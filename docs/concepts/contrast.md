@@ -2,6 +2,33 @@
 
 iridis enforces contrast at pipeline time, not at render time. By the time `engine.run()` resolves, every declared contrast pair has been checked and any failing foreground role has been adjusted. You receive a palette that already satisfies your accessibility requirements.
 
+## Live: AA vs AAA
+
+Toggle **Contrast level** and **Contrast algorithm** in the sidebar to watch `enforce:contrast` lift role pairs to the selected threshold.
+
+<IridisDemo :pipeline="['intake:hex', 'resolve:roles', 'expand:family', 'enforce:contrast']" />
+
+<IridisCode label="Code">
+
+```ts
+engine.pipeline([
+  'intake:hex',
+  'resolve:roles',
+  'expand:family',
+  'enforce:contrast',
+]);
+
+const state = await engine.run({
+  colors:   yourSeeds,
+  roles:    schemaWithContrastPairs,
+  contrast: { level: 'AA', algorithm: 'wcag21' }, // or 'AAA' / 'apca'
+});
+```
+
+</IridisCode>
+
+---
+
 ## WCAG 2.1 — contrastWcag21
 
 The WCAG 2.1 algorithm computes relative luminance from gamma-corrected sRGB values, then produces a ratio between the lighter and darker luminances. The ratio ranges from 1:1 (identical colors) to 21:1 (black on white).

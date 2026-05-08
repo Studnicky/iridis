@@ -2,6 +2,34 @@
 
 A role schema is a consumer-authored description of what a palette means in a particular context. It is the contract between your design system and iridis. You decide what roles exist, what constraints they carry, and which pairs must meet accessibility thresholds. iridis enforces the contract on every run.
 
+## Live: switch role schemas
+
+Pick a different **Role schema** in the sidebar config to see the same seed colors resolve into different role layouts. The demo below renders the resulting `state.roles` map.
+
+<IridisDemo :pipeline="['intake:hex', 'resolve:roles', 'expand:family']" />
+
+<IridisCode label="Code">
+
+```ts
+import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { minimalRoleSchema, w3cRoleSchema, materialRoleSchema } from './roleSchemas';
+
+const engine = new Engine();
+for (const m of mathBuiltins) engine.math.register(m);
+for (const t of coreTasks)    engine.tasks.register(t);
+
+engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family']);
+
+const state = await engine.run({
+  colors: yourSeeds,
+  roles:  w3cRoleSchema, // or minimal, or material
+});
+```
+
+</IridisCode>
+
+---
+
 ## What a role schema is
 
 `RoleSchemaInterface` has three fields: a `name`, an optional `description`, an array of `roles`, and an optional array of `contrastPairs`. It is a plain TypeScript object — not a class, not a schema registry entry. You pass it directly to `engine.run()` via `input.roles`.
