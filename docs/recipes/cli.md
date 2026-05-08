@@ -2,6 +2,39 @@
 
 The iridis CLI runs the same engine and plugins as the library API. It reads a JSON config file, dynamically imports the plugins whose `enable*` flags are set, executes the pipeline, and writes the declared output files. Use it in build scripts or CI pipelines where you want palette generation without writing Node.js code.
 
+## Live: what the CLI would emit
+
+The CLI is a thin wrapper over `engine.run()`. The demo below shows what your sidebar config would resolve to if it were the input to a CLI invocation.
+
+<IridisDemo
+  :pipeline="['intake:hex', 'clamp:count', 'resolve:roles', 'expand:family', 'enforce:contrast', 'derive:variant', 'emit:json']"
+  :show-json="true"
+/>
+
+<IridisCode label="Equivalent CLI config">
+
+```json
+{
+  "colors":   ["#7c3aed", "#06b6d4", "#10b981", "#ec4899"],
+  "roles":    "minimal",
+  "contrast": { "level": "AA", "algorithm": "wcag21" },
+  "runtime":  { "framing": "dark", "colorSpace": "srgb" },
+  "pipeline": [
+    "intake:hex",
+    "clamp:count",
+    "resolve:roles",
+    "expand:family",
+    "enforce:contrast",
+    "derive:variant",
+    "emit:json"
+  ]
+}
+```
+
+</IridisCode>
+
+---
+
 ## Install
 
 ```bash

@@ -15,6 +15,9 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 - First-party output plugins published independently: `-cli`, `-vscode`, `-stylesheet`, `-tailwind`, `-image`, `-contrast`, `-capacitor`, `-rdf`. Each adopts the engine via `engine.adopt(plugin)` and contributes its own `emit:*` task. Engine runs without any of them.
 - VitePress documentation site scaffold with iridescent brand palette and Markdown syntax highlighting for gradient keywords.
 - VitePress build aligned with reference design family (ripper, squashage, json-tology): shared `base.css` for typography, code, table, sidebar, and blockquote rules; project-specific gradients consolidated in `palette.css`; sidebar wired with Introduction / Concepts / Recipes / Reference sections; internal docs (`internal/**`) excluded from public build; `editLink` points at the active `develop` branch.
+- Docs site dogfoods iridis: a sidebar accordion exposes a JSON-Schema-driven config form (seed colors, framing, contrast level/algorithm, color space, role schema). The user's settings drive every live demo on the site AND the docs theme itself — the engine emits CSS custom properties onto `document.documentElement` so the brand and surface tokens are recomputed from the user's seeds.
+- Live demos on every example page (`<IridisDemo>` Vue component) embed a real `Engine` instance bound to the global config store, render canonical colors, resolved roles, and collapsible `state.outputs` JSON. Each demo ships with a paired `<IridisCode>` collapsible block showing the actual code that drives it.
+- Settings persist across pages via localStorage (key: `iridis-docs-config`). SSR-safe; storage access guarded by `typeof window` checks so the static build never trips.
 
 ### Roadmap
 

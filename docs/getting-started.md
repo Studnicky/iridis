@@ -26,7 +26,37 @@ npm install \
 
 :::
 
-## Hello, palette
+## Hello, palette — live
+
+This is the minimum pipeline running against the seeds in your sidebar config.
+
+<IridisDemo
+  :pipeline="['intake:hex', 'resolve:roles', 'emit:json']"
+  :show-roles="true"
+/>
+
+<IridisCode label="Code behind this demo">
+
+```ts
+import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+
+const engine = new Engine();
+for (const m of mathBuiltins) engine.math.register(m);
+for (const t of coreTasks)    engine.tasks.register(t);
+
+engine.pipeline(['intake:hex', 'resolve:roles', 'emit:json']);
+
+const state = await engine.run({
+  'colors': ['#7c3aed'],
+  'roles':  yourRoleSchema,
+});
+
+console.log(state.roles);
+```
+
+</IridisCode>
+
+## Hello, palette — with stylesheet plugin
 
 ```ts
 import { engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
