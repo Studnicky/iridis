@@ -95,7 +95,7 @@ engine.math.register({
 });
 ```
 
-The built-in set — exported as `mathBuiltins` — covers color space conversion, mixing, lightness/chroma adjustments, contrast computation, CVD matrices, and median-cut clustering. See the [math primitive reference](/reference/math) for the full table.
+The built-in set — exported as `mathBuiltins` — covers color space conversion, mixing, lightness/chroma adjustments, contrast computation, CVD matrices, and median-cut clustering. The full primitive table is documented inline in `packages/core/src/math/index.ts` until the dedicated reference page lands.
 
 ## State as the shared medium
 

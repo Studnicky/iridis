@@ -1,6 +1,7 @@
 {
   "name": "@studnicky/iridis-workspace",
   "private": true,
+  "type": "module",
   "workspaces": [
     "packages/*"
   ],

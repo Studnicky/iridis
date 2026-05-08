@@ -14,6 +14,7 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 - Test coverage: 88 tests across Engine, TaskRegistry, ColorMathRegistry, Pipeline composition, and Math composition suites.
 - First-party output plugins published independently: `-cli`, `-vscode`, `-stylesheet`, `-tailwind`, `-image`, `-contrast`, `-capacitor`, `-rdf`. Each adopts the engine via `engine.adopt(plugin)` and contributes its own `emit:*` task. Engine runs without any of them.
 - VitePress documentation site scaffold with iridescent brand palette and Markdown syntax highlighting for gradient keywords.
+- VitePress build aligned with reference design family (ripper, squashage, json-tology): shared `base.css` for typography, code, table, sidebar, and blockquote rules; project-specific gradients consolidated in `palette.css`; sidebar wired with Introduction / Concepts / Recipes / Reference sections; internal docs (`internal/**`) excluded from public build; `editLink` points at the active `develop` branch.
 
 ### Roadmap
 
