@@ -1,49 +1,80 @@
 /**
- * base.css — surface tweaks on top of vitepress defaults.
+ * base.css — shared visual rules.
+ * Reads --vp-c-* variables from palette.css. Touch this file for layout /
+ * typography / shared component tweaks only. Brand colours and project-
+ * specific gradients live in palette.css.
  *
- * Reads --vp-c-* and --iridis-* variables from palette.css. Touch this
- * file for layout / typography only. Brand colors live in palette.css.
+ * This file is a near-verbatim copy of the iridis design-family base.css
+ * (also used by ripper, squashage). Per-project overrides go in palette.css.
  */
 
 :root {
-  --vp-font-family-base: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --vp-font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --vp-font-family-base: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --vp-font-family-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, ui-monospace, monospace;
 }
 
-.VPHero .name {
-  background: linear-gradient(
-    90deg,
-    var(--iridis-violet)  0%,
-    var(--iridis-blue)    33%,
-    var(--iridis-green)   66%,
-    var(--iridis-magenta) 100%
-  );
-  background-clip:         text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color:                   transparent;
+.vp-doc a { color: var(--vp-c-brand-1); text-decoration: none; }
+.vp-doc a:hover { color: var(--vp-c-brand-2); text-decoration: underline; }
+
+.vp-doc h2 {
+  border-bottom: 1px solid var(--vp-c-divider);
+  padding-bottom: 0.4rem;
+  margin-top: 2.4rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.vp-doc h3 { font-weight: 600; margin-top: 1.75rem; }
+
+.vp-doc :not(pre) > code {
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 4px;
+  color: var(--vp-c-text-1);
+  font-size: 0.875em;
+  padding: 0.1em 0.35em;
 }
 
-.VPNavBarTitle .title {
-  letter-spacing: 0.01em;
+.vp-doc div[class*="language-"] {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 4px;
 }
 
-.VPHomeHero .image-bg {
-  background: radial-gradient(
-    circle,
-    rgba(124, 58, 237, 0.18) 0%,
-    rgba(6, 182, 212, 0.10)  40%,
-    transparent              70%
-  );
-  filter: blur(40px);
+.vp-doc table { border-collapse: collapse; width: 100%; }
+.vp-doc th {
+  background: var(--vp-c-bg-alt);
+  border-bottom: 1px solid var(--vp-c-divider);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.vp-doc td,
+.vp-doc th {
+  border-bottom: 1px solid var(--vp-c-divider);
+  padding: 0.5rem 0.75rem;
 }
 
-code .iridis-brand,
-pre .iridis-brand {
-  background:              none;
-  -webkit-background-clip: initial;
-  background-clip:         initial;
-  -webkit-text-fill-color: inherit;
-  color:                   inherit;
-  font-weight:             inherit;
+.VPSidebarItem.level-0 > .item > .text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+}
+.VPSidebarItem.is-active > .item > .link > .text {
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+
+.vp-doc blockquote {
+  border-left: 3px solid var(--vp-c-brand-1);
+  background: var(--vp-c-bg-alt);
+  border-radius: 0 4px 4px 0;
+  color: var(--vp-c-text-2);
+  padding: 0.65rem 1rem;
+}
+
+.VPFeature {
+  border: 1px solid var(--vp-c-divider) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
 }
