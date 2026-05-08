@@ -3,11 +3,10 @@ layout: doc
 title: iridis
 ---
 
-<div style="text-align:center;padding:2rem 0 1rem">
-  <img src="/logo.svg" alt="iridis" style="max-width:160px;margin:0 auto 1rem" />
-  <h1 style="font-size:2.5rem;font-weight:700;margin:0.5rem 0;background:linear-gradient(90deg,#7c3aed 0%,#2563eb 33%,#10b981 66%,#ec4899 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent">iridis</h1>
-  <p style="font-size:1.2rem;color:var(--vp-c-text-2);max-width:640px;margin:0 auto 1.5rem">Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced. Seeds in, role-resolved palettes out.</p>
-  <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem">
+<div style="padding:1.5rem 0 2rem;border-bottom:1px solid var(--vp-c-divider);margin-bottom:2rem">
+  <h1 style="font-size:2.4rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 0.4rem;border:0;padding:0;background:linear-gradient(90deg,#7c3aed 0%,#2563eb 33%,#10b981 66%,#ec4899 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent">iridis</h1>
+  <p style="font-size:1.15rem;color:var(--vp-c-text-2);max-width:640px;margin:0 0 1.25rem">Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced. Seeds in, role-resolved palettes out.</p>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
     <a href="/iridis/getting-started" class="VPButton medium brand" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-brand-bg);color:var(--vp-button-brand-text);font-weight:500">Get started</a>
     <a href="/iridis/concepts/pipeline" class="VPButton medium alt" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-alt-bg);color:var(--vp-button-alt-text);font-weight:500">Pipeline</a>
     <a href="/iridis/v2-living-color" class="VPButton medium alt" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-alt-bg);color:var(--vp-button-alt-text);font-weight:500">Living color (v2 thesis)</a>
