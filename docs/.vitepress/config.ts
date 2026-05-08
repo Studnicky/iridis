@@ -43,9 +43,9 @@ export default defineConfig({
   'srcExclude':  ['internal/**', 'internal/*.md'],
   'markdown':    { 'config': (md) => { md.use(iridisBrandPlugin); } },
   'head': [
-    ['link', { 'rel': 'icon',        'type': 'image/svg+xml', 'href': '/iridis/logo.svg' }],
+    ['link', { 'rel': 'icon',        'type': 'image/png',   'href': '/iridis/logo.png' }],
     ['meta', { 'name': 'theme-color', 'content': '#7c3aed' }],
-    ['meta', { 'name': 'og:image',    'content': '/iridis/logo.svg' }],
+    ['meta', { 'name': 'og:image',    'content': '/iridis/logo.png' }],
   ],
   'appearance':  themeConfig.appearance,
   'themeConfig': {

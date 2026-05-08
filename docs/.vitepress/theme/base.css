@@ -78,3 +78,20 @@
   border-radius: 4px !important;
   box-shadow: none !important;
 }
+
+/* Iridis sidebar icon — rendered via the sidebar-nav-before slot in
+   theme/index.ts. The icon's pure-black corners blend into the dark
+   sidebar background; on light theme they sit as a deliberate dark frame
+   (matches the brand asset's intended viewing context). */
+.VPSidebar .iridis-sidebar-icon {
+  display:             block;
+  width:               180px;
+  height:              180px;
+  margin:              0.5rem auto 1rem;
+  background-image:    url('/iridis/logo.png');
+  background-position: center;
+  background-repeat:   no-repeat;
+  background-size:     contain;
+  flex-shrink:         0;
+  border-radius:       8px;
+}
