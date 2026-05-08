@@ -1,35 +1,35 @@
 ---
-layout: home
-
-hero:
-  name:    iridis
-  text:    Chromatic pipeline for dynamic palette derivation
-  tagline: Pluggable, OKLCH-native, contrast-enforced. Seeds in, role-resolved palettes out.
-  image:
-    src: /logo.png
-    alt: iridis
-  actions:
-    - theme:  brand
-      text:   Get started
-      link:   /getting-started
-    - theme:  alt
-      text:   Living color (v2 thesis)
-      link:   /v2-living-color
-    - theme:  alt
-      text:   GitHub
-      link:   https://github.com/Studnicky/iridis
-
-features:
-  - title:   Variable input
-    details: 1 to N seed colors in any format (hex, rgb, hsl, oklch, lab, named, image pixels). Intake adapters normalize to a canonical OKLCH-first record.
-  - title:   Role-resolved
-    details: Roles are consumer-defined JSON Schema. The engine assigns colors to roles, expands missing roles parametrically, enforces contrast pairs, and emits role-shaped output.
-  - title:   Pluggable everything
-    details: Math primitives, intake formats, transforms, and emitters are all registered domain modules. Swap mixOklch for a perceptual mixer, register a custom emitter, compose your own pipeline.
-  - title:   Contrast-enforced
-    details: WCAG 2.1, APCA, and CVD simulation as registered tasks. Pairs that fail thresholds are nudged in OKLCH space until they pass — every frame, if you want.
-  - title:   Browser- and Node-safe
-    details: Core has zero runtime dependencies. Plugins own their deps (n3 lives in iridis-rdf only). Tree-shake or run as CLI; same engine either way.
-  - title:   Living color (coming)
-    details: Treat a palette as a vector and animate trajectories through OKLCH × N-roles space. Chameleons and chromatophores for your UI.
+layout: doc
+title: iridis
 ---
+
+<div style="text-align:center;padding:2rem 0 1rem">
+  <img src="/logo.svg" alt="iridis" style="max-width:160px;margin:0 auto 1rem" />
+  <h1 style="font-size:2.5rem;font-weight:700;margin:0.5rem 0;background:linear-gradient(90deg,#7c3aed 0%,#2563eb 33%,#10b981 66%,#ec4899 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent">iridis</h1>
+  <p style="font-size:1.2rem;color:var(--vp-c-text-2);max-width:640px;margin:0 auto 1.5rem">Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced. Seeds in, role-resolved palettes out.</p>
+  <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem">
+    <a href="/iridis/getting-started" class="VPButton medium brand" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-brand-bg);color:var(--vp-button-brand-text);font-weight:500">Get started</a>
+    <a href="/iridis/concepts/pipeline" class="VPButton medium alt" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-alt-bg);color:var(--vp-button-alt-text);font-weight:500">Pipeline</a>
+    <a href="/iridis/v2-living-color" class="VPButton medium alt" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-alt-bg);color:var(--vp-button-alt-text);font-weight:500">Living color (v2 thesis)</a>
+    <a href="https://github.com/Studnicky/iridis" class="VPButton medium alt" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-alt-bg);color:var(--vp-button-alt-text);font-weight:500">GitHub</a>
+  </div>
+</div>
+
+`@studnicky/iridis` is a composition engine for generating design system palettes from seed colors. Provide any number of seed colors in any common format. The engine runs them through a registered pipeline — intake, role resolution, contrast enforcement, variant derivation — and emits role-resolved palettes. Output adapters (CSS variables, Tailwind, VS Code semantic tokens, native chrome, RDF graphs) are separate plugins. The engine ships with zero runtime dependencies.
+
+## What it does
+
+- **Variable input.** 1 to N seed colors in any format (hex, rgb, hsl, oklch, lab, named, image pixels). Intake adapters normalize to a canonical OKLCH-first record.
+- **Role-resolved.** Roles are consumer-defined JSON Schema. The engine assigns colors to roles, expands missing roles parametrically, enforces contrast pairs, and emits role-shaped output.
+- **Pluggable everything.** Math primitives, intake formats, transforms, and emitters are all registered domain modules. Swap `mixOklch` for a perceptual mixer, register a custom emitter, compose your own pipeline.
+- **Contrast-enforced.** WCAG 2.1, APCA, and CVD simulation as registered tasks. Pairs that fail thresholds are nudged in OKLCH space until they pass — every frame, if you want.
+- **Browser- and Node-safe.** Core has zero runtime dependencies. Plugins own their deps. Tree-shake or run as CLI; same engine either way.
+- **Living color (coming).** Treat a palette as a vector and animate trajectories through OKLCH × N-roles space. Chameleons and chromatophores for your UI.
+
+## Where to look next
+
+- [Getting started](./getting-started) — install and first run
+- [Pipeline](./concepts/pipeline) — task names, ordering, contracts
+- [Role schemas](./concepts/role-schemas) — define what a palette must satisfy
+- [CLI recipe](./recipes/cli) — JSON config to filesystem outputs
+- [Living color (v2 thesis)](./v2-living-color) — animation engine and reactive bindings planned next
