@@ -111,32 +111,6 @@ pre .iridis-brand {
   font-weight:             inherit;
 }
 
-/* iridis-specific home hero treatment. The hero name picks up a
-   four-stop slice of the brand spectrum. */
-.VPHero .name {
-  background: linear-gradient(
-    90deg,
-    var(--iridis-violet)  0%,
-    var(--iridis-blue)    33%,
-    var(--iridis-green)   66%,
-    var(--iridis-magenta) 100%
-  );
-  background-clip:         text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color:                   transparent;
-}
-
 .VPNavBarTitle .title {
   letter-spacing: 0.01em;
-}
-
-.VPHomeHero .image-bg {
-  background: radial-gradient(
-    circle,
-    rgba(124, 58, 237, 0.18) 0%,
-    rgba(6, 182, 212, 0.10)  40%,
-    transparent              70%
-  );
-  filter: blur(40px);
 }
