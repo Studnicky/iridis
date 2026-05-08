@@ -1,0 +1,37 @@
+import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
+import { colorRecordFactory } from './ColorRecordFactory.ts';
+
+function isColorRecord(v: unknown): v is ColorRecordInterface {
+  if (typeof v !== 'object' || v === null) return false;
+  const c = v as Record<string, unknown>;
+  return typeof c['oklch'] === 'object' && c['oklch'] !== null;
+}
+
+function lerpAngle(a: number, b: number, t: number): number {
+  let diff = b - a;
+  if (diff > 180) diff -= 360;
+  if (diff < -180) diff += 360;
+  return ((a + diff * t) % 360 + 360) % 360;
+}
+
+export class MixOklch implements MathPrimitiveInterface {
+  readonly 'name' = 'mixOklch';
+
+  apply(...args: readonly unknown[]): ColorRecordInterface {
+    const [a, b, t] = args;
+    if (!isColorRecord(a) || !isColorRecord(b)) {
+      throw new Error('MixOklch.apply: expected (a: ColorRecord, b: ColorRecord, t: number)');
+    }
+    if (typeof t !== 'number') {
+      throw new Error('MixOklch.apply: t must be a number');
+    }
+    const tc = Math.max(0, Math.min(1, t));
+    const l = a.oklch.l + (b.oklch.l - a.oklch.l) * tc;
+    const c = a.oklch.c + (b.oklch.c - a.oklch.c) * tc;
+    const h = lerpAngle(a.oklch.h, b.oklch.h, tc);
+    const alpha = a.alpha + (b.alpha - a.alpha) * tc;
+    return colorRecordFactory.fromOklch(l, c, h, alpha);
+  }
+}
+
+export const mixOklch = new MixOklch();

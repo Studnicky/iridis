@@ -1,0 +1,39 @@
+{
+  "name": "@studnicky/iridis",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Pluggable color derivation pipeline. Variable-input-count seed colors expand into role-resolved, contrast-enforced palettes via registered tasks. Browser- and Node-safe. Zero runtime dependencies.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./model": "./src/model/index.ts",
+    "./registry": "./src/registry/index.ts",
+    "./engine": "./src/engine/index.ts",
+    "./math": "./src/math/index.ts",
+    "./tasks": "./src/tasks/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "prebuild": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test 'tests/**/*.test.ts'",
+    "clean": "rm -rf dist"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "@studnicky/json-tology": "*"
+  },
+  "peerDependenciesMeta": {
+    "@studnicky/json-tology": {
+      "optional": true
+    }
+  }
+}

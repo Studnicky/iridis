@@ -1,0 +1,68 @@
+import type { RoleSchemaInterface } from '@studnicky/iridis/model';
+
+/**
+ * W3C-conformant role schema for per-category palettes.
+ *
+ * Seven semantic roles cover the full surface area of a music-app category view.
+ * Contrast pairs enforce WCAG 2.1 AA (4.5:1 text, 3.0:1 non-text) using the
+ * default wcag21 algorithm.
+ */
+export const categoryW3cRoleSchema: RoleSchemaInterface = {
+  'name':        'category-w3c',
+  'description': 'WCAG 2.1 AA role schema for category colour palettes',
+  'roles': [
+    {
+      'name':           'canvas',
+      'description':    'Page / card background',
+      'intent':         'base',
+      'required':       true,
+      'lightnessRange': [0.92, 1.0],
+    },
+    {
+      'name':           'surface',
+      'description':    'Elevated surface (modal, sheet)',
+      'intent':         'surface',
+      'required':       true,
+      'lightnessRange': [0.86, 0.96],
+    },
+    {
+      'name':           'accent',
+      'description':    'Primary interactive / brand colour',
+      'intent':         'accent',
+      'required':       true,
+    },
+    {
+      'name':           'onAccent',
+      'description':    'Text / icons placed on accent',
+      'intent':         'text',
+      'required':       true,
+      'derivedFrom':    'accent',
+      'lightnessRange': [0.98, 1.0],
+    },
+    {
+      'name':           'border',
+      'description':    'Dividers and focus rings',
+      'intent':         'neutral',
+      'lightnessRange': [0.60, 0.80],
+    },
+    {
+      'name':           'muted',
+      'description':    'Secondary / de-emphasised text',
+      'intent':         'muted',
+      'lightnessRange': [0.45, 0.65],
+    },
+    {
+      'name':           'text',
+      'description':    'Primary body text',
+      'intent':         'text',
+      'required':       true,
+      'lightnessRange': [0.10, 0.25],
+    },
+  ],
+  'contrastPairs': [
+    { 'foreground': 'text',     'background': 'canvas',  'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'text',     'background': 'surface', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'onAccent', 'background': 'accent',  'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'border',   'background': 'canvas',  'minRatio': 3.0, 'algorithm': 'wcag21' },
+  ],
+};

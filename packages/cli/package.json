@@ -1,0 +1,23 @@
+{
+  "name": "@studnicky/iridis-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "iridis": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./Cli": "./src/Cli.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "prebuild": "rm -rf dist"
+  },
+  "dependencies": {
+    "@studnicky/iridis": "*"
+  }
+}

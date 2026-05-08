@@ -1,0 +1,26 @@
+{
+  "name": "@studnicky/iridis-tailwind",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "prebuild": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests'",
+    "clean": "rm -rf dist"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@studnicky/iridis": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

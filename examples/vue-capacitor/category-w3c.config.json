@@ -1,0 +1,92 @@
+{
+  "input": {
+    "colors": ["#8B5CF6"],
+    "contrast": { "level": "AA", "algorithm": "wcag21" },
+    "metadata": {
+      "category":     "music",
+      "cssVarPrefix": "--c-",
+      "scopeAttr":    "data-category",
+      "scopePrefix":  "category",
+      "themeName":    "music"
+    },
+    "roles": {
+      "name": "category-w3c",
+      "description": "WCAG 2.1 AA role schema for category colour palettes",
+      "roles": [
+        {
+          "name":           "canvas",
+          "description":    "Page / card background",
+          "intent":         "base",
+          "required":       true,
+          "lightnessRange": [0.92, 1.0]
+        },
+        {
+          "name":           "surface",
+          "description":    "Elevated surface (modal, sheet)",
+          "intent":         "surface",
+          "required":       true,
+          "lightnessRange": [0.86, 0.96]
+        },
+        {
+          "name":           "accent",
+          "description":    "Primary interactive / brand colour",
+          "intent":         "accent",
+          "required":       true
+        },
+        {
+          "name":           "onAccent",
+          "description":    "Text / icons placed on accent",
+          "intent":         "text",
+          "required":       true,
+          "derivedFrom":    "accent",
+          "lightnessRange": [0.98, 1.0]
+        },
+        {
+          "name":           "border",
+          "description":    "Dividers and focus rings",
+          "intent":         "neutral",
+          "lightnessRange": [0.60, 0.80]
+        },
+        {
+          "name":           "muted",
+          "description":    "Secondary / de-emphasised text",
+          "intent":         "muted",
+          "lightnessRange": [0.45, 0.65]
+        },
+        {
+          "name":           "text",
+          "description":    "Primary body text",
+          "intent":         "text",
+          "required":       true,
+          "lightnessRange": [0.10, 0.25]
+        }
+      ],
+      "contrastPairs": [
+        { "foreground": "text",     "background": "canvas",  "minRatio": 4.5, "algorithm": "wcag21" },
+        { "foreground": "text",     "background": "surface", "minRatio": 4.5, "algorithm": "wcag21" },
+        { "foreground": "onAccent", "background": "accent",  "minRatio": 4.5, "algorithm": "wcag21" },
+        { "foreground": "border",   "background": "canvas",  "minRatio": 3.0, "algorithm": "wcag21" }
+      ]
+    }
+  },
+  "enableContrast":   true,
+  "enableStylesheet": true,
+  "enableCapacitor":  true,
+  "pipeline": [
+    "intake:any",
+    "expand:family",
+    "resolve:roles",
+    "enforce:wcagAA",
+    "derive:variant",
+    "emit:cssVars",
+    "emit:capacitorStatusBar",
+    "emit:capacitorTheme"
+  ],
+  "output": {
+    "directory": "./out",
+    "files": {
+      "cssVars":   "music.css",
+      "capacitor": "music.capacitor.json"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/stylesheet" },
+    { "path": "./packages/tailwind" },
+    { "path": "./packages/vscode" },
+    { "path": "./packages/contrast" },
+    { "path": "./packages/capacitor" },
+    { "path": "./packages/image" },
+    { "path": "./packages/rdf" },
+    { "path": "./packages/cli" }
+  ]
+}

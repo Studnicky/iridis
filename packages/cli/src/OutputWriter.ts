@@ -1,0 +1,23 @@
+import { mkdir, writeFile } from 'fs/promises';
+import { join } from 'path';
+import type { PaletteStateInterface } from '@studnicky/iridis/model';
+import type { CliConfigInterface } from './types.ts';
+
+export class OutputWriter {
+  async write(state: PaletteStateInterface, config: CliConfigInterface): Promise<readonly string[]> {
+    await mkdir(config.output.directory, { 'recursive': true });
+
+    const written: string[] = [];
+
+    for (const [key, filename] of Object.entries(config.output.files)) {
+      const value   = state.outputs[key];
+      const content = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+      const target  = join(config.output.directory, filename);
+
+      await writeFile(target, content, 'utf-8');
+      written.push(target);
+    }
+
+    return written;
+  }
+}
