@@ -18,6 +18,7 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 - Docs site dogfoods iridis: a sidebar accordion exposes a JSON-Schema-driven config form (seed colors, framing, contrast level/algorithm, color space, role schema). The user's settings drive every live demo on the site AND the docs theme itself — the engine emits CSS custom properties onto `document.documentElement` so the brand and surface tokens are recomputed from the user's seeds.
 - Live demos on every example page (`<IridisDemo>` Vue component) embed a real `Engine` instance bound to the global config store, render canonical colors, resolved roles, and collapsible `state.outputs` JSON. Each demo ships with a paired `<IridisCode>` collapsible block showing the actual code that drives it.
 - Settings persist across pages via localStorage (key: `iridis-docs-config`). SSR-safe; storage access guarded by `typeof window` checks so the static build never trips.
+- Required-role enforcement: `resolve:roles` now guarantees that every required role is populated AND that its assigned color satisfies the role's declared `lightnessRange`, `chromaRange`, and `hueOffset` constraints. The closest candidate is nudged in OKLCH space — lightness and chroma clamped into range, hue driven to the `hueOffset` target if declared. When no input colors are present, required roles are synthesized from the constraint centers. Optional roles with declared constraints are likewise nudged when assigned. `metadata.rolesSynthesized` records any role populated from constraints alone.
 
 ### Roadmap
 

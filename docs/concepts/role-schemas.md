@@ -2,6 +2,10 @@
 
 A role schema is a consumer-authored description of what a palette means in a particular context. It is the contract between your design system and iridis. You decide what roles exist, what constraints they carry, and which pairs must meet accessibility thresholds. iridis enforces the contract on every run.
 
+::: tip Required means required
+When a role is `required: true`, the engine guarantees it is populated AND that its assigned color satisfies any declared `lightnessRange`, `chromaRange`, or `hueOffset`. If no input color falls inside the constraints, `resolve:roles` nudges the closest candidate in OKLCH space until it does. If there are no input colors at all, the engine synthesizes from the constraint centers. The contract holds unconditionally.
+:::
+
 ## Live: switch role schemas
 
 Pick a different **Role schema** in the sidebar config to see the same seed colors resolve into different role layouts. The demo below renders the resulting `state.roles` map.
