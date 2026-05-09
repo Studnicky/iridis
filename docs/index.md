@@ -16,48 +16,9 @@ title: iridis
 
 `@studnicky/iridis` is a composition engine for generating design system palettes from seed colors. Provide any number of seed colors in any common format. The engine runs them through a registered pipeline — intake, role resolution, contrast enforcement, variant derivation — and emits role-resolved palettes. Output adapters (CSS variables, Tailwind, VS Code semantic tokens, native chrome, RDF graphs) are separate plugins. The engine ships with zero runtime dependencies.
 
-::: tip Live demo
-Open the **Configure docs** accordion in the sidebar to set your seed colors, framing, and contrast targets. Every demo on this site re-runs as you change them, and the docs theme itself recomputes from your seeds via iridis.
+::: tip Live builder
+The example panel on the right is running iridis against your seeds. Pick a color, watch every chrome and syntax token in the docs recompute. Your settings persist across pages via `localStorage`. Every page uses the same builder.
 :::
-
-## Live: full pipeline
-
-The full canonical pipeline running against your seeds: intake → clamp → resolve roles → expand → enforce contrast → derive variants. Head to **[Try it out](/try-it-out)** for the configuration form alongside the same demo. Edits propagate to every demo on the site and the docs theme itself.
-
-<IridisDemo
-  :pipeline="['intake:hex', 'clamp:count', 'resolve:roles', 'expand:family', 'enforce:contrast', 'derive:variant', 'emit:json']"
-/>
-
-<IridisCode label="Code behind this demo">
-
-```ts
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
-
-const engine = new Engine();
-for (const m of mathBuiltins) engine.math.register(m);
-for (const t of coreTasks)    engine.tasks.register(t);
-
-engine.pipeline([
-  'intake:hex',
-  'clamp:count',
-  'resolve:roles',
-  'expand:family',
-  'enforce:contrast',
-  'derive:variant',
-  'emit:json',
-]);
-
-const state = await engine.run({
-  'colors':   ['#7c3aed', '#06b6d4', '#10b981', '#ec4899'],
-  'roles':    minimalRoleSchema,
-  'contrast': { 'level': 'AA', 'algorithm': 'wcag21' },
-  'runtime':  { 'framing': 'dark', 'colorSpace': 'srgb' },
-});
-
-console.log(state.outputs.json);
-```
-
-</IridisCode>
 
 ## What it does
 

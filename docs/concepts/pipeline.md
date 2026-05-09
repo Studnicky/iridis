@@ -2,74 +2,9 @@
 
 iridis is a task pipeline. You register primitives and tasks, declare an execution order, pass an input, and get a fully resolved palette out. The engine does not know or care what the pipeline contains — that is your configuration.
 
-## Live: each stage in isolation
-
-Three demos below run progressively longer pipelines against the same seed colors from your sidebar config so you can see what each stage contributes.
-
-### Stage 1 — intake only
-
-Just normalize the seeds into canonical OKLCH-first records.
-
-<IridisDemo :pipeline="['intake:hex']" :show-roles="false" />
-
-<IridisCode label="Code">
-
-```ts
-engine.pipeline(['intake:hex']);
-const state = await engine.run({ colors: yourSeeds });
-console.log(state.colors); // ColorRecord[]
-```
-
-</IridisCode>
-
-### Stage 2 — intake + resolve roles
-
-Same seeds, now assigned to the role schema selected in your sidebar.
-
-<IridisDemo :pipeline="['intake:hex', 'resolve:roles']" />
-
-<IridisCode label="Code">
-
-```ts
-engine.pipeline(['intake:hex', 'resolve:roles']);
-const state = await engine.run({ colors: yourSeeds, roles: roleSchema });
-console.log(state.roles); // Record<roleName, ColorRecord>
-```
-
-</IridisCode>
-
-### Stage 3 — full pipeline
-
-Intake → clamp → resolve → expand → enforce contrast → derive variants → emit JSON.
-
-<IridisDemo
-  :pipeline="['intake:hex', 'clamp:count', 'resolve:roles', 'expand:family', 'enforce:contrast', 'derive:variant', 'emit:json']"
-  :show-json="true"
-/>
-
-<IridisCode label="Code">
-
-```ts
-engine.pipeline([
-  'intake:hex',
-  'clamp:count',
-  'resolve:roles',
-  'expand:family',
-  'enforce:contrast',
-  'derive:variant',
-  'emit:json',
-]);
-const state = await engine.run({
-  colors:   yourSeeds,
-  roles:    roleSchema,
-  contrast: { level: 'AA', algorithm: 'wcag21' },
-  runtime:  { framing: 'dark' },
-});
-```
-
-</IridisCode>
-
----
+::: tip Live builder
+The example panel on the right is running this exact pipeline against your seeds. Open the **Role schema** or **Code** tab to see how the structure maps to what you're reading below. Every page on the docs uses the same builder.
+:::
 
 ## The four stages
 

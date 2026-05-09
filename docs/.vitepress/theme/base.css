@@ -1,18 +1,40 @@
 /**
- * base.css — shared visual rules.
- * Reads --vp-c-* variables from palette.css. Touch this file for layout /
- * typography / shared component tweaks only. Brand colours and project-
- * specific gradients live in palette.css.
+ * base.css — shared visual rules + iridis depth treatment.
  *
- * This file is a near-verbatim copy of the iridis design-family base.css
- * (also used by ripper, squashage). Per-project overrides go in palette.css.
+ * Reads --vp-c-* and --iridis-* variables from palette.css. Touch this
+ * file for layout / typography / shared-component pop. Brand colours and
+ * project-specific gradients live in palette.css.
  */
 
 :root {
   --vp-font-family-base: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --vp-font-family-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, ui-monospace, monospace;
+
+  /* Iridis-specific shared depth tokens */
+  --iridis-radius-sm:  6px;
+  --iridis-radius-md:  10px;
+  --iridis-radius-lg:  14px;
+  --iridis-shadow-sm:
+    0 1px 2px  rgba(0, 0, 0, 0.20),
+    0 1px 3px  -1px rgba(0, 0, 0, 0.18);
+  --iridis-shadow-md:
+    0 4px 12px -2px rgba(0, 0, 0, 0.30),
+    0 1px 4px  -1px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --iridis-shadow-lg:
+    0 14px 40px -10px rgba(0, 0, 0, 0.45),
+    0 4px  10px -2px  rgba(0, 0, 0, 0.30),
+    inset 0 1px 0    rgba(255, 255, 255, 0.06);
+  --iridis-edge-soft:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+
+  /* Right-panel reservation */
+  --iridis-right-panel-width: 290px;
+  --vp-layout-max-width: 1600px;
 }
 
+/* === Doc surface basics === */
 .vp-doc a { color: var(--vp-c-brand-1); text-decoration: none; }
 .vp-doc a:hover { color: var(--vp-c-brand-2); text-decoration: underline; }
 
@@ -28,18 +50,25 @@
 .vp-doc :not(pre) > code {
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-divider);
-  border-radius: 4px;
+  border-radius: var(--iridis-radius-sm);
   color: var(--vp-c-text-1);
   font-size: 0.875em;
-  padding: 0.1em 0.35em;
+  padding: 0.1em 0.4em;
+  box-shadow: var(--iridis-edge-soft);
 }
 
 .vp-doc div[class*="language-"] {
   border: 1px solid var(--vp-c-divider);
-  border-radius: 4px;
+  border-radius: var(--iridis-radius-md);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklch, var(--iridis-bg-soft) 95%, var(--iridis-brand) 5%) 0%,
+      color-mix(in oklch, var(--iridis-bg-soft) 99%, var(--iridis-text)  1%) 100%);
+  box-shadow: var(--iridis-shadow-sm), var(--iridis-edge-soft);
+  overflow: hidden;
 }
 
-.vp-doc table { border-collapse: collapse; width: 100%; }
+.vp-doc table { border-collapse: collapse; width: 100%; border-radius: var(--iridis-radius-sm); overflow: hidden; }
 .vp-doc th {
   background: var(--vp-c-bg-alt);
   border-bottom: 1px solid var(--vp-c-divider);
@@ -50,7 +79,7 @@
 .vp-doc td,
 .vp-doc th {
   border-bottom: 1px solid var(--vp-c-divider);
-  padding: 0.5rem 0.75rem;
+  padding: 0.55rem 0.8rem;
 }
 
 .VPSidebarItem.level-0 > .item > .text {
@@ -67,31 +96,119 @@
 
 .vp-doc blockquote {
   border-left: 3px solid var(--vp-c-brand-1);
-  background: var(--vp-c-bg-alt);
-  border-radius: 0 4px 4px 0;
+  background: color-mix(in oklch, var(--iridis-bg-soft) 92%, var(--iridis-brand) 8%);
+  border-radius: 0 var(--iridis-radius-md) var(--iridis-radius-md) 0;
   color: var(--vp-c-text-2);
-  padding: 0.65rem 1rem;
+  padding: 0.75rem 1rem;
+  box-shadow: var(--iridis-shadow-sm);
 }
 
 .VPFeature {
   border: 1px solid var(--vp-c-divider) !important;
-  border-radius: 4px !important;
-  box-shadow: none !important;
+  border-radius: var(--iridis-radius-md) !important;
+  background:
+    linear-gradient(160deg,
+      color-mix(in oklch, var(--iridis-surface) 96%, var(--iridis-brand) 4%) 0%,
+      color-mix(in oklch, var(--iridis-bg-soft) 98%, var(--iridis-text)  2%) 100%) !important;
+  box-shadow: var(--iridis-shadow-md) !important;
 }
 
-/* Iridis sidebar icon — rendered via the sidebar-nav-before slot in
-   theme/index.ts. The icon's pure-black corners blend into the dark
-   sidebar background; on light theme they sit as a deliberate dark frame
-   (matches the brand asset's intended viewing context). */
-.VPSidebar .iridis-sidebar-icon {
-  display:             block;
-  width:               180px;
-  height:              180px;
-  margin:              0.5rem auto 1rem;
-  background-image:    url('/iridis/logo.png');
+/* === Custom containers (::: tip etc.) get glass treatment === */
+.vp-doc .custom-block {
+  border-radius: var(--iridis-radius-md) !important;
+  box-shadow: var(--iridis-shadow-sm), var(--iridis-edge-soft) !important;
+  backdrop-filter: blur(4px);
+  border-width: 1px !important;
+}
+
+/* === Pulsing logo block (uiverse loader pattern) === */
+/* Renders inside the sidebar-nav-before slot via theme/index.ts. */
+.VPSidebar .iridis-loader {
+  --iridis-loader-size: 200px;
+  --iridis-loader-duration: 5s;
+  position: relative;
+  width: var(--iridis-loader-size);
+  height: var(--iridis-loader-size);
+  margin: 0.5rem auto 1.25rem;
+  flex-shrink: 0;
+}
+
+.VPSidebar .iridis-loader__box {
+  position: absolute;
+  border-radius: 50%;
+  border-top: 1px solid color-mix(in oklch, var(--iridis-brand) 55%, transparent);
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklch, var(--iridis-brand) 5%, transparent) 0%,
+      color-mix(in oklch, var(--iridis-brand) 14%, transparent) 100%);
+  box-shadow:
+    rgba(0, 0, 0, 0.30) 0px 10px 14px -2px,
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(4px);
+  animation: iridis-loader-ripple var(--iridis-loader-duration) infinite ease-in-out;
+}
+
+.VPSidebar .iridis-loader__box:nth-child(1) { inset: 40%; z-index: 99; animation-delay: 0s; }
+.VPSidebar .iridis-loader__box:nth-child(2) { inset: 30%; z-index: 98; animation-delay: 0.4s; border-top-color: color-mix(in oklch, var(--iridis-brand) 45%, transparent); }
+.VPSidebar .iridis-loader__box:nth-child(3) { inset: 20%; z-index: 97; animation-delay: 0.8s; border-top-color: color-mix(in oklch, var(--iridis-brand) 35%, transparent); }
+.VPSidebar .iridis-loader__box:nth-child(4) { inset: 10%; z-index: 96; animation-delay: 1.2s; border-top-color: color-mix(in oklch, var(--iridis-brand) 25%, transparent); }
+.VPSidebar .iridis-loader__box:nth-child(5) { inset: 0%;  z-index: 95; animation-delay: 1.6s; border-top-color: color-mix(in oklch, var(--iridis-brand) 18%, transparent); }
+
+.VPSidebar .iridis-loader__logo {
+  position: absolute;
+  inset: 22%;
+  z-index: 100;
+  background-image: url('/iridis/logo.png');
   background-position: center;
-  background-repeat:   no-repeat;
-  background-size:     contain;
-  flex-shrink:         0;
-  border-radius:       8px;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: drop-shadow(0 0 12px color-mix(in oklch, var(--iridis-brand) 55%, transparent));
+}
+
+@keyframes iridis-loader-ripple {
+  0%   { transform: scale(1);    box-shadow: rgba(0, 0, 0, 0.30) 0px 10px 12px -2px, inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+  50%  { transform: scale(1.18); box-shadow: rgba(0, 0, 0, 0.30) 0px 24px 22px -2px, inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+  100% { transform: scale(1);    box-shadow: rgba(0, 0, 0, 0.30) 0px 10px 12px -2px, inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+}
+
+/* === Layout — make room for the right panel === */
+.VPDoc.has-aside .container {
+  max-width: 1600px;
+}
+.VPDoc.has-aside .content {
+  /* Constrain the prose so the right panel doesn't overflow the viewport. */
+  max-width: 720px;
+}
+.VPDoc.has-aside .aside {
+  width: calc(var(--iridis-right-panel-width) + 1.5rem);
+  padding-left: 1rem;
+  padding-right: 0.5rem;
+  max-width: calc(var(--iridis-right-panel-width) + 1.5rem);
+}
+.VPDoc.has-aside .aside-container,
+.VPDoc.has-aside .aside-content {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* On narrow viewports the aside collapses below the content. */
+@media (max-width: 1280px) {
+  .VPDoc.has-aside .aside {
+    width: 100%;
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .VPDoc.has-aside .content {
+    max-width: none;
+  }
+  .VPDoc.has-aside .container {
+    flex-direction: column;
+  }
+  .iridis-right {
+    position: relative !important;
+    top: auto !important;
+    width: 100% !important;
+    max-height: none !important;
+  }
 }
