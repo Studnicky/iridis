@@ -14,10 +14,11 @@ const sidebar = [
   {
     'text':  'Concepts',
     'items': [
-      { 'link': '/concepts/pipeline',     'text': 'Pipeline'      },
-      { 'link': '/concepts/role-schemas', 'text': 'Role schemas'  },
-      { 'link': '/concepts/color-record', 'text': 'ColorRecord'   },
-      { 'link': '/concepts/contrast',     'text': 'Contrast'      },
+      { 'link': '/concepts/pipeline',                  'text': 'Pipeline'                  },
+      { 'link': '/concepts/role-schemas',              'text': 'Role schemas'              },
+      { 'link': '/concepts/color-record',              'text': 'ColorRecord'               },
+      { 'link': '/concepts/contrast',                  'text': 'Contrast'                  },
+      { 'link': '/concepts/accessibility-calculations','text': 'Accessibility calculations'},
     ],
   },
   {

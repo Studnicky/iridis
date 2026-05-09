@@ -26,9 +26,20 @@ npm install \
 
 :::
 
+## The simplest possible call
+
+```ts
+import { quickPalette } from '@studnicky/iridis';
+
+const palette = await quickPalette(['#7c3aed', '#06b6d4'], 'dark');
+// → { background: '#07061a', foreground: '#f0f0ff', accent: '#7c3aed', muted: '#7e7e9a' }
+```
+
+One import, one call, four roles back. No schema to define, no pipeline to declare, no tasks to register. The framing argument picks dark or light clamp envelopes; everything else is sensible defaults. `quickPalette` is a thin wrapper around `engine.run()` — drop to the engine API the moment you outgrow it.
+
 ## Hello, palette — live
 
-This is the minimum pipeline running against the seeds in your sidebar config.
+This demo runs the same minimum pipeline `quickPalette` uses, against the seeds in your sidebar config.
 
 <IridisDemo
   :pipeline="['intake:hex', 'resolve:roles', 'emit:json']"
