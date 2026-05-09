@@ -4,6 +4,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { getOrCreateOutput } from '@studnicky/iridis';
 import { FONT_STYLES } from '../data/fontStyles.ts';
 import { SCOPE_MAPPINGS } from '../data/scopeMappings.ts';
 
@@ -20,6 +21,7 @@ interface VscodeMetaInterface {
 
 interface VscodeOutputInterface {
   'semanticTokenRules'?: Record<string, SemanticRuleOutputInterface>;
+  [key: string]: unknown;
 }
 
 function getVscodeMeta(state: PaletteStateInterface): VscodeMetaInterface {
@@ -30,16 +32,6 @@ function getVscodeMeta(state: PaletteStateInterface): VscodeMetaInterface {
   return {};
 }
 
-function getVscodeOutput(state: PaletteStateInterface): VscodeOutputInterface {
-  const outputs = state.outputs;
-  const existing = outputs['vscode'];
-  if (existing !== null && typeof existing === 'object') {
-    return existing as VscodeOutputInterface;
-  }
-  const out: VscodeOutputInterface = {};
-  (outputs as Record<string, unknown>)['vscode'] = out;
-  return out;
-}
 
 export class EmitVscodeSemanticRules implements TaskInterface {
   readonly 'name' = 'emit:vscodeSemanticRules';
@@ -60,7 +52,7 @@ export class EmitVscodeSemanticRules implements TaskInterface {
       throw new Error('EmitVscodeSemanticRules: metadata.vscode.semanticTokenRules not found — run vscode:applyModifiers first');
     }
 
-    const out = getVscodeOutput(state);
+    const out = getOrCreateOutput<VscodeOutputInterface>(state, 'vscode');
     const result: Record<string, SemanticRuleOutputInterface> = {};
 
     for (const [selector, rule] of Object.entries(semanticRules)) {
