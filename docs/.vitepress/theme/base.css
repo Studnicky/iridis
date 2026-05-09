@@ -29,8 +29,11 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     inset 0 -1px 0 rgba(0, 0, 0, 0.18);
 
-  /* Right-panel reservation */
-  --iridis-right-panel-width: 300px;
+  /* Right-panel reservation — resizable by the user via the drag handle.
+     Bounds enforced in JS (240px..720px) but the variable is the only knob. */
+  --iridis-right-panel-width: 420px;
+  --iridis-right-panel-min:   240px;
+  --iridis-right-panel-max:   720px;
   --vp-layout-max-width: 100%;
   --vp-sidebar-width: 280px;
 }
@@ -141,6 +144,7 @@
 .VPSidebar .iridis-loader__box {
   position: absolute;
   border-radius: 50%;
+  transform-origin: center;
   /* Conic gradient sweeps through the iridis spectrum on every ring.
      Each ring's mask carves a thin annulus so they nest like Saturn's rings. */
   background: conic-gradient(
@@ -161,18 +165,19 @@
   opacity: 0.85;
   filter: drop-shadow(0 0 6px color-mix(in oklch, var(--iridis-brand) 35%, transparent));
   animation:
-    iridis-loader-spin var(--iridis-loader-duration) infinite linear,
-    iridis-loader-pulse calc(var(--iridis-loader-duration) / 2) infinite ease-in-out;
+    iridis-loader-spin   var(--iridis-loader-duration)             infinite linear,
+    iridis-loader-pulse  calc(var(--iridis-loader-duration) / 2)   infinite ease-in-out,
+    iridis-loader-ripple calc(var(--iridis-loader-duration) / 2.5) infinite ease-in-out;
 }
 
 /* Five rings, all bounded by the icon. Alternating spin direction so the
-   gradient looks like a counter-rotating chromatic vortex. Inset values
-   produce non-overlapping concentric annuli. */
-.VPSidebar .iridis-loader__box:nth-child(1) { inset:  0%; z-index: 95; animation-delay: 0.0s, 0.0s; animation-direction: normal,  normal; }
-.VPSidebar .iridis-loader__box:nth-child(2) { inset:  8%; z-index: 96; animation-delay: 0.6s, 0.4s; animation-direction: reverse, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.15), calc(var(--iridis-loader-duration) / 2); }
-.VPSidebar .iridis-loader__box:nth-child(3) { inset: 16%; z-index: 97; animation-delay: 1.2s, 0.8s; animation-direction: normal,  normal; animation-duration: calc(var(--iridis-loader-duration) * 0.85), calc(var(--iridis-loader-duration) / 2); }
-.VPSidebar .iridis-loader__box:nth-child(4) { inset: 24%; z-index: 98; animation-delay: 1.8s, 1.2s; animation-direction: reverse, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.30), calc(var(--iridis-loader-duration) / 2); }
-.VPSidebar .iridis-loader__box:nth-child(5) { inset: 32%; z-index: 99; animation-delay: 2.4s, 1.6s; animation-direction: normal,  normal; animation-duration: calc(var(--iridis-loader-duration) * 0.70), calc(var(--iridis-loader-duration) / 2); }
+   gradient looks like a counter-rotating chromatic vortex. Staggered ripple
+   delays make the scale pulse propagate outward → inward. */
+.VPSidebar .iridis-loader__box:nth-child(1) { inset:  0%; z-index: 95; animation-delay: 0.0s, 0.0s, 0.0s; animation-direction: normal,  normal, normal; }
+.VPSidebar .iridis-loader__box:nth-child(2) { inset:  8%; z-index: 96; animation-delay: 0.6s, 0.4s, 0.2s; animation-direction: reverse, normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.15), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
+.VPSidebar .iridis-loader__box:nth-child(3) { inset: 16%; z-index: 97; animation-delay: 1.2s, 0.8s, 0.4s; animation-direction: normal,  normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 0.85), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
+.VPSidebar .iridis-loader__box:nth-child(4) { inset: 24%; z-index: 98; animation-delay: 1.8s, 1.2s, 0.6s; animation-direction: reverse, normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.30), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
+.VPSidebar .iridis-loader__box:nth-child(5) { inset: 32%; z-index: 99; animation-delay: 2.4s, 1.6s, 0.8s; animation-direction: normal,  normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 0.70), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
 
 .VPSidebar .iridis-loader__logo {
   position: absolute;
@@ -193,13 +198,25 @@
   0%, 100% { opacity: 0.65; }
   50%      { opacity: 1.0;  }
 }
+/* Subtle scale ripple — composes with rotate via individual transform
+   properties (split via translate/rotate/scale supported in modern browsers).
+   Falls back to no-op in older browsers since the spin keyframe wins. */
+@keyframes iridis-loader-ripple {
+  0%, 100% { scale: 0.92; box-shadow: 0 0 8px  color-mix(in oklch, var(--iridis-brand) 25%, transparent); }
+  50%      { scale: 1.04; box-shadow: 0 0 16px color-mix(in oklch, var(--iridis-brand) 55%, transparent); }
+}
 
 /* === Layout — full width, both bars hide-able === */
 /* No max-width on the doc container; the layout fills the viewport. */
+/* Real flex: container is flex, content grows, aside is fixed-by-var. */
 .VPDoc.has-aside .container {
   max-width: 100%;
+  display: flex;
+  align-items: flex-start;
 }
 .VPDoc.has-aside .content {
+  flex: 1 1 0;
+  min-width: 0;       /* allow shrink past intrinsic */
   max-width: none;
   padding: 0 2rem;
 }
@@ -207,10 +224,11 @@
   max-width: 100%;
 }
 .VPDoc.has-aside .aside {
+  flex: 0 0 calc(var(--iridis-right-panel-width) + 2.25rem);
   width: calc(var(--iridis-right-panel-width) + 2.25rem);
+  max-width: calc(var(--iridis-right-panel-width) + 2.25rem);
   padding-left: 1rem;
   padding-right: 1.25rem;
-  max-width: calc(var(--iridis-right-panel-width) + 2.25rem);
 }
 .VPDoc.has-aside .aside-container,
 .VPDoc.has-aside .aside-content {

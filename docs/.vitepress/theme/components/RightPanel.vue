@@ -13,7 +13,7 @@
  * The whole panel can be collapsed to an edge handle that re-opens.
  */
 
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
 
@@ -22,6 +22,10 @@ import SchemaForm    from './SchemaForm.vue';
 import { docsConfigSchema } from '../schemas/docsConfig.schema.ts';
 import { roleSchemaByName } from '../schemas/roleSchemas.ts';
 import { configStore, resetConfig } from '../stores/configStore.ts';
+
+const RESIZE_KEY = 'iridis-right-panel-width';
+const RESIZE_MIN = 240;
+const RESIZE_MAX = 720;
 
 const FULL_PIPELINE: readonly string[] = [
   'intake:hex',
@@ -36,6 +40,56 @@ const FULL_PIPELINE: readonly string[] = [
 const open       = ref(true);
 const cfgOpen    = ref(false);
 const exportNote = ref<string | null>(null);
+
+// Resizable width — persisted in localStorage. Drag handle on the panel's
+// left edge updates --iridis-right-panel-width on documentElement.
+function readPersistedWidth(): number | null {
+  if (typeof window === 'undefined') return null;
+  const raw = window.localStorage.getItem(RESIZE_KEY);
+  if (raw === null) return null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : null;
+}
+function writePersistedWidth(width: number): void {
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.setItem(RESIZE_KEY, String(width)); } catch { /* noop */ }
+}
+function applyWidth(width: number): void {
+  if (typeof document === 'undefined') return;
+  const clamped = Math.min(RESIZE_MAX, Math.max(RESIZE_MIN, width));
+  document.documentElement.style.setProperty('--iridis-right-panel-width', `${clamped}px`);
+  writePersistedWidth(clamped);
+}
+
+const dragging = ref(false);
+let dragStartX = 0;
+let dragStartW = 0;
+
+function onDragPointerDown(e: PointerEvent): void {
+  dragging.value = true;
+  dragStartX = e.clientX;
+  const cs = getComputedStyle(document.documentElement).getPropertyValue('--iridis-right-panel-width').trim();
+  dragStartW = parseInt(cs, 10) || 420;
+  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  document.body.style.cursor = 'col-resize';
+  e.preventDefault();
+}
+function onDragPointerMove(e: PointerEvent): void {
+  if (!dragging.value) return;
+  const dx = dragStartX - e.clientX; // dragging LEFT widens the panel
+  applyWidth(dragStartW + dx);
+}
+function onDragPointerUp(e: PointerEvent): void {
+  if (!dragging.value) return;
+  dragging.value = false;
+  (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+  document.body.style.cursor = '';
+}
+
+onMounted(() => {
+  const persisted = readPersistedWidth();
+  if (persisted !== null) applyWidth(persisted);
+});
 
 async function buildExportPayload(): Promise<Record<string, unknown>> {
   const engine = new Engine();
@@ -97,7 +151,18 @@ async function downloadJson(): Promise<void> {
 
 <template>
   <ClientOnly>
-    <aside :class="['iridis-right', { 'iridis-right--collapsed': !open }]" aria-label="Live example builder">
+    <aside :class="['iridis-right', { 'iridis-right--collapsed': !open, 'iridis-right--dragging': dragging }]" aria-label="Live example builder">
+      <div
+        v-show="open"
+        class="iridis-right__resize"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize example panel"
+        @pointerdown="onDragPointerDown"
+        @pointermove="onDragPointerMove"
+        @pointerup="onDragPointerUp"
+        @pointercancel="onDragPointerUp"
+      />
       <button
         type="button"
         class="iridis-right__toggle"
@@ -170,6 +235,28 @@ async function downloadJson(): Promise<void> {
   transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .iridis-right--collapsed { width: 2rem; }
+.iridis-right--dragging { user-select: none; }
+
+/* Drag handle — thin vertical strip on the panel's left edge. Hover lights
+   it; active drag widens it. Cursor: col-resize the whole strip. */
+.iridis-right__resize {
+  position: absolute;
+  top: 0;
+  left: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 3;
+  background: transparent;
+  border-radius: 3px;
+  transition: background 120ms;
+}
+.iridis-right__resize:hover {
+  background: color-mix(in oklch, var(--iridis-brand) 25%, transparent);
+}
+.iridis-right--dragging .iridis-right__resize {
+  background: color-mix(in oklch, var(--iridis-brand) 45%, transparent);
+}
 
 .iridis-right__toggle {
   position: absolute;
