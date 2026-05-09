@@ -31,6 +31,7 @@ import type {
 } from '@studnicky/iridis/model';
 
 import IridisPicker        from './IridisPicker.vue';
+import RoleSchemaEditor    from './RoleSchemaEditor.vue';
 import { configStore }     from '../stores/configStore.ts';
 import { roleSchemaByName } from '../schemas/roleSchemas.ts';
 import { validateColorsArray, validateRoleSchema } from '../validators/inlineValidation.ts';
@@ -356,22 +357,12 @@ const codeText = computed(() => {
         </div>
       </div>
 
-      <!-- Tab: Role schema (editable) -->
+      <!-- Tab: Role schema (visual editor) -->
       <div v-show="activeTab === 'schema'" class="iridis-demo__panel">
         <div class="iridis-demo__editor-hint">
-          Edit the role schema. Validates against <code>RoleSchemaSchema</code> via json-tology — invalid edits do not propagate.
+          Compose your role schema visually. Each row is a role: name it, optionally tag its intent, set lightness and chroma envelopes, and lock a hue or derive it from another role. Add contrast pairs to require minimum ratios — the engine nudges colors until every pair holds.
         </div>
-        <textarea
-          class="iridis-demo__textarea"
-          :class="{ 'iridis-demo__textarea--invalid': schemaError !== null }"
-          :value="localRoleSchemaText"
-          spellcheck="false"
-          rows="14"
-          @input="onRoleSchemaInput"
-        />
-        <div v-if="schemaError" class="iridis-demo__validation">
-          {{ schemaError }}
-        </div>
+        <RoleSchemaEditor />
       </div>
 
       <!-- Tab: Code (mostly read-only, with an editable colors block) -->
