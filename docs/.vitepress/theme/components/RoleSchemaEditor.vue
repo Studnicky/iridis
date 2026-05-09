@@ -292,81 +292,128 @@ function removePair(idx: number): void {
 }
 .role-editor__add:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* === Shape language ===
+   - Cards (sections, role + pair containers): radius-md (10px)
+   - Input pills (text/select/number): radius-sm (6px)
+   - Action × buttons: 50% (perfect circle)
+   - + add buttons: radius-sm
+   All sit on flex-wrap rows so they reflow at any width without overlap.
+*/
+
 .role-editor__roles,
 .role-editor__pairs {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.5rem;
 }
 .role-editor__role,
 .role-editor__pair {
-  padding: 0.55rem 0.65rem;
+  padding: 0.6rem 0.7rem;
   background: var(--vp-c-bg);
   border: var(--iridis-border-soft);
-  border-radius: var(--iridis-radius-sm);
+  border-radius: var(--iridis-radius-md);
   box-shadow: var(--iridis-shadow-felt);
 }
+
+/* Role HEAD row — name/intent/required/remove. Flex-wrap so the row
+   gracefully breaks into multiple lines when the panel is narrow. */
 .role-editor__role-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.55rem;
 }
+.role-editor__role-row > .role-editor__name {
+  flex: 1 1 9rem;
+  min-width: 7rem;
+}
+.role-editor__role-row > .role-editor__intent {
+  flex: 0 1 7rem;
+  min-width: 5.5rem;
+}
+.role-editor__role-row > .role-editor__required {
+  flex: 0 0 auto;
+}
+.role-editor__role-row > .role-editor__remove {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* All input pills share the same radius and chrome. */
 .role-editor__name,
 .role-editor__intent,
 .role-editor__role-row input,
 .role-editor__role-row select,
-.role-editor__pair input,
+.role-editor__pair input:not([type="checkbox"]),
 .role-editor__pair select,
-.role-editor__ranges input,
+.role-editor__ranges input:not([type="checkbox"]),
 .role-editor__ranges select {
-  padding: 0.25rem 0.4rem;
+  padding: 0.32rem 0.45rem;
   background: var(--vp-c-bg-soft);
   border: var(--iridis-border-soft);
   border-radius: var(--iridis-radius-sm);
   font-family: var(--vp-font-family-mono);
   font-size: 0.78rem;
   color: var(--vp-c-text-1);
+  min-width: 0;
+  box-sizing: border-box;
 }
-.role-editor__name { min-width: 0; }
 .role-editor__required {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.3rem;
   font-size: 0.72rem;
   color: var(--vp-c-text-3);
+  padding: 0.25rem 0.5rem;
+  border: var(--iridis-border-soft);
+  border-radius: var(--iridis-radius-sm);
+  background: var(--vp-c-bg-soft);
+  cursor: pointer;
+  user-select: none;
 }
+.role-editor__required input { margin: 0; }
+
+/* × remove — always perfect circle, consistent size. */
 .role-editor__remove {
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: var(--iridis-border-soft);
   border-radius: 50%;
   background: var(--vp-c-bg-soft);
   color: var(--vp-c-text-3);
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  box-shadow: var(--iridis-shadow-felt);
+  transition: background 120ms, color 120ms, transform 120ms;
 }
 .role-editor__remove:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.18);
   color: #ef4444;
+  transform: scale(1.05);
 }
 .role-editor__remove:disabled { opacity: 0.3; cursor: not-allowed; }
 
+/* Ranges grid — auto-fill keeps tiles ≥ 12rem so they wrap cleanly. */
 .role-editor__ranges {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 0.4rem;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.5rem;
 }
 .role-editor__ranges label {
   display: flex;
   flex-direction: column;
-  gap: 0.18rem;
-  font-size: 0.68rem;
+  gap: 0.2rem;
+  font-size: 0.62rem;
   color: var(--vp-c-text-3);
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .role-editor__range,
@@ -374,29 +421,37 @@ function removePair(idx: number): void {
   display: flex;
   align-items: center;
   gap: 0.3rem;
+  min-width: 0;
 }
-.role-editor__range input,
-.role-editor__hue input[type="number"] {
-  width: 4rem;
-}
-.role-editor__hue input[type="checkbox"] { margin-right: 0.2rem; }
+.role-editor__range input { flex: 1 1 0; min-width: 0; max-width: 4.5rem; }
+.role-editor__hue input[type="number"] { flex: 1 1 0; min-width: 0; max-width: 4.5rem; }
+.role-editor__hue input[type="checkbox"] { margin: 0; flex: 0 0 auto; }
 
+/* Pair row — flex-wrap so columns become rows on narrow widths. */
 .role-editor__pair {
-  display: grid;
-  grid-template-columns: 1fr 0.6fr 1fr 0.7fr 1fr 0.7fr auto;
-  gap: 0.4rem;
+  display: flex;
+  flex-wrap: wrap;
   align-items: end;
+  gap: 0.5rem;
 }
 .role-editor__pair label {
   display: flex;
   flex-direction: column;
-  gap: 0.18rem;
-  font-size: 0.66rem;
+  gap: 0.2rem;
+  font-size: 0.62rem;
   color: var(--vp-c-text-3);
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  flex: 1 1 6rem;
+  min-width: 5.5rem;
 }
+.role-editor__pair > .role-editor__remove {
+  align-self: end;
+  margin-bottom: 0.05rem;
+  flex: 0 0 auto;
+}
+
 .role-editor__empty {
   font-size: 0.78rem;
   color: var(--vp-c-text-3);
