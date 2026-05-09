@@ -37,16 +37,7 @@ const palette = await quickPalette(['#7c3aed', '#06b6d4'], 'dark');
 
 One import, one call, four roles back. No schema to define, no pipeline to declare, no tasks to register. The framing argument picks dark or light clamp envelopes; everything else is sensible defaults. `quickPalette` is a thin wrapper around `engine.run()` — drop to the engine API the moment you outgrow it.
 
-## Hello, palette — live
-
-This demo runs the same minimum pipeline `quickPalette` uses, against the seeds in your sidebar config.
-
-<IridisDemo
-  :pipeline="['intake:hex', 'resolve:roles', 'emit:json']"
-  :show-roles="true"
-/>
-
-<IridisCode label="Code behind this demo">
+## Hello, palette — long-form
 
 ```ts
 import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
@@ -65,7 +56,7 @@ const state = await engine.run({
 console.log(state.roles);
 ```
 
-</IridisCode>
+The example panel on the right is running this exact pipeline against your seeds.
 
 ## Hello, palette — with stylesheet plugin
 

@@ -6,33 +6,9 @@ A role schema is a consumer-authored description of what a palette means in a pa
 When a role is `required: true`, the engine guarantees it is populated AND that its assigned color satisfies any declared `lightnessRange`, `chromaRange`, or `hueOffset`. If no input color falls inside the constraints, `resolve:roles` nudges the closest candidate in OKLCH space until it does. If there are no input colors at all, the engine synthesizes from the constraint centers. The contract holds unconditionally.
 :::
 
-## Live: switch role schemas
-
-Pick a different **Role schema** in the sidebar config to see the same seed colors resolve into different role layouts. The demo below renders the resulting `state.roles` map.
-
-<IridisDemo :pipeline="['intake:hex', 'resolve:roles', 'expand:family']" />
-
-<IridisCode label="Code">
-
-```ts
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
-import { minimalRoleSchema, w3cRoleSchema, materialRoleSchema } from './roleSchemas';
-
-const engine = new Engine();
-for (const m of mathBuiltins) engine.math.register(m);
-for (const t of coreTasks)    engine.tasks.register(t);
-
-engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family']);
-
-const state = await engine.run({
-  colors: yourSeeds,
-  roles:  w3cRoleSchema, // or minimal, or material
-});
-```
-
-</IridisCode>
-
----
+::: tip Live builder
+Use the **Role schema** dropdown in the right-panel example to switch between `minimal`, `w3c`, and `material`. Open the Role schema tab to see the JSON; the panel will re-resolve roles against your seeds on every change.
+:::
 
 ## What a role schema is
 

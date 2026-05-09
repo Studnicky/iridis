@@ -3,7 +3,10 @@ import type { DefaultTheme } from 'vitepress';
 export const themeConfig = {
   'appearance': true as const,
   'siteTitle':  'iridis',
-  'outline':    { 'label': 'On this page', 'level': [2, 3] as [number, number] },
+  // Outline moves into the left sidebar as an accordion (rendered by
+  // SidebarToc.vue via the sidebar-nav-after slot). Disable the default
+  // right-rail outline so the right column is free for the example panel.
+  'outline':    false as const,
   'search':     { 'provider': 'local' as const },
   'footer':     { 'copyright': 'MIT License, © Andrew Studnicky', 'message': 'Released under the MIT License.' },
   'editLink':   {
