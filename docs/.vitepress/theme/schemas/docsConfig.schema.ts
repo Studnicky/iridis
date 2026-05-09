@@ -14,14 +14,14 @@ export const docsConfigSchema = {
   '$id':                  'https://studnicky.dev/iridis/docs-config',
   'type':                 'object',
   'title':                'Docs configuration',
-  'description':          'Configure seed colors, framing, contrast, and color space. Your settings drive every live demo on this site and persist across pages.',
+  'description':          'Configure your palette, framing, contrast, and color space. Your settings drive every live demo on this site and persist across pages.',
   'additionalProperties': false,
-  'required':             ['seedColors', 'framing', 'contrastLevel', 'contrastAlgorithm', 'colorSpace', 'roleSchema'],
+  'required':             ['paletteColors', 'framing', 'contrastLevel', 'contrastAlgorithm', 'colorSpace', 'roleSchema'],
   'properties': {
-    'seedColors': {
+    'paletteColors': {
       'type':        'array',
-      'title':       'Seed colors',
-      'description': 'One or more starting colors. Hex format. Variable count — every demo expands these into its target output.',
+      'title':       'Palette colors',
+      'description': 'The colors in your palette. Hex format. Variable count — every demo expands these into its target output.',
       'minItems':    1,
       'maxItems':    8,
       'items':       { 'type': 'string', 'format': 'color', 'pattern': '^#[0-9a-fA-F]{6}$' },
@@ -58,7 +58,7 @@ export const docsConfigSchema = {
     'roleSchema': {
       'type':        'string',
       'title':       'Role schema',
-      'description': 'Which role definition the engine resolves seeds into.',
+      'description': 'Which role definition the engine resolves the palette into.',
       'enum':        ['minimal', 'w3c', 'material'],
       'default':     'minimal',
     },
@@ -66,7 +66,7 @@ export const docsConfigSchema = {
 } as const;
 
 export type DocsConfigType = {
-  'seedColors':        string[];
+  'paletteColors':     string[];
   'framing':           'dark' | 'light';
   'contrastLevel':     'AA' | 'AAA';
   'contrastAlgorithm': 'wcag21' | 'apca';
@@ -75,7 +75,7 @@ export type DocsConfigType = {
 };
 
 export const docsConfigDefaults: DocsConfigType = {
-  'seedColors':        ['#7c3aed', '#06b6d4', '#10b981', '#ec4899'],
+  'paletteColors':     ['#7c3aed', '#06b6d4', '#10b981', '#ec4899'],
   'framing':           'dark',
   'contrastLevel':     'AA',
   'contrastAlgorithm': 'wcag21',

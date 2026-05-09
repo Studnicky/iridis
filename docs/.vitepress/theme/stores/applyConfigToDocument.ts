@@ -12,7 +12,7 @@
  *      via var() references in palette.css. Hover and elevation states are
  *      computed via color-mix() against the iridis tokens, not hardcoded.
  *
- * This is the cascading model: change one seed, the iridis token recomputes,
+ * This is the cascading model: change one palette color, the iridis token recomputes,
  * and every consumer of the cascade follows. Pattern adapted from
  * vscode-arcade-blaster's role-resolved palette → derived theme cascade.
  *
@@ -43,7 +43,7 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
 
     const schema = docsThemeSchemaFor(config.framing);
     const state = await engine.run({
-      'colors':  config.seedColors,
+      'colors':  config.paletteColors,
       'roles':   schema,
       'runtime': {
         'framing':    config.framing,

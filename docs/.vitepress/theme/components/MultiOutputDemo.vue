@@ -2,7 +2,7 @@
 /**
  * MultiOutputDemo.vue
  *
- * Same engine, same seeds, six output formats. Demonstrates the iridis
+ * Same engine, same palette, six output formats. Demonstrates the iridis
  * promise: one input, many surfaces. Each plugin writes its own slot in
  * state.outputs; this component renders all six in tabs.
  *
@@ -67,7 +67,7 @@ async function runPipeline(): Promise<void> {
     ]);
 
     state.value = await engine.run({
-      'colors':  configStore.seedColors,
+      'colors':  configStore.paletteColors,
       // VS Code plugin wants the 16-role schema; it fills missing roles
       // via expand:family + required-role nudging.
       'roles':   vscodeRoleSchema16,
@@ -91,7 +91,7 @@ onMounted(() => { runPipeline(); });
 
 watch(
   () => [
-    [...configStore.seedColors],
+    [...configStore.paletteColors],
     configStore.framing,
     configStore.contrastLevel,
     configStore.contrastAlgorithm,
@@ -158,7 +158,7 @@ function copyToClipboard(): void {
   <ClientOnly>
     <div class="iridis-multi">
       <div class="iridis-multi__header">
-        <span class="iridis-multi__label">Six outputs · same seeds</span>
+        <span class="iridis-multi__label">Six outputs · same palette</span>
         <button type="button" class="iridis-multi__copy" :title="`copy ${visibleLabel}`" @click="copyToClipboard">
           copy
         </button>

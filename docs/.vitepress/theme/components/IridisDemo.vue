@@ -4,8 +4,8 @@
  *
  * Layout:
  *   ┌──────────────────────┬──────────────────────────┐
- *   │ SEEDS (left)         │ OKLCH PICKER (right)     │
- *   │ click to select      │ for the selected seed    │
+ *   │ PALETTE (left)       │ OKLCH PICKER (right)     │
+ *   │ click to select      │ for the selected color   │
  *   ├──────────────────────┴──────────────────────────┤
  *   │ Tabs:                                            │
  *   │   • Roles schema   — JSON, editable in-line      │
@@ -50,7 +50,7 @@ const props = withDefaults(defineProps<{
 
 const state         = ref<PaletteStateInterface | null>(null);
 const error         = ref<string | null>(null);
-const selectedSeed  = ref<number>(0);
+const selectedSwatch = ref<number>(0);
 const activeTab     = ref<'schema' | 'resolved' | 'code'>('resolved');
 
 // Editable in-line state (Roles schema text + colors text)
@@ -62,7 +62,7 @@ const colorsError         = ref<string | null>(null);
 function buildInput(): InputInterface {
   const schema = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal'];
   return {
-    'colors':   configStore.seedColors,
+    'colors':   configStore.paletteColors,
     'roles':    schema,
     'contrast': {
       'level':     configStore.contrastLevel,
@@ -96,7 +96,7 @@ onMounted(() => {
 
 watch(
   () => [
-    [...configStore.seedColors],
+    [...configStore.paletteColors],
     configStore.framing,
     configStore.contrastLevel,
     configStore.contrastAlgorithm,
@@ -114,37 +114,37 @@ watch(
 function syncEditableFromConfig(): void {
   const schema = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal'];
   localRoleSchemaText.value = JSON.stringify(schema, null, 2);
-  localColorsText.value     = JSON.stringify(configStore.seedColors, null, 2);
+  localColorsText.value     = JSON.stringify(configStore.paletteColors, null, 2);
 }
 
 function setColor(idx: number, value: string): void {
-  const next = [...configStore.seedColors];
+  const next = [...configStore.paletteColors];
   next[idx] = value;
-  configStore.seedColors = next;
+  configStore.paletteColors = next;
 }
 
 function addColor(): void {
-  if (configStore.seedColors.length >= props.maxColors) return;
-  configStore.seedColors = [...configStore.seedColors, '#888888'];
-  selectedSeed.value = configStore.seedColors.length - 1;
+  if (configStore.paletteColors.length >= props.maxColors) return;
+  configStore.paletteColors = [...configStore.paletteColors, '#888888'];
+  selectedSwatch.value = configStore.paletteColors.length - 1;
 }
 
 function removeColor(idx: number): void {
-  if (configStore.seedColors.length <= props.minColors) return;
-  const next = [...configStore.seedColors];
+  if (configStore.paletteColors.length <= props.minColors) return;
+  const next = [...configStore.paletteColors];
   next.splice(idx, 1);
-  configStore.seedColors = next;
-  if (selectedSeed.value >= configStore.seedColors.length) {
-    selectedSeed.value = Math.max(0, configStore.seedColors.length - 1);
+  configStore.paletteColors = next;
+  if (selectedSwatch.value >= configStore.paletteColors.length) {
+    selectedSwatch.value = Math.max(0, configStore.paletteColors.length - 1);
   }
 }
 
-function selectSeed(idx: number): void {
-  selectedSeed.value = idx;
+function selectSwatch(idx: number): void {
+  selectedSwatch.value = idx;
 }
 
 function onPickerUpdate(value: string): void {
-  setColor(selectedSeed.value, value);
+  setColor(selectedSwatch.value, value);
 }
 
 // === Inline editor: Role schema textarea ===
@@ -188,14 +188,14 @@ function onColorsInput(e: Event): void {
     return;
   }
   colorsError.value = null;
-  configStore.seedColors = [...(parsed as string[])];
+  configStore.paletteColors = [...(parsed as string[])];
 }
 
 // === Computed views ===
 const roles   = computed(() => state.value?.roles  ?? {} as Record<string, ColorRecordInterface>);
-const canAdd    = computed(() => props.allowAdd && configStore.seedColors.length < props.maxColors);
-const canRemove = computed(() => configStore.seedColors.length > props.minColors);
-const selectedHex = computed(() => configStore.seedColors[selectedSeed.value] ?? '#888888');
+const canAdd    = computed(() => props.allowAdd && configStore.paletteColors.length < props.maxColors);
+const canRemove = computed(() => configStore.paletteColors.length > props.minColors);
+const selectedHex = computed(() => configStore.paletteColors[selectedSwatch.value] ?? '#888888');
 
 function backgroundRole(): ColorRecordInterface | null {
   const r = roles.value;
@@ -229,7 +229,7 @@ function safeOnRoleColor(role: ColorRecordInterface): string {
 }
 
 const codeText = computed(() => {
-  const colors = JSON.stringify(configStore.seedColors);
+  const colors = JSON.stringify(configStore.paletteColors);
   const lines: string[] = [
     "import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';",
     "",
@@ -255,48 +255,49 @@ const codeText = computed(() => {
 <template>
   <ClientOnly>
     <div class="iridis-demo">
-      <!-- Top: split column. Seeds left, picker right. -->
+      <!-- Top: split column. Palette left, picker right. -->
       <div class="iridis-demo__top">
-        <div class="iridis-demo__seeds">
+        <div class="iridis-demo__palette">
           <div class="iridis-demo__col-header">
-            <span class="iridis-demo__label">Seeds ({{ configStore.seedColors.length }})</span>
+            <span class="iridis-demo__label">Palette ({{ configStore.paletteColors.length }})</span>
             <span class="iridis-demo__hint">click to edit</span>
           </div>
-          <div class="iridis-demo__seed-grid">
-            <button
-              v-for="(color, idx) in configStore.seedColors"
-              :key="idx"
-              type="button"
-              :class="['iridis-demo__seed', { 'iridis-demo__seed--selected': selectedSeed === idx }]"
-              :aria-label="`select seed ${idx + 1} (${color})`"
-              :aria-pressed="selectedSeed === idx"
-              @click="selectSeed(idx)"
-            >
-              <span class="iridis-demo__seed-chip" :style="{ background: color }" />
-              <code class="iridis-demo__seed-hex">{{ color }}</code>
-              <span
-                v-if="canRemove"
-                class="iridis-demo__seed-remove"
-                role="button"
-                tabindex="-1"
-                :aria-label="`remove seed ${idx + 1}`"
-                @click.stop="removeColor(idx)"
-              >×</span>
-            </button>
+          <div class="iridis-demo__swatch-grid">
             <button
               v-if="allowAdd"
               type="button"
-              class="iridis-demo__seed-add"
+              class="iridis-demo__swatch-add"
               :disabled="!canAdd"
+              :aria-label="canAdd ? 'Add color to palette' : 'Palette full'"
               @click="addColor"
             >+ add</button>
+            <button
+              v-for="(color, idx) in configStore.paletteColors"
+              :key="idx"
+              type="button"
+              :class="['iridis-demo__swatch', { 'iridis-demo__swatch--selected': selectedSwatch === idx }]"
+              :aria-label="`select palette color ${idx + 1} (${color})`"
+              :aria-pressed="selectedSwatch === idx"
+              @click="selectSwatch(idx)"
+            >
+              <span class="iridis-demo__swatch-chip" :style="{ background: color }" />
+              <code class="iridis-demo__swatch-hex">{{ color }}</code>
+              <span
+                v-if="canRemove"
+                class="iridis-demo__swatch-remove"
+                role="button"
+                tabindex="-1"
+                :aria-label="`remove palette color ${idx + 1}`"
+                @click.stop="removeColor(idx)"
+              >×</span>
+            </button>
           </div>
         </div>
 
         <div class="iridis-demo__picker">
           <div class="iridis-demo__col-header">
             <span class="iridis-demo__label">Picker</span>
-            <span class="iridis-demo__hint">seed {{ selectedSeed + 1 }}</span>
+            <span class="iridis-demo__hint">color {{ selectedSwatch + 1 }}</span>
           </div>
           <IridisPicker :model-value="selectedHex" @update:model-value="onPickerUpdate" />
         </div>
@@ -400,9 +401,10 @@ const codeText = computed(() => {
 <style scoped>
 .iridis-demo {
   margin: 1.25rem 0;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 8px;
+  border: var(--iridis-border-soft);
+  border-radius: var(--iridis-radius-md);
   background: var(--vp-c-bg-soft);
+  box-shadow: var(--iridis-shadow-felt);
   overflow: hidden;
 }
 
@@ -438,44 +440,48 @@ const codeText = computed(() => {
   color: var(--vp-c-text-3);
   font-style: italic;
 }
-.iridis-demo__seed-grid {
+.iridis-demo__swatch-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   align-content: flex-start;
 }
-.iridis-demo__seed {
+.iridis-demo__swatch {
   position: relative;
   display: flex;
   align-items: center;
   gap: 0.4rem;
   padding: 0.3rem 0.55rem 0.3rem 0.3rem;
   background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 5px;
+  border: var(--iridis-border-soft);
+  border-radius: var(--iridis-radius-sm);
   cursor: pointer;
-  transition: border-color 120ms;
+  box-shadow: var(--iridis-shadow-felt);
+  transition: border-color 120ms, box-shadow 120ms, transform 120ms;
 }
-.iridis-demo__seed:hover {
+.iridis-demo__swatch:hover {
   border-color: var(--vp-c-text-2);
+  box-shadow: var(--iridis-shadow-felt-hover);
+  transform: translateY(-1px);
 }
-.iridis-demo__seed--selected {
+.iridis-demo__swatch--selected {
   border-color: var(--vp-c-brand-1);
-  box-shadow: 0 0 0 1px var(--vp-c-brand-1);
+  box-shadow: var(--iridis-shadow-felt-hover), 0 0 0 1px var(--vp-c-brand-1);
 }
-.iridis-demo__seed-chip {
+.iridis-demo__swatch-chip {
   display: inline-block;
   width: 1.2rem;
   height: 1.2rem;
   border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
-.iridis-demo__seed-hex {
+.iridis-demo__swatch-hex {
   font-family: var(--vp-font-family-mono);
   font-size: 0.74rem;
   color: var(--vp-c-text-2);
 }
-.iridis-demo__seed-remove {
+.iridis-demo__swatch-remove {
   width: 1rem;
   height: 1rem;
   display: inline-flex;
@@ -486,29 +492,32 @@ const codeText = computed(() => {
   border-radius: 2px;
   cursor: pointer;
 }
-.iridis-demo__seed-remove:hover {
+.iridis-demo__swatch-remove:hover {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
-.iridis-demo__seed-add {
-  padding: 0.3rem 0.7rem;
+.iridis-demo__swatch-add {
+  padding: 0.45rem 0.85rem;
   font-size: 0.78rem;
-  background: var(--vp-c-bg);
-  border: 1px dashed var(--vp-c-divider);
-  border-radius: 5px;
-  color: var(--vp-c-text-2);
+  font-weight: 600;
+  background: color-mix(in oklch, var(--iridis-brand) 20%, var(--vp-c-bg));
+  border: var(--iridis-border-soft);
+  border-color: color-mix(in oklch, var(--iridis-brand) 40%, var(--iridis-divider));
+  border-radius: var(--iridis-radius-sm);
+  color: var(--iridis-on-brand);
   cursor: pointer;
   align-self: flex-start;
+  box-shadow: var(--iridis-shadow-felt);
+  transition: transform 120ms, box-shadow 120ms, background 120ms;
 }
-.iridis-demo__seed-add:hover:not(:disabled) {
-  color: var(--vp-c-brand-1);
-  border-color: var(--vp-c-brand-1);
-  border-style: solid;
+.iridis-demo__swatch-add:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--iridis-brand) 35%, var(--vp-c-bg));
+  border-color: var(--iridis-brand);
+  box-shadow: var(--iridis-shadow-felt-hover);
+  transform: translateY(-1px);
 }
-.iridis-demo__seed-add:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
+.iridis-demo__swatch-add:active:not(:disabled) { box-shadow: var(--iridis-shadow-pressed); transform: translateY(0); }
+.iridis-demo__swatch-add:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .iridis-demo__error {
   margin: 0;
@@ -552,14 +561,18 @@ const codeText = computed(() => {
   gap: 0.5rem;
 }
 .iridis-demo__role {
-  padding: 0.65rem 0.8rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--iridis-radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   display: flex;
   flex-direction: column;
   gap: 0.18rem;
-  min-height: 78px;
-  box-shadow: inset 0 -10px 14px rgba(0, 0, 0, 0.18);
+  min-height: 82px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 -10px 14px rgba(0, 0, 0, 0.22),
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 4px 12px -4px rgba(0, 0, 0, 0.25);
 }
 .iridis-demo__role-head {
   display: flex;
