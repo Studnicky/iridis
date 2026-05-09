@@ -248,6 +248,19 @@ html.iridis-right-collapsed .VPDoc .content {
   padding-right: 4rem;
 }
 
+/* Narrow viewports: the right panel becomes a stacked drawer below
+   content (no fixed overlay). The doc content gets normal full-width
+   padding regardless of panel state. */
+@media (max-width: 1099px) {
+  .VPDoc .content {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+  html.iridis-right-collapsed .VPDoc .content {
+    padding-right: 1.25rem;
+  }
+}
+
 /* Floating right-edge re-open handle when the right panel is collapsed.
    The chevron inside .iridis-right always remains the canonical control;
    collapsing it shrinks the column to ~2rem so the prose flexes wider. */

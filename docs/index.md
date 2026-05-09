@@ -9,8 +9,8 @@ title: iridis — chromatic palette builder
     Pick your colors. Get a complete, accessible, role-resolved palette. Export it as JSON and walk away.
     No download. No build step. No runtime.
   </p>
-  <div style="display:flex;gap:0.6rem;flex-wrap:wrap">
-    <a href="/iridis/try-it-out" style="text-decoration:none;padding:0.55rem 1.2rem;border-radius:6px;background:var(--iridis-brand);color:var(--iridis-on-brand);font-weight:600;font-size:0.95rem">Build a palette →</a>
+  <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center">
+    <PaletteCTA />
     <a href="/iridis/getting-started" style="text-decoration:none;padding:0.55rem 1.2rem;border-radius:6px;background:var(--iridis-bg-soft);color:var(--iridis-text);border:1px solid var(--iridis-divider);font-weight:500;font-size:0.95rem">For developers</a>
     <a href="https://github.com/Studnicky/iridis" style="text-decoration:none;padding:0.55rem 1.2rem;border-radius:6px;background:var(--iridis-bg-soft);color:var(--iridis-text);border:1px solid var(--iridis-divider);font-weight:500;font-size:0.95rem">GitHub</a>
   </div>

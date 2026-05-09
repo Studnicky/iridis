@@ -13,6 +13,7 @@ import SidebarToc      from './components/SidebarToc.vue';
 import SidebarToggle   from './components/SidebarToggle.vue';
 import SidebarResize   from './components/SidebarResize.vue';
 import InfiniteScroll  from './components/InfiniteScroll.vue';
+import PaletteCTA      from './components/PaletteCTA.vue';
 import { configStore } from './stores/configStore.ts';
 import { applyConfigToDocument } from './stores/applyConfigToDocument.ts';
 
@@ -69,6 +70,7 @@ export const theme: Theme = {
     app.component('SchemaForm',      SchemaForm);
     app.component('MultiOutputDemo', MultiOutputDemo);
     app.component('TryItOutForm',    TryItOutForm);
+    app.component('PaletteCTA',      PaletteCTA);
 
     if (typeof window !== 'undefined') {
       bindFramingToVitepressTheme();

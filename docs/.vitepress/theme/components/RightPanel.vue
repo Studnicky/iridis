@@ -22,6 +22,7 @@ import SchemaForm    from './SchemaForm.vue';
 import { docsConfigSchema } from '../schemas/docsConfig.schema.ts';
 import { roleSchemaByName } from '../schemas/roleSchemas.ts';
 import { configStore, resetConfig } from '../stores/configStore.ts';
+import { panelOpen } from '../stores/panelState.ts';
 
 const RESIZE_KEY = 'iridis-right-panel-width';
 const RESIZE_MIN = 320;  // picker-safe floor: SV square (240) + container chrome
@@ -37,7 +38,7 @@ const FULL_PIPELINE: readonly string[] = [
   'emit:json',
 ];
 
-const open       = ref(true);
+const open       = panelOpen;            // shared global; CTA buttons toggle this
 const cfgOpen    = ref(false);
 const exportNote = ref<string | null>(null);
 
@@ -172,18 +173,6 @@ async function downloadJson(): Promise<void> {
         @pointerup="onDragPointerUp"
         @pointercancel="onDragPointerUp"
       />
-      <!-- Compact chevron, visible only when expanded — closes the panel -->
-      <button
-        v-show="open"
-        type="button"
-        class="iridis-right__toggle"
-        aria-expanded="true"
-        aria-label="Collapse example panel"
-        @click="open = false"
-      >
-        <span aria-hidden="true">›</span>
-      </button>
-
       <!-- Reopen affordance — full-height vertical button visible only when
            collapsed. Reads top-to-bottom so the label invites the click. -->
       <button
@@ -196,12 +185,20 @@ async function downloadJson(): Promise<void> {
       >
         <span class="iridis-right__reopen-icon" aria-hidden="true">⬕</span>
         <span class="iridis-right__reopen-label">Get palette</span>
-        <span class="iridis-right__reopen-chev" aria-hidden="true">‹</span>
       </button>
 
       <div v-show="open" class="iridis-right__body">
         <header class="iridis-right__header">
-          <span class="iridis-right__eyebrow">Live example</span>
+          <div class="iridis-right__header-row">
+            <span class="iridis-right__eyebrow">Live example</span>
+            <button
+              type="button"
+              class="iridis-right__close"
+              aria-label="Close palette builder"
+              title="Close palette builder"
+              @click="open = false"
+            >×</button>
+          </div>
           <h2 class="iridis-right__title">Try iridis on this page</h2>
           <p class="iridis-right__sub">
             Pick palette colors. Every chrome and syntax token recomputes. The whole site is one engine pass.
@@ -242,13 +239,12 @@ async function downloadJson(): Promise<void> {
 </template>
 
 <style scoped>
-/* Floating overlay — fixed to the viewport's right edge. Z-index above
-   docs content so it never pushes the page. */
+/* Desktop (≥1100px): floating overlay at the viewport's right edge. */
 .iridis-right {
   position: fixed;
   top: calc(var(--vp-nav-height, 64px) + 1rem);
   right: 1rem;
-  width: var(--iridis-right-panel-width, 360px);
+  width: var(--iridis-right-panel-width, 380px);
   min-width: 320px;
   max-height: calc(100vh - var(--vp-nav-height, 64px) - 2rem);
   z-index: 30;
@@ -262,10 +258,9 @@ async function downloadJson(): Promise<void> {
   backdrop-filter: blur(10px);
   transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1), min-width 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.iridis-right--collapsed { min-width: 0; }
 .iridis-right--collapsed {
   width: 2.4rem;
-  /* Brand-tinted edge so the collapsed strip reads as actionable. */
+  min-width: 0;
   background:
     linear-gradient(180deg,
       color-mix(in oklch, var(--iridis-brand) 18%, var(--iridis-surface)) 0%,
@@ -273,6 +268,28 @@ async function downloadJson(): Promise<void> {
   border-color: color-mix(in oklch, var(--iridis-brand) 45%, var(--iridis-divider));
 }
 .iridis-right--dragging { user-select: none; }
+
+/* Narrow (<1100px): the panel becomes a stacked drawer below content.
+   The icon + heading + intro come first, the example sits below them.
+   Closed = entirely hidden (icon + heading dominate the viewport). */
+@media (max-width: 1099px) {
+  .iridis-right {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin: 1.5rem auto 2rem;
+    width: 100%;
+    max-width: 720px;
+    min-width: 0;
+    max-height: none;
+    z-index: auto;
+  }
+  .iridis-right--collapsed {
+    display: none;
+  }
+  /* Drag handle disabled on narrow — width is intrinsic. */
+  .iridis-right__resize { display: none; }
+}
 
 /* Reopen button — fills the collapsed strip. Vertical text via writing-mode. */
 .iridis-right__reopen {
@@ -340,38 +357,45 @@ async function downloadJson(): Promise<void> {
   background: color-mix(in oklch, var(--iridis-brand) 45%, transparent);
 }
 
-.iridis-right__toggle {
-  position: absolute;
-  top: 0.4rem;
-  left: 0.3rem;
-  z-index: 2;
-  width: 1.4rem;
-  height: 1.4rem;
+.iridis-right__body {
+  padding: 0.85rem 0.95rem 1rem;
+  overflow: auto;
+  max-height: calc(100vh - var(--vp-nav-height, 64px) - 2rem);
+}
+@media (max-width: 1099px) {
+  .iridis-right__body { max-height: none; }
+}
+.iridis-right__header { margin: 0 0 0.85rem; }
+.iridis-right__header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.iridis-right__close {
+  width: 1.7rem;
+  height: 1.7rem;
   padding: 0;
   background: color-mix(in oklch, var(--iridis-surface) 70%, var(--iridis-brand) 30%);
-  border: 1px solid color-mix(in oklch, var(--iridis-divider) 50%, var(--iridis-brand) 50%);
+  border: var(--iridis-border-soft);
+  border-color: color-mix(in oklch, var(--iridis-divider) 60%, var(--iridis-brand) 40%);
   border-radius: 50%;
   color: var(--iridis-text);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 1rem;
   line-height: 1;
   font-weight: 700;
-  transition: transform 120ms;
+  box-shadow: var(--iridis-shadow-felt);
+  transition: transform 120ms, box-shadow 120ms, background 120ms;
 }
-.iridis-right__toggle:hover {
+.iridis-right__close:hover {
+  background: color-mix(in oklch, var(--iridis-brand) 30%, var(--iridis-surface));
+  box-shadow: var(--iridis-shadow-felt-hover);
   transform: scale(1.08);
-  border-color: var(--iridis-brand);
 }
-
-.iridis-right__body {
-  padding: 0.85rem 0.95rem 1rem;
-  overflow: auto;
-  max-height: calc(100vh - var(--vp-nav-height, 64px) - 2rem);
-}
-.iridis-right__header { margin: 0.4rem 0 0.85rem; }
 .iridis-right__eyebrow {
   display: inline-block;
   font-size: 0.62rem;
