@@ -3,22 +3,16 @@
  * IridisDemo.vue
  *
  * Live engine instance for embedding in markdown pages. Each demo carries
- * its own input row of color pickers — the user can pick colors and
- * progressively add more (up to 8) directly inside the example.
+ * its own color picker row backed directly by the global config store —
+ * any picker on any demo (or in the sidebar accordion) is editing the same
+ * seedColors array. Changes propagate everywhere: every other demo on the
+ * page re-runs, the docs theme recomputes, and localStorage persists.
  *
- * Color source resolution:
- *   1. If `localSeeds` prop is provided: use it as the initial value (and
- *      treat it as the demo's starting point — still locally editable).
- *   2. Otherwise: initialize from configStore.seedColors.
- *
- * Once the user touches the local pickers, the demo runs on the local set.
- * A "Reset to global" button reverts to the sidebar config.
- *
- * Reactive: any change to local colors OR any change to global config
- * (framing / contrast / role schema / colorSpace) re-runs the pipeline.
+ * + add color appends a slot AND immediately opens the native color picker
+ * for it so the user picks the color they're adding in one gesture.
  */
 
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue';
 
 import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
 import type {
@@ -35,7 +29,6 @@ const props = withDefaults(defineProps<{
   'showColors'?:    boolean;
   'showRoles'?:     boolean;
   'showJson'?:      boolean;
-  'localSeeds'?:    readonly string[];
   'allowAdd'?:      boolean;
   'minColors'?:     number;
   'maxColors'?:     number;
@@ -43,39 +36,19 @@ const props = withDefaults(defineProps<{
   'showColors': true,
   'showRoles':  true,
   'showJson':   false,
-  'localSeeds': undefined,
   'allowAdd':   true,
   'minColors':  1,
   'maxColors':  8,
 });
 
-// Local color state. Starts as a clone of localSeeds (if given) or the
-// global seeds. The user touches `local` instead of mutating the prop.
-const local = ref<string[]>([
-  ...(props.localSeeds ?? configStore.seedColors),
-]);
-const useGlobal = ref<boolean>(props.localSeeds === undefined);
-
-// If the user hasn't overridden local yet AND no localSeeds prop was given,
-// keep the local in sync with the global config so changes from the sidebar
-// flow into this demo.
-watch(
-  () => [...configStore.seedColors],
-  (next) => {
-    if (useGlobal.value) {
-      local.value = [...next];
-    }
-  },
-  { 'deep': true },
-);
-
+const pickersRef = useTemplateRef<HTMLElement>('pickersRef');
 const state = ref<PaletteStateInterface | null>(null);
 const error = ref<string | null>(null);
 
 function buildInput(): InputInterface {
   const schema = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal'];
   return {
-    'colors':   local.value,
+    'colors':   configStore.seedColors,
     'roles':    schema,
     'contrast': {
       'level':     configStore.contrastLevel,
@@ -106,7 +79,7 @@ onMounted(() => { runPipeline(); });
 
 watch(
   () => [
-    [...local.value],
+    [...configStore.seedColors],
     configStore.framing,
     configStore.contrastLevel,
     configStore.contrastAlgorithm,
@@ -119,39 +92,46 @@ watch(
 );
 
 function setColor(idx: number, value: string): void {
-  useGlobal.value = false;
-  const next = [...local.value];
+  const next = [...configStore.seedColors];
   next[idx] = value;
-  local.value = next;
+  configStore.seedColors = next;
 }
 
-function addColor(): void {
-  if (local.value.length >= props.maxColors) return;
-  useGlobal.value = false;
-  // Default the new picker to a mid-gray so the user can see it appear,
-  // then immediately edit it.
-  local.value = [...local.value, '#888888'];
+async function addColor(): Promise<void> {
+  if (configStore.seedColors.length >= props.maxColors) return;
+  // Append a fresh slot and immediately open the OS picker for it so the
+  // user picks the color they're adding in a single gesture.
+  configStore.seedColors = [...configStore.seedColors, '#888888'];
+  const newIdx = configStore.seedColors.length - 1;
+  await nextTick();
+  const root = pickersRef.value;
+  if (!root) return;
+  const input = root.querySelector<HTMLInputElement>(`input[data-idx="${newIdx}"]`);
+  if (input) {
+    input.focus();
+    // showPicker() triggers the native color dialog where supported (Chrome,
+    // Edge, Safari TP, Firefox 101+). Falls back to .click() which also
+    // opens the picker on most browsers.
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+    } else {
+      input.click();
+    }
+  }
 }
 
 function removeColor(idx: number): void {
-  if (local.value.length <= props.minColors) return;
-  useGlobal.value = false;
-  const next = [...local.value];
+  if (configStore.seedColors.length <= props.minColors) return;
+  const next = [...configStore.seedColors];
   next.splice(idx, 1);
-  local.value = next;
-}
-
-function resetToGlobal(): void {
-  useGlobal.value = true;
-  local.value = [...configStore.seedColors];
+  configStore.seedColors = next;
 }
 
 const colors  = computed(() => state.value?.colors ?? []);
 const roles   = computed(() => state.value?.roles  ?? {} as Record<string, ColorRecordInterface>);
 const outputsJson = computed(() => state.value === null ? '' : JSON.stringify(state.value.outputs, null, 2));
-const isLocal = computed(() => !useGlobal.value);
-const canAdd  = computed(() => props.allowAdd && local.value.length < props.maxColors);
-const canRemove = computed(() => local.value.length > props.minColors);
+const canAdd    = computed(() => props.allowAdd && configStore.seedColors.length < props.maxColors);
+const canRemove = computed(() => configStore.seedColors.length > props.minColors);
 
 const jsonOpen = ref(false);
 </script>
@@ -159,23 +139,17 @@ const jsonOpen = ref(false);
 <template>
   <ClientOnly>
     <div class="iridis-demo">
-      <!-- Input row: per-demo color pickers -->
+      <!-- Input row: pickers edit configStore.seedColors directly -->
       <div class="iridis-demo__input">
         <div class="iridis-demo__input-header">
-          <span class="iridis-demo__label">Seeds ({{ local.length }})</span>
-          <button
-            v-if="isLocal"
-            type="button"
-            class="iridis-demo__reset"
-            title="Revert to the seeds in the sidebar config"
-            @click="resetToGlobal"
-          >reset to global</button>
-          <span v-else class="iridis-demo__hint">linked to sidebar config</span>
+          <span class="iridis-demo__label">Seeds ({{ configStore.seedColors.length }})</span>
+          <span class="iridis-demo__hint">edits propagate to every demo + the docs theme</span>
         </div>
-        <div class="iridis-demo__pickers">
-          <div v-for="(color, idx) in local" :key="idx" class="iridis-demo__picker">
+        <div ref="pickersRef" class="iridis-demo__pickers">
+          <div v-for="(color, idx) in configStore.seedColors" :key="idx" class="iridis-demo__picker">
             <input
               type="color"
+              :data-idx="idx"
               :value="color"
               :aria-label="`seed ${idx + 1}`"
               @input="setColor(idx, ($event.target as HTMLInputElement).value)"
@@ -335,17 +309,6 @@ const jsonOpen = ref(false);
 .iridis-demo__add:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-.iridis-demo__reset {
-  background: transparent;
-  border: 0;
-  color: var(--vp-c-brand-1);
-  font-size: 0.72rem;
-  cursor: pointer;
-  padding: 0;
-}
-.iridis-demo__reset:hover {
-  text-decoration: underline;
 }
 .iridis-demo__error {
   padding: 0.65rem 0.85rem;
