@@ -30,12 +30,30 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.18);
 
   /* Right-panel reservation — resizable by the user via the drag handle.
-     Bounds enforced in JS (240px..720px) but the variable is the only knob. */
-  --iridis-right-panel-width: 420px;
-  --iridis-right-panel-min:   240px;
+     Min is the picker-safe floor (SV square 240px + container chrome). */
+  --iridis-right-panel-width: 380px;
+  --iridis-right-panel-min:   320px;
   --iridis-right-panel-max:   720px;
   --vp-layout-max-width: 100%;
   --vp-sidebar-width: 280px;
+
+  /* Component design tokens — every interactive surface composes from
+     these for consistent border / radius / inset+outset shadow. */
+  --iridis-border-color: color-mix(in oklch, var(--iridis-divider) 90%, var(--iridis-brand) 10%);
+  --iridis-border-soft:  1px solid var(--iridis-border-color);
+  --iridis-shadow-felt:
+    0 1px 2px  rgba(0, 0, 0, 0.18),
+    0 4px 12px -4px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0  rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+  --iridis-shadow-felt-hover:
+    0 2px 4px  rgba(0, 0, 0, 0.20),
+    0 8px 18px -6px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0  rgba(255, 255, 255, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+  --iridis-shadow-pressed:
+    inset 0 2px 4px rgba(0, 0, 0, 0.20),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* === Doc surface basics === */
@@ -206,34 +224,28 @@
   50%      { scale: 1.04; box-shadow: 0 0 16px color-mix(in oklch, var(--iridis-brand) 55%, transparent); }
 }
 
-/* === Layout — full width, both bars hide-able === */
-/* No max-width on the doc container; the layout fills the viewport. */
-/* Real flex: container is flex, content grows, aside is fixed-by-var. */
-.VPDoc.has-aside .container {
+/* === Layout — full width, right panel overlays (does not push) === */
+/* The right panel is position:fixed at the viewport edge. We pad the
+   content's right side by the panel's width so prose doesn't slide
+   underneath. When the panel collapses, the variable shrinks to ~2.4rem
+   and the prose reflows wider automatically. */
+.VPDoc .container {
   max-width: 100%;
   display: flex;
   align-items: flex-start;
 }
-.VPDoc.has-aside .content {
+.VPDoc .content {
   flex: 1 1 0;
-  min-width: 0;       /* allow shrink past intrinsic */
+  min-width: 0;
   max-width: none;
-  padding: 0 2rem;
+  padding: 0 calc(var(--iridis-right-panel-width) + 2rem) 0 2rem;
 }
-.VPDoc.has-aside .content-container {
-  max-width: 100%;
-}
-.VPDoc.has-aside .aside {
-  flex: 0 0 calc(var(--iridis-right-panel-width) + 2.25rem);
-  width: calc(var(--iridis-right-panel-width) + 2.25rem);
-  max-width: calc(var(--iridis-right-panel-width) + 2.25rem);
-  padding-left: 1rem;
-  padding-right: 1.25rem;
-}
-.VPDoc.has-aside .aside-container,
-.VPDoc.has-aside .aside-content {
-  width: 100%;
-  max-width: 100%;
+.VPDoc .content-container { max-width: 100%; }
+/* Hide vitepress's own aside column entirely — we render via aside-top
+   slot but want the layout space reclaimed. */
+.VPDoc .aside { display: none !important; }
+html.iridis-right-collapsed .VPDoc .content {
+  padding-right: 4rem;
 }
 
 /* Floating right-edge re-open handle when the right panel is collapsed.

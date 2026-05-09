@@ -13,7 +13,7 @@
  * The whole panel can be collapsed to an edge handle that re-opens.
  */
 
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
 
@@ -24,7 +24,7 @@ import { roleSchemaByName } from '../schemas/roleSchemas.ts';
 import { configStore, resetConfig } from '../stores/configStore.ts';
 
 const RESIZE_KEY = 'iridis-right-panel-width';
-const RESIZE_MIN = 240;
+const RESIZE_MIN = 320;  // picker-safe floor: SV square (240) + container chrome
 const RESIZE_MAX = 720;
 
 const FULL_PIPELINE: readonly string[] = [
@@ -40,6 +40,14 @@ const FULL_PIPELINE: readonly string[] = [
 const open       = ref(true);
 const cfgOpen    = ref(false);
 const exportNote = ref<string | null>(null);
+
+// Flip html.iridis-right-collapsed so base.css can reclaim the content's
+// right padding when the panel is collapsed.
+function syncCollapsedClass(isOpen: boolean): void {
+  if (typeof document === 'undefined') return;
+  document.documentElement.classList.toggle('iridis-right-collapsed', !isOpen);
+}
+watch(open, (next) => syncCollapsedClass(next));
 
 // Resizable width — persisted in localStorage. Drag handle on the panel's
 // left edge updates --iridis-right-panel-width on documentElement.
@@ -89,6 +97,7 @@ function onDragPointerUp(e: PointerEvent): void {
 onMounted(() => {
   const persisted = readPersistedWidth();
   if (persisted !== null) applyWidth(persisted);
+  syncCollapsedClass(open.value);
 });
 
 async function buildExportPayload(): Promise<Record<string, unknown>> {
@@ -98,7 +107,7 @@ async function buildExportPayload(): Promise<Record<string, unknown>> {
   engine.pipeline([...FULL_PIPELINE]);
   const schema = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal'];
   const state = await engine.run({
-    'colors':   [...configStore.seedColors],
+    'colors':   [...configStore.paletteColors],
     'roles':    schema,
     'contrast': { 'level': configStore.contrastLevel, 'algorithm': configStore.contrastAlgorithm },
     'runtime':  { 'framing': configStore.framing, 'colorSpace': configStore.colorSpace },
@@ -109,7 +118,7 @@ async function buildExportPayload(): Promise<Record<string, unknown>> {
     'iridis': {
       'version':  '0.1',
       'config': {
-        'seedColors':        [...configStore.seedColors],
+        'paletteColors':     [...configStore.paletteColors],
         'framing':           configStore.framing,
         'contrastLevel':     configStore.contrastLevel,
         'contrastAlgorithm': configStore.contrastAlgorithm,
@@ -195,7 +204,7 @@ async function downloadJson(): Promise<void> {
           <span class="iridis-right__eyebrow">Live example</span>
           <h2 class="iridis-right__title">Try iridis on this page</h2>
           <p class="iridis-right__sub">
-            Pick seeds. Every chrome and syntax token recomputes. The whole site is one engine pass.
+            Pick palette colors. Every chrome and syntax token recomputes. The whole site is one engine pass.
           </p>
         </header>
 
@@ -233,24 +242,27 @@ async function downloadJson(): Promise<void> {
 </template>
 
 <style scoped>
+/* Floating overlay — fixed to the viewport's right edge. Z-index above
+   docs content so it never pushes the page. */
 .iridis-right {
-  position: sticky;
+  position: fixed;
   top: calc(var(--vp-nav-height, 64px) + 1rem);
-  width: var(--iridis-right-panel-width, 320px);
+  right: 1rem;
+  width: var(--iridis-right-panel-width, 360px);
+  min-width: 320px;
   max-height: calc(100vh - var(--vp-nav-height, 64px) - 2rem);
+  z-index: 30;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--iridis-radius-lg);
   background:
     linear-gradient(160deg, color-mix(in oklch, var(--iridis-surface) 92%, var(--iridis-brand) 8%) 0%,
                             color-mix(in oklch, var(--iridis-surface) 96%, var(--iridis-text)  4%) 100%);
   border: 1px solid color-mix(in oklch, var(--iridis-divider) 80%, var(--iridis-brand) 20%);
-  box-shadow:
-    0 14px 40px -10px rgba(0, 0, 0, 0.45),
-    0 2px  6px -2px  rgba(0, 0, 0, 0.30),
-    inset 0 1px 0    rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(8px);
-  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--iridis-shadow-lg);
+  backdrop-filter: blur(10px);
+  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1), min-width 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+.iridis-right--collapsed { min-width: 0; }
 .iridis-right--collapsed {
   width: 2.4rem;
   /* Brand-tinted edge so the collapsed strip reads as actionable. */

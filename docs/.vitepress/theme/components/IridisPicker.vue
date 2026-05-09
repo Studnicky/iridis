@@ -271,8 +271,8 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
 
     <!-- RGB -->
     <div v-else-if="mode === 'rgb'" class="iridis-picker__channels">
-      <label v-for="(ch, key) in { 'R': 'r', 'G': 'g', 'B': 'b' } as const" :key="key">
-        <span>{{ ch }}</span>
+      <label v-for="(label, key) in { 'r': 'R', 'g': 'G', 'b': 'B' } as const" :key="key">
+        <span>{{ label }}</span>
         <input type="number" min="0" max="255" :value="currentRgb[key]"
                @input="(e) => setRgb(key, Number((e.target as HTMLInputElement).value))" />
       </label>
@@ -287,8 +287,8 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
 
     <!-- CMYK -->
     <div v-else-if="mode === 'cmyk'" class="iridis-picker__channels iridis-picker__channels--four">
-      <label v-for="(ch, key) in { 'C': 'c', 'M': 'm', 'Y': 'y', 'K': 'k' } as const" :key="key">
-        <span>{{ ch }}</span>
+      <label v-for="(label, key) in { 'c': 'C', 'm': 'M', 'y': 'Y', 'k': 'K' } as const" :key="key">
+        <span>{{ label }}</span>
         <input type="number" min="0" max="100" :value="Math.round(cmyk[key])"
                @input="(e) => setCmyk(key, Number((e.target as HTMLInputElement).value))" />
       </label>
@@ -307,13 +307,14 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
 .iridis-picker {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.65rem;
   padding: 0.7rem;
   background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
+  border: var(--iridis-border-soft);
+  border-radius: var(--iridis-radius-md);
   width: max-content;
   max-width: 100%;
+  box-shadow: var(--iridis-shadow-felt);
 }
 .iridis-picker__square {
   position: relative;

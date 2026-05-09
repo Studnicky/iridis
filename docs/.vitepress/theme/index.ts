@@ -84,9 +84,8 @@ export const theme: Theme = {
     return h(DefaultTheme.Layout, null, {
       'sidebar-nav-before': () => logoBlock(),
       'sidebar-nav-after':  () => h(SidebarToc),
-      'aside-top':          () => h(RightPanel),
       'doc-after':          () => h(InfiniteScroll),
-      'layout-top':         () => h('div', null, [h(SidebarToggle), h(SidebarResize)]),
+      'layout-top':         () => h('div', null, [h(SidebarToggle), h(SidebarResize), h(RightPanel)]),
     });
   },
 };
