@@ -1,14 +1,18 @@
 <script setup lang="ts">
 /**
- * IridisPicker.vue — multi-format OKLCH-canonical picker.
+ * IridisPicker.vue — HSV-canonical visual picker, multi-format I/O.
  *
  * Visual controls:
- *   - L × C square (drag) at the active hue
- *   - Hue strip (drag)
+ *   - S × V square (drag) at the active hue. Saturation = horizontal,
+ *     Value = vertical. Background composes hue base + white-to-transparent
+ *     (saturation) + black-to-transparent (value). Standard picker recipe
+ *     used by Photoshop, Figma, giacomohuang/colorpicker, etc.
+ *   - Hue strip (drag).
  *
- * Numeric input (tabbed): HEX | RGB | HSV | CMYK | OKLCH.
- * All representations are views over a single OKLCH-canonical state. Edits
- * in any tab convert back to OKLCH and emit a fresh hex via v-model.
+ * Numeric I/O tabs: HEX | RGB | HSV | CMYK | OKLCH. All five compose around
+ * the same H/S/V refs. Edits in any tab convert through HSV → RGB → hex
+ * and emit a fresh modelValue. The visual square's drag updates the
+ * canonical refs directly so every tab's numbers reflect the new value.
  */
 
 import { computed, ref, watch } from 'vue';
@@ -18,134 +22,21 @@ import { colorRecordFactory } from '@studnicky/iridis';
 const props = defineProps<{ 'modelValue': string }>();
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 
-// === Canonical OKLCH state ===
-const l = ref(0.5);
-const c = ref(0.15);
-const h = ref(0);
+// === Canonical HSV state ===
+const hue = ref(270);  // 0..360
+const sat = ref(80);   // 0..100
+const val = ref(60);   // 0..100
 
-watch(
-  () => props.modelValue,
-  (hex) => {
-    try {
-      const rec = colorRecordFactory.fromHex(hex);
-      l.value = rec.oklch.l;
-      c.value = rec.oklch.c;
-      h.value = rec.oklch.h;
-    } catch { /* keep prior */ }
-  },
-  { 'immediate': true },
-);
-
-const currentHex = computed(() => colorRecordFactory.fromOklch(l.value, c.value, h.value, 1).hex);
-watch(currentHex, (hex) => { if (hex !== props.modelValue) emit('update:modelValue', hex); });
-
-// === Hue strip ===
-const HUE_STRIP_WIDTH  = 240;
-const HUE_STRIP_HEIGHT = 16;
-function hueStripBackground(): string {
-  const stops: string[] = [];
-  for (let i = 0; i <= 12; i++) {
-    const hue = (i * 30) % 360;
-    const rec = colorRecordFactory.fromOklch(0.70, 0.20, hue, 1);
-    stops.push(`${rec.hex} ${(i / 12 * 100).toFixed(2)}%`);
-  }
-  return `linear-gradient(90deg, ${stops.join(', ')})`;
-}
-function onHuePointer(e: PointerEvent): void {
-  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  updateHue(e, e.currentTarget as HTMLElement);
-}
-function onHueMove(e: PointerEvent): void {
-  if (e.buttons !== 1) return;
-  updateHue(e, e.currentTarget as HTMLElement);
-}
-function updateHue(e: PointerEvent, target: HTMLElement): void {
-  const r = target.getBoundingClientRect();
-  const x = Math.max(0, Math.min(r.width, e.clientX - r.left));
-  h.value = (x / r.width) * 360;
-}
-const huePos = computed(() => `${(h.value / 360) * HUE_STRIP_WIDTH}px`);
-
-// === L × C square ===
-const LC_SIZE = 240;
-const C_MAX  = 0.32;
-const lcSquareBackground = computed(() => {
-  const lowL  = colorRecordFactory.fromOklch(0.05, C_MAX, h.value, 1).hex;
-  const highL = colorRecordFactory.fromOklch(0.95, C_MAX, h.value, 1).hex;
-  const midGr = colorRecordFactory.fromOklch(0.50, 0,    0,        1).hex;
-  const fullC = colorRecordFactory.fromOklch(0.50, C_MAX, h.value, 1).hex;
-  return `
-    linear-gradient(0deg, ${lowL} 0%, transparent 50%, ${highL} 100%),
-    linear-gradient(90deg, ${midGr} 0%, ${fullC} 100%)
-  `;
-});
-function onLcPointer(e: PointerEvent): void {
-  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  updateLc(e, e.currentTarget as HTMLElement);
-}
-function onLcMove(e: PointerEvent): void {
-  if (e.buttons !== 1) return;
-  updateLc(e, e.currentTarget as HTMLElement);
-}
-function updateLc(e: PointerEvent, target: HTMLElement): void {
-  const r = target.getBoundingClientRect();
-  const x = Math.max(0, Math.min(r.width,  e.clientX - r.left));
-  const y = Math.max(0, Math.min(r.height, e.clientY - r.top));
-  c.value = (x / r.width)  * C_MAX;
-  l.value = 1 - (y / r.height);
-}
-const markerX = computed(() => `${(c.value / C_MAX) * LC_SIZE}px`);
-const markerY = computed(() => `${(1 - l.value) * LC_SIZE}px`);
-
-// === Format-tab views ===
-type Mode = 'hex' | 'rgb' | 'hsv' | 'cmyk' | 'oklch';
-const mode = ref<Mode>('hex');
-
-// RGB view — derived from currentHex
-const rgb = computed(() => {
-  const rec = colorRecordFactory.fromHex(currentHex.value);
-  return {
-    'r': Math.round(rec.rgb.r * 255),
-    'g': Math.round(rec.rgb.g * 255),
-    'b': Math.round(rec.rgb.b * 255),
-  };
-});
-
-function rgbToHex(r: number, g: number, b: number): string {
-  const t = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
-  return `#${t(r)}${t(g)}${t(b)}`;
-}
-function setRgb(channel: 'r' | 'g' | 'b', value: number): void {
-  const cur = rgb.value;
-  const next = { ...cur, [channel]: Math.max(0, Math.min(255, Math.round(value))) };
-  emit('update:modelValue', rgbToHex(next.r, next.g, next.b));
-}
-
-// HSV view — convert RGB to HSV
-function rgbToHsv(r: number, g: number, b: number): { 'h': number; 's': number; 'v': number } {
-  const rn = r / 255, gn = g / 255, bn = b / 255;
-  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
-  const d = max - min;
-  let hue = 0;
-  if (d !== 0) {
-    if      (max === rn) hue = ((gn - bn) / d) % 6;
-    else if (max === gn) hue = (bn - rn) / d + 2;
-    else                 hue = (rn - gn) / d + 4;
-    hue *= 60;
-    if (hue < 0) hue += 360;
-  }
-  const s = max === 0 ? 0 : d / max;
-  return { 'h': hue, 's': s * 100, 'v': max * 100 };
-}
-function hsvToRgb(hsv: { 'h': number; 's': number; 'v': number }): { 'r': number; 'g': number; 'b': number } {
-  const hh = hsv.h / 60;
-  const sv = hsv.s / 100;
-  const vv = hsv.v / 100;
-  const i = Math.floor(hh) % 6;
-  const f = hh - Math.floor(hh);
-  const p = vv * (1 - sv);
-  const q = vv * (1 - f * sv);
-  const t = vv * (1 - (1 - f) * sv);
+// === Conversions ===
+function hsvToRgb(h: number, s: number, v: number): { 'r': number; 'g': number; 'b': number } {
+  const hh = (((h % 360) + 360) % 360) / 60;
+  const sv = s / 100;
+  const vv = v / 100;
+  const i  = Math.floor(hh) % 6;
+  const f  = hh - Math.floor(hh);
+  const p  = vv * (1 - sv);
+  const q  = vv * (1 - f * sv);
+  const t  = vv * (1 - (1 - f) * sv);
   let r = 0, g = 0, b = 0;
   switch (i) {
     case 0: r = vv; g = t;  b = p;  break;
@@ -157,14 +48,149 @@ function hsvToRgb(hsv: { 'h': number; 's': number; 'v': number }): { 'r': number
   }
   return { 'r': Math.round(r * 255), 'g': Math.round(g * 255), 'b': Math.round(b * 255) };
 }
-const hsv = computed(() => rgbToHsv(rgb.value.r, rgb.value.g, rgb.value.b));
-function setHsv(field: 'h' | 's' | 'v', value: number): void {
-  const next = { ...hsv.value, [field]: value };
-  const r = hsvToRgb(next);
-  emit('update:modelValue', rgbToHex(r.r, r.g, r.b));
+
+function rgbToHsv(r: number, g: number, b: number): { 'h': number; 's': number; 'v': number } {
+  const rn = r / 255, gn = g / 255, bn = b / 255;
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+  const d = max - min;
+  let h = 0;
+  if (d !== 0) {
+    if      (max === rn) h = ((gn - bn) / d) % 6;
+    else if (max === gn) h = (bn - rn) / d + 2;
+    else                 h = (rn - gn) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  const s = max === 0 ? 0 : d / max;
+  return { 'h': h, 's': s * 100, 'v': max * 100 };
 }
 
-// CMYK view — derived from RGB
+function rgbToHex(r: number, g: number, b: number): string {
+  const t = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+  return `#${t(r)}${t(g)}${t(b)}`;
+}
+function hexToRgb(hex: string): { 'r': number; 'g': number; 'b': number } | null {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return { 'r': (n >> 16) & 0xff, 'g': (n >> 8) & 0xff, 'b': n & 0xff };
+}
+
+// === Hex round-trip ===
+const currentRgb = computed(() => hsvToRgb(hue.value, sat.value, val.value));
+const currentHex = computed(() => rgbToHex(currentRgb.value.r, currentRgb.value.g, currentRgb.value.b));
+
+// External → internal: parse incoming hex into HSV. Skip if it would
+// produce essentially the same HSV (avoid feedback loops).
+let suppressEmit = false;
+watch(
+  () => props.modelValue,
+  (hex) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return;
+    const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+    if (
+      Math.abs(hsv.h - hue.value) < 0.5 &&
+      Math.abs(hsv.s - sat.value) < 0.5 &&
+      Math.abs(hsv.v - val.value) < 0.5
+    ) return;
+    suppressEmit = true;
+    // Preserve hue when saturation collapses (hue is undefined at S=0).
+    if (hsv.s > 0.5) hue.value = hsv.h;
+    sat.value = hsv.s;
+    val.value = hsv.v;
+    queueMicrotask(() => { suppressEmit = false; });
+  },
+  { 'immediate': true },
+);
+
+// Internal → external: emit fresh hex on any HSV change.
+watch(currentHex, (hex) => {
+  if (suppressEmit) return;
+  if (hex !== props.modelValue) emit('update:modelValue', hex);
+});
+
+// === S × V square ===
+const SV_SIZE = 240;
+const svSquareBackground = computed(() => {
+  const baseRgb = hsvToRgb(hue.value, 100, 100);
+  const baseHex = rgbToHex(baseRgb.r, baseRgb.g, baseRgb.b);
+  // Standard picker recipe: hue base + white-to-transparent overlay
+  // (saturation grows left→right) + black-to-transparent overlay
+  // (value grows bottom→top).
+  return `
+    linear-gradient(to top, #000, transparent),
+    linear-gradient(to right, #fff, transparent),
+    ${baseHex}
+  `;
+});
+function onSvPointer(e: PointerEvent): void {
+  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  updateSv(e, e.currentTarget as HTMLElement);
+}
+function onSvMove(e: PointerEvent): void {
+  if (e.buttons !== 1) return;
+  updateSv(e, e.currentTarget as HTMLElement);
+}
+function updateSv(e: PointerEvent, target: HTMLElement): void {
+  const r = target.getBoundingClientRect();
+  const x = Math.max(0, Math.min(r.width,  e.clientX - r.left));
+  const y = Math.max(0, Math.min(r.height, e.clientY - r.top));
+  sat.value = (x / r.width)  * 100;
+  val.value = (1 - y / r.height) * 100;
+}
+const svMarkerX = computed(() => `${(sat.value / 100) * SV_SIZE}px`);
+const svMarkerY = computed(() => `${(1 - val.value / 100) * SV_SIZE}px`);
+
+// === Hue strip ===
+const HUE_STRIP_WIDTH = 240;
+const HUE_STRIP_HEIGHT = 16;
+const hueStripBackground = computed((): string => {
+  const stops: string[] = [];
+  for (let i = 0; i <= 12; i++) {
+    const h = (i * 30) % 360;
+    const rgb = hsvToRgb(h, 100, 100);
+    stops.push(`${rgbToHex(rgb.r, rgb.g, rgb.b)} ${(i / 12 * 100).toFixed(2)}%`);
+  }
+  return `linear-gradient(90deg, ${stops.join(', ')})`;
+});
+function onHuePointer(e: PointerEvent): void {
+  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  updateHue(e, e.currentTarget as HTMLElement);
+}
+function onHueMove(e: PointerEvent): void {
+  if (e.buttons !== 1) return;
+  updateHue(e, e.currentTarget as HTMLElement);
+}
+function updateHue(e: PointerEvent, target: HTMLElement): void {
+  const r = target.getBoundingClientRect();
+  const x = Math.max(0, Math.min(r.width, e.clientX - r.left));
+  hue.value = (x / r.width) * 360;
+}
+const hueMarkerX = computed(() => `${(hue.value / 360) * HUE_STRIP_WIDTH}px`);
+
+// === Format tabs ===
+type Mode = 'hex' | 'rgb' | 'hsv' | 'cmyk' | 'oklch';
+const mode = ref<Mode>('hex');
+
+function setHex(v: string): void {
+  const rgb = hexToRgb(v);
+  if (!rgb) return;
+  emit('update:modelValue', rgbToHex(rgb.r, rgb.g, rgb.b));
+}
+
+function setRgb(channel: 'r' | 'g' | 'b', value: number): void {
+  const cur = currentRgb.value;
+  const next = { ...cur, [channel]: Math.max(0, Math.min(255, Math.round(value))) };
+  emit('update:modelValue', rgbToHex(next.r, next.g, next.b));
+}
+
+function setHsv(field: 'h' | 's' | 'v', value: number): void {
+  if (field === 'h') hue.value = ((value % 360) + 360) % 360;
+  if (field === 's') sat.value = Math.max(0, Math.min(100, value));
+  if (field === 'v') val.value = Math.max(0, Math.min(100, value));
+}
+
 function rgbToCmyk(r: number, g: number, b: number): { 'c': number; 'm': number; 'y': number; 'k': number } {
   const rn = r / 255, gn = g / 255, bn = b / 255;
   const k = 1 - Math.max(rn, gn, bn);
@@ -182,45 +208,50 @@ function cmykToRgb(c: number, m: number, y: number, k: number): { 'r': number; '
     'b': Math.round(255 * (1 - y / 100) * (1 - kn)),
   };
 }
-const cmyk = computed(() => rgbToCmyk(rgb.value.r, rgb.value.g, rgb.value.b));
+const cmyk = computed(() => rgbToCmyk(currentRgb.value.r, currentRgb.value.g, currentRgb.value.b));
 function setCmyk(field: 'c' | 'm' | 'y' | 'k', value: number): void {
   const next = { ...cmyk.value, [field]: Math.max(0, Math.min(100, value)) };
   const r = cmykToRgb(next.c, next.m, next.y, next.k);
   emit('update:modelValue', rgbToHex(r.r, r.g, r.b));
 }
 
-// HEX
-function onHexInput(e: Event): void {
-  const v = (e.target as HTMLInputElement).value;
-  if (/^#[0-9a-fA-F]{6}$/.test(v)) emit('update:modelValue', v);
+const oklch = computed(() => {
+  const rec = colorRecordFactory.fromHex(currentHex.value);
+  return { 'l': rec.oklch.l, 'c': rec.oklch.c, 'h': rec.oklch.h };
+});
+function setOklch(field: 'l' | 'c' | 'h', value: number): void {
+  const cur = oklch.value;
+  const next = { ...cur, [field]: value };
+  if (field === 'l') next.l = Math.max(0, Math.min(1, value));
+  if (field === 'c') next.c = Math.max(0, Math.min(0.5, value));
+  if (field === 'h') next.h = ((value % 360) + 360) % 360;
+  const rec = colorRecordFactory.fromOklch(next.l, next.c, next.h, 1);
+  emit('update:modelValue', rec.hex);
 }
 
-// OKLCH direct
-function setOklch(field: 'l' | 'c' | 'h', value: number): void {
-  if (field === 'l') l.value = Math.max(0, Math.min(1,    value));
-  if (field === 'c') c.value = Math.max(0, Math.min(0.5,  value));
-  if (field === 'h') h.value = ((value % 360) + 360) % 360;
-}
+const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value }));
 </script>
 
 <template>
   <div class="iridis-picker">
+    <!-- S × V square -->
     <div
       class="iridis-picker__square"
-      :style="{ background: lcSquareBackground, width: `${LC_SIZE}px`, height: `${LC_SIZE}px` }"
-      @pointerdown="onLcPointer"
-      @pointermove="onLcMove"
+      :style="{ background: svSquareBackground, width: `${SV_SIZE}px`, height: `${SV_SIZE}px` }"
+      @pointerdown="onSvPointer"
+      @pointermove="onSvMove"
     >
-      <div class="iridis-picker__marker" :style="{ left: markerX, top: markerY, background: currentHex }" />
+      <div class="iridis-picker__marker" :style="{ left: svMarkerX, top: svMarkerY, background: currentHex }" />
     </div>
 
+    <!-- Hue strip -->
     <div
       class="iridis-picker__hue"
-      :style="{ background: hueStripBackground(), width: `${HUE_STRIP_WIDTH}px`, height: `${HUE_STRIP_HEIGHT}px` }"
+      :style="{ background: hueStripBackground, width: `${HUE_STRIP_WIDTH}px`, height: `${HUE_STRIP_HEIGHT}px` }"
       @pointerdown="onHuePointer"
       @pointermove="onHueMove"
     >
-      <div class="iridis-picker__hue-marker" :style="{ left: huePos }" />
+      <div class="iridis-picker__hue-marker" :style="{ left: hueMarkerX }" />
     </div>
 
     <!-- Format tabs -->
@@ -233,38 +264,41 @@ function setOklch(field: 'l' | 'c' | 'h', value: number): void {
 
     <!-- HEX -->
     <div v-if="mode === 'hex'" class="iridis-picker__row">
-      <input type="color" :value="currentHex" aria-label="System picker" @change="(e) => emit('update:modelValue', (e.target as HTMLInputElement).value)" />
-      <input class="iridis-picker__hex" type="text" :value="currentHex" spellcheck="false" aria-label="Hex" @input="onHexInput" />
+      <input type="color" :value="currentHex" aria-label="System picker" @change="(e) => setHex((e.target as HTMLInputElement).value)" />
+      <input class="iridis-picker__hex" type="text" :value="currentHex" spellcheck="false" aria-label="Hex"
+             @input="(e) => setHex((e.target as HTMLInputElement).value)" />
     </div>
 
     <!-- RGB -->
     <div v-else-if="mode === 'rgb'" class="iridis-picker__channels">
       <label v-for="(ch, key) in { 'R': 'r', 'G': 'g', 'B': 'b' } as const" :key="key">
         <span>{{ ch }}</span>
-        <input type="number" min="0" max="255" :value="rgb[key]" @input="(e) => setRgb(key, Number((e.target as HTMLInputElement).value))" />
+        <input type="number" min="0" max="255" :value="currentRgb[key]"
+               @input="(e) => setRgb(key, Number((e.target as HTMLInputElement).value))" />
       </label>
     </div>
 
     <!-- HSV -->
     <div v-else-if="mode === 'hsv'" class="iridis-picker__channels">
-      <label><span>H</span><input type="number" min="0" max="359" :value="Math.round(hsv.h)"   @input="(e) => setHsv('h', Number((e.target as HTMLInputElement).value))" /></label>
-      <label><span>S</span><input type="number" min="0" max="100" :value="Math.round(hsv.s)"   @input="(e) => setHsv('s', Number((e.target as HTMLInputElement).value))" /></label>
-      <label><span>V</span><input type="number" min="0" max="100" :value="Math.round(hsv.v)"   @input="(e) => setHsv('v', Number((e.target as HTMLInputElement).value))" /></label>
+      <label><span>H</span><input type="number" min="0" max="359" :value="Math.round(hsvView.h)" @input="(e) => setHsv('h', Number((e.target as HTMLInputElement).value))" /></label>
+      <label><span>S</span><input type="number" min="0" max="100" :value="Math.round(hsvView.s)" @input="(e) => setHsv('s', Number((e.target as HTMLInputElement).value))" /></label>
+      <label><span>V</span><input type="number" min="0" max="100" :value="Math.round(hsvView.v)" @input="(e) => setHsv('v', Number((e.target as HTMLInputElement).value))" /></label>
     </div>
 
     <!-- CMYK -->
     <div v-else-if="mode === 'cmyk'" class="iridis-picker__channels iridis-picker__channels--four">
       <label v-for="(ch, key) in { 'C': 'c', 'M': 'm', 'Y': 'y', 'K': 'k' } as const" :key="key">
         <span>{{ ch }}</span>
-        <input type="number" min="0" max="100" :value="Math.round(cmyk[key])" @input="(e) => setCmyk(key, Number((e.target as HTMLInputElement).value))" />
+        <input type="number" min="0" max="100" :value="Math.round(cmyk[key])"
+               @input="(e) => setCmyk(key, Number((e.target as HTMLInputElement).value))" />
       </label>
     </div>
 
     <!-- OKLCH -->
     <div v-else-if="mode === 'oklch'" class="iridis-picker__channels">
-      <label><span>L</span><input type="number" min="0" max="1"   step="0.01" :value="l.toFixed(3)" @input="(e) => setOklch('l', Number((e.target as HTMLInputElement).value))" /></label>
-      <label><span>C</span><input type="number" min="0" max="0.5" step="0.01" :value="c.toFixed(3)" @input="(e) => setOklch('c', Number((e.target as HTMLInputElement).value))" /></label>
-      <label><span>H</span><input type="number" min="0" max="359" :value="Math.round(h)"           @input="(e) => setOklch('h', Number((e.target as HTMLInputElement).value))" /></label>
+      <label><span>L</span><input type="number" min="0" max="1"   step="0.01" :value="oklch.l.toFixed(3)" @input="(e) => setOklch('l', Number((e.target as HTMLInputElement).value))" /></label>
+      <label><span>C</span><input type="number" min="0" max="0.5" step="0.01" :value="oklch.c.toFixed(3)" @input="(e) => setOklch('c', Number((e.target as HTMLInputElement).value))" /></label>
+      <label><span>H</span><input type="number" min="0" max="359" :value="Math.round(oklch.h)" @input="(e) => setOklch('h', Number((e.target as HTMLInputElement).value))" /></label>
     </div>
   </div>
 </template>
