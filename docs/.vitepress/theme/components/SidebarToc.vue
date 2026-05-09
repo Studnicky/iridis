@@ -1,50 +1,70 @@
 <script setup lang="ts">
 /**
- * SidebarToc.vue
+ * SidebarToc.vue — accordion outline.
  *
- * "On this page" outline rendered as a collapsible accordion in the left
- * sidebar. Walks the live DOM (.vp-doc h2/h3) instead of vitepress's
- * useData().page.headers — the latter returns empty in some layouts.
+ * Walks the live DOM (.vp-doc h2/h3) and groups H3 children under each H2.
+ * The H2 whose content is currently in the viewport auto-expands; siblings
+ * collapse. User can manually click any H2 to override (sticky for that
+ * page).
  */
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vitepress';
 
-interface HeadingItem {
-  'level': number;
+interface Heading {
+  'level': 2 | 3;
   'text':  string;
   'id':    string;
 }
+interface Group {
+  'h2':       Heading;
+  'children': Heading[];
+}
 
-const router = useRouter();
-const open       = ref(true);
-const activeId   = ref<string | null>(null);
-const headings   = ref<HeadingItem[]>([]);
-const refreshTick = ref(0);
+const router      = useRouter();
+const groups      = ref<Group[]>([]);
+const activeId    = ref<string | null>(null);
+const userOpen    = ref<string | null>(null);
 
-let observer: IntersectionObserver | null = null;
-let mutationObserver: MutationObserver | null = null;
+let intersection: IntersectionObserver | null = null;
+let mutation:     MutationObserver     | null = null;
 
-function readHeadings(): void {
+function readGroups(): void {
   if (typeof document === 'undefined') return;
-  const els = document.querySelectorAll('.vp-doc h2[id], .vp-doc h3[id]');
-  const next: HeadingItem[] = [];
-  for (const el of Array.from(els)) {
+  const els = Array.from(document.querySelectorAll('.vp-doc h2[id], .vp-doc h3[id]'));
+  const parsed: Heading[] = [];
+  for (const el of els) {
     const text = (el.textContent ?? '').replace(/​/g, '').replace(/^#\s*/, '').trim();
     if (text === '') continue;
-    next.push({
+    parsed.push({
       'level': el.tagName === 'H2' ? 2 : 3,
       'text':  text,
       'id':    el.id,
     });
   }
-  headings.value = next;
+  // Group H3s under their preceding H2. Stray H3s before any H2 form a
+  // synthetic group keyed to the first heading found.
+  const next: Group[] = [];
+  let current: Group | null = null;
+  for (const h of parsed) {
+    if (h.level === 2) {
+      current = { 'h2': h, 'children': [] };
+      next.push(current);
+    } else if (current) {
+      current.children.push(h);
+    } else {
+      // No H2 yet — make a synthetic top-level entry (the H3 itself).
+      current = { 'h2': h, 'children': [] };
+      next.push(current);
+    }
+  }
+  groups.value = next;
 }
 
-function rebindObserver(): void {
+function rebindIntersection(): void {
   if (typeof window === 'undefined') return;
-  observer?.disconnect();
-  observer = new IntersectionObserver(
+  intersection?.disconnect();
+  intersection = new IntersectionObserver(
     (entries) => {
       const visible = entries
         .filter((e) => e.isIntersecting)
@@ -55,68 +75,84 @@ function rebindObserver(): void {
     },
     { 'rootMargin': '-15% 0% -70% 0%' },
   );
-  for (const h of headings.value) {
-    const el = document.getElementById(h.id);
-    if (el) observer.observe(el);
+  for (const g of groups.value) {
+    const h2El = document.getElementById(g.h2.id);
+    if (h2El) intersection.observe(h2El);
+    for (const child of g.children) {
+      const el = document.getElementById(child.id);
+      if (el) intersection.observe(el);
+    }
   }
 }
 
 function refresh(): void {
-  readHeadings();
-  rebindObserver();
-  refreshTick.value++;
+  readGroups();
+  rebindIntersection();
 }
 
 onMounted(() => {
   refresh();
-  // Re-read when the inner content node mutates (vitepress hot-swaps it
-  // on client-side navigation).
   if (typeof document !== 'undefined') {
     const root = document.querySelector('.VPDoc') ?? document.body;
-    mutationObserver = new MutationObserver(() => {
-      // debounce by next-frame so multiple mutations coalesce
-      requestAnimationFrame(refresh);
-    });
-    mutationObserver.observe(root, { 'childList': true, 'subtree': true });
+    mutation = new MutationObserver(() => requestAnimationFrame(refresh));
+    mutation.observe(root, { 'childList': true, 'subtree': true });
   }
-  // After client-side route change, re-read (mutation observer already
-  // covers most cases but this catches edge cases).
   router.onAfterRouteChange = () => {
     setTimeout(refresh, 50);
+    userOpen.value = null;
+    activeId.value = null;
   };
 });
 onUnmounted(() => {
-  observer?.disconnect();
-  mutationObserver?.disconnect();
-  observer = null;
-  mutationObserver = null;
+  intersection?.disconnect();
+  mutation?.disconnect();
+  intersection = null;
+  mutation     = null;
 });
 
-const visible = computed(() => headings.value.length > 0);
+// A group is "open" if user explicitly toggled it OR if its h2/child is
+// the current active heading.
+function isOpen(g: Group): boolean {
+  if (userOpen.value === g.h2.id) return true;
+  if (userOpen.value !== null && userOpen.value !== g.h2.id) return false;
+  if (activeId.value === g.h2.id) return true;
+  return g.children.some((c) => c.id === activeId.value);
+}
+function toggleGroup(g: Group): void {
+  userOpen.value = userOpen.value === g.h2.id ? null : g.h2.id;
+}
+function clickHeading(h: Heading): void {
+  // Let the anchor navigate; clear sticky-open so scroll-driven open resumes
+  setTimeout(() => { userOpen.value = null; }, 600);
+}
+
+const visible = computed(() => groups.value.length > 0);
 </script>
 
 <template>
   <ClientOnly>
-    <section v-if="visible" :class="['iridis-toc', { 'iridis-toc--open': open }]">
-      <button
-        type="button"
-        class="iridis-toc__head"
-        :aria-expanded="open"
-        @click="open = !open"
-      >
-        <span class="iridis-toc__chevron" aria-hidden="true">{{ open ? '▾' : '▸' }}</span>
+    <nav v-if="visible" class="iridis-toc" aria-label="On this page">
+      <div class="iridis-toc__head">
         <span class="iridis-toc__label">On this page</span>
-      </button>
-      <ul v-show="open" class="iridis-toc__list">
-        <li
-          v-for="h in headings"
-          :key="h.id"
-          :class="['iridis-toc__item', `iridis-toc__item--l${h.level}`, { 'iridis-toc__item--active': activeId === h.id }]"
-        >
-          <a :href="'#' + h.id">{{ h.text }}</a>
+      </div>
+      <ul class="iridis-toc__groups">
+        <li v-for="g in groups" :key="g.h2.id" :class="['iridis-toc__group', { 'iridis-toc__group--open': isOpen(g) }]">
+          <button type="button" class="iridis-toc__group-head" :aria-expanded="isOpen(g)" @click="toggleGroup(g)">
+            <span class="iridis-toc__chev" aria-hidden="true">{{ isOpen(g) ? '▾' : '▸' }}</span>
+            <a
+              :href="'#' + g.h2.id"
+              :class="['iridis-toc__group-link', { 'iridis-toc__group-link--active': activeId === g.h2.id }]"
+              @click.stop="clickHeading(g.h2)"
+            >{{ g.h2.text }}</a>
+          </button>
+          <ul v-show="isOpen(g) && g.children.length > 0" class="iridis-toc__sublist">
+            <li v-for="c in g.children" :key="c.id" :class="['iridis-toc__sub', { 'iridis-toc__sub--active': activeId === c.id }]">
+              <a :href="'#' + c.id" @click="clickHeading(c)">{{ c.text }}</a>
+            </li>
+          </ul>
         </li>
       </ul>
-    </section>
+    </nav>
   </ClientOnly>
 </template>
 
@@ -127,42 +163,63 @@ const visible = computed(() => headings.value.length > 0);
   border-top: 1px solid color-mix(in oklch, var(--vp-c-divider) 50%, transparent);
 }
 .iridis-toc__head {
-  width: 100%;
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
+  padding: 0.35rem 0 0.4rem;
   color: var(--vp-c-text-3);
 }
-.iridis-toc__chevron { font-size: 0.7rem; }
 .iridis-toc__label {
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.iridis-toc__head:hover { color: var(--vp-c-brand-1); }
-.iridis-toc__list {
+.iridis-toc__groups,
+.iridis-toc__sublist {
   list-style: none;
-  margin: 0.35rem 0 0;
+  margin: 0;
   padding: 0;
+}
+.iridis-toc__group { margin: 0.05rem 0; }
+.iridis-toc__group-head {
+  display: grid;
+  grid-template-columns: 1.1rem 1fr;
+  align-items: baseline;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.18rem 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  color: var(--vp-c-text-2);
   font-size: 0.82rem;
 }
-.iridis-toc__item a {
+.iridis-toc__chev { font-size: 0.65rem; color: var(--vp-c-text-3); }
+.iridis-toc__group-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 500;
+  border-left: 2px solid transparent;
+  padding-left: 0.45rem;
+  margin-left: 0;
+}
+.iridis-toc__group-link:hover { color: var(--vp-c-brand-1); }
+.iridis-toc__group-link--active {
+  color: var(--vp-c-brand-1);
+  border-left-color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+.iridis-toc__sublist { padding-left: 1.5rem; }
+.iridis-toc__sub a {
   display: block;
-  padding: 0.18rem 0;
-  color: var(--vp-c-text-2);
+  padding: 0.16rem 0 0.16rem 0.45rem;
+  font-size: 0.76rem;
+  color: var(--vp-c-text-3);
   text-decoration: none;
   border-left: 2px solid transparent;
-  padding-left: 0.55rem;
-  transition: border-color 120ms, color 120ms;
 }
-.iridis-toc__item--l3 a { padding-left: 1.4rem; font-size: 0.78rem; color: var(--vp-c-text-3); }
-.iridis-toc__item a:hover { color: var(--vp-c-brand-1); }
-.iridis-toc__item--active a {
+.iridis-toc__sub a:hover { color: var(--vp-c-brand-1); }
+.iridis-toc__sub--active a {
   color: var(--vp-c-brand-1);
   border-left-color: var(--vp-c-brand-1);
 }

@@ -11,6 +11,8 @@ import TryItOutForm    from './components/TryItOutForm.vue';
 import RightPanel      from './components/RightPanel.vue';
 import SidebarToc      from './components/SidebarToc.vue';
 import SidebarToggle   from './components/SidebarToggle.vue';
+import SidebarResize   from './components/SidebarResize.vue';
+import InfiniteScroll  from './components/InfiniteScroll.vue';
 import { configStore } from './stores/configStore.ts';
 import { applyConfigToDocument } from './stores/applyConfigToDocument.ts';
 
@@ -83,7 +85,8 @@ export const theme: Theme = {
       'sidebar-nav-before': () => logoBlock(),
       'sidebar-nav-after':  () => h(SidebarToc),
       'aside-top':          () => h(RightPanel),
-      'layout-top':         () => h(SidebarToggle),
+      'doc-after':          () => h(InfiniteScroll),
+      'layout-top':         () => h('div', null, [h(SidebarToggle), h(SidebarResize)]),
     });
   },
 };

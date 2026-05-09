@@ -244,12 +244,22 @@
 /* Vitepress already provides a mobile-only sidebar toggle. We add a
    desktop-equivalent button at the top-left corner of the sidebar that
    collapses it to a thin edge handle on click. */
-/* Fully hide the sidebar by sliding it off and reclaiming its column width
-   from the content. Uses position-absolute trick so vitepress's natural
-   layout pads from the sidebar's parent (.VPSidebarContainer is positioned
-   independently of the content's padding). */
+/* Sidebar must never have internal scrollbars. The default vitepress
+   sidebar is overflow-y: auto inside a fixed-height column; remove the
+   inner scroll so the entire page scrolls instead. */
 .VPSidebar {
-  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), width 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  width: var(--vp-sidebar-width) !important;
+}
+.VPSidebarNav,
+.VPSidebar .nav,
+.VPSidebar .group {
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
 }
 html.iridis-sidebar-collapsed .VPSidebar {
   transform: translateX(-100%);
@@ -262,6 +272,26 @@ html.iridis-sidebar-collapsed .VPDoc {
   padding-left: 1.5rem;
 }
 .VPContent.has-sidebar { transition: padding-left 220ms cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* Sidebar resize handle on its right edge — mirrors the right panel's
+   left-edge handle. Updates --vp-sidebar-width via the SidebarResize
+   component (mounted in theme/index.ts). */
+.iridis-sidebar-resize {
+  position: fixed;
+  top: var(--vp-nav-height, 64px);
+  left: calc(var(--vp-sidebar-width) - 3px);
+  width: 6px;
+  height: calc(100vh - var(--vp-nav-height, 64px));
+  cursor: col-resize;
+  z-index: 24;
+  background: transparent;
+  transition: background 120ms, left 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.iridis-sidebar-resize:hover,
+.iridis-sidebar-resize--dragging {
+  background: color-mix(in oklch, var(--iridis-brand) 35%, transparent);
+}
+html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
 
 /* Sidebar collapse-edge — a thin edge handle visible when collapsed. */
 .iridis-sidebar-toggle {

@@ -163,14 +163,31 @@ async function downloadJson(): Promise<void> {
         @pointerup="onDragPointerUp"
         @pointercancel="onDragPointerUp"
       />
+      <!-- Compact chevron, visible only when expanded — closes the panel -->
       <button
+        v-show="open"
         type="button"
         class="iridis-right__toggle"
-        :aria-expanded="open"
-        :aria-label="open ? 'Collapse example panel' : 'Expand example panel'"
-        @click="open = !open"
+        aria-expanded="true"
+        aria-label="Collapse example panel"
+        @click="open = false"
       >
-        <span class="iridis-right__toggle-chevron" aria-hidden="true">{{ open ? '›' : '‹' }}</span>
+        <span aria-hidden="true">›</span>
+      </button>
+
+      <!-- Reopen affordance — full-height vertical button visible only when
+           collapsed. Reads top-to-bottom so the label invites the click. -->
+      <button
+        v-show="!open"
+        type="button"
+        class="iridis-right__reopen"
+        aria-expanded="false"
+        aria-label="Open palette builder"
+        @click="open = true"
+      >
+        <span class="iridis-right__reopen-icon" aria-hidden="true">⬕</span>
+        <span class="iridis-right__reopen-label">Get palette</span>
+        <span class="iridis-right__reopen-chev" aria-hidden="true">‹</span>
       </button>
 
       <div v-show="open" class="iridis-right__body">
@@ -234,8 +251,61 @@ async function downloadJson(): Promise<void> {
   backdrop-filter: blur(8px);
   transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.iridis-right--collapsed { width: 2rem; }
+.iridis-right--collapsed {
+  width: 2.4rem;
+  /* Brand-tinted edge so the collapsed strip reads as actionable. */
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklch, var(--iridis-brand) 18%, var(--iridis-surface)) 0%,
+      color-mix(in oklch, var(--iridis-brand)  6%, var(--iridis-surface)) 100%);
+  border-color: color-mix(in oklch, var(--iridis-brand) 45%, var(--iridis-divider));
+}
 .iridis-right--dragging { user-select: none; }
+
+/* Reopen button — fills the collapsed strip. Vertical text via writing-mode. */
+.iridis-right__reopen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.85rem 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--iridis-on-brand);
+  z-index: 4;
+}
+.iridis-right__reopen-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.iridis-right__reopen-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--iridis-on-brand);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.iridis-right__reopen-chev {
+  font-size: 1.1rem;
+  line-height: 1;
+  font-weight: 700;
+}
+.iridis-right__reopen:hover {
+  background: color-mix(in oklch, var(--iridis-brand) 35%, transparent);
+}
+.iridis-right__reopen:hover .iridis-right__reopen-label,
+.iridis-right__reopen:hover .iridis-right__reopen-icon,
+.iridis-right__reopen:hover .iridis-right__reopen-chev {
+  color: var(--iridis-on-brand);
+  filter: brightness(1.15);
+}
 
 /* Drag handle — thin vertical strip on the panel's left edge. Hover lights
    it; active drag widens it. Cursor: col-resize the whole strip. */
