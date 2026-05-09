@@ -4,6 +4,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { getOrCreateOutput } from '@studnicky/iridis';
 import { FONT_STYLES } from '../data/fontStyles.ts';
 import { SCOPE_MAPPINGS } from '../data/scopeMappings.ts';
 
@@ -36,6 +37,7 @@ interface VscodeOutputInterface {
   'workbenchColors'?: Record<string, string>;
   'semanticTokenRules'?: Record<string, { 'foreground'?: string; 'fontStyle'?: string }>;
   'themeJson'?: ThemeJsonInterface;
+  [key: string]: unknown;
 }
 
 function getVscodeMeta(state: PaletteStateInterface): VscodeMetaInterface {
@@ -46,15 +48,6 @@ function getVscodeMeta(state: PaletteStateInterface): VscodeMetaInterface {
   return {};
 }
 
-function getVscodeOutput(state: PaletteStateInterface): VscodeOutputInterface {
-  const existing = state.outputs['vscode'];
-  if (existing !== null && typeof existing === 'object') {
-    return existing as VscodeOutputInterface;
-  }
-  const out: VscodeOutputInterface = {};
-  (state.outputs as Record<string, unknown>)['vscode'] = out;
-  return out;
-}
 
 export class EmitVscodeThemeJson implements TaskInterface {
   readonly 'name' = 'emit:vscodeThemeJson';
@@ -72,7 +65,7 @@ export class EmitVscodeThemeJson implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const out = getVscodeOutput(state);
+    const out = getOrCreateOutput<VscodeOutputInterface>(state, 'vscode');
     const meta = getVscodeMeta(state);
 
     if (!out.workbenchColors) {
