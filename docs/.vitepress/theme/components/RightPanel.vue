@@ -2,19 +2,30 @@
 /**
  * RightPanel.vue
  *
- * Persistent example builder, mounted via the aside-top slot. Replaces
- * vitepress's default right-rail outline (disabled in theme.config.ts).
- * Always shows the same IridisDemo running the canonical full pipeline,
- * sharing configStore with the left-sidebar configuration form.
+ * Persistent example builder + the entire docs configuration. Mounted via
+ * the aside-top slot. Vitepress's right-rail outline is disabled in
+ * theme.config.ts; this panel takes over the column.
  *
- * Collapsible — the chevron tucks the panel to the right edge so the
- * page can use the full width when needed. State is local; no persistence
- * (the panel default-open state is part of the page UX).
+ * Two collapsible sections:
+ *   - Live demo (IridisDemo running the canonical full pipeline)
+ *   - Configuration (the docs-config form bound to configStore)
+ *
+ * The whole panel can be collapsed to an edge handle that re-opens.
  */
 
-import { ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
-import IridisDemo from './IridisDemo.vue';
+import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+
+import IridisDemo    from './IridisDemo.vue';
+import SchemaForm    from './SchemaForm.vue';
+import { docsConfigSchema } from '../schemas/docsConfig.schema.ts';
+import { roleSchemaByName } from '../schemas/roleSchemas.ts';
+import { configStore, resetConfig } from '../stores/configStore.ts';
+
+const RESIZE_KEY = 'iridis-right-panel-width';
+const RESIZE_MIN = 240;
+const RESIZE_MAX = 720;
 
 const FULL_PIPELINE: readonly string[] = [
   'intake:hex',
@@ -26,20 +37,157 @@ const FULL_PIPELINE: readonly string[] = [
   'emit:json',
 ];
 
-const open = ref(true);
+const open       = ref(true);
+const cfgOpen    = ref(false);
+const exportNote = ref<string | null>(null);
+
+// Resizable width — persisted in localStorage. Drag handle on the panel's
+// left edge updates --iridis-right-panel-width on documentElement.
+function readPersistedWidth(): number | null {
+  if (typeof window === 'undefined') return null;
+  const raw = window.localStorage.getItem(RESIZE_KEY);
+  if (raw === null) return null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) ? n : null;
+}
+function writePersistedWidth(width: number): void {
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.setItem(RESIZE_KEY, String(width)); } catch { /* noop */ }
+}
+function applyWidth(width: number): void {
+  if (typeof document === 'undefined') return;
+  const clamped = Math.min(RESIZE_MAX, Math.max(RESIZE_MIN, width));
+  document.documentElement.style.setProperty('--iridis-right-panel-width', `${clamped}px`);
+  writePersistedWidth(clamped);
+}
+
+const dragging = ref(false);
+let dragStartX = 0;
+let dragStartW = 0;
+
+function onDragPointerDown(e: PointerEvent): void {
+  dragging.value = true;
+  dragStartX = e.clientX;
+  const cs = getComputedStyle(document.documentElement).getPropertyValue('--iridis-right-panel-width').trim();
+  dragStartW = parseInt(cs, 10) || 420;
+  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  document.body.style.cursor = 'col-resize';
+  e.preventDefault();
+}
+function onDragPointerMove(e: PointerEvent): void {
+  if (!dragging.value) return;
+  const dx = dragStartX - e.clientX; // dragging LEFT widens the panel
+  applyWidth(dragStartW + dx);
+}
+function onDragPointerUp(e: PointerEvent): void {
+  if (!dragging.value) return;
+  dragging.value = false;
+  (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+  document.body.style.cursor = '';
+}
+
+onMounted(() => {
+  const persisted = readPersistedWidth();
+  if (persisted !== null) applyWidth(persisted);
+});
+
+async function buildExportPayload(): Promise<Record<string, unknown>> {
+  const engine = new Engine();
+  for (const m of mathBuiltins) engine.math.register(m);
+  for (const t of coreTasks)    engine.tasks.register(t);
+  engine.pipeline([...FULL_PIPELINE]);
+  const schema = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal'];
+  const state = await engine.run({
+    'colors':   [...configStore.seedColors],
+    'roles':    schema,
+    'contrast': { 'level': configStore.contrastLevel, 'algorithm': configStore.contrastAlgorithm },
+    'runtime':  { 'framing': configStore.framing, 'colorSpace': configStore.colorSpace },
+  });
+  const roles: Record<string, string> = {};
+  for (const [name, rec] of Object.entries(state.roles)) roles[name] = rec.hex;
+  return {
+    'iridis': {
+      'version':  '0.1',
+      'config': {
+        'seedColors':        [...configStore.seedColors],
+        'framing':           configStore.framing,
+        'contrastLevel':     configStore.contrastLevel,
+        'contrastAlgorithm': configStore.contrastAlgorithm,
+        'colorSpace':        configStore.colorSpace,
+        'roleSchema':        configStore.roleSchema,
+      },
+      'palette': roles,
+      'pipeline': [...FULL_PIPELINE],
+    },
+  };
+}
+
+async function copyJson(): Promise<void> {
+  const payload = await buildExportPayload();
+  const text = JSON.stringify(payload, null, 2);
+  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    try { await navigator.clipboard.writeText(text); exportNote.value = 'Copied to clipboard'; } catch { exportNote.value = 'Copy failed — use download'; }
+  } else { exportNote.value = 'Clipboard unavailable'; }
+  setTimeout(() => { exportNote.value = null; }, 2400);
+}
+
+async function downloadJson(): Promise<void> {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  const payload = await buildExportPayload();
+  const text = JSON.stringify(payload, null, 2);
+  const blob = new Blob([text], { 'type': 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `iridis-palette-${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  exportNote.value = 'Downloaded';
+  setTimeout(() => { exportNote.value = null; }, 2400);
+}
 </script>
 
 <template>
   <ClientOnly>
-    <aside :class="['iridis-right', { 'iridis-right--collapsed': !open }]" aria-label="Live example builder">
+    <aside :class="['iridis-right', { 'iridis-right--collapsed': !open, 'iridis-right--dragging': dragging }]" aria-label="Live example builder">
+      <div
+        v-show="open"
+        class="iridis-right__resize"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize example panel"
+        @pointerdown="onDragPointerDown"
+        @pointermove="onDragPointerMove"
+        @pointerup="onDragPointerUp"
+        @pointercancel="onDragPointerUp"
+      />
+      <!-- Compact chevron, visible only when expanded — closes the panel -->
       <button
+        v-show="open"
         type="button"
         class="iridis-right__toggle"
-        :aria-expanded="open"
-        :aria-label="open ? 'Collapse example panel' : 'Expand example panel'"
-        @click="open = !open"
+        aria-expanded="true"
+        aria-label="Collapse example panel"
+        @click="open = false"
       >
-        <span class="iridis-right__toggle-chevron" aria-hidden="true">{{ open ? '›' : '‹' }}</span>
+        <span aria-hidden="true">›</span>
+      </button>
+
+      <!-- Reopen affordance — full-height vertical button visible only when
+           collapsed. Reads top-to-bottom so the label invites the click. -->
+      <button
+        v-show="!open"
+        type="button"
+        class="iridis-right__reopen"
+        aria-expanded="false"
+        aria-label="Open palette builder"
+        @click="open = true"
+      >
+        <span class="iridis-right__reopen-icon" aria-hidden="true">⬕</span>
+        <span class="iridis-right__reopen-label">Get palette</span>
+        <span class="iridis-right__reopen-chev" aria-hidden="true">‹</span>
       </button>
 
       <div v-show="open" class="iridis-right__body">
@@ -50,7 +198,35 @@ const open = ref(true);
             Pick seeds. Every chrome and syntax token recomputes. The whole site is one engine pass.
           </p>
         </header>
+
         <IridisDemo :pipeline="FULL_PIPELINE" />
+
+        <div class="iridis-right__export">
+          <button type="button" class="iridis-right__export-btn iridis-right__export-btn--primary" @click="downloadJson">
+            ⬇ Export JSON
+          </button>
+          <button type="button" class="iridis-right__export-btn" @click="copyJson">
+            Copy
+          </button>
+          <span v-if="exportNote" class="iridis-right__export-note">{{ exportNote }}</span>
+        </div>
+
+        <section :class="['iridis-right__cfg', { 'iridis-right__cfg--open': cfgOpen }]">
+          <button
+            type="button"
+            class="iridis-right__cfg-toggle"
+            :aria-expanded="cfgOpen"
+            @click="cfgOpen = !cfgOpen"
+          >
+            <span class="iridis-right__cfg-chevron" aria-hidden="true">{{ cfgOpen ? '▾' : '▸' }}</span>
+            <span class="iridis-right__cfg-label">Configuration</span>
+            <span class="iridis-right__cfg-hint">framing · contrast · role schema</span>
+          </button>
+          <div v-show="cfgOpen" class="iridis-right__cfg-panel">
+            <SchemaForm :schema="docsConfigSchema" :model-value="configStore" />
+            <button class="iridis-right__cfg-reset" type="button" @click="resetConfig">Reset to defaults</button>
+          </div>
+        </section>
       </div>
     </aside>
   </ClientOnly>
@@ -60,7 +236,7 @@ const open = ref(true);
 .iridis-right {
   position: sticky;
   top: calc(var(--vp-nav-height, 64px) + 1rem);
-  width: var(--iridis-right-panel-width, 360px);
+  width: var(--iridis-right-panel-width, 320px);
   max-height: calc(100vh - var(--vp-nav-height, 64px) - 2rem);
   overflow: hidden;
   border-radius: 14px;
@@ -76,8 +252,82 @@ const open = ref(true);
   transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .iridis-right--collapsed {
-  width: 2rem;
+  width: 2.4rem;
+  /* Brand-tinted edge so the collapsed strip reads as actionable. */
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklch, var(--iridis-brand) 18%, var(--iridis-surface)) 0%,
+      color-mix(in oklch, var(--iridis-brand)  6%, var(--iridis-surface)) 100%);
+  border-color: color-mix(in oklch, var(--iridis-brand) 45%, var(--iridis-divider));
 }
+.iridis-right--dragging { user-select: none; }
+
+/* Reopen button — fills the collapsed strip. Vertical text via writing-mode. */
+.iridis-right__reopen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.85rem 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--iridis-on-brand);
+  z-index: 4;
+}
+.iridis-right__reopen-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.iridis-right__reopen-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--iridis-on-brand);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.iridis-right__reopen-chev {
+  font-size: 1.1rem;
+  line-height: 1;
+  font-weight: 700;
+}
+.iridis-right__reopen:hover {
+  background: color-mix(in oklch, var(--iridis-brand) 35%, transparent);
+}
+.iridis-right__reopen:hover .iridis-right__reopen-label,
+.iridis-right__reopen:hover .iridis-right__reopen-icon,
+.iridis-right__reopen:hover .iridis-right__reopen-chev {
+  color: var(--iridis-on-brand);
+  filter: brightness(1.15);
+}
+
+/* Drag handle — thin vertical strip on the panel's left edge. Hover lights
+   it; active drag widens it. Cursor: col-resize the whole strip. */
+.iridis-right__resize {
+  position: absolute;
+  top: 0;
+  left: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 3;
+  background: transparent;
+  border-radius: 3px;
+  transition: background 120ms;
+}
+.iridis-right__resize:hover {
+  background: color-mix(in oklch, var(--iridis-brand) 25%, transparent);
+}
+.iridis-right--dragging .iridis-right__resize {
+  background: color-mix(in oklch, var(--iridis-brand) 45%, transparent);
+}
+
 .iridis-right__toggle {
   position: absolute;
   top: 0.4rem;
@@ -103,15 +353,13 @@ const open = ref(true);
   transform: scale(1.08);
   border-color: var(--iridis-brand);
 }
+
 .iridis-right__body {
   padding: 0.85rem 0.95rem 1rem;
   overflow: auto;
   max-height: calc(100vh - var(--vp-nav-height, 64px) - 2rem);
 }
-.iridis-right__header {
-  margin: 0.4rem 0 0.85rem;
-  padding: 0 0.05rem;
-}
+.iridis-right__header { margin: 0.4rem 0 0.85rem; }
 .iridis-right__eyebrow {
   display: inline-block;
   font-size: 0.62rem;
@@ -138,5 +386,90 @@ const open = ref(true);
   color: var(--iridis-muted);
   margin: 0 0 0.85rem;
   line-height: 1.45;
+}
+
+.iridis-right__cfg {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in oklch, var(--iridis-divider) 70%, transparent);
+}
+.iridis-right__cfg-toggle {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.35rem 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  color: var(--iridis-muted);
+}
+.iridis-right__cfg-chevron { font-size: 0.7rem; }
+.iridis-right__cfg-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.iridis-right__cfg-hint {
+  justify-self: end;
+  font-size: 0.62rem;
+  color: var(--iridis-muted);
+  font-style: italic;
+  text-align: right;
+}
+.iridis-right__cfg-toggle:hover { color: var(--iridis-brand); }
+.iridis-right__cfg-panel { margin-top: 0.5rem; padding: 0.65rem 0 0; }
+.iridis-right__cfg-reset {
+  margin-top: 0.85rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--iridis-bg-soft);
+  border: 1px solid var(--iridis-divider);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  color: var(--iridis-muted);
+  cursor: pointer;
+}
+.iridis-right__cfg-reset:hover {
+  color: var(--iridis-brand);
+  border-color: var(--iridis-brand);
+}
+
+.iridis-right__export {
+  margin-top: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.iridis-right__export-btn {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  background: var(--iridis-bg-soft);
+  border: 1px solid var(--iridis-divider);
+  color: var(--iridis-text);
+}
+.iridis-right__export-btn:hover {
+  border-color: var(--iridis-brand);
+  color: var(--iridis-brand);
+}
+.iridis-right__export-btn--primary {
+  background: var(--iridis-brand);
+  color: var(--iridis-on-brand);
+  border-color: var(--iridis-brand);
+}
+.iridis-right__export-btn--primary:hover {
+  filter: brightness(1.1);
+  color: var(--iridis-on-brand);
+}
+.iridis-right__export-note {
+  font-size: 0.74rem;
+  color: var(--iridis-brand);
+  font-weight: 500;
 }
 </style>

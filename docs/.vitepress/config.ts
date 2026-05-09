@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress';
+import { withMermaid }  from 'vitepress-plugin-mermaid';
 
 import { iridisBrandPlugin } from './plugins/iridis-brand.mjs';
 import { themeConfig }       from './theme.config.js';
@@ -38,7 +39,19 @@ const sidebar = [
   },
 ];
 
-export default defineConfig({
+export default withMermaid(defineConfig({
+  'mermaid': {
+    'theme': 'base',
+    'themeVariables': {
+      'fontFamily':    'var(--vp-font-family-mono)',
+      'background':    'var(--iridis-bg-soft)',
+      'primaryColor':  'var(--iridis-brand)',
+      'primaryTextColor': 'var(--iridis-on-brand)',
+      'lineColor':     'var(--iridis-divider)',
+      'textColor':     'var(--iridis-text)',
+    },
+  },
+  'mermaidPlugin': { 'class': 'mermaid iridis-mermaid' },
   'base':        '/iridis/',
   'title':       'iridis',
   'description': 'Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced.',
@@ -63,4 +76,4 @@ export default defineConfig({
     sidebar,
     'socialLinks': [{ 'icon': 'github', 'link': 'https://github.com/Studnicky/iridis' }],
   },
-});
+}));

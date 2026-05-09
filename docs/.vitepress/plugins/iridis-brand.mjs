@@ -1,6 +1,14 @@
-// Markdown-it plugin: wrap literal 'iridis' (case-sensitive, word-bounded)
-// in <span class="iridis-brand">iridis</span>, but only inside text tokens
-// of inline content. Skips code spans and code blocks.
+// Markdown-it plugin: wrap every literal 'iridis' (case-sensitive,
+// word-bounded) in a <span class="iridis-brand"> so the spectrum gradient
+// renders. Skips code spans and code blocks because those are separate
+// token types (code_inline, code_block, fence) — we touch only `text`
+// tokens inside `inline` containers, AND now also inside heading_open /
+// heading_close blocks (h1/h2/h3 etc.).
+//
+// The corresponding CSS in palette.css applies the static spectrum
+// gradient. The navbar siteTitle and any other static-Vue-rendered
+// "iridis" gets the same treatment via a sitewide CSS rule that targets
+// the literal element text — see base.css `.VPNavBarTitle .title`.
 
 const PATTERN = /\biridis\b/g;
 
