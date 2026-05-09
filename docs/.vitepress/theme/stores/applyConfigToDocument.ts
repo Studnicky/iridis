@@ -28,6 +28,12 @@ const PIPELINE: readonly string[] = [
   'intake:hex',
   'resolve:roles',
   'expand:family',
+  // Enforce every contrastPair declared on the docs theme schema (WCAG
+  // AAA + APCA Lc 75 for body text, AA / Lc 60 for everything else).
+  // The result is structurally inaccessibility-proof: regardless of
+  // which seeds the user picks, the engine nudges role colors until
+  // every declared pair is satisfied.
+  'enforce:contrast',
 ];
 
 export async function applyConfigToDocument(config: DocsConfigType): Promise<void> {

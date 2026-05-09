@@ -105,18 +105,23 @@ export class ColorRecordFactory {
 
   fromHex(hex: string): ColorRecordInterface {
     const cleaned = hex.replace(/^#/, '');
-    if (!/^[0-9a-fA-F]{6}$/.test(cleaned)) {
+    // Accept #rrggbb (6) and #rrggbbaa (8). Reject anything else.
+    if (!/^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(cleaned)) {
       throw new Error(`ColorRecordFactory.fromHex: invalid hex '${hex}'`);
     }
     const r = parseInt(cleaned.slice(0, 2), 16) / 255;
     const g = parseInt(cleaned.slice(2, 4), 16) / 255;
     const b = parseInt(cleaned.slice(4, 6), 16) / 255;
+    const alpha = cleaned.length === 8
+      ? parseInt(cleaned.slice(6, 8), 16) / 255
+      : 1;
     const oklch = rgbToOklchRaw(r, g, b);
     return {
       'oklch':        oklch,
       'rgb':          { 'r': r, 'g': g, 'b': b },
-      'hex':          `#${cleaned.toLowerCase()}`,
-      'alpha':        1,
+      // Canonical 6-digit hex; alpha lives in the alpha field.
+      'hex':          `#${cleaned.slice(0, 6).toLowerCase()}`,
+      'alpha':        alpha,
       'sourceFormat': 'hex',
     };
   }

@@ -286,9 +286,17 @@ html.iridis-right-collapsed .VPDoc .content {
   height: auto !important;
   max-height: none !important;
 }
-html.iridis-sidebar-collapsed .VPSidebar {
-  transform: translateX(-100%);
-  pointer-events: none;
+/* Open state: explicitly reset transform so vitepress's own .VPSidebar
+   transforms don't keep the panel hidden after our class is removed. */
+html:not(.iridis-sidebar-collapsed) .VPSidebar,
+html:not(.iridis-sidebar-collapsed) .VPSidebarContainer {
+  transform: translateX(0) !important;
+  pointer-events: auto !important;
+}
+html.iridis-sidebar-collapsed .VPSidebar,
+html.iridis-sidebar-collapsed .VPSidebarContainer {
+  transform: translateX(-100%) !important;
+  pointer-events: none !important;
 }
 html.iridis-sidebar-collapsed .VPContent.has-sidebar {
   padding-left: 0 !important;
