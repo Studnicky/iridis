@@ -1,38 +1,58 @@
 ---
 layout: doc
-title: iridis
+title: iridis — chromatic palette builder
 ---
 
-<div style="padding:1.5rem 0 2rem;border-bottom:1px solid var(--vp-c-divider);margin-bottom:2rem">
-  <h1 style="font-size:2.4rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 0.4rem;border:0;padding:0;background:linear-gradient(90deg,#7c3aed 0%,#2563eb 33%,#10b981 66%,#ec4899 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent">iridis</h1>
-  <p style="font-size:1.15rem;color:var(--vp-c-text-2);max-width:640px;margin:0 0 1.25rem">Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced. Seeds in, role-resolved palettes out.</p>
-  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
-    <a href="/iridis/getting-started" class="VPButton medium brand" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-brand-bg);color:var(--vp-button-brand-text);font-weight:500">Get started</a>
-    <a href="/iridis/concepts/pipeline" class="VPButton medium alt" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-alt-bg);color:var(--vp-button-alt-text);font-weight:500">Pipeline</a>
-    <a href="/iridis/v2-living-color" class="VPButton medium alt" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-alt-bg);color:var(--vp-button-alt-text);font-weight:500">Living color (v2 thesis)</a>
-    <a href="https://github.com/Studnicky/iridis" class="VPButton medium alt" style="text-decoration:none;padding:0.5rem 1.25rem;border-radius:4px;background:var(--vp-button-alt-bg);color:var(--vp-button-alt-text);font-weight:500">GitHub</a>
+<div style="padding:1.5rem 0 1rem;border-bottom:1px solid var(--iridis-divider);margin-bottom:1.5rem">
+  <h1 style="font-size:2.6rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 0.4rem;border:0;padding:0">iridis</h1>
+  <p style="font-size:1.18rem;color:var(--iridis-muted);max-width:680px;margin:0 0 1.25rem;line-height:1.5">
+    Pick your colors. Get a complete, accessible, role-resolved palette. Export it as JSON and walk away.
+    No download. No build step. No runtime.
+  </p>
+  <div style="display:flex;gap:0.6rem;flex-wrap:wrap">
+    <a href="/iridis/try-it-out" style="text-decoration:none;padding:0.55rem 1.2rem;border-radius:6px;background:var(--iridis-brand);color:var(--iridis-on-brand);font-weight:600;font-size:0.95rem">Build a palette →</a>
+    <a href="/iridis/getting-started" style="text-decoration:none;padding:0.55rem 1.2rem;border-radius:6px;background:var(--iridis-bg-soft);color:var(--iridis-text);border:1px solid var(--iridis-divider);font-weight:500;font-size:0.95rem">For developers</a>
+    <a href="https://github.com/Studnicky/iridis" style="text-decoration:none;padding:0.55rem 1.2rem;border-radius:6px;background:var(--iridis-bg-soft);color:var(--iridis-text);border:1px solid var(--iridis-divider);font-weight:500;font-size:0.95rem">GitHub</a>
   </div>
 </div>
 
-`@studnicky/iridis` is a composition engine for generating design system palettes from seed colors. Provide any number of seed colors in any common format. The engine runs them through a registered pipeline — intake, role resolution, contrast enforcement, variant derivation — and emits role-resolved palettes. Output adapters (CSS variables, Tailwind, VS Code semantic tokens, native chrome, RDF graphs) are separate plugins. The engine ships with zero runtime dependencies.
-
-::: tip Live builder
-The example panel on the right is running iridis against your seeds. Pick a color, watch every chrome and syntax token in the docs recompute. Your settings persist across pages via `localStorage`. Every page uses the same builder.
+::: tip For designers
+The example panel on the right is the whole product. Pick seed colors. Open **Configuration** to swap framing or contrast level. Hit **Export** to download a JSON of your resolved palette. Drop it into Figma tokens, your CSS variables, your design system — wherever you ship colors. The whole site re-themes with your choices as you work, so you can preview your palette in motion before you take it home.
 :::
 
-## What it does
+## What you get
 
-- **Variable input.** 1 to N seed colors in any format (hex, rgb, hsl, oklch, lab, named, image pixels). Intake adapters normalize to a canonical OKLCH-first record.
-- **Role-resolved.** Roles are consumer-defined JSON Schema. The engine assigns colors to roles, expands missing roles parametrically, enforces contrast pairs, and emits role-shaped output.
-- **Pluggable everything.** Math primitives, intake formats, transforms, and emitters are all registered domain modules. Swap `mixOklch` for a perceptual mixer, register a custom emitter, compose your own pipeline.
-- **Contrast-enforced.** WCAG 2.1, APCA, and CVD simulation as registered tasks. Pairs that fail thresholds are nudged in OKLCH space until they pass — every frame, if you want.
-- **Browser- and Node-safe.** Core has zero runtime dependencies. Plugins own their deps. Tree-shake or run as CLI; same engine either way.
-- **Living color (coming).** Treat a palette as a vector and animate trajectories through OKLCH × N-roles space. Chameleons and chromatophores for your UI.
+A palette that already satisfies your accessibility requirements. Every role you ask for — `background`, `foreground`, `accent`, `muted`, or whatever your schema declares — comes out inside its declared lightness, chroma, and contrast envelope. If your seeds don't fit, the engine **nudges them in OKLCH space** until they do. You receive the palette that works, not a report of what's broken.
+
+- **Variable input.** 1 to 8 seed colors. Hex, RGB, HSL, OKLCH, Lab, named, or image pixels — all normalized to a canonical OKLCH-first record.
+- **Role-resolved.** Pick `minimal` (4 roles), `w3c` (7 roles), or `material` (6 roles). Or write your own role schema in the right panel.
+- **Contrast-enforced.** WCAG 2.1 AA / AAA, or APCA Lc. Every role pair you declare meets the threshold or the engine moves the color until it does.
+- **Framing-aware.** Dark mode and light mode are real switches in the iridis pipeline, not a CSS toggle. Swap framing in the navbar — every role recomputes against the new envelope.
+- **Free, forever.** This whole page runs in your browser. No account, no API key, no telemetry. The palette is yours.
+
+## When you actually need to install something
+
+You only need the npm package if you want palettes generated **at runtime in your app**, like:
+
+- Per-user theming (each user's seeds drive their session)
+- Dynamic responses (palette shifts on time of day, scroll, audio, sensors)
+- Build-step token generation in CI
+
+If you just need *a* palette — pick once, ship the result — stay here. Export, paste, ship.
+
+```bash
+npm install @studnicky/iridis      # only if you want runtime generation
+```
 
 ## Where to look next
 
-- [Getting started](./getting-started) — install and first run
-- [Pipeline](./concepts/pipeline) — task names, ordering, contracts
-- [Role schemas](./concepts/role-schemas) — define what a palette must satisfy
-- [CLI recipe](./recipes/cli) — JSON config to filesystem outputs
-- [Living color (v2 thesis)](./v2-living-color) — animation engine and reactive bindings planned next
+For designers:
+- **[Try it out](./try-it-out)** — the builder, dedicated full-screen
+- **[Accessibility calculations](./concepts/accessibility-calculations)** — what AA / AAA / APCA actually mean
+
+For developers:
+- **[Getting started](./getting-started)** — the one-liner, then the full Engine API
+- **[Pipeline](./concepts/pipeline)** — how the engine runs (intake → resolve → enforce → emit)
+- **[Role schemas](./concepts/role-schemas)** — declare what a palette must satisfy
+- **[CLI](./recipes/cli)** — the same engine, no Node.js code
+- **[Living color (v2 thesis)](./v2-living-color)** — animation engine and reactive bindings planned next

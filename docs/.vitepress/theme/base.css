@@ -30,8 +30,9 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.18);
 
   /* Right-panel reservation */
-  --iridis-right-panel-width: 290px;
-  --vp-layout-max-width: 1600px;
+  --iridis-right-panel-width: 300px;
+  --vp-layout-max-width: 100%;
+  --vp-sidebar-width: 280px;
 }
 
 /* === Doc surface basics === */
@@ -121,11 +122,15 @@
   border-width: 1px !important;
 }
 
-/* === Pulsing logo block (uiverse loader pattern) === */
-/* Renders inside the sidebar-nav-before slot via theme/index.ts. */
+/* === Pulsing logo (uiverse pattern, contained) === */
+/* Rings are layered INSIDE the icon's footprint — five concentric circles
+   that share the icon's box. None expands beyond it. The pulse is opacity
+   + a slow conic gradient sweep through the iridis spectrum so the rings
+   appear to flow through the brand's colour wheel. */
+
 .VPSidebar .iridis-loader {
-  --iridis-loader-size: 200px;
-  --iridis-loader-duration: 5s;
+  --iridis-loader-size: 180px;
+  --iridis-loader-duration: 8s;
   position: relative;
   width: var(--iridis-loader-size);
   height: var(--iridis-loader-size);
@@ -136,54 +141,76 @@
 .VPSidebar .iridis-loader__box {
   position: absolute;
   border-radius: 50%;
-  border-top: 1px solid color-mix(in oklch, var(--iridis-brand) 55%, transparent);
-  background:
-    linear-gradient(180deg,
-      color-mix(in oklch, var(--iridis-brand) 5%, transparent) 0%,
-      color-mix(in oklch, var(--iridis-brand) 14%, transparent) 100%);
-  box-shadow:
-    rgba(0, 0, 0, 0.30) 0px 10px 14px -2px,
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(4px);
-  animation: iridis-loader-ripple var(--iridis-loader-duration) infinite ease-in-out;
+  /* Conic gradient sweeps through the iridis spectrum on every ring.
+     Each ring's mask carves a thin annulus so they nest like Saturn's rings. */
+  background: conic-gradient(
+    from 0deg,
+    var(--iridis-violet, #7c3aed),
+    var(--iridis-indigo, #4f46e5),
+    var(--iridis-blue,   #2563eb),
+    var(--iridis-teal,   #06b6d4),
+    var(--iridis-green,  #10b981),
+    var(--iridis-yellow, #eab308),
+    var(--iridis-orange, #f97316),
+    var(--iridis-red,    #ef4444),
+    var(--iridis-magenta,#ec4899),
+    var(--iridis-violet, #7c3aed)
+  );
+  -webkit-mask: radial-gradient(circle, transparent calc(50% - 3px), #000 calc(50% - 2px), #000 calc(50% - 0.5px), transparent calc(50% + 0.5px));
+          mask: radial-gradient(circle, transparent calc(50% - 3px), #000 calc(50% - 2px), #000 calc(50% - 0.5px), transparent calc(50% + 0.5px));
+  opacity: 0.85;
+  filter: drop-shadow(0 0 6px color-mix(in oklch, var(--iridis-brand) 35%, transparent));
+  animation:
+    iridis-loader-spin var(--iridis-loader-duration) infinite linear,
+    iridis-loader-pulse calc(var(--iridis-loader-duration) / 2) infinite ease-in-out;
 }
 
-.VPSidebar .iridis-loader__box:nth-child(1) { inset: 40%; z-index: 99; animation-delay: 0s; }
-.VPSidebar .iridis-loader__box:nth-child(2) { inset: 30%; z-index: 98; animation-delay: 0.4s; border-top-color: color-mix(in oklch, var(--iridis-brand) 45%, transparent); }
-.VPSidebar .iridis-loader__box:nth-child(3) { inset: 20%; z-index: 97; animation-delay: 0.8s; border-top-color: color-mix(in oklch, var(--iridis-brand) 35%, transparent); }
-.VPSidebar .iridis-loader__box:nth-child(4) { inset: 10%; z-index: 96; animation-delay: 1.2s; border-top-color: color-mix(in oklch, var(--iridis-brand) 25%, transparent); }
-.VPSidebar .iridis-loader__box:nth-child(5) { inset: 0%;  z-index: 95; animation-delay: 1.6s; border-top-color: color-mix(in oklch, var(--iridis-brand) 18%, transparent); }
+/* Five rings, all bounded by the icon. Alternating spin direction so the
+   gradient looks like a counter-rotating chromatic vortex. Inset values
+   produce non-overlapping concentric annuli. */
+.VPSidebar .iridis-loader__box:nth-child(1) { inset:  0%; z-index: 95; animation-delay: 0.0s, 0.0s; animation-direction: normal,  normal; }
+.VPSidebar .iridis-loader__box:nth-child(2) { inset:  8%; z-index: 96; animation-delay: 0.6s, 0.4s; animation-direction: reverse, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.15), calc(var(--iridis-loader-duration) / 2); }
+.VPSidebar .iridis-loader__box:nth-child(3) { inset: 16%; z-index: 97; animation-delay: 1.2s, 0.8s; animation-direction: normal,  normal; animation-duration: calc(var(--iridis-loader-duration) * 0.85), calc(var(--iridis-loader-duration) / 2); }
+.VPSidebar .iridis-loader__box:nth-child(4) { inset: 24%; z-index: 98; animation-delay: 1.8s, 1.2s; animation-direction: reverse, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.30), calc(var(--iridis-loader-duration) / 2); }
+.VPSidebar .iridis-loader__box:nth-child(5) { inset: 32%; z-index: 99; animation-delay: 2.4s, 1.6s; animation-direction: normal,  normal; animation-duration: calc(var(--iridis-loader-duration) * 0.70), calc(var(--iridis-loader-duration) / 2); }
 
 .VPSidebar .iridis-loader__logo {
   position: absolute;
-  inset: 22%;
+  inset: 24%;
   z-index: 100;
   background-image: url('/iridis/logo.png');
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  filter: drop-shadow(0 0 12px color-mix(in oklch, var(--iridis-brand) 55%, transparent));
+  filter: drop-shadow(0 0 10px color-mix(in oklch, var(--iridis-brand) 55%, transparent));
 }
 
-@keyframes iridis-loader-ripple {
-  0%   { transform: scale(1);    box-shadow: rgba(0, 0, 0, 0.30) 0px 10px 12px -2px, inset 0 1px 0 rgba(255, 255, 255, 0.05); }
-  50%  { transform: scale(1.18); box-shadow: rgba(0, 0, 0, 0.30) 0px 24px 22px -2px, inset 0 1px 0 rgba(255, 255, 255, 0.08); }
-  100% { transform: scale(1);    box-shadow: rgba(0, 0, 0, 0.30) 0px 10px 12px -2px, inset 0 1px 0 rgba(255, 255, 255, 0.05); }
+@keyframes iridis-loader-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes iridis-loader-pulse {
+  0%, 100% { opacity: 0.65; }
+  50%      { opacity: 1.0;  }
 }
 
-/* === Layout — make room for the right panel === */
+/* === Layout — full width, both bars hide-able === */
+/* No max-width on the doc container; the layout fills the viewport. */
 .VPDoc.has-aside .container {
-  max-width: 1600px;
+  max-width: 100%;
 }
 .VPDoc.has-aside .content {
-  /* Constrain the prose so the right panel doesn't overflow the viewport. */
-  max-width: 720px;
+  max-width: none;
+  padding: 0 2rem;
+}
+.VPDoc.has-aside .content-container {
+  max-width: 100%;
 }
 .VPDoc.has-aside .aside {
-  width: calc(var(--iridis-right-panel-width) + 1.5rem);
+  width: calc(var(--iridis-right-panel-width) + 2.25rem);
   padding-left: 1rem;
-  padding-right: 0.5rem;
-  max-width: calc(var(--iridis-right-panel-width) + 1.5rem);
+  padding-right: 1.25rem;
+  max-width: calc(var(--iridis-right-panel-width) + 2.25rem);
 }
 .VPDoc.has-aside .aside-container,
 .VPDoc.has-aside .aside-content {
@@ -191,16 +218,70 @@
   max-width: 100%;
 }
 
-/* On narrow viewports the aside collapses below the content. */
+/* Floating right-edge re-open handle when the right panel is collapsed.
+   The chevron inside .iridis-right always remains the canonical control;
+   collapsing it shrinks the column to ~2rem so the prose flexes wider. */
+
+/* === Left sidebar collapse — adds a "hide sidebar" toggle === */
+/* Vitepress already provides a mobile-only sidebar toggle. We add a
+   desktop-equivalent button at the top-left corner of the sidebar that
+   collapses it to a thin edge handle on click. */
+/* Fully hide the sidebar by sliding it off and reclaiming its column width
+   from the content. Uses position-absolute trick so vitepress's natural
+   layout pads from the sidebar's parent (.VPSidebarContainer is positioned
+   independently of the content's padding). */
+.VPSidebar {
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+html.iridis-sidebar-collapsed .VPSidebar {
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+html.iridis-sidebar-collapsed .VPContent.has-sidebar {
+  padding-left: 0 !important;
+}
+html.iridis-sidebar-collapsed .VPDoc {
+  padding-left: 1.5rem;
+}
+.VPContent.has-sidebar { transition: padding-left 220ms cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* Sidebar collapse-edge — a thin edge handle visible when collapsed. */
+.iridis-sidebar-toggle {
+  position: fixed;
+  top: calc(var(--vp-nav-height, 64px) + 0.6rem);
+  left: 0.4rem;
+  z-index: 25;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  background: color-mix(in oklch, var(--iridis-surface) 70%, var(--iridis-brand) 30%);
+  border: 1px solid color-mix(in oklch, var(--iridis-divider) 50%, var(--iridis-brand) 50%);
+  border-radius: 50%;
+  color: var(--iridis-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: transform 120ms, left 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+html:not(.iridis-sidebar-collapsed) .iridis-sidebar-toggle {
+  left: calc(var(--vp-sidebar-width) - 0.8rem);
+}
+.iridis-sidebar-toggle:hover {
+  transform: scale(1.08);
+  border-color: var(--iridis-brand);
+}
+
+/* On narrow viewports both panels stack: */
 @media (max-width: 1280px) {
   .VPDoc.has-aside .aside {
     width: 100%;
     max-width: none;
     padding-left: 0;
     padding-right: 0;
-  }
-  .VPDoc.has-aside .content {
-    max-width: none;
   }
   .VPDoc.has-aside .container {
     flex-direction: column;

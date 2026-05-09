@@ -8,9 +8,9 @@ import IridisCode      from './components/IridisCode.vue';
 import SchemaForm      from './components/SchemaForm.vue';
 import MultiOutputDemo from './components/MultiOutputDemo.vue';
 import TryItOutForm    from './components/TryItOutForm.vue';
-import IridisConfig    from './components/IridisConfig.vue';
 import RightPanel      from './components/RightPanel.vue';
 import SidebarToc      from './components/SidebarToc.vue';
+import SidebarToggle   from './components/SidebarToggle.vue';
 import { configStore } from './stores/configStore.ts';
 import { applyConfigToDocument } from './stores/applyConfigToDocument.ts';
 
@@ -81,8 +81,9 @@ export const theme: Theme = {
   Layout() {
     return h(DefaultTheme.Layout, null, {
       'sidebar-nav-before': () => logoBlock(),
-      'sidebar-nav-after':  () => h('div', null, [h(IridisConfig), h(SidebarToc)]),
+      'sidebar-nav-after':  () => h(SidebarToc),
       'aside-top':          () => h(RightPanel),
+      'layout-top':         () => h(SidebarToggle),
     });
   },
 };

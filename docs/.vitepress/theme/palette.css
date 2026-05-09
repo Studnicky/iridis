@@ -14,6 +14,19 @@
  */
 
 :root {
+  /* iridis spectrum (canonical 9-stop wheel — used by the wordmark gradient,
+     pulsing rings, and any "all the colors" decoration). Static; the user's
+     own seeds drive --iridis-brand and the cascading chrome tokens. */
+  --iridis-violet:  #7c3aed;
+  --iridis-indigo:  #4f46e5;
+  --iridis-blue:    #2563eb;
+  --iridis-teal:    #06b6d4;
+  --iridis-green:   #10b981;
+  --iridis-yellow:  #eab308;
+  --iridis-orange:  #f97316;
+  --iridis-red:     #ef4444;
+  --iridis-magenta: #ec4899;
+
   /* iridis-emitted tokens — fallback values until the engine runs */
   --iridis-background: #07060f;
   --iridis-surface:    #0f0d1c;
@@ -70,30 +83,30 @@
 .iridis-brand {
   background: linear-gradient(
     90deg,
-    #7c3aed 0%,
-    #4f46e5 12%,
-    #2563eb 25%,
-    #06b6d4 37%,
-    #10b981 50%,
-    #eab308 62%,
-    #f97316 75%,
-    #ef4444 87%,
-    #ec4899 100%
+    var(--iridis-violet)  0%,
+    var(--iridis-indigo)  12%,
+    var(--iridis-blue)    25%,
+    var(--iridis-teal)    37%,
+    var(--iridis-green)   50%,
+    var(--iridis-yellow)  62%,
+    var(--iridis-orange)  75%,
+    var(--iridis-red)     87%,
+    var(--iridis-magenta) 100%,
+    var(--iridis-violet)  120%
   );
-  background-size:         200% 100%;
+  background-size:         300% 100%;
   background-position:     0% 50%;
   -webkit-background-clip: text;
   background-clip:         text;
   -webkit-text-fill-color: transparent;
   color:                   transparent;
   font-weight:             600;
+  animation:               iridis-sweep 6s linear infinite;
 }
-.iridis-brand:hover {
-  animation: iridis-sweep 4s linear infinite;
-}
+.iridis-brand:hover { animation-duration: 1.5s; }
 @keyframes iridis-sweep {
   from { background-position:   0% 50%; }
-  to   { background-position: 200% 50%; }
+  to   { background-position: 300% 50%; }
 }
 code .iridis-brand,
 pre .iridis-brand {
@@ -105,6 +118,31 @@ pre .iridis-brand {
   font-weight:             inherit;
 }
 
+/* Navbar wordmark — "iridis" — gets the same spectrum sweep as
+   .iridis-brand. The siteTitle string is set in themeConfig and rendered
+   directly by vitepress's <VPNavBarTitle>; we paint it via CSS. */
 .VPNavBarTitle .title {
+  background: linear-gradient(
+    90deg,
+    var(--iridis-violet)  0%,
+    var(--iridis-indigo)  12%,
+    var(--iridis-blue)    25%,
+    var(--iridis-teal)    37%,
+    var(--iridis-green)   50%,
+    var(--iridis-yellow)  62%,
+    var(--iridis-orange)  75%,
+    var(--iridis-red)     87%,
+    var(--iridis-magenta) 100%,
+    var(--iridis-violet)  120%
+  );
+  background-size:         300% 100%;
+  background-position:     0% 50%;
+  -webkit-background-clip: text;
+  background-clip:         text;
+  -webkit-text-fill-color: transparent;
+  color:                   transparent;
   letter-spacing: 0.01em;
+  font-weight: 700;
+  animation: iridis-sweep 6s linear infinite;
 }
+.VPNavBarTitle:hover .title { animation-duration: 1.5s; }
