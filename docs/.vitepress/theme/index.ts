@@ -8,31 +8,21 @@ import IridisCode      from './components/IridisCode.vue';
 import SchemaForm      from './components/SchemaForm.vue';
 import MultiOutputDemo from './components/MultiOutputDemo.vue';
 import TryItOutForm    from './components/TryItOutForm.vue';
+import IridisConfig    from './components/IridisConfig.vue';
+import RightPanel      from './components/RightPanel.vue';
+import SidebarToc      from './components/SidebarToc.vue';
 import { configStore } from './stores/configStore.ts';
 import { applyConfigToDocument } from './stores/applyConfigToDocument.ts';
 
 import './palette.css';
 import './base.css';
 
-/**
- * Bidirectional bridge between vitepress's html.dark class (set by the
- * theme toggle in the navbar) and configStore.framing.
- *
- * - On html.dark mutation → set configStore.framing
- * - On configStore.framing mutation → toggle html.dark
- *
- * The two writers are guarded against re-entrant loops by checking the
- * current value before writing.
- */
 function bindFramingToVitepressTheme(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   const html = document.documentElement;
 
-  // Initial sync: vitepress decides the framing on first load (system pref
-  // or stored toggle); honor that, override the persisted iridis framing.
   configStore.framing = html.classList.contains('dark') ? 'dark' : 'light';
 
-  // html.dark → configStore.framing
   const observer = new MutationObserver(() => {
     const next = html.classList.contains('dark') ? 'dark' : 'light';
     if (configStore.framing !== next) {
@@ -41,7 +31,6 @@ function bindFramingToVitepressTheme(): void {
   });
   observer.observe(html, { 'attributes': true, 'attributeFilter': ['class'] });
 
-  // configStore.framing → html.dark
   watch(
     () => configStore.framing,
     (framing) => {
@@ -52,6 +41,22 @@ function bindFramingToVitepressTheme(): void {
       }
     },
   );
+}
+
+/**
+ * Logo block: five concentric rounded boxes (per uiverse loader pattern)
+ * with the brand image at the center. CSS in base.css drives the ripple
+ * animation and the colored borders sourced from --iridis-brand.
+ */
+function logoBlock(): unknown {
+  return h('div', { 'class': 'iridis-loader', 'aria-hidden': 'true' }, [
+    h('div', { 'class': 'iridis-loader__box' }),
+    h('div', { 'class': 'iridis-loader__box' }),
+    h('div', { 'class': 'iridis-loader__box' }),
+    h('div', { 'class': 'iridis-loader__box' }),
+    h('div', { 'class': 'iridis-loader__box' }),
+    h('div', { 'class': 'iridis-loader__logo' }),
+  ]);
 }
 
 export const theme: Theme = {
@@ -75,10 +80,9 @@ export const theme: Theme = {
   },
   Layout() {
     return h(DefaultTheme.Layout, null, {
-      'sidebar-nav-before': () => h('div', {
-        'class':       'iridis-sidebar-icon',
-        'aria-hidden': 'true',
-      }),
+      'sidebar-nav-before': () => logoBlock(),
+      'sidebar-nav-after':  () => h('div', null, [h(IridisConfig), h(SidebarToc)]),
+      'aside-top':          () => h(RightPanel),
     });
   },
 };

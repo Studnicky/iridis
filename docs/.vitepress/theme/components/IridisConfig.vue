@@ -2,13 +2,11 @@
 /**
  * IridisConfig.vue
  *
- * Sidebar accordion containing the global docs configuration form. Mounted
- * into the sidebar-nav-after slot so it sits below the navigation links.
- *
- * The accordion is closed by default to keep the sidebar quiet. Opening it
- * exposes the SchemaForm bound to the global config store. Every change
- * propagates through the store via reactivity, hits localStorage on the
- * next tick, and re-runs every IridisDemo on the page.
+ * Sidebar accordion holding the global docs configuration. Mounts via
+ * sidebar-nav-after slot. The right-panel <IridisDemo> picks colors via
+ * its in-place picker; this accordion exposes the broader knobs (framing,
+ * contrast level, role schema, color space) that don't have inline
+ * controls in the demo.
  */
 
 import { ref } from 'vue';
@@ -22,7 +20,7 @@ const open = ref(false);
 
 <template>
   <ClientOnly>
-    <section class="iridis-config" :class="{ 'iridis-config--open': open }">
+    <section :class="['iridis-config', { 'iridis-config--open': open }]">
       <button
         class="iridis-config__toggle"
         type="button"
@@ -30,13 +28,12 @@ const open = ref(false);
         aria-controls="iridis-config-panel"
         @click="open = !open"
       >
-        <span class="iridis-config__toggle-text">Configure docs</span>
-        <span class="iridis-config__toggle-chevron" aria-hidden="true">{{ open ? '▾' : '▸' }}</span>
+        <span class="iridis-config__chevron" aria-hidden="true">{{ open ? '▾' : '▸' }}</span>
+        <span class="iridis-config__label">Configuration</span>
       </button>
-
       <div v-show="open" id="iridis-config-panel" class="iridis-config__panel">
         <p class="iridis-config__intro">
-          Your settings drive every live demo on this site and persist across pages.
+          Drives every demo on every page and the docs theme.
         </p>
         <SchemaForm :schema="docsConfigSchema" :model-value="configStore" />
         <button class="iridis-config__reset" type="button" @click="resetConfig">
@@ -49,34 +46,29 @@ const open = ref(false);
 
 <style scoped>
 .iridis-config {
-  margin: 1rem 0 1.5rem;
-  padding: 0.75rem 0 0;
-  border-top: 1px solid var(--vp-c-divider);
+  margin: 0.4rem 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in oklch, var(--vp-c-divider) 50%, transparent);
 }
 .iridis-config__toggle {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.4rem 0;
+  gap: 0.4rem;
+  padding: 0.35rem 0;
   background: transparent;
   border: 0;
   cursor: pointer;
-  color: var(--vp-c-text-2);
+  color: var(--vp-c-text-3);
 }
-.iridis-config__toggle-text {
-  font-size: 0.72rem;
+.iridis-config__chevron { font-size: 0.7rem; }
+.iridis-config__label {
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.iridis-config__toggle-chevron {
-  font-size: 0.7rem;
-  color: var(--vp-c-text-3);
-}
-.iridis-config__toggle:hover {
-  color: var(--vp-c-brand-1);
-}
+.iridis-config__toggle:hover { color: var(--vp-c-brand-1); }
 .iridis-config__panel {
   margin-top: 0.5rem;
   padding: 0.65rem 0 0;

@@ -33,6 +33,10 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 - `getOrCreateOutput<T>(state, key)` helper hoisted to core (`@studnicky/iridis/model`). Replaces the duplicated 5-line "fetch-or-init the named output slot" pattern that had accumulated across vscode plugin emit tasks.
 - `EmitVscodeUiPalette` defect fixed: the task was calling `ctx.math.invoke('luminance', hex)` with a hex string, but `Luminance.apply` requires a `ColorRecordInterface` and threw at runtime. The task now resolves the role to its `ColorRecord` and passes that directly. The framing-detection codepath is functional again.
 - Architecture review + cleanup pass landed: `outstanding.md` rewritten to reflect verified-shipped state (engine ready for publish, docs site live and dogfooding the engine) vs. queued plugin work.
+- Two-panel layout: collapsible left sidebar (nav + Configuration accordion + On this page accordion) + collapsible right panel (persistent example builder running the canonical full pipeline). Vitepress's right-rail outline disabled; `<SidebarToc>` walks the live DOM (`.vp-doc h2/h3`) and re-binds on route change. `<RightPanel>` mounts via the `aside-top` slot.
+- Example mechanism unified — every page now shares the same `<IridisDemo>` instance via the right panel; per-page `<IridisDemo>` embeds removed (they were duplicating the panel's output and on `concepts/pipeline.md` showed three near-identical demos).
+- Pulsing concentric-rings logo treatment (uiverse loader pattern) replaces the static rounded-square. Five backdrop-filter-blurred rings with brand-color borders ripple at 5s ease-in-out around the iridescent eye, which gets a violet drop-shadow.
+- Depth + edges + glass treatment: tokenized `--iridis-shadow-{sm,md,lg}` and `--iridis-edge-soft`; gradient surfaces on code blocks, custom blocks, blockquotes, VPFeature; `color-mix(in oklch, ...)` everywhere instead of hardcoded rgba; `backdrop-filter: blur` on translucent panels.
 
 ### Roadmap
 
