@@ -1,9 +1,11 @@
 import type {
+  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { getOrCreateOutput } from '@studnicky/iridis';
 
 /**
  * Derives all 101 VS Code workbench colors from the 16-role palette.
@@ -15,24 +17,15 @@ import type {
 
 interface VscodeOutputInterface {
   'workbenchColors'?: Record<string, string>;
+  [key: string]: unknown;
 }
 
-function getVscodeOutput(state: PaletteStateInterface): VscodeOutputInterface {
-  const existing = state.outputs['vscode'];
-  if (existing !== null && typeof existing === 'object') {
-    return existing as VscodeOutputInterface;
-  }
-  const out: VscodeOutputInterface = {};
-  (state.outputs as Record<string, unknown>)['vscode'] = out;
-  return out;
-}
-
-function getRoleHex(state: PaletteStateInterface, role: string): string {
-  const record = state.roles[role];
+function getRole(state: PaletteStateInterface, name: string): ColorRecordInterface {
+  const record = state.roles[name];
   if (!record) {
-    throw new Error(`EmitVscodeUiPalette: role '${role}' not found in state.roles`);
+    throw new Error(`EmitVscodeUiPalette: role '${name}' not found in state.roles`);
   }
-  return record.hex;
+  return record;
 }
 
 export class EmitVscodeUiPalette implements TaskInterface {
@@ -46,20 +39,33 @@ export class EmitVscodeUiPalette implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const bg      = getRoleHex(state, 'background');
-    const fg      = getRoleHex(state, 'foreground');
-    const accent  = getRoleHex(state, 'keyword');
-    const muted   = getRoleHex(state, 'muted');
-    const surface = getRoleHex(state, 'surface');
-    const error   = getRoleHex(state, 'error');
-    const info    = getRoleHex(state, 'info');
-    const success = getRoleHex(state, 'success');
-    const warning = getRoleHex(state, 'warning');
-    const fn_     = getRoleHex(state, 'function');
-    const type_   = getRoleHex(state, 'type');
+    const bgRole      = getRole(state, 'background');
+    const fgRole      = getRole(state, 'foreground');
+    const accentRole  = getRole(state, 'keyword');
+    const mutedRole   = getRole(state, 'muted');
+    const surfaceRole = getRole(state, 'surface');
+    const errorRole   = getRole(state, 'error');
+    const infoRole    = getRole(state, 'info');
+    const successRole = getRole(state, 'success');
+    const warningRole = getRole(state, 'warning');
+    const fnRole      = getRole(state, 'function');
+    const typeRole    = getRole(state, 'type');
 
-    // Theme type: luminance > 0.5 → light
-    const bgLum = ctx.math.invoke<number>('luminance', bg);
+    const bg      = bgRole.hex;
+    const fg      = fgRole.hex;
+    const accent  = accentRole.hex;
+    const muted   = mutedRole.hex;
+    const surface = surfaceRole.hex;
+    const error   = errorRole.hex;
+    const info    = infoRole.hex;
+    const success = successRole.hex;
+    const warning = warningRole.hex;
+    const fn_     = fnRole.hex;
+    const type_   = typeRole.hex;
+
+    // Theme type: luminance > 0.5 → light. Pass the ColorRecord; Luminance
+    // requires it (hex strings would throw).
+    const bgLum   = ctx.math.invoke<number>('luminance', bgRole);
     const isLight = bgLum > 0.5;
 
     const mixHsl = (a: string, b: string, w: number): string =>
@@ -183,7 +189,7 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'warningForeground':                             warning,
     };
 
-    const out = getVscodeOutput(state);
+    const out = getOrCreateOutput<VscodeOutputInterface>(state, 'vscode');
     out['workbenchColors'] = workbenchColors;
     ctx.logger.debug(
       'EmitVscodeUiPalette',

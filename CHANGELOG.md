@@ -30,6 +30,9 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 - New `Try it out` page consolidates the configuration form alongside one comprehensive demo. Wired into the sidebar right after `Getting started`. Replaces the prior sidebar-mounted accordion.
 - Vitepress dark/light toggle in the navbar is now bidirectionally bound to `configStore.framing` via a MutationObserver on `html.dark` and a watcher on the framing field. Flipping the theme toggles iridis's clamp envelopes for every chrome and syntax token in one paint.
 - Cascading syntax-highlight tokens: 14 new syntax roles in `docsThemeSchema` (`syntaxText`, `syntaxKeyword`, `syntaxString`, `syntaxFunction`, `syntaxType`, `syntaxConstant`, `syntaxComment`, `syntaxNumber`, `syntaxEscape`, `syntaxProperty`, `syntaxTag`, `syntaxPunctuation`, `syntaxVariable`, `syntaxError`) emitted as `--iridis-syntax-*` CSS custom properties. A custom Shiki theme (`shikiTheme.ts`) hardcodes those `var()` references so code blocks recolor in step with the chrome.
+- `getOrCreateOutput<T>(state, key)` helper hoisted to core (`@studnicky/iridis/model`). Replaces the duplicated 5-line "fetch-or-init the named output slot" pattern that had accumulated across vscode plugin emit tasks.
+- `EmitVscodeUiPalette` defect fixed: the task was calling `ctx.math.invoke('luminance', hex)` with a hex string, but `Luminance.apply` requires a `ColorRecordInterface` and threw at runtime. The task now resolves the role to its `ColorRecord` and passes that directly. The framing-detection codepath is functional again.
+- Architecture review + cleanup pass landed: `outstanding.md` rewritten to reflect verified-shipped state (engine ready for publish, docs site live and dogfooding the engine) vs. queued plugin work.
 
 ### Roadmap
 
