@@ -2,13 +2,15 @@ import { defineConfig } from 'vitepress';
 
 import { iridisBrandPlugin } from './plugins/iridis-brand.mjs';
 import { themeConfig }       from './theme.config.js';
+import { iridisShikiTheme }  from './theme/shikiTheme.ts';
 
 const sidebar = [
   {
     'text':  'Introduction',
     'items': [
-      { 'link': '/',                'text': 'What it does'   },
+      { 'link': '/',                'text': 'What it does'    },
       { 'link': '/getting-started', 'text': 'Getting started' },
+      { 'link': '/try-it-out',      'text': 'Try it out'      },
     ],
   },
   {
@@ -42,7 +44,10 @@ export default defineConfig({
   'description': 'Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced.',
   'srcDir':      '.',
   'srcExclude':  ['internal/**', 'internal/*.md'],
-  'markdown':    { 'config': (md) => { md.use(iridisBrandPlugin); } },
+  'markdown':    {
+    'config': (md) => { md.use(iridisBrandPlugin); },
+    'theme':  { 'light': iridisShikiTheme as never, 'dark': iridisShikiTheme as never },
+  },
   'head': [
     ['link', { 'rel': 'icon',        'type': 'image/png',   'href': '/iridis/logo.png' }],
     ['meta', { 'name': 'theme-color', 'content': '#7c3aed' }],

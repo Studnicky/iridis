@@ -54,7 +54,7 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
     const r          = state.roles;
     const root       = document.documentElement;
 
-    // Layer 1 — iridis-emitted tokens. These are the source of truth.
+    // Chrome tokens — source of truth for the docs theme.
     setIridis(root, '--iridis-background', r['background']!.hex);
     setIridis(root, '--iridis-surface',    r['surface']!.hex);
     setIridis(root, '--iridis-bg-soft',    r['bgSoft']!.hex);
@@ -63,6 +63,21 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
     setIridis(root, '--iridis-text',       r['text']!.hex);
     setIridis(root, '--iridis-brand',      r['brand']!.hex);
     setIridis(root, '--iridis-on-brand',   r['onBrand']!.hex);
+
+    // Syntax tokens — consumed by the iridis Shiki theme so code blocks
+    // recolor in step with the chrome on every config change.
+    const syntaxRoles = [
+      'syntaxText', 'syntaxComment', 'syntaxKeyword', 'syntaxString',
+      'syntaxNumber', 'syntaxFunction', 'syntaxType', 'syntaxConstant',
+      'syntaxVariable', 'syntaxProperty', 'syntaxTag', 'syntaxPunctuation',
+      'syntaxEscape', 'syntaxError',
+    ] as const;
+    for (const name of syntaxRoles) {
+      const rec = r[name];
+      if (rec) {
+        setIridis(root, `--iridis-${kebab(name)}`, rec.hex);
+      }
+    }
 
     // Reflect framing for any framing-aware CSS hooks.
     root.dataset['iridisFraming'] = config.framing;
@@ -73,4 +88,8 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
 
 function setIridis(root: HTMLElement, name: string, value: string): void {
   root.style.setProperty(name, value);
+}
+
+function kebab(camel: string): string {
+  return camel.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`);
 }

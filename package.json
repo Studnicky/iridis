@@ -7,11 +7,11 @@
   ],
   "scripts": {
     "typecheck": "tsc --build",
-    "test":      "npm -ws run test --if-present",
-    "build":     "echo 'iridis ships source — no build step. Use typecheck.'",
-    "clean":     "find packages -name dist -type d -exec rm -rf {} + ; rm -f packages/*/tsconfig.tsbuildinfo",
-    "docs:dev":     "vitepress dev docs",
-    "docs:build":   "vitepress build docs",
+    "test": "npm -ws run test --if-present",
+    "build": "echo 'iridis ships source — no build step. Use typecheck.'",
+    "clean": "find packages -name dist -type d -exec rm -rf {} + ; rm -f packages/*/tsconfig.tsbuildinfo",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {

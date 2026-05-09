@@ -22,11 +22,10 @@ Open the **Configure docs** accordion in the sidebar to set your seed colors, fr
 
 ## Live: full pipeline
 
-This demo runs the canonical pipeline end-to-end against your sidebar config: intake → clamp → resolve roles → expand → enforce contrast → derive variants.
+The full canonical pipeline running against your seeds: intake → clamp → resolve roles → expand → enforce contrast → derive variants. Head to **[Try it out](/try-it-out)** for the configuration form alongside the same demo. Edits propagate to every demo on the site and the docs theme itself.
 
 <IridisDemo
   :pipeline="['intake:hex', 'clamp:count', 'resolve:roles', 'expand:family', 'enforce:contrast', 'derive:variant', 'emit:json']"
-  :show-json="true"
 />
 
 <IridisCode label="Code behind this demo">

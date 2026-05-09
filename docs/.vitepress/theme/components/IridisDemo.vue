@@ -1,49 +1,63 @@
 <script setup lang="ts">
 /**
- * IridisDemo.vue
+ * IridisDemo.vue — split-column live engine demo.
  *
- * Live engine instance for embedding in markdown pages. Each demo carries
- * its own color picker row backed directly by the global config store —
- * any picker on any demo (or in the sidebar accordion) is editing the same
- * seedColors array. Changes propagate everywhere: every other demo on the
- * page re-runs, the docs theme recomputes, and localStorage persists.
+ * Layout:
+ *   ┌──────────────────────┬──────────────────────────┐
+ *   │ SEEDS (left)         │ OKLCH PICKER (right)     │
+ *   │ click to select      │ for the selected seed    │
+ *   ├──────────────────────┴──────────────────────────┤
+ *   │ Tabs:                                            │
+ *   │   • Roles schema   — JSON, editable in-line      │
+ *   │   • Resolved roles — swatch grid (read-only)     │
+ *   │   • Code           — TS that updates as you edit │
+ *   └──────────────────────────────────────────────────┘
  *
- * + add color appends a slot AND immediately opens the native color picker
- * for it so the user picks the color they're adding in one gesture.
+ * Editable surfaces (Roles schema textarea + colors[] in Code tab) are
+ * validated via json-tology against canonical schemas. Invalid edits do
+ * not propagate; the prior valid state stays in effect and an error
+ * banner surfaces the validation reason. Valid edits mutate configStore
+ * and propagate to every other demo + the docs theme on the next tick.
  */
 
-import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { Engine, mathBuiltins, coreTasks, contrastWcag21, colorRecordFactory } from '@studnicky/iridis';
 import type {
   ColorRecordInterface,
   InputInterface,
   PaletteStateInterface,
+  RoleSchemaInterface,
 } from '@studnicky/iridis/model';
 
-import { configStore }      from '../stores/configStore.ts';
+import IridisPicker        from './IridisPicker.vue';
+import { configStore }     from '../stores/configStore.ts';
 import { roleSchemaByName } from '../schemas/roleSchemas.ts';
+import { validateColorsArray, validateRoleSchema } from '../validators/inlineValidation.ts';
 
 const props = withDefaults(defineProps<{
   'pipeline':       readonly string[];
-  'showColors'?:    boolean;
   'showRoles'?:     boolean;
-  'showJson'?:      boolean;
   'allowAdd'?:      boolean;
   'minColors'?:     number;
   'maxColors'?:     number;
 }>(), {
-  'showColors': true,
   'showRoles':  true,
-  'showJson':   false,
   'allowAdd':   true,
   'minColors':  1,
   'maxColors':  8,
 });
 
-const pickersRef = useTemplateRef<HTMLElement>('pickersRef');
-const state = ref<PaletteStateInterface | null>(null);
-const error = ref<string | null>(null);
+const state         = ref<PaletteStateInterface | null>(null);
+const error         = ref<string | null>(null);
+const selectedSeed  = ref<number>(0);
+const activeTab     = ref<'schema' | 'resolved' | 'code'>('resolved');
+
+// Editable in-line state (Roles schema text + colors text)
+const localRoleSchemaText = ref<string>('');
+const localColorsText     = ref<string>('');
+const schemaError         = ref<string | null>(null);
+const colorsError         = ref<string | null>(null);
 
 function buildInput(): InputInterface {
   const schema = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal'];
@@ -75,7 +89,10 @@ async function runPipeline(): Promise<void> {
   }
 }
 
-onMounted(() => { runPipeline(); });
+onMounted(() => {
+  syncEditableFromConfig();
+  runPipeline();
+});
 
 watch(
   () => [
@@ -87,9 +104,18 @@ watch(
     configStore.roleSchema,
     props.pipeline,
   ],
-  () => runPipeline(),
+  () => {
+    syncEditableFromConfig();
+    runPipeline();
+  },
   { 'deep': true },
 );
+
+function syncEditableFromConfig(): void {
+  const schema = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal'];
+  localRoleSchemaText.value = JSON.stringify(schema, null, 2);
+  localColorsText.value     = JSON.stringify(configStore.seedColors, null, 2);
+}
 
 function setColor(idx: number, value: string): void {
   const next = [...configStore.seedColors];
@@ -97,27 +123,10 @@ function setColor(idx: number, value: string): void {
   configStore.seedColors = next;
 }
 
-async function addColor(): Promise<void> {
+function addColor(): void {
   if (configStore.seedColors.length >= props.maxColors) return;
-  // Append a fresh slot and immediately open the OS picker for it so the
-  // user picks the color they're adding in a single gesture.
   configStore.seedColors = [...configStore.seedColors, '#888888'];
-  const newIdx = configStore.seedColors.length - 1;
-  await nextTick();
-  const root = pickersRef.value;
-  if (!root) return;
-  const input = root.querySelector<HTMLInputElement>(`input[data-idx="${newIdx}"]`);
-  if (input) {
-    input.focus();
-    // showPicker() triggers the native color dialog where supported (Chrome,
-    // Edge, Safari TP, Firefox 101+). Falls back to .click() which also
-    // opens the picker on most browsers.
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-    } else {
-      input.click();
-    }
-  }
+  selectedSeed.value = configStore.seedColors.length - 1;
 }
 
 function removeColor(idx: number): void {
@@ -125,51 +134,171 @@ function removeColor(idx: number): void {
   const next = [...configStore.seedColors];
   next.splice(idx, 1);
   configStore.seedColors = next;
+  if (selectedSeed.value >= configStore.seedColors.length) {
+    selectedSeed.value = Math.max(0, configStore.seedColors.length - 1);
+  }
 }
 
-const colors  = computed(() => state.value?.colors ?? []);
+function selectSeed(idx: number): void {
+  selectedSeed.value = idx;
+}
+
+function onPickerUpdate(value: string): void {
+  setColor(selectedSeed.value, value);
+}
+
+// === Inline editor: Role schema textarea ===
+function onRoleSchemaInput(e: Event): void {
+  const text = (e.target as HTMLTextAreaElement).value;
+  localRoleSchemaText.value = text;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (err) {
+    schemaError.value = `JSON parse: ${err instanceof Error ? err.message : String(err)}`;
+    return;
+  }
+  const err = validateRoleSchema(parsed);
+  if (err !== null) {
+    schemaError.value = err;
+    return;
+  }
+  schemaError.value = null;
+  // Valid → register the new schema under its name and switch to it so it
+  // propagates through the configStore-driven pipeline.
+  const inline = parsed as RoleSchemaInterface;
+  (roleSchemaByName as Record<string, RoleSchemaInterface>)[inline.name] = inline;
+  configStore.roleSchema = inline.name;
+}
+
+// === Inline editor: colors textarea (Code tab) ===
+function onColorsInput(e: Event): void {
+  const text = (e.target as HTMLTextAreaElement).value;
+  localColorsText.value = text;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (err) {
+    colorsError.value = `JSON parse: ${err instanceof Error ? err.message : String(err)}`;
+    return;
+  }
+  const err = validateColorsArray(parsed);
+  if (err !== null) {
+    colorsError.value = err;
+    return;
+  }
+  colorsError.value = null;
+  configStore.seedColors = [...(parsed as string[])];
+}
+
+// === Computed views ===
 const roles   = computed(() => state.value?.roles  ?? {} as Record<string, ColorRecordInterface>);
-const outputsJson = computed(() => state.value === null ? '' : JSON.stringify(state.value.outputs, null, 2));
 const canAdd    = computed(() => props.allowAdd && configStore.seedColors.length < props.maxColors);
 const canRemove = computed(() => configStore.seedColors.length > props.minColors);
+const selectedHex = computed(() => configStore.seedColors[selectedSeed.value] ?? '#888888');
 
-const jsonOpen = ref(false);
+function backgroundRole(): ColorRecordInterface | null {
+  const r = roles.value;
+  return r['background'] ?? r['canvas'] ?? r['surface'] ?? null;
+}
+
+function contrastFor(role: ColorRecordInterface): number | null {
+  const bg = backgroundRole();
+  if (!bg || bg === role) return null;
+  return contrastWcag21.apply(role, bg) as number;
+}
+
+function contrastBadge(ratio: number | null): string {
+  if (ratio === null) return '';
+  if (ratio >= 7)   return 'AAA';
+  if (ratio >= 4.5) return 'AA';
+  if (ratio >= 3)   return 'AA-Lg';
+  return 'fail';
+}
+
+function fmtOklch(c: ColorRecordInterface): string {
+  return `L ${c.oklch.l.toFixed(2)} · C ${c.oklch.c.toFixed(2)} · H ${Math.round(c.oklch.h)}`;
+}
+
+function safeOnRoleColor(role: ColorRecordInterface): string {
+  const white = colorRecordFactory.fromHex('#ffffff');
+  const black = colorRecordFactory.fromHex('#000000');
+  const onWhite = contrastWcag21.apply(white, role) as number;
+  const onBlack = contrastWcag21.apply(black, role) as number;
+  return onWhite >= onBlack ? '#ffffff' : '#0a0a0a';
+}
+
+const codeText = computed(() => {
+  const colors = JSON.stringify(configStore.seedColors);
+  const lines: string[] = [
+    "import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';",
+    "",
+    "const engine = new Engine();",
+    "for (const m of mathBuiltins) engine.math.register(m);",
+    "for (const t of coreTasks)    engine.tasks.register(t);",
+    "",
+    `engine.pipeline(${JSON.stringify([...props.pipeline], null, 2).replace(/\n/g, '\n  ')});`,
+    "",
+    "const state = await engine.run({",
+    `  'colors':   ${colors},`,
+    "  'roles':    yourRoleSchema,",
+    `  'contrast': { 'level': '${configStore.contrastLevel}', 'algorithm': '${configStore.contrastAlgorithm}' },`,
+    `  'runtime':  { 'framing': '${configStore.framing}', 'colorSpace': '${configStore.colorSpace}' },`,
+    "});",
+    "",
+    "console.log(state.roles);",
+  ];
+  return lines.join('\n');
+});
 </script>
 
 <template>
   <ClientOnly>
     <div class="iridis-demo">
-      <!-- Input row: pickers edit configStore.seedColors directly -->
-      <div class="iridis-demo__input">
-        <div class="iridis-demo__input-header">
-          <span class="iridis-demo__label">Seeds ({{ configStore.seedColors.length }})</span>
-          <span class="iridis-demo__hint">edits propagate to every demo + the docs theme</span>
-        </div>
-        <div ref="pickersRef" class="iridis-demo__pickers">
-          <div v-for="(color, idx) in configStore.seedColors" :key="idx" class="iridis-demo__picker">
-            <input
-              type="color"
-              :data-idx="idx"
-              :value="color"
-              :aria-label="`seed ${idx + 1}`"
-              @input="setColor(idx, ($event.target as HTMLInputElement).value)"
-            />
-            <code class="iridis-demo__picker-hex">{{ color }}</code>
-            <button
-              type="button"
-              class="iridis-demo__remove"
-              :disabled="!canRemove"
-              :aria-label="`remove seed ${idx + 1}`"
-              @click="removeColor(idx)"
-            >×</button>
+      <!-- Top: split column. Seeds left, picker right. -->
+      <div class="iridis-demo__top">
+        <div class="iridis-demo__seeds">
+          <div class="iridis-demo__col-header">
+            <span class="iridis-demo__label">Seeds ({{ configStore.seedColors.length }})</span>
+            <span class="iridis-demo__hint">click to edit</span>
           </div>
-          <button
-            v-if="allowAdd"
-            type="button"
-            class="iridis-demo__add"
-            :disabled="!canAdd"
-            @click="addColor"
-          >+ add color</button>
+          <div class="iridis-demo__seed-grid">
+            <button
+              v-for="(color, idx) in configStore.seedColors"
+              :key="idx"
+              type="button"
+              :class="['iridis-demo__seed', { 'iridis-demo__seed--selected': selectedSeed === idx }]"
+              :aria-label="`select seed ${idx + 1} (${color})`"
+              :aria-pressed="selectedSeed === idx"
+              @click="selectSeed(idx)"
+            >
+              <span class="iridis-demo__seed-chip" :style="{ background: color }" />
+              <code class="iridis-demo__seed-hex">{{ color }}</code>
+              <span
+                v-if="canRemove"
+                class="iridis-demo__seed-remove"
+                role="button"
+                tabindex="-1"
+                :aria-label="`remove seed ${idx + 1}`"
+                @click.stop="removeColor(idx)"
+              >×</span>
+            </button>
+            <button
+              v-if="allowAdd"
+              type="button"
+              class="iridis-demo__seed-add"
+              :disabled="!canAdd"
+              @click="addColor"
+            >+ add</button>
+          </div>
+        </div>
+
+        <div class="iridis-demo__picker">
+          <div class="iridis-demo__col-header">
+            <span class="iridis-demo__label">Picker</span>
+            <span class="iridis-demo__hint">seed {{ selectedSeed + 1 }}</span>
+          </div>
+          <IridisPicker :model-value="selectedHex" @update:model-value="onPickerUpdate" />
         </div>
       </div>
 
@@ -177,23 +306,33 @@ const jsonOpen = ref(false);
         <strong>Pipeline error:</strong> {{ error }}
       </div>
 
-      <div v-if="showColors && colors.length > 0" class="iridis-demo__section">
-        <div class="iridis-demo__label">Canonical colors ({{ colors.length }})</div>
-        <div class="iridis-demo__strip">
-          <div
-            v-for="(c, i) in colors"
-            :key="i"
-            class="iridis-demo__chip"
-            :style="{ background: c.hex }"
-            :title="c.hex + ' • L=' + c.oklch.l.toFixed(3) + ' C=' + c.oklch.c.toFixed(3) + ' H=' + Math.round(c.oklch.h)"
-          >
-            <span class="iridis-demo__chip-label">{{ c.hex }}</span>
-          </div>
-        </div>
+      <!-- Bottom: tabs -->
+      <div class="iridis-demo__tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          :class="['iridis-demo__tab', { 'iridis-demo__tab--active': activeTab === 'resolved' }]"
+          :aria-selected="activeTab === 'resolved'"
+          @click="activeTab = 'resolved'"
+        >Resolved roles</button>
+        <button
+          type="button"
+          role="tab"
+          :class="['iridis-demo__tab', { 'iridis-demo__tab--active': activeTab === 'schema' }]"
+          :aria-selected="activeTab === 'schema'"
+          @click="activeTab = 'schema'"
+        >Role schema</button>
+        <button
+          type="button"
+          role="tab"
+          :class="['iridis-demo__tab', { 'iridis-demo__tab--active': activeTab === 'code' }]"
+          :aria-selected="activeTab === 'code'"
+          @click="activeTab = 'code'"
+        >Code</button>
       </div>
 
-      <div v-if="showRoles && Object.keys(roles).length > 0" class="iridis-demo__section">
-        <div class="iridis-demo__label">Resolved roles</div>
+      <!-- Tab: Resolved roles -->
+      <div v-show="activeTab === 'resolved' && Object.keys(roles).length > 0" class="iridis-demo__panel">
         <div class="iridis-demo__roles">
           <div
             v-for="(c, name) in roles"
@@ -201,17 +340,58 @@ const jsonOpen = ref(false);
             class="iridis-demo__role"
             :style="{ background: c.hex }"
           >
-            <span class="iridis-demo__role-name">{{ name }}</span>
-            <span class="iridis-demo__role-hex">{{ c.hex }}</span>
+            <div class="iridis-demo__role-head">
+              <span class="iridis-demo__role-name" :style="{ color: safeOnRoleColor(c) }">{{ name }}</span>
+              <span
+                v-if="contrastFor(c) !== null"
+                class="iridis-demo__role-badge"
+                :style="{ color: safeOnRoleColor(c), borderColor: safeOnRoleColor(c) + '55' }"
+                :title="`contrast vs background: ${contrastFor(c)?.toFixed(2)}:1`"
+              >{{ contrastBadge(contrastFor(c)) }}</span>
+            </div>
+            <span class="iridis-demo__role-hex" :style="{ color: safeOnRoleColor(c) }">{{ c.hex }}</span>
+            <span class="iridis-demo__role-coords" :style="{ color: safeOnRoleColor(c) + 'b0' }">{{ fmtOklch(c) }}</span>
           </div>
         </div>
       </div>
 
-      <div v-if="showJson && state" class="iridis-demo__section">
-        <button class="iridis-demo__json-toggle" type="button" @click="jsonOpen = !jsonOpen">
-          {{ jsonOpen ? '▾' : '▸' }} state.outputs
-        </button>
-        <pre v-show="jsonOpen" class="iridis-demo__json"><code>{{ outputsJson }}</code></pre>
+      <!-- Tab: Role schema (editable) -->
+      <div v-show="activeTab === 'schema'" class="iridis-demo__panel">
+        <div class="iridis-demo__editor-hint">
+          Edit the role schema. Validates against <code>RoleSchemaSchema</code> via json-tology — invalid edits do not propagate.
+        </div>
+        <textarea
+          class="iridis-demo__textarea"
+          :class="{ 'iridis-demo__textarea--invalid': schemaError !== null }"
+          :value="localRoleSchemaText"
+          spellcheck="false"
+          rows="14"
+          @input="onRoleSchemaInput"
+        />
+        <div v-if="schemaError" class="iridis-demo__validation">
+          {{ schemaError }}
+        </div>
+      </div>
+
+      <!-- Tab: Code (mostly read-only, with an editable colors block) -->
+      <div v-show="activeTab === 'code'" class="iridis-demo__panel">
+        <div class="iridis-demo__editor-hint">
+          Boilerplate updates as you edit. The <code>colors</code> array is editable and validates against
+          <code>{ minItems: 1, maxItems: 8, items: hex }</code>. Other lines are derived from your sidebar config.
+        </div>
+        <pre class="iridis-demo__code"><code>{{ codeText }}</code></pre>
+        <label class="iridis-demo__editor-label">colors (editable)</label>
+        <textarea
+          class="iridis-demo__textarea iridis-demo__textarea--colors"
+          :class="{ 'iridis-demo__textarea--invalid': colorsError !== null }"
+          :value="localColorsText"
+          spellcheck="false"
+          rows="3"
+          @input="onColorsInput"
+        />
+        <div v-if="colorsError" class="iridis-demo__validation">
+          {{ colorsError }}
+        </div>
       </div>
     </div>
   </ClientOnly>
@@ -220,106 +400,31 @@ const jsonOpen = ref(false);
 <style scoped>
 .iridis-demo {
   margin: 1.25rem 0;
-  padding: 1rem;
   border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--vp-c-bg-soft);
+  overflow: hidden;
 }
-.iridis-demo__input {
-  margin-bottom: 1rem;
-  padding-bottom: 0.85rem;
+
+.iridis-demo__top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.25rem;
+  padding: 1rem;
   border-bottom: 1px solid var(--vp-c-divider);
 }
-.iridis-demo__input-header {
+
+@media (max-width: 720px) {
+  .iridis-demo__top {
+    grid-template-columns: 1fr;
+  }
+}
+
+.iridis-demo__col-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.45rem;
-}
-.iridis-demo__hint {
-  font-size: 0.7rem;
-  color: var(--vp-c-text-3);
-  font-style: italic;
-}
-.iridis-demo__pickers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-.iridis-demo__picker {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.4rem 0.25rem 0.25rem;
-  background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 4px;
-}
-.iridis-demo__picker input[type="color"] {
-  width: 2rem;
-  height: 1.6rem;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  cursor: pointer;
-  padding: 0;
-}
-.iridis-demo__picker-hex {
-  font-size: 0.72rem;
-  font-family: var(--vp-font-family-mono);
-  color: var(--vp-c-text-2);
-  text-transform: lowercase;
-  letter-spacing: 0;
-}
-.iridis-demo__remove {
-  width: 1.2rem;
-  height: 1.2rem;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  color: var(--vp-c-text-3);
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-  border-radius: 2px;
-}
-.iridis-demo__remove:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-.iridis-demo__remove:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-.iridis-demo__add {
-  padding: 0.35rem 0.65rem;
-  background: var(--vp-c-bg);
-  border: 1px dashed var(--vp-c-divider);
-  border-radius: 4px;
-  color: var(--vp-c-text-2);
-  font-size: 0.78rem;
-  cursor: pointer;
-}
-.iridis-demo__add:hover:not(:disabled) {
-  color: var(--vp-c-brand-1);
-  border-color: var(--vp-c-brand-1);
-  border-style: solid;
-}
-.iridis-demo__add:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.iridis-demo__error {
-  padding: 0.65rem 0.85rem;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  border-radius: 4px;
-  color: #ef4444;
-  font-size: 0.85rem;
-}
-.iridis-demo__section + .iridis-demo__section {
-  margin-top: 1rem;
+  align-items: baseline;
+  margin-bottom: 0.55rem;
 }
 .iridis-demo__label {
   font-size: 0.7rem;
@@ -327,78 +432,232 @@ const jsonOpen = ref(false);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--vp-c-text-3);
-  margin-bottom: 0.5rem;
 }
-.iridis-demo__strip {
+.iridis-demo__hint {
+  font-size: 0.7rem;
+  color: var(--vp-c-text-3);
+  font-style: italic;
+}
+.iridis-demo__seed-grid {
   display: flex;
-  gap: 0.4rem;
   flex-wrap: wrap;
+  gap: 0.4rem;
+  align-content: flex-start;
 }
-.iridis-demo__chip {
+.iridis-demo__seed {
   position: relative;
-  width: 56px;
-  height: 56px;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.55rem 0.3rem 0.3rem;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: border-color 120ms;
 }
-.iridis-demo__chip-label {
-  font-size: 0.62rem;
+.iridis-demo__seed:hover {
+  border-color: var(--vp-c-text-2);
+}
+.iridis-demo__seed--selected {
+  border-color: var(--vp-c-brand-1);
+  box-shadow: 0 0 0 1px var(--vp-c-brand-1);
+}
+.iridis-demo__seed-chip {
+  display: inline-block;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.iridis-demo__seed-hex {
   font-family: var(--vp-font-family-mono);
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  padding: 0.05rem 0.25rem;
-  border-radius: 2px;
-  margin-bottom: 0.2rem;
+  font-size: 0.74rem;
+  color: var(--vp-c-text-2);
 }
+.iridis-demo__seed-remove {
+  width: 1rem;
+  height: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  color: var(--vp-c-text-3);
+  border-radius: 2px;
+  cursor: pointer;
+}
+.iridis-demo__seed-remove:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+.iridis-demo__seed-add {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  background: var(--vp-c-bg);
+  border: 1px dashed var(--vp-c-divider);
+  border-radius: 5px;
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+  align-self: flex-start;
+}
+.iridis-demo__seed-add:hover:not(:disabled) {
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  border-style: solid;
+}
+.iridis-demo__seed-add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.iridis-demo__error {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  background: rgba(239, 68, 68, 0.12);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  font-size: 0.85rem;
+}
+
+.iridis-demo__tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.45rem 0.6rem 0;
+  border-bottom: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg-soft);
+}
+.iridis-demo__tab {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  color: var(--vp-c-text-2);
+  cursor: pointer;
+}
+.iridis-demo__tab:hover { color: var(--vp-c-text-1); }
+.iridis-demo__tab--active {
+  color: var(--vp-c-brand-1);
+  border-bottom-color: var(--vp-c-brand-1);
+}
+
+.iridis-demo__panel {
+  padding: 1rem;
+}
+
 .iridis-demo__roles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 0.5rem;
 }
 .iridis-demo__role {
-  padding: 0.6rem 0.75rem;
-  border-radius: 4px;
-  border: 1px solid var(--vp-c-divider);
+  padding: 0.65rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  min-height: 64px;
+  gap: 0.18rem;
+  min-height: 78px;
+  box-shadow: inset 0 -10px 14px rgba(0, 0, 0, 0.18);
+}
+.iridis-demo__role-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
 }
 .iridis-demo__role-name {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
-}
-.iridis-demo__role-hex {
-  font-size: 0.65rem;
-  font-family: var(--vp-font-family-mono);
-  color: rgba(255, 255, 255, 0.85);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
-.iridis-demo__json-toggle {
-  background: transparent;
-  border: 0;
-  color: var(--vp-c-text-2);
-  cursor: pointer;
-  font-size: 0.78rem;
-  padding: 0;
+.iridis-demo__role-badge {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.6rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 2px;
+  border: 1px solid;
+  background: rgba(0, 0, 0, 0.25);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
-.iridis-demo__json {
+.iridis-demo__role-hex,
+.iridis-demo__role-coords {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.66rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+.iridis-demo__role-coords { font-size: 0.6rem; }
+
+.iridis-demo__editor-hint {
+  font-size: 0.78rem;
+  color: var(--vp-c-text-3);
+  margin-bottom: 0.5rem;
+  line-height: 1.45;
+}
+.iridis-demo__editor-hint code {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.78rem;
+  color: var(--vp-c-text-2);
+  background: var(--vp-c-bg);
+  padding: 0.05rem 0.3rem;
+  border-radius: 2px;
+}
+.iridis-demo__editor-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-3);
+  margin: 0.85rem 0 0.35rem;
+}
+.iridis-demo__textarea {
+  width: 100%;
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.76rem;
+  line-height: 1.5;
+  padding: 0.65rem 0.85rem;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 4px;
+  color: var(--vp-c-text-1);
+  resize: vertical;
+  min-height: 4rem;
+}
+.iridis-demo__textarea--invalid {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+}
+.iridis-demo__textarea--colors {
+  min-height: 3.5rem;
+}
+.iridis-demo__validation {
   margin-top: 0.4rem;
-  padding: 0.65rem 0.8rem;
+  padding: 0.5rem 0.7rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 4px;
+  color: #ef4444;
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.74rem;
+  white-space: pre-wrap;
+}
+
+.iridis-demo__code {
+  margin: 0;
+  padding: 0.85rem 1rem;
   background: var(--vp-c-bg);
   border: 1px solid var(--vp-c-divider);
   border-radius: 4px;
   overflow: auto;
   max-height: 320px;
 }
-.iridis-demo__json code {
-  font-size: 0.75rem;
+.iridis-demo__code code {
   font-family: var(--vp-font-family-mono);
+  font-size: 0.76rem;
   color: var(--vp-c-text-2);
+  line-height: 1.45;
+  white-space: pre;
 }
 </style>
