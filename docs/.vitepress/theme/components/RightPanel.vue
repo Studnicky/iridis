@@ -243,13 +243,16 @@ async function downloadJson(): Promise<void> {
 </template>
 
 <style scoped>
-/* Desktop (≥1100px): floating overlay at the viewport's right edge. */
+/* Desktop (≥1100px): floating overlay at the viewport's right edge.
+   Width rules are split into two mutually-exclusive selectors so the
+   collapsed-state width can never bleed through to the open state.
+   `.iridis-right:not(.iridis-right--collapsed)` is more specific than
+   `.iridis-right--collapsed` AND mutually exclusive — eliminates any
+   ordering ambiguity that could pin the panel narrow when open. */
 .iridis-right {
   position: fixed;
   top: calc(var(--vp-nav-height, 64px) + 1rem);
   right: 1rem;
-  width: var(--iridis-right-panel-width, 380px);
-  min-width: 320px;
   max-height: calc(100vh - var(--vp-nav-height, 64px) - 2rem);
   z-index: 30;
   overflow: hidden;
@@ -261,6 +264,10 @@ async function downloadJson(): Promise<void> {
   box-shadow: var(--iridis-shadow-lg);
   backdrop-filter: blur(10px);
   transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1), min-width 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.iridis-right:not(.iridis-right--collapsed) {
+  width: var(--iridis-right-panel-width, 380px);
+  min-width: 320px;
 }
 .iridis-right--collapsed {
   width: 2.4rem;
@@ -283,9 +290,7 @@ async function downloadJson(): Promise<void> {
     right: 0;
     bottom: 0;
     left: 0;
-    width: 100%;
     max-width: none;
-    min-width: 0;
     height: 60vh;
     max-height: 60vh;
     margin: 0;
@@ -294,7 +299,15 @@ async function downloadJson(): Promise<void> {
     transform: translateY(0);
     transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
   }
+  /* Override the desktop :not() rule with the same selector at media-query
+     specificity so width fills the viewport on narrow screens. */
+  .iridis-right:not(.iridis-right--collapsed) {
+    width: 100%;
+    min-width: 0;
+  }
   .iridis-right--collapsed {
+    width: 100%;
+    min-width: 0;
     transform: translateY(100%);
     pointer-events: none;
   }

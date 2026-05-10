@@ -329,6 +329,12 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
   cursor: crosshair;
   touch-action: none;
   user-select: none;
+  /* Cap to container width, stay square. The inline width/height set
+     SV_SIZE as a target; max-width clamps it to whatever the parent
+     panel allows so the picker can never overflow a narrow panel.
+     aspect-ratio holds the square shape when width is the limiting factor. */
+  max-width: 100%;
+  aspect-ratio: 1;
 }
 .iridis-picker__marker {
   position: absolute;
@@ -349,6 +355,8 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
   cursor: ew-resize;
   touch-action: none;
   user-select: none;
+  /* Same container clamp as the SV square. */
+  max-width: 100%;
 }
 .iridis-picker__hue-marker {
   position: absolute;
