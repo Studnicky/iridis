@@ -8,11 +8,11 @@ Demonstrates the iridis pipeline producing a W3C-conformant palette from a singl
 seed hex (#8B5CF6)
   → Engine.run({ colors, roles: categoryW3cRoleSchema, contrast: AA })
       ↓
-    wcag:enforce   — validates contrast pairs; adjusts lightness until all minRatio targets are met
+    wcag:enforce   validates contrast pairs; adjusts lightness until all minRatio targets are met
       ↓
-    emit:cssVars   — serialises resolved roles into CSS custom properties
+    emit:cssVars   serialises resolved roles into CSS custom properties
       ↓
-    emit:capacitor — calls Capacitor StatusBar.setBackgroundColorAsync with the accent role hex
+    emit:capacitor calls Capacitor StatusBar.setBackgroundColorAsync with the accent role hex
 ```
 
 ## Role schema (`categoryW3cRoleSchema`)
@@ -21,12 +21,12 @@ Seven roles with WCAG 2.1 AA contrast enforcement:
 
 | Role       | Intent  | Contrast requirement              |
 |------------|---------|-----------------------------------|
-| `canvas`   | base    | —                                 |
-| `surface`  | surface | —                                 |
+| `canvas`   | base    | none                              |
+| `surface`  | surface | none                              |
 | `accent`   | accent  | `onAccent` on `accent` ≥ 4.5:1    |
 | `onAccent` | text    | on `accent` ≥ 4.5:1               |
 | `border`   | neutral | on `canvas` ≥ 3.0:1               |
-| `muted`    | muted   | —                                 |
+| `muted`    | muted   | none                              |
 | `text`     | text    | on `canvas` ≥ 4.5:1, `surface` ≥ 4.5:1 |
 
 ## CSS output
@@ -59,8 +59,8 @@ Properties are scoped to `[data-category="music"]` and also written to `:root`:
 
 Three plugin imports in `categoryColorService.ts` are marked `@ts-expect-error` pending sibling agent delivery:
 
-- `plugins/wcag` — contrast enforcement task
-- `plugins/css-vars` — CSS variable emitter (task class exists at `plugins/css-vars/tasks/EmitCssVars.ts`, index.ts pending)
-- `plugins/capacitor` — Capacitor native chrome adapter
+- `plugins/wcag`: contrast enforcement task
+- `plugins/css-vars`: CSS variable emitter (task class exists at `plugins/css-vars/tasks/EmitCssVars.ts`, index.ts pending)
+- `plugins/capacitor`: Capacitor native chrome adapter
 
 Remove the `@ts-expect-error` directives once each plugin's `index.ts` is present.
