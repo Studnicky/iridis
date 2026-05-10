@@ -5,6 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import type { TailwindOutputInterface } from '../types/index.ts';
 
 /** Regex that matches roles following the `<root>-<shade>` pattern where shade is numeric. */
 const SHADE_ROLE_RE = /^(.+)-(\d+)$/;
@@ -102,12 +103,6 @@ function buildCssVarsSheet(
     return `  ${varName}: ${record.hex};`;
   });
   return `:root {\n${decls.join('\n')}\n}`;
-}
-
-export interface TailwindOutputInterface {
-  readonly 'colors':  ColorsShape;
-  readonly 'cssVars': string;
-  readonly 'config':  string;
 }
 
 export class EmitTailwindTheme implements TaskInterface {

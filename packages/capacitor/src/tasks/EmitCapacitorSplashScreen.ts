@@ -5,11 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-
-export interface SplashScreenOutputInterface {
-  readonly backgroundColor:           string;
-  readonly androidSplashResourceName?: string;
-}
+import type { SplashScreenOutputInterface } from '../types/index.ts';
 
 function resolveSplashColor(
   roles: Record<string, ColorRecordInterface>,

@@ -1,7 +1,7 @@
 import type {
   ColorMathRegistryInterface,
   MathPrimitiveInterface,
-} from '../model/types.ts';
+} from '../types/index.ts';
 
 /**
  * Name-keyed registry of color-math primitives. Tasks reach math through

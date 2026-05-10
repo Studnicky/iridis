@@ -5,6 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import type { CssVarsScopedOutputInterface } from '../types/index.ts';
 
 function toCssVarName(role: string, prefix: string): string {
   const kebab = role.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`);
@@ -23,11 +24,6 @@ function buildScopedCategoryBlock(
   });
   const selector = `[data-${scopePrefix}='${category}']`;
   return `${selector} {\n${decls.join('\n')}\n}`;
-}
-
-export interface CssVarsScopedOutputInterface {
-  readonly 'blocks': Record<string, string>;
-  readonly 'full':   string;
 }
 
 /**

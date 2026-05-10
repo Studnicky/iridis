@@ -1,4 +1,4 @@
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
+import type { ColorRecordInterface, MathPrimitiveInterface } from '../types/index.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
 function hslToRgbComponents(h: number, s: number, l: number): [number, number, number] {

@@ -1,4 +1,4 @@
-import type { LoggerInterface } from '../model/types.ts';
+import type { LoggerInterface } from '../types/index.ts';
 
 /**
  * Default `LoggerInterface` implementation that forwards to the global

@@ -6,6 +6,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import type { CssVarsOutputInterface } from '../types/index.ts';
 
 /**
  * Maps a role name to a CSS custom property name.
@@ -128,16 +129,6 @@ function buildVarMap(
     map[role] = toCssVarName(role, prefix);
   }
   return map;
-}
-
-export interface CssVarsOutputInterface {
-  readonly 'rootBlock':    string;
-  readonly 'scopedBlock':  string;
-  readonly 'darkScheme':   string;
-  readonly 'forcedColors': string;
-  readonly 'wideGamut':    string;
-  readonly 'full':         string;
-  readonly 'map':          Record<string, string>;
 }
 
 export class EmitCssVars implements TaskInterface {

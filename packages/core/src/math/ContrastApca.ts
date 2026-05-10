@@ -1,5 +1,5 @@
 /**
- * APCA-W3 0.0.98G-4g formula — https://github.com/Myndex/SAPC-APCA
+ * APCA-W3 0.0.98G-4g formula. See https://github.com/Myndex/SAPC-APCA.
  *
  * APCA returns a signed Lightness contrast (Lc) in the −108..+106 range
  * rather than a symmetric ratio. Sign indicates polarity: positive means
@@ -7,7 +7,7 @@
  * differs from WCAG (e.g. body text targets |Lc| ≥ 60), so callers should
  * choose minRatio with that scale in mind.
  */
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
+import type { ColorRecordInterface, MathPrimitiveInterface } from '../types/index.ts';
 
 function isColorRecord(v: unknown): v is ColorRecordInterface {
   if (typeof v !== 'object' || v === null) return false;

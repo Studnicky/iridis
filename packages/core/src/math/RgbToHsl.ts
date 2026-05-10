@@ -1,4 +1,4 @@
-import type { MathPrimitiveInterface } from '../model/types.ts';
+import type { MathPrimitiveInterface } from '../types/index.ts';
 
 /**
  * Output shape for {@link RgbToHsl}: `h` in degrees, `s` and `l` in

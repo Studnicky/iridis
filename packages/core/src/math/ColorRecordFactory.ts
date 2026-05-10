@@ -1,4 +1,4 @@
-import type { ColorRecordInterface, OklchInterface, RgbInterface } from '../model/types.ts';
+import type { ColorRecordInterface, OklchInterface, RgbInterface } from '../types/index.ts';
 
 function oklchToRgbRaw(l: number, c: number, h: number): RgbInterface {
   const hRad = (h * Math.PI) / 180;

@@ -1,5 +1,5 @@
 import type { PluginInterface } from '@studnicky/iridis';
-import type { CliConfigInterface } from './types.ts';
+import type { CliConfigInterface } from './types/index.ts';
 
 type FlagKey = keyof Pick<
   CliConfigInterface,

@@ -1,4 +1,4 @@
-import type { MathPrimitiveInterface } from '../model/types.ts';
+import type { MathPrimitiveInterface } from '../types/index.ts';
 
 /**
  * Math primitive that formats sRGB components in 0..1 as a `#rrggbb`

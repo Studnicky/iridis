@@ -1,4 +1,4 @@
-import type { MathPrimitiveInterface, RgbInterface } from '../model/types.ts';
+import type { MathPrimitiveInterface, RgbInterface } from '../types/index.ts';
 
 /**
  * Math primitive that gamma-encodes linear-light values into the sRGB

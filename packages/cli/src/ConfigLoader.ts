@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
 import { CliConfigSchema } from './CliConfigSchema.ts';
-import type { CliConfigInterface } from './types.ts';
+import type { CliConfigInterface } from './types/index.ts';
 
 export class ConfigLoader {
   async load(path: string): Promise<CliConfigInterface> {

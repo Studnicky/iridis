@@ -3,7 +3,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
   TaskRegistryInterface,
-} from '../model/types.ts';
+} from '../types/index.ts';
 
 /**
  * Holds the mutable set of pipeline tasks an `Engine` will run. Tasks

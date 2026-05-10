@@ -1,12 +1,12 @@
 /**
- * ΔE 2000 perceptual color difference computed against an OKLab-derived
+ * Delta E 2000 perceptual color difference computed against an OKLab-derived
  * Lab, scaled to roughly match the CIE Lab numeric range expected by the
- * Sharma et al. 2005 formula. OKLCH is a direct reparametrisation of
- * OKLab, so (L, a*, b*) = (oklch.l, c·cos(h), c·sin(h)) before scaling.
- * The result is a perceptual distance — single-digit values indicate
- * "just noticeable" differences, anything > 10 is clearly distinct.
+ * Sharma et al. 2005 formula. OKLCH is a direct reparametrisation of OKLab,
+ * so (L, a*, b*) = (oklch.l, c*cos(h), c*sin(h)) before scaling. The result
+ * is a perceptual distance: single-digit values indicate "just noticeable"
+ * differences, anything above 10 is clearly distinct.
  */
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
+import type { ColorRecordInterface, MathPrimitiveInterface } from '../types/index.ts';
 
 function isColorRecord(v: unknown): v is ColorRecordInterface {
   if (typeof v !== 'object' || v === null) return false;

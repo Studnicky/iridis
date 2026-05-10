@@ -3,7 +3,7 @@ import type {
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
-} from '../../model/types.ts';
+} from '../../types/index.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 interface LabInput {

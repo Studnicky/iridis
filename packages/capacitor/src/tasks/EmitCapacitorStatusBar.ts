@@ -5,12 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-
-export interface StatusBarOutputInterface {
-  readonly backgroundColor: string;
-  readonly style:           'DARK' | 'LIGHT';
-  readonly overlay:         boolean;
-}
+import type { StatusBarOutputInterface } from '../types/index.ts';
 
 function relativeLuminance(rgb: { readonly r: number; readonly g: number; readonly b: number }): number {
   const lin = (v: number): number =>

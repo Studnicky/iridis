@@ -1,4 +1,4 @@
-import type { TaskInterface } from '../model/types.ts';
+import type { TaskInterface } from '../types/index.ts';
 
 export { intakeHex,         IntakeHex }         from './intake/IntakeHex.ts';
 export { intakeRgb,         IntakeRgb }         from './intake/IntakeRgb.ts';
