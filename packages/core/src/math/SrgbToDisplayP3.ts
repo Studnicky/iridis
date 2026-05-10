@@ -1,4 +1,4 @@
-import type { MathPrimitiveInterface, RgbInterface } from '../model/types.ts';
+import type { MathPrimitiveInterface, RgbInterface } from '../types/index.ts';
 
 function gammaDecode(v: number): number {
   if (v <= 0.04045) {

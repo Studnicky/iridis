@@ -1,5 +1,5 @@
 // APCA-W3 0.0.98G-4g formula — https://github.com/Myndex/SAPC-APCA
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
+import type { ColorRecordInterface, MathPrimitiveInterface } from '../types/index.ts';
 
 function isColorRecord(v: unknown): v is ColorRecordInterface {
   if (typeof v !== 'object' || v === null) return false;

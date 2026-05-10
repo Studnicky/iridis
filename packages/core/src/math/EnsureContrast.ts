@@ -1,4 +1,4 @@
-import type { ColorRecordInterface, ContrastAlgorithmType, MathPrimitiveInterface } from '../model/types.ts';
+import type { ColorRecordInterface, ContrastAlgorithmType, MathPrimitiveInterface } from '../types/index.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { contrastWcag21 } from './ContrastWcag21.ts';
 import { contrastApca } from './ContrastApca.ts';

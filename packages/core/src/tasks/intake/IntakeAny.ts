@@ -3,7 +3,7 @@ import type {
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
-} from '../../model/types.ts';
+} from '../../types/index.ts';
 import { intakeHex }         from './IntakeHex.ts';
 import { intakeRgb }         from './IntakeRgb.ts';
 import { intakeHsl }         from './IntakeHsl.ts';

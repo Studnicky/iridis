@@ -1,4 +1,4 @@
-import type { MathPrimitiveInterface, RgbInterface } from '../model/types.ts';
+import type { MathPrimitiveInterface, RgbInterface } from '../types/index.ts';
 
 export class SrgbToLinear implements MathPrimitiveInterface {
   readonly 'name' = 'srgbToLinear';

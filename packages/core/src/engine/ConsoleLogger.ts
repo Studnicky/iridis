@@ -1,4 +1,4 @@
-import type { LoggerInterface } from '../model/types.ts';
+import type { LoggerInterface } from '../types/index.ts';
 
 export class ConsoleLogger implements LoggerInterface {
   debug(scope: string, op: string, message: string, data?: unknown): void {

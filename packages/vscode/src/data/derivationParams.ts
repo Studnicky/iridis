@@ -13,11 +13,7 @@
  *   comment  → comment  (pass-through)
  *   muted    → operator (mix with foreground)
  */
-export interface DerivationParamsInterface {
-  readonly 'hue'?: number;
-  readonly 'sat'?: number;
-  readonly 'light'?: number;
-}
+import type { DerivationParamsInterface } from '../types/index.ts';
 
 export const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterface>> = {
   // Slightly brighter, concrete

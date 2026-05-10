@@ -5,7 +5,7 @@ import type {
   RoleDefinitionInterface,
   TaskInterface,
   TaskManifestInterface,
-} from '../../model/types.ts';
+} from '../../types/index.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 function rangeCenter(range: readonly [number, number]): number {

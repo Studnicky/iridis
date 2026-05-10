@@ -5,7 +5,7 @@ import type {
   PipelineContextInterface,
   PluginInterface,
   TaskInterface,
-} from '../model/types.ts';
+} from '../types/index.ts';
 import { ColorMathRegistry } from '../registry/ColorMathRegistry.ts';
 import { TaskRegistry }      from '../registry/TaskRegistry.ts';
 import { ConsoleLogger }     from './ConsoleLogger.ts';

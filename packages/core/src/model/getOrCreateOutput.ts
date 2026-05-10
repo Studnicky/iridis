@@ -11,7 +11,7 @@
  * → emit:vscodeThemeJson all share the 'vscode' slot).
  */
 
-import type { PaletteStateInterface } from './types.ts';
+import type { PaletteStateInterface } from '../types/index.ts';
 
 export function getOrCreateOutput<T extends Record<string, unknown>>(
   state: PaletteStateInterface,

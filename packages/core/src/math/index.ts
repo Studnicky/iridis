@@ -25,7 +25,7 @@ export { ClusterMedianCut, clusterMedianCut } from './ClusterMedianCut.ts';
 export { Luminance,        luminance        } from './Luminance.ts';
 export { ContrastText,     contrastText     } from './ContrastText.ts';
 
-import type { MathPrimitiveInterface } from '../model/types.ts';
+import type { MathPrimitiveInterface } from '../types/index.ts';
 import { oklchToRgb       } from './OklchToRgb.ts';
 import { rgbToOklch       } from './RgbToOklch.ts';
 import { hslToRgb         } from './HslToRgb.ts';

@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./model": "./src/model/index.ts",
+    "./types": "./src/types/index.ts",
     "./registry": "./src/registry/index.ts",
     "./engine": "./src/engine/index.ts",
     "./math": "./src/math/index.ts",

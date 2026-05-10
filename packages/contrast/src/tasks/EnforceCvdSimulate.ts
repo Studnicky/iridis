@@ -6,7 +6,7 @@ import type {
   TaskManifestInterface,
 } from '@studnicky/iridis';
 import { cvdMatrices } from '../data/cvdMatrices.ts';
-import type { CvdMatrixInterface } from '../data/cvdMatrices.ts';
+import type { CvdMatrixInterface } from '../types/index.ts';
 
 interface CvdPairWarningInterface {
   readonly foreground:  string;

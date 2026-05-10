@@ -4,7 +4,7 @@ import type {
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
-} from '../../model/types.ts';
+} from '../../types/index.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 const DEFAULT_L_RANGE: readonly [number, number] = [0.05, 0.95];

@@ -3,7 +3,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
   TaskRegistryInterface,
-} from '../model/types.ts';
+} from '../types/index.ts';
 
 export class TaskRegistry implements TaskRegistryInterface {
   private readonly entries = new Map<string, TaskInterface>();

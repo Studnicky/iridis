@@ -1,7 +1,7 @@
 import type {
   ColorMathRegistryInterface,
   MathPrimitiveInterface,
-} from '../model/types.ts';
+} from '../types/index.ts';
 
 export class ColorMathRegistry implements ColorMathRegistryInterface {
   private readonly entries = new Map<string, MathPrimitiveInterface>();

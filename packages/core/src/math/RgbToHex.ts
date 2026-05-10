@@ -1,4 +1,4 @@
-import type { MathPrimitiveInterface } from '../model/types.ts';
+import type { MathPrimitiveInterface } from '../types/index.ts';
 
 export class RgbToHex implements MathPrimitiveInterface {
   readonly 'name' = 'rgbToHex';
