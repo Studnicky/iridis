@@ -73,7 +73,7 @@ interface PluginInterface {
 
 `engine.adopt(plugin)` registers all of the plugin's tasks and math primitives in one call. iridis ships seven plugins in addition to the core task set: `@studnicky/iridis-vscode`, `@studnicky/iridis-stylesheet`, `@studnicky/iridis-tailwind`, `@studnicky/iridis-image`, `@studnicky/iridis-contrast`, `@studnicky/iridis-capacitor`, and `@studnicky/iridis-rdf`. Each is a separate package; install only what your project needs.
 
-Writing a plugin is straightforward — implement `PluginInterface`, return your tasks from `tasks()`, and export a singleton:
+A plugin is an object with `name`, `version`, `tasks()`, and `math()`. Implement the interface and export a singleton:
 
 ```ts
 import type { PluginInterface } from '@studnicky/iridis';
