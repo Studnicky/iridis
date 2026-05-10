@@ -1,45 +1,52 @@
 /**
- * applyConfigToDocument.ts
+ * applyConfigToDocument.ts — projector.
  *
- * iridis dogfoods iridis. Runs the engine against the docs-theme role schema
- * (selected by configStore.framing) and writes the resolved palette as a
- * cascading set of CSS custom properties:
+ * Single responsibility: take the active schema (a {dark,light} pair),
+ * pick the variant matching the current framing, run the engine, write
+ * one CSS variable per resolved role onto documentElement. That is the
+ * entire glue layer.
  *
- *   1. Engine emits canonical role hexes (background, surface, ..., onBrand).
- *      These are the *iridis-emitted* tokens — written as `--iridis-*` so the
- *      provenance is explicit.
- *   2. The vitepress chrome tokens (--vp-c-*) cascade from the iridis tokens
- *      via var() references in palette.css. Hover and elevation states are
- *      computed via color-mix() against the iridis tokens, not hardcoded.
+ *   active schema + framing → engine.run → state.roles → --iridis-{role}
  *
- * This is the cascading model: change one palette color, the iridis token recomputes,
- * and every consumer of the cascade follows. Pattern adapted from
- * vscode-arcade-blaster's role-resolved palette → derived theme cascade.
+ * No alias chains. No JS-side hue rotation. No static fallbacks. If a
+ * role isn't in the schema it isn't in the cascade — that sparseness IS
+ * the demonstration of what the user's chosen schema produces.
  *
- * Side-effect only. SSR-safe.
+ * Previously-set --iridis-* properties are cleared before the new set
+ * is written, so switching from iridis-16 to iridis-4 doesn't leave
+ * stale variables from the previous schema haunting the cascade.
+ *
+ * SSR-safe (early return when window/document is undefined).
  */
 
 import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
 
 import type { DocsConfigType } from '../schemas/docsConfig.schema.ts';
-import { docsThemeSchemaFor } from '../schemas/docsThemeSchema.ts';
+import { roleSchemaByName } from '../schemas/roleSchemas.ts';
 
 const PIPELINE: readonly string[] = [
   'intake:hex',
   'resolve:roles',
   'expand:family',
-  // Enforce every contrastPair declared on the docs theme schema (WCAG
-  // AAA + APCA Lc 75 for body text, AA / Lc 60 for everything else).
-  // The result is structurally inaccessibility-proof: regardless of
-  // which seeds the user picks, the engine nudges role colors until
-  // every declared pair is satisfied.
   'enforce:contrast',
 ];
 
+/** All --iridis-{role} props the projector has written. Used to clear
+ *  stale entries when switching schemas. */
+const writtenProps = new Set<string>();
+
 export async function applyConfigToDocument(config: DocsConfigType): Promise<void> {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+  const pair = roleSchemaByName[config.roleSchema];
+  if (!pair) {
+    if (typeof console !== 'undefined') {
+      console.warn(`[iridis] unknown schema: ${config.roleSchema}`);
+    }
     return;
   }
+
+  const schema = pair[config.framing];
 
   try {
     const engine = new Engine();
@@ -47,55 +54,35 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
     for (const t of coreTasks)    engine.tasks.register(t);
     engine.pipeline(PIPELINE);
 
-    const schema = docsThemeSchemaFor(config.framing);
     const state = await engine.run({
-      'colors':  config.paletteColors,
-      'roles':   schema,
-      'runtime': {
-        'framing':    config.framing,
-        'colorSpace': config.colorSpace,
-      },
+      'colors':   config.paletteColors,
+      'roles':    schema,
+      'contrast': { 'level': config.contrastLevel, 'algorithm': config.contrastAlgorithm },
+      'runtime':  { 'framing': config.framing, 'colorSpace': config.colorSpace },
     });
 
-    const r          = state.roles;
-    const root       = document.documentElement;
+    const root = document.documentElement;
 
-    // Chrome tokens — source of truth for the docs theme.
-    setIridis(root, '--iridis-background', r['background']!.hex);
-    setIridis(root, '--iridis-surface',    r['surface']!.hex);
-    setIridis(root, '--iridis-bg-soft',    r['bgSoft']!.hex);
-    setIridis(root, '--iridis-divider',    r['divider']!.hex);
-    setIridis(root, '--iridis-muted',      r['muted']!.hex);
-    setIridis(root, '--iridis-text',       r['text']!.hex);
-    setIridis(root, '--iridis-brand',      r['brand']!.hex);
-    setIridis(root, '--iridis-on-brand',   r['onBrand']!.hex);
+    /* Clear stale props from the previous run so a 16→4 switch doesn't
+       leave 12 phantom syntax tokens cascading. */
+    for (const prop of writtenProps) {
+      root.style.removeProperty(prop);
+    }
+    writtenProps.clear();
 
-    // Syntax tokens — consumed by the iridis Shiki theme so code blocks
-    // recolor in step with the chrome on every config change.
-    const syntaxRoles = [
-      'syntaxText', 'syntaxComment', 'syntaxKeyword', 'syntaxString',
-      'syntaxNumber', 'syntaxFunction', 'syntaxType', 'syntaxConstant',
-      'syntaxVariable', 'syntaxProperty', 'syntaxTag', 'syntaxPunctuation',
-      'syntaxEscape', 'syntaxError',
-    ] as const;
-    for (const name of syntaxRoles) {
-      const rec = r[name];
-      if (rec) {
-        setIridis(root, `--iridis-${kebab(name)}`, rec.hex);
-      }
+    /* Write one CSS variable per resolved role. The role NAME is the
+       variable name — the schema author controls both. */
+    for (const [name, color] of Object.entries(state.roles)) {
+      const prop = `--iridis-${name}`;
+      root.style.setProperty(prop, color.hex);
+      writtenProps.add(prop);
     }
 
-    // Reflect framing for any framing-aware CSS hooks.
     root.dataset['iridisFraming'] = config.framing;
-  } catch {
-    /* on failure, leave the existing palette.css fallback values in place */
+    root.dataset['iridisSchema']  = config.roleSchema;
+  } catch (err) {
+    if (typeof console !== 'undefined') {
+      console.warn('[iridis] applyConfigToDocument failed:', err);
+    }
   }
-}
-
-function setIridis(root: HTMLElement, name: string, value: string): void {
-  root.style.setProperty(name, value);
-}
-
-function kebab(camel: string): string {
-  return camel.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`);
 }

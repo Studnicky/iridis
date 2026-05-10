@@ -58,9 +58,9 @@ export const docsConfigSchema = {
     'roleSchema': {
       'type':        'string',
       'title':       'Role schema',
-      'description': 'Which role definition the engine resolves the palette into.',
-      'enum':        ['minimal', 'w3c', 'material'],
-      'default':     'minimal',
+      'description': 'Number of roles the engine resolves the palette into. iridis-4 is the absolute minimum (background, text, brand, muted). Each tier is a superset — picking a smaller tier produces a sparser palette, demonstrating what that schema actually gives you.',
+      'enum':        ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16'],
+      'default':     'iridis-16',
     },
   },
 } as const;
@@ -71,7 +71,7 @@ export type DocsConfigType = {
   'contrastLevel':     'AA' | 'AAA';
   'contrastAlgorithm': 'wcag21' | 'apca';
   'colorSpace':        'srgb' | 'displayP3';
-  'roleSchema':        'minimal' | 'w3c' | 'material';
+  'roleSchema':        'iridis-4' | 'iridis-8' | 'iridis-12' | 'iridis-16';
 };
 
 export const docsConfigDefaults: DocsConfigType = {
@@ -80,5 +80,5 @@ export const docsConfigDefaults: DocsConfigType = {
   'contrastLevel':     'AA',
   'contrastAlgorithm': 'wcag21',
   'colorSpace':        'srgb',
-  'roleSchema':        'minimal',
+  'roleSchema':        'iridis-16',
 };

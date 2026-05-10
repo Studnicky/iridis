@@ -264,8 +264,8 @@ function copyToClipboard(): void {
 }
 .iridis-multi__error {
   padding: 0.85rem 1rem;
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 10%, transparent);
+  color: var(--iridis-error, var(--iridis-text, currentColor));
   font-size: 0.85rem;
 }
 </style>
