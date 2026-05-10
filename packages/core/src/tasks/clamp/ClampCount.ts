@@ -8,6 +8,15 @@ import type {
 
 const DEFAULT_MAX = 64;
 
+/**
+ * Pipeline task that caps `state.colors.length` at `input.maxColors`
+ * (default 64) by running median-cut clustering when the limit is
+ * exceeded. Skipped entirely when `input.bypass` is true — useful for
+ * tests that need to assert against the raw intake set.
+ *
+ * Mutates `state.colors` in place rather than reassigning so other
+ * tasks holding a reference (rare, but legal) see the new contents.
+ */
 export class ClampCount implements TaskInterface {
   readonly 'name' = 'clamp:count';
 
@@ -49,4 +58,5 @@ export class ClampCount implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `clamp:count` pipeline task. */
 export const clampCount = new ClampCount();

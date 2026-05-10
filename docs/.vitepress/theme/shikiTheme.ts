@@ -1,16 +1,9 @@
 /**
- * shikiTheme.ts
- *
- * Shiki theme JSON that uses CSS var() references for every color, so
- * syntax highlighting tracks the iridis-driven --iridis-syntax-* tokens
- * just like the rest of the docs chrome. The engine writes those tokens
- * via stores/applyConfigToDocument.ts at runtime.
- *
- * Both light and dark variants exist because vitepress's dual-theme
- * support attaches both --shiki-light and --shiki-dark to every token;
- * we set both to the same var() so the active iridis-framing wins via
- * the variable's value (set by data-iridis-framing on the html element
- * if we want per-framing branching later).
+ * Shiki theme JSON that points every token color at a `var(--iridis-syntax-*)`
+ * CSS custom property, so syntax highlighting tracks the live iridis
+ * palette instead of being a static second source of truth. The
+ * `applyConfigToDocument` projector writes those custom properties
+ * whenever the theme dispatcher's state changes.
  */
 
 export const iridisShikiTheme = {

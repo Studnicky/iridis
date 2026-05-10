@@ -39,6 +39,17 @@ function offsetLightness(color: ColorRecordInterface, offset: number): ColorReco
   );
 }
 
+/**
+ * Pipeline task that produces alternative framings of every assigned
+ * role. With the default config it emits `dark` (lightness inverted)
+ * and `light` (lightness untouched) variants; callers can override by
+ * setting `state.metadata.variantConfig` to an array of named configs
+ * with `invertLightness` and/or `lightnessOffset`.
+ *
+ * Variants live in `state.variants[name]` keyed by role, parallel to
+ * `state.roles`. Emitters consume both surfaces — the canonical role
+ * set for the active framing and the variants for the inverse.
+ */
 export class DeriveVariant implements TaskInterface {
   readonly 'name' = 'derive:variant';
 
@@ -88,4 +99,5 @@ export class DeriveVariant implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `derive:variant` pipeline task. */
 export const deriveVariant = new DeriveVariant();

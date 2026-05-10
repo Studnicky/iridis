@@ -39,8 +39,11 @@ import { deriveVariant }     from './derive/DeriveVariant.ts';
 import { emitJson }          from './emit/EmitJson.ts';
 
 /**
- * All core task singletons in dependency-friendly pipeline order.
- * Register in one shot: `coreTasks.forEach(t => engine.tasks.register(t))`.
+ * Every core pipeline task shipped with `@studnicky/iridis`, ordered
+ * `intake → clamp → resolve → expand → enforce → derive → emit` so a
+ * caller that just wants "the canonical pipeline" can register and
+ * `engine.pipeline(coreTasks.map(t => t.name))` without thinking about
+ * dependencies between phases.
  */
 export const coreTasks: readonly TaskInterface[] = [
   intakeHex,

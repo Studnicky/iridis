@@ -7,6 +7,11 @@ function isColorRecord(v: unknown): v is ColorRecordInterface {
   return typeof c['oklch'] === 'object' && c['oklch'] !== null;
 }
 
+/**
+ * Math primitive that decreases OKLCH lightness by `deltaL`, leaving
+ * chroma and hue alone. Result is clamped into [0, 1] so excessive
+ * deltas collapse to black instead of throwing.
+ */
 export class Darken implements MathPrimitiveInterface {
   readonly 'name' = 'darken';
 
@@ -23,4 +28,5 @@ export class Darken implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `darken` math primitive. */
 export const darken = new Darken();

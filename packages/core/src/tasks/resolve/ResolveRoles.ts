@@ -41,16 +41,10 @@ function distanceToRoleCenter(color: ColorRecordInterface, role: RoleDefinitionI
 }
 
 /**
- * Nudge a candidate color's OKLCH coordinates so they satisfy the role's
- * constraints. Lightness and chroma are clamped into their declared ranges;
- * hue is left alone unless hueOffset is declared as an absolute target,
- * in which case it is set exactly to that target.
- *
- * The returned ColorRecord is rebuilt via colorRecordFactory.fromOklch so
- * the rgb / hex are recomputed consistently with the nudged OKLCH.
- *
- * If the candidate already satisfies every constraint, the original record
- * is returned unchanged (no allocation).
+ * Adjusts a candidate color's OKLCH so it satisfies the role's
+ * lightnessRange, chromaRange, and (if specified) absolute hueOffset
+ * target. Already-conformant candidates are returned unchanged so the
+ * common case is allocation-free.
  */
 function nudgeIntoRole(
   candidate: ColorRecordInterface,
@@ -76,6 +70,23 @@ function synthesizeForRole(role: RoleDefinitionInterface): ColorRecordInterface 
   return colorRecordFactory.fromOklch(l, c, h, 1);
 }
 
+/**
+ * Pipeline task that assigns one `ColorRecord` to each non-derived
+ * role in the schema. Resolution order:
+ *   1. Hint match — a color carrying `hints.role === <name>` wins.
+ *   2. No candidates available — `required` roles are synthesised
+ *      from the role's own range centers.
+ *   3. Closest by OKLCH distance to the range center.
+ *
+ * In all cases the assigned color is then nudged into the declared
+ * `lightnessRange` / `chromaRange` (and exact `hueOffset` if set), so
+ * required roles are guaranteed to satisfy their constraints. Roles
+ * that had to be synthesised are recorded in
+ * `state.metadata.rolesSynthesized` for diagnostics.
+ *
+ * Roles with `derivedFrom` are deferred to {@link ExpandFamily} and
+ * skipped here.
+ */
 export class ResolveRoles implements TaskInterface {
   readonly 'name' = 'resolve:roles';
 
@@ -100,7 +111,7 @@ export class ResolveRoles implements TaskInterface {
         continue;
       }
 
-      // 1. Hint match takes priority — explicit user intent.
+      // Hint match takes priority — explicit user intent.
       const hintMatch = state.colors.find((c) => c.hints?.['role'] === role.name);
       if (hintMatch) {
         state.roles[role.name] = nudgeIntoRole(hintMatch, role);
@@ -108,7 +119,7 @@ export class ResolveRoles implements TaskInterface {
         continue;
       }
 
-      // 2. No candidate colors at all — synthesize from constraints if required.
+      // No candidate colors at all — synthesize required roles from constraints.
       if (state.colors.length === 0) {
         if (role.required) {
           state.roles[role.name] = synthesizeForRole(role);
@@ -122,7 +133,7 @@ export class ResolveRoles implements TaskInterface {
         continue;
       }
 
-      // 3. Pick closest candidate by distance to constraint center.
+      // Pick closest candidate by distance to constraint center.
       let best: ColorRecordInterface | undefined;
       let bestDist = Infinity;
       for (const color of state.colors) {
@@ -133,9 +144,8 @@ export class ResolveRoles implements TaskInterface {
         }
       }
 
-      // 4. Nudge the candidate into the role's ranges. Required means required:
-      //    the assigned color is guaranteed to satisfy lightnessRange and
-      //    chromaRange (and exact hueOffset if specified).
+      // Nudge the candidate into the role's ranges so required roles are
+      // guaranteed to satisfy lightnessRange, chromaRange, and hueOffset.
       if (best) {
         state.roles[role.name] = nudgeIntoRole(best, role);
         ctx.logger.debug(
@@ -144,8 +154,9 @@ export class ResolveRoles implements TaskInterface {
           `Role "${role.name}" assigned by distance (dist=${bestDist.toFixed(4)}) and nudged into range`,
         );
       } else if (role.required) {
-        // Defensive: shouldn't reach here since we checked state.colors above,
-        // but if every distance computation produced Infinity, synthesize.
+        // Defensive: state.colors was non-empty above, so this only fires
+        // if every distance computation produced Infinity. Synthesise to
+        // honour the required contract.
         state.roles[role.name] = synthesizeForRole(role);
         synthesized.push(role.name);
       }
@@ -159,4 +170,5 @@ export class ResolveRoles implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `resolve:roles` pipeline task. */
 export const resolveRoles = new ResolveRoles();

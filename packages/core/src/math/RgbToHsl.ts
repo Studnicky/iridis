@@ -1,5 +1,10 @@
 import type { MathPrimitiveInterface } from '../model/types.ts';
 
+/**
+ * Output shape for {@link RgbToHsl}: `h` in degrees, `s` and `l` in
+ * 0..1, `alpha` in 0..1. Distinct from `ColorRecordInterface` because
+ * HSL is a transient working coordinate, not a canonical encoding.
+ */
 export interface HslResultInterface {
   readonly 'h': number;
   readonly 's': number;
@@ -7,6 +12,11 @@ export interface HslResultInterface {
   readonly 'alpha': number;
 }
 
+/**
+ * Math primitive that decomposes sRGB components into HSL coordinates.
+ * Returns `{h, s, l, alpha}` rather than a `ColorRecordInterface` because
+ * HSL is a transient computation surface, not an iridis canonical encoding.
+ */
 export class RgbToHsl implements MathPrimitiveInterface {
   readonly 'name' = 'rgbToHsl';
 
@@ -53,4 +63,5 @@ export class RgbToHsl implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `rgbToHsl` math primitive. */
 export const rgbToHsl = new RgbToHsl();

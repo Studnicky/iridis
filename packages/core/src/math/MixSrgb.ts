@@ -7,6 +7,12 @@ function isColorRecord(v: unknown): v is ColorRecordInterface {
   return typeof c['rgb'] === 'object' && c['rgb'] !== null;
 }
 
+/**
+ * Math primitive that interpolates two colors directly in gamma-encoded
+ * sRGB. Provided for fidelity with naive web-color mixing — produces
+ * the muddy mid-points consumers expect from CSS `color-mix(in srgb,
+ * ...)`. Use {@link MixOklch} instead for perceptually even palettes.
+ */
 export class MixSrgb implements MathPrimitiveInterface {
   readonly 'name' = 'mixSrgb';
 
@@ -27,4 +33,5 @@ export class MixSrgb implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `mixSrgb` math primitive. */
 export const mixSrgb = new MixSrgb();

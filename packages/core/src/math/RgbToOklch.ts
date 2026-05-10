@@ -1,6 +1,11 @@
 import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
+/**
+ * Math primitive that converts gamma-encoded sRGB components `(r, g, b,
+ * alpha?)` in 0..1 into a fully-populated `ColorRecordInterface`. Pass
+ * byte values pre-divided by 255.
+ */
 export class RgbToOklch implements MathPrimitiveInterface {
   readonly 'name' = 'rgbToOklch';
 
@@ -17,4 +22,5 @@ export class RgbToOklch implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `rgbToOklch` math primitive. */
 export const rgbToOklch = new RgbToOklch();

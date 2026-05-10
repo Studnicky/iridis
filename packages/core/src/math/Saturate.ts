@@ -7,6 +7,11 @@ function isColorRecord(v: unknown): v is ColorRecordInterface {
   return typeof c['oklch'] === 'object' && c['oklch'] !== null;
 }
 
+/**
+ * Math primitive that increases OKLCH chroma by `deltaC`, leaving
+ * lightness and hue alone. Chroma is clamped into [0, 0.5] (the iridis
+ * working range — anything beyond is well outside sRGB anyway).
+ */
 export class Saturate implements MathPrimitiveInterface {
   readonly 'name' = 'saturate';
 
@@ -23,4 +28,5 @@ export class Saturate implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `saturate` math primitive. */
 export const saturate = new Saturate();

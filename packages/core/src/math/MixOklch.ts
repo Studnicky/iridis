@@ -14,6 +14,13 @@ function lerpAngle(a: number, b: number, t: number): number {
   return ((a + diff * t) % 360 + 360) % 360;
 }
 
+/**
+ * Math primitive that linearly interpolates two colors in OKLCH space.
+ * `t` is clamped into [0, 1]; hue takes the short angular path so a
+ * mix from red to violet doesn't tour all of cyan/green. This is the
+ * default mixer used by {@link ExpandFamily} and friends because OKLCH
+ * preserves perceptual lightness through the mid-point, unlike sRGB.
+ */
 export class MixOklch implements MathPrimitiveInterface {
   readonly 'name' = 'mixOklch';
 
@@ -34,4 +41,5 @@ export class MixOklch implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `mixOklch` math primitive. */
 export const mixOklch = new MixOklch();

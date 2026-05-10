@@ -1,5 +1,10 @@
 import type { MathPrimitiveInterface } from '../model/types.ts';
 
+/**
+ * Math primitive that formats sRGB components in 0..1 as a `#rrggbb`
+ * string. Inputs are clamped before quantising so out-of-range values
+ * never throw — they collapse to `00` or `ff`.
+ */
 export class RgbToHex implements MathPrimitiveInterface {
   readonly 'name' = 'rgbToHex';
 
@@ -16,4 +21,5 @@ export class RgbToHex implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `rgbToHex` math primitive. */
 export const rgbToHex = new RgbToHex();

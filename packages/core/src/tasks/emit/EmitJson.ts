@@ -16,6 +16,13 @@ function toHex(color: ColorRecordInterface): string {
   return color.hex;
 }
 
+/**
+ * Pipeline task that flattens the rich `ColorRecord` state into a plain
+ * `{colors, roles, variants}` object of hex strings at
+ * `state.outputs.json`. The lowest-common-denominator output — anything
+ * that can read JSON can consume it, with no knowledge of the OKLCH /
+ * Display P3 enrichments still present on the original records.
+ */
 export class EmitJson implements TaskInterface {
   readonly 'name' = 'emit:json';
 
@@ -54,4 +61,5 @@ export class EmitJson implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `emit:json` pipeline task. */
 export const emitJson = new EmitJson();

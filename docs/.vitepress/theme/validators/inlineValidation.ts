@@ -1,17 +1,19 @@
 /**
- * inlineValidation.ts
- *
- * Browser-safe validators for the IridisDemo inline editors. We can't use
- * json-tology in the docs bundle (it imports node:url) so these are
- * hand-rolled against the same shape constraints.
- *
- * Each validator returns null on success, or an error string on failure.
+ * Browser-safe validators for the IridisDemo inline editors. The
+ * `@studnicky/json-tology` validator chain is unavailable in the docs
+ * bundle (it imports `node:url`), so these are hand-rolled against the
+ * same shape constraints. Each validator returns `null` on success or
+ * an error string on failure — caller decides where to surface it.
  */
 
 import type { RoleSchemaInterface } from '@studnicky/iridis/model';
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
+/**
+ * Validates an array of `#rrggbb` color strings (1..8 entries). Returns
+ * `null` when the value is acceptable for the inline palette editor.
+ */
 export function validateColorsArray(value: unknown): string | null {
   if (!Array.isArray(value)) {
     return 'colors must be an array';

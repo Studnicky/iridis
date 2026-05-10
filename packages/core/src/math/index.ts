@@ -52,6 +52,11 @@ import { clusterMedianCut } from './ClusterMedianCut.ts';
 import { luminance        } from './Luminance.ts';
 import { contrastText     } from './ContrastText.ts';
 
+/**
+ * Every math primitive shipped with `@studnicky/iridis`. Pass to
+ * `engine.math.register` in a loop to wire the full math surface in
+ * one shot, or pick out individuals when bundle size matters.
+ */
 export const mathBuiltins: readonly MathPrimitiveInterface[] = [
   oklchToRgb,
   rgbToOklch,

@@ -58,6 +58,14 @@ function splitBucket(bucket: BucketInterface): [BucketInterface, BucketInterface
   ];
 }
 
+/**
+ * Math primitive that reduces an arbitrary palette of colors to `k`
+ * representative colors via Heckbert's median-cut algorithm operating
+ * in OKLCH. Splits along whichever axis (L, C, or H) currently spans
+ * the widest range; each bucket's median is the channel-wise mean of
+ * its members. Used by `clamp:count` to cap downstream work when an
+ * intake stage produces hundreds of pixels (e.g. image extraction).
+ */
 export class ClusterMedianCut implements MathPrimitiveInterface {
   readonly 'name' = 'clusterMedianCut';
 
@@ -101,4 +109,5 @@ export class ClusterMedianCut implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `clusterMedianCut` math primitive. */
 export const clusterMedianCut = new ClusterMedianCut();

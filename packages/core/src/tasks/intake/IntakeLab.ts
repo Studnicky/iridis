@@ -64,6 +64,13 @@ function labToRgb(l: number, a: number, b: number): [number, number, number] {
   ];
 }
 
+/**
+ * Intake task that consumes `{l, a, b}` CIE Lab literals (D65 white
+ * point) and converts them through XYZ → linear sRGB → gamma-encoded
+ * sRGB. The disambiguation guard rejects entries that also carry HSL
+ * (`s`) or OKLCH (`c`, `h`) keys to avoid stealing them from those
+ * intakes.
+ */
 export class IntakeLab implements TaskInterface {
   readonly 'name' = 'intake:lab';
 
@@ -92,4 +99,5 @@ export class IntakeLab implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `intake:lab` pipeline task. */
 export const intakeLab = new IntakeLab();

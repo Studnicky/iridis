@@ -7,6 +7,11 @@ function isColorRecord(v: unknown): v is ColorRecordInterface {
   return typeof c['oklch'] === 'object' && c['oklch'] !== null;
 }
 
+/**
+ * Math primitive that decreases OKLCH chroma by `deltaC`, leaving
+ * lightness and hue alone. Chroma is clamped into [0, 0.5] so the result
+ * collapses cleanly to neutral gray rather than going negative.
+ */
 export class Desaturate implements MathPrimitiveInterface {
   readonly 'name' = 'desaturate';
 
@@ -23,4 +28,5 @@ export class Desaturate implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `desaturate` math primitive. */
 export const desaturate = new Desaturate();

@@ -1,5 +1,9 @@
 import type { MathPrimitiveInterface, RgbInterface } from '../model/types.ts';
 
+/**
+ * Math primitive that gamma-encodes linear-light values into the sRGB
+ * transfer curve. Inverse of {@link SrgbToLinear}.
+ */
 export class LinearToSrgb implements MathPrimitiveInterface {
   readonly 'name' = 'linearToSrgb';
 
@@ -23,4 +27,5 @@ export class LinearToSrgb implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `linearToSrgb` math primitive. */
 export const linearToSrgb = new LinearToSrgb();

@@ -17,6 +17,16 @@ interface ContrastReport {
   'adjusted':    boolean;
 }
 
+/**
+ * Pipeline task that walks every contrast pair declared on the role
+ * schema (and any extras on `input.contrast.extra`), measures the
+ * actual ratio under the configured algorithm, and nudges the
+ * foreground color via `ensureContrast` when the pair falls short.
+ *
+ * Writes a structured per-pair report to `state.metadata.contrastReport`
+ * so consumers can render compliance dashboards or fail their CI when
+ * `passed: false` survives the nudge.
+ */
 export class EnforceContrast implements TaskInterface {
   readonly 'name' = 'enforce:contrast';
 
@@ -101,4 +111,5 @@ export class EnforceContrast implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `enforce:contrast` pipeline task. */
 export const enforceContrast = new EnforceContrast();
