@@ -157,6 +157,13 @@ const CSS_NAMED_COLORS: Readonly<Record<string, string>> = {
   'yellowgreen':          '#9acd32',
 };
 
+/**
+ * Intake task that resolves CSS named colors (e.g. `"rebeccapurple"`)
+ * via an embedded lookup table covering every CSS Color Module Level 4
+ * keyword. Case-insensitive. Skips strings that aren't recognised so
+ * `IntakeAny` can hand them off to other intakes (notably hex, which
+ * accepts unprefixed `cabbed` etc.).
+ */
 export class IntakeNamed implements TaskInterface {
   readonly 'name' = 'intake:named';
 
@@ -187,4 +194,5 @@ export class IntakeNamed implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `intake:named` pipeline task. */
 export const intakeNamed = new IntakeNamed();

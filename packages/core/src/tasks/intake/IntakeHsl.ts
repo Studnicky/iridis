@@ -44,6 +44,13 @@ function hslToRgbComponents(h: number, s: number, l: number): [number, number, n
   return [r + m, g + m, b + m];
 }
 
+/**
+ * Intake task that converts `{h, s, l, a?}` objects into `ColorRecord`s.
+ * Auto-detects whether saturation/lightness are 0..1 or 0..100 by the
+ * max-value heuristic, so both CSS-style and float literals work
+ * without an explicit unit flag. Hue is taken in degrees and wrapped
+ * to [0, 360) before conversion.
+ */
 export class IntakeHsl implements TaskInterface {
   readonly 'name' = 'intake:hsl';
 
@@ -79,4 +86,5 @@ export class IntakeHsl implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `intake:hsl` pipeline task. */
 export const intakeHsl = new IntakeHsl();

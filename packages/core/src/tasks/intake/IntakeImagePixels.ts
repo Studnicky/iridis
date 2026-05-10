@@ -20,6 +20,16 @@ function isImagePixelInput(v: unknown): v is ImagePixelInput {
     && typeof o['height'] === 'number';
 }
 
+/**
+ * Intake task for `ImageData`-shaped inputs (`{data: Uint8ClampedArray,
+ * width, height}` — the canvas API's pixel buffer). Pushes one
+ * `ColorRecord` per fully or partially opaque pixel; transparent
+ * pixels are dropped so an alpha-channel mask doesn't bias clustering.
+ *
+ * Image inputs typically blow past `clamp:count`'s 64-color default;
+ * pair this intake with `clamp:count` (or a smaller `maxColors`) so
+ * downstream tasks aren't dragged down by tens of thousands of pixels.
+ */
 export class IntakeImagePixels implements TaskInterface {
   readonly 'name' = 'intake:imagePixels';
 
@@ -68,4 +78,5 @@ export class IntakeImagePixels implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `intake:imagePixels` pipeline task. */
 export const intakeImagePixels = new IntakeImagePixels();

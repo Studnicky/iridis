@@ -29,6 +29,17 @@ function normalizeHex(raw: string): string {
   return '';
 }
 
+/**
+ * Intake task that walks `state.input.colors` and converts every entry
+ * matching a hex pattern (`#rgb`, `#rrggbb`, `#rrggbbaa`, with or
+ * without leading `#`) into a `ColorRecord`. Non-string entries and
+ * malformed hex are skipped silently — the dispatcher (`IntakeAny`)
+ * relies on each handler being a no-op for inputs it doesn't own.
+ *
+ * 8-digit alpha is preserved on the resulting record's `alpha` field
+ * while the canonical `hex` is always 6 digits, matching the iridis
+ * convention that alpha lives in its own slot.
+ */
 export class IntakeHex implements TaskInterface {
   readonly 'name' = 'intake:hex';
 
@@ -72,4 +83,5 @@ export class IntakeHex implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `intake:hex` pipeline task. */
 export const intakeHex = new IntakeHex();

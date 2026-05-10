@@ -22,6 +22,17 @@ const DELEGATES = [
   intakeImagePixels,
 ] as const;
 
+/**
+ * The default intake task. Runs every format-specific intake in order
+ * over the same `state.input.colors` array; each delegate is responsible
+ * for ignoring entries it doesn't recognise. Idiomatic when callers
+ * don't know (or don't want to commit to) the exact format coming in.
+ *
+ * Order matters only for ambiguous strings — e.g. `"red"` could match
+ * IntakeNamed, but the unprefixed three-character hex `"red"` is also
+ * accepted by IntakeHex's loose pattern. IntakeHex runs first so hex
+ * always wins when both could parse.
+ */
 export class IntakeAny implements TaskInterface {
   readonly 'name' = 'intake:any';
 
@@ -33,22 +44,13 @@ export class IntakeAny implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const seen = new Set<number>();
-
     for (const delegate of DELEGATES) {
-      const before = state.colors.length;
       delegate.run(state, ctx);
-      const after = state.colors.length;
-
-      if (after > before) {
-        for (let i = before; i < after; i++) {
-          seen.add(i);
-        }
-      }
     }
 
     ctx.logger.debug('IntakeAny', 'run', `Total colors after intake: ${state.colors.length}`);
   }
 }
 
+/** Singleton instance registered as the `intake:any` pipeline task. */
 export const intakeAny = new IntakeAny();

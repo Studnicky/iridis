@@ -5,6 +5,16 @@ import type {
   TaskRegistryInterface,
 } from '../model/types.ts';
 
+/**
+ * Holds the mutable set of pipeline tasks an `Engine` will run. Tasks
+ * are addressed by name, so registering a task with an existing name is
+ * a deliberate override (used by plugins to swap built-ins).
+ *
+ * Hook tasks live in the same name table as ordered tasks but additionally
+ * reside in per-phase queues fired by the engine before/after the main
+ * sequence. The phase a task was hooked into is the phase it fires in;
+ * the same task may not currently be hooked into multiple phases.
+ */
 export class TaskRegistry implements TaskRegistryInterface {
   private readonly entries = new Map<string, TaskInterface>();
 

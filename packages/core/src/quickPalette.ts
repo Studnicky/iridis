@@ -1,18 +1,9 @@
 /**
- * quickPalette.ts
- *
- * One-liner convenience: give it seed colors, get back a role-resolved
- * hex palette. Uses a sensible four-role default schema, framing-aware
- * lightness clamps, and the canonical pipeline. For full control, drop
- * back to `engine.run(input)`.
- *
- * Example
- *   import { quickPalette } from '@studnicky/iridis';
- *   const palette = await quickPalette(['#7c3aed', '#06b6d4'], 'dark');
- *   //   palette.background === '#0a0a14'
- *   //   palette.foreground === '#f0f0ff'
- *   //   palette.accent     === '#7c3aed'
- *   //   palette.muted      === '#7e7e95'
+ * One-liner convenience entry point: hex seeds in, four-role palette
+ * out. Wraps a fresh `Engine` registered with every built-in math
+ * primitive and core task, runs `intake:hex → resolve:roles`, and
+ * returns the assigned hex strings. Drop back to `Engine.run(input)`
+ * for any non-trivial use case.
  */
 
 import { Engine }                  from './engine/Engine.ts';
@@ -40,6 +31,11 @@ const SCHEMA_LIGHT: RoleSchemaInterface = {
   ],
 };
 
+/**
+ * Output shape of {@link quickPalette}: the four canonical roles, each
+ * resolved to a 6-digit hex string. Frozen by convention — callers
+ * read; the engine writes.
+ */
 export interface QuickPaletteInterface {
   readonly background: string;
   readonly foreground: string;
@@ -49,6 +45,12 @@ export interface QuickPaletteInterface {
 
 const PIPELINE: readonly string[] = ['intake:hex', 'resolve:roles'];
 
+/**
+ * Resolves `seeds` into a four-role hex palette under the given framing
+ * (`'dark'` by default). Constructs a throwaway engine each call, so
+ * this is appropriate for one-shot use; prefer a long-lived `Engine`
+ * for anything that runs more than a handful of times.
+ */
 export async function quickPalette(
   seeds: readonly string[],
   framing: FramingType = 'dark',

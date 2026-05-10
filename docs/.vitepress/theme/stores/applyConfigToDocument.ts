@@ -1,22 +1,19 @@
 /**
- * applyConfigToDocument.ts — projector.
- *
- * Single responsibility: take the active schema (a {dark,light} pair),
- * pick the variant matching the current framing, run the engine, write
- * one CSS variable per resolved role onto documentElement. That is the
- * entire glue layer.
+ * Projector that turns docs config into live CSS variables. Picks the
+ * `{dark, light}` variant of the active schema matching the current
+ * framing, runs the iridis engine, and writes one `--iridis-{role}`
+ * custom property per resolved role onto `document.documentElement`.
  *
  *   active schema + framing → engine.run → state.roles → --iridis-{role}
  *
- * No alias chains. No JS-side hue rotation. No static fallbacks. If a
- * role isn't in the schema it isn't in the cascade — that sparseness IS
- * the demonstration of what the user's chosen schema produces.
+ * No alias chains, no JS-side hue rotation, no static fallbacks — if a
+ * role isn't in the schema it isn't in the cascade, and that sparseness
+ * is the demonstration of what the user's chosen schema produces.
  *
- * Previously-set --iridis-* properties are cleared before the new set
- * is written, so switching from iridis-16 to iridis-4 doesn't leave
- * stale variables from the previous schema haunting the cascade.
- *
- * SSR-safe (early return when window/document is undefined).
+ * Previously-written `--iridis-*` properties are cleared before each
+ * run so a 16→4 schema switch doesn't leave 12 phantom variables
+ * cascading. SSR-safe: early-returns when `window`/`document` are
+ * undefined.
  */
 
 import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';

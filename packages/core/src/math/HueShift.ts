@@ -7,6 +7,12 @@ function isColorRecord(v: unknown): v is ColorRecordInterface {
   return typeof c['oklch'] === 'object' && c['oklch'] !== null;
 }
 
+/**
+ * Math primitive that rotates a color's OKLCH hue by `degrees` (positive
+ * or negative). Lightness, chroma, and alpha are preserved; the result
+ * is wrapped into [0, 360). Used by family-derivation tasks to cast
+ * complementary, triadic, and analogous variants from a single seed.
+ */
 export class HueShift implements MathPrimitiveInterface {
   readonly 'name' = 'hueShift';
 
@@ -23,4 +29,5 @@ export class HueShift implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `hueShift` math primitive. */
 export const hueShift = new HueShift();

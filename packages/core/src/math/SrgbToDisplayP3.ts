@@ -14,6 +14,11 @@ function p3Encode(v: number): number {
   return 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
 }
 
+/**
+ * Math primitive that maps gamma-encoded sRGB into Display P3 space
+ * (D65 white point). Used by emitters targeting wide-gamut displays.
+ * Out-of-gamut intermediate values are clipped to [0,1] before re-encoding.
+ */
 export class SrgbToDisplayP3 implements MathPrimitiveInterface {
   readonly 'name' = 'srgbToDisplayP3';
 
@@ -35,4 +40,5 @@ export class SrgbToDisplayP3 implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `srgbToDisplayP3` math primitive. */
 export const srgbToDisplayP3 = new SrgbToDisplayP3();

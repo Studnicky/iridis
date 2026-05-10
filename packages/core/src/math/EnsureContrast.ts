@@ -17,16 +17,23 @@ function getContrast(fg: ColorRecordInterface, bg: ColorRecordInterface, algorit
   if (algorithm === 'wcag21') {
     return contrastWcag21.apply(fg, bg) as number;
   }
+  // APCA returns signed Lc; absolute value lets us use a single threshold
+  // comparison regardless of polarity (text-on-bg vs. bg-on-text).
   return Math.abs(contrastApca.apply(fg, bg) as number);
 }
 
-function meetsCriteria(contrast: number, minRatio: number, algorithm: ContrastAlgorithmType): boolean {
-  if (algorithm === 'apca') {
-    return contrast >= minRatio;
-  }
-  return contrast >= minRatio;
-}
-
+/**
+ * Math primitive that nudges a `foreground` color along the OKLCH
+ * lightness axis until it satisfies `minRatio` against `background`
+ * under the chosen algorithm (`wcag21` or `apca`). Direction is chosen
+ * by comparing source vs. background lightness so dark fg/light bg
+ * pairs darken further and vice versa.
+ *
+ * Up to 50 iterations with a 0.02 step; if the lightness rail clips
+ * to 0 or 1 before passing, the boundary candidate is returned even
+ * if it still falls short — caller is responsible for noticing and
+ * choosing a different background.
+ */
 export class EnsureContrast implements MathPrimitiveInterface {
   readonly 'name' = 'ensureContrast';
 
@@ -45,7 +52,7 @@ export class EnsureContrast implements MathPrimitiveInterface {
     let current = foreground;
     const initialContrast = getContrast(current, background, algorithm);
 
-    if (meetsCriteria(initialContrast, minRatio, algorithm)) {
+    if (initialContrast >= minRatio) {
       return current;
     }
 
@@ -57,7 +64,7 @@ export class EnsureContrast implements MathPrimitiveInterface {
       const candidate = colorRecordFactory.fromOklch(newL, current.oklch.c, current.oklch.h, current.alpha);
       const ratio = getContrast(candidate, background, algorithm);
 
-      if (meetsCriteria(ratio, minRatio, algorithm)) {
+      if (ratio >= minRatio) {
         return candidate;
       }
 
@@ -72,4 +79,5 @@ export class EnsureContrast implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `ensureContrast` math primitive. */
 export const ensureContrast = new EnsureContrast();

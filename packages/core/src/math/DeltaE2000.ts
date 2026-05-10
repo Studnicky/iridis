@@ -1,6 +1,11 @@
-// Delta E 2000 computed via OKLCH-derived Lab (D65). OKLCH is a direct reparametrisation
-// of OKLab, so (L, a*, b*) = (oklch.l, c*cos(h), c*sin(h)) in the OKLab encoding.
-// The CIE ΔE 2000 formula is applied to these Lab values per Sharma et al. 2005.
+/**
+ * ΔE 2000 perceptual color difference computed against an OKLab-derived
+ * Lab, scaled to roughly match the CIE Lab numeric range expected by the
+ * Sharma et al. 2005 formula. OKLCH is a direct reparametrisation of
+ * OKLab, so (L, a*, b*) = (oklch.l, c·cos(h), c·sin(h)) before scaling.
+ * The result is a perceptual distance — single-digit values indicate
+ * "just noticeable" differences, anything > 10 is clearly distinct.
+ */
 import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
 
 function isColorRecord(v: unknown): v is ColorRecordInterface {
@@ -22,6 +27,12 @@ function rad(d: number): number {
   return (d * Math.PI) / 180;
 }
 
+/**
+ * Math primitive that returns the ΔE 2000 perceptual distance between
+ * two colors. Symmetric. Used by tasks that need to test whether two
+ * candidate colors are visibly distinct — e.g. ensuring no two assigned
+ * roles collapse to indistinguishable values after contrast nudging.
+ */
 export class DeltaE2000 implements MathPrimitiveInterface {
   readonly 'name' = 'deltaE2000';
 
@@ -34,7 +45,8 @@ export class DeltaE2000 implements MathPrimitiveInterface {
     const [L1, a1, b1] = oklchToOklab(a.oklch.l, a.oklch.c, a.oklch.h);
     const [L2, a2, b2] = oklchToOklab(b.oklch.l, b.oklch.c, b.oklch.h);
 
-    // Scale OKLab to roughly match CIE Lab numeric range (OKLab L is 0-1, CIE L is 0-100)
+    // OKLab L is 0..1; CIE Lab L is 0..100. Scale so the formula's hard-coded
+    // constants (Sharma et al. 2005) operate on the magnitudes they expect.
     const scale = 100;
     const sL1 = L1 * scale, sa1 = a1 * scale, sb1 = b1 * scale;
     const sL2 = L2 * scale, sa2 = a2 * scale, sb2 = b2 * scale;
@@ -111,4 +123,5 @@ export class DeltaE2000 implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `deltaE2000` math primitive. */
 export const deltaE2000 = new DeltaE2000();

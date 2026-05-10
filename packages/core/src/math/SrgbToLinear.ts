@@ -1,5 +1,11 @@
 import type { MathPrimitiveInterface, RgbInterface } from '../model/types.ts';
 
+/**
+ * Math primitive that converts gamma-encoded sRGB components into
+ * linear-light values via the standard sRGB transfer function. Used by
+ * any math that needs a physically meaningful linear space (luminance,
+ * blending, gamut mapping).
+ */
 export class SrgbToLinear implements MathPrimitiveInterface {
   readonly 'name' = 'srgbToLinear';
 
@@ -23,4 +29,5 @@ export class SrgbToLinear implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `srgbToLinear` math primitive. */
 export const srgbToLinear = new SrgbToLinear();

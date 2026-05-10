@@ -27,6 +27,11 @@ function hslToRgbComponents(h: number, s: number, l: number): [number, number, n
   return [r + m, g + m, b + m];
 }
 
+/**
+ * Math primitive that converts HSL `(h: deg, s: 0..1, l: 0..1, alpha?)`
+ * into a fully-populated `ColorRecordInterface`. Hue is wrapped into
+ * [0, 360); saturation and lightness are clamped into the unit range.
+ */
 export class HslToRgb implements MathPrimitiveInterface {
   readonly 'name' = 'hslToRgb';
 
@@ -44,4 +49,5 @@ export class HslToRgb implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `hslToRgb` math primitive. */
 export const hslToRgb = new HslToRgb();

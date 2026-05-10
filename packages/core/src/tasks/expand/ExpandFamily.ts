@@ -32,6 +32,17 @@ function deriveColor(
   );
 }
 
+/**
+ * Pipeline task that fills in roles declared with `derivedFrom` from
+ * the assigned source role's color, applying the role's own
+ * lightness/chroma centers (and `hueOffset` if set) as the OKLCH
+ * coordinates. Already-assigned derived roles are left alone — explicit
+ * input wins over family derivation.
+ *
+ * Runs after `resolve:roles` so source roles exist; missing sources
+ * are warned about and skipped rather than throwing, on the principle
+ * that a partially-rendered palette is more useful than a hard failure.
+ */
 export class ExpandFamily implements TaskInterface {
   readonly 'name' = 'expand:family';
 
@@ -79,4 +90,5 @@ export class ExpandFamily implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `expand:family` pipeline task. */
 export const expandFamily = new ExpandFamily();

@@ -1,4 +1,12 @@
-// APCA-W3 0.0.98G-4g formula — https://github.com/Myndex/SAPC-APCA
+/**
+ * APCA-W3 0.0.98G-4g formula — https://github.com/Myndex/SAPC-APCA
+ *
+ * APCA returns a signed Lightness contrast (Lc) in the −108..+106 range
+ * rather than a symmetric ratio. Sign indicates polarity: positive means
+ * dark text on light background, negative the inverse. Threshold guidance
+ * differs from WCAG (e.g. body text targets |Lc| ≥ 60), so callers should
+ * choose minRatio with that scale in mind.
+ */
 import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
 
 function isColorRecord(v: unknown): v is ColorRecordInterface {
@@ -32,6 +40,12 @@ const SA98G_SCALE    = 1.14;
 const SA98G_LOW_CLIP = 0.001;
 const SA98G_OFFSET   = 0.027;
 
+/**
+ * Math primitive that computes APCA Lightness contrast (Lc) between
+ * `(text, background)`. Argument order matters — APCA is asymmetric.
+ * Returns 0 when polarity is below the low-clip threshold; otherwise
+ * scales to the documented −108..+106 range.
+ */
 export class ContrastApca implements MathPrimitiveInterface {
   readonly 'name' = 'contrastApca';
 
@@ -66,4 +80,5 @@ export class ContrastApca implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `contrastApca` math primitive. */
 export const contrastApca = new ContrastApca();

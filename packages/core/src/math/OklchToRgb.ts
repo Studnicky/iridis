@@ -1,6 +1,12 @@
 import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
+/**
+ * Math primitive that converts OKLCH coordinates `(l, c, h, alpha?)`
+ * into a fully-populated `ColorRecordInterface`. Delegates to
+ * {@link colorRecordFactory.fromOklch}; out-of-gamut OKLCH values are
+ * silently clipped to the sRGB cube rather than gamut-mapped.
+ */
 export class OklchToRgb implements MathPrimitiveInterface {
   readonly 'name' = 'oklchToRgb';
 
@@ -17,4 +23,5 @@ export class OklchToRgb implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `oklchToRgb` math primitive. */
 export const oklchToRgb = new OklchToRgb();

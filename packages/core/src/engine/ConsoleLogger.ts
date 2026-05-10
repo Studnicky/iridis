@@ -1,5 +1,12 @@
 import type { LoggerInterface } from '../model/types.ts';
 
+/**
+ * Default `LoggerInterface` implementation that forwards to the global
+ * `console` with a `[scope.operation]` prefix. Used by `Engine.run` when
+ * no logger is supplied; consumers building their own pipeline context
+ * are free to substitute a structured logger that satisfies the same
+ * `(scope, operation, message, data?)` contract.
+ */
 export class ConsoleLogger implements LoggerInterface {
   debug(scope: string, op: string, message: string, data?: unknown): void {
     if (data === undefined) {

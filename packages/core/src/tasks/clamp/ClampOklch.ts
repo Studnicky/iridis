@@ -33,6 +33,16 @@ function roleRangeFor(
   return { 'lRange': DEFAULT_L_RANGE, 'cRange': DEFAULT_C_RANGE };
 }
 
+/**
+ * Pipeline task that clamps each color's OKLCH lightness and chroma
+ * into either the role-defined range (when the color carries a role
+ * hint and the schema declares ranges) or the conservative defaults
+ * `[0.05, 0.95]` for L and `[0, 0.40]` for C. Hue is always preserved.
+ *
+ * Runs before `resolve:roles` so the role-distance computation operates
+ * on candidates that already live inside their target envelope. A color
+ * that's already inside its range is returned untouched (no allocation).
+ */
 export class ClampOklch implements TaskInterface {
   readonly 'name' = 'clamp:oklch';
 
@@ -73,4 +83,5 @@ export class ClampOklch implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `clamp:oklch` pipeline task. */
 export const clampOklch = new ClampOklch();

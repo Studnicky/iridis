@@ -17,6 +17,12 @@ function toLinear(value: number): number {
   return Math.pow((value + 0.055) / 1.055, 2.4);
 }
 
+/**
+ * Math primitive that computes the WCAG-style relative luminance of a
+ * color (Y in 0..1). Used both directly for "does this surface need
+ * black or white text?" decisions and as a building block for the
+ * full `contrastWcag21` ratio.
+ */
 export class Luminance implements MathPrimitiveInterface {
   readonly 'name' = 'luminance';
 
@@ -32,4 +38,5 @@ export class Luminance implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `luminance` math primitive. */
 export const luminance = new Luminance();

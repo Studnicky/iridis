@@ -80,7 +80,25 @@ function rgbToHexStr(r: number, g: number, b: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
+/**
+ * Factory for canonical {@link ColorRecordInterface} values. Every record
+ * leaves this factory with all three encodings (`oklch`, `rgb`, `hex`)
+ * populated and consistent: the OKLCH/RGB transforms below round-trip
+ * through the Björn Ottosson OKLab matrices, and the hex string is
+ * derived from the same RGB triple. Inputs are clamped into the valid
+ * encoding ranges (L/C/alpha into [0,1]/[0,0.5]/[0,1]; hue mod 360).
+ *
+ * Use the singleton `colorRecordFactory` rather than `new` — it has no
+ * state and registries assume reference identity.
+ */
 export class ColorRecordFactory {
+  /**
+   * Builds a record from OKLCH coordinates. `l` is normalised lightness
+   * (0..1), `c` is chroma (0..0.5), `h` is hue in degrees (any real
+   * number; wrapped into [0, 360)). The resulting RGB is gamma-encoded
+   * sRGB clamped to gamut — out-of-gamut inputs are silently clipped
+   * rather than gamut-mapped.
+   */
   fromOklch(l: number, c: number, h: number, alpha: number = 1): ColorRecordInterface {
     const rgb = oklchToRgbRaw(l, c, h);
     return {
@@ -92,6 +110,12 @@ export class ColorRecordFactory {
     };
   }
 
+  /**
+   * Builds a record from gamma-encoded sRGB components in 0..1. Inputs
+   * outside the unit range are clamped, not scaled — pass `r/255` if
+   * starting from byte values. The OKLCH coordinates are derived via
+   * Björn Ottosson's OKLab transform.
+   */
   fromRgb(r: number, g: number, b: number, alpha: number = 1): ColorRecordInterface {
     const oklch = rgbToOklchRaw(r, g, b);
     return {
@@ -103,9 +127,15 @@ export class ColorRecordFactory {
     };
   }
 
+  /**
+   * Parses `#rrggbb` or `#rrggbbaa` (case-insensitive, leading `#`
+   * optional). Throws on any other length or non-hex characters. The
+   * returned record's `hex` field is always the canonical 6-digit form;
+   * any 8-digit alpha is split off into the `alpha` field so downstream
+   * code never has to deal with two encodings.
+   */
   fromHex(hex: string): ColorRecordInterface {
     const cleaned = hex.replace(/^#/, '');
-    // Accept #rrggbb (6) and #rrggbbaa (8). Reject anything else.
     if (!/^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(cleaned)) {
       throw new Error(`ColorRecordFactory.fromHex: invalid hex '${hex}'`);
     }
@@ -119,7 +149,6 @@ export class ColorRecordFactory {
     return {
       'oklch':        oklch,
       'rgb':          { 'r': r, 'g': g, 'b': b },
-      // Canonical 6-digit hex; alpha lives in the alpha field.
       'hex':          `#${cleaned.slice(0, 6).toLowerCase()}`,
       'alpha':        alpha,
       'sourceFormat': 'hex',
@@ -127,4 +156,8 @@ export class ColorRecordFactory {
   }
 }
 
+/**
+ * Process-wide singleton instance. Stateless; safe to share across
+ * engines and modules. The registry assumes this exact reference.
+ */
 export const colorRecordFactory = new ColorRecordFactory();

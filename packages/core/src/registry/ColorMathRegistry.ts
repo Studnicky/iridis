@@ -3,6 +3,15 @@ import type {
   MathPrimitiveInterface,
 } from '../model/types.ts';
 
+/**
+ * Name-keyed registry of color-math primitives. Tasks reach math through
+ * the engine's `ctx.math` rather than importing primitives directly so
+ * plugins can override built-ins (e.g. swap a faster gamut mapper) without
+ * touching task source.
+ *
+ * `invoke` is the convenience path: `ctx.math.invoke<T>('mixOklch', a, b, t)`
+ * is equivalent to `ctx.math.resolve('mixOklch').apply(a, b, t) as T`.
+ */
 export class ColorMathRegistry implements ColorMathRegistryInterface {
   private readonly entries = new Map<string, MathPrimitiveInterface>();
 

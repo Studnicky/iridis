@@ -23,6 +23,12 @@ function isOklchInput(v: unknown): v is OklchInput {
     && typeof o['s'] !== 'number';
 }
 
+/**
+ * Intake task that consumes `{l, c, h, a?}` OKLCH literals where `l` is
+ * 0..1, `c` is 0..0.5, and `h` is degrees. This is the lossless intake
+ * — every other format eventually round-trips through OKLCH, so passing
+ * iridis-native coordinates skips a conversion step.
+ */
 export class IntakeOklch implements TaskInterface {
   readonly 'name' = 'intake:oklch';
 
@@ -55,4 +61,5 @@ export class IntakeOklch implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `intake:oklch` pipeline task. */
 export const intakeOklch = new IntakeOklch();

@@ -15,6 +15,12 @@ function relativeLuminance(r: number, g: number, b: number): number {
   return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
 }
 
+/**
+ * Math primitive that computes the WCAG 2.1 contrast ratio between two
+ * colors as `(L_lighter + 0.05) / (L_darker + 0.05)`. Result is in the
+ * 1..21 range. Symmetric: argument order doesn't matter. Used by the
+ * `enforce:contrast` task when the configured algorithm is `wcag21`.
+ */
 export class ContrastWcag21 implements MathPrimitiveInterface {
   readonly 'name' = 'contrastWcag21';
 
@@ -31,4 +37,5 @@ export class ContrastWcag21 implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `contrastWcag21` math primitive. */
 export const contrastWcag21 = new ContrastWcag21();

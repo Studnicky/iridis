@@ -21,6 +21,14 @@ function isRgbInput(v: unknown): v is RgbInput {
     && typeof o['b'] === 'number';
 }
 
+/**
+ * Intake task that converts `{r, g, b, a?}` objects into `ColorRecord`s.
+ * Auto-detects whether components are 0..1 or 0..255 by checking the
+ * maximum value, so callers can pass either CSS-style bytes or float
+ * literals without flagging the unit. Entries that look like other
+ * formats (presence of `h`, `l`, or `c` keys) are skipped to avoid
+ * conflicting with the HSL/OKLCH intakes.
+ */
 export class IntakeRgb implements TaskInterface {
   readonly 'name' = 'intake:rgb';
 
@@ -64,4 +72,5 @@ export class IntakeRgb implements TaskInterface {
   }
 }
 
+/** Singleton instance registered as the `intake:rgb` pipeline task. */
 export const intakeRgb = new IntakeRgb();

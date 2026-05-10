@@ -1,13 +1,11 @@
 /**
- * themeDispatcher.ts — single source of truth for the docs theme.
+ * Single source of truth for the docs theme. State-machine dispatcher:
+ * components emit actions, the reducer derives the next state, a single
+ * projector layer translates that state to the DOM (html class,
+ * localStorage, engine output).
  *
- * This is a state-machine dispatcher: components emit actions, the reducer
- * derives the next state, and a single projector layer translates that
- * state to the DOM (html class, localStorage, engine output).
- *
- * Components NEVER mutate state directly. Components NEVER write to the
- * DOM. Components NEVER observe each other. They dispatch actions and
- * read projections — that's it.
+ * Components NEVER mutate state directly, NEVER write to the DOM, NEVER
+ * observe each other — they dispatch actions and read projections.
  *
  *      ┌──────────┐ dispatch ┌─────────┐ projects ┌──────────┐
  *      │component │ ───────▶ │ reducer │ ───────▶ │  DOM /   │
@@ -17,16 +15,10 @@
  *           └───────── reactive subscription ◀──────────┘
  *
  * VitePress's own appearance switch dispatches `setFraming` via a single
- * MutationObserver bridge (the ONLY place that observes the DOM). All
- * other components dispatch via the action functions exported here.
- *
- * Why this shape:
- *  - The previous version had configStore, applyConfigToDocument, and
- *    bindFramingToVitepressTheme all mutating each other through callbacks
- *    and watchers. Dark-mode toggle worked some of the time and not others
- *    because the order of effects was implicit.
- *  - With one reducer + one projector the order is explicit: action →
- *    state change → project. There is no other path.
+ * MutationObserver bridge — the ONLY place that observes the DOM. Every
+ * other write is an explicit action. With one reducer + one projector
+ * the effect order is explicit (action → state → project) so the dark
+ * toggle is deterministic instead of timing-sensitive.
  */
 
 import { reactive, watch } from 'vue';
@@ -87,6 +79,8 @@ function reduce(action: Action): void {
 
 /* ─── Public API ────────────────────────────────────────────────────── */
 
+/** Run a typed action through the reducer. Synchronous; the projector
+ *  effects fire on the next Vue reactivity tick. */
 export function dispatch(action: Action): void {
   reduce(action);
 }
@@ -112,6 +106,7 @@ export const themeStoreWritable: DocsConfigType = new Proxy(state, {
   },
 }) as DocsConfigType;
 
+/** Resets every config field to the schema's declared default. */
 export function resetTheme(): void {
   dispatch({ 'type': 'reset' });
 }
@@ -184,6 +179,11 @@ function persistConfig(snapshot: DocsConfigType): void {
 
 let booted = false;
 
+/**
+ * One-shot initialiser. Idempotent — wires the persistence/DOM watchers
+ * once, hydrates state from localStorage and the current dom framing,
+ * and starts the projector loop. Called by the theme's `enhanceApp` hook.
+ */
 export function bootThemeDispatcher(): void {
   if (booted) return;
   booted = true;

@@ -11,6 +11,13 @@ function isColorRecord(v: unknown): v is ColorRecordInterface {
   return typeof c['rgb'] === 'object' && c['rgb'] !== null;
 }
 
+/**
+ * Math primitive that picks the higher-contrast monochrome text color
+ * (`#000000` or `#ffffff`) for a given background, using a luminance
+ * cutoff (default 0.179, the WCAG-recommended "should-use-white" threshold).
+ * Cheap and stable — useful as a fallback when a full `enforce:contrast`
+ * pass is overkill (e.g. inline previews).
+ */
 export class ContrastText implements MathPrimitiveInterface {
   readonly 'name' = 'contrastText';
 
@@ -31,4 +38,5 @@ export class ContrastText implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `contrastText` math primitive. */
 export const contrastText = new ContrastText();

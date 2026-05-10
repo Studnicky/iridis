@@ -43,6 +43,12 @@ function lerpAngle(a: number, b: number, t: number): number {
   return ((a + diff * t) % 360 + 360) % 360;
 }
 
+/**
+ * Math primitive that interpolates two colors via HSL. Lightness collapses
+ * differently than OKLCH (HSL is perceptually non-uniform), so prefer
+ * {@link MixOklch} for palette work; this exists for emitters that need
+ * to reproduce CSS `mix-blend-mode` style mixing.
+ */
 export class MixHsl implements MathPrimitiveInterface {
   readonly 'name' = 'mixHsl';
 
@@ -69,4 +75,5 @@ export class MixHsl implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `mixHsl` math primitive. */
 export const mixHsl = new MixHsl();

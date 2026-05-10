@@ -26,9 +26,9 @@ import './palette.css';
 import './base.css';
 
 /**
- * Logo block: five concentric rounded boxes (per uiverse loader pattern)
- * with the brand image at the center. CSS in base.css drives the ripple
- * animation and the colored borders sourced from --iridis-brand.
+ * Renders the sidebar logo block: five concentric rounded boxes with the
+ * brand image at center. CSS in base.css drives the ripple animation
+ * and the colored borders sourced from --iridis-brand.
  */
 function logoBlock(): unknown {
   return h('div', { 'class': 'iridis-loader', 'aria-hidden': 'true' }, [
@@ -41,16 +41,20 @@ function logoBlock(): unknown {
   ]);
 }
 
+/**
+ * Custom VitePress theme. Extends the default theme with the iridis
+ * component library, sidebar/right-panel layout slots, and the boot
+ * hook for the theme-state dispatcher that drives every live demo.
+ */
 export const theme: Theme = {
   'extends': DefaultTheme,
   enhanceApp({ app }): void {
-    // Base components — globally available so any markdown page can use them.
+    // Globally registered so any markdown page can drop these in unprefixed.
     app.component('IridisCard',      IridisCard);
     app.component('IridisButton',    IridisButton);
     app.component('IridisInput',     IridisInput);
     app.component('IridisSelect',    IridisSelect);
     app.component('IridisChip',      IridisChip);
-    // Composed components
     app.component('IridisDemo',      IridisDemo);
     app.component('IridisCode',      IridisCode);
     app.component('SchemaForm',      SchemaForm);

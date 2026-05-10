@@ -14,6 +14,12 @@ function srgbEncode(v: number): number {
   return 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
 }
 
+/**
+ * Math primitive that maps Display P3 components back into sRGB.
+ * Inverse of {@link SrgbToDisplayP3}; intermediate values are clipped
+ * before re-encoding so out-of-sRGB-gamut P3 colors collapse to the
+ * nearest sRGB primary rather than producing negative components.
+ */
 export class DisplayP3ToSrgb implements MathPrimitiveInterface {
   readonly 'name' = 'displayP3ToSrgb';
 
@@ -35,4 +41,5 @@ export class DisplayP3ToSrgb implements MathPrimitiveInterface {
   }
 }
 
+/** Singleton instance registered as the `displayP3ToSrgb` math primitive. */
 export const displayP3ToSrgb = new DisplayP3ToSrgb();
