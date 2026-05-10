@@ -10,7 +10,7 @@ OKLCH is the canonical color space inside iridis. Every `ColorRecord` carries OK
 | C (chroma) | `[0, ~0.5]` | distance from the neutral grey axis |
 | h (hue) | `[0, 360)` degrees | angle on the chromaticity plane |
 
-OKLCH is the polar form of Oklab, Björn Ottosson's perceptually uniform color space (2020). The Cartesian form has axes (L, a, b); the polar form keeps L and replaces (a, b) with chroma C = √(a² + b²) and hue h = atan2(b, a). Polar coordinates are easier to manipulate semantically — "shift hue" and "raise chroma" are coordinate operations rather than vector projections.
+OKLCH is the polar form of Oklab, Björn Ottosson's perceptually uniform color space (2020). The Cartesian form has axes (L, a, b); the polar form keeps L and replaces (a, b) with chroma C = √(a² + b²) and hue h = atan2(b, a). Polar coordinates are easier to manipulate semantically, "shift hue" and "raise chroma" are coordinate operations rather than vector projections.
 
 ## Why OKLCH
 

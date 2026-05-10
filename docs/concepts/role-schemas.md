@@ -12,7 +12,7 @@ Use the **Role schema** dropdown in the right-panel example to switch between `m
 
 ## What a role schema is
 
-`RoleSchemaInterface` has three fields: a `name`, an optional `description`, an array of `roles`, and an optional array of `contrastPairs`. It is a plain TypeScript object — not a class, not a schema registry entry. You pass it directly to `engine.run()` via `input.roles`.
+`RoleSchemaInterface` has three fields: a `name`, an optional `description`, an array of `roles`, and an optional array of `contrastPairs`. It is a plain TypeScript object, not a class, not a schema registry entry. You pass it directly to `engine.run()` via `input.roles`.
 
 ```ts
 import type { RoleSchemaInterface } from '@studnicky/iridis/model';
@@ -24,15 +24,15 @@ export const mySchema: RoleSchemaInterface = {
 };
 ```
 
-The schema is intentionally minimal. iridis does not prescribe role names — `canvas`, `accent`, `text`, `background`, `keyword`, `error` are all equally valid. Name roles after what they mean in your product, not after generic design tokens.
+The schema is intentionally minimal. iridis does not prescribe role names, `canvas`, `accent`, `text`, `background`, `keyword`, `error` are all equally valid. Name roles after what they mean in your product, not after generic design tokens.
 
 ## Required vs optional roles
 
-Each `RoleDefinitionInterface` carries a `required` boolean. When `required: true`, `resolve:roles` emits a warning in `state.metadata.roleWarnings` if no color could be assigned. The pipeline continues regardless — required is advisory, not a hard error. Your integration code can inspect `state.metadata.roleWarnings` and surface failures as appropriate.
+Each `RoleDefinitionInterface` carries a `required` boolean. When `required: true`, `resolve:roles` emits a warning in `state.metadata.roleWarnings` if no color could be assigned. The pipeline continues regardless, required is advisory, not a hard error. Your integration code can inspect `state.metadata.roleWarnings` and surface failures as appropriate.
 
 Optional roles (no `required` field, or `required: false`) are skipped if no candidate matches.
 
-## derivedFrom — parametric expansion
+## derivedFrom, parametric expansion
 
 The `derivedFrom` field links a role to another role in the same schema. `expand:family` runs after `resolve:roles` and synthesizes any unassigned role that has `derivedFrom` set. It takes the source role's OKLCH color and applies the lightness, chroma, and hue constraints declared on the derived role.
 
@@ -42,17 +42,17 @@ This is how a single seed color can produce a full family. Set `derivedFrom: 'ac
 
 ## lightnessRange, chromaRange, hueOffset
 
-These optional range fields constrain where a role can land in OKLCH space. All values use the OKLCH scale: lightness 0–1, chroma 0–0.5, hue 0–360.
+These optional range fields constrain where a role can land in OKLCH space. All values use the OKLCH scale: lightness 0-1, chroma 0-0.5, hue 0-360.
 
 | Field | Type | Effect |
 |---|---|---|
 | `lightnessRange` | `[number, number]` | Role assignment scores colors by distance to range midpoint |
-| `chromaRange` | `[number, number]` | Same — used for chroma scoring and derivation |
+| `chromaRange` | `[number, number]` | Same, used for chroma scoring and derivation |
 | `hueOffset` | `number` | Rotates hue relative to the source role during `expand:family` |
 
 `resolve:roles` uses a weighted OKLCH distance to the range centers when multiple candidates compete for the same role. A color whose lightness sits at range center scores best. `clamp:oklch` (optional, runs before role resolution) can pre-clamp all colors to their role's declared ranges.
 
-## contrastPairs — the accessibility contract
+## contrastPairs, the accessibility contract
 
 `contrastPairs` declares which foreground/background role combinations must meet a minimum contrast ratio. `enforce:contrast` (core) and the named variants `enforce:wcagAA` / `enforce:wcagAAA` / `enforce:apca` in the contrast plugin all operate on these pairs.
 
@@ -89,7 +89,7 @@ export const categoryW3cRoleSchema: RoleSchemaInterface = {
       lightnessRange: [0.86, 0.96],
     },
     {
-      name:     'accent',             // [C] No range — closest color wins
+      name:     'accent',             // [C] No range, closest color wins
       intent:   'accent',
       required: true,
     },
@@ -126,7 +126,7 @@ export const categoryW3cRoleSchema: RoleSchemaInterface = {
 };
 ```
 
-Annotations: **[A]** `canvas` is mandatory — no canvas means no contrast surface to anchor the rest. **[B]** The tight lightness range (0.92–1.0) biases role resolution strongly toward pale colors even when the seed is saturated. **[C]** `accent` carries no range constraint — `resolve:roles` assigns whichever input color is closest in the perceptual space. **[D]** `onAccent` will never appear in the input; `expand:family` synthesizes it from the resolved `accent` color. **[E]** `text` is forced below L=0.25, guaranteeing dark-mode-style contrast on light surfaces. **[F]** The 4.5:1 threshold is WCAG AA for normal text. **[G]** 3.0:1 is WCAG AA for large text and non-text UI elements.
+Annotations: **[A]** `canvas` is mandatory, no canvas means no contrast surface to anchor the rest. **[B]** The tight lightness range (0.92-1.0) biases role resolution strongly toward pale colors even when the seed is saturated. **[C]** `accent` carries no range constraint, `resolve:roles` assigns whichever input color is closest in the perceptual space. **[D]** `onAccent` will never appear in the input; `expand:family` synthesizes it from the resolved `accent` color. **[E]** `text` is forced below L=0.25, guaranteeing dark-mode-style contrast on light surfaces. **[F]** The 4.5:1 threshold is WCAG AA for normal text. **[G]** 3.0:1 is WCAG AA for large text and non-text UI elements.
 
 ## The vscodeRoleSchema16 example
 
@@ -161,11 +161,11 @@ export const vscodeRoleSchema16: RoleSchemaInterface = {
       intent:      'accent',
       required:    true,
       lightnessRange: [0.50, 0.85],
-      chromaRange:    [0.16, 0.40],   // High chroma — vivid accent
+      chromaRange:    [0.16, 0.40],   // High chroma, vivid accent
     },
     {
       name:        'type',
-      derivedFrom: 'keyword',         // Sibling role — same hue family
+      derivedFrom: 'keyword',         // Sibling role, same hue family
       lightnessRange: [0.55, 0.85],
       chromaRange:    [0.16, 0.40],
     },
@@ -179,4 +179,4 @@ export const vscodeRoleSchema16: RoleSchemaInterface = {
 };
 ```
 
-The `derivedFrom` chains in this schema (`surface ← background`, `type ← keyword`, `function ← keyword`, `string ← function`, `number ← string`, `constant ← number`) let iridis derive a coherent token family from two seed colors — one dark background and one vivid accent. The `contrastPairs` enforce WCAG AA/AAA throughout against the dark background.
+The `derivedFrom` chains in this schema (`surface ← background`, `type ← keyword`, `function ← keyword`, `string ← function`, `number ← string`, `constant ← number`) let iridis derive a coherent token family from two seed colors, one dark background and one vivid accent. The `contrastPairs` enforce WCAG AA/AAA throughout against the dark background.

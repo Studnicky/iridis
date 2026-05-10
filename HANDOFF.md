@@ -1,12 +1,12 @@
-# iridis — Handoff
+# iridis, Handoff
 
 Pick this up cold? Read this first, then `docs/internal/architecture.md` for the layout and `docs/internal/outstanding.md` for the work queue.
 
 ## What it is
 
-iridis is a chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced. Variable-input-count seed colors expand into role-resolved palettes; output adapters (CSS variables, Tailwind, VS Code themes, Capacitor native chrome, RDF graphs) are themselves plugins. The repo is at `https://github.com/Studnicky/iridis` (no commits pushed yet — git is initialised, remote is set, do not commit until the user says so).
+iridis is a chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced. Variable-input-count seed colors expand into role-resolved palettes; output adapters (CSS variables, Tailwind, VS Code themes, Capacitor native chrome, RDF graphs) are themselves plugins. The repo is at `https://github.com/Studnicky/iridis` (no commits pushed yet, git is initialised, remote is set, do not commit until the user says so).
 
-## Current state — green
+## Current state, green
 
 - Workspace monorepo at `/Users/studs/Workspace/iridis/`. npm workspaces (`packages/*`).
 - 9 packages in `packages/`: `core`, `cli`, `vscode`, `stylesheet`, `tailwind`, `image`, `contrast`, `capacitor`, `rdf`. All have lean tsconfigs, package.json `exports` pointing at `./src/*.ts`, and source files in place.
@@ -16,7 +16,7 @@ iridis is a chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-
 - Logo at `docs/public/logo.png`. Wired into vitepress theme + index hero.
 - Living-color v2 thesis at `docs/v2-living-color.md`.
 
-## Current state — outstanding
+## Current state, outstanding
 
 See `docs/internal/outstanding.md` for the full queue. Top items:
 
@@ -25,7 +25,7 @@ See `docs/internal/outstanding.md` for the full queue. Top items:
 - Sidebar update in `docs/.vitepress/config.ts` to wire the new pages
 - 6 per-package READMEs (only `core`, `cli`, `vscode` have them)
 - CLI smoke test verification (`npx tsx packages/cli/src/cli.ts examples/vue-capacitor/category-w3c.config.json`)
-- Vue/Capacitor example service still imports from old plugin paths in places — verify
+- Vue/Capacitor example service still imports from old plugin paths in places, verify
 
 ## Architecture in two sentences
 
@@ -50,7 +50,7 @@ Pipeline shape: `intake:* → clamp:* → resolve:roles → enforce:* → expand
 - TypeScript strict + `exactOptionalPropertyTypes` everywhere.
 - `.ts` extensions on relative imports (workspace is `noEmit: true` + `allowImportingTsExtensions: true`).
 - ESM only.
-- `@studnicky/json-tology` for JSON Schema authoring (optional peer; not yet used in iridis source — eligible target for the role schemas).
+- `@studnicky/json-tology` for JSON Schema authoring (optional peer; not yet used in iridis source, eligible target for the role schemas).
 - No Zod, no Ajv, no Yup. Schemas are JSON Schema literals `as const`.
 
 ## Hook posture
@@ -62,7 +62,7 @@ The litany hook on Edit/Write was previously broken upstream by a sibling projec
 
 ## Recent reality check (lessons)
 
-- **Don't trial-and-error TypeScript setup.** Look at a working reference first. The dollarwise project had ship-source figured out — finding it earlier would have saved hours.
+- **Don't trial-and-error TypeScript setup.** Look at a working reference first. The dollarwise project had ship-source figured out, finding it earlier would have saved hours.
 - **Composite + emit + `.ts` extensions in source = pain.** TS 5.7's `rewriteRelativeImportExtensions` rewrites `.js` output but leaks `.ts` into `.d.ts` declaration emit in some configs. Ship-source (`noEmit: true`) sidesteps the whole class.
 - **Don't dump multi-phase work onto one agent.** Phase 1 of the workspace conversion (writing 5 missing package.json + 9 tsconfig + CLI source + sample fixture) was 4 independent lanes. Sending it to one agent serialised the work.
 - **Use `mv` for moves, not `cp`.** `cp` leaves duplicates and timestamps drift.
@@ -71,7 +71,7 @@ The litany hook on Edit/Write was previously broken upstream by a sibling projec
 ## How to continue
 
 1. `cd /Users/studs/Workspace/iridis && npm install`
-2. `npx tsc --build` — should exit 0
+2. `npx tsc --build`, should exit 0
 3. Pick a queue item from `docs/internal/outstanding.md`
 4. For substantial work, dispatch a sonnet/haiku agent with explicit acceptance criteria; for mechanical work, do it inline
 5. Verify with the actual command (`tsx --test`, the CLI binary, `vitepress build`, etc.) before declaring done
@@ -96,7 +96,7 @@ Reserved for v2 (post-v1): `iridis-anima`, `iridis-pulse`, `iridis-fsm`, `iridis
 
 | File | Audience |
 |---|---|
-| `README.md` | GitHub repo visitors — pitch + install + sample |
+| `README.md` | GitHub repo visitors, pitch + install + sample |
 | `CHANGELOG.md` | Versioned changes |
 | `LICENSE` | MIT |
 | `docs/index.md` | VitePress home page |
