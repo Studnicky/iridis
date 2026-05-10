@@ -111,7 +111,9 @@ watch(currentHex, (hex) => {
 });
 
 // === S × V square ===
-const SV_SIZE = 240;
+// Sized by CSS (container-aware, fluid). Markers use percentages so they
+// track the rendered box at any pixel size. Pointer handlers compute
+// sat/val from getBoundingClientRect, so they're already size-independent.
 const svSquareBackground = computed(() => {
   const baseRgb = hsvToRgb(hue.value, 100, 100);
   const baseHex = rgbToHex(baseRgb.r, baseRgb.g, baseRgb.b);
@@ -139,12 +141,12 @@ function updateSv(e: PointerEvent, target: HTMLElement): void {
   sat.value = (x / r.width)  * 100;
   val.value = (1 - y / r.height) * 100;
 }
-const svMarkerX = computed(() => `${(sat.value / 100) * SV_SIZE}px`);
-const svMarkerY = computed(() => `${(1 - val.value / 100) * SV_SIZE}px`);
+const svMarkerX = computed(() => `${sat.value}%`);
+const svMarkerY = computed(() => `${100 - val.value}%`);
 
 // === Hue strip ===
-const HUE_STRIP_WIDTH = 240;
-const HUE_STRIP_HEIGHT = 16;
+// Sized by CSS (full width of container, fixed thin height). Marker
+// positioned by percentage of hue / 360.
 const hueStripBackground = computed((): string => {
   const stops: string[] = [];
   for (let i = 0; i <= 12; i++) {
@@ -167,7 +169,7 @@ function updateHue(e: PointerEvent, target: HTMLElement): void {
   const x = Math.max(0, Math.min(r.width, e.clientX - r.left));
   hue.value = (x / r.width) * 360;
 }
-const hueMarkerX = computed(() => `${(hue.value / 360) * HUE_STRIP_WIDTH}px`);
+const hueMarkerX = computed(() => `${(hue.value / 360) * 100}%`);
 
 // === Format tabs ===
 type Mode = 'hex' | 'rgb' | 'hsv' | 'cmyk' | 'oklch';
@@ -237,7 +239,7 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
     <!-- S × V square -->
     <div
       class="iridis-picker__square"
-      :style="{ background: svSquareBackground, width: `${SV_SIZE}px`, height: `${SV_SIZE}px` }"
+      :style="{ background: svSquareBackground }"
       @pointerdown="onSvPointer"
       @pointermove="onSvMove"
     >
@@ -247,7 +249,7 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
     <!-- Hue strip -->
     <div
       class="iridis-picker__hue"
-      :style="{ background: hueStripBackground, width: `${HUE_STRIP_WIDTH}px`, height: `${HUE_STRIP_HEIGHT}px` }"
+      :style="{ background: hueStripBackground }"
       @pointerdown="onHuePointer"
       @pointermove="onHueMove"
     >
@@ -305,6 +307,8 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
 
 <style scoped>
 .iridis-picker {
+  container-type: inline-size;
+  container-name: picker;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
@@ -312,12 +316,15 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
   background: var(--vp-c-bg);
   border: var(--iridis-border-soft);
   border-radius: var(--iridis-radius-md);
-  width: max-content;
-  max-width: 100%;
+  width: 100%;
+  min-width: 200px;
+  max-width: 280px;
   box-shadow: var(--iridis-shadow-felt);
 }
 .iridis-picker__square {
   position: relative;
+  width: 100%;
+  aspect-ratio: 1;
   border-radius: 4px;
   cursor: crosshair;
   touch-action: none;
@@ -336,6 +343,8 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
 }
 .iridis-picker__hue {
   position: relative;
+  width: 100%;
+  height: 1rem;
   border-radius: 4px;
   cursor: ew-resize;
   touch-action: none;
