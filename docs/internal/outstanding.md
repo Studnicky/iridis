@@ -23,7 +23,7 @@ State of in-flight work after the May 2026 docs-iteration sprint. Read `HANDOFF.
 - VitePress aligned with reference design family (ripper, squashage, json-tology)
 - Logo (transparent, alpha-corrected via imagemagick) in sidebar via `sidebar-nav-before` slot
 - Sidebar: Introduction (What it does / Getting started / Try it out) → Concepts (Pipeline / Role schemas / ColorRecord / Contrast / Accessibility calculations) → Recipes (CLI / Vue + Capacitor) → Reference (Living color thesis)
-- `Try it out` page: configuration form + one comprehensive demo with split-column layout (seeds left, OKLCH picker right) + tabs (Resolved roles / Role schema / Code)
+- `Try it out` page: configuration form + one demo running the full pipeline with split-column layout (seeds left, OKLCH picker right) + tabs (Resolved roles / Role schema / Code)
 - IridisDemo on home, getting-started, concepts/{pipeline,role-schemas,contrast}, recipes/cli pages
 - IridisPicker: OKLCH-aware (L×C square + hue strip + hex/native input + L/C/H readout)
 - Inline editable Role schema textarea + colors[] in Code tab; hand-rolled validators (browser-safe; json-tology pulled `node:url` and was dropped)
@@ -55,7 +55,7 @@ CLI also needs `packages/cli/tests/e2e/Cli.e2e.test.ts` covering `Cli.run()`, `C
 ### Plugin defects to address before adopting in docs
 
 - Capacitor emit tasks duplicate `existingCapacitor` boilerplate (4 sites). Migrate to `getOrCreateOutput`.
-- RDF emit tasks could benefit from same migration.
+- RDF emit tasks duplicate the same boilerplate. Migrate to `getOrCreateOutput`.
 
 ### CLI smoke
 

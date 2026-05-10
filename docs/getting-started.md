@@ -35,7 +35,7 @@ const palette = await quickPalette(['#7c3aed', '#06b6d4'], 'dark');
 // → { background: '#07061a', foreground: '#f0f0ff', accent: '#7c3aed', muted: '#7e7e9a' }
 ```
 
-One import, one call, four roles back. No schema to define, no pipeline to declare, no tasks to register. The framing argument picks dark or light clamp envelopes; everything else is sensible defaults. `quickPalette` is a thin wrapper around `engine.run()` — drop to the engine API the moment you outgrow it.
+One import, one call, four roles back. No schema to define, no pipeline to declare, no tasks to register. The framing argument picks dark or light clamp envelopes; everything else uses defaults. `quickPalette` is a thin wrapper around `engine.run()`; switch to the engine API directly when you need more control.
 
 ## Hello, palette — long-form
 

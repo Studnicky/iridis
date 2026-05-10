@@ -25,6 +25,6 @@ const state = await engine.run({
 console.log(state.palette);
 ```
 
-The plugin adjusts OKLCH lightness iteratively to meet specified contrast ratios against background colors, optionally simulating color vision deficiency (Deuteranopia, Protanopia, Tritanopia) to ensure readability across all viewers. Supports WCAG AA, WCAG AAA, and APCA Lc standards.
+The plugin adjusts OKLCH lightness iteratively until each declared pair meets its target ratio against the background, and optionally simulates Deuteranopia, Protanopia, or Tritanopia for CVD-aware checks. Supports WCAG AA, WCAG AAA, and APCA Lc thresholds.
 
 Part of [iridis](https://github.com/Studnicky/iridis).

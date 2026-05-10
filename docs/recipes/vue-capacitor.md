@@ -44,7 +44,7 @@ export class CategoryColorService {
 }
 ```
 
-The `private constructor` + `static shared()` pattern ensures the engine is wired once. Constructing `Engine` directly (rather than importing the singleton `engine`) gives the service its own isolated registry — useful when multiple services in the same application need different pipeline configurations.
+The `private constructor` + `static shared()` pattern wires the engine once. Constructing `Engine` directly (rather than importing the singleton `engine`) gives the service its own isolated registry, which matters when multiple services in the same application need different pipeline configurations.
 
 ## From seed to palette — the Music example
 

@@ -30,7 +30,7 @@ The schema is intentionally minimal. iridis does not prescribe role names — `c
 
 Each `RoleDefinitionInterface` carries a `required` boolean. When `required: true`, `resolve:roles` emits a warning in `state.metadata.roleWarnings` if no color could be assigned. The pipeline continues regardless — required is advisory, not a hard error. Your integration code can inspect `state.metadata.roleWarnings` and surface failures as appropriate.
 
-Optional roles (no `required` field, or `required: false`) are simply skipped if no candidate matches.
+Optional roles (no `required` field, or `required: false`) are skipped if no candidate matches.
 
 ## derivedFrom — parametric expansion
 
