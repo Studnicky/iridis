@@ -32,6 +32,12 @@ const PIPELINE: readonly string[] = [
  *  stale entries when switching schemas. */
 const writtenProps = new Set<string>();
 
+/**
+ * Projects the supplied config onto the document. Idempotent — invoked
+ * by the theme dispatcher's `watch` on every state change. Async
+ * because the engine pipeline returns a promise; awaiting is optional
+ * for fire-and-forget callers.
+ */
 export async function applyConfigToDocument(config: DocsConfigType): Promise<void> {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
