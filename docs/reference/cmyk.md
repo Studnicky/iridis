@@ -11,7 +11,7 @@ CMYK (cyan, magenta, yellow, key/black) is the subtractive process model used by
 | Y | `[0, 1]` or `[0, 100]` percent | yellow ink coverage |
 | K | `[0, 1]` or `[0, 100]` percent | black ink coverage |
 
-CMYK is device-dependent. A real conversion needs an ICC profile for the target press, paper, and ink set. The browser-side approximation iridis uses is the standard naive transform with no profile applied — accurate enough for a UI control, not accurate enough to send to a printer.
+CMYK is device-dependent. A real conversion needs an ICC profile for the target press, paper, and ink set. The browser-side approximation iridis uses is the standard naive transform with no profile applied, accurate enough for a UI control, not accurate enough to send to a printer.
 
 ## The K channel
 
@@ -34,7 +34,7 @@ B = (1 − Y) · (1 − K)
 
 ## Math primitives
 
-iridis does not export CMYK math primitives. CMYK exists only in the picker as a numeric I/O affordance — designers occasionally want to see what a screen color looks like in CMYK terms even when the output is digital.
+iridis does not export CMYK math primitives. CMYK exists only in the picker as a numeric I/O affordance, designers occasionally want to see what a screen color looks like in CMYK terms even when the output is digital.
 
 ## Where it appears
 

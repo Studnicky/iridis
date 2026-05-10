@@ -29,7 +29,7 @@ Given two relative luminances Y₁ and Y₂:
 ratio = (max(Y₁, Y₂) + 0.05) / (min(Y₁, Y₂) + 0.05)
 ```
 
-The `+ 0.05` flare term models ambient screen reflectance and prevents the ratio from going to infinity when one of the colors is pure black. The result lies in `[1, 21]` — 1:1 for two identical colors, 21:1 for pure black on pure white.
+The `+ 0.05` flare term models ambient screen reflectance and prevents the ratio from going to infinity when one of the colors is pure black. The result lies in `[1, 21]`, 1:1 for two identical colors, 21:1 for pure black on pure white.
 
 The ratio is symmetric. WCAG 2.1 does not distinguish text from background.
 

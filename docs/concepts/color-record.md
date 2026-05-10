@@ -9,7 +9,7 @@ iridis stores every color in OKLCH as the primary representation, with RGB, hex,
 Two practical consequences:
 
 1. **Predictable mixing.** `mixOklch(a, b, 0.5)` produces a midpoint that looks visually centered between `a` and `b`. The same operation in sRGB produces muddy browns when crossing warm/cool hues.
-2. **Reliable contrast adjustment.** `ensureContrast` nudges the `oklch.l` field in fixed 0.02 steps. Because lightness is perceptually linear in OKLCH, each step produces a consistent perceived change — the nudge converges predictably.
+2. **Reliable contrast adjustment.** `ensureContrast` nudges the `oklch.l` field in fixed 0.02 steps. Because lightness is perceptually linear in OKLCH, each step produces a consistent perceived change, the nudge converges predictably.
 
 The trade-off: OKLCH can represent colors outside the sRGB gamut. iridis clamps chroma at 0.5 (the practical sRGB ceiling for most hues) and lightness to [0, 1]. Display P3 values are computed on demand and cached in `displayP3`.
 
@@ -17,21 +17,21 @@ The trade-off: OKLCH can represent colors outside the sRGB gamut. iridis clamps 
 
 | Field | Type | Constraints | Notes |
 |---|---|---|---|
-| `oklch.l` | `number` | 0–1 | Perceptual lightness |
-| `oklch.c` | `number` | 0–0.5 | Chroma (0 = neutral grey) |
-| `oklch.h` | `number` | 0–360 | Hue angle in degrees |
-| `rgb.r` | `number` | 0–1 | Linear sRGB red channel |
-| `rgb.g` | `number` | 0–1 | Linear sRGB green channel |
-| `rgb.b` | `number` | 0–1 | Linear sRGB blue channel |
+| `oklch.l` | `number` | 0-1 | Perceptual lightness |
+| `oklch.c` | `number` | 0-0.5 | Chroma (0 = neutral grey) |
+| `oklch.h` | `number` | 0-360 | Hue angle in degrees |
+| `rgb.r` | `number` | 0-1 | Linear sRGB red channel |
+| `rgb.g` | `number` | 0-1 | Linear sRGB green channel |
+| `rgb.b` | `number` | 0-1 | Linear sRGB blue channel |
 | `hex` | `string` | `#rrggbb` | Lowercase 6-digit hex |
-| `alpha` | `number` | 0–1 | Opacity (1 = opaque) |
+| `alpha` | `number` | 0-1 | Opacity (1 = opaque) |
 | `sourceFormat` | `SourceFormatType` | see below | Format the color was parsed from |
-| `displayP3` | `RgbInterface?` | 0–1 per channel | Wide-gamut projection (optional) |
-| `hints` | `ColorHintsInterface?` | — | Caller-supplied routing metadata |
+| `displayP3` | `RgbInterface?` | 0-1 per channel | Wide-gamut projection (optional) |
+| `hints` | `ColorHintsInterface?` |, | Caller-supplied routing metadata |
 
 `SourceFormatType` is a union: `'hex' | 'rgb' | 'hsl' | 'oklch' | 'lab' | 'named' | 'imagePixel'`. Intake tasks set this field to record provenance.
 
-## hints — role and intent routing
+## hints, role and intent routing
 
 `ColorRecord.hints` is an optional object that callers can attach to input colors before they enter the pipeline. `resolve:roles` checks `hints.role` before falling back to OKLCH distance scoring. If `hints.role === 'accent'`, that color wins the `accent` role regardless of its OKLCH position.
 
@@ -45,11 +45,11 @@ const state = await engine.run({
 });
 ```
 
-`hints.intent` is a `ColorIntentType` (`'base' | 'accent' | 'muted' | 'critical' | 'positive' | 'neutral' | 'surface' | 'text'`). It is informational — plugins and custom tasks can read it for secondary routing decisions, but the core pipeline does not act on it directly.
+`hints.intent` is a `ColorIntentType` (`'base' | 'accent' | 'muted' | 'critical' | 'positive' | 'neutral' | 'surface' | 'text'`). It is informational, plugins and custom tasks can read it for secondary routing decisions, but the core pipeline does not act on it directly.
 
 `hints.weight` is a numeric priority hint. Higher weight breaks ties when two colors have identical OKLCH distance to a role center.
 
-## sourceFormat — provenance
+## sourceFormat, provenance
 
 Every `ColorRecord` records the format it was parsed from. This lets downstream tasks and emitters behave differently for colors extracted from images (`'imagePixel'`) versus design-token hex values (`'hex'`). The RDF emitter uses `sourceFormat` to annotate triples with the originating representation.
 

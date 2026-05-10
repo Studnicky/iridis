@@ -6,7 +6,7 @@ iridis enforces contrast at pipeline time, not at render time. By the time `engi
 Open the right-panel example, hit the **Role schema** tab, and check the `contrastPairs` block. Toggle **Contrast level** in the configuration to watch `enforce:contrast` lift role pairs to the threshold.
 :::
 
-## WCAG 2.1 — contrastWcag21
+## WCAG 2.1, contrastWcag21
 
 The WCAG 2.1 algorithm computes relative luminance from gamma-corrected sRGB values, then produces a ratio between the lighter and darker luminances. The ratio ranges from 1:1 (identical colors) to 21:1 (black on white).
 
@@ -22,7 +22,7 @@ Standard thresholds:
 
 The core `enforce:contrast` task reads `input.roles.contrastPairs` and `input.contrast.extra`, then calls `ctx.math.invoke('contrastWcag21', fg, bg)` for each pair whose `algorithm` is `'wcag21'` (the default). The contrast plugin's `enforce:wcagAA` and `enforce:wcagAAA` tasks are convenience wrappers that apply the same logic with pre-set threshold levels.
 
-## APCA — contrastApca
+## APCA, contrastApca
 
 APCA (Accessible Perceptual Contrast Algorithm, APCA-W3 0.0.98G-4g) uses separate exponents for foreground and background luminance, producing an asymmetric Lc (lightness contrast) value. Results are signed: positive means light background, negative means dark background. The magnitude indicates contrast strength.
 
@@ -45,7 +45,7 @@ contrastPairs: [
 ]
 ```
 
-## CVD simulation — EnforceCvdSimulate
+## CVD simulation, EnforceCvdSimulate
 
 `enforce:cvdSimulate` (`packages/contrast/src/tasks/EnforceCvdSimulate.ts`) is an advisory task, not a corrective one. It simulates protanopia, deuteranopia, and tritanopia using Brettel/Viénot matrices applied in linear sRGB, recomputes the WCAG luminance contrast for each simulated pair, and emits warnings when the simulated contrast drops more than 1.0 below the original.
 
@@ -63,7 +63,7 @@ for (const w of cvd?.warnings ?? []) {
 
 CVD simulation does not modify `state.roles`. It surfaces information; your design decisions about hue selection or additional contrast margins are out of scope for the engine.
 
-## ensureContrast — the iterative nudge
+## ensureContrast, the iterative nudge
 
 `ensureContrast` (`packages/core/src/math/EnsureContrast.ts`) is the math primitive that `enforce:contrast` calls when a pair fails. It works by:
 

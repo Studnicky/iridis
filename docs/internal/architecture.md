@@ -1,4 +1,4 @@
-# Architecture — internal reference
+# Architecture, internal reference
 
 Detailed layout, conventions, and the architectural decisions made during the v0.1 build. For the cold-start orientation, read `HANDOFF.md` at workspace root first.
 
@@ -46,7 +46,7 @@ iridis/
    └─ workflows/docs.yml ← GH Pages deploy
 ```
 
-## Build model — ship-source
+## Build model, ship-source
 
 Mirrors `/Users/studs/Workspace/dollarwise-arch/DollarWise-Prototype/`.
 
@@ -58,7 +58,7 @@ Mirrors `/Users/studs/Workspace/dollarwise-arch/DollarWise-Prototype/`.
 
 This is the reason iridis can ship `.ts` extensions in every relative import without any postbuild rewrite step.
 
-## Engine spine — composition
+## Engine spine, composition
 
 ```
 ColorRecord                          ← canonical OKLCH-first color shape
@@ -76,7 +76,7 @@ Engine.run(input): Promise<state>    ← runs onRunStart hooks, sequential tasks
 
 Every output target (CSS, Tailwind, VS Code, Capacitor, RDF) is a plugin. Plugins are not part of core. Core has zero runtime dependencies.
 
-## Pipeline — canonical task names
+## Pipeline, canonical task names
 
 | Phase | Task name | Source |
 |---|---|---|
@@ -95,7 +95,7 @@ Every output target (CSS, Tailwind, VS Code, Capacitor, RDF) is a plugin. Plugin
 | Image | `gallery:extract`, `gallery:assignRoles`, `gallery:harmonize` | `image/src/tasks/` |
 | RDF | `reason:annotate`, `reason:serialize` | `rdf/src/tasks/` |
 
-## Math primitive registry — canonical names
+## Math primitive registry, canonical names
 
 `oklchToRgb`, `rgbToOklch`, `hslToRgb`, `rgbToHsl`, `hexToRgb`, `rgbToHex`, `srgbToLinear`, `linearToSrgb`, `srgbToDisplayP3`, `displayP3ToSrgb`, `mixOklch`, `mixHsl`, `mixSrgb`, `lighten`, `darken`, `saturate`, `desaturate`, `hueShift`, `contrastWcag21`, `contrastApca`, `deltaE2000`, `ensureContrast`, `clusterMedianCut`, `luminance`, `contrastText`.
 
@@ -144,6 +144,6 @@ The literal word "iridis" is wrapped by `docs/.vitepress/plugins/iridis-brand.mj
 - Look at existing reference projects in the workspace before standing up infrastructure (dollarwise for monorepo, json-tology for docs).
 - Multi-phase work fans out across multiple agents; sequential debug stays single-agent.
 - File moves use `mv`; copies leave duplicates.
-- Agents must run their tools (typecheck, tests, the CLI) — writing files blind produces "looks plausible" failures.
+- Agents must run their tools (typecheck, tests, the CLI), writing files blind produces "looks plausible" failures.
 - Litany hook is real; sibling-project tooling false positives are also real. Distinguish before bypassing.
 - TypeScript composite mode + `.ts`-extension imports + emit is a mire. Ship-source dodges the whole class.

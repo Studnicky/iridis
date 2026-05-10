@@ -1,6 +1,6 @@
 # Getting started
 
-iridis is a chromatic pipeline for dynamic palette derivation. You give it any number of seed colors in any common format. It runs them through a registered sequence of tasks — intake, role resolution, contrast enforcement, variant derivation, and emission — and returns a role-resolved palette plus whichever consumer-shaped outputs you asked for (CSS variables, Tailwind theme, VS Code theme, Capacitor native chrome, RDF graph, etc.).
+iridis is a chromatic pipeline for dynamic palette derivation. You give it any number of seed colors in any common format. It runs them through a registered sequence of tasks, intake, role resolution, contrast enforcement, variant derivation, and emission, and returns a role-resolved palette plus whichever consumer-shaped outputs you asked for (CSS variables, Tailwind theme, VS Code theme, Capacitor native chrome, RDF graph, etc.).
 
 The core ships with zero runtime dependencies. Each output target is a separate plugin package. Pluggable math primitives let you swap the color space without touching task code.
 
@@ -37,7 +37,7 @@ const palette = await quickPalette(['#7c3aed', '#06b6d4'], 'dark');
 
 One import, one call, four roles back. No schema to define, no pipeline to declare, no tasks to register. The framing argument picks dark or light clamp envelopes; everything else uses defaults. `quickPalette` is a thin wrapper around `engine.run()`; switch to the engine API directly when you need more control.
 
-## Hello, palette — long-form
+## Hello, palette, long-form
 
 ```ts
 import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
@@ -58,7 +58,7 @@ console.log(state.roles);
 
 The example panel on the right is running this exact pipeline against your seeds.
 
-## Hello, palette — with stylesheet plugin
+## Hello, palette, with stylesheet plugin
 
 ```ts
 import { engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
@@ -108,5 +108,5 @@ See the sample config at [`examples/vue-capacitor/category-w3c.config.json`](htt
 
 ## Where next
 
-- The [Living color thesis](./v2-living-color) — why this is built around vector-space animation and what comes after v1.
+- The [Living color thesis](./v2-living-color), why this is built around vector-space animation and what comes after v1.
 - [GitHub repository](https://github.com/Studnicky/iridis).

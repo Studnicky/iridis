@@ -92,7 +92,7 @@ The config is a plain JSON file validated against the `CliConfigSchema` (`packag
 }
 ```
 
-The `enable*` flags control which plugin packages are dynamically imported. Only flags set to `true` trigger an import. The corresponding package must be installed — the CLI does not install dependencies on your behalf.
+The `enable*` flags control which plugin packages are dynamically imported. Only flags set to `true` trigger an import. The corresponding package must be installed, the CLI does not install dependencies on your behalf.
 
 The `pipeline` array maps directly to `engine.pipeline()` in the library API. Task names must be registered by either the core task set or one of the adopted plugins.
 

@@ -1,6 +1,6 @@
 # @studnicky/iridis
 
-The engine. Composition spine + canonical models for the iridis chromatic pipeline. Zero runtime dependencies, browser- and Node-safe. Output adapters (CSS, Tailwind, VS Code, RDF, etc.) are separate plugins — none are required for the engine to run.
+The engine. Composition spine + canonical models for the iridis chromatic pipeline. Zero runtime dependencies, browser- and Node-safe. Output adapters (CSS, Tailwind, VS Code, RDF, etc.) are separate plugins, none are required for the engine to run.
 
 ## What ships
 

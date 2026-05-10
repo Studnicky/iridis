@@ -11,7 +11,7 @@ iridis accepts two forms:
 | `#rrggbb` | 3 | red, green, blue |
 | `#rrggbbaa` | 4 | red, green, blue, alpha |
 
-The leading `#` is optional in user input but the canonical stored form keeps it. Each byte ranges `00`–`ff` (0–255). Case is normalised to lower-case on storage.
+The leading `#` is optional in user input but the canonical stored form keeps it. Each byte ranges `00`-`ff` (0-255). Case is normalised to lower-case on storage.
 
 The three-digit shorthand `#rgb` and the four-digit `#rgba` are not accepted. Anything other than six or eight hexadecimal characters after the optional `#` is rejected.
 
@@ -26,7 +26,7 @@ b = parseInt(hex[4:6], 16) / 255
 a = hex.length === 8 ? parseInt(hex[6:8], 16) / 255 : 1
 ```
 
-The reverse direction multiplies each channel by 255, rounds, and pads to two hexadecimal digits. The canonical hex written back from a `ColorRecord` is always six digits — alpha lives in the `alpha` field, not in the hex string.
+The reverse direction multiplies each channel by 255, rounds, and pads to two hexadecimal digits. The canonical hex written back from a `ColorRecord` is always six digits, alpha lives in the `alpha` field, not in the hex string.
 
 ## Math primitives
 

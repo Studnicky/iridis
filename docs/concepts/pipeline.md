@@ -1,6 +1,6 @@
 # How the pipeline works
 
-iridis is a task pipeline. You register primitives and tasks, declare an execution order, pass an input, and get a fully resolved palette out. The engine does not know or care what the pipeline contains — that is your configuration.
+iridis is a task pipeline. You register primitives and tasks, declare an execution order, pass an input, and get a fully resolved palette out. The engine does not know or care what the pipeline contains, that is your configuration.
 
 ::: tip Live builder
 The example panel on the right is running this exact pipeline against your seeds. Open the **Role schema** or **Code** tab to see how the structure maps to what you're reading below. Every page on the docs uses the same builder.
@@ -31,7 +31,7 @@ flowchart TD
     C["state.roles\n(Record<string, ColorRecord>)"]
     D["state.roles\n(contrast-adjusted)"]
     E["state.variants\n(light / dark)"]
-    F["state.outputs\n(cssVars, themeJson, capacitor …)"]
+    F["state.outputs\n(cssVars, themeJson, capacitor ...)"]
 
     A -->|intake tasks| B
     B -->|resolve:roles| C
@@ -41,7 +41,7 @@ flowchart TD
     E -->|emit tasks| F
 ```
 
-## TaskRegistry — the spine
+## TaskRegistry, the spine
 
 `TaskRegistry` (`packages/core/src/registry/TaskRegistry.ts`) is a `Map<string, TaskInterface>`. Every task has a string `name` (e.g. `'intake:any'`). `register(task)` stores it. `resolve(name)` retrieves it and throws if absent.
 
@@ -58,7 +58,7 @@ The `Engine` owns one `TaskRegistry` instance (`engine.tasks`). When you call `e
 
 `TaskRegistry` also supports lifecycle hooks via `registry.hook(phase, task)`. Phase `'onRunStart'` runs before the pipeline sequence; `'onRunEnd'` runs after. Plugins can use hooks to initialize or flush state without occupying a pipeline slot.
 
-## Plugins — domain modules
+## Plugins, domain modules
 
 A plugin is any object that satisfies `PluginInterface`:
 
@@ -86,9 +86,9 @@ export const myPlugin: PluginInterface = {
 };
 ```
 
-## ColorMathRegistry — pluggable primitives
+## ColorMathRegistry, pluggable primitives
 
-iridis separates color math from task logic. Math primitives implement `MathPrimitiveInterface` — a `name` string and an `apply(...args)` method. They live in `ColorMathRegistry` (`packages/core/src/registry/ColorMathRegistry.ts`), available as `engine.math`.
+iridis separates color math from task logic. Math primitives implement `MathPrimitiveInterface`, a `name` string and an `apply(...args)` method. They live in `ColorMathRegistry` (`packages/core/src/registry/ColorMathRegistry.ts`), available as `engine.math`.
 
 Tasks call math via `ctx.math.invoke('oklchToRgb', color)` rather than importing directly. This means any primitive can be overridden: register a custom `oklchToRgb` with the same name after registering `mathBuiltins`, and every task that calls it will use your version.
 
@@ -99,7 +99,7 @@ engine.math.register({
 });
 ```
 
-The built-in set — exported as `mathBuiltins` — covers color space conversion, mixing, lightness/chroma adjustments, contrast computation, CVD matrices, and median-cut clustering. The full primitive table is documented inline in `packages/core/src/math/index.ts` until the dedicated reference page lands.
+The built-in set, exported as `mathBuiltins`, covers color space conversion, mixing, lightness/chroma adjustments, contrast computation, CVD matrices, and median-cut clustering. The full primitive table is documented inline in `packages/core/src/math/index.ts` until the dedicated reference page lands.
 
 ## State as the shared medium
 
@@ -113,6 +113,6 @@ readonly manifest: TaskManifestInterface = {
 };
 ```
 
-The engine does not enforce dependency ordering at runtime — that is your responsibility via the pipeline array. Manifests exist for documentation and tooling. If a task writes `state.roles` and a later task reads `state.roles`, the pipeline order must reflect that.
+The engine does not enforce dependency ordering at runtime, that is your responsibility via the pipeline array. Manifests exist for documentation and tooling. If a task writes `state.roles` and a later task reads `state.roles`, the pipeline order must reflect that.
 
 `PipelineContextInterface` provides the `engine`, `tasks`, `math`, `logger`, `startedAt` timestamp, and a `cache` map for intra-run memoization. Context is constructed fresh for each `engine.run()` call; the engine and registries are reused.

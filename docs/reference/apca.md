@@ -4,13 +4,13 @@ APCA (Accessible Perceptual Contrast Algorithm) is a perceptually weighted contr
 
 ## Why APCA
 
-WCAG 2.1's ratio is symmetric and treats foreground and background interchangeably. In practice, dark text on a light background and light text on a dark background do not need the same contrast to read equally well — the eye is asymmetric. WCAG 2.1 is also a poor predictor at the dark end of the scale, where small differences in luminance compress into large differences in ratio.
+WCAG 2.1's ratio is symmetric and treats foreground and background interchangeably. In practice, dark text on a light background and light text on a dark background do not need the same contrast to read equally well, the eye is asymmetric. WCAG 2.1 is also a poor predictor at the dark end of the scale, where small differences in luminance compress into large differences in ratio.
 
 APCA addresses both. It uses different exponents for text and background, returns a signed value that records polarity, and produces a number that maps more directly to the practical question "is this text readable at this size and weight".
 
 ## Lc
 
-The output is Lc — *lightness contrast* — a signed value, conventionally reported with a magnitude on roughly `[0, 108]`.
+The output is Lc, *lightness contrast*, a signed value, conventionally reported with a magnitude on roughly `[0, 108]`.
 
 | Lc sign | Meaning |
 |---|---|
@@ -49,7 +49,7 @@ Y_text = 0.2126729 · R_lin^0.56  +  0.7151522 · G_lin^0.56  +  0.0721750 · B_
 Y_bg   = 0.2126729 · R_lin^0.65  +  0.7151522 · G_lin^0.65  +  0.0721750 · B_lin^0.65
 ```
 
-The exponents differ — 0.56 for text, 0.65 for background — which is what gives APCA its asymmetry. The Rec. 709 luminance coefficients are unchanged.
+The exponents differ, 0.56 for text, 0.65 for background, which is what gives APCA its asymmetry. The Rec. 709 luminance coefficients are unchanged.
 
 ### Difference and scale
 

@@ -10,7 +10,7 @@ sRGB is the IEC 61966-2-1 standard color space used by the open web, most consum
 - A reference white (D65).
 - A non-linear transfer function (gamma encoding) that compresses linear light for storage.
 
-When a hex string `#7c3aed` is read into iridis, the bytes are interpreted as gamma-encoded sRGB. Each byte is divided by 255 to produce a value in `[0, 1]`. The result is a gamma-corrected sRGB triple — not linear light.
+When a hex string `#7c3aed` is read into iridis, the bytes are interpreted as gamma-encoded sRGB. Each byte is divided by 255 to produce a value in `[0, 1]`. The result is a gamma-corrected sRGB triple, not linear light.
 
 ## Gamma-corrected vs linear
 

@@ -1,12 +1,12 @@
-# Outstanding work — phase board
+# Outstanding work, phase board
 
 State of in-flight work after the May 2026 docs-iteration sprint. Read `HANDOFF.md` for orientation, `architecture.md` for layout. Update this file as items complete; treat it as the authoritative work board.
 
-**Scope reframe:** v0.1 ships `@studnicky/iridis` (the engine) only. Output adapters publish independently on their own cadence. The docs site dogfoods the engine — every chrome and syntax token is iridis-emitted, the user picks seeds, the page recomputes.
+**Scope reframe:** v0.1 ships `@studnicky/iridis` (the engine) only. Output adapters publish independently on their own cadence. The docs site dogfoods the engine, every chrome and syntax token is iridis-emitted, the user picks seeds, the page recomputes.
 
 ## Verified shipped (live in main)
 
-### Core engine — `@studnicky/iridis@0.1.0` (pre-publish, ship-ready)
+### Core engine, `@studnicky/iridis@0.1.0` (pre-publish, ship-ready)
 
 - Composition spine: `Engine`, `TaskRegistry`, `ColorMathRegistry`
 - 25 math primitives (OKLCH ↔ RGB ↔ HSL ↔ Hex, sRGB ↔ linear ↔ Display P3, mix/lighten/darken/saturate/desaturate/hueShift, WCAG 2.1, APCA, ΔE2000, `ensureContrast`, median-cut clustering, luminance, contrastText)
@@ -18,7 +18,7 @@ State of in-flight work after the May 2026 docs-iteration sprint. Read `HANDOFF.
 - 101 tests passing (`npx tsx --test`)
 - Public API: `@studnicky/iridis` re-exports model, registry, engine, math, tasks, quickPalette, getOrCreateOutput
 
-### Docs site — https://studnicky.github.io/iridis/
+### Docs site, https://studnicky.github.io/iridis/
 
 - VitePress aligned with reference design family (ripper, squashage, json-tology)
 - Logo (transparent, alpha-corrected via imagemagick) in sidebar via `sidebar-nav-before` slot
@@ -32,11 +32,11 @@ State of in-flight work after the May 2026 docs-iteration sprint. Read `HANDOFF.
 - localStorage persistence (`iridis-docs-config`)
 - GitHub Actions: docs deploy via push to main; protected branches; PR workflow
 
-## Plugin v0.1 — separate publish cadence
+## Plugin v0.1, separate publish cadence
 
 Each output plugin has its own v0.1. None block the core engine ship.
 
-### Per-plugin e2e suites — still queued
+### Per-plugin e2e suites, still queued
 
 Each plugin needs `packages/<plugin>/tests/e2e/<Plugin>.e2e.test.ts`. Use `packages/core/tests/e2e/Engine.e2e.test.ts` as template; reuse `ScenarioRunner`. Run with `npx tsx --test`.
 
@@ -67,7 +67,7 @@ Expected: produces `examples/vue-capacitor/out/music.css` and `music.capacitor.j
 
 Multi-output demo (`<MultiOutputDemo>`) is built and registered globally but not embedded in markdown. Re-embed once per-plugin tests and the existing pre-existing capacitor / image plugin code paths are audited.
 
-## Docs — pre-publish polish
+## Docs, pre-publish polish
 
 | File | Topic | Approx word count |
 |---|---|---|
@@ -76,15 +76,15 @@ Multi-output demo (`<MultiOutputDemo>`) is built and registered globally but not
 | `docs/reference/tasks.md` | Full task name registry. For each: reads/writes/prerequisites | 600 |
 | `docs/reference/math.md` | Built-in math primitive table with signatures + brief description; how to override | 400 |
 
-## v0.2 — deferred
+## v0.2, deferred
 
 Tracked in `docs/v2-living-color.md`. Listed for queue completeness:
 
-- `@studnicky/iridis-anima` — animation/interpolation engine
-- `@studnicky/iridis-pulse` — reactive signal bindings
-- `@studnicky/iridis-fsm` — palette state machine (XState-style)
-- `@studnicky/iridis-trajectory` — curated palette paths
-- `@studnicky/iridis-algebra` — palette math
+- `@studnicky/iridis-anima`, animation/interpolation engine
+- `@studnicky/iridis-pulse`, reactive signal bindings
+- `@studnicky/iridis-fsm`, palette state machine (XState-style)
+- `@studnicky/iridis-trajectory`, curated palette paths
+- `@studnicky/iridis-algebra`, palette math
 - Migrate role schemas + `ColorRecord` + `PaletteState` through `@studnicky/json-tology` once json-tology ships a browser-safe entry point
 - Self-referential brand demo: replace static `.iridis-brand` CSS gradient with runtime-driven sweep produced by `iridis-anima`
 - Competitor decomp survey
@@ -99,7 +99,7 @@ Tracked in `docs/v2-living-color.md`. Listed for queue completeness:
 
 ## Process notes
 
-1. `npm install && npx tsc --build && find packages/core/tests -name "*.test.ts" | xargs npx tsx --test` — confirm 101/101 pass.
-2. Pick from "Per-plugin e2e suites" or "Docs — pre-publish polish".
+1. `npm install && npx tsc --build && find packages/core/tests -name "*.test.ts" | xargs npx tsx --test`, confirm 101/101 pass.
+2. Pick from "Per-plugin e2e suites" or "Docs, pre-publish polish".
 3. **Run the actual tools** before declaring done.
 4. Update this file as items complete.
