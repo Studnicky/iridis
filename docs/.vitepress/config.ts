@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress';
+import { withMermaid }  from 'vitepress-plugin-mermaid';
 
 import { iridisBrandPlugin } from './plugins/iridis-brand.mjs';
 import { themeConfig }       from './theme.config.js';
@@ -11,6 +12,7 @@ const sidebar = [
       { 'link': '/',                'text': 'What it does'    },
       { 'link': '/getting-started', 'text': 'Getting started' },
       { 'link': '/try-it-out',      'text': 'Try it out'      },
+      { 'link': '/v2-living-color', 'text': 'Living color'    },
     ],
   },
   {
@@ -26,19 +28,48 @@ const sidebar = [
   {
     'text':  'Recipes',
     'items': [
-      { 'link': '/recipes/cli',           'text': 'CLI'           },
-      { 'link': '/recipes/vue-capacitor', 'text': 'Vue + Capacitor' },
+      { 'link': '/recipes/cli',                'text': 'CLI'                },
+      { 'link': '/recipes/cascading-tokens',   'text': 'Cascading tokens'   },
+      { 'link': '/recipes/vue-capacitor',      'text': 'Vue + Capacitor'    },
     ],
   },
   {
     'text':  'Reference',
     'items': [
-      { 'link': '/v2-living-color', 'text': 'Living color (v2 thesis)' },
+      {
+        'text':  'Color spaces',
+        'items': [
+          { 'link': '/reference/hex',   'text': 'Hex'   },
+          { 'link': '/reference/rgb',   'text': 'RGB'   },
+          { 'link': '/reference/hsv',   'text': 'HSV'   },
+          { 'link': '/reference/cmyk',  'text': 'CMYK'  },
+          { 'link': '/reference/oklch', 'text': 'OKLCH' },
+        ],
+      },
+      {
+        'text':  'Accessibility standards',
+        'items': [
+          { 'link': '/reference/wcag', 'text': 'WCAG 2.1' },
+          { 'link': '/reference/apca', 'text': 'APCA'     },
+        ],
+      },
     ],
   },
 ];
 
-export default defineConfig({
+export default withMermaid(defineConfig({
+  'mermaid': {
+    'theme': 'base',
+    'themeVariables': {
+      'fontFamily':    'var(--vp-font-family-mono)',
+      'background':    'var(--iridis-bg-soft)',
+      'primaryColor':  'var(--iridis-brand)',
+      'primaryTextColor': 'var(--iridis-on-brand)',
+      'lineColor':     'var(--iridis-divider)',
+      'textColor':     'var(--iridis-text)',
+    },
+  },
+  'mermaidPlugin': { 'class': 'mermaid iridis-mermaid' },
   'base':        '/iridis/',
   'title':       'iridis',
   'description': 'Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced.',
@@ -63,4 +94,4 @@ export default defineConfig({
     sidebar,
     'socialLinks': [{ 'icon': 'github', 'link': 'https://github.com/Studnicky/iridis' }],
   },
-});
+}));
