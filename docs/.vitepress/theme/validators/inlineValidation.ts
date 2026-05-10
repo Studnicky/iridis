@@ -29,6 +29,12 @@ export function validateColorsArray(value: unknown): string | null {
   return null;
 }
 
+/**
+ * Validates that `value` is a `RoleSchemaInterface`-shaped object —
+ * has a `name` string, a non-empty `roles` array, and any declared
+ * range tuples are well-formed `[number, number]`. Does not validate
+ * range bounds or value semantics; the engine handles those at runtime.
+ */
 export function validateRoleSchema(value: unknown): string | null {
   if (typeof value !== 'object' || value === null) {
     return 'role schema must be an object';
@@ -63,6 +69,11 @@ export function validateRoleSchema(value: unknown): string | null {
   return null;
 }
 
+/**
+ * Casts an unknown value to `RoleSchemaInterface`. Pair with
+ * {@link validateRoleSchema} — this is the assertion that follows a
+ * successful validation, kept separate so the cast site is greppable.
+ */
 export function asRoleSchema(value: unknown): RoleSchemaInterface {
   return value as RoleSchemaInterface;
 }
