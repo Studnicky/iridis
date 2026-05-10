@@ -1,7 +1,13 @@
 import type { Theme } from 'vitepress';
 
-import { h, watch }   from 'vue';
+import { h }          from 'vue';
 import DefaultTheme   from 'vitepress/theme';
+
+import IridisCard      from './components/base/IridisCard.vue';
+import IridisButton    from './components/base/IridisButton.vue';
+import IridisInput     from './components/base/IridisInput.vue';
+import IridisSelect    from './components/base/IridisSelect.vue';
+import IridisChip      from './components/base/IridisChip.vue';
 
 import IridisDemo      from './components/IridisDemo.vue';
 import IridisCode      from './components/IridisCode.vue';
@@ -14,37 +20,10 @@ import SidebarToggle   from './components/SidebarToggle.vue';
 import SidebarResize   from './components/SidebarResize.vue';
 import InfiniteScroll  from './components/InfiniteScroll.vue';
 import PaletteCTA      from './components/PaletteCTA.vue';
-import { configStore } from './stores/configStore.ts';
-import { applyConfigToDocument } from './stores/applyConfigToDocument.ts';
+import { bootThemeDispatcher } from './stores/themeDispatcher.ts';
 
 import './palette.css';
 import './base.css';
-
-function bindFramingToVitepressTheme(): void {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
-  const html = document.documentElement;
-
-  configStore.framing = html.classList.contains('dark') ? 'dark' : 'light';
-
-  const observer = new MutationObserver(() => {
-    const next = html.classList.contains('dark') ? 'dark' : 'light';
-    if (configStore.framing !== next) {
-      configStore.framing = next;
-    }
-  });
-  observer.observe(html, { 'attributes': true, 'attributeFilter': ['class'] });
-
-  watch(
-    () => configStore.framing,
-    (framing) => {
-      const wantDark = framing === 'dark';
-      const isDark   = html.classList.contains('dark');
-      if (wantDark !== isDark) {
-        html.classList.toggle('dark', wantDark);
-      }
-    },
-  );
-}
 
 /**
  * Logo block: five concentric rounded boxes (per uiverse loader pattern)
@@ -65,6 +44,13 @@ function logoBlock(): unknown {
 export const theme: Theme = {
   'extends': DefaultTheme,
   enhanceApp({ app }): void {
+    // Base components — globally available so any markdown page can use them.
+    app.component('IridisCard',      IridisCard);
+    app.component('IridisButton',    IridisButton);
+    app.component('IridisInput',     IridisInput);
+    app.component('IridisSelect',    IridisSelect);
+    app.component('IridisChip',      IridisChip);
+    // Composed components
     app.component('IridisDemo',      IridisDemo);
     app.component('IridisCode',      IridisCode);
     app.component('SchemaForm',      SchemaForm);
@@ -72,15 +58,7 @@ export const theme: Theme = {
     app.component('TryItOutForm',    TryItOutForm);
     app.component('PaletteCTA',      PaletteCTA);
 
-    if (typeof window !== 'undefined') {
-      bindFramingToVitepressTheme();
-      applyConfigToDocument(configStore);
-      watch(
-        () => ({ ...configStore }),
-        () => { applyConfigToDocument(configStore); },
-        { 'deep': true },
-      );
-    }
+    bootThemeDispatcher();
   },
   Layout() {
     return h(DefaultTheme.Layout, null, {

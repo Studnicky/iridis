@@ -106,7 +106,8 @@ async function buildExportPayload(): Promise<Record<string, unknown>> {
   for (const m of mathBuiltins) engine.math.register(m);
   for (const t of coreTasks)    engine.tasks.register(t);
   engine.pipeline([...FULL_PIPELINE]);
-  const schema = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal'];
+  const pair   = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['iridis-16'];
+  const schema = pair[configStore.framing];
   const state = await engine.run({
     'colors':   [...configStore.paletteColors],
     'roles':    schema,
@@ -161,6 +162,22 @@ async function downloadJson(): Promise<void> {
 
 <template>
   <ClientOnly>
+    <!-- Sticky tab — anchored to viewport, always visible. Rides the
+         panel's left edge when open, sits at viewport edge when closed.
+         Arrow flips direction so the tab always invites the available
+         action (▶ to close into the panel, ◀ to open the panel out). -->
+    <button
+      type="button"
+      :class="['iridis-right-tab', { 'iridis-right-tab--open': open }]"
+      :aria-pressed="open"
+      :aria-label="open ? 'Hide palette builder' : 'Open palette builder'"
+      :title="open ? 'Hide palette builder' : 'Open palette builder'"
+      @click="open = !open"
+    >
+      <span class="iridis-right-tab__arrow" aria-hidden="true">{{ open ? '▶' : '◀' }}</span>
+      <span class="iridis-right-tab__label">Get palette</span>
+    </button>
+
     <aside :class="['iridis-right', { 'iridis-right--collapsed': !open, 'iridis-right--dragging': dragging }]" aria-label="Live example builder">
       <div
         v-show="open"
@@ -173,19 +190,6 @@ async function downloadJson(): Promise<void> {
         @pointerup="onDragPointerUp"
         @pointercancel="onDragPointerUp"
       />
-      <!-- Reopen affordance — full-height vertical button visible only when
-           collapsed. Reads top-to-bottom so the label invites the click. -->
-      <button
-        v-show="!open"
-        type="button"
-        class="iridis-right__reopen"
-        aria-expanded="false"
-        aria-label="Open palette builder"
-        @click="open = true"
-      >
-        <span class="iridis-right__reopen-icon" aria-hidden="true">⬕</span>
-        <span class="iridis-right__reopen-label">Get palette</span>
-      </button>
 
       <div v-show="open" class="iridis-right__body">
         <header class="iridis-right__header">
@@ -269,26 +273,35 @@ async function downloadJson(): Promise<void> {
 }
 .iridis-right--dragging { user-select: none; }
 
-/* Narrow (<1100px): the panel becomes a stacked drawer below content.
-   The icon + heading + intro come first, the example sits below them.
-   Closed = entirely hidden (icon + heading dominate the viewport). */
+/* Narrow (<1100px): bottom-drawer accordion. Slides UP from the bottom
+   of the viewport when the sticky tab is opened. Closed = hidden.
+   Drag handle is disabled (width is intrinsic to viewport). */
 @media (max-width: 1099px) {
   .iridis-right {
-    position: relative;
+    position: fixed;
     top: auto;
-    right: auto;
-    margin: 1.5rem auto 2rem;
+    right: 0;
+    bottom: 0;
+    left: 0;
     width: 100%;
-    max-width: 720px;
+    max-width: none;
     min-width: 0;
-    max-height: none;
-    z-index: auto;
+    height: 60vh;
+    max-height: 60vh;
+    margin: 0;
+    z-index: 33;
+    border-radius: var(--iridis-radius) var(--iridis-radius) 0 0;
+    transform: translateY(0);
+    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   .iridis-right--collapsed {
-    display: none;
+    transform: translateY(100%);
+    pointer-events: none;
   }
-  /* Drag handle disabled on narrow — width is intrinsic. */
   .iridis-right__resize { display: none; }
+  .iridis-right__body {
+    max-height: calc(60vh - 1rem);
+  }
 }
 
 /* Reopen button — fills the collapsed strip. Vertical text via writing-mode. */
@@ -348,7 +361,7 @@ async function downloadJson(): Promise<void> {
   z-index: 3;
   background: transparent;
   border-radius: 3px;
-  transition: background 120ms;
+  transition: background-color var(--iridis-transition);
 }
 .iridis-right__resize:hover {
   background: color-mix(in oklch, var(--iridis-brand) 25%, transparent);
@@ -377,9 +390,9 @@ async function downloadJson(): Promise<void> {
   height: 1.7rem;
   padding: 0;
   background: color-mix(in oklch, var(--iridis-surface) 70%, var(--iridis-brand) 30%);
-  border: var(--iridis-border-soft);
+  border: var(--iridis-card-border);
   border-color: color-mix(in oklch, var(--iridis-divider) 60%, var(--iridis-brand) 40%);
-  border-radius: 50%;
+  border-radius: var(--iridis-radius);
   color: var(--iridis-text);
   cursor: pointer;
   display: flex;
@@ -388,13 +401,16 @@ async function downloadJson(): Promise<void> {
   font-size: 1rem;
   line-height: 1;
   font-weight: 700;
-  box-shadow: var(--iridis-shadow-felt);
-  transition: transform 120ms, box-shadow 120ms, background 120ms;
+  box-shadow: var(--iridis-card-shadow);
+  transition:
+    background-color var(--iridis-transition),
+    color            var(--iridis-transition),
+    border-color     var(--iridis-transition),
+    box-shadow       var(--iridis-transition);
 }
 .iridis-right__close:hover {
   background: color-mix(in oklch, var(--iridis-brand) 30%, var(--iridis-surface));
-  box-shadow: var(--iridis-shadow-felt-hover);
-  transform: scale(1.08);
+  box-shadow: var(--iridis-card-shadow-hover);
 }
 .iridis-right__eyebrow {
   display: inline-block;
@@ -405,7 +421,7 @@ async function downloadJson(): Promise<void> {
   color: var(--iridis-brand);
   background: color-mix(in oklch, var(--iridis-brand) 12%, transparent);
   padding: 0.18rem 0.45rem;
-  border-radius: 999px;
+  border-radius: var(--iridis-radius);
   border: 1px solid color-mix(in oklch, var(--iridis-brand) 35%, transparent);
 }
 .iridis-right__title {

@@ -27,9 +27,11 @@ const INTENTS: readonly ColorIntentType[] = [
   'base', 'accent', 'muted', 'critical', 'positive', 'neutral', 'surface', 'text',
 ];
 
-// Active schema — read from the registry by configStore.roleSchema name.
+// Active schema — read from the registry by configStore.roleSchema name,
+// then pick the variant matching the current framing.
 const schema = computed<RoleSchemaInterface>(() => {
-  return roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal']!;
+  const pair = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['iridis-16']!;
+  return pair[configStore.framing];
 });
 
 const roles = computed(() => [...schema.value.roles]);
@@ -374,15 +376,15 @@ function removePair(idx: number): void {
 }
 .role-editor__required input { margin: 0; }
 
-/* × remove — always perfect circle, consistent size. */
+/* × remove — squircle, consistent size, business-card chrome. */
 .role-editor__remove {
   width: 1.6rem;
   height: 1.6rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: var(--iridis-border-soft);
-  border-radius: 50%;
+  border: var(--iridis-card-border);
+  border-radius: var(--iridis-radius);
   background: var(--vp-c-bg-soft);
   color: var(--vp-c-text-3);
   cursor: pointer;
@@ -390,13 +392,13 @@ function removePair(idx: number): void {
   line-height: 1;
   padding: 0;
   flex-shrink: 0;
-  box-shadow: var(--iridis-shadow-felt);
-  transition: background 120ms, color 120ms, transform 120ms;
+  box-shadow: var(--iridis-card-shadow);
+  transition: background var(--iridis-transition), color var(--iridis-transition), box-shadow var(--iridis-transition);
 }
 .role-editor__remove:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.18);
-  color: #ef4444;
-  transform: scale(1.05);
+  background: color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 18%, transparent);
+  color: var(--iridis-error, var(--iridis-text, currentColor));
+  box-shadow: var(--iridis-card-shadow-hover);
 }
 .role-editor__remove:disabled { opacity: 0.3; cursor: not-allowed; }
 

@@ -27,8 +27,9 @@ const sidebar = [
   {
     'text':  'Recipes',
     'items': [
-      { 'link': '/recipes/cli',           'text': 'CLI'           },
-      { 'link': '/recipes/vue-capacitor', 'text': 'Vue + Capacitor' },
+      { 'link': '/recipes/cli',                'text': 'CLI'                },
+      { 'link': '/recipes/cascading-tokens',   'text': 'Cascading tokens'   },
+      { 'link': '/recipes/vue-capacitor',      'text': 'Vue + Capacitor'    },
     ],
   },
   {

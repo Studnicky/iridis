@@ -61,7 +61,8 @@ const schemaError         = ref<string | null>(null);
 const colorsError         = ref<string | null>(null);
 
 function buildInput(): InputInterface {
-  const schema = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal'];
+  const pair   = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['iridis-16'];
+  const schema = pair[configStore.framing];
   return {
     'colors':   configStore.paletteColors,
     'roles':    schema,
@@ -113,7 +114,8 @@ watch(
 );
 
 function syncEditableFromConfig(): void {
-  const schema = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['minimal'];
+  const pair   = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['iridis-16'];
+  const schema = pair[configStore.framing];
   localRoleSchemaText.value = JSON.stringify(schema, null, 2);
   localColorsText.value     = JSON.stringify(configStore.paletteColors, null, 2);
 }
@@ -390,7 +392,13 @@ const codeText = computed(() => {
 </template>
 
 <style scoped>
+/* Container-query host: child layout decisions derive from the demo's
+   own width, not the viewport. The demo packs into the right panel
+   (≈ 320–720px) on desktop and into full width (≈ 600–1100px) on narrow
+   viewports — same component, two contexts, one set of intrinsic rules. */
 .iridis-demo {
+  container-type: inline-size;
+  container-name: demo;
   margin: 1.25rem 0;
   border: var(--iridis-border-soft);
   border-radius: var(--iridis-radius-md);
@@ -399,17 +407,22 @@ const codeText = computed(() => {
   overflow: hidden;
 }
 
+/* Default (narrow): palette stacks above picker. Picker takes intrinsic
+   width; if container is narrower than picker, picker scales down via its
+   own intrinsic min (set in IridisPicker.vue). */
 .iridis-demo__top {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   gap: 1.25rem;
   padding: 1rem;
   border-bottom: 1px solid var(--vp-c-divider);
 }
 
-@media (max-width: 720px) {
+/* Wide enough for two columns side-by-side. Threshold = picker min (260)
+   + palette min (220) + gap (20) + padding (32) ≈ 530px container width. */
+@container demo (min-width: 540px) {
   .iridis-demo__top {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 
@@ -448,7 +461,11 @@ const codeText = computed(() => {
   border-radius: var(--iridis-radius-sm);
   cursor: pointer;
   box-shadow: var(--iridis-shadow-felt);
-  transition: border-color 120ms, box-shadow 120ms, transform 120ms;
+  transition:
+    background-color var(--iridis-transition),
+    border-color     var(--iridis-transition),
+    box-shadow       var(--iridis-transition),
+    transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .iridis-demo__swatch:hover {
   border-color: var(--vp-c-text-2);
@@ -484,8 +501,8 @@ const codeText = computed(() => {
   cursor: pointer;
 }
 .iridis-demo__swatch-remove:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  background: color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 15%, transparent);
+  color: var(--iridis-error, var(--iridis-text, currentColor));
 }
 .iridis-demo__swatch-add {
   padding: 0.45rem 0.85rem;
@@ -499,7 +516,11 @@ const codeText = computed(() => {
   cursor: pointer;
   align-self: flex-start;
   box-shadow: var(--iridis-shadow-felt);
-  transition: transform 120ms, box-shadow 120ms, background 120ms;
+  transition:
+    background-color var(--iridis-transition),
+    border-color     var(--iridis-transition),
+    box-shadow       var(--iridis-transition),
+    transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .iridis-demo__swatch-add:hover:not(:disabled) {
   background: color-mix(in oklch, var(--iridis-brand) 35%, var(--vp-c-bg));
@@ -513,9 +534,9 @@ const codeText = computed(() => {
 .iridis-demo__error {
   margin: 0;
   padding: 0.65rem 0.85rem;
-  background: rgba(239, 68, 68, 0.12);
-  border-bottom: 1px solid rgba(239, 68, 68, 0.4);
-  color: #ef4444;
+  background: color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 12%, transparent);
+  border-bottom: 1px solid color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 40%, transparent);
+  color: var(--iridis-error, var(--iridis-text, currentColor));
   font-size: 0.85rem;
 }
 
@@ -630,8 +651,8 @@ const codeText = computed(() => {
   min-height: 4rem;
 }
 .iridis-demo__textarea--invalid {
-  border-color: #ef4444;
-  background: rgba(239, 68, 68, 0.06);
+  border-color: var(--iridis-error, var(--iridis-text, currentColor));
+  background: color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 6%, transparent);
 }
 .iridis-demo__textarea--colors {
   min-height: 3.5rem;
@@ -639,10 +660,10 @@ const codeText = computed(() => {
 .iridis-demo__validation {
   margin-top: 0.4rem;
   padding: 0.5rem 0.7rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 10%, transparent);
+  border: 1px solid color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 40%, transparent);
   border-radius: 4px;
-  color: #ef4444;
+  color: var(--iridis-error, var(--iridis-text, currentColor));
   font-family: var(--vp-font-family-mono);
   font-size: 0.74rem;
   white-space: pre-wrap;

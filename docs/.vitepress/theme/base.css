@@ -10,24 +10,58 @@
   --vp-font-family-base: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --vp-font-family-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, ui-monospace, monospace;
 
+  /* === Unified color-transition timing ===
+     Every chrome and surface re-tints at the same speed when the user
+     toggles framing or picks a new palette. Brand logo + HSV picker
+     animations are exempt (they have their own pacing for visual effect).
+     Layout transitions (width, transform, padding) are also separate —
+     this token is *only* for color/background/border-color/fill. */
+  --iridis-transition-duration: 180ms;
+  --iridis-transition-timing:   cubic-bezier(0.4, 0, 0.2, 1);
+  --iridis-transition: var(--iridis-transition-duration) var(--iridis-transition-timing);
+
+  /* Override VitePress's color transition variable so its own chrome
+     (search bar, navbar, sidebar dropdowns, theme switch) re-tints in
+     lockstep with everything else. */
+  --vp-transition-color: var(--iridis-transition);
+
   /* Iridis-specific shared depth tokens */
-  --iridis-radius-sm:  6px;
-  --iridis-radius-md:  10px;
-  --iridis-radius-lg:  14px;
-  --iridis-shadow-sm:
-    0 1px 2px  rgba(0, 0, 0, 0.20),
-    0 1px 3px  -1px rgba(0, 0, 0, 0.18);
-  --iridis-shadow-md:
-    0 4px 12px -2px rgba(0, 0, 0, 0.30),
-    0 1px 4px  -1px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  --iridis-shadow-lg:
-    0 14px 40px -10px rgba(0, 0, 0, 0.45),
-    0 4px  10px -2px  rgba(0, 0, 0, 0.30),
-    inset 0 1px 0    rgba(255, 255, 255, 0.06);
+  /* === Business-card design language ===
+     One radius for everything (slight squircle).
+     One border, one shadow recipe — outer drop + inner edge highlight
+     at top + inner shadow at bottom + corner accents. Every surface
+     reads as the same physical plane. */
+  --iridis-radius:      6px;     /* the only radius — every element */
+  --iridis-radius-sm:   6px;     /* legacy aliases — same value */
+  --iridis-radius-md:   6px;
+  --iridis-radius-lg:   6px;
+
+  --iridis-card-border:  1px solid color-mix(in oklch, var(--iridis-divider) 92%, var(--iridis-brand) 8%);
+  --iridis-card-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 2px 6px -2px rgba(0, 0, 0, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22),
+    inset 1px 0 0 rgba(255, 255, 255, 0.03),
+    inset -1px 0 0 rgba(0, 0, 0, 0.10);
+  --iridis-card-shadow-hover:
+    0 2px 4px rgba(0, 0, 0, 0.20),
+    0 6px 14px -4px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.24),
+    inset 1px 0 0 rgba(255, 255, 255, 0.05),
+    inset -1px 0 0 rgba(0, 0, 0, 0.12);
+  --iridis-card-shadow-pressed:
+    inset 0 2px 4px rgba(0, 0, 0, 0.18),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+
+  /* Legacy shadow tokens kept as aliases so older selectors don't break. */
+  --iridis-shadow-sm:    var(--iridis-card-shadow);
+  --iridis-shadow-md:    var(--iridis-card-shadow);
+  --iridis-shadow-lg:    var(--iridis-card-shadow);
   --iridis-edge-soft:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
 
   /* Right-panel reservation — resizable by the user via the drag handle.
      Min is the picker-safe floor (SV square 240px + container chrome). */
@@ -37,23 +71,38 @@
   --vp-layout-max-width: 100%;
   --vp-sidebar-width: 280px;
 
-  /* Component design tokens — every interactive surface composes from
-     these for consistent border / radius / inset+outset shadow. */
-  --iridis-border-color: color-mix(in oklch, var(--iridis-divider) 90%, var(--iridis-brand) 10%);
-  --iridis-border-soft:  1px solid var(--iridis-border-color);
-  --iridis-shadow-felt:
-    0 1px 2px  rgba(0, 0, 0, 0.18),
-    0 4px 12px -4px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0  rgba(255, 255, 255, 0.06),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
-  --iridis-shadow-felt-hover:
-    0 2px 4px  rgba(0, 0, 0, 0.20),
-    0 8px 18px -6px rgba(0, 0, 0, 0.32),
-    inset 0 1px 0  rgba(255, 255, 255, 0.10),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
-  --iridis-shadow-pressed:
-    inset 0 2px 4px rgba(0, 0, 0, 0.20),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  /* Legacy aliases — every interactive surface composes from these
+     consistent business-card tokens. */
+  --iridis-border-color:        color-mix(in oklch, var(--iridis-divider) 92%, var(--iridis-brand) 8%);
+  --iridis-border-soft:         var(--iridis-card-border);
+  --iridis-shadow-felt:         var(--iridis-card-shadow);
+  --iridis-shadow-felt-hover:   var(--iridis-card-shadow-hover);
+  --iridis-shadow-pressed:      var(--iridis-card-shadow-pressed);
+}
+
+/* === Unified color transitions across the page ===
+   Anything that re-tints when framing or palette changes uses one duration.
+   Targets VitePress chrome plus generic body/links/inputs. Element-specific
+   transitions for layout (transform/width/padding) stay separate. */
+body,
+.VPNavBar, .VPNavBar *,
+.VPSidebar, .VPSidebar *,
+.VPLocalNav, .VPLocalNav *,
+.VPNav, .VPNav *,
+.VPDoc, .VPDoc a,
+.VPNavBarSearch, .VPNavBarSearch *,
+.DocSearch-Button, .DocSearch-Button *,
+.DocSearch-Search-Icon,
+.VPLink, .VPNavBarMenuLink,
+.VPSidebarItem .text, .VPSidebarItem .link,
+.VPSwitch,
+button, input, select, textarea {
+  transition:
+    background-color var(--iridis-transition),
+    color           var(--iridis-transition),
+    border-color    var(--iridis-transition),
+    fill            var(--iridis-transition),
+    stroke          var(--iridis-transition);
 }
 
 /* === Doc surface basics === */
@@ -326,51 +375,197 @@ html.iridis-sidebar-collapsed .VPDoc {
 }
 html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
 
-/* Sidebar collapse-edge — a thin edge handle visible when collapsed. */
-.iridis-sidebar-toggle {
+/* === Sticky-tab pattern (left + right bars) ===
+   A vertical pill anchored to the viewport. Tab rides the panel's edge
+   when the panel is open; sits at the viewport edge when closed.
+   Arrow flips direction so the tab always invites the available action.
+   Tabs share business-card chrome with the rest of the design language. */
+.iridis-sidebar-tab,
+.iridis-right-tab {
   position: fixed;
-  top: calc(var(--vp-nav-height, 64px) + 0.6rem);
-  left: 0.4rem;
-  z-index: 25;
-  width: 1.4rem;
-  height: 1.4rem;
-  padding: 0;
-  background: color-mix(in oklch, var(--iridis-surface) 70%, var(--iridis-brand) 30%);
-  border: 1px solid color-mix(in oklch, var(--iridis-divider) 50%, var(--iridis-brand) 50%);
-  border-radius: 50%;
-  color: var(--iridis-text);
-  cursor: pointer;
+  z-index: 35;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  gap: 0.5rem;
+  padding: 0.85rem 0.4rem;
+  width: 1.7rem;
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklch, var(--iridis-surface) 75%, var(--iridis-brand) 25%) 0%,
+      color-mix(in oklch, var(--iridis-surface) 90%, var(--iridis-brand) 10%) 100%);
+  border: var(--iridis-card-border);
+  border-color: color-mix(in oklch, var(--iridis-divider) 60%, var(--iridis-brand) 40%);
+  box-shadow: var(--iridis-card-shadow);
+  cursor: pointer;
+  color: var(--iridis-text);
+  font-family: var(--vp-font-family-base);
+  transition:
+    left 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    right 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color var(--iridis-transition),
+    color            var(--iridis-transition),
+    border-color     var(--iridis-transition),
+    box-shadow       var(--iridis-transition);
+}
+.iridis-sidebar-tab:hover,
+.iridis-right-tab:hover {
+  background:
+    linear-gradient(180deg,
+      color-mix(in oklch, var(--iridis-brand) 35%, var(--iridis-surface)) 0%,
+      color-mix(in oklch, var(--iridis-brand) 18%, var(--iridis-surface)) 100%);
+  box-shadow: var(--iridis-card-shadow-hover);
+}
+.iridis-sidebar-tab:active,
+.iridis-right-tab:active {
+  box-shadow: var(--iridis-card-shadow-pressed);
+}
+.iridis-sidebar-tab__arrow,
+.iridis-right-tab__arrow {
+  font-size: 0.75rem;
   font-weight: 700;
   line-height: 1;
-  transition: transform 120ms, left 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--iridis-on-brand);
 }
-html:not(.iridis-sidebar-collapsed) .iridis-sidebar-toggle {
-  left: calc(var(--vp-sidebar-width) - 0.8rem);
-}
-.iridis-sidebar-toggle:hover {
-  transform: scale(1.08);
-  border-color: var(--iridis-brand);
+.iridis-sidebar-tab__label,
+.iridis-right-tab__label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--iridis-on-brand);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
-/* On narrow viewports both panels stack: */
-@media (max-width: 1280px) {
-  .VPDoc.has-aside .aside {
-    width: 100%;
-    max-width: none;
-    padding-left: 0;
-    padding-right: 0;
+/* Left tab — pinned to left edge of viewport when sidebar collapsed,
+   rides sidebar's right edge when open. Tab is offset by half its
+   width so it visually straddles the edge. Tab radius is asymmetric:
+   the side facing the viewport is square (it's an extension of the
+   sidebar), the side facing the content is rounded. */
+.iridis-sidebar-tab {
+  top: calc(var(--vp-nav-height, 64px) + 6rem);
+  left: 0;
+  border-radius: 0 var(--iridis-radius) var(--iridis-radius) 0;
+}
+.iridis-sidebar-tab--open {
+  left: calc(var(--vp-sidebar-width) - 0.85rem);
+}
+
+/* Right tab — pinned to right edge of viewport when panel collapsed,
+   rides panel's left edge when open. Same asymmetric radius logic. */
+.iridis-right-tab {
+  top: calc(var(--vp-nav-height, 64px) + 6rem);
+  right: 0;
+  border-radius: var(--iridis-radius) 0 0 var(--iridis-radius);
+}
+.iridis-right-tab--open {
+  right: calc(var(--iridis-right-panel-width) + 1rem - 0.85rem);
+}
+
+/* Narrow viewports: tabs become horizontal accordion handles.
+   Sidebar tab pins to TOP of viewport (sidebar drops from top).
+   Right tab pins to BOTTOM (panel slides up from bottom). */
+@media (max-width: 1099px) {
+  .iridis-sidebar-tab,
+  .iridis-right-tab {
+    flex-direction: row;
+    width: auto;
+    height: 2rem;
+    padding: 0.4rem 0.85rem;
+    gap: 0.45rem;
   }
-  .VPDoc.has-aside .container {
-    flex-direction: column;
+  .iridis-sidebar-tab__label,
+  .iridis-right-tab__label {
+    writing-mode: horizontal-tb;
+    transform: none;
   }
-  .iridis-right {
-    position: relative !important;
-    top: auto !important;
+
+  .iridis-sidebar-tab {
+    top: var(--vp-nav-height, 64px);
+    left: 1rem;
+    right: auto;
+    border-radius: 0 0 var(--iridis-radius) var(--iridis-radius);
+  }
+  .iridis-sidebar-tab--open {
+    left: 1rem;
+  }
+  /* Arrow points DOWN to indicate "drop from top" when closed,
+     UP to indicate "retract to top" when open. Override the
+     desktop ◀ ▶ chars via ::before; the v-bound text is hidden
+     on narrow viewports. */
+  .iridis-sidebar-tab .iridis-sidebar-tab__arrow { display: none; }
+  .iridis-sidebar-tab::before {
+    content: '▼';
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--iridis-on-brand);
+  }
+  .iridis-sidebar-tab--open::before { content: '▲'; }
+
+  .iridis-right-tab {
+    top: auto;
+    bottom: 0;
+    right: 1rem;
+    left: auto;
+    border-radius: var(--iridis-radius) var(--iridis-radius) 0 0;
+  }
+  .iridis-right-tab--open {
+    right: 1rem;
+    bottom: 60vh;  /* sit just above the open panel */
+  }
+  .iridis-right-tab .iridis-right-tab__arrow { display: none; }
+  .iridis-right-tab::before {
+    content: '▲';
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--iridis-on-brand);
+  }
+  .iridis-right-tab--open::before { content: '▼'; }
+}
+
+/* === Narrow viewports — left sidebar = top accordion ===
+   On <1099px the sidebar drops down from the top of the viewport instead
+   of sliding in from the left. Tab pinned to top of viewport (above) is
+   the trigger. Sidebar slides via translateY(-100%) when collapsed. */
+@media (max-width: 1099px) {
+  .VPSidebar {
+    position: fixed !important;
+    top: var(--vp-nav-height, 64px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
     width: 100% !important;
-    max-height: none !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+    z-index: 32;
+    background: var(--vp-c-bg) !important;
+    border-bottom: 1px solid var(--vp-c-divider);
+    border-radius: 0 0 var(--iridis-radius) var(--iridis-radius);
+    box-shadow: var(--iridis-card-shadow);
+    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
   }
+  html:not(.iridis-sidebar-collapsed) .VPSidebar,
+  html:not(.iridis-sidebar-collapsed) .VPSidebarContainer {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+  html.iridis-sidebar-collapsed .VPSidebar,
+  html.iridis-sidebar-collapsed .VPSidebarContainer {
+    transform: translateY(-100%) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  /* Content takes full width on narrow — no sidebar reservation. */
+  .VPContent.has-sidebar { padding-left: 0 !important; }
+  .VPDoc { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+  /* Hide the sidebar resize handle on narrow viewports. */
+  .iridis-sidebar-resize { display: none; }
 }

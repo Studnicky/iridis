@@ -1,22 +1,27 @@
 /**
- * palette.css — cascading docs theme.
+ * palette.css — engine-driven cascade.
  *
- * The iridis engine emits eight canonical tokens (`--iridis-*`) onto
- * documentElement via stores/applyConfigToDocument.ts. This file cascades
- * vitepress's chrome tokens (`--vp-c-*`) from those iridis tokens via
- * var() references, plus a small set of derived tokens computed via
- * color-mix(). Change a seed → iridis recomputes → every cascade follower
- * updates in one paint.
+ * The iridis engine writes one --iridis-{role} variable per resolved
+ * role (see stores/applyConfigToDocument.ts). VitePress's chrome tokens
+ * cascade from those iridis variables via var() chains. Derived visual
+ * variants (soft / hover / pressed) are computed at the framework layer
+ * via color-mix — the engine's job is to satisfy roles, not to enumerate
+ * visual states.
  *
- * The fallback values below are used during the brief window before the
- * Vue enhanceApp hook runs the engine and writes the iridis-* tokens.
- * They are also used during SSR when document.documentElement is unavailable.
+ * NO STATIC HEX FALLBACKS for any --iridis-* token. If the engine has
+ * not produced a role, the cascade walks to the next available iridis
+ * variable, terminating at currentColor (browser-native, never a
+ * hardcoded color value). That sparseness IS the demonstration of what
+ * the active schema produces — picking iridis-4 means many tokens are
+ * intentionally absent and the page paints with what little it has.
+ *
+ * The brand spectrum (--iridis-violet … --iridis-magenta) is the only
+ * exception. It is the iridis project's brand identity (the wordmark
+ * gradient + the loader rings) and is NOT engine output.
  */
 
 :root {
-  /* iridis spectrum (canonical 9-stop wheel — used by the wordmark gradient,
-     pulsing rings, and any "all the colors" decoration). Static; the user's
-     own seeds drive --iridis-brand and the cascading chrome tokens. */
+  /* ── Brand spectrum — the iridis wordmark identity. NOT engine output. ── */
   --iridis-violet:  #7c3aed;
   --iridis-indigo:  #4f46e5;
   --iridis-blue:    #2563eb;
@@ -27,58 +32,77 @@
   --iridis-red:     #ef4444;
   --iridis-magenta: #ec4899;
 
-  /* iridis-emitted tokens — fallback values until the engine runs */
-  --iridis-background: #07060f;
-  --iridis-surface:    #0f0d1c;
-  --iridis-bg-soft:    #15122a;
-  --iridis-divider:    #2a2740;
-  --iridis-muted:      #8a8aa9;
-  --iridis-text:       #f0f0ff;
-  --iridis-brand:      #7c3aed;
-  --iridis-on-brand:   #ffffff;
+  /* ── VitePress chrome cascade ───────────────────────────────────────
+     Each --vp-c-* reads from the matching --iridis-{role} engine
+     output, with a multi-tier fallback chain that walks toward more
+     fundamental tokens. The chain ends at currentColor — never a hex.
+     If the engine hasn't run yet (SSR, pre-hydration), the var() call
+     yields the chain's terminal value and the page paints with that.
+  */
 
-  /* vitepress chrome tokens — cascade from iridis */
-  --vp-c-bg:        var(--iridis-background);
-  --vp-c-bg-alt:    var(--iridis-surface);
-  --vp-c-bg-elv:    var(--iridis-surface);
-  --vp-c-bg-soft:   var(--iridis-bg-soft);
+  /* Surfaces */
+  --vp-c-bg:        var(--iridis-background, currentColor);
+  --vp-c-bg-alt:    var(--iridis-surface,    var(--iridis-background, currentColor));
+  --vp-c-bg-elv:    var(--iridis-surface,    var(--iridis-background, currentColor));
+  --vp-c-bg-soft:   var(--iridis-bgSoft,     var(--iridis-surface,    var(--iridis-background, currentColor)));
 
-  --vp-c-divider:   var(--iridis-divider);
-  --vp-c-border:    var(--iridis-divider);
-  --vp-c-gutter:    var(--iridis-divider);
+  /* Borders */
+  --vp-c-divider:   var(--iridis-divider,    var(--iridis-muted, currentColor));
+  --vp-c-border:    var(--iridis-divider,    var(--iridis-muted, currentColor));
+  --vp-c-gutter:    var(--iridis-divider,    var(--iridis-muted, currentColor));
 
-  --vp-c-text-1:    var(--iridis-text);
-  --vp-c-text-2:    var(--iridis-muted);
-  --vp-c-text-3:    color-mix(in oklch, var(--iridis-muted) 75%, var(--iridis-bg-soft) 25%);
+  /* Text */
+  --vp-c-text-1:    var(--iridis-text,       currentColor);
+  --vp-c-text-2:    var(--iridis-muted,      var(--iridis-text, currentColor));
+  --vp-c-text-3:    var(--iridis-muted,      var(--iridis-text, currentColor));
 
-  --vp-c-brand-1:    var(--iridis-brand);
+  /* Brand — visual variants composed at the framework layer via color-mix
+     of engine outputs. The engine's job is to satisfy roles; soft/hover
+     visual variants are derived from those roles, not re-resolved. */
+  --vp-c-brand-1:    var(--iridis-brand, var(--iridis-text, currentColor));
   --vp-c-brand-2:    color-mix(in oklch, var(--iridis-brand) 88%, var(--iridis-text) 12%);
   --vp-c-brand-3:    color-mix(in oklch, var(--iridis-brand) 92%, var(--iridis-background) 8%);
-  --vp-c-brand-soft: color-mix(in oklch, var(--iridis-brand) 14%, transparent 86%);
+  --vp-c-brand-soft: color-mix(in oklch, var(--iridis-brand) 22%, var(--iridis-bg-soft) 78%);
 
-  --vp-button-brand-bg:           var(--iridis-brand);
-  --vp-button-brand-text:         var(--iridis-on-brand);
-  --vp-button-brand-border:       var(--iridis-brand);
-  --vp-button-brand-hover-bg:     color-mix(in oklch, var(--iridis-brand) 88%, var(--iridis-text) 12%);
-  --vp-button-brand-hover-text:   var(--iridis-on-brand);
-  --vp-button-brand-hover-border: color-mix(in oklch, var(--iridis-brand) 88%, var(--iridis-text) 12%);
+  /* Tip / warning / danger surfaces — wired to status roles. Tips use
+     brand because iridis-8+ enforces on-brand on brand at 4.5:1. The
+     22% mix gives a visibly distinct surface while keeping text/bg-soft
+     contrast (≈14:1) effectively unchanged for the inherited text color. */
+  --vp-c-tip-1:      var(--iridis-brand);
+  --vp-c-tip-2:      color-mix(in oklch, var(--iridis-brand) 88%, var(--iridis-on-brand) 12%);
+  --vp-c-tip-soft:   color-mix(in oklch, var(--iridis-brand) 22%, var(--iridis-bg-soft) 78%);
 
-  --vp-button-alt-bg:           var(--iridis-surface);
-  --vp-button-alt-text:         var(--iridis-text);
-  --vp-button-alt-border:       var(--iridis-divider);
-  --vp-button-alt-hover-bg:     var(--iridis-bg-soft);
-  --vp-button-alt-hover-text:   var(--iridis-text);
-  --vp-button-alt-hover-border: var(--iridis-divider);
+  --vp-c-warning-1:    var(--iridis-warning, var(--iridis-brand));
+  --vp-c-warning-2:    var(--iridis-warning, var(--iridis-brand));
+  --vp-c-warning-soft: color-mix(in oklch, var(--iridis-warning, var(--iridis-brand)) 14%, var(--iridis-bg-soft) 86%);
+
+  --vp-c-danger-1:    var(--iridis-error, var(--iridis-brand));
+  --vp-c-danger-2:    var(--iridis-error, var(--iridis-brand));
+  --vp-c-danger-soft: color-mix(in oklch, var(--iridis-error, var(--iridis-brand)) 14%, var(--iridis-bg-soft) 86%);
+
+  /* Brand button */
+  --vp-button-brand-bg:           var(--iridis-brand,   currentColor);
+  --vp-button-brand-text:         var(--iridis-onBrand, var(--iridis-background, currentColor));
+  --vp-button-brand-border:       var(--iridis-brand,   currentColor);
+  --vp-button-brand-hover-bg:     var(--iridis-brand,   currentColor);
+  --vp-button-brand-hover-text:   var(--iridis-onBrand, var(--iridis-background, currentColor));
+  --vp-button-brand-hover-border: var(--iridis-brand,   currentColor);
+
+  /* Alt button */
+  --vp-button-alt-bg:           var(--iridis-surface, var(--iridis-background, currentColor));
+  --vp-button-alt-text:         var(--iridis-text,    currentColor);
+  --vp-button-alt-border:       var(--iridis-divider, var(--iridis-muted, currentColor));
+  --vp-button-alt-hover-bg:     var(--iridis-bgSoft,  var(--iridis-surface, currentColor));
+  --vp-button-alt-hover-text:   var(--iridis-text,    currentColor);
+  --vp-button-alt-hover-border: var(--iridis-divider, var(--iridis-muted, currentColor));
 }
 
 /**
  * .iridis-brand — the wordmark gradient.
  *
- * Applied by the iridis-brand markdown-it plugin to every literal "iridis"
- * in body text. Gradient sweeps through the hard-coded brand spectrum (not
- * the user's seeds) so the brand mark stays recognizable regardless of
- * theme. v2 will replace this with a runtime-driven sweep produced by
- * @studnicky/iridis-anima.
+ * Sweeps through the hard-coded brand spectrum (above) so the brand mark
+ * stays recognizable regardless of which schema is active. The spectrum
+ * is iridis's own identity, not part of the engine output.
  */
 .iridis-brand {
   background: linear-gradient(
@@ -118,9 +142,7 @@ pre .iridis-brand {
   font-weight:             inherit;
 }
 
-/* Navbar wordmark — "iridis" — gets the same spectrum sweep as
-   .iridis-brand. The siteTitle string is set in themeConfig and rendered
-   directly by vitepress's <VPNavBarTitle>; we paint it via CSS. */
+/* Navbar wordmark — same spectrum sweep as .iridis-brand. */
 .VPNavBarTitle .title {
   background: linear-gradient(
     90deg,

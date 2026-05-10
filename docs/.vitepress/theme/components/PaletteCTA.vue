@@ -38,7 +38,12 @@ import { panelOpen, openPanel } from '../stores/panelState.ts';
   border-radius: var(--iridis-radius-md);
   cursor: pointer;
   box-shadow: var(--iridis-shadow-felt);
-  transition: transform 120ms, box-shadow 120ms, filter 120ms;
+  transition:
+    background-color var(--iridis-transition),
+    color            var(--iridis-transition),
+    box-shadow       var(--iridis-transition),
+    filter           var(--iridis-transition),
+    transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .iridis-cta:hover {
   filter: brightness(1.08);
