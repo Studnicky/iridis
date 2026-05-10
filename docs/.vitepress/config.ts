@@ -12,6 +12,7 @@ const sidebar = [
       { 'link': '/',                'text': 'What it does'    },
       { 'link': '/getting-started', 'text': 'Getting started' },
       { 'link': '/try-it-out',      'text': 'Try it out'      },
+      { 'link': '/v2-living-color', 'text': 'Living color'    },
     ],
   },
   {
@@ -35,7 +36,23 @@ const sidebar = [
   {
     'text':  'Reference',
     'items': [
-      { 'link': '/v2-living-color', 'text': 'Living color (v2 thesis)' },
+      {
+        'text':  'Color spaces',
+        'items': [
+          { 'link': '/reference/hex',   'text': 'Hex'   },
+          { 'link': '/reference/rgb',   'text': 'RGB'   },
+          { 'link': '/reference/hsv',   'text': 'HSV'   },
+          { 'link': '/reference/cmyk',  'text': 'CMYK'  },
+          { 'link': '/reference/oklch', 'text': 'OKLCH' },
+        ],
+      },
+      {
+        'text':  'Accessibility standards',
+        'items': [
+          { 'link': '/reference/wcag', 'text': 'WCAG 2.1' },
+          { 'link': '/reference/apca', 'text': 'APCA'     },
+        ],
+      },
     ],
   },
 ];
