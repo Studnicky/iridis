@@ -123,14 +123,6 @@ const showDrawerClose = computed<boolean>(() => isDesktop.value && !collapsed.va
 .iridis-nav-sidebar-toggle {
   display: inline-flex;
 }
-/* Hide PAGES toggle at mobile; the page tree is reachable via the
-   VitePress mobile screen at narrow widths. The Example/builder
-   toggle stays visible at every viewport. */
-@media (max-width: 1099px) {
-  .iridis-nav-sidebar-toggle {
-    display: none;
-  }
-}
 .iridis-nav-sidebar-toggle :deep(.p-button) {
   position: relative;
   isolation: isolate;
