@@ -3,22 +3,16 @@
  * itself, the home page CTA, the navbar) can call open/close/toggle
  * and observe `panelOpen` without prop-drilling.
  *
- * Defaults differ by viewport: desktop (>=1100px) starts open so designers
- * see the builder immediately; mobile (<1100px) starts closed so the
- * drawer does not cover content on first paint. The initial value is
- * resolved against window.matchMedia when the module loads in the
- * browser; SSR/non-browser environments default to closed.
+ * Defaults to open at every viewport. The drawer is a fixed-position
+ * overlay that floats over the right edge; the page content stays
+ * readable alongside it. SSR/non-browser environments also default
+ * to open so server-rendered markup matches the first client paint.
  */
 
 import { ref } from 'vue';
 
-function resolveInitialOpen(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(min-width: 1100px)').matches;
-}
-
-/** Reactive flag. Desktop defaults open, mobile defaults closed. */
-export const panelOpen = ref(resolveInitialOpen());
+/** Reactive flag. Open by default at every viewport. */
+export const panelOpen = ref(true);
 
 /** Opens the right panel. */
 export function openPanel(): void {

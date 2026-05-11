@@ -87,10 +87,11 @@ export default withMermaid(defineConfig({
   'appearance':  themeConfig.appearance,
   'themeConfig': {
     ...themeConfig,
-    'nav': [
-      { 'link': '/',           'text': 'Docs' },
-      { 'link': 'https://github.com/Studnicky/iridis', 'text': 'GitHub' },
-    ],
+    // VitePress's default nav menu is suppressed; the iridis-nav-menu
+    // component (rendered into nav-bar-content-before) renders Docs and
+    // GitHub interleaved with the PAGES and Example toggles. See
+    // theme/components/NavBarMenu.vue.
+    'nav': [],
     sidebar,
     'socialLinks': [{ 'icon': 'github', 'link': 'https://github.com/Studnicky/iridis' }],
   },

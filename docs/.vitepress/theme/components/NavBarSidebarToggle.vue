@@ -2,18 +2,20 @@
 /**
  * NavBarSidebarToggle.vue
  *
- * The universal sidebar toggle, mounted into the navbar via the
- * nav-bar-content-after slot. Visible at every viewport.
+ * The universal sidebar toggle, mounted into the main navbar menu.
+ * Visible at large viewports only; hidden at mobile via CSS. At mobile
+ * the page tree is reachable through the existing VitePress mobile
+ * screen.
  *
  * Toggles the iridis-sidebar-collapsed class on documentElement. The
  * class drives a fixed-position overlay drawer at every width (see
- * base.css). On mount the toggle seeds the class from viewport width:
- * desktop (>=1100px) starts open, mobile (<1100px) starts collapsed.
+ * base.css). On mount the toggle starts uncollapsed at every viewport
+ * so the pages drawer is open by default.
  */
 import { onMounted, onUnmounted, ref } from 'vue';
 import Button from 'primevue/button';
 
-const collapsed = ref(true);
+const collapsed = ref(false);
 let observer: MutationObserver | null = null;
 
 function syncFromDom(): void {
@@ -23,10 +25,9 @@ function syncFromDom(): void {
 
 onMounted(() => {
   if (typeof document === 'undefined') return;
-  const narrow = typeof window !== 'undefined'
-    ? window.matchMedia('(max-width: 1099px)').matches
-    : true;
-  document.documentElement.classList.toggle('iridis-sidebar-collapsed', narrow);
+  // Always start uncollapsed at every viewport. The user can collapse
+  // via this toggle; we never seed the collapsed state from matchMedia.
+  document.documentElement.classList.remove('iridis-sidebar-collapsed');
   syncFromDom();
   observer = new MutationObserver(syncFromDom);
   observer.observe(document.documentElement, { 'attributes': true, 'attributeFilter': ['class'] });
@@ -66,7 +67,17 @@ function toggle(): void {
 .iridis-nav-sidebar-toggle {
   display: inline-flex;
 }
+/* Hide PAGES toggle at mobile; the page tree is reachable via the
+   VitePress mobile screen at narrow widths. The Example/builder
+   toggle stays visible at every viewport. */
+@media (max-width: 1099px) {
+  .iridis-nav-sidebar-toggle {
+    display: none;
+  }
+}
 .iridis-nav-sidebar-toggle :deep(.p-button) {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -81,15 +92,37 @@ function toggle(): void {
   box-shadow: var(--iridis-shadow-sm);
   min-height: 2.4rem;
 }
+/* The active-state highlight is painted by a ::before pseudo pinned
+   to z-index 0 inside the button's isolation context. Label and icon
+   children sit at z-index 1, so the tint reads as a background fill
+   underneath the content rather than an overlay on top of it. */
+.iridis-nav-sidebar-toggle :deep(.p-button)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  z-index: 0;
+  pointer-events: none;
+  transition: background 160ms ease;
+}
+.iridis-nav-sidebar-toggle :deep(.p-button) > * {
+  position: relative;
+  z-index: 1;
+}
 .iridis-nav-sidebar-toggle :deep(.p-button:hover) {
-  background: color-mix(in oklch, var(--iridis-surface) 75%, var(--iridis-brand) 25%);
   border-color: color-mix(in oklch, var(--iridis-divider) 30%, var(--iridis-brand) 70%);
   color: var(--iridis-brand);
 }
+.iridis-nav-sidebar-toggle :deep(.p-button:hover)::before {
+  background: color-mix(in oklch, var(--iridis-brand) 10%, transparent);
+}
 .iridis-nav-sidebar-toggle :deep(.p-button[aria-pressed="true"]) {
-  background: color-mix(in oklch, var(--iridis-brand) 18%, var(--iridis-surface));
   border-color: color-mix(in oklch, var(--iridis-brand) 60%, var(--iridis-divider));
   color: var(--iridis-brand);
+}
+.iridis-nav-sidebar-toggle :deep(.p-button[aria-pressed="true"])::before {
+  background: color-mix(in oklch, var(--iridis-brand) 14%, transparent);
 }
 .iridis-nav-sidebar-toggle__icon {
   font-size: 0.95rem;
@@ -100,10 +133,5 @@ function toggle(): void {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-}
-@media (max-width: 480px) {
-  .iridis-nav-sidebar-toggle__label {
-    display: none;
-  }
 }
 </style>

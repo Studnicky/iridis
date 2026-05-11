@@ -19,8 +19,7 @@ import TryItOutForm    from './components/TryItOutForm.vue';
 import RightPanel      from './components/RightPanel.vue';
 import SidebarToc      from './components/SidebarToc.vue';
 import SidebarResize   from './components/SidebarResize.vue';
-import NavBarSidebarToggle from './components/NavBarSidebarToggle.vue';
-import NavBarBuilderToggle from './components/NavBarBuilderToggle.vue';
+import NavBarMenu      from './components/NavBarMenu.vue';
 import MobileOverlay   from './components/MobileOverlay.vue';
 import InfiniteScroll  from './components/InfiniteScroll.vue';
 import PaletteCTA      from './components/PaletteCTA.vue';
@@ -85,10 +84,7 @@ export const theme: Theme = {
   Layout() {
     return h(DefaultTheme.Layout, null, {
       'sidebar-nav-before':  () => logoBlock(),
-      'nav-bar-content-after': () => h('div', { 'class': 'iridis-nav-toggles' }, [
-        h(NavBarBuilderToggle),
-        h(NavBarSidebarToggle),
-      ]),
+      'nav-bar-content-before': () => h(NavBarMenu),
       'doc-after':           () => h(InfiniteScroll),
       'layout-top':          () => h('div', null, [
         h(SidebarResize),
