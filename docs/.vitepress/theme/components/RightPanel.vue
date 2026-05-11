@@ -2,21 +2,20 @@
 /**
  * RightPanel.vue
  *
- * Persistent example builder + the entire docs configuration. Mounted via
- * the aside-top slot. Vitepress's right-rail outline is disabled in
- * theme.config.ts; this panel takes over the column.
+ * Live example builder + the entire docs configuration. Mounted via the
+ * layout-top slot. The panel is a fixed-position overlay drawer at every
+ * viewport (right-edge drawer on desktop, bottom sheet on mobile). The
+ * navbar TRY IRIDIS button is the universal open/close affordance.
  *
  * Two regions:
  *   - Live demo (IridisDemo running the canonical full pipeline)
  *   - Configuration (PrimeVue Accordion wrapping the docs-config form)
  *
- * The whole panel can be collapsed to an edge handle that re-opens. The
- * close button, eyebrow tag, configuration accordion, and export
- * buttons are PrimeVue primitives; the resize handle and edge-tab
- * sticky button stay custom (project-specific affordances).
+ * Dismissal: tap the backdrop, the close button (mobile), the Escape key,
+ * or the navbar toggle. On mobile the drag handle adds pull-down dismiss.
  */
 
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 import Button         from 'primevue/button';
 import Tag            from 'primevue/tag';
@@ -51,12 +50,6 @@ const FULL_PIPELINE: readonly string[] = [
 const open       = panelOpen;
 const cfgValue   = ref<string | null>(null);
 const exportNote = ref<string | null>(null);
-
-function syncCollapsedClass(isOpen: boolean): void {
-  if (typeof document === 'undefined') return;
-  document.documentElement.classList.toggle('iridis-right-collapsed', !isOpen);
-}
-watch(open, (next) => syncCollapsedClass(next));
 
 function readPersistedWidth(): number | null {
   if (typeof window === 'undefined') return null;
@@ -104,11 +97,8 @@ function onDragPointerUp(e: PointerEvent): void {
 function onKeydown(e: KeyboardEvent): void {
   if (e.key !== 'Escape') return;
   if (!open.value) return;
-  if (typeof window === 'undefined') return;
-  // Only close-on-escape at mobile widths — desktop relies on the
-  // sticky tab or close button so escape does not interfere with the
-  // user's intent on a persistent panel.
-  if (window.matchMedia('(max-width: 1099px)').matches) closePanel();
+  // The builder is an overlay at every width — escape dismisses it.
+  closePanel();
 }
 
 // Pull-down-to-dismiss handler on the mobile drag handle. Active only
@@ -150,12 +140,6 @@ function onSheetPointerUp(e: PointerEvent): void {
 onMounted(() => {
   const persisted = readPersistedWidth();
   if (persisted !== null) applyWidth(persisted);
-  // Default to closed on narrow viewports so the drawer doesn't cover
-  // 60% of the screen on first paint. Desktop default stays open.
-  if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1099px)').matches) {
-    open.value = false;
-  }
-  syncCollapsedClass(open.value);
   if (typeof document !== 'undefined') {
     document.addEventListener('keydown', onKeydown);
   }
@@ -228,18 +212,6 @@ async function downloadJson(): Promise<void> {
 
 <template>
   <ClientOnly>
-    <Button
-      :class="['iridis-right-tab', { 'iridis-right-tab--open': open }]"
-      severity="secondary"
-      :aria-pressed="open"
-      :aria-label="open ? 'Hide palette builder' : 'Open palette builder'"
-      :title="open ? 'Hide palette builder' : 'Open palette builder'"
-      @click="open = !open"
-    >
-      <span class="iridis-right-tab__arrow" aria-hidden="true">{{ open ? '▶' : '◀' }}</span>
-      <span class="iridis-right-tab__label">Get palette</span>
-    </Button>
-
     <aside :class="['iridis-right', { 'iridis-right--collapsed': !open, 'iridis-right--dragging': dragging }]" aria-label="Live example builder">
       <div
         v-show="open"
@@ -337,78 +309,83 @@ async function downloadJson(): Promise<void> {
 </template>
 
 <style scoped>
+/* Mobile-first baseline: the builder is a bottom sheet that slides up
+   from the bottom edge. Same .iridis-right--collapsed class drives both
+   viewport modes; only the transform axis and dimensions change. */
 .iridis-right {
   position: fixed;
-  top: calc(var(--vp-nav-height, 64px) + 1rem);
-  right: 1rem;
-  max-height: calc(100vh - var(--vp-nav-height, 64px) - 2rem);
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  min-width: 0;
+  height: 85vh;
+  max-height: 85vh;
+  margin: 0;
   z-index: 30;
   overflow: hidden;
-  border-radius: var(--iridis-radius-lg);
+  border-radius: var(--iridis-radius-lg) var(--iridis-radius-lg) 0 0;
   background:
     linear-gradient(160deg, color-mix(in oklch, var(--iridis-surface) 92%, var(--iridis-brand) 8%) 0%,
                             color-mix(in oklch, var(--iridis-surface) 96%, var(--iridis-text)  4%) 100%);
   border: 1px solid color-mix(in oklch, var(--iridis-divider) 80%, var(--iridis-brand) 20%);
-  box-shadow: var(--iridis-shadow-lg);
+  box-shadow:
+    0 -8px 24px -8px rgba(0, 0, 0, 0.35),
+    var(--iridis-card-shadow);
   backdrop-filter: blur(10px);
-  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1), min-width 200ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.iridis-right:not(.iridis-right--collapsed) {
-  width: var(--iridis-right-panel-width, 380px);
-  min-width: 320px;
+  transform: translateY(0);
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .iridis-right--collapsed {
-  width: 2.4rem;
-  min-width: 0;
-  background:
-    linear-gradient(180deg,
-      color-mix(in oklch, var(--iridis-brand) 18%, var(--iridis-surface)) 0%,
-      color-mix(in oklch, var(--iridis-brand)  6%, var(--iridis-surface)) 100%);
-  border-color: color-mix(in oklch, var(--iridis-brand) 45%, var(--iridis-divider));
+  transform: translateY(100%);
+  pointer-events: none;
 }
-.iridis-right--dragging { user-select: none; }
+.iridis-right--dragging {
+  transition: none;
+  user-select: none;
+}
+.iridis-right__resize { display: none; }
+.iridis-right__body {
+  padding: 0.85rem 0.95rem 1rem;
+  overflow: auto;
+  max-height: calc(85vh - 2.25rem);
+  padding-top: 0.25rem;
+}
 
-@media (max-width: 1099px) {
+/* Desktop progressive enhancement: the builder becomes a right-edge
+   drawer that spans the full height under the navbar. Same overlay
+   pattern as the pages drawer, mirrored to the opposite edge. */
+@media (min-width: 1100px) {
   .iridis-right {
-    position: fixed;
-    top: auto;
+    top: var(--vp-nav-height, 64px);
     right: 0;
     bottom: 0;
-    left: 0;
-    max-width: none;
-    height: 85vh;
-    max-height: 85vh;
-    margin: 0;
-    z-index: 1000;
-    border-radius: var(--iridis-radius-lg) var(--iridis-radius-lg) 0 0;
-    transform: translateY(0);
-    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    left: auto;
+    width: min(85vw, var(--iridis-right-panel-width, 480px));
+    max-width: 720px;
+    height: calc(100vh - var(--vp-nav-height, 64px));
+    max-height: calc(100vh - var(--vp-nav-height, 64px));
+    border-radius: var(--iridis-radius-lg) 0 0 var(--iridis-radius-lg);
+    border-right: 0;
     box-shadow:
-      0 -8px 24px -8px rgba(0, 0, 0, 0.35),
+      -8px 0 24px -8px rgba(0, 0, 0, 0.35),
       var(--iridis-card-shadow);
-  }
-  .iridis-right:not(.iridis-right--collapsed) {
-    width: 100%;
-    min-width: 0;
+    transform: translateX(0);
+    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), width 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   .iridis-right--collapsed {
-    width: 100%;
-    min-width: 0;
-    transform: translateY(100%);
-    pointer-events: none;
+    transform: translateX(100%);
   }
-  .iridis-right--dragging {
-    transition: none;
-  }
-  .iridis-right__resize { display: none; }
+  .iridis-right__resize { display: block; }
   .iridis-right__body {
-    max-height: calc(85vh - 2.25rem);
-    padding-top: 0.25rem;
+    max-height: calc(100vh - var(--vp-nav-height, 64px));
+    padding-top: 0.85rem;
   }
-}
-@media (min-width: 1100px) {
+  /* Desktop hides the bottom-sheet drag handle; the close button is
+     the dismiss affordance here (matches the pages drawer's behaviour
+     where the backdrop and the navbar toggle do the same). */
   .iridis-right__handle { display: none; }
-  .iridis-right__close  { display: none; }
 }
 
 .iridis-right__handle {

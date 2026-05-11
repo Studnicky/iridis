@@ -37,6 +37,7 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 - Example mechanism unified, every page now shares the same `<IridisDemo>` instance via the right panel; per-page `<IridisDemo>` embeds removed (they were duplicating the panel's output and on `concepts/pipeline.md` showed three near-identical demos).
 - Pulsing concentric-rings logo treatment (uiverse loader pattern) replaces the static rounded-square. Five backdrop-filter-blurred rings with brand-color borders ripple at 5s ease-in-out around the iridescent eye, which gets a violet drop-shadow.
 - Depth + edges + glass treatment: tokenized `--iridis-shadow-{sm,md,lg}` and `--iridis-edge-soft`; gradient surfaces on code blocks, custom blocks, blockquotes, VPFeature; `color-mix(in oklch, ...)` everywhere instead of hardcoded rgba; `backdrop-filter: blur` on translucent panels.
+- Unified drawer layout across every viewport: docs content is the full middle column at every width; the Pages tree and the Try iridis builder are fixed-position overlay drawers driven by the navbar `PAGES` and `TRY IRIDIS` buttons. Drawer dimensions adapt with viewport (Pages: `min(85vw, 320px)`; Builder: `min(85vw, 480px)` right-edge drawer on desktop, full-width bottom sheet on mobile). Defaults differ by viewport — desktop (`>=1100px`) opens both drawers on first paint; mobile (`<1099px`) starts both closed. A single universal backdrop (`MobileOverlay`) dims content whenever any drawer is open and dismisses on tap. Sticky vertical tab affordances retired.
 
 ### Roadmap
 

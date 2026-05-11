@@ -76,11 +76,11 @@ html {
 
   /* Right-panel reservation — resizable by the user via the drag handle.
      Min is the picker-safe floor (SV square 240px + container chrome). */
-  --iridis-right-panel-width: 380px;
+  --iridis-right-panel-width: 480px;
   --iridis-right-panel-min:   320px;
   --iridis-right-panel-max:   720px;
   --vp-layout-max-width: 100%;
-  --vp-sidebar-width: 280px;
+  --vp-sidebar-width: 320px;
 
   /* Legacy aliases — every interactive surface composes from these
      consistent business-card tokens. */
@@ -284,11 +284,14 @@ button, input, select, textarea {
   50%      { scale: 1.04; box-shadow: 0 0 16px color-mix(in oklch, var(--iridis-brand) 55%, transparent); }
 }
 
-/* === Layout — full width, right panel overlays (does not push) === */
-/* The right panel is position:fixed at the viewport edge. We pad the
-   content's right side by the panel's width so prose doesn't slide
-   underneath. When the panel collapses, the variable shrinks to ~2.4rem
-   and the prose reflows wider automatically. */
+/* === Unified drawer layout — mobile-first, drawers overlay at every width ===
+   Content occupies the full middle column at every viewport. Neither the
+   left page tree nor the right palette builder reserves layout space; both
+   are fixed-position overlay drawers driven by the navbar toggles.
+
+   Mobile-first baseline below; the desktop progressive enhancement
+   (wider drawers, full-height overlays) lives under the >=1100px query. */
+
 .VPDoc .container {
   max-width: 100%;
   display: flex;
@@ -298,46 +301,38 @@ button, input, select, textarea {
   flex: 1 1 0;
   min-width: 0;
   max-width: none;
-  padding: 0 calc(var(--iridis-right-panel-width) + 2rem) 0 2rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
 }
 .VPDoc .content-container { max-width: 100%; }
 /* Hide vitepress's own aside column entirely — we render via aside-top
    slot but want the layout space reclaimed. */
 .VPDoc .aside { display: none !important; }
-html.iridis-right-collapsed .VPDoc .content {
-  padding-right: 4rem;
-}
 
-/* Narrow viewports: the right panel becomes a stacked drawer below
-   content (no fixed overlay). The doc content gets normal full-width
-   padding regardless of panel state. */
-@media (max-width: 1099px) {
-  .VPDoc .content {
-    padding-left: 1.25rem;
-    padding-right: 1.25rem;
-  }
-  html.iridis-right-collapsed .VPDoc .content {
-    padding-right: 1.25rem;
-  }
-}
-
-/* Floating right-edge re-open handle when the right panel is collapsed.
-   The chevron inside .iridis-right always remains the canonical control;
-   collapsing it shrinks the column to ~2rem so the prose flexes wider. */
-
-/* === Left sidebar collapse — adds a "hide sidebar" toggle === */
-/* Vitepress already provides a mobile-only sidebar toggle. We add a
-   desktop-equivalent button at the top-left corner of the sidebar that
-   collapses it to a thin edge handle on click. */
-/* Sidebar must never have internal scrollbars. The default vitepress
-   sidebar is overflow-y: auto inside a fixed-height column; remove the
-   inner scroll so the entire page scrolls instead. */
+/* === Left sidebar (Pages drawer) — fixed overlay at every viewport ===
+   320px target width on desktop, capped at 85vw on narrow viewports so
+   the drawer never covers the full screen. Slides in from the left when
+   the iridis-sidebar-collapsed class is absent; transforms off-screen
+   when present. The same rules apply everywhere; only the width varies. */
 .VPSidebar {
-  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), width 220ms cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: visible !important;
-  height: auto !important;
-  max-height: none !important;
-  width: var(--vp-sidebar-width) !important;
+  position: fixed !important;
+  top: var(--vp-nav-height, 64px) !important;
+  left: 0 !important;
+  right: auto !important;
+  bottom: 0 !important;
+  width: min(85vw, var(--vp-sidebar-width, 320px)) !important;
+  max-width: 320px !important;
+  height: calc(100vh - var(--vp-nav-height, 64px)) !important;
+  max-height: calc(100vh - var(--vp-nav-height, 64px)) !important;
+  overflow-y: auto !important;
+  z-index: 30;
+  background: var(--vp-c-bg) !important;
+  border-right: 1px solid var(--vp-c-divider);
+  border-radius: 0 var(--iridis-radius-lg) var(--iridis-radius-lg) 0;
+  box-shadow:
+    8px 0 24px -8px rgba(0, 0, 0, 0.35),
+    var(--iridis-card-shadow);
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .VPSidebarNav,
 .VPSidebar .nav,
@@ -346,37 +341,34 @@ html.iridis-right-collapsed .VPDoc .content {
   height: auto !important;
   max-height: none !important;
 }
-/* Open state: explicitly reset transform so vitepress's own .VPSidebar
-   transforms don't keep the panel hidden after our class is removed. */
 html:not(.iridis-sidebar-collapsed) .VPSidebar,
 html:not(.iridis-sidebar-collapsed) .VPSidebarContainer {
   transform: translateX(0) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
   pointer-events: auto !important;
 }
 html.iridis-sidebar-collapsed .VPSidebar,
 html.iridis-sidebar-collapsed .VPSidebarContainer {
   transform: translateX(-100%) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
   pointer-events: none !important;
 }
-html.iridis-sidebar-collapsed .VPContent.has-sidebar {
-  padding-left: 0 !important;
-}
-html.iridis-sidebar-collapsed .VPDoc {
-  padding-left: 1.5rem;
-}
-.VPContent.has-sidebar { transition: padding-left 220ms cubic-bezier(0.4, 0, 0.2, 1); }
+/* Content never reserves space for the drawer at any width. */
+.VPContent.has-sidebar { padding-left: 0 !important; }
 
-/* Sidebar resize handle on its right edge — mirrors the right panel's
-   left-edge handle. Updates --vp-sidebar-width via the SidebarResize
-   component (mounted in theme/index.ts). */
+/* Sidebar resize handle on its right edge — drag to widen the overlay
+   drawer. Hidden whenever the drawer itself is collapsed (no handle to
+   grab when there is no drawer visible). */
 .iridis-sidebar-resize {
   position: fixed;
   top: var(--vp-nav-height, 64px);
-  left: calc(var(--vp-sidebar-width) - 3px);
+  left: calc(min(85vw, var(--vp-sidebar-width, 320px)) - 3px);
   width: 6px;
   height: calc(100vh - var(--vp-nav-height, 64px));
   cursor: col-resize;
-  z-index: 24;
+  z-index: 31;
   background: transparent;
   transition: background 120ms, left 220ms cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -385,12 +377,46 @@ html.iridis-sidebar-collapsed .VPDoc {
   background: color-mix(in oklch, var(--iridis-brand) 35%, transparent);
 }
 html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
+/* The drag-to-resize affordance is desktop-only — mobile drawers are
+   capped at 85vw and don't benefit from manual resize. */
+@media (max-width: 1099px) {
+  .iridis-sidebar-resize { display: none; }
+}
+
+/* The pulsing brand logo shrinks inside the drawer at narrow widths so
+   the navigation list remains the primary focus. */
+.VPSidebar .iridis-loader {
+  --iridis-loader-size: 96px;
+  margin: 0.25rem auto 0.75rem;
+}
+@media (min-width: 1100px) {
+  .VPSidebar .iridis-loader {
+    --iridis-loader-size: 180px;
+    margin: 0.5rem auto 1.25rem;
+  }
+}
 
 /* VitePress's built-in mobile hamburger opens the VPNavScreen top-nav
    overlay. We have no top-level nav defined (the sidebar is the entire
-   navigation), so suppress the hamburger to avoid an empty/duplicate
-   control next to our NavBarSidebarToggle. */
+   navigation), so suppress the hamburger to avoid a duplicate control
+   alongside our NavBarSidebarToggle. */
 .VPNavBarHamburger { display: none !important; }
+
+/* VitePress's mobile local-nav strip ("Return to top" + page outline)
+   is redundant — the navbar carries Pages and Builder toggles, and the
+   inline TOC injects under the active sidebar item. Hide it everywhere
+   so the content starts flush under the navbar. */
+.VPLocalNav { display: none !important; }
+.VPContent { padding-top: 0 !important; }
+
+/* Group the navbar toggles into a tight right cluster at every width.
+   The slot wraps them in a flex row; per-button spacing is defined on
+   the individual toggle components. */
+.iridis-nav-toggles {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
 
 /* === Inline TOC injected under the active sidebar item ===
    SidebarToc.vue performs DOM injection (via .iridis-toc-inline) so the
@@ -434,198 +460,3 @@ html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
   font-weight: 600;
 }
 
-/* === Sticky-tab pattern (left + right bars) ===
-   Thin pill anchored to the viewport edge — an *affordance*, not a CTA.
-   Subtle brand tint only. Vertical text label, small uppercase letterspaced.
-   Rides the panel's edge when open, sits at viewport edge when closed.
-   Arrow flips direction so the tab always invites the available action. */
-/* Two-class selectors beat PrimeVue's .p-button base styles which set
-   position: relative + their own padding/min-width. */
-.iridis-sidebar-tab.p-button,
-.iridis-right-tab.p-button {
-  position: fixed;
-  z-index: 35;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.55rem 0.25rem;
-  width: 1.6rem;
-  background:
-    linear-gradient(180deg,
-      color-mix(in oklch, var(--iridis-surface) 92%, var(--iridis-brand) 8%) 0%,
-      color-mix(in oklch, var(--iridis-surface) 96%, var(--iridis-brand) 4%) 100%);
-  border: 1px solid color-mix(in oklch, var(--iridis-divider) 78%, var(--iridis-brand) 22%);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  color: var(--iridis-muted);
-  font-family: var(--vp-font-family-base);
-  opacity: 0.85;
-  transition:
-    left 220ms cubic-bezier(0.4, 0, 0.2, 1),
-    right 220ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity          var(--iridis-transition),
-    background-color var(--iridis-transition),
-    color            var(--iridis-transition),
-    border-color     var(--iridis-transition),
-    box-shadow       var(--iridis-transition);
-}
-.iridis-sidebar-tab:hover,
-.iridis-right-tab:hover {
-  opacity: 1;
-  background:
-    linear-gradient(180deg,
-      color-mix(in oklch, var(--iridis-surface) 80%, var(--iridis-brand) 20%) 0%,
-      color-mix(in oklch, var(--iridis-surface) 90%, var(--iridis-brand) 10%) 100%);
-  border-color: color-mix(in oklch, var(--iridis-divider) 50%, var(--iridis-brand) 50%);
-  color: var(--iridis-text);
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-.iridis-sidebar-tab:active,
-.iridis-right-tab:active {
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.14);
-}
-.iridis-sidebar-tab__arrow,
-.iridis-right-tab__arrow {
-  font-size: 0.6rem;
-  font-weight: 600;
-  line-height: 1;
-  color: color-mix(in oklch, var(--iridis-brand) 70%, var(--iridis-muted));
-  opacity: 0.85;
-}
-.iridis-sidebar-tab__label,
-.iridis-right-tab__label {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 0.58rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: inherit;
-}
-
-/* Left tab — pinned to left edge of viewport when sidebar collapsed,
-   rides sidebar's right edge when open. Tab is offset by half its
-   width so it visually straddles the edge. Tab radius is asymmetric:
-   the side facing the viewport is square (it's an extension of the
-   sidebar), the side facing the content is rounded. */
-.iridis-sidebar-tab.p-button {
-  top: calc(var(--vp-nav-height, 64px) + 6rem);
-  left: 0;
-  border-radius: 0 var(--iridis-radius) var(--iridis-radius) 0;
-}
-.iridis-sidebar-tab--open.p-button {
-  left: calc(var(--vp-sidebar-width) - 0.8rem);
-}
-
-/* Right tab — pinned to right edge of viewport when panel collapsed,
-   rides panel's left edge when open. Same asymmetric radius logic. */
-.iridis-right-tab.p-button {
-  top: calc(var(--vp-nav-height, 64px) + 6rem);
-  right: 0;
-  border-radius: var(--iridis-radius) 0 0 var(--iridis-radius);
-}
-.iridis-right-tab--open.p-button {
-  right: calc(var(--iridis-right-panel-width) + 1rem - 0.8rem);
-}
-
-/* Narrow viewports:
-   Both sticky vertical tabs disappear entirely. Touch users summon
-   the same surfaces from the navbar (NavBarSidebarToggle for the page
-   tree, NavBarBuilderToggle for the live builder sheet). Rotated
-   vertical-text affordances do not translate to phones — they fail
-   the 44px touch-target rule and overlap content. */
-@media (max-width: 1099px) {
-  .iridis-sidebar-tab.p-button,
-  .iridis-right-tab.p-button {
-    display: none !important;
-  }
-}
-
-/* === Narrow viewports — left sidebar = slide-in drawer ===
-   On <1099px the sidebar slides in from the left as a drawer, capped at
-   min(85vw, 320px). A separate backdrop element (MobileOverlay.vue) dims
-   the content behind it. Tapping the backdrop closes the drawer. The
-   drawer scrolls independently of the page so long page trees stay
-   reachable. */
-@media (max-width: 1099px) {
-  .VPSidebar {
-    position: fixed !important;
-    top: var(--vp-nav-height, 64px) !important;
-    left: 0 !important;
-    right: auto !important;
-    bottom: 0 !important;
-    width: min(85vw, 320px) !important;
-    max-width: 320px !important;
-    height: calc(100vh - var(--vp-nav-height, 64px)) !important;
-    max-height: calc(100vh - var(--vp-nav-height, 64px)) !important;
-    overflow-y: auto !important;
-    z-index: 1000;
-    background: var(--vp-c-bg) !important;
-    border-right: 1px solid var(--vp-c-divider);
-    border-radius: 0 var(--iridis-radius-lg) var(--iridis-radius-lg) 0;
-    box-shadow:
-      8px 0 24px -8px rgba(0, 0, 0, 0.35),
-      var(--iridis-card-shadow);
-    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  html:not(.iridis-sidebar-collapsed) .VPSidebar,
-  html:not(.iridis-sidebar-collapsed) .VPSidebarContainer {
-    transform: translateX(0) !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-  }
-  html.iridis-sidebar-collapsed .VPSidebar,
-  html.iridis-sidebar-collapsed .VPSidebarContainer {
-    transform: translateX(-100%) !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
-  /* Content takes full width on narrow — no sidebar reservation. */
-  .VPContent.has-sidebar { padding-left: 0 !important; }
-  .VPDoc { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
-  /* Hide the sidebar resize handle on narrow viewports. */
-  .iridis-sidebar-resize { display: none; }
-
-  /* The pulsing brand logo only needs to be a footer flourish on
-     mobile; shrink it from the desktop hero-size 180px to keep the
-     drawer focused on navigation. */
-  .VPSidebar .iridis-loader {
-    --iridis-loader-size: 96px;
-    margin: 0.25rem auto 0.75rem;
-  }
-
-  /* VitePress's mobile local-nav strip ("Return to top" + page outline)
-     is redundant on this site — the navbar carries Pages and Builder
-     toggles, and the inline TOC injects under the active sidebar item.
-     Hide it entirely so it does not waste vertical space above the
-     content. */
-  .VPLocalNav { display: none !important; }
-  .VPContent { padding-top: 0 !important; }
-
-  /* Group the navbar toggles into a tight right cluster. The slot wraps
-     them in a flex row; spacing between the builder + pages buttons is
-     defined on the individual components. */
-  .iridis-nav-toggles {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
-
-  /* Keep prose readable: full width minus tight gutters, no aside
-     reservation, no sticky-tab padding. Sticky tabs are hidden above. */
-  .VPDoc .content {
-    padding-left: 1.25rem !important;
-    padding-right: 1.25rem !important;
-  }
-  html.iridis-right-collapsed .VPDoc .content {
-    padding-right: 1.25rem !important;
-  }
-}
