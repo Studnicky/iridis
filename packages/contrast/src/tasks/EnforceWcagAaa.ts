@@ -76,9 +76,9 @@ function requiredRatioAaa(pair: ContrastPairInterface, roles: Record<string, Col
 }
 
 export class EnforceWcagAaa implements TaskInterface {
-  readonly name = 'enforce:wcagAAA';
+  readonly 'name' = 'enforce:wcagAAA';
 
-  readonly manifest: TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterface = {
     'name':        'enforce:wcagAAA',
     'reads':       ['input.roles.contrastPairs', 'roles'],
     'writes':      ['roles', 'metadata.wcag.aaa'],
@@ -133,7 +133,7 @@ export class EnforceWcagAaa implements TaskInterface {
         ctx.logger.warn('EnforceWcagAaa', 'run', `Pair ${pair.foreground}/${pair.background} could not reach ${required}:1 (achieved ${current.toFixed(2)}) after ${maxIterations} iterations`);
       }
 
-      (state.roles as Record<string, ColorRecordInterface>)[pair.foreground] = currentFg;
+      state.roles[pair.foreground] = currentFg;
 
       results.push({
         'foreground': pair.foreground,
@@ -148,7 +148,7 @@ export class EnforceWcagAaa implements TaskInterface {
 
     const wcagMeta = (state.metadata['wcag'] ?? {}) as Record<string, unknown>;
     const aaaResult: WcagAaaMetaInterface = { 'pairs': results };
-    (state.metadata as Record<string, unknown>)['wcag'] = { ...wcagMeta, 'aaa': aaaResult };
+    state.metadata['wcag'] = { ...wcagMeta, 'aaa': aaaResult };
 
     ctx.logger.debug('EnforceWcagAaa', 'run', `Processed ${results.length} pair(s)`, aaaResult);
   }

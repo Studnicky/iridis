@@ -24,9 +24,9 @@ function xmlItem(name: string, value: string): string {
 }
 
 export class EmitAndroidThemeXml implements TaskInterface {
-  readonly name = 'emit:androidThemeXml';
+  readonly 'name' = 'emit:androidThemeXml';
 
-  readonly manifest: TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:androidThemeXml',
     'reads':       ['roles', 'outputs.capacitor.statusBar', 'outputs.capacitor.splashScreen'],
     'writes':      ['outputs.capacitor.androidThemeXml'],
@@ -73,7 +73,7 @@ export class EmitAndroidThemeXml implements TaskInterface {
     ].join('\n');
 
     const existingCapacitor = (state.outputs['capacitor'] ?? {}) as Record<string, unknown>;
-    (state.outputs as Record<string, unknown>)['capacitor'] = {
+    state.outputs['capacitor'] = {
       ...existingCapacitor,
       'androidThemeXml': xml,
     };

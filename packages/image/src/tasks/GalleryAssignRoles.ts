@@ -20,6 +20,16 @@ import type {
  *
  * Writes to `state.roles`.
  */
+function deriveTextColor(
+  canvas: ColorRecordInterface,
+  ctx: PipelineContextInterface,
+): ColorRecordInterface {
+  if (canvas.oklch.l <= 0.5) {
+    return ctx.math.invoke<ColorRecordInterface>('oklchToRgb', 1.0, 0.0, 0.0, 1.0);
+  }
+  return ctx.math.invoke<ColorRecordInterface>('oklchToRgb', 0.0, 0.0, 0.0, 1.0);
+}
+
 export class GalleryAssignRoles implements TaskInterface {
   readonly 'name' = 'gallery:assignRoles';
 
@@ -65,13 +75,13 @@ export class GalleryAssignRoles implements TaskInterface {
     );
 
     // text — auto-derived: white when canvas is dark (L <= 0.5), black otherwise
-    const text = this.deriveTextColor(canvas, ctx);
+    const text = deriveTextColor(canvas, ctx);
 
-    (state.roles as Record<string, ColorRecordInterface>)['canvas'] = canvas;
-    (state.roles as Record<string, ColorRecordInterface>)['frame']  = frame;
-    (state.roles as Record<string, ColorRecordInterface>)['accent'] = accent;
-    (state.roles as Record<string, ColorRecordInterface>)['muted']  = muted;
-    (state.roles as Record<string, ColorRecordInterface>)['text']   = text;
+    state.roles['canvas'] = canvas;
+    state.roles['frame']  = frame;
+    state.roles['accent'] = accent;
+    state.roles['muted']  = muted;
+    state.roles['text']   = text;
 
     ctx.logger.info('GalleryAssignRoles', 'run', 'roles assigned', {
       'canvas': canvas.hex,
@@ -80,16 +90,6 @@ export class GalleryAssignRoles implements TaskInterface {
       'muted':  muted.hex,
       'text':   text.hex,
     });
-  }
-
-  private deriveTextColor(
-    canvas: ColorRecordInterface,
-    ctx: PipelineContextInterface,
-  ): ColorRecordInterface {
-    if (canvas.oklch.l <= 0.5) {
-      return ctx.math.invoke<ColorRecordInterface>('oklchToRgb', 1.0, 0.0, 0.0, 1.0);
-    }
-    return ctx.math.invoke<ColorRecordInterface>('oklchToRgb', 0.0, 0.0, 0.0, 1.0);
   }
 }
 

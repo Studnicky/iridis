@@ -32,6 +32,11 @@ function getVscodeMeta(state: PaletteStateInterface): VscodeMetaInterface {
   return {};
 }
 
+function defaultFontStyle(selector: string): string | undefined {
+  // selector may be 'variable' or 'variable.readonly'
+  const baseType = selector.includes('.') ? selector.split('.')[0] : selector;
+  return baseType ? (FONT_STYLES[baseType] ?? undefined) : undefined;
+}
 
 export class EmitVscodeSemanticRules implements TaskInterface {
   readonly 'name' = 'emit:vscodeSemanticRules';
@@ -40,8 +45,8 @@ export class EmitVscodeSemanticRules implements TaskInterface {
     'name':        'emit:vscodeSemanticRules',
     'reads':       ['metadata.vscode.semanticTokenRules', 'metadata.vscode.baseTokens'],
     'writes':      ['outputs.vscode.semanticTokenRules'],
-    'description': 'Shapes the 345-rule map for VS Code editor.semanticTokenColorCustomizations.rules. Uses SCOPE_MAPPINGS and FONT_STYLES.',
     'requires':    ['vscode:applyModifiers'],
+    'description': 'Shapes the semantic token rule map for VS Code editor.semanticTokenColorCustomizations.rules using SCOPE_MAPPINGS and FONT_STYLES.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
@@ -62,7 +67,7 @@ export class EmitVscodeSemanticRules implements TaskInterface {
       }
       // Apply font style: modifier transform style takes precedence,
       // then fall back to FONT_STYLES for the base token type part of the selector.
-      const fontStyle = rule.fontStyle ?? this.defaultFontStyle(selector);
+      const fontStyle = rule.fontStyle ?? defaultFontStyle(selector);
       if (fontStyle) {
         entry['fontStyle'] = fontStyle;
       }
@@ -83,12 +88,6 @@ export class EmitVscodeSemanticRules implements TaskInterface {
         ctx.logger.debug('EmitVscodeSemanticRules', 'run', `No colour assigned for scope group '${key}'`);
       }
     }
-  }
-
-  private defaultFontStyle(selector: string): string | undefined {
-    // selector may be 'variable' or 'variable.readonly'
-    const baseType = selector.includes('.') ? selector.split('.')[0] : selector;
-    return baseType ? (FONT_STYLES[baseType] ?? undefined) : undefined;
   }
 }
 

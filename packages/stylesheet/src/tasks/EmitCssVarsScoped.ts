@@ -33,16 +33,16 @@ function buildScopedCategoryBlock(
  * The root roles are emitted under the 'default' category key.
  */
 export class EmitCssVarsScoped implements TaskInterface {
-  readonly name = 'emit:cssVarsScoped';
+  readonly 'name' = 'emit:cssVarsScoped';
 
-  readonly manifest: TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:cssVarsScoped',
     'reads':       ['roles', 'variants', 'metadata'],
     'writes':      ['outputs.cssVarsScoped'],
     'description': 'Emit per-category scoped CSS custom property blocks for Vue/Capacitor use cases',
   };
 
-  run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const prefix = typeof state.metadata['cssVarPrefix'] === 'string'
       ? state.metadata['cssVarPrefix']
       : '--c-';
@@ -68,7 +68,13 @@ export class EmitCssVarsScoped implements TaskInterface {
       'full':   full,
     };
 
-    (state.outputs as Record<string, unknown>)['cssVarsScoped'] = output;
+    state.outputs['cssVarsScoped'] = output;
+
+    ctx.logger.debug(
+      'EmitCssVarsScoped',
+      'run',
+      `Emitted ${Object.keys(blocks).length} scoped block(s)`,
+    );
   }
 }
 

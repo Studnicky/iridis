@@ -106,16 +106,16 @@ function buildCssVarsSheet(
 }
 
 export class EmitTailwindTheme implements TaskInterface {
-  readonly name = 'emit:tailwindTheme';
+  readonly 'name' = 'emit:tailwindTheme';
 
-  readonly manifest: TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:tailwindTheme',
     'reads':       ['roles', 'metadata'],
     'writes':      ['outputs.tailwind'],
     'description': 'Emit Tailwind theme.colors object and config module from resolved roles',
   };
 
-  run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const prefix = typeof state.metadata['cssVarPrefix'] === 'string'
       ? state.metadata['cssVarPrefix']
       : '--c-';
@@ -140,7 +140,13 @@ export class EmitTailwindTheme implements TaskInterface {
       'config':  config,
     };
 
-    (state.outputs as Record<string, unknown>)['tailwind'] = output;
+    state.outputs['tailwind'] = output;
+
+    ctx.logger.debug(
+      'EmitTailwindTheme',
+      'run',
+      `Emitted Tailwind theme with ${Object.keys(colors).length} color group(s)`,
+    );
   }
 }
 

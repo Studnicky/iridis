@@ -54,9 +54,9 @@ function apcaLcTarget(
 }
 
 export class EnforceApca implements TaskInterface {
-  readonly name = 'enforce:apca';
+  readonly 'name' = 'enforce:apca';
 
-  readonly manifest: TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterface = {
     'name':        'enforce:apca',
     'reads':       ['input.roles.contrastPairs', 'roles'],
     'writes':      ['roles', 'metadata.wcag.apca'],
@@ -105,7 +105,7 @@ export class EnforceApca implements TaskInterface {
         ctx.logger.warn('EnforceApca', 'run', `Pair ${pair.foreground}/${pair.background} could not reach Lc ${requiredLc} (achieved Lc ${current.toFixed(1)}) after ${maxIterations} iterations`);
       }
 
-      (state.roles as Record<string, ColorRecordInterface>)[pair.foreground] = currentFg;
+      state.roles[pair.foreground] = currentFg;
 
       results.push({
         'foreground': pair.foreground,
@@ -120,7 +120,7 @@ export class EnforceApca implements TaskInterface {
 
     const wcagMeta = (state.metadata['wcag'] ?? {}) as Record<string, unknown>;
     const apcaResult: ApcaMetaInterface = { 'pairs': results };
-    (state.metadata as Record<string, unknown>)['wcag'] = { ...wcagMeta, 'apca': apcaResult };
+    state.metadata['wcag'] = { ...wcagMeta, 'apca': apcaResult };
 
     ctx.logger.debug('EnforceApca', 'run', `Processed ${results.length} APCA pair(s)`, apcaResult);
   }

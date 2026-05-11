@@ -1,6 +1,5 @@
 import type {
   ColorRecordInterface,
-  MathPrimitiveInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
@@ -55,13 +54,7 @@ export class GalleryExtract implements TaskInterface {
       'dominantColors': dominant,
     };
 
-    (state.metadata as Record<string, unknown>)['gallery'] = updatedMeta;
-
-    const mathPrimitive = ctx.math.has('clusterMedianCut')
-      ? (ctx.math.resolve('clusterMedianCut') as MathPrimitiveInterface)
-      : null;
-
-    void mathPrimitive;
+    state.metadata['gallery'] = updatedMeta;
 
     state.colors.splice(0, state.colors.length, ...dominant);
 
