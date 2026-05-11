@@ -428,8 +428,10 @@ html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
    Subtle brand tint only. Vertical text label, small uppercase letterspaced.
    Rides the panel's edge when open, sits at viewport edge when closed.
    Arrow flips direction so the tab always invites the available action. */
-.iridis-sidebar-tab,
-.iridis-right-tab {
+/* Two-class selectors beat PrimeVue's .p-button base styles which set
+   position: relative + their own padding/min-width. */
+.iridis-sidebar-tab.p-button,
+.iridis-right-tab.p-button {
   position: fixed;
   z-index: 35;
   display: flex;
@@ -501,23 +503,23 @@ html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
    width so it visually straddles the edge. Tab radius is asymmetric:
    the side facing the viewport is square (it's an extension of the
    sidebar), the side facing the content is rounded. */
-.iridis-sidebar-tab {
+.iridis-sidebar-tab.p-button {
   top: calc(var(--vp-nav-height, 64px) + 6rem);
   left: 0;
   border-radius: 0 var(--iridis-radius) var(--iridis-radius) 0;
 }
-.iridis-sidebar-tab--open {
+.iridis-sidebar-tab--open.p-button {
   left: calc(var(--vp-sidebar-width) - 0.8rem);
 }
 
 /* Right tab — pinned to right edge of viewport when panel collapsed,
    rides panel's left edge when open. Same asymmetric radius logic. */
-.iridis-right-tab {
+.iridis-right-tab.p-button {
   top: calc(var(--vp-nav-height, 64px) + 6rem);
   right: 0;
   border-radius: var(--iridis-radius) 0 0 var(--iridis-radius);
 }
-.iridis-right-tab--open {
+.iridis-right-tab--open.p-button {
   right: calc(var(--iridis-right-panel-width) + 1rem - 0.8rem);
 }
 
