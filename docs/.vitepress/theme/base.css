@@ -375,6 +375,54 @@ html.iridis-sidebar-collapsed .VPDoc {
 }
 html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
 
+/* VitePress's built-in mobile hamburger opens the VPNavScreen top-nav
+   overlay. We have no top-level nav defined (the sidebar is the entire
+   navigation), so suppress the hamburger to avoid an empty/duplicate
+   control next to our NavBarSidebarToggle. */
+.VPNavBarHamburger { display: none !important; }
+
+/* === Inline TOC injected under the active sidebar item ===
+   SidebarToc.vue performs DOM injection (via .iridis-toc-inline) so the
+   page's H2/H3 headings appear nested beneath the active page's nav
+   entry. Styles must live outside scoped <style> because the injected
+   list is appended via the DOM API. */
+.VPSidebarItem .iridis-toc-inline {
+  list-style: none;
+  margin: 0.2rem 0 0.4rem;
+  padding: 0;
+  border-left: 1px solid color-mix(in oklch, var(--vp-c-divider) 70%, transparent);
+  margin-left: 0.4rem;
+}
+.VPSidebarItem .iridis-toc-inline__item {
+  margin: 0;
+}
+.VPSidebarItem .iridis-toc-inline__link {
+  display: block;
+  padding: 0.18rem 0 0.18rem 0.55rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--vp-c-text-2);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+  transition:
+    color        var(--iridis-transition),
+    border-color var(--iridis-transition);
+}
+.VPSidebarItem .iridis-toc-inline__link:hover {
+  color: var(--vp-c-brand-1);
+}
+.VPSidebarItem .iridis-toc-inline__item--h3 .iridis-toc-inline__link {
+  padding-left: 1.25rem;
+  font-size: 0.74rem;
+  color: var(--vp-c-text-3);
+}
+.VPSidebarItem .iridis-toc-inline__item--active .iridis-toc-inline__link {
+  color: var(--vp-c-brand-1);
+  border-left-color: var(--vp-c-brand-1);
+  font-weight: 600;
+}
+
 /* === Sticky-tab pattern (left + right bars) ===
    Thin pill anchored to the viewport edge — an *affordance*, not a CTA.
    Subtle brand tint only. Vertical text label, small uppercase letterspaced.
@@ -473,65 +521,59 @@ html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
   right: calc(var(--iridis-right-panel-width) + 1rem - 0.8rem);
 }
 
-/* Narrow viewports: tabs become horizontal accordion handles.
-   Sidebar tab pins to TOP of viewport (sidebar drops from top).
-   Right tab pins to BOTTOM (panel slides up from bottom). */
+/* Narrow viewports:
+   - Left sticky tab hides entirely (NavBarSidebarToggle in the navbar
+     replaces it so the brand mark is never overlapped).
+   - Right tab becomes a horizontal handle anchored to the top edge of
+     the bottom drawer (mirroring the left bar's accordion behavior).
+   Both controls remain visible against the panel they belong to. */
 @media (max-width: 1099px) {
-  .iridis-sidebar-tab,
+  .iridis-sidebar-tab {
+    display: none !important;
+  }
+
   .iridis-right-tab {
     flex-direction: row;
     width: auto;
-    height: 2rem;
-    padding: 0.4rem 0.85rem;
+    height: 1.9rem;
+    padding: 0.3rem 0.85rem;
     gap: 0.45rem;
+    top: auto;
+    left: 50%;
+    right: auto;
+    bottom: 0;
+    transform: translateX(-50%);
+    border-radius: var(--iridis-radius) var(--iridis-radius) 0 0;
+    transition:
+      bottom 220ms cubic-bezier(0.4, 0, 0.2, 1),
+      opacity          var(--iridis-transition),
+      background-color var(--iridis-transition),
+      color            var(--iridis-transition),
+      border-color     var(--iridis-transition),
+      box-shadow       var(--iridis-transition);
   }
-  .iridis-sidebar-tab__label,
   .iridis-right-tab__label {
     writing-mode: horizontal-tb;
     transform: none;
   }
-
-  .iridis-sidebar-tab {
-    top: var(--vp-nav-height, 64px);
-    left: 1rem;
-    right: auto;
-    border-radius: 0 0 var(--iridis-radius) var(--iridis-radius);
-  }
-  .iridis-sidebar-tab--open {
-    left: 1rem;
-  }
-  /* Arrow points DOWN to indicate "drop from top" when closed,
-     UP to indicate "retract to top" when open. Override the
-     desktop ◀ ▶ chars via ::before; the v-bound text is hidden
-     on narrow viewports. */
-  .iridis-sidebar-tab .iridis-sidebar-tab__arrow { display: none; }
-  .iridis-sidebar-tab::before {
-    content: '▼';
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--iridis-on-brand);
-  }
-  .iridis-sidebar-tab--open::before { content: '▲'; }
-
-  .iridis-right-tab {
-    top: auto;
-    bottom: 0;
-    right: 1rem;
-    left: auto;
-    border-radius: var(--iridis-radius) var(--iridis-radius) 0 0;
-  }
   .iridis-right-tab--open {
-    right: 1rem;
-    bottom: 60vh;  /* sit just above the open panel */
+    /* Anchored to the top edge of the open 60vh drawer so the handle
+       is always "on the panel" regardless of open/closed state. */
+    bottom: 60vh;
   }
   .iridis-right-tab .iridis-right-tab__arrow { display: none; }
   .iridis-right-tab::before {
-    content: '▲';
-    font-size: 0.75rem;
+    content: '▲ PALETTE';
+    font-size: 0.7rem;
     font-weight: 700;
+    letter-spacing: 0.12em;
     color: var(--iridis-on-brand);
   }
-  .iridis-right-tab--open::before { content: '▼'; }
+  .iridis-right-tab--open::before {
+    content: '▼ HIDE';
+  }
+  /* Hide the duplicate vertical label since ::before carries the text. */
+  .iridis-right-tab__label { display: none; }
 }
 
 /* === Narrow viewports — left sidebar = top accordion ===

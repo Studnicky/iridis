@@ -20,6 +20,7 @@ import RightPanel      from './components/RightPanel.vue';
 import SidebarToc      from './components/SidebarToc.vue';
 import SidebarToggle   from './components/SidebarToggle.vue';
 import SidebarResize   from './components/SidebarResize.vue';
+import NavBarSidebarToggle from './components/NavBarSidebarToggle.vue';
 import InfiniteScroll  from './components/InfiniteScroll.vue';
 import PaletteCTA      from './components/PaletteCTA.vue';
 import { bootThemeDispatcher } from './stores/themeDispatcher.ts';
@@ -82,10 +83,15 @@ export const theme: Theme = {
   },
   Layout() {
     return h(DefaultTheme.Layout, null, {
-      'sidebar-nav-before': () => logoBlock(),
-      'sidebar-nav-after':  () => h(SidebarToc),
-      'doc-after':          () => h(InfiniteScroll),
-      'layout-top':         () => h('div', null, [h(SidebarToggle), h(SidebarResize), h(RightPanel)]),
+      'sidebar-nav-before':  () => logoBlock(),
+      'nav-bar-content-after': () => h(NavBarSidebarToggle),
+      'doc-after':           () => h(InfiniteScroll),
+      'layout-top':          () => h('div', null, [
+        h(SidebarToggle),
+        h(SidebarResize),
+        h(SidebarToc),
+        h(RightPanel),
+      ]),
     });
   },
 };
