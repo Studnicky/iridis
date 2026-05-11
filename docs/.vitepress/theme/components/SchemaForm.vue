@@ -3,14 +3,18 @@
  * SchemaForm.vue
  *
  * Generic JSON-Schema-driven form generator. Walks the `properties` of an
- * object schema and renders an input per property based on type/format/enum.
+ * object schema and renders a PrimeVue primitive per property based on
+ * type/format/enum.
  *
  * Recognized property shapes:
- *   - { type: 'string', format: 'color' }     → <input type="color">
- *   - { type: 'string', enum: [...] }         → <select>
- *   - { type: 'number', minimum, maximum }    → <input type="range">
- *   - { type: 'boolean' }                     → <input type="checkbox">
+ *   - { type: 'string', format: 'color' }     → native <input type="color">
+ *     (PrimeVue ColorPicker is hex-only with no OKLCH support; for the
+ *     docs config we keep the native swatch.)
+ *   - { type: 'string', enum: [...] }         → PrimeVue Select
+ *   - { type: 'number', minimum, maximum }    → PrimeVue Slider
+ *   - { type: 'boolean' }                     → PrimeVue Checkbox
  *   - { type: 'array', items: { format: 'color' } } → repeatable color row
+ *     with PrimeVue Buttons for + add / × remove
  *
  * Two-way bound to a target reactive object via v-model. The schema is
  * read-only; the target mutates in place. No JSON Schema validation here —
@@ -18,6 +22,12 @@
  */
 
 import { computed } from 'vue';
+
+import InputText from 'primevue/inputtext';
+import Select    from 'primevue/select';
+import Slider    from 'primevue/slider';
+import Checkbox  from 'primevue/checkbox';
+import Button    from 'primevue/button';
 
 interface SchemaPropertyInterface {
   readonly type?:        string;
@@ -46,7 +56,6 @@ const props = defineProps<{
 const properties = computed(() => Object.entries(props.schema.properties));
 
 function update(key: string, value: unknown): void {
-  // Mutate the target reactive object. Vue picks up the change via reactivity.
   (props.modelValue as Record<string, unknown>)[key] = value;
 }
 
@@ -57,6 +66,11 @@ function inputKindFor(prop: SchemaPropertyInterface): string {
   if (prop.type === 'number'  && prop.minimum !== undefined)     return 'range';
   if (prop.type === 'array'   && prop.items?.format === 'color') return 'colorArray';
   return 'text';
+}
+
+function selectOptions(prop: SchemaPropertyInterface): readonly { 'label': string; 'value': string }[] {
+  const list = prop.enum ?? [];
+  return list.map((v) => ({ 'label': v, 'value': v }));
 }
 
 function arrayValue(key: string): string[] {
@@ -100,38 +114,40 @@ function removeArrayItem(key: string, idx: number): void {
         v-if="inputKindFor(prop) === 'color'"
         :id="`f-${key}`"
         type="color"
+        class="iridis-schema-form__color"
         :value="modelValue[key]"
         @input="update(key, ($event.target as HTMLInputElement).value)"
       />
 
       <!-- enum -->
-      <select
+      <Select
         v-else-if="inputKindFor(prop) === 'enum'"
-        :id="`f-${key}`"
-        :value="modelValue[key]"
-        @change="update(key, ($event.target as HTMLSelectElement).value)"
-      >
-        <option v-for="opt in prop.enum" :key="opt" :value="opt">{{ opt }}</option>
-      </select>
+        :model-value="modelValue[key]"
+        :options="selectOptions(prop)"
+        option-label="label"
+        option-value="value"
+        size="small"
+        class="iridis-schema-form__select"
+        @update:model-value="(v) => update(key, v)"
+      />
 
       <!-- range -->
-      <input
+      <Slider
         v-else-if="inputKindFor(prop) === 'range'"
-        :id="`f-${key}`"
-        type="range"
+        :model-value="Number(modelValue[key])"
         :min="prop.minimum"
         :max="prop.maximum"
-        :value="modelValue[key]"
-        @input="update(key, Number(($event.target as HTMLInputElement).value))"
+        class="iridis-schema-form__slider"
+        @update:model-value="(v) => update(key, Number(Array.isArray(v) ? v[0] : v))"
       />
 
       <!-- boolean -->
-      <input
+      <Checkbox
         v-else-if="inputKindFor(prop) === 'boolean'"
-        :id="`f-${key}`"
-        type="checkbox"
-        :checked="modelValue[key] as boolean"
-        @change="update(key, ($event.target as HTMLInputElement).checked)"
+        :model-value="modelValue[key] as boolean"
+        binary
+        :input-id="`f-${key}`"
+        @update:model-value="(v) => update(key, Boolean(v))"
       />
 
       <!-- color array -->
@@ -139,32 +155,41 @@ function removeArrayItem(key: string, idx: number): void {
         <div v-for="(color, idx) in arrayValue(key)" :key="idx" class="iridis-schema-form__color-row">
           <input
             type="color"
+            class="iridis-schema-form__color-swatch"
             :value="color"
             @input="setArrayItem(key, idx, ($event.target as HTMLInputElement).value)"
           />
           <code>{{ color }}</code>
-          <button
+          <Button
             type="button"
+            severity="secondary"
+            size="small"
             class="iridis-schema-form__remove"
             :disabled="arrayValue(key).length <= (prop.minItems ?? 0)"
             @click="removeArrayItem(key, idx)"
-          >×</button>
+          >
+            <span aria-hidden="true">×</span>
+          </Button>
         </div>
-        <button
+        <Button
           type="button"
+          label="+ add"
+          severity="secondary"
+          size="small"
           class="iridis-schema-form__add"
           :disabled="arrayValue(key).length >= (prop.maxItems ?? Infinity)"
           @click="pushArrayItem(key)"
-        >+ add</button>
+        />
       </div>
 
       <!-- fallback text -->
-      <input
+      <InputText
         v-else
         :id="`f-${key}`"
-        type="text"
-        :value="modelValue[key]"
-        @input="update(key, ($event.target as HTMLInputElement).value)"
+        :model-value="String(modelValue[key] ?? '')"
+        size="small"
+        class="iridis-schema-form__text"
+        @update:model-value="(v) => update(key, v ?? '')"
       />
     </div>
   </form>
@@ -194,7 +219,7 @@ function removeArrayItem(key: string, idx: number): void {
   margin: 0 0 0.25rem;
   line-height: 1.4;
 }
-.iridis-schema-form input[type="color"] {
+.iridis-schema-form__color {
   width: 100%;
   height: 2rem;
   border: 1px solid var(--vp-c-divider);
@@ -203,17 +228,15 @@ function removeArrayItem(key: string, idx: number): void {
   cursor: pointer;
   padding: 0;
 }
-.iridis-schema-form select {
+.iridis-schema-form__select :deep(.p-select-label),
+.iridis-schema-form__text :deep(.p-inputtext) {
   width: 100%;
   padding: 0.35rem 0.5rem;
-  border: 1px solid var(--vp-c-divider);
   border-radius: 4px;
-  background: var(--vp-c-bg-soft);
-  color: var(--vp-c-text-1);
   font-size: 0.85rem;
 }
-.iridis-schema-form input[type="range"] {
-  width: 100%;
+.iridis-schema-form__slider {
+  margin: 0.4rem 0;
 }
 .iridis-schema-form__color-array {
   display: flex;
@@ -226,28 +249,24 @@ function removeArrayItem(key: string, idx: number): void {
   gap: 0.5rem;
   align-items: center;
 }
-.iridis-schema-form__color-row input[type="color"] {
+.iridis-schema-form__color-swatch {
   height: 1.6rem;
   width: 2.25rem;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 4px;
+  background: var(--vp-c-bg-soft);
+  cursor: pointer;
+  padding: 0;
 }
 .iridis-schema-form__color-row code {
   font-size: 0.75rem;
   color: var(--vp-c-text-2);
 }
-.iridis-schema-form__remove,
-.iridis-schema-form__add {
+.iridis-schema-form__remove :deep(.p-button),
+.iridis-schema-form__add :deep(.p-button) {
   font-size: 0.78rem;
   padding: 0.2rem 0.5rem;
-  border: 1px solid var(--vp-c-divider);
   border-radius: 4px;
-  background: var(--vp-c-bg-soft);
-  color: var(--vp-c-text-2);
-  cursor: pointer;
-}
-.iridis-schema-form__remove:disabled,
-.iridis-schema-form__add:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 .iridis-schema-form__add {
   margin-top: 0.2rem;
