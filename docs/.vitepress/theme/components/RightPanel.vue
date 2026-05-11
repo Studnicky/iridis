@@ -195,21 +195,7 @@ async function downloadJson(): Promise<void> {
 
       <div v-show="open" class="iridis-right__body">
         <header class="iridis-right__header">
-          <div class="iridis-right__header-row">
-            <Tag value="Live example" severity="info" class="iridis-right__eyebrow" />
-            <Button
-              type="button"
-              icon="pi pi-times"
-              severity="secondary"
-              size="small"
-              aria-label="Close palette builder"
-              title="Close palette builder"
-              class="iridis-right__close"
-              @click="open = false"
-            >
-              <span aria-hidden="true">×</span>
-            </Button>
-          </div>
+          <Tag value="Live example" severity="info" class="iridis-right__eyebrow" />
           <h2 class="iridis-right__title">Try iridis on this page</h2>
           <p class="iridis-right__sub">
             Pick palette colors. Every chrome and syntax token recomputes. The whole site is one engine pass.
@@ -355,12 +341,12 @@ async function downloadJson(): Promise<void> {
 @media (max-width: 1099px) {
   .iridis-right__body { max-height: none; }
 }
-.iridis-right__header { margin: 0 0 0.85rem; }
-.iridis-right__header-row {
+.iridis-right__header {
+  margin: 0 0 0.85rem;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
 /* PrimeVue Tag styled as the eyebrow pill — uppercase letterforms,
@@ -375,26 +361,6 @@ async function downloadJson(): Promise<void> {
   text-transform: uppercase;
   padding:       0.18rem 0.45rem;
   border-radius: var(--iridis-radius);
-}
-
-/* PrimeVue Button as the × close — fixed dimensions, business-card chrome. */
-.iridis-right__close :deep(.p-button) {
-  width:         1.7rem;
-  height:        1.7rem;
-  padding:       0;
-  font-size:     1rem;
-  line-height:   1;
-  font-weight:   700;
-  border-radius: var(--iridis-radius);
-  background:    color-mix(in oklch, var(--iridis-surface) 70%, var(--iridis-brand) 30%);
-  border:        var(--iridis-card-border);
-  border-color:  color-mix(in oklch, var(--iridis-divider) 60%, var(--iridis-brand) 40%);
-  color:         var(--iridis-text);
-  box-shadow:    var(--iridis-card-shadow);
-}
-.iridis-right__close :deep(.p-button:hover) {
-  background:   color-mix(in oklch, var(--iridis-brand) 30%, var(--iridis-surface));
-  box-shadow:   var(--iridis-card-shadow-hover);
 }
 
 .iridis-right__title {
