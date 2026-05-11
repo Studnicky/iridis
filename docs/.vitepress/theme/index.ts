@@ -2,6 +2,9 @@ import type { Theme } from 'vitepress';
 
 import { h }          from 'vue';
 import DefaultTheme   from 'vitepress/theme';
+import PrimeVue       from 'primevue/config';
+
+import { iridisPreset } from './primevuePreset.ts';
 
 import IridisCard      from './components/base/IridisCard.vue';
 import IridisButton    from './components/base/IridisButton.vue';
@@ -49,6 +52,21 @@ function logoBlock(): unknown {
 export const theme: Theme = {
   'extends': DefaultTheme,
   enhanceApp({ app }): void {
+    /* PrimeVue install. The iridisPreset rewires --p-* design tokens
+       to read from --iridis-* engine output; .dark on <html> selects
+       the dark color scheme (VitePress writes this class on appearance
+       toggle). All PrimeVue components used across the docs inherit
+       this theme automatically. */
+    app.use(PrimeVue, {
+      'theme': {
+        'preset':  iridisPreset,
+        'options': {
+          'darkModeSelector': '.dark',
+          'cssLayer':         false,
+        },
+      },
+    });
+
     // Globally registered so any markdown page can drop these in unprefixed.
     app.component('IridisCard',      IridisCard);
     app.component('IridisButton',    IridisButton);
