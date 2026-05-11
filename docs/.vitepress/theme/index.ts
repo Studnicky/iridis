@@ -18,7 +18,6 @@ import MultiOutputDemo from './components/MultiOutputDemo.vue';
 import TryItOutForm    from './components/TryItOutForm.vue';
 import RightPanel      from './components/RightPanel.vue';
 import SidebarToc      from './components/SidebarToc.vue';
-import SidebarToggle   from './components/SidebarToggle.vue';
 import SidebarResize   from './components/SidebarResize.vue';
 import NavBarSidebarToggle from './components/NavBarSidebarToggle.vue';
 import NavBarBuilderToggle from './components/NavBarBuilderToggle.vue';
@@ -92,7 +91,6 @@ export const theme: Theme = {
       ]),
       'doc-after':           () => h(InfiniteScroll),
       'layout-top':          () => h('div', null, [
-        h(SidebarToggle),
         h(SidebarResize),
         h(SidebarToc),
         h(MobileOverlay),
