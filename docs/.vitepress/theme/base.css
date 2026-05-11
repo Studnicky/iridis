@@ -207,9 +207,14 @@ button, input, select, textarea {
 /* Rings are layered INSIDE the icon's footprint — five concentric circles
    that share the icon's box. None expands beyond it. The pulse is opacity
    + a slow conic gradient sweep through the iridis spectrum so the rings
-   appear to flow through the brand's colour wheel. */
+   appear to flow through the brand's colour wheel.
 
-.VPSidebar .iridis-loader {
+   These rules are context-free so the loader can render in either the
+   sidebar drawer (large) or the topbar (compact via --compact modifier).
+   The container CSS variable `--iridis-loader-size` sets the dimensions
+   in each context. */
+
+.iridis-loader {
   --iridis-loader-size: 180px;
   --iridis-loader-duration: 8s;
   position: relative;
@@ -217,9 +222,10 @@ button, input, select, textarea {
   height: var(--iridis-loader-size);
   margin: 0.5rem auto 1.25rem;
   flex-shrink: 0;
+  display: inline-block;
 }
 
-.VPSidebar .iridis-loader__box {
+.iridis-loader__box {
   position: absolute;
   border-radius: 50%;
   transform-origin: center;
@@ -251,13 +257,13 @@ button, input, select, textarea {
 /* Five rings, all bounded by the icon. Alternating spin direction so the
    gradient looks like a counter-rotating chromatic vortex. Staggered ripple
    delays make the scale pulse propagate outward → inward. */
-.VPSidebar .iridis-loader__box:nth-child(1) { inset:  0%; z-index: 95; animation-delay: 0.0s, 0.0s, 0.0s; animation-direction: normal,  normal, normal; }
-.VPSidebar .iridis-loader__box:nth-child(2) { inset:  8%; z-index: 96; animation-delay: 0.6s, 0.4s, 0.2s; animation-direction: reverse, normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.15), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
-.VPSidebar .iridis-loader__box:nth-child(3) { inset: 16%; z-index: 97; animation-delay: 1.2s, 0.8s, 0.4s; animation-direction: normal,  normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 0.85), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
-.VPSidebar .iridis-loader__box:nth-child(4) { inset: 24%; z-index: 98; animation-delay: 1.8s, 1.2s, 0.6s; animation-direction: reverse, normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.30), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
-.VPSidebar .iridis-loader__box:nth-child(5) { inset: 32%; z-index: 99; animation-delay: 2.4s, 1.6s, 0.8s; animation-direction: normal,  normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 0.70), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
+.iridis-loader__box:nth-child(1) { inset:  0%; z-index: 95; animation-delay: 0.0s, 0.0s, 0.0s; animation-direction: normal,  normal, normal; }
+.iridis-loader__box:nth-child(2) { inset:  8%; z-index: 96; animation-delay: 0.6s, 0.4s, 0.2s; animation-direction: reverse, normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.15), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
+.iridis-loader__box:nth-child(3) { inset: 16%; z-index: 97; animation-delay: 1.2s, 0.8s, 0.4s; animation-direction: normal,  normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 0.85), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
+.iridis-loader__box:nth-child(4) { inset: 24%; z-index: 98; animation-delay: 1.8s, 1.2s, 0.6s; animation-direction: reverse, normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.30), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
+.iridis-loader__box:nth-child(5) { inset: 32%; z-index: 99; animation-delay: 2.4s, 1.6s, 0.8s; animation-direction: normal,  normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 0.70), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
 
-.VPSidebar .iridis-loader__logo {
+.iridis-loader__logo {
   position: absolute;
   inset: 24%;
   z-index: 100;
@@ -266,6 +272,21 @@ button, input, select, textarea {
   background-repeat: no-repeat;
   background-size: contain;
   filter: drop-shadow(0 0 10px color-mix(in oklch, var(--iridis-brand) 55%, transparent));
+}
+
+/* Compact topbar variant — smaller footprint, mobile-only visibility.
+   Mounted into VPNavBarTitle via the nav-bar-title-before slot; on
+   desktop the full-size loader inside the sidebar drawer takes over. */
+.iridis-loader--compact {
+  --iridis-loader-size: 28px;
+  --iridis-loader-duration: 8s;
+  margin: 0 0.5rem 0 0;
+  vertical-align: middle;
+}
+@media (min-width: 1100px) {
+  .iridis-loader--compact {
+    display: none;
+  }
 }
 
 @keyframes iridis-loader-spin {
@@ -384,16 +405,67 @@ html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
 }
 
 /* The pulsing brand logo shrinks inside the drawer at narrow widths so
-   the navigation list remains the primary focus. */
-.VPSidebar .iridis-loader {
+   the navigation list remains the primary focus. Excludes the compact
+   topbar variant whose size is set above. */
+.VPSidebar .iridis-loader:not(.iridis-loader--compact) {
   --iridis-loader-size: 96px;
   margin: 0.25rem auto 0.75rem;
+  display: block;
 }
 @media (min-width: 1100px) {
-  .VPSidebar .iridis-loader {
+  .VPSidebar .iridis-loader:not(.iridis-loader--compact) {
     --iridis-loader-size: 180px;
     margin: 0.5rem auto 1.25rem;
   }
+}
+
+/* === Teleported drawer-close button (desktop only) ===
+   Mounted INSIDE the .VPSidebar element by NavBarSidebarToggle.vue's
+   Teleport. Positioned top-right, mirroring the right panel's close
+   button. Hidden at mobile because the MobileOverlay backdrop is the
+   dismiss path there. The Teleport itself is disabled at mobile so
+   nothing reaches the DOM at narrow widths, but this rule guards
+   against any leakage. */
+.VPSidebar .iridis-sidebar-drawer-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 32;
+}
+.VPSidebar .iridis-sidebar-drawer-close .p-button {
+  width: 2.2rem;
+  height: 2.2rem;
+  min-height: 2.2rem;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklch, var(--iridis-surface) 90%, var(--iridis-brand) 10%);
+  border: 1px solid color-mix(in oklch, var(--iridis-divider) 60%, var(--iridis-brand) 40%);
+  color: var(--iridis-muted);
+  font-size: 0.85rem;
+}
+.VPSidebar .iridis-sidebar-drawer-close .p-button:hover {
+  color: var(--iridis-brand);
+  border-color: color-mix(in oklch, var(--iridis-divider) 20%, var(--iridis-brand) 80%);
+}
+@media (max-width: 1099px) {
+  .VPSidebar .iridis-sidebar-drawer-close {
+    display: none;
+  }
+}
+
+/* === Compact topbar loader positioning inside VPNavBarTitle ===
+   The loader renders into the `nav-bar-title-before` slot, which sits
+   INSIDE the `<a class="title" href="/iridis/">` anchor. Make the title
+   anchor a flex container so the loader sits next to the site title
+   text. The default VitePress styles already use flex; this adds gap
+   and ensures vertical centering at mobile. */
+.VPNavBarTitle .title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* VitePress's built-in mobile hamburger opens the VPNavScreen top-nav
