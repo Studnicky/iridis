@@ -20,6 +20,7 @@ import RightPanel      from './components/RightPanel.vue';
 import SidebarToc      from './components/SidebarToc.vue';
 import SidebarResize   from './components/SidebarResize.vue';
 import NavBarMenu      from './components/NavBarMenu.vue';
+import NavBarBrandLoader from './components/NavBarBrandLoader.vue';
 import MobileOverlay   from './components/MobileOverlay.vue';
 import InfiniteScroll  from './components/InfiniteScroll.vue';
 import PaletteCTA      from './components/PaletteCTA.vue';
@@ -84,6 +85,7 @@ export const theme: Theme = {
   Layout() {
     return h(DefaultTheme.Layout, null, {
       'sidebar-nav-before':  () => logoBlock(),
+      'nav-bar-title-before': () => h(NavBarBrandLoader),
       'nav-bar-content-before': () => h(NavBarMenu),
       'doc-after':           () => h(InfiniteScroll),
       'layout-top':          () => h('div', null, [

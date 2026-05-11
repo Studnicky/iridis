@@ -11,16 +11,39 @@
  * class drives a fixed-position overlay drawer at every width (see
  * base.css). On mount the toggle starts uncollapsed at every viewport
  * so the pages drawer is open by default.
+ *
+ * In addition to the navbar toggle button, this component teleports a
+ * matching close `×` button INTO the VPSidebar element so the drawer
+ * has its own dismiss affordance in the top-right corner. The teleport
+ * target is only present at desktop widths (>=1100px); on mobile the
+ * MobileOverlay backdrop is the dismiss path so a close button inside
+ * the drawer would be redundant.
  */
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import Button from 'primevue/button';
 
 const collapsed = ref(false);
+const teleportReady = ref(false);
+const isDesktop = ref(false);
 let observer: MutationObserver | null = null;
+let mql: MediaQueryList | null = null;
 
 function syncFromDom(): void {
   if (typeof document === 'undefined') return;
   collapsed.value = document.documentElement.classList.contains('iridis-sidebar-collapsed');
+}
+
+function syncViewport(event?: MediaQueryListEvent): void {
+  if (event !== undefined) {
+    isDesktop.value = event.matches;
+    return;
+  }
+  if (typeof window === 'undefined') return;
+  isDesktop.value = window.matchMedia('(min-width: 1100px)').matches;
+}
+
+function onMqlChange(event: MediaQueryListEvent): void {
+  syncViewport(event);
 }
 
 onMounted(() => {
@@ -29,13 +52,25 @@ onMounted(() => {
   // via this toggle; we never seed the collapsed state from matchMedia.
   document.documentElement.classList.remove('iridis-sidebar-collapsed');
   syncFromDom();
+  syncViewport();
   observer = new MutationObserver(syncFromDom);
   observer.observe(document.documentElement, { 'attributes': true, 'attributeFilter': ['class'] });
+  if (typeof window !== 'undefined') {
+    mql = window.matchMedia('(min-width: 1100px)');
+    mql.addEventListener('change', onMqlChange);
+  }
+  // The teleport target (.VPSidebar) is rendered by VitePress; wait one
+  // frame so the element exists before we Teleport into it.
+  requestAnimationFrame(() => { teleportReady.value = true; });
 });
 
 onUnmounted(() => {
   observer?.disconnect();
   observer = null;
+  if (mql !== null) {
+    mql.removeEventListener('change', onMqlChange);
+    mql = null;
+  }
 });
 
 function toggle(): void {
@@ -44,6 +79,14 @@ function toggle(): void {
   collapsed.value = next;
   document.documentElement.classList.toggle('iridis-sidebar-collapsed', next);
 }
+
+function close(): void {
+  if (typeof document === 'undefined') return;
+  collapsed.value = true;
+  document.documentElement.classList.add('iridis-sidebar-collapsed');
+}
+
+const showDrawerClose = computed<boolean>(() => isDesktop.value && !collapsed.value);
 </script>
 
 <template>
@@ -60,6 +103,19 @@ function toggle(): void {
       <span class="iridis-nav-sidebar-toggle__icon" aria-hidden="true">{{ collapsed ? '☰' : '✕' }}</span>
       <span class="iridis-nav-sidebar-toggle__label">Pages</span>
     </Button>
+
+    <Teleport v-if="teleportReady" to=".VPSidebar" :disabled="!showDrawerClose">
+      <Button
+        v-show="showDrawerClose"
+        class="iridis-sidebar-drawer-close"
+        severity="secondary"
+        variant="text"
+        aria-label="Close pages menu"
+        title="Close pages menu"
+        icon="pi pi-times"
+        @click="close"
+      />
+    </Teleport>
   </ClientOnly>
 </template>
 
