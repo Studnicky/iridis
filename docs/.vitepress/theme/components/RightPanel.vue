@@ -16,7 +16,7 @@
  * sticky button stay custom (project-specific affordances).
  */
 
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 
 import Button         from 'primevue/button';
 import Tag            from 'primevue/tag';
@@ -32,7 +32,7 @@ import SchemaForm    from './SchemaForm.vue';
 import { docsConfigSchema } from '../schemas/docsConfig.schema.ts';
 import { roleSchemaByName } from '../schemas/roleSchemas.ts';
 import { configStore, resetConfig } from '../stores/configStore.ts';
-import { panelOpen } from '../stores/panelState.ts';
+import { closePanel, panelOpen } from '../stores/panelState.ts';
 
 const RESIZE_KEY = 'iridis-right-panel-width';
 const RESIZE_MIN = 320;
@@ -101,6 +101,52 @@ function onDragPointerUp(e: PointerEvent): void {
   document.body.style.cursor = '';
 }
 
+function onKeydown(e: KeyboardEvent): void {
+  if (e.key !== 'Escape') return;
+  if (!open.value) return;
+  if (typeof window === 'undefined') return;
+  // Only close-on-escape at mobile widths — desktop relies on the
+  // sticky tab or close button so escape does not interfere with the
+  // user's intent on a persistent panel.
+  if (window.matchMedia('(max-width: 1099px)').matches) closePanel();
+}
+
+// Pull-down-to-dismiss handler on the mobile drag handle. Active only
+// at narrow widths; desktop ignores these events entirely.
+const sheetDragging = ref(false);
+let sheetStartY = 0;
+let sheetCurrentDy = 0;
+
+function isMobile(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(max-width: 1099px)').matches;
+}
+
+function onSheetPointerDown(e: PointerEvent): void {
+  if (!isMobile()) return;
+  sheetDragging.value = true;
+  sheetStartY = e.clientY;
+  sheetCurrentDy = 0;
+  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  e.preventDefault();
+}
+function onSheetPointerMove(e: PointerEvent): void {
+  if (!sheetDragging.value) return;
+  sheetCurrentDy = Math.max(0, e.clientY - sheetStartY);
+  const el = document.querySelector('.iridis-right') as HTMLElement | null;
+  if (el) el.style.transform = `translateY(${sheetCurrentDy}px)`;
+}
+function onSheetPointerUp(e: PointerEvent): void {
+  if (!sheetDragging.value) return;
+  sheetDragging.value = false;
+  (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+  const el = document.querySelector('.iridis-right') as HTMLElement | null;
+  if (el) el.style.transform = '';
+  // Dismiss if dragged more than 25% of the sheet height.
+  if (sheetCurrentDy > window.innerHeight * 0.85 * 0.25) closePanel();
+  sheetCurrentDy = 0;
+}
+
 onMounted(() => {
   const persisted = readPersistedWidth();
   if (persisted !== null) applyWidth(persisted);
@@ -110,6 +156,15 @@ onMounted(() => {
     open.value = false;
   }
   syncCollapsedClass(open.value);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', onKeydown);
+  }
+});
+
+onUnmounted(() => {
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('keydown', onKeydown);
+  }
 });
 
 async function buildExportPayload(): Promise<Record<string, unknown>> {
@@ -197,6 +252,32 @@ async function downloadJson(): Promise<void> {
         @pointerup="onDragPointerUp"
         @pointercancel="onDragPointerUp"
       />
+
+      <div
+        v-show="open"
+        class="iridis-right__handle"
+        role="button"
+        tabindex="-1"
+        aria-label="Drag to dismiss"
+        @pointerdown="onSheetPointerDown"
+        @pointermove="onSheetPointerMove"
+        @pointerup="onSheetPointerUp"
+        @pointercancel="onSheetPointerUp"
+      >
+        <span class="iridis-right__handle-bar" aria-hidden="true" />
+      </div>
+
+      <Button
+        v-show="open"
+        class="iridis-right__close"
+        severity="secondary"
+        variant="text"
+        aria-label="Close palette builder"
+        title="Close palette builder"
+        @click="closePanel"
+      >
+        <span class="iridis-right__close-icon" aria-hidden="true">✕</span>
+      </Button>
 
       <div v-show="open" class="iridis-right__body">
         <header class="iridis-right__header">
@@ -295,13 +376,16 @@ async function downloadJson(): Promise<void> {
     bottom: 0;
     left: 0;
     max-width: none;
-    height: 60vh;
-    max-height: 60vh;
+    height: 85vh;
+    max-height: 85vh;
     margin: 0;
-    z-index: 33;
-    border-radius: var(--iridis-radius) var(--iridis-radius) 0 0;
+    z-index: 1000;
+    border-radius: var(--iridis-radius-lg) var(--iridis-radius-lg) 0 0;
     transform: translateY(0);
     transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+      0 -8px 24px -8px rgba(0, 0, 0, 0.35),
+      var(--iridis-card-shadow);
   }
   .iridis-right:not(.iridis-right--collapsed) {
     width: 100%;
@@ -313,10 +397,72 @@ async function downloadJson(): Promise<void> {
     transform: translateY(100%);
     pointer-events: none;
   }
+  .iridis-right--dragging {
+    transition: none;
+  }
   .iridis-right__resize { display: none; }
   .iridis-right__body {
-    max-height: calc(60vh - 1rem);
+    max-height: calc(85vh - 2.25rem);
+    padding-top: 0.25rem;
   }
+}
+@media (min-width: 1100px) {
+  .iridis-right__handle { display: none; }
+  .iridis-right__close  { display: none; }
+}
+
+.iridis-right__handle {
+  position: relative;
+  width: 100%;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  flex-shrink: 0;
+}
+.iridis-right__handle:active {
+  cursor: grabbing;
+}
+.iridis-right__handle-bar {
+  display: block;
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--iridis-muted) 60%, transparent);
+  transition: background-color var(--iridis-transition);
+}
+.iridis-right__handle:hover .iridis-right__handle-bar {
+  background: color-mix(in oklch, var(--iridis-brand) 60%, var(--iridis-muted));
+}
+.iridis-right__close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 2;
+}
+.iridis-right__close :deep(.p-button) {
+  width: 2.4rem;
+  height: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklch, var(--iridis-surface) 90%, var(--iridis-brand) 10%);
+  border: 1px solid color-mix(in oklch, var(--iridis-divider) 60%, var(--iridis-brand) 40%);
+  color: var(--iridis-muted);
+}
+.iridis-right__close :deep(.p-button:hover) {
+  color: var(--iridis-brand);
+  border-color: color-mix(in oklch, var(--iridis-divider) 20%, var(--iridis-brand) 80%);
+}
+.iridis-right__close-icon {
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 .iridis-right__resize {
