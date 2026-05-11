@@ -31,7 +31,7 @@ const PLUGIN_EXPORT_NAMES: Readonly<Record<FlagKey, string>> = {
   'enableImage':      'imagePlugin',
   'enableContrast':   'contrastPlugin',
   'enableCapacitor':  'capacitorPlugin',
-  'enableRdf':        'reasoningPlugin',
+  'enableRdf':        'rdfPlugin',
 } as const;
 
 export class PluginResolver {

@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".":       "./src/index.ts",
+    "./types": "./src/types/index.ts"
   },
   "files": [
     "src"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist",
-    "prebuild": "rm -rf dist"
+    "test":      "node --import tsx --test 'tests/**/*.test.ts'",
+    "clean":     "rm -rf dist",
+    "prebuild":  "rm -rf dist"
   },
   "dependencies": {
     "@studnicky/iridis": "*"

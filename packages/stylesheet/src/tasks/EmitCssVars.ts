@@ -1,5 +1,6 @@
 import type {
   ColorRecordInterface,
+  MathPrimitiveInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
@@ -130,17 +131,21 @@ function buildVarMap(
   return map;
 }
 
-export class EmitCssVars implements TaskInterface {
-  readonly 'name' = 'emit:cssVars';
 
-  readonly 'manifest': TaskManifestInterface = {
+export class EmitCssVars implements TaskInterface {
+  readonly name = 'emit:cssVars';
+
+  readonly manifest: TaskManifestInterface = {
     'name':        'emit:cssVars',
     'reads':       ['roles', 'variants', 'metadata'],
     'writes':      ['outputs.cssVars'],
     'description': 'Emit CSS custom property blocks from resolved roles and variants',
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  // math() accessor satisfies PluginInterface if ever used standalone — not required here
+  // but the class only needs TaskInterface
+
+  run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
     const prefix  = typeof state.metadata['cssVarPrefix'] === 'string'
       ? state.metadata['cssVarPrefix']
       : '--c-';
@@ -175,13 +180,7 @@ export class EmitCssVars implements TaskInterface {
       'map':          map,
     };
 
-    state.outputs['cssVars'] = output;
-
-    ctx.logger.debug(
-      'EmitCssVars',
-      'run',
-      `Emitted ${Object.keys(map).length} CSS custom properties`,
-    );
+    (state.outputs as Record<string, unknown>)['cssVars'] = output;
   }
 }
 

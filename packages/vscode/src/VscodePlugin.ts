@@ -22,7 +22,7 @@ import { expandTokens } from './tasks/ExpandTokens.ts';
  *   → emit:vscodeUiPalette      (parallel with emit:vscodeSemanticRules)
  *   → emit:vscodeThemeJson
  */
-class VscodePlugin implements PluginInterface {
+export class VscodePlugin implements PluginInterface {
   readonly 'name'    = 'vscode';
 
   readonly 'version' = '0.1.0';
