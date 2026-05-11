@@ -18,8 +18,9 @@ import type { PaletteStateInterface } from '@studnicky/iridis/model';
 
 import { stylesheetPlugin }  from '@studnicky/iridis-stylesheet';
 import { tailwindPlugin }    from '@studnicky/iridis-tailwind';
+import { vscodePlugin }      from '@studnicky/iridis-vscode';
 import { capacitorPlugin }   from '@studnicky/iridis-capacitor';
-import { reasoningPlugin }   from '@studnicky/iridis-rdf';
+import { rdfPlugin }         from '@studnicky/iridis-rdf';
 
 import { configStore }       from '../stores/configStore.ts';
 import { roleSchemaByName }  from '../schemas/roleSchemas.ts';
@@ -47,7 +48,7 @@ async function runPipeline(): Promise<void> {
     engine.adopt(tailwindPlugin);
     engine.adopt(vscodePlugin);
     engine.adopt(capacitorPlugin);
-    engine.adopt(reasoningPlugin);
+    engine.adopt(rdfPlugin);
 
     engine.pipeline([
       'intake:hex',

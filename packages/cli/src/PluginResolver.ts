@@ -1,5 +1,5 @@
 import type { PluginInterface } from '@studnicky/iridis';
-import type { CliConfigInterface } from './types.ts';
+import type { CliConfigInterface } from './types/index.ts';
 
 type FlagKey = keyof Pick<
   CliConfigInterface,
@@ -31,7 +31,7 @@ const PLUGIN_EXPORT_NAMES: Readonly<Record<FlagKey, string>> = {
   'enableImage':      'imagePlugin',
   'enableContrast':   'contrastPlugin',
   'enableCapacitor':  'capacitorPlugin',
-  'enableRdf':        'reasoningPlugin',
+  'enableRdf':        'rdfPlugin',
 } as const;
 
 export class PluginResolver {

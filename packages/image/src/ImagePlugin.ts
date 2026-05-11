@@ -8,15 +8,16 @@ import { galleryExtract }     from './tasks/GalleryExtract.ts';
 import { galleryHarmonize }   from './tasks/GalleryHarmonize.ts';
 
 /**
- * GalleryPlugin
+ * ImagePlugin
  *
- * Provides three tasks for art-gallery chrome re-skinning:
+ * Provides three tasks for image-derived palette extraction:
  *   gallery:extract     — reduce image pixels to K dominant colors
  *   gallery:assignRoles — map dominant colors to gallery roles
  *   gallery:harmonize   — shift accent hue if too close to frame
  */
-export class GalleryPlugin implements PluginInterface {
-  readonly 'name'    = 'gallery';
+export class ImagePlugin implements PluginInterface {
+  readonly 'name'    = 'image';
+
   readonly 'version' = '0.1.0';
 
   tasks(): readonly TaskInterface[] {
@@ -28,4 +29,4 @@ export class GalleryPlugin implements PluginInterface {
   }
 }
 
-export const galleryPlugin = new GalleryPlugin();
+export const imagePlugin = new ImagePlugin();

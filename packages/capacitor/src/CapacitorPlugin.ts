@@ -3,14 +3,15 @@ import type {
   PluginInterface,
   TaskInterface,
 } from '@studnicky/iridis';
-import { emitAndroidThemeXml }    from './tasks/EmitAndroidThemeXml.ts';
+import { emitAndroidThemeXml }       from './tasks/EmitAndroidThemeXml.ts';
 import { emitCapacitorSplashScreen } from './tasks/EmitCapacitorSplashScreen.ts';
-import { emitCapacitorStatusBar } from './tasks/EmitCapacitorStatusBar.ts';
-import { emitCapacitorTheme }     from './tasks/EmitCapacitorTheme.ts';
+import { emitCapacitorStatusBar }    from './tasks/EmitCapacitorStatusBar.ts';
+import { emitCapacitorTheme }        from './tasks/EmitCapacitorTheme.ts';
 
 export class CapacitorPlugin implements PluginInterface {
-  readonly name    = 'capacitor';
-  readonly version = '0.1.0';
+  readonly 'name'    = 'capacitor';
+
+  readonly 'version' = '0.1.0';
 
   tasks(): readonly TaskInterface[] {
     return [

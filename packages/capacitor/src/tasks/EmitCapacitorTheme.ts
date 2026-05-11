@@ -6,22 +6,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-
-export interface CapacitorThemeOutputInterface {
-  readonly primary:        string;
-  readonly primaryDark:    string;
-  readonly primaryLight:   string;
-  readonly accent:         string;
-  readonly background:     string;
-  readonly surface:        string;
-  readonly error:          string;
-  readonly warning:        string;
-  readonly success:        string;
-  readonly info:           string;
-  readonly text:           string;
-  readonly textOnPrimary:  string;
-  readonly textOnAccent:   string;
-}
+import type { CapacitorThemeOutputInterface } from '../types/index.ts';
 
 type IntentMap = ReadonlyMap<ColorIntentType, string>;
 

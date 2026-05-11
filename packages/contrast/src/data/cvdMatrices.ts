@@ -5,15 +5,7 @@
 // Tritanopia matrix from Brettel et al. (1997) two-half-plane model.
 // Matrices project linear-sRGB tristimulus onto the confusion plane for each dichromacy.
 
-export interface CvdMatrixInterface {
-  readonly name:   'protanopia' | 'deuteranopia' | 'tritanopia';
-  /** Row-major 3×3 matrix applied to linear sRGB [R, G, B] → [R', G', B'] */
-  readonly matrix: readonly [
-    number, number, number,
-    number, number, number,
-    number, number, number,
-  ];
-}
+import type { CvdMatrixInterface } from '../types/index.ts';
 
 // Protanopia: red cone absent. Viénot et al. 1999, Table 1.
 export const protanopiaMatrix: CvdMatrixInterface = {
