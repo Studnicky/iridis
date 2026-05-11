@@ -5,7 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateOutput } from '@studnicky/iridis';
+import { colorRecordFactory, getOrCreateOutput } from '@studnicky/iridis';
 
 /**
  * Derives all 101 VS Code workbench colors from the 16-role palette.
@@ -68,14 +68,18 @@ export class EmitVscodeUiPalette implements TaskInterface {
     const bgLum   = ctx.math.invoke<number>('luminance', bgRole);
     const isLight = bgLum > 0.5;
 
+    // Math primitives consume + return ColorRecord. Adapt at the boundary
+    // so the workbench-color recipes below can keep their natural hex
+    // string idiom.
+    const rec = (hex: string): ColorRecordInterface => colorRecordFactory.fromHex(hex);
     const mixHsl = (a: string, b: string, w: number): string =>
-      ctx.math.invoke<string>('mixHsl', a, b, w);
+      ctx.math.invoke<ColorRecordInterface>('mixHsl', rec(a), rec(b), w).hex;
     const lighten = (c: string, a: number): string =>
-      ctx.math.invoke<string>('lighten', c, a);
+      ctx.math.invoke<ColorRecordInterface>('lighten', rec(c), a).hex;
     const darken = (c: string, a: number): string =>
-      ctx.math.invoke<string>('darken', c, a);
+      ctx.math.invoke<ColorRecordInterface>('darken', rec(c), a).hex;
     const contrastText = (c: string): string =>
-      ctx.math.invoke<string>('contrastText', c);
+      ctx.math.invoke<ColorRecordInterface>('contrastText', rec(c)).hex;
 
     const activeSelection = mixHsl(bg, accent, isLight ? 0.28 : 0.35);
     const border = mixHsl(bg, fg, isLight ? 0.14 : 0.12);

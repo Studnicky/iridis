@@ -22,7 +22,7 @@ const state = await engine.run({
   metadata: { cssVarPrefix: '--color-' },
 });
 
-const css = state.outputs.stylesheet;
+const css = (state.outputs.cssVars as { full: string }).full;
 // :root { --color-accent: #...; --color-text: #...; }
 // @media (prefers-color-scheme: dark) { ... }
 // @supports (color: color(display-p3 1 0 0)) { ... }
