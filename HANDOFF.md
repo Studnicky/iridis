@@ -20,12 +20,22 @@ iridis is a chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-
 
 See `docs/internal/outstanding.md` for the full queue. Top items:
 
-- 7 plugin test suites (every plugin needs an e2e test file under `packages/<plugin>/tests/e2e/`)
-- 4 doc pages: `docs/recipes/vscode-theme.md`, `docs/reference/{plugins,tasks,math}.md`
-- Sidebar update in `docs/.vitepress/config.ts` to wire the new pages
-- 6 per-package READMEs (only `core`, `cli`, `vscode` have them)
-- CLI smoke test verification (`npx tsx packages/cli/src/cli.ts examples/vue-capacitor/category-w3c.config.json`)
-- Vue/Capacitor example service still imports from old plugin paths in places, verify
+- 7 plugin e2e test suites (every plugin needs an e2e test file under `packages/<plugin>/tests/e2e/`)
+- 4 doc pages still queued: `docs/recipes/vscode-theme.md`, `docs/reference/{plugins,tasks,math}.md`
+- CLI smoke test verification (`npx tsx packages/cli/src/main.ts examples/vue-capacitor/category-w3c.config.json`)
+- Vue/Capacitor example service: verify imports still resolve cleanly after the type-hoist + dispatcher work
+
+Verified shipped since the last handoff:
+
+- Type declarations hoisted to `packages/core/src/types/<domain>.ts`
+- Built-in docs schemas renamed to `iridis-4/8/12/16` (4 ⊂ 8 ⊂ 12 ⊂ 16, each a `{ dark, light }` pair)
+- State-machine dispatcher (`docs/.vitepress/theme/stores/themeDispatcher.ts`) replaces the old configStore + bindings
+- 7 color-math reference pages added (`docs/reference/{hex,rgb,hsv,cmyk,oklch,wcag,apca}.md`)
+- v2 thesis moved from "Reference" to "Introduction" sidebar group; new Reference group has `Color spaces` + `Accessibility standards` subsections
+- Em-dashes, smart quotes, ellipsis chars, NBSPs purged from the markdown corpus
+- TSDoc on every public export across packages and the docs theme
+- 6 per-package READMEs (every package now has one)
+- Markdown corpus cohesion sweep (this pass): terminology consistency, cross-reference integrity
 
 ## Architecture in two sentences
 

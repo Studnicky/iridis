@@ -60,7 +60,7 @@ const state = await engine.run({
 
 ## 2. The token write
 
-This is the layer that varies per consumer. Decide what tokens your app exposes and write them. The mapper here uses **first-match aliases** so the same writer works for any role schema, `minimal`, `w3c`, `material`, or your own.
+This is the layer that varies per consumer. Decide what tokens your app exposes and write them. The mapper here uses **first-match aliases** so the same writer works for any role schema, `iridis-4`, `iridis-8`, `iridis-12`, `iridis-16`, or your own.
 
 ```ts
 type RoleMap = Readonly<Record<string, ColorRecord>>;
@@ -177,7 +177,7 @@ That's the entire dogfood loop. The engine runs in your renderer. The tokens lan
 
 ## Why aliases over hard role names
 
-Role schemas evolve. You ship `minimal` today; six months later a customer wants Material's role naming and you don't want to break the consumer code that already maps `accent` → `--my-app-brand`. The alias chain absorbs the rename:
+Role schemas evolve. You ship `iridis-4` today; six months later a customer wants a richer schema with Material's role naming and you don't want to break the consumer code that already maps `accent` → `--my-app-brand`. The alias chain absorbs the rename:
 
 ```ts
 const brand = pick(state.roles, ['brand', 'accent', 'primary', 'keyword']);
@@ -212,7 +212,7 @@ for (const [token, aliases] of Object.entries(syntaxAliases)) {
 }
 ```
 
-The schema doesn't have to declare syntax roles. If the user picks `minimal` (which has only `background / foreground / accent / muted`), `keyword` falls through to `brand`, `comment` falls through to `muted`, `string` falls through to `success`, and if `success` doesn't exist, you set a fallback in the `:root` block and that paints.
+The schema doesn't have to declare syntax roles. If the user picks `iridis-4` (which has only `background / text / brand / muted`), `keyword` falls through to `brand`, `comment` falls through to `muted`, `string` falls through to `brand` again, and if no candidate exists, you set a fallback in the `:root` block and that paints.
 
 ## Recap
 

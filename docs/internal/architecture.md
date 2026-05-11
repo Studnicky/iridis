@@ -25,13 +25,14 @@ iridis/
 │  └─ rdf/            ← @studnicky/iridis-rdf        n3-backed RDF emitter
 ├─ docs/              ← VitePress site
 │  ├─ public/logo.png
-│  ├─ .vitepress/     ← config, theme, brand plugin
+│  ├─ .vitepress/     ← config, theme, brand plugin, dispatcher, schemas
 │  ├─ index.md
 │  ├─ getting-started.md
+│  ├─ try-it-out.md
 │  ├─ v2-living-color.md
-│  ├─ concepts/       ← pipeline, role-schemas, color-record, contrast
-│  ├─ recipes/        ← cli, vue-capacitor, vscode-theme (missing)
-│  ├─ reference/      ← plugins, tasks, math (all missing)
+│  ├─ concepts/       ← pipeline, role-schemas, color-record, contrast, accessibility-calculations
+│  ├─ recipes/        ← cli, cascading-tokens, vue-capacitor (vscode-theme still pending)
+│  ├─ reference/      ← hex, rgb, hsv, cmyk, oklch (color spaces); wcag, apca (a11y standards)
 │  └─ internal/       ← this file + outstanding.md
 ├─ examples/
 │  └─ vue-capacitor/  ← unpublished. Music-category seed-color demo
@@ -61,11 +62,13 @@ This is the reason iridis can ship `.ts` extensions in every relative import wit
 ## Engine spine, composition
 
 ```
-ColorRecord                          ← canonical OKLCH-first color shape
-PaletteState                         ← run state: input, colors, roles, variants, outputs, metadata, optional graph
-PluginInterface                      ← class with .name, .version, .tasks(), .math()
-TaskInterface                        ← class with .name, .manifest?, .run(state, ctx)
-MathPrimitiveInterface               ← class with .name, .apply(...args)
+ColorRecord                          ← canonical OKLCH-first color shape   (types/color.ts)
+PaletteState                         ← run state: input, colors, roles, variants, outputs, metadata   (types/state.ts)
+PluginInterface                      ← class with .name, .version, .tasks(), .math()                  (types/plugin.ts)
+TaskInterface                        ← class with .name, .manifest?, .run(state, ctx)                 (types/pipeline.ts)
+MathPrimitiveInterface               ← class with .name, .apply(...args)                              (types/math.ts)
+RoleSchemaInterface                  ← consumer-authored role contract                                (types/role.ts)
+RuntimeOptionsInterface              ← framing, colorSpace, extra                                     (types/runtime.ts)
 
 Engine.tasks: TaskRegistry           ← register, hook, resolve, list
 Engine.math:  ColorMathRegistry      ← register, resolve, invoke
@@ -73,6 +76,8 @@ Engine.adopt(plugin): void           ← walks plugin.tasks() and .math(), regis
 Engine.pipeline(order): void         ← declares the run order
 Engine.run(input): Promise<state>    ← runs onRunStart hooks, sequential tasks, onRunEnd hooks
 ```
+
+Type declarations live one per file under `packages/core/src/types/<domain>.ts`. The legacy `packages/core/src/model/types.ts` aggregate is gone; `packages/core/src/model/index.ts` re-exports from `types/` so the public path `@studnicky/iridis/model` keeps working unchanged. Per-package types follow the same `src/types/<domain>.ts` convention (e.g. `packages/cli/src/types/config.ts`).
 
 Every output target (CSS, Tailwind, VS Code, Capacitor, RDF) is a plugin. Plugins are not part of core. Core has zero runtime dependencies.
 
@@ -138,6 +143,12 @@ Per the user's HARD rule. Sample CLI fixture is JSON. Role schemas are JSON Sche
 ## VitePress brand strategy
 
 The literal word "iridis" is wrapped by `docs/.vitepress/plugins/iridis-brand.mjs` with a `<span class="iridis-brand">` whose CSS gradient sweeps the visible spectrum. Static for v0.1; the v2 living-color thesis converts this into a runtime-driven gradient morphing through the iridis engine itself (a self-referential demo).
+
+## Docs site, state-machine dispatcher
+
+The docs site dogfoods the engine. Every chrome and syntax token is iridis-emitted; the user picks seeds in the right panel; the page recomputes. The bridge between user input and the engine is a single state-machine dispatcher at `docs/.vitepress/theme/stores/themeDispatcher.ts`. Components dispatch typed actions (`setFraming`, `setPaletteColors`, `setContrastLevel`, `setContrastAlgorithm`, `setColorSpace`, `setRoleSchema`); a reducer derives the next `DocsConfigType`; one projector layer (`applyConfigToDocument.ts`) runs the engine and writes `--iridis-*` tokens onto `document.documentElement`. VitePress's own appearance switch participates via a single `MutationObserver` bridge that dispatches `setFraming`. The previous `configStore` module is now a backwards-compatible facade over the dispatcher's writable proxy.
+
+Built-in role schemas for the docs site live at `docs/.vitepress/theme/schemas/roleSchemas.ts`. Four tiers, each shipped as a `{ dark, light }` pair: `iridis-4` (background, text, brand, muted) ⊂ `iridis-8` (+ surface, bgSoft, divider, onBrand) ⊂ `iridis-12` (+ success, warning, error, syntaxKeyword) ⊂ `iridis-16` (+ syntaxString, syntaxNumber, syntaxFunction, syntaxType). The framing toggle in the navbar swaps which variant feeds the engine; the engine produces both modes idiomatically without renderer-side inversion.
 
 ## Lessons captured (so we don't repeat)
 

@@ -56,13 +56,18 @@ The full first-party plugin list (CSS, Tailwind, VS Code, image intake, contrast
 
 ## Status
 
-v0.1, pre-publish. Core engine + canonical pipeline tasks + math primitives are stable and tested (88 tests, all passing). First-party output plugins are tracked separately. The [Living color thesis](docs/v2-living-color.md) outlines the v2 animation engine and reactive signal bindings planned for the next major version.
+v0.1, pre-publish. Core engine + canonical pipeline tasks + math primitives are stable and tested (117 tests, all passing). First-party output plugins are tracked separately. The [Living color thesis](docs/v2-living-color.md) outlines the v2 animation engine and reactive signal bindings planned for the next major version.
 
 ## Documentation
 
 Full documentation is published at **https://studnicky.github.io/iridis/**. Source docs live in [`docs/`](docs/):
 
-- [Getting started](docs/getting-started.md)
+- [Getting started](docs/getting-started.md), one-liner and engine API walkthrough
+- [Pipeline](docs/concepts/pipeline.md), how the engine runs (intake → resolve → enforce → emit)
+- [Role schemas](docs/concepts/role-schemas.md), declare what a palette must satisfy
+- [ColorRecord](docs/concepts/color-record.md), the canonical OKLCH-first color shape
+- [Contrast](docs/concepts/contrast.md), WCAG 2.1 and APCA enforcement
+- [Cascading tokens recipe](docs/recipes/cascading-tokens.md), the dogfood pattern this site runs on
 - [Living color thesis](docs/v2-living-color.md), animation, reactivity, and palette state machines for v2
 
 ## License

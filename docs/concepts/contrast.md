@@ -8,7 +8,7 @@ Open the right-panel example, hit the **Role schema** tab, and check the `contra
 
 ## WCAG 2.1, contrastWcag21
 
-The WCAG 2.1 algorithm computes relative luminance from gamma-corrected sRGB values, then produces a ratio between the lighter and darker luminances. The ratio ranges from 1:1 (identical colors) to 21:1 (black on white).
+The WCAG 2.1 algorithm computes relative luminance from gamma-corrected sRGB values, then produces a ratio between the lighter and darker luminances. The ratio ranges from 1:1 (identical colors) to 21:1 (black on white). The full algorithm, including the linear sRGB decode and the Rec. 709 luminance coefficients, is in the [WCAG 2.1 reference](../reference/wcag).
 
 Standard thresholds:
 
@@ -24,7 +24,7 @@ The core `enforce:contrast` task reads `input.roles.contrastPairs` and `input.co
 
 ## APCA, contrastApca
 
-APCA (Accessible Perceptual Contrast Algorithm, APCA-W3 0.0.98G-4g) uses separate exponents for foreground and background luminance, producing an asymmetric Lc (lightness contrast) value. Results are signed: positive means light background, negative means dark background. The magnitude indicates contrast strength.
+APCA (Accessible Perceptual Contrast Algorithm, APCA-W3 0.0.98G-4g) uses separate exponents for foreground and background luminance, producing an asymmetric Lc (lightness contrast) value. Results are signed: positive means light background, negative means dark background. The magnitude indicates contrast strength. The signed-Lc derivation, soft-clamp polynomial, and asymmetric exponents are in the [APCA reference](../reference/apca).
 
 Practical APCA thresholds:
 
