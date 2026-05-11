@@ -3,28 +3,33 @@
  * PaletteCTA.vue
  *
  * Designer-first call-to-action button. Opens the right panel via the
- * shared panelState store. On narrow viewports the panel is stacked
- * below content so the click also scrolls into view (handled by openPanel).
+ * shared panelState store. PrimeVue Button paints with brand tokens
+ * from the iridis preset; the wrapper adds the lift/shadow recipe and
+ * label-flip behavior based on panel state.
  */
 
+import { computed } from 'vue';
+import Button       from 'primevue/button';
+
 import { panelOpen, openPanel } from '../stores/panelState.ts';
+
+const label = computed(() => panelOpen.value ? 'Builder open ↘' : 'Build a palette →');
 </script>
 
 <template>
   <ClientOnly>
-    <button
+    <Button
       type="button"
-      class="iridis-cta"
+      :label="label"
       :aria-pressed="panelOpen"
+      class="iridis-cta"
       @click="openPanel"
-    >
-      <span class="iridis-cta__label">{{ panelOpen ? 'Builder open ↘' : 'Build a palette →' }}</span>
-    </button>
+    />
   </ClientOnly>
 </template>
 
 <style scoped>
-.iridis-cta {
+.iridis-cta :deep(.p-button) {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -36,7 +41,6 @@ import { panelOpen, openPanel } from '../stores/panelState.ts';
   color: var(--iridis-on-brand);
   border: 1px solid var(--iridis-brand);
   border-radius: var(--iridis-radius-md);
-  cursor: pointer;
   box-shadow: var(--iridis-shadow-felt);
   transition:
     background-color var(--iridis-transition),
@@ -45,12 +49,12 @@ import { panelOpen, openPanel } from '../stores/panelState.ts';
     filter           var(--iridis-transition),
     transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.iridis-cta:hover {
+.iridis-cta :deep(.p-button:hover) {
   filter: brightness(1.08);
   box-shadow: var(--iridis-shadow-felt-hover);
   transform: translateY(-1px);
 }
-.iridis-cta:active {
+.iridis-cta :deep(.p-button:active) {
   box-shadow: var(--iridis-shadow-pressed);
   transform: translateY(0);
 }

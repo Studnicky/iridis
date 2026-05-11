@@ -6,14 +6,24 @@
  * the aside-top slot. Vitepress's right-rail outline is disabled in
  * theme.config.ts; this panel takes over the column.
  *
- * Two collapsible sections:
+ * Two regions:
  *   - Live demo (IridisDemo running the canonical full pipeline)
- *   - Configuration (the docs-config form bound to configStore)
+ *   - Configuration (PrimeVue Accordion wrapping the docs-config form)
  *
- * The whole panel can be collapsed to an edge handle that re-opens.
+ * The whole panel can be collapsed to an edge handle that re-opens. The
+ * close button, eyebrow tag, configuration accordion, and export
+ * buttons are PrimeVue primitives; the resize handle and edge-tab
+ * sticky button stay custom (project-specific affordances).
  */
 
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
+
+import Button         from 'primevue/button';
+import Tag            from 'primevue/tag';
+import Accordion      from 'primevue/accordion';
+import AccordionPanel from 'primevue/accordionpanel';
+import AccordionHeader  from 'primevue/accordionheader';
+import AccordionContent from 'primevue/accordioncontent';
 
 import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
 
@@ -25,7 +35,7 @@ import { configStore, resetConfig } from '../stores/configStore.ts';
 import { panelOpen } from '../stores/panelState.ts';
 
 const RESIZE_KEY = 'iridis-right-panel-width';
-const RESIZE_MIN = 320;  // picker-safe floor: SV square (240) + container chrome
+const RESIZE_MIN = 320;
 const RESIZE_MAX = 720;
 
 const FULL_PIPELINE: readonly string[] = [
@@ -38,20 +48,16 @@ const FULL_PIPELINE: readonly string[] = [
   'emit:json',
 ];
 
-const open       = panelOpen;            // shared global; CTA buttons toggle this
-const cfgOpen    = ref(false);
+const open       = panelOpen;
+const cfgValue   = ref<string | null>(null);
 const exportNote = ref<string | null>(null);
 
-// Flip html.iridis-right-collapsed so base.css can reclaim the content's
-// right padding when the panel is collapsed.
 function syncCollapsedClass(isOpen: boolean): void {
   if (typeof document === 'undefined') return;
   document.documentElement.classList.toggle('iridis-right-collapsed', !isOpen);
 }
 watch(open, (next) => syncCollapsedClass(next));
 
-// Resizable width — persisted in localStorage. Drag handle on the panel's
-// left edge updates --iridis-right-panel-width on documentElement.
 function readPersistedWidth(): number | null {
   if (typeof window === 'undefined') return null;
   const raw = window.localStorage.getItem(RESIZE_KEY);
@@ -85,7 +91,7 @@ function onDragPointerDown(e: PointerEvent): void {
 }
 function onDragPointerMove(e: PointerEvent): void {
   if (!dragging.value) return;
-  const dx = dragStartX - e.clientX; // dragging LEFT widens the panel
+  const dx = dragStartX - e.clientX;
   applyWidth(dragStartW + dx);
 }
 function onDragPointerUp(e: PointerEvent): void {
@@ -162,10 +168,6 @@ async function downloadJson(): Promise<void> {
 
 <template>
   <ClientOnly>
-    <!-- Sticky tab — anchored to viewport, always visible. Rides the
-         panel's left edge when open, sits at viewport edge when closed.
-         Arrow flips direction so the tab always invites the available
-         action (▶ to close into the panel, ◀ to open the panel out). -->
     <button
       type="button"
       :class="['iridis-right-tab', { 'iridis-right-tab--open': open }]"
@@ -194,14 +196,19 @@ async function downloadJson(): Promise<void> {
       <div v-show="open" class="iridis-right__body">
         <header class="iridis-right__header">
           <div class="iridis-right__header-row">
-            <span class="iridis-right__eyebrow">Live example</span>
-            <button
+            <Tag value="Live example" severity="info" class="iridis-right__eyebrow" />
+            <Button
               type="button"
-              class="iridis-right__close"
+              icon="pi pi-times"
+              severity="secondary"
+              size="small"
               aria-label="Close palette builder"
               title="Close palette builder"
+              class="iridis-right__close"
               @click="open = false"
-            >×</button>
+            >
+              <span aria-hidden="true">×</span>
+            </Button>
           </div>
           <h2 class="iridis-right__title">Try iridis on this page</h2>
           <p class="iridis-right__sub">
@@ -212,43 +219,52 @@ async function downloadJson(): Promise<void> {
         <IridisDemo :pipeline="FULL_PIPELINE" />
 
         <div class="iridis-right__export">
-          <button type="button" class="iridis-right__export-btn iridis-right__export-btn--primary" @click="downloadJson">
-            ⬇ Export JSON
-          </button>
-          <button type="button" class="iridis-right__export-btn" @click="copyJson">
-            Copy
-          </button>
+          <Button
+            type="button"
+            label="⬇ Export JSON"
+            severity="primary"
+            size="small"
+            class="iridis-right__export-btn iridis-right__export-btn--primary"
+            @click="downloadJson"
+          />
+          <Button
+            type="button"
+            label="Copy"
+            severity="secondary"
+            size="small"
+            class="iridis-right__export-btn"
+            @click="copyJson"
+          />
           <span v-if="exportNote" class="iridis-right__export-note">{{ exportNote }}</span>
         </div>
 
-        <section :class="['iridis-right__cfg', { 'iridis-right__cfg--open': cfgOpen }]">
-          <button
-            type="button"
-            class="iridis-right__cfg-toggle"
-            :aria-expanded="cfgOpen"
-            @click="cfgOpen = !cfgOpen"
-          >
-            <span class="iridis-right__cfg-chevron" aria-hidden="true">{{ cfgOpen ? '▾' : '▸' }}</span>
-            <span class="iridis-right__cfg-label">Configuration</span>
-            <span class="iridis-right__cfg-hint">framing · contrast · role schema</span>
-          </button>
-          <div v-show="cfgOpen" class="iridis-right__cfg-panel">
-            <SchemaForm :schema="docsConfigSchema" :model-value="configStore" />
-            <button class="iridis-right__cfg-reset" type="button" @click="resetConfig">Reset to defaults</button>
-          </div>
-        </section>
+        <Accordion v-model:value="cfgValue" class="iridis-right__cfg">
+          <AccordionPanel value="cfg">
+            <AccordionHeader>
+              <span class="iridis-right__cfg-label">Configuration</span>
+              <span class="iridis-right__cfg-hint">framing · contrast · role schema</span>
+            </AccordionHeader>
+            <AccordionContent>
+              <div class="iridis-right__cfg-panel">
+                <SchemaForm :schema="docsConfigSchema" :model-value="configStore" />
+                <Button
+                  type="button"
+                  label="Reset to defaults"
+                  severity="secondary"
+                  size="small"
+                  class="iridis-right__cfg-reset"
+                  @click="resetConfig"
+                />
+              </div>
+            </AccordionContent>
+          </AccordionPanel>
+        </Accordion>
       </div>
     </aside>
   </ClientOnly>
 </template>
 
 <style scoped>
-/* Desktop (≥1100px): floating overlay at the viewport's right edge.
-   Width rules are split into two mutually-exclusive selectors so the
-   collapsed-state width can never bleed through to the open state.
-   `.iridis-right:not(.iridis-right--collapsed)` is more specific than
-   `.iridis-right--collapsed` AND mutually exclusive — eliminates any
-   ordering ambiguity that could pin the panel narrow when open. */
 .iridis-right {
   position: fixed;
   top: calc(var(--vp-nav-height, 64px) + 1rem);
@@ -280,9 +296,6 @@ async function downloadJson(): Promise<void> {
 }
 .iridis-right--dragging { user-select: none; }
 
-/* Narrow (<1100px): bottom-drawer accordion. Slides UP from the bottom
-   of the viewport when the sticky tab is opened. Closed = hidden.
-   Drag handle is disabled (width is intrinsic to viewport). */
 @media (max-width: 1099px) {
   .iridis-right {
     position: fixed;
@@ -299,8 +312,6 @@ async function downloadJson(): Promise<void> {
     transform: translateY(0);
     transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
   }
-  /* Override the desktop :not() rule with the same selector at media-query
-     specificity so width fills the viewport on narrow screens. */
   .iridis-right:not(.iridis-right--collapsed) {
     width: 100%;
     min-width: 0;
@@ -317,53 +328,6 @@ async function downloadJson(): Promise<void> {
   }
 }
 
-/* Reopen button — fills the collapsed strip. Vertical text via writing-mode. */
-.iridis-right__reopen {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  padding: 0.85rem 0;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  color: var(--iridis-on-brand);
-  z-index: 4;
-}
-.iridis-right__reopen-icon {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-.iridis-right__reopen-label {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--iridis-on-brand);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-}
-.iridis-right__reopen-chev {
-  font-size: 1.1rem;
-  line-height: 1;
-  font-weight: 700;
-}
-.iridis-right__reopen:hover {
-  background: color-mix(in oklch, var(--iridis-brand) 35%, transparent);
-}
-.iridis-right__reopen:hover .iridis-right__reopen-label,
-.iridis-right__reopen:hover .iridis-right__reopen-icon,
-.iridis-right__reopen:hover .iridis-right__reopen-chev {
-  color: var(--iridis-on-brand);
-  filter: brightness(1.15);
-}
-
-/* Drag handle — thin vertical strip on the panel's left edge. Hover lights
-   it; active drag widens it. Cursor: col-resize the whole strip. */
 .iridis-right__resize {
   position: absolute;
   top: 0;
@@ -398,45 +362,41 @@ async function downloadJson(): Promise<void> {
   justify-content: space-between;
   margin-bottom: 0.5rem;
 }
-.iridis-right__close {
-  width: 1.7rem;
-  height: 1.7rem;
-  padding: 0;
-  background: color-mix(in oklch, var(--iridis-surface) 70%, var(--iridis-brand) 30%);
-  border: var(--iridis-card-border);
-  border-color: color-mix(in oklch, var(--iridis-divider) 60%, var(--iridis-brand) 40%);
-  border-radius: var(--iridis-radius);
-  color: var(--iridis-text);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  line-height: 1;
-  font-weight: 700;
-  box-shadow: var(--iridis-card-shadow);
-  transition:
-    background-color var(--iridis-transition),
-    color            var(--iridis-transition),
-    border-color     var(--iridis-transition),
-    box-shadow       var(--iridis-transition);
-}
-.iridis-right__close:hover {
-  background: color-mix(in oklch, var(--iridis-brand) 30%, var(--iridis-surface));
-  box-shadow: var(--iridis-card-shadow-hover);
-}
-.iridis-right__eyebrow {
-  display: inline-block;
-  font-size: 0.62rem;
-  font-weight: 700;
+
+/* PrimeVue Tag styled as the eyebrow pill — uppercase letterforms,
+   brand tint. */
+.iridis-right__eyebrow :deep(.p-tag) {
+  background:    color-mix(in oklch, var(--iridis-brand) 12%, transparent);
+  color:         var(--iridis-brand);
+  border:        1px solid color-mix(in oklch, var(--iridis-brand) 35%, transparent);
+  font-size:     0.62rem;
+  font-weight:   700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--iridis-brand);
-  background: color-mix(in oklch, var(--iridis-brand) 12%, transparent);
-  padding: 0.18rem 0.45rem;
+  padding:       0.18rem 0.45rem;
   border-radius: var(--iridis-radius);
-  border: 1px solid color-mix(in oklch, var(--iridis-brand) 35%, transparent);
 }
+
+/* PrimeVue Button as the × close — fixed dimensions, business-card chrome. */
+.iridis-right__close :deep(.p-button) {
+  width:         1.7rem;
+  height:        1.7rem;
+  padding:       0;
+  font-size:     1rem;
+  line-height:   1;
+  font-weight:   700;
+  border-radius: var(--iridis-radius);
+  background:    color-mix(in oklch, var(--iridis-surface) 70%, var(--iridis-brand) 30%);
+  border:        var(--iridis-card-border);
+  border-color:  color-mix(in oklch, var(--iridis-divider) 60%, var(--iridis-brand) 40%);
+  color:         var(--iridis-text);
+  box-shadow:    var(--iridis-card-shadow);
+}
+.iridis-right__close :deep(.p-button:hover) {
+  background:   color-mix(in oklch, var(--iridis-brand) 30%, var(--iridis-surface));
+  box-shadow:   var(--iridis-card-shadow-hover);
+}
+
 .iridis-right__title {
   font-size: 1.05rem;
   font-weight: 700;
@@ -453,25 +413,31 @@ async function downloadJson(): Promise<void> {
   line-height: 1.45;
 }
 
+/* Configuration accordion — PrimeVue paints the chrome via --p-*
+   tokens; this layer enforces the uppercase eyebrow + brand-on-hover
+   color the docs use. */
 .iridis-right__cfg {
   margin-top: 1rem;
   padding-top: 0.85rem;
   border-top: 1px solid color-mix(in oklch, var(--iridis-divider) 70%, transparent);
 }
-.iridis-right__cfg-toggle {
-  width: 100%;
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  align-items: baseline;
-  gap: 0.4rem;
-  padding: 0.35rem 0;
+.iridis-right__cfg :deep(.p-accordionpanel),
+.iridis-right__cfg :deep(.p-accordionheader),
+.iridis-right__cfg :deep(.p-accordioncontent) {
   background: transparent;
   border: 0;
-  cursor: pointer;
-  text-align: left;
-  color: var(--iridis-muted);
 }
-.iridis-right__cfg-chevron { font-size: 0.7rem; }
+.iridis-right__cfg :deep(.p-accordionheader) {
+  padding: 0.35rem 0;
+  color: var(--iridis-muted);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem;
+  align-items: baseline;
+}
+.iridis-right__cfg :deep(.p-accordionheader:hover) {
+  color: var(--iridis-brand);
+}
 .iridis-right__cfg-label {
   font-size: 0.7rem;
   font-weight: 700;
@@ -479,25 +445,24 @@ async function downloadJson(): Promise<void> {
   text-transform: uppercase;
 }
 .iridis-right__cfg-hint {
-  justify-self: end;
   font-size: 0.62rem;
   color: var(--iridis-muted);
   font-style: italic;
   text-align: right;
 }
-.iridis-right__cfg-toggle:hover { color: var(--iridis-brand); }
-.iridis-right__cfg-panel { margin-top: 0.5rem; padding: 0.65rem 0 0; }
+.iridis-right__cfg-panel { padding: 0.65rem 0 0; }
 .iridis-right__cfg-reset {
   margin-top: 0.85rem;
+}
+.iridis-right__cfg-reset :deep(.p-button) {
   padding: 0.35rem 0.6rem;
   background: var(--iridis-bg-soft);
   border: 1px solid var(--iridis-divider);
   border-radius: 4px;
   font-size: 0.78rem;
   color: var(--iridis-muted);
-  cursor: pointer;
 }
-.iridis-right__cfg-reset:hover {
+.iridis-right__cfg-reset :deep(.p-button:hover) {
   color: var(--iridis-brand);
   border-color: var(--iridis-brand);
 }
@@ -509,26 +474,18 @@ async function downloadJson(): Promise<void> {
   gap: 0.4rem;
   flex-wrap: wrap;
 }
-.iridis-right__export-btn {
+.iridis-right__export-btn :deep(.p-button) {
   padding: 0.4rem 0.85rem;
   font-size: 0.78rem;
   font-weight: 600;
   border-radius: 6px;
-  cursor: pointer;
-  background: var(--iridis-bg-soft);
-  border: 1px solid var(--iridis-divider);
-  color: var(--iridis-text);
 }
-.iridis-right__export-btn:hover {
-  border-color: var(--iridis-brand);
-  color: var(--iridis-brand);
-}
-.iridis-right__export-btn--primary {
-  background: var(--iridis-brand);
-  color: var(--iridis-on-brand);
+.iridis-right__export-btn--primary :deep(.p-button) {
+  background:   var(--iridis-brand);
+  color:        var(--iridis-on-brand);
   border-color: var(--iridis-brand);
 }
-.iridis-right__export-btn--primary:hover {
+.iridis-right__export-btn--primary :deep(.p-button:hover) {
   filter: brightness(1.1);
   color: var(--iridis-on-brand);
 }

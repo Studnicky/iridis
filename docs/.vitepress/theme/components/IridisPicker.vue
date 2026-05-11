@@ -17,6 +17,10 @@
 
 import { computed, ref, watch } from 'vue';
 
+import SelectButton from 'primevue/selectbutton';
+import InputText    from 'primevue/inputtext';
+import InputNumber  from 'primevue/inputnumber';
+
 import { colorRecordFactory } from '@studnicky/iridis';
 
 const props = defineProps<{ 'modelValue': string }>();
@@ -232,6 +236,15 @@ function setOklch(field: 'l' | 'c' | 'h', value: number): void {
 }
 
 const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value }));
+
+/** Format selector options for PrimeVue SelectButton. */
+const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
+  { 'label': 'HEX',   'value': 'hex'   },
+  { 'label': 'RGB',   'value': 'rgb'   },
+  { 'label': 'HSV',   'value': 'hsv'   },
+  { 'label': 'CMYK',  'value': 'cmyk'  },
+  { 'label': 'OKLCH', 'value': 'oklch' },
+];
 </script>
 
 <template>
@@ -256,51 +269,63 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
       <div class="iridis-picker__hue-marker" :style="{ left: hueMarkerX }" />
     </div>
 
-    <!-- Format tabs -->
-    <div class="iridis-picker__tabs" role="tablist">
-      <button v-for="m in (['hex','rgb','hsv','cmyk','oklch'] as Mode[])" :key="m" type="button" role="tab"
-        :class="['iridis-picker__tab', { 'iridis-picker__tab--active': mode === m }]"
-        :aria-selected="mode === m"
-        @click="mode = m">{{ m.toUpperCase() }}</button>
-    </div>
+    <!-- Format selector — PrimeVue SelectButton paints with iridis tokens. -->
+    <SelectButton
+      :model-value="mode"
+      :options="modeOptions"
+      option-label="label"
+      option-value="value"
+      :allow-empty="false"
+      class="iridis-picker__tabs"
+      @update:model-value="(v) => mode = (v ?? 'hex') as Mode"
+    />
 
     <!-- HEX -->
     <div v-if="mode === 'hex'" class="iridis-picker__row">
-      <input type="color" :value="currentHex" aria-label="System picker" @change="(e) => setHex((e.target as HTMLInputElement).value)" />
-      <input class="iridis-picker__hex" type="text" :value="currentHex" spellcheck="false" aria-label="Hex"
-             @input="(e) => setHex((e.target as HTMLInputElement).value)" />
+      <input type="color" :value="currentHex" aria-label="System picker" class="iridis-picker__color-swatch"
+             @change="(e) => setHex((e.target as HTMLInputElement).value)" />
+      <InputText
+        :model-value="currentHex"
+        spellcheck="false"
+        aria-label="Hex"
+        size="small"
+        class="iridis-picker__hex"
+        @update:model-value="(v) => setHex(v ?? '')"
+      />
     </div>
 
     <!-- RGB -->
     <div v-else-if="mode === 'rgb'" class="iridis-picker__channels">
       <label v-for="(label, key) in { 'r': 'R', 'g': 'G', 'b': 'B' } as const" :key="key">
         <span>{{ label }}</span>
-        <input type="number" min="0" max="255" :value="currentRgb[key]"
-               @input="(e) => setRgb(key, Number((e.target as HTMLInputElement).value))" />
+        <InputNumber :model-value="currentRgb[key]" :min="0" :max="255"
+                     show-buttons="false" size="small"
+                     @update:model-value="(v) => setRgb(key, Number(v ?? 0))" />
       </label>
     </div>
 
     <!-- HSV -->
     <div v-else-if="mode === 'hsv'" class="iridis-picker__channels">
-      <label><span>H</span><input type="number" min="0" max="359" :value="Math.round(hsvView.h)" @input="(e) => setHsv('h', Number((e.target as HTMLInputElement).value))" /></label>
-      <label><span>S</span><input type="number" min="0" max="100" :value="Math.round(hsvView.s)" @input="(e) => setHsv('s', Number((e.target as HTMLInputElement).value))" /></label>
-      <label><span>V</span><input type="number" min="0" max="100" :value="Math.round(hsvView.v)" @input="(e) => setHsv('v', Number((e.target as HTMLInputElement).value))" /></label>
+      <label><span>H</span><InputNumber :model-value="Math.round(hsvView.h)" :min="0" :max="359" show-buttons="false" size="small" @update:model-value="(v) => setHsv('h', Number(v ?? 0))" /></label>
+      <label><span>S</span><InputNumber :model-value="Math.round(hsvView.s)" :min="0" :max="100" show-buttons="false" size="small" @update:model-value="(v) => setHsv('s', Number(v ?? 0))" /></label>
+      <label><span>V</span><InputNumber :model-value="Math.round(hsvView.v)" :min="0" :max="100" show-buttons="false" size="small" @update:model-value="(v) => setHsv('v', Number(v ?? 0))" /></label>
     </div>
 
     <!-- CMYK -->
     <div v-else-if="mode === 'cmyk'" class="iridis-picker__channels iridis-picker__channels--four">
       <label v-for="(label, key) in { 'c': 'C', 'm': 'M', 'y': 'Y', 'k': 'K' } as const" :key="key">
         <span>{{ label }}</span>
-        <input type="number" min="0" max="100" :value="Math.round(cmyk[key])"
-               @input="(e) => setCmyk(key, Number((e.target as HTMLInputElement).value))" />
+        <InputNumber :model-value="Math.round(cmyk[key])" :min="0" :max="100"
+                     show-buttons="false" size="small"
+                     @update:model-value="(v) => setCmyk(key, Number(v ?? 0))" />
       </label>
     </div>
 
     <!-- OKLCH -->
     <div v-else-if="mode === 'oklch'" class="iridis-picker__channels">
-      <label><span>L</span><input type="number" min="0" max="1"   step="0.01" :value="oklch.l.toFixed(3)" @input="(e) => setOklch('l', Number((e.target as HTMLInputElement).value))" /></label>
-      <label><span>C</span><input type="number" min="0" max="0.5" step="0.01" :value="oklch.c.toFixed(3)" @input="(e) => setOklch('c', Number((e.target as HTMLInputElement).value))" /></label>
-      <label><span>H</span><input type="number" min="0" max="359" :value="Math.round(oklch.h)" @input="(e) => setOklch('h', Number((e.target as HTMLInputElement).value))" /></label>
+      <label><span>L</span><InputNumber :model-value="oklch.l" :min="0" :max="1"   :step="0.01" :max-fraction-digits="3" show-buttons="false" size="small" @update:model-value="(v) => setOklch('l', Number(v ?? 0))" /></label>
+      <label><span>C</span><InputNumber :model-value="oklch.c" :min="0" :max="0.5" :step="0.01" :max-fraction-digits="3" show-buttons="false" size="small" @update:model-value="(v) => setOklch('c', Number(v ?? 0))" /></label>
+      <label><span>H</span><InputNumber :model-value="Math.round(oklch.h)" :min="0" :max="359" show-buttons="false" size="small" @update:model-value="(v) => setOklch('h', Number(v ?? 0))" /></label>
     </div>
   </div>
 </template>
@@ -369,34 +394,43 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
   pointer-events: none;
 }
+/* PrimeVue SelectButton styled as the format-mode tab strip. */
 .iridis-picker__tabs {
   display: flex;
-  gap: 0.15rem;
   border-bottom: 1px solid var(--vp-c-divider);
 }
-.iridis-picker__tab {
+.iridis-picker__tabs :deep(.p-selectbutton) {
+  display: flex;
+  gap: 0.15rem;
+  width: 100%;
+}
+.iridis-picker__tabs :deep(.p-togglebutton) {
   flex: 1;
   padding: 0.3rem 0.4rem;
   background: transparent;
   border: 0;
   border-bottom: 2px solid transparent;
+  border-radius: 0;
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--vp-c-text-3);
   cursor: pointer;
+  box-shadow: none;
 }
-.iridis-picker__tab:hover { color: var(--vp-c-text-1); }
-.iridis-picker__tab--active {
+.iridis-picker__tabs :deep(.p-togglebutton:hover) { color: var(--vp-c-text-1); background: transparent; }
+.iridis-picker__tabs :deep(.p-togglebutton-checked) {
   color: var(--vp-c-brand-1);
   border-bottom-color: var(--vp-c-brand-1);
+  background: transparent;
 }
+
 .iridis-picker__row {
   display: flex;
   align-items: center;
   gap: 0.4rem;
 }
-.iridis-picker__row input[type="color"] {
+.iridis-picker__color-swatch {
   width: 1.7rem;
   height: 1.7rem;
   border: 0;
@@ -407,13 +441,13 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
 }
 .iridis-picker__hex {
   flex: 1;
+}
+.iridis-picker__hex :deep(.p-inputtext) {
+  width: 100%;
   padding: 0.3rem 0.5rem;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
   border-radius: 4px;
   font-family: var(--vp-font-family-mono);
   font-size: 0.82rem;
-  color: var(--vp-c-text-1);
 }
 .iridis-picker__channels {
   display: grid;
@@ -430,12 +464,10 @@ const hsvView = computed(() => ({ 'h': hue.value, 's': sat.value, 'v': val.value
   font-weight: 600;
 }
 .iridis-picker__channels label > span { letter-spacing: 0.08em; }
-.iridis-picker__channels input {
+.iridis-picker__channels :deep(.p-inputnumber) { width: 100%; }
+.iridis-picker__channels :deep(.p-inputnumber-input) {
   padding: 0.3rem 0.4rem;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
   border-radius: 4px;
-  color: var(--vp-c-text-1);
   font-family: var(--vp-font-family-mono);
   font-size: 0.78rem;
   width: 100%;

@@ -7,20 +7,28 @@
  *   │ PALETTE (left)       │ OKLCH PICKER (right)     │
  *   │ click to select      │ for the selected color   │
  *   ├──────────────────────┴──────────────────────────┤
- *   │ Tabs:                                            │
- *   │   • Roles schema   — JSON, editable in-line      │
- *   │   • Resolved roles — swatch grid (read-only)     │
- *   │   • Code           — TS that updates as you edit │
+ *   │ PrimeVue Tabs:                                  │
+ *   │   • Roles schema   — visual editor              │
+ *   │   • Resolved roles — swatch grid (read-only)    │
+ *   │   • Code           — TS that updates as you edit│
  *   └──────────────────────────────────────────────────┘
  *
- * Editable surfaces (Roles schema textarea + colors[] in Code tab) are
- * validated via json-tology against canonical schemas. Invalid edits do
- * not propagate; the prior valid state stays in effect and an error
- * banner surfaces the validation reason. Valid edits mutate configStore
- * and propagate to every other demo + the docs theme on the next tick.
+ * Tabs, textareas, and the + add / × remove buttons come from PrimeVue;
+ * the swatch grid and role tile rendering stay custom because they paint
+ * with engine-resolved colors and need ad-hoc layout. The colors[] block
+ * in the Code tab is editable via PrimeVue Textarea + json-tology
+ * validation; invalid edits keep the prior valid state in effect.
  */
 
 import { computed, onMounted, ref, watch } from 'vue';
+
+import Tabs       from 'primevue/tabs';
+import TabList    from 'primevue/tablist';
+import Tab        from 'primevue/tab';
+import TabPanels  from 'primevue/tabpanels';
+import TabPanel   from 'primevue/tabpanel';
+import Textarea   from 'primevue/textarea';
+import Button     from 'primevue/button';
 
 import { Engine, mathBuiltins, coreTasks, contrastWcag21, colorRecordFactory } from '@studnicky/iridis';
 import type {
@@ -49,12 +57,11 @@ const props = withDefaults(defineProps<{
   'maxColors':  8,
 });
 
-const state         = ref<PaletteStateInterface | null>(null);
-const error         = ref<string | null>(null);
+const state          = ref<PaletteStateInterface | null>(null);
+const error          = ref<string | null>(null);
 const selectedSwatch = ref<number>(0);
-const activeTab     = ref<'schema' | 'resolved' | 'code'>('resolved');
+const activeTab      = ref<string>('resolved');
 
-// Editable in-line state (Roles schema text + colors text)
 const localRoleSchemaText = ref<string>('');
 const localColorsText     = ref<string>('');
 const schemaError         = ref<string | null>(null);
@@ -150,9 +157,10 @@ function onPickerUpdate(value: string): void {
   setColor(selectedSwatch.value, value);
 }
 
-// === Inline editor: Role schema textarea ===
-function onRoleSchemaInput(e: Event): void {
-  const text = (e.target as HTMLTextAreaElement).value;
+/** Inline editor: Role schema textarea (currently unused by the visual
+ *  editor tab, but exposed for the validators in case a future
+ *  consumer wants the JSON path). */
+function onRoleSchemaInput(text: string): void {
   localRoleSchemaText.value = text;
   let parsed: unknown;
   try {
@@ -167,16 +175,14 @@ function onRoleSchemaInput(e: Event): void {
     return;
   }
   schemaError.value = null;
-  // Valid → register the new schema under its name and switch to it so it
-  // propagates through the configStore-driven pipeline.
   const inline = parsed as RoleSchemaInterface;
   (roleSchemaByName as Record<string, RoleSchemaInterface>)[inline.name] = inline;
   configStore.roleSchema = inline.name;
 }
+void onRoleSchemaInput;
 
-// === Inline editor: colors textarea (Code tab) ===
-function onColorsInput(e: Event): void {
-  const text = (e.target as HTMLTextAreaElement).value;
+/** Inline editor: colors textarea (Code tab). */
+function onColorsInput(text: string): void {
   localColorsText.value = text;
   let parsed: unknown;
   try {
@@ -194,10 +200,9 @@ function onColorsInput(e: Event): void {
   configStore.paletteColors = [...(parsed as string[])];
 }
 
-// === Computed views ===
-const roles   = computed(() => state.value?.roles  ?? {} as Record<string, ColorRecordInterface>);
-const canAdd    = computed(() => props.allowAdd && configStore.paletteColors.length < props.maxColors);
-const canRemove = computed(() => configStore.paletteColors.length > props.minColors);
+const roles       = computed(() => state.value?.roles ?? {} as Record<string, ColorRecordInterface>);
+const canAdd      = computed(() => props.allowAdd && configStore.paletteColors.length < props.maxColors);
+const canRemove   = computed(() => configStore.paletteColors.length > props.minColors);
 const selectedHex = computed(() => configStore.paletteColors[selectedSwatch.value] ?? '#888888');
 
 function backgroundRole(): ColorRecordInterface | null {
@@ -266,14 +271,16 @@ const codeText = computed(() => {
             <span class="iridis-demo__hint">click to edit</span>
           </div>
           <div class="iridis-demo__swatch-grid">
-            <button
+            <Button
               v-if="allowAdd"
               type="button"
-              class="iridis-demo__swatch-add"
+              label="+ add"
+              size="small"
               :disabled="!canAdd"
               :aria-label="canAdd ? 'Add color to palette' : 'Palette full'"
+              class="iridis-demo__swatch-add"
               @click="addColor"
-            >+ add</button>
+            />
             <button
               v-for="(color, idx) in configStore.paletteColors"
               :key="idx"
@@ -310,83 +317,63 @@ const codeText = computed(() => {
         <strong>Pipeline error:</strong> {{ error }}
       </div>
 
-      <!-- Bottom: tabs -->
-      <div class="iridis-demo__tabs" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          :class="['iridis-demo__tab', { 'iridis-demo__tab--active': activeTab === 'resolved' }]"
-          :aria-selected="activeTab === 'resolved'"
-          @click="activeTab = 'resolved'"
-        >Resolved roles</button>
-        <button
-          type="button"
-          role="tab"
-          :class="['iridis-demo__tab', { 'iridis-demo__tab--active': activeTab === 'schema' }]"
-          :aria-selected="activeTab === 'schema'"
-          @click="activeTab = 'schema'"
-        >Role schema</button>
-        <button
-          type="button"
-          role="tab"
-          :class="['iridis-demo__tab', { 'iridis-demo__tab--active': activeTab === 'code' }]"
-          :aria-selected="activeTab === 'code'"
-          @click="activeTab = 'code'"
-        >Code</button>
-      </div>
-
-      <!-- Tab: Resolved roles -->
-      <div v-show="activeTab === 'resolved' && Object.keys(roles).length > 0" class="iridis-demo__panel">
-        <div class="iridis-demo__roles">
-          <div
-            v-for="(c, name) in roles"
-            :key="name"
-            class="iridis-demo__role"
-            :style="{ background: c.hex }"
-          >
-            <div class="iridis-demo__role-head">
-              <span class="iridis-demo__role-name" :style="{ color: safeOnRoleColor(c) }">{{ name }}</span>
-              <span
-                v-if="contrastFor(c) !== null"
-                class="iridis-demo__role-badge"
-                :style="{ color: safeOnRoleColor(c), borderColor: safeOnRoleColor(c) + '55' }"
-                :title="`contrast vs background: ${contrastFor(c)?.toFixed(2)}:1`"
-              >{{ contrastBadge(contrastFor(c)) }}</span>
+      <Tabs v-model:value="activeTab" class="iridis-demo__tabs">
+        <TabList>
+          <Tab value="resolved">Resolved roles</Tab>
+          <Tab value="schema">Role schema</Tab>
+          <Tab value="code">Code</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel value="resolved">
+            <div v-if="Object.keys(roles).length > 0" class="iridis-demo__roles">
+              <div
+                v-for="(c, name) in roles"
+                :key="name"
+                class="iridis-demo__role"
+                :style="{ background: c.hex }"
+              >
+                <div class="iridis-demo__role-head">
+                  <span class="iridis-demo__role-name" :style="{ color: safeOnRoleColor(c) }">{{ name }}</span>
+                  <span
+                    v-if="contrastFor(c) !== null"
+                    class="iridis-demo__role-badge"
+                    :style="{ color: safeOnRoleColor(c), borderColor: safeOnRoleColor(c) + '55' }"
+                    :title="`contrast vs background: ${contrastFor(c)?.toFixed(2)}:1`"
+                  >{{ contrastBadge(contrastFor(c)) }}</span>
+                </div>
+                <span class="iridis-demo__role-hex" :style="{ color: safeOnRoleColor(c) }">{{ c.hex }}</span>
+                <span class="iridis-demo__role-coords" :style="{ color: safeOnRoleColor(c) + 'b0' }">{{ fmtOklch(c) }}</span>
+              </div>
             </div>
-            <span class="iridis-demo__role-hex" :style="{ color: safeOnRoleColor(c) }">{{ c.hex }}</span>
-            <span class="iridis-demo__role-coords" :style="{ color: safeOnRoleColor(c) + 'b0' }">{{ fmtOklch(c) }}</span>
-          </div>
-        </div>
-      </div>
+          </TabPanel>
 
-      <!-- Tab: Role schema (visual editor) -->
-      <div v-show="activeTab === 'schema'" class="iridis-demo__panel">
-        <div class="iridis-demo__editor-hint">
-          Compose your role schema visually. Each row is a role: name it, optionally tag its intent, set lightness and chroma envelopes, and lock a hue or derive it from another role. Add contrast pairs to require minimum ratios — the engine nudges colors until every pair holds.
-        </div>
-        <RoleSchemaEditor />
-      </div>
+          <TabPanel value="schema">
+            <div class="iridis-demo__editor-hint">
+              Compose your role schema visually. Each row is a role: name it, optionally tag its intent, set lightness and chroma envelopes, and lock a hue or derive it from another role. Add contrast pairs to require minimum ratios — the engine nudges colors until every pair holds.
+            </div>
+            <RoleSchemaEditor />
+          </TabPanel>
 
-      <!-- Tab: Code (mostly read-only, with an editable colors block) -->
-      <div v-show="activeTab === 'code'" class="iridis-demo__panel">
-        <div class="iridis-demo__editor-hint">
-          Boilerplate updates as you edit. The <code>colors</code> array is editable and validates against
-          <code>{ minItems: 1, maxItems: 8, items: hex }</code>. Other lines are derived from your sidebar config.
-        </div>
-        <pre class="iridis-demo__code"><code>{{ codeText }}</code></pre>
-        <label class="iridis-demo__editor-label">colors (editable)</label>
-        <textarea
-          class="iridis-demo__textarea iridis-demo__textarea--colors"
-          :class="{ 'iridis-demo__textarea--invalid': colorsError !== null }"
-          :value="localColorsText"
-          spellcheck="false"
-          rows="3"
-          @input="onColorsInput"
-        />
-        <div v-if="colorsError" class="iridis-demo__validation">
-          {{ colorsError }}
-        </div>
-      </div>
+          <TabPanel value="code">
+            <div class="iridis-demo__editor-hint">
+              Boilerplate updates as you edit. The <code>colors</code> array is editable and validates against
+              <code>{ minItems: 1, maxItems: 8, items: hex }</code>. Other lines are derived from your sidebar config.
+            </div>
+            <pre class="iridis-demo__code"><code>{{ codeText }}</code></pre>
+            <label class="iridis-demo__editor-label">colors (editable)</label>
+            <Textarea
+              :model-value="localColorsText"
+              spellcheck="false"
+              :rows="3"
+              :class="['iridis-demo__textarea', 'iridis-demo__textarea--colors', { 'iridis-demo__textarea--invalid': colorsError !== null }]"
+              @update:model-value="(v) => onColorsInput(v ?? '')"
+            />
+            <div v-if="colorsError" class="iridis-demo__validation">
+              {{ colorsError }}
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </div>
   </ClientOnly>
 </template>
@@ -407,9 +394,6 @@ const codeText = computed(() => {
   overflow: hidden;
 }
 
-/* Default (narrow): palette stacks above picker. Picker takes intrinsic
-   width; if container is narrower than picker, picker scales down via its
-   own intrinsic min (set in IridisPicker.vue). */
 .iridis-demo__top {
   display: grid;
   grid-template-columns: 1fr;
@@ -417,9 +401,6 @@ const codeText = computed(() => {
   padding: 1rem;
   border-bottom: 1px solid var(--vp-c-divider);
 }
-
-/* Wide enough for two columns side-by-side. Threshold = picker min (260)
-   + palette min (220) + gap (20) + padding (32) ≈ 530px container width. */
 @container demo (min-width: 540px) {
   .iridis-demo__top {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -504,32 +485,27 @@ const codeText = computed(() => {
   background: color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 15%, transparent);
   color: var(--iridis-error, var(--iridis-text, currentColor));
 }
+
+/* + add button — PrimeVue Button with iridis chrome layered on top. */
 .iridis-demo__swatch-add {
-  padding: 0.45rem 0.85rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  background: color-mix(in oklch, var(--iridis-brand) 20%, var(--vp-c-bg));
-  border: var(--iridis-border-soft);
-  border-color: color-mix(in oklch, var(--iridis-brand) 40%, var(--iridis-divider));
-  border-radius: var(--iridis-radius-sm);
-  color: var(--iridis-on-brand);
-  cursor: pointer;
   align-self: flex-start;
-  box-shadow: var(--iridis-shadow-felt);
-  transition:
-    background-color var(--iridis-transition),
-    border-color     var(--iridis-transition),
-    box-shadow       var(--iridis-transition),
-    transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.iridis-demo__swatch-add:hover:not(:disabled) {
-  background: color-mix(in oklch, var(--iridis-brand) 35%, var(--vp-c-bg));
+.iridis-demo__swatch-add :deep(.p-button) {
+  background:    color-mix(in oklch, var(--iridis-brand) 20%, var(--vp-c-bg));
+  border:        var(--iridis-border-soft);
+  border-color:  color-mix(in oklch, var(--iridis-brand) 40%, var(--iridis-divider));
+  border-radius: var(--iridis-radius-sm);
+  color:         var(--iridis-on-brand);
+  box-shadow:    var(--iridis-shadow-felt);
+  font-weight:   600;
+  font-size:     0.78rem;
+  padding:       0.45rem 0.85rem;
+}
+.iridis-demo__swatch-add :deep(.p-button:hover:not(:disabled)) {
+  background:   color-mix(in oklch, var(--iridis-brand) 35%, var(--vp-c-bg));
   border-color: var(--iridis-brand);
-  box-shadow: var(--iridis-shadow-felt-hover);
-  transform: translateY(-1px);
+  box-shadow:   var(--iridis-shadow-felt-hover);
 }
-.iridis-demo__swatch-add:active:not(:disabled) { box-shadow: var(--iridis-shadow-pressed); transform: translateY(0); }
-.iridis-demo__swatch-add:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .iridis-demo__error {
   margin: 0;
@@ -540,30 +516,27 @@ const codeText = computed(() => {
   font-size: 0.85rem;
 }
 
-.iridis-demo__tabs {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.45rem 0.6rem 0;
-  border-bottom: 1px solid var(--vp-c-divider);
+/* PrimeVue Tabs paint with --p-* tokens (rewired to iridis vars in the
+   preset). The override here keeps the small typography + border-bottom
+   underline pattern the docs use. */
+.iridis-demo__tabs :deep(.p-tablist) {
   background: var(--vp-c-bg-soft);
+  border-bottom: 1px solid var(--vp-c-divider);
+  padding: 0.45rem 0.6rem 0;
 }
-.iridis-demo__tab {
-  padding: 0.4rem 0.8rem;
+.iridis-demo__tabs :deep(.p-tab) {
   font-size: 0.78rem;
   font-weight: 500;
-  background: transparent;
-  border: 1px solid transparent;
-  border-bottom: 2px solid transparent;
+  padding: 0.4rem 0.8rem;
   color: var(--vp-c-text-2);
-  cursor: pointer;
 }
-.iridis-demo__tab:hover { color: var(--vp-c-text-1); }
-.iridis-demo__tab--active {
+.iridis-demo__tabs :deep(.p-tab[aria-selected="true"]) {
   color: var(--vp-c-brand-1);
   border-bottom-color: var(--vp-c-brand-1);
 }
-
-.iridis-demo__panel {
+.iridis-demo__tabs :deep(.p-tabpanels),
+.iridis-demo__tabs :deep(.p-tabpanel) {
+  background: transparent;
   padding: 1rem;
 }
 
@@ -637,24 +610,21 @@ const codeText = computed(() => {
   color: var(--vp-c-text-3);
   margin: 0.85rem 0 0.35rem;
 }
-.iridis-demo__textarea {
+.iridis-demo__textarea :deep(.p-textarea) {
   width: 100%;
   font-family: var(--vp-font-family-mono);
   font-size: 0.76rem;
   line-height: 1.5;
   padding: 0.65rem 0.85rem;
-  background: var(--vp-c-bg);
-  border: 1px solid var(--vp-c-divider);
   border-radius: 4px;
-  color: var(--vp-c-text-1);
   resize: vertical;
   min-height: 4rem;
 }
-.iridis-demo__textarea--invalid {
+.iridis-demo__textarea--invalid :deep(.p-textarea) {
   border-color: var(--iridis-error, var(--iridis-text, currentColor));
-  background: color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 6%, transparent);
+  background:   color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 6%, transparent);
 }
-.iridis-demo__textarea--colors {
+.iridis-demo__textarea--colors :deep(.p-textarea) {
   min-height: 3.5rem;
 }
 .iridis-demo__validation {

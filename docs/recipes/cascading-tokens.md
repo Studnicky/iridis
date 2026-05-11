@@ -222,4 +222,40 @@ The schema doesn't have to declare syntax roles. If the user picks `iridis-4` (w
 - **Fallbacks at `:root`.** SSR, pre-hydration, and error paths all paint.
 - **Reactivity is yours.** A watcher on the config store re-runs the engine. The CSS cascade does the rest.
 
+## Extending the cascade to a component library
+
+The pattern doesn't stop at framework chrome. If your UI rides a component library, point its design tokens at the same `--iridis-*` outputs. This site uses PrimeVue v4; the wiring lives in `docs/.vitepress/theme/primevuePreset.ts` and reads like another token cascade — PrimeVue tokens are CSS variables (`--p-primary-color`, `--p-surface-*`, `--p-form-field-*`) that the library writes once and references everywhere it paints.
+
+```ts
+import { definePreset } from '@primeuix/themes';
+import Aura             from '@primeuix/themes/aura';
+
+export const iridisPreset = definePreset(Aura, {
+  'semantic': {
+    'primary': {
+      '500': 'var(--iridis-brand)',
+      // 50, 100, 200, ..., 950 use color-mix derivations against
+      // --iridis-bg-soft (dark side) and --iridis-text (light side).
+    },
+    'colorScheme': {
+      'light': {
+        'primary': {
+          'color':         'var(--iridis-brand)',
+          'contrastColor': 'var(--iridis-on-brand)',
+        },
+        'formField': {
+          'background':       'var(--iridis-bg-soft)',
+          'color':            'var(--iridis-text)',
+          'borderColor':      'var(--iridis-divider)',
+          'focusBorderColor': 'var(--iridis-brand)',
+        },
+      },
+      'dark': { /* same shape, same iridis vars */ },
+    },
+  },
+});
+```
+
+The light and dark color schemes converge on identical CSS expressions because the engine handles the framing flip role-side. Pick a new palette and PrimeVue's Button, Card, Select, Accordion, and Tabs all re-tint in the next paint with zero per-component overrides.
+
 Ready to wire this up in your project? Start from `getting-started`, drop the engine into your renderer, then mirror this page's `applyConfigToDocument` pattern. The full source for the docs site lives at [github.com/Studnicky/iridis](https://github.com/Studnicky/iridis) under `docs/.vitepress/theme/`.
