@@ -404,18 +404,17 @@ html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
   .iridis-sidebar-resize { display: none; }
 }
 
-/* The pulsing brand logo shrinks inside the drawer at narrow widths so
-   the navigation list remains the primary focus. Excludes the compact
-   topbar variant whose size is set above. */
+/* The pulsing brand logo lives in the sidebar at desktop widths only.
+   On mobile the topbar carries the compact variant, so suppress the
+   large loader inside the drawer to avoid duplicating the brand. */
 .VPSidebar .iridis-loader:not(.iridis-loader--compact) {
-  --iridis-loader-size: 96px;
-  margin: 0.25rem auto 0.75rem;
+  --iridis-loader-size: 180px;
+  margin: 0.5rem auto 1.25rem;
   display: block;
 }
-@media (min-width: 1100px) {
+@media (max-width: 1099px) {
   .VPSidebar .iridis-loader:not(.iridis-loader--compact) {
-    --iridis-loader-size: 180px;
-    margin: 0.5rem auto 1.25rem;
+    display: none;
   }
 }
 
@@ -473,6 +472,14 @@ html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
    navigation), so suppress the hamburger to avoid a duplicate control
    alongside our NavBarSidebarToggle. */
 .VPNavBarHamburger { display: none !important; }
+
+/* VitePress hides the appearance toggle and social links below 768px,
+   moving them into the VPNavScreen overlay. We suppress that overlay
+   above, so force these controls visible at every viewport instead. */
+.VPNavBarAppearance,
+.VPNavBarSocialLinks {
+  display: flex !important;
+}
 
 /* VitePress's mobile local-nav strip ("Return to top" + page outline)
    is redundant — the navbar carries Pages and Builder toggles, and the
