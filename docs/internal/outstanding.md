@@ -15,21 +15,27 @@ State of in-flight work after the May 2026 docs-iteration sprint. Read `HANDOFF.
 - Required-role enforcement: `resolve:roles` guarantees populated AND constraint-satisfying assignment via `nudgeIntoRole` and `synthesizeForRole`
 - `RuntimeOptionsInterface` typed surface (`framing`, `colorSpace`, `extra`); `input.runtime` → `state.runtime`
 - `getOrCreateOutput<T>(state, key)` helper hoisted to core for emit:* tasks
-- 101 tests passing (`npx tsx --test`)
+- Type declarations hoisted to `packages/core/src/types/<domain>.ts` (color, state, role, plugin, pipeline, math, runtime, registry, engine); `model/index.ts` re-exports them so `@studnicky/iridis/model` keeps working
+- TSDoc on every public export across packages and the docs theme; inline validators carry full TSDoc
+- 117 tests passing (`npx tsx --test`)
 - Public API: `@studnicky/iridis` re-exports model, registry, engine, math, tasks, quickPalette, getOrCreateOutput
 
 ### Docs site, https://studnicky.github.io/iridis/
 
 - VitePress aligned with reference design family (ripper, squashage, json-tology)
 - Logo (transparent, alpha-corrected via imagemagick) in sidebar via `sidebar-nav-before` slot
-- Sidebar: Introduction (What it does / Getting started / Try it out) → Concepts (Pipeline / Role schemas / ColorRecord / Contrast / Accessibility calculations) → Recipes (CLI / Vue + Capacitor) → Reference (Living color thesis)
+- Sidebar: Introduction (What it does / Getting started / Try it out / Living color) → Concepts (Pipeline / Role schemas / ColorRecord / Contrast / Accessibility calculations) → Recipes (CLI / Cascading tokens / Vue + Capacitor) → Reference [Color spaces (Hex / RGB / HSV / CMYK / OKLCH) + Accessibility standards (WCAG 2.1 / APCA)]
 - `Try it out` page: configuration form + one demo running the full pipeline with split-column layout (seeds left, OKLCH picker right) + tabs (Resolved roles / Role schema / Code)
 - IridisDemo on home, getting-started, concepts/{pipeline,role-schemas,contrast}, recipes/cli pages
-- IridisPicker: OKLCH-aware (L×C square + hue strip + hex/native input + L/C/H readout)
-- Inline editable Role schema textarea + colors[] in Code tab; hand-rolled validators (browser-safe; json-tology pulled `node:url` and was dropped)
+- IridisPicker: HSV-canonical visual picker, multi-format I/O (HEX, RGB, HSV, CMYK, OKLCH tabs); container-query fluid sizing
+- RoleSchemaEditor: visual schema editor (no JSON required), flex-wrap rows, contrast-pair builder
+- Hand-rolled inline validators (browser-safe; json-tology pulled `node:url` and was dropped)
+- Built-in role schemas: `iridis-4` ⊂ `iridis-8` ⊂ `iridis-12` ⊂ `iridis-16`, each shipped as a `{ dark, light }` pair (`docs/.vitepress/theme/schemas/roleSchemas.ts`)
 - Cascading docs theme: 8 chrome tokens + 14 syntax tokens emitted as `--iridis-*` properties; `--vp-c-*` + custom Shiki theme cascade from them via `var()`
-- Vitepress dark/light navbar toggle ↔ `configStore.framing` bidirectional bind
+- State-machine dispatcher (`docs/.vitepress/theme/stores/themeDispatcher.ts`): components dispatch typed actions, single reducer derives state, single projector writes the DOM. `configStore` is now a backwards-compatible facade over the dispatcher's writable proxy. VitePress dark/light navbar toggle dispatches `setFraming` via a single `MutationObserver` bridge (the only DOM-observing code in the system).
 - localStorage persistence (`iridis-docs-config`)
+- VitePress mermaid plugin wired (`vitepress-plugin-mermaid`) with iridis-themed graphs
+- Markdown corpus stripped of em-dashes, smart quotes, ellipsis chars, NBSPs, and AI-typography
 - GitHub Actions: docs deploy via push to main; protected branches; PR workflow
 
 ## Plugin v0.1, separate publish cadence
@@ -59,7 +65,7 @@ CLI also needs `packages/cli/tests/e2e/Cli.e2e.test.ts` covering `Cli.run()`, `C
 
 ### CLI smoke
 
-`cd /Users/studs/Workspace/iridis && npx tsx packages/cli/src/cli.ts examples/vue-capacitor/category-w3c.config.json`
+`cd /Users/studs/Workspace/iridis && npx tsx packages/cli/src/main.ts examples/vue-capacitor/category-w3c.config.json`
 
 Expected: produces `examples/vue-capacitor/out/music.css` and `music.capacitor.json`. Has not been re-run since the inline-validators / cascade work landed.
 
@@ -68,6 +74,10 @@ Expected: produces `examples/vue-capacitor/out/music.css` and `music.capacitor.j
 Multi-output demo (`<MultiOutputDemo>`) is built and registered globally but not embedded in markdown. Re-embed once per-plugin tests and the existing pre-existing capacitor / image plugin code paths are audited.
 
 ## Docs, pre-publish polish
+
+Already shipped (live in the sidebar): `docs/recipes/cascading-tokens.md`, `docs/reference/{hex,rgb,hsv,cmyk,oklch}.md`, `docs/reference/{wcag,apca}.md`. These cover the per-color-space conversion math, the iridis primitives implementing each, and where each surfaces in the engine pipeline; plus the two contrast standards with full algorithm formulas, threshold tables, and primitive references.
+
+Still queued:
 
 | File | Topic | Approx word count |
 |---|---|---|
@@ -99,7 +109,7 @@ Tracked in `docs/v2-living-color.md`. Listed for queue completeness:
 
 ## Process notes
 
-1. `npm install && npx tsc --build && find packages/core/tests -name "*.test.ts" | xargs npx tsx --test`, confirm 101/101 pass.
+1. `npm install && npx tsc --build && find packages/core/tests -name "*.test.ts" | xargs npx tsx --test`, confirm 117/117 pass.
 2. Pick from "Per-plugin e2e suites" or "Docs, pre-publish polish".
 3. **Run the actual tools** before declaring done.
 4. Update this file as items complete.

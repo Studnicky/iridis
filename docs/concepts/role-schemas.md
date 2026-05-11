@@ -7,7 +7,7 @@ When a role is `required: true`, the engine guarantees it is populated AND that 
 :::
 
 ::: tip Live builder
-Use the **Role schema** dropdown in the right-panel example to switch between `minimal`, `w3c`, and `material`. Open the Role schema tab to see the JSON; the panel will re-resolve roles against your seeds on every change.
+Use the **Role schema** dropdown in the right-panel example to switch between `iridis-4`, `iridis-8`, `iridis-12`, and `iridis-16`. Each tier is a strict superset of the previous (4 ⊂ 8 ⊂ 12 ⊂ 16); a smaller tier paints with fewer tokens. Open the Role schema tab to see the resolved JSON; the panel re-resolves roles against your seeds on every change.
 :::
 
 ## What a role schema is
@@ -42,7 +42,7 @@ This is how a single seed color can produce a full family. Set `derivedFrom: 'ac
 
 ## lightnessRange, chromaRange, hueOffset
 
-These optional range fields constrain where a role can land in OKLCH space. All values use the OKLCH scale: lightness 0-1, chroma 0-0.5, hue 0-360.
+These optional range fields constrain where a role can land in OKLCH space. All values use the OKLCH scale: lightness 0-1, chroma 0-0.5, hue 0-360. See the [OKLCH reference](../reference/oklch) for the full coordinate system.
 
 | Field | Type | Effect |
 |---|---|---|
@@ -126,7 +126,7 @@ export const categoryW3cRoleSchema: RoleSchemaInterface = {
 };
 ```
 
-Annotations: **[A]** `canvas` is mandatory, no canvas means no contrast surface to anchor the rest. **[B]** The tight lightness range (0.92-1.0) biases role resolution strongly toward pale colors even when the seed is saturated. **[C]** `accent` carries no range constraint, `resolve:roles` assigns whichever input color is closest in the perceptual space. **[D]** `onAccent` will never appear in the input; `expand:family` synthesizes it from the resolved `accent` color. **[E]** `text` is forced below L=0.25, guaranteeing dark-mode-style contrast on light surfaces. **[F]** The 4.5:1 threshold is WCAG AA for normal text. **[G]** 3.0:1 is WCAG AA for large text and non-text UI elements.
+Annotations: **[A]** `canvas` is mandatory, no canvas means no contrast surface to anchor the rest. **[B]** The tight lightness range (0.92-1.0) biases role resolution strongly toward pale colors even when the seed is saturated. **[C]** `accent` carries no range constraint, `resolve:roles` assigns whichever input color is closest in the perceptual space. **[D]** `onAccent` will never appear in the input; `expand:family` synthesizes it from the resolved `accent` color. **[E]** `text` is forced below L=0.25, guaranteeing dark-text contrast on the light-framed surfaces declared above. **[F]** The 4.5:1 threshold is WCAG AA for normal text. **[G]** 3.0:1 is WCAG AA for large text and non-text UI elements.
 
 ## The vscodeRoleSchema16 example
 

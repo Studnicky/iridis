@@ -4,14 +4,15 @@ The iridis CLI runs the same engine and plugins as the library API. It reads a J
 
 ## Equivalent CLI config
 
-The CLI is a thin wrapper over `engine.run()`. This config produces what the right-panel example currently shows.
+The CLI is a thin wrapper over `engine.run()`. The right-panel example on every doc page runs the same pipeline; the difference is that the panel selects one of the four built-in `iridis-N` schemas at runtime, while the CLI takes a `RoleSchemaInterface` object inline. Sketch of the input shape:
 
-```json
+```jsonc
 {
-  "colors":   ["#7c3aed", "#06b6d4", "#10b981", "#ec4899"],
-  "roles":    "minimal",
-  "contrast": { "level": "AA", "algorithm": "wcag21" },
-  "runtime":  { "framing": "dark", "colorSpace": "srgb" },
+  "input": {
+    "colors":   ["#7c3aed", "#06b6d4", "#10b981", "#ec4899"],
+    "contrast": { "level": "AA", "algorithm": "wcag21" },
+    "roles":    { /* RoleSchemaInterface inline; see Music sample below */ }
+  },
   "pipeline": [
     "intake:hex",
     "clamp:count",
@@ -20,7 +21,8 @@ The CLI is a thin wrapper over `engine.run()`. This config produces what the rig
     "enforce:contrast",
     "derive:variant",
     "emit:json"
-  ]
+  ],
+  "output": { "directory": "./out", "files": { "json": "palette.json" } }
 }
 ```
 

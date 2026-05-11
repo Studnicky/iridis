@@ -1,10 +1,10 @@
 # ColorRecord
 
-`ColorRecordInterface` is the canonical internal representation of a color in iridis. Every intake task produces `ColorRecord` objects. Every math primitive operates on them. Every role in `state.roles` is a `ColorRecord`. The type is defined in `packages/core/src/model/types.ts`.
+`ColorRecordInterface` is the canonical internal representation of a color in iridis. Every intake task produces `ColorRecord` objects. Every math primitive operates on them. Every role in `state.roles` is a `ColorRecord`. The type is defined in `packages/core/src/types/color.ts` and re-exported via `@studnicky/iridis` and `@studnicky/iridis/model`.
 
 ## OKLCH-first
 
-iridis stores every color in OKLCH as the primary representation, with RGB, hex, and optional Display P3 as cached projections. OKLCH (Lightness, Chroma, Hue) is a perceptually uniform color space: equal numeric steps produce equal perceived changes regardless of hue.
+iridis stores every color in OKLCH as the primary representation, with RGB, hex, and optional Display P3 as cached projections. OKLCH (Lightness, Chroma, Hue) is a perceptually uniform color space: equal numeric steps produce equal perceived changes regardless of hue. The full coordinate system, conversion math, and primitives are in the [OKLCH reference](../reference/oklch); the [RGB](../reference/rgb) and [Hex](../reference/hex) references cover the cached projections.
 
 Two practical consequences:
 
