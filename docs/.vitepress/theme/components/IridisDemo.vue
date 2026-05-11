@@ -281,10 +281,12 @@ const codeText = computed(() => {
               class="iridis-demo__swatch-add"
               @click="addColor"
             />
-            <button
+            <Button
               v-for="(color, idx) in configStore.paletteColors"
               :key="idx"
-              type="button"
+              :severity="selectedSwatch === idx ? 'primary' : 'secondary'"
+              :variant="selectedSwatch === idx ? undefined : 'outlined'"
+              size="small"
               :class="['iridis-demo__swatch', { 'iridis-demo__swatch--selected': selectedSwatch === idx }]"
               :aria-label="`select palette color ${idx + 1} (${color})`"
               :aria-pressed="selectedSwatch === idx"
@@ -295,12 +297,10 @@ const codeText = computed(() => {
               <span
                 v-if="canRemove"
                 class="iridis-demo__swatch-remove"
-                role="button"
-                tabindex="-1"
                 :aria-label="`remove palette color ${idx + 1}`"
                 @click.stop="removeColor(idx)"
               >×</span>
-            </button>
+            </Button>
           </div>
         </div>
 

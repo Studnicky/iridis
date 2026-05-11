@@ -6,8 +6,9 @@
 
 import { ref } from 'vue';
 
-/** Reactive flag. Closed by default; the CTA or the reopen handle opens it. */
-export const panelOpen = ref(false);
+/** Reactive flag. Open by default so designers see the builder immediately;
+ *  the close button or sticky tab toggles it. */
+export const panelOpen = ref(true);
 
 /** Opens the right panel and, on narrow viewports where it stacks below
  *  content, scrolls it into view so the user notices it appearing. */

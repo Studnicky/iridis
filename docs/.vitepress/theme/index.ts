@@ -13,7 +13,6 @@ import IridisSelect    from './components/base/IridisSelect.vue';
 import IridisChip      from './components/base/IridisChip.vue';
 
 import IridisDemo      from './components/IridisDemo.vue';
-import IridisCode      from './components/IridisCode.vue';
 import SchemaForm      from './components/SchemaForm.vue';
 import MultiOutputDemo from './components/MultiOutputDemo.vue';
 import TryItOutForm    from './components/TryItOutForm.vue';
@@ -74,7 +73,6 @@ export const theme: Theme = {
     app.component('IridisSelect',    IridisSelect);
     app.component('IridisChip',      IridisChip);
     app.component('IridisDemo',      IridisDemo);
-    app.component('IridisCode',      IridisCode);
     app.component('SchemaForm',      SchemaForm);
     app.component('MultiOutputDemo', MultiOutputDemo);
     app.component('TryItOutForm',    TryItOutForm);
