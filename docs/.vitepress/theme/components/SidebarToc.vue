@@ -75,6 +75,19 @@ function removeInjected(): void {
   }
 }
 
+function scrollToHeading(id: string): void {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ 'behavior': 'smooth', 'block': 'start' });
+  // Update the URL hash without firing another scroll; replaceState
+  // also lets the same anchor be re-clicked to re-scroll the next time.
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState(window.history.state, '', `#${id}`);
+  } else {
+    location.hash = `#${id}`;
+  }
+}
+
 function renderInline(headings: Heading[], host: HTMLElement): HTMLElement {
   const ul = document.createElement('ul');
   ul.className = INJECT_CLASS;
@@ -88,6 +101,13 @@ function renderInline(headings: Heading[], host: HTMLElement): HTMLElement {
     a.href = `#${h.id}`;
     a.className = 'iridis-toc-inline__link';
     a.textContent = h.text;
+    // Explicit click handler: scrollIntoView fires every time, even when
+    // the hash already matches. Browsers no-op a hash that doesn't
+    // change, so without this an identical second click does nothing.
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      scrollToHeading(h.id);
+    });
     li.appendChild(a);
     ul.appendChild(li);
   }
