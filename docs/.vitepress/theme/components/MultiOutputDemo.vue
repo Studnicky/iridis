@@ -4,7 +4,7 @@
  *
  * Same engine, same palette, six output formats. Demonstrates the iridis
  * promise: one input, many surfaces. Each plugin writes its own slot in
- * state.outputs; this component renders all six in tabs.
+ * state.outputs; this component renders all six in PrimeVue Tabs.
  *
  * Plugins adopted: stylesheet, tailwind, vscode, capacitor, rdf, plus
  * the in-core emit:json. The render is read-only — clicking a tab just
@@ -13,28 +13,34 @@
 
 import { computed, onMounted, ref, watch } from 'vue';
 
+import Tabs      from 'primevue/tabs';
+import TabList   from 'primevue/tablist';
+import Tab       from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
+import TabPanel  from 'primevue/tabpanel';
+import Button    from 'primevue/button';
+
 import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
 import type { PaletteStateInterface } from '@studnicky/iridis/model';
 
 import { stylesheetPlugin }  from '@studnicky/iridis-stylesheet';
 import { tailwindPlugin }    from '@studnicky/iridis-tailwind';
-import { vscodePlugin }      from '@studnicky/iridis-vscode';
+import { vscodePlugin, vscodeRoleSchema16 } from '@studnicky/iridis-vscode';
 import { capacitorPlugin }   from '@studnicky/iridis-capacitor';
 import { rdfPlugin }         from '@studnicky/iridis-rdf';
 
 import { configStore }       from '../stores/configStore.ts';
-import { roleSchemaByName }  from '../schemas/roleSchemas.ts';
 
 const tabs = [
   { 'id': 'css',         'label': 'CSS variables',         'lang': 'css' },
-  { 'id': 'cssScoped',   'label': 'CSS scoped blocks',     'lang': 'css' },
   { 'id': 'tailwind',    'label': 'Tailwind theme',        'lang': 'json' },
+  { 'id': 'vscode',      'label': 'VS Code theme',         'lang': 'json' },
   { 'id': 'capacitor',   'label': 'Capacitor (StatusBar)', 'lang': 'json' },
   { 'id': 'rdf',         'label': 'RDF (Turtle)',          'lang': 'turtle' },
   { 'id': 'json',        'label': 'JSON',                  'lang': 'json' },
 ] as const;
 
-const activeTab = ref<typeof tabs[number]['id']>('css');
+const activeTab = ref<string>('css');
 const state = ref<PaletteStateInterface | null>(null);
 const error = ref<string | null>(null);
 
@@ -69,8 +75,6 @@ async function runPipeline(): Promise<void> {
 
     state.value = await engine.run({
       'colors':  configStore.paletteColors,
-      // VS Code plugin wants the 16-role schema; it fills missing roles
-      // via expand:family + required-role nudging.
       'roles':   vscodeRoleSchema16,
       'contrast': {
         'level':     configStore.contrastLevel,
@@ -129,7 +133,6 @@ const rdfOutput = computed(() => {
 
 const jsonOutput = computed(() => {
   if (!state.value) return '{}';
-  // Render a slimmed JSON of just the canonical surfaces.
   return JSON.stringify({
     'roles':    state.value.roles,
     'variants': state.value.variants,
@@ -144,6 +147,7 @@ const visibleOutput = computed(() => {
     case 'capacitor': return capacitorOutput.value;
     case 'rdf':       return rdfOutput.value;
     case 'json':      return jsonOutput.value;
+    default:          return '';
   }
 });
 
@@ -160,30 +164,30 @@ function copyToClipboard(): void {
     <div class="iridis-multi">
       <div class="iridis-multi__header">
         <span class="iridis-multi__label">Six outputs · same palette</span>
-        <button type="button" class="iridis-multi__copy" :title="`copy ${visibleLabel}`" @click="copyToClipboard">
-          copy
-        </button>
-      </div>
-
-      <div class="iridis-multi__tabs" role="tablist">
-        <button
-          v-for="t in tabs"
-          :key="t.id"
+        <Button
           type="button"
-          role="tab"
-          :class="['iridis-multi__tab', { 'iridis-multi__tab--active': activeTab === t.id }]"
-          :aria-selected="activeTab === t.id"
-          @click="activeTab = t.id"
-        >
-          {{ t.label }}
-        </button>
+          label="copy"
+          severity="secondary"
+          size="small"
+          :title="`copy ${visibleLabel}`"
+          class="iridis-multi__copy"
+          @click="copyToClipboard"
+        />
       </div>
 
-      <div v-if="error" class="iridis-multi__error">
-        <strong>Pipeline error:</strong> {{ error }}
-      </div>
-
-      <pre v-else class="iridis-multi__output"><code>{{ visibleOutput }}</code></pre>
+      <Tabs v-model:value="activeTab" class="iridis-multi__tabs">
+        <TabList>
+          <Tab v-for="t in tabs" :key="t.id" :value="t.id">{{ t.label }}</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel v-for="t in tabs" :key="t.id" :value="t.id">
+            <div v-if="error" class="iridis-multi__error">
+              <strong>Pipeline error:</strong> {{ error }}
+            </div>
+            <pre v-else class="iridis-multi__output"><code>{{ visibleOutput }}</code></pre>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </div>
   </ClientOnly>
 </template>
@@ -211,43 +215,40 @@ function copyToClipboard(): void {
   text-transform: uppercase;
   color: var(--vp-c-text-3);
 }
-.iridis-multi__copy {
+.iridis-multi__copy :deep(.p-button) {
   padding: 0.2rem 0.55rem;
   font-size: 0.72rem;
   color: var(--vp-c-text-2);
   background: transparent;
   border: 1px solid var(--vp-c-divider);
   border-radius: 4px;
-  cursor: pointer;
 }
-.iridis-multi__copy:hover {
+.iridis-multi__copy :deep(.p-button:hover) {
   color: var(--vp-c-brand-1);
   border-color: var(--vp-c-brand-1);
 }
-.iridis-multi__tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  padding: 0.45rem 0.6rem 0;
+
+/* PrimeVue Tabs styled to match the docs' underline pattern. */
+.iridis-multi__tabs :deep(.p-tablist) {
   background: var(--vp-c-bg-soft);
+  padding: 0.45rem 0.6rem 0;
 }
-.iridis-multi__tab {
+.iridis-multi__tabs :deep(.p-tab) {
   padding: 0.35rem 0.7rem;
   font-size: 0.78rem;
   font-weight: 500;
-  background: transparent;
-  border: 1px solid transparent;
-  border-bottom: 2px solid transparent;
   color: var(--vp-c-text-2);
-  cursor: pointer;
 }
-.iridis-multi__tab:hover {
-  color: var(--vp-c-text-1);
-}
-.iridis-multi__tab--active {
+.iridis-multi__tabs :deep(.p-tab[aria-selected="true"]) {
   color: var(--vp-c-brand-1);
   border-bottom-color: var(--vp-c-brand-1);
 }
+.iridis-multi__tabs :deep(.p-tabpanels),
+.iridis-multi__tabs :deep(.p-tabpanel) {
+  background: transparent;
+  padding: 0;
+}
+
 .iridis-multi__output {
   margin: 0;
   padding: 0.85rem 1rem;
