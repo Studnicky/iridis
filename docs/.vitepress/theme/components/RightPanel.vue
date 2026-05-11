@@ -104,6 +104,11 @@ function onDragPointerUp(e: PointerEvent): void {
 onMounted(() => {
   const persisted = readPersistedWidth();
   if (persisted !== null) applyWidth(persisted);
+  // Default to closed on narrow viewports so the drawer doesn't cover
+  // 60% of the screen on first paint. Desktop default stays open.
+  if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1099px)').matches) {
+    open.value = false;
+  }
   syncCollapsedClass(open.value);
 });
 
