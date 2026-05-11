@@ -2,11 +2,16 @@
 /**
  * MobileOverlay.vue
  *
- * Universal dimming backdrop that sits behind whichever drawer is open.
- * Drawers are fixed-position overlays at every viewport, so the backdrop
- * is active at every viewport too. Its visibility is driven by the
- * union of two truthy states:
+ * Dimming backdrop for the drawers at mobile viewports only.
+ * Drawers are fixed-position overlays at every viewport, but on
+ * desktop (>=1100px) the page stays fully readable alongside them
+ * so no backdrop is rendered. At mobile (<=1099px) the drawers
+ * cover content and the backdrop signals that interaction is
+ * captured.
  *
+ * Visibility is driven by the union of three states:
+ *
+ *   - `isNarrow` from matchMedia (viewport <=1099px)
  *   - `panelOpen` from the panelState store (builder drawer open)
  *   - `!iridis-sidebar-collapsed` on documentElement (pages drawer open)
  *
@@ -20,7 +25,10 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { closePanel, panelOpen } from '../stores/panelState.ts';
 
 const sidebarCollapsed = ref(true);
+const isNarrow = ref(false);
 let observer: MutationObserver | null = null;
+let mql: MediaQueryList | null = null;
+let onMqlChange: ((event: MediaQueryListEvent) => void) | null = null;
 
 function readSidebarState(): void {
   if (typeof document === 'undefined') return;
@@ -32,14 +40,28 @@ onMounted(() => {
   readSidebarState();
   observer = new MutationObserver(readSidebarState);
   observer.observe(document.documentElement, { 'attributes': true, 'attributeFilter': ['class'] });
+
+  if (typeof window !== 'undefined') {
+    mql = window.matchMedia('(max-width: 1099px)');
+    isNarrow.value = mql.matches;
+    onMqlChange = (event: MediaQueryListEvent): void => {
+      isNarrow.value = event.matches;
+    };
+    mql.addEventListener('change', onMqlChange);
+  }
 });
 
 onUnmounted(() => {
   observer?.disconnect();
   observer = null;
+  if (mql && onMqlChange) {
+    mql.removeEventListener('change', onMqlChange);
+  }
+  mql = null;
+  onMqlChange = null;
 });
 
-const visible = computed<boolean>(() => panelOpen.value || !sidebarCollapsed.value);
+const visible = computed<boolean>(() => isNarrow.value && (panelOpen.value || !sidebarCollapsed.value));
 
 function dismiss(): void {
   if (typeof document === 'undefined') return;
@@ -65,23 +87,19 @@ function dismiss(): void {
 </template>
 
 <style scoped>
+/* Backdrop is rendered only at mobile (<=1099px); the v-show binding
+   gates it on the matchMedia state, so on desktop the element exists
+   but stays hidden and never paints. */
 .iridis-mobile-overlay {
   display: block;
   position: fixed;
   inset: 0;
   z-index: 28;
-  background: color-mix(in oklch, var(--iridis-background) 65%, transparent);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: color-mix(in oklch, var(--iridis-background) 55%, transparent);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   cursor: pointer;
   animation: iridis-overlay-fade-in 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-@media (max-width: 1099px) {
-  .iridis-mobile-overlay {
-    background: color-mix(in oklch, var(--iridis-background) 55%, transparent);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-  }
 }
 @keyframes iridis-overlay-fade-in {
   from { opacity: 0; }

@@ -409,14 +409,29 @@ html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
 .VPLocalNav { display: none !important; }
 .VPContent { padding-top: 0 !important; }
 
-/* Group the navbar toggles into a tight right cluster at every width.
-   The slot wraps them in a flex row; per-button spacing is defined on
-   the individual toggle components. */
-.iridis-nav-toggles {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+/* Custom navbar menu interleaving.
+
+   The custom iridis-nav-menu (PAGES | Docs | Example | GitHub) is
+   mounted via the `nav-bar-content-before` slot, which makes it the
+   FIRST child of VitePress's `.content-body` flex container. We use
+   CSS `order` to reorder the flex children so the visual layout is:
+
+     brand | search | iridis-nav-menu | appearance | social-links | (extra) | hamburger
+
+   The native `.menu` (VPNavBarMenu) is rendered empty because
+   `themeConfig.nav = []`; it stays in the DOM but has no visible
+   children, so its order assignment is cosmetic only. */
+.VPNavBar .content-body > * {
+  order: 5;
 }
+.VPNavBar .content-body > .search          { order: 1; }
+.VPNavBar .content-body > .iridis-nav-menu { order: 2; }
+.VPNavBar .content-body > .menu            { order: 3; }
+.VPNavBar .content-body > .translations    { order: 4; }
+.VPNavBar .content-body > .appearance      { order: 5; }
+.VPNavBar .content-body > .social-links    { order: 6; }
+.VPNavBar .content-body > .extra           { order: 7; }
+.VPNavBar .content-body > .hamburger       { order: 8; }
 
 /* === Inline TOC injected under the active sidebar item ===
    SidebarToc.vue performs DOM injection (via .iridis-toc-inline) so the

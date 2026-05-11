@@ -2,8 +2,12 @@
 /**
  * NavBarBuilderToggle.vue
  *
- * The universal builder toggle, mounted into the navbar via the
- * nav-bar-content-after slot. Visible at every viewport.
+ * The Example/Try-iridis CTA, mounted inside the main navbar menu
+ * alongside the Docs and GitHub links. Visible at every viewport.
+ *
+ * Styled as an accent CTA: brand text on a muted brand-tinted
+ * background. Distinct from a regular nav link, but less heavyweight
+ * than a primary brand-filled button.
  *
  * Reads and writes the same `panelOpen` ref that RightPanel.vue
  * consumes; the panel renders as an overlay drawer at every width.
@@ -29,7 +33,7 @@ function onClick(): void {
       @click="onClick"
     >
       <span class="iridis-nav-builder-toggle__icon" aria-hidden="true">{{ panelOpen ? '✕' : '◐' }}</span>
-      <span class="iridis-nav-builder-toggle__label">Try iridis</span>
+      <span class="iridis-nav-builder-toggle__label">Example</span>
     </Button>
   </ClientOnly>
 </template>
@@ -37,55 +41,60 @@ function onClick(): void {
 <style scoped>
 .iridis-nav-builder-toggle {
   display: inline-flex;
-  margin-right: 0.35rem;
 }
 .iridis-nav-builder-toggle :deep(.p-button) {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   padding: 0.35rem 0.7rem;
-  background:
-    linear-gradient(180deg,
-      color-mix(in oklch, var(--iridis-brand) 22%, var(--iridis-surface)) 0%,
-      color-mix(in oklch, var(--iridis-brand) 10%, var(--iridis-surface)) 100%);
-  border: 1px solid color-mix(in oklch, var(--iridis-divider) 30%, var(--iridis-brand) 70%);
+  background: color-mix(in oklch, var(--iridis-brand) 12%, var(--iridis-bg-soft));
+  border: 1px solid color-mix(in oklch, var(--iridis-brand) 35%, var(--iridis-divider));
   border-radius: var(--iridis-radius);
-  color: var(--iridis-text);
+  color: var(--iridis-brand);
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   box-shadow: var(--iridis-shadow-sm);
   min-height: 2.4rem;
 }
+/* Active-state tint painted by a ::before pseudo at z-index 0 so the
+   label and icon (at z-index 1) stay legible underneath the highlight. */
+.iridis-nav-builder-toggle :deep(.p-button)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  z-index: 0;
+  pointer-events: none;
+  transition: background 160ms ease;
+}
+.iridis-nav-builder-toggle :deep(.p-button) > * {
+  position: relative;
+  z-index: 1;
+}
 .iridis-nav-builder-toggle :deep(.p-button:hover) {
-  background:
-    linear-gradient(180deg,
-      color-mix(in oklch, var(--iridis-brand) 35%, var(--iridis-surface)) 0%,
-      color-mix(in oklch, var(--iridis-brand) 18%, var(--iridis-surface)) 100%);
-  border-color: color-mix(in oklch, var(--iridis-divider) 10%, var(--iridis-brand) 90%);
+  background: color-mix(in oklch, var(--iridis-brand) 20%, var(--iridis-bg-soft));
+  border-color: color-mix(in oklch, var(--iridis-brand) 55%, var(--iridis-divider));
   color: var(--iridis-brand);
 }
 .iridis-nav-builder-toggle :deep(.p-button[aria-pressed="true"]) {
-  background:
-    linear-gradient(180deg,
-      color-mix(in oklch, var(--iridis-brand) 38%, var(--iridis-surface)) 0%,
-      color-mix(in oklch, var(--iridis-brand) 20%, var(--iridis-surface)) 100%);
-  border-color: color-mix(in oklch, var(--iridis-brand) 80%, var(--iridis-divider));
+  border-color: color-mix(in oklch, var(--iridis-brand) 65%, var(--iridis-divider));
   color: var(--iridis-brand);
+}
+.iridis-nav-builder-toggle :deep(.p-button[aria-pressed="true"])::before {
+  background: color-mix(in oklch, var(--iridis-brand) 10%, transparent);
 }
 .iridis-nav-builder-toggle__icon {
   font-size: 1rem;
   line-height: 1;
-  color: color-mix(in oklch, var(--iridis-brand) 85%, var(--iridis-text));
+  color: var(--iridis-brand);
 }
 .iridis-nav-builder-toggle__label {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-}
-@media (max-width: 480px) {
-  .iridis-nav-builder-toggle__label {
-    display: none;
-  }
 }
 </style>
