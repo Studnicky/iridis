@@ -60,8 +60,8 @@ export class EmitVscodeThemeJson implements TaskInterface {
       'metadata.vscode.baseTokens',
     ],
     'writes':      ['outputs.vscode.themeJson'],
-    'description': 'Assembles the complete VS Code theme JSON: { name, type, colors, semanticTokenColors, tokenColors }.',
     'requires':    ['emit:vscodeSemanticRules', 'emit:vscodeUiPalette'],
+    'description': 'Assembles the complete VS Code theme JSON: { name, type, colors, semanticTokenColors, tokenColors }.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {

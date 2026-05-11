@@ -38,9 +38,9 @@ function resolveTextColor(
 }
 
 export class EmitCapacitorStatusBar implements TaskInterface {
-  readonly name = 'emit:capacitorStatusBar';
+  readonly 'name' = 'emit:capacitorStatusBar';
 
-  readonly manifest: TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:capacitorStatusBar',
     'reads':       ['roles'],
     'writes':      ['outputs.capacitor.statusBar'],
@@ -72,7 +72,7 @@ export class EmitCapacitorStatusBar implements TaskInterface {
     };
 
     const existingCapacitor = (state.outputs['capacitor'] ?? {}) as Record<string, unknown>;
-    (state.outputs as Record<string, unknown>)['capacitor'] = {
+    state.outputs['capacitor'] = {
       ...existingCapacitor,
       'statusBar': output,
     };

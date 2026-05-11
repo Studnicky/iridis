@@ -39,8 +39,8 @@ export class ApplyModifiers implements TaskInterface {
     'name':        'vscode:applyModifiers',
     'reads':       ['metadata.vscode.baseTokens', 'roles'],
     'writes':      ['metadata.vscode.semanticTokenRules'],
-    'description': 'Produces 345 semantic token rules: 23 base + (23 × 10 modifiers) = 253+92... = 345 total. Lifts MODIFIER_TRANSFORMS.',
     'requires':    ['vscode:expandTokens'],
+    'description': 'Produces base + per-modifier semantic token rules from MODIFIER_TRANSFORMS, ensuring each rule meets contrast against the background role.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
@@ -65,9 +65,7 @@ export class ApplyModifiers implements TaskInterface {
       rules[tokenType] = { foreground };
     }
 
-    // 23 × 10 = 230 modifier rules (but source uses 14 modifiers; the TOKEN_MODIFIERS
-    // constant lists 10 — that's the actual VS Code spec set, matching the source's
-    // PackPalette.TOKEN_MODIFIERS.  The "14" in source comments was aspirational.)
+    // 23 token types × N modifiers from TOKEN_MODIFIERS (the VS Code spec set).
     const modifiersLen = TOKEN_MODIFIERS.length;
 
     for (let i = 0; i < typesLen; i++) {

@@ -89,9 +89,9 @@ function luminanceContrast(
 }
 
 export class EnforceCvdSimulate implements TaskInterface {
-  readonly name = 'enforce:cvdSimulate';
+  readonly 'name' = 'enforce:cvdSimulate';
 
-  readonly manifest: TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterface = {
     'name':        'enforce:cvdSimulate',
     'reads':       ['input.roles.contrastPairs', 'roles'],
     'writes':      ['metadata.wcag.cvd'],
@@ -148,7 +148,7 @@ export class EnforceCvdSimulate implements TaskInterface {
 
     const wcagMeta = (state.metadata['wcag'] ?? {}) as Record<string, unknown>;
     const cvdResult: CvdMetaInterface = { 'warnings': warnings };
-    (state.metadata as Record<string, unknown>)['wcag'] = { ...wcagMeta, 'cvd': cvdResult };
+    state.metadata['wcag'] = { ...wcagMeta, 'cvd': cvdResult };
 
     ctx.logger.debug('EnforceCvdSimulate', 'run', `CVD simulation complete. ${warnings.length} warning(s).`, cvdResult);
   }

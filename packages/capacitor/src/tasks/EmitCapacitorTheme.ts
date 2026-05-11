@@ -27,12 +27,11 @@ type IntentMap = ReadonlyMap<ColorIntentType, string>;
 
 function buildIntentMap(roles: Record<string, ColorRecordInterface>): IntentMap {
   const map = new Map<ColorIntentType, string>();
-  for (const [name, record] of Object.entries(roles)) {
+  // Keep the first match per intent; role name takes precedence in resolveHex below.
+  for (const record of Object.values(roles)) {
     const intent = record.hints?.intent;
     if (intent && !map.has(intent)) {
-      map.set(intent, (record as ColorRecordInterface).hex);
-      // Keep the first match per intent; role name takes precedence below.
-      void name;
+      map.set(intent, record.hex);
     }
   }
   return map;
@@ -63,9 +62,9 @@ function variantHex(
 }
 
 export class EmitCapacitorTheme implements TaskInterface {
-  readonly name = 'emit:capacitorTheme';
+  readonly 'name' = 'emit:capacitorTheme';
 
-  readonly manifest: TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:capacitorTheme',
     'reads':       ['roles', 'variants'],
     'writes':      ['outputs.capacitor.theme'],
@@ -110,7 +109,7 @@ export class EmitCapacitorTheme implements TaskInterface {
     };
 
     const existingCapacitor = (state.outputs['capacitor'] ?? {}) as Record<string, unknown>;
-    (state.outputs as Record<string, unknown>)['capacitor'] = {
+    state.outputs['capacitor'] = {
       ...existingCapacitor,
       'theme': output,
     };

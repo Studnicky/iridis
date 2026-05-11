@@ -22,9 +22,9 @@ function resolveSplashColor(
 }
 
 export class EmitCapacitorSplashScreen implements TaskInterface {
-  readonly name = 'emit:capacitorSplashScreen';
+  readonly 'name' = 'emit:capacitorSplashScreen';
 
-  readonly manifest: TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:capacitorSplashScreen',
     'reads':       ['roles', 'metadata.capacitor.splashRole', 'metadata.capacitor.androidSplashResourceName'],
     'writes':      ['outputs.capacitor.splashScreen'],
@@ -58,7 +58,7 @@ export class EmitCapacitorSplashScreen implements TaskInterface {
         };
 
     const existingCapacitor = (state.outputs['capacitor'] ?? {}) as Record<string, unknown>;
-    (state.outputs as Record<string, unknown>)['capacitor'] = {
+    state.outputs['capacitor'] = {
       ...existingCapacitor,
       'splashScreen': output,
     };

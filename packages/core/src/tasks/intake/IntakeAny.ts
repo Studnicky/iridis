@@ -33,18 +33,8 @@ export class IntakeAny implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const seen = new Set<number>();
-
     for (const delegate of DELEGATES) {
-      const before = state.colors.length;
       delegate.run(state, ctx);
-      const after = state.colors.length;
-
-      if (after > before) {
-        for (let i = before; i < after; i++) {
-          seen.add(i);
-        }
-      }
     }
 
     ctx.logger.debug('IntakeAny', 'run', `Total colors after intake: ${state.colors.length}`);

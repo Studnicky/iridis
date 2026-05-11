@@ -17,6 +17,15 @@ import type {
  *   state.metadata.gallery.harmonized       — true/false
  *   state.metadata.gallery.harmonizeDetails — { before, after, deltaE } if changed
  */
+function setHarmonized(state: PaletteStateInterface, value: boolean): void {
+  const galleryMeta = (state.metadata['gallery'] ?? {}) as Record<string, unknown>;
+
+  state.metadata['gallery'] = {
+    ...galleryMeta,
+    'harmonized': value,
+  };
+}
+
 export class GalleryHarmonize implements TaskInterface {
   readonly 'name' = 'gallery:harmonize';
 
@@ -33,7 +42,7 @@ export class GalleryHarmonize implements TaskInterface {
 
     if (!accent || !frame) {
       ctx.logger.warn('GalleryHarmonize', 'run', 'accent or frame role missing — skipping harmonize');
-      this.setHarmonized(state, false);
+      setHarmonized(state, false);
       return;
     }
 
@@ -43,7 +52,7 @@ export class GalleryHarmonize implements TaskInterface {
 
     if (deltaE >= 10) {
       ctx.logger.info('GalleryHarmonize', 'run', 'accent hue is sufficiently distinct — no shift needed', { deltaE });
-      this.setHarmonized(state, false);
+      setHarmonized(state, false);
       return;
     }
 
@@ -64,11 +73,11 @@ export class GalleryHarmonize implements TaskInterface {
       accent.alpha,
     );
 
-    (state.roles as Record<string, ColorRecordInterface>)['accent'] = newAccent;
+    state.roles['accent'] = newAccent;
 
     const galleryMeta = (state.metadata['gallery'] ?? {}) as Record<string, unknown>;
 
-    (state.metadata as Record<string, unknown>)['gallery'] = {
+    state.metadata['gallery'] = {
       ...galleryMeta,
       'harmonized': true,
       'harmonizeDetails': {
@@ -85,15 +94,6 @@ export class GalleryHarmonize implements TaskInterface {
       'shift':   shift,
       deltaE,
     });
-  }
-
-  private setHarmonized(state: PaletteStateInterface, value: boolean): void {
-    const galleryMeta = (state.metadata['gallery'] ?? {}) as Record<string, unknown>;
-
-    (state.metadata as Record<string, unknown>)['gallery'] = {
-      ...galleryMeta,
-      'harmonized': value,
-    };
   }
 }
 
