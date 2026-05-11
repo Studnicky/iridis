@@ -10,6 +10,7 @@
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vitepress';
+import Button from 'primevue/button';
 
 interface Heading {
   'level': 2 | 3;
@@ -137,14 +138,24 @@ const visible = computed(() => groups.value.length > 0);
       </div>
       <ul class="iridis-toc__groups">
         <li v-for="g in groups" :key="g.h2.id" :class="['iridis-toc__group', { 'iridis-toc__group--open': isOpen(g) }]">
-          <button type="button" class="iridis-toc__group-head" :aria-expanded="isOpen(g)" @click="toggleGroup(g)">
-            <span class="iridis-toc__chev" aria-hidden="true">{{ isOpen(g) ? '▾' : '▸' }}</span>
+          <div class="iridis-toc__group-head">
+            <Button
+              class="iridis-toc__chev-btn"
+              severity="secondary"
+              variant="text"
+              size="small"
+              :aria-expanded="isOpen(g)"
+              :aria-label="isOpen(g) ? `Collapse ${g.h2.text}` : `Expand ${g.h2.text}`"
+              @click="toggleGroup(g)"
+            >
+              <span class="iridis-toc__chev" aria-hidden="true">{{ isOpen(g) ? '▾' : '▸' }}</span>
+            </Button>
             <a
               :href="'#' + g.h2.id"
               :class="['iridis-toc__group-link', { 'iridis-toc__group-link--active': activeId === g.h2.id }]"
-              @click.stop="clickHeading(g.h2)"
+              @click="clickHeading(g.h2)"
             >{{ g.h2.text }}</a>
-          </button>
+          </div>
           <ul v-show="isOpen(g) && g.children.length > 0" class="iridis-toc__sublist">
             <li v-for="c in g.children" :key="c.id" :class="['iridis-toc__sub', { 'iridis-toc__sub--active': activeId === c.id }]">
               <a :href="'#' + c.id" @click="clickHeading(c)">{{ c.text }}</a>

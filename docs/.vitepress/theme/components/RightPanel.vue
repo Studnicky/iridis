@@ -168,9 +168,9 @@ async function downloadJson(): Promise<void> {
 
 <template>
   <ClientOnly>
-    <button
-      type="button"
+    <Button
       :class="['iridis-right-tab', { 'iridis-right-tab--open': open }]"
+      severity="secondary"
       :aria-pressed="open"
       :aria-label="open ? 'Hide palette builder' : 'Open palette builder'"
       :title="open ? 'Hide palette builder' : 'Open palette builder'"
@@ -178,7 +178,7 @@ async function downloadJson(): Promise<void> {
     >
       <span class="iridis-right-tab__arrow" aria-hidden="true">{{ open ? '▶' : '◀' }}</span>
       <span class="iridis-right-tab__label">Get palette</span>
-    </button>
+    </Button>
 
     <aside :class="['iridis-right', { 'iridis-right--collapsed': !open, 'iridis-right--dragging': dragging }]" aria-label="Live example builder">
       <div
