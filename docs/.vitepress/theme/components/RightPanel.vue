@@ -24,7 +24,7 @@ import AccordionPanel from 'primevue/accordionpanel';
 import AccordionHeader  from 'primevue/accordionheader';
 import AccordionContent from 'primevue/accordioncontent';
 
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { Engine, coreTasks } from '@studnicky/iridis';
 
 import IridisDemo    from './IridisDemo.vue';
 import SchemaForm    from './SchemaForm.vue';
@@ -153,8 +153,7 @@ onUnmounted(() => {
 
 async function buildExportPayload(): Promise<Record<string, unknown>> {
   const engine = new Engine();
-  for (const m of mathBuiltins) engine.math.register(m);
-  for (const t of coreTasks)    engine.tasks.register(t);
+  for (const t of coreTasks) engine.tasks.register(t);
   engine.pipeline([...FULL_PIPELINE]);
   const pair   = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['iridis-16'];
   const schema = pair[configStore.framing];

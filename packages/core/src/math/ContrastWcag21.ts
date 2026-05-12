@@ -1,4 +1,4 @@
-import type { ColorRecordInterface } from '../model/types.ts';
+import type { ColorRecordInterface } from '../types/index.ts';
 import { luminance } from './Luminance.ts';
 
 export class ContrastWcag21 {

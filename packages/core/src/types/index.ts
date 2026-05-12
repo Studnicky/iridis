@@ -2,7 +2,6 @@ export * from './color.ts';
 export * from './role.ts';
 export * from './runtime.ts';
 export * from './state.ts';
-export * from './math.ts';
 export * from './pipeline.ts';
 export * from './registry.ts';
 export * from './plugin.ts';

@@ -1,4 +1,4 @@
-import type { ColorMathRegistryInterface, TaskRegistryInterface } from './registry.ts';
+import type { TaskRegistryInterface } from './registry.ts';
 import type { EngineInterface } from './engine.ts';
 import type { PaletteStateInterface } from './state.ts';
 
@@ -14,7 +14,6 @@ export interface LoggerInterface {
 export interface PipelineContextInterface {
   readonly engine:    EngineInterface;
   readonly tasks:     TaskRegistryInterface;
-  readonly math:      ColorMathRegistryInterface;
   readonly logger:    LoggerInterface;
   readonly startedAt: number;
   readonly cache:     Map<string, unknown>;

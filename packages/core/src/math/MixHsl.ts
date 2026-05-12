@@ -1,4 +1,4 @@
-import type { ColorRecordInterface } from '../model/types.ts';
+import type { ColorRecordInterface } from '../types/index.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {

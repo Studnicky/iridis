@@ -8,7 +8,7 @@
 
 import { Engine }                  from './engine/Engine.ts';
 import { coreTasks }               from './tasks/index.ts';
-import type { FramingType, RoleSchemaInterface } from './model/types.ts';
+import type { FramingType, RoleSchemaInterface } from './types/index.ts';
 
 const SCHEMA_DARK: RoleSchemaInterface = {
   'name':  'quick-dark',

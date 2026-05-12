@@ -9,13 +9,11 @@ import { test } from 'node:test';
 import assert   from 'node:assert/strict';
 
 import { Engine }       from '@studnicky/iridis/engine';
-import { mathBuiltins } from '@studnicky/iridis/math';
 import { coreTasks }    from '@studnicky/iridis/tasks';
 import { vscodePlugin, VscodePlugin, vscodeRoleSchema16 } from '@studnicky/iridis-vscode';
 
 function freshEngine(): Engine {
   const engine = new Engine();
-  for (const m of mathBuiltins) engine.math.register(m);
   for (const t of coreTasks)    engine.tasks.register(t);
   engine.adopt(vscodePlugin);
   return engine;

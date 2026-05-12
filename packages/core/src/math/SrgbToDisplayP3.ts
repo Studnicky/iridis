@@ -1,4 +1,4 @@
-import type { RgbInterface } from '../model/types.ts';
+import type { RgbInterface } from '../types/index.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
 function p3Encode(v: number): number {
