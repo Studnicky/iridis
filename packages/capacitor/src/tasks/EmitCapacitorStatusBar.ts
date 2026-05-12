@@ -5,6 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
 import type { StatusBarOutputInterface } from '../types/index.ts';
 
 function relativeLuminance(rgb: { readonly r: number; readonly g: number; readonly b: number }): number {
@@ -51,7 +52,7 @@ export class EmitCapacitorStatusBar implements TaskInterface {
     }
 
     // Resolve consumer overlay preference from metadata
-    const capacitorMeta = (state.metadata['capacitor'] ?? {}) as Record<string, unknown>;
+    const capacitorMeta = getOrCreateMetadata(state, 'capacitor');
     const overlay = capacitorMeta['statusBarOverlay'] === true;
 
     const textColor = resolveTextColor(state.roles);
@@ -66,11 +67,8 @@ export class EmitCapacitorStatusBar implements TaskInterface {
       'overlay':         overlay,
     };
 
-    const existingCapacitor = (state.outputs['capacitor'] ?? {}) as Record<string, unknown>;
-    state.outputs['capacitor'] = {
-      ...existingCapacitor,
-      'statusBar': output,
-    };
+    const capacitorOut = getOrCreateOutput(state, 'capacitor');
+    capacitorOut['statusBar'] = output;
 
     ctx.logger.debug('EmitCapacitorStatusBar', 'run', `StatusBar: bg=${output.backgroundColor} style=${output.style} overlay=${output.overlay}`);
   }

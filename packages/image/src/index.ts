@@ -1,3 +1,5 @@
+import './types/augmentation.ts';
+
 export { ImagePlugin, imagePlugin }                 from './ImagePlugin.ts';
 export { GalleryExtract, galleryExtract }           from './tasks/GalleryExtract.ts';
 export { GalleryAssignRoles, galleryAssignRoles }   from './tasks/GalleryAssignRoles.ts';

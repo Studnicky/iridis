@@ -6,21 +6,8 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { contrastWcag21, darken, lighten, luminance } from '@studnicky/iridis';
-
-interface WcagPairResultInterface {
-  readonly foreground: string;
-  readonly background: string;
-  readonly algorithm: 'wcag21' | 'apca';
-  readonly required: number;
-  readonly before: number;
-  readonly after: number;
-  readonly pass: boolean;
-}
-
-interface WcagAaMetaInterface {
-  readonly pairs: readonly WcagPairResultInterface[];
-}
+import { contrastWcag21, darken, getOrCreateMetadata, lighten, luminance } from '@studnicky/iridis';
+import type { WcagPairResultInterface } from '../types/augmentation.ts';
 
 function isTextPair(pair: ContrastPairInterface, roles: Record<string, ColorRecordInterface>): boolean {
   const fgRecord = roles[pair.foreground];
@@ -125,11 +112,10 @@ export class EnforceWcagAa implements TaskInterface {
       });
     }
 
-    const wcagMeta = (state.metadata['wcag'] ?? {}) as Record<string, unknown>;
-    const aaResult: WcagAaMetaInterface = { 'pairs': results };
-    state.metadata['wcag'] = { ...wcagMeta, 'aa': aaResult };
+    const wcagMeta = getOrCreateMetadata(state, 'wcag');
+    wcagMeta['aa'] = { 'pairs': results };
 
-    ctx.logger.debug('EnforceWcagAa', 'run', `Processed ${results.length} pair(s)`, aaResult);
+    ctx.logger.debug('EnforceWcagAa', 'run', `Processed ${results.length} pair(s)`, wcagMeta['aa']);
   }
 }
 

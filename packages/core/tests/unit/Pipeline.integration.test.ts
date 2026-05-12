@@ -21,6 +21,16 @@ import { Engine } from '@studnicky/iridis/engine';
 import { assert } from './ScenarioRunner.ts';
 import { test } from 'node:test';
 
+declare module '@studnicky/iridis' {
+  interface PluginOutputsRegistry {
+    'stub': Record<string, string>;
+  }
+  interface PluginMetadataRegistry {
+    'category': string;
+    'version':  number;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Stub task factories
 // ---------------------------------------------------------------------------

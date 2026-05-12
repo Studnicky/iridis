@@ -1,3 +1,5 @@
+import './types/augmentation.ts';
+
 export { ContrastPlugin, contrastPlugin }         from './ContrastPlugin.ts';
 export { EnforceWcagAa, enforceWcagAa }            from './tasks/EnforceWcagAa.ts';
 export { EnforceWcagAaa, enforceWcagAaa }          from './tasks/EnforceWcagAaa.ts';

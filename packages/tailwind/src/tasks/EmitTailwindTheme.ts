@@ -116,9 +116,7 @@ export class EmitTailwindTheme implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const prefix = typeof state.metadata['cssVarPrefix'] === 'string'
-      ? state.metadata['cssVarPrefix']
-      : '--c-';
+    const prefix = state.metadata['cssVarPrefix'] ?? '--c-';
 
     const colors  = buildColorsShape(state.roles);
     const cssVars = buildCssVarsSheet(state.roles, prefix);

@@ -15,6 +15,13 @@ import type {
 import { Engine, TaskRegistry } from '@studnicky/iridis';
 import { assert }               from './ScenarioRunner.ts';
 
+declare module '@studnicky/iridis' {
+  interface PluginMetadataRegistry {
+    'startSaw': number;
+    'endSaw':   number;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

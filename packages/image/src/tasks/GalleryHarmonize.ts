@@ -5,7 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { deltaE2000, oklchToRgb } from '@studnicky/iridis';
+import { deltaE2000, getOrCreateMetadata, oklchToRgb } from '@studnicky/iridis';
 
 /**
  * `gallery:harmonize`
@@ -19,12 +19,7 @@ import { deltaE2000, oklchToRgb } from '@studnicky/iridis';
  *   state.metadata.gallery.harmonizeDetails — { before, after, deltaE } if changed
  */
 function setHarmonized(state: PaletteStateInterface, value: boolean): void {
-  const galleryMeta = (state.metadata['gallery'] ?? {}) as Record<string, unknown>;
-
-  state.metadata['gallery'] = {
-    ...galleryMeta,
-    'harmonized': value,
-  };
+  getOrCreateMetadata(state, 'gallery')['harmonized'] = value;
 }
 
 export class GalleryHarmonize implements TaskInterface {
@@ -75,17 +70,13 @@ export class GalleryHarmonize implements TaskInterface {
 
     state.roles['accent'] = newAccent;
 
-    const galleryMeta = (state.metadata['gallery'] ?? {}) as Record<string, unknown>;
-
-    state.metadata['gallery'] = {
-      ...galleryMeta,
-      'harmonized': true,
-      'harmonizeDetails': {
-        'before':  accent.hex,
-        'after':   newAccent.hex,
-        'deltaE':  deltaE,
-        'hueShift': shift,
-      },
+    const galleryMeta = getOrCreateMetadata(state, 'gallery');
+    galleryMeta['harmonized'] = true;
+    galleryMeta['harmonizeDetails'] = {
+      'before':   accent.hex,
+      'after':    newAccent.hex,
+      'deltaE':   deltaE,
+      'hueShift': shift,
     };
 
     ctx.logger.info('GalleryHarmonize', 'run', 'accent hue shifted', {

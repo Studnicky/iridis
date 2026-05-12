@@ -1,3 +1,5 @@
+import './types/augmentation.ts';
+
 export { VscodePlugin, vscodePlugin }                       from './VscodePlugin.ts';
 export { ApplyModifiers, applyModifiers }                   from './tasks/ApplyModifiers.ts';
 export { EmitVscodeSemanticRules, emitVscodeSemanticRules } from './tasks/EmitVscodeSemanticRules.ts';

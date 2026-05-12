@@ -1,3 +1,5 @@
+import './types/augmentation.ts';
+
 export { CapacitorPlugin, capacitorPlugin }                     from './CapacitorPlugin.ts';
 export { EmitCapacitorStatusBar, emitCapacitorStatusBar }       from './tasks/EmitCapacitorStatusBar.ts';
 export { EmitCapacitorTheme, emitCapacitorTheme }               from './tasks/EmitCapacitorTheme.ts';

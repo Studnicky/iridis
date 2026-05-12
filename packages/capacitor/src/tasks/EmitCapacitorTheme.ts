@@ -6,6 +6,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { getOrCreateOutput } from '@studnicky/iridis';
 import type { CapacitorThemeOutputInterface } from '../types/index.ts';
 
 type IntentMap = ReadonlyMap<ColorIntentType, string>;
@@ -93,11 +94,8 @@ export class EmitCapacitorTheme implements TaskInterface {
       'textOnAccent':  textOnAccent,
     };
 
-    const existingCapacitor = (state.outputs['capacitor'] ?? {}) as Record<string, unknown>;
-    state.outputs['capacitor'] = {
-      ...existingCapacitor,
-      'theme': output,
-    };
+    const capacitorOut = getOrCreateOutput(state, 'capacitor');
+    capacitorOut['theme'] = output;
 
     ctx.logger.debug('EmitCapacitorTheme', 'run', `Theme emitted with ${Object.keys(output).length} keys`);
   }

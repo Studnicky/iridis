@@ -43,13 +43,8 @@ export class EmitCssVarsScoped implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const prefix = typeof state.metadata['cssVarPrefix'] === 'string'
-      ? state.metadata['cssVarPrefix']
-      : '--c-';
-
-    const scopePrefix = typeof state.metadata['scopePrefix'] === 'string'
-      ? state.metadata['scopePrefix']
-      : 'theme';
+    const prefix      = state.metadata['cssVarPrefix'] ?? '--c-';
+    const scopePrefix = state.metadata['scopePrefix']  ?? 'theme';
 
     const blocks: Record<string, string> = {};
 

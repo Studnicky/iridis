@@ -4,50 +4,13 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateOutput } from '@studnicky/iridis';
+import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
+import type {
+  ThemeJsonInterface,
+  TokenColorRuleInterface,
+} from '../types/augmentation.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
 import { SCOPE_MAPPINGS } from '../data/scopeMappings.ts';
-
-/** VS Code tokenColors rule shape. */
-interface TokenColorRuleInterface {
-  'name': string;
-  'scope': string | readonly string[];
-  'settings': {
-    'foreground'?: string;
-    'fontStyle'?: string;
-  };
-}
-
-/** VS Code theme JSON shape. */
-interface ThemeJsonInterface {
-  'name': string;
-  'type': 'dark' | 'light' | 'hc-dark' | 'hc-light';
-  'semanticHighlighting': true;
-  'colors': Record<string, string>;
-  'semanticTokenColors': Record<string, string | { 'foreground'?: string; 'fontStyle'?: string }>;
-  'tokenColors': TokenColorRuleInterface[];
-}
-
-interface VscodeMetaInterface {
-  'baseTokens'?: Record<string, string>;
-  'semanticTokenRules'?: Record<string, { 'foreground': string; 'fontStyle'?: string }>;
-}
-
-interface VscodeOutputInterface {
-  'workbenchColors'?: Record<string, string>;
-  'semanticTokenRules'?: Record<string, { 'foreground'?: string; 'fontStyle'?: string }>;
-  'themeJson'?: ThemeJsonInterface;
-  [key: string]: unknown;
-}
-
-function getVscodeMeta(state: PaletteStateInterface): VscodeMetaInterface {
-  const existing = state.metadata['vscode'];
-  if (existing !== null && typeof existing === 'object') {
-    return existing as VscodeMetaInterface;
-  }
-  return {};
-}
-
 
 export class EmitVscodeThemeJson implements TaskInterface {
   readonly 'name' = 'emit:vscodeThemeJson';
@@ -65,8 +28,8 @@ export class EmitVscodeThemeJson implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const out = getOrCreateOutput<VscodeOutputInterface>(state, 'vscode');
-    const meta = getVscodeMeta(state);
+    const out  = getOrCreateOutput(state, 'vscode');
+    const meta = getOrCreateMetadata(state, 'vscode');
 
     if (!out.workbenchColors) {
       throw new Error('EmitVscodeThemeJson: outputs.vscode.workbenchColors not found — run emit:vscodeUiPalette first');

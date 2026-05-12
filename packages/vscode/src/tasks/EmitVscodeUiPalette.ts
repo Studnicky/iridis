@@ -23,11 +23,6 @@ import {
  * imports (no string-keyed dispatch).
  */
 
-interface VscodeOutputInterface {
-  'workbenchColors'?: Record<string, string>;
-  [key: string]: unknown;
-}
-
 function getRole(state: PaletteStateInterface, name: string): ColorRecordInterface {
   const record = state.roles[name];
   if (!record) {
@@ -198,7 +193,7 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'warningForeground':                             warning,
     };
 
-    const out = getOrCreateOutput<VscodeOutputInterface>(state, 'vscode');
+    const out = getOrCreateOutput(state, 'vscode');
     out['workbenchColors'] = workbenchColors;
     ctx.logger.debug(
       'EmitVscodeUiPalette',

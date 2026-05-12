@@ -6,21 +6,8 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { contrastWcag21, darken, lighten, luminance } from '@studnicky/iridis';
-
-interface WcagPairResultInterface {
-  readonly foreground: string;
-  readonly background: string;
-  readonly algorithm: 'wcag21' | 'apca';
-  readonly required: number;
-  readonly before: number;
-  readonly after: number;
-  readonly pass: boolean;
-}
-
-interface WcagAaaMetaInterface {
-  readonly pairs: readonly WcagPairResultInterface[];
-}
+import { contrastWcag21, darken, getOrCreateMetadata, lighten, luminance } from '@studnicky/iridis';
+import type { WcagPairResultInterface } from '../types/augmentation.ts';
 
 function requiredRatioAaa(pair: ContrastPairInterface, roles: Record<string, ColorRecordInterface>): number {
   if (pair.minRatio > 0) {
@@ -116,11 +103,10 @@ export class EnforceWcagAaa implements TaskInterface {
       });
     }
 
-    const wcagMeta = (state.metadata['wcag'] ?? {}) as Record<string, unknown>;
-    const aaaResult: WcagAaaMetaInterface = { 'pairs': results };
-    state.metadata['wcag'] = { ...wcagMeta, 'aaa': aaaResult };
+    const wcagMeta = getOrCreateMetadata(state, 'wcag');
+    wcagMeta['aaa'] = { 'pairs': results };
 
-    ctx.logger.debug('EnforceWcagAaa', 'run', `Processed ${results.length} pair(s)`, aaaResult);
+    ctx.logger.debug('EnforceWcagAaa', 'run', `Processed ${results.length} pair(s)`, wcagMeta['aaa']);
   }
 }
 

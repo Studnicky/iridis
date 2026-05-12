@@ -5,6 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
 import type { SplashScreenOutputInterface } from '../types/index.ts';
 
 function resolveSplashColor(
@@ -28,10 +29,8 @@ export class EmitCapacitorSplashScreen implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const capacitorMeta = (state.metadata['capacitor'] ?? {}) as Record<string, unknown>;
-    const splashRole = typeof capacitorMeta['splashRole'] === 'string'
-      ? capacitorMeta['splashRole']
-      : undefined;
+    const capacitorMeta = getOrCreateMetadata(state, 'capacitor');
+    const splashRole = capacitorMeta['splashRole'];
 
     const splashColor = resolveSplashColor(state.roles, splashRole);
 
@@ -40,9 +39,7 @@ export class EmitCapacitorSplashScreen implements TaskInterface {
       return;
     }
 
-    const androidSplashResourceName = typeof capacitorMeta['androidSplashResourceName'] === 'string'
-      ? capacitorMeta['androidSplashResourceName']
-      : undefined;
+    const androidSplashResourceName = capacitorMeta['androidSplashResourceName'];
 
     const output: SplashScreenOutputInterface = androidSplashResourceName !== undefined
       ? {
@@ -53,11 +50,8 @@ export class EmitCapacitorSplashScreen implements TaskInterface {
           'backgroundColor': splashColor.hex,
         };
 
-    const existingCapacitor = (state.outputs['capacitor'] ?? {}) as Record<string, unknown>;
-    state.outputs['capacitor'] = {
-      ...existingCapacitor,
-      'splashScreen': output,
-    };
+    const capacitorOut = getOrCreateOutput(state, 'capacitor');
+    capacitorOut['splashScreen'] = output;
 
     ctx.logger.debug('EmitCapacitorSplashScreen', 'run', `SplashScreen: bg=${output.backgroundColor}`);
   }
