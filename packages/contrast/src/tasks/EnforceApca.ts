@@ -6,6 +6,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { contrastApca, ensureContrast } from '@studnicky/iridis';
 
 interface ApcaPairResultInterface {
   readonly foreground: string;
@@ -85,7 +86,7 @@ export class EnforceApca implements TaskInterface {
       }
 
       const requiredLc = apcaLcTarget(pair, state.roles);
-      const beforeLc = Math.abs(ctx.math.invoke<number>('contrastApca', fgRecord, bgRecord));
+      const beforeLc = Math.abs(contrastApca.apply(fgRecord, bgRecord));
 
       let currentFg = fgRecord;
       let current   = beforeLc;
@@ -96,8 +97,8 @@ export class EnforceApca implements TaskInterface {
         iterations++;
         // APCA: adjust lightness of foreground toward the pole that increases contrast.
         // If foreground is lighter than background, lighten further; otherwise darken.
-        currentFg = ctx.math.invoke<ColorRecordInterface>('ensureContrast', currentFg, bgRecord, requiredLc);
-        current = Math.abs(ctx.math.invoke<number>('contrastApca', currentFg, bgRecord));
+        currentFg = ensureContrast.apply(currentFg, bgRecord, requiredLc, 'apca');
+        current = Math.abs(contrastApca.apply(currentFg, bgRecord));
         // ensureContrast should converge in one call if implemented; iterate as safety net.
       }
 

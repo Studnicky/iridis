@@ -1,5 +1,4 @@
 import type {
-  MathPrimitiveInterface,
   PluginInterface,
   TaskInterface,
 } from '@studnicky/iridis';
@@ -19,12 +18,6 @@ export class WcagPlugin implements PluginInterface {
       enforceApca,
       enforceCvdSimulate,
     ];
-  }
-
-  math(): readonly MathPrimitiveInterface[] {
-    // No additional math primitives beyond those provided by the core.
-    // CVD simulation is performed inline by EnforceCvdSimulate.
-    return [];
   }
 }
 

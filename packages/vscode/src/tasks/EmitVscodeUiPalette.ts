@@ -5,14 +5,22 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateOutput } from '@studnicky/iridis';
+import {
+  colorRecordFactory,
+  contrastText,
+  darken,
+  getOrCreateOutput,
+  lighten,
+  luminance,
+  mixHsl,
+} from '@studnicky/iridis';
 
 /**
  * Derives all 101 VS Code workbench colors from the 16-role palette.
  *
- * Lifted from vscode-arcade-blaster/dev/themes/tools/uiPaletteGenerator.ts
- * The derivation formulas are reproduced here verbatim using ctx.math primitives
- * instead of arcade-blaster's colorMath helpers.
+ * Lifted from vscode-arcade-blaster/dev/themes/tools/uiPaletteGenerator.ts.
+ * The derivation formulas use core math primitives directly via typed
+ * imports (no string-keyed dispatch).
  */
 
 interface VscodeOutputInterface {
@@ -63,27 +71,28 @@ export class EmitVscodeUiPalette implements TaskInterface {
     const fn_     = fnRole.hex;
     const type_   = typeRole.hex;
 
-    // Theme type: luminance > 0.5 → light. Pass the ColorRecord; Luminance
-    // requires it (hex strings would throw).
-    const bgLum   = ctx.math.invoke<number>('luminance', bgRole);
+    // Theme type: luminance > 0.5 → light.
+    const bgLum   = luminance.apply(bgRole);
     const isLight = bgLum > 0.5;
 
-    const mixHsl = (a: string, b: string, w: number): string =>
-      ctx.math.invoke<string>('mixHsl', a, b, w);
-    const lighten = (c: string, a: number): string =>
-      ctx.math.invoke<string>('lighten', c, a);
-    const darken = (c: string, a: number): string =>
-      ctx.math.invoke<string>('darken', c, a);
-    const contrastText = (c: string): string =>
-      ctx.math.invoke<string>('contrastText', c);
+    const fromHex = (h: string): ColorRecordInterface => colorRecordFactory.fromHex(h);
 
-    const activeSelection = mixHsl(bg, accent, isLight ? 0.28 : 0.35);
-    const border = mixHsl(bg, fg, isLight ? 0.14 : 0.12);
-    const chromeBackground = isLight ? mixHsl(bg, fg, 0.06) : darken(bg, 0.2);
-    const chromeInactiveBackground = isLight ? mixHsl(bg, fg, 0.04) : darken(bg, 0.15);
-    const hover = mixHsl(bg, fg, isLight ? 0.06 : 0.08);
-    const inputBackground = isLight ? mixHsl(bg, fg, 0.04) : darken(bg, 0.1);
-    const selection = mixHsl(bg, accent, isLight ? 0.18 : 0.25);
+    const mixHslHex = (a: string, b: string, w: number): string =>
+      mixHsl.apply(fromHex(a), fromHex(b), w).hex;
+    const lightenHex = (c: string, a: number): string =>
+      lighten.apply(fromHex(c), a).hex;
+    const darkenHex = (c: string, a: number): string =>
+      darken.apply(fromHex(c), a).hex;
+    const contrastTextHex = (c: string): string =>
+      contrastText.apply(fromHex(c)).hex;
+
+    const activeSelection = mixHslHex(bg, accent, isLight ? 0.28 : 0.35);
+    const border = mixHslHex(bg, fg, isLight ? 0.14 : 0.12);
+    const chromeBackground = isLight ? mixHslHex(bg, fg, 0.06) : darkenHex(bg, 0.2);
+    const chromeInactiveBackground = isLight ? mixHslHex(bg, fg, 0.04) : darkenHex(bg, 0.15);
+    const hover = mixHslHex(bg, fg, isLight ? 0.06 : 0.08);
+    const inputBackground = isLight ? mixHslHex(bg, fg, 0.04) : darkenHex(bg, 0.1);
+    const selection = mixHslHex(bg, accent, isLight ? 0.18 : 0.25);
 
     const workbenchColors: Record<string, string> = {
       'activityBar.background':                        chromeInactiveBackground,
@@ -91,15 +100,15 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'activityBar.foreground':                        fg,
       'activityBar.inactiveForeground':                muted,
       'activityBarBadge.background':                   accent,
-      'activityBarBadge.foreground':                   contrastText(accent),
+      'activityBarBadge.foreground':                   contrastTextHex(accent),
       'badge.background':                              accent,
-      'badge.foreground':                              contrastText(accent),
+      'badge.foreground':                              contrastTextHex(accent),
       'button.background':                             accent,
-      'button.foreground':                             contrastText(accent),
-      'button.hoverBackground':                        lighten(accent, 0.1),
+      'button.foreground':                             contrastTextHex(accent),
+      'button.hoverBackground':                        lightenHex(accent, 0.1),
       'button.secondaryBackground':                    activeSelection,
       'button.secondaryForeground':                    fg,
-      'button.secondaryHoverBackground':               mixHsl(activeSelection, fg, 0.1),
+      'button.secondaryHoverBackground':               mixHslHex(activeSelection, fg, 0.1),
       'editor.background':                             bg,
       'editor.findMatchBackground':                    `${accent}40`,
       'editor.findMatchHighlightBackground':           `${accent}25`,
@@ -110,7 +119,7 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'editorBracketMatch.background':                 `${selection}60`,
       'editorBracketMatch.border':                     `${accent}80`,
       'editorCursor.foreground':                       accent,
-      'editorIndentGuide.activeBackground1':           mixHsl(bg, fg, 0.2),
+      'editorIndentGuide.activeBackground1':           mixHslHex(bg, fg, 0.2),
       'editorIndentGuide.background1':                 border,
       'editorLineNumber.activeForeground':             fg,
       'editorLineNumber.foreground':                   muted,
@@ -147,13 +156,13 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'scrollbarSlider.hoverBackground':               `${muted}50`,
       'sideBar.background':                            surface,
       'sideBar.border':                                border,
-      'sideBar.foreground':                            mixHsl(fg, muted, 0.3),
+      'sideBar.foreground':                            mixHslHex(fg, muted, 0.3),
       'sideBarSectionHeader.foreground':               fg,
       'statusBar.background':                          chromeBackground,
       'statusBar.border':                              border,
       'statusBar.debuggingBackground':                 accent,
-      'statusBar.debuggingForeground':                 contrastText(accent),
-      'statusBar.foreground':                          mixHsl(fg, muted, 0.5),
+      'statusBar.debuggingForeground':                 contrastTextHex(accent),
+      'statusBar.foreground':                          mixHslHex(fg, muted, 0.5),
       'tab.activeBackground':                          bg,
       'tab.activeBorder':                              accent,
       'tab.activeForeground':                          fg,
@@ -167,13 +176,13 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'terminal.ansiBlack':                            border,
       'terminal.ansiBlue':                             info,
       'terminal.ansiBrightBlack':                      muted,
-      'terminal.ansiBrightBlue':                       lighten(info, 0.15),
-      'terminal.ansiBrightCyan':                       lighten(fn_, 0.15),
-      'terminal.ansiBrightGreen':                      lighten(success, 0.15),
-      'terminal.ansiBrightMagenta':                    lighten(type_, 0.15),
-      'terminal.ansiBrightRed':                        lighten(error, 0.15),
+      'terminal.ansiBrightBlue':                       lightenHex(info, 0.15),
+      'terminal.ansiBrightCyan':                       lightenHex(fn_, 0.15),
+      'terminal.ansiBrightGreen':                      lightenHex(success, 0.15),
+      'terminal.ansiBrightMagenta':                    lightenHex(type_, 0.15),
+      'terminal.ansiBrightRed':                        lightenHex(error, 0.15),
       'terminal.ansiBrightWhite':                      '#ffffff',
-      'terminal.ansiBrightYellow':                     lighten(warning, 0.15),
+      'terminal.ansiBrightYellow':                     lightenHex(warning, 0.15),
       'terminal.ansiCyan':                             fn_,
       'terminal.foreground':                           fg,
       'terminal.ansiGreen':                            success,
@@ -182,7 +191,7 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'terminal.ansiWhite':                            fg,
       'terminal.ansiYellow':                           warning,
       'titleBar.activeBackground':                     chromeBackground,
-      'titleBar.activeForeground':                     mixHsl(fg, muted, 0.3),
+      'titleBar.activeForeground':                     mixHslHex(fg, muted, 0.3),
       'titleBar.border':                               border,
       'titleBar.inactiveBackground':                   chromeInactiveBackground,
       'titleBar.inactiveForeground':                   muted,

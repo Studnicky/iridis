@@ -5,6 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { oklchToRgb } from '@studnicky/iridis';
 
 /**
  * `gallery:assignRoles`
@@ -65,7 +66,7 @@ export class GalleryAssignRoles implements TaskInterface {
     );
 
     // text — auto-derived: white when canvas is dark (L <= 0.5), black otherwise
-    const text = this.deriveTextColor(canvas, ctx);
+    const text = this.deriveTextColor(canvas);
 
     (state.roles as Record<string, ColorRecordInterface>)['canvas'] = canvas;
     (state.roles as Record<string, ColorRecordInterface>)['frame']  = frame;
@@ -82,14 +83,11 @@ export class GalleryAssignRoles implements TaskInterface {
     });
   }
 
-  private deriveTextColor(
-    canvas: ColorRecordInterface,
-    ctx: PipelineContextInterface,
-  ): ColorRecordInterface {
+  private deriveTextColor(canvas: ColorRecordInterface): ColorRecordInterface {
     if (canvas.oklch.l <= 0.5) {
-      return ctx.math.invoke<ColorRecordInterface>('oklchToRgb', 1.0, 0.0, 0.0, 1.0);
+      return oklchToRgb.apply(1.0, 0.0, 0.0, 1.0);
     }
-    return ctx.math.invoke<ColorRecordInterface>('oklchToRgb', 0.0, 0.0, 0.0, 1.0);
+    return oklchToRgb.apply(0.0, 0.0, 0.0, 1.0);
   }
 }
 

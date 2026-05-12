@@ -1,5 +1,4 @@
 import type {
-  MathPrimitiveInterface,
   PluginInterface,
   TaskInterface,
 } from '@studnicky/iridis';
@@ -19,10 +18,6 @@ export class CapacitorPlugin implements PluginInterface {
       emitCapacitorSplashScreen,
       emitAndroidThemeXml,
     ];
-  }
-
-  math(): readonly MathPrimitiveInterface[] {
-    return [];
   }
 }
 

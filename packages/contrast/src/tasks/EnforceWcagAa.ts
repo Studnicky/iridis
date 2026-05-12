@@ -6,6 +6,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { contrastWcag21, darken, lighten, luminance } from '@studnicky/iridis';
 
 interface WcagPairResultInterface {
   readonly foreground: string;
@@ -39,23 +40,6 @@ function isLargeText(pair: ContrastPairInterface): boolean {
   // Consumers signal large text via role name suffix or minRatio <= 3.0 override.
   // Treat pairs with minRatio explicitly set to 3.0 as large-text intented.
   return pair.minRatio <= 3.0;
-}
-
-function luminance(rgb: { readonly r: number; readonly g: number; readonly b: number }): number {
-  const lin = (v: number): number =>
-    v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-  return 0.2126 * lin(rgb.r) + 0.7152 * lin(rgb.g) + 0.0722 * lin(rgb.b);
-}
-
-function wcag21Contrast(
-  fg: ColorRecordInterface,
-  bg: ColorRecordInterface,
-): number {
-  const l1 = luminance(fg.rgb);
-  const l2 = luminance(bg.rgb);
-  const lighter = Math.max(l1, l2);
-  const darker  = Math.min(l1, l2);
-  return (lighter + 0.05) / (darker + 0.05);
 }
 
 function requiredRatioAa(pair: ContrastPairInterface, roles: Record<string, ColorRecordInterface>): number {
@@ -101,27 +85,27 @@ export class EnforceWcagAa implements TaskInterface {
       }
 
       const required = requiredRatioAa(pair, state.roles);
-      const before = wcag21Contrast(fgRecord, bgRecord);
+      const before = contrastWcag21.apply(fgRecord, bgRecord);
 
       let currentFg = fgRecord;
-      let currentBg = bgRecord;
+      const currentBg = bgRecord;
       let current   = before;
       let iterations = 0;
       const maxIterations = 20;
 
       while (current < required && iterations < maxIterations) {
         iterations++;
-        const fgLum = luminance(currentFg.rgb);
-        const bgLum = luminance(currentBg.rgb);
+        const fgLum = luminance.apply(currentFg);
+        const bgLum = luminance.apply(currentBg);
 
         if (fgLum >= bgLum) {
           // foreground is lighter — lighten it further
-          currentFg = ctx.math.invoke<ColorRecordInterface>('lighten', currentFg, 0.05);
+          currentFg = lighten.apply(currentFg, 0.05);
         } else {
           // foreground is darker — darken it further
-          currentFg = ctx.math.invoke<ColorRecordInterface>('darken', currentFg, 0.05);
+          currentFg = darken.apply(currentFg, 0.05);
         }
-        current = wcag21Contrast(currentFg, currentBg);
+        current = contrastWcag21.apply(currentFg, currentBg);
       }
 
       if (current < required) {

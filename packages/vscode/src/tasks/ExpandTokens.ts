@@ -5,6 +5,16 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import {
+  colorRecordFactory,
+  darken,
+  desaturate,
+  ensureContrast,
+  hueShift,
+  lighten,
+  mixHsl,
+  saturate,
+} from '@studnicky/iridis';
 import { DERIVATION_PARAMS, TOKEN_FAMILY, TOKEN_TYPES } from '../data/derivationParams.ts';
 
 /** State shape written by this task. */
@@ -47,6 +57,7 @@ export class ExpandTokens implements TaskInterface {
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const meta = getVscodeMeta(state);
     const bg = roleHex(state, 'background');
+    const bgRecord = colorRecordFactory.fromHex(bg);
 
     // operator = mix(muted, foreground, 0.4) then ensureContrast 3.5
     const mutedHex = roleHex(state, 'muted');
@@ -69,36 +80,40 @@ export class ExpandTokens implements TaskInterface {
 
       // operator is special: mix muted + foreground
       if (tokenType === 'operator') {
-        const mixed = ctx.math.invoke<string>('mixHsl', mutedHex, fgHex, 0.4);
-        const contrasted = ctx.math.invoke<string>('ensureContrast', mixed, bg, 3.5);
-        baseTokens['operator'] = contrasted;
+        const mixed = mixHsl.apply(
+          colorRecordFactory.fromHex(mutedHex),
+          colorRecordFactory.fromHex(fgHex),
+          0.4,
+        );
+        const contrasted = ensureContrast.apply(mixed, bgRecord, 3.5);
+        baseTokens['operator'] = contrasted.hex;
         continue;
       }
 
-      let color = roleHex(state, familyRole);
+      let color = colorRecordFactory.fromHex(roleHex(state, familyRole));
 
       if (params.hue) {
-        color = ctx.math.invoke<string>('hueShift', color, params.hue);
+        color = hueShift.apply(color, params.hue);
       }
       if (params.sat) {
         if (params.sat > 0) {
-          color = ctx.math.invoke<string>('saturate', color, params.sat);
+          color = saturate.apply(color, params.sat);
         } else {
-          color = ctx.math.invoke<string>('desaturate', color, -params.sat);
+          color = desaturate.apply(color, -params.sat);
         }
       }
       if (params.light) {
         if (params.light > 0) {
-          color = ctx.math.invoke<string>('lighten', color, params.light);
+          color = lighten.apply(color, params.light);
         } else {
-          color = ctx.math.invoke<string>('darken', color, -params.light);
+          color = darken.apply(color, -params.light);
         }
       }
 
       // comment gets relaxed contrast (3.0), everything else 4.5
       const minContrast = tokenType === 'comment' ? 3.0 : 4.5;
-      const contrasted = ctx.math.invoke<string>('ensureContrast', color, bg, minContrast);
-      baseTokens[tokenType] = contrasted;
+      const contrasted = ensureContrast.apply(color, bgRecord, minContrast);
+      baseTokens[tokenType] = contrasted.hex;
     }
 
     meta['baseTokens'] = baseTokens;

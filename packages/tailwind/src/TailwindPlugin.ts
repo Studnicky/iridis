@@ -1,5 +1,4 @@
 import type {
-  MathPrimitiveInterface,
   PluginInterface,
   TaskInterface,
 } from '@studnicky/iridis';
@@ -11,10 +10,6 @@ export class TailwindPlugin implements PluginInterface {
 
   tasks(): readonly TaskInterface[] {
     return [emitTailwindTheme];
-  }
-
-  math(): readonly MathPrimitiveInterface[] {
-    return [];
   }
 }
 

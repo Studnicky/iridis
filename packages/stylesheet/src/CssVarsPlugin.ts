@@ -1,5 +1,4 @@
 import type {
-  MathPrimitiveInterface,
   PluginInterface,
   TaskInterface,
 } from '@studnicky/iridis';
@@ -12,10 +11,6 @@ export class CssVarsPlugin implements PluginInterface {
 
   tasks(): readonly TaskInterface[] {
     return [emitCssVars, emitCssVarsScoped];
-  }
-
-  math(): readonly MathPrimitiveInterface[] {
-    return [];
   }
 }
 
