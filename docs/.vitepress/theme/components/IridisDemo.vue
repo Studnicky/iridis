@@ -22,7 +22,7 @@
 
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { Engine, mathBuiltins, coreTasks, contrastWcag21, colorRecordFactory } from '@studnicky/iridis';
+import { Engine, coreTasks, contrastWcag21, colorRecordFactory } from '@studnicky/iridis';
 import type {
   ColorRecordInterface,
   InputInterface,
@@ -78,7 +78,6 @@ function buildInput(): InputInterface {
 async function runPipeline(): Promise<void> {
   try {
     const engine = new Engine();
-    for (const m of mathBuiltins) engine.math.register(m);
     for (const t of coreTasks)    engine.tasks.register(t);
     engine.pipeline(props.pipeline);
     state.value = await engine.run(buildInput());
@@ -231,10 +230,9 @@ function safeOnRoleColor(role: ColorRecordInterface): string {
 const codeText = computed(() => {
   const colors = JSON.stringify(configStore.seedColors);
   const lines: string[] = [
-    "import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';",
+    "import { Engine, coreTasks } from '@studnicky/iridis';",
     "",
     "const engine = new Engine();",
-    "for (const m of mathBuiltins) engine.math.register(m);",
     "for (const t of coreTasks)    engine.tasks.register(t);",
     "",
     `engine.pipeline(${JSON.stringify([...props.pipeline], null, 2).replace(/\n/g, '\n  ')});`,

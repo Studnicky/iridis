@@ -1,4 +1,4 @@
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { Engine, coreTasks } from '@studnicky/iridis';
 import { contrastPlugin }                  from '@studnicky/iridis-contrast';
 import { stylesheetPlugin }                from '@studnicky/iridis-stylesheet';
 import { capacitorPlugin }                 from '@studnicky/iridis-capacitor';
@@ -20,9 +20,6 @@ export class CategoryColorService {
 
   private constructor() {
     this.engine = new Engine();
-    for (const primitive of mathBuiltins) {
-      this.engine.math.register(primitive);
-    }
     for (const task of coreTasks) {
       this.engine.tasks.register(task);
     }

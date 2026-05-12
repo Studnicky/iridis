@@ -8,7 +8,7 @@
  * Usage in markdown:
  *   <IridisCode label="Pipeline construction">
  *     ```ts
- *     import { engine, coreTasks, mathBuiltins } from '@studnicky/iridis';
+ *     import { engine, coreTasks } from '@studnicky/iridis';
  *     ...
  *     ```
  *   </IridisCode>

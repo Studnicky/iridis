@@ -13,7 +13,7 @@
 
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { Engine, coreTasks } from '@studnicky/iridis';
 import type { PaletteStateInterface } from '@studnicky/iridis/model';
 
 import { stylesheetPlugin }  from '@studnicky/iridis-stylesheet';
@@ -40,7 +40,6 @@ const error = ref<string | null>(null);
 async function runPipeline(): Promise<void> {
   try {
     const engine = new Engine();
-    for (const m of mathBuiltins) engine.math.register(m);
     for (const t of coreTasks)    engine.tasks.register(t);
 
     engine.adopt(stylesheetPlugin);
