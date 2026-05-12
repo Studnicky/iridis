@@ -6,23 +6,17 @@ import type {
   PluginInterface,
   TaskInterface,
 } from '../model/types.ts';
-import { ColorMathRegistry } from '../registry/ColorMathRegistry.ts';
 import { TaskRegistry }      from '../registry/TaskRegistry.ts';
 import { ConsoleLogger }     from './ConsoleLogger.ts';
 
 export class Engine implements EngineInterface {
   readonly tasks: TaskRegistry = new TaskRegistry();
 
-  readonly math:  ColorMathRegistry = new ColorMathRegistry();
-
   private order: readonly string[] = [];
 
   adopt(plugin: PluginInterface): void {
     for (const task of plugin.tasks()) {
       this.tasks.register(task);
-    }
-    for (const primitive of plugin.math()) {
-      this.math.register(primitive);
     }
   }
 
@@ -48,7 +42,6 @@ export class Engine implements EngineInterface {
     const ctx: PipelineContextInterface = {
       'engine':    this,
       'tasks':     this.tasks,
-      'math':      this.math,
       'logger':    new ConsoleLogger(),
       'startedAt': Date.now(),
       'cache':     new Map<string, unknown>(),

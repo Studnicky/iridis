@@ -1,11 +1,15 @@
 import type {
   ColorRecordInterface,
+  ContrastAlgorithmType,
   ContrastPairInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
 } from '../../model/types.ts';
+import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
+import { contrastApca }   from '../../math/ContrastApca.ts';
+import { ensureContrast } from '../../math/EnsureContrast.ts';
 
 interface ContrastReport {
   'foreground':  string;
@@ -15,6 +19,17 @@ interface ContrastReport {
   'minRatio':    number;
   'passed':      boolean;
   'adjusted':    boolean;
+}
+
+function measureContrast(
+  algorithm: ContrastAlgorithmType,
+  fg: ColorRecordInterface,
+  bg: ColorRecordInterface,
+): number {
+  if (algorithm === 'apca') {
+    return contrastApca.apply(fg, bg);
+  }
+  return contrastWcag21.apply(fg, bg);
 }
 
 export class EnforceContrast implements TaskInterface {
@@ -56,8 +71,7 @@ export class EnforceContrast implements TaskInterface {
 
       const algo = pair.algorithm ?? defaultAlgo;
 
-      const primitiveName = algo === 'apca' ? 'contrastApca' : 'contrastWcag21';
-      const ratio = ctx.math.invoke<number>(primitiveName, fgColor, bgColor);
+      const ratio = measureContrast(algo, fgColor, bgColor);
       const passed = ratio >= pair.minRatio;
 
       let adjusted = false;
@@ -70,20 +84,14 @@ export class EnforceContrast implements TaskInterface {
           `Pair ${pair.foreground}/${pair.background}: ratio ${ratio.toFixed(2)} < ${pair.minRatio} — nudging`,
         );
 
-        finalFg = ctx.math.invoke<ColorRecordInterface>(
-          'ensureContrast',
-          fgColor,
-          bgColor,
-          pair.minRatio,
-          algo,
-        );
+        finalFg = ensureContrast.apply(fgColor, bgColor, pair.minRatio, algo);
 
         state.roles[pair.foreground] = finalFg;
         adjusted = true;
       }
 
       const finalRatio = adjusted
-        ? ctx.math.invoke<number>(primitiveName, finalFg, bgColor)
+        ? measureContrast(algo, finalFg, bgColor)
         : ratio;
 
       report.push({
