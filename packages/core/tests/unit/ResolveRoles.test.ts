@@ -16,14 +16,12 @@ import { test } from 'node:test';
 
 import type { RoleSchemaInterface } from '@studnicky/iridis';
 import { Engine }                   from '@studnicky/iridis';
-import { mathBuiltins }             from '@studnicky/iridis/math';
 import { coreTasks }                from '@studnicky/iridis/tasks';
 import { colorRecordFactory }       from '../../src/math/ColorRecordFactory.ts';
 import { assert }                   from './ScenarioRunner.ts';
 
 function freshEngine(): Engine {
   const engine = new Engine();
-  for (const m of mathBuiltins) engine.math.register(m);
   for (const t of coreTasks)    engine.tasks.register(t);
   engine.pipeline(['intake:hex', 'resolve:roles']);
   return engine;

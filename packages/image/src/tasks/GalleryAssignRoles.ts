@@ -21,16 +21,6 @@ import { oklchToRgb } from '@studnicky/iridis';
  *
  * Writes to `state.roles`.
  */
-function deriveTextColor(
-  canvas: ColorRecordInterface,
-  ctx: PipelineContextInterface,
-): ColorRecordInterface {
-  if (canvas.oklch.l <= 0.5) {
-    return ctx.math.invoke<ColorRecordInterface>('oklchToRgb', 1.0, 0.0, 0.0, 1.0);
-  }
-  return ctx.math.invoke<ColorRecordInterface>('oklchToRgb', 0.0, 0.0, 0.0, 1.0);
-}
-
 export class GalleryAssignRoles implements TaskInterface {
   readonly 'name' = 'gallery:assignRoles';
 

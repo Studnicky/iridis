@@ -1,7 +1,7 @@
 // Delta E 2000 computed via OKLCH-derived Lab (D65). OKLCH is a direct reparametrisation
 // of OKLab, so (L, a*, b*) = (oklch.l, c*cos(h), c*sin(h)) in the OKLab encoding.
 // The CIE ΔE 2000 formula is applied to these Lab values per Sharma et al. 2005.
-import type { ColorRecordInterface } from '../model/types.ts';
+import type { ColorRecordInterface } from '../types/index.ts';
 
 function oklchToOklab(l: number, c: number, h: number): [number, number, number] {
   const hRad = (h * Math.PI) / 180;

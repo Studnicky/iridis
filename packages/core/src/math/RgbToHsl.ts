@@ -1,4 +1,4 @@
-import type { HslResultInterface } from '../model/types.ts';
+import type { HslResultInterface } from '../types/index.ts';
 
 export class RgbToHsl {
   readonly 'name' = 'rgbToHsl';

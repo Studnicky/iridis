@@ -6,7 +6,6 @@ import type {
   TaskManifestInterface,
 } from '@studnicky/iridis';
 import {
-  colorRecordFactory,
   darken,
   desaturate,
   ensureContrast,
@@ -44,8 +43,6 @@ export class ExpandTokens implements TaskInterface {
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const meta = getVscodeMeta(state);
-    const bg = roleHex(state, 'background');
-    const bgRecord = colorRecordFactory.fromHex(bg);
 
     // Math primitives operate on ColorRecord; keep the records on the
     // role lookups so we don't reconvert at every invoke.
@@ -73,17 +70,18 @@ export class ExpandTokens implements TaskInterface {
 
       // operator is special: mix muted + foreground
       if (tokenType === 'operator') {
-        const mixed = mixHsl.apply(
-          colorRecordFactory.fromHex(mutedHex),
-          colorRecordFactory.fromHex(fgHex),
-          0.4,
-        );
-        const contrasted = ensureContrast.apply(mixed, bgRecord, 3.5);
+        const mixed = mixHsl.apply(mutedRec, fgRec, 0.4);
+        const contrasted = ensureContrast.apply(mixed, bgRec, 3.5);
         baseTokens['operator'] = contrasted.hex;
         continue;
       }
 
-      let color = colorRecordFactory.fromHex(roleHex(state, familyRole));
+      const familyRec = state.roles[familyRole];
+      if (!familyRec) {
+        ctx.logger.warn('ExpandTokens', 'run', `No role record for family '${familyRole}' (token '${tokenType}')`);
+        continue;
+      }
+      let color: ColorRecordInterface = familyRec;
 
       if (params.hue) {
         color = hueShift.apply(color, params.hue);
@@ -105,7 +103,7 @@ export class ExpandTokens implements TaskInterface {
 
       // comment gets relaxed contrast (3.0), everything else 4.5
       const minContrast = tokenType === 'comment' ? 3.0 : 4.5;
-      const contrasted = ensureContrast.apply(color, bgRecord, minContrast);
+      const contrasted = ensureContrast.apply(color, bgRec, minContrast);
       baseTokens[tokenType] = contrasted.hex;
     }
 

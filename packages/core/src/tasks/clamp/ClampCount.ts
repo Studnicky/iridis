@@ -3,7 +3,7 @@ import type {
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
-} from '../../model/types.ts';
+} from '../../types/index.ts';
 import { clusterMedianCut } from '../../math/ClusterMedianCut.ts';
 
 const DEFAULT_MAX = 64;

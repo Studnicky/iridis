@@ -6,7 +6,7 @@ import type {
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
-} from '../../model/types.ts';
+} from '../../types/index.ts';
 import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
 import { contrastApca }   from '../../math/ContrastApca.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';

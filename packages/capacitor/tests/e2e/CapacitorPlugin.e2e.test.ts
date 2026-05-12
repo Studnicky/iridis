@@ -8,7 +8,6 @@ import { test } from 'node:test';
 import assert   from 'node:assert/strict';
 
 import { Engine }       from '@studnicky/iridis/engine';
-import { mathBuiltins } from '@studnicky/iridis/math';
 import { coreTasks }    from '@studnicky/iridis/tasks';
 import type { RoleSchemaInterface } from '@studnicky/iridis';
 import { capacitorPlugin, CapacitorPlugin } from '@studnicky/iridis-capacitor';
@@ -29,7 +28,6 @@ const ROLES: RoleSchemaInterface = {
 
 function freshEngine(): Engine {
   const engine = new Engine();
-  for (const m of mathBuiltins) engine.math.register(m);
   for (const t of coreTasks)    engine.tasks.register(t);
   engine.adopt(capacitorPlugin);
   return engine;

@@ -1,5 +1,5 @@
 // APCA-W3 0.0.98G-4g formula — https://github.com/Myndex/SAPC-APCA
-import type { ColorRecordInterface } from '../model/types.ts';
+import type { ColorRecordInterface } from '../types/index.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
 function fgLuminance(r: number, g: number, b: number): number {
