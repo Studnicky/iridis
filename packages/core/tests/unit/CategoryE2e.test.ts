@@ -2,7 +2,6 @@ import { test }   from 'node:test';
 import assert     from 'node:assert/strict';
 
 import { Engine }                from '@studnicky/iridis/engine';
-import { mathBuiltins }          from '@studnicky/iridis/math';
 import { coreTasks }             from '@studnicky/iridis/tasks';
 import { contrastPlugin }        from '@studnicky/iridis-contrast';
 import { stylesheetPlugin }      from '@studnicky/iridis-stylesheet';
@@ -12,9 +11,6 @@ import { categoryW3cRoleSchema } from '../fixtures/categoryW3cRoleSchema.ts';
 test('CategoryE2e :: happy :: single hex seed produces W3C-conformant outputs', async () => {
   const engine = new Engine();
 
-  for (const primitive of mathBuiltins) {
-    engine.math.register(primitive);
-  }
   for (const task of coreTasks) {
     engine.tasks.register(task);
   }

@@ -12,7 +12,6 @@
  */
 import type {
   InputInterface,
-  MathPrimitiveInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   PluginInterface,
@@ -93,7 +92,6 @@ function makeStubPlugin(): PluginInterface {
     tasks(): readonly TaskInterface[] {
       return [makeIntakeTask(), makeTransformTask(), makeEmitTask()];
     },
-    math(): readonly MathPrimitiveInterface[] { return []; },
   };
 }
 
@@ -159,7 +157,6 @@ test('Pipeline :: integration :: happy :: multiple seed colors produce multiple 
     'name':    'multi-color-plugin',
     'version': '0.0.1',
     tasks(): readonly TaskInterface[] { return [makeIntakeTask(), multiTransform, makeEmitTask()]; },
-    math(): readonly MathPrimitiveInterface[] { return []; },
   };
 
   engine.adopt(plugin);
@@ -206,7 +203,6 @@ test('Pipeline :: integration :: happy :: context engine reference is the same e
     'name':    'inspect-plugin',
     'version': '0.0.1',
     tasks(): readonly TaskInterface[] { return [inspectTask]; },
-    math(): readonly MathPrimitiveInterface[] { return []; },
   };
 
   engine.adopt(plugin);
@@ -231,7 +227,6 @@ test('Pipeline :: integration :: unhappy :: task that throws propagates error to
     'name':    'error-plugin',
     'version': '0.0.1',
     tasks(): readonly TaskInterface[] { return [errorTask]; },
-    math(): readonly MathPrimitiveInterface[] { return []; },
   };
 
   engine.adopt(plugin);

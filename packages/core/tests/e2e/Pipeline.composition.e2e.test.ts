@@ -11,7 +11,6 @@ import type {
   RoleSchemaInterface,
 } from '@studnicky/iridis';
 import { Engine }       from '@studnicky/iridis';
-import { mathBuiltins } from '@studnicky/iridis/math';
 import { coreTasks }    from '@studnicky/iridis/tasks';
 import { assert }       from './ScenarioRunner.ts';
 
@@ -21,7 +20,6 @@ import { assert }       from './ScenarioRunner.ts';
 
 function freshEngine(): Engine {
   const engine = new Engine();
-  for (const m of mathBuiltins) engine.math.register(m);
   for (const t of coreTasks)    engine.tasks.register(t);
   return engine;
 }

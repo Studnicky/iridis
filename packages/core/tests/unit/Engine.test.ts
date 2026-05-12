@@ -1,6 +1,5 @@
 import type {
   InputInterface,
-  MathPrimitiveInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   PluginInterface,
@@ -29,12 +28,11 @@ function makeTask(name: string, marker?: string): TaskInterface & { 'calls': str
   };
 }
 
-function makePlugin(name: string, tasks: TaskInterface[], prims: MathPrimitiveInterface[] = []): PluginInterface {
+function makePlugin(name: string, tasks: TaskInterface[]): PluginInterface {
   return {
     'name': name,
     'version': '0.0.1',
     tasks(): readonly TaskInterface[] { return tasks; },
-    math(): readonly MathPrimitiveInterface[] { return prims; },
   };
 }
 
@@ -55,15 +53,6 @@ test('Engine :: happy :: adopt registers plugin tasks', () => {
   const plugin = makePlugin('stub-plugin', [task]);
   engine.adopt(plugin);
   assert.strictEqual(engine.tasks.has('stub:task'), true);
-});
-
-test('Engine :: happy :: adopt registers plugin math primitives', () => {
-  const engine = new Engine();
-  const prim: MathPrimitiveInterface = { 'name': 'prim:double', apply: (x: unknown) => (x as number) * 2 };
-  const plugin = makePlugin('prim-plugin', [], [prim]);
-  engine.adopt(plugin);
-  assert.strictEqual(engine.math.has('prim:double'), true);
-  assert.strictEqual(engine.math.invoke<number>('prim:double', 5), 10);
 });
 
 test('Engine :: happy :: adopt multiple plugins accumulates all tasks', () => {
@@ -236,26 +225,4 @@ test('Engine :: edge :: run state has cache available to tasks', async () => {
   await engine.run(makeInput());
   assert.ok(capturedCache instanceof Map);
   assert.strictEqual(capturedCache.get('key'), 'value');
-});
-
-test('Engine :: edge :: run passes math registry to tasks via context', async () => {
-  const engine = new Engine();
-  let mathInvoked = false;
-
-  const prim: MathPrimitiveInterface = {
-    'name': 'math:noop',
-    apply(): unknown { mathInvoked = true; return null; },
-  };
-  engine.math.register(prim);
-
-  const usesMathTask: TaskInterface = {
-    'name': 'task:usesMath',
-    'manifest': { 'name': 'task:usesMath' },
-    run(_state, ctx) { ctx.math.invoke('math:noop'); },
-  };
-
-  engine.adopt(makePlugin('p', [usesMathTask]));
-  engine.pipeline(['task:usesMath']);
-  await engine.run(makeInput());
-  assert.strictEqual(mathInvoked, true);
 });
