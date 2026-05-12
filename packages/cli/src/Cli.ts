@@ -1,5 +1,4 @@
 import { Engine }       from '@studnicky/iridis/engine';
-import { mathBuiltins } from '@studnicky/iridis/math';
 import { coreTasks }    from '@studnicky/iridis/tasks';
 import type { PaletteStateInterface } from '@studnicky/iridis/model';
 import { ConfigLoader }  from './ConfigLoader.ts';
@@ -17,9 +16,6 @@ export class Cli {
 
     const engine = new Engine();
 
-    for (const primitive of mathBuiltins) {
-      engine.math.register(primitive);
-    }
     for (const task of coreTasks) {
       engine.tasks.register(task);
     }

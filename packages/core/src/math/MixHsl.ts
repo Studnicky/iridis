@@ -1,11 +1,5 @@
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../types/index.ts';
+import type { ColorRecordInterface } from '../model/types.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
-
-function isColorRecord(v: unknown): v is ColorRecordInterface {
-  if (typeof v !== 'object' || v === null) return false;
-  const c = v as Record<string, unknown>;
-  return typeof c['rgb'] === 'object' && c['rgb'] !== null;
-}
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   const max = Math.max(r, g, b);
@@ -43,23 +37,10 @@ function lerpAngle(a: number, b: number, t: number): number {
   return ((a + diff * t) % 360 + 360) % 360;
 }
 
-/**
- * Math primitive that interpolates two colors via HSL. Lightness collapses
- * differently than OKLCH (HSL is perceptually non-uniform), so prefer
- * {@link MixOklch} for palette work; this exists for emitters that need
- * to reproduce CSS `mix-blend-mode` style mixing.
- */
-export class MixHsl implements MathPrimitiveInterface {
+export class MixHsl {
   readonly 'name' = 'mixHsl';
 
-  apply(...args: readonly unknown[]): ColorRecordInterface {
-    const [a, b, t] = args;
-    if (!isColorRecord(a) || !isColorRecord(b)) {
-      throw new Error('MixHsl.apply: expected (a: ColorRecord, b: ColorRecord, t: number)');
-    }
-    if (typeof t !== 'number') {
-      throw new Error('MixHsl.apply: t must be a number');
-    }
+  apply(a: ColorRecordInterface, b: ColorRecordInterface, t: number): ColorRecordInterface {
     const tc = Math.max(0, Math.min(1, t));
 
     const [ha, sa, la] = rgbToHsl(a.rgb.r, a.rgb.g, a.rgb.b);

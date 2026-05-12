@@ -5,6 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { deltaE2000, oklchToRgb } from '@studnicky/iridis';
 
 /**
  * `gallery:harmonize`
@@ -46,7 +47,7 @@ export class GalleryHarmonize implements TaskInterface {
       return;
     }
 
-    const deltaE = ctx.math.invoke<number>('deltaE2000', accent, frame);
+    const deltaE = deltaE2000.apply(accent, frame);
 
     ctx.logger.debug('GalleryHarmonize', 'run', 'deltaE2000 between accent and frame', { deltaE });
 
@@ -65,8 +66,7 @@ export class GalleryHarmonize implements TaskInterface {
     const shift    = diff > 0 ? 30 : -30;
     const newHue   = ((accentHue + shift) % 360 + 360) % 360;
 
-    const newAccent = ctx.math.invoke<ColorRecordInterface>(
-      'oklchToRgb',
+    const newAccent = oklchToRgb.apply(
       accent.oklch.l,
       accent.oklch.c,
       newHue,

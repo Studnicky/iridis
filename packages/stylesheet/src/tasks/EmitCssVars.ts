@@ -1,6 +1,5 @@
 import type {
   ColorRecordInterface,
-  MathPrimitiveInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,

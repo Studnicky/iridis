@@ -16,7 +16,7 @@
  * undefined.
  */
 
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { Engine, coreTasks } from '@studnicky/iridis';
 
 import type { DocsConfigType } from '../schemas/docsConfig.schema.ts';
 import { roleSchemaByName } from '../schemas/roleSchemas.ts';
@@ -53,7 +53,6 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
 
   try {
     const engine = new Engine();
-    for (const m of mathBuiltins) engine.math.register(m);
     for (const t of coreTasks)    engine.tasks.register(t);
     engine.pipeline(PIPELINE);
 

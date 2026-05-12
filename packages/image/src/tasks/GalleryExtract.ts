@@ -1,10 +1,10 @@
 import type {
-  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { clusterMedianCut } from '@studnicky/iridis';
 
 /**
  * `gallery:extract`
@@ -43,18 +43,14 @@ export class GalleryExtract implements TaskInterface {
 
     const clamp = Math.min(k, state.colors.length);
 
-    const dominant = ctx.math.invoke<ColorRecordInterface[]>(
-      'clusterMedianCut',
-      state.colors,
-      clamp,
-    );
+    const dominant = clusterMedianCut.apply(state.colors, clamp);
 
     const updatedMeta: Record<string, unknown> = {
       ...galleryMeta,
       'dominantColors': dominant,
     };
 
-    state.metadata['gallery'] = updatedMeta;
+    (state.metadata as Record<string, unknown>)['gallery'] = updatedMeta;
 
     state.colors.splice(0, state.colors.length, ...dominant);
 

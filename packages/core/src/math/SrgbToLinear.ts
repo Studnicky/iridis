@@ -1,26 +1,9 @@
-import type { MathPrimitiveInterface, RgbInterface } from '../types/index.ts';
+import type { RgbInterface } from '../model/types.ts';
 
-function decode(v: number): number {
-  if (v <= 0.04045) {
-    return v / 12.92;
-  }
-  return Math.pow((v + 0.055) / 1.055, 2.4);
-}
-
-/**
- * Math primitive that converts gamma-encoded sRGB components into
- * linear-light values via the standard sRGB transfer function. Used by
- * any math that needs a physically meaningful linear space (luminance,
- * blending, gamut mapping).
- */
-export class SrgbToLinear implements MathPrimitiveInterface {
+export class SrgbToLinear {
   readonly 'name' = 'srgbToLinear';
 
-  apply(...args: readonly unknown[]): RgbInterface {
-    const [r, g, b] = args;
-    if (typeof r !== 'number' || typeof g !== 'number' || typeof b !== 'number') {
-      throw new Error('SrgbToLinear.apply: expected (r: number, g: number, b: number)');
-    }
+  apply(r: number, g: number, b: number): RgbInterface {
     return {
       'r': decode(r),
       'g': decode(g),

@@ -1,5 +1,4 @@
 import type {
-  MathPrimitiveInterface,
   PluginInterface,
   TaskInterface,
 } from '@studnicky/iridis';
@@ -35,10 +34,6 @@ export class VscodePlugin implements PluginInterface {
       emitVscodeUiPalette,
       emitVscodeThemeJson,
     ];
-  }
-
-  math(): readonly MathPrimitiveInterface[] {
-    return [];
   }
 }
 

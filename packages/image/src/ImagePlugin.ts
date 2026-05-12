@@ -1,5 +1,4 @@
 import type {
-  MathPrimitiveInterface,
   PluginInterface,
   TaskInterface,
 } from '@studnicky/iridis';
@@ -22,10 +21,6 @@ export class ImagePlugin implements PluginInterface {
 
   tasks(): readonly TaskInterface[] {
     return [galleryExtract, galleryAssignRoles, galleryHarmonize];
-  }
-
-  math(): readonly MathPrimitiveInterface[] {
-    return [];
   }
 }
 

@@ -8,8 +8,7 @@
 
 import { Engine }                  from './engine/Engine.ts';
 import { coreTasks }               from './tasks/index.ts';
-import { mathBuiltins }            from './math/index.ts';
-import type { FramingType, RoleSchemaInterface } from './types/index.ts';
+import type { FramingType, RoleSchemaInterface } from './model/types.ts';
 
 const SCHEMA_DARK: RoleSchemaInterface = {
   'name':  'quick-dark',
@@ -56,7 +55,6 @@ export async function quickPalette(
   framing: FramingType = 'dark',
 ): Promise<QuickPaletteInterface> {
   const engine = new Engine();
-  for (const m of mathBuiltins) engine.math.register(m);
   for (const t of coreTasks)    engine.tasks.register(t);
   engine.pipeline(PIPELINE);
 

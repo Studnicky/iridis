@@ -1,11 +1,5 @@
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../types/index.ts';
+import type { ColorRecordInterface } from '../model/types.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
-
-function isColorRecord(v: unknown): v is ColorRecordInterface {
-  if (typeof v !== 'object' || v === null) return false;
-  const c = v as Record<string, unknown>;
-  return typeof c['oklch'] === 'object' && c['oklch'] !== null;
-}
 
 interface BucketInterface {
   colors: ColorRecordInterface[];
@@ -58,27 +52,14 @@ function splitBucket(bucket: BucketInterface): [BucketInterface, BucketInterface
   ];
 }
 
-/**
- * Math primitive that reduces an arbitrary palette of colors to `k`
- * representative colors via Heckbert's median-cut algorithm operating
- * in OKLCH. Splits along whichever axis (L, C, or H) currently spans
- * the widest range; each bucket's median is the channel-wise mean of
- * its members. Used by `clamp:count` to cap downstream work when an
- * intake stage produces hundreds of pixels (e.g. image extraction).
- */
-export class ClusterMedianCut implements MathPrimitiveInterface {
+export class ClusterMedianCut {
   readonly 'name' = 'clusterMedianCut';
 
-  apply(...args: readonly unknown[]): ColorRecordInterface[] {
-    const [colors, k] = args;
-    if (!Array.isArray(colors) || !colors.every(isColorRecord)) {
-      throw new Error('ClusterMedianCut.apply: expected (colors: ColorRecord[], k: number)');
-    }
-    if (typeof k !== 'number' || k < 1) {
+  apply(colors: readonly ColorRecordInterface[], k: number): ColorRecordInterface[] {
+    if (colors.length === 0) return [];
+    if (k < 1) {
       throw new Error('ClusterMedianCut.apply: k must be a positive number');
     }
-
-    if (colors.length === 0) return [];
 
     const targetK = Math.min(Math.floor(k), colors.length);
     let buckets: BucketInterface[] = [{ colors: [...colors] }];

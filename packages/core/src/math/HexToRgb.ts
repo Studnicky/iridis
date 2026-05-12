@@ -1,20 +1,10 @@
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../types/index.ts';
+import type { ColorRecordInterface } from '../model/types.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
-/**
- * Math primitive that parses a hex color string and returns a fully
- * populated `ColorRecordInterface` (rgb + oklch + canonical hex).
- * Thin wrapper around {@link colorRecordFactory.fromHex} that satisfies
- * the variadic `MathPrimitiveInterface.apply` contract used by registries.
- */
-export class HexToRgb implements MathPrimitiveInterface {
+export class HexToRgb {
   readonly 'name' = 'hexToRgb';
 
-  apply(...args: readonly unknown[]): ColorRecordInterface {
-    const [hex] = args;
-    if (typeof hex !== 'string') {
-      throw new Error('HexToRgb.apply: expected (hex: string)');
-    }
+  apply(hex: string): ColorRecordInterface {
     return colorRecordFactory.fromHex(hex);
   }
 }

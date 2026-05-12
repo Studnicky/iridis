@@ -1,35 +1,9 @@
-import type { MathPrimitiveInterface } from '../types/index.ts';
+import type { HslResultInterface } from '../model/types.ts';
 
-/**
- * Output shape for {@link RgbToHsl}: `h` in degrees, `s` and `l` in
- * 0..1, `alpha` in 0..1. Distinct from `ColorRecordInterface` because
- * HSL is a transient working coordinate, not a canonical encoding.
- */
-export interface HslResultInterface {
-  readonly 'h': number;
-  readonly 's': number;
-  readonly 'l': number;
-  readonly 'alpha': number;
-}
-
-/**
- * Math primitive that decomposes sRGB components into HSL coordinates.
- * Returns `{h, s, l, alpha}` rather than a `ColorRecordInterface` because
- * HSL is a transient computation surface, not an iridis canonical encoding.
- */
-export class RgbToHsl implements MathPrimitiveInterface {
+export class RgbToHsl {
   readonly 'name' = 'rgbToHsl';
 
-  apply(...args: readonly unknown[]): HslResultInterface {
-    const [r, g, b, alpha] = args;
-    if (typeof r !== 'number' || typeof g !== 'number' || typeof b !== 'number') {
-      throw new Error('RgbToHsl.apply: expected (r: number, g: number, b: number, alpha?: number)');
-    }
-    const a = alpha === undefined ? 1 : alpha;
-    if (typeof a !== 'number') {
-      throw new Error('RgbToHsl.apply: alpha must be a number');
-    }
-
+  apply(r: number, g: number, b: number, alpha: number = 1): HslResultInterface {
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const delta = max - min;
@@ -58,7 +32,7 @@ export class RgbToHsl implements MathPrimitiveInterface {
       'h':     h,
       's':     s,
       'l':     l,
-      'alpha': Math.max(0, Math.min(1, a)),
+      'alpha': Math.max(0, Math.min(1, alpha)),
     };
   }
 }

@@ -1,10 +1,10 @@
 import type {
-  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
-} from '../../types/index.ts';
+} from '../../model/types.ts';
+import { clusterMedianCut } from '../../math/ClusterMedianCut.ts';
 
 const DEFAULT_MAX = 64;
 
@@ -45,11 +45,7 @@ export class ClampCount implements TaskInterface {
       `Reducing ${state.colors.length} colors → ${max} via clusterMedianCut`,
     );
 
-    const clustered = ctx.math.invoke<ColorRecordInterface[]>(
-      'clusterMedianCut',
-      state.colors,
-      max,
-    );
+    const clustered = clusterMedianCut.apply(state.colors, max);
 
     state.colors.length = 0;
     for (const c of clustered) {

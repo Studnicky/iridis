@@ -4,6 +4,15 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import {
+  colorRecordFactory,
+  darken,
+  desaturate,
+  ensureContrast,
+  lighten,
+  mixHsl,
+  saturate,
+} from '@studnicky/iridis';
 import { MODIFIER_TRANSFORMS } from '../data/modifierTransforms.ts';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from '../data/derivationParams.ts';
 
@@ -52,6 +61,7 @@ export class ApplyModifiers implements TaskInterface {
     }
 
     const bg = roleHex(state, 'background') ?? '#000000';
+    const bgRecord = colorRecordFactory.fromHex(bg);
     const rules: Record<string, SemanticRuleEntryInterface> = {};
 
     const typesLen = TOKEN_TYPES.length;
@@ -81,35 +91,35 @@ export class ApplyModifiers implements TaskInterface {
         const transform = MODIFIER_TRANSFORMS[modifier];
         if (!transform) continue;
 
-        let color = baseColor;
+        let color = colorRecordFactory.fromHex(baseColor);
 
         if (transform.lightness) {
           if (transform.lightness > 0) {
-            color = ctx.math.invoke<string>('lighten', color, transform.lightness);
+            color = lighten.apply(color, transform.lightness);
           } else {
-            color = ctx.math.invoke<string>('darken', color, -transform.lightness);
+            color = darken.apply(color, -transform.lightness);
           }
         }
 
         if (transform.saturation) {
           if (transform.saturation > 0) {
-            color = ctx.math.invoke<string>('saturate', color, transform.saturation);
+            color = saturate.apply(color, transform.saturation);
           } else {
-            color = ctx.math.invoke<string>('desaturate', color, -transform.saturation);
+            color = desaturate.apply(color, -transform.saturation);
           }
         }
 
         if (transform.mixWith && transform.mixWeight) {
           const mixHex = roleHex(state, transform.mixWith);
           if (mixHex) {
-            color = ctx.math.invoke<string>('mixHsl', color, mixHex, transform.mixWeight);
+            color = mixHsl.apply(color, colorRecordFactory.fromHex(mixHex), transform.mixWeight);
           }
         }
 
-        color = ctx.math.invoke<string>('ensureContrast', color, bg, 4.5);
+        color = ensureContrast.apply(color, bgRecord, 4.5);
 
         const selector = `${tokenType}.${modifier}`;
-        const entry: SemanticRuleEntryInterface = { 'foreground': color };
+        const entry: SemanticRuleEntryInterface = { 'foreground': color.hex };
         if (transform.fontStyle) {
           entry['fontStyle'] = transform.fontStyle;
         }

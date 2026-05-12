@@ -1,7 +1,7 @@
 /**
  * Engine end-to-end tests.
  *
- * Tests use the real coreTasks + mathBuiltins via the public package API.
+ * Tests use the real coreTasks via the public package API.
  * Each test constructs a fresh Engine instance to avoid shared state.
  */
 import { test } from 'node:test';
@@ -13,7 +13,6 @@ import type {
   TaskInterface,
 } from '@studnicky/iridis';
 import { Engine }            from '@studnicky/iridis';
-import { mathBuiltins }      from '@studnicky/iridis/math';
 import { coreTasks }         from '@studnicky/iridis/tasks';
 import { assert }            from './ScenarioRunner.ts';
 
@@ -23,7 +22,6 @@ import { assert }            from './ScenarioRunner.ts';
 
 function freshEngine(): Engine {
   const engine = new Engine();
-  for (const m of mathBuiltins) engine.math.register(m);
   for (const t of coreTasks)    engine.tasks.register(t);
   return engine;
 }
@@ -262,7 +260,6 @@ test('Engine e2e :: unhappy :: pipeline with nonexistent task name throws', () =
 
 test('Engine e2e :: unhappy :: pipeline task that throws propagates error', async () => {
   const engine = new Engine();
-  for (const m of mathBuiltins) engine.math.register(m);
 
   const bombTask: TaskInterface = {
     'name': 'bomb:task',

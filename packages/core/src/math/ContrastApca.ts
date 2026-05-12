@@ -1,35 +1,19 @@
-/**
- * APCA-W3 0.0.98G-4g formula. See https://github.com/Myndex/SAPC-APCA.
- *
- * APCA returns a signed Lightness contrast (Lc) in the −108..+106 range
- * rather than a symmetric ratio. Sign indicates polarity: positive means
- * dark text on light background, negative the inverse. Threshold guidance
- * differs from WCAG (e.g. body text targets |Lc| ≥ 60), so callers should
- * choose minRatio with that scale in mind.
- */
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../types/index.ts';
-
-function isColorRecord(v: unknown): v is ColorRecordInterface {
-  if (typeof v !== 'object' || v === null) return false;
-  const c = v as Record<string, unknown>;
-  return typeof c['rgb'] === 'object' && c['rgb'] !== null;
-}
-
-function toLinear(v: number): number {
-  if (v <= 0.04045) return v / 12.92;
-  return Math.pow((v + 0.055) / 1.055, 2.4);
-}
+// APCA-W3 0.0.98G-4g formula — https://github.com/Myndex/SAPC-APCA
+import type { ColorRecordInterface } from '../model/types.ts';
+import { srgbToLinear } from './SrgbToLinear.ts';
 
 function fgLuminance(r: number, g: number, b: number): number {
-  return 0.2126729 * Math.pow(toLinear(r), 0.56)
-       + 0.7151522 * Math.pow(toLinear(g), 0.56)
-       + 0.0721750 * Math.pow(toLinear(b), 0.56);
+  const lin = srgbToLinear.apply(r, g, b);
+  return 0.2126729 * Math.pow(lin.r, 0.56)
+       + 0.7151522 * Math.pow(lin.g, 0.56)
+       + 0.0721750 * Math.pow(lin.b, 0.56);
 }
 
 function bgLuminance(r: number, g: number, b: number): number {
-  return 0.2126729 * Math.pow(toLinear(r), 0.65)
-       + 0.7151522 * Math.pow(toLinear(g), 0.65)
-       + 0.0721750 * Math.pow(toLinear(b), 0.65);
+  const lin = srgbToLinear.apply(r, g, b);
+  return 0.2126729 * Math.pow(lin.r, 0.65)
+       + 0.7151522 * Math.pow(lin.g, 0.65)
+       + 0.0721750 * Math.pow(lin.b, 0.65);
 }
 
 const SA98G_NORM_BG  = 0.56;
@@ -40,23 +24,12 @@ const SA98G_SCALE    = 1.14;
 const SA98G_LOW_CLIP = 0.001;
 const SA98G_OFFSET   = 0.027;
 
-/**
- * Math primitive that computes APCA Lightness contrast (Lc) between
- * `(text, background)`. Argument order matters — APCA is asymmetric.
- * Returns 0 when polarity is below the low-clip threshold; otherwise
- * scales to the documented −108..+106 range.
- */
-export class ContrastApca implements MathPrimitiveInterface {
+export class ContrastApca {
   readonly 'name' = 'contrastApca';
 
-  apply(...args: readonly unknown[]): number {
-    const [text, background] = args;
-    if (!isColorRecord(text) || !isColorRecord(background)) {
-      throw new Error('ContrastApca.apply: expected (text: ColorRecord, background: ColorRecord)');
-    }
-
+  apply(text: ColorRecordInterface, background: ColorRecordInterface): number {
     const Ytxt = fgLuminance(text.rgb.r,       text.rgb.g,       text.rgb.b);
-    const Ybg  = bgLuminance(background.rgb.r,  background.rgb.g, background.rgb.b);
+    const Ybg  = bgLuminance(background.rgb.r, background.rgb.g, background.rgb.b);
 
     const txtClamp = Ytxt < SA98G_CLAMP
       ? Ytxt + Math.pow(SA98G_CLAMP - Ytxt, SA98G_CLAMP_P)

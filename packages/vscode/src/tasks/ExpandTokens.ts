@@ -5,6 +5,16 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import {
+  colorRecordFactory,
+  darken,
+  desaturate,
+  ensureContrast,
+  hueShift,
+  lighten,
+  mixHsl,
+  saturate,
+} from '@studnicky/iridis';
 import { DERIVATION_PARAMS, TOKEN_FAMILY, TOKEN_TYPES } from '../data/derivationParams.ts';
 
 /** State shape written by this task. */
@@ -34,6 +44,8 @@ export class ExpandTokens implements TaskInterface {
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const meta = getVscodeMeta(state);
+    const bg = roleHex(state, 'background');
+    const bgRecord = colorRecordFactory.fromHex(bg);
 
     // Math primitives operate on ColorRecord; keep the records on the
     // role lookups so we don't reconvert at every invoke.
@@ -61,41 +73,39 @@ export class ExpandTokens implements TaskInterface {
 
       // operator is special: mix muted + foreground
       if (tokenType === 'operator') {
-        const mixed = ctx.math.invoke<ColorRecordInterface>('mixHsl', mutedRec, fgRec, 0.4);
-        const contrasted = ctx.math.invoke<ColorRecordInterface>('ensureContrast', mixed, bgRec, 3.5);
+        const mixed = mixHsl.apply(
+          colorRecordFactory.fromHex(mutedHex),
+          colorRecordFactory.fromHex(fgHex),
+          0.4,
+        );
+        const contrasted = ensureContrast.apply(mixed, bgRecord, 3.5);
         baseTokens['operator'] = contrasted.hex;
         continue;
       }
 
-      const sourceRec = state.roles[familyRole];
-      if (!sourceRec) {
-        ctx.logger.warn('ExpandTokens', 'run', `Source role '${familyRole}' not found for token type '${tokenType}'`);
-        continue;
-      }
-
-      let color: ColorRecordInterface = sourceRec;
+      let color = colorRecordFactory.fromHex(roleHex(state, familyRole));
 
       if (params.hue) {
-        color = ctx.math.invoke<ColorRecordInterface>('hueShift', color, params.hue);
+        color = hueShift.apply(color, params.hue);
       }
       if (params.sat) {
         if (params.sat > 0) {
-          color = ctx.math.invoke<ColorRecordInterface>('saturate', color, params.sat);
+          color = saturate.apply(color, params.sat);
         } else {
-          color = ctx.math.invoke<ColorRecordInterface>('desaturate', color, -params.sat);
+          color = desaturate.apply(color, -params.sat);
         }
       }
       if (params.light) {
         if (params.light > 0) {
-          color = ctx.math.invoke<ColorRecordInterface>('lighten', color, params.light);
+          color = lighten.apply(color, params.light);
         } else {
-          color = ctx.math.invoke<ColorRecordInterface>('darken', color, -params.light);
+          color = darken.apply(color, -params.light);
         }
       }
 
       // comment gets relaxed contrast (3.0), everything else 4.5
       const minContrast = tokenType === 'comment' ? 3.0 : 4.5;
-      const contrasted = ctx.math.invoke<ColorRecordInterface>('ensureContrast', color, bgRec, minContrast);
+      const contrasted = ensureContrast.apply(color, bgRecord, minContrast);
       baseTokens[tokenType] = contrasted.hex;
     }
 

@@ -1,18 +1,7 @@
-/**
- * Delta E 2000 perceptual color difference computed against an OKLab-derived
- * Lab, scaled to roughly match the CIE Lab numeric range expected by the
- * Sharma et al. 2005 formula. OKLCH is a direct reparametrisation of OKLab,
- * so (L, a*, b*) = (oklch.l, c*cos(h), c*sin(h)) before scaling. The result
- * is a perceptual distance: single-digit values indicate "just noticeable"
- * differences, anything above 10 is clearly distinct.
- */
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../types/index.ts';
-
-function isColorRecord(v: unknown): v is ColorRecordInterface {
-  if (typeof v !== 'object' || v === null) return false;
-  const c = v as Record<string, unknown>;
-  return typeof c['oklch'] === 'object' && c['oklch'] !== null;
-}
+// Delta E 2000 computed via OKLCH-derived Lab (D65). OKLCH is a direct reparametrisation
+// of OKLab, so (L, a*, b*) = (oklch.l, c*cos(h), c*sin(h)) in the OKLab encoding.
+// The CIE ΔE 2000 formula is applied to these Lab values per Sharma et al. 2005.
+import type { ColorRecordInterface } from '../model/types.ts';
 
 function oklchToOklab(l: number, c: number, h: number): [number, number, number] {
   const hRad = (h * Math.PI) / 180;
@@ -27,21 +16,10 @@ function rad(d: number): number {
   return (d * Math.PI) / 180;
 }
 
-/**
- * Math primitive that returns the ΔE 2000 perceptual distance between
- * two colors. Symmetric. Used by tasks that need to test whether two
- * candidate colors are visibly distinct — e.g. ensuring no two assigned
- * roles collapse to indistinguishable values after contrast nudging.
- */
-export class DeltaE2000 implements MathPrimitiveInterface {
+export class DeltaE2000 {
   readonly 'name' = 'deltaE2000';
 
-  apply(...args: readonly unknown[]): number {
-    const [a, b] = args;
-    if (!isColorRecord(a) || !isColorRecord(b)) {
-      throw new Error('DeltaE2000.apply: expected (a: ColorRecord, b: ColorRecord)');
-    }
-
+  apply(a: ColorRecordInterface, b: ColorRecordInterface): number {
     const [L1, a1, b1] = oklchToOklab(a.oklch.l, a.oklch.c, a.oklch.h);
     const [L2, a2, b2] = oklchToOklab(b.oklch.l, b.oklch.c, b.oklch.h);
 
