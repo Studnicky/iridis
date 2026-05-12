@@ -1,13 +1,9 @@
-import type { MathPrimitiveInterface, RgbInterface } from '../model/types.ts';
+import type { RgbInterface } from '../model/types.ts';
 
-export class SrgbToLinear implements MathPrimitiveInterface {
+export class SrgbToLinear {
   readonly 'name' = 'srgbToLinear';
 
-  apply(...args: readonly unknown[]): RgbInterface {
-    const [r, g, b] = args;
-    if (typeof r !== 'number' || typeof g !== 'number' || typeof b !== 'number') {
-      throw new Error('SrgbToLinear.apply: expected (r: number, g: number, b: number)');
-    }
+  apply(r: number, g: number, b: number): RgbInterface {
     return {
       'r': this.decode(r),
       'g': this.decode(g),

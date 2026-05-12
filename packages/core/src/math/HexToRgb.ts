@@ -1,14 +1,10 @@
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
+import type { ColorRecordInterface } from '../model/types.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
-export class HexToRgb implements MathPrimitiveInterface {
+export class HexToRgb {
   readonly 'name' = 'hexToRgb';
 
-  apply(...args: readonly unknown[]): ColorRecordInterface {
-    const [hex] = args;
-    if (typeof hex !== 'string') {
-      throw new Error('HexToRgb.apply: expected (hex: string)');
-    }
+  apply(hex: string): ColorRecordInterface {
     return colorRecordFactory.fromHex(hex);
   }
 }

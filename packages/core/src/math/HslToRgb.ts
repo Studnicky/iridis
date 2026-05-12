@@ -1,4 +1,4 @@
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
+import type { ColorRecordInterface } from '../model/types.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
 function hslToRgbComponents(h: number, s: number, l: number): [number, number, number] {
@@ -27,20 +27,12 @@ function hslToRgbComponents(h: number, s: number, l: number): [number, number, n
   return [r + m, g + m, b + m];
 }
 
-export class HslToRgb implements MathPrimitiveInterface {
+export class HslToRgb {
   readonly 'name' = 'hslToRgb';
 
-  apply(...args: readonly unknown[]): ColorRecordInterface {
-    const [h, s, l, alpha] = args;
-    if (typeof h !== 'number' || typeof s !== 'number' || typeof l !== 'number') {
-      throw new Error('HslToRgb.apply: expected (h: number, s: number, l: number, alpha?: number)');
-    }
-    const a = alpha === undefined ? 1 : alpha;
-    if (typeof a !== 'number') {
-      throw new Error('HslToRgb.apply: alpha must be a number');
-    }
+  apply(h: number, s: number, l: number, alpha: number = 1): ColorRecordInterface {
     const [r, g, b] = hslToRgbComponents(((h % 360) + 360) % 360, Math.max(0, Math.min(1, s)), Math.max(0, Math.min(1, l)));
-    return colorRecordFactory.fromRgb(r, g, b, a);
+    return colorRecordFactory.fromRgb(r, g, b, alpha);
   }
 }
 

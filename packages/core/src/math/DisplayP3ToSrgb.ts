@@ -1,11 +1,5 @@
-import type { MathPrimitiveInterface, RgbInterface } from '../model/types.ts';
-
-function p3Decode(v: number): number {
-  if (v <= 0.04045) {
-    return v / 12.92;
-  }
-  return Math.pow((v + 0.055) / 1.055, 2.4);
-}
+import type { RgbInterface } from '../model/types.ts';
+import { srgbToLinear } from './SrgbToLinear.ts';
 
 function srgbEncode(v: number): number {
   if (v <= 0.0031308) {
@@ -14,18 +8,14 @@ function srgbEncode(v: number): number {
   return 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
 }
 
-export class DisplayP3ToSrgb implements MathPrimitiveInterface {
+export class DisplayP3ToSrgb {
   readonly 'name' = 'displayP3ToSrgb';
 
-  apply(...args: readonly unknown[]): RgbInterface {
-    const [r, g, b] = args;
-    if (typeof r !== 'number' || typeof g !== 'number' || typeof b !== 'number') {
-      throw new Error('DisplayP3ToSrgb.apply: expected (r: number, g: number, b: number)');
-    }
-
-    const rl = p3Decode(r);
-    const gl = p3Decode(g);
-    const bl = p3Decode(b);
+  apply(r: number, g: number, b: number): RgbInterface {
+    const lin = srgbToLinear.apply(r, g, b);
+    const rl = lin.r;
+    const gl = lin.g;
+    const bl = lin.b;
 
     const sr = srgbEncode(Math.max(0, Math.min(1,  1.2249401 * rl - 0.2249404 * gl + 0.0000000 * bl)));
     const sg = srgbEncode(Math.max(0, Math.min(1, -0.0420569 * rl + 1.0420571 * gl - 0.0000001 * bl)));

@@ -43,6 +43,13 @@ export interface RgbInterface {
   readonly b: number;
 }
 
+export interface HslResultInterface {
+  readonly h:     number;
+  readonly s:     number;
+  readonly l:     number;
+  readonly alpha: number;
+}
+
 export interface ColorHintsInterface {
   readonly role?:   string;
   readonly intent?: ColorIntentType;
@@ -113,7 +120,6 @@ export interface PaletteStateInterface {
 export interface PipelineContextInterface {
   readonly engine:    EngineInterface;
   readonly tasks:     TaskRegistryInterface;
-  readonly math:      ColorMathRegistryInterface;
   readonly logger:    LoggerInterface;
   readonly startedAt: number;
   readonly cache:     Map<string, unknown>;
@@ -141,16 +147,10 @@ export interface TaskInterface {
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): Promise<void> | void;
 }
 
-export interface MathPrimitiveInterface {
-  readonly name: string;
-  apply(...args: readonly unknown[]): unknown;
-}
-
 export interface PluginInterface {
   readonly name:    string;
   readonly version: string;
   tasks(): readonly TaskInterface[];
-  math():  readonly MathPrimitiveInterface[];
 }
 
 export interface TaskRegistryInterface {
@@ -162,17 +162,8 @@ export interface TaskRegistryInterface {
   hooks(phase: LifecyclePhaseType): readonly TaskInterface[];
 }
 
-export interface ColorMathRegistryInterface {
-  register(primitive: MathPrimitiveInterface): void;
-  resolve(name: string): MathPrimitiveInterface;
-  has(name: string): boolean;
-  list(): readonly string[];
-  invoke<TResult = unknown>(name: string, ...args: readonly unknown[]): TResult;
-}
-
 export interface EngineInterface {
   readonly tasks: TaskRegistryInterface;
-  readonly math:  ColorMathRegistryInterface;
   adopt(plugin: PluginInterface): void;
   pipeline(order: readonly string[]): void;
   run(input: InputInterface): Promise<PaletteStateInterface>;

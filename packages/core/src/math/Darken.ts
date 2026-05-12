@@ -1,23 +1,10 @@
-import type { ColorRecordInterface, MathPrimitiveInterface } from '../model/types.ts';
+import type { ColorRecordInterface } from '../model/types.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
-function isColorRecord(v: unknown): v is ColorRecordInterface {
-  if (typeof v !== 'object' || v === null) return false;
-  const c = v as Record<string, unknown>;
-  return typeof c['oklch'] === 'object' && c['oklch'] !== null;
-}
-
-export class Darken implements MathPrimitiveInterface {
+export class Darken {
   readonly 'name' = 'darken';
 
-  apply(...args: readonly unknown[]): ColorRecordInterface {
-    const [color, deltaL] = args;
-    if (!isColorRecord(color)) {
-      throw new Error('Darken.apply: expected (color: ColorRecord, deltaL: number)');
-    }
-    if (typeof deltaL !== 'number') {
-      throw new Error('Darken.apply: deltaL must be a number');
-    }
+  apply(color: ColorRecordInterface, deltaL: number): ColorRecordInterface {
     const l = Math.max(0, Math.min(1, color.oklch.l - deltaL));
     return colorRecordFactory.fromOklch(l, color.oklch.c, color.oklch.h, color.alpha);
   }
