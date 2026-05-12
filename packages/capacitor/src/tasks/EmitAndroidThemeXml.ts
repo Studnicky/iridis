@@ -5,6 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { getOrCreateOutput } from '@studnicky/iridis';
 
 function resolveHexRole(
   roles: Record<string, ColorRecordInterface>,
@@ -36,17 +37,13 @@ export class EmitAndroidThemeXml implements TaskInterface {
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const roles = state.roles;
 
-    const capacitorOutputs = (state.outputs['capacitor'] ?? {}) as Record<string, unknown>;
-    const statusBarOutput  = capacitorOutputs['statusBar'] as Record<string, unknown> | undefined;
-    const splashOutput     = capacitorOutputs['splashScreen'] as Record<string, unknown> | undefined;
+    const capacitorOut = getOrCreateOutput(state, 'capacitor');
 
-    const statusBarColor    = typeof statusBarOutput?.['backgroundColor'] === 'string'
-      ? statusBarOutput['backgroundColor']
-      : resolveHexRole(roles, 'topBar', 'surface', 'base');
+    const statusBarColor = capacitorOut.statusBar?.backgroundColor
+      ?? resolveHexRole(roles, 'topBar', 'surface', 'base');
 
-    const splashColor       = typeof splashOutput?.['backgroundColor'] === 'string'
-      ? splashOutput['backgroundColor']
-      : resolveHexRole(roles, 'surface', 'background', 'base');
+    const splashColor = capacitorOut.splashScreen?.backgroundColor
+      ?? resolveHexRole(roles, 'surface', 'background', 'base');
 
     const windowBackground  = resolveHexRole(roles, 'background', 'surface', 'base');
     const primaryColor      = resolveHexRole(roles, 'primary', 'base', 'accent');
@@ -72,11 +69,7 @@ export class EmitAndroidThemeXml implements TaskInterface {
       '</resources>',
     ].join('\n');
 
-    const existingCapacitor = (state.outputs['capacitor'] ?? {}) as Record<string, unknown>;
-    state.outputs['capacitor'] = {
-      ...existingCapacitor,
-      'androidThemeXml': xml,
-    };
+    capacitorOut['androidThemeXml'] = xml;
 
     ctx.logger.debug('EmitAndroidThemeXml', 'run', 'Android themes.xml fragment generated');
   }

@@ -4,16 +4,11 @@ import type {
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
+  VariantConfigInterface,
 } from '../../types/index.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
-interface VariantConfig {
-  'name':  string;
-  'invertLightness': boolean;
-  'lightnessOffset'?: number;
-}
-
-const DEFAULT_VARIANTS: readonly VariantConfig[] = [
+const DEFAULT_VARIANTS: readonly VariantConfigInterface[] = [
   { 'name': 'dark',  'invertLightness': true  },
   { 'name': 'light', 'invertLightness': false },
 ];
@@ -62,8 +57,8 @@ export class DeriveVariant implements TaskInterface {
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const configRaw = state.metadata['variantConfig'];
-    const configs: readonly VariantConfig[] = Array.isArray(configRaw)
-      ? (configRaw as VariantConfig[])
+    const configs: readonly VariantConfigInterface[] = Array.isArray(configRaw)
+      ? configRaw
       : DEFAULT_VARIANTS;
 
     const roleNames = Object.keys(state.roles);

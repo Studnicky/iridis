@@ -2,6 +2,7 @@ import type {
   ColorRecordInterface,
   ContrastAlgorithmType,
   ContrastPairInterface,
+  ContrastReportEntryInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
@@ -10,16 +11,6 @@ import type {
 import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
 import { contrastApca }   from '../../math/ContrastApca.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
-
-interface ContrastReport {
-  'foreground':  string;
-  'background':  string;
-  'algorithm':   string;
-  'ratio':       number;
-  'minRatio':    number;
-  'passed':      boolean;
-  'adjusted':    boolean;
-}
 
 function measureContrast(
   algorithm: ContrastAlgorithmType,
@@ -54,7 +45,7 @@ export class EnforceContrast implements TaskInterface {
       return;
     }
 
-    const report: ContrastReport[] = [];
+    const report: ContrastReportEntryInterface[] = [];
 
     for (const pair of allPairs) {
       const fgColor = state.roles[pair.foreground];

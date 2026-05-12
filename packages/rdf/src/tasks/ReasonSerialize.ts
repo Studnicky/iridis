@@ -7,6 +7,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
 
 type SerializationFormatType = 'Turtle' | 'TriG' | 'N-Quads' | 'application/ld+json';
 
@@ -63,7 +64,7 @@ export class ReasonSerialize implements TaskInterface {
       return;
     }
 
-    const reasoningMeta = (state.metadata['reasoning'] ?? {}) as Record<string, unknown>;
+    const reasoningMeta = getOrCreateMetadata(state, 'reasoning');
     const format        = resolveFormat(reasoningMeta['format']);
 
     ctx.logger.debug('ReasonSerialize', 'run', 'serializing graph', { format });
@@ -78,13 +79,8 @@ export class ReasonSerialize implements TaskInterface {
       return;
     }
 
-    const outputs   = state.outputs;
-    const reasoning = (outputs['reasoning'] ?? {}) as Record<string, unknown>;
-
-    outputs['reasoning'] = {
-      ...reasoning,
-      'serialized': serialized,
-    };
+    const reasoning = getOrCreateOutput(state, 'reasoning');
+    reasoning['serialized'] = serialized;
 
     ctx.logger.info('ReasonSerialize', 'run', 'serialization complete', {
       format,

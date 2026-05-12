@@ -5,22 +5,10 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { getOrCreateMetadata } from '@studnicky/iridis';
 import { cvdMatrices } from '../data/cvdMatrices.ts';
 import type { CvdMatrixInterface } from '../types/index.ts';
-
-interface CvdPairWarningInterface {
-  readonly foreground:  string;
-  readonly background:  string;
-  readonly cvdType:     'protanopia' | 'deuteranopia' | 'tritanopia';
-  readonly originalLuminanceContrast: number;
-  readonly simulatedLuminanceContrast: number;
-  readonly drop: number;
-  readonly threshold: number;
-}
-
-interface CvdMetaInterface {
-  readonly warnings: readonly CvdPairWarningInterface[];
-}
+import type { CvdPairWarningInterface } from '../types/augmentation.ts';
 
 function linearize(v: number): number {
   return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
@@ -146,11 +134,10 @@ export class EnforceCvdSimulate implements TaskInterface {
       }
     }
 
-    const wcagMeta = (state.metadata['wcag'] ?? {}) as Record<string, unknown>;
-    const cvdResult: CvdMetaInterface = { 'warnings': warnings };
-    state.metadata['wcag'] = { ...wcagMeta, 'cvd': cvdResult };
+    const wcagMeta = getOrCreateMetadata(state, 'wcag');
+    wcagMeta['cvd'] = { 'warnings': warnings };
 
-    ctx.logger.debug('EnforceCvdSimulate', 'run', `CVD simulation complete. ${warnings.length} warning(s).`, cvdResult);
+    ctx.logger.debug('EnforceCvdSimulate', 'run', `CVD simulation complete. ${warnings.length} warning(s).`, wcagMeta['cvd']);
   }
 }
 

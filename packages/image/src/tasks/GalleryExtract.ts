@@ -4,7 +4,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { clusterMedianCut } from '@studnicky/iridis';
+import { clusterMedianCut, getOrCreateMetadata } from '@studnicky/iridis';
 
 /**
  * `gallery:extract`
@@ -31,8 +31,8 @@ export class GalleryExtract implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const galleryMeta = (state.metadata['gallery'] ?? {}) as Record<string, unknown>;
-    const k = typeof galleryMeta['k'] === 'number' ? galleryMeta['k'] : 5;
+    const galleryMeta = getOrCreateMetadata(state, 'gallery');
+    const k = galleryMeta['k'] ?? 5;
 
     ctx.logger.debug('GalleryExtract', 'run', 'extracting dominant colors', { 'inputCount': state.colors.length, k });
 
@@ -45,12 +45,7 @@ export class GalleryExtract implements TaskInterface {
 
     const dominant = clusterMedianCut.apply(state.colors, clamp);
 
-    const updatedMeta: Record<string, unknown> = {
-      ...galleryMeta,
-      'dominantColors': dominant,
-    };
-
-    (state.metadata as Record<string, unknown>)['gallery'] = updatedMeta;
+    galleryMeta['dominantColors'] = dominant;
 
     state.colors.splice(0, state.colors.length, ...dominant);
 

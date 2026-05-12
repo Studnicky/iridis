@@ -145,17 +145,9 @@ export class EmitCssVars implements TaskInterface {
   // but the class only needs TaskInterface
 
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
-    const prefix  = typeof state.metadata['cssVarPrefix'] === 'string'
-      ? state.metadata['cssVarPrefix']
-      : '--c-';
-
-    const scopeAttr = typeof state.metadata['scopeAttr'] === 'string'
-      ? state.metadata['scopeAttr']
-      : undefined;
-
-    const themeName = typeof state.metadata['themeName'] === 'string'
-      ? state.metadata['themeName']
-      : 'default';
+    const prefix    = state.metadata['cssVarPrefix'] ?? '--c-';
+    const scopeAttr = state.metadata['scopeAttr'];
+    const themeName = state.metadata['themeName']    ?? 'default';
 
     const darkRoles = state.variants['dark'] ?? null;
 
@@ -179,7 +171,7 @@ export class EmitCssVars implements TaskInterface {
       'map':          map,
     };
 
-    (state.outputs as Record<string, unknown>)['cssVars'] = output;
+    state.outputs['cssVars'] = output;
   }
 }
 

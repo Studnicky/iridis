@@ -6,21 +6,8 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { contrastApca, ensureContrast } from '@studnicky/iridis';
-
-interface ApcaPairResultInterface {
-  readonly foreground: string;
-  readonly background: string;
-  readonly algorithm: 'apca';
-  readonly requiredLc: number;
-  readonly beforeLc: number;
-  readonly afterLc: number;
-  readonly pass: boolean;
-}
-
-interface ApcaMetaInterface {
-  readonly pairs: readonly ApcaPairResultInterface[];
-}
+import { contrastApca, ensureContrast, getOrCreateMetadata } from '@studnicky/iridis';
+import type { ApcaPairResultInterface } from '../types/augmentation.ts';
 
 // APCA Lc target selection per WCAG 3 Bronze level working draft (2023).
 // Reference: https://www.w3.org/WAI/GL/task-forces/silver/wiki/Visual_Contrast_of_Text_Subgroup
@@ -119,11 +106,10 @@ export class EnforceApca implements TaskInterface {
       });
     }
 
-    const wcagMeta = (state.metadata['wcag'] ?? {}) as Record<string, unknown>;
-    const apcaResult: ApcaMetaInterface = { 'pairs': results };
-    state.metadata['wcag'] = { ...wcagMeta, 'apca': apcaResult };
+    const wcagMeta = getOrCreateMetadata(state, 'wcag');
+    wcagMeta['apca'] = { 'pairs': results };
 
-    ctx.logger.debug('EnforceApca', 'run', `Processed ${results.length} APCA pair(s)`, apcaResult);
+    ctx.logger.debug('EnforceApca', 'run', `Processed ${results.length} APCA pair(s)`, wcagMeta['apca']);
   }
 }
 

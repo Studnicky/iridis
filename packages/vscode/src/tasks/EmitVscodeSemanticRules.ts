@@ -4,33 +4,10 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateOutput } from '@studnicky/iridis';
+import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
+import type { SemanticRuleEntryInterface } from '../types/augmentation.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
 import { SCOPE_MAPPINGS } from '../data/scopeMappings.ts';
-
-/** VS Code editor.semanticTokenColorCustomizations.rules entry shape. */
-interface SemanticRuleOutputInterface {
-  'foreground'?: string;
-  'fontStyle'?: string;
-}
-
-interface VscodeMetaInterface {
-  'semanticTokenRules'?: Record<string, { 'foreground': string; 'fontStyle'?: string }>;
-  'baseTokens'?: Record<string, string>;
-}
-
-interface VscodeOutputInterface {
-  'semanticTokenRules'?: Record<string, SemanticRuleOutputInterface>;
-  [key: string]: unknown;
-}
-
-function getVscodeMeta(state: PaletteStateInterface): VscodeMetaInterface {
-  const existing = state.metadata['vscode'];
-  if (existing !== null && typeof existing === 'object') {
-    return existing as VscodeMetaInterface;
-  }
-  return {};
-}
 
 function defaultFontStyle(selector: string): string | undefined {
   // selector may be 'variable' or 'variable.readonly'
@@ -50,18 +27,18 @@ export class EmitVscodeSemanticRules implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const meta = getVscodeMeta(state);
+    const meta = getOrCreateMetadata(state, 'vscode');
     const semanticRules = meta['semanticTokenRules'];
 
     if (!semanticRules) {
       throw new Error('EmitVscodeSemanticRules: metadata.vscode.semanticTokenRules not found — run vscode:applyModifiers first');
     }
 
-    const out = getOrCreateOutput<VscodeOutputInterface>(state, 'vscode');
-    const result: Record<string, SemanticRuleOutputInterface> = {};
+    const out = getOrCreateOutput(state, 'vscode');
+    const result: Record<string, SemanticRuleEntryInterface> = {};
 
     for (const [selector, rule] of Object.entries(semanticRules)) {
-      const entry: SemanticRuleOutputInterface = {};
+      const entry: SemanticRuleEntryInterface = {};
       if (rule.foreground) {
         entry['foreground'] = rule.foreground;
       }
