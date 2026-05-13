@@ -10,7 +10,15 @@ import { linearToSrgb } from './LinearToSrgb.ts';
 import { rgbToHex } from './RgbToHex.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
-function oklchToRgbRaw(l: number, c: number, h: number): RgbInterface {
+/**
+ * Raw OKLCH → sRGB conversion without `ColorRecord` allocation. Returns
+ * a plain `RgbInterface` so hot inner loops (e.g. `EnsureContrast`) can
+ * iterate on a scalar L value without materialising a full record per
+ * step. The transform matches `ColorRecordFactory.fromOklch` bit-for-bit;
+ * inputs are not clamped (callers operating on a scalar L are expected
+ * to clamp themselves).
+ */
+export function oklchToRgbRaw(l: number, c: number, h: number): RgbInterface {
   const hRad = (h * Math.PI) / 180;
   const a = c * Math.cos(hRad);
   const b = c * Math.sin(hRad);

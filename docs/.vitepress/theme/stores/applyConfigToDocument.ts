@@ -10,10 +10,10 @@
  * role isn't in the schema it isn't in the cascade, and that sparseness
  * is the demonstration of what the user's chosen schema produces.
  *
- * Previously-written `--iridis-*` properties are cleared before each
- * run so a 16→4 schema switch doesn't leave 12 phantom variables
- * cascading. SSR-safe: early-returns when `window`/`document` are
- * undefined.
+ * CSS variable writes are diffed against the previous run: roles that
+ * dropped out of the schema get `removeProperty`'d, roles whose hex
+ * changed get `setProperty`'d, roles whose hex is identical pay nothing.
+ * SSR-safe: early-returns when `window`/`document` are undefined.
  */
 
 import { Engine, coreTasks } from '@studnicky/iridis';
@@ -28,9 +28,13 @@ const PIPELINE: readonly string[] = [
   'enforce:contrast',
 ];
 
-/** All --iridis-{role} props the projector has written. Used to clear
- *  stale entries when switching schemas. */
-const writtenProps = new Set<string>();
+/**
+ * Last-written role hex per `--iridis-{role}` prop. Used to skip
+ * `setProperty` calls when nothing changed for a role, and to drive
+ * `removeProperty` only for roles that disappeared since the previous
+ * run (e.g. switching from a 16-role schema to a 4-role schema).
+ */
+const writtenRoles = new Map<string, string>();
 
 /**
  * Module-scope engine. Constructed once at import time with the core
@@ -72,19 +76,30 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
 
     const root = document.documentElement;
 
-    /* Clear stale props from the previous run so a 16→4 switch doesn't
-       leave 12 phantom syntax tokens cascading. */
-    for (const prop of writtenProps) {
-      root.style.removeProperty(prop);
-    }
-    writtenProps.clear();
-
-    /* Write one CSS variable per resolved role. The role NAME is the
-       variable name — the schema author controls both. */
+    /* Diff against the previous run: only `setProperty` when a role's
+       hex actually changed, and only `removeProperty` for role names
+       that disappeared (e.g. 16-role → 4-role schema switch).         */
+    const currentRoles = new Map<string, string>();
     for (const [name, color] of Object.entries(state.roles)) {
-      const prop = `--iridis-${name}`;
-      root.style.setProperty(prop, color.hex);
-      writtenProps.add(prop);
+      currentRoles.set(name, color.hex);
+    }
+
+    for (const [name, prevHex] of writtenRoles) {
+      if (!currentRoles.has(name)) {
+        root.style.removeProperty(`--iridis-${name}`);
+        writtenRoles.delete(name);
+      } else if (currentRoles.get(name) !== prevHex) {
+        const hex = currentRoles.get(name) as string;
+        root.style.setProperty(`--iridis-${name}`, hex);
+        writtenRoles.set(name, hex);
+      }
+    }
+
+    for (const [name, hex] of currentRoles) {
+      if (!writtenRoles.has(name)) {
+        root.style.setProperty(`--iridis-${name}`, hex);
+        writtenRoles.set(name, hex);
+      }
     }
 
     root.dataset['iridisFraming'] = config.framing;

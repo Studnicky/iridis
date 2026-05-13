@@ -15,12 +15,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
 import type { PaletteStateInterface } from '@studnicky/iridis/model';
-
-import { stylesheetPlugin }  from '@studnicky/iridis-stylesheet';
-import { tailwindPlugin }    from '@studnicky/iridis-tailwind';
-import { vscodePlugin, vscodeRoleSchema16 } from '@studnicky/iridis-vscode';
-import { capacitorPlugin }   from '@studnicky/iridis-capacitor';
-import { rdfPlugin }         from '@studnicky/iridis-rdf';
+import type { RoleSchemaInterface }   from '@studnicky/iridis/model';
 
 import { configStore }       from '../stores/configStore.ts';
 
@@ -38,42 +33,67 @@ const state = ref<PaletteStateInterface | null>(null);
 const error = ref<string | null>(null);
 
 /* Module-scope engine: constructed once at component-script load, with
- * core tasks registered, all five plugins adopted, and the pipeline
- * order declared. `Engine.run` is stateless across calls — every
- * invocation produces a fresh PaletteStateInterface from the input —
- * so reuse is safe and avoids re-allocating the registry + 15 task
- * registrations + 5 plugin adoptions on every `watch` tick. */
+ * core tasks registered immediately. The five plugin packages are loaded
+ * via dynamic `import()` so they live in their own chunks — only fetched
+ * when this component mounts, rather than bundled into every docs page's
+ * theme chunk. `engineReady` is a promise that resolves once all five
+ * plugins have been adopted and the pipeline order is declared; every
+ * `runPipeline()` call awaits it before invoking `engine.run`. */
 const engine = new Engine();
 for (const t of coreTasks) engine.tasks.register(t);
 
-engine.adopt(stylesheetPlugin);
-engine.adopt(tailwindPlugin);
-engine.adopt(vscodePlugin);
-engine.adopt(capacitorPlugin);
-engine.adopt(rdfPlugin);
+interface MultiOutputEngineReady {
+  readonly 'engine':    Engine;
+  readonly 'roleSchema': RoleSchemaInterface;
+}
 
-engine.pipeline([
-  'intake:hex',
-  'resolve:roles',
-  'expand:family',
-  'enforce:contrast',
-  'derive:variant',
-  'emit:json',
-  'emit:cssVars',
-  'emit:tailwindTheme',
-  'emit:vscodeUiPalette',
-  'emit:vscodeSemanticRules',
-  'emit:vscodeThemeJson',
-  'emit:capacitorTheme',
-  'reason:annotate',
-  'reason:serialize',
-]);
+const engineReady: Promise<MultiOutputEngineReady> = (async () => {
+  const [
+    { stylesheetPlugin },
+    { tailwindPlugin },
+    { vscodePlugin, vscodeRoleSchema16 },
+    { capacitorPlugin },
+    { rdfPlugin },
+  ] = await Promise.all([
+    import('@studnicky/iridis-stylesheet'),
+    import('@studnicky/iridis-tailwind'),
+    import('@studnicky/iridis-vscode'),
+    import('@studnicky/iridis-capacitor'),
+    import('@studnicky/iridis-rdf'),
+  ]);
+
+  engine.adopt(stylesheetPlugin);
+  engine.adopt(tailwindPlugin);
+  engine.adopt(vscodePlugin);
+  engine.adopt(capacitorPlugin);
+  engine.adopt(rdfPlugin);
+
+  engine.pipeline([
+    'intake:hex',
+    'resolve:roles',
+    'expand:family',
+    'enforce:contrast',
+    'derive:variant',
+    'emit:json',
+    'emit:cssVars',
+    'emit:tailwindTheme',
+    'emit:vscodeUiPalette',
+    'emit:vscodeSemanticRules',
+    'emit:vscodeThemeJson',
+    'emit:capacitorTheme',
+    'reason:annotate',
+    'reason:serialize',
+  ]);
+
+  return { 'engine': engine, 'roleSchema': vscodeRoleSchema16 };
+})();
 
 async function runPipeline(): Promise<void> {
   try {
-    state.value = await engine.run({
+    const ready = await engineReady;
+    state.value = await ready.engine.run({
       'colors':  configStore.paletteColors,
-      'roles':   vscodeRoleSchema16,
+      'roles':   ready.roleSchema,
       'contrast': {
         'level':     configStore.contrastLevel,
         'algorithm': configStore.contrastAlgorithm,
