@@ -33,7 +33,12 @@ export class Engine implements EngineInterface {
    */
   adopt(plugin: PluginInterface): void {
     for (const task of plugin.tasks()) {
-      this.tasks.register(task);
+      const phase = task.manifest?.phase;
+      if (phase) {
+        this.tasks.hook(phase, task);
+      } else {
+        this.tasks.register(task);
+      }
     }
   }
 
@@ -49,6 +54,40 @@ export class Engine implements EngineInterface {
         throw new Error(`Engine.pipeline: task '${name}' is not registered`);
       }
     }
+
+    for (let i = 0; i < order.length; i++) {
+      const name     = order[i] as string;
+      const task     = this.tasks.resolve(name);
+      const requires = task.manifest?.requires;
+
+      if (!requires) {
+        continue;
+      }
+
+      for (const dep of requires) {
+        // Only enforce requires entries that refer to registered tasks.
+        // Math primitive names appear in requires as documentation and are
+        // not subject to pipeline ordering constraints.
+        if (!this.tasks.has(dep)) {
+          continue;
+        }
+
+        const depIndex = order.indexOf(dep);
+
+        if (depIndex === -1) {
+          throw new Error(
+            `Engine.pipeline: task '${name}' requires '${dep}', which is missing from the pipeline entirely`,
+          );
+        }
+
+        if (depIndex >= i) {
+          throw new Error(
+            `Engine.pipeline: task '${name}' requires '${dep}', which must appear earlier in the pipeline`,
+          );
+        }
+      }
+    }
+
     this.order = order;
   }
 

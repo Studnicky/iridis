@@ -195,22 +195,24 @@ test('Engine :: edge :: run with empty pipeline succeeds and returns state', asy
   assert.deepStrictEqual(state.outputs, {});
 });
 
-test('Engine :: edge :: run skips tasks with lifecycle phase set', async () => {
+test('Engine :: edge :: adopt-routed onRunStart task fires via hook, not in main pipeline loop', async () => {
   const engine = new Engine();
-  const skippedCalls: string[] = [];
+  const hookCalls: string[] = [];
 
-  // This task has phase set — should be skipped in pipeline execution
+  // P1.3: adopt() routes phased tasks through hook(). The task fires once as a hook,
+  // not as a main-loop task. The pipeline loop skips tasks with phase set.
   const phaseTask: TaskInterface = {
     'name': 'task:lifecycle',
     'manifest': { 'name': 'task:lifecycle', 'phase': 'onRunStart' },
-    run(_state, _ctx) { skippedCalls.push('should-not-run'); },
+    run(_state, _ctx) { hookCalls.push('hook-fired'); },
   };
 
   engine.adopt(makePlugin('p', [phaseTask]));
   engine.pipeline(['task:lifecycle']);
   await engine.run(makeInput());
-  // task.manifest.phase is set → skipped in the pipeline loop
-  assert.strictEqual(skippedCalls.length, 0);
+  // fires exactly once as an onRunStart hook (not zero, not twice)
+  assert.strictEqual(hookCalls.length, 1);
+  assert.strictEqual(hookCalls[0], 'hook-fired');
 });
 
 test('Engine :: edge :: run state has cache available to tasks', async () => {
@@ -231,4 +233,199 @@ test('Engine :: edge :: run state has cache available to tasks', async () => {
   await engine.run(makeInput());
   assert.ok(capturedCache instanceof Map);
   assert.strictEqual(capturedCache.get('key'), 'value');
+});
+
+// ---------------------------------------------------------------------------
+// P1.3 — adopt routes phased tasks through hooks
+// ---------------------------------------------------------------------------
+
+test('Engine :: P1.3 :: adopt routes onRunStart task through hook, not register', () => {
+  const engine = new Engine();
+  const hookTask: TaskInterface = {
+    'name':     'hook:onstart',
+    'manifest': { 'name': 'hook:onstart', 'phase': 'onRunStart' },
+    run(_state, _ctx): void { /* no-op */ },
+  };
+  engine.adopt(makePlugin('p', [hookTask]));
+
+  // The task is resolvable by name (hook() stores it in entries too)
+  assert.strictEqual(engine.tasks.has('hook:onstart'), true);
+  // It appears in the onRunStart hook list
+  const startHooks = engine.tasks.hooks('onRunStart');
+  assert.strictEqual(startHooks.length, 1);
+  assert.strictEqual(startHooks[0]?.name, 'hook:onstart');
+  // It does NOT appear in the onRunEnd hook list
+  assert.strictEqual(engine.tasks.hooks('onRunEnd').length, 0);
+});
+
+test('Engine :: P1.3 :: adopt routes onRunEnd task through hook, not register', () => {
+  const engine = new Engine();
+  const hookTask: TaskInterface = {
+    'name':     'hook:onend',
+    'manifest': { 'name': 'hook:onend', 'phase': 'onRunEnd' },
+    run(_state, _ctx): void { /* no-op */ },
+  };
+  engine.adopt(makePlugin('p', [hookTask]));
+
+  assert.strictEqual(engine.tasks.has('hook:onend'), true);
+  const endHooks = engine.tasks.hooks('onRunEnd');
+  assert.strictEqual(endHooks.length, 1);
+  assert.strictEqual(endHooks[0]?.name, 'hook:onend');
+  assert.strictEqual(engine.tasks.hooks('onRunStart').length, 0);
+});
+
+test('Engine :: P1.3 :: adopt fires onRunStart hook before main task during run', async () => {
+  const engine = new Engine();
+  const executionOrder: string[] = [];
+
+  const hookTask: TaskInterface = {
+    'name':     'hook:start',
+    'manifest': { 'name': 'hook:start', 'phase': 'onRunStart' },
+    run(_state, _ctx): void { executionOrder.push('hook'); },
+  };
+  const mainTask: TaskInterface = {
+    'name':     'task:main',
+    'manifest': { 'name': 'task:main' },
+    run(_state, _ctx): void { executionOrder.push('main'); },
+  };
+
+  engine.adopt(makePlugin('mixed-plugin', [hookTask, mainTask]));
+  engine.pipeline(['task:main']);
+  await engine.run(makeInput());
+
+  assert.strictEqual(executionOrder[0], 'hook', 'hook must fire before main task');
+  assert.strictEqual(executionOrder[1], 'main', 'main task fires after hook');
+  assert.strictEqual(executionOrder.length, 2);
+});
+
+test('Engine :: P1.3 :: adopt separates mixed phased and ordinary tasks correctly', async () => {
+  const engine = new Engine();
+  const executionOrder: string[] = [];
+
+  const startHook: TaskInterface = {
+    'name':     'hook:start',
+    'manifest': { 'name': 'hook:start', 'phase': 'onRunStart' },
+    run(_state, _ctx): void { executionOrder.push('start-hook'); },
+  };
+  const endHook: TaskInterface = {
+    'name':     'hook:end',
+    'manifest': { 'name': 'hook:end', 'phase': 'onRunEnd' },
+    run(_state, _ctx): void { executionOrder.push('end-hook'); },
+  };
+  const mainTask: TaskInterface = {
+    'name':     'task:work',
+    'manifest': { 'name': 'task:work' },
+    run(_state, _ctx): void { executionOrder.push('work'); },
+  };
+
+  engine.adopt(makePlugin('full-plugin', [startHook, mainTask, endHook]));
+  engine.pipeline(['task:work']);
+  await engine.run(makeInput());
+
+  assert.deepStrictEqual(executionOrder, ['start-hook', 'work', 'end-hook']);
+});
+
+// ---------------------------------------------------------------------------
+// P1.4 — pipeline enforces manifest.requires ordering
+// ---------------------------------------------------------------------------
+
+test('Engine :: P1.4 :: pipeline accepts correct dependency order', () => {
+  const engine = new Engine();
+
+  const depTask: TaskInterface = {
+    'name':     'task:dep',
+    'manifest': { 'name': 'task:dep' },
+    run(_state, _ctx): void { /* no-op */ },
+  };
+  const consumerTask: TaskInterface = {
+    'name':     'task:consumer',
+    'manifest': { 'name': 'task:consumer', 'requires': ['task:dep'] },
+    run(_state, _ctx): void { /* no-op */ },
+  };
+
+  engine.adopt(makePlugin('p', [depTask, consumerTask]));
+
+  // dep before consumer — should not throw
+  engine.pipeline(['task:dep', 'task:consumer']);
+  assert.strictEqual(engine.tasks.has('task:dep'),      true);
+  assert.strictEqual(engine.tasks.has('task:consumer'), true);
+});
+
+test('Engine :: P1.4 :: pipeline throws when required task appears after dependent', () => {
+  const engine = new Engine();
+
+  const depTask: TaskInterface = {
+    'name':     'task:dep',
+    'manifest': { 'name': 'task:dep' },
+    run(_state, _ctx): void { /* no-op */ },
+  };
+  const consumerTask: TaskInterface = {
+    'name':     'task:consumer',
+    'manifest': { 'name': 'task:consumer', 'requires': ['task:dep'] },
+    run(_state, _ctx): void { /* no-op */ },
+  };
+
+  engine.adopt(makePlugin('p', [depTask, consumerTask]));
+
+  assert.throws(
+    () => engine.pipeline(['task:consumer', 'task:dep']),
+    (err: unknown) => {
+      assert.ok(err instanceof Error);
+      assert.ok(
+        err.message.includes('task:consumer') && err.message.includes('task:dep'),
+        `expected error to mention both task names, got: ${err.message}`,
+      );
+      assert.ok(
+        err.message.includes('must appear earlier'),
+        `expected 'must appear earlier' in message, got: ${err.message}`,
+      );
+      return true;
+    },
+  );
+});
+
+test('Engine :: P1.4 :: pipeline throws when required task is missing from pipeline entirely', () => {
+  const engine = new Engine();
+
+  const depTask: TaskInterface = {
+    'name':     'task:dep',
+    'manifest': { 'name': 'task:dep' },
+    run(_state, _ctx): void { /* no-op */ },
+  };
+  const consumerTask: TaskInterface = {
+    'name':     'task:consumer',
+    'manifest': { 'name': 'task:consumer', 'requires': ['task:dep'] },
+    run(_state, _ctx): void { /* no-op */ },
+  };
+
+  engine.adopt(makePlugin('p', [depTask, consumerTask]));
+
+  assert.throws(
+    () => engine.pipeline(['task:consumer']),
+    (err: unknown) => {
+      assert.ok(err instanceof Error);
+      assert.ok(
+        err.message.includes('task:dep') && err.message.includes('missing from the pipeline'),
+        `expected missing-from-pipeline error, got: ${err.message}`,
+      );
+      return true;
+    },
+  );
+});
+
+test('Engine :: P1.4 :: pipeline skips requires validation for math primitive names', () => {
+  const engine = new Engine();
+
+  // Task with requires pointing at math primitive names (not pipeline tasks)
+  const taskWithMathRequires: TaskInterface = {
+    'name':     'task:usesmath',
+    'manifest': { 'name': 'task:usesmath', 'requires': ['someMathPrimitive'] },
+    run(_state, _ctx): void { /* no-op */ },
+  };
+
+  engine.adopt(makePlugin('p', [taskWithMathRequires]));
+
+  // 'someMathPrimitive' is not a registered task — should not throw
+  engine.pipeline(['task:usesmath']);
+  assert.strictEqual(engine.tasks.has('task:usesmath'), true);
 });
