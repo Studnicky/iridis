@@ -18,8 +18,8 @@
   "engines": {
     "node": ">=24"
   },
-  "dependencies": {
-    "@studnicky/iridis": "*"
+  "peerDependencies": {
+    "@studnicky/iridis": "^0.1.0"
   },
   "devDependencies": {
     "typescript": "^5.6.0"

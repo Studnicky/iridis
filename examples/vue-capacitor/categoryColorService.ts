@@ -1,19 +1,10 @@
-import { Engine, coreTasks } from '@studnicky/iridis';
-import { contrastPlugin }                  from '@studnicky/iridis-contrast';
-import { stylesheetPlugin }                from '@studnicky/iridis-stylesheet';
-import { capacitorPlugin }                 from '@studnicky/iridis-capacitor';
-import { categoryW3cRoleSchema }           from './categoryW3cRoleSchema.ts';
-
-interface CssVarsOutputInterface {
-  readonly full:        string;
-  readonly scopedBlock: string;
-  readonly map:         Record<string, string>;
-}
-
-interface CapacitorStatusBarOutputInterface {
-  readonly backgroundColor: string;
-  readonly style:           'DARK' | 'LIGHT';
-}
+import { Engine, coreTasks }                                    from '@studnicky/iridis';
+import { contrastPlugin }                                          from '@studnicky/iridis-contrast';
+import { stylesheetPlugin }                                        from '@studnicky/iridis-stylesheet';
+import type { CssVarsOutputInterface }                             from '@studnicky/iridis-stylesheet/types';
+import { capacitorPlugin }                                         from '@studnicky/iridis-capacitor';
+import type { StatusBarOutputInterface }                           from '@studnicky/iridis-capacitor/types';
+import { categoryW3cRoleSchema }                                   from './categoryW3cRoleSchema.ts';
 
 export class CategoryColorService {
   private readonly engine: Engine;
@@ -50,7 +41,7 @@ export class CategoryColorService {
 
   async apply(category: string, seed: string): Promise<{
     readonly cssVars:   CssVarsOutputInterface;
-    readonly statusBar: CapacitorStatusBarOutputInterface;
+    readonly statusBar: StatusBarOutputInterface;
   }> {
     const state = await this.engine.run({
       'colors':   [seed],
@@ -65,7 +56,7 @@ export class CategoryColorService {
       },
     });
     const cssVars   = state.outputs['cssVars'] as CssVarsOutputInterface;
-    const capacitor = state.outputs['capacitor'] as { readonly statusBar: CapacitorStatusBarOutputInterface };
+    const capacitor = state.outputs['capacitor'] as { readonly statusBar: StatusBarOutputInterface };
     const sheetId   = `ce-${category}-styles`;
     let   sheet     = document.getElementById(sheetId) as HTMLStyleElement | null;
 

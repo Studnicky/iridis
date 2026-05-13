@@ -14,8 +14,10 @@
     "clean":     "rm -rf dist",
     "prebuild":  "rm -rf dist"
   },
+  "peerDependencies": {
+    "@studnicky/iridis": "^0.1.0"
+  },
   "dependencies": {
-    "@studnicky/iridis": "*",
     "n3": "^1.21.0"
   },
   "devDependencies": {
