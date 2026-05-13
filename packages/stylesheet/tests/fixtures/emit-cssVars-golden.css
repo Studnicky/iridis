@@ -7,7 +7,7 @@
 @media (forced-colors: active) {
   :root {
     --c-background: Canvas;
-    --c-foreground: Canvas;
+    --c-foreground: CanvasText;
     --c-accent: Highlight;
   }
 }

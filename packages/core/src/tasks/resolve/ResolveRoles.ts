@@ -1,4 +1,5 @@
 import type {
+  ColorHintsInterface,
   ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
@@ -44,7 +45,11 @@ function distanceToRoleCenter(color: ColorRecordInterface, role: RoleDefinitionI
  * Adjusts a candidate color's OKLCH so it satisfies the role's
  * lightnessRange, chromaRange, and (if specified) absolute hueOffset
  * target. Already-conformant candidates are returned unchanged so the
- * common case is allocation-free.
+ * common case is allocation-free, unless the role declares an `intent`
+ * that the candidate's hints lack — in which case a new record is
+ * allocated through the factory so `hints.intent` is propagated onto
+ * the resolved record (the schema's intent is authoritative; see the
+ * JSDoc on {@link RoleDefinitionInterface.intent}).
  */
 function nudgeIntoRole(
   candidate: ColorRecordInterface,
@@ -56,18 +61,35 @@ function nudgeIntoRole(
   const targetC = role.chromaRange    ? clampToRange(c, role.chromaRange)    : c;
   const targetH = role.hueOffset !== undefined ? role.hueOffset             : h;
 
-  if (targetL === l && targetC === c && targetH === h) {
+  const needsRangeNudge = targetL !== l || targetC !== c || targetH !== h;
+  const needsIntent     = role.intent !== undefined && candidate.hints?.intent !== role.intent;
+
+  if (!needsRangeNudge && !needsIntent) {
     return candidate;
   }
 
-  return colorRecordFactory.fromOklch(targetL, targetC, targetH, candidate.alpha);
+  const nextHints: ColorHintsInterface | undefined = role.intent !== undefined
+    ? { ...candidate.hints, 'intent': role.intent }
+    : candidate.hints;
+
+  return colorRecordFactory.fromOklch(
+    targetL,
+    targetC,
+    targetH,
+    candidate.alpha,
+    candidate.sourceFormat,
+    nextHints,
+  );
 }
 
 function synthesizeForRole(role: RoleDefinitionInterface): ColorRecordInterface {
   const l = role.lightnessRange ? rangeCenter(role.lightnessRange) : 0.5;
   const c = role.chromaRange    ? rangeCenter(role.chromaRange)    : 0;
   const h = role.hueOffset !== undefined ? role.hueOffset           : 0;
-  return colorRecordFactory.fromOklch(l, c, h, 1);
+  const hints: ColorHintsInterface | undefined = role.intent !== undefined
+    ? { 'intent': role.intent }
+    : undefined;
+  return colorRecordFactory.fromOklch(l, c, h, 1, 'oklch', hints);
 }
 
 /**

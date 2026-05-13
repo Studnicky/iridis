@@ -222,6 +222,61 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
   assert.ok(out !== undefined, 'cssVars output present');
   const actual = `${out.full}\n`;
 
+  // Requirement-level assertions (independent of the golden fixture).
+  // These assert the spec's mandatory output structure so the golden can't
+  // silently lock in a regression: even a freshly regenerated golden must
+  // satisfy these explicit requirements.
+
+  // 1. :root block declares one CSS variable per role.
+  for (const role of GOLDEN_ROLES.roles) {
+    assert.match(
+      out.rootBlock,
+      new RegExp(`--c-${role.name}:\\s+#[0-9a-fA-F]{6};`),
+      `:root must declare --c-${role.name} as a hex value`,
+    );
+  }
+
+  // 2. forced-colors block exists and maps each role's CSS var to a system
+  //    token derived from the schema's intent declaration.
+  assert.match(out.forcedColors, /@media \(forced-colors: active\)/,
+    'forced-colors block must be a (forced-colors: active) media query');
+
+  const FORCED_BY_INTENT: Readonly<Record<string, string>> = {
+    'text':       'CanvasText',
+    'background': 'Canvas',
+    'surface':    'Canvas',
+    'base':       'Canvas',
+    'muted':      'Canvas',
+    'neutral':    'Canvas',
+    'accent':     'Highlight',
+    'onAccent':   'HighlightText',
+    'button':     'ButtonFace',
+    'onButton':   'ButtonText',
+    'link':       'LinkText',
+    'critical':   'CanvasText',
+    'positive':   'CanvasText',
+  };
+
+  for (const role of GOLDEN_ROLES.roles) {
+    const expectedToken = role.intent !== undefined
+      ? FORCED_BY_INTENT[role.intent]
+      : 'CanvasText';
+    assert.ok(expectedToken !== undefined,
+      `test setup: GOLDEN_ROLES role '${role.name}' uses intent '${role.intent}' which lacks a FORCED_BY_INTENT mapping in this test`);
+    assert.match(
+      out.forcedColors,
+      new RegExp(`--c-${role.name}:\\s+${expectedToken};`),
+      `forced-colors must map --c-${role.name} (intent='${role.intent}') to ${expectedToken}`,
+    );
+  }
+
+  // 3. Specifically: the 'foreground' role (intent='text') must NOT collapse
+  //    to Canvas (the historic substring-match regression that motivated R1.2).
+  assert.doesNotMatch(out.forcedColors, /--c-foreground:\s+Canvas;/,
+    'foreground role must NOT map to Canvas under forced-colors — that would make text invisible');
+  assert.match(out.forcedColors, /--c-foreground:\s+CanvasText;/,
+    'foreground role with intent=text must map to CanvasText');
+
   if (process.env['UPDATE_GOLDENS'] === '1') {
     writeFileSync(CSS_VARS_GOLDEN, actual);
   }
