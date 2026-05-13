@@ -7,6 +7,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { contrastWcag21 } from '@studnicky/iridis';
 import { colorologyVocab } from '../data/colorologyVocab.ts';
 
 const xsdDecimal = 'http://www.w3.org/2001/XMLSchema#decimal';
@@ -25,23 +26,6 @@ function paletteIri(startedAt: number): string {
   return `https://studnicky.dev/colorology/palette/run-${startedAt}`;
 }
 
-function relativeLuminance(c: ColorRecordInterface): number {
-  const linearize = (v: number): number =>
-    (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
-
-  return 0.2126 * linearize(c.rgb.r)
-       + 0.7152 * linearize(c.rgb.g)
-       + 0.0722 * linearize(c.rgb.b);
-}
-
-function wcagRatio(fg: ColorRecordInterface, bg: ColorRecordInterface): number {
-  const l1 = relativeLuminance(fg);
-  const l2 = relativeLuminance(bg);
-  const lighter = Math.max(l1, l2);
-  const darker  = Math.min(l1, l2);
-
-  return (lighter + 0.05) / (darker + 0.05);
-}
 
 export class ReasonAnnotate implements TaskInterface {
   readonly 'name' = 'reason:annotate';
@@ -87,7 +71,7 @@ export class ReasonAnnotate implements TaskInterface {
         const [fgName, fg] = roleEntries[i] as [string, ColorRecordInterface];
         const [bgName, bg] = roleEntries[j] as [string, ColorRecordInterface];
         const pairIri      = `https://studnicky.dev/colorology/pair/${fgName}-on-${bgName}`;
-        const ratio        = wcagRatio(fg, bg);
+        const ratio        = contrastWcag21.apply(fg, bg);
 
         store.addQuad(DataFactory.quad(
           DataFactory.namedNode(pairIri),

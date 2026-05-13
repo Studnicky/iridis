@@ -1,36 +1,12 @@
 import type {
-  ColorRecordInterface,
-  ContrastPairInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { contrastWcag21, darken, getOrCreateMetadata, lighten, luminance } from '@studnicky/iridis';
+import { contrastWcag21, ensureContrast, getOrCreateMetadata } from '@studnicky/iridis';
+import { wcagRequiredRatio } from '../data/wcagRequiredRatio.ts';
 import type { WcagPairResultInterface } from '../types/augmentation.ts';
-
-function requiredRatioAaa(pair: ContrastPairInterface, roles: Record<string, ColorRecordInterface>): number {
-  if (pair.minRatio > 0) {
-    return pair.minRatio;
-  }
-  const fgRecord = roles[pair.foreground];
-  const bgRecord = roles[pair.background];
-  if (!fgRecord || !bgRecord) {
-    return 7.0;
-  }
-  const fgIntent = fgRecord.hints?.intent;
-  const bgIntent = bgRecord.hints?.intent;
-  const isText =
-    (fgIntent === 'text' || bgIntent === 'text') &&
-    (fgIntent === 'surface' || fgIntent === 'base' || bgIntent === 'surface' || bgIntent === 'base');
-
-  if (isText) {
-    // Large text (≥18pt or ≥14pt bold) threshold is 4.5; normal text is 7.0.
-    // Treat pairs with minRatio explicitly at/below 4.5 as large-text.
-    return 7.0;
-  }
-  return 4.5;
-}
 
 export class EnforceWcagAaa implements TaskInterface {
   readonly 'name' = 'enforce:wcagAAA';
@@ -64,30 +40,14 @@ export class EnforceWcagAaa implements TaskInterface {
         continue;
       }
 
-      const required = requiredRatioAaa(pair, state.roles);
+      const required = wcagRequiredRatio.apply('aaa', pair, state.roles);
       const before = contrastWcag21.apply(fgRecord, bgRecord);
 
-      let currentFg = fgRecord;
-      const currentBg = bgRecord;
-      let current   = before;
-      let iterations = 0;
-      const maxIterations = 30;
-
-      while (current < required && iterations < maxIterations) {
-        iterations++;
-        const fgLum = luminance.apply(currentFg);
-        const bgLum = luminance.apply(currentBg);
-
-        if (fgLum >= bgLum) {
-          currentFg = lighten.apply(currentFg, 0.04);
-        } else {
-          currentFg = darken.apply(currentFg, 0.04);
-        }
-        current = contrastWcag21.apply(currentFg, currentBg);
-      }
+      const currentFg = ensureContrast.apply(fgRecord, bgRecord, required, 'wcag21');
+      const current   = contrastWcag21.apply(currentFg, bgRecord);
 
       if (current < required) {
-        ctx.logger.warn('EnforceWcagAaa', 'run', `Pair ${pair.foreground}/${pair.background} could not reach ${required}:1 (achieved ${current.toFixed(2)}) after ${maxIterations} iterations`);
+        ctx.logger.warn('EnforceWcagAaa', 'run', `Pair ${pair.foreground}/${pair.background} could not reach ${required}:1 (achieved ${current.toFixed(2)})`);
       }
 
       state.roles[pair.foreground] = currentFg;

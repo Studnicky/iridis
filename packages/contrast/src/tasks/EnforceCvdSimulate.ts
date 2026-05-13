@@ -5,21 +5,10 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateMetadata } from '@studnicky/iridis';
+import { contrastWcag21, getOrCreateMetadata, linearToSrgb, srgbToLinear } from '@studnicky/iridis';
 import { cvdMatrices } from '../data/cvdMatrices.ts';
 import type { CvdMatrixInterface } from '../types/index.ts';
 import type { CvdPairWarningInterface } from '../types/augmentation.ts';
-
-function linearize(v: number): number {
-  return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-}
-
-function delinearize(v: number): number {
-  if (v <= 0.0031308) {
-    return 12.92 * v;
-  }
-  return 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
-}
 
 function applyMatrix(
   cvd: CvdMatrixInterface,
@@ -44,33 +33,27 @@ function simulateColor(
   cvd: CvdMatrixInterface,
 ): { readonly r: number; readonly g: number; readonly b: number } {
   // Convert gamma-encoded sRGB → linear sRGB
-  const rl = linearize(color.rgb.r);
-  const gl = linearize(color.rgb.g);
-  const bl = linearize(color.rgb.b);
+  const lin = srgbToLinear.apply(color.rgb.r, color.rgb.g, color.rgb.b);
 
   // Apply CVD matrix in linear sRGB
-  const [rp, gp, bp] = applyMatrix(cvd, rl, gl, bl);
+  const [rp, gp, bp] = applyMatrix(cvd, lin.r, lin.g, lin.b);
 
   // Convert back to gamma-encoded sRGB
-  return {
-    'r': delinearize(rp),
-    'g': delinearize(gp),
-    'b': delinearize(bp),
-  };
+  const encoded = linearToSrgb.apply(rp, gp, bp);
+  return { 'r': encoded.r, 'g': encoded.g, 'b': encoded.b };
 }
 
-function relativeLuminance(r: number, g: number, b: number): number {
-  const lin = (v: number): number =>
-    v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+function simulatedLuminance(sim: { readonly r: number; readonly g: number; readonly b: number }): number {
+  const lin = srgbToLinear.apply(sim.r, sim.g, sim.b);
+  return 0.2126 * lin.r + 0.7152 * lin.g + 0.0722 * lin.b;
 }
 
-function luminanceContrast(
+function simulatedContrast(
   fg: { readonly r: number; readonly g: number; readonly b: number },
   bg: { readonly r: number; readonly g: number; readonly b: number },
 ): number {
-  const l1 = relativeLuminance(fg.r, fg.g, fg.b);
-  const l2 = relativeLuminance(bg.r, bg.g, bg.b);
+  const l1 = simulatedLuminance(fg);
+  const l2 = simulatedLuminance(bg);
   const lighter = Math.max(l1, l2);
   const darker  = Math.min(l1, l2);
   return (lighter + 0.05) / (darker + 0.05);
@@ -105,12 +88,12 @@ export class EnforceCvdSimulate implements TaskInterface {
         continue;
       }
 
-      const originalContrast = luminanceContrast(fgRecord.rgb, bgRecord.rgb);
+      const originalContrast = contrastWcag21.apply(fgRecord, bgRecord);
 
       for (const cvd of cvdMatrices) {
         const simFg = simulateColor(fgRecord, cvd);
         const simBg = simulateColor(bgRecord, cvd);
-        const simContrast = luminanceContrast(simFg, simBg);
+        const simContrast = simulatedContrast(simFg, simBg);
         const drop = originalContrast - simContrast;
 
         if (drop > DROP_THRESHOLD) {

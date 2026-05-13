@@ -5,19 +5,12 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
+import { getOrCreateMetadata, getOrCreateOutput, luminance } from '@studnicky/iridis';
 import type { StatusBarOutputInterface } from '../types/index.ts';
-
-function relativeLuminance(rgb: { readonly r: number; readonly g: number; readonly b: number }): number {
-  const lin = (v: number): number =>
-    v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-  return 0.2126 * lin(rgb.r) + 0.7152 * lin(rgb.g) + 0.0722 * lin(rgb.b);
-}
 
 function pickBarStyle(barColor: ColorRecordInterface): 'DARK' | 'LIGHT' {
   // LIGHT style = light icons/text on dark bar. DARK style = dark icons/text on light bar.
-  const lum = relativeLuminance(barColor.rgb);
-  return lum < 0.18 ? 'LIGHT' : 'DARK';
+  return luminance.apply(barColor) < 0.18 ? 'LIGHT' : 'DARK';
 }
 
 function resolveBarColor(
@@ -58,7 +51,7 @@ export class EmitCapacitorStatusBar implements TaskInterface {
     const textColor = resolveTextColor(state.roles);
     // Prefer text-aware style derivation when text role exists.
     const style: 'DARK' | 'LIGHT' = textColor
-      ? (relativeLuminance(textColor.rgb) > 0.18 ? 'DARK' : 'LIGHT')
+      ? (luminance.apply(textColor) > 0.18 ? 'DARK' : 'LIGHT')
       : pickBarStyle(barColor);
 
     const output: StatusBarOutputInterface = {

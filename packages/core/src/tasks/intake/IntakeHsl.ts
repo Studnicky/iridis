@@ -4,7 +4,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '../../types/index.ts';
-import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
+import { hslToRgb } from '../../math/HslToRgb.ts';
 
 interface HslInput {
   'h': number;
@@ -21,27 +21,6 @@ function isHslInput(v: unknown): v is HslInput {
     && typeof o['l'] === 'number'
     && typeof o['r'] !== 'number'
     && typeof o['c'] !== 'number';
-}
-
-function hslToRgbComponents(h: number, s: number, l: number): [number, number, number] {
-  const hue = ((h % 360) + 360) % 360;
-  const sat = s > 1 ? s / 100 : s;
-  const lig = l > 1 ? l / 100 : l;
-
-  const c = (1 - Math.abs(2 * lig - 1)) * sat;
-  const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
-  const m = lig - c / 2;
-
-  let r = 0, g = 0, b = 0;
-
-  if (hue < 60)      { r = c; g = x; b = 0; }
-  else if (hue < 120) { r = x; g = c; b = 0; }
-  else if (hue < 180) { r = 0; g = c; b = x; }
-  else if (hue < 240) { r = 0; g = x; b = c; }
-  else if (hue < 300) { r = x; g = 0; b = c; }
-  else                { r = c; g = 0; b = x; }
-
-  return [r + m, g + m, b + m];
 }
 
 /**
@@ -71,13 +50,11 @@ export class IntakeHsl implements TaskInterface {
       const a = typeof raw['a'] === 'number' ? raw['a'] : 1;
       const alpha = a > 1 ? a / 100 : a;
 
-      const [r, g, b] = hslToRgbComponents(h, s, l);
-      const base = colorRecordFactory.fromRgb(
-        Math.max(0, Math.min(1, r)),
-        Math.max(0, Math.min(1, g)),
-        Math.max(0, Math.min(1, b)),
-        Math.max(0, Math.min(1, alpha)),
-      );
+      // Normalise 0–100 s/l to 0–1 before passing to hslToRgb.
+      const sat = s > 1 ? s / 100 : s;
+      const lig = l > 1 ? l / 100 : l;
+
+      const base = hslToRgb.apply(h, sat, lig, Math.max(0, Math.min(1, alpha)));
       const record = { ...base, 'sourceFormat': 'hsl' as const };
 
       state.colors.push(record);
