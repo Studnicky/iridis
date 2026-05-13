@@ -4,12 +4,14 @@
  * Tests use the real coreTasks via the public package API.
  * Each test constructs a fresh Engine instance to avoid shared state.
  */
-import { test } from 'node:test';
+import { describe, it, test } from 'node:test';
 import type {
+  ColorRecordInterface,
   InputInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   RoleSchemaInterface,
+  SourceFormatType,
   TaskInterface,
 } from '@studnicky/iridis';
 import { Engine }            from '@studnicky/iridis';
@@ -325,6 +327,83 @@ test('Engine e2e :: runtime :: tasks read framing from state.runtime', async () 
 
   await engine.run({ 'colors': [], 'runtime': { 'framing': 'light' } });
   assert.strictEqual(observedFraming, 'light');
+});
+
+// ---------------------------------------------------------------------------
+// intake:any dispatcher coverage — mixed-format input feeds every delegate
+// ---------------------------------------------------------------------------
+
+interface IntakeAnyExpectationInterface {
+  readonly 'sourceFormat': SourceFormatType;
+  readonly 'description':  string;
+}
+
+describe('Engine e2e :: intake:any dispatcher coverage', () => {
+  it('intake:any routes each mixed-format input to the correct delegate intake task', async () => {
+    const engine = freshEngine();
+    engine.pipeline(['intake:any']);
+
+    // The dispatcher runs every format-specific intake in order:
+    // hex → rgb → hsl → oklch → lab → named → imagePixel. Each handler
+    // walks the full input array; non-matching entries are skipped. So
+    // the resulting state.colors order tracks the DELEGATE order, not the
+    // input order. We feed one of each format and assert the
+    // round-tripped records carry the matching sourceFormat tag and a
+    // sensible canonical 6-digit hex.
+    const state = await engine.run({
+      'colors': [
+        '#fff',                              // intake:hex
+        { 'r': 1,   'g': 0,   'b': 0 },      // intake:rgb (already 0..1)
+        { 'h': 200, 's': 0.5, 'l': 0.4 },    // intake:hsl
+        { 'l': 0.6, 'c': 0.2, 'h': 250 },    // intake:oklch
+        { 'l': 0.6, 'a': 0.1, 'b': -0.1 },   // intake:lab
+        'rebeccapurple',                     // intake:named
+      ],
+    });
+
+    // Every delegate parsed exactly its target entry — total six records.
+    assert.strictEqual(state.colors.length, 6,
+      `intake:any should yield six records (one per format), got ${state.colors.length}`);
+
+    // Per delegate dispatch order — hex first, then rgb, hsl, oklch, lab, named.
+    const expected: readonly IntakeAnyExpectationInterface[] = [
+      { 'sourceFormat': 'hex',   'description': 'hex string "#fff"' },
+      { 'sourceFormat': 'rgb',   'description': '{r,g,b} object' },
+      { 'sourceFormat': 'hsl',   'description': '{h,s,l} object' },
+      { 'sourceFormat': 'oklch', 'description': '{l,c,h} object' },
+      { 'sourceFormat': 'lab',   'description': '{l,a,b} object' },
+      { 'sourceFormat': 'named', 'description': 'named color "rebeccapurple"' },
+    ];
+
+    for (let i = 0; i < expected.length; i++) {
+      const record = state.colors[i] as ColorRecordInterface;
+      const want   = expected[i]!;
+
+      // Every record carries the canonical ColorRecord shape — oklch / rgb / hex / alpha
+      // / sourceFormat / displayP3 / hints — and EVERY allocation comes through
+      // ColorRecordFactory.* with the same hidden class.
+      assert.ok(record !== undefined, `record ${i} (${want.description}) defined`);
+      assert.strictEqual(typeof record.oklch.l, 'number',  `record ${i} oklch.l populated`);
+      assert.strictEqual(typeof record.oklch.c, 'number',  `record ${i} oklch.c populated`);
+      assert.strictEqual(typeof record.oklch.h, 'number',  `record ${i} oklch.h populated`);
+      assert.strictEqual(typeof record.rgb.r,   'number',  `record ${i} rgb.r populated`);
+      assert.strictEqual(typeof record.rgb.g,   'number',  `record ${i} rgb.g populated`);
+      assert.strictEqual(typeof record.rgb.b,   'number',  `record ${i} rgb.b populated`);
+      assert.strictEqual(typeof record.alpha,   'number',  `record ${i} alpha populated`);
+      assert.match(record.hex, /^#[0-9a-f]{6}$/,
+        `record ${i} (${want.description}) hex "${record.hex}" should be canonical 6-digit`);
+      assert.strictEqual(record.sourceFormat, want.sourceFormat,
+        `record ${i} (${want.description}) sourceFormat should be "${want.sourceFormat}", got "${record.sourceFormat}"`);
+    }
+
+    // Spot-check known round-trip results:
+    // - '#fff' → expands to '#ffffff'
+    // - 'rebeccapurple' → '#663399'
+    // - {r:1, g:0, b:0} pure red → '#ff0000'
+    assert.strictEqual(state.colors[0]!.hex, '#ffffff',  '"#fff" should canonicalise to "#ffffff"');
+    assert.strictEqual(state.colors[1]!.hex, '#ff0000',  '{r:1,g:0,b:0} should round-trip to "#ff0000"');
+    assert.strictEqual(state.colors[5]!.hex, '#663399',  '"rebeccapurple" should resolve to "#663399"');
+  });
 });
 
 test('Engine e2e :: unhappy :: malformed input colors — intake produces empty state', async () => {

@@ -18,8 +18,8 @@ import type {
   TaskInterface,
 } from '@studnicky/iridis';
 import { Engine } from '@studnicky/iridis/engine';
-import { assert } from './ScenarioRunner.ts';
-import { test } from 'node:test';
+import assert     from 'node:assert/strict';
+import { test }   from 'node:test';
 
 declare module '@studnicky/iridis' {
   interface PluginOutputsRegistry {

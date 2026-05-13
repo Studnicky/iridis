@@ -1,0 +1,13 @@
+:root {
+  --c-background: #060b18;
+  --c-foreground: #f8fafc;
+  --c-accent: #7b4cde;
+}
+
+@media (forced-colors: active) {
+  :root {
+    --c-background: Canvas;
+    --c-foreground: Canvas;
+    --c-accent: Highlight;
+  }
+}

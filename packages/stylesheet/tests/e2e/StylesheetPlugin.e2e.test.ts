@@ -6,12 +6,18 @@
  */
 import { test } from 'node:test';
 import assert   from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 import { Engine }       from '@studnicky/iridis/engine';
 import { coreTasks }    from '@studnicky/iridis/tasks';
 import type { RoleSchemaInterface } from '@studnicky/iridis';
 import { stylesheetPlugin, StylesheetPlugin } from '@studnicky/iridis-stylesheet';
 import type { CssVarsOutputInterface } from '@studnicky/iridis-stylesheet/types';
+
+const CSS_VARS_GOLDEN = new URL(
+  '../fixtures/emit-cssVars-golden.css',
+  import.meta.url,
+);
 
 const ROLES: RoleSchemaInterface = {
   'name': 'simple',
@@ -175,4 +181,55 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
       sc.assert(state);
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// Golden fixture — locks the full emit:cssVars output for a stable seed +
+// role schema running through intake:hex → resolve:roles → expand:family →
+// enforce:contrast → emit:cssVars. Any drift in role math, contrast
+// enforcement, or CSS serialisation flips this test. Regenerate via
+// UPDATE_GOLDENS=1 after an intentional behaviour change.
+// ---------------------------------------------------------------------------
+
+const GOLDEN_ROLES: RoleSchemaInterface = {
+  'name':  'golden-cssvars',
+  'roles': [
+    { 'name': 'background', 'required': true, 'intent': 'surface', 'lightnessRange': [0.05, 0.15], 'chromaRange': [0.00, 0.03] },
+    { 'name': 'foreground', 'required': true, 'intent': 'text',    'lightnessRange': [0.90, 0.99], 'chromaRange': [0.00, 0.03] },
+    { 'name': 'accent',     'required': true, 'intent': 'accent',  'lightnessRange': [0.55, 0.70], 'chromaRange': [0.15, 0.25] },
+  ],
+  'contrastPairs': [
+    { 'foreground': 'foreground', 'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+  ],
+};
+
+test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fixture', async () => {
+  const engine = freshEngine();
+  engine.pipeline([
+    'intake:hex',
+    'resolve:roles',
+    'expand:family',
+    'enforce:contrast',
+    'emit:cssVars',
+  ]);
+
+  const state = await engine.run({
+    'colors': ['#5b21b6', '#0f172a', '#f8fafc'],
+    'roles':  GOLDEN_ROLES,
+  });
+
+  const out = state.outputs['cssVars'] as CssVarsOutputInterface | undefined;
+  assert.ok(out !== undefined, 'cssVars output present');
+  const actual = `${out.full}\n`;
+
+  if (process.env['UPDATE_GOLDENS'] === '1') {
+    writeFileSync(CSS_VARS_GOLDEN, actual);
+  }
+
+  const expected = readFileSync(CSS_VARS_GOLDEN, 'utf8');
+  assert.strictEqual(
+    actual,
+    expected,
+    'emit:cssVars output drifted from the golden fixture; regenerate with UPDATE_GOLDENS=1 if intentional',
+  );
 });
