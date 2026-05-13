@@ -523,10 +523,14 @@ function removePair(idx: number): void {
 }
 
 .role-editor__pair {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  grid-template-areas:
+    'fg fg     remove'
+    'on on     remove'
+    'ratio via via';
   align-items: end;
-  gap: 0.5rem;
+  gap: 0.5rem 0.5rem;
 }
 .role-editor__pair label {
   display: flex;
@@ -537,13 +541,24 @@ function removePair(idx: number): void {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  flex: 1 1 6rem;
-  min-width: 5.5rem;
+  min-width: 0;
 }
+.role-editor__pair > label:nth-of-type(1) { grid-area: fg; }
+.role-editor__pair > label:nth-of-type(2) { grid-area: on; }
+.role-editor__pair > label:nth-of-type(3) { grid-area: ratio; }
+.role-editor__pair > label:nth-of-type(4) { grid-area: via; }
 .role-editor__pair > .role-editor__remove {
+  grid-area: remove;
   align-self: end;
-  margin-bottom: 0.05rem;
-  flex: 0 0 auto;
+}
+.role-editor__pair :deep(.p-select),
+.role-editor__pair :deep(.p-inputnumber) {
+  width: 100%;
+  min-width: 0;
+}
+.role-editor__pair :deep(.p-select-label) {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .role-editor__empty {
