@@ -5,10 +5,10 @@ import type { PaletteStateInterface } from './state.ts';
 export type LifecyclePhaseType = 'onRunStart' | 'onRunEnd';
 
 export interface LoggerInterface {
-  debug(scope: string, op: string, message: string, data?: unknown): void;
-  info(scope: string, op: string, message: string, data?: unknown):  void;
-  warn(scope: string, op: string, message: string, data?: unknown):  void;
-  error(scope: string, op: string, message: string, data?: unknown): void;
+  debug(scope: string, op: string, message: string | (() => string), data?: unknown): void;
+  info(scope: string, op: string, message: string | (() => string), data?: unknown):  void;
+  warn(scope: string, op: string, message: string | (() => string), data?: unknown):  void;
+  error(scope: string, op: string, message: string | (() => string), data?: unknown): void;
 }
 
 export interface PipelineContextInterface {

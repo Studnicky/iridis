@@ -7,7 +7,7 @@ import type {
   TaskInterface,
 } from '../types/index.ts';
 import { TaskRegistry }        from '../registry/TaskRegistry.ts';
-import { ConsoleLogger }       from './ConsoleLogger.ts';
+import { consoleLogger }       from './ConsoleLogger.ts';
 import { validator }           from '../model/Validator.ts';
 import { InputSchema }         from '../model/InputSchema.ts';
 import { PluginSchema }        from '../model/PluginSchema.ts';
@@ -28,6 +28,15 @@ export class Engine implements EngineInterface {
   readonly tasks: TaskRegistry = new TaskRegistry();
 
   private order: readonly string[] = [];
+
+  /**
+   * Cached, resolved task sequence for the current `order`. Built by
+   * {@link Engine.pipeline} (or by the first {@link Engine.run} when no
+   * pipeline was set) and reused across runs. Invalidated to `null` on
+   * the next {@link Engine.pipeline} or {@link Engine.adopt} call —
+   * either may change which task object resolves for a given name.
+   */
+  private sequence: readonly TaskInterface[] | null = null;
 
   /** Plugin names that have been adopted. Used to warn on duplicate names. */
   private readonly adoptedPlugins = new Set<string>();
@@ -66,6 +75,11 @@ export class Engine implements EngineInterface {
         this.tasks.register(task);
       }
     }
+
+    // Adopting tasks may shadow names already present in the resolved
+    // sequence; invalidate so the next `run()` rebuilds against the
+    // current registry contents.
+    this.sequence = null;
   }
 
   /**
@@ -114,7 +128,8 @@ export class Engine implements EngineInterface {
       }
     }
 
-    this.order = order;
+    this.order    = order;
+    this.sequence = order.map((name) => this.tasks.resolve(name));
   }
 
   /**
@@ -155,7 +170,7 @@ export class Engine implements EngineInterface {
     const ctx: PipelineContextInterface = {
       'engine':    this,
       'tasks':     this.tasks,
-      'logger':    new ConsoleLogger(),
+      'logger':    consoleLogger,
       'startedAt': Date.now(),
     };
 
@@ -163,11 +178,13 @@ export class Engine implements EngineInterface {
       await hook.run(state, ctx);
     }
 
-    const sequence: TaskInterface[] = this.order.length > 0
-      ? this.order.map((name) => this.tasks.resolve(name))
-      : this.tasks.list().map((manifest) => this.tasks.resolve(manifest.name));
+    if (this.sequence === null) {
+      this.sequence = this.order.length > 0
+        ? this.order.map((name) => this.tasks.resolve(name))
+        : this.tasks.list().map((manifest) => this.tasks.resolve(manifest.name));
+    }
 
-    for (const task of sequence) {
+    for (const task of this.sequence) {
       if (task.manifest?.phase) {
         continue;
       }
