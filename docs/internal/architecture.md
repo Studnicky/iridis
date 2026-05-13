@@ -64,20 +64,30 @@ This is the reason iridis can ship `.ts` extensions in every relative import wit
 ```
 ColorRecord                          ← canonical OKLCH-first color shape   (types/color.ts)
 PaletteState                         ← run state: input, colors, roles, variants, outputs, metadata   (types/state.ts)
-PluginInterface                      ← class with .name, .version, .tasks(), .math()                  (types/plugin.ts)
+PluginInterface                      ← class with .name, .version, .tasks()                           (types/plugin.ts)
 TaskInterface                        ← class with .name, .manifest?, .run(state, ctx)                 (types/pipeline.ts)
-MathPrimitiveInterface               ← class with .name, .apply(...args)                              (types/math.ts)
 RoleSchemaInterface                  ← consumer-authored role contract                                (types/role.ts)
 RuntimeOptionsInterface              ← framing, colorSpace, extra                                     (types/runtime.ts)
 
 Engine.tasks: TaskRegistry           ← register, hook, resolve, list
-Engine.math:  ColorMathRegistry      ← register, resolve, invoke
-Engine.adopt(plugin): void           ← walks plugin.tasks() and .math(), registers each
-Engine.pipeline(order): void         ← declares the run order
+Engine.adopt(plugin): void           ← walks plugin.tasks(), registers each; validates plugin shape
+Engine.pipeline(order): void         ← declares the run order; validates manifest.requires ordering
 Engine.run(input): Promise<state>    ← runs onRunStart hooks, sequential tasks, onRunEnd hooks
 ```
 
 Type declarations live one per file under `packages/core/src/types/<domain>.ts`. The legacy `packages/core/src/model/types.ts` aggregate is gone; `packages/core/src/model/index.ts` re-exports from `types/` so the public path `@studnicky/iridis/model` keeps working unchanged. Per-package types follow the same `src/types/<domain>.ts` convention (e.g. `packages/cli/src/types/config.ts`).
+
+## Type subpath exports
+
+Each package exposes up to three import paths:
+
+| Subpath | Example | Purpose |
+|---------|---------|---------|
+| `.` (root) | `import { Engine } from '@studnicky/iridis'` | Runtime classes, singletons, plugin entry points |
+| `./model` | `import { InputSchema } from '@studnicky/iridis/model'` | JSON Schema literals (`as const`) — kept for backwards compatibility |
+| `./types` | `import type { ColorRecordInterface } from '@studnicky/iridis/types'` | TypeScript interface declarations — **canonical for new code** |
+
+`./types` is the canonical subpath for new code. `./model` and the root `.` export remain valid and are not deprecated. All three co-exist without breakage.
 
 Every output target (CSS, Tailwind, VS Code, Capacitor, RDF) is a plugin. Plugins are not part of core. Core has zero runtime dependencies.
 
