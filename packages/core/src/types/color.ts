@@ -47,12 +47,27 @@ export interface ColorHintsInterface {
   readonly weight?: number;
 }
 
+/**
+ * Canonical color record. Every record allocated anywhere in iridis
+ * MUST have the same field set in the same key order so V8 collapses
+ * them into a single hidden class. The optional fields use
+ * `T | undefined` rather than `T?` so callers must spell out
+ * `displayP3: undefined` / `hints: undefined` instead of omitting
+ * the slot — explicit-undefined keeps the shape monomorphic where
+ * key-absence would create a second hidden class.
+ *
+ * Key order is: `oklch`, `rgb`, `hex`, `alpha`, `sourceFormat`,
+ * `displayP3`, `hints`. `ColorRecordFactory` is the only sanctioned
+ * allocation point; downstream code MUST NOT use `{...record, x}`
+ * spread-append patterns to add or override fields because spread
+ * reorders keys and breaks the hidden class.
+ */
 export interface ColorRecordInterface {
   readonly oklch:        OklchInterface;
   readonly rgb:          RgbInterface;
   readonly hex:          string;
   readonly alpha:        number;
   readonly sourceFormat: SourceFormatType;
-  readonly displayP3?:   RgbInterface;
-  readonly hints?:       ColorHintsInterface;
+  readonly displayP3:    RgbInterface | undefined;
+  readonly hints:        ColorHintsInterface | undefined;
 }

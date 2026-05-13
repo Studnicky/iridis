@@ -72,10 +72,7 @@ export class IntakeHex implements TaskInterface {
         return 1;
       })();
 
-      const base: ColorRecordInterface = colorRecordFactory.fromHex(`#${hex6}`);
-      const record: ColorRecordInterface = alpha === 1
-        ? base
-        : { ...base, 'alpha': alpha, 'sourceFormat': 'hex' };
+      const record: ColorRecordInterface = colorRecordFactory.fromHex(`#${hex6}`, alpha);
 
       state.colors.push(record);
       ctx.logger.debug('IntakeHex', 'run', `Parsed hex ${raw} → ${record.hex}`);

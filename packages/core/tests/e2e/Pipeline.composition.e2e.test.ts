@@ -79,6 +79,7 @@ test('Pipeline composition e2e :: happy :: hint.role causes exact role assignmen
     'hex':          '#4d33cc',
     'alpha':        1,
     'sourceFormat': 'hex',
+    'displayP3':    undefined,
     'hints':        { 'role': 'accent' },
   };
   const bgColor: ColorRecordInterface = {
@@ -87,6 +88,7 @@ test('Pipeline composition e2e :: happy :: hint.role causes exact role assignmen
     'hex':          '#f2f2f2',
     'alpha':        1,
     'sourceFormat': 'hex',
+    'displayP3':    undefined,
     'hints':        { 'role': 'surface' },
   };
 

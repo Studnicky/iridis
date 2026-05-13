@@ -37,34 +37,40 @@ const activeTab = ref<string>('css');
 const state = ref<PaletteStateInterface | null>(null);
 const error = ref<string | null>(null);
 
+/* Module-scope engine: constructed once at component-script load, with
+ * core tasks registered, all five plugins adopted, and the pipeline
+ * order declared. `Engine.run` is stateless across calls — every
+ * invocation produces a fresh PaletteStateInterface from the input —
+ * so reuse is safe and avoids re-allocating the registry + 15 task
+ * registrations + 5 plugin adoptions on every `watch` tick. */
+const engine = new Engine();
+for (const t of coreTasks) engine.tasks.register(t);
+
+engine.adopt(stylesheetPlugin);
+engine.adopt(tailwindPlugin);
+engine.adopt(vscodePlugin);
+engine.adopt(capacitorPlugin);
+engine.adopt(rdfPlugin);
+
+engine.pipeline([
+  'intake:hex',
+  'resolve:roles',
+  'expand:family',
+  'enforce:contrast',
+  'derive:variant',
+  'emit:json',
+  'emit:cssVars',
+  'emit:tailwindTheme',
+  'emit:vscodeUiPalette',
+  'emit:vscodeSemanticRules',
+  'emit:vscodeThemeJson',
+  'emit:capacitorTheme',
+  'reason:annotate',
+  'reason:serialize',
+]);
+
 async function runPipeline(): Promise<void> {
   try {
-    const engine = new Engine();
-    for (const t of coreTasks)    engine.tasks.register(t);
-
-    engine.adopt(stylesheetPlugin);
-    engine.adopt(tailwindPlugin);
-    engine.adopt(vscodePlugin);
-    engine.adopt(capacitorPlugin);
-    engine.adopt(rdfPlugin);
-
-    engine.pipeline([
-      'intake:hex',
-      'resolve:roles',
-      'expand:family',
-      'enforce:contrast',
-      'derive:variant',
-      'emit:json',
-      'emit:cssVars',
-      'emit:tailwindTheme',
-      'emit:vscodeUiPalette',
-      'emit:vscodeSemanticRules',
-      'emit:vscodeThemeJson',
-      'emit:capacitorTheme',
-      'reason:annotate',
-      'reason:serialize',
-    ]);
-
     state.value = await engine.run({
       'colors':  configStore.paletteColors,
       'roles':   vscodeRoleSchema16,
