@@ -6,27 +6,31 @@ import type {
   PluginInterface,
   TaskInterface,
 } from '../types/index.ts';
-import { TaskRegistry }      from '../registry/TaskRegistry.ts';
-import { ConsoleLogger }     from './ConsoleLogger.ts';
-import { validator }         from '../model/Validator.ts';
-import { InputSchema }       from '../model/InputSchema.ts';
-import { PluginSchema }      from '../model/PluginSchema.ts';
+import { TaskRegistry }        from '../registry/TaskRegistry.ts';
+import { ConsoleLogger }       from './ConsoleLogger.ts';
+import { validator }           from '../model/Validator.ts';
+import { InputSchema }         from '../model/InputSchema.ts';
+import { PluginSchema }        from '../model/PluginSchema.ts';
+import { PaletteStateSchema }  from '../model/PaletteStateSchema.ts';
+import { RoleSchemaSchema }    from '../model/RoleSchemaSchema.ts';
 
 /**
  * The single composition root of the iridis pipeline. An Engine owns one
- * `TaskRegistry` and one `ColorMathRegistry`; plugins contribute tasks and
- * math primitives via {@link Engine.adopt}, callers select an execution
- * order via {@link Engine.pipeline}, and {@link Engine.run} drives the
- * registered tasks against an input to produce a `PaletteStateInterface`.
+ * `TaskRegistry`; plugins contribute tasks via {@link Engine.adopt},
+ * callers select an execution order via {@link Engine.pipeline}, and
+ * {@link Engine.run} drives the registered tasks against an input to
+ * produce a `PaletteStateInterface`.
  *
- * Engines are intentionally inert until configured. The exported singleton
- * `engine` is provided for one-shot scripts; library/app code should
- * construct its own instance so registries don't bleed across consumers.
+ * Engines are intentionally inert until configured. Construct a dedicated
+ * `new Engine()` per consumer so registries don't bleed across modules.
  */
 export class Engine implements EngineInterface {
   readonly tasks: TaskRegistry = new TaskRegistry();
 
   private order: readonly string[] = [];
+
+  /** Plugin names that have been adopted. Used to warn on duplicate names. */
+  private readonly adoptedPlugins = new Set<string>();
 
   /**
    * Registers every task and math primitive a plugin contributes in a
@@ -46,6 +50,13 @@ export class Engine implements EngineInterface {
         `Engine.adopt: plugin invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
       );
     }
+
+    if (this.adoptedPlugins.has(plugin.name)) {
+      console.warn(
+        `Engine.adopt: plugin '${plugin.name}' (v${plugin.version}) is already adopted — re-adopting will overwrite its tasks`,
+      );
+    }
+    this.adoptedPlugins.add(plugin.name);
 
     for (const task of plugin.tasks()) {
       const phase = task.manifest?.phase;
@@ -122,6 +133,16 @@ export class Engine implements EngineInterface {
       );
     }
 
+    if (input.roles !== undefined) {
+      const rolesResult = validator.validate(RoleSchemaSchema, input.roles);
+      if (!rolesResult.valid) {
+        const first = rolesResult.errors[0];
+        throw new Error(
+          `Engine.run: input.roles invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+        );
+      }
+    }
+
     const state: PaletteStateInterface = {
       'input':    input,
       'runtime':  { ...input.runtime },
@@ -136,7 +157,6 @@ export class Engine implements EngineInterface {
       'tasks':     this.tasks,
       'logger':    new ConsoleLogger(),
       'startedAt': Date.now(),
-      'cache':     new Map<string, unknown>(),
     };
 
     for (const hook of this.tasks.hooks('onRunStart')) {
@@ -158,13 +178,14 @@ export class Engine implements EngineInterface {
       await hook.run(state, ctx);
     }
 
+    const stateResult = validator.validate(PaletteStateSchema, state);
+    if (!stateResult.valid) {
+      const first = stateResult.errors[0];
+      throw new Error(
+        `Engine.run: output state invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+      );
+    }
+
     return state;
   }
 }
-
-/**
- * Process-wide convenience instance. Useful for one-off scripts and the
- * REPL; production consumers should construct a dedicated `new Engine()`
- * so registries don't leak between modules.
- */
-export const engine = new Engine();

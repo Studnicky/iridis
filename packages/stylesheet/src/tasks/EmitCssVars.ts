@@ -39,9 +39,9 @@ function forcedColorsToken(role: string): string {
 
 function serializeP3(p3: ColorRecordInterface['displayP3']): string {
   if (!p3) return '';
-  const r = (p3.r / 255).toFixed(4);
-  const g = (p3.g / 255).toFixed(4);
-  const b = (p3.b / 255).toFixed(4);
+  const r = p3.r.toFixed(4);
+  const g = p3.g.toFixed(4);
+  const b = p3.b.toFixed(4);
   return `color(display-p3 ${r} ${g} ${b})`;
 }
 
