@@ -1,4 +1,7 @@
 import type { ColorRecordInterface, OklchInterface, RgbInterface } from '../types/index.ts';
+import { linearToSrgb } from './LinearToSrgb.ts';
+import { rgbToHex } from './RgbToHex.ts';
+import { srgbToLinear } from './SrgbToLinear.ts';
 
 function oklchToRgbRaw(l: number, c: number, h: number): RgbInterface {
   const hRad = (h * Math.PI) / 180;
@@ -13,39 +16,21 @@ function oklchToRgbRaw(l: number, c: number, h: number): RgbInterface {
   y = y * y * y;
   z = z * z * z;
 
-  let r = +4.0767416621 * x - 3.3077115913 * y + 0.2309699292 * z;
-  let g = -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z;
-  let bv = -0.0041960863 * x - 0.7034186147 * y + 1.707614701  * z;
+  const rLin = +4.0767416621 * x - 3.3077115913 * y + 0.2309699292 * z;
+  const gLin = -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z;
+  const bLin = -0.0041960863 * x - 0.7034186147 * y + 1.707614701  * z;
 
-  r = gammaEncode(r);
-  g = gammaEncode(g);
-  bv = gammaEncode(bv);
+  const encoded = linearToSrgb.apply(rLin, gLin, bLin);
 
   return {
-    'r': Math.max(0, Math.min(1, r)),
-    'g': Math.max(0, Math.min(1, g)),
-    'b': Math.max(0, Math.min(1, bv)),
+    'r': Math.max(0, Math.min(1, encoded.r)),
+    'g': Math.max(0, Math.min(1, encoded.g)),
+    'b': Math.max(0, Math.min(1, encoded.b)),
   };
 }
 
-function gammaEncode(v: number): number {
-  if (v <= 0.0031308) {
-    return 12.92 * v;
-  }
-  return 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
-}
-
-function gammaDecode(v: number): number {
-  if (v <= 0.04045) {
-    return v / 12.92;
-  }
-  return Math.pow((v + 0.055) / 1.055, 2.4);
-}
-
 function rgbToOklchRaw(r: number, g: number, b: number): OklchInterface {
-  const rl = gammaDecode(r);
-  const gl = gammaDecode(g);
-  const bl = gammaDecode(b);
+  const { r: rl, g: gl, b: bl } = srgbToLinear.apply(r, g, b);
 
   let x = 0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl;
   let y = 0.2119034982 * rl + 0.6806995451 * gl + 0.1073969566 * bl;
@@ -72,14 +57,6 @@ function rgbToOklchRaw(r: number, g: number, b: number): OklchInterface {
   };
 }
 
-function rgbToHexStr(r: number, g: number, b: number): string {
-  const toHex = (v: number): string => {
-    const byte = Math.round(Math.max(0, Math.min(1, v)) * 255);
-    return byte.toString(16).padStart(2, '0');
-  };
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-}
-
 /**
  * Factory for canonical {@link ColorRecordInterface} values. Every record
  * leaves this factory with all three encodings (`oklch`, `rgb`, `hex`)
@@ -104,7 +81,7 @@ export class ColorRecordFactory {
     return {
       'oklch':        { 'l': Math.max(0, Math.min(1, l)), 'c': Math.max(0, Math.min(0.5, c)), 'h': ((h % 360) + 360) % 360 },
       'rgb':          rgb,
-      'hex':          rgbToHexStr(rgb.r, rgb.g, rgb.b),
+      'hex':          rgbToHex.apply(rgb.r, rgb.g, rgb.b),
       'alpha':        Math.max(0, Math.min(1, alpha)),
       'sourceFormat': 'oklch',
     };
@@ -121,7 +98,7 @@ export class ColorRecordFactory {
     return {
       'oklch':        oklch,
       'rgb':          { 'r': Math.max(0, Math.min(1, r)), 'g': Math.max(0, Math.min(1, g)), 'b': Math.max(0, Math.min(1, b)) },
-      'hex':          rgbToHexStr(r, g, b),
+      'hex':          rgbToHex.apply(r, g, b),
       'alpha':        Math.max(0, Math.min(1, alpha)),
       'sourceFormat': 'rgb',
     };
