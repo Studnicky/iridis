@@ -9,27 +9,13 @@ import {
   darken,
   desaturate,
   ensureContrast,
+  getOrCreateMetadata,
   hueShift,
   lighten,
   mixHsl,
   saturate,
 } from '@studnicky/iridis';
 import { DERIVATION_PARAMS, TOKEN_FAMILY, TOKEN_TYPES } from '../data/derivationParams.ts';
-
-/** State shape written by this task. */
-interface VscodeMetaInterface {
-  'baseTokens': Record<string, string>;
-}
-
-function getVscodeMeta(state: PaletteStateInterface): VscodeMetaInterface {
-  const existing = state.metadata['vscode'];
-  if (existing !== null && typeof existing === 'object' && 'baseTokens' in existing) {
-    return existing as VscodeMetaInterface;
-  }
-  const meta: VscodeMetaInterface = { 'baseTokens': {} };
-  state.metadata['vscode'] = meta;
-  return meta;
-}
 
 export class ExpandTokens implements TaskInterface {
   readonly 'name' = 'vscode:expandTokens';
@@ -42,7 +28,7 @@ export class ExpandTokens implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const meta = getVscodeMeta(state);
+    const meta = getOrCreateMetadata(state, 'vscode');
 
     // Math primitives operate on ColorRecord; keep the records on the
     // role lookups so we don't reconvert at every invoke.

@@ -9,33 +9,14 @@ import {
   darken,
   desaturate,
   ensureContrast,
+  getOrCreateMetadata,
   lighten,
   mixHsl,
   saturate,
 } from '@studnicky/iridis';
+import type { SemanticRuleEntryInterface } from '../types/augmentation.ts';
 import { MODIFIER_TRANSFORMS } from '../data/modifierTransforms.ts';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from '../data/derivationParams.ts';
-
-/** Shape of an individual semantic token rule entry. */
-interface SemanticRuleEntryInterface {
-  'foreground': string;
-  'fontStyle'?: string;
-}
-
-interface VscodeMetaInterface {
-  'baseTokens'?: Record<string, string>;
-  'semanticTokenRules'?: Record<string, SemanticRuleEntryInterface>;
-}
-
-function getVscodeMeta(state: PaletteStateInterface): VscodeMetaInterface {
-  const existing = state.metadata['vscode'];
-  if (existing !== null && typeof existing === 'object') {
-    return existing as VscodeMetaInterface;
-  }
-  const meta: VscodeMetaInterface = {};
-  state.metadata['vscode'] = meta;
-  return meta;
-}
 
 function roleHex(state: PaletteStateInterface, role: string): string | undefined {
   return state.roles[role]?.hex;
@@ -53,7 +34,7 @@ export class ApplyModifiers implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const meta = getVscodeMeta(state);
+    const meta = getOrCreateMetadata(state, 'vscode');
     const baseTokens = meta['baseTokens'];
 
     if (!baseTokens) {
