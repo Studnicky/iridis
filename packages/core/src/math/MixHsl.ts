@@ -1,4 +1,5 @@
 import type { ColorRecordInterface } from '../types/index.ts';
+import { clamp01 } from './Clamp.ts';
 import { hslToRgb } from './HslToRgb.ts';
 import { rgbToHsl } from './RgbToHsl.ts';
 
@@ -13,7 +14,7 @@ export class MixHsl {
   readonly 'name' = 'mixHsl';
 
   apply(a: ColorRecordInterface, b: ColorRecordInterface, t: number): ColorRecordInterface {
-    const tc = Math.max(0, Math.min(1, t));
+    const tc = clamp01(t);
 
     const hslA = rgbToHsl.apply(a.rgb.r, a.rgb.g, a.rgb.b);
     const hslB = rgbToHsl.apply(b.rgb.r, b.rgb.g, b.rgb.b);

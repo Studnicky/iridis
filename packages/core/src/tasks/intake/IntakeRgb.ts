@@ -59,12 +59,7 @@ export class IntakeRgb implements TaskInterface {
       }
 
       const alpha = a > 1 ? a / 255 : a;
-      const record = colorRecordFactory.fromRgb(
-        Math.max(0, Math.min(1, r)),
-        Math.max(0, Math.min(1, g)),
-        Math.max(0, Math.min(1, b)),
-        Math.max(0, Math.min(1, alpha)),
-      );
+      const record = colorRecordFactory.fromRgb(r, g, b, alpha);
 
       state.colors.push(record);
       ctx.logger.debug('IntakeRgb', 'run', `Parsed rgb(${r},${g},${b}) → ${record.hex}`);

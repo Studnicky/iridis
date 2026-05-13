@@ -5,16 +5,8 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { toCssVarName } from '@studnicky/iridis';
 import type { CssVarsOutputInterface } from '../types/index.ts';
-
-/**
- * Maps a role name to a CSS custom property name.
- * Camel-case is kebab-cased; a configurable prefix is prepended.
- */
-function toCssVarName(role: string, prefix: string): string {
-  const kebab = role.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`);
-  return `${prefix}${kebab}`;
-}
 
 /**
  * Picks a forced-colors system color keyword based on the role name's semantic intent.

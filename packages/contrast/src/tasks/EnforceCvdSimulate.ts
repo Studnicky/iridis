@@ -5,7 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { contrastWcag21, getOrCreateMetadata, linearToSrgb, srgbToLinear } from '@studnicky/iridis';
+import { clamp01, contrastWcag21, getOrCreateMetadata, linearToSrgb, srgbToLinear } from '@studnicky/iridis';
 import { cvdMatrices } from '../data/cvdMatrices.ts';
 import type { CvdMatrixInterface } from '../types/index.ts';
 import type { CvdPairWarningInterface } from '../types/augmentation.ts';
@@ -22,9 +22,9 @@ function applyMatrix(
   const gp = m[3]! * r + m[4]! * g + m[5]! * b;
   const bp = m[6]! * r + m[7]! * g + m[8]! * b;
   return [
-    Math.max(0, Math.min(1, rp)),
-    Math.max(0, Math.min(1, gp)),
-    Math.max(0, Math.min(1, bp)),
+    clamp01(rp),
+    clamp01(gp),
+    clamp01(bp),
   ] as const;
 }
 

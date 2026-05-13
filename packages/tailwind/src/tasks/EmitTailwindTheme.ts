@@ -5,6 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
+import { toCssVarName } from '@studnicky/iridis';
 import type { TailwindOutputInterface } from '../types/index.ts';
 
 /** Regex that matches roles following the `<root>-<shade>` pattern where shade is numeric. */
@@ -18,11 +19,6 @@ const TAILWIND_SHADES = new Set([
 ]);
 
 type ColorsShape = Record<string, string | Record<string, string>>;
-
-function toCssVarName(role: string, prefix: string): string {
-  const kebab = role.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`);
-  return `${prefix}${kebab}`;
-}
 
 /**
  * Groups roles into shade scales when the name follows `<root>-<shade>` with a

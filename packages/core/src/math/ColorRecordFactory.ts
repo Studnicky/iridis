@@ -1,4 +1,5 @@
 import type { ColorRecordInterface, OklchInterface, RgbInterface } from '../types/index.ts';
+import { clamp, clamp01 } from './Clamp.ts';
 import { linearToSrgb } from './LinearToSrgb.ts';
 import { rgbToHex } from './RgbToHex.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
@@ -23,9 +24,9 @@ function oklchToRgbRaw(l: number, c: number, h: number): RgbInterface {
   const encoded = linearToSrgb.apply(rLin, gLin, bLin);
 
   return {
-    'r': Math.max(0, Math.min(1, encoded.r)),
-    'g': Math.max(0, Math.min(1, encoded.g)),
-    'b': Math.max(0, Math.min(1, encoded.b)),
+    'r': clamp01(encoded.r),
+    'g': clamp01(encoded.g),
+    'b': clamp01(encoded.b),
   };
 }
 
@@ -51,8 +52,8 @@ function rgbToOklchRaw(r: number, g: number, b: number): OklchInterface {
   }
 
   return {
-    'l': Math.max(0, Math.min(1, labL)),
-    'c': Math.max(0, Math.min(0.5, c)),
+    'l': clamp01(labL),
+    'c': clamp(0, 0.5, c),
     'h': h % 360,
   };
 }
@@ -79,10 +80,10 @@ export class ColorRecordFactory {
   fromOklch(l: number, c: number, h: number, alpha: number = 1): ColorRecordInterface {
     const rgb = oklchToRgbRaw(l, c, h);
     return {
-      'oklch':        { 'l': Math.max(0, Math.min(1, l)), 'c': Math.max(0, Math.min(0.5, c)), 'h': ((h % 360) + 360) % 360 },
+      'oklch':        { 'l': clamp01(l), 'c': clamp(0, 0.5, c), 'h': ((h % 360) + 360) % 360 },
       'rgb':          rgb,
       'hex':          rgbToHex.apply(rgb.r, rgb.g, rgb.b),
-      'alpha':        Math.max(0, Math.min(1, alpha)),
+      'alpha':        clamp01(alpha),
       'sourceFormat': 'oklch',
     };
   }
@@ -97,9 +98,9 @@ export class ColorRecordFactory {
     const oklch = rgbToOklchRaw(r, g, b);
     return {
       'oklch':        oklch,
-      'rgb':          { 'r': Math.max(0, Math.min(1, r)), 'g': Math.max(0, Math.min(1, g)), 'b': Math.max(0, Math.min(1, b)) },
+      'rgb':          { 'r': clamp01(r), 'g': clamp01(g), 'b': clamp01(b) },
       'hex':          rgbToHex.apply(r, g, b),
-      'alpha':        Math.max(0, Math.min(1, alpha)),
+      'alpha':        clamp01(alpha),
       'sourceFormat': 'rgb',
     };
   }

@@ -1,4 +1,5 @@
 import type { RgbInterface } from '../types/index.ts';
+import { clamp01 } from './Clamp.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
 function srgbEncode(v: number): number {
@@ -17,9 +18,9 @@ export class DisplayP3ToSrgb {
     const gl = lin.g;
     const bl = lin.b;
 
-    const sr = srgbEncode(Math.max(0, Math.min(1,  1.2249401 * rl - 0.2249404 * gl + 0.0000000 * bl)));
-    const sg = srgbEncode(Math.max(0, Math.min(1, -0.0420569 * rl + 1.0420571 * gl - 0.0000001 * bl)));
-    const sb = srgbEncode(Math.max(0, Math.min(1, -0.0196376 * rl - 0.0786361 * gl + 1.0982735 * bl)));
+    const sr = srgbEncode(clamp01( 1.2249401 * rl - 0.2249404 * gl + 0.0000000 * bl));
+    const sg = srgbEncode(clamp01(-0.0420569 * rl + 1.0420571 * gl - 0.0000001 * bl));
+    const sb = srgbEncode(clamp01(-0.0196376 * rl - 0.0786361 * gl + 1.0982735 * bl));
 
     return { 'r': sr, 'g': sg, 'b': sb };
   }

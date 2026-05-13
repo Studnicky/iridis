@@ -7,3 +7,4 @@ export { RoleSchemaSchema }   from './RoleSchemaSchema.ts';
 export { Validator, validator } from './Validator.ts';
 export type { SchemaInterface } from './Validator.ts';
 export { getOrCreateOutput, getOrCreateMetadata } from './getOrCreateOutput.ts';
+export { toCssVarName } from './CssVar.ts';
