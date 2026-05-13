@@ -13,7 +13,7 @@ import type { FramingType, RoleSchemaInterface } from './types/index.ts';
 const SCHEMA_DARK: RoleSchemaInterface = {
   'name':  'quick-dark',
   'roles': [
-    { 'name': 'background', 'required': true, 'intent': 'base',   'lightnessRange': [0.05, 0.12], 'chromaRange': [0, 0.04] },
+    { 'name': 'background', 'required': true, 'intent': 'background',   'lightnessRange': [0.05, 0.12], 'chromaRange': [0, 0.04] },
     { 'name': 'foreground', 'required': true, 'intent': 'text',   'lightnessRange': [0.94, 0.99], 'chromaRange': [0, 0.03] },
     { 'name': 'accent',     'required': true, 'intent': 'accent', 'lightnessRange': [0.62, 0.78], 'chromaRange': [0.14, 0.28] },
     { 'name': 'muted',      'required': true, 'intent': 'muted',  'lightnessRange': [0.55, 0.70], 'chromaRange': [0, 0.05] },
@@ -23,7 +23,7 @@ const SCHEMA_DARK: RoleSchemaInterface = {
 const SCHEMA_LIGHT: RoleSchemaInterface = {
   'name':  'quick-light',
   'roles': [
-    { 'name': 'background', 'required': true, 'intent': 'base',   'lightnessRange': [0.96, 1.0],  'chromaRange': [0, 0.02] },
+    { 'name': 'background', 'required': true, 'intent': 'background',   'lightnessRange': [0.96, 1.0],  'chromaRange': [0, 0.02] },
     { 'name': 'foreground', 'required': true, 'intent': 'text',   'lightnessRange': [0.10, 0.20], 'chromaRange': [0, 0.03] },
     { 'name': 'accent',     'required': true, 'intent': 'accent', 'lightnessRange': [0.42, 0.55], 'chromaRange': [0.12, 0.24] },
     { 'name': 'muted',      'required': true, 'intent': 'muted',  'lightnessRange': [0.40, 0.55], 'chromaRange': [0, 0.04] },

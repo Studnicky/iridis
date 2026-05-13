@@ -21,7 +21,7 @@ export const galleryRoleSchema5: RoleSchemaInterface = {
     {
       'name':           'canvas',
       'description':    'Darkest neutral — page and frame background',
-      'intent':         'surface',
+      'intent':         'background',
       'required':       true,
       'lightnessRange': [0.0, 0.40],
       'chromaRange':    [0.0, 0.06],
@@ -29,7 +29,7 @@ export const galleryRoleSchema5: RoleSchemaInterface = {
     {
       'name':           'frame',
       'description':    'Mid-luminance neutral — gallery moulding and borders',
-      'intent':         'neutral',
+      'intent':         'muted',
       'required':       true,
       'lightnessRange': [0.30, 0.70],
       'chromaRange':    [0.0, 0.10],

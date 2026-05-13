@@ -14,14 +14,14 @@ export const categoryW3cRoleSchema: RoleSchemaInterface = {
     {
       'name':           'canvas',
       'description':    'Page / card background',
-      'intent':         'base',
+      'intent':         'background',
       'required':       true,
       'lightnessRange': [0.92, 1.0],
     },
     {
       'name':           'surface',
       'description':    'Elevated surface (modal, sheet)',
-      'intent':         'surface',
+      'intent':         'background',
       'required':       true,
       'lightnessRange': [0.86, 0.96],
     },
@@ -42,7 +42,7 @@ export const categoryW3cRoleSchema: RoleSchemaInterface = {
     {
       'name':           'border',
       'description':    'Dividers and focus rings',
-      'intent':         'neutral',
+      'intent':         'muted',
       'lightnessRange': [0.60, 0.80],
     },
     {

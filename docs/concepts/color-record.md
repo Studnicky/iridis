@@ -45,7 +45,7 @@ const state = await engine.run({
 });
 ```
 
-`hints.intent` is a `ColorIntentType` (`'base' | 'accent' | 'muted' | 'critical' | 'positive' | 'neutral' | 'surface' | 'text'`). It is informational, plugins and custom tasks can read it for secondary routing decisions, but the core pipeline does not act on it directly.
+`hints.intent` is a `ColorIntentType` (`'text' | 'background' | 'accent' | 'muted' | 'critical' | 'positive' | 'link' | 'button' | 'onAccent' | 'onButton'`). It drives every downstream semantic decision: forced-colors token selection, APCA Lc target, WCAG required ratio, and capacitor StatusBar style. The schema author's declared intent is authoritative — no substring inference happens anywhere downstream.
 
 `hints.weight` is a numeric priority hint. Higher weight breaks ties when two colors have identical OKLCH distance to a role center.
 

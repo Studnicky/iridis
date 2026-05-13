@@ -15,15 +15,16 @@ import type { CssVarsOutputInterface } from '../types/index.ts';
  * substring inference happens on role names.
  *
  * Intent → system-token mapping (CSS Color 4 §6 / WHCM spec):
- *   text                                   → CanvasText
- *   background, surface, base, muted,
- *     neutral                              → Canvas
- *   accent                                 → Highlight
- *   onAccent                               → HighlightText
- *   button                                 → ButtonFace
- *   onButton                               → ButtonText
- *   link                                   → LinkText
- *   critical, positive                     → CanvasText (signal foreground)
+ *   text       → CanvasText
+ *   background → Canvas
+ *   accent     → Highlight
+ *   muted      → GrayText      (WHCM token for de-emphasised content)
+ *   critical   → CanvasText    (forced-colors strips colour state; legibility wins)
+ *   positive   → CanvasText    (forced-colors strips colour state; legibility wins)
+ *   link       → LinkText
+ *   button     → ButtonFace
+ *   onAccent   → HighlightText
+ *   onButton   → ButtonText
  *
  * When `hints.intent` is missing (role schema declared no intent) the
  * mapping FALLS SAFE to `CanvasText` so text-shaped roles in undeclared
@@ -36,17 +37,14 @@ function forcedColorsToken(record: ColorRecordInterface): string {
   switch (record.hints?.intent) {
     case 'text':       return 'CanvasText';
     case 'background': return 'Canvas';
-    case 'surface':    return 'Canvas';
-    case 'base':       return 'Canvas';
-    case 'muted':      return 'Canvas';
-    case 'neutral':    return 'Canvas';
     case 'accent':     return 'Highlight';
-    case 'onAccent':   return 'HighlightText';
-    case 'button':     return 'ButtonFace';
-    case 'onButton':   return 'ButtonText';
-    case 'link':       return 'LinkText';
+    case 'muted':      return 'GrayText';
     case 'critical':   return 'CanvasText';
     case 'positive':   return 'CanvasText';
+    case 'link':       return 'LinkText';
+    case 'button':     return 'ButtonFace';
+    case 'onAccent':   return 'HighlightText';
+    case 'onButton':   return 'ButtonText';
     default:           return 'CanvasText';
   }
 }

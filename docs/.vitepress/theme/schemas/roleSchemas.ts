@@ -30,10 +30,10 @@ const iridis4Dark: RoleSchemaInterface = {
   'name':        'iridis-4-dark',
   'description': 'Minimal four-role schema (dark framing). Background, text, brand, muted.',
   'roles': [
-    { 'name': 'background', 'intent': 'base',   'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },
-    { 'name': 'text',       'intent': 'text',   'required': true, 'lightnessRange': [0.85, 0.96], 'chromaRange': [0.00, 0.04] },
-    { 'name': 'brand',      'intent': 'accent', 'required': true, 'lightnessRange': [0.55, 0.78], 'chromaRange': [0.12, 0.30] },
-    { 'name': 'muted',      'intent': 'muted',                    'lightnessRange': [0.50, 0.68], 'chromaRange': [0.00, 0.06] },
+    { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },
+    { 'name': 'text',       'intent': 'text',       'required': true, 'lightnessRange': [0.85, 0.96], 'chromaRange': [0.00, 0.04] },
+    { 'name': 'brand',      'intent': 'accent',     'required': true, 'lightnessRange': [0.55, 0.78], 'chromaRange': [0.12, 0.30] },
+    { 'name': 'muted',      'intent': 'muted',                        'lightnessRange': [0.50, 0.68], 'chromaRange': [0.00, 0.06] },
   ],
   'contrastPairs': [
     { 'foreground': 'text',  'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
@@ -46,10 +46,10 @@ const iridis4Light: RoleSchemaInterface = {
   'name':        'iridis-4-light',
   'description': 'Minimal four-role schema (light framing). Background, text, brand, muted.',
   'roles': [
-    { 'name': 'background', 'intent': 'base',   'required': true, 'lightnessRange': [0.94, 0.99], 'chromaRange': [0.00, 0.03] },
-    { 'name': 'text',       'intent': 'text',   'required': true, 'lightnessRange': [0.10, 0.22], 'chromaRange': [0.00, 0.04] },
-    { 'name': 'brand',      'intent': 'accent', 'required': true, 'lightnessRange': [0.40, 0.58], 'chromaRange': [0.14, 0.32] },
-    { 'name': 'muted',      'intent': 'muted',                    'lightnessRange': [0.40, 0.55], 'chromaRange': [0.00, 0.06] },
+    { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.94, 0.99], 'chromaRange': [0.00, 0.03] },
+    { 'name': 'text',       'intent': 'text',       'required': true, 'lightnessRange': [0.10, 0.22], 'chromaRange': [0.00, 0.04] },
+    { 'name': 'brand',      'intent': 'accent',     'required': true, 'lightnessRange': [0.40, 0.58], 'chromaRange': [0.14, 0.32] },
+    { 'name': 'muted',      'intent': 'muted',                        'lightnessRange': [0.40, 0.55], 'chromaRange': [0.00, 0.06] },
   ],
   'contrastPairs': [
     { 'foreground': 'text',  'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
@@ -65,10 +65,10 @@ const iridis8Dark: RoleSchemaInterface = {
   'description': 'Eight-role schema (dark framing). Adds surface, bgSoft, divider, onBrand.',
   'roles': [
     ...iridis4Dark.roles,
-    { 'name': 'surface',  'intent': 'surface', 'required': true, 'derivedFrom': 'background', 'lightnessRange': [0.08, 0.18], 'chromaRange': [0.00, 0.06] },
-    { 'name': 'bg-soft',  'intent': 'surface', 'derivedFrom': 'background', 'lightnessRange': [0.10, 0.22], 'chromaRange': [0.00, 0.08] },
-    { 'name': 'divider',  'intent': 'neutral', 'derivedFrom': 'background', 'lightnessRange': [0.18, 0.32], 'chromaRange': [0.00, 0.06] },
-    { 'name': 'on-brand', 'intent': 'text',    'required': true, 'derivedFrom': 'brand',      'lightnessRange': [0.96, 1.00], 'chromaRange': [0.00, 0.02] },
+    { 'name': 'surface',  'intent': 'background', 'required': true, 'derivedFrom': 'background', 'lightnessRange': [0.08, 0.18], 'chromaRange': [0.00, 0.06] },
+    { 'name': 'bg-soft',  'intent': 'background', 'derivedFrom': 'background', 'lightnessRange': [0.10, 0.22], 'chromaRange': [0.00, 0.08] },
+    { 'name': 'divider',  'intent': 'muted',      'derivedFrom': 'background', 'lightnessRange': [0.18, 0.32], 'chromaRange': [0.00, 0.06] },
+    { 'name': 'on-brand', 'intent': 'text',       'required': true, 'derivedFrom': 'brand',      'lightnessRange': [0.96, 1.00], 'chromaRange': [0.00, 0.02] },
   ],
   'contrastPairs': [
     ...(iridis4Dark.contrastPairs ?? []),
@@ -84,10 +84,10 @@ const iridis8Light: RoleSchemaInterface = {
   'description': 'Eight-role schema (light framing). Adds surface, bg-soft, divider, on-brand.',
   'roles': [
     ...iridis4Light.roles,
-    { 'name': 'surface',  'intent': 'surface', 'required': true, 'derivedFrom': 'background', 'lightnessRange': [0.88, 0.96], 'chromaRange': [0.00, 0.04] },
-    { 'name': 'bg-soft',  'intent': 'surface', 'derivedFrom': 'background', 'lightnessRange': [0.90, 0.98], 'chromaRange': [0.00, 0.04] },
-    { 'name': 'divider',  'intent': 'neutral', 'derivedFrom': 'background', 'lightnessRange': [0.72, 0.86], 'chromaRange': [0.00, 0.04] },
-    { 'name': 'on-brand', 'intent': 'text',    'required': true, 'derivedFrom': 'brand',      'lightnessRange': [0.97, 1.00], 'chromaRange': [0.00, 0.02] },
+    { 'name': 'surface',  'intent': 'background', 'required': true, 'derivedFrom': 'background', 'lightnessRange': [0.88, 0.96], 'chromaRange': [0.00, 0.04] },
+    { 'name': 'bg-soft',  'intent': 'background', 'derivedFrom': 'background', 'lightnessRange': [0.90, 0.98], 'chromaRange': [0.00, 0.04] },
+    { 'name': 'divider',  'intent': 'muted',      'derivedFrom': 'background', 'lightnessRange': [0.72, 0.86], 'chromaRange': [0.00, 0.04] },
+    { 'name': 'on-brand', 'intent': 'text',       'required': true, 'derivedFrom': 'brand',      'lightnessRange': [0.97, 1.00], 'chromaRange': [0.00, 0.02] },
   ],
   'contrastPairs': [
     ...(iridis4Light.contrastPairs ?? []),

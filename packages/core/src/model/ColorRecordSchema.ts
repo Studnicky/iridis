@@ -47,7 +47,7 @@ export const ColorRecordSchema = {
         'role':   { 'type': 'string' },
         'intent': {
           'type': 'string',
-          'enum': ['base', 'accent', 'muted', 'critical', 'positive', 'neutral', 'surface', 'text'],
+          'enum': ['text', 'background', 'accent', 'muted', 'critical', 'positive', 'link', 'button', 'onAccent', 'onButton'],
         },
         'weight': { 'type': 'number', 'minimum': 0 },
       },

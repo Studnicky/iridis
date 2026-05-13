@@ -84,7 +84,7 @@ const APCA_ROLES: RoleSchemaInterface = {
   'name':  'apca-contrast',
   'roles': [
     { 'name': 'text',       'required': true, 'intent': 'text',    'lightnessRange': [0.00, 0.30], 'chromaRange': [0.00, 0.05] },
-    { 'name': 'background', 'required': true, 'intent': 'surface', 'lightnessRange': [0.85, 1.00], 'chromaRange': [0.00, 0.05] },
+    { 'name': 'background', 'required': true, 'intent': 'background', 'lightnessRange': [0.85, 1.00], 'chromaRange': [0.00, 0.05] },
   ],
   'contrastPairs': [
     { 'foreground': 'text', 'background': 'background', 'minRatio': 1, 'algorithm': 'apca' },

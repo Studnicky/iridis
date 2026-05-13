@@ -6,22 +6,25 @@
  * (`EmitCapacitorTheme`). The schema author's declared intent is
  * authoritative — no substring inference happens anywhere downstream.
  *
- * Values group into three families:
- *  - foreground intents: `'text' | 'link'` — paint over a background.
- *  - background intents: `'background' | 'surface' | 'base' | 'muted' | 'neutral'` — receive a foreground.
- *  - signal intents:     `'accent' | 'critical' | 'positive' | 'button'` — call attention or carry state.
- *  - inverse intents:    `'onAccent' | 'onButton'` — foreground painted onto a signal background.
+ * Ten canonical members grouped by usage family:
+ *  - `'text'`       — primary text content painted over a background.
+ *  - `'background'` — primary surface that receives a foreground.
+ *  - `'accent'`     — brand or emphasis colour calling attention.
+ *  - `'muted'`      — low-emphasis text or chrome (de-emphasised content).
+ *  - `'critical'`   — error / danger state signal.
+ *  - `'positive'`   — success / affirmative state signal.
+ *  - `'link'`       — anchor text foreground.
+ *  - `'button'`     — actionable surface (button face).
+ *  - `'onAccent'`   — foreground painted onto an accent surface.
+ *  - `'onButton'`   — foreground painted onto a button surface.
  */
 export type ColorIntentType =
-  | 'base'
+  | 'text'
+  | 'background'
   | 'accent'
   | 'muted'
   | 'critical'
   | 'positive'
-  | 'neutral'
-  | 'surface'
-  | 'text'
-  | 'background'
   | 'link'
   | 'button'
   | 'onAccent'

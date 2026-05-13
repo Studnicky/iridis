@@ -28,8 +28,8 @@ import type {
 const ROLES: RoleSchemaInterface = {
   'name': 'simple-capacitor',
   'roles': [
-    { 'name': 'primary',    'required': true,  'intent': 'base' },
-    { 'name': 'background', 'required': true,  'intent': 'surface' },
+    { 'name': 'primary',    'required': true,  'intent': 'background' },
+    { 'name': 'background', 'required': true,  'intent': 'background' },
     { 'name': 'accent',     'required': false, 'intent': 'accent' },
   ],
 };

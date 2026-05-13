@@ -78,13 +78,13 @@ export const categoryW3cRoleSchema: RoleSchemaInterface = {
   roles: [
     {
       name:           'canvas',       // [A] Page / card background
-      intent:         'base',
+      intent:         'background',
       required:       true,
       lightnessRange: [0.92, 1.0],    // [B] Forces near-white
     },
     {
       name:           'surface',
-      intent:         'surface',
+      intent:         'background',
       required:       true,
       lightnessRange: [0.86, 0.96],
     },
@@ -102,7 +102,7 @@ export const categoryW3cRoleSchema: RoleSchemaInterface = {
     },
     {
       name:           'border',
-      intent:         'neutral',
+      intent:         'muted',
       lightnessRange: [0.60, 0.80],
     },
     {
@@ -138,7 +138,7 @@ export const vscodeRoleSchema16: RoleSchemaInterface = {
   roles: [
     {
       name:           'background',
-      intent:         'surface',
+      intent:         'background',
       required:       true,
       lightnessRange: [0.03, 0.20],   // Dark background
       chromaRange:    [0.00, 0.12],   // Low chroma (near-neutral)
