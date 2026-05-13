@@ -8,7 +8,7 @@ import { reasonSerialize } from './tasks/ReasonSerialize.ts';
 /**
  * RdfPlugin
  *
- * Annotates the palette with RDF triples (n3 Store → state.graph) and
+ * Annotates the palette with RDF triples (n3 Store → outputs.reasoning.graph) and
  * serializes the graph to the requested format.
  *
  * Peer dependency: `n3` (optional, browser-safe pure-JS).

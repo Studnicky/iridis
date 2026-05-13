@@ -10,7 +10,10 @@ export class OutputWriter {
     const written: string[] = [];
 
     for (const [key, filename] of Object.entries(config.output.files)) {
-      const value   = state.outputs[key];
+      // User-supplied config keys are arbitrary strings mapping to plugin output slots.
+      // Cast is safe: missing slots produce undefined → serialized as "undefined".
+      const outputs = state.outputs as Record<string, unknown>;
+      const value   = outputs[key];
       const content = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
       const target  = join(config.output.directory, filename);
 

@@ -56,5 +56,5 @@ test('RdfPlugin e2e :: happy :: reason:annotate writes a graph onto state', asyn
     'roles':  ROLES,
   });
 
-  assert.ok(state.graph !== undefined, 'reason:annotate populated state.graph');
+  assert.ok(state.outputs.reasoning?.graph !== undefined, 'reason:annotate populated outputs.reasoning.graph');
 });

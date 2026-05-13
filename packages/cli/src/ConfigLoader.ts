@@ -1,5 +1,6 @@
 import { readFile } from 'fs/promises';
 import { CliConfigSchema } from './CliConfigSchema.ts';
+import { validator }       from '@studnicky/iridis/model';
 import type { CliConfigInterface } from './types/index.ts';
 
 export class ConfigLoader {
@@ -13,46 +14,14 @@ export class ConfigLoader {
   }
 
   private validate(data: unknown): void {
-    if (typeof data !== 'object' || data === null) {
-      throw new Error(`Config must be a JSON object (schema type: ${CliConfigSchema['type']})`);
-    }
-
-    const obj    = data as Record<string, unknown>;
-    const input  = obj['input'];
-
-    if (typeof input !== 'object' || input === null) {
-      throw new Error('Config.input must be an object');
-    }
-
-    const inputObj = input as Record<string, unknown>;
-    const colors   = inputObj['colors'];
-
-    if (!Array.isArray(colors) || colors.length === 0) {
-      throw new Error('Config.input.colors must be a non-empty array');
-    }
-
-    const pipeline = obj['pipeline'];
-
-    if (!Array.isArray(pipeline) || pipeline.length === 0) {
-      throw new Error('Config.pipeline must be a non-empty array of task names');
-    }
-
-    const output = obj['output'];
-
-    if (typeof output !== 'object' || output === null) {
-      throw new Error('Config.output must be an object');
-    }
-
-    const outputObj   = output as Record<string, unknown>;
-    const directory   = outputObj['directory'];
-    const files       = outputObj['files'];
-
-    if (typeof directory !== 'string') {
-      throw new Error('Config.output.directory must be a string');
-    }
-
-    if (typeof files !== 'object' || files === null) {
-      throw new Error('Config.output.files must be an object');
+    const result = validator.validate(CliConfigSchema, data);
+    if (!result.valid) {
+      const first = result.errors[0];
+      throw new Error(
+        `Config invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+      );
     }
   }
 }
+
+export const configLoader = new ConfigLoader();

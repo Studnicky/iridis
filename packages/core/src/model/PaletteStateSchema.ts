@@ -41,9 +41,6 @@ export const PaletteStateSchema = {
       'description': 'Output namespace owned by emit:* tasks. Each emitter writes its slot.',
       'additionalProperties': true,
     },
-    'graph': {
-      'description': 'Optional N3 store written by reason:annotate (browser-safe via n3.js).',
-    },
     'metadata': {
       'type': 'object',
       'description': 'Run-scoped metadata (timings, contrast reports, role schema in use, etc.).',

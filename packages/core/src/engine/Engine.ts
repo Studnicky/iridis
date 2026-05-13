@@ -8,6 +8,9 @@ import type {
 } from '../types/index.ts';
 import { TaskRegistry }      from '../registry/TaskRegistry.ts';
 import { ConsoleLogger }     from './ConsoleLogger.ts';
+import { validator }         from '../model/Validator.ts';
+import { InputSchema }       from '../model/InputSchema.ts';
+import { PluginSchema }      from '../model/PluginSchema.ts';
 
 /**
  * The single composition root of the iridis pipeline. An Engine owns one
@@ -30,8 +33,20 @@ export class Engine implements EngineInterface {
    * single call. Idempotent at the registry level: re-adopting a plugin
    * overwrites prior entries with the same names, which is how downstream
    * consumers monkey-patch built-ins.
+   *
+   * The plugin shape is validated against `PluginSchema` at the boundary.
+   * Well-formed plugins pass in O(1); the check is fast enough to leave on
+   * in production.
    */
   adopt(plugin: PluginInterface): void {
+    const result = validator.validate(PluginSchema, plugin);
+    if (!result.valid) {
+      const first = result.errors[0];
+      throw new Error(
+        `Engine.adopt: plugin invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+      );
+    }
+
     for (const task of plugin.tasks()) {
       const phase = task.manifest?.phase;
       if (phase) {
@@ -99,6 +114,14 @@ export class Engine implements EngineInterface {
    * by this call — callers may mutate it without affecting the engine.
    */
   async run(input: InputInterface): Promise<PaletteStateInterface> {
+    const inputResult = validator.validate(InputSchema, input);
+    if (!inputResult.valid) {
+      const first = inputResult.errors[0];
+      throw new Error(
+        `Engine.run: input invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+      );
+    }
+
     const state: PaletteStateInterface = {
       'input':    input,
       'runtime':  { ...input.runtime },

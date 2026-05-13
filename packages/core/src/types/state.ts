@@ -77,6 +77,5 @@ export interface PaletteStateInterface {
   roles:             Record<string, ColorRecordInterface>;
   variants:          Record<string, Record<string, ColorRecordInterface>>;
   outputs:           Partial<PluginOutputsRegistry>;
-  graph?:            unknown;
   metadata:          Partial<PluginMetadataRegistry>;
 }
