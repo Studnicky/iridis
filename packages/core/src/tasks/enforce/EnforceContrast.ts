@@ -23,6 +23,22 @@ function measureContrast(
   return contrastWcag21.apply(fg, bg);
 }
 
+/**
+ * Converts `input.contrast.level` to a minimum WCAG 21 ratio floor.
+ *
+ * - `'AAA'` → 7.0 (WCAG 2.1 enhanced contrast for normal text)
+ * - `'AA'`  → 4.5 (WCAG 2.1 minimum contrast for normal text)
+ * - anything else → 1.0 (no floor — pair's own minRatio governs)
+ *
+ * When a pair's declared `minRatio` already exceeds this floor the pair's
+ * value wins. The level is a global minimum; it never lowers a pair's ratio.
+ */
+function levelFloor(level: string | undefined): number {
+  if (level === 'AAA') return 7.0;
+  if (level === 'AA')  return 4.5;
+  return 1.0;
+}
+
 export class EnforceContrast implements TaskInterface {
   readonly 'name' = 'enforce:contrast';
 
@@ -38,6 +54,7 @@ export class EnforceContrast implements TaskInterface {
     const schemaPairs  = state.input.roles?.contrastPairs ?? [];
     const extraPairs   = state.input.contrast?.extra       ?? [];
     const defaultAlgo  = state.input.contrast?.algorithm   ?? 'wcag21';
+    const floor        = levelFloor(state.input.contrast?.level);
 
     const allPairs: readonly ContrastPairInterface[] = [...schemaPairs, ...extraPairs];
 
@@ -60,10 +77,12 @@ export class EnforceContrast implements TaskInterface {
         continue;
       }
 
-      const algo = pair.algorithm ?? defaultAlgo;
+      const algo     = pair.algorithm ?? defaultAlgo;
+      // input.contrast.level acts as a global floor — never lowers a pair's declared ratio.
+      const minRatio = Math.max(pair.minRatio, floor);
 
-      const ratio = measureContrast(algo, fgColor, bgColor);
-      const passed = ratio >= pair.minRatio;
+      const ratio  = measureContrast(algo, fgColor, bgColor);
+      const passed = ratio >= minRatio;
 
       let adjusted = false;
       let finalFg = fgColor;
@@ -72,10 +91,10 @@ export class EnforceContrast implements TaskInterface {
         ctx.logger.info(
           'EnforceContrast',
           'run',
-          `Pair ${pair.foreground}/${pair.background}: ratio ${ratio.toFixed(2)} < ${pair.minRatio} — nudging`,
+          `Pair ${pair.foreground}/${pair.background}: ratio ${ratio.toFixed(2)} < ${minRatio} — nudging`,
         );
 
-        finalFg = ensureContrast.apply(fgColor, bgColor, pair.minRatio, algo);
+        finalFg = ensureContrast.apply(fgColor, bgColor, minRatio, algo);
 
         state.roles[pair.foreground] = finalFg;
         adjusted = true;
@@ -90,8 +109,8 @@ export class EnforceContrast implements TaskInterface {
         'background': pair.background,
         'algorithm':  algo,
         'ratio':      finalRatio,
-        'minRatio':   pair.minRatio,
-        'passed':     finalRatio >= pair.minRatio,
+        'minRatio':   minRatio,
+        'passed':     finalRatio >= minRatio,
         'adjusted':   adjusted,
       });
     }

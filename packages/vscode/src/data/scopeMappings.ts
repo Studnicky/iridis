@@ -913,36 +913,3 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
   ],
 
 } as const;
-
-/**
- * Maps VS Code semantic token type names to SemanticPaletteInterface keys.
- * Used by emit:vscodeSemanticRules to assign palette colours to token selectors.
- */
-export const SEMANTIC_TOKEN_TO_PALETTE: Readonly<Record<string, string>> = {
-  'class':                    'class',
-  'comment':                  'comment',
-  'decorator':                'decorator',
-  'enum':                     'enum',
-  'enumMember':               'enumMember',
-  'event':                    'function',
-  'function':                 'function',
-  'function.defaultLibrary':  'builtin',
-  'interface':                'interface',
-  'keyword':                  'keyword',
-  'macro':                    'macro',
-  'method':                   'method',
-  'namespace':                'namespace',
-  'number':                   'number',
-  'operator':                 'operator',
-  'parameter':                'parameter',
-  'property':                 'property',
-  'property.readonly':        'propertyReadonly',
-  'regexp':                   'regexp',
-  'string':                   'string',
-  'struct':                   'class',
-  'type':                     'type',
-  'typeParameter':            'typeParameter',
-  'variable':                 'variable',
-  'variable.defaultLibrary':  'builtin',
-  'variable.readonly':        'variableReadonly',
-} as const;

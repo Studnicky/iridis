@@ -8,7 +8,6 @@ export const RoleSchemaSchema = {
     'description': { 'type': 'string' },
     'roles': {
       'type':     'array',
-      'minItems': 1,
       'items': {
         'type':     'object',
         'required': ['name'],

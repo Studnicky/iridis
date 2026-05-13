@@ -1,2 +1,2 @@
-export { Engine, engine }   from './Engine.ts';
-export { ConsoleLogger }    from './ConsoleLogger.ts';
+export { Engine }        from './Engine.ts';
+export { ConsoleLogger } from './ConsoleLogger.ts';

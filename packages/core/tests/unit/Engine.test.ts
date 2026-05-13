@@ -215,25 +215,6 @@ test('Engine :: edge :: adopt-routed onRunStart task fires via hook, not in main
   assert.strictEqual(hookCalls[0], 'hook-fired');
 });
 
-test('Engine :: edge :: run state has cache available to tasks', async () => {
-  const engine = new Engine();
-  let capturedCache: Map<string, unknown> | undefined;
-
-  const cacheTask: TaskInterface = {
-    'name': 'task:cache',
-    'manifest': { 'name': 'task:cache' },
-    run(_state, ctx) {
-      capturedCache = ctx.cache;
-      ctx.cache.set('key', 'value');
-    },
-  };
-
-  engine.adopt(makePlugin('p', [cacheTask]));
-  engine.pipeline(['task:cache']);
-  await engine.run(makeInput());
-  assert.ok(capturedCache instanceof Map);
-  assert.strictEqual(capturedCache.get('key'), 'value');
-});
 
 // ---------------------------------------------------------------------------
 // P1.3 — adopt routes phased tasks through hooks
@@ -428,4 +409,24 @@ test('Engine :: P1.4 :: pipeline skips requires validation for math primitive na
   // 'someMathPrimitive' is not a registered task — should not throw
   engine.pipeline(['task:usesmath']);
   assert.strictEqual(engine.tasks.has('task:usesmath'), true);
+});
+
+// ---------------------------------------------------------------------------
+// P3 — plugin name uniqueness check
+// ---------------------------------------------------------------------------
+
+test('Engine :: P3 :: adopt warns when plugin name already adopted', () => {
+  const engine = new Engine();
+  const warnings: string[] = [];
+  const origWarn = console.warn;
+  console.warn = (...args: unknown[]) => { warnings.push(String(args[0])); };
+
+  engine.adopt(makePlugin('my-plugin', []));
+  assert.strictEqual(warnings.length, 0, 'first adopt should not warn');
+
+  engine.adopt(makePlugin('my-plugin', []));
+  assert.strictEqual(warnings.length, 1, 'second adopt of same name should warn');
+  assert.ok(warnings[0]?.includes('my-plugin'), `expected plugin name in warning, got: ${warnings[0]}`);
+
+  console.warn = origWarn;
 });

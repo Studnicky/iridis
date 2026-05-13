@@ -16,6 +16,13 @@ export interface InputInterface {
   };
   readonly maxColors?: number;
   readonly bypass?:    boolean;
+  /**
+   * Selective emit filter — names of output slots to produce. Reserved for
+   * the planned `@studnicky/iridis-anima` animation/interpolation engine,
+   * which will use this field to request only the output slots it needs per
+   * interpolation frame (avoiding unnecessary emit work on hot paths).
+   * No current task reads this field; it is public API for future consumers.
+   */
   readonly emit?:      readonly string[];
   readonly runtime?:   RuntimeOptionsInterface;
   readonly metadata?:  Record<string, unknown>;

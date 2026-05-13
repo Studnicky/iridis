@@ -16,7 +16,6 @@ export interface PipelineContextInterface {
   readonly tasks:     TaskRegistryInterface;
   readonly logger:    LoggerInterface;
   readonly startedAt: number;
-  readonly cache:     Map<string, unknown>;
 }
 
 export interface TaskManifestInterface {

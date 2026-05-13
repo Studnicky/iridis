@@ -7,7 +7,6 @@ class ColorologyVocab {
   readonly 'rgb'         = `${this.base}rgb`;
   readonly 'hex'         = `${this.base}hex`;
   readonly 'wcag21Ratio' = `${this.base}wcag21Ratio`;
-  readonly 'apcaLc'      = `${this.base}apcaLc`;
 }
 
 export const colorologyVocab = new ColorologyVocab();
