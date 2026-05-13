@@ -1,3 +1,17 @@
+/**
+ * Canonical color intent ontology. Drives every downstream semantic
+ * decision: forced-colors token selection (`EmitCssVars.forcedColorsToken`),
+ * APCA Lc target selection (`EnforceApca`), WCAG required-ratio selection
+ * (`wcagRequiredRatio`), and capacitor StatusBar style
+ * (`EmitCapacitorTheme`). The schema author's declared intent is
+ * authoritative — no substring inference happens anywhere downstream.
+ *
+ * Values group into three families:
+ *  - foreground intents: `'text' | 'link'` — paint over a background.
+ *  - background intents: `'background' | 'surface' | 'base' | 'muted' | 'neutral'` — receive a foreground.
+ *  - signal intents:     `'accent' | 'critical' | 'positive' | 'button'` — call attention or carry state.
+ *  - inverse intents:    `'onAccent' | 'onButton'` — foreground painted onto a signal background.
+ */
 export type ColorIntentType =
   | 'base'
   | 'accent'
@@ -6,7 +20,12 @@ export type ColorIntentType =
   | 'positive'
   | 'neutral'
   | 'surface'
-  | 'text';
+  | 'text'
+  | 'background'
+  | 'link'
+  | 'button'
+  | 'onAccent'
+  | 'onButton';
 
 export type SourceFormatType =
   | 'hex'

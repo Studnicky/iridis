@@ -167,14 +167,15 @@ describe('ContrastPlugin e2e :: scenarios', () => {
         assert.strictEqual(entry.foreground, 'text');
         assert.strictEqual(entry.background, 'background');
         assert.strictEqual(entry.algorithm,  'apca');
-        // EnforceApca picks Lc 75 / 60 / 45 from role hint intents; colors arriving via
-        // intake:hex don't carry hints, so the non-text UI fallback Lc 45 applies.
-        // The black-on-white pair clears any APCA target by a wide margin.
-        assert.ok([45, 60, 75].includes(entry.requiredLc),
-          `requiredLc ${entry.requiredLc} should be one of 45 / 60 / 75`);
+        // EnforceApca picks Lc 75 / 60 / 45 from role hint intents. R1.1 propagates
+        // the schema's role.intent ('text' on foreground, 'surface' on background)
+        // onto the resolved record's hints.intent, so the text+surface pair selects
+        // the body-text Lc 75 target. The black-on-white pair clears Lc 75 by a wide margin.
+        assert.strictEqual(entry.requiredLc, 75,
+          `requiredLc must be 75 for a text+surface pair (got ${entry.requiredLc}); R1.1 should propagate role.intent onto hints.intent`);
         assert.ok(entry.afterLc >= entry.requiredLc,
           `afterLc ${entry.afterLc} should meet requiredLc ${entry.requiredLc}`);
-        assert.strictEqual(entry.pass, true, 'pair passes the chosen APCA Lc target');
+        assert.strictEqual(entry.pass, true, 'pair passes the body-text Lc 75 target');
         // Black-on-white (or its inverse) has high APCA Lc magnitude regardless of which
         // role lands on which colour — the absolute Lc must be substantial.
         assert.ok(Math.abs(entry.afterLc) >= 45,

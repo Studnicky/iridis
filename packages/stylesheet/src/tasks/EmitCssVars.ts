@@ -9,32 +9,46 @@ import { toCssVarName } from '@studnicky/iridis';
 import type { CssVarsOutputInterface } from '../types/index.ts';
 
 /**
- * Picks a forced-colors system color keyword based on the role name's semantic intent.
- * Windows High Contrast maps sRGB-approximate colors to system tokens; roles with
- * "text" intent map to CanvasText, background/surface roles map to Canvas, etc.
+ * Picks a Windows High Contrast (Forced Colors) system color keyword for
+ * a resolved role record. The mapping is driven entirely by the record's
+ * `hints.intent` — the schema-declared ontology is the contract; NO
+ * substring inference happens on role names.
+ *
+ * Intent → system-token mapping (CSS Color 4 §6 / WHCM spec):
+ *   text                                   → CanvasText
+ *   background, surface, base, muted,
+ *     neutral                              → Canvas
+ *   accent                                 → Highlight
+ *   onAccent                               → HighlightText
+ *   button                                 → ButtonFace
+ *   onButton                               → ButtonText
+ *   link                                   → LinkText
+ *   critical, positive                     → CanvasText (signal foreground)
+ *
+ * When `hints.intent` is missing (role schema declared no intent) the
+ * mapping FALLS SAFE to `CanvasText` so text-shaped roles in undeclared
+ * schemas remain legible against a default Canvas background rather
+ * than disappearing into it. Roles that need a different forced-colors
+ * mapping MUST declare an `intent` on the schema; see
+ * {@link RoleDefinitionInterface.intent}.
  */
-function forcedColorsToken(role: string): string {
-  const lower = role.toLowerCase();
-  if (lower.includes('text') || lower.includes('label') || lower.includes('caption')) {
-    return 'CanvasText';
+function forcedColorsToken(record: ColorRecordInterface): string {
+  switch (record.hints?.intent) {
+    case 'text':       return 'CanvasText';
+    case 'background': return 'Canvas';
+    case 'surface':    return 'Canvas';
+    case 'base':       return 'Canvas';
+    case 'muted':      return 'Canvas';
+    case 'neutral':    return 'Canvas';
+    case 'accent':     return 'Highlight';
+    case 'onAccent':   return 'HighlightText';
+    case 'button':     return 'ButtonFace';
+    case 'onButton':   return 'ButtonText';
+    case 'link':       return 'LinkText';
+    case 'critical':   return 'CanvasText';
+    case 'positive':   return 'CanvasText';
+    default:           return 'CanvasText';
   }
-  if (lower.includes('link') || lower.includes('anchor')) {
-    return 'LinkText';
-  }
-  if (lower.includes('accent') || lower.includes('highlight') || lower.includes('selected')) {
-    return 'Highlight';
-  }
-  if (lower.includes('on-accent') || lower.includes('on-highlight')) {
-    return 'HighlightText';
-  }
-  if (lower.includes('button') || lower.includes('action') || lower.includes('interactive')) {
-    return 'ButtonFace';
-  }
-  if (lower.includes('on-button') || lower.includes('on-action')) {
-    return 'ButtonText';
-  }
-  // surface / background / base / muted → Canvas (the page background)
-  return 'Canvas';
 }
 
 function serializeP3(p3: ColorRecordInterface['displayP3']): string {
@@ -88,9 +102,9 @@ function buildForcedColorsBlock(
   roles: Record<string, ColorRecordInterface>,
   prefix: string,
 ): string {
-  const decls = Object.entries(roles).map(([role, _record]) => {
+  const decls = Object.entries(roles).map(([role, record]) => {
     const varName = toCssVarName(role, prefix);
-    const token = forcedColorsToken(role);
+    const token = forcedColorsToken(record);
     return `  ${varName}: ${token};`;
   });
   return `@media (forced-colors: active) {\n  :root {\n${decls.map((d) => `  ${d}`).join('\n')}\n  }\n}`;
