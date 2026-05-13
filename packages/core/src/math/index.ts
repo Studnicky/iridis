@@ -1,3 +1,4 @@
+export { clamp01, clamp }                        from './Clamp.ts';
 export { ColorRecordFactory, colorRecordFactory } from './ColorRecordFactory.ts';
 export { OklchToRgb,       oklchToRgb       } from './OklchToRgb.ts';
 export { RgbToOklch,       rgbToOklch       } from './RgbToOklch.ts';

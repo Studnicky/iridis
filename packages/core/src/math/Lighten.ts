@@ -1,11 +1,12 @@
 import type { ColorRecordInterface } from '../types/index.ts';
+import { clamp01 } from './Clamp.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
 export class Lighten {
   readonly 'name' = 'lighten';
 
   apply(color: ColorRecordInterface, deltaL: number): ColorRecordInterface {
-    const l = Math.max(0, Math.min(1, color.oklch.l + deltaL));
+    const l = clamp01(color.oklch.l + deltaL);
     return colorRecordFactory.fromOklch(l, color.oklch.c, color.oklch.h, color.alpha);
   }
 }

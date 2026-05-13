@@ -4,6 +4,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '../../types/index.ts';
+import { clamp01 } from '../../math/Clamp.ts';
 import { hslToRgb } from '../../math/HslToRgb.ts';
 
 interface HslInput {
@@ -54,7 +55,7 @@ export class IntakeHsl implements TaskInterface {
       const sat = s > 1 ? s / 100 : s;
       const lig = l > 1 ? l / 100 : l;
 
-      const base = hslToRgb.apply(h, sat, lig, Math.max(0, Math.min(1, alpha)));
+      const base = hslToRgb.apply(h, sat, lig, clamp01(alpha));
       const record = { ...base, 'sourceFormat': 'hsl' as const };
 
       state.colors.push(record);

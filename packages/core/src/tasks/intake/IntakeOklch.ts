@@ -48,12 +48,7 @@ export class IntakeOklch implements TaskInterface {
       const { l, c, h } = raw;
       const a = typeof raw['a'] === 'number' ? raw['a'] : 1;
 
-      const record = colorRecordFactory.fromOklch(
-        Math.max(0, Math.min(1, l)),
-        Math.max(0, Math.min(0.5, c)),
-        ((h % 360) + 360) % 360,
-        Math.max(0, Math.min(1, a)),
-      );
+      const record = colorRecordFactory.fromOklch(l, c, h, a);
 
       state.colors.push(record);
       ctx.logger.debug('IntakeOklch', 'run', `Parsed oklch(${l},${c},${h}) → ${record.hex}`);

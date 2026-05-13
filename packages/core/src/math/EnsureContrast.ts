@@ -1,4 +1,5 @@
 import type { ColorRecordInterface, ContrastAlgorithmType } from '../types/index.ts';
+import { clamp01 } from './Clamp.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { contrastWcag21 } from './ContrastWcag21.ts';
 import { contrastApca } from './ContrastApca.ts';
@@ -34,7 +35,7 @@ export class EnsureContrast {
     const step = foreground.oklch.l < bgL ? -0.02 : 0.02;
 
     for (let i = 0; i < 50; i++) {
-      const newL = Math.max(0, Math.min(1, current.oklch.l + step));
+      const newL = clamp01(current.oklch.l + step);
       const candidate = colorRecordFactory.fromOklch(newL, current.oklch.c, current.oklch.h, current.alpha);
       const ratio = getContrast(candidate, background, algorithm);
 

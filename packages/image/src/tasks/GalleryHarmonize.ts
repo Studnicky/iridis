@@ -1,11 +1,10 @@
 import type {
-  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { deltaE2000, getOrCreateMetadata, oklchToRgb } from '@studnicky/iridis';
+import { deltaE2000, getOrCreateMetadata, hueShift } from '@studnicky/iridis';
 
 /**
  * `gallery:harmonize`
@@ -59,14 +58,7 @@ export class GalleryHarmonize implements TaskInterface {
     // If diff > 0 accent is clockwise from frame → continue clockwise (+30)
     // If diff ≤ 0 accent is counterclockwise  → continue counterclockwise (-30)
     const shift    = diff > 0 ? 30 : -30;
-    const newHue   = ((accentHue + shift) % 360 + 360) % 360;
-
-    const newAccent = oklchToRgb.apply(
-      accent.oklch.l,
-      accent.oklch.c,
-      newHue,
-      accent.alpha,
-    );
+    const newAccent = hueShift.apply(accent, shift);
 
     state.roles['accent'] = newAccent;
 
