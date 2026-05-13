@@ -26,10 +26,9 @@ function apcaLcTarget(
   const fgIntent = fgRecord.hints?.intent;
   const bgIntent = bgRecord.hints?.intent;
   const isText   = fgIntent === 'text' || bgIntent === 'text';
-  const isSurface = fgIntent === 'surface' || fgIntent === 'base' ||
-                    bgIntent === 'surface' || bgIntent === 'base';
+  const isBackground = fgIntent === 'background' || bgIntent === 'background';
 
-  if (isText && isSurface) {
+  if (isText && isBackground) {
     // body text: Lc 75
     return 75;
   }

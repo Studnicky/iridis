@@ -17,7 +17,7 @@ export const RoleSchemaSchema = {
           'description': { 'type': 'string' },
           'intent': {
             'type': 'string',
-            'enum': ['base', 'accent', 'muted', 'critical', 'positive', 'neutral', 'surface', 'text'],
+            'enum': ['text', 'background', 'accent', 'muted', 'critical', 'positive', 'link', 'button', 'onAccent', 'onButton'],
           },
           'required':       { 'type': 'boolean' },
           'derivedFrom':    { 'type': 'string', 'description': 'Other role name; if present, expand:family seeds from it.' },

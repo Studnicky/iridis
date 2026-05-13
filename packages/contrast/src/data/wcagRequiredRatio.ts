@@ -13,7 +13,7 @@ function isTextPair(
   const bgIntent = bgRecord.hints?.intent;
   return (
     (fgIntent === 'text' || bgIntent === 'text') &&
-    (fgIntent === 'surface' || fgIntent === 'base' || bgIntent === 'surface' || bgIntent === 'base')
+    (fgIntent === 'background' || bgIntent === 'background')
   );
 }
 

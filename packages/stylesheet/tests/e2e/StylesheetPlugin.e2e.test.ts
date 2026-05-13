@@ -194,7 +194,7 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
 const GOLDEN_ROLES: RoleSchemaInterface = {
   'name':  'golden-cssvars',
   'roles': [
-    { 'name': 'background', 'required': true, 'intent': 'surface', 'lightnessRange': [0.05, 0.15], 'chromaRange': [0.00, 0.03] },
+    { 'name': 'background', 'required': true, 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'chromaRange': [0.00, 0.03] },
     { 'name': 'foreground', 'required': true, 'intent': 'text',    'lightnessRange': [0.90, 0.99], 'chromaRange': [0.00, 0.03] },
     { 'name': 'accent',     'required': true, 'intent': 'accent',  'lightnessRange': [0.55, 0.70], 'chromaRange': [0.15, 0.25] },
   ],
@@ -244,17 +244,14 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
   const FORCED_BY_INTENT: Readonly<Record<string, string>> = {
     'text':       'CanvasText',
     'background': 'Canvas',
-    'surface':    'Canvas',
-    'base':       'Canvas',
-    'muted':      'Canvas',
-    'neutral':    'Canvas',
     'accent':     'Highlight',
-    'onAccent':   'HighlightText',
-    'button':     'ButtonFace',
-    'onButton':   'ButtonText',
-    'link':       'LinkText',
+    'muted':      'GrayText',
     'critical':   'CanvasText',
     'positive':   'CanvasText',
+    'link':       'LinkText',
+    'button':     'ButtonFace',
+    'onAccent':   'HighlightText',
+    'onButton':   'ButtonText',
   };
 
   for (const role of GOLDEN_ROLES.roles) {

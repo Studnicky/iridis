@@ -21,7 +21,7 @@ export const vscodeRoleSchema16: RoleSchemaInterface = {
     {
       'name':           'background',
       'description':    'Editor and chrome background',
-      'intent':         'surface',
+      'intent':         'background',
       'required':       true,
       // DARK_CLAMPS.background: lMin 3, lMax 20 → OKLCh ≈ 0.03–0.20; sMin 0, sMax 30 → chroma ≈ 0–0.12
       'lightnessRange': [0.03, 0.20],
@@ -39,7 +39,7 @@ export const vscodeRoleSchema16: RoleSchemaInterface = {
     {
       'name':           'surface',
       'description':    'Sidebar, panels, activity bar background',
-      'intent':         'surface',
+      'intent':         'background',
       'required':       true,
       'derivedFrom':    'background',
       // DARK_CLAMPS.surface: lMin 5, lMax 22; sMin 0, sMax 35 → chroma ≈ 0–0.14
@@ -142,7 +142,7 @@ export const vscodeRoleSchema16: RoleSchemaInterface = {
     {
       'name':           'warning',
       'description':    'Warning diagnostics',
-      'intent':         'neutral',
+      'intent':         'muted',
       'required':       true,
       'derivedFrom':    'error',
       'lightnessRange': [0.55, 0.80],
@@ -151,7 +151,7 @@ export const vscodeRoleSchema16: RoleSchemaInterface = {
     {
       'name':           'info',
       'description':    'Info diagnostics, async hint colour',
-      'intent':         'neutral',
+      'intent':         'muted',
       'required':       true,
       'derivedFrom':    'error',
       'lightnessRange': [0.55, 0.80],

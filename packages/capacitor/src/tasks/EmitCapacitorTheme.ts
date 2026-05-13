@@ -64,17 +64,17 @@ export class EmitCapacitorTheme implements TaskInterface {
 
     const FALLBACK = '#000000';
 
-    const primary     = resolveHex(roles, intentMap, 'primary', 'base',     FALLBACK);
+    const primary     = resolveHex(roles, intentMap, 'primary', 'background', FALLBACK);
     const primaryDark = variantHex(roles, variants, 'primary', 'dark',  primary);
     const primaryLight = variantHex(roles, variants, 'primary', 'light', primary);
-    const accent      = resolveHex(roles, intentMap, 'accent',  'accent',   primary);
-    const background  = resolveHex(roles, intentMap, 'background', 'base',  '#ffffff');
-    const surface     = resolveHex(roles, intentMap, 'surface', 'surface',  background);
-    const error       = resolveHex(roles, intentMap, 'error',   'critical', '#b00020');
-    const warning     = resolveHex(roles, intentMap, 'warning', 'muted',    '#f59e0b');
-    const success     = resolveHex(roles, intentMap, 'success', 'positive', '#10b981');
-    const info        = resolveHex(roles, intentMap, 'info',    'neutral',  '#3b82f6');
-    const text        = resolveHex(roles, intentMap, 'text',    'text',     '#1f2937');
+    const accent      = resolveHex(roles, intentMap, 'accent',  'accent',     primary);
+    const background  = resolveHex(roles, intentMap, 'background', 'background', '#ffffff');
+    const surface     = resolveHex(roles, intentMap, 'surface', 'background', background);
+    const error       = resolveHex(roles, intentMap, 'error',   'critical',   '#b00020');
+    const warning     = resolveHex(roles, intentMap, 'warning', 'muted',      '#f59e0b');
+    const success     = resolveHex(roles, intentMap, 'success', 'positive',   '#10b981');
+    const info        = resolveHex(roles, intentMap, 'info',    'accent',     '#3b82f6');
+    const text        = resolveHex(roles, intentMap, 'text',    'text',       '#1f2937');
     const textOnPrimary = resolveHex(roles, intentMap, 'textOnPrimary', 'text', '#ffffff');
     const textOnAccent  = resolveHex(roles, intentMap, 'textOnAccent',  'text', '#ffffff');
 
