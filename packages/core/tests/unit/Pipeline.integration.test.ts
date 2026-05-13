@@ -53,6 +53,8 @@ function makeIntakeTask(): TaskInterface {
           'hex':          hex,
           'alpha':        1,
           'sourceFormat': 'hex',
+          'displayP3':    undefined,
+          'hints':        undefined,
         });
       }
     },

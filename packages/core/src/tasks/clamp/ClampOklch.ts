@@ -68,12 +68,16 @@ export class ClampOklch implements TaskInterface {
         continue;
       }
 
-      const updated = colorRecordFactory.fromOklch(clampedL, clampedC, h, color.alpha);
-      const withMeta: ColorRecordInterface = color.hints
-        ? { ...updated, 'hints': color.hints, 'sourceFormat': color.sourceFormat }
-        : { ...updated, 'sourceFormat': color.sourceFormat };
+      const updated = colorRecordFactory.fromOklch(
+        clampedL,
+        clampedC,
+        h,
+        color.alpha,
+        color.sourceFormat,
+        color.hints,
+      );
 
-      state.colors[i] = withMeta;
+      state.colors[i] = updated;
       ctx.logger.debug(
         'ClampOklch',
         'run',

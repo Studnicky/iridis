@@ -33,6 +33,17 @@ const PIPELINE: readonly string[] = [
 const writtenProps = new Set<string>();
 
 /**
+ * Module-scope engine. Constructed once at import time with the core
+ * tasks registered and the projector's pipeline declared. `Engine.run`
+ * carries no state between calls — every invocation produces a fresh
+ * `PaletteStateInterface` from the input — so reuse is safe and avoids
+ * per-`watch`-tick allocation of a new registry + task list.
+ */
+const engine = new Engine();
+for (const t of coreTasks) engine.tasks.register(t);
+engine.pipeline(PIPELINE);
+
+/**
  * Projects the supplied config onto the document. Idempotent — invoked
  * by the theme dispatcher's `watch` on every state change. Async
  * because the engine pipeline returns a promise; awaiting is optional
@@ -52,10 +63,6 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
   const schema = pair[config.framing];
 
   try {
-    const engine = new Engine();
-    for (const t of coreTasks)    engine.tasks.register(t);
-    engine.pipeline(PIPELINE);
-
     const state = await engine.run({
       'colors':   config.paletteColors,
       'roles':    schema,

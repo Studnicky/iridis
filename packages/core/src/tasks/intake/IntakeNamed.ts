@@ -185,8 +185,7 @@ export class IntakeNamed implements TaskInterface {
         continue;
       }
 
-      const base = colorRecordFactory.fromHex(hex);
-      const record = { ...base, 'sourceFormat': 'named' as const };
+      const record = colorRecordFactory.fromHex(hex, undefined, 'named');
 
       state.colors.push(record);
       ctx.logger.debug('IntakeNamed', 'run', `Parsed named color "${raw}" → ${record.hex}`);

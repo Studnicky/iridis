@@ -90,6 +90,8 @@ test('TaskRegistry e2e :: happy :: hooks invoked in order with state mutations v
         'hex':          '#80cc33',
         'alpha':        1,
         'sourceFormat': 'hex',
+        'displayP3':    undefined,
+        'hints':        undefined,
       });
     },
   };

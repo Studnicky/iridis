@@ -5,7 +5,7 @@ import type {
   TaskManifestInterface,
 } from '../../types/index.ts';
 import { clamp01 } from '../../math/Clamp.ts';
-import { hslToRgb } from '../../math/HslToRgb.ts';
+import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 interface HslInput {
   'h': number;
@@ -55,8 +55,7 @@ export class IntakeHsl implements TaskInterface {
       const sat = s > 1 ? s / 100 : s;
       const lig = l > 1 ? l / 100 : l;
 
-      const base = hslToRgb.apply(h, sat, lig, clamp01(alpha));
-      const record = { ...base, 'sourceFormat': 'hsl' as const };
+      const record = colorRecordFactory.fromHsl(h, sat, lig, clamp01(alpha), 'hsl');
 
       state.colors.push(record);
       ctx.logger.debug('IntakeHsl', 'run', `Parsed hsl(${h},${s},${l}) → ${record.hex}`);

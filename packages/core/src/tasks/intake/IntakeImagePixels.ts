@@ -62,8 +62,7 @@ export class IntakeImagePixels implements TaskInterface {
         const b = (data[offset + 2] ?? 0) / 255;
         const a = alpha / 255;
 
-        const base = colorRecordFactory.fromRgb(r, g, b, a);
-        const record = { ...base, 'sourceFormat': 'imagePixel' as const };
+        const record = colorRecordFactory.fromRgb(r, g, b, a, 'imagePixel');
 
         state.colors.push(record);
         pushed++;
