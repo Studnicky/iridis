@@ -5,10 +5,16 @@
  * hex palette guaranteed to satisfy the framing-appropriate clamp ranges.
  */
 
-import { test } from 'node:test';
+import { test }                            from 'node:test';
+import { readFileSync, writeFileSync }     from 'node:fs';
 
 import { quickPalette } from '@studnicky/iridis';
 import { assert }       from './ScenarioRunner.ts';
+
+const QUICK_PALETTE_GOLDEN = new URL(
+  '../fixtures/quickPalette-violet-dark.json',
+  import.meta.url,
+);
 
 test('quickPalette :: dark framing :: returns four hex roles', async () => {
   const palette = await quickPalette(['#7c3aed', '#06b6d4', '#10b981']);
@@ -46,4 +52,27 @@ test('quickPalette :: single seed :: still produces a complete palette', async (
   assert.ok(palette.foreground);
   assert.ok(palette.accent);
   assert.ok(palette.muted);
+});
+
+// ---------------------------------------------------------------------------
+// Golden fixture — locks the output of quickPalette(['#5b21b6'], 'dark') so any
+// drift in intake / resolve / role-range math surfaces as a test failure. Set
+// UPDATE_GOLDENS=1 to regenerate the fixture after an intentional behaviour
+// change.
+// ---------------------------------------------------------------------------
+
+test('quickPalette :: golden :: violet seed under dark framing matches locked fixture', async () => {
+  const palette = await quickPalette(['#5b21b6'], 'dark');
+  const actual  = `${JSON.stringify(palette, null, 2)}\n`;
+
+  if (process.env['UPDATE_GOLDENS'] === '1') {
+    writeFileSync(QUICK_PALETTE_GOLDEN, actual);
+  }
+
+  const expected = readFileSync(QUICK_PALETTE_GOLDEN, 'utf8');
+  assert.strictEqual(
+    actual,
+    expected,
+    'quickPalette(["#5b21b6"], "dark") output drifted; regenerate with UPDATE_GOLDENS=1 if intentional',
+  );
 });

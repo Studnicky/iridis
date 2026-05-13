@@ -48,6 +48,15 @@ interface WcagMetaShapeInterface {
   readonly 'aaa'?:  { readonly 'pairs': readonly WcagPairInterface[] };
   readonly 'cvd'?:  { readonly 'warnings': readonly CvdWarningInterface[] };
 }
+interface ContrastReportEntryShapeInterface {
+  readonly 'foreground': string;
+  readonly 'background': string;
+  readonly 'algorithm':  string;
+  readonly 'ratio':      number;
+  readonly 'minRatio':   number;
+  readonly 'passed':     boolean;
+  readonly 'adjusted':   boolean;
+}
 
 interface ScenarioInterface {
   readonly 'name':     string;
@@ -90,6 +99,18 @@ const WCAG_AAA_ROLES: RoleSchemaInterface = {
   ],
   'contrastPairs': [
     { 'foreground': 'text', 'background': 'background', 'minRatio': 7.0, 'algorithm': 'wcag21' },
+  ],
+};
+
+const ENFORCE_CONTRAST_ADJUST_ROLES: RoleSchemaInterface = {
+  'name':  'enforce-contrast-adjust',
+  'roles': [
+    // Range is wide so EnforceContrast can lighten foreground freely.
+    { 'name': 'text',       'required': true, 'lightnessRange': [0.10, 0.95], 'chromaRange': [0.00, 0.05] },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.85, 1.00], 'chromaRange': [0.00, 0.05] },
+  ],
+  'contrastPairs': [
+    { 'foreground': 'text', 'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
   ],
 };
 
@@ -183,6 +204,40 @@ describe('ContrastPlugin e2e :: scenarios', () => {
         const bgHex   = state.roles['background']?.hex;
         assert.ok(textHex !== undefined && bgHex !== undefined, 'both roles assigned');
         assert.ok(textHex !== bgHex, 'text hex differs from background after enforce');
+      },
+    },
+    {
+      'name':     'enforce:contrast — low-contrast pair flips adjusted=true and rewrites the foreground role',
+      'pipeline': ['intake:hex', 'resolve:roles', 'enforce:contrast'],
+      'input': {
+        'colors': ['#bbbbbb', '#ffffff'],
+        'roles':  ENFORCE_CONTRAST_ADJUST_ROLES,
+      },
+      assert(state): void {
+        // EnforceContrast writes a single report array under metadata.contrastReport.
+        const report = state.metadata['contrastReport'] as readonly ContrastReportEntryShapeInterface[] | undefined;
+        assert.ok(report !== undefined,                'metadata.contrastReport written by enforce:contrast');
+        assert.strictEqual(report.length, 1,            'exactly one contrast pair processed');
+        const entry = report[0]!;
+        assert.strictEqual(entry.foreground, 'text');
+        assert.strictEqual(entry.background, 'background');
+        assert.strictEqual(entry.algorithm,  'wcag21');
+        assert.strictEqual(entry.minRatio,   4.5,       'minRatio surfaces the schema pair value');
+        assert.strictEqual(entry.adjusted,   true,      'failing pair flipped adjusted=true (the branch under test)');
+        assert.strictEqual(entry.passed,     true,      'pair passes after adjustment');
+        assert.ok(entry.ratio >= 4.5,
+          `post-adjustment ratio ${entry.ratio} should be ≥ 4.5`);
+
+        // The text role hex was rewritten by enforce:contrast.
+        const textHex = state.roles['text']?.hex;
+        const bgHex   = state.roles['background']?.hex;
+        assert.ok(textHex !== undefined && bgHex !== undefined, 'both roles resolved');
+        // Pre-enforce intake hex for the text role was #bbbbbb; after adjustment the L axis
+        // shifted the role into a darker (or lighter) variant — the hex must differ from the seed.
+        assert.notStrictEqual(textHex.toLowerCase(), '#bbbbbb',
+          `text hex ${textHex} must differ from the original low-contrast seed #bbbbbb`);
+        assert.strictEqual(bgHex.toLowerCase(), '#ffffff',
+          'background role unchanged by enforce:contrast (foreground is the one adjusted)');
       },
     },
     {

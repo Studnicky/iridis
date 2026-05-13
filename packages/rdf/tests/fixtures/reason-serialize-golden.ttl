@@ -1,0 +1,9 @@
+
+    <https://studnicky.dev/colorology#hasColor> <https://studnicky.dev/colorology/color/0d1528>.
+    <https://studnicky.dev/colorology#hasColor> <https://studnicky.dev/colorology/color/5b21b6>.
+<https://studnicky.dev/colorology/color/0d1528> <https://studnicky.dev/colorology#hex> "#0d1528";
+<https://studnicky.dev/colorology/color/5b21b6> <https://studnicky.dev/colorology#hex> "#5b21b6";
+<https://studnicky.dev/colorology/pair/background-on-primary> <https://studnicky.dev/colorology#wcag21Ratio> 2.02.
+<https://studnicky.dev/colorology/pair/primary-on-background> <https://studnicky.dev/colorology#wcag21Ratio> 2.02.
+<https://studnicky.dev/colorology/role/background> a <https://studnicky.dev/colorology#Role>;
+<https://studnicky.dev/colorology/role/primary> a <https://studnicky.dev/colorology#Role>;

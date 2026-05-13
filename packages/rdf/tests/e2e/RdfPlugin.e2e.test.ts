@@ -6,11 +6,44 @@
  */
 import { test } from 'node:test';
 import assert   from 'node:assert/strict';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 import { Engine }       from '@studnicky/iridis/engine';
 import { coreTasks }    from '@studnicky/iridis/tasks';
 import type { RoleSchemaInterface } from '@studnicky/iridis';
 import { rdfPlugin, RdfPlugin, colorologyVocab } from '@studnicky/iridis-rdf';
+
+const REASON_SERIALIZE_GOLDEN = new URL(
+  '../fixtures/reason-serialize-golden.ttl',
+  import.meta.url,
+);
+
+/**
+ * Normalises a Turtle string for golden-fixture comparison. Two sources of
+ * non-determinism are filtered before line-sort:
+ *
+ *   1. The palette IRI embeds `ctx.startedAt` (Date.now). Any triple whose
+ *      subject or object contains `colorology/palette/run-` is dropped.
+ *
+ *   2. The n3 `Writer` assigns blank-node labels (`_:n3-0`, `_:n3-1`, …) in
+ *      insertion order — stable within one run but the labels themselves
+ *      carry no semantic value. Any line referencing a `_:n3-` label is
+ *      dropped from the comparison. The number of such lines is asserted
+ *      separately so we still catch a change in blank-node count.
+ *
+ * Remaining lines are sorted to defeat any future ordering shuffle inside
+ * the writer.
+ */
+function normaliseTurtle(ttl: string): string {
+  const lines = ttl.split('\n');
+  const stable: string[] = [];
+  for (const raw of lines) {
+    if (raw.includes('colorology/palette/run-')) continue;
+    if (raw.includes('_:n3-'))                   continue;
+    stable.push(raw);
+  }
+  return stable.sort().join('\n');
+}
 
 const ROLES: RoleSchemaInterface = {
   'name': 'simple',
@@ -109,4 +142,59 @@ describe('RdfPlugin e2e :: serialize scenarios', () => {
       sc.assert(state);
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// Golden fixture — locks the Turtle output of intake:hex → resolve:roles →
+// reason:annotate → reason:serialize for a stable seed + role schema. Lines
+// referencing the per-run palette IRI (Date.now based) and blank-node labels
+// (auto-assigned by the n3 Writer) are filtered out of the comparison; see
+// `normaliseTurtle` above. Regenerate with UPDATE_GOLDENS=1 after an
+// intentional change to ReasonAnnotate or ReasonSerialize.
+// ---------------------------------------------------------------------------
+
+const GOLDEN_RDF_ROLES: RoleSchemaInterface = {
+  'name':  'golden-rdf',
+  'roles': [
+    { 'name': 'primary',    'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.25] },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.05, 0.20], 'chromaRange': [0.00, 0.05] },
+  ],
+};
+
+test('reason:serialize :: golden :: stable seed matches locked Turtle fixture (palette IRI + blank nodes filtered)', async () => {
+  const engine = freshEngine();
+  engine.pipeline([
+    'intake:hex',
+    'resolve:roles',
+    'reason:annotate',
+    'reason:serialize',
+  ]);
+
+  const state = await engine.run({
+    'colors': ['#5b21b6', '#0f172a'],
+    'roles':  GOLDEN_RDF_ROLES,
+  });
+
+  const ttl = state.outputs.reasoning?.serialized;
+  assert.ok(ttl !== undefined, 'serialized Turtle present');
+
+  // Independent assertion on the blank-node count: ReasonAnnotate writes
+  // two blank nodes (oklch + rgb) per role. Two roles → four blank refs
+  // in the unfiltered Turtle.
+  const blankRefCount = ttl.split('\n').filter((l) => l.includes('_:n3-')).length;
+  assert.strictEqual(blankRefCount, 4,
+    `expected 4 blank-node lines (oklch+rgb per role × 2 roles), got ${blankRefCount}`);
+
+  const actual = `${normaliseTurtle(ttl)}\n`;
+
+  if (process.env['UPDATE_GOLDENS'] === '1') {
+    writeFileSync(REASON_SERIALIZE_GOLDEN, actual);
+  }
+
+  const expected = readFileSync(REASON_SERIALIZE_GOLDEN, 'utf8');
+  assert.strictEqual(
+    actual,
+    expected,
+    'reason:serialize Turtle output drifted from golden; regenerate with UPDATE_GOLDENS=1 if intentional',
+  );
 });
