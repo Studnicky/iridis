@@ -7,7 +7,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { contrastWcag21 } from '@studnicky/iridis';
+import { contrastWcag21, getOrCreateOutput } from '@studnicky/iridis';
 import { colorologyVocab } from '../data/colorologyVocab.ts';
 
 const xsdDecimal = 'http://www.w3.org/2001/XMLSchema#decimal';
@@ -33,7 +33,7 @@ export class ReasonAnnotate implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'reason:annotate',
     'reads':       ['roles', 'colors'],
-    'writes':      ['graph'],
+    'writes':      ['outputs.reasoning.graph'],
     'description': 'Annotate palette with RDF triples via n3 Store',
   };
 
@@ -81,7 +81,8 @@ export class ReasonAnnotate implements TaskInterface {
       }
     }
 
-    state.graph = store;
+    const reasoning = getOrCreateOutput(state, 'reasoning');
+    reasoning['graph'] = store;
 
     ctx.logger.info('ReasonAnnotate', 'run', 'RDF annotation complete', {
       'roleCount': Object.keys(state.roles).length,

@@ -8,12 +8,9 @@ import type {
   TaskManifestInterface,
 } from '@studnicky/iridis';
 import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
+import type { IterableStoreInterface } from '../types/augmentation.ts';
 
 type SerializationFormatType = 'Turtle' | 'TriG' | 'N-Quads' | 'application/ld+json';
-
-interface IterableStoreInterface {
-  [Symbol.iterator](): Iterator<Quad>;
-}
 
 function resolveFormat(raw: unknown): SerializationFormatType {
   if (typeof raw !== 'string') {
@@ -33,7 +30,9 @@ function serializeStore(store: IterableStoreInterface, format: SerializationForm
     const writer = new Writer({ 'format': format });
 
     for (const quad of store) {
-      writer.addQuad(quad);
+      // quad is typed as unknown in IterableStoreInterface to avoid cross-package
+      // @types/n3 vs @rdfjs/types conflicts; the store is always an n3 Store here.
+      writer.addQuad(quad as Quad);
     }
 
     writer.end((err, result) => {
@@ -52,14 +51,15 @@ export class ReasonSerialize implements TaskInterface {
 
   readonly 'manifest': TaskManifestInterface = {
     'name':        'reason:serialize',
-    'reads':       ['graph', 'metadata.reasoning.format'],
+    'reads':       ['outputs.reasoning.graph', 'metadata.reasoning.format'],
     'writes':      ['outputs.reasoning.serialized'],
-    'description': 'Serialize state.graph to Turtle / TriG / N-Quads / JSON-LD',
+    'description': 'Serialize outputs.reasoning.graph to Turtle / TriG / N-Quads / JSON-LD',
   };
 
   async run(state: PaletteStateInterface, ctx: PipelineContextInterface): Promise<void> {
-    if (!state.graph) {
-      ctx.logger.warn('ReasonSerialize', 'run', 'state.graph is absent — run reason:annotate first');
+    const graph = state.outputs.reasoning?.graph;
+    if (!graph) {
+      ctx.logger.warn('ReasonSerialize', 'run', 'outputs.reasoning.graph is absent — run reason:annotate first');
 
       return;
     }
@@ -72,7 +72,7 @@ export class ReasonSerialize implements TaskInterface {
     let serialized: string;
 
     try {
-      serialized = await serializeStore(state.graph as IterableStoreInterface, format);
+      serialized = await serializeStore(graph, format);
     } catch (err) {
       ctx.logger.error('ReasonSerialize', 'run', 'serialization failed', err);
 
