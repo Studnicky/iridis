@@ -62,7 +62,7 @@ export class IntakeRgb implements TaskInterface {
       const record = colorRecordFactory.fromRgb(r, g, b, alpha);
 
       state.colors.push(record);
-      ctx.logger.debug('IntakeRgb', 'run', `Parsed rgb(${r},${g},${b}) → ${record.hex}`);
+      ctx.logger.debug('IntakeRgb', 'run', 'Parsed rgb value', { 'r': r, 'g': g, 'b': b, 'hex': record.hex });
     }
   }
 }

@@ -48,7 +48,7 @@ export class ExpandTokens implements TaskInterface {
 
       const familyRole = TOKEN_FAMILY[tokenType];
       if (!familyRole) {
-        ctx.logger.warn('ExpandTokens', 'run', `No family role for token type '${tokenType}'`);
+        ctx.logger.warn('ExpandTokens', 'run', 'No family role for token type', { 'tokenType': tokenType });
         continue;
       }
 
@@ -64,7 +64,10 @@ export class ExpandTokens implements TaskInterface {
 
       const familyRec = state.roles[familyRole];
       if (!familyRec) {
-        ctx.logger.warn('ExpandTokens', 'run', `No role record for family '${familyRole}' (token '${tokenType}')`);
+        ctx.logger.warn('ExpandTokens', 'run', 'No role record for family', {
+          'familyRole': familyRole,
+          'tokenType':  tokenType,
+        });
         continue;
       }
       let color: ColorRecordInterface = familyRec;
@@ -94,7 +97,9 @@ export class ExpandTokens implements TaskInterface {
     }
 
     meta['baseTokens'] = baseTokens;
-    ctx.logger.debug('ExpandTokens', 'run', `Derived ${Object.keys(baseTokens).length} base token colours`);
+    ctx.logger.debug('ExpandTokens', 'run', 'Derived base token colours', {
+      'count': Object.keys(baseTokens).length,
+    });
   }
 }
 

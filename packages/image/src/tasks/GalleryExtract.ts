@@ -34,7 +34,7 @@ export class GalleryExtract implements TaskInterface {
     const galleryMeta = getOrCreateMetadata(state, 'gallery');
     const k = galleryMeta['k'] ?? 5;
 
-    ctx.logger.debug('GalleryExtract', 'run', 'extracting dominant colors', { 'inputCount': state.colors.length, k });
+    ctx.logger.debug('GalleryExtract', 'run', 'extracting dominant colors', { 'inputCount': state.colors.length, 'k': k });
 
     if (state.colors.length === 0) {
       ctx.logger.warn('GalleryExtract', 'run', 'state.colors is empty — nothing to extract');

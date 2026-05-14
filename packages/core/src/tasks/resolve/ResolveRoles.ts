@@ -137,7 +137,7 @@ export class ResolveRoles implements TaskInterface {
       const hintMatch = state.colors.find((c) => c.hints?.['role'] === role.name);
       if (hintMatch) {
         state.roles[role.name] = nudgeIntoRole(hintMatch, role);
-        ctx.logger.debug('ResolveRoles', 'run', `Role "${role.name}" assigned by hint match`);
+        ctx.logger.debug('ResolveRoles', 'run', 'Role assigned by hint match', { 'role': role.name });
         continue;
       }
 
@@ -146,11 +146,9 @@ export class ResolveRoles implements TaskInterface {
         if (role.required) {
           state.roles[role.name] = synthesizeForRole(role);
           synthesized.push(role.name);
-          ctx.logger.debug(
-            'ResolveRoles',
-            'run',
-            `Role "${role.name}" synthesized from constraints (no input colors)`,
-          );
+          ctx.logger.debug('ResolveRoles', 'run', 'Role synthesized from constraints — no input colors', {
+            'role': role.name,
+          });
         }
         continue;
       }
@@ -170,11 +168,10 @@ export class ResolveRoles implements TaskInterface {
       // guaranteed to satisfy lightnessRange, chromaRange, and hueOffset.
       if (best) {
         state.roles[role.name] = nudgeIntoRole(best, role);
-        ctx.logger.debug(
-          'ResolveRoles',
-          'run',
-          `Role "${role.name}" assigned by distance (dist=${bestDist.toFixed(4)}) and nudged into range`,
-        );
+        ctx.logger.debug('ResolveRoles', 'run', 'Role assigned by distance and nudged into range', {
+          'role':     role.name,
+          'distance': bestDist,
+        });
       } else if (role.required) {
         // Defensive: state.colors was non-empty above, so this only fires
         // if every distance computation produced Infinity. Synthesise to

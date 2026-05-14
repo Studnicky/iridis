@@ -67,14 +67,14 @@ export class ReasonSerialize implements TaskInterface {
     const reasoningMeta = getOrCreateMetadata(state, 'reasoning');
     const format        = resolveFormat(reasoningMeta['format']);
 
-    ctx.logger.debug('ReasonSerialize', 'run', 'serializing graph', { format });
+    ctx.logger.debug('ReasonSerialize', 'run', 'serializing graph', { 'format': format });
 
     let serialized: string;
 
     try {
       serialized = await serializeStore(graph, format);
     } catch (err) {
-      ctx.logger.error('ReasonSerialize', 'run', 'serialization failed', err);
+      ctx.logger.error('ReasonSerialize', 'run', 'serialization failed', { 'error': err });
 
       return;
     }
@@ -83,7 +83,7 @@ export class ReasonSerialize implements TaskInterface {
     reasoning['serialized'] = serialized;
 
     ctx.logger.info('ReasonSerialize', 'run', 'serialization complete', {
-      format,
+      'format': format,
       'length': serialized.length,
     });
   }

@@ -87,11 +87,10 @@ export class DeriveVariant implements TaskInterface {
       }
 
       state.variants[config.name] = variantRoles;
-      ctx.logger.debug(
-        'DeriveVariant',
-        'run',
-        `Derived variant "${config.name}" with ${roleNames.length} roles`,
-      );
+      ctx.logger.debug('DeriveVariant', 'run', 'Derived variant', {
+        'variant':   config.name,
+        'roleCount': roleNames.length,
+      });
     }
   }
 }

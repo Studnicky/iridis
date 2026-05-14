@@ -43,10 +43,10 @@ export class GalleryHarmonize implements TaskInterface {
 
     const deltaE = deltaE2000.apply(accent, frame);
 
-    ctx.logger.debug('GalleryHarmonize', 'run', 'deltaE2000 between accent and frame', { deltaE });
+    ctx.logger.debug('GalleryHarmonize', 'run', 'deltaE2000 between accent and frame', { 'deltaE': deltaE });
 
     if (deltaE >= 10) {
-      ctx.logger.info('GalleryHarmonize', 'run', 'accent hue is sufficiently distinct — no shift needed', { deltaE });
+      ctx.logger.info('GalleryHarmonize', 'run', 'accent hue is sufficiently distinct — no shift needed', { 'deltaE': deltaE });
       setHarmonized(state, false);
       return;
     }
@@ -75,7 +75,7 @@ export class GalleryHarmonize implements TaskInterface {
       'before':  accent.hex,
       'after':   newAccent.hex,
       'shift':   shift,
-      deltaE,
+      'deltaE':  deltaE,
     });
   }
 }

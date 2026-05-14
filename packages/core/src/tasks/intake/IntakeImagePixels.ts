@@ -68,11 +68,11 @@ export class IntakeImagePixels implements TaskInterface {
         pushed++;
       }
 
-      ctx.logger.debug(
-        'IntakeImagePixels',
-        'run',
-        `Pushed ${pushed} pixels from ${width}x${height} image`,
-      );
+      ctx.logger.debug('IntakeImagePixels', 'run', 'Pushed pixels from image', {
+        'pushed': pushed,
+        'width':  width,
+        'height': height,
+      });
     }
   }
 }

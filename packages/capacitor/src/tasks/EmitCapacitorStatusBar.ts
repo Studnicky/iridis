@@ -63,7 +63,11 @@ export class EmitCapacitorStatusBar implements TaskInterface {
     const capacitorOut = getOrCreateOutput(state, 'capacitor');
     capacitorOut['statusBar'] = output;
 
-    ctx.logger.debug('EmitCapacitorStatusBar', 'run', `StatusBar: bg=${output.backgroundColor} style=${output.style} overlay=${output.overlay}`);
+    ctx.logger.debug('EmitCapacitorStatusBar', 'run', 'StatusBar emitted', {
+      'backgroundColor': output.backgroundColor,
+      'style':           output.style,
+      'overlay':         output.overlay,
+    });
   }
 }
 

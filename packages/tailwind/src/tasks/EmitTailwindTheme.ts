@@ -136,11 +136,9 @@ export class EmitTailwindTheme implements TaskInterface {
 
     state.outputs['tailwind'] = output;
 
-    ctx.logger.debug(
-      'EmitTailwindTheme',
-      'run',
-      `Emitted Tailwind theme with ${Object.keys(colors).length} color group(s)`,
-    );
+    ctx.logger.debug('EmitTailwindTheme', 'run', 'Emitted Tailwind theme', {
+      'colorGroups': Object.keys(colors).length,
+    });
   }
 }
 

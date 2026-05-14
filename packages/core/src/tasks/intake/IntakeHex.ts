@@ -61,7 +61,7 @@ export class IntakeHex implements TaskInterface {
       }
       const hex6 = normalizeHex(trimmed);
       if (!hex6) {
-        ctx.logger.warn('IntakeHex', 'run', `Skipping unrecognized hex value: ${raw}`);
+        ctx.logger.warn('IntakeHex', 'run', 'Skipping unrecognized hex value', { 'raw': raw });
         continue;
       }
       const alpha = ((): number => {
@@ -75,7 +75,7 @@ export class IntakeHex implements TaskInterface {
       const record: ColorRecordInterface = colorRecordFactory.fromHex(`#${hex6}`, alpha);
 
       state.colors.push(record);
-      ctx.logger.debug('IntakeHex', 'run', `Parsed hex ${raw} → ${record.hex}`);
+      ctx.logger.debug('IntakeHex', 'run', 'Parsed hex value', { 'raw': raw, 'hex': record.hex });
     }
   }
 }
