@@ -7,3 +7,5 @@ export interface CvdMatrixInterface {
     number, number, number,
   ];
 }
+
+export type * from './augmentation.ts';

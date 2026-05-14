@@ -3,3 +3,5 @@ export interface TailwindOutputInterface {
   readonly 'cssVars': string;
   readonly 'config':  string;
 }
+
+export type * from './augmentation.ts';

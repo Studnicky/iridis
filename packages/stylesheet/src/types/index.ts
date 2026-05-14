@@ -12,3 +12,5 @@ export interface CssVarsScopedOutputInterface {
   readonly 'blocks': Record<string, string>;
   readonly 'full':   string;
 }
+
+export type * from './augmentation.ts';

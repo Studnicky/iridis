@@ -4,7 +4,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '../../types/index.ts';
-import { clamp01 } from '../../math/Clamp.ts';
+import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 interface LabInput {
@@ -59,9 +59,9 @@ function labToRgb(l: number, a: number, b: number): [number, number, number] {
   bv = linearToSrgb(bv);
 
   return [
-    clamp01(r),
-    clamp01(g),
-    clamp01(bv),
+    clamp01.apply(r),
+    clamp01.apply(g),
+    clamp01.apply(bv),
   ];
 }
 

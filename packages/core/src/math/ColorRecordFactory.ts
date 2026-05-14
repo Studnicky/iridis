@@ -5,44 +5,11 @@ import type {
   RgbInterface,
   SourceFormatType,
 } from '../types/index.ts';
-import { clamp, clamp01 } from './Clamp.ts';
-import { linearToSrgb } from './LinearToSrgb.ts';
+import { clamp } from './Clamp.ts';
+import { clamp01 } from './Clamp01.ts';
+import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
 import { rgbToHex } from './RgbToHex.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
-
-/**
- * Raw OKLCH → sRGB conversion without `ColorRecord` allocation. Returns
- * a plain `RgbInterface` so hot inner loops (e.g. `EnsureContrast`) can
- * iterate on a scalar L value without materialising a full record per
- * step. The transform matches `ColorRecordFactory.fromOklch` bit-for-bit;
- * inputs are not clamped (callers operating on a scalar L are expected
- * to clamp themselves).
- */
-export function oklchToRgbRaw(l: number, c: number, h: number): RgbInterface {
-  const hRad = (h * Math.PI) / 180;
-  const a = c * Math.cos(hRad);
-  const b = c * Math.sin(hRad);
-
-  let x = l + 0.3963377774 * a + 0.2158037573 * b;
-  let y = l - 0.1055613458 * a - 0.0638541728 * b;
-  let z = l - 0.0894841775 * a - 1.291485548  * b;
-
-  x = x * x * x;
-  y = y * y * y;
-  z = z * z * z;
-
-  const rLin = +4.0767416621 * x - 3.3077115913 * y + 0.2309699292 * z;
-  const gLin = -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z;
-  const bLin = -0.0041960863 * x - 0.7034186147 * y + 1.707614701  * z;
-
-  const encoded = linearToSrgb.apply(rLin, gLin, bLin);
-
-  return {
-    'r': clamp01(encoded.r),
-    'g': clamp01(encoded.g),
-    'b': clamp01(encoded.b),
-  };
-}
 
 function rgbToOklchRaw(r: number, g: number, b: number): OklchInterface {
   const { r: rl, g: gl, b: bl } = srgbToLinear.apply(r, g, b);
@@ -66,16 +33,16 @@ function rgbToOklchRaw(r: number, g: number, b: number): OklchInterface {
   }
 
   return {
-    'l': clamp01(labL),
-    'c': clamp(0, 0.5, c),
+    'l': clamp01.apply(labL),
+    'c': clamp.apply(0, 0.5, c),
     'h': h % 360,
   };
 }
 
 function hslToRgbRaw(h: number, s: number, l: number): RgbInterface {
   const hh = ((h % 360) + 360) % 360;
-  const ss = clamp01(s);
-  const ll = clamp01(l);
+  const ss = clamp01.apply(s);
+  const ll = clamp01.apply(l);
 
   const c = (1 - Math.abs(2 * ll - 1)) * ss;
   const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
@@ -99,7 +66,7 @@ function hslToRgbRaw(h: number, s: number, l: number): RgbInterface {
     r = c; g = 0; b = x;
   }
 
-  return { 'r': clamp01(r + m), 'g': clamp01(g + m), 'b': clamp01(b + m) };
+  return { 'r': clamp01.apply(r + m), 'g': clamp01.apply(g + m), 'b': clamp01.apply(b + m) };
 }
 
 /**
@@ -141,12 +108,12 @@ export class ColorRecordFactory {
     sourceFormat: SourceFormatType   = 'oklch',
     hints:        ColorHintsInterface | undefined = undefined,
   ): ColorRecordInterface {
-    const rgb = oklchToRgbRaw(l, c, h);
+    const rgb = oklchToRgbRaw.apply(l, c, h);
     return {
-      'oklch':        { 'l': clamp01(l), 'c': clamp(0, 0.5, c), 'h': ((h % 360) + 360) % 360 },
+      'oklch':        { 'l': clamp01.apply(l), 'c': clamp.apply(0, 0.5, c), 'h': ((h % 360) + 360) % 360 },
       'rgb':          rgb,
       'hex':          rgbToHex.apply(rgb.r, rgb.g, rgb.b),
-      'alpha':        clamp01(alpha),
+      'alpha':        clamp01.apply(alpha),
       'sourceFormat': sourceFormat,
       'displayP3':    undefined,
       'hints':        hints,
@@ -175,9 +142,9 @@ export class ColorRecordFactory {
     const oklch = rgbToOklchRaw(r, g, b);
     return {
       'oklch':        oklch,
-      'rgb':          { 'r': clamp01(r), 'g': clamp01(g), 'b': clamp01(b) },
+      'rgb':          { 'r': clamp01.apply(r), 'g': clamp01.apply(g), 'b': clamp01.apply(b) },
       'hex':          rgbToHex.apply(r, g, b),
-      'alpha':        clamp01(alpha),
+      'alpha':        clamp01.apply(alpha),
       'sourceFormat': sourceFormat,
       'displayP3':    undefined,
       'hints':        hints,
@@ -219,7 +186,7 @@ export class ColorRecordFactory {
       'oklch':        oklch,
       'rgb':          { 'r': r, 'g': g, 'b': b },
       'hex':          `#${cleaned.slice(0, 6).toLowerCase()}`,
-      'alpha':        clamp01(alpha),
+      'alpha':        clamp01.apply(alpha),
       'sourceFormat': sourceFormat,
       'displayP3':    undefined,
       'hints':        hints,

@@ -24,3 +24,5 @@ export interface SplashScreenOutputInterface {
   readonly 'backgroundColor':            string;
   readonly 'androidSplashResourceName'?: string;
 }
+
+export type * from './augmentation.ts';

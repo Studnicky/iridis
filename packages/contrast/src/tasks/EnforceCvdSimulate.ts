@@ -22,9 +22,9 @@ function applyMatrix(
   const gp = m[3]! * r + m[4]! * g + m[5]! * b;
   const bp = m[6]! * r + m[7]! * g + m[8]! * b;
   return [
-    clamp01(rp),
-    clamp01(gp),
-    clamp01(bp),
+    clamp01.apply(rp),
+    clamp01.apply(gp),
+    clamp01.apply(bp),
   ] as const;
 }
 

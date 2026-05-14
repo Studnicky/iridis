@@ -1,5 +1,5 @@
 import type { RgbInterface } from '../types/index.ts';
-import { clamp01 } from './Clamp.ts';
+import { clamp01 } from './Clamp01.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
 function p3Encode(v: number): number {
@@ -18,9 +18,9 @@ export class SrgbToDisplayP3 {
     const gl = lin.g;
     const bl = lin.b;
 
-    const p3r = p3Encode(clamp01( 0.8224621 * rl + 0.1775380 * gl + 0.0000000 * bl));
-    const p3g = p3Encode(clamp01( 0.0331941 * rl + 0.9668058 * gl + 0.0000001 * bl));
-    const p3b = p3Encode(clamp01( 0.0170827 * rl + 0.0723968 * gl + 0.9105206 * bl));
+    const p3r = p3Encode(clamp01.apply( 0.8224621 * rl + 0.1775380 * gl + 0.0000000 * bl));
+    const p3g = p3Encode(clamp01.apply( 0.0331941 * rl + 0.9668058 * gl + 0.0000001 * bl));
+    const p3b = p3Encode(clamp01.apply( 0.0170827 * rl + 0.0723968 * gl + 0.9105206 * bl));
 
     return { 'r': p3r, 'g': p3g, 'b': p3b };
   }

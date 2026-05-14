@@ -1,5 +1,5 @@
 import type { ColorRecordInterface } from '../types/index.ts';
-import { clamp01 } from './Clamp.ts';
+import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
 function lerpAngle(a: number, b: number, t: number): number {
@@ -13,7 +13,7 @@ export class MixOklch {
   readonly 'name' = 'mixOklch';
 
   apply(a: ColorRecordInterface, b: ColorRecordInterface, t: number): ColorRecordInterface {
-    const tc = clamp01(t);
+    const tc = clamp01.apply(t);
     const l = a.oklch.l + (b.oklch.l - a.oklch.l) * tc;
     const c = a.oklch.c + (b.oklch.c - a.oklch.c) * tc;
     const h = lerpAngle(a.oklch.h, b.oklch.h, tc);
