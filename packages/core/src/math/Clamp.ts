@@ -1,15 +1,14 @@
 /**
- * Clamps `v` to the [0, 1] range. Branch-free comparison path; faster than
- * the equivalent `Math.max(0, Math.min(1, v))` due to no function-call overhead.
+ * Clamps `v` to the [min, max] range.
+ * For the common [0, 1] case prefer {@link import('./Clamp01.ts').clamp01}.
  */
-export function clamp01(v: number): number {
-  return v < 0 ? 0 : v > 1 ? 1 : v;
+export class Clamp {
+  readonly 'name' = 'clamp';
+
+  apply(min: number, max: number, v: number): number {
+    return v < min ? min : v > max ? max : v;
+  }
 }
 
-/**
- * Clamps `v` to the [min, max] range.
- * For the common [0, 1] case prefer {@link clamp01}.
- */
-export function clamp(min: number, max: number, v: number): number {
-  return v < min ? min : v > max ? max : v;
-}
+/** Singleton instance registered as the `clamp` math primitive. */
+export const clamp = new Clamp();

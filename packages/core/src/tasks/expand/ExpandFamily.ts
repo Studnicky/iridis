@@ -6,7 +6,8 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '../../types/index.ts';
-import { clamp, clamp01 } from '../../math/Clamp.ts';
+import { clamp } from '../../math/Clamp.ts';
+import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 function rangeCenter(range: readonly [number, number]): number {
@@ -26,8 +27,8 @@ function deriveColor(
     : h;
 
   return colorRecordFactory.fromOklch(
-    clamp01(targetL),
-    clamp(0, 0.5, targetC),
+    clamp01.apply(targetL),
+    clamp.apply(0, 0.5, targetC),
     targetH,
     source.alpha,
   );

@@ -1,5 +1,5 @@
 import type { HslResultInterface } from '../types/index.ts';
-import { clamp01 } from './Clamp.ts';
+import { clamp01 } from './Clamp01.ts';
 
 export class RgbToHsl {
   readonly 'name' = 'rgbToHsl';
@@ -33,7 +33,7 @@ export class RgbToHsl {
       'h':     h,
       's':     s,
       'l':     l,
-      'alpha': clamp01(alpha),
+      'alpha': clamp01.apply(alpha),
     };
   }
 }

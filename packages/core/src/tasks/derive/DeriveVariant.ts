@@ -6,7 +6,8 @@ import type {
   TaskManifestInterface,
   VariantConfigInterface,
 } from '../../types/index.ts';
-import { clamp, clamp01 } from '../../math/Clamp.ts';
+import { clamp } from '../../math/Clamp.ts';
+import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 const DEFAULT_VARIANTS: readonly VariantConfigInterface[] = [
@@ -18,8 +19,8 @@ function invertLightness(color: ColorRecordInterface): ColorRecordInterface {
   const { l, c, h } = color.oklch;
   const inverted = 1 - l;
   return colorRecordFactory.fromOklch(
-    clamp01(inverted),
-    clamp(0, 0.5, c),
+    clamp01.apply(inverted),
+    clamp.apply(0, 0.5, c),
     h,
     color.alpha,
   );
@@ -28,8 +29,8 @@ function invertLightness(color: ColorRecordInterface): ColorRecordInterface {
 function offsetLightness(color: ColorRecordInterface, offset: number): ColorRecordInterface {
   const { l, c, h } = color.oklch;
   return colorRecordFactory.fromOklch(
-    clamp01(l + offset),
-    clamp(0, 0.5, c),
+    clamp01.apply(l + offset),
+    clamp.apply(0, 0.5, c),
     h,
     color.alpha,
   );

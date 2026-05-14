@@ -1,6 +1,7 @@
 import type { ColorRecordInterface, ContrastAlgorithmType, RgbInterface } from '../types/index.ts';
-import { clamp01 } from './Clamp.ts';
-import { colorRecordFactory, oklchToRgbRaw } from './ColorRecordFactory.ts';
+import { clamp01 } from './Clamp01.ts';
+import { colorRecordFactory } from './ColorRecordFactory.ts';
+import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
 const APCA_NORM_BG  = 0.56;
@@ -103,8 +104,8 @@ export class EnsureContrast {
     let lastL    = currentL;
 
     for (let i = 0; i < 50; i++) {
-      const newL = clamp01(currentL + step);
-      const rgb  = oklchToRgbRaw(newL, c, h);
+      const newL = clamp01.apply(currentL + step);
+      const rgb  = oklchToRgbRaw.apply(newL, c, h);
 
       const ratio = algorithm === 'wcag21'
         ? wcagRatio(rgbLuminance(rgb.r, rgb.g, rgb.b), Ybg)

@@ -6,7 +6,7 @@ export class Desaturate {
   readonly 'name' = 'desaturate';
 
   apply(color: ColorRecordInterface, deltaC: number): ColorRecordInterface {
-    const c = clamp(0, 0.5, color.oklch.c - deltaC);
+    const c = clamp.apply(0, 0.5, color.oklch.c - deltaC);
     return colorRecordFactory.fromOklch(color.oklch.l, c, color.oklch.h, color.alpha);
   }
 }
