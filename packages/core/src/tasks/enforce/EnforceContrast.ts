@@ -69,11 +69,10 @@ export class EnforceContrast implements TaskInterface {
       const bgColor = state.roles[pair.background];
 
       if (!fgColor || !bgColor) {
-        ctx.logger.warn(
-          'EnforceContrast',
-          'run',
-          `Contrast pair "${pair.foreground}"/"${pair.background}" — one or both roles missing`,
-        );
+        ctx.logger.warn('EnforceContrast', 'run', 'Contrast pair has missing role(s)', {
+          'foreground': pair.foreground,
+          'background': pair.background,
+        });
         continue;
       }
 
@@ -88,11 +87,12 @@ export class EnforceContrast implements TaskInterface {
       let finalFg = fgColor;
 
       if (!passed) {
-        ctx.logger.info(
-          'EnforceContrast',
-          'run',
-          `Pair ${pair.foreground}/${pair.background}: ratio ${ratio.toFixed(2)} < ${minRatio} — nudging`,
-        );
+        ctx.logger.info('EnforceContrast', 'run', 'Pair below minimum ratio — nudging', {
+          'foreground': pair.foreground,
+          'background': pair.background,
+          'ratio':      ratio,
+          'minRatio':   minRatio,
+        });
 
         finalFg = ensureContrast.apply(fgColor, bgColor, minRatio, algo);
 

@@ -195,11 +195,9 @@ export class EmitVscodeUiPalette implements TaskInterface {
 
     const out = getOrCreateOutput(state, 'vscode');
     out['workbenchColors'] = workbenchColors;
-    ctx.logger.debug(
-      'EmitVscodeUiPalette',
-      'run',
-      `Derived ${Object.keys(workbenchColors).length} workbench colors`,
-    );
+    ctx.logger.debug('EmitVscodeUiPalette', 'run', 'Derived workbench colors', {
+      'count': Object.keys(workbenchColors).length,
+    });
   }
 }
 

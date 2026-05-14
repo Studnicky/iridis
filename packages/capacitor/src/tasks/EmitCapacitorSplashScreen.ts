@@ -53,7 +53,9 @@ export class EmitCapacitorSplashScreen implements TaskInterface {
     const capacitorOut = getOrCreateOutput(state, 'capacitor');
     capacitorOut['splashScreen'] = output;
 
-    ctx.logger.debug('EmitCapacitorSplashScreen', 'run', `SplashScreen: bg=${output.backgroundColor}`);
+    ctx.logger.debug('EmitCapacitorSplashScreen', 'run', 'SplashScreen emitted', {
+      'backgroundColor': output.backgroundColor,
+    });
   }
 }
 

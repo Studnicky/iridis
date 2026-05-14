@@ -58,7 +58,7 @@ export class IntakeHsl implements TaskInterface {
       const record = colorRecordFactory.fromHsl(h, sat, lig, clamp01.apply(alpha), 'hsl');
 
       state.colors.push(record);
-      ctx.logger.debug('IntakeHsl', 'run', `Parsed hsl(${h},${s},${l}) → ${record.hex}`);
+      ctx.logger.debug('IntakeHsl', 'run', 'Parsed hsl value', { 'h': h, 's': s, 'l': l, 'hex': record.hex });
     }
   }
 }

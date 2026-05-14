@@ -107,12 +107,14 @@ export class EnforceCvdSimulate implements TaskInterface {
             'threshold':                DROP_THRESHOLD,
           };
           warnings.push(warning);
-          ctx.logger.warn(
-            'EnforceCvdSimulate',
-            'run',
-            `CVD advisory: ${pair.foreground}/${pair.background} contrast drops ${drop.toFixed(2)} under ${cvd.name} (${originalContrast.toFixed(2)} → ${simContrast.toFixed(2)})`,
-            warning,
-          );
+          ctx.logger.warn('EnforceCvdSimulate', 'run', 'CVD advisory — contrast drops under simulated CVD', {
+            'foreground':       pair.foreground,
+            'background':       pair.background,
+            'cvdType':          cvd.name,
+            'originalContrast': originalContrast,
+            'simulatedContrast': simContrast,
+            'drop':             drop,
+          });
         }
       }
     }
@@ -120,7 +122,10 @@ export class EnforceCvdSimulate implements TaskInterface {
     const wcagMeta = getOrCreateMetadata(state, 'wcag');
     wcagMeta['cvd'] = { 'warnings': warnings };
 
-    ctx.logger.debug('EnforceCvdSimulate', 'run', `CVD simulation complete. ${warnings.length} warning(s).`, wcagMeta['cvd']);
+    ctx.logger.debug('EnforceCvdSimulate', 'run', 'CVD simulation complete', {
+      'warningCount': warnings.length,
+      'cvdMeta':      wcagMeta['cvd'],
+    });
   }
 }
 

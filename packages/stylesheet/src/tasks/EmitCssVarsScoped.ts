@@ -61,11 +61,9 @@ export class EmitCssVarsScoped implements TaskInterface {
 
     state.outputs['cssVarsScoped'] = output;
 
-    ctx.logger.debug(
-      'EmitCssVarsScoped',
-      'run',
-      `Emitted ${Object.keys(blocks).length} scoped block(s)`,
-    );
+    ctx.logger.debug('EmitCssVarsScoped', 'run', 'Emitted scoped blocks', {
+      'count': Object.keys(blocks).length,
+    });
   }
 }
 

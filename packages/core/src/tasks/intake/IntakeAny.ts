@@ -48,7 +48,7 @@ export class IntakeAny implements TaskInterface {
       delegate.run(state, ctx);
     }
 
-    ctx.logger.debug('IntakeAny', 'run', `Total colors after intake: ${state.colors.length}`);
+    ctx.logger.debug('IntakeAny', 'run', 'Total colors after intake', { 'count': state.colors.length });
   }
 }
 

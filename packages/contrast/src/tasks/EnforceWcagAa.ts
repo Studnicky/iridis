@@ -36,7 +36,10 @@ export class EnforceWcagAa implements TaskInterface {
       const bgRecord = state.roles[pair.background];
 
       if (!fgRecord || !bgRecord) {
-        ctx.logger.warn('EnforceWcagAa', 'run', `Role not found for pair ${pair.foreground}/${pair.background}`);
+        ctx.logger.warn('EnforceWcagAa', 'run', 'Role not found for pair', {
+          'foreground': pair.foreground,
+          'background': pair.background,
+        });
         continue;
       }
 
@@ -47,7 +50,12 @@ export class EnforceWcagAa implements TaskInterface {
       const current   = contrastWcag21.apply(currentFg, bgRecord);
 
       if (current < required) {
-        ctx.logger.warn('EnforceWcagAa', 'run', `Pair ${pair.foreground}/${pair.background} could not reach ${required}:1 (achieved ${current.toFixed(2)})`);
+        ctx.logger.warn('EnforceWcagAa', 'run', 'Pair could not reach required ratio', {
+          'foreground': pair.foreground,
+          'background': pair.background,
+          'required':   required,
+          'achieved':   current,
+        });
       }
 
       state.roles[pair.foreground] = currentFg;
@@ -66,7 +74,10 @@ export class EnforceWcagAa implements TaskInterface {
     const wcagMeta = getOrCreateMetadata(state, 'wcag');
     wcagMeta['aa'] = { 'pairs': results };
 
-    ctx.logger.debug('EnforceWcagAa', 'run', `Processed ${results.length} pair(s)`, wcagMeta['aa']);
+    ctx.logger.debug('EnforceWcagAa', 'run', 'Processed pairs', {
+      'pairCount': results.length,
+      'aaMeta':    wcagMeta['aa'],
+    });
   }
 }
 

@@ -39,11 +39,10 @@ export class ClampCount implements TaskInterface {
       return;
     }
 
-    ctx.logger.info(
-      'ClampCount',
-      'run',
-      `Reducing ${state.colors.length} colors → ${max} via clusterMedianCut`,
-    );
+    ctx.logger.info('ClampCount', 'run', 'Reducing colors via clusterMedianCut', {
+      'from': state.colors.length,
+      'to':   max,
+    });
 
     const clustered = clusterMedianCut.apply(state.colors, max);
 

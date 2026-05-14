@@ -78,11 +78,13 @@ export class ClampOklch implements TaskInterface {
       );
 
       state.colors[i] = updated;
-      ctx.logger.debug(
-        'ClampOklch',
-        'run',
-        `Clamped color ${i}: L ${l.toFixed(3)}→${clampedL.toFixed(3)}, C ${c.toFixed(3)}→${clampedC.toFixed(3)}`,
-      );
+      ctx.logger.debug('ClampOklch', 'run', 'Clamped color', {
+        'index':    i,
+        'lFrom':    l,
+        'lTo':      clampedL,
+        'cFrom':    c,
+        'cTo':      clampedC,
+      });
     }
   }
 }

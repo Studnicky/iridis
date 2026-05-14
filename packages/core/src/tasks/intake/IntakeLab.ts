@@ -94,7 +94,7 @@ export class IntakeLab implements TaskInterface {
       const record = colorRecordFactory.fromRgb(r, g, bv, 1, 'lab');
 
       state.colors.push(record);
-      ctx.logger.debug('IntakeLab', 'run', `Parsed lab(${l},${a},${b}) → ${record.hex}`);
+      ctx.logger.debug('IntakeLab', 'run', 'Parsed lab value', { 'l': l, 'a': a, 'b': b, 'hex': record.hex });
     }
   }
 }

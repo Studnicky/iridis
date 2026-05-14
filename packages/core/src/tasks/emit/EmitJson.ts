@@ -53,11 +53,11 @@ export class EmitJson implements TaskInterface {
     const output: JsonOutput = { colors, roles, variants };
     state.outputs['json'] = output;
 
-    ctx.logger.debug(
-      'EmitJson',
-      'run',
-      `Wrote json output: ${colors.length} colors, ${Object.keys(roles).length} roles, ${Object.keys(variants).length} variants`,
-    );
+    ctx.logger.debug('EmitJson', 'run', 'Wrote json output', {
+      'colors':   colors.length,
+      'roles':    Object.keys(roles).length,
+      'variants': Object.keys(variants).length,
+    });
   }
 }
 

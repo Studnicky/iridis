@@ -109,11 +109,9 @@ export class ApplyModifiers implements TaskInterface {
     }
 
     meta['semanticTokenRules'] = rules;
-    ctx.logger.debug(
-      'ApplyModifiers',
-      'run',
-      `Generated ${Object.keys(rules).length} semantic token rules`,
-    );
+    ctx.logger.debug('ApplyModifiers', 'run', 'Generated semantic token rules', {
+      'count': Object.keys(rules).length,
+    });
   }
 }
 

@@ -67,27 +67,25 @@ export class ExpandFamily implements TaskInterface {
       }
 
       if (state.roles[role.name]) {
-        ctx.logger.debug(
-          'ExpandFamily',
-          'run',
-          `Role "${role.name}" already assigned — skipping`,
-        );
+        ctx.logger.debug('ExpandFamily', 'run', 'Role already assigned — skipping', { 'role': role.name });
         continue;
       }
 
       const sourceColor = state.roles[role.derivedFrom];
 
       if (!sourceColor) {
-        ctx.logger.warn(
-          'ExpandFamily',
-          'run',
-          `Role "${role.name}" derivedFrom "${role.derivedFrom}" but source is not assigned`,
-        );
+        ctx.logger.warn('ExpandFamily', 'run', 'Role derivedFrom source is not assigned', {
+          'role':        role.name,
+          'derivedFrom': role.derivedFrom,
+        });
         continue;
       }
 
       state.roles[role.name] = deriveColor(sourceColor, role);
-      ctx.logger.debug('ExpandFamily', 'run', `Derived role "${role.name}" from "${role.derivedFrom}"`);
+      ctx.logger.debug('ExpandFamily', 'run', 'Derived role from source', {
+        'role':        role.name,
+        'derivedFrom': role.derivedFrom,
+      });
     }
   }
 }

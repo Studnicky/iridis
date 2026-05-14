@@ -67,7 +67,10 @@ export class EnforceApca implements TaskInterface {
       const bgRecord = state.roles[pair.background];
 
       if (!fgRecord || !bgRecord) {
-        ctx.logger.warn('EnforceApca', 'run', `Role not found for pair ${pair.foreground}/${pair.background}`);
+        ctx.logger.warn('EnforceApca', 'run', 'Role not found for pair', {
+          'foreground': pair.foreground,
+          'background': pair.background,
+        });
         continue;
       }
 
@@ -89,7 +92,13 @@ export class EnforceApca implements TaskInterface {
       }
 
       if (current < requiredLc) {
-        ctx.logger.warn('EnforceApca', 'run', `Pair ${pair.foreground}/${pair.background} could not reach Lc ${requiredLc} (achieved Lc ${current.toFixed(1)}) after ${maxIterations} iterations`);
+        ctx.logger.warn('EnforceApca', 'run', 'Pair could not reach required Lc after iterations', {
+          'foreground':    pair.foreground,
+          'background':    pair.background,
+          'requiredLc':    requiredLc,
+          'achievedLc':    current,
+          'maxIterations': maxIterations,
+        });
       }
 
       state.roles[pair.foreground] = currentFg;
@@ -108,7 +117,10 @@ export class EnforceApca implements TaskInterface {
     const wcagMeta = getOrCreateMetadata(state, 'wcag');
     wcagMeta['apca'] = { 'pairs': results };
 
-    ctx.logger.debug('EnforceApca', 'run', `Processed ${results.length} APCA pair(s)`, wcagMeta['apca']);
+    ctx.logger.debug('EnforceApca', 'run', 'Processed APCA pairs', {
+      'pairCount': results.length,
+      'apcaMeta':  wcagMeta['apca'],
+    });
   }
 }
 

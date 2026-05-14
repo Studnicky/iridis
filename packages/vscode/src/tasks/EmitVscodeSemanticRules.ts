@@ -52,17 +52,15 @@ export class EmitVscodeSemanticRules implements TaskInterface {
     }
 
     out['semanticTokenRules'] = result;
-    ctx.logger.debug(
-      'EmitVscodeSemanticRules',
-      'run',
-      `Emitted ${Object.keys(result).length} semantic token rules`,
-    );
+    ctx.logger.debug('EmitVscodeSemanticRules', 'run', 'Emitted semantic token rules', {
+      'count': Object.keys(result).length,
+    });
 
     // Validate scope coverage — log any SCOPE_MAPPINGS keys with no colour
     const baseTokens = meta['baseTokens'] ?? {};
     for (const key of Object.keys(SCOPE_MAPPINGS)) {
       if (!(key in baseTokens) && !(key in result)) {
-        ctx.logger.debug('EmitVscodeSemanticRules', 'run', `No colour assigned for scope group '${key}'`);
+        ctx.logger.debug('EmitVscodeSemanticRules', 'run', 'No colour assigned for scope group', { 'scope': key });
       }
     }
   }

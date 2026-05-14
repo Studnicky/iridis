@@ -84,13 +84,11 @@ export class EmitVscodeThemeJson implements TaskInterface {
     };
 
     out['themeJson'] = themeJson;
-    ctx.logger.debug(
-      'EmitVscodeThemeJson',
-      'run',
-      `Assembled theme JSON: ${Object.keys(out.workbenchColors).length} colors, ` +
-      `${Object.keys(semanticTokenColors).length} semanticTokenColors, ` +
-      `${tokenColors.length} tokenColors entries`,
-    );
+    ctx.logger.debug('EmitVscodeThemeJson', 'run', 'Assembled theme JSON', {
+      'colors':              Object.keys(out.workbenchColors).length,
+      'semanticTokenColors': Object.keys(semanticTokenColors).length,
+      'tokenColors':         tokenColors.length,
+    });
   }
 }
 

@@ -97,7 +97,9 @@ export class EmitCapacitorTheme implements TaskInterface {
     const capacitorOut = getOrCreateOutput(state, 'capacitor');
     capacitorOut['theme'] = output;
 
-    ctx.logger.debug('EmitCapacitorTheme', 'run', `Theme emitted with ${Object.keys(output).length} keys`);
+    ctx.logger.debug('EmitCapacitorTheme', 'run', 'Theme emitted', {
+      'keyCount': Object.keys(output).length,
+    });
   }
 }
 
