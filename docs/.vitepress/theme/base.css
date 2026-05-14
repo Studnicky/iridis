@@ -267,7 +267,7 @@ button, input, select, textarea {
   position: absolute;
   inset: 24%;
   z-index: 100;
-  background-image: url('/iridis/logo.png');
+  background-image: url('/logo.png');
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
