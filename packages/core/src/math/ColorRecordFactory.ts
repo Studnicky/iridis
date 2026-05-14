@@ -7,6 +7,8 @@ import type {
 } from '../types/index.ts';
 import { clamp } from './Clamp.ts';
 import { clamp01 } from './Clamp01.ts';
+import { gamutMapSrgb } from './GamutMapSrgb.ts';
+import { oklchToDisplayP3 } from './OklchToDisplayP3.ts';
 import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
 import { rgbToHex } from './RgbToHex.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
@@ -91,9 +93,23 @@ export class ColorRecordFactory {
   /**
    * Builds a record from OKLCH coordinates. `l` is normalised lightness
    * (0..1), `c` is chroma (0..0.5), `h` is hue in degrees (any real
-   * number; wrapped into [0, 360)). The resulting RGB is gamma-encoded
-   * sRGB clamped to gamut — out-of-gamut inputs are silently clipped
-   * rather than gamut-mapped.
+   * number; wrapped into [0, 360)).
+   *
+   * Wide-gamut handling — when the input OKLCH falls outside the sRGB
+   * gamut, the factory:
+   *  1. Computes a sRGB-safe value via {@link import('./GamutMapSrgb.ts').GamutMapSrgb}
+   *     (chroma-reduction along constant L+H per CSS Color 4 §13.2.2).
+   *     The returned record's `rgb` and `hex` fields store this
+   *     gamut-mapped value so any sRGB-only consumer is safe.
+   *  2. Populates `displayP3` from the ORIGINAL (l, c, h) via
+   *     {@link import('./OklchToDisplayP3.ts').OklchToDisplayP3}. P3
+   *     channels are clipped to `[0, 1]` here for the rare case where
+   *     even P3 does not cover the input.
+   *  3. Preserves the ORIGINAL (l, c, h) on the record's `oklch` slot so
+   *     round-trips don't lose the wide-gamut intent.
+   *
+   * When the input is already in sRGB, `displayP3` is `undefined` and
+   * `rgb` is the direct (unclamped → clamped) conversion.
    *
    * `sourceFormat` defaults to `'oklch'` but accepts any
    * {@link SourceFormatType} so callers that transcoded into OKLCH from
@@ -108,14 +124,28 @@ export class ColorRecordFactory {
     sourceFormat: SourceFormatType   = 'oklch',
     hints:        ColorHintsInterface | undefined = undefined,
   ): ColorRecordInterface {
-    const rgb = oklchToRgbRaw.apply(l, c, h);
+    const mapped = gamutMapSrgb.apply(l, c, h);
+    const rgb    = oklchToRgbRaw.apply(mapped.l, mapped.c, mapped.h);
+
+    let displayP3: { 'r': number; 'g': number; 'b': number } | undefined;
+    if (!mapped.inGamut) {
+      const p3 = oklchToDisplayP3.apply(l, c, h);
+      displayP3 = {
+        'r': clamp01.apply(p3.r),
+        'g': clamp01.apply(p3.g),
+        'b': clamp01.apply(p3.b),
+      };
+    } else {
+      displayP3 = undefined;
+    }
+
     return {
       'oklch':        { 'l': clamp01.apply(l), 'c': clamp.apply(0, 0.5, c), 'h': ((h % 360) + 360) % 360 },
       'rgb':          rgb,
       'hex':          rgbToHex.apply(rgb.r, rgb.g, rgb.b),
       'alpha':        clamp01.apply(alpha),
       'sourceFormat': sourceFormat,
-      'displayP3':    undefined,
+      'displayP3':    displayP3,
       'hints':        hints,
     };
   }

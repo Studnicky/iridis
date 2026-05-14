@@ -60,7 +60,8 @@ export type SourceFormatType =
   | 'oklch'
   | 'lab'
   | 'named'
-  | 'imagePixel';
+  | 'imagePixel'
+  | 'displayP3';
 
 export type ColorSpaceType = 'srgb' | 'displayP3';
 
@@ -106,6 +107,26 @@ export interface ColorHintsInterface {
  * allocation point; downstream code MUST NOT use `{...record, x}`
  * spread-append patterns to add or override fields because spread
  * reorders keys and breaks the hidden class.
+ *
+ * Field semantics:
+ *  - `oklch` — the input color in OKLCH space. May lie OUTSIDE the
+ *    sRGB gamut; consumers wanting wide-gamut fidelity should read this
+ *    slot (or `displayP3`) rather than `rgb`.
+ *  - `rgb` — the color in sRGB. ALWAYS representable on sRGB-only
+ *    displays: when the input OKLCH is out-of-sRGB, the factory
+ *    gamut-maps to sRGB along constant L+H (CSS Color 4 §13.2.2) and
+ *    stores the mapped value here. Callers emitting sRGB-only outputs
+ *    can read `rgb` (or `hex`) directly without worrying about clipping.
+ *  - `hex` — `#rrggbb` derived from `rgb`. Same sRGB-safe guarantee.
+ *  - `displayP3` — populated when the input OKLCH is OUT-OF-SRGB-GAMUT,
+ *    or when the record arrived through `intake:p3`. Channels are
+ *    clipped to `[0, 1]`. `undefined` when the input is already fully
+ *    sRGB-representable, so consumers can detect "this color benefits
+ *    from a wide-gamut output path" with a single `displayP3 !==
+ *    undefined` check.
+ *  - `hints` — soft metadata (role, intent, weight). Propagated through
+ *    the pipeline; the schema-declared `intent` overrides intake-level
+ *    intent at `resolve:roles`.
  */
 export interface ColorRecordInterface {
   readonly oklch:        OklchInterface;
