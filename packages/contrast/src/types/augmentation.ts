@@ -1,3 +1,5 @@
+import type { CvdType } from '@studnicky/iridis';
+
 export interface WcagPairResultInterface {
   readonly 'foreground': string;
   readonly 'background': string;
@@ -26,14 +28,27 @@ export interface ApcaPairResultSetInterface {
   readonly 'pairs': readonly ApcaPairResultInterface[];
 }
 
+/**
+ * One CVD-simulation warning. Emitted by `enforce:cvdSimulate` when
+ * either of the two stability signals for the named CVD type fires:
+ *  - `|drop|` exceeds the type's `dropMagnitude` threshold, OR
+ *  - `simulatedLuminanceContrast` falls below the type's
+ *    `minSimulatedContrast` floor.
+ *
+ * `dropThreshold` and `minSimulatedContrast` are echoed onto each
+ * warning so downstream consumers can audit which signal fired without
+ * cross-referencing the threshold table. Thresholds come from
+ * `CVD_THRESHOLDS` in `packages/contrast/src/data/cvdThresholds.ts`.
+ */
 export interface CvdPairWarningInterface {
   readonly 'foreground':                 string;
   readonly 'background':                 string;
-  readonly 'cvdType':                    'protanopia' | 'deuteranopia' | 'tritanopia';
+  readonly 'cvdType':                    CvdType;
   readonly 'originalLuminanceContrast':  number;
   readonly 'simulatedLuminanceContrast': number;
   readonly 'drop':                       number;
-  readonly 'threshold':                  number;
+  readonly 'dropThreshold':              number;
+  readonly 'minSimulatedContrast':       number;
 }
 
 export interface CvdResultSetInterface {

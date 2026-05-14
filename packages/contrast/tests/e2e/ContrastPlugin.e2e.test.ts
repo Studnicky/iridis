@@ -37,10 +37,14 @@ interface WcagPairInterface {
   readonly 'pass':       boolean;
 }
 interface CvdWarningInterface {
-  readonly 'foreground': string;
-  readonly 'background': string;
-  readonly 'cvdType':    string;
-  readonly 'drop':       number;
+  readonly 'foreground':                 string;
+  readonly 'background':                 string;
+  readonly 'cvdType':                    string;
+  readonly 'originalLuminanceContrast':  number;
+  readonly 'simulatedLuminanceContrast': number;
+  readonly 'drop':                       number;
+  readonly 'dropThreshold':              number;
+  readonly 'minSimulatedContrast':       number;
 }
 interface WcagMetaShapeInterface {
   readonly 'apca'?: { readonly 'pairs': readonly ApcaPairInterface[] };
@@ -114,14 +118,60 @@ const ENFORCE_CONTRAST_ADJUST_ROLES: RoleSchemaInterface = {
   ],
 };
 
-const CVD_ROLES: RoleSchemaInterface = {
-  'name':  'cvd-contrast',
+/* CVD test roles split candidates by lightness AND hue. The hue offset
+   sets the assigned colour's H exactly; the lightness band ensures the
+   distance picker selects the right input. Each seed lies inside the
+   declared lightness range so `clampToRange` leaves L untouched. */
+const CVD_RED_ON_GREEN_ROLES: RoleSchemaInterface = {
+  /* #d00000: L=0.539, H=29   |  #008000: L=0.520, H=142 */
+  'name':  'cvd-red-on-green',
   'roles': [
-    { 'name': 'text',       'required': true, 'lightnessRange': [0.00, 0.50], 'chromaRange': [0.10, 0.40] },
-    { 'name': 'background', 'required': true, 'lightnessRange': [0.80, 1.00], 'chromaRange': [0.00, 0.05] },
+    { 'name': 'text',       'required': true, 'lightnessRange': [0.40, 0.60], 'chromaRange': [0.10, 0.40], 'hueOffset': 29 },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.40, 0.60], 'chromaRange': [0.10, 0.40], 'hueOffset': 142 },
   ],
   'contrastPairs': [
-    { 'foreground': 'text', 'background': 'background', 'minRatio': 3.0, 'algorithm': 'wcag21' },
+    { 'foreground': 'text', 'background': 'background', 'minRatio': 1.0, 'algorithm': 'wcag21' },
+  ],
+};
+
+/* Blue/yellow pair — tritanopia confusion. Distinct lightness bands
+   because the inputs sit at very different luminance levels
+   (blue L=0.452, yellow L=0.968). */
+const CVD_BLUE_ON_YELLOW_ROLES: RoleSchemaInterface = {
+  'name':  'cvd-blue-on-yellow',
+  'roles': [
+    { 'name': 'text',       'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.40], 'hueOffset': 264 },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.85, 1.00], 'chromaRange': [0.10, 0.40], 'hueOffset': 110 },
+  ],
+  'contrastPairs': [
+    { 'foreground': 'text', 'background': 'background', 'minRatio': 1.0, 'algorithm': 'wcag21' },
+  ],
+};
+
+/* Iso-luminant red/green for achromatopsia.
+   #ff0000: L=0.628, H=29  |  #00d800: L=0.764, H=142 */
+const CVD_ISOLUM_ROLES: RoleSchemaInterface = {
+  'name':  'cvd-isolum',
+  'roles': [
+    { 'name': 'text',       'required': true, 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.20, 0.30], 'hueOffset': 29 },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.70, 0.85], 'chromaRange': [0.20, 0.30], 'hueOffset': 142 },
+  ],
+  'contrastPairs': [
+    { 'foreground': 'text', 'background': 'background', 'minRatio': 1.0, 'algorithm': 'wcag21' },
+  ],
+};
+
+/* Black on white — the canonical maximum-contrast pair. All four CVD
+   types must produce zero warnings against the published thresholds. */
+const CVD_BLACK_ON_WHITE_ROLES: RoleSchemaInterface = {
+  'name':  'cvd-black-on-white',
+  'roles': [
+    /* black: L 0, C 0; white: L 1, C 0 — discriminate by lightness. */
+    { 'name': 'text',       'required': true, 'lightnessRange': [0.00, 0.20], 'chromaRange': [0.00, 0.05] },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.90, 1.00], 'chromaRange': [0.00, 0.05] },
+  ],
+  'contrastPairs': [
+    { 'foreground': 'text', 'background': 'background', 'minRatio': 1.0, 'algorithm': 'wcag21' },
   ],
 };
 
@@ -242,21 +292,132 @@ describe('ContrastPlugin e2e :: scenarios', () => {
       },
     },
     {
-      'name':     'enforce:cvdSimulate — deep-red on white raises a deuteranopia warning',
+      'name':     'enforce:cvdSimulate — saturated red on green raises a deuteranopia warning at the grounded threshold',
       'pipeline': ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       'input': {
-        'colors': ['#990000', '#ffffff'],
-        'roles':  CVD_ROLES,
+        // Saturated red/green — the canonical [VBM99] deuteranopia
+        // confusion pair. Trichromat WCAG contrast ~1.11; deuteranopia
+        // simulation collapses the chromatic difference, leaving the
+        // pair indistinguishable.
+        'colors': ['#d00000', '#008000'],
+        'roles':  CVD_RED_ON_GREEN_ROLES,
       },
       assert(state): void {
         const wcag = state.metadata['wcag'] as WcagMetaShapeInterface | undefined;
         assert.ok(wcag?.cvd !== undefined,            'metadata.wcag.cvd written');
         assert.ok(Array.isArray(wcag.cvd.warnings),    'cvd.warnings is an array');
         const deuter = wcag.cvd.warnings.find((w) => w.cvdType === 'deuteranopia');
-        assert.ok(deuter !== undefined,                'a deuteranopia warning is present');
+        assert.ok(deuter !== undefined,                'a deuteranopia warning fires for the red/green pair');
         assert.strictEqual(deuter.foreground, 'text');
         assert.strictEqual(deuter.background, 'background');
-        assert.ok(deuter.drop > 1.0, `drop ${deuter.drop} should exceed 1.0 advisory threshold`);
+        // dropThreshold from CVD_THRESHOLDS for deuteranopia
+        assert.strictEqual(deuter.dropThreshold, 0.5,
+          'deuteranopia dropThreshold is the published ΔE-derived 0.5');
+        assert.strictEqual(deuter.minSimulatedContrast, 3.0,
+          'deuteranopia minSimulatedContrast is the WCAG-21 SC-1.4.11 floor');
+        // Trichromat contrast for red-on-green is already below 3:1 ([d00000]/[008000] ≈ 1.11),
+        // so the simulated contrast will also be below 3:1, firing the floor signal — and the
+        // dichromacy projection will perturb that low contrast further.
+        assert.ok(deuter.simulatedLuminanceContrast < deuter.minSimulatedContrast,
+          `sim contrast ${deuter.simulatedLuminanceContrast} should be below the 3:1 floor for the red/green pair`);
+        assert.ok(deuter.originalLuminanceContrast > 1.0,
+          `original contrast ${deuter.originalLuminanceContrast} should be above 1.0`);
+      },
+    },
+    {
+      'name':     'enforce:cvdSimulate — pure red/green pair flags protanopia + deuteranopia (red/green confusion family)',
+      'pipeline': ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
+      'input': {
+        // [VBM99] cite pure red/green as the textbook protanopia
+        // confusion pair. The L-cone-absent projection brings the
+        // red foreground far closer to the green background in
+        // luminance, triggering both the drop and floor signals.
+        'colors': ['#ff0000', '#00cc00'],
+        'roles':  CVD_RED_ON_GREEN_ROLES,
+      },
+      assert(state): void {
+        const wcag = state.metadata['wcag'] as WcagMetaShapeInterface | undefined;
+        assert.ok(wcag?.cvd !== undefined,            'metadata.wcag.cvd written');
+        const prot = wcag.cvd.warnings.find((w) => w.cvdType === 'protanopia');
+        assert.ok(prot !== undefined,                'a protanopia warning fires for pure red/green');
+        assert.strictEqual(prot.foreground, 'text');
+        assert.strictEqual(prot.background, 'background');
+        // |drop| should exceed the 0.5 protanopia threshold for this pair — the
+        // L-cone-absent projection radically reshuffles luminance for saturated red.
+        assert.ok(Math.abs(prot.drop) > prot.dropThreshold,
+          `|drop| ${Math.abs(prot.drop)} should exceed protanopia threshold ${prot.dropThreshold}`);
+        // Red/green pair always also fires deuteranopia (same confusion family).
+        const deut = wcag.cvd.warnings.find((w) => w.cvdType === 'deuteranopia');
+        assert.ok(deut !== undefined, 'deuteranopia warning also fires (red/green confusion is shared with protanopia)');
+      },
+    },
+    {
+      'name':     'enforce:cvdSimulate — blue/yellow pair flags tritanopia ([BVM97] confusion line)',
+      'pipeline': ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
+      'input': {
+        // Classic tritanopia confusion: pure blue on pure yellow.
+        // Trichromat contrast ~8:1, but the S-cone-absent projection
+        // pulls the blue toward green and shrinks the contrast.
+        'colors': ['#0000ff', '#ffff00'],
+        'roles':  CVD_BLUE_ON_YELLOW_ROLES,
+      },
+      assert(state): void {
+        const wcag = state.metadata['wcag'] as WcagMetaShapeInterface | undefined;
+        assert.ok(wcag?.cvd !== undefined,            'metadata.wcag.cvd written');
+        const trit = wcag.cvd.warnings.find((w) => w.cvdType === 'tritanopia');
+        assert.ok(trit !== undefined,                'a tritanopia warning fires for the blue/yellow pair');
+        assert.strictEqual(trit.foreground, 'text');
+        assert.strictEqual(trit.background, 'background');
+        assert.strictEqual(trit.dropThreshold, 0.5,
+          'tritanopia dropThreshold matches the published 0.5 perceptible-difference value');
+        // |drop| should clear the 0.5 perceptible-difference threshold for this iconic pair.
+        assert.ok(Math.abs(trit.drop) > trit.dropThreshold,
+          `|drop| ${Math.abs(trit.drop)} should exceed tritanopia threshold ${trit.dropThreshold}`);
+      },
+    },
+    {
+      'name':     'enforce:cvdSimulate — iso-luminant red/green flags achromatopsia via the SC-1.4.11 floor',
+      'pipeline': ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
+      'input': {
+        // Saturated red and green at near-equal BT.709 luminance —
+        // distinguishable to trichromats by chroma, but reduce to a
+        // sub-3:1 grayscale pair for rod-monochromacy viewers.
+        'colors': ['#ff0000', '#00d800'],
+        'roles':  CVD_ISOLUM_ROLES,
+      },
+      assert(state): void {
+        const wcag = state.metadata['wcag'] as WcagMetaShapeInterface | undefined;
+        assert.ok(wcag?.cvd !== undefined,            'metadata.wcag.cvd written');
+        const achr = wcag.cvd.warnings.find((w) => w.cvdType === 'achromatopsia');
+        assert.ok(achr !== undefined,                'achromatopsia warning fires for iso-luminant red/green');
+        assert.strictEqual(achr.dropThreshold, 0,
+          'achromatopsia dropThreshold is 0 — BT.709 projection preserves luminance');
+        assert.strictEqual(achr.minSimulatedContrast, 3.0,
+          'achromatopsia minSimulatedContrast is the WCAG-21 SC-1.4.11 floor');
+        // BT.709 luminance projection preserves luminance contrast exactly,
+        // so the drop is identically 0 for achromatopsia. The floor signal
+        // is what fires: sim contrast < 3:1.
+        assert.ok(Math.abs(achr.drop) < 0.001,
+          `achromatopsia drop ${achr.drop} should be ~0 by BT.709 invariance`);
+        assert.ok(achr.simulatedLuminanceContrast < achr.minSimulatedContrast,
+          `sim contrast ${achr.simulatedLuminanceContrast} should be below the 3:1 floor`);
+      },
+    },
+    {
+      'name':     'enforce:cvdSimulate — black-on-white passes all four CVD checks without warnings (negative case)',
+      'pipeline': ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
+      'input': {
+        // Maximum-contrast pair. Every CVD type must produce zero
+        // warnings — both signals (drop magnitude AND floor) must clear.
+        'colors': ['#000000', '#ffffff'],
+        'roles':  CVD_BLACK_ON_WHITE_ROLES,
+      },
+      assert(state): void {
+        const wcag = state.metadata['wcag'] as WcagMetaShapeInterface | undefined;
+        assert.ok(wcag?.cvd !== undefined,            'metadata.wcag.cvd written');
+        assert.ok(Array.isArray(wcag.cvd.warnings),    'cvd.warnings is an array');
+        assert.strictEqual(wcag.cvd.warnings.length, 0,
+          `black-on-white must produce 0 CVD warnings; got ${wcag.cvd.warnings.length}`);
       },
     },
   ];

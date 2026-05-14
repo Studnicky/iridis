@@ -14,6 +14,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
+import { contrastPlugin }    from '@studnicky/iridis-contrast';
 import type { PaletteStateInterface } from '@studnicky/iridis/model';
 import type { RoleSchemaInterface }   from '@studnicky/iridis/model';
 
@@ -41,6 +42,11 @@ const error = ref<string | null>(null);
  * `runPipeline()` call awaits it before invoking `engine.run`. */
 const engine = new Engine();
 for (const t of coreTasks) engine.tasks.register(t);
+/* Contrast plugin is statically imported (compile-time bundling) because
+   the projector in `applyConfigToDocument.ts` and the export pipeline in
+   `RightPanel.vue` already depend on it; the lazy-load optimization from
+   P5.6 targets the heavier emit-side plugins only. */
+engine.adopt(contrastPlugin);
 
 interface MultiOutputEngineReady {
   readonly 'engine':    Engine;
@@ -68,11 +74,21 @@ const engineReady: Promise<MultiOutputEngineReady> = (async () => {
   engine.adopt(capacitorPlugin);
   engine.adopt(rdfPlugin);
 
+  /* Demo configuration is the maximal-correctness configuration: it
+     applies every contrast and CVD compliance check the engine
+     exposes. Real consumers opt in/out via their own pipeline, but the
+     showroom demonstrates the full standards-compliance surface —
+     WCAG 2.1 AA + AAA, APCA Lc targets, and CVD simulation against
+     protanopia + deuteranopia + tritanopia + achromatopsia. */
   engine.pipeline([
     'intake:hex',
     'resolve:roles',
     'expand:family',
     'enforce:contrast',
+    'enforce:wcagAA',
+    'enforce:wcagAAA',
+    'enforce:apca',
+    'enforce:cvdSimulate',
     'derive:variant',
     'emit:json',
     'emit:cssVars',

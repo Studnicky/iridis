@@ -25,6 +25,7 @@ import AccordionHeader  from 'primevue/accordionheader';
 import AccordionContent from 'primevue/accordioncontent';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
+import { contrastPlugin }    from '@studnicky/iridis-contrast';
 
 import IridisDemo    from './IridisDemo.vue';
 import SchemaForm    from './SchemaForm.vue';
@@ -37,12 +38,19 @@ const RESIZE_KEY = 'iridis-right-panel-width';
 const RESIZE_MIN = 320;
 const RESIZE_MAX = 720;
 
+/* Showroom export pipeline applies every compliance check the engine
+   exposes — WCAG 2.1 AA + AAA, APCA Lc targets, and CVD simulation
+   against the four canonical deficiency types. */
 const FULL_PIPELINE: readonly string[] = [
   'intake:hex',
   'clamp:count',
   'resolve:roles',
   'expand:family',
   'enforce:contrast',
+  'enforce:wcagAA',
+  'enforce:wcagAAA',
+  'enforce:apca',
+  'enforce:cvdSimulate',
   'derive:variant',
   'emit:json',
 ];
@@ -154,6 +162,7 @@ onUnmounted(() => {
 async function buildExportPayload(): Promise<Record<string, unknown>> {
   const engine = new Engine();
   for (const t of coreTasks) engine.tasks.register(t);
+  engine.adopt(contrastPlugin);
   engine.pipeline([...FULL_PIPELINE]);
   const pair   = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['iridis-16'];
   const schema = pair[configStore.framing];

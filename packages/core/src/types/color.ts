@@ -30,6 +30,29 @@ export type ColorIntentType =
   | 'onAccent'
   | 'onButton';
 
+/**
+ * Color-vision-deficiency types supported by the contrast plugin's
+ * `enforce:cvdSimulate` task. Four canonical members covering the
+ * three dichromacies (one missing cone) plus full achromatopsia
+ * (no chromatic vision):
+ *  - `'protanopia'`    — missing L-cone (red-blind);    ~1 % of males.
+ *  - `'deuteranopia'`  — missing M-cone (green-blind);  ~1 % of males.
+ *  - `'tritanopia'`    — missing S-cone (blue-blind);   ~0.01 % overall.
+ *  - `'achromatopsia'` — no functional cones (rod monochromacy);
+ *                        ~0.003 % overall. Vision reduces to luminance only.
+ *
+ * Partial-deficiency variants (protanomaly, deuteranomaly, tritanomaly)
+ * are deliberately out of scope: the simulation matrices in the
+ * literature [BVM97], [VBM99] target the dichromatic limit, and the
+ * Machado/Oliveira/Fernandes 2009 parametric model collapses to those
+ * matrices at severity = 1.0.
+ */
+export type CvdType =
+  | 'protanopia'
+  | 'deuteranopia'
+  | 'tritanopia'
+  | 'achromatopsia';
+
 export type SourceFormatType =
   | 'hex'
   | 'rgb'
