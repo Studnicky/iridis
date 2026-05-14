@@ -7,6 +7,7 @@ import type {
 } from '@studnicky/iridis';
 import { toCssVarName } from '@studnicky/iridis';
 import type { CssVarsOutputInterface } from '../types/index.ts';
+import { serializeP3 } from '../util/serializeP3.ts';
 
 /**
  * Picks a Windows High Contrast (Forced Colors) system color keyword for
@@ -47,14 +48,6 @@ function forcedColorsToken(record: ColorRecordInterface): string {
     case 'onButton':   return 'ButtonText';
     default:           return 'CanvasText';
   }
-}
-
-function serializeP3(p3: ColorRecordInterface['displayP3']): string {
-  if (!p3) return '';
-  const r = p3.r.toFixed(4);
-  const g = p3.g.toFixed(4);
-  const b = p3.b.toFixed(4);
-  return `color(display-p3 ${r} ${g} ${b})`;
 }
 
 function buildDeclarations(

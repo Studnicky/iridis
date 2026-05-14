@@ -11,6 +11,7 @@ import type {
 } from '../types/augmentation.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
 import { SCOPE_MAPPINGS } from '../data/scopeMappings.ts';
+import { recordToVscodeColor } from '../util/recordToVscodeColor.ts';
 
 export class EmitVscodeThemeJson implements TaskInterface {
   readonly 'name' = 'emit:vscodeThemeJson';
@@ -56,14 +57,19 @@ export class EmitVscodeThemeJson implements TaskInterface {
       }
     }
 
-    // tokenColors: build from SCOPE_MAPPINGS + baseTokens + FONT_STYLES
+    // tokenColors: build from SCOPE_MAPPINGS + baseTokens + FONT_STYLES.
+    // Each foreground is serialised via {@link recordToVscodeColor} so any
+    // record carrying `displayP3` emits `color(display-p3 r g b)` instead
+    // of the gamut-mapped hex; sRGB-only records stay as hex.
     const tokenColors: TokenColorRuleInterface[] = [];
     for (const [paletteKey, scopes] of Object.entries(SCOPE_MAPPINGS)) {
-      const foreground = baseTokens[paletteKey];
-      if (!foreground) continue;
+      const foregroundRecord = baseTokens[paletteKey];
+      if (!foregroundRecord) continue;
 
       const fontStyle = FONT_STYLES[paletteKey];
-      const settings: TokenColorRuleInterface['settings'] = { 'foreground': foreground };
+      const settings: TokenColorRuleInterface['settings'] = {
+        'foreground': recordToVscodeColor(foregroundRecord),
+      };
       if (fontStyle) {
         settings['fontStyle'] = fontStyle;
       }

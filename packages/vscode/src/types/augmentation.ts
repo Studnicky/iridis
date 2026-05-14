@@ -1,3 +1,5 @@
+import type { ColorRecordInterface } from '@studnicky/iridis';
+
 /** Semantic token rule entry as written to outputs.vscode.semanticTokenRules */
 export interface SemanticRuleEntryInterface {
   'foreground'?: string;
@@ -37,9 +39,19 @@ export interface VscodeOutputSlotInterface {
 /**
  * Fields written by vscode tasks to state.metadata['vscode'].
  * Written by: ExpandTokens (baseTokens), ApplyModifiers (semanticTokenRules).
+ *
+ * `baseTokens` carries full {@link ColorRecordInterface} entries — NOT
+ * pre-serialised hex strings — so downstream emit tasks
+ * (`EmitVscodeThemeJson`, `EmitVscodeSemanticRules`) can decide per slot
+ * whether to emit the sRGB hex or the wide-gamut `color(display-p3 r g b)`
+ * form based on whether the record carries `displayP3`. Math primitives
+ * applied by `ExpandTokens` / `ApplyModifiers` (lighten, mixHsl,
+ * ensureContrast, ...) re-derive `displayP3` through
+ * `colorRecordFactory.fromOklch` so the wide-gamut signal survives the
+ * derivation chain when applicable.
  */
 export interface VscodeMetaSlotInterface {
-  'baseTokens'?:         Record<string, string>;
+  'baseTokens'?:         Record<string, ColorRecordInterface>;
   'semanticTokenRules'?: Record<string, SemanticRuleEntryInterface>;
 }
 
