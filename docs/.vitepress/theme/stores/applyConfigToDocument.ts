@@ -17,15 +17,26 @@
  */
 
 import { Engine, coreTasks } from '@studnicky/iridis';
+import { contrastPlugin }    from '@studnicky/iridis-contrast';
 
 import type { DocsConfigType } from '../schemas/docsConfig.schema.ts';
-import { roleSchemaByName } from '../schemas/roleSchemas.ts';
+import { roleSchemaByName }   from '../schemas/roleSchemas.ts';
 
+/* Docs/demo projector runs the maximal-correctness contrast pipeline:
+   WCAG 2.1 AA + AAA, APCA Lc targets, and CVD simulation against the
+   four canonical deficiency types (protanopia, deuteranopia,
+   tritanopia, achromatopsia). The showroom configuration applies
+   every compliance check the engine exposes; real consumers opt
+   in/out via their own pipeline. */
 const PIPELINE: readonly string[] = [
   'intake:hex',
   'resolve:roles',
   'expand:family',
   'enforce:contrast',
+  'enforce:wcagAA',
+  'enforce:wcagAAA',
+  'enforce:apca',
+  'enforce:cvdSimulate',
 ];
 
 /**
@@ -45,6 +56,7 @@ const writtenRoles = new Map<string, string>();
  */
 const engine = new Engine();
 for (const t of coreTasks) engine.tasks.register(t);
+engine.adopt(contrastPlugin);
 engine.pipeline(PIPELINE);
 
 /**

@@ -7,6 +7,7 @@ import type {
 } from '@studnicky/iridis';
 import { clamp01, contrastWcag21, getOrCreateMetadata, linearToSrgb, srgbToLinear } from '@studnicky/iridis';
 import { cvdMatrices } from '../data/cvdMatrices.ts';
+import { CVD_THRESHOLDS } from '../data/cvdThresholds.ts';
 import type { CvdMatrixInterface } from '../types/index.ts';
 import type { CvdPairWarningInterface } from '../types/augmentation.ts';
 
@@ -59,6 +60,20 @@ function simulatedContrast(
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+/**
+ * Evaluates every contrast pair against all four CVD types
+ * (protanopia, deuteranopia, tritanopia, achromatopsia) and emits a
+ * warning on `metadata.wcag.cvd.warnings` for any pair × type whose
+ * perceptual-stability signals violate the published thresholds in
+ * `CVD_THRESHOLDS`. Two signals are evaluated per pair × type:
+ *  - The magnitude of the trichromat-vs-simulated WCAG-21 contrast
+ *    drop must not exceed `dropMagnitude` (perceptible-difference
+ *    boundary per [CIE76] / [SWD05] mapped to WCAG ratio space).
+ *  - The post-simulation WCAG-21 contrast must stay ≥
+ *    `minSimulatedContrast` ([WCAG21] SC 1.4.11 non-text floor).
+ *
+ * Advisory only — the task does not auto-fix.
+ */
 export class EnforceCvdSimulate implements TaskInterface {
   readonly 'name' = 'enforce:cvdSimulate';
 
@@ -66,7 +81,7 @@ export class EnforceCvdSimulate implements TaskInterface {
     'name':        'enforce:cvdSimulate',
     'reads':       ['input.roles.contrastPairs', 'roles'],
     'writes':      ['metadata.wcag.cvd'],
-    'description': 'Advisory CVD simulation: checks contrast drop under protanopia, deuteranopia, tritanopia. Warns but does not auto-fix.',
+    'description': 'Advisory CVD simulation against published thresholds: protanopia, deuteranopia, tritanopia, achromatopsia. Warns but does not auto-fix.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
@@ -74,9 +89,6 @@ export class EnforceCvdSimulate implements TaskInterface {
     if (pairs.length === 0) {
       return;
     }
-
-    // Advisory drop threshold: warn if simulated contrast drops more than 1.0 below original.
-    const DROP_THRESHOLD = 1.0;
 
     const warnings: CvdPairWarningInterface[] = [];
 
@@ -91,31 +103,45 @@ export class EnforceCvdSimulate implements TaskInterface {
       const originalContrast = contrastWcag21.apply(fgRecord, bgRecord);
 
       for (const cvd of cvdMatrices) {
-        const simFg = simulateColor(fgRecord, cvd);
-        const simBg = simulateColor(bgRecord, cvd);
+        const threshold   = CVD_THRESHOLDS[cvd.name];
+        const simFg       = simulateColor(fgRecord, cvd);
+        const simBg       = simulateColor(bgRecord, cvd);
         const simContrast = simulatedContrast(simFg, simBg);
-        const drop = originalContrast - simContrast;
+        const drop        = originalContrast - simContrast;
 
-        if (drop > DROP_THRESHOLD) {
-          const warning: CvdPairWarningInterface = {
-            'foreground':               pair.foreground,
-            'background':               pair.background,
-            'cvdType':                  cvd.name,
-            'originalLuminanceContrast': originalContrast,
-            'simulatedLuminanceContrast': simContrast,
-            'drop':                     drop,
-            'threshold':                DROP_THRESHOLD,
-          };
-          warnings.push(warning);
-          ctx.logger.warn('EnforceCvdSimulate', 'run', 'CVD advisory — contrast drops under simulated CVD', {
-            'foreground':       pair.foreground,
-            'background':       pair.background,
-            'cvdType':          cvd.name,
-            'originalContrast': originalContrast,
-            'simulatedContrast': simContrast,
-            'drop':             drop,
-          });
+        const exceedsDrop  = Math.abs(drop) > threshold.dropMagnitude;
+        const belowFloor   = simContrast < threshold.minSimulatedContrast;
+
+        // For achromatopsia, dropMagnitude is 0 and the drop is
+        // identically 0 by definition of the BT.709 grayscale
+        // projection — so only the floor signal can fire. For the
+        // dichromacies, either signal can trigger.
+        if (!exceedsDrop && !belowFloor) {
+          continue;
         }
+
+        const warning: CvdPairWarningInterface = {
+          'foreground':                  pair.foreground,
+          'background':                  pair.background,
+          'cvdType':                     cvd.name,
+          'originalLuminanceContrast':   originalContrast,
+          'simulatedLuminanceContrast':  simContrast,
+          'drop':                        drop,
+          'dropThreshold':               threshold.dropMagnitude,
+          'minSimulatedContrast':        threshold.minSimulatedContrast,
+        };
+        warnings.push(warning);
+        ctx.logger.warn('EnforceCvdSimulate', 'run', 'CVD advisory — pair fails perceptual-stability threshold', {
+          'foreground':         pair.foreground,
+          'background':         pair.background,
+          'cvdType':            cvd.name,
+          'originalContrast':   originalContrast,
+          'simulatedContrast':  simContrast,
+          'drop':               drop,
+          'dropThreshold':      threshold.dropMagnitude,
+          'minSimulatedContrast': threshold.minSimulatedContrast,
+          'reason':             exceedsDrop ? 'drop' : 'floor',
+        });
       }
     }
 

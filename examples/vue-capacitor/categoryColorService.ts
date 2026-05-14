@@ -17,11 +17,19 @@ export class CategoryColorService {
     this.engine.adopt(contrastPlugin);
     this.engine.adopt(stylesheetPlugin);
     this.engine.adopt(capacitorPlugin);
+    /* Example wires every compliance check the engine exposes —
+       WCAG 2.1 AA + AAA, APCA Lc targets, and CVD simulation against
+       protanopia + deuteranopia + tritanopia + achromatopsia. Real
+       consumers opt in/out via their own pipeline; the example
+       demonstrates the maximal-correctness configuration. */
     this.engine.pipeline([
       'intake:any',
       'expand:family',
       'resolve:roles',
       'enforce:wcagAA',
+      'enforce:wcagAAA',
+      'enforce:apca',
+      'enforce:cvdSimulate',
       'derive:variant',
       'emit:cssVars',
       'emit:capacitorStatusBar',
