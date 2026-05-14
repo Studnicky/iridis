@@ -105,11 +105,24 @@ export class ColorRecordFactory {
    *     {@link import('./OklchToDisplayP3.ts').OklchToDisplayP3}. P3
    *     channels are clipped to `[0, 1]` here for the rare case where
    *     even P3 does not cover the input.
-   *  3. Preserves the ORIGINAL (l, c, h) on the record's `oklch` slot so
-   *     round-trips don't lose the wide-gamut intent.
+   *  3. Records the ORIGINAL (l, c, h) on the `oklch` slot subject to
+   *     bounds: `l` clamped to `[0, 1]`, `c` clamped to `[0, 0.5]`, `h`
+   *     wrapped to `[0, 360)`. The 0.5 chroma ceiling covers the
+   *     human-visible gamut with room to spare; values beyond it
+   *     are pathological and get bounded silently.
    *
    * When the input is already in sRGB, `displayP3` is `undefined` and
    * `rgb` is the direct (unclamped → clamped) conversion.
+   *
+   * Round-trip note: when a record allocated by another factory method
+   * (e.g. `intake:p3` populating `displayP3` verbatim from a P3 input)
+   * is later passed BACK through `fromOklch` (e.g. by `ResolveRoles`
+   * when copying `role.intent` onto the hints), the `displayP3` slot is
+   * re-derived from the OKLCH chain rather than preserved. Drift is
+   * ~1e-8 per channel — below the 4dp precision used by `serializeP3`
+   * and invisible to consumers. If verbatim preservation matters,
+   * consumers must hold the original record reference rather than
+   * reallocating.
    *
    * `sourceFormat` defaults to `'oklch'` but accepts any
    * {@link SourceFormatType} so callers that transcoded into OKLCH from

@@ -44,8 +44,9 @@ The path is sRGB → linear sRGB → CIE XYZ-like cone responses → cube-root n
 | `linearToSrgb` | `packages/core/src/math/LinearToSrgb.ts` | gamma-encodes a triple of linear sRGB channels back to sRGB |
 | `rgbToOklch` | `packages/core/src/math/RgbToOklch.ts` | builds a `ColorRecord` from three sRGB channels via `ColorRecordFactory.fromRgb` |
 | `oklchToRgb` | `packages/core/src/math/OklchToRgb.ts` | builds a `ColorRecord` from L, C, h via `ColorRecordFactory.fromOklch` |
-| `srgbToDisplayP3` | `packages/core/src/math/SrgbToDisplayP3.ts` | gamut-maps from sRGB primaries to Display P3 primaries |
-| `displayP3ToSrgb` | `packages/core/src/math/DisplayP3ToSrgb.ts` | gamut-maps from Display P3 back to sRGB |
+| `oklchToRgbRaw` | `packages/core/src/math/OklchToRgbRaw.ts` | converts L, C, h to an sRGB triple without allocating a `ColorRecord` (hot-loop primitive used by `EnsureContrast` and the factory) |
+| `oklchToDisplayP3` | `packages/core/src/math/OklchToDisplayP3.ts` | converts L, C, h to a Display-P3 RGB triple; unclamped so out-of-sRGB inputs survive |
+| `gamutMapSrgb` | `packages/core/src/math/GamutMapSrgb.ts` | CSS Color 4 §13.2.2 chroma-reduction gamut mapping; reports `inGamut` flag |
 | `mixSrgb` | `packages/core/src/math/MixSrgb.ts` | linear interpolation in gamma-corrected sRGB (fast, perceptually crude) |
 
 `luminance` (`packages/core/src/math/Luminance.ts`) and the WCAG / APCA contrast primitives all depend on the sRGB → linear decode internally.

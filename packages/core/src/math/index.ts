@@ -10,8 +10,6 @@ export { HexToRgb,         hexToRgb         } from './HexToRgb.ts';
 export { RgbToHex,         rgbToHex         } from './RgbToHex.ts';
 export { SrgbToLinear,     srgbToLinear     } from './SrgbToLinear.ts';
 export { LinearToSrgb,     linearToSrgb     } from './LinearToSrgb.ts';
-export { SrgbToDisplayP3,  srgbToDisplayP3  } from './SrgbToDisplayP3.ts';
-export { DisplayP3ToSrgb,  displayP3ToSrgb  } from './DisplayP3ToSrgb.ts';
 export { OklchToDisplayP3, oklchToDisplayP3 } from './OklchToDisplayP3.ts';
 export { GamutMapSrgb,     gamutMapSrgb     } from './GamutMapSrgb.ts';
 export type { GamutMapResultInterface } from './GamutMapSrgb.ts';
