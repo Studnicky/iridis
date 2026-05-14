@@ -1,4 +1,5 @@
 import type {
+  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
@@ -17,10 +18,7 @@ import {
 import type { SemanticRuleEntryInterface } from '../types/augmentation.ts';
 import { MODIFIER_TRANSFORMS } from '../data/modifierTransforms.ts';
 import { TOKEN_MODIFIERS, TOKEN_TYPES } from '../data/derivationParams.ts';
-
-function roleHex(state: PaletteStateInterface, role: string): string | undefined {
-  return state.roles[role]?.hex;
-}
+import { recordToVscodeColor } from '../util/recordToVscodeColor.ts';
 
 export class ApplyModifiers implements TaskInterface {
   readonly 'name' = 'vscode:applyModifiers';
@@ -41,19 +39,18 @@ export class ApplyModifiers implements TaskInterface {
       throw new Error('ApplyModifiers: metadata.vscode.baseTokens not found — run vscode:expandTokens first');
     }
 
-    const bg = roleHex(state, 'background') ?? '#000000';
-    const bgRecord = colorRecordFactory.fromHex(bg);
+    const bgRecord = state.roles['background'] ?? colorRecordFactory.fromHex('#000000');
     const rules: Record<string, SemanticRuleEntryInterface> = {};
 
     const typesLen = TOKEN_TYPES.length;
 
-    // 23 base rules
+    // 23 base rules — emit P3 form when the record carries it, hex otherwise.
     for (let i = 0; i < typesLen; i++) {
       const tokenType = TOKEN_TYPES[i];
       if (!tokenType) continue;
-      const foreground = baseTokens[tokenType];
-      if (!foreground) continue;
-      rules[tokenType] = { foreground };
+      const baseRecord = baseTokens[tokenType];
+      if (!baseRecord) continue;
+      rules[tokenType] = { 'foreground': recordToVscodeColor(baseRecord) };
     }
 
     // 23 token types × N modifiers from TOKEN_MODIFIERS (the VS Code spec set).
@@ -62,8 +59,8 @@ export class ApplyModifiers implements TaskInterface {
     for (let i = 0; i < typesLen; i++) {
       const tokenType = TOKEN_TYPES[i];
       if (!tokenType) continue;
-      const baseColor = baseTokens[tokenType];
-      if (!baseColor) continue;
+      const baseRecord = baseTokens[tokenType];
+      if (!baseRecord) continue;
 
       for (let j = 0; j < modifiersLen; j++) {
         const modifier = TOKEN_MODIFIERS[j];
@@ -72,7 +69,7 @@ export class ApplyModifiers implements TaskInterface {
         const transform = MODIFIER_TRANSFORMS[modifier];
         if (!transform) continue;
 
-        let color = colorRecordFactory.fromHex(baseColor);
+        let color: ColorRecordInterface = baseRecord;
 
         if (transform.lightness) {
           if (transform.lightness > 0) {
@@ -91,16 +88,16 @@ export class ApplyModifiers implements TaskInterface {
         }
 
         if (transform.mixWith && transform.mixWeight) {
-          const mixHex = roleHex(state, transform.mixWith);
-          if (mixHex) {
-            color = mixHsl.apply(color, colorRecordFactory.fromHex(mixHex), transform.mixWeight);
+          const mixRecord = state.roles[transform.mixWith];
+          if (mixRecord) {
+            color = mixHsl.apply(color, mixRecord, transform.mixWeight);
           }
         }
 
         color = ensureContrast.apply(color, bgRecord, 4.5);
 
         const selector = `${tokenType}.${modifier}`;
-        const entry: SemanticRuleEntryInterface = { 'foreground': color.hex };
+        const entry: SemanticRuleEntryInterface = { 'foreground': recordToVscodeColor(color) };
         if (transform.fontStyle) {
           entry['fontStyle'] = transform.fontStyle;
         }

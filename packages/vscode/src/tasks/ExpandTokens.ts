@@ -39,7 +39,7 @@ export class ExpandTokens implements TaskInterface {
       throw new Error('ExpandTokens: requires roles background, muted, foreground');
     }
 
-    const baseTokens: Record<string, string> = {};
+    const baseTokens: Record<string, ColorRecordInterface> = {};
 
     const len = TOKEN_TYPES.length;
     for (let i = 0; i < len; i++) {
@@ -58,7 +58,7 @@ export class ExpandTokens implements TaskInterface {
       if (tokenType === 'operator') {
         const mixed = mixHsl.apply(mutedRec, fgRec, 0.4);
         const contrasted = ensureContrast.apply(mixed, bgRec, 3.5);
-        baseTokens['operator'] = contrasted.hex;
+        baseTokens['operator'] = contrasted;
         continue;
       }
 
@@ -93,7 +93,7 @@ export class ExpandTokens implements TaskInterface {
       // comment gets relaxed contrast (3.0), everything else 4.5
       const minContrast = tokenType === 'comment' ? 3.0 : 4.5;
       const contrasted = ensureContrast.apply(color, bgRec, minContrast);
-      baseTokens[tokenType] = contrasted.hex;
+      baseTokens[tokenType] = contrasted;
     }
 
     meta['baseTokens'] = baseTokens;

@@ -48,6 +48,10 @@ export class ReasonAnnotate implements TaskInterface {
     const rgbNode     = DataFactory.namedNode(colorologyVocab.rgb);
     const hexNode     = DataFactory.namedNode(colorologyVocab.hex);
     const ratioNode   = DataFactory.namedNode(colorologyVocab.wcag21Ratio);
+    const p3RNode     = DataFactory.namedNode(colorologyVocab.displayP3R);
+    const p3GNode     = DataFactory.namedNode(colorologyVocab.displayP3G);
+    const p3BNode     = DataFactory.namedNode(colorologyVocab.displayP3B);
+    const xsdDecimalNode = DataFactory.namedNode(xsdDecimal);
 
     for (const [roleName, color] of Object.entries(state.roles)) {
       const role  = DataFactory.namedNode(roleIri(roleName));
@@ -58,6 +62,19 @@ export class ReasonAnnotate implements TaskInterface {
       store.addQuad(DataFactory.quad(colorN,  hexNode,      DataFactory.literal(color.hex, DataFactory.namedNode(xsdString))));
       store.addQuad(DataFactory.quad(colorN,  oklchNode,    DataFactory.blankNode()));
       store.addQuad(DataFactory.quad(colorN,  rgbNode,      DataFactory.blankNode()));
+
+      // Display-P3 channels: emitted ONLY when the record carries a
+      // wide-gamut value (out-of-sRGB OKLCH input or `intake:p3` origin).
+      // Channels are xsd:decimal literals at 4dp, matching CSS Color 4
+      // `color(display-p3 r g b)` semantics — SPARQL consumers can join
+      // these triples with the hex literal to surface the wide-gamut
+      // form when supported, fall back to hex when not.
+      if (color.displayP3) {
+        store.addQuad(DataFactory.quad(colorN, p3RNode, DataFactory.literal(color.displayP3.r.toFixed(4), xsdDecimalNode)));
+        store.addQuad(DataFactory.quad(colorN, p3GNode, DataFactory.literal(color.displayP3.g.toFixed(4), xsdDecimalNode)));
+        store.addQuad(DataFactory.quad(colorN, p3BNode, DataFactory.literal(color.displayP3.b.toFixed(4), xsdDecimalNode)));
+      }
+
       store.addQuad(DataFactory.quad(paletteNode, hasRoleNode, role));
     }
 

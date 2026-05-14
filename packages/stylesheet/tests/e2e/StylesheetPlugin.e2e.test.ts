@@ -129,6 +129,64 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
           scoped.full.includes(`[data-iridis-scope='dark']`),
           'full contains a scoped block for the dark variant',
         );
+        // sRGB-only input — no @supports blocks emitted, no display-p3 syntax anywhere.
+        assert.deepStrictEqual(scoped.wideGamut, {},
+          'wideGamut is an empty object when no role carries displayP3');
+        assert.ok(!scoped.full.includes('@supports'),
+          'full contains no @supports block when no role carries displayP3');
+        assert.ok(!scoped.full.includes('display-p3'),
+          'full contains no display-p3 syntax when no role carries displayP3');
+      },
+    },
+    {
+      // R7.1 — wide-gamut OKLCH through emit:cssVarsScoped. The scoped
+      // task must mirror EmitCssVars's @supports cascade but scope the
+      // inner block under [data-<scopePrefix>='<category>']. Categories
+      // without P3 records emit no @supports sibling.
+      'name':     'emit:cssVarsScoped wide-gamut input emits per-category @supports blocks under the scoped selector',
+      'pipeline': ['intake:oklch', 'resolve:roles', 'derive:variant', 'emit:cssVarsScoped'],
+      'input': {
+        'colors':   [{ 'l': 0.7, 'c': 0.4, 'h': 30 }],
+        'roles':    WIDE_GAMUT_ROLES,
+        'metadata': { 'scopePrefix': 'iridis-scope' },
+      },
+      assert(state): void {
+        const record = state.roles['primary'];
+        assert.ok(record !== undefined, 'primary role resolved');
+        assert.ok(record.displayP3 !== undefined,
+          'state.roles.primary.displayP3 is populated for out-of-sRGB OKLCH input');
+
+        const scoped = state.outputs['cssVarsScoped'] as CssVarsScopedOutputInterface | undefined;
+        assert.ok(scoped !== undefined, 'outputs.cssVarsScoped present');
+
+        // sRGB scoped block — unconditional, hex form, scoped selector.
+        assert.ok('default' in scoped.blocks, 'default category present');
+        assert.match(scoped.blocks['default'] as string,
+          /\[data-iridis-scope='default'\]/,
+          'default scoped block uses the [data-iridis-scope] selector');
+        assert.match(scoped.blocks['default'] as string,
+          new RegExp(`--c-primary:\\s+${record.hex};`),
+          'default scoped block declares --c-primary as gamut-mapped sRGB hex');
+
+        // Wide-gamut sibling — scoped under the same selector, wrapped in @supports.
+        assert.ok('default' in scoped.wideGamut,
+          'wideGamut block emitted for the default category because primary carries displayP3');
+        const defaultP3 = scoped.wideGamut['default'] as string;
+        assert.match(defaultP3, /@supports \(color: color\(display-p3 0 0 0\)\)/,
+          'wideGamut block opens with @supports detection query');
+        assert.match(defaultP3, /\[data-iridis-scope='default'\]/,
+          'wideGamut block scopes its inner declarations under [data-iridis-scope]');
+        assert.match(defaultP3, /--c-primary:\s+color\(display-p3 [\d.]+ [\d.]+ [\d.]+\);/,
+          'wideGamut block declares --c-primary as color(display-p3 ...)');
+
+        // Cascade ordering inside `full`: each category's sRGB block precedes
+        // its own @supports sibling so the P3 override resolves cleanly.
+        const sRgbIdx     = scoped.full.indexOf(`[data-iridis-scope='default'] {`);
+        const supportsIdx = scoped.full.indexOf('@supports (color: color(display-p3 0 0 0))');
+        assert.ok(sRgbIdx >= 0,        'full contains the default sRGB block');
+        assert.ok(supportsIdx >= 0,    'full contains an @supports block');
+        assert.ok(sRgbIdx < supportsIdx,
+          'sRGB scoped block precedes its @supports sibling in cascade order');
       },
     },
     {

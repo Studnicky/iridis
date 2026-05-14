@@ -9,8 +9,9 @@ export interface CssVarsOutputInterface {
 }
 
 export interface CssVarsScopedOutputInterface {
-  readonly 'blocks': Record<string, string>;
-  readonly 'full':   string;
+  readonly 'blocks':    Record<string, string>;
+  readonly 'wideGamut': Record<string, string>;
+  readonly 'full':      string;
 }
 
 export type * from './augmentation.ts';
