@@ -28,7 +28,7 @@ export const ColorRecordSchema = {
     'alpha':        { 'type': 'number', 'minimum': 0, 'maximum': 1 },
     'sourceFormat': {
       'type': 'string',
-      'enum': ['hex', 'rgb', 'hsl', 'oklch', 'lab', 'named', 'imagePixel'],
+      'enum': ['hex', 'rgb', 'hsl', 'oklch', 'lab', 'named', 'imagePixel', 'displayP3'],
     },
     'displayP3': {
       'type':     'object',

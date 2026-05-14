@@ -7,6 +7,7 @@ export { intakeOklch,       IntakeOklch }       from './intake/IntakeOklch.ts';
 export { intakeLab,         IntakeLab }         from './intake/IntakeLab.ts';
 export { intakeNamed,       IntakeNamed }       from './intake/IntakeNamed.ts';
 export { intakeImagePixels, IntakeImagePixels } from './intake/IntakeImagePixels.ts';
+export { intakeP3,          IntakeP3 }          from './intake/IntakeP3.ts';
 export { intakeAny,         IntakeAny }         from './intake/IntakeAny.ts';
 
 export { clampCount, ClampCount } from './clamp/ClampCount.ts';
@@ -29,6 +30,7 @@ import { intakeOklch }       from './intake/IntakeOklch.ts';
 import { intakeLab }         from './intake/IntakeLab.ts';
 import { intakeNamed }       from './intake/IntakeNamed.ts';
 import { intakeImagePixels } from './intake/IntakeImagePixels.ts';
+import { intakeP3 }          from './intake/IntakeP3.ts';
 import { intakeAny }         from './intake/IntakeAny.ts';
 import { clampCount }        from './clamp/ClampCount.ts';
 import { clampOklch }        from './clamp/ClampOklch.ts';
@@ -53,6 +55,7 @@ export const coreTasks: readonly TaskInterface[] = [
   intakeLab,
   intakeNamed,
   intakeImagePixels,
+  intakeP3,
   intakeAny,
   clampCount,
   clampOklch,

@@ -11,9 +11,11 @@ import { intakeOklch }       from './IntakeOklch.ts';
 import { intakeLab }         from './IntakeLab.ts';
 import { intakeNamed }       from './IntakeNamed.ts';
 import { intakeImagePixels } from './IntakeImagePixels.ts';
+import { intakeP3 }          from './IntakeP3.ts';
 
 const DELEGATES = [
   intakeHex,
+  intakeP3,
   intakeRgb,
   intakeHsl,
   intakeOklch,

@@ -67,21 +67,18 @@ test('StylesheetPlugin e2e :: happy :: emit:cssVars writes a :root block to outp
 });
 
 // ---------------------------------------------------------------------------
-// emit:cssVarsScoped + wide-gamut serializeP3 scenario coverage
+// emit:cssVarsScoped + wide-gamut scenario coverage
 //
 // One pipeline pass per scenario; each `it` body asserts every observable
-// effect of the task being exercised. Wide-gamut needs displayP3 populated
-// on a record before emit:cssVars runs — we seed via an onRunStart hook
-// because no intake task populates displayP3 today.
+// effect of the task being exercised. Wide-gamut runs through real input
+// paths — `intake:oklch` for out-of-sRGB OKLCH and `intake:p3` for the CSS
+// `color(display-p3 ...)` syntax — exercising the gamut-map / displayP3
+// population pipeline end-to-end (no `onRunStart` seeding).
 // ---------------------------------------------------------------------------
 import { describe, it }              from 'node:test';
-import { colorRecordFactory }        from '@studnicky/iridis';
 import type {
-  ColorRecordInterface,
   InputInterface,
   PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
 } from '@studnicky/iridis';
 import type { CssVarsScopedOutputInterface } from '@studnicky/iridis-stylesheet/types';
 
@@ -89,10 +86,18 @@ interface StylesheetScenarioInterface {
   readonly 'name':     string;
   readonly 'pipeline': readonly string[];
   readonly 'input':    InputInterface;
-  /** Optional onRunStart hook to seed special colors (e.g. with displayP3 populated). */
-  readonly 'seed'?:    () => TaskInterface;
   assert(state: PaletteStateInterface): void;
 }
+
+const WIDE_GAMUT_ROLES: RoleSchemaInterface = {
+  'name': 'wide-gamut',
+  'roles': [
+    // Wide chroma range so the resolver does NOT shrink the input
+    // chroma during nudgeIntoRole — preserving the wide-gamut intent.
+    { 'name': 'primary', 'required': true, 'intent': 'accent',
+      'lightnessRange': [0.05, 0.95], 'chromaRange': [0.00, 0.50] },
+  ],
+};
 
 describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
   const scenarios: readonly StylesheetScenarioInterface[] = [
@@ -127,45 +132,103 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
       },
     },
     {
-      'name':     'emit:cssVars wide-gamut path emits color(display-p3 ...) at 4dp precision',
-      'pipeline': ['intake:hex', 'resolve:roles', 'emit:cssVars'],
-      'input':    { 'colors': [], 'roles': ROLES },
-      seed(): TaskInterface {
-        // Build a record with displayP3 populated; nudgeIntoRole will pass it
-        // straight through unchanged because L=0.6 and chroma 0.0 satisfy any
-        // declared range without the factory's post-spread machinery getting
-        // involved.
-        const base = colorRecordFactory.fromOklch(0.6, 0.0, 0, 1, 'oklch', { 'role': 'primary' });
-        const withP3: ColorRecordInterface = {
-          'oklch':        base.oklch,
-          'rgb':          base.rgb,
-          'hex':          base.hex,
-          'alpha':        base.alpha,
-          'sourceFormat': base.sourceFormat,
-          'displayP3':    { 'r': 1.0, 'g': 0.5, 'b': 0.25 },
-          'hints':        base.hints,
-        };
-        return {
-          'name':     'seed:displayP3',
-          'manifest': { 'name': 'seed:displayP3', 'phase': 'onRunStart' },
-          run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
-            state.colors.push(withP3);
-          },
-        };
+      // OKLCH(0.7, 0.4, 30) is a vivid red-orange well outside sRGB —
+      // every channel of the linear-sRGB conversion overflows [0, 1].
+      // The factory MUST gamut-map for `rgb` and populate `displayP3`
+      // from the original wide-gamut point.
+      'name':     'emit:cssVars wide-gamut OKLCH input populates displayP3 and emits @supports block',
+      'pipeline': ['intake:oklch', 'resolve:roles', 'emit:cssVars'],
+      'input': {
+        'colors': [{ 'l': 0.7, 'c': 0.4, 'h': 30 }],
+        'roles':  WIDE_GAMUT_ROLES,
       },
       assert(state): void {
+        const record = state.roles['primary'];
+        assert.ok(record !== undefined, 'primary role resolved');
+
+        // displayP3 populated because the input is out-of-sRGB.
+        assert.ok(record.displayP3 !== undefined,
+          'state.roles.primary.displayP3 is populated for out-of-sRGB OKLCH input');
+
+        // rgb is gamut-mapped — every channel safely in [0, 1].
+        assert.ok(record.rgb.r >= 0 && record.rgb.r <= 1, 'rgb.r in [0,1]');
+        assert.ok(record.rgb.g >= 0 && record.rgb.g <= 1, 'rgb.g in [0,1]');
+        assert.ok(record.rgb.b >= 0 && record.rgb.b <= 1, 'rgb.b in [0,1]');
+
+        // hex matches rgb (sRGB-safe).
+        assert.match(record.hex, /^#[0-9a-f]{6}$/, 'hex is canonical 6-digit sRGB form');
+
+        // Emitted CSS contains the unconditional :root with the sRGB-safe value.
         const out = state.outputs['cssVars'] as CssVarsOutputInterface | undefined;
         assert.ok(out !== undefined, 'outputs.cssVars present');
-        assert.ok(out.wideGamut.length > 0,
-          'wideGamut block emitted (at least one role has displayP3)');
-        // EmitCssVars.serializeP3 formats components at .toFixed(4).
+        assert.match(out.rootBlock,
+          new RegExp(`--c-primary:\\s+${record.hex};`),
+          ':root block declares the sRGB-safe hex value');
+
+        // Wide-gamut @supports block present with the P3 color.
+        assert.ok(out.wideGamut.length > 0, 'wideGamut block emitted');
+        assert.match(out.wideGamut, /@supports \(color: color\(display-p3 0 0 0\)\)/,
+          'wideGamut is wrapped in @supports detection query');
+        assert.match(out.wideGamut, /--c-primary:\s+color\(display-p3 [\d.]+ [\d.]+ [\d.]+\);/,
+          'wideGamut block declares --c-primary as a display-p3 color');
+
+        // Cascade order in `full`: rootBlock → (darkScheme) → wideGamut → forcedColors.
+        const rootIdx    = out.full.indexOf(':root');
+        const supportsIdx = out.full.indexOf('@supports');
+        const forcedIdx  = out.full.indexOf('@media (forced-colors');
+        assert.ok(rootIdx < supportsIdx,
+          ':root block precedes @supports block in cascade order');
+        assert.ok(supportsIdx < forcedIdx,
+          '@supports block precedes @media (forced-colors) block in cascade order');
+      },
+    },
+    {
+      // intake:p3 direct CSS-color string input. The value
+      // `color(display-p3 0.99 0.42 0.18)` is within the P3 gamut and
+      // (depending on conversion) at the edge of sRGB — the record's
+      // `displayP3` must carry the input verbatim and `sourceFormat`
+      // must report `'displayP3'`.
+      'name':     'emit:cssVars intake:p3 string input populates displayP3 verbatim',
+      'pipeline': ['intake:p3', 'resolve:roles', 'emit:cssVars'],
+      'input': {
+        'colors': ['color(display-p3 0.99 0.42 0.18)'],
+        'roles':  WIDE_GAMUT_ROLES,
+      },
+      assert(state): void {
+        const record = state.roles['primary'];
+        assert.ok(record !== undefined, 'primary role resolved');
+
+        // sourceFormat: the record is rebuilt by resolve:roles via
+        // factory.fromOklch (because the schema role declares an intent
+        // the intake record lacks). The factory call preserves the
+        // record's `sourceFormat` argument, so 'displayP3' propagates
+        // through the rebuild.
+        assert.strictEqual(record.sourceFormat, 'displayP3',
+          "sourceFormat reports 'displayP3' for color(display-p3 ...) input");
+
+        // displayP3 is populated. Channels match the input within the
+        // OKLCH round-trip drift that fromOklch introduces during
+        // resolve:roles (≪ the 4dp precision used by serializeP3).
+        assert.ok(record.displayP3 !== undefined, 'displayP3 populated');
+        const dp3 = record.displayP3;
+        const EPS_P3 = 5e-4;
+        assert.ok(Math.abs(dp3.r - 0.99) < EPS_P3, `dp3.r ≈ 0.99, got ${dp3.r}`);
+        assert.ok(Math.abs(dp3.g - 0.42) < EPS_P3, `dp3.g ≈ 0.42, got ${dp3.g}`);
+        assert.ok(Math.abs(dp3.b - 0.18) < EPS_P3, `dp3.b ≈ 0.18, got ${dp3.b}`);
+
+        // rgb is sRGB-safe.
+        assert.ok(record.rgb.r >= 0 && record.rgb.r <= 1, 'rgb.r in [0,1]');
+        assert.ok(record.rgb.g >= 0 && record.rgb.g <= 1, 'rgb.g in [0,1]');
+        assert.ok(record.rgb.b >= 0 && record.rgb.b <= 1, 'rgb.b in [0,1]');
+
+        // Emitted CSS contains the exact P3 value at 4dp precision.
+        const out = state.outputs['cssVars'] as CssVarsOutputInterface | undefined;
+        assert.ok(out !== undefined, 'outputs.cssVars present');
+        assert.ok(out.wideGamut.length > 0, 'wideGamut block emitted');
         assert.ok(
-          out.wideGamut.includes('color(display-p3 1.0000 0.5000 0.2500)'),
-          `wideGamut should serialize at 4dp, got:\n${out.wideGamut}`,
+          out.wideGamut.includes('color(display-p3 0.9900 0.4200 0.1800)'),
+          `wideGamut should contain the exact P3 input at 4dp, got:\n${out.wideGamut}`,
         );
-        // The wide-gamut block is wrapped in @supports.
-        assert.match(out.wideGamut, /@supports \(color: color\(display-p3 1 1 1\)\)/,
-          'wideGamut is wrapped in @supports query');
       },
     },
   ];
@@ -173,9 +236,6 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
   for (const sc of scenarios) {
     it(sc.name, async () => {
       const engine = freshEngine();
-      if (sc.seed) {
-        engine.tasks.hook('onRunStart', sc.seed());
-      }
       engine.pipeline(sc.pipeline);
       const state = await engine.run(sc.input);
       sc.assert(state);

@@ -108,6 +108,21 @@ function buildForcedColorsBlock(
   return `@media (forced-colors: active) {\n  :root {\n${decls.map((d) => `  ${d}`).join('\n')}\n  }\n}`;
 }
 
+/**
+ * Builds the `@supports (color: color(display-p3 0 0 0))` block that
+ * overrides the unconditional sRGB `:root` declarations with their
+ * wide-gamut equivalents on P3-capable browsers. ONLY roles whose
+ * resolved record has `displayP3` populated (i.e. the input OKLCH lay
+ * outside sRGB, or the record arrived through `intake:p3`) are included
+ * — sRGB-only roles fall through to the unconditional block.
+ *
+ * The `@supports` query mirrors the CSS Color 4 §6.5 feature-detection
+ * idiom; the cascade then resolves sRGB-only → P3 override →
+ * forced-colors override (in that order in the emitted file).
+ *
+ * Returns an empty string when no role has `displayP3` populated so the
+ * caller can omit the block entirely.
+ */
 function buildWideGamutBlock(
   roles: Record<string, ColorRecordInterface>,
   prefix: string,
@@ -120,7 +135,7 @@ function buildWideGamutBlock(
     }
   }
   if (p3Decls.length === 0) return '';
-  return `@supports (color: color(display-p3 1 1 1)) {\n  :root {\n${p3Decls.map((d) => `  ${d}`).join('\n')}\n  }\n}`;
+  return `@supports (color: color(display-p3 0 0 0)) {\n  :root {\n${p3Decls.map((d) => `  ${d}`).join('\n')}\n  }\n}`;
 }
 
 function buildVarMap(
@@ -161,7 +176,12 @@ export class EmitCssVars implements TaskInterface {
     const forcedColors = buildForcedColorsBlock(state.roles, prefix);
     const wideGamut    = buildWideGamutBlock(state.roles, prefix);
 
-    const parts = [rootBlock, darkScheme, forcedColors, wideGamut].filter(Boolean);
+    // Cascade order: sRGB defaults → dark-scheme override → wide-gamut
+    // override (P3-capable browsers) → forced-colors override (Windows
+    // High Contrast Mode). Later blocks win in the cascade; forced-colors
+    // is intentionally last so accessibility tokens override any colored
+    // value emitted above them.
+    const parts = [rootBlock, darkScheme, wideGamut, forcedColors].filter(Boolean);
     const full  = parts.join('\n\n');
     const map   = buildVarMap(state.roles, prefix);
 
