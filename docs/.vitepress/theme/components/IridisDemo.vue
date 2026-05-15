@@ -23,6 +23,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 
 import { Engine, coreTasks, contrastWcag21, colorRecordFactory } from '@studnicky/iridis';
+import { contrastPlugin } from '@studnicky/iridis-contrast';
 import type {
   ColorRecordInterface,
   InputInterface,
@@ -52,6 +53,16 @@ const props = withDefaults(defineProps<{
 const state          = ref<PaletteStateInterface | null>(null);
 const error          = ref<string | null>(null);
 const selectedSwatch = ref<number>(0);
+
+/* Module-scope engine: constructed once at component-script load. Core
+ * tasks + contrast plugin are registered immediately so the engine carries
+ * the `enforce:wcagAA`, `enforce:wcagAAA`, `enforce:apca`, and
+ * `enforce:cvdSimulate` tasks referenced by the showroom's FULL_PIPELINE.
+ * `Engine.run` carries no state between calls — reuse is safe and avoids
+ * per-watch-tick allocation of a fresh registry + task list. */
+const engine = new Engine();
+for (const t of coreTasks) engine.tasks.register(t);
+engine.adopt(contrastPlugin);
 const activeTab      = ref<string>('resolved');
 
 const localRoleSchemaText = ref<string>('');
@@ -78,8 +89,6 @@ function buildInput(): InputInterface {
 
 async function runPipeline(): Promise<void> {
   try {
-    const engine = new Engine();
-    for (const t of coreTasks)    engine.tasks.register(t);
     engine.pipeline(props.pipeline);
     state.value = await engine.run(buildInput());
     error.value = null;
