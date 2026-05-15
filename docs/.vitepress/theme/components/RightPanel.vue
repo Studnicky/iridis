@@ -27,6 +27,7 @@ import AccordionContent from 'primevue/accordioncontent';
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { contrastPlugin }    from '@studnicky/iridis-contrast';
 
+import ExportBar    from './ExportBar.vue';
 import IridisDemo    from './IridisDemo.vue';
 import SchemaForm    from './SchemaForm.vue';
 import { docsConfigSchema } from '../schemas/docsConfig.schema.ts';
@@ -63,9 +64,8 @@ const FULL_PIPELINE: readonly string[] = [
   'emit:json',
 ];
 
-const open       = panelOpen;
-const cfgValue   = ref<string | null>(null);
-const exportNote = ref<string | null>(null);
+const open     = panelOpen;
+const cfgValue = ref<string | null>(null);
 
 function readPersistedWidth(): number | null {
   if (typeof window === 'undefined') return null;
@@ -199,31 +199,6 @@ async function buildExportPayload(): Promise<Record<string, unknown>> {
   };
 }
 
-async function copyJson(): Promise<void> {
-  const payload = await buildExportPayload();
-  const text = JSON.stringify(payload, null, 2);
-  if (typeof navigator !== 'undefined' && navigator.clipboard) {
-    try { await navigator.clipboard.writeText(text); exportNote.value = 'Copied to clipboard'; } catch { exportNote.value = 'Copy failed — use download'; }
-  } else { exportNote.value = 'Clipboard unavailable'; }
-  setTimeout(() => { exportNote.value = null; }, 2400);
-}
-
-async function downloadJson(): Promise<void> {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
-  const payload = await buildExportPayload();
-  const text = JSON.stringify(payload, null, 2);
-  const blob = new Blob([text], { 'type': 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `iridis-palette-${Date.now()}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  exportNote.value = 'Downloaded';
-  setTimeout(() => { exportNote.value = null; }, 2400);
-}
 </script>
 
 <template>
@@ -278,27 +253,11 @@ async function downloadJson(): Promise<void> {
 
         <IridisDemo :pipeline="FULL_PIPELINE" />
 
-        <div class="iridis-right__export">
-          <Button
-            type="button"
-            label="⬇ Export JSON"
-            severity="primary"
-            size="small"
-            class="iridis-right__export-btn iridis-right__export-btn--primary"
-            title="Download the full engine state as a JSON file — palette, role schema, resolved roles, contrast metadata, every emitter output. Suitable as a fixture for tests or a hand-off to a designer."
-            @click="downloadJson"
-          />
-          <Button
-            type="button"
-            label="Copy"
-            severity="secondary"
-            size="small"
-            class="iridis-right__export-btn"
-            title="Copy the same JSON payload to the clipboard."
-            @click="copyJson"
-          />
-          <span v-if="exportNote" class="iridis-right__export-note">{{ exportNote }}</span>
-        </div>
+        <ExportBar
+          filename="iridis-state.json"
+          :payload-provider="buildExportPayload"
+          primary-title="Download the full engine state as a JSON file — palette, role schema, resolved roles, contrast metadata, every emitter output. Suitable as a fixture for tests or a hand-off to a designer."
+        />
 
         <Accordion v-model:value="cfgValue" class="iridis-right__cfg">
           <AccordionPanel value="cfg">
@@ -580,31 +539,4 @@ async function downloadJson(): Promise<void> {
   border-color: var(--iridis-brand);
 }
 
-.iridis-right__export {
-  margin-top: 0.85rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-.iridis-right__export-btn :deep(.p-button) {
-  padding: 0.4rem 0.85rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  border-radius: 6px;
-}
-.iridis-right__export-btn--primary :deep(.p-button) {
-  background:   var(--iridis-brand);
-  color:        var(--iridis-on-brand);
-  border-color: var(--iridis-brand);
-}
-.iridis-right__export-btn--primary :deep(.p-button:hover) {
-  filter: brightness(1.1);
-  color: var(--iridis-on-brand);
-}
-.iridis-right__export-note {
-  font-size: 0.74rem;
-  color: var(--iridis-brand);
-  font-weight: 500;
-}
 </style>

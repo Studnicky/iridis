@@ -21,6 +21,8 @@ import SelectButton from 'primevue/selectbutton';
 import InputText    from 'primevue/inputtext';
 import InputNumber  from 'primevue/inputnumber';
 
+import FormField from './FormField.vue';
+
 import { colorRecordFactory } from '@studnicky/iridis';
 
 const props = defineProps<{ 'modelValue': string }>();
@@ -306,31 +308,57 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
 
     <!-- RGB -->
     <div v-else-if="mode === 'rgb'" class="iridis-picker__channels">
-      <label title="Red channel — sRGB byte value, 0 (no red) to 255 (full red)."><span>R</span><InputNumber :model-value="currentRgb.r" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('r', Number(v ?? 0))" /></label>
-      <label title="Green channel — sRGB byte value, 0 (no green) to 255 (full green)."><span>G</span><InputNumber :model-value="currentRgb.g" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('g', Number(v ?? 0))" /></label>
-      <label title="Blue channel — sRGB byte value, 0 (no blue) to 255 (full blue)."><span>B</span><InputNumber :model-value="currentRgb.b" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('b', Number(v ?? 0))" /></label>
+      <FormField orientation="column" compact leg="R" tooltip="Red channel — sRGB byte value, 0 (no red) to 255 (full red).">
+        <InputNumber :model-value="currentRgb.r" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('r', Number(v ?? 0))" />
+      </FormField>
+      <FormField orientation="column" compact leg="G" tooltip="Green channel — sRGB byte value, 0 (no green) to 255 (full green).">
+        <InputNumber :model-value="currentRgb.g" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('g', Number(v ?? 0))" />
+      </FormField>
+      <FormField orientation="column" compact leg="B" tooltip="Blue channel — sRGB byte value, 0 (no blue) to 255 (full blue).">
+        <InputNumber :model-value="currentRgb.b" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('b', Number(v ?? 0))" />
+      </FormField>
     </div>
 
     <!-- HSV -->
     <div v-else-if="mode === 'hsv'" class="iridis-picker__channels">
-      <label title="Hue in degrees, 0–359. Same axis as the hue strip above."><span>H</span><InputNumber :model-value="Math.round(hsvView.h)" :min="0" :max="359" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('h', Number(v ?? 0))" /></label>
-      <label title="Saturation as a percentage, 0–100. 0 collapses to a grey at the current value."><span>S</span><InputNumber :model-value="Math.round(hsvView.s)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('s', Number(v ?? 0))" /></label>
-      <label title="Value as a percentage, 0–100. 0 forces black regardless of hue or saturation."><span>V</span><InputNumber :model-value="Math.round(hsvView.v)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('v', Number(v ?? 0))" /></label>
+      <FormField orientation="column" compact leg="H" tooltip="Hue in degrees, 0–359. Same axis as the hue strip above.">
+        <InputNumber :model-value="Math.round(hsvView.h)" :min="0" :max="359" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('h', Number(v ?? 0))" />
+      </FormField>
+      <FormField orientation="column" compact leg="S" tooltip="Saturation as a percentage, 0–100. 0 collapses to a grey at the current value.">
+        <InputNumber :model-value="Math.round(hsvView.s)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('s', Number(v ?? 0))" />
+      </FormField>
+      <FormField orientation="column" compact leg="V" tooltip="Value as a percentage, 0–100. 0 forces black regardless of hue or saturation.">
+        <InputNumber :model-value="Math.round(hsvView.v)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('v', Number(v ?? 0))" />
+      </FormField>
     </div>
 
     <!-- CMYK -->
     <div v-else-if="mode === 'cmyk'" class="iridis-picker__channels iridis-picker__channels--four">
-      <label title="Cyan ink percentage, 0–100 (subtractive model — useful for print-target conversion only; screens display sRGB)."><span>C</span><InputNumber :model-value="Math.round(cmyk.c)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('c', Number(v ?? 0))" /></label>
-      <label title="Magenta ink percentage, 0–100."><span>M</span><InputNumber :model-value="Math.round(cmyk.m)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('m', Number(v ?? 0))" /></label>
-      <label title="Yellow ink percentage, 0–100."><span>Y</span><InputNumber :model-value="Math.round(cmyk.y)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('y', Number(v ?? 0))" /></label>
-      <label title="Black (Key) ink percentage, 0–100."><span>K</span><InputNumber :model-value="Math.round(cmyk.k)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('k', Number(v ?? 0))" /></label>
+      <FormField orientation="column" compact leg="C" tooltip="Cyan ink percentage, 0–100 (subtractive model — useful for print-target conversion only; screens display sRGB).">
+        <InputNumber :model-value="Math.round(cmyk.c)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('c', Number(v ?? 0))" />
+      </FormField>
+      <FormField orientation="column" compact leg="M" tooltip="Magenta ink percentage, 0–100.">
+        <InputNumber :model-value="Math.round(cmyk.m)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('m', Number(v ?? 0))" />
+      </FormField>
+      <FormField orientation="column" compact leg="Y" tooltip="Yellow ink percentage, 0–100.">
+        <InputNumber :model-value="Math.round(cmyk.y)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('y', Number(v ?? 0))" />
+      </FormField>
+      <FormField orientation="column" compact leg="K" tooltip="Black (Key) ink percentage, 0–100.">
+        <InputNumber :model-value="Math.round(cmyk.k)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('k', Number(v ?? 0))" />
+      </FormField>
     </div>
 
     <!-- OKLCH -->
     <div v-else-if="mode === 'oklch'" class="iridis-picker__channels">
-      <label title="OKLCH lightness, 0 (black) to 1 (white). Perceptually uniform: 0.5 looks half-bright regardless of hue, unlike HSV's V."><span>L</span><InputNumber :model-value="oklch.l" :min="0" :max="1"   :step="0.01" :max-fraction-digits="3" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('l', Number(v ?? 0))" /></label>
-      <label title="OKLCH chroma, 0 (fully grey) to ~0.4 (maximally saturated for the input hue/lightness)."><span>C</span><InputNumber :model-value="oklch.c" :min="0" :max="0.5" :step="0.01" :max-fraction-digits="3" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('c', Number(v ?? 0))" /></label>
-      <label title="OKLCH hue in degrees, 0–359. Same convention as HSV's H but perceptually uniform."><span>H</span><InputNumber :model-value="Math.round(oklch.h)" :min="0" :max="359" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('h', Number(v ?? 0))" /></label>
+      <FormField orientation="column" compact leg="L" tooltip="OKLCH lightness, 0 (black) to 1 (white). Perceptually uniform: 0.5 looks half-bright regardless of hue, unlike HSV's V.">
+        <InputNumber :model-value="oklch.l" :min="0" :max="1"   :step="0.01" :max-fraction-digits="3" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('l', Number(v ?? 0))" />
+      </FormField>
+      <FormField orientation="column" compact leg="C" tooltip="OKLCH chroma, 0 (fully grey) to ~0.4 (maximally saturated for the input hue/lightness).">
+        <InputNumber :model-value="oklch.c" :min="0" :max="0.5" :step="0.01" :max-fraction-digits="3" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('c', Number(v ?? 0))" />
+      </FormField>
+      <FormField orientation="column" compact leg="H" tooltip="OKLCH hue in degrees, 0–359. Same convention as HSV's H but perceptually uniform.">
+        <InputNumber :model-value="Math.round(oklch.h)" :min="0" :max="359" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('h', Number(v ?? 0))" />
+      </FormField>
     </div>
   </div>
 </template>
@@ -472,21 +500,10 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
   gap: 0.4rem;
 }
 .iridis-picker__channels--four { grid-template-columns: repeat(4, 1fr); }
-.iridis-picker__channels label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.18rem;
-  font-size: 0.7rem;
-  color: var(--vp-c-text-3);
-  font-weight: 600;
-}
-.iridis-picker__channels label > span { letter-spacing: 0.08em; }
-.iridis-picker__channels :deep(.p-inputnumber) { width: 100%; }
 .iridis-picker__channels :deep(.p-inputnumber-input) {
   padding: 0.3rem 0.4rem;
   border-radius: 4px;
   font-family: var(--vp-font-family-mono);
   font-size: 0.78rem;
-  width: 100%;
 }
 </style>

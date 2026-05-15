@@ -20,7 +20,7 @@ import Button from 'primevue/button';
 const props = withDefaults(
   defineProps<{
     'filename':        string;
-    'payloadProvider': () => unknown;
+    'payloadProvider': () => unknown | Promise<unknown>;
     'primaryLabel'?:   string;
     'copyLabel'?:      string;
     'primaryTitle'?:   string;
@@ -38,8 +38,12 @@ const exportNote = ref<string | null>(null);
 
 const NOTE_TIMEOUT_MS = 2000;
 
-function serialize(): string {
-  return JSON.stringify(props.payloadProvider(), null, 2);
+/* Resolve the payload — synchronous returns and Promise returns both go
+ * through Promise.resolve so the caller can keep building the payload
+ * lazily against fresh state (incl. async engine.run pipelines). */
+async function serialize(): Promise<string> {
+  const value = await Promise.resolve(props.payloadProvider());
+  return JSON.stringify(value, null, 2);
 }
 
 function setNote(text: string): void {
@@ -47,9 +51,9 @@ function setNote(text: string): void {
   setTimeout(() => { exportNote.value = null; }, NOTE_TIMEOUT_MS);
 }
 
-function downloadJson(): void {
+async function downloadJson(): Promise<void> {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
-  const text = serialize();
+  const text = await serialize();
   const blob = new Blob([text], { 'type': 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -63,7 +67,7 @@ function downloadJson(): void {
 }
 
 async function copyJson(): Promise<void> {
-  const text = serialize();
+  const text = await serialize();
   if (typeof navigator !== 'undefined' && navigator.clipboard) {
     try {
       await navigator.clipboard.writeText(text);

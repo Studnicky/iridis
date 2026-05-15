@@ -16,6 +16,8 @@ import InputNumber from 'primevue/inputnumber';
 import Select      from 'primevue/select';
 import Button      from 'primevue/button';
 
+import FormField from './FormField.vue';
+
 import type { ContrastPairInterface } from '@studnicky/iridis/model';
 
 interface SelectOptionInterface { 'label': string; 'value': string }
@@ -53,8 +55,7 @@ const emit = defineEmits<{
     </header>
 
     <div class="pair-card__body">
-      <label class="pair-card__field" title="Foreground role — typically a text or accent color that must remain legible against the background role below.">
-        <span class="pair-card__leg">foreground</span>
+      <FormField leg="foreground" tooltip="Foreground role — typically a text or accent color that must remain legible against the background role below.">
         <Select
           :model-value="pair.foreground"
           :options="roleOptions"
@@ -64,10 +65,9 @@ const emit = defineEmits<{
           class="pair-card__select"
           @update:model-value="(v) => emit('update:foreground', String(v ?? ''))"
         />
-      </label>
+      </FormField>
 
-      <label class="pair-card__field" title="Background role — the surface the foreground above is painted onto.">
-        <span class="pair-card__leg">on</span>
+      <FormField leg="on" tooltip="Background role — the surface the foreground above is painted onto.">
         <Select
           :model-value="pair.background"
           :options="roleOptions"
@@ -77,10 +77,9 @@ const emit = defineEmits<{
           class="pair-card__select"
           @update:model-value="(v) => emit('update:background', String(v ?? ''))"
         />
-      </label>
+      </FormField>
 
-      <label class="pair-card__field" title="Minimum contrast ratio the engine MUST enforce between the two roles. WCAG 2.1 conventions: 3.0 for large text or non-text UI, 4.5 for normal text, 7.0 for AAA. The enforce:contrast task nudges colors along the lightness axis until this ratio is reached.">
-        <span class="pair-card__leg">min ratio</span>
+      <FormField leg="min ratio" tooltip="Minimum contrast ratio the engine MUST enforce between the two roles. WCAG 2.1 conventions: 3.0 for large text or non-text UI, 4.5 for normal text, 7.0 for AAA. The enforce:contrast task nudges colors along the lightness axis until this ratio is reached.">
         <InputNumber
           :model-value="pair.minRatio"
           :min="1" :max="21" :step="0.5"
@@ -90,10 +89,9 @@ const emit = defineEmits<{
           class="pair-card__num"
           @update:model-value="(v) => emit('update:minRatio', Number(v ?? 1))"
         />
-      </label>
+      </FormField>
 
-      <label class="pair-card__field" title="Which contrast algorithm enforces this pair. WCAG 2.1 uses a luminance ratio (familiar, widely cited). APCA uses Lightness Contrast — perceptually accurate for modern UIs and required for WCAG 3.0 drafts.">
-        <span class="pair-card__leg">via</span>
+      <FormField leg="via" tooltip="Which contrast algorithm enforces this pair. WCAG 2.1 uses a luminance ratio (familiar, widely cited). APCA uses Lightness Contrast — perceptually accurate for modern UIs and required for WCAG 3.0 drafts.">
         <Select
           :model-value="pair.algorithm ?? 'wcag21'"
           :options="algorithmOptions"
@@ -103,7 +101,7 @@ const emit = defineEmits<{
           class="pair-card__select"
           @update:model-value="(v) => emit('update:algorithm', String(v ?? 'wcag21') as 'wcag21' | 'apca')"
         />
-      </label>
+      </FormField>
     </div>
   </article>
 </template>
@@ -164,21 +162,6 @@ const emit = defineEmits<{
   flex-direction: column;
   gap: 0.4rem;
   min-width: 0;
-}
-.pair-card__field {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-width: 0;
-}
-.pair-card__leg {
-  flex: 0 0 4.5rem;
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--vp-c-text-3);
-  user-select: none;
 }
 .pair-card__select,
 .pair-card__num {

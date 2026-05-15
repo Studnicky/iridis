@@ -22,14 +22,13 @@
 
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { Engine, coreTasks, contrastWcag21, colorRecordFactory } from '@studnicky/iridis';
+import { Engine, coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 
 /* PrimeVue components used in this component's template. PrimeVue's
    `app.use` plugin registers its provide/inject scaffolding but does NOT
    auto-register components — each consumer imports the components it
    uses so Vite tree-shakes unused widgets. */
-import Button     from 'primevue/button';
 import Tabs       from 'primevue/tabs';
 import TabList    from 'primevue/tablist';
 import Tab        from 'primevue/tab';
@@ -44,6 +43,8 @@ import type {
 } from '@studnicky/iridis/model';
 
 import IridisPicker        from './IridisPicker.vue';
+import PaletteEditor       from './PaletteEditor.vue';
+import ResolvedRoleCard    from './ResolvedRoleCard.vue';
 import RoleSchemaEditor    from './RoleSchemaEditor.vue';
 import { configStore }     from '../stores/configStore.ts';
 import { roleSchemaByName } from '../schemas/roleSchemas.ts';
@@ -268,18 +269,6 @@ function roleBadge(name: string): string {
   return 'AA';
 }
 
-function fmtOklch(c: ColorRecordInterface): string {
-  return `L ${c.oklch.l.toFixed(2)} · C ${c.oklch.c.toFixed(2)} · H ${Math.round(c.oklch.h)}`;
-}
-
-function safeOnRoleColor(role: ColorRecordInterface): string {
-  const white = colorRecordFactory.fromHex('#ffffff');
-  const black = colorRecordFactory.fromHex('#000000');
-  const onWhite = contrastWcag21.apply(white, role) as number;
-  const onBlack = contrastWcag21.apply(black, role) as number;
-  return onWhite >= onBlack ? '#ffffff' : '#0a0a0a';
-}
-
 const codeText = computed(() => {
   const colors = JSON.stringify(configStore.paletteColors);
   const lines: string[] = [
@@ -309,45 +298,18 @@ const codeText = computed(() => {
       <!-- Top: split column. Palette left, picker right. -->
       <div class="iridis-demo__top">
         <div class="iridis-demo__palette">
-          <div class="iridis-demo__col-header">
-            <span class="iridis-demo__label">Palette ({{ configStore.paletteColors.length }})</span>
-            <span class="iridis-demo__hint">click to edit</span>
-          </div>
-          <div class="iridis-demo__swatch-grid">
-            <Button
-              v-if="allowAdd"
-              type="button"
-              label="+ add"
-              size="small"
-              :disabled="!canAdd"
-              :aria-label="canAdd ? 'Add color to palette' : 'Palette full'"
-              class="iridis-demo__swatch-add"
-              :title="canAdd ? 'Append a new color to the palette. The engine re-resolves immediately.' : 'Palette is at its maxItems cap.'"
-              @click="addColor"
-            />
-            <Button
-              v-for="(color, idx) in configStore.paletteColors"
-              :key="idx"
-              :severity="selectedSwatch === idx ? 'primary' : 'secondary'"
-              :variant="selectedSwatch === idx ? undefined : 'outlined'"
-              size="small"
-              :class="['iridis-demo__swatch', { 'iridis-demo__swatch--selected': selectedSwatch === idx }]"
-              :aria-label="`select palette color ${idx + 1} (${color})`"
-              :aria-pressed="selectedSwatch === idx"
-              :title="`Palette color ${idx + 1} (${color}). Click to load it into the picker on the right.`"
-              @click="selectSwatch(idx)"
-            >
-              <span class="iridis-demo__swatch-chip" :style="{ background: color }" />
-              <code class="iridis-demo__swatch-hex">{{ color }}</code>
-              <span
-                v-if="canRemove"
-                class="iridis-demo__swatch-remove"
-                :aria-label="`remove palette color ${idx + 1}`"
-                title="Remove this color from the palette. The engine re-resolves with one fewer seed."
-                @click.stop="removeColor(idx)"
-              >×</span>
-            </Button>
-          </div>
+          <!-- PaletteEditor owns its own header ("Palette (N)" + "click to edit")
+               so this column does not render a duplicate. -->
+          <PaletteEditor
+            :colors="configStore.paletteColors"
+            :selected-index="selectedSwatch"
+            :allow-add="allowAdd"
+            :can-add="canAdd"
+            :can-remove="canRemove"
+            @select="selectSwatch"
+            @add="addColor"
+            @remove="removeColor"
+          />
         </div>
 
         <div class="iridis-demo__picker">
@@ -372,24 +334,14 @@ const codeText = computed(() => {
         <TabPanels>
           <TabPanel value="resolved">
             <div v-if="Object.keys(roles).length > 0" class="iridis-demo__roles">
-              <div
+              <ResolvedRoleCard
                 v-for="(c, name) in roles"
                 :key="name"
-                class="iridis-demo__role"
-                :style="{ background: c.hex }"
-              >
-                <div class="iridis-demo__role-head">
-                  <span class="iridis-demo__role-name" :style="{ color: safeOnRoleColor(c) }">{{ name }}</span>
-                  <span
-                    v-if="roleBadge(String(name)) !== ''"
-                    class="iridis-demo__role-badge"
-                    :style="{ color: safeOnRoleColor(c), borderColor: safeOnRoleColor(c) + '55' }"
-                    :title="`enforced by engine — ${configStore.contrastAlgorithm === 'apca' ? 'APCA' : 'WCAG 2.1'} pair as foreground`"
-                  >{{ roleBadge(String(name)) }}</span>
-                </div>
-                <span class="iridis-demo__role-hex" :style="{ color: safeOnRoleColor(c) }">{{ c.hex }}</span>
-                <span class="iridis-demo__role-coords" :style="{ color: safeOnRoleColor(c) + 'b0' }">{{ fmtOklch(c) }}</span>
-              </div>
+                :name="String(name)"
+                :record="c"
+                :badge="roleBadge(String(name))"
+                :badge-title="`enforced by engine — ${configStore.contrastAlgorithm === 'apca' ? 'APCA' : 'WCAG 2.1'} pair as foreground`"
+              />
             </div>
           </TabPanel>
 
@@ -472,87 +424,6 @@ const codeText = computed(() => {
   color: var(--vp-c-text-3);
   font-style: italic;
 }
-.iridis-demo__swatch-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-content: flex-start;
-}
-.iridis-demo__swatch {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.55rem 0.3rem 0.3rem;
-  background: var(--vp-c-bg);
-  border: var(--iridis-border-soft);
-  border-radius: var(--iridis-radius-sm);
-  cursor: pointer;
-  box-shadow: var(--iridis-shadow-felt);
-  transition:
-    background-color var(--iridis-transition),
-    border-color     var(--iridis-transition),
-    box-shadow       var(--iridis-transition),
-    transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-.iridis-demo__swatch:hover {
-  border-color: var(--vp-c-text-2);
-  box-shadow: var(--iridis-shadow-felt-hover);
-  transform: translateY(-1px);
-}
-.iridis-demo__swatch--selected {
-  border-color: var(--vp-c-brand-1);
-  box-shadow: var(--iridis-shadow-felt-hover), 0 0 0 1px var(--vp-c-brand-1);
-}
-.iridis-demo__swatch-chip {
-  display: inline-block;
-  width: 1.2rem;
-  height: 1.2rem;
-  border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-}
-.iridis-demo__swatch-hex {
-  font-family: var(--vp-font-family-mono);
-  font-size: 0.74rem;
-  color: var(--vp-c-text-2);
-}
-.iridis-demo__swatch-remove {
-  width: 1rem;
-  height: 1rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.95rem;
-  color: var(--vp-c-text-3);
-  border-radius: 2px;
-  cursor: pointer;
-}
-.iridis-demo__swatch-remove:hover {
-  background: color-mix(in oklch, var(--iridis-error, var(--iridis-text, currentColor)) 15%, transparent);
-  color: var(--iridis-error, var(--iridis-text, currentColor));
-}
-
-/* + add button — PrimeVue Button with iridis chrome layered on top. */
-.iridis-demo__swatch-add {
-  align-self: flex-start;
-}
-.iridis-demo__swatch-add :deep(.p-button) {
-  background:    color-mix(in oklch, var(--iridis-brand) 20%, var(--vp-c-bg));
-  border:        var(--iridis-border-soft);
-  border-color:  color-mix(in oklch, var(--iridis-brand) 40%, var(--iridis-divider));
-  border-radius: var(--iridis-radius-sm);
-  color:         var(--iridis-on-brand);
-  box-shadow:    var(--iridis-shadow-felt);
-  font-weight:   600;
-  font-size:     0.78rem;
-  padding:       0.45rem 0.85rem;
-}
-.iridis-demo__swatch-add :deep(.p-button:hover:not(:disabled)) {
-  background:   color-mix(in oklch, var(--iridis-brand) 35%, var(--vp-c-bg));
-  border-color: var(--iridis-brand);
-  box-shadow:   var(--iridis-shadow-felt-hover);
-}
 
 .iridis-demo__error {
   margin: 0;
@@ -592,47 +463,6 @@ const codeText = computed(() => {
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 0.5rem;
 }
-.iridis-demo__role {
-  padding: 0.7rem 0.85rem;
-  border-radius: var(--iridis-radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  display: flex;
-  flex-direction: column;
-  gap: 0.18rem;
-  min-height: 82px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    inset 0 -10px 14px rgba(0, 0, 0, 0.22),
-    0 1px 2px rgba(0, 0, 0, 0.18),
-    0 4px 12px -4px rgba(0, 0, 0, 0.25);
-}
-.iridis-demo__role-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.4rem;
-}
-.iridis-demo__role-name {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-}
-.iridis-demo__role-badge {
-  font-family: var(--vp-font-family-mono);
-  font-size: 0.6rem;
-  padding: 0.05rem 0.35rem;
-  border-radius: 2px;
-  border: 1px solid;
-  background: rgba(0, 0, 0, 0.25);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-}
-.iridis-demo__role-hex,
-.iridis-demo__role-coords {
-  font-family: var(--vp-font-family-mono);
-  font-size: 0.66rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-}
-.iridis-demo__role-coords { font-size: 0.6rem; }
 
 .iridis-demo__editor-hint {
   font-size: 0.78rem;
