@@ -23,8 +23,11 @@
 
 import { reactive, watch } from 'vue';
 
+import type { RoleSchemaInterface } from '@studnicky/iridis/model';
+
 import type { DocsConfigType } from '../schemas/docsConfig.schema.ts';
 import { docsConfigDefaults } from '../schemas/docsConfig.schema.ts';
+import { roleSchemaByName }   from '../schemas/roleSchemas.ts';
 import { applyConfigToDocument } from './applyConfigToDocument.ts';
 
 const STORAGE_KEY    = 'iridis-docs-config';
@@ -43,7 +46,8 @@ type Action =
   | { 'type': 'setContrastLevel';    'level':         'AA' | 'AAA' }
   | { 'type': 'setContrastAlgorithm';'algorithm':     'wcag21' | 'apca' }
   | { 'type': 'setColorSpace';       'colorSpace':    'srgb' | 'displayP3' }
-  | { 'type': 'setRoleSchema';       'roleSchema':    'iridis-4' | 'iridis-8' | 'iridis-12' | 'iridis-16' }
+  | { 'type': 'setRoleSchema';       'roleSchema':    string }
+  | { 'type': 'editRoleSchema';      'schema':        RoleSchemaInterface }
   | { 'type': 'reset' };
 
 /* ─── Reducer ───────────────────────────────────────────────────────── */
@@ -71,6 +75,24 @@ function reduce(action: Action): void {
     case 'setRoleSchema':
       state.roleSchema = action.roleSchema;
       return;
+    case 'editRoleSchema': {
+      /* Edits to the active schema register a new `custom-<timestamp>`
+         entry in `roleSchemaByName` and swap the active pointer. The
+         registry always stores `{ dark, light }` pairs so downstream
+         lookups stay shape-correct — the non-active framing inherits
+         from the previously-active pair, the active framing is the
+         edited content. */
+      const name      = `custom-${Date.now()}`;
+      const prevPair  = roleSchemaByName[state.roleSchema] ?? roleSchemaByName['iridis-16']!;
+      const otherFr   = state.framing === 'dark' ? 'light' : 'dark';
+      const pair: { 'dark': RoleSchemaInterface; 'light': RoleSchemaInterface } = {
+        'dark':  state.framing === 'dark'  ? action.schema : prevPair[otherFr],
+        'light': state.framing === 'light' ? action.schema : prevPair[otherFr],
+      };
+      (roleSchemaByName as Record<string, typeof pair>)[name] = pair;
+      state.roleSchema = name;
+      return;
+    }
     case 'reset':
       Object.assign(state, docsConfigDefaults);
       return;
@@ -98,7 +120,7 @@ export const themeStoreWritable: DocsConfigType = new Proxy(state, {
       case 'contrastLevel':     dispatch({ 'type': 'setContrastLevel',    'level':     value as 'AA' | 'AAA' }); break;
       case 'contrastAlgorithm': dispatch({ 'type': 'setContrastAlgorithm','algorithm': value as 'wcag21' | 'apca' }); break;
       case 'colorSpace':        dispatch({ 'type': 'setColorSpace',       'colorSpace':value as 'srgb' | 'displayP3' }); break;
-      case 'roleSchema':        dispatch({ 'type': 'setRoleSchema',       'roleSchema':value as 'iridis-4' | 'iridis-8' | 'iridis-12' | 'iridis-16' }); break;
+      case 'roleSchema':        dispatch({ 'type': 'setRoleSchema',       'roleSchema':value as string }); break;
       default:
         (target as Record<string, unknown>)[prop as string] = value;
     }
@@ -111,6 +133,16 @@ export function resetTheme(): void {
   dispatch({ 'type': 'reset' });
 }
 
+/**
+ * Publish an edited role schema. The dispatcher registers the new schema
+ * in `roleSchemaByName` under a generated `custom-<timestamp>` name and
+ * swaps the active pointer atomically — components that subscribe via
+ * Vue reactivity see the new pair before any subsequent projector tick.
+ */
+export function editRoleSchema(schema: RoleSchemaInterface): void {
+  dispatch({ 'type': 'editRoleSchema', 'schema': schema });
+}
+
 /* ─── Hydration ─────────────────────────────────────────────────────── */
 
 /** Validate persisted values against the current schema enum so a stale
@@ -120,13 +152,18 @@ export function resetTheme(): void {
  *  init action falls back to docsConfigDefaults for missing keys. */
 function migratePersisted(raw: Partial<DocsConfigType>): Partial<DocsConfigType> {
   const out: Partial<DocsConfigType> = {};
-  const validRoleSchemas: ReadonlySet<string> = new Set(['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16']);
   const validFramings:    ReadonlySet<string> = new Set(['dark', 'light']);
   const validLevels:      ReadonlySet<string> = new Set(['AA', 'AAA']);
   const validAlgorithms:  ReadonlySet<string> = new Set(['wcag21', 'apca']);
   const validSpaces:      ReadonlySet<string> = new Set(['srgb', 'displayP3']);
 
-  if (typeof raw.roleSchema        === 'string' && validRoleSchemas.has(raw.roleSchema))        out.roleSchema        = raw.roleSchema;
+  /* Role schema name is free-form: built-in `iridis-N` plus any
+     `custom-<timestamp>` pair the editor publishes. Reject only if the
+     name no longer resolves in the registry — that handles renames + the
+     `custom-*` entries that vanish on page reload. */
+  if (typeof raw.roleSchema === 'string' && raw.roleSchema in roleSchemaByName) {
+    out.roleSchema = raw.roleSchema;
+  }
   if (typeof raw.framing           === 'string' && validFramings.has(raw.framing))              out.framing           = raw.framing;
   if (typeof raw.contrastLevel     === 'string' && validLevels.has(raw.contrastLevel))          out.contrastLevel     = raw.contrastLevel;
   if (typeof raw.contrastAlgorithm === 'string' && validAlgorithms.has(raw.contrastAlgorithm))  out.contrastAlgorithm = raw.contrastAlgorithm;

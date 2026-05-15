@@ -180,14 +180,19 @@ const iridis16Light: RoleSchemaInterface = {
 
 /* ─── Public registry ─────────────────────────────────────────────── */
 
+/** Built-in schema-tier identifiers; the registry also accepts
+ *  dispatcher-published `custom-<timestamp>` entries authored via the
+ *  RoleSchemaEditor. The map's key type is widened to `string` to admit
+ *  those custom entries; built-in tier names remain the canonical default
+ *  set. */
 export type SchemaName = 'iridis-4' | 'iridis-8' | 'iridis-12' | 'iridis-16';
 
 export interface SchemaPair {
-  readonly dark:  RoleSchemaInterface;
-  readonly light: RoleSchemaInterface;
+  'dark':  RoleSchemaInterface;
+  'light': RoleSchemaInterface;
 }
 
-export const roleSchemaByName: Readonly<Record<SchemaName, SchemaPair>> = {
+export const roleSchemaByName: Record<string, SchemaPair> = {
   'iridis-4':  { 'dark': iridis4Dark,  'light': iridis4Light  },
   'iridis-8':  { 'dark': iridis8Dark,  'light': iridis8Light  },
   'iridis-12': { 'dark': iridis12Dark, 'light': iridis12Light },

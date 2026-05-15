@@ -18,6 +18,16 @@ import { contrastPlugin }    from '@studnicky/iridis-contrast';
 import type { PaletteStateInterface } from '@studnicky/iridis/model';
 import type { RoleSchemaInterface }   from '@studnicky/iridis/model';
 
+/* PrimeVue components used in this component's template. PrimeVue's
+   `app.use` plugin registers its provide/inject scaffolding but does NOT
+   auto-register components — each consumer imports what it uses. */
+import Button    from 'primevue/button';
+import Tabs      from 'primevue/tabs';
+import TabList   from 'primevue/tablist';
+import Tab       from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
+import TabPanel  from 'primevue/tabpanel';
+
 import { configStore }       from '../stores/configStore.ts';
 
 const tabs = [

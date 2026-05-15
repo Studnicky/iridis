@@ -58,8 +58,7 @@ export const docsConfigSchema = {
     'roleSchema': {
       'type':        'string',
       'title':       'Role schema',
-      'description': 'Number of roles the engine resolves the palette into. iridis-4 is the absolute minimum (background, text, brand, muted). Each tier is a superset — picking a smaller tier produces a sparser palette, demonstrating what that schema actually gives you.',
-      'enum':        ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16'],
+      'description': 'Name of the active role schema. Built-in tiers are `iridis-4`, `iridis-8`, `iridis-12`, `iridis-16`. The RoleSchemaEditor publishes user-edited variants under `custom-<timestamp>` names; the field is intentionally a free-form string so dispatched edits can register their own schema.',
       'default':     'iridis-16',
     },
   },
@@ -71,7 +70,8 @@ export type DocsConfigType = {
   'contrastLevel':     'AA' | 'AAA';
   'contrastAlgorithm': 'wcag21' | 'apca';
   'colorSpace':        'srgb' | 'displayP3';
-  'roleSchema':        'iridis-4' | 'iridis-8' | 'iridis-12' | 'iridis-16';
+  /** Free-form string. Built-in tiers (`iridis-{4,8,12,16}`) and dispatcher-published `custom-<timestamp>` schemas both live under the same key. */
+  'roleSchema':        string;
 };
 
 export const docsConfigDefaults: DocsConfigType = {
