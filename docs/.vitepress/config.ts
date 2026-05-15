@@ -38,10 +38,16 @@ const CDN_PRIMEVUE_SUBPATHS = [
   'checkbox',
   'card',
   'tag',
+  'textarea',
   'accordion',
   'accordionpanel',
   'accordionheader',
   'accordioncontent',
+  'tabs',
+  'tablist',
+  'tab',
+  'tabpanels',
+  'tabpanel',
 ] as const;
 
 function buildImportMap(): string {
