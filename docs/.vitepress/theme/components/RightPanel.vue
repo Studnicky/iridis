@@ -36,7 +36,15 @@ import { closePanel, panelOpen } from '../stores/panelState.ts';
 
 const RESIZE_KEY = 'iridis-right-panel-width';
 const RESIZE_MIN = 320;
-const RESIZE_MAX = 720;
+/* Right panel can expand up to 50 % of the viewport. Computed at clamp
+   time against `window.innerWidth` so the cap tracks the current window
+   (desktop monitors can drag to 960 px+ on a 1920 px display; the
+   720 px floor preserves usable width on smaller viewports). */
+const RESIZE_MAX_FLOOR = 720;
+function resizeMax(): number {
+  if (typeof window === 'undefined') return RESIZE_MAX_FLOOR;
+  return Math.max(RESIZE_MAX_FLOOR, Math.floor(window.innerWidth * 0.5));
+}
 
 /* Showroom export pipeline applies every compliance check the engine
    exposes — WCAG 2.1 AA + AAA, APCA Lc targets, and CVD simulation
@@ -72,7 +80,7 @@ function writePersistedWidth(width: number): void {
 }
 function applyWidth(width: number): void {
   if (typeof document === 'undefined') return;
-  const clamped = Math.min(RESIZE_MAX, Math.max(RESIZE_MIN, width));
+  const clamped = Math.min(resizeMax(), Math.max(RESIZE_MIN, width));
   document.documentElement.style.setProperty('--iridis-right-panel-width', `${clamped}px`);
   writePersistedWidth(clamped);
 }
@@ -370,8 +378,8 @@ async function downloadJson(): Promise<void> {
     right: 0;
     bottom: 0;
     left: auto;
-    width: min(85vw, var(--iridis-right-panel-width, 480px));
-    max-width: 720px;
+    width: min(50vw, var(--iridis-right-panel-width, 480px));
+    max-width: 50vw;
     height: calc(100vh - var(--vp-nav-height, 64px));
     max-height: calc(100vh - var(--vp-nav-height, 64px));
     border-radius: var(--iridis-radius-lg) 0 0 var(--iridis-radius-lg);
