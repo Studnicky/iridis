@@ -205,80 +205,75 @@ function removePair(idx: number): void {
                 <span aria-hidden="true">×</span>
               </Button>
             </div>
-            <div class="role-editor__ranges">
-              <label>
-                <span>lightness</span>
-                <span class="role-editor__range">
-                  <InputNumber
-                    :model-value="role.lightnessRange?.[0] ?? 0"
-                    :min="0" :max="1" :step="0.01"
-                    :max-fraction-digits="2"
-                    :show-buttons="false"
-                    size="small"
-                    @update:model-value="(v) => setRange(idx, 'lightnessRange', 0, Number(v ?? 0))"
-                  />
-                  <span>→</span>
-                  <InputNumber
-                    :model-value="role.lightnessRange?.[1] ?? 1"
-                    :min="0" :max="1" :step="0.01"
-                    :max-fraction-digits="2"
-                    :show-buttons="false"
-                    size="small"
-                    @update:model-value="(v) => setRange(idx, 'lightnessRange', 1, Number(v ?? 1))"
-                  />
-                </span>
-              </label>
-              <label>
-                <span>chroma</span>
-                <span class="role-editor__range">
-                  <InputNumber
-                    :model-value="role.chromaRange?.[0] ?? 0"
-                    :min="0" :max="0.5" :step="0.01"
-                    :max-fraction-digits="2"
-                    :show-buttons="false"
-                    size="small"
-                    @update:model-value="(v) => setRange(idx, 'chromaRange', 0, Number(v ?? 0))"
-                  />
-                  <span>→</span>
-                  <InputNumber
-                    :model-value="role.chromaRange?.[1] ?? 0.5"
-                    :min="0" :max="0.5" :step="0.01"
-                    :max-fraction-digits="2"
-                    :show-buttons="false"
-                    size="small"
-                    @update:model-value="(v) => setRange(idx, 'chromaRange', 1, Number(v ?? 0.5))"
-                  />
-                </span>
-              </label>
-              <label>
-                <span>derived from</span>
+            <div class="role-editor__constraints">
+              <span class="role-editor__field" title="OKLCH lightness range">
+                <span class="role-editor__leg">L</span>
+                <InputNumber
+                  :model-value="role.lightnessRange?.[0] ?? 0"
+                  :min="0" :max="1" :step="0.01"
+                  :max-fraction-digits="2"
+                  :show-buttons="false"
+                  size="small"
+                  @update:model-value="(v) => setRange(idx, 'lightnessRange', 0, Number(v ?? 0))"
+                />
+                <span class="role-editor__dash">→</span>
+                <InputNumber
+                  :model-value="role.lightnessRange?.[1] ?? 1"
+                  :min="0" :max="1" :step="0.01"
+                  :max-fraction-digits="2"
+                  :show-buttons="false"
+                  size="small"
+                  @update:model-value="(v) => setRange(idx, 'lightnessRange', 1, Number(v ?? 1))"
+                />
+              </span>
+              <span class="role-editor__field" title="OKLCH chroma range">
+                <span class="role-editor__leg">C</span>
+                <InputNumber
+                  :model-value="role.chromaRange?.[0] ?? 0"
+                  :min="0" :max="0.5" :step="0.01"
+                  :max-fraction-digits="2"
+                  :show-buttons="false"
+                  size="small"
+                  @update:model-value="(v) => setRange(idx, 'chromaRange', 0, Number(v ?? 0))"
+                />
+                <span class="role-editor__dash">→</span>
+                <InputNumber
+                  :model-value="role.chromaRange?.[1] ?? 0.5"
+                  :min="0" :max="0.5" :step="0.01"
+                  :max-fraction-digits="2"
+                  :show-buttons="false"
+                  size="small"
+                  @update:model-value="(v) => setRange(idx, 'chromaRange', 1, Number(v ?? 0.5))"
+                />
+              </span>
+              <span class="role-editor__field" title="Derive from another role">
+                <span class="role-editor__leg">derive</span>
                 <Select
                   :model-value="role.derivedFrom ?? ''"
                   :options="[{ 'label': '— none —', 'value': '' }, ...derivedFromOptions.filter((o) => o.value !== role.name)]"
                   option-label="label"
                   option-value="value"
                   size="small"
+                  class="role-editor__derive"
                   @update:model-value="(v) => toggleDerivedFrom(idx, String(v ?? ''))"
                 />
-              </label>
-              <label>
-                <span>hue lock</span>
-                <span class="role-editor__hue">
-                  <Checkbox
-                    :model-value="role.hueOffset !== undefined"
-                    binary
-                    @update:model-value="(v) => toggleHueOffset(idx, Boolean(v))"
-                  />
-                  <InputNumber
-                    v-if="role.hueOffset !== undefined"
-                    :model-value="Math.round(role.hueOffset)"
-                    :min="0" :max="359"
-                    :show-buttons="false"
-                    size="small"
-                    @update:model-value="(v) => updateRole(idx, { 'hueOffset': Number(v ?? 0) })"
-                  />
-                </span>
-              </label>
+              </span>
+              <span class="role-editor__field" title="Pin the hue offset">
+                <span class="role-editor__leg">hue</span>
+                <Checkbox
+                  :model-value="role.hueOffset !== undefined"
+                  binary
+                  @update:model-value="(v) => toggleHueOffset(idx, Boolean(v))"
+                />
+                <InputNumber
+                  v-if="role.hueOffset !== undefined"
+                  :model-value="Math.round(role.hueOffset)"
+                  :min="0" :max="359"
+                  :show-buttons="false"
+                  size="small"
+                  @update:model-value="(v) => updateRole(idx, { 'hueOffset': Number(v ?? 0) })"
+                />
+              </span>
             </div>
           </article>
         </div>
@@ -417,37 +412,40 @@ function removePair(idx: number): void {
 }
 .role-editor__role,
 .role-editor__pair {
-  padding: 0.65rem 0.75rem;
+  padding: 0.5rem 0.6rem;
   background: var(--vp-c-bg);
   border: var(--iridis-border-soft);
   border-radius: var(--iridis-radius-md);
   box-shadow: var(--iridis-shadow-felt);
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.4rem;
 }
 
 /* Header row — name, intent, required toggle, remove. Single line at any
-   panel width; the name input flexes, secondary controls stay compact. */
+   panel width; the name input grows to a sensible cap then the secondary
+   controls dock to its right without trailing dead space. */
 .role-editor__role-row {
   display: flex;
   flex-wrap: nowrap;
-  gap: 0.4rem;
+  gap: 0.35rem;
   align-items: center;
   min-width: 0;
 }
 .role-editor__role-row > .role-editor__name {
   flex: 1 1 auto;
+  max-width: 14rem;
   min-width: 0;
 }
 .role-editor__role-row > .role-editor__intent {
-  flex: 0 0 7rem;
+  flex: 0 0 6.5rem;
 }
 .role-editor__role-row > .role-editor__required {
   flex: 0 0 auto;
 }
 .role-editor__role-row > .role-editor__remove {
   flex: 0 0 auto;
+  margin-left: auto;
 }
 
 /* Shared input chrome — PrimeVue paints color via --p-*, this layer
@@ -507,52 +505,48 @@ function removePair(idx: number): void {
 .role-editor__remove :deep(.p-button:disabled) { opacity: 0.3; cursor: not-allowed; }
 
 /* Constraints bar — single horizontal row holding L range, C range,
-   derived-from select, and the optional hue lock. Labels above values;
-   uppercase scoped to the legend `<span>` only. Items wrap as a group
-   so a narrow panel doesn't tear individual controls apart. */
-.role-editor__ranges {
+   derived-from select, and the optional hue lock. Each field is an
+   inline group with a tiny lower-case leg label on the left and its
+   inputs on the right; the row wraps as a group on narrow widths.
+   Cuts card height roughly in half versus the previous label-above-input
+   layout. */
+.role-editor__constraints {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem 0.85rem;
-  align-items: end;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
+  padding-left: 0.1rem;
 }
-.role-editor__ranges > label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  min-width: 0;
-  flex: 0 1 auto;
-}
-.role-editor__ranges > label > span:first-child {
-  font-size: 0.62rem;
-  color: var(--vp-c-text-3);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.role-editor__range,
-.role-editor__hue {
-  display: flex;
+.role-editor__field {
+  display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   min-width: 0;
 }
-.role-editor__range :deep(.p-inputnumber),
-.role-editor__hue   :deep(.p-inputnumber) {
-  flex: 0 0 4.25rem;
-  min-width: 0;
+.role-editor__leg {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: var(--vp-c-text-3);
+  font-weight: 700;
+  text-transform: uppercase;
+  user-select: none;
 }
-.role-editor__range > span {
-  /* The `→` separator stays at its authored case regardless of the
-     legend-span uppercase rule above. */
+.role-editor__dash {
   color: var(--vp-c-text-3);
   font-size: 0.7rem;
-  text-transform: none;
 }
-/* The derived-from <Select> needs full-width inside its label cell so
-   long role names don't truncate to BACK… / ON-B…. */
-.role-editor__ranges > label > :deep(.p-select) {
-  width: 9rem;
+.role-editor__field :deep(.p-inputnumber),
+.role-editor__field :deep(.p-inputnumber-input) {
+  width: 3.5rem;
+  min-width: 0;
+}
+.role-editor__field .role-editor__derive :deep(.p-select),
+.role-editor__field :deep(.role-editor__derive),
+.role-editor__derive :deep(.p-select) {
+  width: 7.5rem;
+}
+.role-editor__field :deep(.p-checkbox) {
+  flex: 0 0 auto;
 }
 
 .role-editor__pair {
