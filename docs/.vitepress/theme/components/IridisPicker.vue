@@ -253,6 +253,7 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
     <div
       class="iridis-picker__square"
       :style="{ background: svSquareBackground }"
+      title="Saturation × Value. Horizontal axis is saturation (left = grey, right = full chroma); vertical is value (top = bright, bottom = black). Drag to pick."
       @pointerdown="onSvPointer"
       @pointermove="onSvMove"
     >
@@ -263,6 +264,7 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
     <div
       class="iridis-picker__hue"
       :style="{ background: hueStripBackground }"
+      title="Hue strip — 0° red, 60° yellow, 120° green, 180° cyan, 240° blue, 300° magenta. Drag to pick."
       @pointerdown="onHuePointer"
       @pointermove="onHueMove"
     >
@@ -277,55 +279,58 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
       option-value="value"
       :allow-empty="false"
       class="iridis-picker__tabs"
+      title="Numeric I/O format. All five tabs read/write the same underlying HSV state; pick whichever matches how you author colors."
       @update:model-value="(v) => mode = (v ?? 'hex') as Mode"
     />
 
     <!-- HEX -->
     <div v-if="mode === 'hex'" class="iridis-picker__row">
-      <input type="color" :value="currentHex" aria-label="System picker" class="iridis-picker__color-swatch"
-             @change="(e) => setHex((e.target as HTMLInputElement).value)" />
+      <input
+        type="color"
+        :value="currentHex"
+        aria-label="System picker"
+        class="iridis-picker__color-swatch"
+        title="Native OS color picker. Opens whatever color-picker dialog your platform provides."
+        @change="(e) => setHex((e.target as HTMLInputElement).value)"
+      />
       <InputText
         :model-value="currentHex"
         spellcheck="false"
         aria-label="Hex"
         size="small"
         class="iridis-picker__hex"
+        title="Hex color literal. Six lowercase hex digits prefixed with #, e.g. #5b21b6. Drives every other input field below."
         @update:model-value="(v) => setHex(v ?? '')"
       />
     </div>
 
     <!-- RGB -->
     <div v-else-if="mode === 'rgb'" class="iridis-picker__channels">
-      <label v-for="(label, key) in { 'r': 'R', 'g': 'G', 'b': 'B' } as const" :key="key">
-        <span>{{ label }}</span>
-        <InputNumber :model-value="currentRgb[key]" :min="0" :max="255"
-                     :show-buttons="false" size="small"
-                     @update:model-value="(v) => setRgb(key, Number(v ?? 0))" />
-      </label>
+      <label title="Red channel — sRGB byte value, 0 (no red) to 255 (full red)."><span>R</span><InputNumber :model-value="currentRgb.r" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('r', Number(v ?? 0))" /></label>
+      <label title="Green channel — sRGB byte value, 0 (no green) to 255 (full green)."><span>G</span><InputNumber :model-value="currentRgb.g" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('g', Number(v ?? 0))" /></label>
+      <label title="Blue channel — sRGB byte value, 0 (no blue) to 255 (full blue)."><span>B</span><InputNumber :model-value="currentRgb.b" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('b', Number(v ?? 0))" /></label>
     </div>
 
     <!-- HSV -->
     <div v-else-if="mode === 'hsv'" class="iridis-picker__channels">
-      <label><span>H</span><InputNumber :model-value="Math.round(hsvView.h)" :min="0" :max="359" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('h', Number(v ?? 0))" /></label>
-      <label><span>S</span><InputNumber :model-value="Math.round(hsvView.s)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('s', Number(v ?? 0))" /></label>
-      <label><span>V</span><InputNumber :model-value="Math.round(hsvView.v)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('v', Number(v ?? 0))" /></label>
+      <label title="Hue in degrees, 0–359. Same axis as the hue strip above."><span>H</span><InputNumber :model-value="Math.round(hsvView.h)" :min="0" :max="359" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('h', Number(v ?? 0))" /></label>
+      <label title="Saturation as a percentage, 0–100. 0 collapses to a grey at the current value."><span>S</span><InputNumber :model-value="Math.round(hsvView.s)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('s', Number(v ?? 0))" /></label>
+      <label title="Value as a percentage, 0–100. 0 forces black regardless of hue or saturation."><span>V</span><InputNumber :model-value="Math.round(hsvView.v)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('v', Number(v ?? 0))" /></label>
     </div>
 
     <!-- CMYK -->
     <div v-else-if="mode === 'cmyk'" class="iridis-picker__channels iridis-picker__channels--four">
-      <label v-for="(label, key) in { 'c': 'C', 'm': 'M', 'y': 'Y', 'k': 'K' } as const" :key="key">
-        <span>{{ label }}</span>
-        <InputNumber :model-value="Math.round(cmyk[key])" :min="0" :max="100"
-                     :show-buttons="false" size="small"
-                     @update:model-value="(v) => setCmyk(key, Number(v ?? 0))" />
-      </label>
+      <label title="Cyan ink percentage, 0–100 (subtractive model — useful for print-target conversion only; screens display sRGB)."><span>C</span><InputNumber :model-value="Math.round(cmyk.c)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('c', Number(v ?? 0))" /></label>
+      <label title="Magenta ink percentage, 0–100."><span>M</span><InputNumber :model-value="Math.round(cmyk.m)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('m', Number(v ?? 0))" /></label>
+      <label title="Yellow ink percentage, 0–100."><span>Y</span><InputNumber :model-value="Math.round(cmyk.y)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('y', Number(v ?? 0))" /></label>
+      <label title="Black (Key) ink percentage, 0–100."><span>K</span><InputNumber :model-value="Math.round(cmyk.k)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('k', Number(v ?? 0))" /></label>
     </div>
 
     <!-- OKLCH -->
     <div v-else-if="mode === 'oklch'" class="iridis-picker__channels">
-      <label><span>L</span><InputNumber :model-value="oklch.l" :min="0" :max="1"   :step="0.01" :max-fraction-digits="3" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('l', Number(v ?? 0))" /></label>
-      <label><span>C</span><InputNumber :model-value="oklch.c" :min="0" :max="0.5" :step="0.01" :max-fraction-digits="3" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('c', Number(v ?? 0))" /></label>
-      <label><span>H</span><InputNumber :model-value="Math.round(oklch.h)" :min="0" :max="359" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('h', Number(v ?? 0))" /></label>
+      <label title="OKLCH lightness, 0 (black) to 1 (white). Perceptually uniform: 0.5 looks half-bright regardless of hue, unlike HSV's V."><span>L</span><InputNumber :model-value="oklch.l" :min="0" :max="1"   :step="0.01" :max-fraction-digits="3" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('l', Number(v ?? 0))" /></label>
+      <label title="OKLCH chroma, 0 (fully grey) to ~0.4 (maximally saturated for the input hue/lightness)."><span>C</span><InputNumber :model-value="oklch.c" :min="0" :max="0.5" :step="0.01" :max-fraction-digits="3" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('c', Number(v ?? 0))" /></label>
+      <label title="OKLCH hue in degrees, 0–359. Same convention as HSV's H but perceptually uniform."><span>H</span><InputNumber :model-value="Math.round(oklch.h)" :min="0" :max="359" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('h', Number(v ?? 0))" /></label>
     </div>
   </div>
 </template>

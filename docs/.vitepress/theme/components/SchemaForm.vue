@@ -116,6 +116,7 @@ function removeArrayItem(key: string, idx: number): void {
         type="color"
         class="iridis-schema-form__color"
         :value="modelValue[key]"
+        :title="prop.description ?? prop.title ?? key"
         @input="update(key, ($event.target as HTMLInputElement).value)"
       />
 
@@ -128,6 +129,7 @@ function removeArrayItem(key: string, idx: number): void {
         option-value="value"
         size="small"
         class="iridis-schema-form__select"
+        :title="prop.description ?? prop.title ?? key"
         @update:model-value="(v) => update(key, v)"
       />
 
@@ -138,6 +140,7 @@ function removeArrayItem(key: string, idx: number): void {
         :min="prop.minimum"
         :max="prop.maximum"
         class="iridis-schema-form__slider"
+        :title="prop.description ?? prop.title ?? key"
         @update:model-value="(v) => update(key, Number(Array.isArray(v) ? v[0] : v))"
       />
 
@@ -147,16 +150,22 @@ function removeArrayItem(key: string, idx: number): void {
         :model-value="modelValue[key] as boolean"
         binary
         :input-id="`f-${key}`"
+        :title="prop.description ?? prop.title ?? key"
         @update:model-value="(v) => update(key, Boolean(v))"
       />
 
       <!-- color array -->
-      <div v-else-if="inputKindFor(prop) === 'colorArray'" class="iridis-schema-form__color-array">
+      <div
+        v-else-if="inputKindFor(prop) === 'colorArray'"
+        class="iridis-schema-form__color-array"
+        :title="prop.description ?? prop.title ?? key"
+      >
         <div v-for="(color, idx) in arrayValue(key)" :key="idx" class="iridis-schema-form__color-row">
           <input
             type="color"
             class="iridis-schema-form__color-swatch"
             :value="color"
+            :title="`Palette color ${idx + 1}. Click to open the native color picker.`"
             @input="setArrayItem(key, idx, ($event.target as HTMLInputElement).value)"
           />
           <code>{{ color }}</code>
@@ -166,6 +175,7 @@ function removeArrayItem(key: string, idx: number): void {
             size="small"
             class="iridis-schema-form__remove"
             :disabled="arrayValue(key).length <= (prop.minItems ?? 0)"
+            :title="`Remove color ${idx + 1}. Disabled when removing it would drop the palette below the schema's minItems floor.`"
             @click="removeArrayItem(key, idx)"
           >
             <span aria-hidden="true">×</span>
@@ -178,6 +188,7 @@ function removeArrayItem(key: string, idx: number): void {
           size="small"
           class="iridis-schema-form__add"
           :disabled="arrayValue(key).length >= (prop.maxItems ?? Infinity)"
+          title="Append a new color to the palette. Disabled when the schema's maxItems is reached."
           @click="pushArrayItem(key)"
         />
       </div>
@@ -189,6 +200,7 @@ function removeArrayItem(key: string, idx: number): void {
         :model-value="String(modelValue[key] ?? '')"
         size="small"
         class="iridis-schema-form__text"
+        :title="prop.description ?? prop.title ?? key"
         @update:model-value="(v) => update(key, v ?? '')"
       />
     </div>

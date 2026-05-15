@@ -285,6 +285,7 @@ async function downloadJson(): Promise<void> {
             severity="primary"
             size="small"
             class="iridis-right__export-btn iridis-right__export-btn--primary"
+            title="Download the full engine state as a JSON file — palette, role schema, resolved roles, contrast metadata, every emitter output. Suitable as a fixture for tests or a hand-off to a designer."
             @click="downloadJson"
           />
           <Button
@@ -293,6 +294,7 @@ async function downloadJson(): Promise<void> {
             severity="secondary"
             size="small"
             class="iridis-right__export-btn"
+            title="Copy the same JSON payload to the clipboard."
             @click="copyJson"
           />
           <span v-if="exportNote" class="iridis-right__export-note">{{ exportNote }}</span>
@@ -300,7 +302,7 @@ async function downloadJson(): Promise<void> {
 
         <Accordion v-model:value="cfgValue" class="iridis-right__cfg">
           <AccordionPanel value="cfg">
-            <AccordionHeader>
+            <AccordionHeader title="Expand to edit framing, contrast level, contrast algorithm, color space, and role schema. Every field is schema-driven by docsConfigSchema; descriptions surface here as native tooltips.">
               <span class="iridis-right__cfg-label">Configuration</span>
               <span class="iridis-right__cfg-hint">framing · contrast · role schema</span>
             </AccordionHeader>
@@ -313,6 +315,7 @@ async function downloadJson(): Promise<void> {
                   severity="secondary"
                   size="small"
                   class="iridis-right__cfg-reset"
+                  title="Reset every config field to its declared default. The dispatcher fires a single `reset` action."
                   @click="resetConfig"
                 />
               </div>
