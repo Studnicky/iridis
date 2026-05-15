@@ -33,11 +33,10 @@ The engine doesn't import the framework. The framework doesn't import the engine
 Set up a singleton engine. Register the math + tasks once, define your pipeline, then call `run()` on every config change. This is the same code any consumer would write, it isn't site-specific.
 
 ```ts
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { Engine, coreTasks } from '@studnicky/iridis';
 
 const engine = new Engine();
-for (const m of mathBuiltins) engine.math.register(m);
-for (const t of coreTasks)    engine.tasks.register(t);
+for (const task of coreTasks) engine.tasks.register(task);
 engine.pipeline([
   'intake:hex',
   'resolve:roles',
@@ -131,13 +130,12 @@ The fallback values are non-negotiable: they cover SSR (no `document`), the pre-
 ```ts
 // applyConfigToDocument.ts, the entire glue layer
 
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { Engine, coreTasks } from '@studnicky/iridis';
 import { configStore } from './store';
 import { roleSchemaByName } from './schemas';
 
 const engine = new Engine();
-for (const m of mathBuiltins) engine.math.register(m);
-for (const t of coreTasks)    engine.tasks.register(t);
+for (const task of coreTasks) engine.tasks.register(task);
 engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'enforce:contrast']);
 
 export async function applyConfigToDocument(): Promise<void> {

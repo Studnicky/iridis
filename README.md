@@ -8,7 +8,7 @@
 
 `@studnicky/iridis` is the engine: a composition spine that turns variable-input-count seed colors into role-resolved palettes via a declared task pipeline. Zero runtime dependencies. Browser- and Node-safe. Outputs are not part of the engine. Every output target (CSS variables, Tailwind, VS Code themes, native chrome, RDF graphs) is a separate plugin you adopt at runtime.
 
-The engine ships intake, clamp, resolve, expand, enforce, derive, and emit:json tasks plus 25 math primitives (OKLCH, HSL, sRGB, contrast models, CVD simulation, median-cut clustering). Plugins register additional tasks and math primitives via `engine.adopt(plugin)`. Cross-output runtime toggles (framing, color space, plugin extras) flow through a typed `state.runtime` slot read by every emitter.
+The engine ships intake, clamp, resolve, expand, enforce, derive, and `emit:json` tasks plus 25 math primitives (OKLCH, HSL, sRGB, Display-P3, contrast models, CVD simulation, median-cut clustering). Math primitives are exported as direct singletons from `@studnicky/iridis`; import only what you need. Plugins register additional tasks via `engine.adopt(plugin)`. Cross-output runtime toggles (framing, color space, plugin extras) flow through a typed `state.runtime` slot read by every emitter.
 
 ## Install
 
@@ -19,10 +19,10 @@ npm install @studnicky/iridis
 ## Hello, palette
 
 ```ts
-import { engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { Engine, coreTasks } from '@studnicky/iridis';
 
-for (const m of mathBuiltins) engine.math.register(m);
-for (const t of coreTasks)    engine.tasks.register(t);
+const engine = new Engine();
+for (const task of coreTasks) engine.tasks.register(task);
 
 engine.pipeline([
   'intake:any',
@@ -39,7 +39,17 @@ const state = await engine.run({
   'runtime': { 'framing': 'dark' },
 });
 
-console.log(state.outputs.json);
+console.log(state.outputs['json']);
+```
+
+Need direct access to a math primitive? Import the singleton:
+
+```ts
+import { luminance, contrastWcag21, oklchToRgb } from '@studnicky/iridis';
+
+const lum    = luminance.apply(record);
+const ratio  = contrastWcag21.apply(foreground, background);
+const purple = oklchToRgb.apply(0.62, 0.18, 290);
 ```
 
 To target a specific output (CSS variables, Tailwind config, VS Code theme, etc.), `engine.adopt(...)` the corresponding plugin and add its emit task to the pipeline.

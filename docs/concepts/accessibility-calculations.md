@@ -63,13 +63,11 @@ Hue and chroma are preserved. The result is a foreground that *looks the same* a
 
 ## CVD simulation, Brettel-Viénot
 
-The `iridis-contrast` plugin (separate package) ships three CVD primitives: `cvdDeuteranopia`, `cvdProtanopia`, `cvdTritanopia`. Each transforms an input color into what a viewer with that color vision deficiency would perceive. Use them to:
+The `iridis-contrast` plugin (separate package) ships the `enforce:cvdSimulate` task. It applies four CVD transforms (`protanopia`, `deuteranopia`, `tritanopia`, `achromatopsia`) via the Brettel-Viénot matrices in linear sRGB, recomputes WCAG luminance contrast against each simulated pair, and writes warnings to `state.metadata.wcag.cvd.warnings` when the simulated ratio drops more than the per-type stability threshold below the original (or when the simulated contrast falls below the per-type floor).
 
-- Simulate a pair under CVD before publishing.
-- Run `enforce:contrast` against the simulated pair (not the original) for CVD-aware AA.
-- Surface palette pairs that collapse under simulation as `metadata.cvdConflicts`.
+Each warning entry includes `foreground`, `background`, `cvdType`, `originalLuminanceContrast`, `simulatedLuminanceContrast`, `drop`, `dropThreshold`, and `minSimulatedContrast` so a CI gate can audit which signal fired without cross-referencing the threshold table (sourced from `CVD_THRESHOLDS` in `packages/contrast/src/data/cvdThresholds.ts`).
 
-The plugin is opt-in. The core engine ships only the WCAG and APCA metrics.
+CVD simulation is advisory — it surfaces palette pairs that collapse under simulation but does not modify `state.roles`. The hue-selection decision stays yours. The plugin is opt-in; the core engine ships only the WCAG and APCA metrics.
 
 ## Why declare instead of validate
 
