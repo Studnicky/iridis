@@ -322,6 +322,7 @@ const codeText = computed(() => {
               :disabled="!canAdd"
               :aria-label="canAdd ? 'Add color to palette' : 'Palette full'"
               class="iridis-demo__swatch-add"
+              :title="canAdd ? 'Append a new color to the palette. The engine re-resolves immediately.' : 'Palette is at its maxItems cap.'"
               @click="addColor"
             />
             <Button
@@ -333,6 +334,7 @@ const codeText = computed(() => {
               :class="['iridis-demo__swatch', { 'iridis-demo__swatch--selected': selectedSwatch === idx }]"
               :aria-label="`select palette color ${idx + 1} (${color})`"
               :aria-pressed="selectedSwatch === idx"
+              :title="`Palette color ${idx + 1} (${color}). Click to load it into the picker on the right.`"
               @click="selectSwatch(idx)"
             >
               <span class="iridis-demo__swatch-chip" :style="{ background: color }" />
@@ -341,6 +343,7 @@ const codeText = computed(() => {
                 v-if="canRemove"
                 class="iridis-demo__swatch-remove"
                 :aria-label="`remove palette color ${idx + 1}`"
+                title="Remove this color from the palette. The engine re-resolves with one fewer seed."
                 @click.stop="removeColor(idx)"
               >×</span>
             </Button>
@@ -362,9 +365,9 @@ const codeText = computed(() => {
 
       <Tabs v-model:value="activeTab" class="iridis-demo__tabs">
         <TabList>
-          <Tab value="resolved">Resolved roles</Tab>
-          <Tab value="schema">Role schema</Tab>
-          <Tab value="code">Code</Tab>
+          <Tab value="resolved" title="The roles the engine resolved from the palette. Each role's hex, OKLCH coords, and contrast badge are shown.">Resolved roles</Tab>
+          <Tab value="schema" title="Edit the role schema. Each card is a role; add or remove roles, declare contrast pairs, tag intents.">Role schema</Tab>
+          <Tab value="code" title="Boilerplate JavaScript that reproduces the current pipeline. Copy-paste-runnable in a fresh checkout.">Code</Tab>
         </TabList>
         <TabPanels>
           <TabPanel value="resolved">
@@ -409,6 +412,7 @@ const codeText = computed(() => {
               spellcheck="false"
               :rows="3"
               :class="['iridis-demo__textarea', 'iridis-demo__textarea--colors', { 'iridis-demo__textarea--invalid': colorsError !== null }]"
+              title="Edit the palette as a JSON array of hex strings. Validates against { minItems: 1, maxItems: 8, items: pattern '^#[0-9a-fA-F]{6}$' } — invalid edits keep the previous valid state in effect."
               @update:model-value="(v) => onColorsInput(v ?? '')"
             />
             <div v-if="colorsError" class="iridis-demo__validation">
