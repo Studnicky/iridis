@@ -8,8 +8,6 @@ import { iridisPreset } from './primevuePreset.ts';
 
 import IridisCard      from './components/base/IridisCard.vue';
 import IridisButton    from './components/base/IridisButton.vue';
-import IridisInput     from './components/base/IridisInput.vue';
-import IridisSelect    from './components/base/IridisSelect.vue';
 import IridisChip      from './components/base/IridisChip.vue';
 
 import IridisDemo      from './components/IridisDemo.vue';
@@ -71,8 +69,6 @@ export const theme: Theme = {
     // Globally registered so any markdown page can drop these in unprefixed.
     app.component('IridisCard',      IridisCard);
     app.component('IridisButton',    IridisButton);
-    app.component('IridisInput',     IridisInput);
-    app.component('IridisSelect',    IridisSelect);
     app.component('IridisChip',      IridisChip);
     app.component('IridisDemo',      IridisDemo);
     app.component('SchemaForm',      SchemaForm);

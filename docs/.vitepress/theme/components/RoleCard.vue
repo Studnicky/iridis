@@ -22,6 +22,8 @@ import Select      from 'primevue/select';
 import Checkbox    from 'primevue/checkbox';
 import Button      from 'primevue/button';
 
+import FormField from './FormField.vue';
+
 import type { ColorIntentType, RoleDefinitionInterface } from '@studnicky/iridis/model';
 
 interface SelectOptionInterface { 'label': string; 'value': string }
@@ -76,8 +78,7 @@ function setIntent(v: unknown): void {
     </header>
 
     <div class="role-card__body">
-      <label class="role-card__field" title="Semantic intent — drives forced-colors mapping, APCA Lc target, WCAG required ratio, Capacitor StatusBar style. Pick the closest match; the engine treats unknown roles by name only when intent is absent.">
-        <span class="role-card__leg">intent</span>
+      <FormField leg="intent" tooltip="Semantic intent — drives forced-colors mapping, APCA Lc target, WCAG required ratio, Capacitor StatusBar style. Pick the closest match; the engine treats unknown roles by name only when intent is absent.">
         <Select
           :model-value="role.intent ?? ''"
           :options="intentOptions"
@@ -87,60 +88,53 @@ function setIntent(v: unknown): void {
           class="role-card__select"
           @update:model-value="setIntent"
         />
-      </label>
+      </FormField>
 
-      <label class="role-card__field" title="OKLCH lightness envelope. The engine nudges any resolved color into this range. 0 is black, 1 is white. Background roles in dark mode typically sit at 0.04–0.14; text at 0.85–0.96.">
-        <span class="role-card__leg">L range</span>
-        <span class="role-card__range">
-          <InputNumber
-            :model-value="role.lightnessRange?.[0] ?? 0"
-            :min="0" :max="1" :step="0.01"
-            :max-fraction-digits="2"
-            :show-buttons="false"
-            size="small"
-            title="Lightness floor — the lowest OKLCH L value the resolver will allow."
-            @update:model-value="(v) => emit('update:range', 'lightnessRange', 0, Number(v ?? 0))"
-          />
-          <span class="role-card__dash">→</span>
-          <InputNumber
-            :model-value="role.lightnessRange?.[1] ?? 1"
-            :min="0" :max="1" :step="0.01"
-            :max-fraction-digits="2"
-            :show-buttons="false"
-            size="small"
-            title="Lightness ceiling — the highest OKLCH L value the resolver will allow."
-            @update:model-value="(v) => emit('update:range', 'lightnessRange', 1, Number(v ?? 1))"
-          />
-        </span>
-      </label>
+      <FormField leg="L range" tooltip="OKLCH lightness envelope. The engine nudges any resolved color into this range. 0 is black, 1 is white. Background roles in dark mode typically sit at 0.04–0.14; text at 0.85–0.96.">
+        <InputNumber
+          :model-value="role.lightnessRange?.[0] ?? 0"
+          :min="0" :max="1" :step="0.01"
+          :max-fraction-digits="2"
+          :show-buttons="false"
+          size="small"
+          title="Lightness floor — the lowest OKLCH L value the resolver will allow."
+          @update:model-value="(v) => emit('update:range', 'lightnessRange', 0, Number(v ?? 0))"
+        />
+        <span class="role-card__dash">→</span>
+        <InputNumber
+          :model-value="role.lightnessRange?.[1] ?? 1"
+          :min="0" :max="1" :step="0.01"
+          :max-fraction-digits="2"
+          :show-buttons="false"
+          size="small"
+          title="Lightness ceiling — the highest OKLCH L value the resolver will allow."
+          @update:model-value="(v) => emit('update:range', 'lightnessRange', 1, Number(v ?? 1))"
+        />
+      </FormField>
 
-      <label class="role-card__field" title="OKLCH chroma envelope. 0 is fully grey, 0.4+ is highly saturated. Accent roles typically sit at 0.12–0.30; surfaces and dividers stay near 0.">
-        <span class="role-card__leg">C range</span>
-        <span class="role-card__range">
-          <InputNumber
-            :model-value="role.chromaRange?.[0] ?? 0"
-            :min="0" :max="0.5" :step="0.01"
-            :max-fraction-digits="2"
-            :show-buttons="false"
-            size="small"
-            title="Chroma floor — the lowest OKLCH C value the resolver will allow."
-            @update:model-value="(v) => emit('update:range', 'chromaRange', 0, Number(v ?? 0))"
-          />
-          <span class="role-card__dash">→</span>
-          <InputNumber
-            :model-value="role.chromaRange?.[1] ?? 0.5"
-            :min="0" :max="0.5" :step="0.01"
-            :max-fraction-digits="2"
-            :show-buttons="false"
-            size="small"
-            title="Chroma ceiling — the highest OKLCH C value the resolver will allow."
-            @update:model-value="(v) => emit('update:range', 'chromaRange', 1, Number(v ?? 0.5))"
-          />
-        </span>
-      </label>
+      <FormField leg="C range" tooltip="OKLCH chroma envelope. 0 is fully grey, 0.4+ is highly saturated. Accent roles typically sit at 0.12–0.30; surfaces and dividers stay near 0.">
+        <InputNumber
+          :model-value="role.chromaRange?.[0] ?? 0"
+          :min="0" :max="0.5" :step="0.01"
+          :max-fraction-digits="2"
+          :show-buttons="false"
+          size="small"
+          title="Chroma floor — the lowest OKLCH C value the resolver will allow."
+          @update:model-value="(v) => emit('update:range', 'chromaRange', 0, Number(v ?? 0))"
+        />
+        <span class="role-card__dash">→</span>
+        <InputNumber
+          :model-value="role.chromaRange?.[1] ?? 0.5"
+          :min="0" :max="0.5" :step="0.01"
+          :max-fraction-digits="2"
+          :show-buttons="false"
+          size="small"
+          title="Chroma ceiling — the highest OKLCH C value the resolver will allow."
+          @update:model-value="(v) => emit('update:range', 'chromaRange', 1, Number(v ?? 0.5))"
+        />
+      </FormField>
 
-      <label class="role-card__field" title="Pick a parent role to derive from. The expand:family task synthesizes the child by copying the parent's hue and applying the hue offset below. Leave as none to resolve independently from the input palette.">
-        <span class="role-card__leg">derive</span>
+      <FormField leg="derive" tooltip="Pick a parent role to derive from. The expand:family task synthesizes the child by copying the parent's hue and applying the hue offset below. Leave as none to resolve independently from the input palette.">
         <Select
           :model-value="role.derivedFrom ?? ''"
           :options="[{ 'label': '— none —', 'value': '' }, ...derivedFromOptions.filter((o) => o.value !== role.name)]"
@@ -150,29 +144,28 @@ function setIntent(v: unknown): void {
           class="role-card__select"
           @update:model-value="(v) => emit('update:derivedFrom', String(v ?? ''))"
         />
-      </label>
+      </FormField>
 
-      <label class="role-card__field" title="Pin the OKLCH hue to a specific angle (0–359°) rather than inheriting from the input palette. When enabled, this role always renders at this hue regardless of the palette colors.">
-        <span class="role-card__leg">hue lock</span>
-        <span class="role-card__range">
-          <Checkbox
-            :model-value="role.hueOffset !== undefined"
-            binary
-            title="Enable hue lock. Reveals a degree input the role's hue is pinned to."
-            @update:model-value="(v) => emit('update:hueLock', Boolean(v))"
-          />
-          <InputNumber
-            v-if="role.hueOffset !== undefined"
-            :model-value="Math.round(role.hueOffset)"
-            :min="0" :max="359"
-            :show-buttons="false"
-            size="small"
-            title="Hue in degrees (0–359). 0 is red, 120 green, 240 blue."
-            @update:model-value="(v) => emit('update:hueOffset', Number(v ?? 0))"
-          />
-        </span>
-      </label>
+      <FormField leg="hue lock" tooltip="Pin the OKLCH hue to a specific angle (0–359°) rather than inheriting from the input palette. When enabled, this role always renders at this hue regardless of the palette colors.">
+        <Checkbox
+          :model-value="role.hueOffset !== undefined"
+          binary
+          title="Enable hue lock. Reveals a degree input the role's hue is pinned to."
+          @update:model-value="(v) => emit('update:hueLock', Boolean(v))"
+        />
+        <InputNumber
+          v-if="role.hueOffset !== undefined"
+          :model-value="Math.round(role.hueOffset)"
+          :min="0" :max="359"
+          :show-buttons="false"
+          size="small"
+          title="Hue in degrees (0–359). 0 is red, 120 green, 240 blue."
+          @update:model-value="(v) => emit('update:hueOffset', Number(v ?? 0))"
+        />
+      </FormField>
 
+      <!-- "required" doesn't fit FormField: the checkbox precedes the label
+           rather than following a leg legend. Kept as a bespoke field. -->
       <label class="role-card__field role-card__field--required" title="Required roles MUST be populated. If no input color resolves into this role's ranges, the engine synthesizes a color from the range centers. Optional roles silently disappear when no candidate fits.">
         <Checkbox
           :model-value="role.required ?? false"
@@ -243,6 +236,8 @@ function setIntent(v: unknown): void {
   min-width: 0;
 }
 
+/* The bespoke "required" field — checkbox-then-label layout that the
+   leg-before-control FormField wrapper does not model. */
 .role-card__field {
   display: flex;
   align-items: center;
@@ -266,31 +261,6 @@ function setIntent(v: unknown): void {
   letter-spacing: 0.04em;
 }
 
-.role-card__leg {
-  flex: 0 0 4.5rem;
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--vp-c-text-3);
-  user-select: none;
-}
-
-.role-card__range {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.role-card__range :deep(.p-inputnumber) {
-  flex: 1 1 0;
-  min-width: 0;
-}
-.role-card__range :deep(.p-inputnumber-input) {
-  width: 100%;
-  min-width: 0;
-}
 .role-card__dash {
   color: var(--vp-c-text-3);
   font-size: 0.7rem;
