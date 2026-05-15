@@ -1,6 +1,6 @@
 {
   "name": "@studnicky/iridis-capacitor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "exports": {
     ".":       "./src/index.ts",
@@ -16,6 +16,6 @@
     "prebuild":  "rm -rf dist"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.1.0"
+    "@studnicky/iridis": "^0.2.0"
   }
 }
