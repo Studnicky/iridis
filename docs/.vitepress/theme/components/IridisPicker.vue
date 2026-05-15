@@ -299,16 +299,16 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
       <label v-for="(label, key) in { 'r': 'R', 'g': 'G', 'b': 'B' } as const" :key="key">
         <span>{{ label }}</span>
         <InputNumber :model-value="currentRgb[key]" :min="0" :max="255"
-                     show-buttons="false" size="small"
+                     :show-buttons="false" size="small"
                      @update:model-value="(v) => setRgb(key, Number(v ?? 0))" />
       </label>
     </div>
 
     <!-- HSV -->
     <div v-else-if="mode === 'hsv'" class="iridis-picker__channels">
-      <label><span>H</span><InputNumber :model-value="Math.round(hsvView.h)" :min="0" :max="359" show-buttons="false" size="small" @update:model-value="(v) => setHsv('h', Number(v ?? 0))" /></label>
-      <label><span>S</span><InputNumber :model-value="Math.round(hsvView.s)" :min="0" :max="100" show-buttons="false" size="small" @update:model-value="(v) => setHsv('s', Number(v ?? 0))" /></label>
-      <label><span>V</span><InputNumber :model-value="Math.round(hsvView.v)" :min="0" :max="100" show-buttons="false" size="small" @update:model-value="(v) => setHsv('v', Number(v ?? 0))" /></label>
+      <label><span>H</span><InputNumber :model-value="Math.round(hsvView.h)" :min="0" :max="359" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('h', Number(v ?? 0))" /></label>
+      <label><span>S</span><InputNumber :model-value="Math.round(hsvView.s)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('s', Number(v ?? 0))" /></label>
+      <label><span>V</span><InputNumber :model-value="Math.round(hsvView.v)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setHsv('v', Number(v ?? 0))" /></label>
     </div>
 
     <!-- CMYK -->
@@ -316,16 +316,16 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
       <label v-for="(label, key) in { 'c': 'C', 'm': 'M', 'y': 'Y', 'k': 'K' } as const" :key="key">
         <span>{{ label }}</span>
         <InputNumber :model-value="Math.round(cmyk[key])" :min="0" :max="100"
-                     show-buttons="false" size="small"
+                     :show-buttons="false" size="small"
                      @update:model-value="(v) => setCmyk(key, Number(v ?? 0))" />
       </label>
     </div>
 
     <!-- OKLCH -->
     <div v-else-if="mode === 'oklch'" class="iridis-picker__channels">
-      <label><span>L</span><InputNumber :model-value="oklch.l" :min="0" :max="1"   :step="0.01" :max-fraction-digits="3" show-buttons="false" size="small" @update:model-value="(v) => setOklch('l', Number(v ?? 0))" /></label>
-      <label><span>C</span><InputNumber :model-value="oklch.c" :min="0" :max="0.5" :step="0.01" :max-fraction-digits="3" show-buttons="false" size="small" @update:model-value="(v) => setOklch('c', Number(v ?? 0))" /></label>
-      <label><span>H</span><InputNumber :model-value="Math.round(oklch.h)" :min="0" :max="359" show-buttons="false" size="small" @update:model-value="(v) => setOklch('h', Number(v ?? 0))" /></label>
+      <label><span>L</span><InputNumber :model-value="oklch.l" :min="0" :max="1"   :step="0.01" :max-fraction-digits="3" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('l', Number(v ?? 0))" /></label>
+      <label><span>C</span><InputNumber :model-value="oklch.c" :min="0" :max="0.5" :step="0.01" :max-fraction-digits="3" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('c', Number(v ?? 0))" /></label>
+      <label><span>H</span><InputNumber :model-value="Math.round(oklch.h)" :min="0" :max="359" :show-buttons="false" size="small" @update:model-value="(v) => setOklch('h', Number(v ?? 0))" /></label>
     </div>
   </div>
 </template>
@@ -342,8 +342,10 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
   border: var(--iridis-border-soft);
   border-radius: var(--iridis-radius-md);
   width: 100%;
-  min-width: 200px;
-  max-width: 280px;
+  /* Enough width for the five-mode SelectButton labels (HEX, RGB, HSV,
+     CMYK, OKLCH) to render unclipped at the 0.7rem font size below. */
+  min-width: 260px;
+  max-width: 360px;
   box-shadow: var(--iridis-shadow-felt);
 }
 .iridis-picker__square {
@@ -405,18 +407,28 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
   width: 100%;
 }
 .iridis-picker__tabs :deep(.p-togglebutton) {
-  flex: 1;
-  padding: 0.3rem 0.4rem;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.3rem 0.2rem;
   background: transparent;
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
   font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: var(--vp-c-text-3);
   cursor: pointer;
   box-shadow: none;
+  white-space: nowrap;
+  text-align: center;
+}
+.iridis-picker__tabs :deep(.p-togglebutton-label) {
+  /* PrimeVue's default label markup truncates with text-overflow. The
+     picker labels are 3–5 chars and the widened panel has room — let
+     them render fully and shrink with the flex track. */
+  overflow: visible;
+  text-overflow: clip;
 }
 .iridis-picker__tabs :deep(.p-togglebutton:hover) { color: var(--vp-c-text-1); background: transparent; }
 .iridis-picker__tabs :deep(.p-togglebutton-checked) {
