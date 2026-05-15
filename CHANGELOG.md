@@ -4,6 +4,60 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-15
+
+Pre-alpha. First wide-gamut + ontology-driven release.
+
+### Added
+
+- **Cross-plugin Display-P3 propagation.** Stylesheet (scoped + unscoped), Tailwind theme, VS Code theme JSON, and the RDF reasoning graph all emit P3 forms when an input role carries populated `displayP3`. Capacitor stays sRGB per its native OS surface limits.
+- **`intake:p3` task.** Parses CSS `color(display-p3 r g b [/alpha])` strings. `intake:any` dispatches P3 strings to it automatically. `SourceFormatType` extends with `'displayP3'`.
+- **OKLCH gamut handling in `ColorRecordFactory.fromOklch`.** Detects out-of-sRGB input via the new `GamutMapSrgb` primitive (CSS Color 4 §13.2.2 binary-search chroma reduction); populates `displayP3` from the unclipped original; populates `rgb` from the gamut-mapped value so sRGB consumers stay safe.
+- **`OklchToDisplayP3` math primitive.** Class + singleton, cites Björn Ottosson OKLab + CSS Color 4 §17.6.
+- **`@supports`-wrapped P3 cascade in `EmitCssVars` + `EmitCssVarsScoped`.** Emitted CSS orders blocks `:root` → `@media (prefers-color-scheme: dark)` → `@supports (color: color(display-p3 0 0 0))` → `@media (forced-colors: active)`.
+- **Research-grounded CVD compliance.** `EnforceCvdSimulate` evaluates every pair against all four canonical CVD types (deuteranopia, protanopia, tritanopia, achromatopsia). Per-type thresholds in `cvdThresholds.ts` cite BVM97, MOF09, VBM99, CIE76, SWD05, WCAG21, WS82. Bipartite signal: warning fires on either `|drop|` exceeding `dropMagnitude` OR `simulatedContrast` falling below the WCAG 1.4.11 floor. Output preserves shape; adds `dropThreshold` + `minSimulatedContrast` for auditability.
+- **Structured logger.** `ConsoleLogger` channels accept `(scope, op, message, context?: Record<string, unknown>)`. The logger formats; callers never interpolate. Level evaluated first so suppressed calls return before any context object is touched. New `trace` channel. Order: `silent < error < warn < info < debug < trace`.
+- **Ontology-driven role intent.** `ResolveRoles` propagates `RoleDefinitionInterface.intent` onto resolved `ColorRecordInterface.hints`. `EmitCssVars.forcedColorsToken` switches on `hints.intent` — no substring inference on role names. APCA `requiredLc`, WCAG required ratio, and Capacitor StatusBar style all read the same intent slot. `RoleSchemaEditor`'s intent picker exposes the canonical 10-value `ColorIntentType` union.
+- **Canonical `ColorIntentType` union.** Ten values: `text | background | accent | muted | critical | positive | link | button | onAccent | onButton`.
+- **Reusable docs components.** `RoleCard`, `PairCard`, `ResolvedRoleCard`, `PaletteSwatch`, `PaletteEditor`, `FormField`, `ExportBar`. All form fields surface native `title` tooltips explaining their purpose.
+- **`xState`-style dispatcher actions.** `editRoleSchema` action publishes user-edited schemas as `custom-<timestamp>` entries in `roleSchemaByName`. Components dispatch typed actions; the dispatcher owns the registry shape.
+- **CDN externalisation for docs heavy deps.** Vue, PrimeVue (14 subpaths), `@primeuix/themes`, and mermaid load from esm.sh via a `<head>` import map. Theme chunk 582 → 175 KB. Vitepress build emits zero warnings.
+- **Plugin type re-exports.** Every plugin re-exports its `augmentation.ts` slot interfaces via `src/types/index.ts`; every plugin's `package.json` exposes `./types` in its exports map.
+- **Math primitive consistency.** `oklchToRgbRaw`, `clamp01`, `clamp` promoted from free functions to class + singleton (`OklchToRgbRaw`, `Clamp01`, `Clamp`) matching the project's `<Name> { apply(...) }` pattern.
+- **Test coverage extended to 220 scenario-runner tests.** Wide-gamut, CVD compliance, intake-any dispatcher, golden fixtures (`quickPalette`, `emit-cssVars`, `reason-serialize`), structured-logger zero-work-at-suppressed-levels, role-intent propagation, plus the original critical-path coverage.
+
+### Changed
+
+- **`ColorIntentType` union trimmed to 10 canonical values.** Legacy values `base`, `surface`, `neutral` removed; consumer schemas migrated (`base`/`surface` → `background`, `neutral` → `muted`).
+- **`ColorRecordInterface.displayP3` semantics.** Populates only when the input OKLCH lies outside sRGB-gamut OR the record arrived via `intake:p3`; stays `undefined` for sRGB-representable inputs. `ColorRecordInterface.rgb` is always sRGB-safe (gamut-mapped from OKLCH when needed).
+- **`ColorRecordInterface` shape is monomorphic.** Every allocation produces the same V8 hidden class. `displayP3` + `hints` slots are required `T | undefined`, written explicitly by the factory.
+- **`Engine` caches resolved task sequence on `pipeline()`.** Invalidated on `adopt()`.
+- **`ConsoleLogger` is a module singleton.** `Engine.run` no longer allocates a fresh logger per call.
+- **`EnsureContrast` mutates an OKLCH `L` scalar.** Single `ColorRecord` allocation at return (was up to 50 per failing pair).
+- **`MultiOutputDemo.vue` plugin imports are dynamic.** Theme chunk drops 207 KB; lazy chunks load on mount.
+- **`iridis-8` dark mode `on-brand` lightness range.** Flipped from `[0.96, 1.00]` (white) to `[0.04, 0.14]` (dark) so the brand pair always reaches 4.5:1. Light mode unchanged.
+
+### Fixed
+
+- **Workspace `tsc` gate.** Root `tsconfig.json` was previously bypassed by `tsc --noEmit`; `tsc --build` now drives every package reference.
+- **`Engine.adopt` plugin shape validation.** Hand-rolled JSON Schema walker at `core/src/model/Validator.ts` validates `PluginInterface` at adoption. Duplicate plugin `name` adoption warns.
+- **`Engine.pipeline` enforces `manifest.requires`.** A task that requires another task must appear after it; declared-out-of-order throws.
+- **`state.graph` relocated to RDF plugin namespace.** Canonical `PaletteStateInterface` no longer carries a graph slot; RDF reads/writes `state.outputs.reasoning.graph` via plugin augmentation.
+- **`MathPrimitiveInterface` + `ColorMathRegistry` removed.** Plugins import singletons directly; engine no longer carries a math registry.
+- **`SrgbToDisplayP3` + `DisplayP3ToSrgb` deleted.** Zero internal consumers; replaced by `OklchToDisplayP3` + the inverse chain inside `IntakeP3`.
+- **`RoleSchemaEditor` no longer mutates the registry directly.** Edits dispatch through `editRoleSchema`; the dispatcher owns the `{ dark, light }` pair shape so downstream consumers see a complete entry.
+- **Right panel widens to 50 % of the viewport** (was capped at 720 px).
+- **Vitepress logo path resolution.** Asset paths switched `/iridis/logo.png` → `/logo.png` so VitePress applies the base prefix at build time.
+
+### Removed
+
+- **Legacy `ColorIntentType` values:** `base`, `surface`, `neutral`.
+- **`base/IridisInput.vue` + `base/IridisSelect.vue`** — dead wrappers, never consumed.
+- **`SrgbToDisplayP3` + `DisplayP3ToSrgb` math primitives** — superseded by `OklchToDisplayP3` + `IntakeP3`.
+- **Substring-based forced-colors token inference.** Ontology is the contract.
+
+## [0.1.0] - prior pre-alpha state
+
 ### Added
 
 - `@studnicky/iridis` engine package: composition spine (`Engine`, `TaskRegistry`), canonical models (`ColorRecord`, `PaletteState`, `RoleSchema`, `RuntimeOptions`), and zero runtime dependencies.
