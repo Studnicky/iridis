@@ -27,10 +27,16 @@ import Button      from 'primevue/button';
 import type { RoleSchemaInterface, RoleDefinitionInterface, ContrastPairInterface, ColorIntentType } from '@studnicky/iridis/model';
 
 import { configStore }      from '../stores/configStore.ts';
+import { editRoleSchema }   from '../stores/themeDispatcher.ts';
 import { roleSchemaByName } from '../schemas/roleSchemas.ts';
 
+/* Canonical 10-value `ColorIntentType` union (post-R1.6). The picker
+   surfaces these in tier order: core ontology first, signal-family next,
+   interaction-family last. */
 const INTENTS: readonly ColorIntentType[] = [
-  'base', 'accent', 'muted', 'critical', 'positive', 'neutral', 'surface', 'text',
+  'text', 'background', 'accent', 'muted',
+  'critical', 'positive',
+  'link', 'button', 'onAccent', 'onButton',
 ];
 
 const intentOptions = [
@@ -54,11 +60,14 @@ const roleNames = computed(() => roles.value.map((r) => r.name));
 
 const derivedFromOptions = computed(() => roleNames.value.map((n) => ({ 'label': n, 'value': n })));
 
+/* The editor never mutates the registry directly. Every change builds a
+   fresh `RoleSchemaInterface` and dispatches it through the theme
+   dispatcher, which registers a `custom-<timestamp>` pair and swaps the
+   active pointer atomically. The dispatcher owns the pair shape so
+   downstream consumers (`applyConfigToDocument`, `IridisDemo`) always
+   see a complete `{ dark, light }` entry. */
 function commit(next: RoleSchemaInterface): void {
-  const name = `custom-${Date.now()}`;
-  const named: RoleSchemaInterface = { ...next, 'name': name };
-  (roleSchemaByName as Record<string, RoleSchemaInterface>)[name] = named;
-  configStore.roleSchema = name;
+  editRoleSchema(next);
 }
 
 function updateRole(idx: number, patch: Partial<RoleDefinitionInterface>): void {
@@ -204,7 +213,7 @@ function removePair(idx: number): void {
                     :model-value="role.lightnessRange?.[0] ?? 0"
                     :min="0" :max="1" :step="0.01"
                     :max-fraction-digits="2"
-                    show-buttons="false"
+                    :show-buttons="false"
                     size="small"
                     @update:model-value="(v) => setRange(idx, 'lightnessRange', 0, Number(v ?? 0))"
                   />
@@ -213,7 +222,7 @@ function removePair(idx: number): void {
                     :model-value="role.lightnessRange?.[1] ?? 1"
                     :min="0" :max="1" :step="0.01"
                     :max-fraction-digits="2"
-                    show-buttons="false"
+                    :show-buttons="false"
                     size="small"
                     @update:model-value="(v) => setRange(idx, 'lightnessRange', 1, Number(v ?? 1))"
                   />
@@ -226,7 +235,7 @@ function removePair(idx: number): void {
                     :model-value="role.chromaRange?.[0] ?? 0"
                     :min="0" :max="0.5" :step="0.01"
                     :max-fraction-digits="2"
-                    show-buttons="false"
+                    :show-buttons="false"
                     size="small"
                     @update:model-value="(v) => setRange(idx, 'chromaRange', 0, Number(v ?? 0))"
                   />
@@ -235,7 +244,7 @@ function removePair(idx: number): void {
                     :model-value="role.chromaRange?.[1] ?? 0.5"
                     :min="0" :max="0.5" :step="0.01"
                     :max-fraction-digits="2"
-                    show-buttons="false"
+                    :show-buttons="false"
                     size="small"
                     @update:model-value="(v) => setRange(idx, 'chromaRange', 1, Number(v ?? 0.5))"
                   />
@@ -264,7 +273,7 @@ function removePair(idx: number): void {
                     v-if="role.hueOffset !== undefined"
                     :model-value="Math.round(role.hueOffset)"
                     :min="0" :max="359"
-                    show-buttons="false"
+                    :show-buttons="false"
                     size="small"
                     @update:model-value="(v) => updateRole(idx, { 'hueOffset': Number(v ?? 0) })"
                   />
@@ -319,7 +328,7 @@ function removePair(idx: number): void {
                 :model-value="pair.minRatio"
                 :min="1" :max="100" :step="0.5"
                 :max-fraction-digits="1"
-                show-buttons="false"
+                :show-buttons="false"
                 size="small"
                 @update:model-value="(v) => updatePair(idx, { 'minRatio': Number(v ?? 1) })"
               />

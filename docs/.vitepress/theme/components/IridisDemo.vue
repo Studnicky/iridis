@@ -24,6 +24,18 @@ import { computed, onMounted, ref, watch } from 'vue';
 
 import { Engine, coreTasks, contrastWcag21, colorRecordFactory } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
+
+/* PrimeVue components used in this component's template. PrimeVue's
+   `app.use` plugin registers its provide/inject scaffolding but does NOT
+   auto-register components — each consumer imports the components it
+   uses so Vite tree-shakes unused widgets. */
+import Button     from 'primevue/button';
+import Tabs       from 'primevue/tabs';
+import TabList    from 'primevue/tablist';
+import Tab        from 'primevue/tab';
+import TabPanels  from 'primevue/tabpanels';
+import TabPanel   from 'primevue/tabpanel';
+import Textarea   from 'primevue/textarea';
 import type {
   ColorRecordInterface,
   InputInterface,
