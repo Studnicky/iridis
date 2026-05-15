@@ -217,23 +217,55 @@ const canAdd      = computed(() => props.allowAdd && configStore.paletteColors.l
 const canRemove   = computed(() => configStore.paletteColors.length > props.minColors);
 const selectedHex = computed(() => configStore.paletteColors[selectedSwatch.value] ?? '#888888');
 
-function backgroundRole(): ColorRecordInterface | null {
-  const r = roles.value;
-  return r['background'] ?? r['canvas'] ?? r['surface'] ?? null;
-}
+/* The contrast badge surfaces what the engine actually enforced — not a
+   re-derived contrast-vs-background heuristic. Roles that are never
+   declared as a contrast-pair foreground (surfaces, dividers, accent
+   backings) get no badge; that's correct semantics rather than a "fail"
+   on a role that was never supposed to be legible against the canvas. */
+/* Badge unifies what the engine actually enforced across every contrast
+   task — independent of whichever algorithm the user picked in the
+   sidebar. A role gets a badge iff it appears as the foreground in at
+   least one declared contrast pair; the badge says either:
+     - the strongest passing standard it cleared, OR
+     - `fail` if any of its pairs failed enforcement.
+   Surfaces and other non-foreground roles get no badge — that's correct
+   semantics: they're not legibility surfaces. */
+function roleBadge(name: string): string {
+  if (!state.value) return '';
+  const wcag = state.value.metadata['wcag'] as
+    | { 'aa'?:  { 'pairs': readonly { 'foreground': string; 'pass': boolean }[] };
+        'aaa'?: { 'pairs': readonly { 'foreground': string; 'pass': boolean }[] };
+        'apca'?:{ 'pairs': readonly { 'foreground': string; 'pass': boolean; 'afterLc': number }[] }; }
+    | undefined;
+  if (!wcag) return '';
 
-function contrastFor(role: ColorRecordInterface): number | null {
-  const bg = backgroundRole();
-  if (!bg || bg === role) return null;
-  return contrastWcag21.apply(role, bg) as number;
-}
+  const aaPairs   = wcag.aa  ?.pairs.filter((p) => p.foreground === name) ?? [];
+  const aaaPairs  = wcag.aaa ?.pairs.filter((p) => p.foreground === name) ?? [];
+  const apcaPairs = wcag.apca?.pairs.filter((p) => p.foreground === name) ?? [];
 
-function contrastBadge(ratio: number | null): string {
-  if (ratio === null) return '';
-  if (ratio >= 7)   return 'AAA';
-  if (ratio >= 4.5) return 'AA';
-  if (ratio >= 3)   return 'AA-Lg';
-  return 'fail';
+  const anyDeclared = aaPairs.length + aaaPairs.length + apcaPairs.length > 0;
+  if (!anyDeclared) return '';
+
+  /* AA is the WCAG legibility floor — a true failure. AAA is a gold
+     standard; a role that meets AA but not AAA is still legible and
+     should surface as `AA`, not `fail`. The badge only reads `fail`
+     when the AA / APCA-pass floor isn't reached. */
+  const aaPass = aaPairs.length === 0 || aaPairs.every((p) => p.pass);
+  if (!aaPass) return 'fail';
+
+  if (apcaPairs.length > 0) {
+    const apcaPass = apcaPairs.every((p) => p.pass);
+    if (!apcaPass) return 'fail';
+  }
+
+  /* Walk from strongest to weakest passing standard. AAA beats AA beats
+     APCA Bronze beats APCA-pass. */
+  if (aaaPairs.length > 0 && aaaPairs.every((p) => p.pass)) return 'AAA';
+  if (apcaPairs.length > 0) {
+    const bronze = apcaPairs.every((p) => Math.abs(p.afterLc) >= 75);
+    return bronze ? 'APCA·Bronze' : 'APCA';
+  }
+  return 'AA';
 }
 
 function fmtOklch(c: ColorRecordInterface): string {
@@ -346,11 +378,11 @@ const codeText = computed(() => {
                 <div class="iridis-demo__role-head">
                   <span class="iridis-demo__role-name" :style="{ color: safeOnRoleColor(c) }">{{ name }}</span>
                   <span
-                    v-if="contrastFor(c) !== null"
+                    v-if="roleBadge(String(name)) !== ''"
                     class="iridis-demo__role-badge"
                     :style="{ color: safeOnRoleColor(c), borderColor: safeOnRoleColor(c) + '55' }"
-                    :title="`contrast vs background: ${contrastFor(c)?.toFixed(2)}:1`"
-                  >{{ contrastBadge(contrastFor(c)) }}</span>
+                    :title="`enforced by engine — ${configStore.contrastAlgorithm === 'apca' ? 'APCA' : 'WCAG 2.1'} pair as foreground`"
+                  >{{ roleBadge(String(name)) }}</span>
                 </div>
                 <span class="iridis-demo__role-hex" :style="{ color: safeOnRoleColor(c) }">{{ c.hex }}</span>
                 <span class="iridis-demo__role-coords" :style="{ color: safeOnRoleColor(c) + 'b0' }">{{ fmtOklch(c) }}</span>

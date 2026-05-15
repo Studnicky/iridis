@@ -68,7 +68,7 @@ const iridis8Dark: RoleSchemaInterface = {
     { 'name': 'surface',  'intent': 'background', 'required': true, 'derivedFrom': 'background', 'lightnessRange': [0.08, 0.18], 'chromaRange': [0.00, 0.06] },
     { 'name': 'bg-soft',  'intent': 'background', 'derivedFrom': 'background', 'lightnessRange': [0.10, 0.22], 'chromaRange': [0.00, 0.08] },
     { 'name': 'divider',  'intent': 'muted',      'derivedFrom': 'background', 'lightnessRange': [0.18, 0.32], 'chromaRange': [0.00, 0.06] },
-    { 'name': 'on-brand', 'intent': 'text',       'required': true, 'derivedFrom': 'brand',      'lightnessRange': [0.96, 1.00], 'chromaRange': [0.00, 0.02] },
+    { 'name': 'on-brand', 'intent': 'text',       'required': true, 'derivedFrom': 'brand',      'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.02] },
   ],
   'contrastPairs': [
     ...(iridis4Dark.contrastPairs ?? []),

@@ -417,34 +417,37 @@ function removePair(idx: number): void {
 }
 .role-editor__role,
 .role-editor__pair {
-  padding: 0.6rem 0.7rem;
+  padding: 0.65rem 0.75rem;
   background: var(--vp-c-bg);
   border: var(--iridis-border-soft);
   border-radius: var(--iridis-radius-md);
   box-shadow: var(--iridis-shadow-felt);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
 }
 
+/* Header row — name, intent, required toggle, remove. Single line at any
+   panel width; the name input flexes, secondary controls stay compact. */
 .role-editor__role-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.4rem;
   align-items: center;
-  margin-bottom: 0.55rem;
+  min-width: 0;
 }
 .role-editor__role-row > .role-editor__name {
-  flex: 1 1 9rem;
-  min-width: 7rem;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .role-editor__role-row > .role-editor__intent {
-  flex: 0 1 7rem;
-  min-width: 5.5rem;
+  flex: 0 0 7rem;
 }
 .role-editor__role-row > .role-editor__required {
   flex: 0 0 auto;
 }
 .role-editor__role-row > .role-editor__remove {
   flex: 0 0 auto;
-  margin-left: auto;
 }
 
 /* Shared input chrome — PrimeVue paints color via --p-*, this layer
@@ -459,6 +462,10 @@ function removePair(idx: number): void {
   font-family: var(--vp-font-family-mono);
   font-size: 0.78rem;
   border-radius: var(--iridis-radius-sm);
+  /* `text-transform: uppercase` lives on the legend `<span>`s only, not
+     the wrapping <label>, so inputs and dropdown labels render at their
+     authored case (e.g. role names like `background`, not `BACKGROUND`). */
+  text-transform: none;
 }
 
 .role-editor__required {
@@ -467,12 +474,13 @@ function removePair(idx: number): void {
   gap: 0.3rem;
   font-size: 0.72rem;
   color: var(--vp-c-text-3);
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.55rem;
   border: var(--iridis-border-soft);
   border-radius: var(--iridis-radius-sm);
   background: var(--vp-c-bg-soft);
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
 }
 
 /* × remove — PrimeVue Button shrunk to squircle icon-only square. */
@@ -498,15 +506,24 @@ function removePair(idx: number): void {
 }
 .role-editor__remove :deep(.p-button:disabled) { opacity: 0.3; cursor: not-allowed; }
 
+/* Constraints bar — single horizontal row holding L range, C range,
+   derived-from select, and the optional hue lock. Labels above values;
+   uppercase scoped to the legend `<span>` only. Items wrap as a group
+   so a narrow panel doesn't tear individual controls apart. */
 .role-editor__ranges {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-  gap: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.85rem;
+  align-items: end;
 }
-.role-editor__ranges label {
+.role-editor__ranges > label {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.role-editor__ranges > label > span:first-child {
   font-size: 0.62rem;
   color: var(--vp-c-text-3);
   font-weight: 700;
@@ -520,15 +537,22 @@ function removePair(idx: number): void {
   gap: 0.3rem;
   min-width: 0;
 }
-.role-editor__range :deep(.p-inputnumber) {
-  flex: 1 1 0;
+.role-editor__range :deep(.p-inputnumber),
+.role-editor__hue   :deep(.p-inputnumber) {
+  flex: 0 0 4.25rem;
   min-width: 0;
-  max-width: 4.5rem;
 }
-.role-editor__hue :deep(.p-inputnumber) {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: 4.5rem;
+.role-editor__range > span {
+  /* The `→` separator stays at its authored case regardless of the
+     legend-span uppercase rule above. */
+  color: var(--vp-c-text-3);
+  font-size: 0.7rem;
+  text-transform: none;
+}
+/* The derived-from <Select> needs full-width inside its label cell so
+   long role names don't truncate to BACK… / ON-B…. */
+.role-editor__ranges > label > :deep(.p-select) {
+  width: 9rem;
 }
 
 .role-editor__pair {
