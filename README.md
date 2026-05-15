@@ -10,6 +10,19 @@
 
 The engine ships intake, clamp, resolve, expand, enforce, derive, and `emit:json` tasks plus 25 math primitives (OKLCH, HSL, sRGB, Display-P3, contrast models, CVD simulation, median-cut clustering). Math primitives are exported as direct singletons from `@studnicky/iridis`; import only what you need. Plugins register additional tasks via `engine.adopt(plugin)`. Cross-output runtime toggles (framing, color space, plugin extras) flow through a typed `state.runtime` slot read by every emitter.
 
+## Documentation
+
+The full documentation is published at **https://studnicky.github.io/iridis/**. The site runs the live engine against its own brand palette — every chrome and syntax token on the page is the output of `engine.run()`, so the docs themselves demonstrate what the library produces.
+
+- [Getting started](https://studnicky.github.io/iridis/getting-started) - install, the smallest possible pipeline, the shape of the output.
+- [Try it out](https://studnicky.github.io/iridis/try-it-out) - edit seed colors and a role schema in the browser; the page recomputes through the engine on every keystroke.
+- [Pipeline](https://studnicky.github.io/iridis/concepts/pipeline) - how `Engine.adopt` + `pipeline()` + `run()` compose.
+- [Role schemas](https://studnicky.github.io/iridis/concepts/role-schemas) - declarative role definitions, OKLCH envelopes, contrast pairs, the canonical 10-value `ColorIntentType` ontology.
+- [ColorRecord](https://studnicky.github.io/iridis/concepts/color-record) - the monomorphic record shape every task reads and writes, including wide-gamut `displayP3` semantics.
+- [Contrast](https://studnicky.github.io/iridis/concepts/contrast) and [Accessibility calculations](https://studnicky.github.io/iridis/concepts/accessibility-calculations) - WCAG 2.1 AA/AAA, APCA Lc targets, and CVD simulation against the four canonical color-vision-deficiency types.
+- [Recipes](https://studnicky.github.io/iridis/recipes/cli) - end-to-end snippets for the CLI, cascading CSS variables, and the Vue + Capacitor sample app.
+- [Reference](https://studnicky.github.io/iridis/reference/hex) - per-color-space pages (Hex, RGB, HSV, CMYK, OKLCH) and accessibility-standards pages (WCAG 2.1, APCA).
+
 ## Install
 
 ```bash
