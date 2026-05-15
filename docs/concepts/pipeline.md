@@ -67,39 +67,48 @@ interface PluginInterface {
   readonly name:    string;
   readonly version: string;
   tasks(): readonly TaskInterface[];
-  math():  readonly MathPrimitiveInterface[];
 }
 ```
 
-`engine.adopt(plugin)` registers all of the plugin's tasks and math primitives in one call. iridis ships seven plugins in addition to the core task set: `@studnicky/iridis-vscode`, `@studnicky/iridis-stylesheet`, `@studnicky/iridis-tailwind`, `@studnicky/iridis-image`, `@studnicky/iridis-contrast`, `@studnicky/iridis-capacitor`, and `@studnicky/iridis-rdf`. Each is a separate package; install only what your project needs.
+`engine.adopt(plugin)` registers all of the plugin's tasks in one call. iridis ships seven plugins in addition to the core task set: `@studnicky/iridis-vscode`, `@studnicky/iridis-stylesheet`, `@studnicky/iridis-tailwind`, `@studnicky/iridis-image`, `@studnicky/iridis-contrast`, `@studnicky/iridis-capacitor`, and `@studnicky/iridis-rdf`. Each is a separate package; install only what your project needs.
 
-A plugin is an object with `name`, `version`, `tasks()`, and `math()`. Implement the interface and export a singleton:
+Implement the interface and export a singleton:
 
 ```ts
-import type { PluginInterface } from '@studnicky/iridis';
+import type { PluginInterface, TaskInterface } from '@studnicky/iridis';
 
 export const myPlugin: PluginInterface = {
-  name:    'my-plugin',
-  version: '1.0.0',
+  'name':    'my-plugin',
+  'version': '1.0.0',
   tasks(): readonly TaskInterface[] { return [myTask]; },
-  math():  readonly MathPrimitiveInterface[] { return []; },
 };
 ```
 
-## ColorMathRegistry, pluggable primitives
+Plugin names are unique within a single engine. Re-adopting a plugin with the same `name` logs a warning and overwrites its tasks — the explicit composition root means consumers always see what the engine is running.
 
-iridis separates color math from task logic. Math primitives implement `MathPrimitiveInterface`, a `name` string and an `apply(...args)` method. They live in `ColorMathRegistry` (`packages/core/src/registry/ColorMathRegistry.ts`), available as `engine.math`.
+## Math primitives, direct imports
 
-Tasks call math via `ctx.math.invoke('oklchToRgb', color)` rather than importing directly. This means any primitive can be overridden: register a custom `oklchToRgb` with the same name after registering `mathBuiltins`, and every task that calls it will use your version.
+iridis exports each colour-math primitive as a class with a singleton instance. Tasks and consumers import them directly:
 
 ```ts
-engine.math.register({
-  name: 'contrastWcag21',
-  apply(...args) { /* custom implementation */ },
-});
+import {
+  oklchToRgb,
+  rgbToOklch,
+  luminance,
+  contrastWcag21,
+  contrastApca,
+  mixOklch,
+  ensureContrast,
+  gamutMapSrgb,
+} from '@studnicky/iridis';
+
+const lum    = luminance.apply(record);
+const ratio  = contrastWcag21.apply(foreground, background);
+const blend  = mixOklch.apply(a, b, 0.5);
+const purple = oklchToRgb.apply(0.62, 0.18, 290);
 ```
 
-The built-in set, exported as `mathBuiltins`, covers color space conversion, mixing, lightness/chroma adjustments, contrast computation, CVD matrices, and median-cut clustering. The full primitive table is documented inline in `packages/core/src/math/index.ts` until the dedicated reference page lands.
+The built-in set covers OKLCH ↔ RGB ↔ HSL ↔ Hex conversion, sRGB ↔ linear ↔ Display-P3, gamut-mapping (CSS Color 4 §13.2.2 constant-L+H reduction), mixing in three colour spaces, lightness/chroma/hue adjustment, WCAG 2.1 + APCA contrast, ΔE2000, `ensureContrast` iterative lift, median-cut clustering, luminance, and `contrastText` text-colour selection. The full primitive table is documented inline in `packages/core/src/math/index.ts`.
 
 ## State as the shared medium
 
@@ -115,4 +124,4 @@ readonly manifest: TaskManifestInterface = {
 
 The engine does not enforce dependency ordering at runtime, that is your responsibility via the pipeline array. Manifests exist for documentation and tooling. If a task writes `state.roles` and a later task reads `state.roles`, the pipeline order must reflect that.
 
-`PipelineContextInterface` provides the `engine`, `tasks`, `math`, `logger`, `startedAt` timestamp, and a `cache` map for intra-run memoization. Context is constructed fresh for each `engine.run()` call; the engine and registries are reused.
+`PipelineContextInterface` provides the `engine`, `tasks` registry, `logger`, and `startedAt` timestamp. Context is constructed fresh for each `engine.run()` call; the engine and registry are reused.

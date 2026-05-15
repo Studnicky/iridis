@@ -7,7 +7,7 @@ This recipe walks through `examples/vue-capacitor/categoryColorService.ts`, a se
 `CategoryColorService` is a singleton that owns a single `Engine` instance configured at construction time. The engine is set up once; individual calls to `apply(category, seed)` just invoke `engine.run()` with a new input.
 
 ```ts
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { Engine, coreTasks } from '@studnicky/iridis';
 import { contrastPlugin }   from '@studnicky/iridis-contrast';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
 import { capacitorPlugin }  from '@studnicky/iridis-capacitor';
@@ -19,8 +19,7 @@ export class CategoryColorService {
   private constructor() {
     this.engine = new Engine();
 
-    for (const primitive of mathBuiltins) this.engine.math.register(primitive);
-    for (const task of coreTasks)         this.engine.tasks.register(task);
+    for (const task of coreTasks) this.engine.tasks.register(task);
 
     this.engine.adopt(contrastPlugin);
     this.engine.adopt(stylesheetPlugin);
@@ -44,7 +43,7 @@ export class CategoryColorService {
 }
 ```
 
-The `private constructor` + `static shared()` pattern wires the engine once. Constructing `Engine` directly (rather than importing the singleton `engine`) gives the service its own isolated registry, which matters when multiple services in the same application need different pipeline configurations.
+The `private constructor` + `static shared()` pattern wires the engine once. Each service owns its own `Engine` instance and therefore its own isolated `TaskRegistry`, which matters when multiple services in the same application need different pipeline configurations.
 
 ## From seed to palette, the Music example
 

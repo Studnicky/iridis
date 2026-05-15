@@ -72,17 +72,19 @@ The constants in `ContrastApca.ts` (`SA98G_NORM_BG`, `SA98G_NORM_TXT`, `SA98G_CL
 
 ## Math primitive
 
-`contrastApca` is registered in `mathBuiltins` (`packages/core/src/math/index.ts`) and called as:
+`contrastApca` is exported as a singleton from `@studnicky/iridis` (`packages/core/src/math/ContrastApca.ts`) and called directly:
 
 ```ts
-const lc = ctx.math.invoke('contrastApca', text, background);
+import { contrastApca } from '@studnicky/iridis';
+
+const lc = contrastApca.apply(text, background);
 ```
 
-Both arguments are `ColorRecord` instances. The primitive reads the `rgb` field of each and returns a signed `Lc` value.
+Both arguments are `ColorRecord` instances. The primitive reads the `rgb` field of each (sRGB-safe, gamut-mapped if the source OKLCH lay outside sRGB) and returns a signed `Lc` value.
 
 ## Where it appears
 
-- `enforce:contrast` (`packages/core/src/tasks/enforce/EnforceContrast.ts`) routes pairs whose `algorithm` is `'apca'` to `contrastApca` and uses the absolute value of `Lc` against the pair's `minRatio`.
+- `enforce:contrast` (`packages/core/src/tasks/enforce/EnforceContrast.ts`) routes pairs whose `algorithm` is `'apca'` to `contrastApca.apply(text, background)` and uses the absolute value of `Lc` against the pair's `minRatio`.
 - `enforce:apca` in the contrast plugin (`packages/contrast/src/tasks/`) provides a wrapper that applies APCA threshold tables to pairs without each pair restating the magnitude.
 - A role schema selects APCA per pair:
 

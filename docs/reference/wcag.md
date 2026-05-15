@@ -47,16 +47,18 @@ Logos, decorative imagery, and disabled states are exempt from the contrast requ
 
 ## Math primitive
 
-`contrastWcag21` is registered in `mathBuiltins` (`packages/core/src/math/index.ts`) and called as:
+`contrastWcag21` is exported as a singleton from `@studnicky/iridis` (`packages/core/src/math/ContrastWcag21.ts`) and called directly:
 
 ```ts
-const ratio = ctx.math.invoke('contrastWcag21', foreground, background);
+import { contrastWcag21 } from '@studnicky/iridis';
+
+const ratio = contrastWcag21.apply(foreground, background);
 ```
 
-Both arguments are `ColorRecord` instances. The primitive reads the `rgb` field of each and returns a number on `[1, 21]`.
+Both arguments are `ColorRecord` instances. The primitive reads the `rgb` field of each (sRGB-safe, gamut-mapped if the source OKLCH lay outside sRGB) and returns a number on `[1, 21]`.
 
 ## Where it appears
 
-- `enforce:contrast` (`packages/core/src/tasks/enforce/EnforceContrast.ts`) walks `input.roles.contrastPairs` and `input.contrast.extra`. For each pair whose `algorithm` is `'wcag21'` (the default) it calls `contrastWcag21` and lifts the foreground's L coordinate in OKLCH until the configured `minRatio` is met.
+- `enforce:contrast` (`packages/core/src/tasks/enforce/EnforceContrast.ts`) walks `input.roles.contrastPairs` and `input.contrast.extra`. For each pair whose `algorithm` is `'wcag21'` (the default) it calls `contrastWcag21.apply(fg, bg)` and lifts the foreground's L coordinate in OKLCH until the configured `minRatio` is met.
 - `enforce:wcagAA` and `enforce:wcagAAA` in the contrast plugin (`packages/contrast/src/tasks/`) are convenience wrappers that apply the AA and AAA threshold tables to declared pairs without each pair having to repeat the ratio.
 - `enforce:cvdSimulate` re-evaluates the same `contrastWcag21` math against simulated protanopia, deuteranopia, and tritanopia versions of each pair and records warnings when the simulated ratio drops more than 1.0 below the original.

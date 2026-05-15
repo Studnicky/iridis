@@ -2,7 +2,7 @@
 
 iridis is a chromatic pipeline for dynamic palette derivation. You give it any number of seed colors in any common format. It runs them through a registered sequence of tasks, intake, role resolution, contrast enforcement, variant derivation, and emission, and returns a role-resolved palette plus whichever consumer-shaped outputs you asked for (CSS variables, Tailwind theme, VS Code theme, Capacitor native chrome, RDF graph, etc.).
 
-The core ships with zero runtime dependencies. Each output target is a separate plugin package. Pluggable math primitives let you swap the color space without touching task code.
+The core ships with zero runtime dependencies. Each output target is a separate plugin package. Math primitives ship as direct singletons (`luminance`, `contrastWcag21`, `oklchToRgb`, ...) so callers import only what they need.
 
 ## Install
 
@@ -40,11 +40,10 @@ One import, one call, four roles back. No schema to define, no pipeline to decla
 ## Hello, palette, long-form
 
 ```ts
-import { Engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
+import { Engine, coreTasks } from '@studnicky/iridis';
 
 const engine = new Engine();
-for (const m of mathBuiltins) engine.math.register(m);
-for (const t of coreTasks)    engine.tasks.register(t);
+for (const task of coreTasks) engine.tasks.register(task);
 
 engine.pipeline(['intake:hex', 'resolve:roles', 'emit:json']);
 
@@ -61,11 +60,11 @@ The example panel on the right is running this exact pipeline against your seeds
 ## Hello, palette, with stylesheet plugin
 
 ```ts
-import { engine, mathBuiltins, coreTasks } from '@studnicky/iridis';
-import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
+import { Engine, coreTasks }  from '@studnicky/iridis';
+import { stylesheetPlugin }   from '@studnicky/iridis-stylesheet';
 
-for (const m of mathBuiltins) engine.math.register(m);
-for (const t of coreTasks)    engine.tasks.register(t);
+const engine = new Engine();
+for (const task of coreTasks) engine.tasks.register(task);
 engine.adopt(stylesheetPlugin);
 
 engine.pipeline([
@@ -78,12 +77,23 @@ engine.pipeline([
 ]);
 
 const state = await engine.run({
-  'colors':  ['#8B5CF6'],
-  'roles':   yourRoleSchema,
+  'colors':   ['#8B5CF6'],
+  'roles':    yourRoleSchema,
+  'contrast': { 'level': 'AA' },
   'metadata': { 'cssVarPrefix': '--c-' },
 });
 
-document.documentElement.style.cssText = state.outputs.cssVars.full;
+document.documentElement.style.cssText = state.outputs['cssVars']!.full;
+```
+
+Need a math primitive standalone? Import the singleton and call `apply`:
+
+```ts
+import { luminance, contrastWcag21, oklchToRgb } from '@studnicky/iridis';
+
+const lum    = luminance.apply(record);
+const ratio  = contrastWcag21.apply(foreground, background);
+const purple = oklchToRgb.apply(0.62, 0.18, 290);
 ```
 
 ## Two ways to run
@@ -92,7 +102,7 @@ iridis works as an NPM library AND as a CLI tool.
 
 ### As a library
 
-Import `engine` (or `new Engine()` for isolation), register the core tasks and math primitives, `adopt()` the plugins you want, declare your `pipeline()` order, and call `run(input)`.
+Construct `new Engine()`, register the core tasks (`coreTasks`), `adopt()` the plugins you want, declare your `pipeline()` order, and call `run(input)`. Math primitives are independent singletons — import any of them directly from `@studnicky/iridis` when you need to call colour math outside the pipeline.
 
 ### As a CLI
 

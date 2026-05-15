@@ -12,25 +12,141 @@ Use the **Role schema** dropdown in the right-panel example to switch between `i
 
 ## What a role schema is
 
-`RoleSchemaInterface` has three fields: a `name`, an optional `description`, an array of `roles`, and an optional array of `contrastPairs`. It is a plain TypeScript object, not a class, not a schema registry entry. You pass it directly to `engine.run()` via `input.roles`.
+`RoleSchemaInterface` has four fields: a `name`, an optional `description`, an array of `roles`, and an optional array of `contrastPairs`. It is a plain TypeScript object, not a class, not a schema registry entry. You pass it directly to `engine.run()` via `input.roles`.
 
 ```ts
-import type { RoleSchemaInterface } from '@studnicky/iridis/model';
+import type { RoleSchemaInterface } from '@studnicky/iridis/types';
 
 export const mySchema: RoleSchemaInterface = {
-  name:  'my-palette',
-  roles: [ /* ... */ ],
-  contrastPairs: [ /* ... */ ],
+  'name':  'my-palette',
+  'roles': [ /* ... */ ],
+  'contrastPairs': [ /* ... */ ],
 };
 ```
 
-The schema is intentionally minimal. iridis does not prescribe role names, `canvas`, `accent`, `text`, `background`, `keyword`, `error` are all equally valid. Name roles after what they mean in your product, not after generic design tokens.
+The schema is intentionally minimal. iridis does not prescribe role names — `canvas`, `accent`, `text`, `background`, `keyword`, `error` are all equally valid. Name roles after what they mean in your product, not after generic design tokens.
+
+The same schema serialises to JSON-LD using the colorology vocabulary the RDF plugin ships with. This is the canonical single-document form:
+
+```json
+{
+  "@context": {
+    "@vocab":     "https://studnicky.dev/iridis/colorology#",
+    "name":       "https://schema.org/name",
+    "description": "https://schema.org/description",
+    "roles":       { "@id": "role", "@container": "@list" },
+    "intent":      { "@type": "@id" }
+  },
+  "@type": "RoleSchema",
+  "name":  "my-palette",
+  "description": "Brand surface, text, and accent for the marketing site.",
+  "roles": [
+    {
+      "@type":          "Role",
+      "name":           "background",
+      "intent":         "background",
+      "required":       true,
+      "lightnessRange": [0.95, 1.00]
+    },
+    {
+      "@type":   "Role",
+      "name":    "text",
+      "intent":  "text",
+      "required": true,
+      "lightnessRange": [0.10, 0.25]
+    },
+    {
+      "@type":   "Role",
+      "name":    "accent",
+      "intent":  "accent",
+      "required": true
+    }
+  ],
+  "contrastPairs": [
+    { "foreground": "text",   "background": "background", "minRatio": 4.5, "algorithm": "wcag21" }
+  ]
+}
+```
+
+The `intent` value is a `ColorIntentType` term and drives every downstream semantic decision (see below). The schema is the contract; no substring inference happens on the `name` field anywhere in the pipeline.
 
 ## Required vs optional roles
 
 Each `RoleDefinitionInterface` carries a `required` boolean. When `required: true`, `resolve:roles` emits a warning in `state.metadata.roleWarnings` if no color could be assigned. The pipeline continues regardless, required is advisory, not a hard error. Your integration code can inspect `state.metadata.roleWarnings` and surface failures as appropriate.
 
 Optional roles (no `required` field, or `required: false`) are skipped if no candidate matches.
+
+## intent, the ontology hook
+
+`RoleDefinitionInterface.intent` is the authoritative semantic marker iridis reads to drive every downstream decision. `ResolveRoles` propagates the schema-declared `intent` onto the resolved record's `hints.intent`; later tasks branch on that value rather than guessing from the role's `name`. NO substring inference happens anywhere in the pipeline — the ontology IS the contract.
+
+The canonical 10-value `ColorIntentType` union (`packages/core/src/types/color.ts`) groups by usage family:
+
+| Value | One-line description | Where it shows up |
+|---|---|---|
+| `text` | Primary text content painted over a background. | APCA Lc 75 floor (body text); WCAG 4.5/7 ratios; WHCM `CanvasText` |
+| `background` | Primary surface that receives a foreground. | APCA pairing target; WHCM `Canvas`; Capacitor StatusBar background |
+| `accent` | Brand or emphasis colour calling attention. | WHCM `Highlight`; iconic role for `expand:family` derivations |
+| `muted` | Low-emphasis text or chrome (de-emphasised content). | WHCM `GrayText`; relaxed APCA Lc 45 floor for non-text UI |
+| `critical` | Error / danger state signal. | WHCM falls safe to `CanvasText` (legibility wins under forced-colors) |
+| `positive` | Success / affirmative state signal. | WHCM falls safe to `CanvasText` |
+| `link` | Anchor text foreground. | WHCM `LinkText` |
+| `button` | Actionable surface (button face). | WHCM `ButtonFace`; Capacitor button-tinted chrome |
+| `onAccent` | Foreground painted onto an accent surface. | WHCM `HighlightText`; paired with `accent` in `contrastPairs` |
+| `onButton` | Foreground painted onto a button surface. | WHCM `ButtonText`; paired with `button` in `contrastPairs` |
+
+### Worked examples per family
+
+```ts
+// Text on background — the most common pair.
+{ 'name': 'body',       'intent': 'text',       'required': true },
+{ 'name': 'page',       'intent': 'background', 'required': true },
+
+// Accent + onAccent — call-to-action button family.
+{ 'name': 'ctaSurface', 'intent': 'accent',     'required': true },
+{ 'name': 'ctaLabel',   'intent': 'onAccent',   'required': true, 'derivedFrom': 'ctaSurface' },
+
+// State signals — critical / positive carry semantic intent
+// even though they fall safe to CanvasText under forced-colors.
+{ 'name': 'danger',     'intent': 'critical' },
+{ 'name': 'success',    'intent': 'positive' },
+
+// Chrome — muted for de-emphasised content, link for anchors.
+{ 'name': 'metadata',   'intent': 'muted' },
+{ 'name': 'anchor',     'intent': 'link' },
+
+// Button family — button face + onButton label.
+{ 'name': 'btnSurface', 'intent': 'button' },
+{ 'name': 'btnLabel',   'intent': 'onButton', 'derivedFrom': 'btnSurface' },
+```
+
+### forcedColorsToken → WHCM mapping
+
+`EmitCssVars` emits a `@media (forced-colors: active)` block whose values are Windows High Contrast Mode (WHCM) system tokens. The mapping is intent-driven:
+
+| `intent` | WHCM token |
+|---|---|
+| `text` | `CanvasText` |
+| `background` | `Canvas` |
+| `accent` | `Highlight` |
+| `muted` | `GrayText` |
+| `critical` | `CanvasText` (forced-colors strips colour state; legibility wins) |
+| `positive` | `CanvasText` (same reason) |
+| `link` | `LinkText` |
+| `button` | `ButtonFace` |
+| `onAccent` | `HighlightText` |
+| `onButton` | `ButtonText` |
+
+### Fall-back defaults
+
+When a role does not declare `intent`, downstream readers fall back to the legibility-safe option:
+
+- `EmitCssVars.forcedColorsToken` → `CanvasText` (a text-shaped role stays legible against a default `Canvas` background).
+- `EnforceApca` → `Lc 75` (body-text floor) when neither foreground nor background carry an intent that would point at a relaxed tier.
+
+Custom JSON-tology overlays may add new intent values or override the mapping additively — the schema is the contract, and a downstream consumer that ships its own overlay flows through identically.
+
+The legacy `intent` values `base`, `surface`, and `neutral` are gone. Migrate to `background` (was `base`/`surface`) and `muted` (was `neutral`).
 
 ## derivedFrom, parametric expansion
 

@@ -8,8 +8,8 @@ State of in-flight work after the May 2026 docs-iteration sprint. Read `HANDOFF.
 
 ### Core engine, `@studnicky/iridis@0.1.0` (pre-publish, ship-ready)
 
-- Composition spine: `Engine`, `TaskRegistry`, `ColorMathRegistry`
-- 25 math primitives (OKLCH ↔ RGB ↔ HSL ↔ Hex, sRGB ↔ linear ↔ Display P3, mix/lighten/darken/saturate/desaturate/hueShift, WCAG 2.1, APCA, ΔE2000, `ensureContrast`, median-cut clustering, luminance, contrastText)
+- Composition spine: `Engine`, `TaskRegistry`
+- 25 direct-import math primitives (OKLCH ↔ RGB ↔ HSL ↔ Hex, sRGB ↔ linear ↔ Display-P3, gamut-mapping, mix/lighten/darken/saturate/desaturate/hueShift, WCAG 2.1, APCA, ΔE2000, `ensureContrast`, median-cut clustering, luminance, contrastText)
 - 15 canonical pipeline tasks: `intake:hex/rgb/hsl/oklch/lab/named/imagePixels/any`, `clamp:count/oklch`, `resolve:roles`, `expand:family`, `enforce:contrast`, `derive:variant`, `emit:json`
 - `quickPalette(seeds, framing?)` one-liner convenience export
 - Required-role enforcement: `resolve:roles` guarantees populated AND constraint-satisfying assignment via `nudgeIntoRole` and `synthesizeForRole`

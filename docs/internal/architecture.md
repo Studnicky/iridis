@@ -154,6 +154,10 @@ Per the user's HARD rule. Sample CLI fixture is JSON. Role schemas are JSON Sche
 
 The literal word "iridis" is wrapped by `docs/.vitepress/plugins/iridis-brand.mjs` with a `<span class="iridis-brand">` whose CSS gradient sweeps the visible spectrum. Static for v0.1; the v2 living-color thesis converts this into a runtime-driven gradient morphing through the iridis engine itself (a self-referential demo).
 
+## Docs theme bundle, CDN externals
+
+The docs site externalises Vue, PrimeVue (14 subpaths), `@primeuix/themes`, and mermaid to `esm.sh` via a Vitepress import map injected into `<head>`. Pinned versions: `vue@3.5.34`, `primevue@4.5.5`, `@primeuix/themes@2.0.3`, `mermaid@11.14.0` — each loaded with `?external=vue` so the CDN copies share the same Vue instance the Vitepress runtime ships. `rollupOptions.external` is gated to build mode only so dev still resolves locally. Modulepreload 404s for the externalised bare specifiers are benign browser hints — the import-map redirects fire before the network request. `<ClientOnly>` wraps any component that imports a CDN module so SSR never tries to evaluate a browser-only ESM module.
+
 ## Docs site, state-machine dispatcher
 
 The docs site dogfoods the engine. Every chrome and syntax token is iridis-emitted; the user picks seeds in the right panel; the page recomputes. The bridge between user input and the engine is a single state-machine dispatcher at `docs/.vitepress/theme/stores/themeDispatcher.ts`. Components dispatch typed actions (`setFraming`, `setPaletteColors`, `setContrastLevel`, `setContrastAlgorithm`, `setColorSpace`, `setRoleSchema`); a reducer derives the next `DocsConfigType`; one projector layer (`applyConfigToDocument.ts`) runs the engine and writes `--iridis-*` tokens onto `document.documentElement`. VitePress's own appearance switch participates via a single `MutationObserver` bridge that dispatches `setFraming`. The previous `configStore` module is now a backwards-compatible facade over the dispatcher's writable proxy.

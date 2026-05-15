@@ -20,7 +20,7 @@ Standard thresholds:
 | Large text | 4.5:1 | AAA |
 | Non-text UI elements, focus rings | 3.0:1 | AA |
 
-The core `enforce:contrast` task reads `input.roles.contrastPairs` and `input.contrast.extra`, then calls `ctx.math.invoke('contrastWcag21', fg, bg)` for each pair whose `algorithm` is `'wcag21'` (the default). The contrast plugin's `enforce:wcagAA` and `enforce:wcagAAA` tasks are convenience wrappers that apply the same logic with pre-set threshold levels.
+The core `enforce:contrast` task reads `input.roles.contrastPairs` and `input.contrast.extra`, then calls `contrastWcag21.apply(fg, bg)` for each pair whose `algorithm` is `'wcag21'` (the default). The contrast plugin's `enforce:wcagAA` and `enforce:wcagAAA` tasks are convenience wrappers that apply the same logic with pre-set threshold levels.
 
 ## APCA, contrastApca
 
@@ -35,7 +35,7 @@ Practical APCA thresholds:
 | Large text / headlines | ≥ 45 |
 | Non-text / icons | ≥ 30 |
 
-`contrastApca` is registered in `mathBuiltins` and is available via `ctx.math.invoke('contrastApca', text, background)`. The iridis contrast plugin provides `enforce:apca` which applies APCA thresholds to pairs declared with `algorithm: 'apca'`.
+`contrastApca` is exported as a singleton from `@studnicky/iridis` and called as `contrastApca.apply(text, background)`. The iridis contrast plugin provides `enforce:apca` which applies APCA thresholds to pairs declared with `algorithm: 'apca'`.
 
 To use APCA in a role schema contrast pair, set `algorithm: 'apca'` and use Lc magnitude as `minRatio`:
 
@@ -72,15 +72,12 @@ CVD simulation does not modify `state.roles`. It surfaces information; your desi
 3. Iterating up to 50 steps of 0.02 OKLCH lightness each, testing the ratio after each step.
 4. Returning the first candidate that meets the threshold, or the final candidate if no step succeeded.
 
-The step size (0.02) is small enough to produce smooth changes but bounded (max 50 steps = 1.0 lightness range) to prevent infinite loops. The primitive is registered by name (`'ensureContrast'`) so custom implementations can replace it:
+The step size (0.02) is small enough to produce smooth changes but bounded (max 50 steps = 1.0 lightness range) to prevent infinite loops. The singleton is the only registered binding — to apply a custom contrast lift, wrap `ensureContrast` in your own task or pass an adjusted `ColorRecord` directly into a derived role.
 
 ```ts
-engine.math.register({
-  name: 'ensureContrast',
-  apply(fg, bg, minRatio, algorithm) {
-    // alternative implementation
-  },
-});
+import { ensureContrast } from '@studnicky/iridis';
+
+const lifted = ensureContrast.apply(foreground, background, 4.5, 'wcag21');
 ```
 
 ## The contrast report
