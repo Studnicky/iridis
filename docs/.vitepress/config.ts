@@ -282,10 +282,10 @@ export default withMermaid(defineConfig({
    * would show the iridis homepage card.
    */
   transformPageData(pageData): void {
-    const relPath  = pageData.relativePath
+    const relPath = pageData.relativePath
       .replace(/\.md$/, '')
-      .replace(/(^|\/)index$/, '/');
-    const pageUrl  = `${SITE_URL}${relPath}`;
+      .replace(/(^|\/)index$/, '');
+    const pageUrl = relPath === '' ? SITE_URL : `${SITE_URL}${relPath}`;
     const title    = (pageData.frontmatter['title'] as string | undefined)
       ?? pageData.title
       ?? SITE_TITLE;
