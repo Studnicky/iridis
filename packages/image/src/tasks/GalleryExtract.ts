@@ -19,25 +19,25 @@ import type { GalleryAlgorithmType } from '../types/augmentation.ts';
  * Reduces `state.colors` to K representative colours via one of three
  * clustering primitives, selected by `metadata.gallery.algorithm`:
  *
- *   - `'median-cut'` (default) — when at least one input record carries
+ *   - `'median-cut'` (default): when at least one input record carries
  *     `hints.weight`, dispatches to `clusterMedianCutWeighted` so pixel
  *     density survives the reduction. Otherwise falls back to the
  *     stateless `clusterMedianCut` for backward compatibility with
  *     non-image inputs (raw hex palettes, RGB triples).
- *   - `'delta-e'` — agglomerative deltaE2000 merger. Pair with
+ *   - `'delta-e'`: agglomerative deltaE2000 merger. Pair with
  *     `gallery:histogram` upstream so the merger operates over ≤ a few
  *     hundred weighted bins rather than tens of thousands of pixels.
  *
  * Configuration (via `state.metadata.gallery`):
- *   k         — number of dominant colors to extract (default: 5)
- *   algorithm — `'median-cut'` (default) | `'delta-e'`
+ *   k:         number of dominant colors to extract (default: 5)
+ *   algorithm: `'median-cut'` (default) | `'delta-e'`
  *
  * Writes:
- *   state.metadata.gallery.dominantColors — the K representative colors
- *   state.colors                          — replaced with the K-color set
+ *   state.metadata.gallery.dominantColors: the K representative colors
+ *   state.colors:                          replaced with the K-color set
  */
 /* True when ANY input carries a declared `hints.weight`. The presence
-   of the hint key is the signal — not its magnitude — so a histogram
+   of the hint key is the signal (not its magnitude), so a histogram
    where every bin happens to hold exactly one pixel still dispatches
    to the weighted reducer. The previous predicate excluded `weight === 1`
    and silently fell back to `clusterMedianCut`, losing the weight
@@ -55,7 +55,7 @@ function hasAnyWeight(colors: readonly ColorRecordInterface[]): boolean {
  * histogram (thousands of non-empty bins) hangs the main thread. We
  * pre-trim by descending weight: the merger still sees every visually
  * important cluster (heaviest first), and the long tail of one-off
- * pixels falls off — which is the same trade-off median-cut already
+ * pixels falls off, which is the same trade-off median-cut already
  * makes implicitly when its bucket-selection heuristic refuses to
  * split low-weight buckets.
  */
@@ -89,7 +89,7 @@ export class GalleryExtract implements TaskInterface {
     });
 
     if (state.colors.length === 0) {
-      ctx.logger.warn('GalleryExtract', 'run', 'state.colors is empty — nothing to extract');
+      ctx.logger.warn('GalleryExtract', 'run', 'state.colors is empty; nothing to extract');
       return;
     }
 

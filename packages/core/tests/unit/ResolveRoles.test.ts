@@ -1,5 +1,5 @@
 /**
- * ResolveRoles unit tests — chromaRange enforcement.
+ * ResolveRoles unit tests: chromaRange enforcement.
  *
  * The resolve:roles task must clamp a candidate color's chroma into the
  * role's declared chromaRange, in addition to lightnessRange. A near-neutral
@@ -105,7 +105,7 @@ test('ResolveRoles :: chromaRange :: low-chroma input below range is lifted to r
   };
 
   const engine = freshEngine();
-  // Pure gray — chroma 0, well below the role's [0.15, 0.25] floor.
+  // Pure gray: chroma 0, well below the role's [0.15, 0.25] floor.
   const state = await engine.run({ 'colors': ['#808080'], 'roles': schema });
 
   const accent = state.roles['accent'];
@@ -130,7 +130,7 @@ test('ResolveRoles :: chromaRange :: hue is preserved when only chroma needs nud
   };
 
   const engine = freshEngine();
-  // Vivid blue — hue ~264 in OKLCH. After chroma clamp the hue should still
+  // Vivid blue: hue ~264 in OKLCH. After chroma clamp the hue should still
   // be in the blue family, not rotated.
   const state = await engine.run({ 'colors': ['#3b82f6'], 'roles': schema });
 

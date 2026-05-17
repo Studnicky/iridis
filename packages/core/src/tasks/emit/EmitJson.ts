@@ -19,7 +19,7 @@ function toHex(color: ColorRecordInterface): string {
 /**
  * Pipeline task that flattens the rich `ColorRecord` state into a plain
  * `{colors, roles, variants}` object of hex strings at
- * `state.outputs.json`. The lowest-common-denominator output — anything
+ * `state.outputs.json`. The lowest-common-denominator output: anything
  * that can read JSON can consume it, with no knowledge of the OKLCH /
  * Display P3 enrichments still present on the original records.
  */

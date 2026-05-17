@@ -2,8 +2,9 @@
 /**
  * NavBarBuilderToggle.vue
  *
- * Navbar entry point into the /build workspace. Reads the current route
- * to mark itself active when the user is already on /build.
+ * Navbar entry point into the iridis build workspace, which lives on
+ * the home page. Reads the current route to mark itself active when
+ * the user is already on the home page.
  */
 import { computed }       from 'vue';
 import Button             from 'primevue/button';
@@ -15,9 +16,7 @@ const router = useRouter();
 const isActive = computed(() => {
   const p = route.path;
   return p === withBase('/')
-    || p === withBase('/index.html')
-    || p === withBase('/build')
-    || p === withBase('/build.html');
+    || p === withBase('/index.html');
 });
 
 function goBuild(): void {
@@ -34,7 +33,7 @@ function goBuild(): void {
       :aria-pressed="isActive"
       :aria-current="isActive ? 'page' : undefined"
       aria-label="Open Build workspace"
-      title="Open the consolidated build workspace — seed colors, image, role schema"
+      title="Open the consolidated build workspace: seed colors, image, role schema"
       @click="goBuild"
     >
       <span class="iridis-nav-builder-toggle__icon" aria-hidden="true">◐</span>

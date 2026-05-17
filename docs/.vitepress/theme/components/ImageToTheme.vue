@@ -127,7 +127,7 @@ let pendingRun: PendingRunInterface | null = null;
 async function runForUrl(src: string, label: string): Promise<void> {
   if (isWorking.value) {
     pendingRun = { 'src': src, 'label': label };
-    status.value = `Queued ${label} (${algorithm.value}) — finishing current run…`;
+    status.value = `Queued ${label} (${algorithm.value}); finishing current run…`;
     return;
   }
   error.value = null;
@@ -142,7 +142,7 @@ async function runForUrl(src: string, label: string): Promise<void> {
     engine.pipeline(PIPELINE);
     /* Use the user's active role schema + framing so the resolved
        roles match what the rest of the docs see. The image pipeline
-       is just a different intake — same downstream resolution. */
+       is just a different intake; same downstream resolution. */
     const pair   = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['iridis-32']!;
     const schema = pair[configStore.framing];
     const result = await engine.run({
@@ -167,7 +167,7 @@ async function runForUrl(src: string, label: string): Promise<void> {
     /* Publish the image-derived seeds into the canonical SPA store so
        every other page re-themes from this image. The active role schema
        (default iridis-16) re-resolves them through the normal docs
-       projector — we don't fork to a separate cascade.
+       projector; we don't fork to a separate cascade.
        Capped at 8 because docsConfigSchema enforces maxItems: 8 on
        paletteColors. */
     const dominant = (result.metadata['gallery'] as { 'dominantColors'?: readonly ColorRecordInterface[] } | undefined)?.dominantColors ?? [];
@@ -178,7 +178,7 @@ async function runForUrl(src: string, label: string): Promise<void> {
     if (seeds.length > 0) {
       configStore.paletteColors = seeds;
     }
-    status.value = `Theme generated from ${label} in ${elapsedMs.value} ms — applied to docs.`;
+    status.value = `Theme generated from ${label} in ${elapsedMs.value} ms. Applied to docs.`;
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
     state.value = null;
@@ -226,7 +226,7 @@ function onUrlSubmit(): void {
 
 /* Famous public-domain photographs hosted on Wikimedia Commons. Every
    URL targets the `upload.wikimedia.org` CDN at a thumbnail-sized
-   render (≤ 1280px on the long edge) — small enough to decode quickly,
+   render (≤ 1280px on the long edge): small enough to decode quickly,
    large enough to expose meaningful palette structure. Wikimedia serves
    these with `Access-Control-Allow-Origin: *` so the canvas decoder
    does not taint when the image lands. The hosting is about as stable
@@ -248,37 +248,37 @@ const PRESETS_RAW: readonly PresetInterface[] = [
   {
     'label':  'Great Wave',
     'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/The_Great_Wave_off_Kanagawa.jpg/1280px-The_Great_Wave_off_Kanagawa.jpg',
-    'credit': 'Katsushika Hokusai, c. 1831 — public domain (Wikimedia Commons)',
+    'credit': 'Katsushika Hokusai, c. 1831, public domain (Wikimedia Commons)',
   },
   {
     'label':  'Starry Night',
     'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
-    'credit': 'Vincent van Gogh, 1889 — public domain (Wikimedia Commons)',
+    'credit': 'Vincent van Gogh, 1889, public domain (Wikimedia Commons)',
   },
   {
     'label':  'Earthrise',
     'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/NASA-Apollo8-Dec24-Earthrise.jpg/1280px-NASA-Apollo8-Dec24-Earthrise.jpg',
-    'credit': 'William Anders / NASA Apollo 8, 1968 — public domain',
+    'credit': 'William Anders / NASA Apollo 8, 1968, public domain',
   },
   {
     'label':  'Blue Marble',
     'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/1024px-The_Earth_seen_from_Apollo_17.jpg',
-    'credit': 'NASA Apollo 17, 1972 — public domain',
+    'credit': 'NASA Apollo 17, 1972, public domain',
   },
   {
     'label':  'Pillars of Creation',
     'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Pillars_2014_HST_WFC3-UVIS_full-res_denoised.jpg/1280px-Pillars_2014_HST_WFC3-UVIS_full-res_denoised.jpg',
-    'credit': 'NASA/ESA Hubble, 2014 — public domain',
+    'credit': 'NASA/ESA Hubble, 2014, public domain',
   },
   {
     'label':  'Carina Nebula',
     'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Cosmic_Cliffs_in_Carina_%28NIRCam_Image%29.jpg/1280px-Cosmic_Cliffs_in_Carina_%28NIRCam_Image%29.jpg',
-    'credit': 'NASA/ESA/CSA JWST, 2022 — public domain',
+    'credit': 'NASA/ESA/CSA JWST, 2022, public domain',
   },
 ];
 
 /* Availability-filtered preset list. The mount-time probe (below)
-   removes any URL that fails to load in the user's browser — a
+   removes any URL that fails to load in the user's browser: a
    broken CDN, a corporate firewall, an extension blocking the host,
    or Wikimedia's hash path changing. The fallback is silent at the
    UI layer (the chip just disappears) and loud at the console
@@ -338,7 +338,7 @@ onMounted(() => {
 /* Empty-histogram fallback: when the current pipeline produced no
    clusters (degenerate slider config, all pixels filtered out, etc),
    return a zero-weight structure so the SVG frame stays mounted and
-   the layout doesn't jump. Only the bars are empty — the panel,
+   the layout doesn't jump. Only the bars are empty: the panel,
    legend, and axes all remain visible. */
 const EMPTY_SPECTROGRAPH: SpectrographDataInterface = {
   'clusters':    [],
@@ -418,7 +418,7 @@ const algorithmOptions: readonly { label: string; value: GalleryAlgorithmType; }
   { 'label': 'Delta-E',     'value': 'delta-e'    },
 ];
 
-/* Source-mode SelectButton — mirrors the OKLCH picker's format-mode
+/* Source-mode SelectButton: mirrors the OKLCH picker's format-mode
    SelectButton pattern (hex / rgb / hsv / cmyk / oklch). Only one
    input control is visible at a time, picked by `sourceMode`. */
 type SourceMode = 'file' | 'url' | 'preset';
@@ -434,10 +434,10 @@ const sourceMode = ref<SourceMode>('file');
   <ClientOnly>
     <section class="image-to-theme">
       <div class="image-to-theme__grid">
-        <!-- LEFT — Image input column. Mirrors IridisPicker:
-               1. Drop zone / preview      (visual surface — like SV square)
-               2. Source SelectButton      (mode tabs — like format tabs)
-               3. Mode-specific input row  (per-mode editor — like channel inputs)
+        <!-- LEFT: Image input column. Mirrors IridisPicker:
+               1. Drop zone / preview      (visual surface, like SV square)
+               2. Source SelectButton      (mode tabs, like format tabs)
+               3. Mode-specific input row  (per-mode editor, like channel inputs)
              One column, stacked, with the input row swapping content
              based on the active source mode. -->
         <div class="image-to-theme__col image-to-theme__col--source">
@@ -459,7 +459,7 @@ const sourceMode = ref<SourceMode>('file');
             </div>
           </div>
 
-          <!-- Source mode SelectButton — same slot as the OKLCH picker's
+          <!-- Source mode SelectButton: same slot as the OKLCH picker's
                format-mode tabs. Only the input row for the active mode
                renders below. -->
           <SelectButton
@@ -517,14 +517,14 @@ const sourceMode = ref<SourceMode>('file');
           </div>
         </div>
 
-        <!-- RIGHT — Options column. Per the IridisDemo pattern (picker on
+        <!-- RIGHT: Options column. Per the IridisDemo pattern (picker on
              left, swatches on right), the right column owns the OUTPUT
              configuration knobs:
                1. Histogram     (visual read-out of the extracted palette)
                2. Status        (elapsed time / error surface)
                3. Algorithm     (which clustering math runs)
                4. Sliders       (K, histogram bpc, ΔE cap, harmonize, envelopes)
-             The algorithm SelectButton stays on this side — it's a
+             The algorithm SelectButton stays on this side: it's a
              configuration knob (which math runs against the image), not a
              source-mode picker. -->
         <div class="image-to-theme__col image-to-theme__col--output">
@@ -565,7 +565,7 @@ const sourceMode = ref<SourceMode>('file');
             </svg>
             <div class="image-to-theme__histogram-legend">
               <span>palette ribbon · {{ stripGeometry.length }} clusters</span>
-              <span>hue histogram · 0° — 360°</span>
+              <span>hue histogram · 0°–360°</span>
             </div>
           </div>
 
@@ -585,7 +585,7 @@ const sourceMode = ref<SourceMode>('file');
             <BuildImageOptionsGuide class="image-to-theme__options-guide" />
 
             <div class="image-to-theme__options-controls">
-              <!-- Algorithm SelectButton — output configuration, not
+              <!-- Algorithm SelectButton: output configuration, not
                    input source. Selects which clustering math runs
                    against the image data. -->
               <SelectButton
@@ -595,10 +595,10 @@ const sourceMode = ref<SourceMode>('file');
                 option-value="value"
                 :allow-empty="false"
                 class="image-to-theme__mode-tabs"
-                title="median-cut: weighted Heckbert variant — fast O(N log N). delta-e: agglomerative ΔE2000 — visually faithful, O(N² log N)."
+                title="median-cut: weighted Heckbert variant, fast O(N log N). delta-e: agglomerative ΔE2000, visually faithful, O(N² log N)."
               />
 
-              <!-- Slider channels — one knob per extraction parameter.
+              <!-- Slider channels: one knob per extraction parameter.
                    Each label carries a title-tooltip with the same
                    short explanation surfaced inline by the guide
                    panel beside it. -->
@@ -825,7 +825,7 @@ const sourceMode = ref<SourceMode>('file');
   border-color: var(--vp-c-brand-1);
 }
 
-/* Slider form — one row per knob, label and monospace readout on the
+/* Slider form: one row per knob, label and monospace readout on the
    first line, slider on the second. Form chrome lifted: no fieldset
    border, just generous spacing and quiet dividers. */
 .image-to-theme__config {

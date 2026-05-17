@@ -11,9 +11,9 @@ import type { ApcaPairResultInterface } from '../types/augmentation.ts';
 
 // APCA Lc target selection per WCAG 3 Bronze level working draft (2023).
 // Reference: https://www.w3.org/WAI/GL/task-forces/silver/wiki/Visual_Contrast_of_Text_Subgroup
-// Lc 75 — body / paragraph text (normal size, normal weight).
-// Lc 60 — fluent / headline / large text (≥18pt or ≥14pt bold).
-// Lc 45 — non-text UI components (icons, separators, input borders).
+// Lc 75: body / paragraph text (normal size, normal weight).
+// Lc 60: fluent / headline / large text (≥18pt or ≥14pt bold).
+// Lc 45: non-text UI components (icons, separators, input borders).
 function apcaLcTarget(
   pair: ContrastPairInterface,
   roles: Record<string, ColorRecordInterface>,

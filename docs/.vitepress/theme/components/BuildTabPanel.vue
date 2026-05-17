@@ -2,16 +2,16 @@
 /**
  * BuildTabPanel.vue
  *
- * Shared chrome for every tab body on the /build page so the five
+ * Shared chrome for every tab body on the home-page builder so the five
  * surfaces (User palette / Image / Role schema / Configuration /
  * Code) read as one consistent system rather than five bespoke
  * components.
  *
  * Each tab supplies:
- *   - `eyebrow` — a tiny uppercase tag (matches the resolved-roles
+ *   - `eyebrow`: a tiny uppercase tag (matches the resolved-roles
  *     header label style)
- *   - `title`   — the human-readable name of the workflow
- *   - `hint`    — one sentence explaining what the tab does
+ *   - `title`  : the human-readable name of the workflow
+ *   - `hint`   : one sentence explaining what the tab does
  *
  * Content is slotted in; the panel imposes the surface (IridisCard
  * variant=default), the header padding, and the body spacing.

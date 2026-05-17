@@ -2,7 +2,7 @@
 
 /**
  * SCOPE_MAPPINGS maps every semantic palette key to its TextMate grammar scopes.
- * Comprehensive coverage for all VS Code-supported languages plus fallbacks.
+ * Full coverage for all VS Code-supported languages plus fallbacks.
  *
  * The keys here are the SemanticPaletteInterface keys used by the arcade-blaster
  * SemanticPaletteInterface.  The emit:vscodeSemanticRules task projects the 23

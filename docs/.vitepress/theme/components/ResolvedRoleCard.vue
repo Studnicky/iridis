@@ -7,7 +7,7 @@
  * role's own color as the background; foreground text is auto-tuned to
  * whichever of white or black yields the better WCAG 2.1 contrast.
  *
- * The badge string is supplied by the parent — this component is dumb
+ * The badge string is supplied by the parent; this component is dumb
  * about which standard cleared. Downstream consumers receive a pre-
  * computed badge ('AAA' | 'AA' | 'APCA' | 'APCA·Bronze' | 'fail' | '')
  * so the same tile renders identically whether the engine enforced AA,
@@ -111,7 +111,7 @@ function badgeBorder(): string {
     <span
       class="resolved-role-card__coords"
       :style="{ color: fgMuted() }"
-      :title="`OKLCH coordinates — L lightness (0 black to 1 white), C chroma (0 grey to ~0.4 saturated), H hue in degrees (0 red, 120 green, 240 blue). Read state.roles[name].oklch for the raw numbers.`"
+      :title="`OKLCH coordinates: L lightness (0 black to 1 white), C chroma (0 grey to ~0.4 saturated), H hue in degrees (0 red, 120 green, 240 blue). Read state.roles[name].oklch for the raw numbers.`"
     >{{ fmtOklch(record) }}</span>
     <span
       v-if="envelopeWarning !== undefined"

@@ -19,11 +19,11 @@ export interface SchemaInterface {
   readonly 'minItems'?:            number;
   readonly 'maxItems'?:            number;
   readonly 'pattern'?:             string;
-  /** Ignored during traversal — present only for schema identification. */
+  /** Ignored during traversal; present only for schema identification. */
   readonly '$id'?:                 string;
   readonly '$schema'?:             string;
   readonly 'description'?:         string;
-  /** $ref: not resolved — schemas that use $ref must be validated elsewhere. */
+  /** $ref: not resolved; schemas that use $ref must be validated elsewhere. */
   readonly '$ref'?:                string;
 }
 
@@ -66,7 +66,7 @@ function validateType(schema: SchemaInterface, value: unknown, path: string, err
 }
 
 function walkValue(schema: SchemaInterface, value: unknown, path: string, errors: ValidationErrorInterface[]): void {
-  // $ref: skip — schemas using $ref are not validated via this walker
+  // $ref: skip; schemas using $ref are not validated via this walker
   if (schema['$ref'] !== undefined) {
     return;
   }
@@ -158,7 +158,7 @@ function walkValue(schema: SchemaInterface, value: unknown, path: string, errors
       schema['additionalProperties'] !== null &&
       !Array.isArray(schema['additionalProperties'])
     ) {
-      // additionalProperties is a schema — validate every value against it
+      // additionalProperties is a schema: validate every value against it
       const knownKeys = schema['properties'] !== undefined
         ? new Set(Object.keys(schema['properties']))
         : new Set<string>();

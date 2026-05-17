@@ -1,6 +1,6 @@
 ---
 title: "Vue + Capacitor: per-category palettes"
-description: A worked recipe — one Engine instance per CategoryColorService, scoped CSS custom properties on the document, and Capacitor StatusBar parameters for native chrome
+description: A worked recipe. One Engine instance per CategoryColorService, scoped CSS custom properties on the document, and Capacitor StatusBar parameters for native chrome.
 ---
 
 # Vue + Capacitor: per-category palettes

@@ -3,7 +3,7 @@
  * PairCard.vue
  *
  * Reusable vertical card editor for a single `ContrastPairInterface`.
- * Sibling to RoleCard — same card metaphor, same tooltip discipline,
+ * Sibling to RoleCard: same card metaphor, same tooltip discipline,
  * same grid-reflow strategy in the parent. Each pair declares two
  * roles (foreground + background), a required minimum contrast ratio,
  * and which algorithm (WCAG 2.1 or APCA) the engine should enforce.
@@ -55,7 +55,7 @@ const emit = defineEmits<{
     </header>
 
     <div class="pair-card__body">
-      <FormField leg="foreground" tooltip="Foreground role — typically a text or accent color that must remain legible against the background role below.">
+      <FormField leg="foreground" tooltip="Foreground role: typically a text or accent color that must remain legible against the background role below.">
         <Select
           :model-value="pair.foreground"
           :options="roleOptions"
@@ -67,7 +67,7 @@ const emit = defineEmits<{
         />
       </FormField>
 
-      <FormField leg="on" tooltip="Background role — the surface the foreground above is painted onto.">
+      <FormField leg="on" tooltip="Background role: the surface the foreground above is painted onto.">
         <Select
           :model-value="pair.background"
           :options="roleOptions"
@@ -91,7 +91,7 @@ const emit = defineEmits<{
         />
       </FormField>
 
-      <FormField leg="via" tooltip="Which contrast algorithm enforces this pair. WCAG 2.1 uses a luminance ratio (familiar, widely cited). APCA uses Lightness Contrast — perceptually accurate for modern UIs and required for WCAG 3.0 drafts.">
+      <FormField leg="via" tooltip="Which contrast algorithm enforces this pair. WCAG 2.1 uses a luminance ratio (familiar, widely cited). APCA uses Lightness Contrast: perceptually accurate for modern UIs and required for WCAG 3.0 drafts.">
         <Select
           :model-value="pair.algorithm ?? 'wcag21'"
           :options="algorithmOptions"

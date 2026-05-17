@@ -33,10 +33,10 @@ export class EmitVscodeThemeJson implements TaskInterface {
     const meta = getOrCreateMetadata(state, 'vscode');
 
     if (!out.workbenchColors) {
-      throw new Error('EmitVscodeThemeJson: outputs.vscode.workbenchColors not found — run emit:vscodeUiPalette first');
+      throw new Error('EmitVscodeThemeJson: outputs.vscode.workbenchColors not found; run emit:vscodeUiPalette first');
     }
     if (!out.semanticTokenRules) {
-      throw new Error('EmitVscodeThemeJson: outputs.vscode.semanticTokenRules not found — run emit:vscodeSemanticRules first');
+      throw new Error('EmitVscodeThemeJson: outputs.vscode.semanticTokenRules not found; run emit:vscodeSemanticRules first');
     }
 
     const themeName = (state.input.metadata?.['themeName'] as string | undefined) ?? 'Color Engine Theme';

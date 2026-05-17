@@ -11,7 +11,7 @@ const DEFAULT_MAX = 64;
 /**
  * Pipeline task that caps `state.colors.length` at `input.maxColors`
  * (default 64) by running median-cut clustering when the limit is
- * exceeded. Skipped entirely when `input.bypass` is true — useful for
+ * exceeded. Skipped entirely when `input.bypass` is true, useful for
  * tests that need to assert against the raw intake set.
  *
  * Mutates `state.colors` in place rather than reassigning so other

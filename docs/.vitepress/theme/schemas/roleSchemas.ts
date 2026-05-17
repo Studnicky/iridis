@@ -4,7 +4,7 @@
  * Built-in iridis role schemas for the docs site. Each tier is a superset
  * of the previous (4 ⊂ 8 ⊂ 12 ⊂ 16 ⊂ 32), so picking a smaller tier
  * produces a sparser palette and the docs page paints with fewer tokens
- * — that sparseness IS the demonstration of what each schema gives you.
+ * (that sparseness IS the demonstration of what each schema gives you).
  *
  * Each tier ships as a { dark, light } pair. Same role names, same contrast
  * pairs, only lightness ranges differ. The framing toggle in the navbar
@@ -190,23 +190,23 @@ const iridis32Dark: RoleSchemaInterface = {
   'description': 'Thirty-two-role schema (dark framing). Adds emphasis tiers, interaction colors, chrome variants, and extended syntax tokens.',
   'roles': [
     ...iridis16Dark.roles,
-    /* Emphasis tiers — text-strong reads as primary headings, text-subtle as captions / metadata. */
+    /* Emphasis tiers: text-strong reads as primary headings, text-subtle as captions / metadata. */
     { 'name': 'text-strong',  'intent': 'text', 'derivedFrom': 'text', 'lightnessRange': [0.92, 0.99], 'chromaRange': [0.00, 0.03] },
     { 'name': 'text-subtle',  'intent': 'muted', 'derivedFrom': 'text', 'lightnessRange': [0.62, 0.74], 'chromaRange': [0.00, 0.04] },
-    /* Interaction family — link/link-hover for anchors, focus-ring for a11y outlines. */
+    /* Interaction family: link/link-hover for anchors, focus-ring for a11y outlines. */
     { 'name': 'link',         'intent': 'link',   'derivedFrom': 'brand', 'lightnessRange': [0.62, 0.78], 'chromaRange': [0.14, 0.28], 'hueOffset': -15 },
     { 'name': 'link-hover',   'intent': 'link',   'derivedFrom': 'brand', 'lightnessRange': [0.72, 0.86], 'chromaRange': [0.16, 0.30], 'hueOffset': -15 },
     { 'name': 'focus-ring',   'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.60, 0.75], 'chromaRange': [0.20, 0.34] },
-    /* Chrome variants — overlays, alternate borders, code surfaces. */
+    /* Chrome variants: overlays, alternate borders, code surfaces. */
     { 'name': 'overlay',      'intent': 'background', 'lightnessRange': [0.02, 0.10], 'chromaRange': [0.00, 0.04] },
     { 'name': 'border',       'intent': 'muted',      'derivedFrom': 'divider', 'lightnessRange': [0.22, 0.34], 'chromaRange': [0.00, 0.06] },
     { 'name': 'border-strong','intent': 'muted',      'derivedFrom': 'divider', 'lightnessRange': [0.32, 0.46], 'chromaRange': [0.00, 0.08] },
     { 'name': 'code-bg',      'intent': 'background', 'derivedFrom': 'bg-soft', 'lightnessRange': [0.08, 0.16], 'chromaRange': [0.00, 0.04] },
-    /* Status family — info completes the warning/error/success quadrant. */
+    /* Status family: info completes the warning/error/success quadrant. */
     { 'name': 'info',         'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.55, 0.72], 'chromaRange': [0.16, 0.28], 'hueOffset': -60 },
-    /* Secondary accent — pairs with brand for two-color emphasis. */
+    /* Secondary accent: pairs with brand for two-color emphasis. */
     { 'name': 'accent-alt',   'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.58, 0.74], 'chromaRange': [0.14, 0.26], 'hueOffset': 150 },
-    /* Extended syntax — comment / tag / attribute / operator / class / punctuation. */
+    /* Extended syntax: comment / tag / attribute / operator / class / punctuation. */
     { 'name': 'syntax-comment',     'intent': 'muted',  'derivedFrom': 'muted', 'lightnessRange': [0.48, 0.60], 'chromaRange': [0.00, 0.06] },
     { 'name': 'syntax-tag',         'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.68, 0.82], 'chromaRange': [0.14, 0.26], 'hueOffset': 240 },
     { 'name': 'syntax-attribute',   'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.68, 0.82], 'chromaRange': [0.12, 0.24], 'hueOffset': 270 },

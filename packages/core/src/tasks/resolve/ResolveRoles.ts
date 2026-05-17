@@ -46,7 +46,7 @@ function distanceToRoleCenter(color: ColorRecordInterface, role: RoleDefinitionI
  * lightnessRange, chromaRange, and (if specified) absolute hueOffset
  * target. Already-conformant candidates are returned unchanged so the
  * common case is allocation-free, unless the role declares an `intent`
- * that the candidate's hints lack — in which case a new record is
+ * that the candidate's hints lack, in which case a new record is
  * allocated through the factory so `hints.intent` is propagated onto
  * the resolved record (the schema's intent is authoritative; see the
  * JSDoc on {@link RoleDefinitionInterface.intent}).
@@ -95,8 +95,8 @@ function synthesizeForRole(role: RoleDefinitionInterface): ColorRecordInterface 
 /**
  * Pipeline task that assigns one `ColorRecord` to each non-derived
  * role in the schema. Resolution order:
- *   1. Hint match — a color carrying `hints.role === <name>` wins.
- *   2. No candidates available — `required` roles are synthesised
+ *   1. Hint match: a color carrying `hints.role === <name>` wins.
+ *   2. No candidates available: `required` roles are synthesised
  *      from the role's own range centers.
  *   3. Closest by OKLCH distance to the range center.
  *
@@ -121,7 +121,7 @@ export class ResolveRoles implements TaskInterface {
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     if (!state.input.roles) {
-      ctx.logger.debug('ResolveRoles', 'run', 'No role schema provided — skipping');
+      ctx.logger.debug('ResolveRoles', 'run', 'No role schema provided; skipping');
       return;
     }
 
@@ -133,7 +133,7 @@ export class ResolveRoles implements TaskInterface {
         continue;
       }
 
-      // Hint match takes priority — explicit user intent.
+      // Hint match takes priority: explicit user intent.
       const hintMatch = state.colors.find((c) => c.hints?.['role'] === role.name);
       if (hintMatch) {
         state.roles[role.name] = nudgeIntoRole(hintMatch, role);
@@ -141,12 +141,12 @@ export class ResolveRoles implements TaskInterface {
         continue;
       }
 
-      // No candidate colors at all — synthesize required roles from constraints.
+      // No candidate colors at all: synthesize required roles from constraints.
       if (state.colors.length === 0) {
         if (role.required) {
           state.roles[role.name] = synthesizeForRole(role);
           synthesized.push(role.name);
-          ctx.logger.debug('ResolveRoles', 'run', 'Role synthesized from constraints — no input colors', {
+          ctx.logger.debug('ResolveRoles', 'run', 'Role synthesized from constraints; no input colors', {
             'role': role.name,
           });
         }

@@ -4,19 +4,19 @@
  * APCA Lc target selection (`EnforceApca`), WCAG required-ratio selection
  * (`wcagRequiredRatio`), and capacitor StatusBar style
  * (`EmitCapacitorTheme`). The schema author's declared intent is
- * authoritative — no substring inference happens anywhere downstream.
+ * authoritative; no substring inference happens anywhere downstream.
  *
  * Ten canonical members grouped by usage family:
- *  - `'text'`       — primary text content painted over a background.
- *  - `'background'` — primary surface that receives a foreground.
- *  - `'accent'`     — brand or emphasis colour calling attention.
- *  - `'muted'`      — low-emphasis text or chrome (de-emphasised content).
- *  - `'critical'`   — error / danger state signal.
- *  - `'positive'`   — success / affirmative state signal.
- *  - `'link'`       — anchor text foreground.
- *  - `'button'`     — actionable surface (button face).
- *  - `'onAccent'`   — foreground painted onto an accent surface.
- *  - `'onButton'`   — foreground painted onto a button surface.
+ *  - `'text'`:       primary text content painted over a background.
+ *  - `'background'`: primary surface that receives a foreground.
+ *  - `'accent'`:     brand or emphasis colour calling attention.
+ *  - `'muted'`:      low-emphasis text or chrome (de-emphasised content).
+ *  - `'critical'`:   error / danger state signal.
+ *  - `'positive'`:   success / affirmative state signal.
+ *  - `'link'`:       anchor text foreground.
+ *  - `'button'`:     actionable surface (button face).
+ *  - `'onAccent'`:   foreground painted onto an accent surface.
+ *  - `'onButton'`:   foreground painted onto a button surface.
  */
 export type ColorIntentType =
   | 'text'
@@ -35,10 +35,10 @@ export type ColorIntentType =
  * `enforce:cvdSimulate` task. Four canonical members covering the
  * three dichromacies (one missing cone) plus full achromatopsia
  * (no chromatic vision):
- *  - `'protanopia'`    — missing L-cone (red-blind);    ~1 % of males.
- *  - `'deuteranopia'`  — missing M-cone (green-blind);  ~1 % of males.
- *  - `'tritanopia'`    — missing S-cone (blue-blind);   ~0.01 % overall.
- *  - `'achromatopsia'` — no functional cones (rod monochromacy);
+ *  - `'protanopia'`:    missing L-cone (red-blind);    ~1 % of males.
+ *  - `'deuteranopia'`:  missing M-cone (green-blind);  ~1 % of males.
+ *  - `'tritanopia'`:    missing S-cone (blue-blind);   ~0.01 % overall.
+ *  - `'achromatopsia'`: no functional cones (rod monochromacy);
  *                        ~0.003 % overall. Vision reduces to luminance only.
  *
  * Partial-deficiency variants (protanomaly, deuteranomaly, tritanomaly)
@@ -99,7 +99,7 @@ export interface ColorHintsInterface {
  * them into a single hidden class. The optional fields use
  * `T | undefined` rather than `T?` so callers must spell out
  * `displayP3: undefined` / `hints: undefined` instead of omitting
- * the slot — explicit-undefined keeps the shape monomorphic where
+ * the slot. Explicit-undefined keeps the shape monomorphic where
  * key-absence would create a second hidden class.
  *
  * Key order is: `oklch`, `rgb`, `hex`, `alpha`, `sourceFormat`,
@@ -109,22 +109,22 @@ export interface ColorHintsInterface {
  * reorders keys and breaks the hidden class.
  *
  * Field semantics:
- *  - `oklch` — the input color in OKLCH space. May lie OUTSIDE the
+ *  - `oklch`: the input color in OKLCH space. May lie OUTSIDE the
  *    sRGB gamut; consumers wanting wide-gamut fidelity should read this
  *    slot (or `displayP3`) rather than `rgb`.
- *  - `rgb` — the color in sRGB. ALWAYS representable on sRGB-only
+ *  - `rgb`: the color in sRGB. ALWAYS representable on sRGB-only
  *    displays: when the input OKLCH is out-of-sRGB, the factory
  *    gamut-maps to sRGB along constant L+H (CSS Color 4 §13.2.2) and
  *    stores the mapped value here. Callers emitting sRGB-only outputs
  *    can read `rgb` (or `hex`) directly without worrying about clipping.
- *  - `hex` — `#rrggbb` derived from `rgb`. Same sRGB-safe guarantee.
- *  - `displayP3` — populated when the input OKLCH is OUT-OF-SRGB-GAMUT,
+ *  - `hex`: `#rrggbb` derived from `rgb`. Same sRGB-safe guarantee.
+ *  - `displayP3`: populated when the input OKLCH is OUT-OF-SRGB-GAMUT,
  *    or when the record arrived through `intake:p3`. Channels are
  *    clipped to `[0, 1]`. `undefined` when the input is already fully
  *    sRGB-representable, so consumers can detect "this color benefits
  *    from a wide-gamut output path" with a single `displayP3 !==
  *    undefined` check.
- *  - `hints` — soft metadata (role, intent, weight). Propagated through
+ *  - `hints`: soft metadata (role, intent, weight). Propagated through
  *    the pipeline; the schema-declared `intent` overrides intake-level
  *    intent at `resolve:roles`.
  */

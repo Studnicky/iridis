@@ -30,9 +30,9 @@ const DELEGATES = [
  * for ignoring entries it doesn't recognise. Idiomatic when callers
  * don't know (or don't want to commit to) the exact format coming in.
  *
- * Order matters only for ambiguous strings — e.g. `"red"` could match
+ * Order matters only for ambiguous strings (e.g. `"red"` could match
  * IntakeNamed, but the unprefixed three-character hex `"red"` is also
- * accepted by IntakeHex's loose pattern. IntakeHex runs first so hex
+ * accepted by IntakeHex's loose pattern). IntakeHex runs first so hex
  * always wins when both could parse.
  */
 export class IntakeAny implements TaskInterface {

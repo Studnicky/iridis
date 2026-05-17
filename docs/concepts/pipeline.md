@@ -1,6 +1,6 @@
 ---
 title: How the pipeline works
-description: The four iridis stages — intake, resolve, enforce, emit — and how registered tasks turn raw seed strings into a role-resolved, contrast-safe palette
+description: The four iridis stages (intake, resolve, enforce, emit) and how registered tasks turn raw seed strings into a role-resolved, contrast-safe palette.
 ---
 
 # How the pipeline works
@@ -89,7 +89,7 @@ export const myPlugin: PluginInterface = {
 };
 ```
 
-Plugin names are unique within a single engine. Re-adopting a plugin with the same `name` logs a warning and overwrites its tasks — the explicit composition root means consumers always see what the engine is running.
+Plugin names are unique within a single engine. Re-adopting a plugin with the same `name` logs a warning and overwrites its tasks; the explicit composition root means consumers always see what the engine is running.
 
 ## Math primitives, direct imports
 

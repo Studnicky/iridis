@@ -28,7 +28,7 @@ import { colorRecordFactory, getOrCreateMetadata } from '@studnicky/iridis';
  *   - Input weights are respected: a record that arrives with
  *     `hints.weight = w` contributes `w` to its bin, not `1`. Callers
  *     can therefore stack histograms.
- *   - Records with `alpha === 0` are skipped — transparent pixels
+ *   - Records with `alpha === 0` are skipped; transparent pixels
  *     should not bias clustering.
  */
 
@@ -65,7 +65,7 @@ export class GalleryHistogram implements TaskInterface {
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     if (state.colors.length === 0) {
-      ctx.logger.warn('GalleryHistogram', 'run', 'state.colors is empty — nothing to histogram');
+      ctx.logger.warn('GalleryHistogram', 'run', 'state.colors is empty; nothing to histogram');
       return;
     }
 

@@ -37,7 +37,7 @@ export class WcagRequiredRatio {
       return 3.0;
     }
 
-    // AAA level — roles must exist; default to 7.0 when absent.
+    // AAA level: roles must exist; default to 7.0 when absent.
     if (!roles[pair.foreground] || !roles[pair.background]) {
       return 7.0;
     }

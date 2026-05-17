@@ -12,7 +12,7 @@ import { reasonSerialize } from './tasks/ReasonSerialize.ts';
  * serializes the graph to the requested format.
  *
  * Peer dependency: `n3` (optional, browser-safe pure-JS).
- * If n3 is absent, tasks log an error and skip — they do not throw.
+ * If n3 is absent, tasks log an error and skip; they do not throw.
  */
 export class RdfPlugin implements PluginInterface {
   readonly 'name'    = 'rdf';

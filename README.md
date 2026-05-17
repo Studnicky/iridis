@@ -12,7 +12,7 @@ The engine ships intake, clamp, resolve, expand, enforce, derive, and `emit:json
 
 ## Documentation
 
-The full documentation is published at **https://studnicky.github.io/iridis/**. The site runs the live engine against its own brand palette — every chrome and syntax token on the page is the output of `engine.run()`, so the docs themselves demonstrate what the library produces.
+The full documentation is published at **https://studnicky.github.io/iridis/**. The site runs the live engine against its own brand palette; every chrome and syntax token on the page is the output of `engine.run()`, so the docs themselves demonstrate what the library produces.
 
 - [Getting started](https://studnicky.github.io/iridis/getting-started) - install, the smallest possible pipeline, the shape of the output.
 - [Try it out](https://studnicky.github.io/iridis/try-it-out) - edit seed colors and a role schema in the browser; the page recomputes through the engine on every keystroke.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * IridisPicker.vue — HSV-canonical visual picker, multi-format I/O.
+ * IridisPicker.vue: HSV-canonical visual picker, multi-format I/O.
  *
  * Visual controls:
  *   - S × V square (drag) at the active hue. Saturation = horizontal,
@@ -266,14 +266,14 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
     <div
       class="iridis-picker__hue"
       :style="{ background: hueStripBackground }"
-      title="Hue strip — 0° red, 60° yellow, 120° green, 180° cyan, 240° blue, 300° magenta. Drag to pick."
+      title="Hue strip: 0° red, 60° yellow, 120° green, 180° cyan, 240° blue, 300° magenta. Drag to pick."
       @pointerdown="onHuePointer"
       @pointermove="onHueMove"
     >
       <div class="iridis-picker__hue-marker" :style="{ left: hueMarkerX }" />
     </div>
 
-    <!-- Format selector — PrimeVue SelectButton paints with iridis tokens. -->
+    <!-- Format selector: PrimeVue SelectButton paints with iridis tokens. -->
     <SelectButton
       :model-value="mode"
       :options="modeOptions"
@@ -308,13 +308,13 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
 
     <!-- RGB -->
     <div v-else-if="mode === 'rgb'" class="iridis-picker__channels">
-      <FormField orientation="column" compact leg="R" tooltip="Red channel — sRGB byte value, 0 (no red) to 255 (full red).">
+      <FormField orientation="column" compact leg="R" tooltip="Red channel: sRGB byte value, 0 (no red) to 255 (full red).">
         <InputNumber :model-value="currentRgb.r" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('r', Number(v ?? 0))" />
       </FormField>
-      <FormField orientation="column" compact leg="G" tooltip="Green channel — sRGB byte value, 0 (no green) to 255 (full green).">
+      <FormField orientation="column" compact leg="G" tooltip="Green channel: sRGB byte value, 0 (no green) to 255 (full green).">
         <InputNumber :model-value="currentRgb.g" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('g', Number(v ?? 0))" />
       </FormField>
-      <FormField orientation="column" compact leg="B" tooltip="Blue channel — sRGB byte value, 0 (no blue) to 255 (full blue).">
+      <FormField orientation="column" compact leg="B" tooltip="Blue channel: sRGB byte value, 0 (no blue) to 255 (full blue).">
         <InputNumber :model-value="currentRgb.b" :min="0" :max="255" :show-buttons="false" size="small" @update:model-value="(v) => setRgb('b', Number(v ?? 0))" />
       </FormField>
     </div>
@@ -334,7 +334,7 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
 
     <!-- CMYK -->
     <div v-else-if="mode === 'cmyk'" class="iridis-picker__channels iridis-picker__channels--four">
-      <FormField orientation="column" compact leg="C" tooltip="Cyan ink percentage, 0–100 (subtractive model — useful for print-target conversion only; screens display sRGB).">
+      <FormField orientation="column" compact leg="C" tooltip="Cyan ink percentage, 0–100 (subtractive model, useful for print-target conversion only; screens display sRGB).">
         <InputNumber :model-value="Math.round(cmyk.c)" :min="0" :max="100" :show-buttons="false" size="small" @update:model-value="(v) => setCmyk('c', Number(v ?? 0))" />
       </FormField>
       <FormField orientation="column" compact leg="M" tooltip="Magenta ink percentage, 0–100.">
@@ -439,7 +439,7 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
   gap: 0.15rem;
   width: 100%;
 }
-/* Picker's format-mode tab strip — visual tabs with an underline on
+/* Picker's format-mode tab strip: visual tabs with an underline on
    the active item, NOT filled pills. Colors bind to the engine-
    enforced iridis text token so contrast against the picker bg is
    the same ratio the role schema declares for text/background. */

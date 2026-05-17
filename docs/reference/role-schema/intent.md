@@ -45,7 +45,7 @@ The intent vocabulary is closed at 10 members, grouped by usage family.
 
 ## What it means
 
-Intent is orthogonal to role name. Two roles with intent `accent` are *both* accents — the schema's `derivedFrom` plus `hueOffset` is the right tool to relate them parametrically. Intent is the **classifier**; `name` is the **identifier**.
+Intent is orthogonal to role name. Two roles with intent `accent` are *both* accents; the schema's `derivedFrom` plus `hueOffset` is the right tool to relate them parametrically. Intent is the **classifier**; `name` is the **identifier**.
 
 ## How to author
 
@@ -55,5 +55,5 @@ Intent is orthogonal to role name. Two roles with intent `accent` are *both* acc
 
 ## Related
 
-- [Role schemas overview](../../concepts/role-schemas) — full authoring guide.
-- [Contrast pairs](./contrast-pairs) — declares which intents pair against which.
+- [Role schemas overview](../../concepts/role-schemas): full authoring guide.
+- [Contrast pairs](./contrast-pairs): declares which intents pair against which.

@@ -11,7 +11,7 @@
  * don't duplicate the route-config logic. Items already loaded are
  * tracked in a Set keyed by pathname.
  *
- * Mounted from theme/index.ts via doc-after slot — appears at the end of
+ * Mounted from theme/index.ts via doc-after slot. Appears at the end of
  * the article on every page.
  */
 
@@ -93,7 +93,7 @@ async function loadNext(): Promise<void> {
 
     lastUrlPath = target;
   } catch {
-    /* network failure — silent; user can scroll back, navigate, or refresh */
+    /* network failure: silent; user can scroll back, navigate, or refresh */
     loadedPaths.delete(target);
   } finally {
     loading.value = false;

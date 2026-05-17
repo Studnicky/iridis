@@ -3,7 +3,7 @@
 CLI runner for `@studnicky/iridis`. Reads a JSON config, dynamically imports
 the plugins whose `enable*` flag is `true`, runs the engine, and writes each
 plugin's outputs to separate files in `output.directory`. Same `Engine` the
-library API uses — the CLI is a thin shell around `engine.run()`.
+library API uses. The CLI is a thin shell around `engine.run()`.
 
 ## Install
 
@@ -67,7 +67,7 @@ The config is validated against `CliConfigSchema`. Required top-level keys:
 ```
 
 The `enable*` flags determine which plugin packages the CLI `import()`s at
-runtime — only flags set to `true` trigger a dynamic import, and the
+runtime. Only flags set to `true` trigger a dynamic import, and the
 corresponding package must be installed alongside the CLI.
 
 `output.files` is a `Record<string, string>` keyed by the plugin's

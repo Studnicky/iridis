@@ -47,7 +47,7 @@ test('Pipeline composition e2e :: happy :: hint-driven role assignment', async (
     ],
   };
 
-  // Hex inputs don't carry hints — so role assignment falls back to OKLCH distance.
+  // Hex inputs don't carry hints, so role assignment falls back to OKLCH distance.
   // We supply 3 colors with distinct lightness so each role can be resolved.
   const state = await engine.run({
     'colors': ['#6d28d9', '#f5f3ff', '#1c1917'],
@@ -284,7 +284,7 @@ test('Pipeline composition e2e :: edge :: double enforce:contrast is idempotent'
 });
 
 // ---------------------------------------------------------------------------
-// edge: empty roles schema — resolve:roles and expand:family return cleanly
+// edge: empty roles schema; resolve:roles and expand:family return cleanly
 // ---------------------------------------------------------------------------
 
 test('Pipeline composition e2e :: edge :: empty roles list produces empty state.roles', async () => {
@@ -317,10 +317,10 @@ test('Pipeline composition e2e :: edge :: empty roles list produces empty state.
 });
 
 // ---------------------------------------------------------------------------
-// edge: no roles schema at all — resolve:roles and expand:family skip cleanly
+// edge: no roles schema at all; resolve:roles and expand:family skip cleanly
 // ---------------------------------------------------------------------------
 
-test('Pipeline composition e2e :: edge :: no roles input — resolve and expand skip cleanly', async () => {
+test('Pipeline composition e2e :: edge :: no roles input; resolve and expand skip cleanly', async () => {
   const engine = freshEngine();
   engine.pipeline([
     'intake:hex',
@@ -333,7 +333,7 @@ test('Pipeline composition e2e :: edge :: no roles input — resolve and expand 
   const input: InputInterface = { 'colors': ['#ff6b6b', '#4ecdc4'] };
   const state = await engine.run(input);
 
-  // No crash — roles and variants are empty
+  // No crash: roles and variants are empty
   assert.deepStrictEqual(state.roles, {}, 'state.roles should be empty without role schema');
   assert.deepStrictEqual(state.variants, {}, 'state.variants should be empty');
   const json = state.outputs['json'] as JsonOutput | undefined;

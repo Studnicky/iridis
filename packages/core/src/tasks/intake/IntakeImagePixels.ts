@@ -22,7 +22,7 @@ function isImagePixelInput(v: unknown): v is ImagePixelInput {
 
 /**
  * Intake task for `ImageData`-shaped inputs (`{data: Uint8ClampedArray,
- * width, height}` — the canvas API's pixel buffer). Pushes one
+ * width, height}`, the canvas API's pixel buffer). Pushes one
  * `ColorRecord` per fully or partially opaque pixel; transparent
  * pixels are dropped so an alpha-channel mask doesn't bias clustering.
  *

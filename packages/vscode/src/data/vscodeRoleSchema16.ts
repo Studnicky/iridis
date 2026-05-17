@@ -4,7 +4,7 @@ import type { RoleSchemaInterface } from '@studnicky/iridis';
  * 16-role schema for VS Code theme generation.
  *
  * Lightness and chroma ranges are derived from the arcade-blaster dark-mode
- * DARK_CLAMPS table in paletteClamp.ts (reference only — not imported).
+ * DARK_CLAMPS table in paletteClamp.ts (reference only, not imported).
  * Ranges use OKLCh scale: lightness 0–1, chroma 0–0.4 (mapped from HSL 0–100).
  *
  * DEFAULT VARIANT: dark.

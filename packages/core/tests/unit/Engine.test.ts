@@ -97,7 +97,7 @@ test('Engine :: unhappy :: pipeline references unknown task name throws', () => 
 });
 
 // ---------------------------------------------------------------------------
-// run — happy path
+// run: happy path
 // ---------------------------------------------------------------------------
 
 test('Engine :: happy :: run returns PaletteStateInterface with input preserved', async () => {
@@ -183,7 +183,7 @@ test('Engine :: happy :: run executes onRunEnd hooks after pipeline tasks', asyn
 });
 
 // ---------------------------------------------------------------------------
-// run — edge
+// run: edge
 // ---------------------------------------------------------------------------
 
 test('Engine :: edge :: run with empty pipeline succeeds and returns state', async () => {
@@ -217,7 +217,7 @@ test('Engine :: edge :: adopt-routed onRunStart task fires via hook, not in main
 
 
 // ---------------------------------------------------------------------------
-// P1.3 — adopt routes phased tasks through hooks
+// P1.3: adopt routes phased tasks through hooks
 // ---------------------------------------------------------------------------
 
 test('Engine :: P1.3 :: adopt routes onRunStart task through hook, not register', () => {
@@ -307,7 +307,7 @@ test('Engine :: P1.3 :: adopt separates mixed phased and ordinary tasks correctl
 });
 
 // ---------------------------------------------------------------------------
-// P1.4 — pipeline enforces manifest.requires ordering
+// P1.4: pipeline enforces manifest.requires ordering
 // ---------------------------------------------------------------------------
 
 test('Engine :: P1.4 :: pipeline accepts correct dependency order', () => {
@@ -326,7 +326,7 @@ test('Engine :: P1.4 :: pipeline accepts correct dependency order', () => {
 
   engine.adopt(makePlugin('p', [depTask, consumerTask]));
 
-  // dep before consumer — should not throw
+  // dep before consumer: should not throw
   engine.pipeline(['task:dep', 'task:consumer']);
   assert.strictEqual(engine.tasks.has('task:dep'),      true);
   assert.strictEqual(engine.tasks.has('task:consumer'), true);
@@ -406,13 +406,13 @@ test('Engine :: P1.4 :: pipeline skips requires validation for math primitive na
 
   engine.adopt(makePlugin('p', [taskWithMathRequires]));
 
-  // 'someMathPrimitive' is not a registered task — should not throw
+  // 'someMathPrimitive' is not a registered task; should not throw
   engine.pipeline(['task:usesmath']);
   assert.strictEqual(engine.tasks.has('task:usesmath'), true);
 });
 
 // ---------------------------------------------------------------------------
-// P3 — plugin name uniqueness check
+// P3: plugin name uniqueness check
 // ---------------------------------------------------------------------------
 
 test('Engine :: P3 :: adopt warns when plugin name already adopted', () => {

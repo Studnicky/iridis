@@ -1,7 +1,7 @@
 /**
  * quickPalette one-liner contract.
  *
- * One call, one array of seeds, optional framing — back comes a four-key
+ * One call, one array of seeds, optional framing: back comes a four-key
  * hex palette guaranteed to satisfy the framing-appropriate clamp ranges.
  */
 
@@ -55,7 +55,7 @@ test('quickPalette :: single seed :: still produces a complete palette', async (
 });
 
 // ---------------------------------------------------------------------------
-// Golden fixture — locks the output of quickPalette(['#5b21b6'], 'dark') so any
+// Golden fixture: locks the output of quickPalette(['#5b21b6'], 'dark') so any
 // drift in intake / resolve / role-range math surfaces as a test failure. Set
 // UPDATE_GOLDENS=1 to regenerate the fixture after an intentional behaviour
 // change.

@@ -5,7 +5,7 @@
  * Reusable vertical card editor for a single `RoleDefinitionInterface`.
  * The role schema editor renders one of these per role and lets CSS
  * grid reflow them into one, two, or three columns based on the drawer
- * width — matching the card metaphor used by the IridisPicker.
+ * width, matching the card metaphor used by the IridisPicker.
  *
  * Every field carries a native `title` tooltip explaining what it does
  * and how the engine uses it. Tooltips appear on the wrapper element
@@ -78,7 +78,7 @@ function setIntent(v: unknown): void {
     </header>
 
     <div class="role-card__body">
-      <FormField leg="intent" tooltip="Semantic intent — drives forced-colors mapping, APCA Lc target, WCAG required ratio, Capacitor StatusBar style. Pick the closest match; the engine treats unknown roles by name only when intent is absent.">
+      <FormField leg="intent" tooltip="Semantic intent. Drives forced-colors mapping, APCA Lc target, WCAG required ratio, Capacitor StatusBar style. Pick the closest match; the engine treats unknown roles by name only when intent is absent.">
         <Select
           :model-value="role.intent ?? ''"
           :options="intentOptions"
@@ -97,7 +97,7 @@ function setIntent(v: unknown): void {
           :max-fraction-digits="2"
           :show-buttons="false"
           size="small"
-          title="Lightness floor — the lowest OKLCH L value the resolver will allow."
+          title="Lightness floor: the lowest OKLCH L value the resolver will allow."
           @update:model-value="(v) => emit('update:range', 'lightnessRange', 0, Number(v ?? 0))"
         />
         <span class="role-card__dash">→</span>
@@ -107,7 +107,7 @@ function setIntent(v: unknown): void {
           :max-fraction-digits="2"
           :show-buttons="false"
           size="small"
-          title="Lightness ceiling — the highest OKLCH L value the resolver will allow."
+          title="Lightness ceiling: the highest OKLCH L value the resolver will allow."
           @update:model-value="(v) => emit('update:range', 'lightnessRange', 1, Number(v ?? 1))"
         />
       </FormField>
@@ -119,7 +119,7 @@ function setIntent(v: unknown): void {
           :max-fraction-digits="2"
           :show-buttons="false"
           size="small"
-          title="Chroma floor — the lowest OKLCH C value the resolver will allow."
+          title="Chroma floor: the lowest OKLCH C value the resolver will allow."
           @update:model-value="(v) => emit('update:range', 'chromaRange', 0, Number(v ?? 0))"
         />
         <span class="role-card__dash">→</span>
@@ -129,7 +129,7 @@ function setIntent(v: unknown): void {
           :max-fraction-digits="2"
           :show-buttons="false"
           size="small"
-          title="Chroma ceiling — the highest OKLCH C value the resolver will allow."
+          title="Chroma ceiling: the highest OKLCH C value the resolver will allow."
           @update:model-value="(v) => emit('update:range', 'chromaRange', 1, Number(v ?? 0.5))"
         />
       </FormField>
@@ -137,7 +137,7 @@ function setIntent(v: unknown): void {
       <FormField leg="derive" tooltip="Pick a parent role to derive from. The expand:family task synthesizes the child by copying the parent's hue and applying the hue offset below. Leave as none to resolve independently from the input palette.">
         <Select
           :model-value="role.derivedFrom ?? ''"
-          :options="[{ 'label': '— none —', 'value': '' }, ...derivedFromOptions.filter((o) => o.value !== role.name)]"
+          :options="[{ 'label': '(none)', 'value': '' }, ...derivedFromOptions.filter((o) => o.value !== role.name)]"
           option-label="label"
           option-value="value"
           size="small"
@@ -236,7 +236,7 @@ function setIntent(v: unknown): void {
   min-width: 0;
 }
 
-/* The bespoke "required" field — checkbox-then-label layout that the
+/* The bespoke "required" field: checkbox-then-label layout that the
    leg-before-control FormField wrapper does not model. */
 .role-card__field {
   display: flex;
@@ -275,7 +275,7 @@ function setIntent(v: unknown): void {
   width: 100%;
 }
 
-/* Shared input chrome — monospace + iridis radius, scoped here so the
+/* Shared input chrome: monospace + iridis radius, scoped here so the
    tokens descend into PrimeVue children without leaking to neighbouring
    components. Dropdown labels render at their authored case; only the
    leg legends use uppercase. */

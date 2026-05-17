@@ -1,6 +1,6 @@
 ---
 title: "Cascading tokens, dogfood pattern"
-description: Scope iridis-emitted CSS custom properties per UI category — emit:cssVarsScoped writes one block per scope and the cascade resolves at paint, no JS theme switcher needed
+description: Scope iridis-emitted CSS custom properties per UI category. emit:cssVarsScoped writes one block per scope and the cascade resolves at paint, no JS theme switcher needed.
 ---
 
 # Cascading tokens
@@ -223,7 +223,7 @@ The schema doesn't have to declare syntax roles. If the user picks `iridis-4` (w
 
 ## Extending the cascade to a component library
 
-The pattern doesn't stop at framework chrome. If your UI rides a component library, point its design tokens at the same `--iridis-*` outputs. This site uses PrimeVue v4; the wiring lives in `docs/.vitepress/theme/primevuePreset.ts` and reads like another token cascade — PrimeVue tokens are CSS variables (`--p-primary-color`, `--p-surface-*`, `--p-form-field-*`) that the library writes once and references everywhere it paints.
+The pattern doesn't stop at framework chrome. If your UI rides a component library, point its design tokens at the same `--iridis-*` outputs. This site uses PrimeVue v4; the wiring lives in `docs/.vitepress/theme/primevuePreset.ts` and reads like another token cascade: PrimeVue tokens are CSS variables (`--p-primary-color`, `--p-surface-*`, `--p-form-field-*`) that the library writes once and references everywhere it paints.
 
 ```ts
 import { definePreset } from '@primeuix/themes';

@@ -50,14 +50,14 @@ function variantHex(
 /**
  * Emits a flat hex-string theme map for native Capacitor storage.
  *
- * Wide-gamut policy — Native Capacitor APIs (`StatusBar.setStyle`,
+ * Wide-gamut policy: Native Capacitor APIs (`StatusBar.setStyle`,
  * `SplashScreen` color, Android theme XML `@color/...`) are sRGB-only at
  * the OS surface; iOS UIColor accepts a `displayP3` constructor but the
  * Capacitor plugin layer marshals colours as ARGB hex strings and the
  * Android side has no equivalent at all. The gamut-mapped `record.rgb`
  * slot from
- * {@link import('@studnicky/iridis').ColorRecordFactory.fromOklch} —
- * always sRGB-safe per CSS Color 4 §13.2.2 chroma-reduction — is the
+ * {@link import('@studnicky/iridis').ColorRecordFactory.fromOklch}
+ * (always sRGB-safe per CSS Color 4 §13.2.2 chroma-reduction) is the
  * correct emission target. Wide-gamut OKLCH inputs are silently clamped
  * to sRGB at the factory layer; this task therefore does NOT (and CANNOT
  * usefully) surface `record.displayP3` even when populated. The

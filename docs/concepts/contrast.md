@@ -77,7 +77,7 @@ CVD simulation does not modify `state.roles`. It surfaces information; your desi
 3. Iterating up to 50 steps of 0.02 OKLCH lightness each, testing the ratio after each step.
 4. Returning the first candidate that meets the threshold, or the final candidate if no step succeeded.
 
-The step size (0.02) is small enough to produce smooth changes but bounded (max 50 steps = 1.0 lightness range) to prevent infinite loops. The singleton is the only registered binding — to apply a custom contrast lift, wrap `ensureContrast` in your own task or pass an adjusted `ColorRecord` directly into a derived role.
+The step size (0.02) is small enough to produce smooth changes but bounded (max 50 steps = 1.0 lightness range) to prevent infinite loops. The singleton is the only registered binding; to apply a custom contrast lift, wrap `ensureContrast` in your own task or pass an adjusted `ColorRecord` directly into a derived role.
 
 ```ts
 import { ensureContrast } from '@studnicky/iridis';

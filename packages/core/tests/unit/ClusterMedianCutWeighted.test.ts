@@ -2,7 +2,7 @@
  * ClusterMedianCutWeighted unit suite.
  *
  * Asserts the weighted variant collapses heavily-weighted regions
- * differently from the unweighted median-cut — a single record with
+ * differently from the unweighted median-cut: a single record with
  * extremely high weight survives reduction as its own cluster instead
  * of being merged into a larger neighbourhood.
  */

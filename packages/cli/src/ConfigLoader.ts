@@ -18,7 +18,7 @@ export class ConfigLoader {
     if (!result.valid) {
       const first = result.errors[0];
       throw new Error(
-        `Config invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+        `Config invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
       );
     }
   }

@@ -10,13 +10,13 @@ import pkg                   from '../../package.json' with { type: 'json' };
 
 /**
  * SEO tokens live in package.json under `iridis.seo`. All three values
- * are *explicitly designed to be public* — Google/Bing verification
+ * are *explicitly designed to be public*: Google/Bing verification
  * meta tags are not credentials, they're property-ownership markers
  * the registry reads back to confirm the SC account that ships this
  * string owns this domain. Anyone can read them; nobody can abuse them.
  * The Twitter handle is the public-facing account.
  *
- * Empty string suppresses the corresponding head tag at build time —
+ * Empty string suppresses the corresponding head tag at build time:
  * we ship no orphaned meta tags pointing at unowned properties.
  */
 interface IridisSeoConfig {
@@ -30,7 +30,7 @@ const seo: IridisSeoConfig = (pkg as { 'iridis'?: { 'seo'?: IridisSeoConfig } })
   twitterHandle:          '',
 };
 
-// ── Site identity — single source of truth for SEO, OG, JSON-LD ─────────
+// ── Site identity: single source of truth for SEO, OG, JSON-LD ─────────
 const SITE_TITLE           = 'iridis';
 const SITE_TAGLINE         = 'chromatic pipeline for dynamic palettes';
 const SITE_DESCRIPTION     = 'Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced.';
@@ -51,13 +51,13 @@ const SITE_LOGO            = `${SITE_URL}logo.png`;
    https://www.bing.com/webmasters (Bing), paste the verification value
    into `package.json` → `iridis.seo.{googleSiteVerification,
    bingSiteVerification}` so the next build ships the meta tag.
-   Empty string (the default) suppresses the tag — we don't ship orphan
+   Empty string (the default) suppresses the tag: we don't ship orphan
    tags pointing at unowned properties. */
 const VERIFY_GOOGLE        = seo.googleSiteVerification;
 const VERIFY_BING          = seo.bingSiteVerification;
 
 /* Twitter / X handle for `twitter:site` + `twitter:creator` attribution
-   in the unfurl card. Leave empty to omit — a missing handle is better
+   in the unfurl card. Leave empty to omit: a missing handle is better
    than a wrong one, since Twitter's validator drops the entire card if
    `twitter:site` resolves to a deleted account. Set in `package.json`
    → `iridis.seo.twitterHandle` (include the `@`). */
@@ -131,7 +131,7 @@ const CDN_EXTERNAL_PATTERNS: ReadonlyArray<RegExp | string> = [
 /**
  * Detect production build vs dev server from process.argv. VitePress's
  * `vite` config is a static object shared between both, but we only want
- * to externalise heavy deps during `vitepress build` — the dev server
+ * to externalise heavy deps during `vitepress build`. The dev server
  * needs Vue + PrimeVue resolved locally so Vite's optimizer and HMR can
  * work. In dev, `optimizeDeps.exclude` for `vue` is forbidden because
  * VitePress itself depends on Vue at the entry point.
@@ -142,8 +142,7 @@ const sidebar = [
   {
     'text':  'Introduction',
     'items': [
-      { 'link': '/',                'text': 'Build'           },
-      { 'link': '/about',           'text': 'About iridis'    },
+      { 'link': '/',                'text': 'iridis'          },
       { 'link': '/getting-started', 'text': 'Getting started' },
       { 'link': '/try-it-out',      'text': 'Try it out'      },
       { 'link': '/image-to-theme',  'text': 'Image to theme'  },
@@ -239,7 +238,7 @@ export default withMermaid(defineConfig({
     'hostname': SITE_URL,
   },
   'head': [
-    /* Favicon stack — the SVG is the canonical icon (modern browsers,
+    /* Favicon stack. The SVG is the canonical icon (modern browsers,
        crisp at every size, ~600 bytes). The PNG variants stay as
        fallbacks for crawlers and iOS home-screen / Android-shortcut
        use cases where SVG support is patchy. Order matters: browsers
@@ -252,12 +251,12 @@ export default withMermaid(defineConfig({
     ['link',   { 'rel': 'mask-icon',        'color': SITE_THEME_COLOR,                     'href': `${SITE_BASE}favicon.svg` }],
     ['link',   { 'rel': 'manifest',                                                        'href': `${SITE_BASE}manifest.webmanifest` }],
     ['link',   { 'rel': 'sitemap',          'type': 'application/xml',  'href': `${SITE_BASE}sitemap.xml` }],
-    ['link',   { 'rel': 'alternate',        'type': 'application/rss+xml', 'title': `${SITE_TITLE} — changelog`, 'href': `${SITE_BASE}feed.xml` }],
+    ['link',   { 'rel': 'alternate',        'type': 'application/rss+xml', 'title': `${SITE_TITLE}: changelog`, 'href': `${SITE_BASE}feed.xml` }],
 
     /* Cross-origin preconnect / dns-prefetch. The browser opens TCP +
        TLS to these hosts during HTML parsing, shaving ~100-300ms off
        the first PrimeVue/Vue/mermaid chunk download. Bing/Google grade
-       this as a Core Web Vitals signal — LCP improves when third-party
+       this as a Core Web Vitals signal: LCP improves when third-party
        resources resolve faster. `dns-prefetch` is a no-op when
        `preconnect` already fired but stays as a fallback for browsers
        that ignore preconnect (older Safari). */
@@ -266,7 +265,7 @@ export default withMermaid(defineConfig({
 
     /* `hreflang` declares this is the en-US canonical of the site. With
        only one language variant published, `x-default` points at the
-       same URL — harmless duplication that disambiguates intent for
+       same URL: harmless duplication that disambiguates intent for
        international search engines and avoids "language not declared"
        webmaster-tools warnings. */
     ['link',   { 'rel': 'alternate', 'hreflang': 'en-US',     'href': SITE_URL }],
@@ -304,7 +303,7 @@ export default withMermaid(defineConfig({
     ...(VERIFY_GOOGLE !== '' ? [['meta', { 'name': 'google-site-verification', 'content': VERIFY_GOOGLE }] as const] : []),
     ...(VERIFY_BING   !== '' ? [['meta', { 'name': 'msvalidate.01',            'content': VERIFY_BING   }] as const] : []),
 
-    /* Open Graph + Twitter — drive the unfurl card that Discord, Slack,
+    /* Open Graph + Twitter: drive the unfurl card that Discord, Slack,
        iMessage, Twitter/X, and LinkedIn render when someone pastes the
        URL. `og:image` MUST be an absolute URL; Discord drops relative
        paths and falls back to the bare hostname. Per-page values are
@@ -313,28 +312,28 @@ export default withMermaid(defineConfig({
        Twitter's `summary_large_image` card renders correctly. */
     ['meta',   { 'property': 'og:type',             'content': 'website' }],
     ['meta',   { 'property': 'og:site_name',        'content': SITE_TITLE }],
-    ['meta',   { 'property': 'og:title',            'content': `${SITE_TITLE} — ${SITE_TAGLINE}` }],
+    ['meta',   { 'property': 'og:title',            'content': `${SITE_TITLE}: ${SITE_TAGLINE}` }],
     ['meta',   { 'property': 'og:description',      'content': SITE_DESCRIPTION }],
     ['meta',   { 'property': 'og:url',              'content': SITE_URL }],
     ['meta',   { 'property': 'og:image',            'content': SITE_OG_IMAGE }],
     ['meta',   { 'property': 'og:image:secure_url', 'content': SITE_OG_IMAGE }],
     ['meta',   { 'property': 'og:image:type',       'content': 'image/png' }],
-    ['meta',   { 'property': 'og:image:alt',        'content': `${SITE_TITLE} — ${SITE_TAGLINE}` }],
+    ['meta',   { 'property': 'og:image:alt',        'content': `${SITE_TITLE}: ${SITE_TAGLINE}` }],
     ['meta',   { 'property': 'og:image:width',      'content': '1200' }],
     ['meta',   { 'property': 'og:image:height',     'content': '630' }],
     ['meta',   { 'property': 'og:locale',           'content': 'en_US' }],
     ['meta',   { 'name':     'twitter:card',        'content': 'summary_large_image' }],
-    ['meta',   { 'name':     'twitter:title',       'content': `${SITE_TITLE} — ${SITE_TAGLINE}` }],
+    ['meta',   { 'name':     'twitter:title',       'content': `${SITE_TITLE}: ${SITE_TAGLINE}` }],
     ['meta',   { 'name':     'twitter:description', 'content': SITE_DESCRIPTION_SHORT }],
     ['meta',   { 'name':     'twitter:image',       'content': SITE_OG_IMAGE }],
-    ['meta',   { 'name':     'twitter:image:alt',   'content': `${SITE_TITLE} — ${SITE_TAGLINE}` }],
+    ['meta',   { 'name':     'twitter:image:alt',   'content': `${SITE_TITLE}: ${SITE_TAGLINE}` }],
     ...(SITE_TWITTER_HANDLE !== '' ? [
       ['meta', { 'name': 'twitter:site',    'content': SITE_TWITTER_HANDLE }] as const,
       ['meta', { 'name': 'twitter:creator', 'content': SITE_TWITTER_HANDLE }] as const,
     ] : []),
 
     /* JSON-LD structured data. Search engines parse this into a rich
-       site card — name, description, author, repository — and link the
+       site card (name, description, author, repository) and link the
        resulting result to schema.org's SoftwareSourceCode + WebSite
        types so the site shows up in code-search and design-tool
        organic results. */
@@ -366,7 +365,7 @@ export default withMermaid(defineConfig({
     })],
     /* Organization schema powers the Google Knowledge Panel. `sameAs`
        lists the canonical accounts that represent this organization
-       across the web — GitHub repo, npm registry — so search engines
+       across the web (GitHub repo, npm registry) so search engines
        can disambiguate `iridis` from unrelated brands with the same
        name. `logo` is the square mark; absolute URL is mandatory. */
     ['script', { 'type': 'application/ld+json' }, JSON.stringify({
@@ -411,15 +410,15 @@ export default withMermaid(defineConfig({
     const frontmatterDescription = pageData.frontmatter['description'] as string | undefined;
     const title       = frontmatterTitle       || pageData.title       || SITE_TITLE;
     const description = frontmatterDescription || pageData.description || SITE_DESCRIPTION;
-    const displayTitle = title === SITE_TITLE ? SITE_TITLE : `${title} — ${SITE_TITLE}`;
+    const displayTitle = title === SITE_TITLE ? SITE_TITLE : `${title}: ${SITE_TITLE}`;
     /* Force VitePress's `<title>` resolution to honour the frontmatter
        title over a content-derived H1 (relevant when a page uses a custom
-       hero with its own `<h1>` that differs from the frontmatter title —
+       hero with its own `<h1>` that differs from the frontmatter title:
        e.g. `about.md` renders `<h1>iridis</h1>` inside `<AuroraHero>` but
        the frontmatter title is "About iridis"). */
     if (frontmatterTitle !== undefined) pageData.title = frontmatterTitle;
     /* Suppress the `:title | iridis` template on any page whose title is
-       already the site title — without this the home renders as `iridis
+       already the site title. Without this the home renders as `iridis
        | iridis` (the template appends unconditionally). VitePress reads
        `pageData.titleTemplate` (top-level, not under frontmatter) when
        composing the `<title>` element; `false` skips template expansion
@@ -430,7 +429,7 @@ export default withMermaid(defineConfig({
 
     /* BreadcrumbList structured data. Google renders this as the
        "Home > Section > Page" trail above the SERP result, replacing
-       the bare URL. Built from URL segments — root is always "iridis";
+       the bare URL. Built from URL segments: root is always "iridis";
        each path segment becomes a position with a humanised label and
        its absolute URL. Schema.org spec: every list item carries its
        absolute `item` URL plus a sequential `position`. */
@@ -466,7 +465,7 @@ export default withMermaid(defineConfig({
        sit alongside dated competitors. ISO-8601 with timezone is the
        required format. */
     /* Uncommitted markdown files come back with `lastUpdated === 0` or
-       NaN — guard both to avoid `Date(0).toISOString()` polluting the
+       NaN; guard both to avoid `Date(0).toISOString()` polluting the
        freshness signal with 1970, and to avoid the constructor throwing
        on NaN. */
     const lastUpdated = (typeof pageData.lastUpdated === 'number'
@@ -479,7 +478,7 @@ export default withMermaid(defineConfig({
        guide; the HowTo type powers a step-carousel rich-result variant
        in Google search. We emit a minimal shell here (name + URL +
        description + image); per-recipe `step` arrays would require
-       parsing the markdown — that's a future enhancement. The shell
+       parsing the markdown: that's a future enhancement. The shell
        alone is enough for Google to recognise the page as a HowTo and
        grant the rich-result eligibility. */
     const isRecipe = relPath.startsWith('recipes/');
@@ -540,7 +539,7 @@ export default withMermaid(defineConfig({
     }
     /* RFC 822 date format is the RSS 2.0 spec requirement (Sun, 10 Jan
        2026 00:00:00 GMT). VitePress's lastUpdated is millis since epoch;
-       Keep a Changelog dates are YYYY-MM-DD — convert via `new Date(`...`)`
+       Keep a Changelog dates are YYYY-MM-DD; convert via `new Date(`...`)`
        at UTC noon to avoid timezone-drift backdating. */
     const rfc822 = (isoDate: string): string => new Date(`${isoDate}T12:00:00Z`).toUTCString();
     const escape = (s: string): string => s
@@ -562,7 +561,7 @@ export default withMermaid(defineConfig({
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
       '  <channel>',
-      `    <title>${escape(SITE_TITLE)} — changelog</title>`,
+      `    <title>${escape(SITE_TITLE)}: changelog</title>`,
       `    <link>${escape(SITE_URL)}</link>`,
       `    <description>${escape(SITE_DESCRIPTION)}</description>`,
       '    <language>en-US</language>',

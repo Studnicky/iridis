@@ -66,7 +66,7 @@ export class ReasonAnnotate implements TaskInterface {
       // Display-P3 channels: emitted ONLY when the record carries a
       // wide-gamut value (out-of-sRGB OKLCH input or `intake:p3` origin).
       // Channels are xsd:decimal literals at 4dp, matching CSS Color 4
-      // `color(display-p3 r g b)` semantics — SPARQL consumers can join
+      // `color(display-p3 r g b)` semantics; SPARQL consumers can join
       // these triples with the hex literal to surface the wide-gamut
       // form when supported, fall back to hex when not.
       if (color.displayP3) {

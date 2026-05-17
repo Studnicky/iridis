@@ -1,5 +1,5 @@
 /**
- * primevuePreset.ts — iridis-aware PrimeVue design preset.
+ * primevuePreset.ts: iridis-aware PrimeVue design preset.
  *
  * PrimeVue v4 ships its theme as a set of CSS variables (--p-*) generated
  * from a token tree. The default presets (Aura, Lara, Material, Nora)
@@ -37,7 +37,7 @@ import Aura             from '@primeuix/themes/aura';
  * raw CSS value PrimeVue writes verbatim into its CSS variable.
  *
  * @param brandPct  Percentage of the brand color in the mix (0..100).
- * @param anchor    The neutral side of the mix — bgSoft for lights and
+ * @param anchor    The neutral side of the mix: bgSoft for lights and
  *                  text for darks gives a perceptually balanced ramp.
  */
 function brandStep(brandPct: number, anchor: 'bg-soft' | 'text'): string {

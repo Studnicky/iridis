@@ -6,9 +6,9 @@
  * are still building task implementations.
  *
  * Pipeline stage model:
- *   intake   — writes colors from raw input into state.colors
- *   transform — derives roles from colors
- *   emit     — writes final output from roles
+ *   intake:    writes colors from raw input into state.colors
+ *   transform: derives roles from colors
+ *   emit:      writes final output from roles
  */
 import type {
   InputInterface,

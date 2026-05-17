@@ -28,7 +28,7 @@ function measureContrast(
  *
  * - `'AAA'` → 7.0 (WCAG 2.1 enhanced contrast for normal text)
  * - `'AA'`  → 4.5 (WCAG 2.1 minimum contrast for normal text)
- * - anything else → 1.0 (no floor — pair's own minRatio governs)
+ * - anything else → 1.0 (no floor; pair's own minRatio governs)
  *
  * When a pair's declared `minRatio` already exceeds this floor the pair's
  * value wins. The level is a global minimum; it never lowers a pair's ratio.
@@ -77,7 +77,7 @@ export class EnforceContrast implements TaskInterface {
       }
 
       const algo     = pair.algorithm ?? defaultAlgo;
-      // input.contrast.level acts as a global floor — never lowers a pair's declared ratio.
+      // input.contrast.level acts as a global floor; never lowers a pair's declared ratio.
       const minRatio = Math.max(pair.minRatio, floor);
 
       const ratio  = measureContrast(algo, fgColor, bgColor);
@@ -87,7 +87,7 @@ export class EnforceContrast implements TaskInterface {
       let finalFg = fgColor;
 
       if (!passed) {
-        ctx.logger.info('EnforceContrast', 'run', 'Pair below minimum ratio — nudging', {
+        ctx.logger.info('EnforceContrast', 'run', 'Pair below minimum ratio; nudging', {
           'foreground': pair.foreground,
           'background': pair.background,
           'ratio':      ratio,

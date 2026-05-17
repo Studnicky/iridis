@@ -5,7 +5,7 @@ background, and an Android `colors.xml` resource fragment from resolved roles.
 The plugin's StatusBar style picker reads `luminance` of the text/surface roles
 so the bar icons stay legible in both framings.
 
-Native Android / iOS surfaces are sRGB-only at the OS level — the platform
+Native Android / iOS surfaces are sRGB-only at the OS level. The platform
 APIs do not accept CSS Color 4 `color(display-p3 ...)` strings. The plugin
 therefore reads `record.rgb` / `record.hex` (the gamut-mapped sRGB
 representation) everywhere it serialises. Wide-gamut input is preserved on
