@@ -42,6 +42,7 @@ import BuildConfigFieldPanel from './BuildConfigFieldPanel.vue';
 import BuildResolvedRoles    from './BuildResolvedRoles.vue';
 import BuildCodePanel        from './BuildCodePanel.vue';
 import BuildRoleSchemaGuide  from './BuildRoleSchemaGuide.vue';
+import BuildEngineKnobsGuide from './BuildEngineKnobsGuide.vue';
 
 import { resetConfig, configStore } from '../stores/configStore.ts';
 import { roleSchemaByName }         from '../schemas/roleSchemas.ts';
@@ -185,9 +186,11 @@ const roleSchemaOptions = computed<readonly OptionInterface[]>(() => {
               title="Engine knobs"
               hint="Framing, contrast level, algorithm, color space, and active schema picker — every field writes to configStore and themes the docs."
             >
-              <div class="build-panel__configuration">
-                <BuildConfigFieldPanel
-                  leg="Framing"
+              <div class="build-panel__configuration-grid">
+                <BuildEngineKnobsGuide class="build-panel__configuration-guide" />
+                <div class="build-panel__configuration">
+                  <BuildConfigFieldPanel
+                    leg="Framing"
                   tooltip="Dark frame for museum-style chrome, light for room-style. Every emitter reads this to flip surface colors."
                   class="build-panel__cfg-cell"
                 >
@@ -269,6 +272,7 @@ const roleSchemaOptions = computed<readonly OptionInterface[]>(() => {
                     class="build-panel__schema-select"
                   />
                 </BuildConfigFieldPanel>
+                </div>
               </div>
             </BuildTabPanel>
           </TabPanel>
@@ -398,6 +402,23 @@ const roleSchemaOptions = computed<readonly OptionInterface[]>(() => {
 }
 .build-panel__role-schema-guide,
 .build-panel__role-schema-editor {
+  min-width: 0;
+}
+/* Configuration tab: guide column on the LEFT (mirrors role-schema +
+   image-options layout), knob grid on the RIGHT. Stacks single-column
+   below 920 px viewport. */
+.build-panel__configuration-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 920px) {
+  .build-panel__configuration-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.build-panel__configuration-guide {
   min-width: 0;
 }
 .build-panel__schema-select :deep(.p-select) {
