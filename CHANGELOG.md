@@ -4,6 +4,22 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-05-17
+
+Docs minor.
+
+### Added
+
+- **`BuildImageOptionsGuide.vue`** — reference panel paired with the Image-tab sliders. One block per extractor knob (algorithm, palette size, histogram bpc, ΔE input cap, harmonize, lightness range, chroma range) with short summary + long explanation + hover-detail. Same shape as `BuildRoleSchemaGuide`.
+- **`BuildEngineKnobsGuide.vue`** — reference panel paired with the Configuration-tab knob grid. One block per engine knob (framing, color space, algorithm, contrast level, envelope mode, role schema) with the same structure.
+- **Famous-photo preset library.** Six public-domain photos hosted on `upload.wikimedia.org`: *Great Wave* (Hokusai, c. 1831), *Starry Night* (Van Gogh, 1889), *Earthrise* (Apollo 8, 1968), *Blue Marble* (Apollo 17, 1972), *Pillars of Creation* (Hubble, 2014), *Carina Nebula* (JWST, 2022). The iridis logo stays as the project reference.
+- **Mount-time preset availability probe.** Every preset URL is loaded via an `Image()` element with `onload`/`onerror` and an 8s timeout; unreachable URLs are filtered from the chip row and logged via `console.warn` so misconfiguration surfaces in dev-tools without breaking the page.
+
+### Changed
+
+- **Image-tab right column layout.** Histogram on top spans the column; below, a sub-grid pairs a small `BuildImageOptionsGuide` with the controls stack (algorithm `SelectButton` + slider channels). Each slider carries a `title` tooltip matching the guide's inline explanation.
+- **Configuration-tab layout.** Mirrors the Role-schema tab: `BuildEngineKnobsGuide` on the left, knob grid on the right, stacking single-column below 920px.
+
 ## [0.3.1] - 2026-05-17
 
 Patch.
