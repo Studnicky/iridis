@@ -4,7 +4,19 @@ import { h }          from 'vue';
 import DefaultTheme   from 'vitepress/theme';
 import PrimeVue       from 'primevue/config';
 
+import { consoleLogger } from '@studnicky/iridis';
+
 import { iridisPreset } from './primevuePreset.ts';
+
+/* Silence the engine's CVD-advisory + missing-role warnings on the
+   docs site. They fire on every projector run (which is hundreds of
+   runs per session as the user edits the palette) and aren't actually
+   actionable from inside the docs: the user is meant to drive the
+   pipeline against ANY input, and the advisories are correct engine
+   output, not bugs. Setting the singleton level to 'error' keeps real
+   failures visible while dropping the informational noise. Consumers
+   of the library set their own level; this only affects the docs. */
+consoleLogger.level = 'error';
 
 import IridisCard      from './components/base/IridisCard.vue';
 import IridisButton    from './components/base/IridisButton.vue';

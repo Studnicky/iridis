@@ -108,7 +108,7 @@ const CDN_PRIMEVUE_SUBPATHS = [
   'tabpanel',
 ] as const;
 
-function buildImportMap(): string {
+function buildImportMap(): Record<string, string> {
   const imports: Record<string, string> = {
     'vue':                   `https://esm.sh/vue@${CDN_VERSIONS.vue}`,
     '@primeuix/themes':      `https://esm.sh/@primeuix/themes@${CDN_VERSIONS.primeuixThemes}?external=vue`,
@@ -118,7 +118,7 @@ function buildImportMap(): string {
   for (const subpath of CDN_PRIMEVUE_SUBPATHS) {
     imports[`primevue/${subpath}`] = `https://esm.sh/primevue@${CDN_VERSIONS.primevue}/${subpath}?external=vue`;
   }
-  return JSON.stringify({ imports });
+  return imports;
 }
 
 const CDN_EXTERNAL_PATTERNS: ReadonlyArray<RegExp | string> = [
@@ -382,11 +382,11 @@ export default withMermaid(defineConfig({
       },
     })],
 
-    /* Import map MUST precede any module script so the browser resolves
-       bare specifiers via the map. VitePress emits its script tags later
-       in the head; native import maps are honoured when declared earlier
-       in source order. */
-    ['script', { 'type': 'importmap' }, buildImportMap()],
+    /* Import map is injected via the Vite plugin below — VitePress's
+       `head` array is appended after Vite's own <script type="module">
+       and modulepreload links, which is too late for the spec. The
+       plugin uses `injectTo: 'head-prepend'` to land before all other
+       head content. */
   ],
   /**
    * Per-page metadata. VitePress invokes this for every page during the
@@ -520,30 +520,28 @@ export default withMermaid(defineConfig({
    * type="application/rss+xml">` in the head for in-page auto-discovery.
    */
   /**
-   * Critical ordering fix. VitePress appends `head` entries (where our
-   * import map is declared) AFTER its own `<script type="module" src=
-   * "app.js">` tag and the modulepreload links that follow. Per the
-   * HTML spec, an import map MUST appear BEFORE any module script or
-   * modulepreload link; otherwise the browser parses it too late and
-   * silently ignores it. Without this hook the live site renders the
-   * static SSR shell but fails to mount BuildPanel + PrimeVue because
-   * every bare specifier (`vue`, `primevue/*`, `@primeuix/themes`)
-   * resolves to a relative path like `/iridis/vue` and 404s.
+   * Inject the import map at the very top of `<head>`. VitePress 1.x
+   * has no position-controlled head-injection API: `head` config
+   * entries are appended AFTER Vite's emitted `<script type="module"
+   * src="app.js">` and modulepreload links, and Vite's own
+   * `transformIndexHtml` hook does NOT fire on VitePress's SSG-
+   * rendered HTML (Vite only runs that hook in dev). `transformHtml`
+   * is VitePress's documented hook for static-build HTML edits
+   * (https://vitepress.dev/reference/site-config#transformhtml);
+   * inserting the map immediately after `<head>` guarantees it
+   * precedes every module-script and modulepreload anchor Vite
+   * emits, which is what the HTML spec requires for the browser to
+   * honour bare-specifier resolution.
    *
-   * Pull the import-map script out of its emitted position and
-   * reinsert it immediately before the first module-script or
-   * modulepreload anchor in the head. Safe to no-op when the map is
-   * missing (e.g. dev mode skips externalisation).
+   * Without this, every `import 'vue'` / `import 'primevue/*'` /
+   * `import '@primeuix/themes'` in the externalised bundle resolves
+   * to a relative path like `/iridis/vue` and 404s, BuildPanel never
+   * mounts, the live site shows the SSR shell only.
    */
   transformHtml(code): string {
-    const mapMatch = code.match(/<script type="importmap">[\s\S]*?<\/script>/);
-    if (mapMatch === null) return code;
-    const map     = mapMatch[0];
-    const without = code.replace(map, '');
-    const anchor  = without.match(/<script type="module"|<link rel="modulepreload"/);
-    if (anchor === null) return code;
-    const idx = anchor.index ?? 0;
-    return `${without.slice(0, idx)}${map}\n    ${without.slice(idx)}`;
+    const imports = buildImportMap();
+    const tag     = `<script type="importmap">${JSON.stringify({ 'imports': imports })}</script>`;
+    return code.replace('<head>', `<head>\n    ${tag}`);
   },
   buildEnd(siteConfig): void {
     const changelogPath = resolve(siteConfig.root, '..', 'CHANGELOG.md');
