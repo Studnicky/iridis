@@ -1,6 +1,6 @@
 ---
 title: HSV
-description: The cylindrical hue, saturation, value re-parameterisation of sRGB used by the iridis picker — sector-based conversion math and why no pipeline primitive ships
+description: The cylindrical hue, saturation, value re-parameterisation of sRGB used by the iridis picker. Sector-based conversion math and why no pipeline primitive ships.
 ---
 
 # HSV

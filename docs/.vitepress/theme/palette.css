@@ -1,18 +1,18 @@
 /**
- * palette.css — engine-driven cascade.
+ * palette.css: engine-driven cascade.
  *
  * The iridis engine writes one --iridis-{role} variable per resolved
  * role (see stores/applyConfigToDocument.ts). VitePress's chrome tokens
  * cascade from those iridis variables via var() chains. Derived visual
  * variants (soft / hover / pressed) are computed at the framework layer
- * via color-mix — the engine's job is to satisfy roles, not to enumerate
+ * via color-mix. The engine's job is to satisfy roles, not to enumerate
  * visual states.
  *
  * NO STATIC HEX FALLBACKS for any --iridis-* token. If the engine has
  * not produced a role, the cascade walks to the next available iridis
  * variable, terminating at currentColor (browser-native, never a
  * hardcoded color value). That sparseness IS the demonstration of what
- * the active schema produces — picking iridis-4 means many tokens are
+ * the active schema produces: picking iridis-4 means many tokens are
  * intentionally absent and the page paints with what little it has.
  *
  * The brand spectrum (--iridis-violet … --iridis-magenta) is the only
@@ -21,7 +21,7 @@
  */
 
 :root {
-  /* ── Brand spectrum — the iridis wordmark identity. NOT engine output. ── */
+  /* ── Brand spectrum: the iridis wordmark identity. NOT engine output. ── */
   --iridis-violet:  #7c3aed;
   --iridis-indigo:  #4f46e5;
   --iridis-blue:    #2563eb;
@@ -35,7 +35,7 @@
   /* ── VitePress chrome cascade ───────────────────────────────────────
      Each --vp-c-* reads from the matching --iridis-{role} engine
      output, with a multi-tier fallback chain that walks toward more
-     fundamental tokens. The chain ends at currentColor — never a hex.
+     fundamental tokens. The chain ends at currentColor, never a hex.
      If the engine hasn't run yet (SSR, pre-hydration), the var() call
      yields the chain's terminal value and the page paints with that.
   */
@@ -56,7 +56,7 @@
   --vp-c-text-2:    var(--iridis-muted,      var(--iridis-text, currentColor));
   --vp-c-text-3:    var(--iridis-muted,      var(--iridis-text, currentColor));
 
-  /* Brand — visual variants composed at the framework layer via color-mix
+  /* Brand: visual variants composed at the framework layer via color-mix
      of engine outputs. The engine's job is to satisfy roles; soft/hover
      visual variants are derived from those roles, not re-resolved. */
   --vp-c-brand-1:    var(--iridis-brand, var(--iridis-text, currentColor));
@@ -64,7 +64,7 @@
   --vp-c-brand-3:    color-mix(in oklch, var(--iridis-brand) 92%, var(--iridis-background) 8%);
   --vp-c-brand-soft: color-mix(in oklch, var(--iridis-brand) 22%, var(--iridis-bg-soft) 78%);
 
-  /* Tip / warning / danger surfaces — wired to status roles. Tips use
+  /* Tip / warning / danger surfaces: wired to status roles. Tips use
      brand because iridis-8+ enforces on-brand on brand at 4.5:1. The
      22% mix gives a visibly distinct surface while keeping text/bg-soft
      contrast (≈14:1) effectively unchanged for the inherited text color. */
@@ -98,7 +98,7 @@
 }
 
 /**
- * .iridis-brand — the wordmark gradient.
+ * .iridis-brand: the wordmark gradient.
  *
  * Sweeps through the hard-coded brand spectrum (above) so the brand mark
  * stays recognizable regardless of which schema is active. The spectrum
@@ -142,7 +142,7 @@ pre .iridis-brand {
   font-weight:             inherit;
 }
 
-/* Navbar wordmark — same spectrum sweep as .iridis-brand. */
+/* Navbar wordmark: same spectrum sweep as .iridis-brand. */
 .VPNavBarTitle .title {
   background: linear-gradient(
     90deg,

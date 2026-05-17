@@ -11,10 +11,10 @@ import { galleryHistogram }   from './tasks/GalleryHistogram.ts';
  * ImagePlugin
  *
  * Provides four tasks for image-derived palette extraction:
- *   gallery:histogram   — quantise pixels into a weighted 5-bpc histogram
- *   gallery:extract     — reduce records to K dominant colors (median-cut or deltaE-merge)
- *   gallery:assignRoles — map dominant colors to gallery roles
- *   gallery:harmonize   — shift accent hue if too close to frame
+ *   gallery:histogram:   quantise pixels into a weighted 5-bpc histogram
+ *   gallery:extract:     reduce records to K dominant colors (median-cut or deltaE-merge)
+ *   gallery:assignRoles: map dominant colors to gallery roles
+ *   gallery:harmonize:   shift accent hue if too close to frame
  */
 export class ImagePlugin implements PluginInterface {
   readonly 'name'    = 'image';

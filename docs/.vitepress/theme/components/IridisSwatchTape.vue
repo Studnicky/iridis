@@ -6,7 +6,7 @@
  * segment per resolved role in the active palette. Reads the inline
  * `--iridis-{role}` custom properties the docs projector wrote on
  * `document.documentElement` so the tape always shows the actual SPA
- * theme — even when the user's seed-color list is small (1-2 hex
+ * theme, even when the user's seed-color list is small (1-2 hex
  * codes that the engine expands into ~16 resolved roles via the role
  * schema). A live visual signature of the SPA theme.
  *
@@ -30,7 +30,7 @@ interface SegmentInterface {
   readonly 'w':    number;
 }
 
-/* Roles whose color tracks the page background — emitting them as
+/* Roles whose color tracks the page background: emitting them as
    tape segments produces invisible bars that read as "broken." */
 const SKIP_ROLES = new Set(['background', 'bg-soft', 'surface', 'divider', 'on-brand']);
 

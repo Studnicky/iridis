@@ -80,13 +80,13 @@ function hslToRgbRaw(h: number, s: number, l: number): RgbInterface {
  * encoding ranges (L/C/alpha into [0,1]/[0,0.5]/[0,1]; hue mod 360).
  *
  * Every record is allocated with the SAME field set in the SAME key
- * order — `oklch`, `rgb`, `hex`, `alpha`, `sourceFormat`, `displayP3`,
- * `hints` — so V8 collapses all records into a single hidden class.
+ * order (`oklch`, `rgb`, `hex`, `alpha`, `sourceFormat`, `displayP3`,
+ * `hints`) so V8 collapses all records into a single hidden class.
  * Optional fields default to `undefined` (explicit, not absent) so
  * downstream code can read `record.hints?.role` without forcing a
  * second hidden class to materialise on the spread/append path.
  *
- * Use the singleton `colorRecordFactory` rather than `new` — it has no
+ * Use the singleton `colorRecordFactory` rather than `new`; it has no
  * state and registries assume reference identity.
  */
 export class ColorRecordFactory {
@@ -95,7 +95,7 @@ export class ColorRecordFactory {
    * (0..1), `c` is chroma (0..0.5), `h` is hue in degrees (any real
    * number; wrapped into [0, 360)).
    *
-   * Wide-gamut handling — when the input OKLCH falls outside the sRGB
+   * Wide-gamut handling: when the input OKLCH falls outside the sRGB
    * gamut, the factory:
    *  1. Computes a sRGB-safe value via {@link import('./GamutMapSrgb.ts').GamutMapSrgb}
    *     (chroma-reduction along constant L+H per CSS Color 4 §13.2.2).
@@ -119,7 +119,7 @@ export class ColorRecordFactory {
    * is later passed BACK through `fromOklch` (e.g. by `ResolveRoles`
    * when copying `role.intent` onto the hints), the `displayP3` slot is
    * re-derived from the OKLCH chain rather than preserved. Drift is
-   * ~1e-8 per channel — below the 4dp precision used by `serializeP3`
+   * ~1e-8 per channel, below the 4dp precision used by `serializeP3`
    * and invisible to consumers. If verbatim preservation matters,
    * consumers must hold the original record reference rather than
    * reallocating.
@@ -165,7 +165,7 @@ export class ColorRecordFactory {
 
   /**
    * Builds a record from gamma-encoded sRGB components in 0..1. Inputs
-   * outside the unit range are clamped, not scaled — pass `r/255` if
+   * outside the unit range are clamped, not scaled; pass `r/255` if
    * starting from byte values. The OKLCH coordinates are derived via
    * Björn Ottosson's OKLab transform.
    *
@@ -202,7 +202,7 @@ export class ColorRecordFactory {
    * code never has to deal with two encodings.
    *
    * The optional `alphaOverride` argument lets callers (notably
-   * `IntakeHex`) supply an alpha derived elsewhere — useful when the
+   * `IntakeHex`) supply an alpha derived elsewhere, useful when the
    * hex string is the 6-digit canonical form but the original input
    * carried a separate alpha. When `undefined`, the alpha embedded in
    * the hex string (or `1` for 6-digit input) is used.

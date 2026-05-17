@@ -4,15 +4,15 @@
  * Transform parameters for each of the 10 VS Code semantic token modifiers.
  *
  * Design principles:
- *   declaration/definition  — Slightly brighter (being defined here)
- *   readonly                — Bold, slight tint toward constant
- *   static                  — Underlined, slightly desaturated (class-level, not instance)
- *   deprecated              — Strikethrough, heavily desaturated (don't use)
- *   abstract                — Italic, slightly ethereal
- *   async                   — Italic, hint of info color (async/await context)
- *   modification            — Bold, slightly warmer (being changed)
- *   documentation           — Italic, muted toward comment
- *   defaultLibrary          — Subtle, blend toward muted (built-in, not user code)
+ *   declaration/definition: Slightly brighter (being defined here)
+ *   readonly:               Bold, slight tint toward constant
+ *   static:                 Underlined, slightly desaturated (class-level, not instance)
+ *   deprecated:             Strikethrough, heavily desaturated (don't use)
+ *   abstract:               Italic, slightly ethereal
+ *   async:                  Italic, hint of info color (async/await context)
+ *   modification:           Bold, slightly warmer (being changed)
+ *   documentation:          Italic, muted toward comment
+ *   defaultLibrary:         Subtle, blend toward muted (built-in, not user code)
  */
 
 import type { ModifierTransformInterface } from '../types/index.ts';

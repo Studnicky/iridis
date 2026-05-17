@@ -1,5 +1,5 @@
 {
-  "name": "iridis — chromatic pipeline for dynamic palettes",
+  "name": "iridis: chromatic pipeline for dynamic palettes",
   "short_name": "iridis",
   "description": "Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced.",
   "id": "/iridis/",

@@ -6,9 +6,9 @@
  * pipeline against the current `configStore` state.
  *
  * Renders three blocks:
- *   1. Seed-driven engine call — the canonical hex-input path.
- *   2. Image-driven engine call — same schema, different intake.
- *   3. CSS variables — flattened `:root { --iridis-{role}: #hex }`
+ *   1. Seed-driven engine call: the canonical hex-input path.
+ *   2. Image-driven engine call: same schema, different intake.
+ *   3. CSS variables: flattened `:root { --iridis-{role}: #hex }`
  *      from the inline styles the projector wrote on documentElement.
  *
  * Each block carries its own copy-to-clipboard button.
@@ -62,7 +62,7 @@ const seedCode = computed<string>(() => {
     "import { contrastPlugin }    from '@studnicky/iridis-contrast';",
     "import type { RoleSchemaInterface } from '@studnicky/iridis/model';",
     '',
-    `// Active schema — '${configStore.roleSchema}' / framing '${configStore.framing}' — inlined`,
+    `// Active schema: '${configStore.roleSchema}' / framing '${configStore.framing}'. Inlined`,
     '// for a self-contained example. Move it to its own module in your app.',
     `const roleSchema: RoleSchemaInterface = ${resolvedSchemaLiteral.value};`,
     '',
@@ -89,8 +89,8 @@ const imageCode = computed<string>(() => [
   "import { imagePlugin }       from '@studnicky/iridis-image';",
   "import type { RoleSchemaInterface } from '@studnicky/iridis/model';",
   '',
-  `// Active schema — '${configStore.roleSchema}' / framing '${configStore.framing}' — inlined.`,
-  '// Same schema as the seed-driven example above — image is just a different intake.',
+  `// Active schema: '${configStore.roleSchema}' / framing '${configStore.framing}'. Inlined.`,
+  '// Same schema as the seed-driven example above; image is just a different intake.',
   `const roleSchema: RoleSchemaInterface = ${resolvedSchemaLiteral.value};`,
   '',
   'const engine = new Engine();',
@@ -100,7 +100,7 @@ const imageCode = computed<string>(() => [
   '',
   `engine.pipeline(${JSON.stringify([...IMAGE_PIPELINE], null, 2)});`,
   '',
-  '// `imageData` is the result of canvas.getImageData() — Uint8ClampedArray + width + height.',
+  '// `imageData` is the result of canvas.getImageData(): Uint8ClampedArray + width + height.',
   'const state = await engine.run({',
   "  'colors':   [imageData],",
   `  'roles':    roleSchema,`,
@@ -114,7 +114,7 @@ const imageCode = computed<string>(() => [
 const cssVariables = computed<string>(() => {
   /* Source the snippet from the reactive `appliedRoles` map the
      projector publishes on every successful `engine.run`. Reading
-     `document.documentElement.style` would race the projector — the
+     `document.documentElement.style` would race the projector: the
      watch fires synchronously on config change but the projector
      awaits `engine.run` before writing CSS vars, so the DOM is stale
      until the next microtask. The reactive ref lets Vue track the

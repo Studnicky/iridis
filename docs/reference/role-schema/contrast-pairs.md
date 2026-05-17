@@ -5,7 +5,7 @@ description: Foreground / background pairs that the engine enforces a minimum ra
 
 # Contrast pairs
 
-A `contrastPairs[]` entry declares that two roles, used together as foreground and background, MUST satisfy a minimum contrast ratio. The engine's `enforce:contrast` family (WCAG 2.1, APCA, CVD simulation) nudges role colours in OKLCH until every declared pair passes — the **accessibility contract** of the schema.
+A `contrastPairs[]` entry declares that two roles, used together as foreground and background, MUST satisfy a minimum contrast ratio. The engine's `enforce:contrast` family (WCAG 2.1, APCA, CVD simulation) nudges role colours in OKLCH until every declared pair passes. This is the **accessibility contract** of the schema.
 
 ## Shape
 
@@ -42,23 +42,23 @@ A contrast pair is a **declarative accessibility constraint**, not a styling hin
 Common pair sets:
 
 - **Floor pairs**: `text` against every surface (`background`, `bg-soft`, `surface`). Without these, text is unreadable on at least one surface.
-- **Brand pair**: `brand` against `background` at 3:1 (UI element threshold) — guarantees the brand is at least *visible*, even if not text-readable.
-- **Status pairs**: `success`, `warning`, `error` against `background` at 4.5:1 — guarantees status messages remain legible.
-- **Syntax pairs**: every `syntax-*` against `bg-soft` at 4.5:1 — guarantees code stays readable inside code blocks.
+- **Brand pair**: `brand` against `background` at 3:1 (UI element threshold). Guarantees the brand is at least *visible*, even if not text-readable.
+- **Status pairs**: `success`, `warning`, `error` against `background` at 4.5:1. Guarantees status messages remain legible.
+- **Syntax pairs**: every `syntax-*` against `bg-soft` at 4.5:1. Guarantees code stays readable inside code blocks.
 
 ## How to author
 
-- Declare a pair for **every foreground/background combination that will actually be painted**. Pairs not declared aren't enforced — the engine can't read your CSS.
+- Declare a pair for **every foreground/background combination that will actually be painted**. Pairs not declared aren't enforced; the engine can't read your CSS.
 - Use the **algorithm matching your design system**:
-  - WCAG 2.1 — the legal floor for accessibility audits. `4.5:1` normal text, `3:1` large text.
-  - APCA Lc — the perceptual algorithm targeted by WCAG 3. Lc ≥ 60 for normal text, ≥ 75 for body text, ≥ 90 for dense / chromatic body. Better behaviour on chromatic backgrounds and in dark mode.
+  - WCAG 2.1: the legal floor for accessibility audits. `4.5:1` normal text, `3:1` large text.
+  - APCA Lc: the perceptual algorithm targeted by WCAG 3. Lc ≥ 60 for normal text, ≥ 75 for body text, ≥ 90 for dense / chromatic body. Better behaviour on chromatic backgrounds and in dark mode.
 - Use `minRatio: 7` for AAA-level pairs (text on body surfaces); `4.5` for AA-level pairs (text on chromatic accents); `3` for non-text UI elements (icons, dividers, focus rings).
 - Declare pairs in both the dark and light framing variants of the schema. The engine flips L envelopes between framings, so pairs must be enforced separately for each.
 
 ## Related
 
-- [WCAG 2.1 reference](../wcag) — luminance-ratio algorithm.
-- [APCA reference](../apca) — perceptual contrast algorithm.
-- [Contrast concept](../../concepts/contrast) — engine-level overview of the enforcement pipeline.
-- [Accessibility calculations](../../concepts/accessibility-calculations) — what AA / AAA / APCA mean in practice.
+- [WCAG 2.1 reference](../wcag): luminance-ratio algorithm.
+- [APCA reference](../apca): perceptual contrast algorithm.
+- [Contrast concept](../../concepts/contrast): engine-level overview of the enforcement pipeline.
+- [Accessibility calculations](../../concepts/accessibility-calculations): what AA / AAA / APCA mean in practice.
 - [Role schemas overview](../../concepts/role-schemas).

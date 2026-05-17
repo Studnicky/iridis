@@ -3,7 +3,7 @@
  *
  * resolve:roles must guarantee that every required role is populated AND that
  * the assigned color satisfies the role's declared lightnessRange,
- * chromaRange, and hueOffset constraints — even when no input color falls
+ * chromaRange, and hueOffset constraints, even when no input color falls
  * inside those constraints. The engine nudges the closest candidate into
  * range; if there are no input colors at all, it synthesizes from the
  * constraints' centers.
@@ -105,7 +105,7 @@ test('Required role :: hueOffset :: assigned hue equals the declared target', as
 
   const engine = freshEngine();
   engine.pipeline(['intake:hex', 'resolve:roles']);
-  // Pure red — hue is far from 142
+  // Pure red: hue is far from 142
   const state = await engine.run({ 'colors': ['#ff0000'], 'roles': schema });
 
   const anchor = state.roles['anchor'];

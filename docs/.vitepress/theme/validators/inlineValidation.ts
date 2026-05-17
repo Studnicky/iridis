@@ -3,7 +3,7 @@
  * `@studnicky/json-tology` validator chain is unavailable in the docs
  * bundle (it imports `node:url`), so these are hand-rolled against the
  * same shape constraints. Each validator returns `null` on success or
- * an error string on failure — caller decides where to surface it.
+ * an error string on failure; caller decides where to surface it.
  */
 
 import type { RoleSchemaInterface } from '@studnicky/iridis/model';
@@ -30,7 +30,7 @@ export function validateColorsArray(value: unknown): string | null {
 }
 
 /**
- * Validates that `value` is a `RoleSchemaInterface`-shaped object —
+ * Validates that `value` is a `RoleSchemaInterface`-shaped object:
  * has a `name` string, a non-empty `roles` array, and any declared
  * range tuples are well-formed `[number, number]`. Does not validate
  * range bounds or value semantics; the engine handles those at runtime.
@@ -71,7 +71,7 @@ export function validateRoleSchema(value: unknown): string | null {
 
 /**
  * Casts an unknown value to `RoleSchemaInterface`. Pair with
- * {@link validateRoleSchema} — this is the assertion that follows a
+ * {@link validateRoleSchema}; this is the assertion that follows a
  * successful validation, kept separate so the cast site is greppable.
  */
 export function asRoleSchema(value: unknown): RoleSchemaInterface {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * IridisDemo.vue — split-column palette editor + OKLCH picker.
+ * IridisDemo.vue: split-column palette editor + OKLCH picker.
  *
  * Parallel layout to ImageToTheme so the User-palette ↔ Image tab
  * swap reads as a content change, not a layout shift. Left column
@@ -65,7 +65,7 @@ const selectedHex = computed(() => configStore.paletteColors[selectedSwatch.valu
   <ClientOnly>
     <section class="iridis-demo">
       <div class="iridis-demo__grid">
-        <!-- LEFT — Color picker. Same slot as the image drop zone in
+        <!-- LEFT: Color picker. Same slot as the image drop zone in
              the Image tab: the single visual editor for the active
              input. -->
         <div class="iridis-demo__col iridis-demo__col--source">
@@ -76,7 +76,7 @@ const selectedHex = computed(() => configStore.paletteColors[selectedSwatch.valu
           <IridisPicker :model-value="selectedHex" @update:model-value="onPickerUpdate" />
         </div>
 
-        <!-- RIGHT — Palette swatches. Same slot as the histogram +
+        <!-- RIGHT: Palette swatches. Same slot as the histogram +
              extraction sliders in the Image tab: the multi-cluster
              output view. Click a swatch to load it into the picker. -->
         <div class="iridis-demo__col iridis-demo__col--output">

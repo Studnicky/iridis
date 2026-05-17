@@ -12,7 +12,7 @@ import { serializeP3 } from '../util/serializeP3.ts';
 /**
  * Picks a Windows High Contrast (Forced Colors) system color keyword for
  * a resolved role record. The mapping is driven entirely by the record's
- * `hints.intent` — the schema-declared ontology is the contract; NO
+ * `hints.intent`; the schema-declared ontology is the contract; NO
  * substring inference happens on role names.
  *
  * Intent → system-token mapping (CSS Color 4 §6 / WHCM spec):
@@ -107,7 +107,7 @@ function buildForcedColorsBlock(
  * wide-gamut equivalents on P3-capable browsers. ONLY roles whose
  * resolved record has `displayP3` populated (i.e. the input OKLCH lay
  * outside sRGB, or the record arrived through `intake:p3`) are included
- * — sRGB-only roles fall through to the unconditional block.
+ * (sRGB-only roles fall through to the unconditional block).
  *
  * The `@supports` query mirrors the CSS Color 4 §6.5 feature-detection
  * idiom; the cascade then resolves sRGB-only → P3 override →
@@ -153,7 +153,7 @@ export class EmitCssVars implements TaskInterface {
     'description': 'Emit CSS custom property blocks from resolved roles and variants',
   };
 
-  // math() accessor satisfies PluginInterface if ever used standalone — not required here
+  // math() accessor satisfies PluginInterface if ever used standalone; not required here
   // but the class only needs TaskInterface
 
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {

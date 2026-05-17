@@ -49,8 +49,8 @@ const state = await engine.run({
 
 const out = state.outputs['json']!;
 // out.colors:   readonly hex[]
-// out.roles:    Record<string, string> — gallery canvas / frame / accent / muted / text
-// out.variants: Record<string, Record<string, string>> — dark / light by default
+// out.roles:    Record<string, string> // gallery canvas / frame / accent / muted / text
+// out.variants: Record<string, Record<string, string>> // dark / light by default
 ```
 
 ## Tasks

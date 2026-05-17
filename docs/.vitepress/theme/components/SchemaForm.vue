@@ -17,7 +17,7 @@
  *     with PrimeVue Buttons for + add / × remove
  *
  * Two-way bound to a target reactive object via v-model. The schema is
- * read-only; the target mutates in place. No JSON Schema validation here —
+ * read-only; the target mutates in place. No JSON Schema validation here:
  * the schema is the form definition, not a runtime gate.
  */
 

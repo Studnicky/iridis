@@ -1,6 +1,6 @@
 ---
 title: Accessibility calculations
-description: How iridis measures and enforces contrast — WCAG 2.1 luminance ratios, APCA Lc magnitudes, and CVD simulation as swappable math primitives
+description: How iridis measures and enforces contrast. WCAG 2.1 luminance ratios, APCA Lc magnitudes, and CVD simulation as swappable math primitives.
 ---
 
 # Accessibility calculations
@@ -72,7 +72,7 @@ The `iridis-contrast` plugin (separate package) ships the `enforce:cvdSimulate` 
 
 Each warning entry includes `foreground`, `background`, `cvdType`, `originalLuminanceContrast`, `simulatedLuminanceContrast`, `drop`, `dropThreshold`, and `minSimulatedContrast` so a CI gate can audit which signal fired without cross-referencing the threshold table (sourced from `CVD_THRESHOLDS` in `packages/contrast/src/data/cvdThresholds.ts`).
 
-CVD simulation is advisory — it surfaces palette pairs that collapse under simulation but does not modify `state.roles`. The hue-selection decision stays yours. The plugin is opt-in; the core engine ships only the WCAG and APCA metrics.
+CVD simulation is advisory: it surfaces palette pairs that collapse under simulation but does not modify `state.roles`. The hue-selection decision stays yours. The plugin is opt-in; the core engine ships only the WCAG and APCA metrics.
 
 ## Why declare instead of validate
 

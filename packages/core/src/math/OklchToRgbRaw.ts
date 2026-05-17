@@ -9,7 +9,7 @@ import { linearToSrgb } from './LinearToSrgb.ts';
  * {@link import('./ColorRecordFactory.ts').ColorRecordFactory.fromOklch}.
  * Uses the same Björn Ottosson OKLab matrices and gamma curve as the full
  * record factory; the only difference is the absence of record wrapping.
- * Inputs are not clamped — callers iterating on a scalar L value are
+ * Inputs are not clamped; callers iterating on a scalar L value are
  * expected to clamp themselves before invoking.
  */
 export class OklchToRgbRaw {

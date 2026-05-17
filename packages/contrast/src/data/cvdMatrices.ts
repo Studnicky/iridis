@@ -17,7 +17,7 @@
  *   [VBM99] Viénot F., Brettel H., Mollon J.D. (1999)
  *           "Digital video colourmaps for checking the legibility of
  *           displays by dichromats." Color Res. Appl. 24(4):243–252.
- *           — Table 1 supplies the protanopia and deuteranopia matrices.
+ *           Table 1 supplies the protanopia and deuteranopia matrices.
  *   [WS82]  Wyszecki G., Stiles W.S. (1982)
  *           "Color Science: Concepts and Methods, Quantitative Data and
  *           Formulae", 2nd ed., §3.3 (luminance projection for
@@ -58,7 +58,7 @@ export const tritanopiaMatrix: CvdMatrixInterface = {
 
 /**
  * Achromatopsia (rod monochromacy): no chromatic vision. BT.709 luminance
- * projection — each output channel receives the same scalar
+ * projection: each output channel receives the same scalar
  * Y = 0.2126R + 0.7152G + 0.0722B, producing a perfectly desaturated
  * record that preserves luminance contrast exactly. The matrix is
  * applied in linear sRGB before the gamma re-encoding step, identical

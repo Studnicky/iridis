@@ -3,7 +3,7 @@
  * PaletteCTA.vue
  *
  * Designer-first call-to-action button. Routes to the home (`/`)
- * which renders the BuildPanel — the seed-colors / image / role-schema
+ * which renders the BuildPanel: the seed-colors / image / role-schema
  * pipelines all theme the SPA. PrimeVue Button paints with brand tokens
  * from the iridis preset; the wrapper adds the lift/shadow recipe.
  */

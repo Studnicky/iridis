@@ -5,7 +5,7 @@ description: Pin a role to an exact OKLCH hue regardless of the seed. The opposi
 
 # Hue lock
 
-A role with `hueLock` declared takes a fixed OKLCH hue, ignoring whatever hue the seed produces. Use it when a role's identity depends on a specific colour family — `success` is **green**, `error` is **red**, `link` is **blue** — regardless of what the user picked as a brand seed.
+A role with `hueLock` declared takes a fixed OKLCH hue, ignoring whatever hue the seed produces. Use it when a role's identity depends on a specific colour family (`success` is **green**, `error` is **red**, `link` is **blue**), regardless of what the user picked as a brand seed.
 
 ## Shape
 
@@ -40,12 +40,12 @@ Typical hue-lock anchors:
 ## How to author
 
 - Use `hueLock` on roles whose **semantic meaning** depends on cultural colour associations (success = green, error = red).
-- Don't lock a brand role's hue — the brand IS what the user is supplying as the seed.
+- Don't lock a brand role's hue; the brand IS what the user is supplying as the seed.
 - Pair `hueLock` with a chroma range tight enough that the locked hue reads clearly. A locked green at `C ≤ 0.04` is just a slightly-warm grey.
-- `hueLock` and `derivedFrom` together is a contradiction — the schema validator rejects roles that declare both.
+- `hueLock` and `derivedFrom` together is a contradiction; the schema validator rejects roles that declare both.
 
 ## Related
 
-- [Derived roles](./derived-from) — the opposite knob: inherit a parent's hue with an offset.
-- [Chroma range](./chroma-range) — controls how much the locked hue can be expressed.
+- [Derived roles](./derived-from): the opposite knob, inherit a parent's hue with an offset.
+- [Chroma range](./chroma-range): controls how much the locked hue can be expressed.
 - [Role schemas overview](../../concepts/role-schemas).

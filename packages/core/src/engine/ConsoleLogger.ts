@@ -3,7 +3,7 @@ import type { LoggerInterface } from '../types/index.ts';
 /**
  * The six log levels the `ConsoleLogger` supports, ordered from most
  * to least restrictive. `silent` suppresses every message; `trace`
- * emits everything. The default threshold is `'warn'` — debug, info,
+ * emits everything. The default threshold is `'warn'`; debug, info,
  * and trace are dropped at the source before any context object is
  * touched, so callers pay zero formatting cost in production.
  */
@@ -41,7 +41,7 @@ function renderValue(value: unknown): string {
  * `key=value` tail, with keys sorted alphabetically for stable output.
  * Returns the empty string when the context is missing or has no
  * own-enumerable keys; the caller decides whether to append the
- * ` — ` separator.
+ * ` | ` separator.
  */
 function renderContext(context: Record<string, unknown> | undefined): string {
   if (!context) return '';
@@ -53,14 +53,14 @@ function renderContext(context: Record<string, unknown> | undefined): string {
 }
 
 /**
- * Format the full log line — `[scope.op] message` when the context is
- * empty, `[scope.op] message — k=v k=v` otherwise. The formatter lives
+ * Format the full log line: `[scope.op] message` when the context is
+ * empty, `[scope.op] message | k=v k=v` otherwise. The formatter lives
  * here so every call site shares the exact same output shape.
  */
 function format(scope: string, op: string, message: string, context: Record<string, unknown> | undefined): string {
   const tail = renderContext(context);
   if (tail === '') return `[${scope}.${op}] ${message}`;
-  return `[${scope}.${op}] ${message} — ${tail}`;
+  return `[${scope}.${op}] ${message} | ${tail}`;
 }
 
 /**
@@ -72,11 +72,11 @@ function format(scope: string, op: string, message: string, context: Record<stri
  *
  * Each instance carries a mutable `level` threshold (default `'warn'`).
  * Messages below the threshold short-circuit BEFORE the `context`
- * argument is touched — no key enumeration, no stringification, no
+ * argument is touched: no key enumeration, no stringification, no
  * concatenation. Callers pass a fixed `message` literal and a
  * `Record<string, unknown>` of named values; the logger owns the
  * rendering. Templates and pre-formatting at the call site are
- * forbidden by contract — the point is one canonical output shape.
+ * forbidden by contract: the point is one canonical output shape.
  */
 export class ConsoleLogger implements LoggerInterface {
   level: LogLevelType = 'warn';

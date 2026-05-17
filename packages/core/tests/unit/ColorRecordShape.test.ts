@@ -111,7 +111,7 @@ test('ColorRecord shape :: factory :: fromHsl produces canonical key order', () 
 });
 
 // ---------------------------------------------------------------------------
-// Intake tasks — drive each format through the engine and inspect state.colors
+// Intake tasks: drive each format through the engine and inspect state.colors
 // ---------------------------------------------------------------------------
 
 function makeEngine(): Engine {
@@ -225,13 +225,13 @@ test('ColorRecord shape :: intake :: intake:any emits canonical key order for mi
 });
 
 // ---------------------------------------------------------------------------
-// Clamp task — clamp:oklch must preserve canonical shape on the rebuilt record
+// Clamp task: clamp:oklch must preserve canonical shape on the rebuilt record
 // ---------------------------------------------------------------------------
 
 test('ColorRecord shape :: clamp :: clamp:oklch preserves canonical key order after clamping', async () => {
   /* Schema with a tight chroma range forces clamp:oklch to actually
    * rebuild the record (the factory call inside ClampOklch is what we
-   * care about — it must produce the canonical shape including
+   * care about; it must produce the canonical shape including
    * preserved sourceFormat and hints). */
   const engine = makeEngine();
   engine.pipeline(['intake:hex', 'clamp:oklch']);
@@ -250,7 +250,7 @@ test('ColorRecord shape :: clamp :: clamp:oklch preserves canonical key order af
   });
   assert.strictEqual(state.colors.length, 1);
   /* The default schema-less branch is exercised because the color
-   * carries no hints.role, so the conservative defaults apply —
+   * carries no hints.role, so the conservative defaults apply.
    * #3b82f6's chroma (~0.18) exceeds the 0.40 ceiling? No, it doesn't.
    * Force the rebuild via the role-hint path instead. */
   assertCanonical(state.colors[0]!, 'clamp:oklch-pre-hint');
@@ -305,7 +305,7 @@ test('ColorRecord shape :: clamp :: clamp:oklch with hint preserves canonical ke
 });
 
 // ---------------------------------------------------------------------------
-// Cross-allocation shape stability — every record returned anywhere has the
+// Cross-allocation shape stability: every record returned anywhere has the
 // same Object.keys array
 // ---------------------------------------------------------------------------
 

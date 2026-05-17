@@ -5,10 +5,10 @@
  * Soft glow that tracks the cursor. Position is written to two CSS
  * custom properties (`--iridis-cursor-x`, `--iridis-cursor-y`) on the
  * root element on every pointermove; the blob's transform reads them.
- * No requestAnimationFrame loop — the browser's compositor smoothly
+ * No requestAnimationFrame loop: the browser's compositor smoothly
  * interpolates the transform between pointer events.
  *
- * Painted from `--iridis-brand` (engine-resolved role) — that's the
+ * Painted from `--iridis-brand` (engine-resolved role); that's the
  * variable every iridis-N schema exposes, so the blob is always tinted
  * even on minimal schemas. Hidden on coarse-pointer devices (touch)
  * where a cursor doesn't exist. Pointer-events disabled so it never
@@ -69,7 +69,7 @@ onUnmounted(() => {
   mix-blend-mode: lighten;
   opacity: 0.45;
 }
-/* Coarse pointers (touch) don't have a hover cursor — hiding the blob
+/* Coarse pointers (touch) don't have a hover cursor; hiding the blob
    prevents a permanent stuck spotlight at the last tap location. */
 @media (pointer: coarse) {
   .iridis-cursor-blob { display: none; }

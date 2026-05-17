@@ -134,7 +134,7 @@ const CVD_RED_ON_GREEN_ROLES: RoleSchemaInterface = {
   ],
 };
 
-/* Blue/yellow pair — tritanopia confusion. Distinct lightness bands
+/* Blue/yellow pair: tritanopia confusion. Distinct lightness bands
    because the inputs sit at very different luminance levels
    (blue L=0.452, yellow L=0.968). */
 const CVD_BLUE_ON_YELLOW_ROLES: RoleSchemaInterface = {
@@ -161,12 +161,12 @@ const CVD_ISOLUM_ROLES: RoleSchemaInterface = {
   ],
 };
 
-/* Black on white — the canonical maximum-contrast pair. All four CVD
+/* Black on white: the canonical maximum-contrast pair. All four CVD
    types must produce zero warnings against the published thresholds. */
 const CVD_BLACK_ON_WHITE_ROLES: RoleSchemaInterface = {
   'name':  'cvd-black-on-white',
   'roles': [
-    /* black: L 0, C 0; white: L 1, C 0 — discriminate by lightness. */
+    /* black: L 0, C 0; white: L 1, C 0; discriminate by lightness. */
     { 'name': 'text',       'required': true, 'lightnessRange': [0.00, 0.20], 'chromaRange': [0.00, 0.05] },
     { 'name': 'background', 'required': true, 'lightnessRange': [0.90, 1.00], 'chromaRange': [0.00, 0.05] },
   ],
@@ -178,7 +178,7 @@ const CVD_BLACK_ON_WHITE_ROLES: RoleSchemaInterface = {
 describe('ContrastPlugin e2e :: scenarios', () => {
   const scenarios: readonly ScenarioInterface[] = [
     {
-      'name':     'plugin shape — singleton + four task registrations',
+      'name':     'plugin shape: singleton + four task registrations',
       'pipeline': ['intake:hex', 'resolve:roles', 'enforce:wcagAA', 'emit:json'],
       'input': {
         'colors': ['#000000', '#ffffff'],
@@ -202,7 +202,7 @@ describe('ContrastPlugin e2e :: scenarios', () => {
       },
     },
     {
-      'name':     'enforce:apca — black-on-white text pair meets the APCA Lc target',
+      'name':     'enforce:apca: black-on-white text pair meets the APCA Lc target',
       'pipeline': ['intake:hex', 'resolve:roles', 'enforce:apca'],
       'input': {
         'colors': ['#000000', '#ffffff'],
@@ -227,13 +227,13 @@ describe('ContrastPlugin e2e :: scenarios', () => {
           `afterLc ${entry.afterLc} should meet requiredLc ${entry.requiredLc}`);
         assert.strictEqual(entry.pass, true, 'pair passes the body-text Lc 75 target');
         // Black-on-white (or its inverse) has high APCA Lc magnitude regardless of which
-        // role lands on which colour — the absolute Lc must be substantial.
+        // role lands on which colour; the absolute Lc must be substantial.
         assert.ok(Math.abs(entry.afterLc) >= 45,
           `afterLc magnitude ${entry.afterLc} should be substantial for high-contrast pair`);
       },
     },
     {
-      'name':     'enforce:wcagAAA — low-contrast pair is adjusted to ≥7:1',
+      'name':     'enforce:wcagAAA: low-contrast pair is adjusted to ≥7:1',
       'pipeline': ['intake:hex', 'resolve:roles', 'enforce:wcagAAA'],
       'input': {
         'colors': ['#777777', '#aaaaaa'],
@@ -258,7 +258,7 @@ describe('ContrastPlugin e2e :: scenarios', () => {
       },
     },
     {
-      'name':     'enforce:contrast — low-contrast pair flips adjusted=true and rewrites the foreground role',
+      'name':     'enforce:contrast: low-contrast pair flips adjusted=true and rewrites the foreground role',
       'pipeline': ['intake:hex', 'resolve:roles', 'enforce:contrast'],
       'input': {
         'colors': ['#bbbbbb', '#ffffff'],
@@ -284,7 +284,7 @@ describe('ContrastPlugin e2e :: scenarios', () => {
         const bgHex   = state.roles['background']?.hex;
         assert.ok(textHex !== undefined && bgHex !== undefined, 'both roles resolved');
         // Pre-enforce intake hex for the text role was #bbbbbb; after adjustment the L axis
-        // shifted the role into a darker (or lighter) variant — the hex must differ from the seed.
+        // shifted the role into a darker (or lighter) variant; the hex must differ from the seed.
         assert.notStrictEqual(textHex.toLowerCase(), '#bbbbbb',
           `text hex ${textHex} must differ from the original low-contrast seed #bbbbbb`);
         assert.strictEqual(bgHex.toLowerCase(), '#ffffff',
@@ -292,10 +292,10 @@ describe('ContrastPlugin e2e :: scenarios', () => {
       },
     },
     {
-      'name':     'enforce:cvdSimulate — saturated red on green raises a deuteranopia warning at the grounded threshold',
+      'name':     'enforce:cvdSimulate: saturated red on green raises a deuteranopia warning at the grounded threshold',
       'pipeline': ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       'input': {
-        // Saturated red/green — the canonical [VBM99] deuteranopia
+        // Saturated red/green: the canonical [VBM99] deuteranopia
         // confusion pair. Trichromat WCAG contrast ~1.11; deuteranopia
         // simulation collapses the chromatic difference, leaving the
         // pair indistinguishable.
@@ -316,7 +316,7 @@ describe('ContrastPlugin e2e :: scenarios', () => {
         assert.strictEqual(deuter.minSimulatedContrast, 3.0,
           'deuteranopia minSimulatedContrast is the WCAG-21 SC-1.4.11 floor');
         // Trichromat contrast for red-on-green is already below 3:1 ([d00000]/[008000] ≈ 1.11),
-        // so the simulated contrast will also be below 3:1, firing the floor signal — and the
+        // so the simulated contrast will also be below 3:1, firing the floor signal; and the
         // dichromacy projection will perturb that low contrast further.
         assert.ok(deuter.simulatedLuminanceContrast < deuter.minSimulatedContrast,
           `sim contrast ${deuter.simulatedLuminanceContrast} should be below the 3:1 floor for the red/green pair`);
@@ -325,7 +325,7 @@ describe('ContrastPlugin e2e :: scenarios', () => {
       },
     },
     {
-      'name':     'enforce:cvdSimulate — pure red/green pair flags protanopia + deuteranopia (red/green confusion family)',
+      'name':     'enforce:cvdSimulate: pure red/green pair flags protanopia + deuteranopia (red/green confusion family)',
       'pipeline': ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       'input': {
         // [VBM99] cite pure red/green as the textbook protanopia
@@ -342,7 +342,7 @@ describe('ContrastPlugin e2e :: scenarios', () => {
         assert.ok(prot !== undefined,                'a protanopia warning fires for pure red/green');
         assert.strictEqual(prot.foreground, 'text');
         assert.strictEqual(prot.background, 'background');
-        // |drop| should exceed the 0.5 protanopia threshold for this pair — the
+        // |drop| should exceed the 0.5 protanopia threshold for this pair; the
         // L-cone-absent projection radically reshuffles luminance for saturated red.
         assert.ok(Math.abs(prot.drop) > prot.dropThreshold,
           `|drop| ${Math.abs(prot.drop)} should exceed protanopia threshold ${prot.dropThreshold}`);
@@ -352,7 +352,7 @@ describe('ContrastPlugin e2e :: scenarios', () => {
       },
     },
     {
-      'name':     'enforce:cvdSimulate — blue/yellow pair flags tritanopia ([BVM97] confusion line)',
+      'name':     'enforce:cvdSimulate: blue/yellow pair flags tritanopia ([BVM97] confusion line)',
       'pipeline': ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       'input': {
         // Classic tritanopia confusion: pure blue on pure yellow.
@@ -376,10 +376,10 @@ describe('ContrastPlugin e2e :: scenarios', () => {
       },
     },
     {
-      'name':     'enforce:cvdSimulate — iso-luminant red/green flags achromatopsia via the SC-1.4.11 floor',
+      'name':     'enforce:cvdSimulate: iso-luminant red/green flags achromatopsia via the SC-1.4.11 floor',
       'pipeline': ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       'input': {
-        // Saturated red and green at near-equal BT.709 luminance —
+        // Saturated red and green at near-equal BT.709 luminance:
         // distinguishable to trichromats by chroma, but reduce to a
         // sub-3:1 grayscale pair for rod-monochromacy viewers.
         'colors': ['#ff0000', '#00d800'],
@@ -391,7 +391,7 @@ describe('ContrastPlugin e2e :: scenarios', () => {
         const achr = wcag.cvd.warnings.find((w) => w.cvdType === 'achromatopsia');
         assert.ok(achr !== undefined,                'achromatopsia warning fires for iso-luminant red/green');
         assert.strictEqual(achr.dropThreshold, 0,
-          'achromatopsia dropThreshold is 0 — BT.709 projection preserves luminance');
+          'achromatopsia dropThreshold is 0; BT.709 projection preserves luminance');
         assert.strictEqual(achr.minSimulatedContrast, 3.0,
           'achromatopsia minSimulatedContrast is the WCAG-21 SC-1.4.11 floor');
         // BT.709 luminance projection preserves luminance contrast exactly,
@@ -404,11 +404,11 @@ describe('ContrastPlugin e2e :: scenarios', () => {
       },
     },
     {
-      'name':     'enforce:cvdSimulate — black-on-white passes all four CVD checks without warnings (negative case)',
+      'name':     'enforce:cvdSimulate: black-on-white passes all four CVD checks without warnings (negative case)',
       'pipeline': ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       'input': {
         // Maximum-contrast pair. Every CVD type must produce zero
-        // warnings — both signals (drop magnitude AND floor) must clear.
+        // warnings; both signals (drop magnitude AND floor) must clear.
         'colors': ['#000000', '#ffffff'],
         'roles':  CVD_BLACK_ON_WHITE_ROLES,
       },

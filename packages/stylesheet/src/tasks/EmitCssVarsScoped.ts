@@ -62,7 +62,7 @@ function buildScopedWideGamutBlock(
  * Categories are derived from state.variants keys (e.g. 'dark', 'brand-A', 'brand-B').
  * The root roles are emitted under the 'default' category key.
  *
- * Wide-gamut handling — for any category whose records carry `displayP3`,
+ * Wide-gamut handling: for any category whose records carry `displayP3`,
  * a sibling `@supports (color: color(display-p3 0 0 0))` block is emitted
  * scoping the P3 declarations under the SAME `[data-<scopePrefix>='...']`
  * selector. Browsers without P3 support fall through to the sRGB block;

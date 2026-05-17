@@ -13,9 +13,9 @@ import { deltaE2000, getOrCreateMetadata, hueShift } from '@studnicky/iridis';
  * If deltaE < 10, shifts the accent hue by 30° away from frame.
  *
  * Writes:
- *   state.roles.accent                      — potentially updated accent
- *   state.metadata.gallery.harmonized       — true/false
- *   state.metadata.gallery.harmonizeDetails — { before, after, deltaE } if changed
+ *   state.roles.accent:                      potentially updated accent
+ *   state.metadata.gallery.harmonized:       true/false
+ *   state.metadata.gallery.harmonizeDetails: { before, after, deltaE } if changed
  */
 function setHarmonized(state: PaletteStateInterface, value: boolean): void {
   getOrCreateMetadata(state, 'gallery')['harmonized'] = value;
@@ -36,7 +36,7 @@ export class GalleryHarmonize implements TaskInterface {
     const frame  = state.roles['frame'];
 
     if (!accent || !frame) {
-      ctx.logger.warn('GalleryHarmonize', 'run', 'accent or frame role missing — skipping harmonize');
+      ctx.logger.warn('GalleryHarmonize', 'run', 'accent or frame role missing; skipping harmonize');
       setHarmonized(state, false);
       return;
     }
@@ -48,7 +48,7 @@ export class GalleryHarmonize implements TaskInterface {
     ctx.logger.debug('GalleryHarmonize', 'run', 'deltaE2000 between accent and frame', { 'deltaE': deltaE, 'threshold': threshold });
 
     if (deltaE >= threshold) {
-      ctx.logger.info('GalleryHarmonize', 'run', 'accent hue is sufficiently distinct — no shift needed', { 'deltaE': deltaE });
+      ctx.logger.info('GalleryHarmonize', 'run', 'accent hue is sufficiently distinct; no shift needed', { 'deltaE': deltaE });
       setHarmonized(state, false);
       return;
     }

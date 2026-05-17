@@ -4,14 +4,32 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-05-17
+
+Docs minor with one breaking URL change.
+
+### Added
+
+- **PrimeVue Accordion in the reference panels.** `BuildImageOptionsGuide`, `BuildEngineKnobsGuide`, and `BuildRoleSchemaGuide` now render one accordion panel per knob instead of a flat list. Single-select (default); the leg label sits on the left, the toggle indicator on the right, full row is the click target. Initial state opens the first panel so first paint is never blank.
+
+### Changed
+
+- **Home page consolidates the project pitch + builder.** `AuroraHero` sits above the `BuildPanel`; the prose (what you get, when to install, where to look next) sits below. One scrollable surface instead of two cross-linked pages.
+- **`BuildPanel` header replaced by a connected tab bar.** The page title and subtitle are gone; the tabs themselves now act as the panel header with the `Reset to defaults` button sitting in the same row at the right. CSS gives the tab bar and the panel body shared borders and rounded corners so they read as one card.
+- **Project-wide copy scrub.** Every em-dash (`—`) in human-readable surfaces (markdown docs, Vue components, TypeScript JSDoc, CSS comments, CHANGELOG, README, llms.txt, manifest, package.json description fields, RSS feed template, SEO meta-tag templates) replaced with context-appropriate punctuation. `ConsoleLogger`'s ` — ` field separator swapped for ` | ` with the golden test fixtures updated in lockstep. AI-isms (3 hits across the project: `seamlessly`, `elevated`, and one in the VSCode plugin) rewritten or cut. En-dashes in numeric ranges and proper-name citations preserved.
+
+### Removed
+
+- **BREAKING: `/about` and `/build` routes deleted.** Both URLs return 404 now. The content lives on the home page (`/`). Links in the sidebar, the navbar builder toggle, the `try-it-out` page, the `image-to-theme` page, and the SEO sitemap have all been updated to point at `/`.
+
 ## [0.3.2] - 2026-05-17
 
 Docs minor.
 
 ### Added
 
-- **`BuildImageOptionsGuide.vue`** — reference panel paired with the Image-tab sliders. One block per extractor knob (algorithm, palette size, histogram bpc, ΔE input cap, harmonize, lightness range, chroma range) with short summary + long explanation + hover-detail. Same shape as `BuildRoleSchemaGuide`.
-- **`BuildEngineKnobsGuide.vue`** — reference panel paired with the Configuration-tab knob grid. One block per engine knob (framing, color space, algorithm, contrast level, envelope mode, role schema) with the same structure.
+- **`BuildImageOptionsGuide.vue`**: reference panel paired with the Image-tab sliders. One block per extractor knob (algorithm, palette size, histogram bpc, ΔE input cap, harmonize, lightness range, chroma range) with short summary + long explanation + hover-detail. Same shape as `BuildRoleSchemaGuide`.
+- **`BuildEngineKnobsGuide.vue`**: reference panel paired with the Configuration-tab knob grid. One block per engine knob (framing, color space, algorithm, contrast level, envelope mode, role schema) with the same structure.
 - **Famous-photo preset library.** Six public-domain photos hosted on `upload.wikimedia.org`: *Great Wave* (Hokusai, c. 1831), *Starry Night* (Van Gogh, 1889), *Earthrise* (Apollo 8, 1968), *Blue Marble* (Apollo 17, 1972), *Pillars of Creation* (Hubble, 2014), *Carina Nebula* (JWST, 2022). The iridis logo stays as the project reference.
 - **Mount-time preset availability probe.** Every preset URL is loaded via an `Image()` element with `onload`/`onerror` and an 8s timeout; unreachable URLs are filtered from the chip row and logged via `console.warn` so misconfiguration surfaces in dev-tools without breaking the page.
 
@@ -26,7 +44,7 @@ Patch.
 
 ### Fixed
 
-- **`ImageToTheme.vue` source-mode picker placement.** The source-mode SelectButton (File / URL / Preset) and its input row sit on the LEFT column under the image drop zone, mirroring `IridisPicker`'s mode-tabs slot. Right column owns output configuration only — histogram, algorithm SelectButton, sliders.
+- **`ImageToTheme.vue` source-mode picker placement.** The source-mode SelectButton (File / URL / Preset) and its input row sit on the LEFT column under the image drop zone, mirroring `IridisPicker`'s mode-tabs slot. Right column owns output configuration only: histogram, algorithm SelectButton, sliders.
 
 ## [0.3.0] - 2026-05-16
 
@@ -37,18 +55,18 @@ Pre-alpha. Image clustering primitives, consolidated `/build` workspace, unified
 - **`gallery:histogram` task** (`@studnicky/iridis-image`). 5-bits-per-channel weighted histogram over `state.colors`; emits one record per non-empty bin with `hints.weight` set to the pixel count. Pair upstream with `intake:imagePixels` and downstream with `gallery:extract`.
 - **`clusterMedianCutWeighted` math primitive** (`@studnicky/iridis`). Generalises `clusterMedianCut` to respect per-record `hints.weight`; bucket splits partition by cumulative weight (not count), so a heavily-weighted color survives reduction even when surrounded by low-weight neighbours. Selection score is `weight × widest_range` (minimum-within-cluster-error heuristic).
 - **`clusterDeltaEMerge` math primitive** (`@studnicky/iridis`). Agglomerative ΔE2000 clustering. Each input record starts as its own cluster; merges the closest pair until exactly K remain. Forward-progress guard handles all-NaN distance pathology. Output `hints.weight` is the merged cluster's total.
-- **`gallery:extract` algorithm dispatch** (`@studnicky/iridis-image`). New `metadata.gallery.algorithm` slot selects `'median-cut'` (default — dispatches to `clusterMedianCutWeighted` when any input carries a weight, else `clusterMedianCut` for plain palettes) or `'delta-e'` (pre-trims by descending weight to bound the agglomerative reducer's input).
-- **`/build` workspace consolidation.** Five-tab workbench at `/iridis/build` — User palette / Image / Role schema / Configuration / Code — sharing one `configStore` so every tab edits the same SPA-wide theme. `BuildResolvedRoles` grid renders below the tabs as the canonical live read-out.
+- **`gallery:extract` algorithm dispatch** (`@studnicky/iridis-image`). New `metadata.gallery.algorithm` slot selects `'median-cut'` (default; dispatches to `clusterMedianCutWeighted` when any input carries a weight, else `clusterMedianCut` for plain palettes) or `'delta-e'` (pre-trims by descending weight to bound the agglomerative reducer's input).
+- **`/build` workspace consolidation.** Five-tab workbench at `/iridis/build` (User palette / Image / Role schema / Configuration / Code) sharing one `configStore` so every tab edits the same SPA-wide theme. `BuildResolvedRoles` grid renders below the tabs as the canonical live read-out.
 - **Standalone live-demo pages.** `/iridis/try-it-out` and `/iridis/image-to-theme` render the seed-picker and image-extraction workflows respectively, each followed by the shared resolved-roles grid. Both add to the sidebar.
 - **Unified SEO + structured-data template** (`docs/.vitepress/config.ts`). `BreadcrumbList` JSON-LD on every page, `Organization` JSON-LD with `sameAs` to GitHub + npm + author, `HowTo` JSON-LD gated to `/recipes/*`, `article:modified_time` + `article:author` when git lastUpdated resolves. `preconnect` + `dns-prefetch` to `esm.sh` for LCP improvement. `hreflang` en-US + x-default. Bingbot directive. Referrer policy `origin-when-cross-origin`.
 - **PWA manifest** (`docs/public/manifest.webmanifest`). Icons, screenshots, theme color, scope, start_url.
 - **RSS feed** (`docs/.vitepress/dist/feed.xml`, generated at build-end). Parses `CHANGELOG.md` versions into RSS 2.0; linked from `<head>` via `rel=alternate type=application/rss+xml`.
-- **`llms.txt`** (`docs/public/llms.txt`). Markdown index of canonical URLs per llmstxt.org standard — for LLM crawlers (ChatGPT, Perplexity, Claude).
+- **`llms.txt`** (`docs/public/llms.txt`). Markdown index of canonical URLs per llmstxt.org standard, for LLM crawlers (ChatGPT, Perplexity, Claude).
 - **Per-page `description:` frontmatter.** Every route under `/concepts`, `/recipes`, `/reference`, plus the top-level pages, ships a unique 110-160 char declarative description; SERP previews and unfurl cards no longer share the site-level fallback.
 - **`iridis.seo` config in `package.json`.** Single namespace for Google Search Console + Bing Webmaster Tools verification tokens and the X/Twitter handle. All three are explicitly-public markers, not credentials. Empty string suppresses the corresponding tag.
 - **Reactive `appliedRoles` projection** (`docs/.vitepress/theme/stores/applyConfigToDocument.ts`). The projector publishes the role → hex map atomically on every successful `engine.run`, so downstream consumers (code-snippet panel, role cards) subscribe via Vue reactivity instead of polling `document.documentElement.style`.
-- **Docs hero + atmosphere components.** `AuroraHero`, `ColorOrgan`, `IridisCursorBlob`, `IridisSwatchTape`, `PaletteCTA` — decorative components composed by `about.md` and the global layout slots. All respect `prefers-reduced-motion`.
-- **Reference: role-schema field pages.** `/iridis/reference/role-schema/{name, intent, lightness-range, chroma-range, derived-from, hue-lock, required, contrast-pairs}` — one page per schema field with shape, semantics, and examples.
+- **Docs hero + atmosphere components.** `AuroraHero`, `ColorOrgan`, `IridisCursorBlob`, `IridisSwatchTape`, `PaletteCTA`: decorative components composed by `about.md` and the global layout slots. All respect `prefers-reduced-motion`.
+- **Reference: role-schema field pages.** `/iridis/reference/role-schema/{name, intent, lightness-range, chroma-range, derived-from, hue-lock, required, contrast-pairs}`: one page per schema field with shape, semantics, and examples.
 
 ### Changed
 
@@ -60,18 +78,18 @@ Pre-alpha. Image clustering primitives, consolidated `/build` workspace, unified
 ### Fixed
 
 - **`<title>` tag duplication on home + about.** Home page (`title: iridis`) used to render as `iridis | iridis` because `titleTemplate: ':title | iridis'` appended unconditionally; about page (`title: About iridis`) used to render as `iridis | iridis` because VitePress derived the title from the `<h1>iridis</h1>` inside `<AuroraHero>` over the frontmatter. `transformPageData` now forces `pageData.title` from frontmatter and sets `pageData.titleTemplate = false` when the page title equals the site title.
-- **Empty `og:description` + `twitter:description` on every page lacking frontmatter description.** `transformPageData` used `??` to coalesce, but VitePress sets `pageData.description = ''` (empty string, not undefined) when no description is supplied — `??` passed through. Switched to `||` with explicit frontmatter extraction.
-- **`ImageToTheme.vue` duplicate source picker.** The LEFT column duplicated the source-mode `SelectButton`, file input, and `ref="fileInput"` already present in the RIGHT column — two hidden file inputs with the same template ref, two visible mode pickers. LEFT column is now drop-zone + preview only.
+- **Empty `og:description` + `twitter:description` on every page lacking frontmatter description.** `transformPageData` used `??` to coalesce, but VitePress sets `pageData.description = ''` (empty string, not undefined) when no description is supplied, so `??` passed through. Switched to `||` with explicit frontmatter extraction.
+- **`ImageToTheme.vue` duplicate source picker.** The LEFT column duplicated the source-mode `SelectButton`, file input, and `ref="fileInput"` already present in the RIGHT column: two hidden file inputs with the same template ref, two visible mode pickers. LEFT column is now drop-zone + preview only.
 - **`BuildCodePanel.vue` reactivity gap.** Module-scope `void themeStore` never established a reactive dependency; the CSS-vars snippet read from `document.documentElement.style` which the async projector updates after the watch fires (race condition). Computed now reads the new reactive `appliedRoles` ref directly.
-- **`ClusterDeltaEMerge` pass-through preserves wide-gamut.** When `k >= colors.length`, the pass-through used to reallocate every record via `fromOklch` — stripping `displayP3` (re-derived only when out of sRGB) and dropping non-weight hint keys. Now returns inputs verbatim when a weight is already declared; otherwise reallocates via the factory with merged hints.
+- **`ClusterDeltaEMerge` pass-through preserves wide-gamut.** When `k >= colors.length`, the pass-through used to reallocate every record via `fromOklch`, stripping `displayP3` (re-derived only when out of sRGB) and dropping non-weight hint keys. Now returns inputs verbatim when a weight is already declared; otherwise reallocates via the factory with merged hints.
 - **`ClusterMedianCutWeighted` type-cast bypasses.** Three `as ColorRecordInterface` casts replaced with `for...of` guards consistent with the rest of the file.
 - **Stale comments referencing the deleted `RightPanel.vue`.** Comments in `MultiOutputDemo.vue`, `SidebarResize.vue`, `theme/index.ts`, and `base/IridisCard.vue` rewritten to reflect current state.
 
 ### Removed
 
-- **`docs/.vitepress/theme/components/RightPanel.vue`** — split into `BuildPanel` (tabbed workbench) + `BuildResolvedRoles` (shared resolved-roles grid).
-- **`docs/.vitepress/theme/components/TryItOutForm.vue`** — replaced by `IridisDemo` standalone on `/try-it-out`.
-- **`docs/.vitepress/theme/stores/panelState.ts`** — the consolidated `/build` workspace has no right-panel-toggle state to track.
+- **`docs/.vitepress/theme/components/RightPanel.vue`**: split into `BuildPanel` (tabbed workbench) + `BuildResolvedRoles` (shared resolved-roles grid).
+- **`docs/.vitepress/theme/components/TryItOutForm.vue`**: replaced by `IridisDemo` standalone on `/try-it-out`.
+- **`docs/.vitepress/theme/stores/panelState.ts`**: the consolidated `/build` workspace has no right-panel-toggle state to track.
 
 ## [0.2.0] - 2026-05-15
 
@@ -86,7 +104,7 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 - **`@supports`-wrapped P3 cascade in `EmitCssVars` + `EmitCssVarsScoped`.** Emitted CSS orders blocks `:root` → `@media (prefers-color-scheme: dark)` → `@supports (color: color(display-p3 0 0 0))` → `@media (forced-colors: active)`.
 - **Research-grounded CVD compliance.** `EnforceCvdSimulate` evaluates every pair against all four canonical CVD types (deuteranopia, protanopia, tritanopia, achromatopsia). Per-type thresholds in `cvdThresholds.ts` cite BVM97, MOF09, VBM99, CIE76, SWD05, WCAG21, WS82. Bipartite signal: warning fires on either `|drop|` exceeding `dropMagnitude` OR `simulatedContrast` falling below the WCAG 1.4.11 floor. Output preserves shape; adds `dropThreshold` + `minSimulatedContrast` for auditability.
 - **Structured logger.** `ConsoleLogger` channels accept `(scope, op, message, context?: Record<string, unknown>)`. The logger formats; callers never interpolate. Level evaluated first so suppressed calls return before any context object is touched. New `trace` channel. Order: `silent < error < warn < info < debug < trace`.
-- **Ontology-driven role intent.** `ResolveRoles` propagates `RoleDefinitionInterface.intent` onto resolved `ColorRecordInterface.hints`. `EmitCssVars.forcedColorsToken` switches on `hints.intent` — no substring inference on role names. APCA `requiredLc`, WCAG required ratio, and Capacitor StatusBar style all read the same intent slot. `RoleSchemaEditor`'s intent picker exposes the canonical 10-value `ColorIntentType` union.
+- **Ontology-driven role intent.** `ResolveRoles` propagates `RoleDefinitionInterface.intent` onto resolved `ColorRecordInterface.hints`. `EmitCssVars.forcedColorsToken` switches on `hints.intent`; no substring inference on role names. APCA `requiredLc`, WCAG required ratio, and Capacitor StatusBar style all read the same intent slot. `RoleSchemaEditor`'s intent picker exposes the canonical 10-value `ColorIntentType` union.
 - **Canonical `ColorIntentType` union.** Ten values: `text | background | accent | muted | critical | positive | link | button | onAccent | onButton`.
 - **Reusable docs components.** `RoleCard`, `PairCard`, `ResolvedRoleCard`, `PaletteSwatch`, `PaletteEditor`, `FormField`, `ExportBar`. All form fields surface native `title` tooltips explaining their purpose.
 - **`xState`-style dispatcher actions.** `editRoleSchema` action publishes user-edited schemas as `custom-<timestamp>` entries in `roleSchemaByName`. Components dispatch typed actions; the dispatcher owns the registry shape.
@@ -121,8 +139,8 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 ### Removed
 
 - **Legacy `ColorIntentType` values:** `base`, `surface`, `neutral`.
-- **`base/IridisInput.vue` + `base/IridisSelect.vue`** — dead wrappers, never consumed.
-- **`SrgbToDisplayP3` + `DisplayP3ToSrgb` math primitives** — superseded by `OklchToDisplayP3` + `IntakeP3`.
+- **`base/IridisInput.vue` + `base/IridisSelect.vue`**: dead wrappers, never consumed.
+- **`SrgbToDisplayP3` + `DisplayP3ToSrgb` math primitives**: superseded by `OklchToDisplayP3` + `IntakeP3`.
 - **Substring-based forced-colors token inference.** Ontology is the contract.
 
 ## [0.1.0] - prior pre-alpha state
@@ -147,7 +165,7 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 - Cascading docs theme tokens: the engine emits eight canonical `--iridis-*` properties; vitepress's `--vp-c-*` chrome tokens cascade from them via `var()` references in `palette.css`, and hover/elevation states are computed via `color-mix()`. One seed change → one engine recompute → every cascade follower updates in one paint.
 - `quickPalette(seeds, framing?)` one-liner exported from `@studnicky/iridis`. Returns a four-role hex palette (`background`, `foreground`, `accent`, `muted`) using framing-aware default clamp ranges. The simplest possible iridis call. 4 new tests cover dark/light direction, single-seed, and hex format.
 - New top-level concept page `concepts/accessibility-calculations.md`: WCAG 2.1 + APCA tier tables, `contrastPairs` declaration semantics, the `enforce:contrast` nudge loop, CVD simulation overview, and the "declare instead of validate" stance. Wired into the sidebar.
-- Logo background stripped via `magick -fuzz 12% -transparent black`. The icon's pure-black corners are now true alpha-zero; on the dark sidebar it blends seamlessly without a visible square frame.
+- Logo background stripped via `magick -fuzz 12% -transparent black`. The icon's pure-black corners are now true alpha-zero; on the dark sidebar it blends without a visible square frame.
 - Redesigned `<IridisDemo>` as split-column + tabs: seeds row left, OKLCH-aware picker right, three tabs at the bottom (Resolved roles / Role schema / Code). Both the Role schema textarea and the colors block in the Code tab are inline-editable and validated against canonical schemas, invalid edits do not propagate, valid edits update `configStore` immediately and the engine re-runs.
 - Multi-output demo (six output formats from one engine instance: cssVars, cssScoped, tailwindTheme, capacitorTheme, RDF Turtle, JSON) shipped as `<MultiOutputDemo>`. VS Code emit is intentionally omitted from the docs demo pending a fix to the plugin's `luminance(hex)` invocation.
 - New `Try it out` page consolidates the configuration form alongside one demo running the full pipeline. Wired into the sidebar right after `Getting started`. Replaces the prior sidebar-mounted accordion.
@@ -160,7 +178,7 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 - Example mechanism unified, every page now shares the same `<IridisDemo>` instance via the right panel; per-page `<IridisDemo>` embeds removed (they were duplicating the panel's output and on `concepts/pipeline.md` showed three near-identical demos).
 - Pulsing concentric-rings logo treatment (uiverse loader pattern) replaces the static rounded-square. Five backdrop-filter-blurred rings with brand-color borders ripple at 5s ease-in-out around the iridescent eye, which gets a violet drop-shadow.
 - Depth + edges + glass treatment: tokenized `--iridis-shadow-{sm,md,lg}` and `--iridis-edge-soft`; gradient surfaces on code blocks, custom blocks, blockquotes, VPFeature; `color-mix(in oklch, ...)` everywhere instead of hardcoded rgba; `backdrop-filter: blur` on translucent panels.
-- Unified drawer layout across every viewport: docs content is the full middle column at every width; the Pages tree and the Try iridis builder are fixed-position overlay drawers driven by the navbar `PAGES` and `TRY IRIDIS` buttons. Drawer dimensions adapt with viewport (Pages: `min(85vw, 320px)`; Builder: `min(85vw, 480px)` right-edge drawer on desktop, full-width bottom sheet on mobile). Defaults differ by viewport — desktop (`>=1100px`) opens both drawers on first paint; mobile (`<1099px`) starts both closed. A single universal backdrop (`MobileOverlay`) dims content whenever any drawer is open and dismisses on tap. Sticky vertical tab affordances retired.
+- Unified drawer layout across every viewport: docs content is the full middle column at every width; the Pages tree and the Try iridis builder are fixed-position overlay drawers driven by the navbar `PAGES` and `TRY IRIDIS` buttons. Drawer dimensions adapt with viewport (Pages: `min(85vw, 320px)`; Builder: `min(85vw, 480px)` right-edge drawer on desktop, full-width bottom sheet on mobile). Defaults differ by viewport: desktop (`>=1100px`) opens both drawers on first paint; mobile (`<1099px`) starts both closed. A single universal backdrop (`MobileOverlay`) dims content whenever any drawer is open and dismisses on tap. Sticky vertical tab affordances retired.
 
 ### Roadmap
 

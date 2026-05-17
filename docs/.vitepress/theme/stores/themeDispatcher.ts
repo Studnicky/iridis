@@ -5,7 +5,7 @@
  * localStorage, engine output).
  *
  * Components NEVER mutate state directly, NEVER write to the DOM, NEVER
- * observe each other — they dispatch actions and read projections.
+ * observe each other; they dispatch actions and read projections.
  *
  *      ┌──────────┐ dispatch ┌─────────┐ projects ┌──────────┐
  *      │component │ ───────▶ │ reducer │ ───────▶ │  DOM /   │
@@ -15,7 +15,7 @@
  *           └───────── reactive subscription ◀──────────┘
  *
  * VitePress's own appearance switch dispatches `setFraming` via a single
- * MutationObserver bridge — the ONLY place that observes the DOM. Every
+ * MutationObserver bridge: the ONLY place that observes the DOM. Every
  * other write is an explicit action. With one reducer + one projector
  * the effect order is explicit (action → state → project) so the dark
  * toggle is deterministic instead of timing-sensitive.
@@ -81,7 +81,7 @@ function reduce(action: Action): void {
       /* Edits to the active schema register a new `custom-<timestamp>`
          entry in `roleSchemaByName` and swap the active pointer. The
          registry always stores `{ dark, light }` pairs so downstream
-         lookups stay shape-correct — the non-active framing inherits
+         lookups stay shape-correct: the non-active framing inherits
          from the previously-active pair, the active framing is the
          edited content. */
       const name      = `custom-${Date.now()}`;
@@ -125,7 +125,7 @@ export function dispatch(action: Action): void {
 /** Read-only projection of state. Components subscribe via Vue reactivity. */
 export const themeStore: Readonly<DocsConfigType> = state;
 
-/** Mutable proxy — write any field; the reducer is invoked under the hood.
+/** Mutable proxy: write any field; the reducer is invoked under the hood.
  *  Provided for v-model bindings that expect a writeable target. */
 export const themeStoreWritable: DocsConfigType = new Proxy(state, {
   set(target, prop: keyof DocsConfigType, value): boolean {
@@ -153,7 +153,7 @@ export function resetTheme(): void {
 /**
  * Publish an edited role schema. The dispatcher registers the new schema
  * in `roleSchemaByName` under a generated `custom-<timestamp>` name and
- * swaps the active pointer atomically — components that subscribe via
+ * swaps the active pointer atomically; components that subscribe via
  * Vue reactivity see the new pair before any subsequent projector tick.
  */
 export function editRoleSchema(schema: RoleSchemaInterface): void {
@@ -188,7 +188,7 @@ function migratePersisted(raw: Partial<DocsConfigType>): Partial<DocsConfigType>
 
   /* Role schema name is free-form: built-in `iridis-N` plus any
      `custom-<timestamp>` pair the editor publishes. Reject only if the
-     name no longer resolves in the registry — that handles renames + the
+     name no longer resolves in the registry; that handles renames + the
      `custom-*` entries that vanish on page reload. */
   if (typeof raw.roleSchema === 'string' && raw.roleSchema in roleSchemaByName) {
     out.roleSchema = raw.roleSchema;
@@ -228,7 +228,7 @@ function readDomFraming(): 'dark' | 'light' | null {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 }
 
-/* ─── Projector — the ONLY thing that writes the DOM ────────────────── */
+/* ─── Projector: the ONLY thing that writes the DOM ────────────────── */
 
 let observer: MutationObserver | null = null;
 
@@ -254,7 +254,7 @@ function persistConfig(snapshot: DocsConfigType): void {
 let booted = false;
 
 /**
- * One-shot initialiser. Idempotent — wires the persistence/DOM watchers
+ * One-shot initialiser. Idempotent; wires the persistence/DOM watchers
  * once, hydrates state from localStorage and the current dom framing,
  * and starts the projector loop. Called by the theme's `enhanceApp` hook.
  */

@@ -2,12 +2,12 @@
 // word-bounded) in <span class="iridis-brand"> so the animated spectrum
 // gradient renders. Three transform passes:
 //
-//   1. `text` tokens inside `inline` containers — covers prose,
+//   1. `text` tokens inside `inline` containers: covers prose,
 //      paragraphs, headings (h1..h6 emit `inline` children for their
 //      heading text).
-//   2. `html_inline` tokens — covers inline raw HTML inside a paragraph,
+//   2. `html_inline` tokens: covers inline raw HTML inside a paragraph,
 //      e.g. `<span>iridis</span>` typed by the author.
-//   3. `html_block` tokens — covers top-level raw HTML blocks such as
+//   3. `html_block` tokens: covers top-level raw HTML blocks such as
 //      the hero `<div><h1>iridis</h1>…</div>` on index.md. These are
 //      passed through by markdown-it without children, so the plugin
 //      rewrites the raw HTML string directly.
@@ -25,12 +25,12 @@
 //     only mutates text-outside-tags, never attribute payloads.
 //
 // The matched literal is replaced VERBATIM (preserving case) inside
-// the span — `Iridis` stays `Iridis`, `IRIDIS` stays `IRIDIS`.
+// the span: `Iridis` stays `Iridis`, `IRIDIS` stays `IRIDIS`.
 //
 // The corresponding CSS in palette.css applies the animated spectrum
 // gradient. The navbar siteTitle and any other static-Vue-rendered
 // "iridis" gets the same treatment via a sitewide CSS rule that targets
-// the literal element text — see palette.css `.VPNavBarTitle .title`.
+// the literal element text. See palette.css `.VPNavBarTitle .title`.
 
 const PATTERN = /(^|[^A-Za-z0-9_/:@.\-])(iridis)\b/gi;
 
@@ -43,7 +43,7 @@ function wrapInText(input) {
  * payload between tags is matched. Attribute values inside `<...>`
  * tags (href, class, src) are left untouched. The split is naïve but
  * correct for the small set of authored HTML blocks in this docs tree
- * — no embedded `>` in attributes.
+ * (no embedded `>` in attributes).
  */
 function wrapInHtml(html) {
   let out = '';
@@ -96,7 +96,7 @@ export function iridisBrandPlugin(md) {
           out.push(token);
           continue;
         }
-        // Reset regex state between tokens — /g regexes maintain lastIndex.
+        // Reset regex state between tokens: /g regexes maintain lastIndex.
         PATTERN.lastIndex = 0;
         out.push(token);
       }

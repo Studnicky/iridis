@@ -3,7 +3,7 @@
  *
  * Each plugin declares its slot shape via module augmentation on
  * PluginOutputsRegistry / PluginMetadataRegistry. These helpers constrain
- * the key to the declared set and return the declared value type —
+ * the key to the declared set and return the declared value type;
  * no `as Record<string, unknown>` needed at call sites.
  *
  * The slot is created once and mutated in place by subsequent emit tasks in

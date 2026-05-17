@@ -1,6 +1,6 @@
 ---
 title: OKLCH
-description: The perceptually uniform polar form of Oklab that every iridis ColorRecord carries — coordinates, why the pipeline reasons in this space, and the sRGB conversion chain
+description: The perceptually uniform polar form of Oklab that every iridis ColorRecord carries. Coordinates, why the pipeline reasons in this space, and the sRGB conversion chain.
 ---
 
 # OKLCH

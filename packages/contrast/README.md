@@ -10,8 +10,8 @@ APCA Lc target selection is intent-driven: `EnforceApca` reads each pair's
 foreground / background intent and picks Lc 75 (body text), Lc 60 (fluent /
 headline text), or Lc 45 (non-text UI) per the WCAG 3 Bronze draft. The
 `pair.minRatio` field on an `algorithm: 'apca'` pair is ignored by the APCA
-task — the target is selected from intent. Pairs with no declared intent on
-either side fall back to Lc 75 — the body-text floor — so undeclared schemas
+task. The target is selected from intent. Pairs with no declared intent on
+either side fall back to Lc 75 (the body-text floor), so undeclared schemas
 still hit the strict tier.
 
 CVD simulation is advisory: `enforce:cvdSimulate` writes per-pair warnings to
@@ -53,10 +53,10 @@ const state = await engine.run({
 });
 
 const wcag = state.metadata['wcag']!;
-// wcag.aa?.pairs   : WcagPairResultInterface[]   — { foreground, background, required, before, after, pass }
+// wcag.aa?.pairs   : WcagPairResultInterface[]   // { foreground, background, required, before, after, pass }
 // wcag.aaa?.pairs  : WcagPairResultInterface[]
-// wcag.apca?.pairs : ApcaPairResultInterface[]   — { foreground, background, requiredLc, beforeLc, afterLc, pass }
-// wcag.cvd?.warnings: CvdPairWarningInterface[]  — { foreground, background, cvdType, drop, dropThreshold, ... }
+// wcag.apca?.pairs : ApcaPairResultInterface[]   // { foreground, background, requiredLc, beforeLc, afterLc, pass }
+// wcag.cvd?.warnings: CvdPairWarningInterface[]  // { foreground, background, cvdType, drop, dropThreshold, ... }
 ```
 
 ## Tasks

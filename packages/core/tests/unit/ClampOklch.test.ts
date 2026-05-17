@@ -3,12 +3,12 @@
  *
  * Exercises `roleRangeFor` and the in-range no-op early return.
  * `ColorRecordShape.test.ts` already covers canonical key-order preservation
- * after a clamp rebuild — this suite is strictly about which range gets
+ * after a clamp rebuild; this suite is strictly about which range gets
  * picked under each combination of (color.hints.role, schema role-range
  * declarations) and whether the early-return path actually returns
  * the same record reference (no allocation) when the input is inside range.
  *
- * Drives the task via a single scenarios table — one `it` per scenario,
+ * Drives the task via a single scenarios table: one `it` per scenario,
  * each runs the engine ONCE and asserts every observable property of the
  * resulting state.colors[0] in the same body.
  */
@@ -55,7 +55,7 @@ function freshEngine(seed: ColorRecordInterface): Engine {
 
 describe('ClampOklch unit :: scenarios', () => {
   // ---------------------------------------------------------------------------
-  // Seed factories — each scenario picks the relevant one.
+  // Seed factories: each scenario picks the relevant one.
   // ---------------------------------------------------------------------------
 
   // In-range against the conservative defaults [0.05, 0.95] × [0.0, 0.40].
@@ -66,7 +66,7 @@ describe('ClampOklch unit :: scenarios', () => {
     0.5, 0.1, 200, 1, 'oklch', { 'role': 'accent' },
   );
 
-  // Out-of-range L above the default upper bound — clamp:oklch must rebuild.
+  // Out-of-range L above the default upper bound; clamp:oklch must rebuild.
   const outOfRangeL = colorRecordFactory.fromOklch(0.999, 0.1, 200);
 
   // Hint-bearing color where the schema declares the role and a tight chroma
@@ -76,13 +76,13 @@ describe('ClampOklch unit :: scenarios', () => {
   );
 
   // Hint-bearing color whose hinted role IS defined in the schema but ranges
-  // are absent on that role — should fall back to defaults (so in-range
+  // are absent on that role; should fall back to defaults (so in-range
   // defaults apply and an identity early-return fires).
   const hintRoleWithoutRanges = colorRecordFactory.fromOklch(
     0.5, 0.1, 200, 1, 'oklch', { 'role': 'mystery' },
   );
 
-  // Hint-bearing color whose hinted role is NOT in the schema's role list —
+  // Hint-bearing color whose hinted role is NOT in the schema's role list;
   // roleRangeFor falls back to defaults.
   const hintRoleUnknown = colorRecordFactory.fromOklch(
     0.5, 0.1, 200, 1, 'oklch', { 'role': 'unknown-role' },
@@ -90,7 +90,7 @@ describe('ClampOklch unit :: scenarios', () => {
 
   const scenarios: readonly ScenarioInterface[] = [
     {
-      'name':           'default range — in-range L+C returns the same record (no allocation)',
+      'name':           'default range: in-range L+C returns the same record (no allocation)',
       'seed':           inRangeDefault,
       'input':          { 'colors': [] },
       'expectIdentity': true,
@@ -105,7 +105,7 @@ describe('ClampOklch unit :: scenarios', () => {
       },
     },
     {
-      'name':           'role-defined range — in-range L+C returns the same record',
+      'name':           'role-defined range: in-range L+C returns the same record',
       'seed':           inRangeRoleDefined,
       'input':          {
         'colors': [],
@@ -125,7 +125,7 @@ describe('ClampOklch unit :: scenarios', () => {
       },
     },
     {
-      'name':           'no hints, no schema — default range clamps out-of-range L into bounds',
+      'name':           'no hints, no schema: default range clamps out-of-range L into bounds',
       'seed':           outOfRangeL,
       'input':          { 'colors': [] },
       'expectIdentity': false,
@@ -166,7 +166,7 @@ describe('ClampOklch unit :: scenarios', () => {
       },
     },
     {
-      'name':           'role declared without explicit ranges — falls back to defaults',
+      'name':           'role declared without explicit ranges: falls back to defaults',
       'seed':           hintRoleWithoutRanges,
       'input':          {
         'colors': [],
@@ -186,7 +186,7 @@ describe('ClampOklch unit :: scenarios', () => {
       },
     },
     {
-      'name':           'role hint pointing at a role NOT in schema — defaults apply',
+      'name':           'role hint pointing at a role NOT in schema: defaults apply',
       'seed':           hintRoleUnknown,
       'input':          {
         'colors': [],

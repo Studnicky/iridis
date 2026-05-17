@@ -1,7 +1,7 @@
 /**
  * Published CVD perceptual-stability thresholds per deficiency type.
  *
- * Each threshold has two signals — `dropMagnitude` (the absolute WCAG-21
+ * Each threshold has two signals: `dropMagnitude` (the absolute WCAG-21
  * luminance-contrast drop between trichromat perception and CVD-simulated
  * perception) and `minSimulatedContrast` (the minimum WCAG-21 contrast
  * the CVD-simulated pair must still meet). A warning fires when EITHER
@@ -18,7 +18,7 @@
  *
  * ## Threshold derivation
  *
- * ### `dropMagnitude` — perceptible-difference threshold
+ * ### `dropMagnitude`: perceptible-difference threshold
  *
  * The "just-noticeable difference" in colour perception is canonically
  * ΔE76 ≈ 2.3 [CIE76] and ΔE2000 ≈ 1.0–3.0 [SWD05] depending on patch
@@ -34,9 +34,9 @@
  *
  * Achromatopsia drops are identically zero by definition (BT.709
  * luminance projection preserves luminance) so the threshold for that
- * type is **0** — never the firing signal.
+ * type is **0**, never the firing signal.
  *
- * ### `minSimulatedContrast` — post-simulation legibility floor
+ * ### `minSimulatedContrast`: post-simulation legibility floor
  *
  * [WCAG21] SC 1.4.11 ("Non-text Contrast", Level AA) requires a 3:1
  * contrast ratio for "User Interface Components and Graphical Objects".
@@ -51,44 +51,44 @@
  *   [BVM97]      Brettel H., Viénot F., Mollon J.D. (1997)
  *                "Computerized simulation of color appearance for
  *                dichromats." J. Opt. Soc. Am. A 14(10):2647–2655.
- *                — Source for the simulation matrices.
+ *                Source for the simulation matrices.
  *
  *   [VBM99]      Viénot F., Brettel H., Mollon J.D. (1999)
  *                "Digital video colourmaps for checking the legibility
  *                of displays by dichromats." Color Res. Appl.
- *                24(4):243–252. — Table 1 normalised protanopia /
+ *                24(4):243–252. Table 1 normalised protanopia /
  *                deuteranopia matrices.
  *
  *   [MOF09]      Machado G.M., Oliveira M.M., Fernandes L.A.F. (2009)
  *                "A Physiologically-based Model for Simulation of Color
- *                Vision Deficiency." IEEE TVCG 15(6):1291–1298. —
+ *                Vision Deficiency." IEEE TVCG 15(6):1291–1298.
  *                Severity-parameterised CVD model; reduces to [VBM99]
  *                at severity 1.0 (dichromatic limit). Reference
  *                implementation used by Color Oracle and Sim Daltonism.
  *
  *   [CIE76]      CIE (1976) "Colorimetry, 3rd ed.", CIE Publication
- *                15:2004. — ΔE76 ≈ 2.3 just-noticeable-difference.
+ *                15:2004. ΔE76 ≈ 2.3 just-noticeable-difference.
  *
  *   [SWD05]      Sharma G., Wu W., Dalal E.N. (2005)
  *                "The CIEDE2000 color-difference formula: Implementation
  *                notes, supplementary test data, and mathematical
- *                observations." Color Res. Appl. 30(1):21–30. — ΔE2000
+ *                observations." Color Res. Appl. 30(1):21–30. ΔE2000
  *                perceptible threshold ~1.0–3.0.
  *
  *   [WCAG21]     W3C (2018) "Web Content Accessibility Guidelines 2.1"
- *                — SC 1.4.1 (Use of Color, Level A), SC 1.4.11
+ *                SC 1.4.1 (Use of Color, Level A), SC 1.4.11
  *                (Non-text Contrast, Level AA, 3:1 minimum).
  *
- *   [WCAG2-INTRO] W3C "WCAG 2 Overview — Approach": "When in doubt,
+ *   [WCAG2-INTRO] W3C "WCAG 2 Overview, Approach": "When in doubt,
  *                err on the side of accessibility."
  *
  *   [WS82]       Wyszecki G., Stiles W.S. (1982) "Color Science:
  *                Concepts and Methods, Quantitative Data and Formulae",
- *                2nd ed., §3.3. — Luminance-projection model for
+ *                2nd ed., §3.3. Luminance-projection model for
  *                rod-only (achromatopsic) viewing.
  *
  *   [WONG11]     Wong B. (2011) "Color blindness." Nat. Methods
- *                8(6):441. — CVD prevalence: ~8 % of males, ~0.5 % of
+ *                8(6):441. CVD prevalence: ~8 % of males, ~0.5 % of
  *                females (predominantly deuteranomaly + deuteranopia +
  *                protanomaly + protanopia).
  */
@@ -101,7 +101,7 @@ export interface CvdThresholdInterface {
    * CVD-simulated perception. A pair exceeding this magnitude raises a
    * warning. Achromatopsia uses 0 because the BT.709 projection
    * preserves luminance exactly, so the drop signal is meaningless for
-   * that type — the `minSimulatedContrast` signal carries the weight.
+   * that type; the `minSimulatedContrast` signal carries the weight.
    */
   readonly 'dropMagnitude':        number;
   /**

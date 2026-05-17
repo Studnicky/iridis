@@ -84,8 +84,8 @@ Each package exposes up to three import paths:
 | Subpath | Example | Purpose |
 |---------|---------|---------|
 | `.` (root) | `import { Engine } from '@studnicky/iridis'` | Runtime classes, singletons, plugin entry points |
-| `./model` | `import { InputSchema } from '@studnicky/iridis/model'` | JSON Schema literals (`as const`) — kept for backwards compatibility |
-| `./types` | `import type { ColorRecordInterface } from '@studnicky/iridis/types'` | TypeScript interface declarations — **canonical for new code** |
+| `./model` | `import { InputSchema } from '@studnicky/iridis/model'` | JSON Schema literals (`as const`), kept for backwards compatibility |
+| `./types` | `import type { ColorRecordInterface } from '@studnicky/iridis/types'` | TypeScript interface declarations, **canonical for new code** |
 
 `./types` is the canonical subpath for new code. `./model` and the root `.` export remain valid and are not deprecated. All three co-exist without breakage.
 
@@ -156,7 +156,7 @@ The literal word "iridis" is wrapped by `docs/.vitepress/plugins/iridis-brand.mj
 
 ## Docs theme bundle, CDN externals
 
-The docs site externalises Vue, PrimeVue (14 subpaths), `@primeuix/themes`, and mermaid to `esm.sh` via a Vitepress import map injected into `<head>`. Pinned versions: `vue@3.5.34`, `primevue@4.5.5`, `@primeuix/themes@2.0.3`, `mermaid@11.14.0` — each loaded with `?external=vue` so the CDN copies share the same Vue instance the Vitepress runtime ships. `rollupOptions.external` is gated to build mode only so dev still resolves locally. Modulepreload 404s for the externalised bare specifiers are benign browser hints — the import-map redirects fire before the network request. `<ClientOnly>` wraps any component that imports a CDN module so SSR never tries to evaluate a browser-only ESM module.
+The docs site externalises Vue, PrimeVue (14 subpaths), `@primeuix/themes`, and mermaid to `esm.sh` via a Vitepress import map injected into `<head>`. Pinned versions: `vue@3.5.34`, `primevue@4.5.5`, `@primeuix/themes@2.0.3`, `mermaid@11.14.0`, each loaded with `?external=vue` so the CDN copies share the same Vue instance the Vitepress runtime ships. `rollupOptions.external` is gated to build mode only so dev still resolves locally. Modulepreload 404s for the externalised bare specifiers are benign browser hints, the import-map redirects fire before the network request. `<ClientOnly>` wraps any component that imports a CDN module so SSR never tries to evaluate a browser-only ESM module.
 
 ## Docs site, state-machine dispatcher
 

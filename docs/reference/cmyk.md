@@ -1,6 +1,6 @@
 ---
 title: CMYK
-description: The subtractive four-ink model iridis exposes as a picker affordance — channel ranges, the K separation formula, and why no profile-aware math primitives ship
+description: The subtractive four-ink model iridis exposes as a picker affordance. Channel ranges, the K separation formula, and why no profile-aware math primitives ship.
 ---
 
 # CMYK

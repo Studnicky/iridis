@@ -13,7 +13,7 @@
  * stays recognisably iridis regardless of which user palette is
  * driving the rest of the page. Engine-resolved `--iridis-accent` /
  * `--iridis-muted` are layered on top so user choices still tint the
- * field — the brand spectrum is the bass, the engine output is the
+ * field. The brand spectrum is the bass, the engine output is the
  * melody.
  *
  * Slot pass-through renders foreground hero content (title, CTAs)
@@ -68,7 +68,7 @@
   will-change: transform;
 }
 /* Each blob is a conic gradient spanning four of the brand spectrum
-   anchors — overlapping pairs produce live additive hue mixing as the
+   anchors; overlapping pairs produce live additive hue mixing as the
    blobs rotate against each other. */
 .aurora-hero__blob--a {
   top: -15%;
@@ -143,7 +143,7 @@
 }
 
 /* ── Guaranteed-contrast text over the live aurora ─────────────────
-   The aurora background is animated and colorful — static text colors
+   The aurora background is animated and colorful; static text colors
    can't guarantee WCAG contrast against the moving blobs at every
    pixel. `mix-blend-mode: difference` solves it mathematically: with
    text painted pure white, every text pixel renders as |255 − bg|,

@@ -42,10 +42,10 @@ function makeTask(
 }
 
 // ---------------------------------------------------------------------------
-// happy: register 50 tasks — list returns 50 in registration order
+// happy: register 50 tasks; list returns 50 in registration order
 // ---------------------------------------------------------------------------
 
-test('TaskRegistry e2e :: happy :: register 50 tasks — list returns all in order', () => {
+test('TaskRegistry e2e :: happy :: register 50 tasks; list returns all in order', () => {
   const registry = new TaskRegistry();
   const names: string[] = [];
 

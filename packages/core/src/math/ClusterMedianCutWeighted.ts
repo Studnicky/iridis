@@ -131,7 +131,7 @@ export class ClusterMedianCutWeighted {
         //
         // Selecting purely by weight makes a huge uniform region (page
         // whites, sky) hog every split, so smaller-but-distinct hues
-        // never get their own cluster — the resulting palette ends up
+        // never get their own cluster; the resulting palette ends up
         // as N shades of the same neutral. Selecting purely by range
         // (Heckbert's original) ignores pixel density and lets a tiny
         // outlier dominate.

@@ -72,7 +72,7 @@ function simulatedContrast(
  *  - The post-simulation WCAG-21 contrast must stay ≥
  *    `minSimulatedContrast` ([WCAG21] SC 1.4.11 non-text floor).
  *
- * Advisory only — the task does not auto-fix.
+ * Advisory only; the task does not auto-fix.
  */
 export class EnforceCvdSimulate implements TaskInterface {
   readonly 'name' = 'enforce:cvdSimulate';
@@ -114,7 +114,7 @@ export class EnforceCvdSimulate implements TaskInterface {
 
         // For achromatopsia, dropMagnitude is 0 and the drop is
         // identically 0 by definition of the BT.709 grayscale
-        // projection — so only the floor signal can fire. For the
+        // projection, so only the floor signal can fire. For the
         // dichromacies, either signal can trigger.
         if (!exceedsDrop && !belowFloor) {
           continue;
@@ -131,7 +131,7 @@ export class EnforceCvdSimulate implements TaskInterface {
           'minSimulatedContrast':        threshold.minSimulatedContrast,
         };
         warnings.push(warning);
-        ctx.logger.warn('EnforceCvdSimulate', 'run', 'CVD advisory — pair fails perceptual-stability threshold', {
+        ctx.logger.warn('EnforceCvdSimulate', 'run', 'CVD advisory: pair fails perceptual-stability threshold', {
           'foreground':         pair.foreground,
           'background':         pair.background,
           'cvdType':            cvd.name,

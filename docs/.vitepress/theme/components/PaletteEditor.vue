@@ -6,7 +6,7 @@
  * "click to edit" hint) and a wrap-flex grid of `<PaletteSwatch>`
  * buttons, optionally preceded by a "+ add" button.
  *
- * Presentational only — never touches the theme store. Every mutation
+ * Presentational only; never touches the theme store. Every mutation
  * bubbles up through typed emits so the parent (currently IridisDemo)
  * stays the single owner of palette state and dispatch.
  */

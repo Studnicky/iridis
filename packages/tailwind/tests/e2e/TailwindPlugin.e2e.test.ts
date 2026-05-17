@@ -56,7 +56,7 @@ test('TailwindPlugin e2e :: happy :: emit:tailwindTheme writes colors + cssVars 
   assert.ok(typeof out.colors  === 'object',   'colors is an object');
   assert.ok(typeof out.cssVars === 'string',   'cssVars is a string');
   assert.ok(typeof out.config  === 'string',   'config is a string');
-  // sRGB-only input — no @supports / display-p3 syntax in cssVars.
+  // sRGB-only input; no @supports / display-p3 syntax in cssVars.
   assert.ok(!out.cssVars.includes('@supports'),
     'sRGB-only input leaves cssVars without an @supports block');
   assert.ok(!out.cssVars.includes('display-p3'),
@@ -64,10 +64,10 @@ test('TailwindPlugin e2e :: happy :: emit:tailwindTheme writes colors + cssVars 
 });
 
 // ---------------------------------------------------------------------------
-// R7.2 — wide-gamut P3 propagation through emit:tailwindTheme. The tailwind
+// R7.2: wide-gamut P3 propagation through emit:tailwindTheme. The tailwind
 // plugin emits both a JSON `colors` config (consumed by Tailwind's own CSS
 // generation) AND a direct `cssVars` sheet for Tailwind v4 `@theme`
-// references. The cssVars sheet is direct CSS — it gains an
+// references. The cssVars sheet is direct CSS: it gains an
 // `@supports (color: color(display-p3 0 0 0))` block that re-declares
 // wide-gamut roles in P3 form. The `colors` JSON keeps sRGB hex values
 // (Tailwind v4 sees them through the cssVars cascade anyway).
@@ -122,7 +122,7 @@ describe('TailwindPlugin e2e :: wide-gamut scenarios', () => {
         assert.match(out.cssVars, /--c-accent:\s+color\(display-p3 [\d.]+ [\d.]+ [\d.]+\);/,
           '@supports block declares --c-accent as color(display-p3 ...)');
 
-        // Cascade order — :root first, @supports after.
+        // Cascade order: :root first, @supports after.
         const rootIdx     = out.cssVars.indexOf(':root');
         const supportsIdx = out.cssVars.indexOf('@supports');
         assert.ok(rootIdx >= 0 && supportsIdx >= 0,
@@ -130,7 +130,7 @@ describe('TailwindPlugin e2e :: wide-gamut scenarios', () => {
         assert.ok(rootIdx < supportsIdx,
           ':root block precedes @supports block in cssVars cascade');
 
-        // colors JSON keeps sRGB hex — the wide-gamut surfacing happens via
+        // colors JSON keeps sRGB hex; the wide-gamut surfacing happens via
         // the cssVars cascade, not in the static config object.
         const accentColor = out.colors['accent'];
         assert.ok(typeof accentColor === 'string',

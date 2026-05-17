@@ -7,7 +7,7 @@
  * state.outputs; this component renders all six in PrimeVue Tabs.
  *
  * Plugins adopted: stylesheet, tailwind, vscode, capacitor, rdf, plus
- * the in-core emit:json. The render is read-only — clicking a tab just
+ * the in-core emit:json. The render is read-only; clicking a tab just
  * switches the visible output.
  */
 
@@ -20,7 +20,7 @@ import type { RoleSchemaInterface }   from '@studnicky/iridis/model';
 
 /* PrimeVue components used in this component's template. PrimeVue's
    `app.use` plugin registers its provide/inject scaffolding but does NOT
-   auto-register components — each consumer imports what it uses. */
+   auto-register components: each consumer imports what it uses. */
 import Button    from 'primevue/button';
 import Tabs      from 'primevue/tabs';
 import TabList   from 'primevue/tablist';
@@ -45,7 +45,7 @@ const error = ref<string | null>(null);
 
 /* Module-scope engine: constructed once at component-script load, with
  * core tasks registered immediately. The five plugin packages are loaded
- * via dynamic `import()` so they live in their own chunks — only fetched
+ * via dynamic `import()` so they live in their own chunks: only fetched
  * when this component mounts, rather than bundled into every docs page's
  * theme chunk. `engineReady` is a promise that resolves once all five
  * plugins have been adopted and the pipeline order is declared; every
@@ -86,7 +86,7 @@ const engineReady: Promise<MultiOutputEngineReady> = (async () => {
   /* Demo configuration is the maximal-correctness configuration: it
      applies every contrast and CVD compliance check the engine
      exposes. Real consumers opt in/out via their own pipeline, but the
-     showroom demonstrates the full standards-compliance surface —
+     showroom demonstrates the full standards-compliance surface:
      WCAG 2.1 AA + AAA, APCA Lc targets, and CVD simulation against
      protanopia + deuteranopia + tritanopia + achromatopsia. */
   engine.pipeline([

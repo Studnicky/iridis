@@ -2,7 +2,7 @@
  * RDF plugin end-to-end tests.
  *
  * Asserts plugin shape and drives the reason:annotate / reason:serialize pair.
- * n3 is the plugin's runtime dep — workspace install resolves it.
+ * n3 is the plugin's runtime dep; workspace install resolves it.
  */
 import { test } from 'node:test';
 import assert   from 'node:assert/strict';
@@ -26,7 +26,7 @@ const REASON_SERIALIZE_GOLDEN = new URL(
  *      subject or object contains `colorology/palette/run-` is dropped.
  *
  *   2. The n3 `Writer` assigns blank-node labels (`_:n3-0`, `_:n3-1`, …) in
- *      insertion order — stable within one run but the labels themselves
+ *      insertion order: stable within one run but the labels themselves
  *      carry no semantic value. Any line referencing a `_:n3-` label is
  *      dropped from the comparison. The number of such lines is asserted
  *      separately so we still catch a change in blank-node count.
@@ -96,7 +96,7 @@ test('RdfPlugin e2e :: happy :: reason:annotate writes a graph onto state', asyn
 // reason:serialize scenario coverage
 //
 // ONE pipeline run produces the serialized Turtle output. The single `it`
-// body asserts every observable property of the serialized string —
+// body asserts every observable property of the serialized string:
 // presence, non-empty, contains expected colorology IRIs + xsd literals.
 // ---------------------------------------------------------------------------
 import { describe, it }              from 'node:test';
@@ -140,7 +140,7 @@ describe('RdfPlugin e2e :: serialize scenarios', () => {
         assert.match(ttl, /https:\/\/studnicky\.dev\/colorology\/role\//,  'contains role IRIs');
         assert.match(ttl, /https:\/\/studnicky\.dev\/colorology\/color\//, 'contains color IRIs');
         assert.match(ttl, /https:\/\/studnicky\.dev\/colorology\//,         'uses colorology vocab');
-        // sRGB-only input — no displayP3 channel triples present.
+        // sRGB-only input; no displayP3 channel triples present.
         assert.ok(!ttl.includes('displayP3R'),
           'sRGB-only input emits no colorology:displayP3R triples');
         assert.ok(!ttl.includes('displayP3G'),
@@ -150,14 +150,14 @@ describe('RdfPlugin e2e :: serialize scenarios', () => {
       },
     },
     {
-      // R7.4 — wide-gamut OKLCH input must populate colorology:displayP3R/G/B
+      // R7.4: wide-gamut OKLCH input must populate colorology:displayP3R/G/B
       // literal triples in the serialized Turtle, channel values at 4dp
       // xsd:decimal precision.
       'name':     'reason:serialize emits displayP3R/G/B triples when the record carries a wide-gamut value',
       'pipeline': ['intake:oklch', 'resolve:roles', 'reason:annotate', 'reason:serialize'],
       'input': {
-        // OKLCH(0.7, 0.4, 30) — vivid red-orange outside sRGB → displayP3 populated.
-        // OKLCH(0.10, 0.01, 280) — near-black, in sRGB → displayP3 undefined.
+        // OKLCH(0.7, 0.4, 30): vivid red-orange outside sRGB → displayP3 populated.
+        // OKLCH(0.10, 0.01, 280): near-black, in sRGB → displayP3 undefined.
         'colors': [{ 'l': 0.7, 'c': 0.4, 'h': 30 }, { 'l': 0.10, 'c': 0.01, 'h': 280 }],
         'roles':  WIDE_GAMUT_ROLES,
       },
@@ -200,7 +200,7 @@ describe('RdfPlugin e2e :: serialize scenarios', () => {
           `Turtle contains accent displayP3B literal ${b4}`);
 
         // Exactly three displayP3 channel-triple occurrences (one per channel,
-        // for accent only — background's record carries no displayP3).
+        // for accent only; background's record carries no displayP3).
         const p3LineCount =
           (ttl.match(/displayP3R/g) ?? []).length +
           (ttl.match(/displayP3G/g) ?? []).length +
@@ -222,7 +222,7 @@ describe('RdfPlugin e2e :: serialize scenarios', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Golden fixture — locks the Turtle output of intake:hex → resolve:roles →
+// Golden fixture: locks the Turtle output of intake:hex → resolve:roles →
 // reason:annotate → reason:serialize for a stable seed + role schema. Lines
 // referencing the per-run palette IRI (Date.now based) and blank-node labels
 // (auto-assigned by the n3 Writer) are filtered out of the comparison; see

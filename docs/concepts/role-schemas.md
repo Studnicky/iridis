@@ -1,6 +1,6 @@
 ---
 title: Role schemas
-description: A role schema names the tokens your design system uses and the contrast pairs they must satisfy — iridis treats it as a contract and enforces it on every run
+description: A role schema names the tokens your design system uses and the contrast pairs they must satisfy. iridis treats it as a contract and enforces it on every run.
 ---
 
 # Role schemas
@@ -29,7 +29,7 @@ export const mySchema: RoleSchemaInterface = {
 };
 ```
 
-The schema is intentionally minimal. iridis does not prescribe role names — `canvas`, `accent`, `text`, `background`, `keyword`, `error` are all equally valid. Name roles after what they mean in your product, not after generic design tokens.
+The schema is intentionally minimal. iridis does not prescribe role names: `canvas`, `accent`, `text`, `background`, `keyword`, `error` are all equally valid. Name roles after what they mean in your product, not after generic design tokens.
 
 The same schema serialises to JSON-LD using the colorology vocabulary the RDF plugin ships with. This is the canonical single-document form:
 
@@ -83,7 +83,7 @@ Optional roles (no `required` field, or `required: false`) are skipped if no can
 
 ## intent, the ontology hook
 
-`RoleDefinitionInterface.intent` is the authoritative semantic marker iridis reads to drive every downstream decision. `ResolveRoles` propagates the schema-declared `intent` onto the resolved record's `hints.intent`; later tasks branch on that value rather than guessing from the role's `name`. NO substring inference happens anywhere in the pipeline — the ontology IS the contract.
+`RoleDefinitionInterface.intent` is the authoritative semantic marker iridis reads to drive every downstream decision. `ResolveRoles` propagates the schema-declared `intent` onto the resolved record's `hints.intent`; later tasks branch on that value rather than guessing from the role's `name`. NO substring inference happens anywhere in the pipeline; the ontology IS the contract.
 
 The canonical 10-value `ColorIntentType` union (`packages/core/src/types/color.ts`) groups by usage family:
 
@@ -103,24 +103,24 @@ The canonical 10-value `ColorIntentType` union (`packages/core/src/types/color.t
 ### Worked examples per family
 
 ```ts
-// Text on background — the most common pair.
+// Text on background, the most common pair.
 { 'name': 'body',       'intent': 'text',       'required': true },
 { 'name': 'page',       'intent': 'background', 'required': true },
 
-// Accent + onAccent — call-to-action button family.
+// Accent + onAccent, call-to-action button family.
 { 'name': 'ctaSurface', 'intent': 'accent',     'required': true },
 { 'name': 'ctaLabel',   'intent': 'onAccent',   'required': true, 'derivedFrom': 'ctaSurface' },
 
-// State signals — critical / positive carry semantic intent
+// State signals: critical / positive carry semantic intent
 // even though they fall safe to CanvasText under forced-colors.
 { 'name': 'danger',     'intent': 'critical' },
 { 'name': 'success',    'intent': 'positive' },
 
-// Chrome — muted for de-emphasised content, link for anchors.
+// Chrome: muted for de-emphasised content, link for anchors.
 { 'name': 'metadata',   'intent': 'muted' },
 { 'name': 'anchor',     'intent': 'link' },
 
-// Button family — button face + onButton label.
+// Button family: button face + onButton label.
 { 'name': 'btnSurface', 'intent': 'button' },
 { 'name': 'btnLabel',   'intent': 'onButton', 'derivedFrom': 'btnSurface' },
 ```
@@ -149,7 +149,7 @@ When a role does not declare `intent`, downstream readers fall back to the legib
 - `EmitCssVars.forcedColorsToken` → `CanvasText` (a text-shaped role stays legible against a default `Canvas` background).
 - `EnforceApca` → `Lc 75` (body-text floor) when neither foreground nor background carry an intent that would point at a relaxed tier.
 
-Custom JSON-tology overlays may add new intent values or override the mapping additively — the schema is the contract, and a downstream consumer that ships its own overlay flows through identically.
+Custom JSON-tology overlays may add new intent values or override the mapping additively; the schema is the contract, and a downstream consumer that ships its own overlay flows through identically.
 
 The legacy `intent` values `base`, `surface`, and `neutral` are gone. Migrate to `background` (was `base`/`surface`) and `muted` (was `neutral`).
 

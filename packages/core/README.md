@@ -6,7 +6,7 @@ The engine. Composition spine + canonical models for the iridis chromatic pipeli
 
 - `Engine` with `TaskRegistry`
 - Canonical pipeline tasks: `intake:* / clamp:* / resolve:roles / expand:family / enforce:contrast / derive:variant / emit:json`
-- 25 math primitives (OKLCH ↔ RGB ↔ HSL ↔ Hex, sRGB ↔ linear ↔ Display-P3, gamut-mapping, mix/lighten/darken/saturate/desaturate/hueShift, WCAG 2.1 + APCA contrast, ΔE2000, `ensureContrast`, median-cut clustering, luminance, contrastText) — each exported as a class plus a singleton instance for direct import
+- 25 math primitives (OKLCH ↔ RGB ↔ HSL ↔ Hex, sRGB ↔ linear ↔ Display-P3, gamut-mapping, mix/lighten/darken/saturate/desaturate/hueShift, WCAG 2.1 + APCA contrast, ΔE2000, `ensureContrast`, median-cut clustering, luminance, contrastText), each exported as a class plus a singleton instance for direct import
 - Models: `ColorRecord`, `PaletteState`, `RoleSchema`, `RuntimeOptions` (typed cross-output toggles)
 
 ## Install
@@ -34,7 +34,7 @@ const state = await engine.run({
 console.log(state.outputs['json']);
 ```
 
-Math primitives are direct singleton imports — pull only what you call:
+Math primitives are direct singleton imports; pull only what you call:
 
 ```ts
 import { luminance, contrastWcag21, oklchToRgb } from '@studnicky/iridis';

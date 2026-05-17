@@ -25,8 +25,8 @@ function isOklchInput(v: unknown): v is OklchInput {
 
 /**
  * Intake task that consumes `{l, c, h, a?}` OKLCH literals where `l` is
- * 0..1, `c` is 0..0.5, and `h` is degrees. This is the lossless intake
- * — every other format eventually round-trips through OKLCH, so passing
+ * 0..1, `c` is 0..0.5, and `h` is degrees. This is the lossless intake:
+ * every other format eventually round-trips through OKLCH, so passing
  * iridis-native coordinates skips a conversion step.
  */
 export class IntakeOklch implements TaskInterface {

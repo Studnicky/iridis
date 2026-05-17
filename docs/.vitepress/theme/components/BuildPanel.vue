@@ -2,23 +2,23 @@
 /**
  * BuildPanel.vue
  *
- * The /build workspace. Layout:
+ * The build workspace on the home page. Layout:
  *
- *   [ Header — title + Reset                        ]
- *   [ BuildResolvedRoles — ALWAYS visible           ]
+ *   [ Header: title + Reset                         ]
+ *   [ BuildResolvedRoles: ALWAYS visible            ]
  *   [ Tabs:                                         ]
- *     - Seed colors    — palette editor / picker
- *     - Image          — drop / extract / sliders
- *     - Role schema    — visual schema editor
- *     - Configuration  — framing / contrast / algo /
+ *     - Seed colors    : palette editor / picker
+ *     - Image          : drop / extract / sliders
+ *     - Role schema    : visual schema editor
+ *     - Configuration  : framing / contrast / algo /
  *                        color space / schema picker
- *     - Code           — boilerplate snippets
+ *     - Code           : boilerplate snippets
  *
  * The resolved-roles grid sits above the tab strip because it's the
  * authoritative read-out of the current SPA theme: whatever tab the
  * user is editing in, those cards reflect the live engine output.
  *
- * Every tab — Seed colors, Image, Role schema — writes to the same
+ * Every tab (Seed colors, Image, Role schema) writes to the same
  * `configStore`, and they all use the SAME `roleSchema`. Image
  * extraction produces seeds that feed the canonical pipeline; the
  * schema (default iridis-16) declares the roles for ALL pipelines.
@@ -118,32 +118,25 @@ const roleSchemaOptions = computed<readonly OptionInterface[]>(() => {
 <template>
   <ClientOnly>
     <section class="build-panel">
-      <header class="build-panel__header">
-        <div class="build-panel__header-text">
-          <h1 class="build-panel__title">Build</h1>
-          <p class="build-panel__sub">
-            Five ways into the same engine. The resolved roles below are always live — every tab edits the same schema-bound state. Hit Reset to go back to defaults.
-          </p>
-        </div>
-        <IridisButton
-          variant="secondary"
-          size="sm"
-          class="build-panel__reset"
-          title="Restore docsConfigDefaults. Affects every page of the docs."
-          @click="onReset"
-        >
-          Reset to defaults
-        </IridisButton>
-      </header>
-
       <Tabs v-model:value="activeTab" class="build-panel__tabs">
-        <TabList>
-          <Tab value="user-palette"  title="Hex / RGB / OKLCH seeds feed the active role schema.">User palette</Tab>
-          <Tab value="image"         title="Drop or paste an image; histogram + cluster pipeline extracts dominant colors as seeds.">Image</Tab>
-          <Tab value="role-schema"   title="Compose the role schema the engine enforces — roles, intents, envelopes, contrast pairs.">Role schema</Tab>
-          <Tab value="configuration" title="Framing, contrast level, algorithm, color space, and active schema picker.">Configuration</Tab>
-          <Tab value="code"          title="Copy-paste-runnable boilerplate that reproduces the current pipeline against the current configStore.">Code</Tab>
-        </TabList>
+        <div class="build-panel__tab-bar">
+          <TabList class="build-panel__tablist">
+            <Tab value="user-palette"  title="Hex, RGB, or OKLCH seeds feed the active role schema.">User palette</Tab>
+            <Tab value="image"         title="Drop or paste an image; the histogram and cluster pipeline extract dominant colors as seeds.">Image</Tab>
+            <Tab value="role-schema"   title="Compose the role schema the engine enforces: roles, intents, envelopes, contrast pairs.">Role schema</Tab>
+            <Tab value="configuration" title="Framing, contrast level, algorithm, color space, and active schema picker.">Configuration</Tab>
+            <Tab value="code"          title="Copy-paste-runnable boilerplate that reproduces the current pipeline against the current configStore.">Code</Tab>
+          </TabList>
+          <IridisButton
+            variant="secondary"
+            size="sm"
+            class="build-panel__reset"
+            title="Restore docsConfigDefaults. Affects every page of the docs."
+            @click="onReset"
+          >
+            Reset to defaults
+          </IridisButton>
+        </div>
         <TabPanels>
           <TabPanel value="user-palette">
             <BuildTabPanel
@@ -184,7 +177,7 @@ const roleSchemaOptions = computed<readonly OptionInterface[]>(() => {
             <BuildTabPanel
               eyebrow="Configuration"
               title="Engine knobs"
-              hint="Framing, contrast level, algorithm, color space, and active schema picker — every field writes to configStore and themes the docs."
+              hint="Framing, contrast level, algorithm, color space, and active schema picker. Every field writes to configStore and themes the docs."
             >
               <div class="build-panel__configuration-grid">
                 <BuildEngineKnobsGuide class="build-panel__configuration-guide" />
@@ -205,7 +198,7 @@ const roleSchemaOptions = computed<readonly OptionInterface[]>(() => {
 
                 <BuildConfigFieldPanel
                   leg="Color space"
-                  tooltip="sRGB or Display P3 — wide-gamut emitters use this to opt into P3."
+                  tooltip="sRGB or Display P3. Wide-gamut emitters use this to opt into P3."
                   class="build-panel__cfg-cell"
                 >
                   <SelectButton
@@ -247,7 +240,7 @@ const roleSchemaOptions = computed<readonly OptionInterface[]>(() => {
 
                 <BuildConfigFieldPanel
                   leg="Envelope mode"
-                  tooltip="Strict (default): the engine clamps every seed into the role's lightness/chroma envelope. Loose: envelopes act as warnings — the engine still clamps, but the resolved-role cards flag seeds that landed outside their declared range so you can see exactly what the engine adjusted."
+                  tooltip="Strict (default): the engine clamps every seed into the role's lightness/chroma envelope. Loose: envelopes act as warnings; the engine still clamps, but the resolved-role cards flag seeds that landed outside their declared range so you can see exactly what the engine adjusted."
                   class="build-panel__cfg-cell build-panel__cfg-cell--wide"
                 >
                   <SelectButton
@@ -301,46 +294,48 @@ const roleSchemaOptions = computed<readonly OptionInterface[]>(() => {
   margin: 1rem 0 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 2rem;
 }
-.build-panel__header {
+/* Tab bar row: TabList grows to fill, Reset button sits on the right.
+   Background + rounded top corners + bottom border match the tablist
+   below so the row reads as one continuous header strip attached to
+   the panel content. */
+.build-panel__tab-bar {
   display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--vp-c-divider);
+  align-items: stretch;
+  gap: 0.5rem;
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
+  border-bottom: 0;
+  border-top-left-radius: var(--iridis-radius-md, 8px);
+  border-top-right-radius: var(--iridis-radius-md, 8px);
+  padding: 0.4rem 0.55rem;
 }
-@container (min-width: 720px) {
-  .build-panel__header {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-  }
+.build-panel__tablist {
+  flex: 1 1 auto;
+  min-width: 0;
 }
-.build-panel__title {
-  margin: 0 0 0.35rem;
-  font-size: 2.2rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  border: 0;
-  padding: 0;
-}
-.build-panel__sub {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--vp-c-text-2);
-  max-width: 60ch;
-  line-height: 1.5;
+.build-panel__reset {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
 }
 .build-panel__reset :deep(.p-button) {
   white-space: nowrap;
 }
+@container (max-width: 600px) {
+  /* Narrow viewport: stack the reset button below the tab strip so
+     neither row has to scroll horizontally. */
+  .build-panel__tab-bar {
+    flex-direction: column;
+    gap: 0.4rem;
+    align-items: stretch;
+  }
+}
 .build-panel__tabs :deep(.p-tablist) {
-  background: var(--vp-c-bg-soft);
-  border-bottom: 1px solid var(--vp-c-divider);
-  padding: 0.55rem 0.6rem 0;
-  border-top-left-radius: var(--iridis-radius-md, 8px);
-  border-top-right-radius: var(--iridis-radius-md, 8px);
+  background: transparent;
+  border: 0;
+  padding: 0;
   display: flex;
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -357,10 +352,21 @@ const roleSchemaOptions = computed<readonly OptionInterface[]>(() => {
   color: var(--vp-c-brand-1);
   border-bottom-color: var(--vp-c-brand-1);
 }
-.build-panel__tabs :deep(.p-tabpanels),
+/* TabPanels container picks up where the tab bar ends: same border
+   colour, no top border (the tab bar already provides one), bottom
+   corners rounded so the surface reads as one card with a tabbed
+   header. */
+.build-panel__tabs :deep(.p-tabpanels) {
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-top: 0;
+  border-bottom-left-radius: var(--iridis-radius-md, 8px);
+  border-bottom-right-radius: var(--iridis-radius-md, 8px);
+  padding: 1.25rem;
+}
 .build-panel__tabs :deep(.p-tabpanel) {
   background: transparent;
-  padding: 1.25rem 0 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;

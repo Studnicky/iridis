@@ -33,7 +33,7 @@ function normalizeHex(raw: string): string {
  * Intake task that walks `state.input.colors` and converts every entry
  * matching a hex pattern (`#rgb`, `#rrggbb`, `#rrggbbaa`, with or
  * without leading `#`) into a `ColorRecord`. Non-string entries and
- * malformed hex are skipped silently — the dispatcher (`IntakeAny`)
+ * malformed hex are skipped silently; the dispatcher (`IntakeAny`)
  * relies on each handler being a no-op for inputs it doesn't own.
  *
  * 8-digit alpha is preserved on the resulting record's `alpha` field

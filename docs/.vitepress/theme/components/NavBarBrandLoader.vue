@@ -4,7 +4,7 @@
  *
  * Compact pulsing iridis loader for the topbar. Mounted via the
  * `nav-bar-title-before` slot so it renders INSIDE VitePress's
- * `<a class="title" href="/iridis/">` anchor — clicking the loader
+ * `<a class="title" href="/iridis/">` anchor; clicking the loader
  * therefore navigates to the docs home, matching the title text's
  * behaviour.
  *

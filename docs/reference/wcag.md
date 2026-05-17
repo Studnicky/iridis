@@ -1,6 +1,6 @@
 ---
 title: WCAG 2.1
-description: The luminance-ratio contrast algorithm iridis uses by default — Rec. 709 coefficients, the 0.05 flare term, and AA/AAA threshold tables for text and UI
+description: The luminance-ratio contrast algorithm iridis uses by default. Rec. 709 coefficients, the 0.05 flare term, and AA/AAA threshold tables for text and UI.
 ---
 
 # WCAG 2.1
