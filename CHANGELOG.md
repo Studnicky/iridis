@@ -4,6 +4,21 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-05-17
+
+Docs site refactor. Eliminates the entire import-map fragility class.
+
+### Removed
+
+- **CDN externalisation of Vue, PrimeVue, `@primeuix/themes`, and mermaid.** The site used to load these from `esm.sh` at runtime via an import-map declared in `<head>`; that approach forced a fragile head-ordering dance (see v0.3.4 / v0.3.5) because VitePress 1.x emits its own `<script type="module">` and modulepreload links BEFORE any `head` config entry, and Vite's own `transformIndexHtml` does not fire on VitePress's SSG output. None of the other VitePress sites in this workspace use the CDN pattern. Trading the small bundle-size saving for HTML-spec compliance, predictable production behaviour, no cross-origin handshake to `esm.sh`, no corporate-firewall failures, and no future-VitePress-upgrade breakage.
+- `CDN_VERSIONS`, `CDN_PRIMEVUE_SUBPATHS`, `CDN_EXTERNAL_PATTERNS`, `IS_BUILD`, `buildImportMap`, `vite.build.rollupOptions.external`, and the `transformHtml` hook are all removed from `docs/.vitepress/config.ts`.
+
+### Changed
+
+- **VitePress 1.5.0 → 1.6.4** (current stable, was already in the lockfile via `^1.5.0`; range explicit now).
+- **Vue 3.5.0 → 3.5.34** (current stable).
+- **mermaid 11.14.0 → 11.15.0** (current stable).
+
 ## [0.3.5] - 2026-05-17
 
 Cleanup of v0.3.4.
