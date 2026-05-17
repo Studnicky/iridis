@@ -63,81 +63,6 @@ const VERIFY_BING          = seo.bingSiteVerification;
    → `iridis.seo.twitterHandle` (include the `@`). */
 const SITE_TWITTER_HANDLE  = seo.twitterHandle;
 
-/**
- * CDN externalisation map. Heavy runtime dependencies that don't change
- * between deploys load from esm.sh at pinned versions instead of being
- * bundled into the docs theme chunk. Keeps the theme chunk under the
- * 500 KB Rollup advisory threshold.
- *
- * Pinned versions MUST match `package.json` exactly. Bumping a version
- * in `package.json` requires bumping the corresponding entry here.
- *
- * `?external=vue` forces every `primevue/*` and `@primeuix/themes` bundle
- * to leave its internal `import "vue"` as a bare specifier, so the
- * browser's import map can resolve it to the same Vue instance VitePress
- * itself uses. Single Vue instance is mandatory for Vue plugin install
- * + provide/inject + reactivity across PrimeVue components.
- */
-const CDN_VERSIONS = {
-  'vue':              '3.5.34',
-  'primevue':         '4.5.5',
-  'primeuixThemes':   '2.0.3',
-  'mermaid':          '11.14.0',
-} as const;
-
-const CDN_PRIMEVUE_SUBPATHS = [
-  'config',
-  'button',
-  'inputtext',
-  'inputnumber',
-  'select',
-  'selectbutton',
-  'slider',
-  'checkbox',
-  'card',
-  'tag',
-  'textarea',
-  'accordion',
-  'accordionpanel',
-  'accordionheader',
-  'accordioncontent',
-  'tabs',
-  'tablist',
-  'tab',
-  'tabpanels',
-  'tabpanel',
-] as const;
-
-function buildImportMap(): Record<string, string> {
-  const imports: Record<string, string> = {
-    'vue':                   `https://esm.sh/vue@${CDN_VERSIONS.vue}`,
-    '@primeuix/themes':      `https://esm.sh/@primeuix/themes@${CDN_VERSIONS.primeuixThemes}?external=vue`,
-    '@primeuix/themes/aura': `https://esm.sh/@primeuix/themes@${CDN_VERSIONS.primeuixThemes}/aura?external=vue`,
-    'mermaid':               `https://esm.sh/mermaid@${CDN_VERSIONS.mermaid}`,
-  };
-  for (const subpath of CDN_PRIMEVUE_SUBPATHS) {
-    imports[`primevue/${subpath}`] = `https://esm.sh/primevue@${CDN_VERSIONS.primevue}/${subpath}?external=vue`;
-  }
-  return imports;
-}
-
-const CDN_EXTERNAL_PATTERNS: ReadonlyArray<RegExp | string> = [
-  'vue',
-  /^primevue($|\/)/,
-  /^@primeuix\/themes($|\/)/,
-  'mermaid',
-];
-
-/**
- * Detect production build vs dev server from process.argv. VitePress's
- * `vite` config is a static object shared between both, but we only want
- * to externalise heavy deps during `vitepress build`. The dev server
- * needs Vue + PrimeVue resolved locally so Vite's optimizer and HMR can
- * work. In dev, `optimizeDeps.exclude` for `vue` is forbidden because
- * VitePress itself depends on Vue at the entry point.
- */
-const IS_BUILD = process.argv.includes('build');
-
 const sidebar = [
   {
     'text':  'Introduction',
@@ -519,30 +444,6 @@ export default withMermaid(defineConfig({
    * docs costs almost nothing and gets cited from `<link rel="alternate"
    * type="application/rss+xml">` in the head for in-page auto-discovery.
    */
-  /**
-   * Inject the import map at the very top of `<head>`. VitePress 1.x
-   * has no position-controlled head-injection API: `head` config
-   * entries are appended AFTER Vite's emitted `<script type="module"
-   * src="app.js">` and modulepreload links, and Vite's own
-   * `transformIndexHtml` hook does NOT fire on VitePress's SSG-
-   * rendered HTML (Vite only runs that hook in dev). `transformHtml`
-   * is VitePress's documented hook for static-build HTML edits
-   * (https://vitepress.dev/reference/site-config#transformhtml);
-   * inserting the map immediately after `<head>` guarantees it
-   * precedes every module-script and modulepreload anchor Vite
-   * emits, which is what the HTML spec requires for the browser to
-   * honour bare-specifier resolution.
-   *
-   * Without this, every `import 'vue'` / `import 'primevue/*'` /
-   * `import '@primeuix/themes'` in the externalised bundle resolves
-   * to a relative path like `/iridis/vue` and 404s, BuildPanel never
-   * mounts, the live site shows the SSR shell only.
-   */
-  transformHtml(code): string {
-    const imports = buildImportMap();
-    const tag     = `<script type="importmap">${JSON.stringify({ 'imports': imports })}</script>`;
-    return code.replace('<head>', `<head>\n    ${tag}`);
-  },
   buildEnd(siteConfig): void {
     const changelogPath = resolve(siteConfig.root, '..', 'CHANGELOG.md');
     if (!existsSync(changelogPath)) return;
@@ -597,19 +498,6 @@ export default withMermaid(defineConfig({
     ].join('\n');
     writeFileSync(resolve(siteConfig.outDir, 'feed.xml'), feed);
   },
-  'vite': IS_BUILD ? {
-    'build': {
-      'rollupOptions': {
-        /* Client build: leave these as bare specifiers in the output so
-           the browser's import map resolves them to esm.sh at runtime.
-           Drops ~400+ KB of PrimeVue + @primeuix/themes + ~600 KB of
-           mermaid from the static client bundle. SSR build still
-           resolves them from node_modules via Node's resolver, so
-           server-rendered pages stay correct. */
-        'external': CDN_EXTERNAL_PATTERNS as RegExp[] | string[],
-      },
-    },
-  } : {},
   'appearance':  themeConfig.appearance,
   'themeConfig': {
     ...themeConfig,
