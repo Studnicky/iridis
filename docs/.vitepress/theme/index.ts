@@ -13,8 +13,8 @@ import IridisChip      from './components/base/IridisChip.vue';
 import IridisDemo      from './components/IridisDemo.vue';
 import SchemaForm      from './components/SchemaForm.vue';
 import MultiOutputDemo from './components/MultiOutputDemo.vue';
-import TryItOutForm    from './components/TryItOutForm.vue';
-import RightPanel      from './components/RightPanel.vue';
+import ImageToTheme    from './components/ImageToTheme.vue';
+import BuildPanel      from './components/BuildPanel.vue';
 import SidebarToc      from './components/SidebarToc.vue';
 import SidebarResize   from './components/SidebarResize.vue';
 import NavBarMenu      from './components/NavBarMenu.vue';
@@ -22,6 +22,11 @@ import NavBarBrandLoader from './components/NavBarBrandLoader.vue';
 import MobileOverlay   from './components/MobileOverlay.vue';
 import InfiniteScroll  from './components/InfiniteScroll.vue';
 import PaletteCTA      from './components/PaletteCTA.vue';
+import AuroraHero          from './components/AuroraHero.vue';
+import ColorOrgan          from './components/ColorOrgan.vue';
+import BuildResolvedRoles  from './components/BuildResolvedRoles.vue';
+import IridisCursorBlob    from './components/IridisCursorBlob.vue';
+import IridisSwatchTape    from './components/IridisSwatchTape.vue';
 import { bootThemeDispatcher } from './stores/themeDispatcher.ts';
 
 import './palette.css';
@@ -45,8 +50,9 @@ function logoBlock(): unknown {
 
 /**
  * Custom VitePress theme. Extends the default theme with the iridis
- * component library, sidebar/right-panel layout slots, and the boot
- * hook for the theme-state dispatcher that drives every live demo.
+ * component library, layout slot decorations (cursor blob, swatch tape,
+ * sidebar resize handle), and the boot hook for the theme-state
+ * dispatcher that drives every live demo.
  */
 export const theme: Theme = {
   'extends': DefaultTheme,
@@ -73,8 +79,12 @@ export const theme: Theme = {
     app.component('IridisDemo',      IridisDemo);
     app.component('SchemaForm',      SchemaForm);
     app.component('MultiOutputDemo', MultiOutputDemo);
-    app.component('TryItOutForm',    TryItOutForm);
-    app.component('PaletteCTA',      PaletteCTA);
+    app.component('ImageToTheme',    ImageToTheme);
+    app.component('BuildPanel',         BuildPanel);
+    app.component('BuildResolvedRoles', BuildResolvedRoles);
+    app.component('PaletteCTA',         PaletteCTA);
+    app.component('AuroraHero',         AuroraHero);
+    app.component('ColorOrgan',         ColorOrgan);
 
     bootThemeDispatcher();
   },
@@ -85,10 +95,12 @@ export const theme: Theme = {
       'nav-bar-content-before': () => h(NavBarMenu),
       'doc-after':           () => h(InfiniteScroll),
       'layout-top':          () => h('div', null, [
+        h(ColorOrgan),
         h(SidebarResize),
         h(SidebarToc),
         h(MobileOverlay),
-        h(RightPanel),
+        h(IridisCursorBlob),
+        h(IridisSwatchTape),
       ]),
     });
   },

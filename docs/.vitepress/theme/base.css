@@ -195,6 +195,14 @@ button, input, select, textarea {
   box-shadow: var(--iridis-shadow-md) !important;
 }
 
+/* Reserve room at the bottom of every page for the IridisSwatchTape
+   strip (6 px collapsed, 24 px expanded on hover). 12 px is enough that
+   the strip never overlaps trailing content while staying invisible
+   when not hovered. */
+.VPDoc, .VPHome {
+  padding-bottom: 12px;
+}
+
 /* === Custom containers (::: tip etc.) get glass treatment === */
 .vp-doc .custom-block {
   border-radius: var(--iridis-radius-md) !important;
@@ -257,21 +265,32 @@ button, input, select, textarea {
 /* Five rings, all bounded by the icon. Alternating spin direction so the
    gradient looks like a counter-rotating chromatic vortex. Staggered ripple
    delays make the scale pulse propagate outward → inward. */
-.iridis-loader__box:nth-child(1) { inset:  0%; z-index: 95; animation-delay: 0.0s, 0.0s, 0.0s; animation-direction: normal,  normal, normal; }
-.iridis-loader__box:nth-child(2) { inset:  8%; z-index: 96; animation-delay: 0.6s, 0.4s, 0.2s; animation-direction: reverse, normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.15), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
-.iridis-loader__box:nth-child(3) { inset: 16%; z-index: 97; animation-delay: 1.2s, 0.8s, 0.4s; animation-direction: normal,  normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 0.85), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
-.iridis-loader__box:nth-child(4) { inset: 24%; z-index: 98; animation-delay: 1.8s, 1.2s, 0.6s; animation-direction: reverse, normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.30), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
+/* Ring insets are picked so the OUTERMOST ring at maximum ripple scale
+   (1.04 in `iridis-loader-ripple`) still sits entirely inside the
+   container — and therefore entirely inside the logo, which now fills
+   the container. Math: ring base extent = 100% - 2*inset; max scaled
+   extent = base * 1.04. With inset 8%, max extent = 84% * 1.04 = 87.4%.
+   Innermost ring sits inside the inner negative-space of the logo. */
+.iridis-loader__box:nth-child(1) { inset:  8%; z-index: 95; animation-delay: 0.0s, 0.0s, 0.0s; animation-direction: normal,  normal, normal; }
+.iridis-loader__box:nth-child(2) { inset: 14%; z-index: 96; animation-delay: 0.6s, 0.4s, 0.2s; animation-direction: reverse, normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.15), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
+.iridis-loader__box:nth-child(3) { inset: 20%; z-index: 97; animation-delay: 1.2s, 0.8s, 0.4s; animation-direction: normal,  normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 0.85), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
+.iridis-loader__box:nth-child(4) { inset: 26%; z-index: 98; animation-delay: 1.8s, 1.2s, 0.6s; animation-direction: reverse, normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 1.30), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
 .iridis-loader__box:nth-child(5) { inset: 32%; z-index: 99; animation-delay: 2.4s, 1.6s, 0.8s; animation-direction: normal,  normal, normal; animation-duration: calc(var(--iridis-loader-duration) * 0.70), calc(var(--iridis-loader-duration) / 2), calc(var(--iridis-loader-duration) / 2.5); }
 
+/* Logo fills the entire container and sits on TOP (highest z-index) so
+   the rings render BEHIND it, peeking through the logo's transparent
+   negative space. At max ripple scale every ring stays within the
+   logo's footprint — the rings never expand past the icon. */
 .iridis-loader__logo {
   position: absolute;
-  inset: 24%;
+  inset: 0%;
   z-index: 100;
   background-image: url('/logo.png');
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  filter: drop-shadow(0 0 10px color-mix(in oklch, var(--iridis-brand) 55%, transparent));
+  filter: drop-shadow(0 0 14px color-mix(in oklch, var(--iridis-brand) 55%, transparent));
+  pointer-events: none;
 }
 
 /* Compact topbar variant — smaller footprint, mobile-only visibility.
@@ -313,19 +332,83 @@ button, input, select, textarea {
    Mobile-first baseline below; the desktop progressive enhancement
    (wider drawers, full-height overlays) lives under the >=1100px query. */
 
+/* ── Center column width ─────────────────────────────────────────
+   VitePress's default doc layout reserves ~ 1152 px for the centre
+   column on the assumption there's an aside / TOC eating real estate.
+   We killed both the right panel and the aside, so reclaim the
+   width: container fills its parent (VPDoc handles the 32 px gutter
+   on each side already via VitePress defaults). Aurora flanks the
+   column at any viewport ≥ ~1100 px where prose line-length stays
+   readable. */
 .VPDoc .container {
-  max-width: 100%;
+  max-width: none;
+  margin-left:  auto;
+  margin-right: auto;
   display: flex;
   align-items: flex-start;
 }
 .VPDoc .content {
   flex: 1 1 0;
   min-width: 0;
-  max-width: none;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
+  max-width: none !important;
+  padding-left:  1.5rem;
+  padding-right: 1.5rem;
 }
-.VPDoc .content-container { max-width: 100%; }
+/* VitePress's stock `.VPDoc .content-container` rule pins `max-width:
+   688px` for prose readability — that's the wrong default once the
+   aside / right panel are gone. We target ~60 % of viewport, centered,
+   so the aurora has room to glow on both sides while the column stays
+   comfortably above the prose-readability floor.
+
+   `!important` overrides the higher-specificity scoped vue selector
+   that ships with VitePress chrome. */
+.VPDoc .content-container {
+  max-width:    60vw !important;
+  margin-left:  auto !important;
+  margin-right: auto !important;
+}
+/* On narrower viewports 60 vw shrinks too fast — collapse to a
+   percentage-based fallback so phones and tablets still get the
+   full readable column. */
+@media (max-width: 960px) {
+  .VPDoc .content-container { max-width: 92vw !important; }
+}
+
+/* ── Center column background ────────────────────────────────────
+   The ColorOrgan paints a full-viewport aurora behind every page at
+   z-index 0. Without a solid-ish backdrop on the readable column, the
+   aurora bleeds under the prose and hurts legibility. A 90 % alpha
+   `--vp-c-bg` keeps the body legible (the engine output still tints
+   the column subtly via the role color) while letting the aurora
+   glow at the column edges. Painted on the inner `.content-container`
+   so the chrome margins stay aurora-visible. */
+.VPDoc .content-container {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in oklch, var(--vp-c-bg) 90%, transparent);
+  backdrop-filter: blur(8px) saturate(1.05);
+  -webkit-backdrop-filter: blur(8px) saturate(1.05);
+  border-radius: var(--iridis-radius-md, 8px);
+  /* Generous left/right padding so the `#` header-anchor (positioned
+     `absolute; left: -0.87em` by VitePress) sits inside the column
+     instead of clipping the edge. */
+  padding: 1.5rem 2.5rem 2rem;
+  box-shadow: 0 1px 0 color-mix(in oklch, var(--vp-c-divider) 80%, transparent) inset;
+}
+.VPHome .container,
+.VPHome .vp-doc {
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 480px) {
+  /* Tighten the column padding + drop the backdrop-filter on the
+     smallest screens to preserve scroll perf on mid-range phones. */
+  .VPDoc .content-container {
+    padding: 1rem 0.85rem 1.35rem;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
 /* Hide vitepress's own aside column entirely — we render via aside-top
    slot but want the layout space reclaimed. */
 .VPDoc .aside { display: none !important; }
@@ -354,6 +437,18 @@ button, input, select, textarea {
     8px 0 24px -8px rgba(0, 0, 0, 0.35),
     var(--iridis-card-shadow);
   transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* VitePress's default `.VPSidebar` rule applies `padding-top:
+     var(--vp-nav-height)` so the sidebar content clears the navbar in the
+     stock layout. We position the sidebar AT `top: var(--vp-nav-height)`
+     already, so adding the same padding inside leaves a visibly-empty
+     gap above the brand logo. Zero the top padding and use a small
+     intentional gap instead. */
+  padding-top: 0.75rem !important;
+  /* VitePress also paints `padding-left: max(32px, ...)` which carves 32 px
+     out of the 320 px-wide drawer. Tighten so the page tree owns the row
+     width and the logo sits closer to the top-left. */
+  padding-left: 1rem !important;
+  padding-right: 0.75rem !important;
 }
 .VPSidebarNav,
 .VPSidebar .nav,
@@ -408,8 +503,8 @@ html.iridis-sidebar-collapsed .iridis-sidebar-resize { display: none; }
    On mobile the topbar carries the compact variant, so suppress the
    large loader inside the drawer to avoid duplicating the brand. */
 .VPSidebar .iridis-loader:not(.iridis-loader--compact) {
-  --iridis-loader-size: 180px;
-  margin: 0.5rem auto 1.25rem;
+  --iridis-loader-size: 240px;
+  margin: 0.75rem auto 1.5rem;
   display: block;
 }
 @media (max-width: 1099px) {

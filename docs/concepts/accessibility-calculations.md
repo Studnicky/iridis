@@ -1,3 +1,8 @@
+---
+title: Accessibility calculations
+description: How iridis measures and enforces contrast — WCAG 2.1 luminance ratios, APCA Lc magnitudes, and CVD simulation as swappable math primitives
+---
+
 # Accessibility calculations
 
 iridis treats accessibility as a constraint the engine satisfies, not an afterthought you audit. Three layers do the work: contrast measurement, contrast enforcement, and CVD simulation. Each is a registered math primitive, swap or extend without touching task code.

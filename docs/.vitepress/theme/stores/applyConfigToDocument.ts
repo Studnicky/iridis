@@ -16,11 +16,22 @@
  * SSR-safe: early-returns when `window`/`document` are undefined.
  */
 
+import { ref }              from 'vue';
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { contrastPlugin }    from '@studnicky/iridis-contrast';
 
 import type { DocsConfigType } from '../schemas/docsConfig.schema.ts';
 import { roleSchemaByName }   from '../schemas/roleSchemas.ts';
+
+/**
+ * Reactive projection of the most-recently-applied role → hex map.
+ * Updated atomically at the end of every `applyConfigToDocument` run,
+ * after locks have been merged in. Subscribers (`BuildCodePanel`,
+ * `BuildResolvedRoles`, downstream consumers that don't want to read
+ * the DOM) see the same roles the projector wrote to
+ * `document.documentElement.style.--iridis-{role}`.
+ */
+export const appliedRoles = ref<Readonly<Record<string, string>>>({});
 
 /* Docs/demo projector runs the maximal-correctness contrast pipeline:
    WCAG 2.1 AA + AAA, APCA Lc targets, and CVD simulation against the
@@ -90,10 +101,14 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
 
     /* Diff against the previous run: only `setProperty` when a role's
        hex actually changed, and only `removeProperty` for role names
-       that disappeared (e.g. 16-role → 4-role schema switch).         */
+       that disappeared (e.g. 16-role → 4-role schema switch).
+       Locked roles override the engine's resolved hex — the user's
+       per-role pin always wins. */
     const currentRoles = new Map<string, string>();
+    const locks = config.lockedRoles ?? {};
     for (const [name, color] of Object.entries(state.roles)) {
-      currentRoles.set(name, color.hex);
+      const locked = locks[name];
+      currentRoles.set(name, typeof locked === 'string' ? locked : color.hex);
     }
 
     for (const [name, prevHex] of writtenRoles) {
@@ -116,6 +131,12 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
 
     root.dataset['iridisFraming'] = config.framing;
     root.dataset['iridisSchema']  = config.roleSchema;
+
+    /* Publish the resolved map as a reactive snapshot so downstream
+       consumers (code-snippet panel, resolved-role cards) don't have
+       to read `document.documentElement.style` (which updates async
+       after this function awaits `engine.run`). */
+    appliedRoles.value = Object.fromEntries(currentRoles);
   } catch (err) {
     if (typeof console !== 'undefined') {
       console.warn('[iridis] applyConfigToDocument failed:', err);

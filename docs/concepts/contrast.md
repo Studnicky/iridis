@@ -1,3 +1,8 @@
+---
+title: Contrast enforcement
+description: How enforce:contrast walks declared role pairs at pipeline time and nudges OKLCH lightness until every WCAG ratio or APCA Lc threshold is satisfied
+---
+
 # Contrast enforcement
 
 iridis enforces contrast at pipeline time, not at render time. By the time `engine.run()` resolves, every declared contrast pair has been checked and any failing foreground role has been adjusted. You receive a palette that already satisfies your accessibility requirements.

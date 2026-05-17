@@ -48,6 +48,8 @@ type Action =
   | { 'type': 'setColorSpace';       'colorSpace':    'srgb' | 'displayP3' }
   | { 'type': 'setRoleSchema';       'roleSchema':    string }
   | { 'type': 'editRoleSchema';      'schema':        RoleSchemaInterface }
+  | { 'type': 'setLockedRole';       'name':          string; 'hex': string | undefined }
+  | { 'type': 'setLooseEnvelope';    'value':         boolean }
   | { 'type': 'reset' };
 
 /* ─── Reducer ───────────────────────────────────────────────────────── */
@@ -83,7 +85,7 @@ function reduce(action: Action): void {
          from the previously-active pair, the active framing is the
          edited content. */
       const name      = `custom-${Date.now()}`;
-      const prevPair  = roleSchemaByName[state.roleSchema] ?? roleSchemaByName['iridis-16']!;
+      const prevPair  = roleSchemaByName[state.roleSchema] ?? roleSchemaByName['iridis-32']!;
       const otherFr   = state.framing === 'dark' ? 'light' : 'dark';
       const pair: { 'dark': RoleSchemaInterface; 'light': RoleSchemaInterface } = {
         'dark':  state.framing === 'dark'  ? action.schema : prevPair[otherFr],
@@ -93,6 +95,19 @@ function reduce(action: Action): void {
       state.roleSchema = name;
       return;
     }
+    case 'setLockedRole': {
+      const next = { ...(state.lockedRoles ?? {}) };
+      if (action.hex === undefined) {
+        delete next[action.name];
+      } else {
+        next[action.name] = action.hex;
+      }
+      state.lockedRoles = next;
+      return;
+    }
+    case 'setLooseEnvelope':
+      state.looseEnvelope = action.value;
+      return;
     case 'reset':
       Object.assign(state, docsConfigDefaults);
       return;
@@ -121,6 +136,8 @@ export const themeStoreWritable: DocsConfigType = new Proxy(state, {
       case 'contrastAlgorithm': dispatch({ 'type': 'setContrastAlgorithm','algorithm': value as 'wcag21' | 'apca' }); break;
       case 'colorSpace':        dispatch({ 'type': 'setColorSpace',       'colorSpace':value as 'srgb' | 'displayP3' }); break;
       case 'roleSchema':        dispatch({ 'type': 'setRoleSchema',       'roleSchema':value as string }); break;
+      case 'lockedRoles':       state.lockedRoles  = { ...(value as Record<string, string>) }; break;
+      case 'looseEnvelope':     dispatch({ 'type': 'setLooseEnvelope',    'value':     value as boolean }); break;
       default:
         (target as Record<string, unknown>)[prop as string] = value;
     }
@@ -141,6 +158,18 @@ export function resetTheme(): void {
  */
 export function editRoleSchema(schema: RoleSchemaInterface): void {
   dispatch({ 'type': 'editRoleSchema', 'schema': schema });
+}
+
+/** Set or clear a user-pinned hex for a role. Pass undefined as `hex` to
+ *  remove the lock. Projector overrides the engine-resolved value with
+ *  the locked hex on every subsequent projection. */
+export function setLockedRole(name: string, hex: string | undefined): void {
+  dispatch({ 'type': 'setLockedRole', 'name': name, 'hex': hex });
+}
+
+/** Toggle the envelope-loose warning surface on/off. */
+export function setLooseEnvelope(value: boolean): void {
+  dispatch({ 'type': 'setLooseEnvelope', 'value': value });
 }
 
 /* ─── Hydration ─────────────────────────────────────────────────────── */
@@ -171,6 +200,14 @@ function migratePersisted(raw: Partial<DocsConfigType>): Partial<DocsConfigType>
   if (Array.isArray(raw.paletteColors) && raw.paletteColors.every((c) => typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c))) {
     out.paletteColors = raw.paletteColors;
   }
+  if (raw.lockedRoles !== null && typeof raw.lockedRoles === 'object' && !Array.isArray(raw.lockedRoles)) {
+    const cleaned: Record<string, string> = {};
+    for (const [name, hex] of Object.entries(raw.lockedRoles as Record<string, unknown>)) {
+      if (typeof hex === 'string' && /^#[0-9a-fA-F]{6}$/.test(hex)) cleaned[name] = hex;
+    }
+    out.lockedRoles = cleaned;
+  }
+  if (typeof raw.looseEnvelope === 'boolean') out.looseEnvelope = raw.looseEnvelope;
   return out;
 }
 

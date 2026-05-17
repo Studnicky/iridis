@@ -1,3 +1,8 @@
+---
+title: Getting started
+description: Install @studnicky/iridis, call quickPalette for four roles in one line, or wire up the engine API for full control over intake, resolve, enforce, and emit
+---
+
 # Getting started
 
 iridis is a chromatic pipeline for dynamic palette derivation. You give it any number of seed colors in any common format. It runs them through a registered sequence of tasks, intake, role resolution, contrast enforcement, variant derivation, and emission, and returns a role-resolved palette plus whichever consumer-shaped outputs you asked for (CSS variables, Tailwind theme, VS Code theme, Capacitor native chrome, RDF graph, etc.).

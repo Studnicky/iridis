@@ -1,5 +1,6 @@
 ---
-title: Cascading tokens, dogfood pattern
+title: "Cascading tokens, dogfood pattern"
+description: Scope iridis-emitted CSS custom properties per UI category — emit:cssVarsScoped writes one block per scope and the cascade resolves at paint, no JS theme switcher needed
 ---
 
 # Cascading tokens

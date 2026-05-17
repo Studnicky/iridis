@@ -439,6 +439,10 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
   gap: 0.15rem;
   width: 100%;
 }
+/* Picker's format-mode tab strip — visual tabs with an underline on
+   the active item, NOT filled pills. Colors bind to the engine-
+   enforced iridis text token so contrast against the picker bg is
+   the same ratio the role schema declares for text/background. */
 .iridis-picker__tabs :deep(.p-togglebutton) {
   flex: 1 1 0;
   min-width: 0;
@@ -447,27 +451,38 @@ const modeOptions: readonly { 'label': string; 'value': Mode }[] = [
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: var(--vp-c-text-3);
+  color: var(--iridis-muted, var(--iridis-text));
   cursor: pointer;
   box-shadow: none;
   white-space: nowrap;
   text-align: center;
 }
+.iridis-picker__tabs :deep(.p-togglebutton-content) {
+  background: transparent;
+  color: inherit;
+}
 .iridis-picker__tabs :deep(.p-togglebutton-label) {
-  /* PrimeVue's default label markup truncates with text-overflow. The
-     picker labels are 3–5 chars and the widened panel has room — let
-     them render fully and shrink with the flex track. */
   overflow: visible;
   text-overflow: clip;
+  color: inherit;
 }
-.iridis-picker__tabs :deep(.p-togglebutton:hover) { color: var(--vp-c-text-1); background: transparent; }
-.iridis-picker__tabs :deep(.p-togglebutton-checked) {
-  color: var(--vp-c-brand-1);
-  border-bottom-color: var(--vp-c-brand-1);
+.iridis-picker__tabs :deep(.p-togglebutton:hover),
+.iridis-picker__tabs :deep(.p-togglebutton:hover) .p-togglebutton-content,
+.iridis-picker__tabs :deep(.p-togglebutton:hover) .p-togglebutton-label {
+  color: var(--iridis-text);
   background: transparent;
+}
+.iridis-picker__tabs :deep(.p-togglebutton.p-togglebutton-checked),
+.iridis-picker__tabs :deep(.p-togglebutton.p-togglebutton-checked) .p-togglebutton-content,
+.iridis-picker__tabs :deep(.p-togglebutton.p-togglebutton-checked) .p-togglebutton-label {
+  color: var(--iridis-text);
+  background: transparent;
+}
+.iridis-picker__tabs :deep(.p-togglebutton.p-togglebutton-checked) {
+  border-bottom-color: var(--iridis-brand);
 }
 
 .iridis-picker__row {

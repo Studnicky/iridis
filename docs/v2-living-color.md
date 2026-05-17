@@ -1,3 +1,8 @@
+---
+title: Living color
+description: The v2 thesis — treat a palette as a vector in OKLCH × N-roles space and animate between points while WCAG and role-schema constraints hold every frame
+---
+
 # Living color
 
 A palette is a point in OKLCH × N-roles vector space. A static theme is a frozen point. A living palette is a path through that space, the way a chameleon or a cephalopod chromatophore does not pick a color but animates along a trajectory while preserving constraints (visibility, contrast, biological viability).

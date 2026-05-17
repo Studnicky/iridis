@@ -2,27 +2,13 @@
 /**
  * MobileOverlay.vue
  *
- * Dimming backdrop for the drawers at mobile viewports only.
- * Drawers are fixed-position overlays at every viewport, but on
- * desktop (>=1100px) the page stays fully readable alongside them
- * so no backdrop is rendered. At mobile (<=1099px) the drawers
- * cover content and the backdrop signals that interaction is
- * captured.
- *
- * Visibility is driven by the union of three states:
- *
- *   - `isNarrow` from matchMedia (viewport <=1099px)
- *   - `panelOpen` from the panelState store (builder drawer open)
- *   - `!iridis-sidebar-collapsed` on documentElement (pages drawer open)
- *
- * Tapping the backdrop closes whichever surface is currently open.
- * If both happen to be open simultaneously, the pages drawer takes
- * precedence (it sits "above" the builder in our z-order).
+ * Dimming backdrop for the sidebar (PAGES) drawer at mobile viewports
+ * (≤ 1099 px). On desktop the drawer is fixed-position but the page
+ * remains usable alongside it, so no backdrop renders. At mobile the
+ * drawer covers content and the backdrop signals that interaction is
+ * captured. Tapping the backdrop closes the drawer.
  */
-
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-
-import { closePanel, panelOpen } from '../stores/panelState.ts';
 
 const sidebarCollapsed = ref(true);
 const isNarrow = ref(false);
@@ -61,17 +47,11 @@ onUnmounted(() => {
   onMqlChange = null;
 });
 
-const visible = computed<boolean>(() => isNarrow.value && (panelOpen.value || !sidebarCollapsed.value));
+const visible = computed<boolean>(() => isNarrow.value && !sidebarCollapsed.value);
 
 function dismiss(): void {
   if (typeof document === 'undefined') return;
-  // Pages drawer takes precedence — if it's open, close it first; the
-  // builder stays in whatever state the user left it.
-  if (!sidebarCollapsed.value) {
-    document.documentElement.classList.add('iridis-sidebar-collapsed');
-    return;
-  }
-  if (panelOpen.value) closePanel();
+  document.documentElement.classList.add('iridis-sidebar-collapsed');
 }
 </script>
 
@@ -87,9 +67,6 @@ function dismiss(): void {
 </template>
 
 <style scoped>
-/* Backdrop is rendered only at mobile (<=1099px); the v-show binding
-   gates it on the matchMedia state, so on desktop the element exists
-   but stays hidden and never paints. */
 .iridis-mobile-overlay {
   display: block;
   position: fixed;
