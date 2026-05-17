@@ -4,6 +4,14 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-05-17
+
+Hotfix.
+
+### Fixed
+
+- **Production import map ordering.** VitePress emits its `<script type="module" src="app.js">` and modulepreload links into `<head>` BEFORE the entries declared in the `head` config. Per the HTML spec, an import map MUST appear before any module script or modulepreload anchor; otherwise the browser parses it too late and silently ignores it. Without the fix the live site rendered the SSR shell but failed to mount `BuildPanel` and PrimeVue, because every bare specifier (`vue`, `primevue/*`, `@primeuix/themes`) resolved to a relative path like `/iridis/vue` and 404'd. A new `transformHtml` hook in `docs/.vitepress/config.ts` pulls the import map out of its emitted position and reinserts it immediately before the first module-script or modulepreload anchor. Verified in built dist: import map now on line 12, app script on line 13.
+
 ## [0.3.3] - 2026-05-17
 
 Docs minor with one breaking URL change.

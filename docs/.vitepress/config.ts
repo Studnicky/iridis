@@ -519,6 +519,32 @@ export default withMermaid(defineConfig({
    * docs costs almost nothing and gets cited from `<link rel="alternate"
    * type="application/rss+xml">` in the head for in-page auto-discovery.
    */
+  /**
+   * Critical ordering fix. VitePress appends `head` entries (where our
+   * import map is declared) AFTER its own `<script type="module" src=
+   * "app.js">` tag and the modulepreload links that follow. Per the
+   * HTML spec, an import map MUST appear BEFORE any module script or
+   * modulepreload link; otherwise the browser parses it too late and
+   * silently ignores it. Without this hook the live site renders the
+   * static SSR shell but fails to mount BuildPanel + PrimeVue because
+   * every bare specifier (`vue`, `primevue/*`, `@primeuix/themes`)
+   * resolves to a relative path like `/iridis/vue` and 404s.
+   *
+   * Pull the import-map script out of its emitted position and
+   * reinsert it immediately before the first module-script or
+   * modulepreload anchor in the head. Safe to no-op when the map is
+   * missing (e.g. dev mode skips externalisation).
+   */
+  transformHtml(code): string {
+    const mapMatch = code.match(/<script type="importmap">[\s\S]*?<\/script>/);
+    if (mapMatch === null) return code;
+    const map     = mapMatch[0];
+    const without = code.replace(map, '');
+    const anchor  = without.match(/<script type="module"|<link rel="modulepreload"/);
+    if (anchor === null) return code;
+    const idx = anchor.index ?? 0;
+    return `${without.slice(0, idx)}${map}\n    ${without.slice(idx)}`;
+  },
   buildEnd(siteConfig): void {
     const changelogPath = resolve(siteConfig.root, '..', 'CHANGELOG.md');
     if (!existsSync(changelogPath)) return;
