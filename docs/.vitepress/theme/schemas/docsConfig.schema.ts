@@ -37,16 +37,16 @@ export const docsConfigSchema = {
     'contrastLevel': {
       'type':        'string',
       'title':       'Contrast level',
-      'description': 'WCAG threshold the enforce:contrast task lifts pairs to.',
+      'description': 'WCAG threshold the enforce:contrast task lifts pairs to. Defaults to AAA — the strictest level — so derived palettes pass the most rigorous accessibility audit out of the box.',
       'enum':        ['AA', 'AAA'],
-      'default':     'AA',
+      'default':     'AAA',
     },
     'contrastAlgorithm': {
       'type':        'string',
       'title':       'Contrast algorithm',
-      'description': 'WCAG 2.1 ratio or APCA Lc.',
+      'description': 'WCAG 2.1 luminance ratio or APCA Lc perceptual model. Defaults to APCA — the modern perceptual algorithm WCAG 3 is built on — which generally enforces stricter targets for body text.',
       'enum':        ['wcag21', 'apca'],
-      'default':     'wcag21',
+      'default':     'apca',
     },
     'colorSpace': {
       'type':        'string',
@@ -58,8 +58,20 @@ export const docsConfigSchema = {
     'roleSchema': {
       'type':        'string',
       'title':       'Role schema',
-      'description': 'Name of the active role schema. Built-in tiers are `iridis-4`, `iridis-8`, `iridis-12`, `iridis-16`. The RoleSchemaEditor publishes user-edited variants under `custom-<timestamp>` names; the field is intentionally a free-form string so dispatched edits can register their own schema.',
-      'default':     'iridis-16',
+      'description': 'Name of the active role schema. Built-in tiers are `iridis-4`, `iridis-8`, `iridis-12`, `iridis-16`, `iridis-32`. The RoleSchemaEditor publishes user-edited variants under `custom-<timestamp>` names; the field is intentionally a free-form string so dispatched edits can register their own schema.',
+      'default':     'iridis-32',
+    },
+    'lockedRoles': {
+      'type':        'object',
+      'title':       'Locked roles',
+      'description': 'User-pinned per-role hex overrides. The projector overwrites the engine-resolved hex with the locked value for any role whose name appears in this map. Used by the lock toggle on each resolved-role card.',
+      'default':     {},
+    },
+    'looseEnvelope': {
+      'type':        'boolean',
+      'title':       'Loose envelope',
+      'description': 'When true, the resolved-roles surface flags every role whose seed sat outside the declared lightness/chroma envelope. Visualisation only — the engine still clamps; the warning makes the engine\'s hand visible.',
+      'default':     false,
     },
   },
 } as const;
@@ -70,15 +82,28 @@ export type DocsConfigType = {
   'contrastLevel':     'AA' | 'AAA';
   'contrastAlgorithm': 'wcag21' | 'apca';
   'colorSpace':        'srgb' | 'displayP3';
-  /** Free-form string. Built-in tiers (`iridis-{4,8,12,16}`) and dispatcher-published `custom-<timestamp>` schemas both live under the same key. */
+  /** Free-form string. Built-in tiers (`iridis-{4,8,12,16,32}`) and dispatcher-published `custom-<timestamp>` schemas both live under the same key. */
   'roleSchema':        string;
+  /** role name → user-pinned hex. Overrides the engine-resolved hex on every projection. */
+  'lockedRoles':       Record<string, string>;
+  /** When true, the resolved-roles surface flags roles whose seed sat outside the schema envelope. */
+  'looseEnvelope':     boolean;
 };
 
+/* Strict-by-default. The first-visit user gets the most rigorous
+   accessibility audit the engine can run: AAA WCAG threshold (7:1
+   normal text), APCA Lc targets (the perceptual model WCAG 3 is built
+   on), strict envelope clamping. The schema spec above and this
+   runtime object MUST stay in sync — both are read by different
+   consumers (SchemaForm uses the JSON Schema spec; the dispatcher's
+   reducer uses this object). */
 export const docsConfigDefaults: DocsConfigType = {
   'paletteColors':     ['#7c3aed', '#06b6d4', '#10b981', '#ec4899'],
   'framing':           'dark',
-  'contrastLevel':     'AA',
-  'contrastAlgorithm': 'wcag21',
+  'contrastLevel':     'AAA',
+  'contrastAlgorithm': 'apca',
   'colorSpace':        'srgb',
-  'roleSchema':        'iridis-16',
+  'roleSchema':        'iridis-32',
+  'lockedRoles':       {},
+  'looseEnvelope':     false,
 };

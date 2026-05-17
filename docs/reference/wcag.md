@@ -1,3 +1,8 @@
+---
+title: WCAG 2.1
+description: The luminance-ratio contrast algorithm iridis uses by default — Rec. 709 coefficients, the 0.05 flare term, and AA/AAA threshold tables for text and UI
+---
+
 # WCAG 2.1
 
 The Web Content Accessibility Guidelines 2.1 contrast algorithm produces a single ratio between two colors based on their relative luminance. It is the default contrast metric used by `enforce:contrast`.

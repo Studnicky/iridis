@@ -2,9 +2,9 @@
  * roleSchemas.ts
  *
  * Built-in iridis role schemas for the docs site. Each tier is a superset
- * of the previous (4 ⊂ 8 ⊂ 12 ⊂ 16), so picking a smaller tier produces
- * a sparser palette and the docs page paints with fewer tokens — that
- * sparseness IS the demonstration of what each schema gives you.
+ * of the previous (4 ⊂ 8 ⊂ 12 ⊂ 16 ⊂ 32), so picking a smaller tier
+ * produces a sparser palette and the docs page paints with fewer tokens
+ * — that sparseness IS the demonstration of what each schema gives you.
  *
  * Each tier ships as a { dark, light } pair. Same role names, same contrast
  * pairs, only lightness ranges differ. The framing toggle in the navbar
@@ -178,6 +178,99 @@ const iridis16Light: RoleSchemaInterface = {
   ],
 };
 
+/* ─── iridis-32 ────────────────────────────────────────────────────── */
+
+/* Sixteen-role tier extended with emphasis tiers, interaction colors,
+   chrome variants, and the full editor-style syntax family. Mirrors
+   the conceptual surface that large-scale design systems (vscode,
+   ide themes, full chrome+code+status surfaces) consume. */
+
+const iridis32Dark: RoleSchemaInterface = {
+  'name':        'iridis-32-dark',
+  'description': 'Thirty-two-role schema (dark framing). Adds emphasis tiers, interaction colors, chrome variants, and extended syntax tokens.',
+  'roles': [
+    ...iridis16Dark.roles,
+    /* Emphasis tiers — text-strong reads as primary headings, text-subtle as captions / metadata. */
+    { 'name': 'text-strong',  'intent': 'text', 'derivedFrom': 'text', 'lightnessRange': [0.92, 0.99], 'chromaRange': [0.00, 0.03] },
+    { 'name': 'text-subtle',  'intent': 'muted', 'derivedFrom': 'text', 'lightnessRange': [0.62, 0.74], 'chromaRange': [0.00, 0.04] },
+    /* Interaction family — link/link-hover for anchors, focus-ring for a11y outlines. */
+    { 'name': 'link',         'intent': 'link',   'derivedFrom': 'brand', 'lightnessRange': [0.62, 0.78], 'chromaRange': [0.14, 0.28], 'hueOffset': -15 },
+    { 'name': 'link-hover',   'intent': 'link',   'derivedFrom': 'brand', 'lightnessRange': [0.72, 0.86], 'chromaRange': [0.16, 0.30], 'hueOffset': -15 },
+    { 'name': 'focus-ring',   'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.60, 0.75], 'chromaRange': [0.20, 0.34] },
+    /* Chrome variants — overlays, alternate borders, code surfaces. */
+    { 'name': 'overlay',      'intent': 'background', 'lightnessRange': [0.02, 0.10], 'chromaRange': [0.00, 0.04] },
+    { 'name': 'border',       'intent': 'muted',      'derivedFrom': 'divider', 'lightnessRange': [0.22, 0.34], 'chromaRange': [0.00, 0.06] },
+    { 'name': 'border-strong','intent': 'muted',      'derivedFrom': 'divider', 'lightnessRange': [0.32, 0.46], 'chromaRange': [0.00, 0.08] },
+    { 'name': 'code-bg',      'intent': 'background', 'derivedFrom': 'bg-soft', 'lightnessRange': [0.08, 0.16], 'chromaRange': [0.00, 0.04] },
+    /* Status family — info completes the warning/error/success quadrant. */
+    { 'name': 'info',         'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.55, 0.72], 'chromaRange': [0.16, 0.28], 'hueOffset': -60 },
+    /* Secondary accent — pairs with brand for two-color emphasis. */
+    { 'name': 'accent-alt',   'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.58, 0.74], 'chromaRange': [0.14, 0.26], 'hueOffset': 150 },
+    /* Extended syntax — comment / tag / attribute / operator / class / punctuation. */
+    { 'name': 'syntax-comment',     'intent': 'muted',  'derivedFrom': 'muted', 'lightnessRange': [0.48, 0.60], 'chromaRange': [0.00, 0.06] },
+    { 'name': 'syntax-tag',         'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.68, 0.82], 'chromaRange': [0.14, 0.26], 'hueOffset': 240 },
+    { 'name': 'syntax-attribute',   'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.68, 0.82], 'chromaRange': [0.12, 0.24], 'hueOffset': 270 },
+    { 'name': 'syntax-operator',    'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.70, 0.84], 'chromaRange': [0.10, 0.22], 'hueOffset': 300 },
+    { 'name': 'syntax-class',       'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.70, 0.84], 'chromaRange': [0.14, 0.26], 'hueOffset':  30 },
+    { 'name': 'syntax-punctuation', 'intent': 'muted',  'derivedFrom': 'muted', 'lightnessRange': [0.58, 0.72], 'chromaRange': [0.00, 0.08] },
+  ],
+  'contrastPairs': [
+    ...(iridis16Dark.contrastPairs ?? []),
+    { 'foreground': 'text-strong', 'background': 'background', 'minRatio': 7.0, 'algorithm': 'wcag21' },
+    { 'foreground': 'text-subtle', 'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'link',        'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'link-hover',  'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'info',        'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'accent-alt',  'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-tag',         'background': 'code-bg', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-attribute',   'background': 'code-bg', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-operator',    'background': 'code-bg', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-class',       'background': 'code-bg', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-comment',     'background': 'code-bg', 'minRatio': 3.0, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-punctuation', 'background': 'code-bg', 'minRatio': 3.0, 'algorithm': 'wcag21' },
+  ],
+};
+
+const iridis32Light: RoleSchemaInterface = {
+  'name':        'iridis-32-light',
+  'description': 'Thirty-two-role schema (light framing). Adds emphasis tiers, interaction colors, chrome variants, and extended syntax tokens.',
+  'roles': [
+    ...iridis16Light.roles,
+    { 'name': 'text-strong',  'intent': 'text', 'derivedFrom': 'text', 'lightnessRange': [0.04, 0.12], 'chromaRange': [0.00, 0.04] },
+    { 'name': 'text-subtle',  'intent': 'muted', 'derivedFrom': 'text', 'lightnessRange': [0.32, 0.46], 'chromaRange': [0.00, 0.05] },
+    { 'name': 'link',         'intent': 'link',   'derivedFrom': 'brand', 'lightnessRange': [0.36, 0.50], 'chromaRange': [0.14, 0.28], 'hueOffset': -15 },
+    { 'name': 'link-hover',   'intent': 'link',   'derivedFrom': 'brand', 'lightnessRange': [0.28, 0.42], 'chromaRange': [0.16, 0.30], 'hueOffset': -15 },
+    { 'name': 'focus-ring',   'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.40, 0.58], 'chromaRange': [0.20, 0.34] },
+    { 'name': 'overlay',      'intent': 'background', 'lightnessRange': [0.85, 0.94], 'chromaRange': [0.00, 0.03] },
+    { 'name': 'border',       'intent': 'muted',      'derivedFrom': 'divider', 'lightnessRange': [0.72, 0.84], 'chromaRange': [0.00, 0.05] },
+    { 'name': 'border-strong','intent': 'muted',      'derivedFrom': 'divider', 'lightnessRange': [0.60, 0.72], 'chromaRange': [0.00, 0.06] },
+    { 'name': 'code-bg',      'intent': 'background', 'derivedFrom': 'bg-soft', 'lightnessRange': [0.92, 0.97], 'chromaRange': [0.00, 0.03] },
+    { 'name': 'info',         'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.36, 0.50], 'chromaRange': [0.16, 0.28], 'hueOffset': -60 },
+    { 'name': 'accent-alt',   'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.36, 0.50], 'chromaRange': [0.14, 0.26], 'hueOffset': 150 },
+    { 'name': 'syntax-comment',     'intent': 'muted',  'derivedFrom': 'muted', 'lightnessRange': [0.45, 0.58], 'chromaRange': [0.00, 0.06] },
+    { 'name': 'syntax-tag',         'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.38, 0.52], 'chromaRange': [0.14, 0.26], 'hueOffset': 240 },
+    { 'name': 'syntax-attribute',   'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.38, 0.52], 'chromaRange': [0.12, 0.24], 'hueOffset': 270 },
+    { 'name': 'syntax-operator',    'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.40, 0.52], 'chromaRange': [0.10, 0.22], 'hueOffset': 300 },
+    { 'name': 'syntax-class',       'intent': 'accent', 'derivedFrom': 'brand', 'lightnessRange': [0.38, 0.52], 'chromaRange': [0.14, 0.26], 'hueOffset':  30 },
+    { 'name': 'syntax-punctuation', 'intent': 'muted',  'derivedFrom': 'muted', 'lightnessRange': [0.40, 0.55], 'chromaRange': [0.00, 0.08] },
+  ],
+  'contrastPairs': [
+    ...(iridis16Light.contrastPairs ?? []),
+    { 'foreground': 'text-strong', 'background': 'background', 'minRatio': 7.0, 'algorithm': 'wcag21' },
+    { 'foreground': 'text-subtle', 'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'link',        'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'link-hover',  'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'info',        'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'accent-alt',  'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-tag',         'background': 'code-bg', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-attribute',   'background': 'code-bg', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-operator',    'background': 'code-bg', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-class',       'background': 'code-bg', 'minRatio': 4.5, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-comment',     'background': 'code-bg', 'minRatio': 3.0, 'algorithm': 'wcag21' },
+    { 'foreground': 'syntax-punctuation', 'background': 'code-bg', 'minRatio': 3.0, 'algorithm': 'wcag21' },
+  ],
+};
+
 /* ─── Public registry ─────────────────────────────────────────────── */
 
 /** Built-in schema-tier identifiers; the registry also accepts
@@ -185,7 +278,7 @@ const iridis16Light: RoleSchemaInterface = {
  *  RoleSchemaEditor. The map's key type is widened to `string` to admit
  *  those custom entries; built-in tier names remain the canonical default
  *  set. */
-export type SchemaName = 'iridis-4' | 'iridis-8' | 'iridis-12' | 'iridis-16';
+export type SchemaName = 'iridis-4' | 'iridis-8' | 'iridis-12' | 'iridis-16' | 'iridis-32';
 
 export interface SchemaPair {
   'dark':  RoleSchemaInterface;
@@ -197,4 +290,5 @@ export const roleSchemaByName: Record<string, SchemaPair> = {
   'iridis-8':  { 'dark': iridis8Dark,  'light': iridis8Light  },
   'iridis-12': { 'dark': iridis12Dark, 'light': iridis12Light },
   'iridis-16': { 'dark': iridis16Dark, 'light': iridis16Light },
+  'iridis-32': { 'dark': iridis32Dark, 'light': iridis32Light },
 };

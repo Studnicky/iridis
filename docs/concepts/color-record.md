@@ -1,3 +1,8 @@
+---
+title: ColorRecord
+description: The OKLCH-first internal color shape every iridis task reads and writes, with cached sRGB, hex, and conditional Display-P3 projections for wide-gamut output
+---
+
 # ColorRecord
 
 `ColorRecordInterface` is the canonical internal representation of a color in iridis. Every intake task produces `ColorRecord` objects. Every math primitive operates on them. Every role in `state.roles` is a `ColorRecord`. The type is defined in `packages/core/src/types/color.ts` and re-exported via `@studnicky/iridis`, `@studnicky/iridis/model`, and `@studnicky/iridis/types`.

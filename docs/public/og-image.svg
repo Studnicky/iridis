@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1200 630" role="img" aria-label="iridis — chromatic pipeline for dynamic palettes">
+
+  <defs>
+    <!-- Dark purple-to-near-black gradient — mirrors the iridis brand -->
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0"   stop-color="#1a0533"/>
+      <stop offset="0.5" stop-color="#130426"/>
+      <stop offset="1"   stop-color="#0c0218"/>
+    </linearGradient>
+
+    <!-- Purple accent glow behind the logo -->
+    <radialGradient id="logoGlow" cx="220" cy="315" r="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0"   stop-color="#7c3aed" stop-opacity="0.28"/>
+      <stop offset="1"   stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Subtle right-edge accent to separate text zone -->
+    <linearGradient id="rightAccent" x1="500" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0"   stop-color="#4c1d95" stop-opacity="0.06"/>
+      <stop offset="1"   stop-color="#7c3aed" stop-opacity="0.04"/>
+    </linearGradient>
+
+    <filter id="logoShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+
+    <filter id="glowFilter" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <style>
+      .title {
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        fill: #f5f3ff;
+      }
+      .tagline {
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-weight: 400;
+        letter-spacing: 0.01em;
+        fill: #c4b5fd;
+        opacity: 0.90;
+      }
+      .meta {
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-weight: 500;
+        fill: #a78bfa;
+        opacity: 0.65;
+      }
+      .divider {
+        stroke: #7c3aed;
+        stroke-opacity: 0.35;
+        stroke-width: 1.5;
+      }
+      /* Palette swatch dots */
+      .swatch { opacity: 0.88; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="1200" height="630" fill="url(#bgGradient)"/>
+  <!-- Subtle right-zone overlay -->
+  <rect x="0" y="0" width="1200" height="630" fill="url(#rightAccent)"/>
+  <!-- Logo glow halo -->
+  <ellipse cx="220" cy="315" rx="250" ry="250" fill="url(#logoGlow)"/>
+
+  <!-- Logo image — centered in left zone, constrained to 480×480 -->
+  <image
+    href="logo.png"
+    x="0" y="75"
+    width="440" height="440"
+    filter="url(#logoShadow)"
+    preserveAspectRatio="xMidYMid meet"
+  />
+
+  <!-- Vertical divider -->
+  <line x1="470" y1="80" x2="470" y2="550" class="divider"/>
+
+  <!-- Text zone: right of divider -->
+  <g transform="translate(510, 170)">
+    <!-- Project name -->
+    <text class="title" x="0" y="0" font-size="96">iridis</text>
+
+    <!-- Tagline, two lines -->
+    <text class="tagline" x="0" y="68" font-size="28">chromatic pipeline</text>
+    <text class="tagline" x="0" y="104" font-size="28">for dynamic palettes</text>
+
+    <!-- Palette swatch row — five OKLCH-inspired colours -->
+    <g transform="translate(0, 152)">
+      <circle class="swatch" cx="14"  cy="14" r="14" fill="#ef4444"/>
+      <circle class="swatch" cx="52"  cy="14" r="14" fill="#f97316"/>
+      <circle class="swatch" cx="90"  cy="14" r="14" fill="#eab308"/>
+      <circle class="swatch" cx="128" cy="14" r="14" fill="#22c55e"/>
+      <circle class="swatch" cx="166" cy="14" r="14" fill="#3b82f6"/>
+      <circle class="swatch" cx="204" cy="14" r="14" fill="#7c3aed"/>
+      <circle class="swatch" cx="242" cy="14" r="14" fill="#ec4899"/>
+    </g>
+
+    <!-- Meta line -->
+    <text class="meta" x="0" y="238" font-size="20">OKLCH-native · contrast-enforced · pluggable</text>
+  </g>
+</svg>

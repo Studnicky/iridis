@@ -10,7 +10,7 @@
  * Variants:
  *   default → bg-soft surface
  *   inset   → background surface (recessed feel for nested cards)
- *   panel   → brand-tinted gradient (right-panel chrome)
+ *   panel   → brand-tinted gradient (elevated chrome)
  *
  * The `tag` prop is preserved for backward compat but PrimeVue Card
  * renders its own root element; consumers that relied on a custom tag

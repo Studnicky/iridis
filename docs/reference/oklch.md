@@ -1,3 +1,8 @@
+---
+title: OKLCH
+description: The perceptually uniform polar form of Oklab that every iridis ColorRecord carries — coordinates, why the pipeline reasons in this space, and the sRGB conversion chain
+---
+
 # OKLCH
 
 OKLCH is the canonical color space inside iridis. Every `ColorRecord` carries OKLCH coordinates regardless of the input format. The pipeline reasons about lightness, chroma, and hue in this space.

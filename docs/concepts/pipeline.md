@@ -1,3 +1,8 @@
+---
+title: How the pipeline works
+description: The four iridis stages — intake, resolve, enforce, emit — and how registered tasks turn raw seed strings into a role-resolved, contrast-safe palette
+---
+
 # How the pipeline works
 
 iridis is a task pipeline. You register primitives and tasks, declare an execution order, pass an input, and get a fully resolved palette out. The engine does not know or care what the pipeline contains, that is your configuration.

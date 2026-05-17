@@ -2,28 +2,28 @@
 /**
  * PaletteCTA.vue
  *
- * Designer-first call-to-action button. Opens the right panel via the
- * shared panelState store. PrimeVue Button paints with brand tokens
- * from the iridis preset; the wrapper adds the lift/shadow recipe and
- * label-flip behavior based on panel state.
+ * Designer-first call-to-action button. Routes to the home (`/`)
+ * which renders the BuildPanel — the seed-colors / image / role-schema
+ * pipelines all theme the SPA. PrimeVue Button paints with brand tokens
+ * from the iridis preset; the wrapper adds the lift/shadow recipe.
  */
 
-import { computed } from 'vue';
-import Button       from 'primevue/button';
+import { useRouter, withBase } from 'vitepress';
+import Button                  from 'primevue/button';
 
-import { panelOpen, openPanel } from '../stores/panelState.ts';
-
-const label = computed(() => panelOpen.value ? 'Builder open ↘' : 'Build a palette →');
+const router = useRouter();
+function goBuild(): void {
+  router.go(withBase('/'));
+}
 </script>
 
 <template>
   <ClientOnly>
     <Button
       type="button"
-      :label="label"
-      :aria-pressed="panelOpen"
+      label="Build a palette →"
       class="iridis-cta"
-      @click="openPanel"
+      @click="goBuild"
     />
   </ClientOnly>
 </template>

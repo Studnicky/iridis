@@ -1,3 +1,8 @@
+---
+title: Hex
+description: The #rrggbb and #rrggbbaa sRGB encoding iridis accepts on intake, the validation regex, and how hexToRgb routes parsed bytes into a canonical ColorRecord
+---
+
 # Hex
 
 A hex color is an sRGB triple encoded as three or four bytes in hexadecimal.

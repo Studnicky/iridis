@@ -21,14 +21,14 @@ function freshEngine(): Engine {
 test('ImagePlugin e2e :: shape :: singleton is an instance of ImagePlugin', () => {
   assert.ok(imagePlugin instanceof ImagePlugin);
   assert.strictEqual(imagePlugin.name,    'image');
-  assert.strictEqual(imagePlugin.version, '0.1.0');
+  assert.strictEqual(imagePlugin.version, '0.2.0');
 });
 
-test('ImagePlugin e2e :: shape :: registers the three gallery tasks', () => {
+test('ImagePlugin e2e :: shape :: registers the four gallery tasks', () => {
   const taskNames = imagePlugin.tasks().map((t) => t.name).sort();
   assert.deepStrictEqual(
     taskNames,
-    ['gallery:assignRoles', 'gallery:extract', 'gallery:harmonize'],
+    ['gallery:assignRoles', 'gallery:extract', 'gallery:harmonize', 'gallery:histogram'],
   );
 });
 

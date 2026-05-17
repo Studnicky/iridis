@@ -1,3 +1,8 @@
+---
+title: CMYK
+description: The subtractive four-ink model iridis exposes as a picker affordance — channel ranges, the K separation formula, and why no profile-aware math primitives ship
+---
+
 # CMYK
 
 CMYK (cyan, magenta, yellow, key/black) is the subtractive process model used by four-color print. Each channel is the percentage of one ink laid on a white substrate. K is the black plate, separated out so that dark colors do not require saturating all three chromatic inks.

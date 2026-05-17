@@ -16,9 +16,43 @@
  * swap.
  */
 
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import Button from 'primevue/button';
+
+const COLLAPSE_KEY = 'iridis-role-editor-collapse';
+const rolesOpen = ref<boolean>(true);
+const pairsOpen = ref<boolean>(true);
+
+if (typeof window !== 'undefined') {
+  try {
+    const raw = window.localStorage.getItem(COLLAPSE_KEY);
+    if (raw !== null) {
+      const persisted = JSON.parse(raw) as { 'roles'?: boolean; 'pairs'?: boolean };
+      if (typeof persisted.roles === 'boolean') rolesOpen.value = persisted.roles;
+      if (typeof persisted.pairs === 'boolean') pairsOpen.value = persisted.pairs;
+    }
+  } catch { /* noop */ }
+}
+
+function persistCollapse(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(COLLAPSE_KEY, JSON.stringify({
+      'roles': rolesOpen.value,
+      'pairs': pairsOpen.value,
+    }));
+  } catch { /* noop */ }
+}
+
+function toggleRoles(): void {
+  rolesOpen.value = !rolesOpen.value;
+  persistCollapse();
+}
+function togglePairs(): void {
+  pairsOpen.value = !pairsOpen.value;
+  persistCollapse();
+}
 
 import type { RoleSchemaInterface, RoleDefinitionInterface, ContrastPairInterface, ColorIntentType } from '@studnicky/iridis/model';
 
@@ -49,7 +83,7 @@ const algorithmOptions = [
 ];
 
 const schema = computed<RoleSchemaInterface>(() => {
-  const pair = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['iridis-16']!;
+  const pair = roleSchemaByName[configStore.roleSchema] ?? roleSchemaByName['iridis-32']!;
   return pair[configStore.framing];
 });
 
@@ -152,9 +186,20 @@ function removePair(idx: number): void {
   <ClientOnly>
     <div class="role-editor">
       <!-- Roles -->
-      <section class="role-editor__section">
+      <section class="role-editor__section" :class="{ 'role-editor__section--collapsed': !rolesOpen }">
         <header class="role-editor__head">
-          <h3 title="Each role becomes a CSS variable (--c-{name}) and a slot in `state.roles`. The engine resolves the input palette into these roles by nudging colors into the declared OKLCH envelopes.">Roles</h3>
+          <button
+            type="button"
+            class="role-editor__toggle"
+            :aria-expanded="rolesOpen"
+            :aria-controls="'role-editor-roles-body'"
+            :title="rolesOpen ? 'Collapse roles section' : 'Expand roles section'"
+            @click="toggleRoles"
+          >
+            <span class="role-editor__chevron" :class="{ 'role-editor__chevron--open': rolesOpen }" aria-hidden="true">▸</span>
+            <h3 title="Each role becomes a CSS variable (--c-{name}) and a slot in `state.roles`. The engine resolves the input palette into these roles by nudging colors into the declared OKLCH envelopes.">Roles</h3>
+            <span class="role-editor__count">({{ roles.length }})</span>
+          </button>
           <Button
             type="button"
             label="+ add role"
@@ -164,7 +209,7 @@ function removePair(idx: number): void {
             @click="addRole"
           />
         </header>
-        <div class="role-editor__grid">
+        <div v-show="rolesOpen" id="role-editor-roles-body" class="role-editor__grid">
           <RoleCard
             v-for="(role, idx) in roles"
             :key="idx"
@@ -185,9 +230,20 @@ function removePair(idx: number): void {
       </section>
 
       <!-- Contrast pairs -->
-      <section class="role-editor__section">
+      <section class="role-editor__section" :class="{ 'role-editor__section--collapsed': !pairsOpen }">
         <header class="role-editor__head">
-          <h3 title="Each contrast pair declares a minimum legibility contract the engine MUST enforce. enforce:contrast nudges colors along the lightness axis until every pair holds.">Contrast pairs</h3>
+          <button
+            type="button"
+            class="role-editor__toggle"
+            :aria-expanded="pairsOpen"
+            :aria-controls="'role-editor-pairs-body'"
+            :title="pairsOpen ? 'Collapse contrast pairs section' : 'Expand contrast pairs section'"
+            @click="togglePairs"
+          >
+            <span class="role-editor__chevron" :class="{ 'role-editor__chevron--open': pairsOpen }" aria-hidden="true">▸</span>
+            <h3 title="Each contrast pair declares a minimum legibility contract the engine MUST enforce. enforce:contrast nudges colors along the lightness axis until every pair holds.">Contrast pairs</h3>
+            <span class="role-editor__count">({{ pairs.length }})</span>
+          </button>
           <Button
             type="button"
             label="+ add pair"
@@ -198,8 +254,8 @@ function removePair(idx: number): void {
             @click="addPair"
           />
         </header>
-        <p v-if="pairs.length === 0" class="role-editor__empty">No contrast pairs declared yet — add one to enforce a minimum ratio between two roles.</p>
-        <div class="role-editor__grid">
+        <p v-if="pairsOpen && pairs.length === 0" class="role-editor__empty">No contrast pairs declared yet — add one to enforce a minimum ratio between two roles.</p>
+        <div v-show="pairsOpen" id="role-editor-pairs-body" class="role-editor__grid">
           <PairCard
             v-for="(pair, idx) in pairs"
             :key="idx"
@@ -246,6 +302,48 @@ function removePair(idx: number): void {
   margin: 0;
   padding: 0;
   border: 0;
+}
+
+/* Section-title toggle: chevron + heading + count, clickable as one
+   target. Mirrors the way VitePress sidebar groups collapse to their
+   title. localStorage-persisted so the user's open/closed choice
+   survives reloads. */
+.role-editor__toggle {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+}
+.role-editor__toggle:hover h3,
+.role-editor__toggle:hover .role-editor__count {
+  color: var(--iridis-brand, var(--vp-c-brand-1));
+}
+.role-editor__chevron {
+  display: inline-block;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: var(--vp-c-text-3);
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: 35% 50%;
+}
+.role-editor__chevron--open {
+  transform: rotate(90deg);
+}
+.role-editor__count {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.7rem;
+  color: var(--vp-c-text-3);
+  font-weight: 500;
+}
+.role-editor__section--collapsed .role-editor__head {
+  margin-bottom: 0;
 }
 
 /* + add button — iridis chrome on top of PrimeVue Button. */
