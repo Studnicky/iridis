@@ -4,6 +4,15 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-05-17
+
+Cleanup of v0.3.4.
+
+### Changed
+
+- **Import map injection is now declarative.** Replaces the v0.3.4 regex-based move-after-emit hack with a direct `transformHtml` insertion at the top of `<head>` (`String.replace('<head>', ...)`). VitePress 1.x has no position-controlled head-injection API, and Vite's own `transformIndexHtml` hook does NOT fire on VitePress's SSG-rendered output, so `transformHtml` remains the source-of-truth hook. `buildImportMap` now returns a typed `Record<string, string>` instead of pre-stringified JSON; the `transformHtml` hook wraps it in the `<script type="importmap">` tag at insertion time.
+- **Engine logger silenced on the docs site.** `consoleLogger.level = 'error'` set at theme boot in `docs/.vitepress/theme/index.ts`. The engine's CVD-advisory and missing-role warnings fire on every projector run (hundreds per session as the user edits the palette) and aren't actionable from inside the docs. Library consumers configure their own level; this only affects the docs site.
+
 ## [0.3.4] - 2026-05-17
 
 Hotfix.
