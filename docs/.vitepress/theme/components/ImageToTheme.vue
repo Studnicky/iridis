@@ -344,11 +344,12 @@ const sourceMode = ref<SourceMode>('file');
   <ClientOnly>
     <section class="image-to-theme">
       <div class="image-to-theme__grid">
-        <!-- LEFT — Image preview surface. Drop zone + preview only. The
-             source-mode picker (File / URL / Preset) and its input row
-             live in the RIGHT column next to the algorithm tabs, so the
-             user's choice between input source and output configuration
-             reads as one column of knobs rather than two split panels. -->
+        <!-- LEFT — Image input column. Mirrors IridisPicker:
+               1. Drop zone / preview      (visual surface — like SV square)
+               2. Source SelectButton      (mode tabs — like format tabs)
+               3. Mode-specific input row  (per-mode editor — like channel inputs)
+             One column, stacked, with the input row swapping content
+             based on the active source mode. -->
         <div class="image-to-theme__col image-to-theme__col--source">
           <div class="image-to-theme__col-head">
             <span class="image-to-theme__label">Image</span>
@@ -367,78 +368,10 @@ const sourceMode = ref<SourceMode>('file');
               <span>Drop an image here</span>
             </div>
           </div>
-        </div>
 
-        <!-- RIGHT — Options: structured like the OKLCH picker.
-               1. Histogram (visual viz, top — analogous to SV+hue strip)
-               2. Algorithm SelectButton (mode tabs — analogous to format)
-               3. Source SelectButton + mode-specific input
-                  (analogous to channel inputs varying by format)
-               4. Extraction config sliders (analogous to OKLCH
-                  channel sliders) -->
-        <div class="image-to-theme__col image-to-theme__col--output">
-          <div class="image-to-theme__col-head">
-            <span class="image-to-theme__label">Options</span>
-            <span
-              v-if="elapsedMs !== null && !isWorking && error === null"
-              class="image-to-theme__hint"
-            >{{ elapsedMs }} ms</span>
-            <span v-else class="image-to-theme__hint">algorithm · source · config</span>
-          </div>
-
-          <div class="image-to-theme__histogram" aria-label="Color histogram">
-            <svg viewBox="0 0 100 22" preserveAspectRatio="none" class="image-to-theme__svg">
-              <g>
-                <rect
-                  v-for="(seg, i) in stripGeometry"
-                  :key="`strip-${i}`"
-                  :x="seg.x"
-                  y="0"
-                  :width="seg.w"
-                  height="8"
-                  :fill="seg.hex"
-                />
-              </g>
-              <g>
-                <rect
-                  v-for="(bar, i) in spectrograph.hueBars"
-                  :key="`hue-${i}`"
-                  :x="(i / spectrograph.hueBars.length) * 100"
-                  :y="22 - (bar.weight / huePeakWeight) * 12"
-                  :width="100 / spectrograph.hueBars.length"
-                  :height="(bar.weight / huePeakWeight) * 12"
-                  :fill="bar.hex"
-                  :opacity="bar.weight === 0 ? 0 : 1"
-                />
-              </g>
-            </svg>
-            <div class="image-to-theme__histogram-legend">
-              <span>palette ribbon · {{ stripGeometry.length }} clusters</span>
-              <span>hue histogram · 0° — 360°</span>
-            </div>
-          </div>
-
-          <div
-            class="image-to-theme__status"
-            :class="{ 'image-to-theme__status--error': error !== null }"
-          >
-            <span>{{ error ?? status }}</span>
-          </div>
-
-          <!-- Algorithm mode SelectButton — like format tabs in the
-               OKLCH picker; selects which clustering math runs. -->
-          <SelectButton
-            v-model="algorithm"
-            :options="algorithmOptions"
-            option-label="label"
-            option-value="value"
-            :allow-empty="false"
-            class="image-to-theme__mode-tabs"
-          />
-
-          <!-- Source mode SelectButton — collapses the file / URL /
-               preset clutter into a single mode picker. Only the
-               input row for the active mode renders below. -->
+          <!-- Source mode SelectButton — same slot as the OKLCH picker's
+               format-mode tabs. Only the input row for the active mode
+               renders below. -->
           <SelectButton
             v-model="sourceMode"
             :options="sourceModeOptions"
@@ -491,9 +424,81 @@ const sourceMode = ref<SourceMode>('file');
               >{{ p.label }}</button>
             </div>
           </div>
+        </div>
 
-          <!-- Slider channels — analogous to OKLCH L/C/H number
-               inputs: one knob per extraction parameter. -->
+        <!-- RIGHT — Options column. Per the IridisDemo pattern (picker on
+             left, swatches on right), the right column owns the OUTPUT
+             configuration knobs:
+               1. Histogram     (visual read-out of the extracted palette)
+               2. Status        (elapsed time / error surface)
+               3. Algorithm     (which clustering math runs)
+               4. Sliders       (K, histogram bpc, ΔE cap, harmonize, envelopes)
+             The algorithm SelectButton stays on this side — it's a
+             configuration knob (which math runs against the image), not a
+             source-mode picker. -->
+        <div class="image-to-theme__col image-to-theme__col--output">
+          <div class="image-to-theme__col-head">
+            <span class="image-to-theme__label">Options</span>
+            <span
+              v-if="elapsedMs !== null && !isWorking && error === null"
+              class="image-to-theme__hint"
+            >{{ elapsedMs }} ms</span>
+            <span v-else class="image-to-theme__hint">algorithm · config</span>
+          </div>
+
+          <div class="image-to-theme__histogram" aria-label="Color histogram">
+            <svg viewBox="0 0 100 22" preserveAspectRatio="none" class="image-to-theme__svg">
+              <g>
+                <rect
+                  v-for="(seg, i) in stripGeometry"
+                  :key="`strip-${i}`"
+                  :x="seg.x"
+                  y="0"
+                  :width="seg.w"
+                  height="8"
+                  :fill="seg.hex"
+                />
+              </g>
+              <g>
+                <rect
+                  v-for="(bar, i) in spectrograph.hueBars"
+                  :key="`hue-${i}`"
+                  :x="(i / spectrograph.hueBars.length) * 100"
+                  :y="22 - (bar.weight / huePeakWeight) * 12"
+                  :width="100 / spectrograph.hueBars.length"
+                  :height="(bar.weight / huePeakWeight) * 12"
+                  :fill="bar.hex"
+                  :opacity="bar.weight === 0 ? 0 : 1"
+                />
+              </g>
+            </svg>
+            <div class="image-to-theme__histogram-legend">
+              <span>palette ribbon · {{ stripGeometry.length }} clusters</span>
+              <span>hue histogram · 0° — 360°</span>
+            </div>
+          </div>
+
+          <div
+            class="image-to-theme__status"
+            :class="{ 'image-to-theme__status--error': error !== null }"
+          >
+            <span>{{ error ?? status }}</span>
+          </div>
+
+          <!-- Algorithm SelectButton — output configuration, not input
+               source. Selects which clustering math runs against the
+               image data. Stays on the right per the IridisDemo split:
+               picker / source on the left, output config on the right. -->
+          <SelectButton
+            v-model="algorithm"
+            :options="algorithmOptions"
+            option-label="label"
+            option-value="value"
+            :allow-empty="false"
+            class="image-to-theme__mode-tabs"
+          />
+
+          <!-- Slider channels — one knob per extraction parameter. -->
           <div class="image-to-theme__config">
             <label class="image-to-theme__slider">
               <span class="image-to-theme__slider-name">Palette size</span>
