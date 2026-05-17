@@ -3,19 +3,27 @@
  * BuildImageOptionsGuide.vue
  *
  * Reference panel that pairs with the image-extraction sliders in
- * ImageToTheme. One block per extraction knob — algorithm, palette
- * size (K), histogram bits-per-channel, ΔE input cap, harmonize
- * threshold, lightness range, chroma range. Static; owns no state,
- * mutates nothing. Mirrors `BuildRoleSchemaGuide` shape so the two
- * tabs read as one design system.
+ * ImageToTheme. One Accordion panel per extraction knob: algorithm,
+ * palette size (K), histogram bits-per-channel, ΔE input cap,
+ * harmonize threshold, lightness range, chroma range. Single-select
+ * (PrimeVue Accordion's default) so only one detail block is open at
+ * a time, keeping the reference column compact. Mirrors
+ * `BuildRoleSchemaGuide` shape so all three tab-guides read as one
+ * design system.
  *
  * Each block:
- *   - `leg`     short label that matches the slider's leg
- *   - `summary` one-line "what it is"
- *   - `detail`  longer "what it does", surfaced via title-tooltip
- *               on hover and rendered inline below the summary
+ *   - `leg`     header label (left side, full row click target)
+ *   - `summary` one-line "what it is": top of the expanded body
+ *   - `detail`  longer "what it does": bottom of the expanded body
  *   - `href`    optional drill-in into the reference docs
  */
+import { ref } from 'vue';
+
+import Accordion        from 'primevue/accordion';
+import AccordionPanel   from 'primevue/accordionpanel';
+import AccordionHeader  from 'primevue/accordionheader';
+import AccordionContent from 'primevue/accordioncontent';
+
 import IridisCard from './base/IridisCard.vue';
 
 interface FieldInterface {
@@ -25,11 +33,18 @@ interface FieldInterface {
   readonly 'href'?:    string;
 }
 
+/* The currently-open accordion panel id (one of FIELDS[].leg). `null`
+   collapses every panel. PrimeVue Accordion v-models a single value
+   in single-select mode (its default) and lets the user collapse the
+   open panel by clicking its header again. Initial state opens
+   "Algorithm" so the panel is never empty on first paint. */
+const openPanel = ref<string | null>('Algorithm');
+
 const FIELDS: readonly FieldInterface[] = [
   {
     'leg':     'Algorithm',
     'summary': 'Which clustering math reduces pixels to K dominant colours.',
-    'detail':  'median-cut is the weighted Heckbert variant — O(N log N), fast, splits buckets by widest range × cumulative weight. delta-e is agglomerative ΔE2000 — O(N² log N), visually faithful, preserves perceptually similar clusters.',
+    'detail':  'median-cut is the weighted Heckbert variant: O(N log N), fast, splits buckets by widest range × cumulative weight. delta-e is agglomerative ΔE2000: O(N² log N), visually faithful, preserves perceptually similar clusters.',
   },
   {
     'leg':     'Palette size (K)',
@@ -39,7 +54,7 @@ const FIELDS: readonly FieldInterface[] = [
   {
     'leg':     'Histogram bpc',
     'summary': 'Bits per channel for the upstream pixel histogram.',
-    'detail':  'Three to seven bits per RGB channel. 5 bpc = 32 768 bins, the default — collapses sensor noise while keeping perceptually distinct colours separate. Lower bpc smashes more pixels into the same bin (faster, less faithful); higher bpc lets near-duplicate sensor values fragment into separate clusters.',
+    'detail':  'Three to seven bits per RGB channel. 5 bpc = 32 768 bins, the default; collapses sensor noise while keeping perceptually distinct colours separate. Lower bpc smashes more pixels into the same bin (faster, less faithful); higher bpc lets near-duplicate sensor values fragment into separate clusters.',
   },
   {
     'leg':     'Δ-E input cap',
@@ -49,7 +64,7 @@ const FIELDS: readonly FieldInterface[] = [
   {
     'leg':     'Harmonize ΔE',
     'summary': 'Min ΔE distance the accent must keep from the frame.',
-    'detail':  '`gallery:harmonize` shifts the accent\'s OKLCH hue if it lands within this distance of the frame — guarantees the accent reads as distinct against the surface it sits on. Zero disables harmonization; ten is the perceptual "noticeably different" threshold.',
+    'detail':  '`gallery:harmonize` shifts the accent\'s OKLCH hue if it lands within this distance of the frame, guaranteeing the accent reads as distinct against the surface it sits on. Zero disables harmonization; ten is the perceptual "noticeably different" threshold.',
   },
   {
     'leg':     'Lightness range',
@@ -69,23 +84,36 @@ const FIELDS: readonly FieldInterface[] = [
     <header class="build-image-options-guide__head">
       <span class="build-image-options-guide__eyebrow">Reference</span>
       <h3 class="build-image-options-guide__title">Image options</h3>
-      <p class="build-image-options-guide__hint">What every extractor knob does. Hover for the long version.</p>
+      <p class="build-image-options-guide__hint">What every extractor knob does. Click a row to expand.</p>
     </header>
-    <ol class="build-image-options-guide__list">
-      <li
+    <Accordion
+      :value="openPanel"
+      class="build-image-options-guide__accordion"
+      @update:value="(v) => openPanel = v as string | null"
+    >
+      <AccordionPanel
         v-for="f in FIELDS"
         :key="f.leg"
-        class="build-image-options-guide__item"
-        :title="f.detail"
+        :value="f.leg"
+        class="build-image-options-guide__panel"
       >
-        <div class="build-image-options-guide__item-head">
+        <AccordionHeader class="build-image-options-guide__header">
           <span class="build-image-options-guide__leg">{{ f.leg }}</span>
-          <a v-if="f.href" :href="f.href" class="build-image-options-guide__link" :title="`Open the ${f.leg} reference page`">docs →</a>
-        </div>
-        <p class="build-image-options-guide__summary">{{ f.summary }}</p>
-        <p class="build-image-options-guide__detail">{{ f.detail }}</p>
-      </li>
-    </ol>
+        </AccordionHeader>
+        <AccordionContent>
+          <div class="build-image-options-guide__body">
+            <p class="build-image-options-guide__summary">{{ f.summary }}</p>
+            <p class="build-image-options-guide__detail">{{ f.detail }}</p>
+            <a
+              v-if="f.href"
+              :href="f.href"
+              class="build-image-options-guide__link"
+              :title="`Open the ${f.leg} reference page`"
+            >Open the {{ f.leg }} reference page →</a>
+          </div>
+        </AccordionContent>
+      </AccordionPanel>
+    </Accordion>
   </IridisCard>
 </template>
 
@@ -123,26 +151,36 @@ const FIELDS: readonly FieldInterface[] = [
   line-height: 1.5;
   color: var(--vp-c-text-2);
 }
-.build-image-options-guide__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* PrimeVue Accordion overrides. The iridisPreset wires --p-* tokens
+   to --iridis-* engine output but the accordion header has no preset
+   override, so we paint it manually here. Header row: label on the
+   left, indicator on the right (PrimeVue 4.x renders the toggle icon
+   inline with text on the right by default; we just shape the row). */
+.build-image-options-guide__accordion {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.4rem;
 }
-.build-image-options-guide__item {
-  padding: 0.6rem 0.75rem;
+.build-image-options-guide__panel {
   border-radius: var(--iridis-radius, 6px);
   background: color-mix(in oklch, var(--vp-c-bg) 50%, transparent);
   border: 1px solid color-mix(in oklch, var(--vp-c-divider) 60%, transparent);
+  overflow: hidden;
 }
-.build-image-options-guide__item-head {
+.build-image-options-guide__header :deep(button),
+.build-image-options-guide__header :deep(.p-accordionheader) {
+  width: 100%;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: baseline;
   gap: 0.6rem;
-  margin-bottom: 0.2rem;
+  padding: 0.55rem 0.75rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
 }
 .build-image-options-guide__leg {
   font-size: 0.84rem;
@@ -150,16 +188,14 @@ const FIELDS: readonly FieldInterface[] = [
   color: var(--vp-c-text-1);
   letter-spacing: -0.005em;
 }
-.build-image-options-guide__link {
-  font-size: 0.7rem;
-  color: var(--iridis-brand, var(--vp-c-brand-1));
-  text-decoration: none;
-}
-.build-image-options-guide__link:hover {
-  text-decoration: underline;
+.build-image-options-guide__body {
+  padding: 0.1rem 0.75rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 .build-image-options-guide__summary {
-  margin: 0 0 0.25rem;
+  margin: 0;
   font-size: 0.78rem;
   line-height: 1.45;
   color: var(--vp-c-text-2);
@@ -169,5 +205,14 @@ const FIELDS: readonly FieldInterface[] = [
   font-size: 0.72rem;
   line-height: 1.5;
   color: var(--vp-c-text-3);
+}
+.build-image-options-guide__link {
+  font-size: 0.7rem;
+  color: var(--iridis-brand, var(--vp-c-brand-1));
+  text-decoration: none;
+  margin-top: 0.25rem;
+}
+.build-image-options-guide__link:hover {
+  text-decoration: underline;
 }
 </style>

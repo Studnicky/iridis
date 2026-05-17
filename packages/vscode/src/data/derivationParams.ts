@@ -21,7 +21,7 @@ export const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfac
     'light': 5,
     'sat': 5,
   },
-  // From palette.comment — pass-through
+  // From palette.comment: pass-through
   'comment': {},
   // Meta, annotation feel
   'decorator': {
@@ -33,21 +33,21 @@ export const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfac
     'hue': -25,
     'sat': 5,
   },
-  // From palette.constant — pass-through
+  // From palette.constant: pass-through
   'enumMember': {},
   // Reactive, callback feel
   'event': {
     'hue': 25,
     'sat': 8,
   },
-  // Base color — pass-through
+  // Base color: pass-through
   'function': {},
   // Shifted, abstract feel
   'interface': {
     'hue': 20,
     'sat': -8,
   },
-  // Base color — pass-through
+  // Base color: pass-through
   'keyword': {},
   // Warmer, stands out in goto/break
   'label': {
@@ -69,9 +69,9 @@ export const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfac
     'light': -5,
     'sat': -20,
   },
-  // From palette.number — pass-through
+  // From palette.number: pass-through
   'number': {},
-  // Derived from muted/foreground mix — handled in task
+  // Derived from muted/foreground mix; handled in task
   'operator': {},
   // Input, argument feel
   'parameter': {
@@ -88,21 +88,21 @@ export const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfac
     'hue': -45,
     'sat': 15,
   },
-  // Base color — pass-through
+  // Base color: pass-through
   'string': {},
   // Cooler, low-level feel
   'struct': {
     'hue': -10,
     'light': -3,
   },
-  // Base color — pass-through
+  // Base color: pass-through
   'type': {},
   // Generic, abstract
   'typeParameter': {
     'hue': 35,
     'sat': -5,
   },
-  // Base color — pass-through
+  // Base color: pass-through
   'variable': {},
 } as const;
 

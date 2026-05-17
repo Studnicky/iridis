@@ -6,7 +6,7 @@ string. Role names that match `<root>-<shade>` with a numeric Tailwind shade
 (`accent-50`, `accent-100`, ..., `accent-950`) collapse into nested colour
 objects automatically.
 
-The theme JSON colours stay sRGB hex on every roundtrip — Tailwind v4 picks up
+The theme JSON colours stay sRGB hex on every roundtrip. Tailwind v4 picks up
 wide-gamut values through the companion CSS-vars sheet, which gains an
 `@supports (color: color(display-p3 0 0 0))` sibling block whenever any role
 carries a populated `displayP3` slot.

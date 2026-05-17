@@ -14,7 +14,7 @@ import type { TailwindOutputInterface } from '../types/index.ts';
  * callers can branch on length without an extra null check.
  *
  * Local duplicate of the stylesheet plugin's helper rather than a
- * cross-plugin import — the tailwind plugin must not depend on
+ * cross-plugin import; the tailwind plugin must not depend on
  * `@studnicky/iridis-stylesheet` (sibling-rank plugins shouldn't form a
  * dep graph between themselves).
  */
@@ -71,7 +71,7 @@ function buildColorsShape(roles: Record<string, ColorRecordInterface>): ColorsSh
   // Grouped shade scales
   for (const [root, shades] of Object.entries(groups)) {
     if (Object.keys(shades).length === 1) {
-      // Single member — fold into flat
+      // Single member: fold into flat
       const [[shade, hex]] = Object.entries(shades) as [[string, string]];
       colors[`${root}-${shade}`] = hex;
     } else {
@@ -110,7 +110,7 @@ function serializeColorsToJs(colors: ColorsShape): string {
  * properties that the `@theme` directive can reference. When any role
  * carries `displayP3` (out-of-sRGB OKLCH input or `intake:p3` origin),
  * an `@supports (color: color(display-p3 0 0 0))` sibling block is
- * appended that re-declares those vars in P3 — Tailwind utilities
+ * appended that re-declares those vars in P3; Tailwind utilities
  * consuming the variable inherit the cascade automatically, so
  * `bg-primary` on a P3-capable browser resolves to the wide-gamut value
  * without any plugin-side work.

@@ -21,7 +21,7 @@ export const docsConfigSchema = {
     'paletteColors': {
       'type':        'array',
       'title':       'Palette colors',
-      'description': 'The colors in your palette. Hex format. Variable count — every demo expands these into its target output.',
+      'description': 'The colors in your palette. Hex format. Variable count: every demo expands these into its target output.',
       'minItems':    1,
       'maxItems':    8,
       'items':       { 'type': 'string', 'format': 'color', 'pattern': '^#[0-9a-fA-F]{6}$' },
@@ -37,14 +37,14 @@ export const docsConfigSchema = {
     'contrastLevel': {
       'type':        'string',
       'title':       'Contrast level',
-      'description': 'WCAG threshold the enforce:contrast task lifts pairs to. Defaults to AAA — the strictest level — so derived palettes pass the most rigorous accessibility audit out of the box.',
+      'description': 'WCAG threshold the enforce:contrast task lifts pairs to. Defaults to AAA (the strictest level) so derived palettes pass the most rigorous accessibility audit out of the box.',
       'enum':        ['AA', 'AAA'],
       'default':     'AAA',
     },
     'contrastAlgorithm': {
       'type':        'string',
       'title':       'Contrast algorithm',
-      'description': 'WCAG 2.1 luminance ratio or APCA Lc perceptual model. Defaults to APCA — the modern perceptual algorithm WCAG 3 is built on — which generally enforces stricter targets for body text.',
+      'description': 'WCAG 2.1 luminance ratio or APCA Lc perceptual model. Defaults to APCA (the modern perceptual algorithm WCAG 3 is built on), which generally enforces stricter targets for body text.',
       'enum':        ['wcag21', 'apca'],
       'default':     'apca',
     },
@@ -70,7 +70,7 @@ export const docsConfigSchema = {
     'looseEnvelope': {
       'type':        'boolean',
       'title':       'Loose envelope',
-      'description': 'When true, the resolved-roles surface flags every role whose seed sat outside the declared lightness/chroma envelope. Visualisation only — the engine still clamps; the warning makes the engine\'s hand visible.',
+      'description': 'When true, the resolved-roles surface flags every role whose seed sat outside the declared lightness/chroma envelope. Visualisation only: the engine still clamps; the warning makes the engine\'s hand visible.',
       'default':     false,
     },
   },
@@ -94,7 +94,7 @@ export type DocsConfigType = {
    accessibility audit the engine can run: AAA WCAG threshold (7:1
    normal text), APCA Lc targets (the perceptual model WCAG 3 is built
    on), strict envelope clamping. The schema spec above and this
-   runtime object MUST stay in sync — both are read by different
+   runtime object MUST stay in sync; both are read by different
    consumers (SchemaForm uses the JSON Schema spec; the dispatcher's
    reducer uses this object). */
 export const docsConfigDefaults: DocsConfigType = {

@@ -1,6 +1,6 @@
 ---
 title: Living color
-description: The v2 thesis — treat a palette as a vector in OKLCH × N-roles space and animate between points while WCAG and role-schema constraints hold every frame
+description: The v2 thesis. Treat a palette as a vector in OKLCH × N-roles space and animate between points while WCAG and role-schema constraints hold every frame.
 ---
 
 # Living color

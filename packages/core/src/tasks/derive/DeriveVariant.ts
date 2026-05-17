@@ -44,7 +44,7 @@ function offsetLightness(color: ColorRecordInterface, offset: number): ColorReco
  * with `invertLightness` and/or `lightnessOffset`.
  *
  * Variants live in `state.variants[name]` keyed by role, parallel to
- * `state.roles`. Emitters consume both surfaces — the canonical role
+ * `state.roles`. Emitters consume both surfaces: the canonical role
  * set for the active framing and the variants for the inverse.
  */
 export class DeriveVariant implements TaskInterface {
@@ -66,7 +66,7 @@ export class DeriveVariant implements TaskInterface {
     const roleNames = Object.keys(state.roles);
 
     if (roleNames.length === 0) {
-      ctx.logger.debug('DeriveVariant', 'run', 'No roles assigned — skipping variant derivation');
+      ctx.logger.debug('DeriveVariant', 'run', 'No roles assigned; skipping variant derivation');
       return;
     }
 

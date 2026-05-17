@@ -102,7 +102,7 @@ test('Engine e2e :: happy :: intake:any dispatches hex strings correctly', async
 });
 
 // ---------------------------------------------------------------------------
-// happy: no pipeline() call — engine runs all registered tasks in order
+// happy: no pipeline() call; engine runs all registered tasks in order
 // ---------------------------------------------------------------------------
 
 test('Engine e2e :: happy :: no pipeline call runs all registered tasks', async () => {
@@ -219,7 +219,7 @@ test('Engine e2e :: edge :: enforce:contrast is no-op when pair already passes',
 
   const state = await engine.run({
     'colors': [
-      // black text hint, white background hint — contrast ~21:1, well above 3.0
+      // black text hint, white background hint; contrast ~21:1, well above 3.0
       { 'r': 0, 'g': 0, 'b': 0, 'hints': { 'role': 'text' } } as unknown,
       { 'r': 1, 'g': 1, 'b': 1, 'hints': { 'role': 'background' } } as unknown,
     ],
@@ -284,7 +284,7 @@ test('Engine e2e :: unhappy :: pipeline task that throws propagates error', asyn
 });
 
 // ---------------------------------------------------------------------------
-// unhappy: malformed input — every intake task rejects non-string/non-object
+// unhappy: malformed input; every intake task rejects non-string/non-object
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
@@ -330,7 +330,7 @@ test('Engine e2e :: runtime :: tasks read framing from state.runtime', async () 
 });
 
 // ---------------------------------------------------------------------------
-// intake:any dispatcher coverage — mixed-format input feeds every delegate
+// intake:any dispatcher coverage: mixed-format input feeds every delegate
 // ---------------------------------------------------------------------------
 
 interface IntakeAnyExpectationInterface {
@@ -361,11 +361,11 @@ describe('Engine e2e :: intake:any dispatcher coverage', () => {
       ],
     });
 
-    // Every delegate parsed exactly its target entry — total six records.
+    // Every delegate parsed exactly its target entry: total six records.
     assert.strictEqual(state.colors.length, 6,
       `intake:any should yield six records (one per format), got ${state.colors.length}`);
 
-    // Per delegate dispatch order — hex first, then rgb, hsl, oklch, lab, named.
+    // Per delegate dispatch order: hex first, then rgb, hsl, oklch, lab, named.
     const expected: readonly IntakeAnyExpectationInterface[] = [
       { 'sourceFormat': 'hex',   'description': 'hex string "#fff"' },
       { 'sourceFormat': 'rgb',   'description': '{r,g,b} object' },
@@ -379,8 +379,8 @@ describe('Engine e2e :: intake:any dispatcher coverage', () => {
       const record = state.colors[i] as ColorRecordInterface;
       const want   = expected[i]!;
 
-      // Every record carries the canonical ColorRecord shape — oklch / rgb / hex / alpha
-      // / sourceFormat / displayP3 / hints — and EVERY allocation comes through
+      // Every record carries the canonical ColorRecord shape (oklch / rgb / hex / alpha
+      // / sourceFormat / displayP3 / hints) and EVERY allocation comes through
       // ColorRecordFactory.* with the same hidden class.
       assert.ok(record !== undefined, `record ${i} (${want.description}) defined`);
       assert.strictEqual(typeof record.oklch.l, 'number',  `record ${i} oklch.l populated`);
@@ -406,11 +406,11 @@ describe('Engine e2e :: intake:any dispatcher coverage', () => {
   });
 });
 
-test('Engine e2e :: unhappy :: malformed input colors — intake produces empty state', async () => {
+test('Engine e2e :: unhappy :: malformed input colors; intake produces empty state', async () => {
   const engine = freshEngine();
   engine.pipeline(['intake:hex', 'clamp:count', 'emit:json']);
 
-  // Passing objects that are not hex strings — intake:hex will silently skip them
+  // Passing objects that are not hex strings; intake:hex will silently skip them
   const state = await engine.run({
     'colors': [{} as unknown, null as unknown, 42 as unknown],
   });

@@ -11,7 +11,7 @@ import type { RgbInterface } from '../types/index.ts';
  *    §17.6 "Sample code for color conversions"
  *    (https://www.w3.org/TR/css-color-4/#color-conversion-code). The
  *    composed matrix derives from `linearSrgb → XYZ-D65 → linearP3`.
- *  - Display-P3 transfer function: Apple/SMPTE — same piecewise gamma
+ *  - Display-P3 transfer function: Apple/SMPTE, same piecewise gamma
  *    curve as sRGB (linear segment below 0.0031308, then `1.055·v^(1/2.4) − 0.055`).
  *
  * UNLIKE {@link import('./OklchToRgbRaw.ts').OklchToRgbRaw}, this primitive

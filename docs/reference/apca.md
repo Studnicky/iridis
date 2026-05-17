@@ -1,6 +1,6 @@
 ---
 title: APCA
-description: The Accessible Perceptual Contrast Algorithm shipped as APCA-W3 0.0.98G-4g — signed Lc values, polarity-aware exponents, and the soft-clamp polynomial iridis uses
+description: The Accessible Perceptual Contrast Algorithm shipped as APCA-W3 0.0.98G-4g. Signed Lc values, polarity-aware exponents, and the soft-clamp polynomial iridis uses.
 ---
 
 # APCA

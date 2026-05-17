@@ -33,7 +33,7 @@ export class Engine implements EngineInterface {
    * Cached, resolved task sequence for the current `order`. Built by
    * {@link Engine.pipeline} (or by the first {@link Engine.run} when no
    * pipeline was set) and reused across runs. Invalidated to `null` on
-   * the next {@link Engine.pipeline} or {@link Engine.adopt} call —
+   * the next {@link Engine.pipeline} or {@link Engine.adopt} call;
    * either may change which task object resolves for a given name.
    */
   private sequence: readonly TaskInterface[] | null = null;
@@ -56,13 +56,13 @@ export class Engine implements EngineInterface {
     if (!result.valid) {
       const first = result.errors[0];
       throw new Error(
-        `Engine.adopt: plugin invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+        `Engine.adopt: plugin invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
       );
     }
 
     if (this.adoptedPlugins.has(plugin.name)) {
       console.warn(
-        `Engine.adopt: plugin '${plugin.name}' (v${plugin.version}) is already adopted — re-adopting will overwrite its tasks`,
+        `Engine.adopt: plugin '${plugin.name}' (v${plugin.version}) is already adopted; re-adopting will overwrite its tasks`,
       );
     }
     this.adoptedPlugins.add(plugin.name);
@@ -137,14 +137,14 @@ export class Engine implements EngineInterface {
    * state. Phase-marked tasks (`manifest.phase`) are skipped by the main
    * loop because they're invoked through the `onRunStart` / `onRunEnd`
    * hook channels instead. The returned state is a fresh object owned
-   * by this call — callers may mutate it without affecting the engine.
+   * by this call; callers may mutate it without affecting the engine.
    */
   async run(input: InputInterface): Promise<PaletteStateInterface> {
     const inputResult = validator.validate(InputSchema, input);
     if (!inputResult.valid) {
       const first = inputResult.errors[0];
       throw new Error(
-        `Engine.run: input invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+        `Engine.run: input invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
       );
     }
 
@@ -153,7 +153,7 @@ export class Engine implements EngineInterface {
       if (!rolesResult.valid) {
         const first = rolesResult.errors[0];
         throw new Error(
-          `Engine.run: input.roles invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+          `Engine.run: input.roles invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
         );
       }
     }
@@ -199,7 +199,7 @@ export class Engine implements EngineInterface {
     if (!stateResult.valid) {
       const first = stateResult.errors[0];
       throw new Error(
-        `Engine.run: output state invalid — ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+        `Engine.run: output state invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
       );
     }
 

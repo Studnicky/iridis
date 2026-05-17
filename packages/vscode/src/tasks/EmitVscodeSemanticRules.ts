@@ -31,7 +31,7 @@ export class EmitVscodeSemanticRules implements TaskInterface {
     const semanticRules = meta['semanticTokenRules'];
 
     if (!semanticRules) {
-      throw new Error('EmitVscodeSemanticRules: metadata.vscode.semanticTokenRules not found — run vscode:applyModifiers first');
+      throw new Error('EmitVscodeSemanticRules: metadata.vscode.semanticTokenRules not found; run vscode:applyModifiers first');
     }
 
     const out = getOrCreateOutput(state, 'vscode');
@@ -56,7 +56,7 @@ export class EmitVscodeSemanticRules implements TaskInterface {
       'count': Object.keys(result).length,
     });
 
-    // Validate scope coverage — log any SCOPE_MAPPINGS keys with no colour
+    // Validate scope coverage: log any SCOPE_MAPPINGS keys with no colour
     const baseTokens = meta['baseTokens'] ?? {};
     for (const key of Object.keys(SCOPE_MAPPINGS)) {
       if (!(key in baseTokens) && !(key in result)) {

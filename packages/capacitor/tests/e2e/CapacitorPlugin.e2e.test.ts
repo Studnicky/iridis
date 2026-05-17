@@ -5,7 +5,7 @@
  * shared engine via a single scenario table. The happy-path scenario
  * runs the pipeline once and asserts EVERY output slot (statusBar,
  * theme, splashScreen, androidThemeXml) is present and correctly
- * shaped — replacing the earlier guarded `if (output !== undefined)`
+ * shaped, replacing the earlier guarded `if (output !== undefined)`
  * pattern that silently passed when an output went missing.
  */
 import { describe, it, test } from 'node:test';

@@ -17,7 +17,7 @@ export interface InputInterface {
   readonly maxColors?: number;
   readonly bypass?:    boolean;
   /**
-   * Selective emit filter — names of output slots to produce. Reserved for
+   * Selective emit filter: names of output slots to produce. Reserved for
    * the planned `@studnicky/iridis-anima` animation/interpolation engine,
    * which will use this field to request only the output slots it needs per
    * interpolation frame (avoiding unnecessary emit work on hot paths).
@@ -39,10 +39,10 @@ export interface InputInterface {
  *
  * PaletteStateInterface.outputs / .metadata are typed as Partial<...>
  * so every slot is optional (the plugin may not have run yet) but, once
- * present, the value has the declared plugin shape — no unknown bag.
+ * present, the value has the declared plugin shape, no unknown bag.
  */
 export interface PluginOutputsRegistry {
-  /** emit:json — colors/roles/variants flattened to hex strings */
+  /** emit:json: colors/roles/variants flattened to hex strings */
   'json': {
     'colors':   string[];
     'roles':    Record<string, string>;
@@ -51,11 +51,11 @@ export interface PluginOutputsRegistry {
 }
 
 export interface PluginMetadataRegistry {
-  /** enforce:contrast — per-pair contrast check results */
+  /** enforce:contrast: per-pair contrast check results */
   'contrastReport':   ContrastReportEntryInterface[];
-  /** derive:variant — caller-supplied variant config */
+  /** derive:variant: caller-supplied variant config */
   'variantConfig':    VariantConfigInterface[];
-  /** resolve:roles — names of roles that were synthesized (not assigned from colors) */
+  /** resolve:roles: names of roles that were synthesized (not assigned from colors) */
   'rolesSynthesized': string[];
 }
 

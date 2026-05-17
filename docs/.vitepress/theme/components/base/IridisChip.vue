@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * IridisChip.vue — PrimeVue Tag wrapper with iridis chrome.
+ * IridisChip.vue: PrimeVue Tag wrapper with iridis chrome.
  *
  * Chips on this site are non-interactive labels (status, kind, slot
  * markers). PrimeVue Tag matches that role; the wrapper adds the

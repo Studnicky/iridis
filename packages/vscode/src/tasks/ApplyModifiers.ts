@@ -36,7 +36,7 @@ export class ApplyModifiers implements TaskInterface {
     const baseTokens = meta['baseTokens'];
 
     if (!baseTokens) {
-      throw new Error('ApplyModifiers: metadata.vscode.baseTokens not found — run vscode:expandTokens first');
+      throw new Error('ApplyModifiers: metadata.vscode.baseTokens not found; run vscode:expandTokens first');
     }
 
     const bgRecord = state.roles['background'] ?? colorRecordFactory.fromHex('#000000');
@@ -44,7 +44,7 @@ export class ApplyModifiers implements TaskInterface {
 
     const typesLen = TOKEN_TYPES.length;
 
-    // 23 base rules — emit P3 form when the record carries it, hex otherwise.
+    // 23 base rules: emit P3 form when the record carries it, hex otherwise.
     for (let i = 0; i < typesLen; i++) {
       const tokenType = TOKEN_TYPES[i];
       if (!tokenType) continue;

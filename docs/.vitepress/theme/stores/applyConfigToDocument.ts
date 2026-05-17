@@ -6,7 +6,7 @@
  *
  *   active schema + framing → engine.run → state.roles → --iridis-{role}
  *
- * No alias chains, no JS-side hue rotation, no static fallbacks — if a
+ * No alias chains, no JS-side hue rotation, no static fallbacks: if a
  * role isn't in the schema it isn't in the cascade, and that sparseness
  * is the demonstration of what the user's chosen schema produces.
  *
@@ -61,8 +61,8 @@ const writtenRoles = new Map<string, string>();
 /**
  * Module-scope engine. Constructed once at import time with the core
  * tasks registered and the projector's pipeline declared. `Engine.run`
- * carries no state between calls — every invocation produces a fresh
- * `PaletteStateInterface` from the input — so reuse is safe and avoids
+ * carries no state between calls; every invocation produces a fresh
+ * `PaletteStateInterface` from the input, so reuse is safe and avoids
  * per-`watch`-tick allocation of a new registry + task list.
  */
 const engine = new Engine();
@@ -71,7 +71,7 @@ engine.adopt(contrastPlugin);
 engine.pipeline(PIPELINE);
 
 /**
- * Projects the supplied config onto the document. Idempotent — invoked
+ * Projects the supplied config onto the document. Idempotent; invoked
  * by the theme dispatcher's `watch` on every state change. Async
  * because the engine pipeline returns a promise; awaiting is optional
  * for fire-and-forget callers.
@@ -102,7 +102,7 @@ export async function applyConfigToDocument(config: DocsConfigType): Promise<voi
     /* Diff against the previous run: only `setProperty` when a role's
        hex actually changed, and only `removeProperty` for role names
        that disappeared (e.g. 16-role → 4-role schema switch).
-       Locked roles override the engine's resolved hex — the user's
+       Locked roles override the engine's resolved hex: the user's
        per-role pin always wins. */
     const currentRoles = new Map<string, string>();
     const locks = config.lockedRoles ?? {};

@@ -67,7 +67,7 @@ const themeJson = out.themeJson;
 
 `state.outputs['vscode']` is typed as `VscodeOutputSlotInterface` and carries
 the three optional slots (`workbenchColors`, `semanticTokenRules`, `themeJson`)
-so any subset of the emit tasks can run independently — the final
+so any subset of the emit tasks can run independently. The final
 `emit:vscodeThemeJson` task fails fast if its dependencies were not run.
 
 Part of [iridis](https://github.com/Studnicky/iridis).

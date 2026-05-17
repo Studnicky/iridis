@@ -40,8 +40,8 @@ export interface VscodeOutputSlotInterface {
  * Fields written by vscode tasks to state.metadata['vscode'].
  * Written by: ExpandTokens (baseTokens), ApplyModifiers (semanticTokenRules).
  *
- * `baseTokens` carries full {@link ColorRecordInterface} entries — NOT
- * pre-serialised hex strings — so downstream emit tasks
+ * `baseTokens` carries full {@link ColorRecordInterface} entries (NOT
+ * pre-serialised hex strings) so downstream emit tasks
  * (`EmitVscodeThemeJson`, `EmitVscodeSemanticRules`) can decide per slot
  * whether to emit the sRGB hex or the wide-gamut `color(display-p3 r g b)`
  * form based on whether the record carries `displayP3`. Math primitives

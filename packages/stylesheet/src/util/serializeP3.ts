@@ -2,7 +2,7 @@ import type { ColorRecordInterface } from '@studnicky/iridis';
 
 /**
  * Serialise a Display-P3 channel triple into CSS Color 4
- * `color(display-p3 r g b)` syntax at 4 decimal places of precision —
+ * `color(display-p3 r g b)` syntax at 4 decimal places of precision:
  * tight enough to survive an OKLCH → P3 → OKLCH round-trip (~1e-8 drift
  * per channel) without flapping golden fixtures, loose enough to keep
  * the emitted CSS compact.

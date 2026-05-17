@@ -14,7 +14,7 @@ export const FONT_STYLES: Readonly<Partial<Record<string, string>>> = {
 
   // Comments & Documentation
   'comment':         'italic',
-  // Immutable values — bold for emphasis
+  // Immutable values: bold for emphasis
   'constant':        'bold',
 
   // CSS
@@ -22,14 +22,14 @@ export const FONT_STYLES: Readonly<Partial<Record<string, string>>> = {
   // Metaprogramming
   'decorator':       'italic',
 
-  // Invalid/Deprecated — visual warnings
+  // Invalid/Deprecated: visual warnings
   'deprecated':      'strikethrough',
   'docComment':      'italic',
 
   'enumMember':      'bold',
   // Special syntax
   'escape':          'bold',
-  // Types & Interfaces — distinguish from classes
+  // Types & Interfaces: distinguish from classes
   'interface':       'italic',
   'invalid':         'strikethrough',
 

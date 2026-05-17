@@ -1,7 +1,7 @@
 import type { OklchInterface } from '../types/index.ts';
 
 /**
- * CSS Color Module Level 4 §13.2.2 gamut-mapping algorithm — reduces
+ * CSS Color Module Level 4 §13.2.2 gamut-mapping algorithm: reduces
  * OKLCH chroma along a constant L+H ray until the color falls inside the
  * sRGB gamut, preserving perceived lightness and hue.
  *
@@ -12,7 +12,7 @@ import type { OklchInterface } from '../types/index.ts';
  *  1. Convert the input OKLCH to linear sRGB (Björn Ottosson matrices,
  *     same chain as {@link import('./OklchToRgbRaw.ts').OklchToRgbRaw}).
  *  2. If every linear-sRGB channel is in `[0, 1]`, the color is in-gamut
- *     — return it untouched with `inGamut: true`.
+ *     (return it untouched with `inGamut: true`).
  *  3. If `l ≤ 0`, return black. If `l ≥ 1`, return white.
  *  4. Otherwise binary-search the chroma between `[0, c_original]`. At
  *     each midpoint, convert and check in-gamut; converge to within
@@ -83,7 +83,7 @@ function inSrgbGamut(l: number, c: number, h: number): boolean {
   const gLin = -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z;
   const bLin = -0.0041960863 * x - 0.7034186147 * y + 1.707614701  * z;
 
-  // Allow a tiny epsilon — floating-point error shouldn't kick a barely
+  // Allow a tiny epsilon; floating-point error shouldn't kick a barely
   // in-gamut color out into the binary-search branch.
   const eps = 1e-6;
   return (

@@ -1,4 +1,4 @@
-// APCA-W3 0.0.98G-4g formula — https://github.com/Myndex/SAPC-APCA
+// APCA-W3 0.0.98G-4g formula: https://github.com/Myndex/SAPC-APCA
 import type { ColorRecordInterface } from '../types/index.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 

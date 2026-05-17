@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * SidebarToc.vue — inline TOC injector for the active sidebar item.
+ * SidebarToc.vue: inline TOC injector for the active sidebar item.
  *
  * Walks the live DOM (.vp-doc h2/h3) and injects an inline list of the
  * current page's headings directly under the active VPSidebarItem. The
@@ -11,7 +11,7 @@
  * in-viewport heading receives a brand-tinted highlight in the
  * injected list.
  *
- * The component itself renders no markup — it owns lifecycle hooks
+ * The component itself renders no markup; it owns lifecycle hooks
  * that perform DOM injection into the VitePress sidebar tree.
  */
 
@@ -54,7 +54,7 @@ function findActiveSidebarItem(): HTMLElement | null {
   // Prefer the deepest active item (i.e., the leaf link being viewed).
   const candidates = document.querySelectorAll<HTMLElement>('.VPSidebarItem.is-active');
   if (candidates.length === 0) return null;
-  // The leaf item is the one with no further is-active descendants — pick
+  // The leaf item is the one with no further is-active descendants; pick
   // the last one in DOM order which corresponds to the deepest active.
   let leaf: HTMLElement | null = null;
   for (const el of Array.from(candidates)) {

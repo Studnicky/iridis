@@ -254,7 +254,7 @@ function removePair(idx: number): void {
             @click="addPair"
           />
         </header>
-        <p v-if="pairsOpen && pairs.length === 0" class="role-editor__empty">No contrast pairs declared yet — add one to enforce a minimum ratio between two roles.</p>
+        <p v-if="pairsOpen && pairs.length === 0" class="role-editor__empty">No contrast pairs declared yet. Add one to enforce a minimum ratio between two roles.</p>
         <div v-show="pairsOpen" id="role-editor-pairs-body" class="role-editor__grid">
           <PairCard
             v-for="(pair, idx) in pairs"
@@ -346,7 +346,7 @@ function removePair(idx: number): void {
   margin-bottom: 0;
 }
 
-/* + add button — iridis chrome on top of PrimeVue Button. */
+/* + add button: iridis chrome on top of PrimeVue Button. */
 .role-editor__add :deep(.p-button) {
   padding: 0.3rem 0.65rem;
   font-size: 0.74rem;
@@ -364,7 +364,7 @@ function removePair(idx: number): void {
   box-shadow:   var(--iridis-shadow-felt-hover);
 }
 
-/* Card grid — auto-fill columns reflow 1/2/3-wide as the drawer
+/* Card grid: auto-fill columns reflow 1/2/3-wide as the drawer
    expands. minmax(16rem, 1fr) keeps cards legible at 320 px panels
    and stops them sprawling on wide monitors. */
 .role-editor__grid {

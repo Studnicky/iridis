@@ -8,7 +8,7 @@
  * and renders one ResolvedRoleCard per role.
  *
  * The image pipeline writes its extracted dominant colors into the
- * same `configStore.paletteColors` — so this grid is the SHARED
+ * same `configStore.paletteColors`, so this grid is the SHARED
  * resolved-roles surface regardless of which input workflow the user
  * is on. Image extraction and seed-color editing both end up here.
  */
@@ -86,7 +86,7 @@ watch(
 );
 
 /* Engine-resolved roles. Locked roles get overridden in `displayRoles`
-   below — keep the raw resolution here so the diff-disclosure can show
+   below; keep the raw resolution here so the diff-disclosure can show
    the engine output even when the user has pinned a different hex. */
 const roles = computed<Record<string, ColorRecordInterface>>(() => state.value?.roles ?? {});
 
@@ -119,7 +119,7 @@ const activeSchema = computed<RoleSchemaInterface | null>(() => {
 });
 
 /* Seed lookup: the closest paletteColor by OKLCH distance is treated
-   as the "seed" for a role. Best-effort — the engine doesn't expose
+   as the "seed" for a role. Best-effort; the engine doesn't expose
    the seed → role assignment explicitly, so this is a reconstruction. */
 function seedHexFor(name: string, record: ColorRecordInterface): string | undefined {
   const seeds = configStore.paletteColors;

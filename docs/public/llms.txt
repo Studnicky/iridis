@@ -6,7 +6,7 @@ iridis is a TypeScript library (`@studnicky/iridis`) for deriving role-based col
 
 ## Getting started
 
-- [Build playground](https://studnicky.github.io/iridis/): the consolidated workspace — seed colors, image extraction, role schema editor, configuration, code snippets. Every change re-themes the docs site live.
+- [Build playground](https://studnicky.github.io/iridis/): the consolidated workspace (seed colors, image extraction, role schema editor, configuration, code snippets). Every change re-themes the docs site live.
 - [About iridis](https://studnicky.github.io/iridis/about): project pitch for designers + developers.
 - [Getting started](https://studnicky.github.io/iridis/getting-started): install, the smallest possible pipeline, the shape of the output.
 - [Try it out](https://studnicky.github.io/iridis/try-it-out): edit hex / RGB / OKLCH seeds; the page recomputes through the engine on every keystroke.
@@ -27,7 +27,7 @@ iridis is a TypeScript library (`@studnicky/iridis`) for deriving role-based col
 - [Cascading tokens, dogfood pattern](https://studnicky.github.io/iridis/recipes/cascading-tokens): scoped CSS variables per category with the `emit:cssVarsScoped` task.
 - [Vue + Capacitor: per-category palettes](https://studnicky.github.io/iridis/recipes/vue-capacitor): native chrome via Capacitor StatusBar plugin, web chrome via cascading CSS vars.
 
-## Reference — color spaces
+## Reference: color spaces
 
 - [Hex](https://studnicky.github.io/iridis/reference/hex)
 - [RGB](https://studnicky.github.io/iridis/reference/rgb)
@@ -35,12 +35,12 @@ iridis is a TypeScript library (`@studnicky/iridis`) for deriving role-based col
 - [CMYK](https://studnicky.github.io/iridis/reference/cmyk)
 - [OKLCH](https://studnicky.github.io/iridis/reference/oklch): the engine's canonical working space.
 
-## Reference — accessibility standards
+## Reference: accessibility standards
 
 - [WCAG 2.1](https://studnicky.github.io/iridis/reference/wcag): luminance-ratio model the `enforce:wcagAA` + `enforce:wcagAAA` tasks lift pairs to.
 - [APCA](https://studnicky.github.io/iridis/reference/apca): perceptual contrast model WCAG 3 is built on; `enforce:apca` task uses APCA Lc targets per role intent.
 
-## Reference — role schema fields
+## Reference: role schema fields
 
 - [Name](https://studnicky.github.io/iridis/reference/role-schema/name): the unique identifier for a role within a schema.
 - [Role intent](https://studnicky.github.io/iridis/reference/role-schema/intent): the canonical ontology tag (text / background / accent / muted / critical / positive / link / button / onAccent / onButton).

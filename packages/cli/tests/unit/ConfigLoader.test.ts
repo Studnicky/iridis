@@ -1,5 +1,5 @@
 /**
- * Unit tests for ConfigLoader — specifically the validator-backed validation.
+ * Unit tests for ConfigLoader: specifically the validator-backed validation.
  * Tests exercise the schema validation that replaced the hand-rolled typeof guards.
  */
 import { test }                                     from 'node:test';
@@ -48,7 +48,7 @@ test('ConfigLoader :: happy :: loads a valid config', async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Validation failures — required properties
+// Validation failures: required properties
 // ---------------------------------------------------------------------------
 
 test('ConfigLoader :: unhappy :: rejects non-object config', async () => {

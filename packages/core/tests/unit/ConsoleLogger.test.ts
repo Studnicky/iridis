@@ -1,11 +1,11 @@
 /**
- * ConsoleLogger unit tests — R3.
+ * ConsoleLogger unit tests: R3.
  *
  * Verifies the structured-args contract: every channel takes
  * `(scope, op, message, context?)` where `message` is a fixed string
  * and `context` is a `Record<string, unknown>` the LOGGER renders.
  * Callers never format. When the level threshold suppresses a channel,
- * the call returns immediately with zero downstream work — proven by
+ * the call returns immediately with zero downstream work, proven by
  * passing a context that throws on access.
  */
 import { test } from 'node:test';
@@ -130,7 +130,7 @@ test('ConsoleLogger :: R3 :: context renders with keys sorted alphabetically', (
 
   cap.restore();
   assert.strictEqual(cap.calls.length, 1, 'one console.debug call');
-  assert.strictEqual(cap.calls[0], '[Scope.op] message — a=1 b=2 c=3', 'sorted context tail');
+  assert.strictEqual(cap.calls[0], '[Scope.op] message | a=1 b=2 c=3', 'sorted context tail');
 });
 
 test('ConsoleLogger :: R3 :: missing context renders without trailing separator', () => {
@@ -141,7 +141,7 @@ test('ConsoleLogger :: R3 :: missing context renders without trailing separator'
   logger.debug('Scope', 'op', 'no context here');
 
   cap.restore();
-  assert.strictEqual(cap.calls[0], '[Scope.op] no context here', 'no — separator when context missing');
+  assert.strictEqual(cap.calls[0], '[Scope.op] no context here', 'no separator when context missing');
 });
 
 test('ConsoleLogger :: R3 :: empty context renders without trailing separator', () => {
@@ -152,7 +152,7 @@ test('ConsoleLogger :: R3 :: empty context renders without trailing separator', 
   logger.debug('Scope', 'op', 'empty context', {});
 
   cap.restore();
-  assert.strictEqual(cap.calls[0], '[Scope.op] empty context', 'no — separator for {} context');
+  assert.strictEqual(cap.calls[0], '[Scope.op] empty context', 'no separator for {} context');
 });
 
 test('ConsoleLogger :: R3 :: primitive values render via their native string form', () => {
@@ -172,7 +172,7 @@ test('ConsoleLogger :: R3 :: primitive values render via their native string for
   // Keys sorted: bool, nullV, num, str, undefV
   assert.strictEqual(
     cap.calls[0],
-    '[Scope.op] primitives — bool=true nullV=null num=42 str=hello undefV=undefined',
+    '[Scope.op] primitives | bool=true nullV=null num=42 str=hello undefV=undefined',
     'primitive value rendering',
   );
 });
@@ -190,7 +190,7 @@ test('ConsoleLogger :: R3 :: objects and arrays render via JSON.stringify', () =
   cap.restore();
   assert.strictEqual(
     cap.calls[0],
-    '[Scope.op] composite — arr=[1,2,3] obj={"k":"v"}',
+    '[Scope.op] composite | arr=[1,2,3] obj={"k":"v"}',
     'object/array rendering',
   );
 });
@@ -206,13 +206,13 @@ test('ConsoleLogger :: R3 :: Error values render with name and message', () => {
   cap.restore();
   assert.strictEqual(
     cap.calls[0],
-    '[Scope.op] failure — error=TypeError: bad input',
+    '[Scope.op] failure | error=TypeError: bad input',
     'Error rendering',
   );
 });
 
 test('ConsoleLogger :: R3 :: trace channel routes to console.debug', () => {
-  // Verify trace is the most-verbose level — silently dropped at debug level
+  // Verify trace is the most-verbose level; silently dropped at debug level
   const logger = new ConsoleLogger();
   logger.level = 'debug';
   const debugCap = captureConsole('debug');

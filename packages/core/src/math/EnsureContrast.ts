@@ -68,7 +68,7 @@ export class EnsureContrast {
   /**
    * Adjusts `foreground` along the OKLCH L axis until its contrast against
    * `background` meets `minRatio` for the given `algorithm`. The inner
-   * loop operates on a scalar `L` value — no `ColorRecord` is allocated
+   * loop operates on a scalar `L` value; no `ColorRecord` is allocated
    * per iteration. The background's luminance is computed once. A single
    * `ColorRecord` is materialised at return via `colorRecordFactory`.
    */
@@ -78,7 +78,7 @@ export class EnsureContrast {
     minRatio: number,
     algorithm: ContrastAlgorithmType = 'wcag21',
   ): ColorRecordInterface {
-    // Precompute background luminance once — it never changes during the loop.
+    // Precompute background luminance once; it never changes during the loop.
     const bgRgb: RgbInterface = background.rgb;
     const Ybg = algorithm === 'wcag21'
       ? rgbLuminance(bgRgb.r, bgRgb.g, bgRgb.b)

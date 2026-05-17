@@ -5,7 +5,7 @@ description: Drop a picture, A/B median-cut vs delta-E clustering, and the extra
 
 # Image → theme
 
-Drop or paste an image below. The pipeline histograms the pixels, clusters them into K dominant colors with your choice of algorithm, maps them to roles, enforces contrast, and re-themes the docs — every page on the site reacts to the result.
+Drop or paste an image below. The pipeline histograms the pixels, clusters them into K dominant colors with your choice of algorithm, maps them to roles, enforces contrast, and re-themes the docs. Every page on the site reacts to the result.
 
 <ImageToTheme />
 
@@ -64,4 +64,4 @@ const palette = state.outputs['json']!.roles;
 ```
 
 → Prefer a hex / RGB / OKLCH picker? See **[Try it out](./try-it-out)**. <br />
-→ Want every knob in one place? Open **[Build](./build)**.
+→ Want every knob in one place? Open **[the home page](./)**.

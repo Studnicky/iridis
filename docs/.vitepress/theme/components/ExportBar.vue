@@ -2,7 +2,7 @@
 /**
  * ExportBar.vue
  *
- * Reusable export-action bar — pairs an "Export JSON" download button
+ * Reusable export-action bar. Pairs an "Export JSON" download button
  * with a "Copy" clipboard button and an ephemeral status note. The
  * payload is supplied lazily via the `payloadProvider` callback so the
  * caller can build the JSON at click time against the freshest state.
@@ -38,7 +38,7 @@ const exportNote = ref<string | null>(null);
 
 const NOTE_TIMEOUT_MS = 2000;
 
-/* Resolve the payload — synchronous returns and Promise returns both go
+/* Resolve the payload: synchronous returns and Promise returns both go
  * through Promise.resolve so the caller can keep building the payload
  * lazily against fresh state (incl. async engine.run pipelines). */
 async function serialize(): Promise<string> {
@@ -73,10 +73,10 @@ async function copyJson(): Promise<void> {
       await navigator.clipboard.writeText(text);
       setNote('Copied to clipboard');
     } catch {
-      setNote('Copy failed — clipboard unavailable');
+      setNote('Copy failed: clipboard unavailable');
     }
   } else {
-    setNote('Copy failed — clipboard unavailable');
+    setNote('Copy failed: clipboard unavailable');
   }
 }
 </script>

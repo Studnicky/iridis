@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * IridisButton.vue — PrimeVue Button wrapper with iridis chrome.
+ * IridisButton.vue: PrimeVue Button wrapper with iridis chrome.
  *
  * Delegates rendering, focus management, accessibility, and disabled
  * semantics to PrimeVue's Button. The wrapper maps the iridis variant

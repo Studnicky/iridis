@@ -10,7 +10,7 @@ import { Engine }                             from '@studnicky/iridis/engine';
 import type { SchemaInterface }               from '@studnicky/iridis/model';
 
 // ---------------------------------------------------------------------------
-// Validator — type-level coverage
+// Validator: type-level coverage
 // ---------------------------------------------------------------------------
 
 test('Validator :: shape :: singleton is an instance of Validator', () => {
@@ -93,7 +93,7 @@ test('Validator :: happy :: accepts empty object when no required properties', (
 });
 
 // ---------------------------------------------------------------------------
-// Validator — array checks
+// Validator: array checks
 // ---------------------------------------------------------------------------
 
 test('Validator :: happy :: accepts valid array with items schema', () => {
@@ -132,7 +132,7 @@ test('Validator :: unhappy :: rejects array longer than maxItems', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Validator — number bounds
+// Validator: number bounds
 // ---------------------------------------------------------------------------
 
 test('Validator :: unhappy :: rejects number below minimum', () => {
@@ -150,7 +150,7 @@ test('Validator :: unhappy :: rejects number above maximum', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Validator — enum
+// Validator: enum
 // ---------------------------------------------------------------------------
 
 test('Validator :: happy :: accepts value in enum', () => {
@@ -167,7 +167,7 @@ test('Validator :: unhappy :: rejects value not in enum', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Validator — pattern
+// Validator: pattern
 // ---------------------------------------------------------------------------
 
 test('Validator :: happy :: accepts string matching pattern', () => {
@@ -184,7 +184,7 @@ test('Validator :: unhappy :: rejects string not matching pattern', () => {
 });
 
 // ---------------------------------------------------------------------------
-// InputSchema — engine boundary validation
+// InputSchema: engine boundary validation
 // ---------------------------------------------------------------------------
 
 test('Validator :: InputSchema :: accepts valid input', () => {
@@ -205,7 +205,7 @@ test('Validator :: InputSchema :: rejects colors that is not an array', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Engine.run — validation at boundary
+// Engine.run: validation at boundary
 // ---------------------------------------------------------------------------
 
 test('Engine :: P1.6 :: run throws on missing colors field', async () => {
@@ -240,13 +240,13 @@ test('Engine :: P1.6 :: run throws when colors is not an array', async () => {
 
 test('Engine :: P1.6 :: run accepts well-formed input', async () => {
   const engine = new Engine();
-  // Does not throw — validation passes
+  // Does not throw: validation passes
   const state = await engine.run({ 'colors': ['#ff0000'] });
   assert.ok(state !== undefined);
 });
 
 // ---------------------------------------------------------------------------
-// Engine.adopt — plugin shape validation
+// Engine.adopt: plugin shape validation
 // ---------------------------------------------------------------------------
 
 test('Engine :: P1.6 :: adopt throws on plugin missing name', () => {

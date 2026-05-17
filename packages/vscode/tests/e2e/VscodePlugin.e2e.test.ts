@@ -70,7 +70,7 @@ const VSCODE_PIPELINE: readonly string[] = [
 describe('VscodePlugin e2e :: scenarios', () => {
   const scenarios: readonly ScenarioInterface[] = [
     {
-      'name':     'full vscode pipeline — every emit task produces shape-correct output',
+      'name':     'full vscode pipeline: every emit task produces shape-correct output',
       'pipeline': VSCODE_PIPELINE,
       'input': {
         'colors': [
@@ -111,7 +111,7 @@ describe('VscodePlugin e2e :: scenarios', () => {
         // expandTokens derives a 'comment' base token from the comment family role
         assert.ok('comment' in meta.baseTokens,             'baseTokens contains the comment token (expandTokens ran)');
         assert.ok(meta.semanticTokenRules !== undefined,    'applyModifiers wrote metadata.vscode.semanticTokenRules');
-        // applyModifiers cross-products TOKEN_TYPES × TOKEN_MODIFIERS — must include modifier selectors
+        // applyModifiers cross-products TOKEN_TYPES × TOKEN_MODIFIERS; must include modifier selectors
         const ruleSelectors = Object.keys(meta.semanticTokenRules);
         const modifierSelector = ruleSelectors.find((s) => s.includes('.'));
         assert.ok(
@@ -137,7 +137,7 @@ describe('VscodePlugin e2e :: scenarios', () => {
         assert.ok('editor.background' in palette,              'workbenchColors includes editor.background UI key');
         assert.ok('activityBar.background' in palette,         'workbenchColors includes activityBar.background UI key');
 
-        // ---- outputs.vscode.themeJson — assembled by emit:vscodeThemeJson -
+        // ---- outputs.vscode.themeJson: assembled by emit:vscodeThemeJson -
         const themeJson = out.themeJson as ThemeJsonShapeInterface | undefined;
         assert.ok(themeJson !== undefined,                 'emit:vscodeThemeJson wrote outputs.vscode.themeJson');
         assert.ok(typeof themeJson.name === 'string' && themeJson.name.length > 0, 'themeJson.name is a non-empty string');
@@ -161,7 +161,7 @@ describe('VscodePlugin e2e :: scenarios', () => {
 });
 
 // ---------------------------------------------------------------------------
-// R7.3 — wide-gamut P3 propagation through the VS Code pipeline. The plugin
+// R7.3: wide-gamut P3 propagation through the VS Code pipeline. The plugin
 // emits CSS Color 4 `color(display-p3 r g b)` syntax in tokenColors /
 // workbench colors when the source record carries `displayP3`; sRGB-only
 // records emit hex. The slot must choose per role: math-derived slots
@@ -193,7 +193,7 @@ describe('VscodePlugin e2e :: wide-gamut scenarios', () => {
       'colors': [
         // 15 in-sRGB seeds + 1 wide-gamut display-p3 string for the keyword
         // (accent driver). The display-p3 input lands at OKLCH ≈ (0.65,
-        // 0.30, 30) — within keyword's range and outside sRGB gamut, so
+        // 0.30, 30): within keyword's range and outside sRGB gamut, so
         // ResolveRoles preserves the displayP3 slot.
         '#0d1117', '#e6edf3', '#161b22', '#7d8590',
         'color(display-p3 1.0 0.30 0.20)',
@@ -230,21 +230,21 @@ describe('VscodePlugin e2e :: wide-gamut scenarios', () => {
       /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+\)$/,
       'tab.activeBorder (direct keyword passthrough) emits color(display-p3 ...)');
 
-    // Math-derived slots stay sRGB hex — they go through fromHex/mixHsl/
+    // Math-derived slots stay sRGB hex; they go through fromHex/mixHsl/
     // lighten/darken which round-trip via 6-digit hex (P3 cannot survive).
     const findMatch = themeJson.colors['editor.findMatchBackground'];
     assert.match(findMatch as string, /^#[0-9a-f]{6}[0-9a-f]{2}$/,
       'editor.findMatchBackground (template-string alpha suffix) stays 8-digit sRGB hex');
 
-    // sideBar.foreground is mixHsl(fg, muted) — sRGB-only math output.
+    // sideBar.foreground is mixHsl(fg, muted): sRGB-only math output.
     const sideBarFg = themeJson.colors['sideBar.foreground'];
     assert.match(sideBarFg as string, /^#[0-9a-f]{6}$/,
       'sideBar.foreground (math-derived) stays 6-digit sRGB hex');
 
-    // editor.background is a direct fg passthrough — foreground role is
+    // editor.background is a direct fg passthrough; foreground role is
     // intent='text' and our input gave it a plain sRGB seed, so stays hex.
     const editorBg = themeJson.colors['editor.background'];
-    // bg is the background role (sRGB seed) — stays hex.
+    // bg is the background role (sRGB seed); stays hex.
     assert.match(editorBg as string, /^#[0-9a-f]{6}$/,
       'editor.background (sRGB background role passthrough) stays 6-digit sRGB hex');
 
@@ -267,11 +267,11 @@ describe('VscodePlugin e2e :: wide-gamut scenarios', () => {
 });
 
 // ---------------------------------------------------------------------------
-// R7.7 — math-derived and template-string-alpha slots must NEVER emit
+// R7.7: math-derived and template-string-alpha slots must NEVER emit
 // `color(display-p3 ...)`, regardless of input. Those slots route through
 // helpers that operate on 6-digit hex strings (mixHslHex / lightenHex /
 // darkenHex / contrastTextHex) or concatenate an 8-digit alpha suffix
-// (`${color}40`) — neither is compatible with the P3 functional syntax.
+// (`${color}40`); neither is compatible with the P3 functional syntax.
 // This regression test stays valid even when role resolution nudges
 // input chromas out of sRGB, because it only inspects slots that are
 // guaranteed-sRGB by construction.
@@ -294,7 +294,7 @@ describe('VscodePlugin e2e :: math-derived slot regression', () => {
     const colors = out.themeJson.colors;
 
     // Slots that are math-derived (mixHsl / lighten / darken / contrastText)
-    // or template-string alpha-suffixed — every value MUST be a plain hex
+    // or template-string alpha-suffixed; every value MUST be a plain hex
     // string, never `color(display-p3 ...)`.
     const sRgbOnlySlots = [
       'activityBar.background',           // mixHslHex / darkenHex

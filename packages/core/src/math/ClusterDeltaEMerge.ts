@@ -57,7 +57,7 @@ function mergeCentroids(a: ClusterInterface, b: ClusterInterface): ClusterInterf
  *
  * Complexity is O(N² log N) due to repeated nearest-pair scans;
  * intended for ≤ a few hundred input bins (i.e., post-histogram).
- * Calling against raw pixel arrays will be slow — feed it the output
+ * Calling against raw pixel arrays will be slow; feed it the output
  * of `gallery:histogram` instead.
  */
 export class ClusterDeltaEMerge {
@@ -73,7 +73,7 @@ export class ClusterDeltaEMerge {
       /* Pass-through: no clustering needed. Return inputs verbatim when
          a weight is already declared (preserves `displayP3` + every hint
          the upstream task attached); otherwise reallocate via the factory
-         (the only sanctioned allocation point — spread-append would
+         (the only sanctioned allocation point; spread-append would
          break the monomorphic hidden class per ColorRecordInterface
          docs) while merging existing hint keys (`role`, `intent`, etc.)
          with the stamped `weight: 1`. */

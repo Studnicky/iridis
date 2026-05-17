@@ -8,7 +8,7 @@
  * used across RoleCard, PairCard, and IridisPicker channel inputs.
  *
  * The `title` attribute lives on the wrapper `<label>` so hovering anywhere
- * inside the field — leg, control, padding — surfaces the help text. The
+ * inside the field (leg, control, padding) surfaces the help text. The
  * component never owns model state; it only frames whatever control the
  * consumer slots in (PrimeVue Inputs / Selects in practice).
  *

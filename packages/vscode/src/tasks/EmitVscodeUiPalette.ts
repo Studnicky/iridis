@@ -60,7 +60,7 @@ export class EmitVscodeUiPalette implements TaskInterface {
     //    and for the `${...}40` template alpha-suffix idiom (CSS Color 4
     //    `color(display-p3 …)` cannot accept an 8-digit alpha suffix);
     //  - `*` (the P3-aware form via {@link recordToVscodeColor}) for slot
-    //    values that pass a role through verbatim — those gain
+    //    values that pass a role through verbatim, those gain
     //    `color(display-p3 r g b)` when the underlying record carries P3.
     const bg_HEX      = bgRole.hex;
     const fg_HEX      = fgRole.hex;
@@ -101,7 +101,7 @@ export class EmitVscodeUiPalette implements TaskInterface {
     const contrastTextHex = (c: string): string =>
       contrastText.apply(fromHex(c)).hex;
 
-    // Math-derived intermediates always work in hex — the math helpers
+    // Math-derived intermediates always work in hex; the math helpers
     // (`fromHex` → core math → `.hex`) cannot accept a P3 functional
     // string. `${color}40` alpha-suffix concatenation likewise requires
     // a 6-digit hex; CSS Color 4 forbids the 8-digit alpha shorthand on

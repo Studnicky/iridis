@@ -62,7 +62,7 @@ test('ImagePlugin e2e :: shape :: galleryRoleSchema5 exposes five roles', () => 
 // gallery:assignRoles + gallery:harmonize scenario coverage
 //
 // ONE pipeline pass per scenario. The single `it` body asserts EVERY
-// observable effect of the task being exercised — state.roles assignment,
+// observable effect of the task being exercised: state.roles assignment,
 // metadata.gallery.harmonized flag, accent hue delta after harmonize, etc.
 // ---------------------------------------------------------------------------
 import { describe, it }          from 'node:test';
@@ -118,7 +118,7 @@ describe('ImagePlugin e2e :: gallery scenarios', () => {
       'name':     'gallery:harmonize shifts accent hue when deltaE vs frame is < 10',
       'pipeline': ['intake:hex', 'gallery:extract', 'gallery:assignRoles', 'gallery:harmonize'],
       'input': {
-        // accent and frame share hues — gallery:harmonize MUST shift accent ±30°.
+        // accent and frame share hues; gallery:harmonize MUST shift accent ±30°.
         'colors': [
           '#0d0d0d',          // canvas (darkest)
           '#6d28d9',          // saturated violet → accent candidate

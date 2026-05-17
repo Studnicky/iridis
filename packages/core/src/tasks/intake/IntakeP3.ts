@@ -40,9 +40,9 @@ const P3_PATTERN = /^color\(\s*display-p3\s+(-?\d*\.?\d+)\s+(-?\d*\.?\d+)\s+(-?\
  *      derived OKLCH back into sRGB (chroma-reduction along L+H).
  *
  * The resulting record stores:
- *   - `displayP3` — the input (r, g, b), preserved verbatim (clamped to [0,1]).
- *   - `rgb`/`hex` — the gamut-mapped sRGB representation.
- *   - `oklch`     — derived from the original wide-gamut point.
+ *   - `displayP3`: the input (r, g, b), preserved verbatim (clamped to [0,1]).
+ *   - `rgb`/`hex`: the gamut-mapped sRGB representation.
+ *   - `oklch`:     derived from the original wide-gamut point.
  *   - `sourceFormat: 'displayP3'`.
  */
 export class IntakeP3 implements TaskInterface {
@@ -98,7 +98,7 @@ function recordFromP3(
 ): ColorRecordInterface {
   // 1. Display-P3 gamma → linear Display-P3 (sign-preserving for
   //    out-of-range floats; spec guarantees inputs in [0, 1] but be
-  //    robust to slightly-out-of-range floats).
+  //    tolerant of slightly-out-of-range floats).
   const lp3R = decodeP3(p3R);
   const lp3G = decodeP3(p3G);
   const lp3B = decodeP3(p3B);
@@ -115,8 +115,8 @@ function recordFromP3(
   //    inputs.
   const oklch = linearSrgbToOklch(lsR, lsG, lsB);
 
-  // 4. Determine whether the linear sRGB is in-gamut. If yes — emit
-  //    directly. If no — gamut-map the OKLCH back into sRGB and use
+  // 4. Determine whether the linear sRGB is in-gamut. If yes, emit
+  //    directly. If no, gamut-map the OKLCH back into sRGB and use
   //    that for the sRGB-safe `rgb`/`hex`.
   const inSrgb =
     lsR >= 0 && lsR <= 1 &&

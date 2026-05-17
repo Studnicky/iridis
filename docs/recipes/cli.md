@@ -1,6 +1,6 @@
 ---
 title: Using the CLI
-description: Drive the iridis pipeline from a JSON config file — install @studnicky/iridis-cli, declare your colors, schema, and emit targets, and write palettes from CI
+description: Drive the iridis pipeline from a JSON config file. Install @studnicky/iridis-cli, declare your colors, schema, and emit targets, and write palettes from CI.
 ---
 
 # Using the CLI

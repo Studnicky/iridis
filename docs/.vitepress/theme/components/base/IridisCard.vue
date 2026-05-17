@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * IridisCard.vue — PrimeVue Card wrapper with iridis chrome.
+ * IridisCard.vue: PrimeVue Card wrapper with iridis chrome.
  *
  * PrimeVue Card provides the structural slots (header, title, subtitle,
  * content, footer); the iridis layer adds the shared business-card
@@ -10,7 +10,7 @@
  * Variants:
  *   default → bg-soft surface
  *   inset   → background surface (recessed feel for nested cards)
- *   panel   → brand-tinted gradient (elevated chrome)
+ *   panel   → brand-tinted gradient (raised chrome)
  *
  * The `tag` prop is preserved for backward compat but PrimeVue Card
  * renders its own root element; consumers that relied on a custom tag

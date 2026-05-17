@@ -2,8 +2,8 @@
 
 Annotates the resolved palette as RDF triples (via `n3`) and serialises to
 Turtle, TriG, N-Quads, or JSON-LD. The reasoning graph carries the truth: hex,
-sRGB channels, OKLCH coordinates, contrast ratios, and — when the source
-record is wide-gamut — Display-P3 channels alongside the sRGB ones.
+sRGB channels, OKLCH coordinates, contrast ratios, and (when the source
+record is wide-gamut) Display-P3 channels alongside the sRGB ones.
 
 The vocabulary lives at `colorologyVocab` (`packages/rdf/src/data/colorologyVocab.ts`)
 under `https://studnicky.dev/colorology/`. Each `ColorRecord` becomes a
@@ -44,8 +44,8 @@ const state = await engine.run({
 });
 
 const out = state.outputs['reasoning']!;
-// out.graph      : IterableStoreInterface — the live n3 Store, ready for SPARQL.
-// out.serialized : string — the serialised text in the requested format.
+// out.graph      : IterableStoreInterface // the live n3 Store, ready for SPARQL.
+// out.serialized : string                 // the serialised text in the requested format.
 ```
 
 ## Tasks

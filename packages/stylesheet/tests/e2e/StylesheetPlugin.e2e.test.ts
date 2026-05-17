@@ -71,8 +71,8 @@ test('StylesheetPlugin e2e :: happy :: emit:cssVars writes a :root block to outp
 //
 // One pipeline pass per scenario; each `it` body asserts every observable
 // effect of the task being exercised. Wide-gamut runs through real input
-// paths — `intake:oklch` for out-of-sRGB OKLCH and `intake:p3` for the CSS
-// `color(display-p3 ...)` syntax — exercising the gamut-map / displayP3
+// paths: `intake:oklch` for out-of-sRGB OKLCH and `intake:p3` for the CSS
+// `color(display-p3 ...)` syntax, exercising the gamut-map / displayP3
 // population pipeline end-to-end (no `onRunStart` seeding).
 // ---------------------------------------------------------------------------
 import { describe, it }              from 'node:test';
@@ -93,7 +93,7 @@ const WIDE_GAMUT_ROLES: RoleSchemaInterface = {
   'name': 'wide-gamut',
   'roles': [
     // Wide chroma range so the resolver does NOT shrink the input
-    // chroma during nudgeIntoRole — preserving the wide-gamut intent.
+    // chroma during nudgeIntoRole, preserving the wide-gamut intent.
     { 'name': 'primary', 'required': true, 'intent': 'accent',
       'lightnessRange': [0.05, 0.95], 'chromaRange': [0.00, 0.50] },
   ],
@@ -123,13 +123,13 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
         );
         // CSS variable declarations are present under the selector.
         assert.match(scoped.full, /--c-primary:\s+#[0-9a-fA-F]{6};/, 'primary role declared as CSS var');
-        // derive:variant adds 'dark' (and possibly 'light') — scoped should emit them too.
+        // derive:variant adds 'dark' (and possibly 'light'); scoped should emit them too.
         assert.ok('dark' in scoped.blocks, 'dark variant has its own scoped block');
         assert.ok(
           scoped.full.includes(`[data-iridis-scope='dark']`),
           'full contains a scoped block for the dark variant',
         );
-        // sRGB-only input — no @supports blocks emitted, no display-p3 syntax anywhere.
+        // sRGB-only input; no @supports blocks emitted, no display-p3 syntax anywhere.
         assert.deepStrictEqual(scoped.wideGamut, {},
           'wideGamut is an empty object when no role carries displayP3');
         assert.ok(!scoped.full.includes('@supports'),
@@ -139,7 +139,7 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
       },
     },
     {
-      // R7.1 — wide-gamut OKLCH through emit:cssVarsScoped. The scoped
+      // R7.1: wide-gamut OKLCH through emit:cssVarsScoped. The scoped
       // task must mirror EmitCssVars's @supports cascade but scope the
       // inner block under [data-<scopePrefix>='<category>']. Categories
       // without P3 records emit no @supports sibling.
@@ -159,7 +159,7 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
         const scoped = state.outputs['cssVarsScoped'] as CssVarsScopedOutputInterface | undefined;
         assert.ok(scoped !== undefined, 'outputs.cssVarsScoped present');
 
-        // sRGB scoped block — unconditional, hex form, scoped selector.
+        // sRGB scoped block: unconditional, hex form, scoped selector.
         assert.ok('default' in scoped.blocks, 'default category present');
         assert.match(scoped.blocks['default'] as string,
           /\[data-iridis-scope='default'\]/,
@@ -168,7 +168,7 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
           new RegExp(`--c-primary:\\s+${record.hex};`),
           'default scoped block declares --c-primary as gamut-mapped sRGB hex');
 
-        // Wide-gamut sibling — scoped under the same selector, wrapped in @supports.
+        // Wide-gamut sibling: scoped under the same selector, wrapped in @supports.
         assert.ok('default' in scoped.wideGamut,
           'wideGamut block emitted for the default category because primary carries displayP3');
         const defaultP3 = scoped.wideGamut['default'] as string;
@@ -190,7 +190,7 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
       },
     },
     {
-      // OKLCH(0.7, 0.4, 30) is a vivid red-orange well outside sRGB —
+      // OKLCH(0.7, 0.4, 30) is a vivid red-orange well outside sRGB;
       // every channel of the linear-sRGB conversion overflows [0, 1].
       // The factory MUST gamut-map for `rgb` and populate `displayP3`
       // from the original wide-gamut point.
@@ -208,7 +208,7 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
         assert.ok(record.displayP3 !== undefined,
           'state.roles.primary.displayP3 is populated for out-of-sRGB OKLCH input');
 
-        // rgb is gamut-mapped — every channel safely in [0, 1].
+        // rgb is gamut-mapped; every channel safely in [0, 1].
         assert.ok(record.rgb.r >= 0 && record.rgb.r <= 1, 'rgb.r in [0,1]');
         assert.ok(record.rgb.g >= 0 && record.rgb.g <= 1, 'rgb.g in [0,1]');
         assert.ok(record.rgb.b >= 0 && record.rgb.b <= 1, 'rgb.b in [0,1]');
@@ -243,7 +243,7 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
     {
       // intake:p3 direct CSS-color string input. The value
       // `color(display-p3 0.99 0.42 0.18)` is within the P3 gamut and
-      // (depending on conversion) at the edge of sRGB — the record's
+      // (depending on conversion) at the edge of sRGB; the record's
       // `displayP3` must carry the input verbatim and `sourceFormat`
       // must report `'displayP3'`.
       'name':     'emit:cssVars intake:p3 string input populates displayP3 verbatim',
@@ -302,7 +302,7 @@ describe('StylesheetPlugin e2e :: scoped + wide-gamut scenarios', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Golden fixture — locks the full emit:cssVars output for a stable seed +
+// Golden fixture: locks the full emit:cssVars output for a stable seed +
 // role schema running through intake:hex → resolve:roles → expand:family →
 // enforce:contrast → emit:cssVars. Any drift in role math, contrast
 // enforcement, or CSS serialisation flips this test. Regenerate via
@@ -388,7 +388,7 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
   // 3. Specifically: the 'foreground' role (intent='text') must NOT collapse
   //    to Canvas (the historic substring-match regression that motivated R1.2).
   assert.doesNotMatch(out.forcedColors, /--c-foreground:\s+Canvas;/,
-    'foreground role must NOT map to Canvas under forced-colors — that would make text invisible');
+    'foreground role must NOT map to Canvas under forced-colors; that would make text invisible');
   assert.match(out.forcedColors, /--c-foreground:\s+CanvasText;/,
     'foreground role with intent=text must map to CanvasText');
 

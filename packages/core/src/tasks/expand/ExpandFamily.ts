@@ -38,7 +38,7 @@ function deriveColor(
  * Pipeline task that fills in roles declared with `derivedFrom` from
  * the assigned source role's color, applying the role's own
  * lightness/chroma centers (and `hueOffset` if set) as the OKLCH
- * coordinates. Already-assigned derived roles are left alone — explicit
+ * coordinates. Already-assigned derived roles are left alone; explicit
  * input wins over family derivation.
  *
  * Runs after `resolve:roles` so source roles exist; missing sources
@@ -57,7 +57,7 @@ export class ExpandFamily implements TaskInterface {
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     if (!state.input.roles) {
-      ctx.logger.debug('ExpandFamily', 'run', 'No role schema — skipping');
+      ctx.logger.debug('ExpandFamily', 'run', 'No role schema; skipping');
       return;
     }
 
@@ -67,7 +67,7 @@ export class ExpandFamily implements TaskInterface {
       }
 
       if (state.roles[role.name]) {
-        ctx.logger.debug('ExpandFamily', 'run', 'Role already assigned — skipping', { 'role': role.name });
+        ctx.logger.debug('ExpandFamily', 'run', 'Role already assigned; skipping', { 'role': role.name });
         continue;
       }
 

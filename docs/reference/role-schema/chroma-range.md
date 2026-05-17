@@ -5,7 +5,7 @@ description: The OKLCH C-channel envelope the engine clamps each role into. Two 
 
 # Chroma range
 
-The `[min, max]` envelope on the OKLCH **C** channel that the engine clamps the resolved role into. Encodes how saturated a role is allowed to be — neutrals near `0`, accents near `0.25+`.
+The `[min, max]` envelope on the OKLCH **C** channel that the engine clamps the resolved role into. Encodes how saturated a role is allowed to be: neutrals near `0`, accents near `0.25+`.
 
 ## Shape
 
@@ -14,7 +14,7 @@ The `[min, max]` envelope on the OKLCH **C** channel that the engine clamps the 
 | `chromaRange[0]` | `number` | `[0, ~0.5]`, lower bound |
 | `chromaRange[1]` | `number` | `[0, ~0.5]`, upper bound, `>= [0]` |
 
-The practical upper limit is `~0.4` — beyond that most hues fall outside the sRGB and Display-P3 gamuts and get mapped back during emit.
+The practical upper limit is `~0.4`; beyond that most hues fall outside the sRGB and Display-P3 gamuts and get mapped back during emit.
 
 ## What it does
 
@@ -24,7 +24,7 @@ The practical upper limit is `~0.4` — beyond that most hues fall outside the s
 
 ## What it means
 
-Chroma encodes **how chromatic** a role is — independent of which hue. A `muted` text role with `chromaRange: [0, 0.04]` will stay near-grey even if the user supplies a violent magenta seed.
+Chroma encodes **how chromatic** a role is, independent of which hue. A `muted` text role with `chromaRange: [0, 0.04]` will stay near-grey even if the user supplies a violent magenta seed.
 
 - Neutral roles (`background`, `text`, `divider`, `surface`): `[0, 0.06]`.
 - Muted roles (`muted`, `text-subtle`, `border`): `[0, 0.08]`.
@@ -39,6 +39,6 @@ Chroma encodes **how chromatic** a role is — independent of which hue. A `mute
 
 ## Related
 
-- [Lightness range](./lightness-range) — the orthogonal envelope on the L channel.
-- [OKLCH reference](../oklch) — full conversion math + chroma boundaries.
+- [Lightness range](./lightness-range): the orthogonal envelope on the L channel.
+- [OKLCH reference](../oklch): full conversion math + chroma boundaries.
 - [Role schemas overview](../../concepts/role-schemas).

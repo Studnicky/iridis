@@ -92,7 +92,7 @@ test('Math e2e :: happy :: oklchToRgb → rgbToOklch round-trip within 0.001', (
       Math.abs(back.oklch.c - c) < eps,
       `C round-trip failed for (${l},${c},${h}): got ${back.oklch.c}`,
     );
-    // Skip hue round-trip check when c≈0 (achromatic — hue is undefined)
+    // Skip hue round-trip check when c≈0 (achromatic; hue is undefined)
     if (c > 0.001) {
       const hueDiff           = Math.abs(((back.oklch.h - h) + 360) % 360);
       const normalizedHueDiff = hueDiff > 180 ? 360 - hueDiff : hueDiff;

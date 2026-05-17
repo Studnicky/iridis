@@ -10,10 +10,17 @@
  * paragraph, a link into the matching reference page in the docs
  * sidebar so designers can drill in.
  *
- * The component is dumb: it owns no state, mutates nothing. It is a
- * static reference surface that pairs visually with the editor on
- * the right.
+ * The component owns one bit of state: which Accordion panel is open
+ * (single-select; PrimeVue's default). Initial state opens the first
+ * panel so first paint is never blank.
  */
+import { ref } from 'vue';
+
+import Accordion        from 'primevue/accordion';
+import AccordionPanel   from 'primevue/accordionpanel';
+import AccordionHeader  from 'primevue/accordionheader';
+import AccordionContent from 'primevue/accordioncontent';
+
 import IridisCard from './base/IridisCard.vue';
 
 interface FieldInterface {
@@ -22,6 +29,8 @@ interface FieldInterface {
   readonly 'detail':   string;
   readonly 'href':     string;
 }
+
+const openPanel = ref<string | null>('Name');
 
 const FIELDS: readonly FieldInterface[] = [
   {
@@ -32,7 +41,7 @@ const FIELDS: readonly FieldInterface[] = [
   },
   {
     'leg':     'Intent',
-    'summary': 'The ontology tag — what kind of role this is.',
+    'summary': 'The ontology tag: what kind of role this is.',
     'detail':  'Picked from a closed 10-member vocabulary: text, background, accent, muted, critical, positive, link, button, onAccent, onButton. Drives forced-colors mapping, APCA targets, WCAG ratio selection.',
     'href':    '/iridis/reference/role-schema/intent',
   },
@@ -45,7 +54,7 @@ const FIELDS: readonly FieldInterface[] = [
   {
     'leg':     'Chroma range',
     'summary': 'The OKLCH C envelope, [min, max] in 0..~0.5.',
-    'detail':  'Controls how saturated the role is allowed to be. Neutrals near 0, accents 0.10–0.32. The upper bound matters most for sRGB emit targets — values above ~0.32 fall outside the gamut and get mapped back.',
+    'detail':  'Controls how saturated the role is allowed to be. Neutrals near 0, accents 0.10–0.32. The upper bound matters most for sRGB emit targets; values above ~0.32 fall outside the gamut and get mapped back.',
     'href':    '/iridis/reference/role-schema/chroma-range',
   },
   {
@@ -80,23 +89,35 @@ const FIELDS: readonly FieldInterface[] = [
     <header class="build-role-schema-guide__head">
       <span class="build-role-schema-guide__eyebrow">Reference</span>
       <h3 class="build-role-schema-guide__title">Schema fields</h3>
-      <p class="build-role-schema-guide__hint">Every per-role knob the editor exposes. Hover for the short description; tap the link for the full reference page.</p>
+      <p class="build-role-schema-guide__hint">Every per-role knob the editor exposes. Click a row to expand.</p>
     </header>
-    <ol class="build-role-schema-guide__list">
-      <li
+    <Accordion
+      :value="openPanel"
+      class="build-role-schema-guide__accordion"
+      @update:value="(v) => openPanel = v as string | null"
+    >
+      <AccordionPanel
         v-for="f in FIELDS"
         :key="f.leg"
-        class="build-role-schema-guide__item"
-        :title="f.detail"
+        :value="f.leg"
+        class="build-role-schema-guide__panel"
       >
-        <div class="build-role-schema-guide__item-head">
+        <AccordionHeader class="build-role-schema-guide__header">
           <span class="build-role-schema-guide__leg">{{ f.leg }}</span>
-          <a :href="f.href" class="build-role-schema-guide__link" :title="`Open the ${f.leg} reference page`">docs →</a>
-        </div>
-        <p class="build-role-schema-guide__summary">{{ f.summary }}</p>
-        <p class="build-role-schema-guide__detail">{{ f.detail }}</p>
-      </li>
-    </ol>
+        </AccordionHeader>
+        <AccordionContent>
+          <div class="build-role-schema-guide__body">
+            <p class="build-role-schema-guide__summary">{{ f.summary }}</p>
+            <p class="build-role-schema-guide__detail">{{ f.detail }}</p>
+            <a
+              :href="f.href"
+              class="build-role-schema-guide__link"
+              :title="`Open the ${f.leg} reference page`"
+            >Open the {{ f.leg }} reference page →</a>
+          </div>
+        </AccordionContent>
+      </AccordionPanel>
+    </Accordion>
   </IridisCard>
 </template>
 
@@ -134,28 +155,33 @@ const FIELDS: readonly FieldInterface[] = [
   line-height: 1.5;
   color: var(--vp-c-text-2);
 }
-.build-role-schema-guide__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.build-role-schema-guide__accordion {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.4rem;
   counter-reset: schema-field;
 }
-.build-role-schema-guide__item {
+.build-role-schema-guide__panel {
   counter-increment: schema-field;
-  padding: 0.6rem 0.75rem;
   border-radius: var(--iridis-radius, 6px);
   background: color-mix(in oklch, var(--vp-c-bg) 50%, transparent);
   border: 1px solid color-mix(in oklch, var(--vp-c-divider) 60%, transparent);
+  overflow: hidden;
 }
-.build-role-schema-guide__item-head {
+.build-role-schema-guide__header :deep(button),
+.build-role-schema-guide__header :deep(.p-accordionheader) {
+  width: 100%;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: baseline;
   gap: 0.6rem;
-  margin-bottom: 0.2rem;
+  padding: 0.55rem 0.75rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
 }
 .build-role-schema-guide__leg {
   font-size: 0.78rem;
@@ -171,12 +197,19 @@ const FIELDS: readonly FieldInterface[] = [
   font-size: 0.72rem;
   letter-spacing: 0.02em;
 }
+.build-role-schema-guide__body {
+  padding: 0.1rem 0.75rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
 .build-role-schema-guide__link {
   font-size: 0.7rem;
   font-family: var(--vp-font-family-mono);
   color: var(--vp-c-brand-1, var(--iridis-brand));
   text-decoration: none;
   white-space: nowrap;
+  margin-top: 0.25rem;
 }
 .build-role-schema-guide__link:hover {
   text-decoration: underline;

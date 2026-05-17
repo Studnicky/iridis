@@ -32,7 +32,7 @@ const SCHEMA_LIGHT: RoleSchemaInterface = {
 
 /**
  * Output shape of {@link quickPalette}: the four canonical roles, each
- * resolved to a 6-digit hex string. Frozen by convention — callers
+ * resolved to a 6-digit hex string. Frozen by convention: callers
  * read; the engine writes.
  */
 export interface QuickPaletteInterface {

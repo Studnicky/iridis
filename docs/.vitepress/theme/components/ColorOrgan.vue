@@ -36,7 +36,7 @@ interface RibbonInterface {
 }
 
 /* Skip roles whose color is the page background OR the page foreground
-   text — both produce dark/light smudges instead of glowing curtains.
+   text. Both produce dark/light smudges instead of glowing curtains.
    Aurora ribbons should be chromatic. */
 const SKIP_ROLES = new Set([
   'background',
@@ -58,7 +58,7 @@ function readResolvedRoles(): string[] {
     if (prop === undefined || !prop.startsWith('--iridis-')) continue;
     const name = prop.slice('--iridis-'.length);
     if (SKIP_ROLES.has(name)) continue;
-    /* Cheap colour-ish check — the projector only writes hex strings
+    /* Cheap colour-ish check: the projector only writes hex strings
        on iridis-* properties, but a future plugin might publish a
        non-color into the same namespace. Guard against it. */
     const value = root.style.getPropertyValue(prop).trim();
@@ -82,7 +82,7 @@ const ribbons = computed<readonly RibbonInterface[]>(() => {
   void projectorVersion.value;
   const roles = readResolvedRoles();
   if (roles.length === 0) return [];
-  /* Five ribbons is the sweet spot — enough to feel like a chromatic
+  /* Five ribbons is the sweet spot: enough to feel like a chromatic
      field without becoming a rainbow soup. Picked at evenly-spaced
      offsets so they sample across the role list (so a 16-role schema
      uses ~roles 0, 3, 6, 10, 13). */
@@ -97,7 +97,7 @@ const ribbons = computed<readonly RibbonInterface[]>(() => {
 });
 
 /* Listen for the user's reduced-motion preference and pause animation
-   if requested. Doesn't unmount — the static ribbons stay visible. */
+   if requested. Doesn't unmount; the static ribbons stay visible. */
 const reduceMotion = ref<boolean>(false);
 let mql: MediaQueryList | null = null;
 function syncReduce(): void {
@@ -187,7 +187,7 @@ onUnmounted(() => {
    (scale + brightness + opacity) so the field reads as living rave
    lights. Aurora-sway carries the wrapper; aurora-pulse carries
    the pseudo. Phase offsets prevent the field from breathing in
-   unison — the wave moves across the curtains, not through them all
+   unison; the wave moves across the curtains, not through them all
    simultaneously. */
 .color-organ__ribbon--0 {
   left: 50%;
@@ -241,7 +241,7 @@ onUnmounted(() => {
   animation-delay: -1.4s;
 }
 
-/* Sway keyframes — slow lateral + vertical + skew drift carried by
+/* Sway keyframes: slow lateral + vertical + skew drift carried by
    the wrapper. Same shape as before; preserved so existing layout
    timing reads consistently. */
 @keyframes aurora-sway-0 {
@@ -270,7 +270,7 @@ onUnmounted(() => {
   100% { transform: translateX(-50%) translateX(26vw) translateY(3vh)  skewX(3deg); }
 }
 
-/* Pulse keyframe — scale + brightness + saturate + opacity all
+/* Pulse keyframe: scale + brightness + saturate + opacity all
    oscillate on the same cycle so the curtain feels like it's
    inhaling and exhaling. `scaleY` carries the "grow"; `scaleX`
    stays subtle so the ribbon doesn't visibly widen across page
