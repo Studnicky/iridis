@@ -1,3 +1,8 @@
+---
+title: RGB
+description: How iridis stores sRGB as floating-point unit-interval triples, the piecewise gamma transfer function, and when linear vs gamma-corrected values are required
+---
+
 # RGB
 
 RGB describes a color as a triple of red, green, and blue intensities. iridis stores RGB in floating-point form on the unit interval `[0, 1]`, in the sRGB color space.

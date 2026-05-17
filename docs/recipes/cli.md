@@ -1,3 +1,8 @@
+---
+title: Using the CLI
+description: Drive the iridis pipeline from a JSON config file — install @studnicky/iridis-cli, declare your colors, schema, and emit targets, and write palettes from CI
+---
+
 # Using the CLI
 
 The iridis CLI runs the same engine and plugins as the library API. It reads a JSON config file, dynamically imports the plugins whose `enable*` flags are set, executes the pipeline, and writes the declared output files. Use it in build scripts or CI pipelines where you want palette generation without writing Node.js code.

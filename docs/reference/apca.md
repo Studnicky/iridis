@@ -1,3 +1,8 @@
+---
+title: APCA
+description: The Accessible Perceptual Contrast Algorithm shipped as APCA-W3 0.0.98G-4g — signed Lc values, polarity-aware exponents, and the soft-clamp polynomial iridis uses
+---
+
 # APCA
 
 APCA (Accessible Perceptual Contrast Algorithm) is a perceptually weighted contrast metric developed by Andrew Somers, intended as a successor to WCAG 2.x luminance contrast. It is the algorithm being evaluated for inclusion in WCAG 3. iridis ships APCA-W3 0.0.98G-4g (`packages/core/src/math/ContrastApca.ts`).

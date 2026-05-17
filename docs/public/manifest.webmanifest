@@ -1,0 +1,43 @@
+{
+  "name": "iridis — chromatic pipeline for dynamic palettes",
+  "short_name": "iridis",
+  "description": "Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced.",
+  "id": "/iridis/",
+  "start_url": "/iridis/",
+  "scope": "/iridis/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#7c3aed",
+  "background_color": "#0f0f12",
+  "lang": "en-US",
+  "categories": ["productivity", "developer", "design"],
+  "icons": [
+    {
+      "src": "/iridis/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    },
+    {
+      "src": "/iridis/logo.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/iridis/logo.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/iridis/og-image.png",
+      "type": "image/png",
+      "sizes": "1200x630",
+      "form_factor": "wide",
+      "label": "iridis docs site with live engine output theming every chrome and syntax token"
+    }
+  ]
+}

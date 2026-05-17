@@ -1,3 +1,8 @@
+---
+title: "Vue + Capacitor: per-category palettes"
+description: A worked recipe — one Engine instance per CategoryColorService, scoped CSS custom properties on the document, and Capacitor StatusBar parameters for native chrome
+---
+
 # Vue + Capacitor: per-category palettes
 
 This recipe walks through `examples/vue-capacitor/categoryColorService.ts`, a service that takes a category name and a seed hex color, runs the iridis pipeline, writes scoped CSS custom properties to the document, and returns Capacitor StatusBar parameters for native chrome.

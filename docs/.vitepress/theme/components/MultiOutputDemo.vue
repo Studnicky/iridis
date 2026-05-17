@@ -53,9 +53,8 @@ const error = ref<string | null>(null);
 const engine = new Engine();
 for (const t of coreTasks) engine.tasks.register(t);
 /* Contrast plugin is statically imported (compile-time bundling) because
-   the projector in `applyConfigToDocument.ts` and the export pipeline in
-   `RightPanel.vue` already depend on it; the lazy-load optimization from
-   P5.6 targets the heavier emit-side plugins only. */
+   the projector in `applyConfigToDocument.ts` already depends on it; the
+   lazy-load optimization targets the heavier emit-side plugins only. */
 engine.adopt(contrastPlugin);
 
 interface MultiOutputEngineReady {

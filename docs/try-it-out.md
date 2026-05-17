@@ -1,13 +1,19 @@
 ---
 title: Try it out
+description: Live seed-color playground — edit hex / RGB / OKLCH inputs and the iridis engine re-resolves the docs theme on every keystroke.
 ---
 
 # Try it out
 
-The example panel on the right is the engine, end to end, against your config. Pick seeds, swap framing in the navbar (light/dark), pick a contrast level and role schema in the sidebar, every chrome and syntax token in the docs recomputes, and your settings persist across pages via `localStorage`.
+Edit seed colors below; the iridis engine resolves your active role schema against them and re-themes every page on the site. Your selection persists across navigation — wander the docs, the palette follows.
 
-This page intentionally has no body content beyond this paragraph. The right panel is the page.
+<IridisDemo />
 
-::: tip How it cascades
-The engine emits eight chrome tokens and 14 syntax tokens as `--iridis-*` CSS custom properties. Every vitepress chrome token (`--vp-c-bg`, `--vp-c-text-1`, etc.) and every Shiki token color cascades from those iridis tokens via `var()` references. Change one seed → engine recomputes → every cascade follower updates in one paint.
-:::
+## Resolved roles
+
+The cards below are the canonical read-out of the live theme. Every role the active schema declares appears here with its resolved hex, contrast pairs, and any envelope warnings the engine flagged.
+
+<BuildResolvedRoles />
+
+→ Want to drive the same pipeline from an image instead? See **[Image to theme](./image-to-theme)**. <br />
+→ Want every knob in one place — schema editor, configuration, code snippets? Open **[Build](./build)**.

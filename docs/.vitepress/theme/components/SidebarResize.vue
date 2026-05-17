@@ -2,9 +2,9 @@
 /**
  * SidebarResize.vue
  *
- * Drag handle on the sidebar's right edge. Mirrors RightPanel's resize:
- * updates --vp-sidebar-width on documentElement, persists to localStorage,
- * bounded 200..520. Mounted from theme/index.ts via layout-top slot.
+ * Drag handle on the sidebar's right edge. Updates --vp-sidebar-width on
+ * documentElement, persists to localStorage, bounded 200..520. Mounted
+ * from theme/index.ts via layout-top slot.
  */
 
 import { onMounted, ref } from 'vue';

@@ -1,3 +1,8 @@
+---
+title: Role schemas
+description: A role schema names the tokens your design system uses and the contrast pairs they must satisfy — iridis treats it as a contract and enforces it on every run
+---
+
 # Role schemas
 
 A role schema is a consumer-authored description of what a palette means in a particular context. It is the contract between your design system and iridis. You decide what roles exist, what constraints they carry, and which pairs must meet accessibility thresholds. iridis enforces the contract on every run.

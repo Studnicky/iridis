@@ -1,0 +1,58 @@
+# iridis
+
+> Chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-native, contrast-enforced. You bring the colors you want to use and the role names your design system uses; iridis decides which color goes to which role so every accessibility constraint you declare is satisfied.
+
+iridis is a TypeScript library (`@studnicky/iridis`) for deriving role-based color palettes from a small set of seed colors. The engine is a composition spine over a declared task pipeline; output adapters (CSS variables, Tailwind, VS Code theme JSON, Capacitor native chrome, RDF) are separate plugins consumers adopt at runtime. Zero runtime dependencies, Display-P3 wide-gamut support, WCAG 2.1 + APCA contrast enforcement, CVD compliance against the four canonical color-vision-deficiency types.
+
+## Getting started
+
+- [Build playground](https://studnicky.github.io/iridis/): the consolidated workspace — seed colors, image extraction, role schema editor, configuration, code snippets. Every change re-themes the docs site live.
+- [About iridis](https://studnicky.github.io/iridis/about): project pitch for designers + developers.
+- [Getting started](https://studnicky.github.io/iridis/getting-started): install, the smallest possible pipeline, the shape of the output.
+- [Try it out](https://studnicky.github.io/iridis/try-it-out): edit hex / RGB / OKLCH seeds; the page recomputes through the engine on every keystroke.
+- [Image to theme](https://studnicky.github.io/iridis/image-to-theme): drop a picture, A/B median-cut vs delta-E clustering, the extracted palette themes every page of the docs.
+- [Living color (v2 thesis)](https://studnicky.github.io/iridis/v2-living-color): palette-as-vector-in-OKLCH-space framing, animation between resolved palettes while preserving contrast invariants.
+
+## Concepts
+
+- [How the pipeline works](https://studnicky.github.io/iridis/concepts/pipeline): `Engine.adopt` + `pipeline()` + `run()` composition; task contracts and the `manifest.requires` ordering rule.
+- [Role schemas](https://studnicky.github.io/iridis/concepts/role-schemas): declarative role definitions, OKLCH envelopes, contrast pairs, the canonical 10-value `ColorIntentType` ontology.
+- [ColorRecord](https://studnicky.github.io/iridis/concepts/color-record): the monomorphic record shape every task reads and writes, including wide-gamut `displayP3` semantics.
+- [Contrast enforcement](https://studnicky.github.io/iridis/concepts/contrast): the `enforce:contrast` family and how the engine nudges roles in OKLCH until every declared pair satisfies its threshold.
+- [Accessibility calculations](https://studnicky.github.io/iridis/concepts/accessibility-calculations): WCAG 2.1 AA/AAA luminance ratios, APCA Lc targets, CVD simulation against deuteranopia / protanopia / tritanopia / achromatopsia.
+
+## Recipes
+
+- [Using the CLI](https://studnicky.github.io/iridis/recipes/cli): end-to-end command-line snippet.
+- [Cascading tokens, dogfood pattern](https://studnicky.github.io/iridis/recipes/cascading-tokens): scoped CSS variables per category with the `emit:cssVarsScoped` task.
+- [Vue + Capacitor: per-category palettes](https://studnicky.github.io/iridis/recipes/vue-capacitor): native chrome via Capacitor StatusBar plugin, web chrome via cascading CSS vars.
+
+## Reference — color spaces
+
+- [Hex](https://studnicky.github.io/iridis/reference/hex)
+- [RGB](https://studnicky.github.io/iridis/reference/rgb)
+- [HSV](https://studnicky.github.io/iridis/reference/hsv)
+- [CMYK](https://studnicky.github.io/iridis/reference/cmyk)
+- [OKLCH](https://studnicky.github.io/iridis/reference/oklch): the engine's canonical working space.
+
+## Reference — accessibility standards
+
+- [WCAG 2.1](https://studnicky.github.io/iridis/reference/wcag): luminance-ratio model the `enforce:wcagAA` + `enforce:wcagAAA` tasks lift pairs to.
+- [APCA](https://studnicky.github.io/iridis/reference/apca): perceptual contrast model WCAG 3 is built on; `enforce:apca` task uses APCA Lc targets per role intent.
+
+## Reference — role schema fields
+
+- [Name](https://studnicky.github.io/iridis/reference/role-schema/name): the unique identifier for a role within a schema.
+- [Role intent](https://studnicky.github.io/iridis/reference/role-schema/intent): the canonical ontology tag (text / background / accent / muted / critical / positive / link / button / onAccent / onButton).
+- [Lightness range](https://studnicky.github.io/iridis/reference/role-schema/lightness-range): OKLCH L-channel envelope.
+- [Chroma range](https://studnicky.github.io/iridis/reference/role-schema/chroma-range): OKLCH C-channel envelope.
+- [Derived roles](https://studnicky.github.io/iridis/reference/role-schema/derived-from): parametric expansion of one role into a family via `hueOffset`.
+- [Hue lock](https://studnicky.github.io/iridis/reference/role-schema/hue-lock): pin a role to an exact OKLCH hue regardless of seed.
+- [Required roles](https://studnicky.github.io/iridis/reference/role-schema/required): roles flagged required must appear in the resolved palette.
+- [Contrast pairs](https://studnicky.github.io/iridis/reference/role-schema/contrast-pairs): foreground/background pairs the engine enforces a minimum ratio on.
+
+## Source
+
+- [GitHub repository](https://github.com/Studnicky/iridis)
+- [npm package](https://www.npmjs.com/package/@studnicky/iridis)
+- [Sitemap](https://studnicky.github.io/iridis/sitemap.xml)

@@ -1,3 +1,8 @@
+---
+title: HSV
+description: The cylindrical hue, saturation, value re-parameterisation of sRGB used by the iridis picker — sector-based conversion math and why no pipeline primitive ships
+---
+
 # HSV
 
 HSV (hue, saturation, value) is a cylindrical re-parameterisation of sRGB. It exists because flat RGB sliders are a poor interface for picking a color by eye, moving along the hue axis at constant saturation and value is the natural action a human takes when they want "the same color, but more orange".

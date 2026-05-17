@@ -2,22 +2,26 @@
 /**
  * NavBarBuilderToggle.vue
  *
- * The Example/Try-iridis CTA, mounted inside the main navbar menu
- * alongside the Docs and GitHub links. Visible at every viewport.
- *
- * Styled as an accent CTA: brand text on a muted brand-tinted
- * background. Distinct from a regular nav link, but less heavyweight
- * than a primary brand-filled button.
- *
- * Reads and writes the same `panelOpen` ref that RightPanel.vue
- * consumes; the panel renders as an overlay drawer at every width.
+ * Navbar entry point into the /build workspace. Reads the current route
+ * to mark itself active when the user is already on /build.
  */
-import Button from 'primevue/button';
+import { computed }       from 'vue';
+import Button             from 'primevue/button';
+import { useRoute, useRouter, withBase } from 'vitepress';
 
-import { panelOpen, togglePanel } from '../stores/panelState.ts';
+const route  = useRoute();
+const router = useRouter();
 
-function onClick(): void {
-  togglePanel();
+const isActive = computed(() => {
+  const p = route.path;
+  return p === withBase('/')
+    || p === withBase('/index.html')
+    || p === withBase('/build')
+    || p === withBase('/build.html');
+});
+
+function goBuild(): void {
+  router.go(withBase('/'));
 }
 </script>
 
@@ -27,13 +31,14 @@ function onClick(): void {
       class="iridis-nav-builder-toggle"
       severity="secondary"
       variant="text"
-      :aria-pressed="panelOpen"
-      :aria-label="panelOpen ? 'Hide palette builder' : 'Open palette builder'"
-      :title="panelOpen ? 'Hide palette builder' : 'Open palette builder'"
-      @click="onClick"
+      :aria-pressed="isActive"
+      :aria-current="isActive ? 'page' : undefined"
+      aria-label="Open Build workspace"
+      title="Open the consolidated build workspace — seed colors, image, role schema"
+      @click="goBuild"
     >
-      <span class="iridis-nav-builder-toggle__icon" aria-hidden="true">{{ panelOpen ? '✕' : '◐' }}</span>
-      <span class="iridis-nav-builder-toggle__label">Example</span>
+      <span class="iridis-nav-builder-toggle__icon" aria-hidden="true">◐</span>
+      <span class="iridis-nav-builder-toggle__label">Build</span>
     </Button>
   </ClientOnly>
 </template>

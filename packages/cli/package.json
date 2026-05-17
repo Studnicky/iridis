@@ -20,6 +20,6 @@
     "prebuild":  "rm -rf dist"
   },
   "dependencies": {
-    "@studnicky/iridis": "^0.2.0"
+    "@studnicky/iridis": "^0.3.0"
   }
 }

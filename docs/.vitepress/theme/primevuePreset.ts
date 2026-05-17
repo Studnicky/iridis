@@ -310,4 +310,60 @@ export const iridisPreset = definePreset(Aura, {
       },
     },
   },
+  /* Component-level overrides. Maps directly into PrimeVue's
+     `--p-{component}-{slot}-{property}` CSS variables; PrimeVue's
+     internal scoped CSS reads these tokens, so no specificity fight
+     in base.css.
+
+     Aura's togglebutton tokens nest color-scope under
+     `colorScheme.{light|dark}.root` and `colorScheme.{light|dark}.content`.
+     iridis handles framing flips inside the engine (the same iridis-*
+     CSS variables resolve to light or dark depending on the active
+     framing), so identical expressions work in both schemes. */
+  'components': {
+    'togglebutton': {
+      'colorScheme': {
+        'light': {
+          'root': {
+            'background':         'var(--iridis-bg-soft, var(--iridis-surface))',
+            'hoverBackground':    'color-mix(in oklch, var(--iridis-bg-soft, var(--iridis-surface)) 88%, var(--iridis-brand) 12%)',
+            'checkedBackground':  'var(--iridis-text)',
+            'borderColor':        'var(--iridis-divider, var(--iridis-muted))',
+            'checkedBorderColor': 'var(--iridis-text)',
+            'color':              'var(--iridis-muted, var(--iridis-text))',
+            'hoverColor':         'var(--iridis-text)',
+            'checkedColor':       'var(--iridis-background)',
+          },
+          'content': {
+            'checkedBackground': 'var(--iridis-text)',
+          },
+          'icon': {
+            'color':        'var(--iridis-muted, var(--iridis-text))',
+            'hoverColor':   'var(--iridis-text)',
+            'checkedColor': 'var(--iridis-background)',
+          },
+        },
+        'dark': {
+          'root': {
+            'background':         'var(--iridis-bg-soft, var(--iridis-surface))',
+            'hoverBackground':    'color-mix(in oklch, var(--iridis-bg-soft, var(--iridis-surface)) 88%, var(--iridis-brand) 12%)',
+            'checkedBackground':  'var(--iridis-text)',
+            'borderColor':        'var(--iridis-divider, var(--iridis-muted))',
+            'checkedBorderColor': 'var(--iridis-text)',
+            'color':              'var(--iridis-muted, var(--iridis-text))',
+            'hoverColor':         'var(--iridis-text)',
+            'checkedColor':       'var(--iridis-background)',
+          },
+          'content': {
+            'checkedBackground': 'var(--iridis-text)',
+          },
+          'icon': {
+            'color':        'var(--iridis-muted, var(--iridis-text))',
+            'hoverColor':   'var(--iridis-text)',
+            'checkedColor': 'var(--iridis-background)',
+          },
+        },
+      },
+    },
+  },
 });
