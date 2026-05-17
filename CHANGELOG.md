@@ -4,6 +4,14 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-05-17
+
+Patch.
+
+### Fixed
+
+- **`ImageToTheme.vue` source-mode picker placement.** The source-mode SelectButton (File / URL / Preset) and its input row sit on the LEFT column under the image drop zone, mirroring `IridisPicker`'s mode-tabs slot. Right column owns output configuration only — histogram, algorithm SelectButton, sliders.
+
 ## [0.3.0] - 2026-05-16
 
 Pre-alpha. Image clustering primitives, consolidated `/build` workspace, unified SEO/structured-data template.
