@@ -39,6 +39,8 @@ import SelectButton from 'primevue/selectbutton';
 import Button       from 'primevue/button';
 import Slider       from 'primevue/slider';
 
+import BuildImageOptionsGuide from './BuildImageOptionsGuide.vue';
+
 import { configStore }      from '../stores/configStore.ts';
 import { roleSchemaByName } from '../schemas/roleSchemas.ts';
 
@@ -222,9 +224,96 @@ function onUrlSubmit(): void {
   void runForUrl(urlInput.value.trim(), 'URL');
 }
 
-const PRESETS = [
-  { 'label': 'iridis logo',  'src': '/iridis/logo.png' },
-] as const;
+/* Famous public-domain photographs hosted on Wikimedia Commons. Every
+   URL targets the `upload.wikimedia.org` CDN at a thumbnail-sized
+   render (≤ 1280px on the long edge) — small enough to decode quickly,
+   large enough to expose meaningful palette structure. Wikimedia serves
+   these with `Access-Control-Allow-Origin: *` so the canvas decoder
+   does not taint when the image lands. The hosting is about as stable
+   as anything on the public internet: every URL has a permanent stable
+   path under `/wikipedia/commons/thumb/<hash>/<filename>/<size>px-...`
+   and Wikimedia commits to never breaking these. The iridis logo stays
+   first as the project's own reference frame. */
+interface PresetInterface {
+  readonly 'label':  string;
+  readonly 'src':    string;
+  readonly 'credit': string;
+}
+const PRESETS_RAW: readonly PresetInterface[] = [
+  {
+    'label':  'iridis logo',
+    'src':    '/iridis/logo.png',
+    'credit': 'iridis',
+  },
+  {
+    'label':  'Great Wave',
+    'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/The_Great_Wave_off_Kanagawa.jpg/1280px-The_Great_Wave_off_Kanagawa.jpg',
+    'credit': 'Katsushika Hokusai, c. 1831 — public domain (Wikimedia Commons)',
+  },
+  {
+    'label':  'Starry Night',
+    'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
+    'credit': 'Vincent van Gogh, 1889 — public domain (Wikimedia Commons)',
+  },
+  {
+    'label':  'Earthrise',
+    'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/NASA-Apollo8-Dec24-Earthrise.jpg/1280px-NASA-Apollo8-Dec24-Earthrise.jpg',
+    'credit': 'William Anders / NASA Apollo 8, 1968 — public domain',
+  },
+  {
+    'label':  'Blue Marble',
+    'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/The_Earth_seen_from_Apollo_17.jpg/1024px-The_Earth_seen_from_Apollo_17.jpg',
+    'credit': 'NASA Apollo 17, 1972 — public domain',
+  },
+  {
+    'label':  'Pillars of Creation',
+    'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Pillars_2014_HST_WFC3-UVIS_full-res_denoised.jpg/1280px-Pillars_2014_HST_WFC3-UVIS_full-res_denoised.jpg',
+    'credit': 'NASA/ESA Hubble, 2014 — public domain',
+  },
+  {
+    'label':  'Carina Nebula',
+    'src':    'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/Cosmic_Cliffs_in_Carina_%28NIRCam_Image%29.jpg/1280px-Cosmic_Cliffs_in_Carina_%28NIRCam_Image%29.jpg',
+    'credit': 'NASA/ESA/CSA JWST, 2022 — public domain',
+  },
+];
+
+/* Availability-filtered preset list. The mount-time probe (below)
+   removes any URL that fails to load in the user's browser — a
+   broken CDN, a corporate firewall, an extension blocking the host,
+   or Wikimedia's hash path changing. The fallback is silent at the
+   UI layer (the chip just disappears) and loud at the console
+   (`[iridis] preset unavailable: ...`) so misconfiguration surfaces
+   in dev-tools without breaking the page. */
+const availablePresets = ref<readonly PresetInterface[]>(PRESETS_RAW);
+
+function probePreset(preset: PresetInterface): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof Image === 'undefined') { resolve(true); return; }
+    const img    = new Image();
+    img.crossOrigin = 'anonymous';
+    const timer  = setTimeout(() => { resolve(false); }, 8000);
+    img.onload   = (): void => { clearTimeout(timer); resolve(true);  };
+    img.onerror  = (): void => { clearTimeout(timer); resolve(false); };
+    img.src      = preset.src;
+  });
+}
+
+async function refreshPresetAvailability(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const results = await Promise.all(PRESETS_RAW.map(async (p) => ({
+    'preset':    p,
+    'available': await probePreset(p),
+  })));
+  const kept: PresetInterface[] = [];
+  for (const r of results) {
+    if (r.available) {
+      kept.push(r.preset);
+    } else if (typeof console !== 'undefined') {
+      console.warn(`[iridis] preset unavailable: ${r.preset.label} (${r.preset.src})`);
+    }
+  }
+  availablePresets.value = kept;
+}
 
 function onPreset(src: string, label: string): void {
   urlInput.value = src;
@@ -243,6 +332,7 @@ watch([
 
 onMounted(() => {
   void runForUrl('/iridis/logo.png', 'iridis logo');
+  void refreshPresetAvailability();
 });
 
 /* Empty-histogram fallback: when the current pipeline produced no
@@ -416,10 +506,11 @@ const sourceMode = ref<SourceMode>('file');
             </template>
             <div v-else-if="sourceMode === 'preset'" class="image-to-theme__presets">
               <button
-                v-for="p in PRESETS"
+                v-for="p in availablePresets"
                 :key="p.src"
                 type="button"
                 class="image-to-theme__preset"
+                :title="p.credit"
                 @click="onPreset(p.src, p.label)"
               >{{ p.label }}</button>
             </div>
@@ -485,56 +576,89 @@ const sourceMode = ref<SourceMode>('file');
             <span>{{ error ?? status }}</span>
           </div>
 
-          <!-- Algorithm SelectButton — output configuration, not input
-               source. Selects which clustering math runs against the
-               image data. Stays on the right per the IridisDemo split:
-               picker / source on the left, output config on the right. -->
-          <SelectButton
-            v-model="algorithm"
-            :options="algorithmOptions"
-            option-label="label"
-            option-value="value"
-            :allow-empty="false"
-            class="image-to-theme__mode-tabs"
-          />
+          <!-- Help + config sub-grid. Histogram above spans both
+               sub-columns; below, a narrow help column pairs with the
+               algorithm SelectButton + slider stack. Mirrors the
+               Role-schema tab's [guide][editor] layout so the two
+               surfaces read as one design system. -->
+          <div class="image-to-theme__options-grid">
+            <BuildImageOptionsGuide class="image-to-theme__options-guide" />
 
-          <!-- Slider channels — one knob per extraction parameter. -->
-          <div class="image-to-theme__config">
-            <label class="image-to-theme__slider">
-              <span class="image-to-theme__slider-name">Palette size</span>
-              <span class="image-to-theme__slider-readout">K = {{ cfgK }}</span>
-              <Slider v-model="cfgK" :min="2" :max="16" :step="1" />
-            </label>
+            <div class="image-to-theme__options-controls">
+              <!-- Algorithm SelectButton — output configuration, not
+                   input source. Selects which clustering math runs
+                   against the image data. -->
+              <SelectButton
+                v-model="algorithm"
+                :options="algorithmOptions"
+                option-label="label"
+                option-value="value"
+                :allow-empty="false"
+                class="image-to-theme__mode-tabs"
+                title="median-cut: weighted Heckbert variant — fast O(N log N). delta-e: agglomerative ΔE2000 — visually faithful, O(N² log N)."
+              />
 
-            <label class="image-to-theme__slider">
-              <span class="image-to-theme__slider-name">Histogram bpc</span>
-              <span class="image-to-theme__slider-readout">{{ cfgHistogramBits }} · {{ (1 << (cfgHistogramBits * 3)).toLocaleString() }} bins</span>
-              <Slider v-model="cfgHistogramBits" :min="3" :max="7" :step="1" />
-            </label>
+              <!-- Slider channels — one knob per extraction parameter.
+                   Each label carries a title-tooltip with the same
+                   short explanation surfaced inline by the guide
+                   panel beside it. -->
+              <div class="image-to-theme__config">
+                <label
+                  class="image-to-theme__slider"
+                  title="Number of dominant colours the extractor returns. Lower K = broader strokes; higher K = finer-grained palette."
+                >
+                  <span class="image-to-theme__slider-name">Palette size</span>
+                  <span class="image-to-theme__slider-readout">K = {{ cfgK }}</span>
+                  <Slider v-model="cfgK" :min="2" :max="16" :step="1" />
+                </label>
 
-            <label class="image-to-theme__slider" :class="{ 'image-to-theme__slider--disabled': algorithm !== 'delta-e' }">
-              <span class="image-to-theme__slider-name">Δ-E input cap</span>
-              <span class="image-to-theme__slider-readout">{{ cfgDeltaECap }}</span>
-              <Slider v-model="cfgDeltaECap" :min="16" :max="256" :step="8" :disabled="algorithm !== 'delta-e'" />
-            </label>
+                <label
+                  class="image-to-theme__slider"
+                  title="Bits per channel for the upstream pixel histogram. 5 bpc = 32 768 bins (default). Lower bpc = coarser, faster; higher bpc = finer, slower."
+                >
+                  <span class="image-to-theme__slider-name">Histogram bpc</span>
+                  <span class="image-to-theme__slider-readout">{{ cfgHistogramBits }} · {{ (1 << (cfgHistogramBits * 3)).toLocaleString() }} bins</span>
+                  <Slider v-model="cfgHistogramBits" :min="3" :max="7" :step="1" />
+                </label>
 
-            <label class="image-to-theme__slider">
-              <span class="image-to-theme__slider-name">Harmonize</span>
-              <span class="image-to-theme__slider-readout">Δ-E &lt; {{ cfgHarmonizeThreshold }}</span>
-              <Slider v-model="cfgHarmonizeThreshold" :min="0" :max="30" :step="1" />
-            </label>
+                <label
+                  class="image-to-theme__slider"
+                  :class="{ 'image-to-theme__slider--disabled': algorithm !== 'delta-e' }"
+                  title="Max records fed into the agglomerative ΔE reducer. Active only for the delta-e algorithm. Pre-trims by descending weight to bound the O(N²) reducer."
+                >
+                  <span class="image-to-theme__slider-name">Δ-E input cap</span>
+                  <span class="image-to-theme__slider-readout">{{ cfgDeltaECap }}</span>
+                  <Slider v-model="cfgDeltaECap" :min="16" :max="256" :step="8" :disabled="algorithm !== 'delta-e'" />
+                </label>
 
-            <label class="image-to-theme__slider">
-              <span class="image-to-theme__slider-name">Lightness</span>
-              <span class="image-to-theme__slider-readout">{{ cfgLightnessRange[0].toFixed(2) }} – {{ cfgLightnessRange[1].toFixed(2) }}</span>
-              <Slider v-model="cfgLightnessRange" :min="0" :max="1" :step="0.01" range />
-            </label>
+                <label
+                  class="image-to-theme__slider"
+                  title="Min ΔE distance the accent must keep from the frame. gallery:harmonize shifts the accent's OKLCH hue if it lands within this distance. Zero disables; ten is the perceptual 'noticeably different' threshold."
+                >
+                  <span class="image-to-theme__slider-name">Harmonize</span>
+                  <span class="image-to-theme__slider-readout">Δ-E &lt; {{ cfgHarmonizeThreshold }}</span>
+                  <Slider v-model="cfgHarmonizeThreshold" :min="0" :max="30" :step="1" />
+                </label>
 
-            <label class="image-to-theme__slider">
-              <span class="image-to-theme__slider-name">Chroma</span>
-              <span class="image-to-theme__slider-readout">{{ cfgChromaRange[0].toFixed(2) }} – {{ cfgChromaRange[1].toFixed(2) }}</span>
-              <Slider v-model="cfgChromaRange" :min="0" :max="0.5" :step="0.01" range />
-            </label>
+                <label
+                  class="image-to-theme__slider"
+                  title="OKLCH L envelope the extractor clamps clusters into. Drops blown-out highlights (cap max < 0.95) and shadow noise (raise min > 0.05) when the image has long dynamic range."
+                >
+                  <span class="image-to-theme__slider-name">Lightness</span>
+                  <span class="image-to-theme__slider-readout">{{ cfgLightnessRange[0].toFixed(2) }} – {{ cfgLightnessRange[1].toFixed(2) }}</span>
+                  <Slider v-model="cfgLightnessRange" :min="0" :max="1" :step="0.01" range />
+                </label>
+
+                <label
+                  class="image-to-theme__slider"
+                  title="OKLCH C envelope the extractor clamps clusters into. Raise min above 0 to drop near-neutral pixels; cap max below 0.5 to drop super-saturated outliers."
+                >
+                  <span class="image-to-theme__slider-name">Chroma</span>
+                  <span class="image-to-theme__slider-readout">{{ cfgChromaRange[0].toFixed(2) }} – {{ cfgChromaRange[1].toFixed(2) }}</span>
+                  <Slider v-model="cfgChromaRange" :min="0" :max="0.5" :step="0.01" range />
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -558,6 +682,27 @@ const sourceMode = ref<SourceMode>('file');
   }
 }
 .image-to-theme__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+/* Right-column sub-grid: histogram (above) spans both sub-columns;
+   below, a narrow guide column pairs with the controls stack. */
+.image-to-theme__options-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+@container image-to-theme (min-width: 720px) {
+  .image-to-theme__options-grid {
+    grid-template-columns: minmax(180px, 0.42fr) minmax(0, 1fr);
+  }
+}
+.image-to-theme__options-guide {
+  min-width: 0;
+}
+.image-to-theme__options-controls {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
