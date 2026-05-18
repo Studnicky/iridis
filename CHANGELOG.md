@@ -2,6 +2,17 @@
 
 All notable changes to iridis are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2026-05-18
+
+### Changed
+
+- **README structure** trimmed to match the json-tology pattern: composite header SVG up top, then concise Documentation / Requirements / Install / License / Changelog sections. The long-form usage walkthroughs that previously lived in the README are kept on the docs site.
+- **Composite header SVG** (`docs/public/readme-header.svg`) replaces the standalone `iridis-node.svg`. The new SVG is 1280×320, base64-embeds `docs/public/logo.png` on the left, and renders the wordmark + version pill + tagline + palette swatches on the right. Single asset, self-contained, used by both the README and the release-publish workflow.
+
+### Removed
+
+- `docs/public/iridis-node.svg` and its template — superseded by `readme-header.svg`.
+
 ## [0.4.3] - 2026-05-18
 
 ### Fixed
