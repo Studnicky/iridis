@@ -32,8 +32,8 @@ export class CategoryColorService {
 
     this.engine.pipeline([
       'intake:any',
-      'expand:family',
       'resolve:roles',
+      'expand:family',
       'enforce:wcagAA',
       'derive:variant',
       'emit:cssVars',
@@ -62,12 +62,12 @@ The Music category uses seed `#8B5CF6`, a mid-purple with high chroma.
 
 `enforce:wcagAA` checks all four contrast pairs in `categoryW3cRoleSchema` and nudges foreground roles until each pair meets 4.5:1 (text) or 3.0:1 (border).
 
-`emit:cssVars` writes `state.outputs.cssVars` with three shapes:
+`emit:cssVars` writes `state.outputs['stylesheet:cssVars']` with three shapes:
 - `full`, a single CSS string with all custom properties
 - `scopedBlock`, a scoped `[data-category="music"] { ... }` block
 - `map`, a `Record<string, string>` of property name to value
 
-`emit:capacitorStatusBar` and `emit:capacitorTheme` populate `state.outputs.capacitor`.
+`emit:capacitorStatusBar` writes `state.outputs['capacitor:statusBar']`. `emit:capacitorTheme` writes `state.outputs['capacitor:theme']`.
 
 ## Applying CSS variables dynamically
 
@@ -88,8 +88,8 @@ async apply(category: string, seed: string) {
     },
   });
 
-  const cssVars   = state.outputs['cssVars'];
-  const capacitor = state.outputs['capacitor'];
+  const cssVars   = state.outputs['stylesheet:cssVars'];
+  const statusBar = state.outputs['capacitor:statusBar'];
 
   // Inject or replace the scoped stylesheet
   const sheetId = `ce-${category}-styles`;
@@ -103,7 +103,7 @@ async apply(category: string, seed: string) {
     Object.entries(cssVars.map).map(([k, v]) => `  ${k}: ${v};`).join('\n')
   }\n}`;
 
-  return { cssVars, statusBar: capacitor.statusBar };
+  return { cssVars, statusBar };
 }
 ```
 
@@ -144,7 +144,7 @@ async function onCategoryChange(category: string, seed: string) {
 
 ## Capacitor StatusBar
 
-The `emit:capacitorStatusBar` task writes `state.outputs.capacitor.statusBar.backgroundColor` (the resolved `accent` role hex) and `statusBar.style` (`'DARK'` or `'LIGHT'` depending on the background luminance). Pass these directly to the Capacitor `StatusBar` plugin.
+The `emit:capacitorStatusBar` task writes `state.outputs['capacitor:statusBar'].backgroundColor` (the resolved `surface`/`topBar` role hex) and `.style` (`'DARK'` or `'LIGHT'` depending on the background luminance). Pass these directly to the Capacitor `StatusBar` plugin.
 
 ## On dynamic re-skinning
 

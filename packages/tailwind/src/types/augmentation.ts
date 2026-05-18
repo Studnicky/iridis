@@ -1,11 +1,5 @@
-import type { TailwindOutputInterface } from './index.ts';
+// Tailwind plugin type definitions.
+// Module augmentation on PluginOutputsRegistry / PluginMetadataRegistry
+// has been replaced with explicit schema contribution via TailwindPlugin.schemas().
 
-declare module '@studnicky/iridis' {
-  interface PluginOutputsRegistry {
-    'tailwind': TailwindOutputInterface;
-  }
-
-  interface PluginMetadataRegistry {
-    'cssVarPrefix': string;
-  }
-}
+export type {};

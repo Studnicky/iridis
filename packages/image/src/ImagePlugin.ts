@@ -1,11 +1,30 @@
 import type {
   PluginInterface,
+  PluginSchemaContributionInterface,
   TaskInterface,
 } from '@studnicky/iridis';
 import { galleryAssignRoles } from './tasks/GalleryAssignRoles.ts';
 import { galleryExtract }     from './tasks/GalleryExtract.ts';
 import { galleryHarmonize }   from './tasks/GalleryHarmonize.ts';
 import { galleryHistogram }   from './tasks/GalleryHistogram.ts';
+
+const galleryHistogramSchema = {
+  'type': 'object',
+  'additionalProperties': false,
+  'properties': {
+    'bins':        { 'type': 'array' },
+    'totalPixels': { 'type': 'number', 'minimum': 0 },
+    'binCount':    { 'type': 'number', 'minimum': 0 },
+  },
+} as const;
+
+const galleryDominantColorsSchema = {
+  'type': 'array',
+} as const;
+
+const galleryHarmonizedSchema = {
+  'type': 'boolean',
+} as const;
 
 /**
  * ImagePlugin
@@ -23,6 +42,16 @@ export class ImagePlugin implements PluginInterface {
 
   tasks(): readonly TaskInterface[] {
     return [galleryHistogram, galleryExtract, galleryAssignRoles, galleryHarmonize];
+  }
+
+  schemas(): PluginSchemaContributionInterface {
+    return {
+      'metadata': {
+        'gallery:histogram':     galleryHistogramSchema,
+        'gallery:dominantColors': galleryDominantColorsSchema,
+        'gallery:harmonized':    galleryHarmonizedSchema,
+      },
+    };
   }
 }
 

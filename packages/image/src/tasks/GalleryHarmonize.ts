@@ -4,7 +4,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { deltaE2000, getOrCreateMetadata, hueShift } from '@studnicky/iridis';
+import { deltaE2000, hueShift } from '@studnicky/iridis';
 
 /**
  * `gallery:harmonize`
@@ -13,13 +13,10 @@ import { deltaE2000, getOrCreateMetadata, hueShift } from '@studnicky/iridis';
  * If deltaE < 10, shifts the accent hue by 30° away from frame.
  *
  * Writes:
- *   state.roles.accent:                      potentially updated accent
- *   state.metadata.gallery.harmonized:       true/false
- *   state.metadata.gallery.harmonizeDetails: { before, after, deltaE } if changed
+ *   state.roles.accent:                        potentially updated accent
+ *   state.metadata['gallery:harmonized']:      true/false
+ *   state.metadata['gallery:harmonizeDetails']: { before, after, deltaE } if changed
  */
-function setHarmonized(state: PaletteStateInterface, value: boolean): void {
-  getOrCreateMetadata(state, 'gallery')['harmonized'] = value;
-}
 
 export class GalleryHarmonize implements TaskInterface {
   readonly 'name' = 'gallery:harmonize';
@@ -27,7 +24,7 @@ export class GalleryHarmonize implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'gallery:harmonize',
     'reads':       ['roles', 'metadata.gallery'],
-    'writes':      ['roles.accent', 'metadata.gallery.harmonized'],
+    'writes':      ['roles.accent', 'metadata.gallery:harmonized'],
     'description': 'Shift accent hue by 30° when deltaE2000 vs frame is < 10',
   };
 
@@ -37,7 +34,7 @@ export class GalleryHarmonize implements TaskInterface {
 
     if (!accent || !frame) {
       ctx.logger.warn('GalleryHarmonize', 'run', 'accent or frame role missing; skipping harmonize');
-      setHarmonized(state, false);
+      state.metadata['gallery:harmonized'] = false;
       return;
     }
 
@@ -49,7 +46,7 @@ export class GalleryHarmonize implements TaskInterface {
 
     if (deltaE >= threshold) {
       ctx.logger.info('GalleryHarmonize', 'run', 'accent hue is sufficiently distinct; no shift needed', { 'deltaE': deltaE });
-      setHarmonized(state, false);
+      state.metadata['gallery:harmonized'] = false;
       return;
     }
 
@@ -59,14 +56,13 @@ export class GalleryHarmonize implements TaskInterface {
     const diff      = ((accentHue - frameHue + 540) % 360) - 180;
     // If diff > 0 accent is clockwise from frame → continue clockwise (+30)
     // If diff ≤ 0 accent is counterclockwise  → continue counterclockwise (-30)
-    const shift    = diff > 0 ? 30 : -30;
+    const shift     = diff > 0 ? 30 : -30;
     const newAccent = hueShift.apply(accent, shift);
 
     state.roles['accent'] = newAccent;
 
-    const galleryMeta = getOrCreateMetadata(state, 'gallery');
-    galleryMeta['harmonized'] = true;
-    galleryMeta['harmonizeDetails'] = {
+    state.metadata['gallery:harmonized'] = true;
+    state.metadata['gallery:harmonizeDetails'] = {
       'before':   accent.hex,
       'after':    newAccent.hex,
       'deltaE':   deltaE,

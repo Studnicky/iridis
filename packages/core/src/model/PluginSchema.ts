@@ -3,8 +3,9 @@ export const PluginSchema = {
   'type':     'object',
   'required': ['name', 'version'],
   'properties': {
-    'name':    { 'type': 'string' },
-    'version': { 'type': 'string' },
-    'tasks': {},
+    'name':    { 'type': 'string', 'minLength': 1 },
+    'version': { 'type': 'string', 'minLength': 1 },
+    'tasks':   {},
+    'schemas': {},
   },
 } as const;

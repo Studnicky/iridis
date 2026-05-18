@@ -27,7 +27,7 @@ The CLI is a thin wrapper over `engine.run()`. The right-panel example on every 
     "derive:variant",
     "emit:json"
   ],
-  "output": { "directory": "./out", "files": { "json": "palette.json" } }
+  "output": { "directory": "./out", "files": { "core:json": "palette.json" } }
 }
 ```
 
@@ -84,8 +84,8 @@ The config is a plain JSON file validated against the `CliConfigSchema` (`packag
   "enableRdf":        false,
   "pipeline": [
     "intake:any",
-    "expand:family",
     "resolve:roles",
+    "expand:family",
     "enforce:wcagAA",
     "derive:variant",
     "emit:cssVars"
@@ -93,7 +93,7 @@ The config is a plain JSON file validated against the `CliConfigSchema` (`packag
   "output": {
     "directory": "./out",
     "files": {
-      "cssVars": "palette.css"
+      "stylesheet:cssVars": "palette.css"
     }
   }
 }
@@ -126,8 +126,8 @@ The `pipeline` array maps directly to `engine.pipeline()` in the library API. Ta
   "enableCapacitor":  true,
   "pipeline": [
     "intake:any",
-    "expand:family",
     "resolve:roles",
+    "expand:family",
     "enforce:wcagAA",
     "derive:variant",
     "emit:cssVars",
@@ -137,14 +137,15 @@ The `pipeline` array maps directly to `engine.pipeline()` in the library API. Ta
   "output": {
     "directory": "./out",
     "files": {
-      "cssVars":   "music.css",
-      "capacitor": "music.capacitor.json"
+      "stylesheet:cssVars":  "music.css",
+      "capacitor:statusBar": "music-statusbar.json",
+      "capacitor:theme":     "music-theme.json"
     }
   }
 }
 ```
 
-Running `npx iridis ./category-w3c.config.json` writes two files to `./out/`: `music.css` (CSS custom properties) and `music.capacitor.json` (StatusBar/SplashScreen parameters).
+Running `npx iridis ./category-w3c.config.json` writes three files to `./out/`: `music.css` (CSS custom properties), `music-statusbar.json` (StatusBar parameters), and `music-theme.json` (Capacitor theme map).
 
 ## Wiring into a build pipeline
 

@@ -1,28 +1,22 @@
 /**
- * ColorRecord monomorphic shape regression.
+ * ColorRecordShape — scenario-matrix suite.
  *
- * Every `ColorRecordInterface` allocation in the codebase MUST produce a
- * record with the same key set in the same insertion order so V8 collapses
- * them into a single hidden class. The factory is the canonical
- * allocation point; intake tasks and ClampOklch route through it without
- * post-call spread-append patterns that would reorder keys or add
- * shape-divergent fields.
+ * Subject: `ColorRecordInterface` monomorphic hidden-class discipline.
  *
- * These tests pin the canonical key list and assert it across every
- * allocation path the pipeline exercises:
- *   - factory methods: fromOklch, fromRgb, fromHex, fromHsl
- *   - intake tasks:    intake:hex, intake:rgb, intake:hsl, intake:oklch,
- *                      intake:lab, intake:named, intake:imagePixels
- *   - clamp task:      clamp:oklch (when clamping fires; preserves shape)
+ * Every `ColorRecordInterface` allocation MUST produce a record with the
+ * same key set in the same insertion order so V8 collapses them into a
+ * single hidden class. The factory is the canonical allocation point;
+ * intake tasks and ClampOklch route through it.
  *
- * Failure mode prevented: a future refactor reintroducing
- * `{...record, sourceFormat: 'x'}` or `{...record, hints: {...}}` would
- * produce records with a different key order than the factory output,
- * causing V8 to allocate a second hidden class. Megamorphic call sites
- * (e.g. EnforceContrast iterating over state.colors) would then deopt.
+ * Cells:
+ *   1. factory    — every factory method (fromOklch, fromRgb, fromHex, fromHsl)
+ *                   produces canonical key order
+ *   2. intake     — every intake task emits canonical key order via Engine.run
+ *   3. clamp      — clamp:oklch preserves canonical key order on the rebuilt record
+ *   4. stability  — all factory paths produce identical Object.keys arrays
+ *
+ * Canonical order: oklch · rgb · hex · alpha · sourceFormat · displayP3 · hints
  */
-
-import { test } from 'node:test';
 
 import type {
   ColorRecordInterface,
@@ -32,12 +26,19 @@ import type {
   TaskInterface,
 } from '@studnicky/iridis';
 import { Engine }            from '@studnicky/iridis';
-import { coreTasks }         from '@studnicky/iridis/tasks';
+import { test }              from 'node:test';
+import {
+  ScenarioRunner,
+  assert,
+  type ScenarioInterface,
+} from '../_runner/ScenarioRunner.ts';
+import { coreTasks }          from '@studnicky/iridis/tasks';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
-import { assert }            from './ScenarioRunner.ts';
 
-/* The canonical insertion order. Every record MUST match this exact
- * array (same elements, same order). */
+// ---------------------------------------------------------------------------
+// Test helpers
+// ---------------------------------------------------------------------------
+
 const CANONICAL_KEYS: readonly string[] = [
   'oklch',
   'rgb',
@@ -52,264 +53,385 @@ function keysOf(record: ColorRecordInterface): readonly string[] {
   return Object.keys(record);
 }
 
-function assertCanonical(record: ColorRecordInterface, label: string): void {
-  const actual = keysOf(record);
-  assert.deepStrictEqual(
-    actual,
-    CANONICAL_KEYS,
-    `${label}: expected canonical key order ${CANONICAL_KEYS.join(',')}, got ${actual.join(',')}`,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Factory methods
-// ---------------------------------------------------------------------------
-
-test('ColorRecord shape :: factory :: fromOklch produces canonical key order', () => {
-  const record = colorRecordFactory.fromOklch(0.5, 0.1, 200);
-  assertCanonical(record, 'fromOklch');
-});
-
-test('ColorRecord shape :: factory :: fromOklch with hints produces canonical key order', () => {
-  const record = colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'accent' });
-  assertCanonical(record, 'fromOklch+hints');
-});
-
-test('ColorRecord shape :: factory :: fromRgb produces canonical key order', () => {
-  const record = colorRecordFactory.fromRgb(0.3, 0.6, 0.9);
-  assertCanonical(record, 'fromRgb');
-});
-
-test('ColorRecord shape :: factory :: fromRgb with sourceFormat=lab produces canonical key order', () => {
-  const record = colorRecordFactory.fromRgb(0.3, 0.6, 0.9, 1, 'lab');
-  assertCanonical(record, 'fromRgb+lab');
-});
-
-test('ColorRecord shape :: factory :: fromHex 6-digit produces canonical key order', () => {
-  const record = colorRecordFactory.fromHex('#3b82f6');
-  assertCanonical(record, 'fromHex-6');
-});
-
-test('ColorRecord shape :: factory :: fromHex 8-digit produces canonical key order', () => {
-  const record = colorRecordFactory.fromHex('#3b82f680');
-  assertCanonical(record, 'fromHex-8');
-});
-
-test('ColorRecord shape :: factory :: fromHex with alpha override produces canonical key order', () => {
-  const record = colorRecordFactory.fromHex('#3b82f6', 0.5);
-  assertCanonical(record, 'fromHex+alpha');
-});
-
-test('ColorRecord shape :: factory :: fromHex with sourceFormat=named produces canonical key order', () => {
-  const record = colorRecordFactory.fromHex('#ff0000', undefined, 'named');
-  assertCanonical(record, 'fromHex+named');
-});
-
-test('ColorRecord shape :: factory :: fromHsl produces canonical key order', () => {
-  const record = colorRecordFactory.fromHsl(120, 0.5, 0.5);
-  assertCanonical(record, 'fromHsl');
-});
-
-// ---------------------------------------------------------------------------
-// Intake tasks: drive each format through the engine and inspect state.colors
-// ---------------------------------------------------------------------------
-
 function makeEngine(): Engine {
   const engine = new Engine();
   for (const t of coreTasks) engine.tasks.register(t);
   return engine;
 }
 
-async function runIntakeOnly(
-  engine:   Engine,
-  pipeline: readonly string[],
-  input:    InputInterface,
-): Promise<PaletteStateInterface> {
-  engine.pipeline(pipeline);
-  return engine.run(input);
+// ---------------------------------------------------------------------------
+// Cell 1 — factory method key order
+//
+// Every factory method must produce the canonical key set in the canonical
+// insertion order. Checked via Object.keys. Covers:
+//   - fromOklch (no hints, with hints)
+//   - fromRgb (no sourceFormat, with alternate sourceFormat)
+//   - fromHex (6-digit, 8-digit with embedded alpha, with alpha override, with sourceFormat)
+//   - fromHsl
+// ---------------------------------------------------------------------------
+
+interface Cell1Input {
+  readonly label:  string;
+  readonly record: ColorRecordInterface;
+}
+interface Cell1Output {
+  readonly actual:    readonly string[];
+  readonly label:     string;
 }
 
-test('ColorRecord shape :: intake :: intake:hex emits canonical key order', async () => {
-  const engine = makeEngine();
-  const state  = await runIntakeOnly(engine, ['intake:hex'], { 'colors': ['#3b82f6'] });
-  assert.strictEqual(state.colors.length, 1);
-  assertCanonical(state.colors[0]!, 'intake:hex');
-});
+const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
+  {
+    name: 'fromOklch basic produces canonical key order',
+    kind: 'happy',
+    input: { label: 'fromOklch', record: colorRecordFactory.fromOklch(0.5, 0.1, 200) },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromOklch] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromOklch] key order: ${output!.label}`);
+    },
+  },
+  {
+    name: 'fromOklch with hints produces canonical key order',
+    kind: 'happy',
+    input: {
+      label:  'fromOklch+hints',
+      record: colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'accent' }),
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromOklch-hints] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromOklch-hints] key order: ${output!.label}`);
+    },
+  },
+  {
+    name: 'fromRgb basic produces canonical key order',
+    kind: 'happy',
+    input: { label: 'fromRgb', record: colorRecordFactory.fromRgb(0.3, 0.6, 0.9) },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromRgb] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromRgb] key order: ${output!.label}`);
+    },
+  },
+  {
+    name: 'fromRgb with sourceFormat=lab produces canonical key order',
+    kind: 'happy',
+    input: { label: 'fromRgb+lab', record: colorRecordFactory.fromRgb(0.3, 0.6, 0.9, 1, 'lab') },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromRgb-lab] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromRgb-lab] key order: ${output!.label}`);
+    },
+  },
+  {
+    name: 'fromHex 6-digit produces canonical key order',
+    kind: 'happy',
+    input: { label: 'fromHex-6', record: colorRecordFactory.fromHex('#3b82f6') },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromHex-6] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromHex-6] key order: ${output!.label}`);
+    },
+  },
+  {
+    name: 'fromHex 8-digit with embedded alpha produces canonical key order',
+    kind: 'happy',
+    input: { label: 'fromHex-8', record: colorRecordFactory.fromHex('#3b82f680') },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromHex-8] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromHex-8] key order: ${output!.label}`);
+    },
+  },
+  {
+    name: 'fromHex with alpha override produces canonical key order',
+    kind: 'happy',
+    input: { label: 'fromHex+alpha', record: colorRecordFactory.fromHex('#3b82f6', 0.5) },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromHex-alpha] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromHex-alpha] key order: ${output!.label}`);
+    },
+  },
+  {
+    name: 'fromHex with sourceFormat=named produces canonical key order',
+    kind: 'happy',
+    input: { label: 'fromHex+named', record: colorRecordFactory.fromHex('#ff0000', undefined, 'named') },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromHex-named] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromHex-named] key order: ${output!.label}`);
+    },
+  },
+  {
+    name: 'fromHsl produces canonical key order',
+    kind: 'happy',
+    input: { label: 'fromHsl', record: colorRecordFactory.fromHsl(120, 0.5, 0.5) },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromHsl] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromHsl] key order: ${output!.label}`);
+    },
+  },
+  {
+    name: 'fromOklch hue=0 (achromatic boundary) produces canonical key order',
+    kind: 'edge',
+    input: { label: 'fromOklch-hue0', record: colorRecordFactory.fromOklch(0.5, 0.0, 0) },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromOklch-hue0] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromOklch-hue0] key order: ${output!.label}`);
+    },
+  },
+  {
+    name: 'fromOklch hue=360 (upper hue boundary) produces canonical key order',
+    kind: 'edge',
+    input: { label: 'fromOklch-hue360', record: colorRecordFactory.fromOklch(0.5, 0.1, 360) },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=fromOklch-hue360] must not throw');
+      assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromOklch-hue360] key order: ${output!.label}`);
+    },
+  },
+];
 
-test('ColorRecord shape :: intake :: intake:hex with 8-digit alpha emits canonical key order', async () => {
-  const engine = makeEngine();
-  const state  = await runIntakeOnly(engine, ['intake:hex'], { 'colors': ['#3b82f680'] });
-  assert.strictEqual(state.colors.length, 1);
-  assertCanonical(state.colors[0]!, 'intake:hex-alpha');
-});
-
-test('ColorRecord shape :: intake :: intake:rgb emits canonical key order', async () => {
-  const engine = makeEngine();
-  const state  = await runIntakeOnly(
-    engine,
-    ['intake:rgb'],
-    { 'colors': [{ 'r': 100, 'g': 150, 'b': 200 }] },
-  );
-  assert.strictEqual(state.colors.length, 1);
-  assertCanonical(state.colors[0]!, 'intake:rgb');
-});
-
-test('ColorRecord shape :: intake :: intake:hsl emits canonical key order', async () => {
-  const engine = makeEngine();
-  const state  = await runIntakeOnly(
-    engine,
-    ['intake:hsl'],
-    { 'colors': [{ 'h': 200, 's': 0.5, 'l': 0.5 }] },
-  );
-  assert.strictEqual(state.colors.length, 1);
-  assertCanonical(state.colors[0]!, 'intake:hsl');
-});
-
-test('ColorRecord shape :: intake :: intake:oklch emits canonical key order', async () => {
-  const engine = makeEngine();
-  const state  = await runIntakeOnly(
-    engine,
-    ['intake:oklch'],
-    { 'colors': [{ 'l': 0.6, 'c': 0.15, 'h': 250 }] },
-  );
-  assert.strictEqual(state.colors.length, 1);
-  assertCanonical(state.colors[0]!, 'intake:oklch');
-});
-
-test('ColorRecord shape :: intake :: intake:lab emits canonical key order', async () => {
-  const engine = makeEngine();
-  const state  = await runIntakeOnly(
-    engine,
-    ['intake:lab'],
-    { 'colors': [{ 'l': 50, 'a': 20, 'b': -30 }] },
-  );
-  assert.strictEqual(state.colors.length, 1);
-  assertCanonical(state.colors[0]!, 'intake:lab');
-});
-
-test('ColorRecord shape :: intake :: intake:named emits canonical key order', async () => {
-  const engine = makeEngine();
-  const state  = await runIntakeOnly(engine, ['intake:named'], { 'colors': ['rebeccapurple'] });
-  assert.strictEqual(state.colors.length, 1);
-  assertCanonical(state.colors[0]!, 'intake:named');
-});
-
-test('ColorRecord shape :: intake :: intake:imagePixels emits canonical key order', async () => {
-  const engine = makeEngine();
-  // Two opaque pixels (4 bytes each: r,g,b,a).
-  const data = new Uint8ClampedArray([
-    255, 0,   0,   255,
-    0,   128, 255, 255,
-  ]);
-  const state = await runIntakeOnly(
-    engine,
-    ['intake:imagePixels'],
-    { 'colors': [{ 'data': data, 'width': 2, 'height': 1 }] },
-  );
-  assert.strictEqual(state.colors.length, 2);
-  assertCanonical(state.colors[0]!, 'intake:imagePixels[0]');
-  assertCanonical(state.colors[1]!, 'intake:imagePixels[1]');
-});
-
-test('ColorRecord shape :: intake :: intake:any emits canonical key order for mixed input', async () => {
-  const engine = makeEngine();
-  const state  = await runIntakeOnly(
-    engine,
-    ['intake:any'],
-    { 'colors': ['#3b82f6', { 'l': 0.6, 'c': 0.15, 'h': 250 }, 'rebeccapurple'] },
-  );
-  assert.ok(state.colors.length >= 3, `expected ≥3 colors, got ${state.colors.length}`);
-  for (let i = 0; i < state.colors.length; i++) {
-    assertCanonical(state.colors[i]!, `intake:any[${i}]`);
-  }
-});
+new ScenarioRunner<Cell1Input, Cell1Output>(
+  'ColorRecordShape :: cell-1 :: factory',
+  (input) => ({
+    actual: keysOf(input.record),
+    label:  input.label,
+  }),
+).run(cell1Scenarios);
 
 // ---------------------------------------------------------------------------
-// Clamp task: clamp:oklch must preserve canonical shape on the rebuilt record
+// Cell 2 — intake task key order
+//
+// Each intake task drives a full Engine.run and the resulting state.colors
+// records must carry the canonical key order. Covers every registered intake.
 // ---------------------------------------------------------------------------
 
-test('ColorRecord shape :: clamp :: clamp:oklch preserves canonical key order after clamping', async () => {
-  /* Schema with a tight chroma range forces clamp:oklch to actually
-   * rebuild the record (the factory call inside ClampOklch is what we
-   * care about; it must produce the canonical shape including
-   * preserved sourceFormat and hints). */
-  const engine = makeEngine();
-  engine.pipeline(['intake:hex', 'clamp:oklch']);
-  const state = await engine.run({
-    'colors': ['#3b82f6'],
-    'roles': {
-      'name': 'tight-blue',
-      'roles': [
-        {
-          'name':           'background',
-          'lightnessRange': [0.50, 0.60],
-          'chromaRange':    [0.00, 0.02],
+interface Cell2Input {
+  readonly pipeline: readonly string[];
+  readonly input:    InputInterface;
+  readonly label:    string;
+}
+interface Cell2Output {
+  readonly records: readonly ColorRecordInterface[];
+  readonly label:   string;
+}
+
+const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
+  {
+    name: 'intake:hex emits canonical key order',
+    kind: 'happy',
+    input: { pipeline: ['intake:hex'], input: { 'colors': ['#3b82f6'] }, label: 'intake:hex' },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=intake-hex] must not throw');
+      assert.strictEqual(output!.records.length, 1, '[cell=2, scenario=intake-hex] one record');
+      assert.deepStrictEqual(keysOf(output!.records[0]!), CANONICAL_KEYS, `[cell=2, scenario=intake-hex] key order`);
+    },
+  },
+  {
+    name: 'intake:hex with 8-digit alpha emits canonical key order',
+    kind: 'happy',
+    input: { pipeline: ['intake:hex'], input: { 'colors': ['#3b82f680'] }, label: 'intake:hex-alpha' },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=intake-hex-alpha] must not throw');
+      assert.deepStrictEqual(keysOf(output!.records[0]!), CANONICAL_KEYS, `[cell=2, scenario=intake-hex-alpha] key order`);
+    },
+  },
+  {
+    name: 'intake:rgb emits canonical key order',
+    kind: 'happy',
+    input: {
+      pipeline: ['intake:rgb'],
+      input:    { 'colors': [{ 'r': 100, 'g': 150, 'b': 200 }] },
+      label:    'intake:rgb',
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=intake-rgb] must not throw');
+      assert.deepStrictEqual(keysOf(output!.records[0]!), CANONICAL_KEYS, `[cell=2, scenario=intake-rgb] key order`);
+    },
+  },
+  {
+    name: 'intake:hsl emits canonical key order',
+    kind: 'happy',
+    input: {
+      pipeline: ['intake:hsl'],
+      input:    { 'colors': [{ 'h': 200, 's': 0.5, 'l': 0.5 }] },
+      label:    'intake:hsl',
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=intake-hsl] must not throw');
+      assert.deepStrictEqual(keysOf(output!.records[0]!), CANONICAL_KEYS, `[cell=2, scenario=intake-hsl] key order`);
+    },
+  },
+  {
+    name: 'intake:oklch emits canonical key order',
+    kind: 'happy',
+    input: {
+      pipeline: ['intake:oklch'],
+      input:    { 'colors': [{ 'l': 0.6, 'c': 0.15, 'h': 250 }] },
+      label:    'intake:oklch',
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=intake-oklch] must not throw');
+      assert.deepStrictEqual(keysOf(output!.records[0]!), CANONICAL_KEYS, `[cell=2, scenario=intake-oklch] key order`);
+    },
+  },
+  {
+    name: 'intake:lab emits canonical key order',
+    kind: 'happy',
+    input: {
+      pipeline: ['intake:lab'],
+      input:    { 'colors': [{ 'l': 50, 'a': 20, 'b': -30 }] },
+      label:    'intake:lab',
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=intake-lab] must not throw');
+      assert.deepStrictEqual(keysOf(output!.records[0]!), CANONICAL_KEYS, `[cell=2, scenario=intake-lab] key order`);
+    },
+  },
+  {
+    name: 'intake:named emits canonical key order',
+    kind: 'happy',
+    input: { pipeline: ['intake:named'], input: { 'colors': ['rebeccapurple'] }, label: 'intake:named' },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=intake-named] must not throw');
+      assert.deepStrictEqual(keysOf(output!.records[0]!), CANONICAL_KEYS, `[cell=2, scenario=intake-named] key order`);
+    },
+  },
+  {
+    name: 'intake:any mixed input emits canonical key order for all records',
+    kind: 'happy',
+    input: {
+      pipeline: ['intake:any'],
+      input:    { 'colors': ['#3b82f6', { 'l': 0.6, 'c': 0.15, 'h': 250 }, 'rebeccapurple'] },
+      label:    'intake:any',
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=intake-any] must not throw');
+      assert.ok(output!.records.length >= 3, `[cell=2, scenario=intake-any] expected ≥3 records, got ${output!.records.length}`);
+      for (let i = 0; i < output!.records.length; i++) {
+        assert.deepStrictEqual(keysOf(output!.records[i]!), CANONICAL_KEYS, `[cell=2, scenario=intake-any] record[${i}] key order`);
+      }
+    },
+  },
+  {
+    name: 'intake:imagePixels two pixels emit canonical key order',
+    kind: 'edge',
+    input: {
+      pipeline: ['intake:imagePixels'],
+      input:    { 'colors': [{ 'data': new Uint8ClampedArray([255, 0, 0, 255, 0, 128, 255, 255]), 'width': 2, 'height': 1 }] },
+      label:    'intake:imagePixels',
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=intake-imagePixels] must not throw');
+      assert.strictEqual(output!.records.length, 2, '[cell=2, scenario=intake-imagePixels] two records');
+      assert.deepStrictEqual(keysOf(output!.records[0]!), CANONICAL_KEYS, `[cell=2, scenario=intake-imagePixels] record[0] key order`);
+      assert.deepStrictEqual(keysOf(output!.records[1]!), CANONICAL_KEYS, `[cell=2, scenario=intake-imagePixels] record[1] key order`);
+    },
+  },
+];
+
+new ScenarioRunner<Cell2Input, Cell2Output>(
+  'ColorRecordShape :: cell-2 :: intake',
+  async (input) => {
+    const engine = makeEngine();
+    engine.pipeline(input.pipeline);
+    const state = await engine.run(input.input);
+    return { records: state.colors, label: input.label };
+  },
+).run(cell2Scenarios);
+
+// ---------------------------------------------------------------------------
+// Cell 3 — clamp:oklch preserves canonical key order
+//
+// When clamp:oklch rebuilds a record (out-of-range L or C) the rebuilt
+// record must carry the canonical key order, sourceFormat, and hints.
+// ---------------------------------------------------------------------------
+
+interface Cell3Input {
+  readonly label:    string;
+  readonly pipeline: readonly string[];
+  readonly input:    InputInterface;
+  readonly seedHook: boolean;
+  readonly hinted:   ColorRecordInterface | null;
+}
+interface Cell3Output {
+  readonly record:   ColorRecordInterface;
+  readonly label:    string;
+}
+
+const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
+  {
+    name: 'clamp:oklch via intake:hex preserves canonical key order',
+    kind: 'happy',
+    input: {
+      label:     'clamp:oklch-pre-hint',
+      pipeline:  ['intake:hex', 'clamp:oklch'],
+      input: {
+        'colors': ['#3b82f6'],
+        'roles': {
+          'name': 'tight-blue',
+          'roles': [{ 'name': 'background', 'lightnessRange': [0.50, 0.60], 'chromaRange': [0.00, 0.02] }],
         },
-      ],
+      },
+      seedHook:  false,
+      hinted:    null,
     },
-  });
-  assert.strictEqual(state.colors.length, 1);
-  /* The default schema-less branch is exercised because the color
-   * carries no hints.role, so the conservative defaults apply.
-   * #3b82f6's chroma (~0.18) exceeds the 0.40 ceiling? No, it doesn't.
-   * Force the rebuild via the role-hint path instead. */
-  assertCanonical(state.colors[0]!, 'clamp:oklch-pre-hint');
-});
-
-test('ColorRecord shape :: clamp :: clamp:oklch with hint preserves canonical key order', async () => {
-  /* Construct a hinted color via factory then push it onto state via
-   * an onRunStart hook. clamp:oklch will rebuild it because the hinted
-   * role declares a tight chroma range the input exceeds. */
-  const engine = makeEngine();
-
-  const hinted: ColorRecordInterface = colorRecordFactory.fromHex(
-    '#3b82f6',
-    undefined,
-    'hex',
-    { 'role': 'background' },
-  );
-
-  const seed: TaskInterface = {
-    'name': 'seed:hinted',
-    'manifest': { 'name': 'seed:hinted', 'phase': 'onRunStart' },
-    run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
-      state.colors.push(hinted);
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=3, scenario=clamp-hex] must not throw');
+      assert.deepStrictEqual(keysOf(output!.record), CANONICAL_KEYS, `[cell=3, scenario=clamp-hex] key order: ${output!.label}`);
     },
-  };
-  engine.tasks.hook('onRunStart', seed);
-  engine.pipeline(['clamp:oklch']);
-
-  const state = await engine.run({
-    'colors': [],
-    'roles': {
-      'name': 'tight-blue',
-      'roles': [
-        {
-          'name':           'background',
-          'required':       true,
-          'lightnessRange': [0.50, 0.60],
-          'chromaRange':    [0.00, 0.02],
+  },
+  {
+    name: 'clamp:oklch with role-hinted color preserves canonical key order, sourceFormat, and hints',
+    kind: 'happy',
+    input: {
+      label:    'clamp:oklch+hint',
+      pipeline: ['clamp:oklch'],
+      input: {
+        'colors': [],
+        'roles': {
+          'name': 'tight-blue',
+          'roles': [{ 'name': 'background', 'required': true, 'lightnessRange': [0.50, 0.60], 'chromaRange': [0.00, 0.02] }],
         },
-      ],
+      },
+      seedHook: true,
+      hinted:   colorRecordFactory.fromHex('#3b82f6', undefined, 'hex', { 'role': 'background' }),
     },
-  });
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=3, scenario=clamp-hinted] must not throw');
+      assert.deepStrictEqual(keysOf(output!.record), CANONICAL_KEYS, `[cell=3, scenario=clamp-hinted] key order`);
+      assert.ok(output!.record.oklch.c <= 0.02, `[cell=3, scenario=clamp-hinted] clamp fired: C=${output!.record.oklch.c}`);
+      assert.strictEqual(output!.record.hints?.role, 'background', '[cell=3, scenario=clamp-hinted] role hint preserved');
+      assert.strictEqual(output!.record.sourceFormat, 'hex', '[cell=3, scenario=clamp-hinted] sourceFormat preserved');
+    },
+  },
+];
 
-  assert.strictEqual(state.colors.length, 1);
-  const clamped = state.colors[0]!;
-  assertCanonical(clamped, 'clamp:oklch+hint');
-  /* Sanity: clamp:oklch must have actually fired (chroma is now within range). */
-  assert.ok(clamped.oklch.c <= 0.02, `expected chroma ≤ 0.02 after clamp, got ${clamped.oklch.c}`);
-  /* Hints and sourceFormat must be preserved through the clamp rebuild. */
-  assert.strictEqual(clamped.hints?.role, 'background');
-  assert.strictEqual(clamped.sourceFormat, 'hex');
-});
+new ScenarioRunner<Cell3Input, Cell3Output>(
+  'ColorRecordShape :: cell-3 :: clamp',
+  async (input) => {
+    const engine = makeEngine();
+
+    if (input.seedHook && input.hinted !== null) {
+      const hinted = input.hinted;
+      const seed: TaskInterface = {
+        'name': 'seed:hinted',
+        'manifest': { 'name': 'seed:hinted', 'phase': 'onRunStart' },
+        run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
+          state.colors.push(hinted);
+        },
+      };
+      engine.tasks.hook('onRunStart', seed);
+    }
+
+    engine.pipeline(input.pipeline);
+    const state = await engine.run(input.input);
+    return { record: state.colors[0]!, label: input.label };
+  },
+).run(cell3Scenarios);
 
 // ---------------------------------------------------------------------------
-// Cross-allocation shape stability: every record returned anywhere has the
-// same Object.keys array
+// Golden fixture — cross-allocation key stability
+//
+// All factory paths must produce identical Object.keys arrays. This test is
+// table-incompatible because it asserts pairwise equality across all records
+// simultaneously — a single cross-record invariant, not per-record assertions.
 // ---------------------------------------------------------------------------
 
-test('ColorRecord shape :: stability :: every factory path returns identical key sets', () => {
+test('ColorRecordShape :: cell-4 :: stability :: every factory path returns identical key sets', () => {
   const records: readonly ColorRecordInterface[] = [
     colorRecordFactory.fromOklch(0.5, 0.1, 200),
     colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'r' }),
@@ -328,7 +450,7 @@ test('ColorRecord shape :: stability :: every factory path returns identical key
     assert.strictEqual(
       actual,
       reference,
-      `record ${i} key order diverged: expected ${reference}, got ${actual}`,
+      `[cell=4, scenario=stability] record[${i}] key order diverged: expected ${reference}, got ${actual}`,
     );
   }
 });

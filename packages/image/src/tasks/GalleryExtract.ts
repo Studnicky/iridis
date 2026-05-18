@@ -9,7 +9,6 @@ import {
   clusterDeltaEMerge,
   clusterMedianCut,
   clusterMedianCutWeighted,
-  getOrCreateMetadata,
 } from '@studnicky/iridis';
 import type { GalleryAlgorithmType } from '../types/augmentation.ts';
 
@@ -28,13 +27,13 @@ import type { GalleryAlgorithmType } from '../types/augmentation.ts';
  *     `gallery:histogram` upstream so the merger operates over ≤ a few
  *     hundred weighted bins rather than tens of thousands of pixels.
  *
- * Configuration (via `state.metadata.gallery`):
+ * Configuration (via `state.metadata['gallery']`):
  *   k:         number of dominant colors to extract (default: 5)
  *   algorithm: `'median-cut'` (default) | `'delta-e'`
  *
  * Writes:
- *   state.metadata.gallery.dominantColors: the K representative colors
- *   state.colors:                          replaced with the K-color set
+ *   state.metadata['gallery:dominantColors']: the K representative colors
+ *   state.colors:                             replaced with the K-color set
  */
 /* True when ANY input carries a declared `hints.weight`. The presence
    of the hint key is the signal (not its magnitude), so a histogram
@@ -72,15 +71,17 @@ export class GalleryExtract implements TaskInterface {
 
   readonly 'manifest': TaskManifestInterface = {
     'name':        'gallery:extract',
-    'reads':       ['colors', 'metadata.gallery.k', 'metadata.gallery.algorithm'],
-    'writes':      ['colors', 'metadata.gallery.dominantColors'],
+    'reads':       ['colors', 'metadata.gallery'],
+    'writes':      ['colors', 'metadata.gallery:dominantColors'],
     'description': 'Reduce input records to K dominant colors via median-cut (weighted) or deltaE-merge clustering',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const galleryMeta = getOrCreateMetadata(state, 'gallery');
-    const k = galleryMeta['k'] ?? 5;
-    const algorithm: GalleryAlgorithmType = galleryMeta['algorithm'] ?? 'median-cut';
+    const galleryConfig = state.metadata['gallery'] as
+      | { 'k'?: number; 'algorithm'?: GalleryAlgorithmType; 'deltaECap'?: number }
+      | undefined;
+    const k = galleryConfig?.k ?? 5;
+    const algorithm: GalleryAlgorithmType = galleryConfig?.algorithm ?? 'median-cut';
 
     ctx.logger.debug('GalleryExtract', 'run', 'extracting dominant colors', {
       'inputCount': state.colors.length,
@@ -97,7 +98,7 @@ export class GalleryExtract implements TaskInterface {
 
     let dominant: ColorRecordInterface[];
     if (algorithm === 'delta-e') {
-      const cap = Math.max(8, Math.min(512, Math.floor(galleryMeta['deltaECap'] ?? DELTA_E_INPUT_CAP_DEFAULT)));
+      const cap = Math.max(8, Math.min(512, Math.floor(galleryConfig?.deltaECap ?? DELTA_E_INPUT_CAP_DEFAULT)));
       const trimmed = trimByWeightDescending(state.colors, cap);
       if (trimmed.length < state.colors.length) {
         ctx.logger.debug('GalleryExtract', 'run', 'trimmed delta-E input by weight', {
@@ -113,7 +114,7 @@ export class GalleryExtract implements TaskInterface {
       dominant = clusterMedianCut.apply(state.colors, clamp);
     }
 
-    galleryMeta['dominantColors'] = dominant;
+    state.metadata['gallery:dominantColors'] = dominant;
 
     state.colors.splice(0, state.colors.length, ...dominant);
 

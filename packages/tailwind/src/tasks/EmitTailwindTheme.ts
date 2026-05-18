@@ -151,12 +151,13 @@ export class EmitTailwindTheme implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:tailwindTheme',
     'reads':       ['roles', 'metadata'],
-    'writes':      ['outputs.tailwind'],
+    'writes':      ['outputs.tailwind:theme'],
     'description': 'Emit Tailwind theme.colors object and config module from resolved roles',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const prefix = state.metadata['cssVarPrefix'] ?? '--c-';
+    const prefixRaw = state.metadata['cssVarPrefix'];
+    const prefix    = typeof prefixRaw === 'string' ? prefixRaw : '--c-';
 
     const colors  = buildColorsShape(state.roles);
     const cssVars = buildCssVarsSheet(state.roles, prefix);
@@ -178,7 +179,7 @@ export class EmitTailwindTheme implements TaskInterface {
       'config':  config,
     };
 
-    state.outputs['tailwind'] = output;
+    state.outputs['tailwind:theme'] = output;
 
     ctx.logger.debug('EmitTailwindTheme', 'run', 'Emitted Tailwind theme', {
       'colorGroups': Object.keys(colors).length,

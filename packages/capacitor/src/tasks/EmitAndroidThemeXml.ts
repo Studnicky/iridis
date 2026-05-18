@@ -5,7 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateOutput } from '@studnicky/iridis';
+import type { SplashScreenOutputInterface, StatusBarOutputInterface } from '../types/index.ts';
 
 function resolveHexRole(
   roles: Record<string, ColorRecordInterface>,
@@ -29,20 +29,21 @@ export class EmitAndroidThemeXml implements TaskInterface {
 
   readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:androidThemeXml',
-    'reads':       ['roles', 'outputs.capacitor.statusBar', 'outputs.capacitor.splashScreen'],
-    'writes':      ['outputs.capacitor.androidThemeXml'],
+    'reads':       ['roles', 'outputs.capacitor:statusBar', 'outputs.capacitor:splashScreen'],
+    'writes':      ['outputs.capacitor:androidThemeXml'],
     'description': 'Emit Android themes.xml fragment for Capacitor splash screen and status bar.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const roles = state.roles;
 
-    const capacitorOut = getOrCreateOutput(state, 'capacitor');
+    const priorStatusBar    = state.outputs['capacitor:statusBar']    as StatusBarOutputInterface   | undefined;
+    const priorSplashScreen = state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterface | undefined;
 
-    const statusBarColor = capacitorOut.statusBar?.backgroundColor
+    const statusBarColor = priorStatusBar?.backgroundColor
       ?? resolveHexRole(roles, 'topBar', 'surface', 'base');
 
-    const splashColor = capacitorOut.splashScreen?.backgroundColor
+    const splashColor = priorSplashScreen?.backgroundColor
       ?? resolveHexRole(roles, 'surface', 'background', 'base');
 
     const windowBackground  = resolveHexRole(roles, 'background', 'surface', 'base');
@@ -69,7 +70,7 @@ export class EmitAndroidThemeXml implements TaskInterface {
       '</resources>',
     ].join('\n');
 
-    capacitorOut['androidThemeXml'] = xml;
+    state.outputs['capacitor:androidThemeXml'] = xml;
 
     ctx.logger.debug('EmitAndroidThemeXml', 'run', 'Android themes.xml fragment generated');
   }

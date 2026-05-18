@@ -8,11 +8,12 @@ import type {
 } from '../types/index.ts';
 import { TaskRegistry }        from '../registry/TaskRegistry.ts';
 import { consoleLogger }       from './ConsoleLogger.ts';
-import { validator }           from '../model/Validator.ts';
+import { Validator }           from '../model/Validator.ts';
 import { InputSchema }         from '../model/InputSchema.ts';
 import { PluginSchema }        from '../model/PluginSchema.ts';
 import { PaletteStateSchema }  from '../model/PaletteStateSchema.ts';
 import { RoleSchemaSchema }    from '../model/RoleSchemaSchema.ts';
+import { TaskManifestSchema }  from '../model/TaskManifestSchema.ts';
 
 /**
  * The single composition root of the iridis pipeline. An Engine owns one
@@ -42,19 +43,39 @@ export class Engine implements EngineInterface {
   private readonly adoptedPlugins = new Set<string>();
 
   /**
+   * Per-engine ajv-backed validator (owns the ajv instance and compile cache).
+   * Each Engine gets its own Validator so plugin-contributed schemas registered
+   * into one Engine's validator don't leak to another.
+   */
+  private readonly validator: Validator = new Validator();
+
+  /**
+   * Accumulated plugin output schema contributions.
+   * Key: slot name (e.g. 'json', 'cssVars'). Value: the JSON Schema to validate
+   * state.outputs[key] against at run exit.
+   */
+  private readonly outputSchemas:   Map<string, Record<string, unknown>> = new Map();
+
+  /**
+   * Accumulated plugin metadata schema contributions.
+   * Key: slot name. Value: the JSON Schema to validate state.metadata[key] against.
+   */
+  private readonly metadataSchemas: Map<string, Record<string, unknown>> = new Map();
+
+  /**
    * Registers every task and math primitive a plugin contributes in a
    * single call. Idempotent at the registry level: re-adopting a plugin
    * overwrites prior entries with the same names, which is how downstream
    * consumers monkey-patch built-ins.
    *
-   * The plugin shape is validated against `PluginSchema` at the boundary.
-   * Well-formed plugins pass in O(1); the check is fast enough to leave on
-   * in production.
+   * Validates: plugin shape, each task manifest (if present), and each
+   * plugin-contributed output/metadata schema (must be ajv-compilable).
+   * Rejects on first failure.
    */
   adopt(plugin: PluginInterface): void {
-    const result = validator.validate(PluginSchema, plugin);
-    if (!result.valid) {
-      const first = result.errors[0];
+    const pluginResult = this.validator.validate(PluginSchema, plugin);
+    if (!pluginResult.valid) {
+      const first = pluginResult.errors[0];
       throw new Error(
         `Engine.adopt: plugin invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
       );
@@ -68,11 +89,48 @@ export class Engine implements EngineInterface {
     this.adoptedPlugins.add(plugin.name);
 
     for (const task of plugin.tasks()) {
+      if (task.manifest !== undefined) {
+        const manifestResult = this.validator.validate(TaskManifestSchema, task.manifest);
+        if (!manifestResult.valid) {
+          const first = manifestResult.errors[0];
+          throw new Error(
+            `Engine.adopt: task '${task.name}' manifest invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+          );
+        }
+      }
+
       const phase = task.manifest?.phase;
       if (phase) {
         this.tasks.hook(phase, task);
       } else {
         this.tasks.register(task);
+      }
+    }
+
+    // Validate and register plugin-contributed schemas
+    if (typeof plugin.schemas === 'function') {
+      const contrib = plugin.schemas();
+
+      if (contrib.outputs !== undefined) {
+        for (const [slot, schema] of Object.entries(contrib.outputs)) {
+          if (!this.validator.tryCompile(schema)) {
+            throw new Error(
+              `Engine.adopt: plugin '${plugin.name}' contributed malformed output schema for slot '${slot}'`,
+            );
+          }
+          this.outputSchemas.set(slot, schema);
+        }
+      }
+
+      if (contrib.metadata !== undefined) {
+        for (const [slot, schema] of Object.entries(contrib.metadata)) {
+          if (!this.validator.tryCompile(schema)) {
+            throw new Error(
+              `Engine.adopt: plugin '${plugin.name}' contributed malformed metadata schema for slot '${slot}'`,
+            );
+          }
+          this.metadataSchemas.set(slot, schema);
+        }
       }
     }
 
@@ -87,6 +145,8 @@ export class Engine implements EngineInterface {
    * Each name MUST already be registered; an unknown name throws now
    * (fail-fast at composition) rather than mid-pipeline. When no order
    * is set, `run()` executes tasks in registration order.
+   *
+   * Re-validates each named task's manifest at pipeline declaration time.
    */
   pipeline(order: readonly string[]): void {
     for (const name of order) {
@@ -138,9 +198,15 @@ export class Engine implements EngineInterface {
    * loop because they're invoked through the `onRunStart` / `onRunEnd`
    * hook channels instead. The returned state is a fresh object owned
    * by this call; callers may mutate it without affecting the engine.
+   *
+   * Validation points:
+   *   - InputSchema at entry
+   *   - RoleSchemaSchema on input.roles if present
+   *   - PaletteStateSchema on final state at exit
+   *   - Plugin-contributed output/metadata schemas at exit
    */
   async run(input: InputInterface): Promise<PaletteStateInterface> {
-    const inputResult = validator.validate(InputSchema, input);
+    const inputResult = this.validator.validate(InputSchema, input);
     if (!inputResult.valid) {
       const first = inputResult.errors[0];
       throw new Error(
@@ -149,7 +215,7 @@ export class Engine implements EngineInterface {
     }
 
     if (input.roles !== undefined) {
-      const rolesResult = validator.validate(RoleSchemaSchema, input.roles);
+      const rolesResult = this.validator.validate(RoleSchemaSchema, input.roles);
       if (!rolesResult.valid) {
         const first = rolesResult.errors[0];
         throw new Error(
@@ -195,12 +261,40 @@ export class Engine implements EngineInterface {
       await hook.run(state, ctx);
     }
 
-    const stateResult = validator.validate(PaletteStateSchema, state);
+    const stateResult = this.validator.validate(PaletteStateSchema, state);
     if (!stateResult.valid) {
       const first = stateResult.errors[0];
       throw new Error(
         `Engine.run: output state invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
       );
+    }
+
+    // Validate plugin-contributed output slot schemas
+    for (const [slot, schema] of this.outputSchemas) {
+      const slotValue = state.outputs[slot];
+      if (slotValue !== undefined) {
+        const slotResult = this.validator.validate(schema, slotValue);
+        if (!slotResult.valid) {
+          const first = slotResult.errors[0];
+          throw new Error(
+            `Engine.run: outputs['${slot}'] failed plugin schema: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+          );
+        }
+      }
+    }
+
+    // Validate plugin-contributed metadata slot schemas
+    for (const [slot, schema] of this.metadataSchemas) {
+      const slotValue = state.metadata[slot];
+      if (slotValue !== undefined) {
+        const slotResult = this.validator.validate(schema, slotValue);
+        if (!slotResult.valid) {
+          const first = slotResult.errors[0];
+          throw new Error(
+            `Engine.run: metadata['${slot}'] failed plugin schema: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+          );
+        }
+      }
     }
 
     return state;

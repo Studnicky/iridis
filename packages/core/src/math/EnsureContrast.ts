@@ -1,4 +1,4 @@
-import type { ColorRecordInterface, ContrastAlgorithmType, RgbInterface } from '../types/index.ts';
+import type { ColorRecordInterface, ContrastAlgorithmType, RgbInterface, SourceFormatType } from '../types/index.ts';
 import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
@@ -11,6 +11,12 @@ const APCA_CLAMP_P  = 1.414;
 const APCA_SCALE    = 1.14;
 const APCA_LOW_CLIP = 0.001;
 const APCA_OFFSET   = 0.027;
+
+/** sRGB-family source formats. When the original foreground was sourced from
+ *  one of these, the adjusted record must remain sRGB (no displayP3 slot).   */
+const SRGB_FORMATS: ReadonlySet<SourceFormatType> = new Set([
+  'hex', 'rgb', 'hsl', 'lab', 'named', 'imagePixel',
+]);
 
 /** WCAG 2.1 relative luminance from a gamma-encoded sRGB triple in 0..1.
  *  Equivalent to `luminance.apply({rgb: {r, g, b}, ...})` without the
@@ -71,6 +77,14 @@ export class EnsureContrast {
    * loop operates on a scalar `L` value; no `ColorRecord` is allocated
    * per iteration. The background's luminance is computed once. A single
    * `ColorRecord` is materialised at return via `colorRecordFactory`.
+   *
+   * Gamut preservation: the adjusted record inherits `foreground.sourceFormat`.
+   * When that format is an sRGB-family format (`hex`, `rgb`, `hsl`, `lab`,
+   * `named`, `imagePixel`), the record is built via `fromRgb` using the
+   * sRGB-clamped coordinates computed during the loop — preventing a
+   * spurious `displayP3` slot from appearing on a colour that was never
+   * wide-gamut. When the source is `displayP3` or `oklch`, `fromOklch` is
+   * used so the wide-gamut `displayP3` slot is re-derived as expected.
    */
   apply(
     foreground: ColorRecordInterface,
@@ -94,14 +108,18 @@ export class EnsureContrast {
       return foreground;
     }
 
-    const fgL = foreground.oklch.l;
-    const c   = foreground.oklch.c;
-    const h   = foreground.oklch.h;
-    const a   = foreground.alpha;
-    const step = fgL < background.oklch.l ? -0.02 : 0.02;
+    const fgL    = foreground.oklch.l;
+    const c      = foreground.oklch.c;
+    const h      = foreground.oklch.h;
+    const a      = foreground.alpha;
+    const fmt    = foreground.sourceFormat;
+    const hints  = foreground.hints;
+    const isSrgb = SRGB_FORMATS.has(fmt);
+    const step   = fgL < background.oklch.l ? -0.02 : 0.02;
 
     let currentL = fgL;
     let lastL    = currentL;
+    let lastRgb: RgbInterface = fgRgb;
 
     for (let i = 0; i < 50; i++) {
       const newL = clamp01.apply(currentL + step);
@@ -111,20 +129,27 @@ export class EnsureContrast {
         ? wcagRatio(rgbLuminance(rgb.r, rgb.g, rgb.b), Ybg)
         : apcaLcFromYtxt(apcaFg(rgb.r, rgb.g, rgb.b), Ybg);
 
-      lastL = newL;
+      lastL   = newL;
+      lastRgb = rgb;
 
       if (ratio >= minRatio) {
-        return colorRecordFactory.fromOklch(newL, c, h, a);
+        return isSrgb
+          ? colorRecordFactory.fromRgb(rgb.r, rgb.g, rgb.b, a, fmt, hints)
+          : colorRecordFactory.fromOklch(newL, c, h, a, fmt, hints);
       }
 
       if (newL === 0 || newL === 1) {
-        return colorRecordFactory.fromOklch(newL, c, h, a);
+        return isSrgb
+          ? colorRecordFactory.fromRgb(rgb.r, rgb.g, rgb.b, a, fmt, hints)
+          : colorRecordFactory.fromOklch(newL, c, h, a, fmt, hints);
       }
 
       currentL = newL;
     }
 
-    return colorRecordFactory.fromOklch(lastL, c, h, a);
+    return isSrgb
+      ? colorRecordFactory.fromRgb(lastRgb.r, lastRgb.g, lastRgb.b, a, fmt, hints)
+      : colorRecordFactory.fromOklch(lastL, c, h, a, fmt, hints);
   }
 }
 

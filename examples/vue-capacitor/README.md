@@ -10,11 +10,11 @@ seed hex (#8B5CF6)
        |
     enforce:wcagAA           (validates contrast pairs; lifts lightness until every minRatio is met)
        |
-    emit:cssVars             (serialises resolved roles into CSS custom properties)
+    emit:cssVars             (writes state.outputs['stylesheet:cssVars'])
        |
-    emit:capacitorStatusBar  (writes StatusBar backgroundColor + style for Capacitor consumption)
+    emit:capacitorStatusBar  (writes state.outputs['capacitor:statusBar'])
        |
-    emit:capacitorTheme      (writes theme map for native chrome)
+    emit:capacitorTheme      (writes state.outputs['capacitor:theme'])
 ```
 
 ## Role schema (`categoryW3cRoleSchema`)

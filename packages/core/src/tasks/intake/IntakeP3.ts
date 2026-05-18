@@ -55,22 +55,41 @@ export class IntakeP3 implements TaskInterface {
     'description': 'Parses CSS color(display-p3 r g b [/ alpha]) strings into ColorRecord entries with displayP3 populated.',
   };
 
+  /**
+   * Parses a single value as a CSS `color(display-p3 …)` string. Throws when
+   * the input is not a string or does not match the Display-P3 pattern.
+   * Used by IntakeAny for format dispatch (via try/catch).
+   */
+  parse(raw: unknown): ColorRecordInterface {
+    if (typeof raw !== 'string') {
+      throw new Error(`intake:p3 — expected a string, got ${typeof raw}`);
+    }
+    const match = P3_PATTERN.exec(raw.trim());
+    if (!match) {
+      throw new Error(`intake:p3 — not a display-p3 string: "${raw}"`);
+    }
+
+    const p3R   = parseFloat(match[1]!);
+    const p3G   = parseFloat(match[2]!);
+    const p3B   = parseFloat(match[3]!);
+    const alpha = match[4] !== undefined ? parseFloat(match[4]) : 1;
+
+    return recordFromP3(p3R, p3G, p3B, alpha, undefined);
+  }
+
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (const raw of state.input.colors) {
-      if (typeof raw !== 'string') {
-        continue;
+    for (let i = 0; i < state.input.colors.length; i++) {
+      const raw = state.input.colors[i];
+      let record: ColorRecordInterface;
+      try {
+        record = this.parse(raw);
+      } catch {
+        throw new Error(
+          `intake:p3 — entry at index ${i} is not a Display-P3 string. ` +
+          `Expected CSS color(display-p3 r g b [/ alpha]) syntax. ` +
+          `Got: ${JSON.stringify(raw)}`,
+        );
       }
-      const match = P3_PATTERN.exec(raw.trim());
-      if (!match) {
-        continue;
-      }
-
-      const p3R   = parseFloat(match[1]!);
-      const p3G   = parseFloat(match[2]!);
-      const p3B   = parseFloat(match[3]!);
-      const alpha = match[4] !== undefined ? parseFloat(match[4]) : 1;
-
-      const record = recordFromP3(p3R, p3G, p3B, alpha, undefined);
       state.colors.push(record);
       ctx.logger.debug('IntakeP3', 'run', 'Parsed display-p3 value', {
         'raw': raw,

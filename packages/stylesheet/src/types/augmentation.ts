@@ -1,18 +1,5 @@
-import type {
-  CssVarsOutputInterface,
-  CssVarsScopedOutputInterface,
-} from './index.ts';
+// Stylesheet plugin type definitions.
+// Module augmentation on PluginOutputsRegistry / PluginMetadataRegistry
+// has been replaced with explicit schema contribution via StylesheetPlugin.schemas().
 
-declare module '@studnicky/iridis' {
-  interface PluginOutputsRegistry {
-    'cssVars':       CssVarsOutputInterface;
-    'cssVarsScoped': CssVarsScopedOutputInterface;
-  }
-
-  interface PluginMetadataRegistry {
-    'cssVarPrefix': string;
-    'scopeAttr':    string;
-    'themeName':    string;
-    'scopePrefix':  string;
-  }
-}
+export type {};

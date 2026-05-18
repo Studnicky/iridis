@@ -48,24 +48,27 @@ const state = await engine.run({
   'metadata': { 'themeName': 'music' },
 });
 
-const out = state.outputs['capacitor']!;
-// out.statusBar       : { backgroundColor: '#...', style: 'DARK' | 'LIGHT', overlay: boolean }
-// out.theme           : { primary, primaryDark, accent, background, surface, error, ... }
-// out.splashScreen    : { backgroundColor: '#...', androidSplashResourceName?: string }
-// out.androidThemeXml : '<?xml version="1.0" encoding="utf-8"?><resources>...</resources>'
+const statusBar      = state.outputs['capacitor:statusBar']!;
+const theme          = state.outputs['capacitor:theme']!;
+const splashScreen   = state.outputs['capacitor:splashScreen']!;
+const androidThemeXml = state.outputs['capacitor:androidThemeXml']!;
+// statusBar       : { backgroundColor: '#...', style: 'DARK' | 'LIGHT', overlay: boolean }
+// theme           : { primary, primaryDark, accent, background, surface, error, ... }
+// splashScreen    : { backgroundColor: '#...', androidSplashResourceName?: string }
+// androidThemeXml : '<?xml version="1.0" encoding="utf-8"?><resources>...</resources>'
 ```
 
 ## Tasks
 
 | Name | Output slot | Notes |
 |---|---|---|
-| `emit:capacitorStatusBar` | `outputs.capacitor.statusBar` | Reads `roles.topBar` / `roles.surface`, picks `DARK` / `LIGHT` style from the text-or-bar luminance. Honors `metadata.capacitor.statusBarOverlay`. |
-| `emit:capacitorTheme` | `outputs.capacitor.theme` | Material-style colour map: primary / primaryDark / accent / background / surface / error / warning / success / info / text / textOnPrimary / textOnAccent. |
-| `emit:capacitorSplashScreen` | `outputs.capacitor.splashScreen` | Honors `metadata.capacitor.splashRole` and `metadata.capacitor.androidSplashResourceName`. |
-| `emit:androidThemeXml` | `outputs.capacitor.androidThemeXml` | Ready-to-write XML for `android/app/src/main/res/values/colors.xml`. |
+| `emit:capacitorStatusBar` | `outputs['capacitor:statusBar']` | Reads `roles.topBar` / `roles.surface`, picks `DARK` / `LIGHT` style from the text-or-bar luminance. Honors `metadata.capacitor.statusBarOverlay`. |
+| `emit:capacitorTheme` | `outputs['capacitor:theme']` | Material-style colour map: primary / primaryDark / accent / background / surface / error / warning / success / info / text / textOnPrimary / textOnAccent. |
+| `emit:capacitorSplashScreen` | `outputs['capacitor:splashScreen']` | Honors `metadata.capacitor.splashRole` and `metadata.capacitor.androidSplashResourceName`. |
+| `emit:androidThemeXml` | `outputs['capacitor:androidThemeXml']` | Ready-to-write XML for `android/app/src/main/res/values/colors.xml`. |
 
-Write `out.statusBar.backgroundColor` and `out.statusBar.style` directly into
+Write `statusBar.backgroundColor` and `statusBar.style` directly into
 the Capacitor `StatusBar.setBackgroundColor` / `StatusBar.setStyle` calls.
-Write `out.androidThemeXml` to disk to ship native Android theme tokens.
+Write `androidThemeXml` to disk to ship native Android theme tokens.
 
 Part of [iridis](https://github.com/Studnicky/iridis).

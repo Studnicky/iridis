@@ -7,3 +7,4 @@ export * from './registry.ts';
 export * from './plugin.ts';
 export * from './engine.ts';
 export * from './validation.ts';
+export * from './schema-derived.ts';

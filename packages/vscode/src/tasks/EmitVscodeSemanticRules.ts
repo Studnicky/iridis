@@ -1,10 +1,10 @@
 import type {
+  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
 import type { SemanticRuleEntryInterface } from '../types/augmentation.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
 import { SCOPE_MAPPINGS } from '../data/scopeMappings.ts';
@@ -20,21 +20,14 @@ export class EmitVscodeSemanticRules implements TaskInterface {
 
   readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:vscodeSemanticRules',
-    'reads':       ['metadata.vscode.semanticTokenRules', 'metadata.vscode.baseTokens'],
-    'writes':      ['outputs.vscode.semanticTokenRules'],
+    'reads':       ['metadata.vscode:semanticTokenRules', 'metadata.vscode:baseTokens'],
+    'writes':      ['outputs.vscode:semanticTokenRules'],
     'requires':    ['vscode:applyModifiers'],
     'description': 'Shapes the semantic token rule map for VS Code editor.semanticTokenColorCustomizations.rules using SCOPE_MAPPINGS and FONT_STYLES.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const meta = getOrCreateMetadata(state, 'vscode');
-    const semanticRules = meta['semanticTokenRules'];
-
-    if (!semanticRules) {
-      throw new Error('EmitVscodeSemanticRules: metadata.vscode.semanticTokenRules not found; run vscode:applyModifiers first');
-    }
-
-    const out = getOrCreateOutput(state, 'vscode');
+    const semanticRules = (state.metadata['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterface>;
     const result: Record<string, SemanticRuleEntryInterface> = {};
 
     for (const [selector, rule] of Object.entries(semanticRules)) {
@@ -51,13 +44,13 @@ export class EmitVscodeSemanticRules implements TaskInterface {
       result[selector] = entry;
     }
 
-    out['semanticTokenRules'] = result;
+    state.outputs['vscode:semanticTokenRules'] = result;
     ctx.logger.debug('EmitVscodeSemanticRules', 'run', 'Emitted semantic token rules', {
       'count': Object.keys(result).length,
     });
 
     // Validate scope coverage: log any SCOPE_MAPPINGS keys with no colour
-    const baseTokens = meta['baseTokens'] ?? {};
+    const baseTokens = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterface>;
     for (const key of Object.keys(SCOPE_MAPPINGS)) {
       if (!(key in baseTokens) && !(key in result)) {
         ctx.logger.debug('EmitVscodeSemanticRules', 'run', 'No colour assigned for scope group', { 'scope': key });

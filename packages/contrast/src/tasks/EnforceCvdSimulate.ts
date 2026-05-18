@@ -5,7 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { clamp01, contrastWcag21, getOrCreateMetadata, linearToSrgb, srgbToLinear } from '@studnicky/iridis';
+import { clamp01, contrastWcag21, linearToSrgb, srgbToLinear } from '@studnicky/iridis';
 import { cvdMatrices } from '../data/cvdMatrices.ts';
 import { CVD_THRESHOLDS } from '../data/cvdThresholds.ts';
 import type { CvdMatrixInterface } from '../types/index.ts';
@@ -80,7 +80,7 @@ export class EnforceCvdSimulate implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'enforce:cvdSimulate',
     'reads':       ['input.roles.contrastPairs', 'roles'],
-    'writes':      ['metadata.wcag.cvd'],
+    'writes':      ['metadata[\'contrast:cvd\']'],
     'description': 'Advisory CVD simulation against published thresholds: protanopia, deuteranopia, tritanopia, achromatopsia. Warns but does not auto-fix.',
   };
 
@@ -145,12 +145,11 @@ export class EnforceCvdSimulate implements TaskInterface {
       }
     }
 
-    const wcagMeta = getOrCreateMetadata(state, 'wcag');
-    wcagMeta['cvd'] = { 'warnings': warnings };
+    state.metadata['contrast:cvd'] = { 'warnings': warnings };
 
     ctx.logger.debug('EnforceCvdSimulate', 'run', 'CVD simulation complete', {
       'warningCount': warnings.length,
-      'cvdMeta':      wcagMeta['cvd'],
+      'cvdMeta':      state.metadata['contrast:cvd'],
     });
   }
 }
