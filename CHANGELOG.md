@@ -2,6 +2,12 @@
 
 All notable changes to iridis are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-05-18
+
+### Fixed
+
+- **Peer-dependency ranges in plugin packages** updated to `^0.4.0` so workspace resolution links `@studnicky/iridis` correctly under `npm ci`. The 0.4.0 release shipped with plugins declaring `^0.3.0`, which made `npm ci` fall through to the public npm registry (where the package is unpublished) and 404. CI build for the docs site failed as a result; this release fixes the workspace-internal linking.
+
 ## [0.4.0] - 2026-05-18
 
 Schema-first engine foundation, flat slot grammar, and full test refactor. Breaking on plugin slot names and the `PluginOutputsRegistry` / `PluginMetadataRegistry` module-augmentation pattern.
