@@ -1,12 +1,42 @@
 import type {
   PluginInterface,
+  PluginSchemaContributionInterface,
   TaskInterface,
 } from '@studnicky/iridis';
-import { applyModifiers } from './tasks/ApplyModifiers.ts';
+import { applyModifiers }          from './tasks/ApplyModifiers.ts';
 import { emitVscodeSemanticRules } from './tasks/EmitVscodeSemanticRules.ts';
-import { emitVscodeThemeJson } from './tasks/EmitVscodeThemeJson.ts';
-import { emitVscodeUiPalette } from './tasks/EmitVscodeUiPalette.ts';
-import { expandTokens } from './tasks/ExpandTokens.ts';
+import { emitVscodeThemeJson }     from './tasks/EmitVscodeThemeJson.ts';
+import { emitVscodeUiPalette }     from './tasks/EmitVscodeUiPalette.ts';
+import { expandTokens }            from './tasks/ExpandTokens.ts';
+
+const semanticRuleEntrySchema = {
+  'type': 'object',
+  'additionalProperties': false,
+  'properties': {
+    'foreground': { 'type': 'string' },
+    'fontStyle':  { 'type': 'string' },
+  },
+} as const;
+
+const vscodeWorkbenchColorsSchema = {
+  'type':                 'object',
+  'additionalProperties': { 'type': 'string' },
+} as const;
+
+const vscodeSemanticTokenRulesSchema = {
+  'type':                 'object',
+  'additionalProperties': semanticRuleEntrySchema,
+} as const;
+
+const vscodeThemeJsonSchema = {
+  'type':                 'object',
+  'additionalProperties': true,
+} as const;
+
+const vscodeBaseTokensSchema = {
+  'type':                 'object',
+  'additionalProperties': true,
+} as const;
 
 /**
  * VscodePlugin
@@ -34,6 +64,20 @@ export class VscodePlugin implements PluginInterface {
       emitVscodeUiPalette,
       emitVscodeThemeJson,
     ];
+  }
+
+  schemas(): PluginSchemaContributionInterface {
+    return {
+      'outputs': {
+        'vscode:themeJson':          vscodeThemeJsonSchema,
+        'vscode:workbenchColors':    vscodeWorkbenchColorsSchema,
+        'vscode:semanticTokenRules': vscodeSemanticTokenRulesSchema,
+      },
+      'metadata': {
+        'vscode:baseTokens':         vscodeBaseTokensSchema,
+        'vscode:semanticTokenRules': vscodeSemanticTokenRulesSchema,
+      },
+    };
   }
 }
 

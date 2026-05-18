@@ -10,7 +10,6 @@ import {
   darken,
   desaturate,
   ensureContrast,
-  getOrCreateMetadata,
   lighten,
   mixHsl,
   saturate,
@@ -25,21 +24,16 @@ export class ApplyModifiers implements TaskInterface {
 
   readonly 'manifest': TaskManifestInterface = {
     'name':        'vscode:applyModifiers',
-    'reads':       ['metadata.vscode.baseTokens', 'roles'],
-    'writes':      ['metadata.vscode.semanticTokenRules'],
+    'reads':       ['metadata.vscode:baseTokens', 'roles'],
+    'writes':      ['metadata.vscode:semanticTokenRules'],
     'requires':    ['vscode:expandTokens'],
     'description': 'Produces base + per-modifier semantic token rules from MODIFIER_TRANSFORMS, ensuring each rule meets contrast against the background role.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const meta = getOrCreateMetadata(state, 'vscode');
-    const baseTokens = meta['baseTokens'];
+    const baseTokens = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterface>;
 
-    if (!baseTokens) {
-      throw new Error('ApplyModifiers: metadata.vscode.baseTokens not found; run vscode:expandTokens first');
-    }
-
-    const bgRecord = state.roles['background'] ?? colorRecordFactory.fromHex('#000000');
+    const bgRecord  = state.roles['background'] ?? colorRecordFactory.fromHex('#000000');
     const rules: Record<string, SemanticRuleEntryInterface> = {};
 
     const typesLen = TOKEN_TYPES.length;
@@ -105,7 +99,7 @@ export class ApplyModifiers implements TaskInterface {
       }
     }
 
-    meta['semanticTokenRules'] = rules;
+    state.metadata['vscode:semanticTokenRules'] = rules;
     ctx.logger.debug('ApplyModifiers', 'run', 'Generated semantic token rules', {
       'count': Object.keys(rules).length,
     });

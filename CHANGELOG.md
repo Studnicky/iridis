@@ -2,7 +2,37 @@
 
 All notable changes to iridis are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2026-05-18
+
+Schema-first engine foundation, flat slot grammar, and full test refactor. Breaking on plugin slot names and the `PluginOutputsRegistry` / `PluginMetadataRegistry` module-augmentation pattern.
+
+### Breaking
+
+- **Flat colon-namespaced slot grammar.** `state.outputs` and `state.metadata` use a single top-level key per slot, namespaced by plugin (`capacitor:statusBar`, `vscode:themeJson`, `stylesheet:cssVars`, `rdf:reasoningGraph`, `gallery:histogram`, `contrast:aa`, `core:json`, etc.). The previous namespace-object pattern (`state.outputs['capacitor'].statusBar`) is gone. User configs map slot keys to filenames 1:1 in `output.files`.
+- **`declare module '@studnicky/iridis'` augmentation pattern deleted.** Plugins now expose `schemas(): { outputs?: Record<string, JSONSchema>, metadata?: Record<string, JSONSchema> }` on `PluginInterface` to declare their slot shapes. The engine validates `state.outputs[slot]` and `state.metadata[slot]` against the contributing plugin's schema at run exit.
+- **Typed intakes throw on non-conforming input.** `intake:hex`, `intake:rgb`, `intake:hsl`, `intake:oklch`, `intake:lab`, `intake:p3`, `intake:named`, `intake:imagePixels` reject malformed input with a descriptive error. `intake:any` keeps polymorphic dispatch — iterates delegates, first non-null parse wins, throws only if no delegate matches.
+
+### Added
+
+- **ajv-backed validator** with per-engine compile cache. Replaces the hand-rolled draft-07 walker. `Validator` is now a thin wrapper around ajv.
+- **`json-schema-to-ts`** derives TS interfaces from `as const` schema literals via `FromSchema`. JSON Schema is the source of truth for every boundary type.
+- **`TaskManifestSchema`** validates every adopted task's manifest at `Engine.adopt`, again at `Engine.pipeline`, and at `Engine.run` entry. Defense in depth.
+- **Upstream `output.files` validation** at `Cli.run`: rejects configs that declare a slot no pipeline task writes. The error names the missing slot and lists the slots that ARE produced.
+- **Bundle aggregator pattern** (opt-in): plugins may ship an `emit:<plugin>Bundle` task that reads sibling slots and writes one combined slot for users who want one file containing the whole plugin namespace.
+- **Scenario-matrix test suites** across all 9 packages. Cells, coordinate-tagged assertion messages, happy/edge/unhappy scenarios per subject. ~700 scenarios workspace-wide.
+
+### Fixed
+
+- **VSCode P3 leak.** `EnsureContrast.apply` now preserves the source gamut. sRGB-sourced foregrounds (hex inputs) round-trip through contrast adjustment as sRGB instead of being re-stamped as `displayP3`. VSCode theme slots like `gitDecoration.addedResourceForeground` emit `#rrggbb` hex for sRGB inputs instead of `color(display-p3 …)`.
+
+### Removed
+
+- **Dead `requires` runtime guards** in vscode tasks (`ApplyModifiers`, `EmitVscodeSemanticRules`, `EmitVscodeThemeJson`). `Engine.pipeline` validates these declarations at build time; the runtime throws were unreachable.
+- **`PluginOutputsRegistry` / `PluginMetadataRegistry`** TypeScript registry interfaces. Plugin output and metadata shapes now flow through schemas, not module augmentation.
+
+### Dependencies
+
+- `@studnicky/iridis` (core) adds runtime deps: `ajv@^8.20.0`, `json-schema-to-ts@^3.1.1`. The "zero runtime dependencies" claim is gone.
 
 ## [0.3.6] - 2026-05-17
 

@@ -60,7 +60,7 @@ const state = await engine.run({
   'metadata': { 'gallery': { 'k': 6, 'algorithm': 'delta-e' } },
 });
 
-const palette = state.outputs['json']!.roles;
+const palette = (state.outputs['core:json'] as { roles: Record<string, unknown> })!.roles;
 ```
 
 → Prefer a hex / RGB / OKLCH picker? See **[Try it out](./try-it-out)**. <br />

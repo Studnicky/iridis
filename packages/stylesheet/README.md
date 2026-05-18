@@ -43,11 +43,11 @@ const state = await engine.run({
   'metadata': { 'cssVarPrefix': '--c-' },
 });
 
-const out = state.outputs['cssVars']!;
+const out = state.outputs['stylesheet:cssVars']!;
 document.documentElement.style.cssText = out.full;
 ```
 
-`state.outputs['cssVars']` is typed as `CssVarsOutputInterface` via the plugin's
+`state.outputs['stylesheet:cssVars']` is typed as `CssVarsOutputInterface` via the plugin's
 module augmentation:
 
 | Field | Shape | Notes |
@@ -63,6 +63,6 @@ module augmentation:
 The `emit:cssVarsScoped` task is the multi-scope companion: register it instead
 of `emit:cssVars` when you need one block per `state.variants` entry under a
 data-attribute selector (`[data-category='music']`, `[data-tenant='acme']`).
-Output lives at `state.outputs['cssVarsScoped']`.
+Output lives at `state.outputs['stylesheet:cssVarsScoped']`.
 
 Part of [iridis](https://github.com/Studnicky/iridis).

@@ -1,22 +1,16 @@
 /**
- * ClampOklch range-pick unit suite.
+ * ClampOklch — scenario-matrix suite.
  *
- * Exercises `roleRangeFor` and the in-range no-op early return.
- * `ColorRecordShape.test.ts` already covers canonical key-order preservation
- * after a clamp rebuild; this suite is strictly about which range gets
- * picked under each combination of (color.hints.role, schema role-range
- * declarations) and whether the early-return path actually returns
- * the same record reference (no allocation) when the input is inside range.
+ * Subject: `clamp:oklch` pipeline task (ClampOklch).
+ * Drives the task through Engine.run, seeding state.colors via an
+ * onRunStart hook, then asserting the resulting state.colors[0].
  *
- * Drives the task via a single scenarios table: one `it` per scenario,
- * each runs the engine ONCE and asserts every observable property of the
- * resulting state.colors[0] in the same body.
+ * Cells:
+ *   1. range-select  — roleRangeFor picks the right range for each input
+ *   2. clamp-rebuild — out-of-range values are clamped and a new record allocated
+ *   3. identity      — in-range values return the same record reference (no alloc)
  */
 
-import { describe, it } from 'node:test';
-import assert           from 'node:assert/strict';
-
-import { Engine }            from '@studnicky/iridis';
 import type {
   ColorRecordInterface,
   InputInterface,
@@ -24,21 +18,20 @@ import type {
   PipelineContextInterface,
   TaskInterface,
 } from '@studnicky/iridis';
-import { coreTasks }         from '@studnicky/iridis/tasks';
+import { Engine }            from '@studnicky/iridis/engine';
+import {
+  ScenarioRunner,
+  assert,
+  type ScenarioInterface,
+} from '../_runner/ScenarioRunner.ts';
+import { coreTasks }          from '@studnicky/iridis/tasks';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 
-interface ScenarioInterface {
-  readonly 'name':  string;
-  /** Color (already an OKLCH record) to seed onto state.colors via an onRunStart hook. */
-  readonly 'seed':  ColorRecordInterface;
-  /** Role schema to drive ClampOklch's roleRangeFor lookup. */
-  readonly 'input': InputInterface;
-  /** True if the test expects clamp:oklch to leave state.colors[0] === seed (no allocation). */
-  readonly 'expectIdentity': boolean;
-  assert(state: PaletteStateInterface, seed: ColorRecordInterface): void;
-}
+// ---------------------------------------------------------------------------
+// Test helpers
+// ---------------------------------------------------------------------------
 
-function freshEngine(seed: ColorRecordInterface): Engine {
+function makeEngine(seed: ColorRecordInterface): Engine {
   const engine = new Engine();
   for (const t of coreTasks) engine.tasks.register(t);
   const seedTask: TaskInterface = {
@@ -53,165 +46,340 @@ function freshEngine(seed: ColorRecordInterface): Engine {
   return engine;
 }
 
-describe('ClampOklch unit :: scenarios', () => {
-  // ---------------------------------------------------------------------------
-  // Seed factories: each scenario picks the relevant one.
-  // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Cell 1 — range selection (roleRangeFor)
+//
+// roleRangeFor determines which L/C envelope is applied to each color:
+//   - no hints + no schema            → default [0.05, 0.95] × [0.00, 0.40]
+//   - role hint + schema declares it  → role-specific L/C ranges
+//   - role hint + role has no ranges  → falls back to defaults
+//   - role hint + role not in schema  → falls back to defaults
+// This cell asserts that the correct range governs the clamp outcome by
+// placing in-range values against each range selector and asserting identity.
+// ---------------------------------------------------------------------------
 
-  // In-range against the conservative defaults [0.05, 0.95] × [0.0, 0.40].
-  const inRangeDefault = colorRecordFactory.fromOklch(0.5, 0.1, 200);
+interface Cell1Input {
+  readonly seed:  ColorRecordInterface;
+  readonly input: InputInterface;
+}
+interface Cell1Output {
+  readonly color:     ColorRecordInterface;
+  readonly isSameRef: boolean;
+  readonly seed:      ColorRecordInterface;
+}
 
-  // In-range under a tight role declaration [0.40, 0.60] × [0.05, 0.15].
-  const inRangeRoleDefined = colorRecordFactory.fromOklch(
-    0.5, 0.1, 200, 1, 'oklch', { 'role': 'accent' },
-  );
-
-  // Out-of-range L above the default upper bound; clamp:oklch must rebuild.
-  const outOfRangeL = colorRecordFactory.fromOklch(0.999, 0.1, 200);
-
-  // Hint-bearing color where the schema declares the role and a tight chroma
-  // range; chroma exceeds the ceiling so clamp:oklch must rebuild.
-  const outOfRangeChromaHinted = colorRecordFactory.fromOklch(
-    0.5, 0.30, 200, 1, 'oklch', { 'role': 'accent' },
-  );
-
-  // Hint-bearing color whose hinted role IS defined in the schema but ranges
-  // are absent on that role; should fall back to defaults (so in-range
-  // defaults apply and an identity early-return fires).
-  const hintRoleWithoutRanges = colorRecordFactory.fromOklch(
-    0.5, 0.1, 200, 1, 'oklch', { 'role': 'mystery' },
-  );
-
-  // Hint-bearing color whose hinted role is NOT in the schema's role list;
-  // roleRangeFor falls back to defaults.
-  const hintRoleUnknown = colorRecordFactory.fromOklch(
-    0.5, 0.1, 200, 1, 'oklch', { 'role': 'unknown-role' },
-  );
-
-  const scenarios: readonly ScenarioInterface[] = [
-    {
-      'name':           'default range: in-range L+C returns the same record (no allocation)',
-      'seed':           inRangeDefault,
-      'input':          { 'colors': [] },
-      'expectIdentity': true,
-      assert(state, seed): void {
-        assert.strictEqual(state.colors.length, 1);
-        const out = state.colors[0]!;
-        // Early-return path: same reference (no factory call, no record alloc).
-        assert.strictEqual(out, seed, 'in-range default → identity early-return');
-        // Sanity: OKLCH unchanged.
-        assert.strictEqual(out.oklch.l, 0.5);
-        assert.strictEqual(out.oklch.c, 0.1);
-      },
+const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
+  {
+    name: 'no hints no schema: default range applied — in-range L+C → identity',
+    kind: 'happy',
+    input: {
+      seed:  colorRecordFactory.fromOklch(0.5, 0.1, 200),
+      input: { 'colors': [] },
     },
-    {
-      'name':           'role-defined range: in-range L+C returns the same record',
-      'seed':           inRangeRoleDefined,
-      'input':          {
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=default-in-range] must not throw');
+      assert.strictEqual(output!.isSameRef, true, '[cell=1, scenario=default-in-range] identity early-return');
+      assert.strictEqual(output!.color.oklch.l, 0.5, '[cell=1, scenario=default-in-range] L unchanged');
+      assert.strictEqual(output!.color.oklch.c, 0.1, '[cell=1, scenario=default-in-range] C unchanged');
+    },
+  },
+  {
+    name: 'role hint + schema defines range: in-range under tight bounds → identity',
+    kind: 'happy',
+    input: {
+      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'accent' }),
+      input: {
         'colors': [],
-        'roles':  {
+        'roles': {
           'name':  'tight-accent',
           'roles': [
             { 'name': 'accent', 'lightnessRange': [0.40, 0.60], 'chromaRange': [0.05, 0.15] },
           ],
         },
       },
-      'expectIdentity': true,
-      assert(state, seed): void {
-        const out = state.colors[0]!;
-        // Schema overrides defaults; values are inside the tighter range, so identity holds.
-        assert.strictEqual(out, seed, 'role-range in-range → identity');
-        assert.strictEqual(out.hints?.role, 'accent', 'hint preserved');
-      },
     },
-    {
-      'name':           'no hints, no schema: default range clamps out-of-range L into bounds',
-      'seed':           outOfRangeL,
-      'input':          { 'colors': [] },
-      'expectIdentity': false,
-      assert(state, seed): void {
-        const out = state.colors[0]!;
-        assert.notStrictEqual(out, seed, 'out-of-range → factory rebuilt the record');
-        // Default upper L bound is 0.95.
-        assert.ok(out.oklch.l <= 0.95 + 1e-9, `L ${out.oklch.l} should be ≤ default upper 0.95`);
-        assert.ok(out.oklch.l >= 0.05 - 1e-9, `L ${out.oklch.l} should be ≥ default lower 0.05`);
-        // Hue preserved.
-        assert.ok(Math.abs(out.oklch.h - 200) < 1e-6, `hue should be ≈200, got ${out.oklch.h}`);
-        // sourceFormat / hints preserved across the clamp rebuild.
-        assert.strictEqual(out.sourceFormat, seed.sourceFormat);
-        assert.strictEqual(out.hints, seed.hints);
-      },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=role-in-range] must not throw');
+      assert.strictEqual(output!.isSameRef, true, '[cell=1, scenario=role-in-range] role-range in-range → identity');
+      assert.strictEqual(output!.color.hints?.role, 'accent', '[cell=1, scenario=role-in-range] hint preserved');
     },
-    {
-      'name':           'role-defined chromaRange clamps an out-of-range hinted color',
-      'seed':           outOfRangeChromaHinted,
-      'input':          {
+  },
+  {
+    name: 'role hint + role in schema but no ranges → falls back to defaults → identity',
+    kind: 'edge',
+    input: {
+      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'mystery' }),
+      input: {
         'colors': [],
-        'roles':  {
-          'name':  'tight-accent',
-          'roles': [
-            { 'name': 'accent', 'chromaRange': [0.00, 0.10] },
-          ],
-        },
-      },
-      'expectIdentity': false,
-      assert(state, seed): void {
-        const out = state.colors[0]!;
-        assert.notStrictEqual(out, seed, 'out-of-range chroma triggered rebuild');
-        assert.ok(out.oklch.c <= 0.10 + 1e-9,
-          `chroma ${out.oklch.c} should be ≤ role upper 0.10`);
-        assert.strictEqual(out.hints?.role, 'accent', 'hint preserved through rebuild');
-        // L is in-range under defaults so it should be the same.
-        assert.strictEqual(out.oklch.l, 0.5);
-      },
-    },
-    {
-      'name':           'role declared without explicit ranges: falls back to defaults',
-      'seed':           hintRoleWithoutRanges,
-      'input':          {
-        'colors': [],
-        'roles':  {
+        'roles': {
           'name':  'mystery-only',
-          'roles': [
-            { 'name': 'mystery' }, // role exists but declares no lightness/chroma ranges
-          ],
+          'roles': [{ 'name': 'mystery' }],
         },
       },
-      'expectIdentity': true,
-      assert(state, seed): void {
-        const out = state.colors[0]!;
-        // Defaults apply; values inside default range → identity.
-        assert.strictEqual(out, seed, 'role without ranges → defaults → in-range → identity');
-        assert.strictEqual(out.hints?.role, 'mystery');
-      },
     },
-    {
-      'name':           'role hint pointing at a role NOT in schema: defaults apply',
-      'seed':           hintRoleUnknown,
-      'input':          {
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=no-ranges-fallback] must not throw');
+      assert.strictEqual(output!.isSameRef, true, '[cell=1, scenario=no-ranges-fallback] defaults applied → identity');
+      assert.strictEqual(output!.color.hints?.role, 'mystery', '[cell=1, scenario=no-ranges-fallback] hint preserved');
+    },
+  },
+  {
+    name: 'role hint pointing to an absent role → defaults apply → identity',
+    kind: 'edge',
+    input: {
+      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'unknown-role' }),
+      input: {
         'colors': [],
-        'roles':  {
+        'roles': {
           'name':  'no-match',
-          'roles': [
-            { 'name': 'accent', 'lightnessRange': [0.40, 0.60] },
-          ],
+          'roles': [{ 'name': 'accent', 'lightnessRange': [0.40, 0.60] }],
         },
       },
-      'expectIdentity': true,
-      assert(state, seed): void {
-        const out = state.colors[0]!;
-        // Hinted role name doesn't exist in schema; roleRangeFor returns defaults.
-        // L=0.5 is in default range; no rebuild.
-        assert.strictEqual(out, seed, 'unmatched role hint → defaults → identity');
-      },
     },
-  ];
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=1, scenario=unknown-role] must not throw');
+      assert.strictEqual(output!.isSameRef, true, '[cell=1, scenario=unknown-role] defaults applied → identity');
+    },
+  },
+];
 
-  for (const sc of scenarios) {
-    it(sc.name, async () => {
-      const engine = freshEngine(sc.seed);
-      const state  = await engine.run(sc.input);
-      sc.assert(state, sc.seed);
-    });
-  }
-});
+new ScenarioRunner<Cell1Input, Cell1Output>(
+  'ClampOklch :: cell-1 :: range-select',
+  async (input) => {
+    const engine = makeEngine(input.seed);
+    const state  = await engine.run(input.input);
+    const color  = state.colors[0]!;
+    return { color, isSameRef: color === input.seed, seed: input.seed };
+  },
+).run(cell1Scenarios);
+
+// ---------------------------------------------------------------------------
+// Cell 2 — clamp rebuild
+//
+// When a channel falls outside its applicable range clamp:oklch MUST:
+//   - allocate a new record (different object reference from the input seed)
+//   - clamp L to [lMin, lMax] and C to [cMin, cMax]
+//   - preserve hue exactly
+//   - preserve sourceFormat and hints through the rebuild
+// ---------------------------------------------------------------------------
+
+interface Cell2Input {
+  readonly seed:  ColorRecordInterface;
+  readonly input: InputInterface;
+  readonly lMax:  number;
+  readonly cMax:  number;
+  readonly lMin:  number;
+  readonly cMin:  number;
+}
+interface Cell2Output {
+  readonly color:      ColorRecordInterface;
+  readonly isSameRef:  boolean;
+  readonly seed:       ColorRecordInterface;
+  readonly lMin:       number;
+  readonly lMax:       number;
+  readonly cMin:       number;
+  readonly cMax:       number;
+}
+
+const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
+  {
+    name: 'L above default upper bound is clamped to 0.95',
+    kind: 'happy',
+    input: {
+      seed:  colorRecordFactory.fromOklch(0.999, 0.1, 200),
+      input: { 'colors': [] },
+      lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=L-above-default] must not throw');
+      assert.notStrictEqual(output!.isSameRef, true, '[cell=2, scenario=L-above-default] new record allocated');
+      assert.ok(output!.color.oklch.l <= output!.lMax + 1e-9,
+        `[cell=2, scenario=L-above-default] L clamped ≤ ${output!.lMax}`);
+      assert.ok(output!.color.oklch.l >= output!.lMin - 1e-9,
+        `[cell=2, scenario=L-above-default] L ≥ ${output!.lMin}`);
+      assert.ok(Math.abs(output!.color.oklch.h - 200) < 1e-6,
+        `[cell=2, scenario=L-above-default] hue preserved, got ${output!.color.oklch.h}`);
+    },
+  },
+  {
+    name: 'L below default lower bound is clamped to 0.05',
+    kind: 'happy',
+    input: {
+      seed:  colorRecordFactory.fromOklch(0.001, 0.1, 200),
+      input: { 'colors': [] },
+      lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=L-below-default] must not throw');
+      assert.notStrictEqual(output!.isSameRef, true, '[cell=2, scenario=L-below-default] new record allocated');
+      assert.ok(output!.color.oklch.l >= output!.lMin - 1e-9,
+        `[cell=2, scenario=L-below-default] L lifted to minimum`);
+    },
+  },
+  {
+    name: 'role-defined chromaRange: C exceeding role ceiling is clamped',
+    kind: 'happy',
+    input: {
+      seed: colorRecordFactory.fromOklch(0.5, 0.30, 200, 1, 'oklch', { 'role': 'accent' }),
+      input: {
+        'colors': [],
+        'roles': {
+          'name':  'tight-accent',
+          'roles': [{ 'name': 'accent', 'chromaRange': [0.00, 0.10] }],
+        },
+      },
+      lMin: 0.05, lMax: 0.95, cMin: 0.00, cMax: 0.10,
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=C-role-clamp] must not throw');
+      assert.notStrictEqual(output!.isSameRef, true, '[cell=2, scenario=C-role-clamp] new record allocated');
+      assert.ok(output!.color.oklch.c <= 0.10 + 1e-9,
+        `[cell=2, scenario=C-role-clamp] C clamped to role ceiling, got ${output!.color.oklch.c}`);
+      assert.strictEqual(output!.color.hints?.role, 'accent', '[cell=2, scenario=C-role-clamp] hint preserved through rebuild');
+      assert.strictEqual(output!.color.oklch.l, 0.5, '[cell=2, scenario=C-role-clamp] in-range L unchanged');
+    },
+  },
+  {
+    name: 'sourceFormat preserved through rebuild',
+    kind: 'happy',
+    input: {
+      seed: colorRecordFactory.fromOklch(0.999, 0.1, 200, 1, 'hex'),
+      input: { 'colors': [] },
+      lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=sourceFormat-preserved] must not throw');
+      assert.strictEqual(output!.color.sourceFormat, 'hex', '[cell=2, scenario=sourceFormat-preserved] sourceFormat preserved');
+    },
+  },
+  {
+    name: 'hints preserved through rebuild (role + other keys)',
+    kind: 'happy',
+    input: {
+      seed: colorRecordFactory.fromOklch(0.999, 0.1, 200, 1, 'oklch', { 'role': 'bg', 'weight': 5 }),
+      input: { 'colors': [] },
+      lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=hints-preserved] must not throw');
+      assert.strictEqual(output!.color.hints?.role, 'bg', '[cell=2, scenario=hints-preserved] role hint preserved');
+      assert.strictEqual(output!.color.hints?.weight, 5, '[cell=2, scenario=hints-preserved] weight hint preserved');
+    },
+  },
+  {
+    name: 'C above default max clamped to 0.40',
+    kind: 'edge',
+    input: {
+      seed:  colorRecordFactory.fromOklch(0.5, 0.50, 200),
+      input: { 'colors': [] },
+      lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2, scenario=C-above-default] must not throw');
+      assert.notStrictEqual(output!.isSameRef, true, '[cell=2, scenario=C-above-default] new record allocated');
+      assert.ok(output!.color.oklch.c <= 0.40 + 1e-9,
+        `[cell=2, scenario=C-above-default] C clamped to default ceiling`);
+    },
+  },
+];
+
+new ScenarioRunner<Cell2Input, Cell2Output>(
+  'ClampOklch :: cell-2 :: clamp-rebuild',
+  async (input) => {
+    const engine = makeEngine(input.seed);
+    const state  = await engine.run(input.input);
+    const color  = state.colors[0]!;
+    return {
+      color,
+      isSameRef: color === input.seed,
+      seed: input.seed,
+      lMin: input.lMin,
+      lMax: input.lMax,
+      cMin: input.cMin,
+      cMax: input.cMax,
+    };
+  },
+).run(cell2Scenarios);
+
+// ---------------------------------------------------------------------------
+// Cell 3 — identity early-return (no allocation)
+//
+// When a color is already inside its applicable range the task MUST return
+// the exact same record reference (no factory call, no object allocation).
+// This is the performance contract: O(N) pointer comparisons, not N
+// hidden-class allocations.
+//
+// Covers:
+//   - L at exact lower bound (boundary inclusive)
+//   - L at exact upper bound (boundary inclusive)
+//   - C at exact 0 (achromatic, always in default range)
+//   - C at exact default upper bound 0.40
+// ---------------------------------------------------------------------------
+
+interface Cell3Input {
+  readonly seed:  ColorRecordInterface;
+  readonly input: InputInterface;
+}
+interface Cell3Output {
+  readonly isSameRef: boolean;
+}
+
+const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
+  {
+    name: 'L = 0.05 (exact lower boundary) → identity',
+    kind: 'edge',
+    input: {
+      seed:  colorRecordFactory.fromOklch(0.05, 0.1, 200),
+      input: { 'colors': [] },
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=3, scenario=L-at-lower] must not throw');
+      assert.strictEqual(output!.isSameRef, true, '[cell=3, scenario=L-at-lower] L=0.05 boundary → identity');
+    },
+  },
+  {
+    name: 'L = 0.95 (exact upper boundary) → identity',
+    kind: 'edge',
+    input: {
+      seed:  colorRecordFactory.fromOklch(0.95, 0.1, 200),
+      input: { 'colors': [] },
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=3, scenario=L-at-upper] must not throw');
+      assert.strictEqual(output!.isSameRef, true, '[cell=3, scenario=L-at-upper] L=0.95 boundary → identity');
+    },
+  },
+  {
+    name: 'C = 0.0 (achromatic, always in default range) → identity',
+    kind: 'edge',
+    input: {
+      seed:  colorRecordFactory.fromOklch(0.5, 0.0, 200),
+      input: { 'colors': [] },
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=3, scenario=C-zero] must not throw');
+      assert.strictEqual(output!.isSameRef, true, '[cell=3, scenario=C-zero] C=0 → identity');
+    },
+  },
+  {
+    name: 'C = 0.40 (exact default C upper bound) → identity',
+    kind: 'edge',
+    input: {
+      seed:  colorRecordFactory.fromOklch(0.5, 0.40, 200),
+      input: { 'colors': [] },
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=3, scenario=C-at-upper] must not throw');
+      assert.strictEqual(output!.isSameRef, true, '[cell=3, scenario=C-at-upper] C=0.40 boundary → identity');
+    },
+  },
+];
+
+new ScenarioRunner<Cell3Input, Cell3Output>(
+  'ClampOklch :: cell-3 :: identity',
+  async (input) => {
+    const engine = makeEngine(input.seed);
+    const state  = await engine.run(input.input);
+    return { isSameRef: state.colors[0] === input.seed };
+  },
+).run(cell3Scenarios);

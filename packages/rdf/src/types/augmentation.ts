@@ -7,19 +7,4 @@ export interface IterableStoreInterface {
   [Symbol.iterator](): Iterator<unknown>;
 }
 
-declare module '@studnicky/iridis' {
-  interface PluginOutputsRegistry {
-    'reasoning': {
-      'serialized'?: string;
-      'graph'?:      IterableStoreInterface;
-    };
-  }
-
-  interface PluginMetadataRegistry {
-    'reasoning': {
-      'format'?: string;
-    };
-  }
-}
-
 export type {};

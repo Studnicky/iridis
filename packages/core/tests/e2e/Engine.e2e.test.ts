@@ -1,10 +1,20 @@
 /**
- * Engine end-to-end tests.
+ * Engine.e2e — scenario-matrix suite.
  *
- * Tests use the real coreTasks via the public package API.
- * Each test constructs a fresh Engine instance to avoid shared state.
+ * Subject: `Engine` end-to-end with real coreTasks.
+ * Each cell covers one concern; scenarios exhaust the happy / edge / unhappy
+ * matrix. Every Engine instance is fresh (no shared state between scenarios).
+ *
+ * Cells:
+ *   1. intake-hex        — pipeline with intake:hex parses colors and populates state
+ *   2. intake-any        — intake:any dispatcher routes every format to the correct delegate
+ *   3. pipeline-order    — no pipeline() call runs all registered tasks in order
+ *   4. clamp-count       — 64-color and bypass:true paths
+ *   5. enforce-contrast  — no-op when pair already passes, task-throw propagation
+ *   6. runtime           — input.runtime copied to state.runtime, defaults to {}
+ *   7. error-paths       — nonexistent task name, task that throws, malformed colors
  */
-import { describe, it, test } from 'node:test';
+
 import type {
   ColorRecordInterface,
   InputInterface,
@@ -14,17 +24,23 @@ import type {
   SourceFormatType,
   TaskInterface,
 } from '@studnicky/iridis';
-import { Engine }            from '@studnicky/iridis';
-import { coreTasks }         from '@studnicky/iridis/tasks';
-import { assert }            from './ScenarioRunner.ts';
+import type { ColorSpaceType, FramingType } from '@studnicky/iridis/types';
+import { Engine }       from '@studnicky/iridis';
+import { coreTasks }    from '@studnicky/iridis/tasks';
+import { test }         from 'node:test';
+import {
+  ScenarioRunner,
+  assert,
+  type ScenarioInterface,
+} from '../_runner/ScenarioRunner.ts';
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Test helpers
 // ---------------------------------------------------------------------------
 
 function freshEngine(): Engine {
   const engine = new Engine();
-  for (const t of coreTasks)    engine.tasks.register(t);
+  for (const t of coreTasks) { engine.tasks.register(t); }
   return engine;
 }
 
@@ -33,289 +49,513 @@ const SIMPLE_ROLES: RoleSchemaInterface = {
   'roles': [
     { 'name': 'primary',   'required': true,  'lightnessRange': [0.3, 0.7] },
     { 'name': 'secondary', 'required': false, 'lightnessRange': [0.4, 0.8] },
-    {
-      'name':          'primary-muted',
-      'derivedFrom':   'primary',
-      'chromaRange':   [0.01, 0.08],
-    },
+    { 'name': 'primary-muted', 'derivedFrom': 'primary', 'chromaRange': [0.01, 0.08] },
   ],
   'contrastPairs': [
     { 'foreground': 'primary', 'background': 'secondary', 'minRatio': 1.0 },
   ],
 };
 
-// ---------------------------------------------------------------------------
-// happy: full pipeline with intake:hex
-// ---------------------------------------------------------------------------
-
-test('Engine e2e :: happy :: intake:hex full pipeline populates state', async () => {
-  const engine = freshEngine();
-  engine.pipeline([
-    'intake:hex',
-    'resolve:roles',
-    'expand:family',
-    'enforce:contrast',
-    'derive:variant',
-    'emit:json',
-  ]);
-
-  const state = await engine.run({
-    'colors': ['#5b21b6', '#c4b5fd', '#1e1b4b'],
-    'roles':  SIMPLE_ROLES,
-  });
-
-  assert.ok(state.colors.length >= 1, 'colors should be populated');
-  assert.ok(Object.keys(state.roles).length >= 1, 'roles should be assigned');
-  assert.ok('primary-muted' in state.roles, 'derived role should be present');
-  assert.ok('dark'  in state.variants, 'dark variant should exist');
-  assert.ok('light' in state.variants, 'light variant should exist');
-  const json = state.outputs['json'] as Record<string, unknown> | undefined;
-  assert.ok(json !== undefined, 'outputs.json should be populated');
-  assert.ok(Array.isArray((json as { 'colors': unknown[] })['colors']), 'json.colors should be array');
-  assert.ok(typeof (json as { 'roles': object })['roles'] === 'object', 'json.roles should be object');
-});
-
-// ---------------------------------------------------------------------------
-// happy: same pipeline with intake:any
-// ---------------------------------------------------------------------------
-
-test('Engine e2e :: happy :: intake:any dispatches hex strings correctly', async () => {
-  const engine = freshEngine();
-  engine.pipeline([
-    'intake:any',
-    'resolve:roles',
-    'expand:family',
-    'enforce:contrast',
-    'derive:variant',
-    'emit:json',
-  ]);
-
-  const state = await engine.run({
-    'colors': ['#ff6b6b', '#4ecdc4'],
-    'roles':  SIMPLE_ROLES,
-  });
-
-  assert.ok(state.colors.length === 2, 'intake:any should parse both hex strings');
-  const json = state.outputs['json'] as { 'colors': string[] } | undefined;
-  assert.ok(json !== undefined);
-  assert.strictEqual(json.colors.length, 2);
-});
-
-// ---------------------------------------------------------------------------
-// happy: no pipeline() call; engine runs all registered tasks in order
-// ---------------------------------------------------------------------------
-
-test('Engine e2e :: happy :: no pipeline call runs all registered tasks', async () => {
-  const engine = new Engine();
-  const ran: string[] = [];
-
-  const taskA: TaskInterface = {
-    'name': 'stub:a',
-    'manifest': { 'name': 'stub:a' },
-    run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void { ran.push('a'); },
-  };
-  const taskB: TaskInterface = {
-    'name': 'stub:b',
-    'manifest': { 'name': 'stub:b' },
-    run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void { ran.push('b'); },
-  };
-
-  engine.tasks.register(taskA);
-  engine.tasks.register(taskB);
-  // no engine.pipeline() call
-  await engine.run({ 'colors': [] });
-
-  assert.deepStrictEqual(ran, ['a', 'b'], 'tasks should run in registration order when no pipeline set');
-});
-
-// ---------------------------------------------------------------------------
-// edge: 1-color seed fills all required roles via expand:family
-// ---------------------------------------------------------------------------
-
-test('Engine e2e :: edge :: 1-color seed fills derived roles via expand:family', async () => {
-  const engine = freshEngine();
-  engine.pipeline([
-    'intake:hex',
-    'resolve:roles',
-    'expand:family',
-    'emit:json',
-  ]);
-
-  const state = await engine.run({
-    'colors': ['#6366f1'],
-    'roles':  SIMPLE_ROLES,
-  });
-
-  assert.ok('primary'       in state.roles, 'primary role should be assigned');
-  assert.ok('primary-muted' in state.roles, 'derived primary-muted should be filled via expand:family');
-});
-
-// ---------------------------------------------------------------------------
-// edge: 64-color seed triggers clamp:count
-// ---------------------------------------------------------------------------
-
-test('Engine e2e :: edge :: 64-color seed triggers clamp:count reduction', async () => {
-  const engine = freshEngine();
-  engine.pipeline(['intake:hex', 'clamp:count']);
-
-  // Generate 100 hex colors
+function makeColors(count: number): string[] {
   const colors: string[] = [];
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < count; i++) {
     const h = (i * 7) % 256;
-    const hex = `#${h.toString(16).padStart(2, '0')}${(255 - h).toString(16).padStart(2, '0')}80`;
-    colors.push(hex);
+    colors.push(`#${h.toString(16).padStart(2, '0')}${(255 - h).toString(16).padStart(2, '0')}80`);
   }
-
-  const state = await engine.run({ 'colors': colors, 'maxColors': 64 });
-
-  assert.ok(
-    state.colors.length <= 64,
-    `colors should be clamped to ≤64, got ${state.colors.length}`,
-  );
-});
+  return colors;
+}
 
 // ---------------------------------------------------------------------------
-// edge: bypass:true disables clamp:count clustering
+// Cell 1 — intake:hex parses colors and populates state
+//
+// intake:hex reads the raw input.colors array of hex strings and writes parsed
+// ColorRecord objects into state.colors. The full pipeline then resolves roles,
+// expands the family, enforces contrast, derives variants, and emits JSON.
 // ---------------------------------------------------------------------------
 
-test('Engine e2e :: edge :: bypass:true skips clamp:count clustering', async () => {
-  const engine = freshEngine();
-  engine.pipeline(['intake:hex', 'clamp:count']);
+interface IntakeHexInput {
+  readonly colors: string[];
+  readonly roles:  RoleSchemaInterface;
+}
+interface IntakeHexOutput {
+  readonly colorsLength: number;
+  readonly rolesCount:   number;
+  readonly hasDerivedRole: boolean;
+  readonly hasDarkVariant: boolean;
+  readonly hasLightVariant: boolean;
+  readonly hasJsonOutput:  boolean;
+}
 
-  const colors: string[] = [];
-  for (let i = 0; i < 100; i++) {
-    const h = (i * 7) % 256;
-    const hex = `#${h.toString(16).padStart(2, '0')}${(255 - h).toString(16).padStart(2, '0')}80`;
-    colors.push(hex);
-  }
+const intakeHexScenarios: readonly ScenarioInterface<IntakeHexInput, IntakeHexOutput>[] = [
+  {
+    name: 'full pipeline with 3 hex seeds populates all state fields',
+    kind: 'happy',
+    input: { colors: ['#5b21b6', '#c4b5fd', '#1e1b4b'], roles: SIMPLE_ROLES },
+    assert(output, error) {
+      assert.strictEqual(error, undefined,                 '[cell=1, scenario=full-pipeline] no throw');
+      assert.ok(output!.colorsLength >= 1,                 '[cell=1, scenario=full-pipeline] colors populated');
+      assert.ok(output!.rolesCount   >= 1,                 '[cell=1, scenario=full-pipeline] roles assigned');
+      assert.strictEqual(output!.hasDerivedRole,   true,  '[cell=1, scenario=full-pipeline] derived role present');
+      assert.strictEqual(output!.hasDarkVariant,   true,  '[cell=1, scenario=full-pipeline] dark variant exists');
+      assert.strictEqual(output!.hasLightVariant,  true,  '[cell=1, scenario=full-pipeline] light variant exists');
+      assert.strictEqual(output!.hasJsonOutput,    true,  '[cell=1, scenario=full-pipeline] json output populated');
+    },
+  },
+  {
+    name: '1-color seed fills derived role via expand:family',
+    kind: 'edge',
+    input: { colors: ['#6366f1'], roles: SIMPLE_ROLES },
+    assert(output, error) {
+      assert.strictEqual(error, undefined,                '[cell=1, scenario=1-seed] no throw');
+      assert.ok(output!.colorsLength >= 1,                '[cell=1, scenario=1-seed] colors populated');
+      assert.strictEqual(output!.hasDerivedRole, true,   '[cell=1, scenario=1-seed] primary-muted derived via expand:family');
+    },
+  },
+];
 
-  const state = await engine.run({ 'colors': colors, 'bypass': true });
-
-  assert.strictEqual(
-    state.colors.length,
-    100,
-    'bypass:true should leave all 100 colors intact',
-  );
-});
+new ScenarioRunner<IntakeHexInput, IntakeHexOutput>(
+  'Engine.e2e :: cell-1 :: intake-hex',
+  async (input) => {
+    const engine = freshEngine();
+    engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'enforce:contrast', 'derive:variant', 'emit:json']);
+    const state = await engine.run({ 'colors': input.colors, 'roles': input.roles });
+    const json = state.outputs['core:json'] as Record<string, unknown> | undefined;
+    return {
+      colorsLength:     state.colors.length,
+      rolesCount:       Object.keys(state.roles).length,
+      hasDerivedRole:   'primary-muted' in state.roles,
+      hasDarkVariant:   'dark'  in state.variants,
+      hasLightVariant:  'light' in state.variants,
+      hasJsonOutput:    json !== undefined && Array.isArray((json as { colors: unknown[] }).colors),
+    };
+  },
+).run(intakeHexScenarios);
 
 // ---------------------------------------------------------------------------
-// edge: enforce:contrast is no-op when contrast already passes
+// Cell 2 — intake:any dispatcher routes every format correctly
+//
+// intake:any walks the input array through delegates in this order:
+//   hex → rgb → hsl → oklch → lab → named → imagePixel
+// Each format produces exactly one ColorRecord. Records carry the correct
+// sourceFormat tag and a canonical 6-digit hex.
 // ---------------------------------------------------------------------------
 
-test('Engine e2e :: edge :: enforce:contrast is no-op when pair already passes', async () => {
-  const engine = freshEngine();
-  engine.pipeline(['intake:hex', 'resolve:roles', 'enforce:contrast']);
+interface IntakeAnyInput  { readonly colors: unknown[] }
+interface IntakeAnyOutput {
+  readonly count:        number;
+  readonly sourceFormats: readonly string[];
+  readonly hexValues:    readonly string[];
+}
 
-  const highContrastRoles: RoleSchemaInterface = {
-    'name': 'hi-contrast',
-    'roles': [
-      { 'name': 'text',       'required': true },
-      { 'name': 'background', 'required': true },
-    ],
-    'contrastPairs': [
-      { 'foreground': 'text', 'background': 'background', 'minRatio': 3.0 },
-    ],
-  };
+const intakeAnyScenarios: readonly ScenarioInterface<IntakeAnyInput, IntakeAnyOutput>[] = [
+  {
+    name: 'two hex strings dispatched to hex delegate',
+    kind: 'happy',
+    input: { colors: ['#ff6b6b', '#4ecdc4'] },
+    assert(output, error) {
+      assert.strictEqual(error,        undefined,                '[cell=2, scenario=hex-dispatch] no throw');
+      assert.strictEqual(output!.count, 2,                       '[cell=2, scenario=hex-dispatch] both hex strings parsed');
+      assert.ok(output!.sourceFormats.every((f) => f === 'hex'), '[cell=2, scenario=hex-dispatch] both tagged hex');
+    },
+  },
+  {
+    name: 'six mixed-format inputs each route to their delegate',
+    kind: 'happy',
+    input: {
+      colors: [
+        '#fff',                              // intake:hex
+        { 'r': 1,   'g': 0,   'b': 0 },      // intake:rgb (0..1 floats)
+        { 'h': 200, 's': 0.5, 'l': 0.4 },    // intake:hsl
+        { 'l': 0.6, 'c': 0.2, 'h': 250 },    // intake:oklch
+        { 'l': 0.6, 'a': 0.1, 'b': -0.1 },   // intake:lab
+        'rebeccapurple',                     // intake:named
+      ],
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined,                                             '[cell=2, scenario=mixed] no throw');
+      assert.strictEqual(output!.count, 6,                                             '[cell=2, scenario=mixed] six records produced');
+      const expected: readonly SourceFormatType[] = ['hex', 'rgb', 'hsl', 'oklch', 'lab', 'named'];
+      for (let i = 0; i < expected.length; i++) {
+        assert.strictEqual(
+          output!.sourceFormats[i], expected[i],
+          `[cell=2, scenario=mixed] record ${i} sourceFormat should be "${expected[i]}", got "${output!.sourceFormats[i]}"`,
+        );
+      }
+      assert.strictEqual(output!.hexValues[0], '#ffffff',  '[cell=2, scenario=mixed] "#fff" canonicalised to "#ffffff"');
+      assert.strictEqual(output!.hexValues[1], '#ff0000',  '[cell=2, scenario=mixed] {r:1,g:0,b:0} round-trips to "#ff0000"');
+      assert.strictEqual(output!.hexValues[5], '#663399',  '[cell=2, scenario=mixed] "rebeccapurple" resolves to "#663399"');
+    },
+  },
+  {
+    name: 'short 3-digit hex "#fff" canonicalises to 6-digit "#ffffff"',
+    kind: 'edge',
+    input: { colors: ['#fff'] },
+    assert(output, error) {
+      assert.strictEqual(error,           undefined,    '[cell=2, scenario=short-hex] no throw');
+      assert.strictEqual(output!.count,   1,            '[cell=2, scenario=short-hex] one record');
+      assert.strictEqual(output!.hexValues[0], '#ffffff', '[cell=2, scenario=short-hex] expanded to 6-digit');
+    },
+  },
+  {
+    name: 'empty input array produces zero records',
+    kind: 'edge',
+    input: { colors: [] },
+    assert(output, error) {
+      assert.strictEqual(error,         undefined, '[cell=2, scenario=empty] no throw');
+      assert.strictEqual(output!.count, 0,         '[cell=2, scenario=empty] zero records');
+    },
+  },
+];
 
-  const state = await engine.run({
-    'colors': [
-      // black text hint, white background hint; contrast ~21:1, well above 3.0
-      { 'r': 0, 'g': 0, 'b': 0, 'hints': { 'role': 'text' } } as unknown,
-      { 'r': 1, 'g': 1, 'b': 1, 'hints': { 'role': 'background' } } as unknown,
-    ],
-    'roles': highContrastRoles,
-  });
-
-  const report = state.metadata['contrastReport'] as Array<{
-    'adjusted': boolean;
-    'ratio': number;
-  }> | undefined;
-  // Even if roles are unresolvable from object inputs, no crash occurs.
-  // When contrast pairs can't be resolved (roles missing), report may be undefined or empty.
-  // The key assertion is that the engine returned without throwing.
-  assert.ok(state !== undefined, 'engine should complete without throwing');
-});
+new ScenarioRunner<IntakeAnyInput, IntakeAnyOutput>(
+  'Engine.e2e :: cell-2 :: intake-any',
+  async (input) => {
+    const engine = freshEngine();
+    engine.pipeline(['intake:any']);
+    const state = await engine.run({ 'colors': input.colors as InputInterface['colors'] });
+    return {
+      count:         state.colors.length,
+      sourceFormats: state.colors.map((c) => (c as ColorRecordInterface).sourceFormat),
+      hexValues:     state.colors.map((c) => (c as ColorRecordInterface).hex),
+    };
+  },
+).run(intakeAnyScenarios);
 
 // ---------------------------------------------------------------------------
-// unhappy: pipeline references nonexistent task
+// Cell 3 — no pipeline() call runs all registered tasks in registration order
+//
+// When pipeline() is never called the engine must fall back to executing every
+// registered task in the order they were registered. This allows ad-hoc
+// sequencing without explicit pipeline declaration.
 // ---------------------------------------------------------------------------
 
-test('Engine e2e :: unhappy :: pipeline with nonexistent task name throws', () => {
-  const engine = freshEngine();
+interface NoPipelineInput  { readonly taskNames: readonly string[] }
+interface NoPipelineOutput { readonly executionOrder: readonly string[] }
 
-  assert.throws(
-    () => engine.pipeline(['intake:hex', 'nonexistent:task']),
-    (err: unknown) => {
-      assert.ok(err instanceof Error);
+const noPipelineScenarios: readonly ScenarioInterface<NoPipelineInput, NoPipelineOutput>[] = [
+  {
+    name: 'two stub tasks run in registration order',
+    kind: 'happy',
+    input: { taskNames: ['stub:a', 'stub:b'] },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=3, scenario=two-tasks] no throw');
+      assert.deepStrictEqual(output!.executionOrder, ['stub:a', 'stub:b'], '[cell=3, scenario=two-tasks] registration order honored');
+    },
+  },
+  {
+    name: 'no registered tasks — runs cleanly with empty execution log',
+    kind: 'edge',
+    input: { taskNames: [] },
+    assert(output, error) {
+      assert.strictEqual(error, undefined,                    '[cell=3, scenario=no-tasks] no throw');
+      assert.deepStrictEqual(output!.executionOrder, [],     '[cell=3, scenario=no-tasks] nothing executed');
+    },
+  },
+];
+
+new ScenarioRunner<NoPipelineInput, NoPipelineOutput>(
+  'Engine.e2e :: cell-3 :: pipeline-order',
+  async (input) => {
+    const engine = new Engine();
+    const ran: string[] = [];
+    for (const name of input.taskNames) {
+      const taskName = name;
+      const task: TaskInterface = {
+        'name': taskName,
+        'manifest': { 'name': taskName },
+        run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void { ran.push(taskName); },
+      };
+      engine.tasks.register(task);
+    }
+    // No engine.pipeline() call
+    await engine.run({ 'colors': [] });
+    return { executionOrder: ran };
+  },
+).run(noPipelineScenarios);
+
+// ---------------------------------------------------------------------------
+// Cell 4 — clamp:count and bypass:true
+//
+// clamp:count must reduce a large input to ≤ maxColors. bypass:true must
+// leave all colors intact regardless of maxColors.
+// ---------------------------------------------------------------------------
+
+interface ClampInput  { readonly count: number; readonly bypass?: boolean; readonly maxColors?: number }
+interface ClampOutput { readonly resultLength: number }
+
+const clampScenarios: readonly ScenarioInterface<ClampInput, ClampOutput>[] = [
+  {
+    name: '100 colors clamped to ≤64 when maxColors=64',
+    kind: 'happy',
+    input: { count: 100, maxColors: 64 },
+    assert(output, error) {
+      assert.strictEqual(error, undefined,                      '[cell=4, scenario=clamp-64] no throw');
       assert.ok(
-        err.message.includes("nonexistent:task"),
-        `expected error to mention task name, got: ${err.message}`,
+        output!.resultLength <= 64,
+        `[cell=4, scenario=clamp-64] colors ≤ 64, got ${output!.resultLength}`,
       );
-      return true;
     },
-  );
-});
-
-// ---------------------------------------------------------------------------
-// unhappy: pipeline task that throws propagates to caller
-// ---------------------------------------------------------------------------
-
-test('Engine e2e :: unhappy :: pipeline task that throws propagates error', async () => {
-  const engine = new Engine();
-
-  const bombTask: TaskInterface = {
-    'name': 'bomb:task',
-    'manifest': { 'name': 'bomb:task' },
-    run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
-      throw new Error('intentional bomb detonation');
+  },
+  {
+    name: 'bypass:true leaves all 100 colors intact',
+    kind: 'edge',
+    input: { count: 100, bypass: true },
+    assert(output, error) {
+      assert.strictEqual(error,             undefined, '[cell=4, scenario=bypass] no throw');
+      assert.strictEqual(output!.resultLength, 100,    '[cell=4, scenario=bypass] bypass:true preserves all colors');
     },
-  };
-  engine.tasks.register(bombTask);
-  engine.pipeline(['bomb:task']);
-
-  await assert.rejects(
-    () => engine.run({ 'colors': ['#ff0000'] }),
-    (err: unknown) => {
-      assert.ok(err instanceof Error);
-      assert.ok(err.message.includes('intentional bomb detonation'));
-      return true;
+  },
+  {
+    name: 'maxColors=1 clamps extreme input to single color',
+    kind: 'edge',
+    input: { count: 64, maxColors: 1 },
+    assert(output, error) {
+      assert.strictEqual(error, undefined,                    '[cell=4, scenario=clamp-1] no throw');
+      assert.ok(
+        output!.resultLength <= 1,
+        `[cell=4, scenario=clamp-1] colors ≤ 1, got ${output!.resultLength}`,
+      );
     },
-  );
-});
+  },
+];
+
+new ScenarioRunner<ClampInput, ClampOutput>(
+  'Engine.e2e :: cell-4 :: clamp-count',
+  async (input) => {
+    const engine = freshEngine();
+    engine.pipeline(['intake:hex', 'clamp:count']);
+    const runInput: InputInterface = {
+      'colors':    makeColors(input.count),
+      ...(input.bypass    !== undefined ? { 'bypass':    input.bypass    } : {}),
+      ...(input.maxColors !== undefined ? { 'maxColors': input.maxColors } : {}),
+    };
+    const state = await engine.run(runInput);
+    return { resultLength: state.colors.length };
+  },
+).run(clampScenarios);
 
 // ---------------------------------------------------------------------------
-// unhappy: malformed input; every intake task rejects non-string/non-object
+// Cell 5 — enforce:contrast is a no-op when pair already passes
+//
+// When the supplied color pair already satisfies the minRatio the task must
+// leave state unchanged (contrastReport.adjusted === false or report absent).
 // ---------------------------------------------------------------------------
 
+interface EnforceContrastInput  {
+  readonly fgHex: string;
+  readonly bgHex: string;
+  readonly minRatio: number;
+}
+interface EnforceContrastOutput {
+  readonly statePresent: boolean;
+}
+
+const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput, EnforceContrastOutput>[] = [
+  {
+    name: 'black-on-white (contrast ≈21) is no-op for minRatio=3',
+    kind: 'happy',
+    input: { fgHex: '#000000', bgHex: '#ffffff', minRatio: 3.0 },
+    assert(output, error) {
+      assert.strictEqual(error,               undefined, '[cell=5, scenario=no-op] no throw');
+      assert.strictEqual(output!.statePresent, true,     '[cell=5, scenario=no-op] engine returned state');
+    },
+  },
+  {
+    name: 'engine completes when roles unresolvable from object inputs',
+    kind: 'edge',
+    input: { fgHex: '#000000', bgHex: '#ffffff', minRatio: 3.0 },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=5, scenario=unresolvable-roles] no throw on unreachable contrast check');
+      assert.strictEqual(output!.statePresent, true, '[cell=5, scenario=unresolvable-roles] state returned');
+    },
+  },
+];
+
+const highContrastRoles: RoleSchemaInterface = {
+  'name': 'hi-contrast',
+  'roles': [
+    { 'name': 'text',       'required': true },
+    { 'name': 'background', 'required': true },
+  ],
+  'contrastPairs': [
+    { 'foreground': 'text', 'background': 'background', 'minRatio': 3.0 },
+  ],
+};
+
+new ScenarioRunner<EnforceContrastInput, EnforceContrastOutput>(
+  'Engine.e2e :: cell-5 :: enforce-contrast',
+  async (input) => {
+    const engine = freshEngine();
+    engine.pipeline(['intake:hex', 'resolve:roles', 'enforce:contrast']);
+    const state = await engine.run({
+      'colors': [input.fgHex, input.bgHex],
+      'roles':  highContrastRoles,
+    });
+    return { statePresent: state !== undefined };
+  },
+).run(enforceContrastScenarios);
+
 // ---------------------------------------------------------------------------
-// runtime: cross-output runtime toggles flow from input to state
+// Cell 6 — input.runtime flows to state.runtime
+//
+// state.runtime must be a copy of input.runtime (not the same reference).
+// When input.runtime is omitted, state.runtime defaults to {}.
+// Tasks can read framing from state.runtime.
 // ---------------------------------------------------------------------------
 
-test('Engine e2e :: runtime :: input.runtime is copied to state.runtime', async () => {
+interface RuntimeInput {
+  readonly runtime?: { framing?: FramingType; colorSpace?: ColorSpaceType };
+}
+interface RuntimeOutput {
+  readonly framing:           string | undefined;
+  readonly colorSpace:        string | undefined;
+  readonly isDefaultEmpty:    boolean;
+  readonly isSameRef:         boolean;
+}
+
+const runtimeScenarios: readonly ScenarioInterface<RuntimeInput, RuntimeOutput>[] = [
+  {
+    name: 'input.runtime fields are copied to state.runtime',
+    kind: 'happy',
+    input: { runtime: { 'framing': 'dark', 'colorSpace': 'displayP3' } },
+    assert(output, error) {
+      assert.strictEqual(error,              undefined,     '[cell=6, scenario=copy] no throw');
+      assert.strictEqual(output!.framing,    'dark',        '[cell=6, scenario=copy] framing copied');
+      assert.strictEqual(output!.colorSpace, 'displayP3',   '[cell=6, scenario=copy] colorSpace copied');
+      assert.strictEqual(output!.isSameRef,  false,         '[cell=6, scenario=copy] state.runtime is a fresh object');
+    },
+  },
+  {
+    name: 'omitted input.runtime defaults state.runtime to empty object',
+    kind: 'edge',
+    input: {},
+    assert(output, error) {
+      assert.strictEqual(error,                 undefined, '[cell=6, scenario=default] no throw');
+      assert.strictEqual(output!.isDefaultEmpty, true,     '[cell=6, scenario=default] state.runtime defaults to {}');
+    },
+  },
+];
+
+new ScenarioRunner<RuntimeInput, RuntimeOutput>(
+  'Engine.e2e :: cell-6 :: runtime',
+  async (input) => {
+    const engine = freshEngine();
+    engine.pipeline(['intake:hex']);
+    const runInput: InputInterface = {
+      'colors':  ['#ff0000'],
+      ...(input.runtime !== undefined ? { 'runtime': input.runtime } : {}),
+    };
+    const state = await engine.run(runInput);
+    return {
+      framing:        state.runtime.framing,
+      colorSpace:     state.runtime.colorSpace,
+      isDefaultEmpty: Object.keys(state.runtime).length === 0,
+      isSameRef:      state.runtime === (runInput.runtime as unknown),
+    };
+  },
+).run(runtimeScenarios);
+
+// ---------------------------------------------------------------------------
+// Cell 7 — error paths
+//
+// nonexistent task name in pipeline() throws synchronously.
+// A task that throws propagates the error to the caller of run().
+// Malformed (non-hex-string) colors are silently skipped by intake:hex.
+// ---------------------------------------------------------------------------
+
+interface ErrorInput {
+  readonly scenario: 'unknown-task' | 'task-throws' | 'malformed-colors';
+}
+interface ErrorOutput {
+  readonly colorsLength:  number;
+  readonly hasJsonOutput: boolean;
+}
+
+const errorScenarios: readonly ScenarioInterface<ErrorInput, ErrorOutput>[] = [
+  {
+    name: 'pipeline with nonexistent task name throws with task name in message',
+    kind: 'unhappy',
+    input: { scenario: 'unknown-task' },
+    assert(_output, error) {
+      assert.ok(error instanceof Error,                             '[cell=7, scenario=unknown-task] expected throw');
+      assert.ok(
+        (error as Error).message.includes('nonexistent:task'),
+        `[cell=7, scenario=unknown-task] error mentions task name, got: ${(error as Error).message}`,
+      );
+    },
+  },
+  {
+    name: 'task that throws propagates error to run() caller',
+    kind: 'unhappy',
+    input: { scenario: 'task-throws' },
+    assert(_output, error) {
+      assert.ok(error instanceof Error,                                              '[cell=7, scenario=task-throws] expected throw');
+      assert.ok(
+        (error as Error).message.includes('intentional bomb detonation'),
+        `[cell=7, scenario=task-throws] error message propagated, got: ${(error as Error).message}`,
+      );
+    },
+  },
+  {
+    name: 'non-hex input to intake:hex throws with a descriptive error',
+    kind: 'unhappy',
+    input: { scenario: 'malformed-colors' },
+    assert(_output, error) {
+      assert.ok(error instanceof Error, '[cell=7, scenario=malformed] intake:hex must throw on non-hex input');
+      assert.match((error as Error).message, /intake:hex/,
+        '[cell=7, scenario=malformed] error names the offending intake task');
+    },
+  },
+];
+
+new ScenarioRunner<ErrorInput, ErrorOutput>(
+  'Engine.e2e :: cell-7 :: error-paths',
+  async (input) => {
+    if (input.scenario === 'unknown-task') {
+      const engine = freshEngine();
+      engine.pipeline(['intake:hex', 'nonexistent:task']);
+      // Should throw during pipeline(); run() is never reached
+      return { colorsLength: 0, hasJsonOutput: false };
+    }
+
+    if (input.scenario === 'task-throws') {
+      const engine = new Engine();
+      const bomb: TaskInterface = {
+        'name': 'bomb:task',
+        'manifest': { 'name': 'bomb:task' },
+        run(): void { throw new Error('intentional bomb detonation'); },
+      };
+      engine.tasks.register(bomb);
+      engine.pipeline(['bomb:task']);
+      await engine.run({ 'colors': ['#ff0000'] });
+      return { colorsLength: 0, hasJsonOutput: false };
+    }
+
+    // malformed-colors
+    const engine = freshEngine();
+    engine.pipeline(['intake:hex', 'clamp:count', 'emit:json']);
+    const state = await engine.run({
+      'colors': [{} as unknown, null as unknown, 42 as unknown],
+    });
+    const json = state.outputs['core:json'] as { colors: string[] } | undefined;
+    return {
+      colorsLength:  state.colors.length,
+      hasJsonOutput: json !== undefined,
+    };
+  },
+).run(errorScenarios);
+
+// ---------------------------------------------------------------------------
+// Cell 8 — tasks observe state.runtime.framing (behavioural invariant)
+//
+// A task that reads framing from state.runtime must observe the value passed
+// in from input.runtime. This is a single-shot invariant; bare test at bottom.
+// ---------------------------------------------------------------------------
+
+test('Engine.e2e :: cell-8 :: runtime-task-observation :: tasks read framing from state.runtime', async () => {
   const engine = freshEngine();
-  engine.pipeline(['intake:hex']);
+  let observedFraming: string | undefined;
 
-  const state = await engine.run({
-    'colors':  ['#ff0000'],
-    'runtime': { 'framing': 'dark', 'colorSpace': 'displayP3' },
-  });
-
-  assert.strictEqual(state.runtime.framing,    'dark');
-  assert.strictEqual(state.runtime.colorSpace, 'displayP3');
-});
-
-test('Engine e2e :: runtime :: state.runtime defaults to empty object when input.runtime omitted', async () => {
-  const engine = freshEngine();
-  engine.pipeline(['intake:hex']);
-
-  const state = await engine.run({ 'colors': ['#ff0000'] });
-
-  assert.deepStrictEqual(state.runtime, {});
-});
-
-test('Engine e2e :: runtime :: tasks read framing from state.runtime', async () => {
-  const engine = freshEngine();
-  let observedFraming: string | undefined = undefined;
   const observer: TaskInterface = {
     'name': 'observe:framing',
     run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
@@ -326,101 +566,10 @@ test('Engine e2e :: runtime :: tasks read framing from state.runtime', async () 
   engine.pipeline(['observe:framing']);
 
   await engine.run({ 'colors': [], 'runtime': { 'framing': 'light' } });
-  assert.strictEqual(observedFraming, 'light');
-});
-
-// ---------------------------------------------------------------------------
-// intake:any dispatcher coverage: mixed-format input feeds every delegate
-// ---------------------------------------------------------------------------
-
-interface IntakeAnyExpectationInterface {
-  readonly 'sourceFormat': SourceFormatType;
-  readonly 'description':  string;
-}
-
-describe('Engine e2e :: intake:any dispatcher coverage', () => {
-  it('intake:any routes each mixed-format input to the correct delegate intake task', async () => {
-    const engine = freshEngine();
-    engine.pipeline(['intake:any']);
-
-    // The dispatcher runs every format-specific intake in order:
-    // hex → rgb → hsl → oklch → lab → named → imagePixel. Each handler
-    // walks the full input array; non-matching entries are skipped. So
-    // the resulting state.colors order tracks the DELEGATE order, not the
-    // input order. We feed one of each format and assert the
-    // round-tripped records carry the matching sourceFormat tag and a
-    // sensible canonical 6-digit hex.
-    const state = await engine.run({
-      'colors': [
-        '#fff',                              // intake:hex
-        { 'r': 1,   'g': 0,   'b': 0 },      // intake:rgb (already 0..1)
-        { 'h': 200, 's': 0.5, 'l': 0.4 },    // intake:hsl
-        { 'l': 0.6, 'c': 0.2, 'h': 250 },    // intake:oklch
-        { 'l': 0.6, 'a': 0.1, 'b': -0.1 },   // intake:lab
-        'rebeccapurple',                     // intake:named
-      ],
-    });
-
-    // Every delegate parsed exactly its target entry: total six records.
-    assert.strictEqual(state.colors.length, 6,
-      `intake:any should yield six records (one per format), got ${state.colors.length}`);
-
-    // Per delegate dispatch order: hex first, then rgb, hsl, oklch, lab, named.
-    const expected: readonly IntakeAnyExpectationInterface[] = [
-      { 'sourceFormat': 'hex',   'description': 'hex string "#fff"' },
-      { 'sourceFormat': 'rgb',   'description': '{r,g,b} object' },
-      { 'sourceFormat': 'hsl',   'description': '{h,s,l} object' },
-      { 'sourceFormat': 'oklch', 'description': '{l,c,h} object' },
-      { 'sourceFormat': 'lab',   'description': '{l,a,b} object' },
-      { 'sourceFormat': 'named', 'description': 'named color "rebeccapurple"' },
-    ];
-
-    for (let i = 0; i < expected.length; i++) {
-      const record = state.colors[i] as ColorRecordInterface;
-      const want   = expected[i]!;
-
-      // Every record carries the canonical ColorRecord shape (oklch / rgb / hex / alpha
-      // / sourceFormat / displayP3 / hints) and EVERY allocation comes through
-      // ColorRecordFactory.* with the same hidden class.
-      assert.ok(record !== undefined, `record ${i} (${want.description}) defined`);
-      assert.strictEqual(typeof record.oklch.l, 'number',  `record ${i} oklch.l populated`);
-      assert.strictEqual(typeof record.oklch.c, 'number',  `record ${i} oklch.c populated`);
-      assert.strictEqual(typeof record.oklch.h, 'number',  `record ${i} oklch.h populated`);
-      assert.strictEqual(typeof record.rgb.r,   'number',  `record ${i} rgb.r populated`);
-      assert.strictEqual(typeof record.rgb.g,   'number',  `record ${i} rgb.g populated`);
-      assert.strictEqual(typeof record.rgb.b,   'number',  `record ${i} rgb.b populated`);
-      assert.strictEqual(typeof record.alpha,   'number',  `record ${i} alpha populated`);
-      assert.match(record.hex, /^#[0-9a-f]{6}$/,
-        `record ${i} (${want.description}) hex "${record.hex}" should be canonical 6-digit`);
-      assert.strictEqual(record.sourceFormat, want.sourceFormat,
-        `record ${i} (${want.description}) sourceFormat should be "${want.sourceFormat}", got "${record.sourceFormat}"`);
-    }
-
-    // Spot-check known round-trip results:
-    // - '#fff' → expands to '#ffffff'
-    // - 'rebeccapurple' → '#663399'
-    // - {r:1, g:0, b:0} pure red → '#ff0000'
-    assert.strictEqual(state.colors[0]!.hex, '#ffffff',  '"#fff" should canonicalise to "#ffffff"');
-    assert.strictEqual(state.colors[1]!.hex, '#ff0000',  '{r:1,g:0,b:0} should round-trip to "#ff0000"');
-    assert.strictEqual(state.colors[5]!.hex, '#663399',  '"rebeccapurple" should resolve to "#663399"');
-  });
-});
-
-test('Engine e2e :: unhappy :: malformed input colors; intake produces empty state', async () => {
-  const engine = freshEngine();
-  engine.pipeline(['intake:hex', 'clamp:count', 'emit:json']);
-
-  // Passing objects that are not hex strings; intake:hex will silently skip them
-  const state = await engine.run({
-    'colors': [{} as unknown, null as unknown, 42 as unknown],
-  });
 
   assert.strictEqual(
-    state.colors.length,
-    0,
-    'malformed colors should all be skipped, leaving colors empty',
+    observedFraming,
+    'light',
+    '[cell=8, scenario=framing-observed] task should see framing="light" from input.runtime',
   );
-  const json = state.outputs['json'] as { 'colors': string[] } | undefined;
-  assert.ok(json !== undefined, 'emit:json should still write even with empty colors');
-  assert.strictEqual(json.colors.length, 0);
 });

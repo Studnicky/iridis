@@ -4,7 +4,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { contrastWcag21, ensureContrast, getOrCreateMetadata } from '@studnicky/iridis';
+import { contrastWcag21, ensureContrast } from '@studnicky/iridis';
 import { wcagRequiredRatio } from '../data/wcagRequiredRatio.ts';
 import type { WcagPairResultInterface } from '../types/augmentation.ts';
 
@@ -14,7 +14,7 @@ export class EnforceWcagAa implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'enforce:wcagAA',
     'reads':       ['input.roles.contrastPairs', 'roles'],
-    'writes':      ['roles', 'metadata.wcag.aa'],
+    'writes':      ['roles', 'metadata[\'contrast:aa\']'],
     'description': 'Enforce WCAG 2.1 AA contrast (4.5:1 normal text, 3:1 large/UI) on all role pairs.',
   };
 
@@ -71,12 +71,11 @@ export class EnforceWcagAa implements TaskInterface {
       });
     }
 
-    const wcagMeta = getOrCreateMetadata(state, 'wcag');
-    wcagMeta['aa'] = { 'pairs': results };
+    state.metadata['contrast:aa'] = { 'pairs': results };
 
     ctx.logger.debug('EnforceWcagAa', 'run', 'Processed pairs', {
       'pairCount': results.length,
-      'aaMeta':    wcagMeta['aa'],
+      'aaMeta':    state.metadata['contrast:aa'],
     });
   }
 }

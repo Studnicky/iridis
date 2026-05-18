@@ -5,7 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateMetadata, getOrCreateOutput, luminance } from '@studnicky/iridis';
+import { getOrCreateMetadata, luminance } from '@studnicky/iridis';
 import type { StatusBarOutputInterface } from '../types/index.ts';
 
 function pickBarStyle(barColor: ColorRecordInterface): 'DARK' | 'LIGHT' {
@@ -32,7 +32,7 @@ export class EmitCapacitorStatusBar implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:capacitorStatusBar',
     'reads':       ['roles'],
-    'writes':      ['outputs.capacitor.statusBar'],
+    'writes':      ['outputs.capacitor:statusBar'],
     'description': 'Emit Capacitor StatusBar configuration from surface/topBar role.',
   };
 
@@ -60,8 +60,7 @@ export class EmitCapacitorStatusBar implements TaskInterface {
       'overlay':         overlay,
     };
 
-    const capacitorOut = getOrCreateOutput(state, 'capacitor');
-    capacitorOut['statusBar'] = output;
+    state.outputs['capacitor:statusBar'] = output;
 
     ctx.logger.debug('EmitCapacitorStatusBar', 'run', 'StatusBar emitted', {
       'backgroundColor': output.backgroundColor,

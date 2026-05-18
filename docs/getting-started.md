@@ -88,7 +88,7 @@ const state = await engine.run({
   'metadata': { 'cssVarPrefix': '--c-' },
 });
 
-document.documentElement.style.cssText = state.outputs['cssVars']!.full;
+document.documentElement.style.cssText = (state.outputs['stylesheet:cssVars'] as { full: string }).full;
 ```
 
 Need a math primitive standalone? Import the singleton and call `apply`:

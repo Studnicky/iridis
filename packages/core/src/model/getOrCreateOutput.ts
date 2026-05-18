@@ -1,44 +1,39 @@
 /**
- * Type-safe fetch-or-init helpers for plugin output and metadata slots.
+ * Fetch-or-init helpers for plugin output and metadata slots.
  *
- * Each plugin declares its slot shape via module augmentation on
- * PluginOutputsRegistry / PluginMetadataRegistry. These helpers constrain
- * the key to the declared set and return the declared value type;
- * no `as Record<string, unknown>` needed at call sites.
+ * Each plugin writes its own slot in state.outputs / state.metadata.
+ * These helpers create the slot object on first access and return it
+ * so subsequent emit tasks in the same plugin family share the same reference.
  *
- * The slot is created once and mutated in place by subsequent emit tasks in
- * the same plugin family (e.g. emit:vscodeUiPalette → emit:vscodeSemanticRules
- * → emit:vscodeThemeJson all share the 'vscode' slot).
+ * The returned type is `Record<string, unknown>` — plugin tasks cast
+ * to their own concrete types after retrieval. This is safe because the
+ * plugin owns and controls the slot; no other plugin writes to it.
  */
 
-import type {
-  PaletteStateInterface,
-  PluginOutputsRegistry,
-  PluginMetadataRegistry,
-} from '../types/index.ts';
+import type { PaletteStateInterface } from '../types/index.ts';
 
-export function getOrCreateOutput<K extends keyof PluginOutputsRegistry>(
+export function getOrCreateOutput(
   state: PaletteStateInterface,
-  key:   K,
-): NonNullable<PluginOutputsRegistry[K]> {
+  key:   string,
+): Record<string, unknown> {
   const existing = state.outputs[key];
   if (existing !== null && existing !== undefined) {
-    return existing as NonNullable<PluginOutputsRegistry[K]>;
+    return existing as Record<string, unknown>;
   }
-  const fresh = {} as NonNullable<PluginOutputsRegistry[K]>;
+  const fresh: Record<string, unknown> = {};
   state.outputs[key] = fresh;
   return fresh;
 }
 
-export function getOrCreateMetadata<K extends keyof PluginMetadataRegistry>(
+export function getOrCreateMetadata(
   state: PaletteStateInterface,
-  key:   K,
-): NonNullable<PluginMetadataRegistry[K]> {
+  key:   string,
+): Record<string, unknown> {
   const existing = state.metadata[key];
   if (existing !== null && existing !== undefined) {
-    return existing as NonNullable<PluginMetadataRegistry[K]>;
+    return existing as Record<string, unknown>;
   }
-  const fresh = {} as NonNullable<PluginMetadataRegistry[K]>;
+  const fresh: Record<string, unknown> = {};
   state.metadata[key] = fresh;
   return fresh;
 }

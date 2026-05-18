@@ -5,7 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
+import { getOrCreateMetadata } from '@studnicky/iridis';
 import type { SplashScreenOutputInterface } from '../types/index.ts';
 
 function resolveSplashColor(
@@ -24,13 +24,13 @@ export class EmitCapacitorSplashScreen implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:capacitorSplashScreen',
     'reads':       ['roles', 'metadata.capacitor.splashRole', 'metadata.capacitor.androidSplashResourceName'],
-    'writes':      ['outputs.capacitor.splashScreen'],
+    'writes':      ['outputs.capacitor:splashScreen'],
     'description': 'Emit Capacitor splash screen configuration from surface or input-specified splashRole.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const capacitorMeta = getOrCreateMetadata(state, 'capacitor');
-    const splashRole = capacitorMeta['splashRole'];
+    const splashRole = typeof capacitorMeta['splashRole'] === 'string' ? capacitorMeta['splashRole'] : undefined;
 
     const splashColor = resolveSplashColor(state.roles, splashRole);
 
@@ -39,7 +39,9 @@ export class EmitCapacitorSplashScreen implements TaskInterface {
       return;
     }
 
-    const androidSplashResourceName = capacitorMeta['androidSplashResourceName'];
+    const androidSplashResourceName = typeof capacitorMeta['androidSplashResourceName'] === 'string'
+      ? capacitorMeta['androidSplashResourceName']
+      : undefined;
 
     const output: SplashScreenOutputInterface = androidSplashResourceName !== undefined
       ? {
@@ -50,8 +52,7 @@ export class EmitCapacitorSplashScreen implements TaskInterface {
           'backgroundColor': splashColor.hex,
         };
 
-    const capacitorOut = getOrCreateOutput(state, 'capacitor');
-    capacitorOut['splashScreen'] = output;
+    state.outputs['capacitor:splashScreen'] = output;
 
     ctx.logger.debug('EmitCapacitorSplashScreen', 'run', 'SplashScreen emitted', {
       'backgroundColor': output.backgroundColor,

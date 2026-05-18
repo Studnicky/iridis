@@ -48,8 +48,9 @@ const state = await engine.run({
   'metadata': { 'themeName': 'Iridis Dark' },
 });
 
-const out = state.outputs['vscode']!;
-const themeJson = out.themeJson;
+const themeJson       = state.outputs['vscode:themeJson']!;
+const workbenchColors = state.outputs['vscode:workbenchColors'];
+const semanticRules   = state.outputs['vscode:semanticTokenRules'];
 // themeJson.colors:              workbench Record<string, string>
 // themeJson.semanticTokenColors: Record<string, string | { foreground, fontStyle }>
 // themeJson.tokenColors:         TokenColorRule[] driven by SCOPE_MAPPINGS
@@ -61,13 +62,11 @@ const themeJson = out.themeJson;
 |---|---|
 | `vscode:expandTokens` | Materialises 23 base tokens from the resolved 16-role palette. |
 | `vscode:applyModifiers` | Applies 10 colour modifiers to the base tokens, producing 253 semantic-token rules and re-enforcing contrast against the background role. |
-| `emit:vscodeSemanticRules` | Shapes `state.outputs.vscode.semanticTokenRules` from the modifier output. Maps onto `editor.semanticTokenColorCustomizations.rules`. |
-| `emit:vscodeUiPalette` | Writes `state.outputs.vscode.workbenchColors` covering 100+ workbench slots (`editor.background`, `sideBar.foreground`, ...). Selects light/dark variants via the resolved `background` luminance. |
-| `emit:vscodeThemeJson` | Composes the previous outputs into a single `theme.json` ready for the `themes` array in `package.json`. Requires `emit:vscodeSemanticRules` AND `emit:vscodeUiPalette`. |
+| `emit:vscodeSemanticRules` | Writes `state.outputs['vscode:semanticTokenRules']` from the modifier output. Maps onto `editor.semanticTokenColorCustomizations.rules`. |
+| `emit:vscodeUiPalette` | Writes `state.outputs['vscode:workbenchColors']` covering 100+ workbench slots (`editor.background`, `sideBar.foreground`, ...). Selects light/dark variants via the resolved `background` luminance. |
+| `emit:vscodeThemeJson` | Writes `state.outputs['vscode:themeJson']` combining the previous outputs into a single `theme.json` ready for the `themes` array in `package.json`. Requires `emit:vscodeSemanticRules` AND `emit:vscodeUiPalette`. |
 
-`state.outputs['vscode']` is typed as `VscodeOutputSlotInterface` and carries
-the three optional slots (`workbenchColors`, `semanticTokenRules`, `themeJson`)
-so any subset of the emit tasks can run independently. The final
-`emit:vscodeThemeJson` task fails fast if its dependencies were not run.
+Each emit task writes its own flat slot. Any subset of the emit tasks can run
+independently. `emit:vscodeThemeJson` fails fast if its dependencies were not run.
 
 Part of [iridis](https://github.com/Studnicky/iridis).

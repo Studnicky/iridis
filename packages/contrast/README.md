@@ -4,7 +4,7 @@ Enforces WCAG 2.1 AA / AAA luminance contrast, APCA Lc (WCAG 3 draft), and
 Brettel-Viénot CVD-aware contrast surveillance. Each enforcement task iterates
 the foreground role's OKLCH lightness via the `ensureContrast` primitive
 (step 0.02, max 50 iterations) until the declared `minRatio` is met; results
-land in `state.metadata.wcag.{aa,aaa,apca,cvd}` for inspection.
+land in `state.metadata` under flat keys `contrast:aa`, `contrast:aaa`, `contrast:apca`, and `contrast:cvd` for inspection.
 
 APCA Lc target selection is intent-driven: `EnforceApca` reads each pair's
 foreground / background intent and picks Lc 75 (body text), Lc 60 (fluent /
@@ -15,7 +15,7 @@ either side fall back to Lc 75 (the body-text floor), so undeclared schemas
 still hit the strict tier.
 
 CVD simulation is advisory: `enforce:cvdSimulate` writes per-pair warnings to
-`state.metadata.wcag.cvd.warnings` when any of `protanopia`, `deuteranopia`,
+`state.metadata['contrast:cvd']?.warnings` when any of `protanopia`, `deuteranopia`,
 `tritanopia`, or `achromatopsia` collapses contrast below the per-type
 stability floor. It never modifies `state.roles`.
 
@@ -52,11 +52,14 @@ const state = await engine.run({
   'contrast': { 'level': 'AA', 'algorithm': 'wcag21' },
 });
 
-const wcag = state.metadata['wcag']!;
-// wcag.aa?.pairs   : WcagPairResultInterface[]   // { foreground, background, required, before, after, pass }
-// wcag.aaa?.pairs  : WcagPairResultInterface[]
-// wcag.apca?.pairs : ApcaPairResultInterface[]   // { foreground, background, requiredLc, beforeLc, afterLc, pass }
-// wcag.cvd?.warnings: CvdPairWarningInterface[]  // { foreground, background, cvdType, drop, dropThreshold, ... }
+const aa   = state.metadata['contrast:aa']   as { pairs: WcagPairResultInterface[]  } | undefined;
+const aaa  = state.metadata['contrast:aaa']  as { pairs: WcagPairResultInterface[]  } | undefined;
+const apca = state.metadata['contrast:apca'] as { pairs: ApcaPairResultInterface[]  } | undefined;
+const cvd  = state.metadata['contrast:cvd']  as { warnings: CvdPairWarningInterface[] } | undefined;
+// aa?.pairs    : WcagPairResultInterface[]   // { foreground, background, required, before, after, pass }
+// aaa?.pairs   : WcagPairResultInterface[]
+// apca?.pairs  : ApcaPairResultInterface[]   // { foreground, background, requiredLc, beforeLc, afterLc, pass }
+// cvd?.warnings: CvdPairWarningInterface[]   // { foreground, background, cvdType, drop, dropThreshold, ... }
 ```
 
 ## Tasks

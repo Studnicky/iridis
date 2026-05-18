@@ -7,7 +7,6 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
 import type { IterableStoreInterface } from '../types/augmentation.ts';
 
 type SerializationFormatType = 'Turtle' | 'TriG' | 'N-Quads' | 'application/ld+json';
@@ -51,21 +50,20 @@ export class ReasonSerialize implements TaskInterface {
 
   readonly 'manifest': TaskManifestInterface = {
     'name':        'reason:serialize',
-    'reads':       ['outputs.reasoning.graph', 'metadata.reasoning.format'],
-    'writes':      ['outputs.reasoning.serialized'],
-    'description': 'Serialize outputs.reasoning.graph to Turtle / TriG / N-Quads / JSON-LD',
+    'reads':       ['rdf:reasoningGraph', 'rdf:format'],
+    'writes':      ['rdf:serialized'],
+    'description': 'Serialize rdf:reasoningGraph to Turtle / TriG / N-Quads / JSON-LD',
   };
 
   async run(state: PaletteStateInterface, ctx: PipelineContextInterface): Promise<void> {
-    const graph = state.outputs.reasoning?.graph;
+    const graph = state.outputs['rdf:reasoningGraph'] as IterableStoreInterface | undefined;
     if (!graph) {
-      ctx.logger.warn('ReasonSerialize', 'run', 'outputs.reasoning.graph is absent; run reason:annotate first');
+      ctx.logger.warn('ReasonSerialize', 'run', 'rdf:reasoningGraph is absent; run reason:annotate first');
 
       return;
     }
 
-    const reasoningMeta = getOrCreateMetadata(state, 'reasoning');
-    const format        = resolveFormat(reasoningMeta['format']);
+    const format = resolveFormat(state.metadata['rdf:format']);
 
     ctx.logger.debug('ReasonSerialize', 'run', 'serializing graph', { 'format': format });
 
@@ -79,8 +77,7 @@ export class ReasonSerialize implements TaskInterface {
       return;
     }
 
-    const reasoning = getOrCreateOutput(state, 'reasoning');
-    reasoning['serialized'] = serialized;
+    state.outputs['rdf:serialized'] = serialized;
 
     ctx.logger.info('ReasonSerialize', 'run', 'serialization complete', {
       'format': format,

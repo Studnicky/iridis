@@ -52,7 +52,7 @@ const state = await engine.run({
   'runtime': { 'framing': 'dark' },
 });
 
-console.log(state.outputs['json']);
+console.log(state.outputs['core:json']);
 ```
 
 Need direct access to a math primitive? Import the singleton:

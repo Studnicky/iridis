@@ -31,7 +31,7 @@ const state = await engine.run({
   'runtime': { 'framing': 'dark' },
 });
 
-console.log(state.outputs['json']);
+console.log(state.outputs['core:json']);
 ```
 
 Math primitives are direct singleton imports; pull only what you call:

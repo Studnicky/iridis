@@ -43,17 +43,18 @@ const state = await engine.run({
   'metadata': { 'reasoning': { 'format': 'Turtle' } },
 });
 
-const out = state.outputs['reasoning']!;
-// out.graph      : IterableStoreInterface // the live n3 Store, ready for SPARQL.
-// out.serialized : string                 // the serialised text in the requested format.
+const graph      = state.outputs['rdf:reasoningGraph']!;
+const serialized = state.outputs['rdf:serialized']!;
+// graph      : IterableStoreInterface // the live n3 Store, ready for SPARQL.
+// serialized : string                 // the serialised text in the requested format.
 ```
 
 ## Tasks
 
 | Name | Output slot | Notes |
 |---|---|---|
-| `reason:annotate` | `outputs.reasoning.graph` | Builds the n3 `Store`: emits `Color`, `Role`, `Palette`, `ContrastPair` resources plus per-record `displayP3R/G/B` literals when populated. |
-| `reason:serialize` | `outputs.reasoning.serialized` | Renders the graph to the requested format. Reads `metadata.reasoning.format`; accepts `Turtle` (default), `TriG`, `N-Quads`, or `application/ld+json`. |
+| `reason:annotate` | `outputs['rdf:reasoningGraph']` | Builds the n3 `Store`: emits `Color`, `Role`, `Palette`, `ContrastPair` resources plus per-record `displayP3R/G/B` literals when populated. |
+| `reason:serialize` | `outputs['rdf:serialized']` | Renders the graph to the requested format. Reads `metadata['rdf:format']`; accepts `Turtle` (default), `TriG`, `N-Quads`, or `application/ld+json`. |
 
 JSON-LD output is consumed directly by `@context`-aware tooling; Turtle / TriG /
 N-Quads are produced by the n3 `Writer` and round-trip through any standard

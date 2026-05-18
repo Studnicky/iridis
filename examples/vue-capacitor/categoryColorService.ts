@@ -24,8 +24,8 @@ export class CategoryColorService {
        demonstrates the maximal-correctness configuration. */
     this.engine.pipeline([
       'intake:any',
-      'expand:family',
       'resolve:roles',
+      'expand:family',
       'enforce:wcagAA',
       'enforce:wcagAAA',
       'enforce:apca',
@@ -63,8 +63,8 @@ export class CategoryColorService {
         'themeName':    category,
       },
     });
-    const cssVars   = state.outputs['cssVars'] as CssVarsOutputInterface;
-    const capacitor = state.outputs['capacitor'] as { readonly statusBar: StatusBarOutputInterface };
+    const cssVars   = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterface;
+    const capacitor = state.outputs['capacitor:statusBar'] as StatusBarOutputInterface;
     const sheetId   = `ce-${category}-styles`;
     let   sheet     = document.getElementById(sheetId) as HTMLStyleElement | null;
 
@@ -77,7 +77,7 @@ export class CategoryColorService {
       Object.entries(cssVars.map).map(([k, v]) => `  ${k}: ${v};`).join('\n')
     }\n}`;
 
-    return { 'cssVars': cssVars, 'statusBar': capacitor.statusBar };
+    return { 'cssVars': cssVars, 'statusBar': capacitor };
   }
 }
 
