@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/public/logo.png" alt="iridis" width="200" /></p>
+<p align="center"><a href="https://studnicky.github.io/iridis/"><img src="https://raw.githubusercontent.com/Studnicky/iridis/main/docs/public/iridis-node.svg" alt="iridis" width="180" /></a></p>
 
 # iridis
 
@@ -6,7 +6,7 @@
 
 **You bring the colors you want to use and the role names your design system uses. iridis decides which color goes to which role so every accessibility constraint you declare is satisfied.**
 
-`@studnicky/iridis` is the engine: a composition spine that turns variable-input-count seed colors into role-resolved palettes via a declared task pipeline. Zero runtime dependencies. Browser- and Node-safe. Outputs are not part of the engine. Every output target (CSS variables, Tailwind, VS Code themes, native chrome, RDF graphs) is a separate plugin you adopt at runtime.
+`@studnicky/iridis` is the engine: a composition spine that turns variable-input-count seed colors into role-resolved palettes via a declared task pipeline. Schema-first foundation (ajv + json-schema-to-ts) validates every boundary. Browser- and Node-safe. Outputs are not part of the engine. Every output target (CSS variables, Tailwind, VS Code themes, native chrome, RDF graphs) is a separate plugin you adopt at runtime.
 
 The engine ships intake, clamp, resolve, expand, enforce, derive, and `emit:json` tasks plus 25 math primitives (OKLCH, HSL, sRGB, Display-P3, contrast models, CVD simulation, median-cut clustering). Math primitives are exported as direct singletons from `@studnicky/iridis`; import only what you need. Plugins register additional tasks via `engine.adopt(plugin)`. Cross-output runtime toggles (framing, color space, plugin extras) flow through a typed `state.runtime` slot read by every emitter.
 
