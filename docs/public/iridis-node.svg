@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 460" role="img" aria-label="iridis v0.4.1">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 460" role="img" aria-label="iridis v0.4.2">
   <defs>
     <linearGradient id="ringHex" x1="92" y1="36" x2="308" y2="364" gradientUnits="userSpaceOnUse">
       <stop offset="0"   stop-color="#3a1066"/>
@@ -117,5 +117,5 @@
     <text class="wordmark" x="200" y="330" text-anchor="middle" font-size="56">iridis</text>
   </g>
   <rect x="142" y="402" width="116" height="40" rx="20" fill="#7c3aed" stroke="#c4b5fd" stroke-width="1.5"/>
-  <text class="version" x="200" y="428" text-anchor="middle" font-size="20">v0.4.1</text>
+  <text class="version" x="200" y="428" text-anchor="middle" font-size="20">v0.4.2</text>
 </svg>
