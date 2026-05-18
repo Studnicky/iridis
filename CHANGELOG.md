@@ -2,6 +2,12 @@
 
 All notable changes to iridis are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2026-05-18
+
+### Fixed
+
+- **README header image now uses the sidebar logo.** v0.4.2 shipped with a brand-new hex-node SVG drawn from the favicon vector. The README image is supposed to match the rest of the site — every other surface (VitePress sidebar, favicon, apple-touch-icon, msapplication-TileImage) renders `docs/public/logo.png`. The versioned SVG now base64-embeds `logo.png` directly so the README, GitHub release pages, and the docs site all show the same artifact. Version pill below the image unchanged.
+
 ## [0.4.2] - 2026-05-18
 
 Docs and release-pipeline polish.
