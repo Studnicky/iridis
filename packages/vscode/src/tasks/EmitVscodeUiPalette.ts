@@ -9,7 +9,6 @@ import {
   colorRecordFactory,
   contrastText,
   darken,
-  getOrCreateOutput,
   lighten,
   luminance,
   mixHsl,
@@ -38,7 +37,7 @@ export class EmitVscodeUiPalette implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:vscodeUiPalette',
     'reads':       ['roles'],
-    'writes':      ['outputs.vscode.workbenchColors'],
+    'writes':      ['outputs.vscode:workbenchColors'],
     'description': 'Derives 101 VS Code workbench colors from the 16-role palette. Lifts uiPaletteGenerator.ts derivation.',
   };
 
@@ -221,8 +220,7 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'warningForeground':                             warning,
     };
 
-    const out = getOrCreateOutput(state, 'vscode');
-    out['workbenchColors'] = workbenchColors;
+    state.outputs['vscode:workbenchColors'] = workbenchColors;
     ctx.logger.debug('EmitVscodeUiPalette', 'run', 'Derived workbench colors', {
       'count': Object.keys(workbenchColors).length,
     });

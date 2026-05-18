@@ -295,7 +295,7 @@ new ScenarioRunner<CombinedInput, CombinedOutput>(
 //
 // When the input colors array is empty a required role with all three
 // constraints must be synthesized to their center values. The synthesized
-// role name must appear in state.metadata.rolesSynthesized. A required role
+// role name must appear in state.metadata['core:rolesSynthesized']. A required role
 // with no constraints still produces a synthesized record. A second role with
 // a point range (l=0.5, c=0) round-trips its hex correctly.
 // ---------------------------------------------------------------------------
@@ -361,7 +361,7 @@ new ScenarioRunner<SynthesisInput, SynthesisOutput>(
     engine.pipeline(['intake:hex', 'resolve:roles']);
     const state = await engine.run({ 'colors': [], 'roles': schema });
     const role       = state.roles['synth'] as RoleEntry | undefined;
-    const synthList  = state.metadata['rolesSynthesized'];
+    const synthList  = state.metadata['core:rolesSynthesized'];
     return {
       roleAssigned: role !== undefined,
       l:            role?.oklch.l ?? -1,

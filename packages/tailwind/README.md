@@ -43,13 +43,13 @@ const state = await engine.run({
   'metadata': { 'cssVarPrefix': '--c-' },
 });
 
-const out = state.outputs['tailwind']!;
+const out = state.outputs['tailwind:theme']!;
 // out.colors  : { accent: { 50: '#...', ... }, text: '#...', background: '#...' }
 // out.cssVars : ':root { --c-accent: #...; ... }' + optional @supports P3 block
 // out.config  : 'export default { theme: { extend: { colors: { ... } } } };'
 ```
 
-`state.outputs['tailwind']` is typed as `TailwindOutputInterface`:
+`state.outputs['tailwind:theme']` is typed as `TailwindOutputInterface`:
 
 | Field | Shape | Notes |
 |---|---|---|

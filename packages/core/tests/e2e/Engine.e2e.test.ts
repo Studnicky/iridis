@@ -119,7 +119,7 @@ new ScenarioRunner<IntakeHexInput, IntakeHexOutput>(
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'enforce:contrast', 'derive:variant', 'emit:json']);
     const state = await engine.run({ 'colors': input.colors, 'roles': input.roles });
-    const json = state.outputs['json'] as Record<string, unknown> | undefined;
+    const json = state.outputs['core:json'] as Record<string, unknown> | undefined;
     return {
       colorsLength:     state.colors.length,
       rolesCount:       Object.keys(state.roles).length,
@@ -537,7 +537,7 @@ new ScenarioRunner<ErrorInput, ErrorOutput>(
     const state = await engine.run({
       'colors': [{} as unknown, null as unknown, 42 as unknown],
     });
-    const json = state.outputs['json'] as { colors: string[] } | undefined;
+    const json = state.outputs['core:json'] as { colors: string[] } | undefined;
     return {
       colorsLength:  state.colors.length,
       hasJsonOutput: json !== undefined,

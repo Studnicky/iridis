@@ -54,11 +54,11 @@ contrastPairs: [
 
 `enforce:cvdSimulate` (`packages/contrast/src/tasks/EnforceCvdSimulate.ts`) is an advisory task, not a corrective one. It simulates protanopia, deuteranopia, and tritanopia using Brettel/Viénot matrices applied in linear sRGB, recomputes the WCAG luminance contrast for each simulated pair, and emits warnings when the simulated contrast drops more than 1.0 below the original.
 
-The warnings are written to `state.metadata['wcag']`:
+The warnings are written to `state.metadata['contrast:cvd']`:
 
 ```ts
 // After engine.run()
-const cvd = state.metadata['wcag']?.cvd;
+const cvd = state.metadata['contrast:cvd'] as { warnings: Array<{ foreground: string; background: string; cvdType: string; drop: number }> } | undefined;
 for (const w of cvd?.warnings ?? []) {
   console.warn(
     `${w.foreground}/${w.background}: ${w.cvdType} drops contrast by ${w.drop.toFixed(2)}`
@@ -87,7 +87,7 @@ const lifted = ensureContrast.apply(foreground, background, 4.5, 'wcag21');
 
 ## The contrast report
 
-After `enforce:contrast` runs, `state.metadata.contrastReport` contains a structured report:
+After `enforce:contrast` runs, `state.metadata['core:contrastReport']` contains a structured report:
 
 ```ts
 interface ContrastReport {
@@ -104,7 +104,7 @@ interface ContrastReport {
 Inspect this in tests or CI to verify your palette meets requirements before shipping:
 
 ```ts
-const report = state.metadata.contrastReport as ContrastReport[];
+const report = state.metadata['core:contrastReport'] as ContrastReport[];
 const failures = report.filter(r => !r.passed);
 if (failures.length > 0) {
   throw new Error(`Contrast failures: ${JSON.stringify(failures, null, 2)}`);

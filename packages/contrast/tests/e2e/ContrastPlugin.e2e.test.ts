@@ -16,6 +16,7 @@
  */
 
 import type {
+  ColorIntentType,
   InputInterface,
   PaletteStateInterface,
   RoleSchemaInterface,
@@ -94,7 +95,7 @@ function wcagAaaRoles(
 }
 
 /** RoleSchema with intent hints for APCA target selection. */
-function apcaRoles(fgIntent: string, bgIntent: string): RoleSchemaInterface {
+function apcaRoles(fgIntent: ColorIntentType, bgIntent: ColorIntentType): RoleSchemaInterface {
   return {
     'name':  'apca',
     'roles': [
@@ -788,7 +789,7 @@ new ScenarioRunner<ApcaInput, ApcaOutput>(
 // Cell 5 — enforce:cvdSimulate
 //
 // enforce:cvdSimulate evaluates every contrastPair against all four CVD
-// matrices and emits warnings on metadata.wcag.cvd.warnings. Two signals:
+// matrices and emits warnings on metadata['contrast:cvd'].warnings. Two signals:
 //   - drop signal: |trichromat contrast − simulated contrast| > dropMagnitude
 //   - floor signal: simulated contrast < minSimulatedContrast (3.0 SC-1.4.11)
 // Achromatopsia uses BT.709 (luminance-invariant): drop is always ~0; only
@@ -855,7 +856,7 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
         Math.abs(prot.drop) > prot.dropThreshold,
         `[cell=5, scenario=cvd-prot-drop] |drop| ${Math.abs(prot.drop)} > threshold ${prot.dropThreshold}`,
       );
-      const deut = wcag.cvd.warnings.find((w) => w.cvdType === 'deuteranopia');
+      const deut = cvd.warnings.find((w) => w.cvdType === 'deuteranopia');
       assert.ok(deut !== undefined, '[cell=5, scenario=cvd-prot-drop] deuteranopia also fires (same confusion family)');
     },
   },
@@ -871,9 +872,9 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=cvd-trit-drop] no throw');
-      const wcag = output!.state.metadata['wcag'] as WcagMetaShape | undefined;
-      assert.ok(wcag?.cvd !== undefined, '[cell=5, scenario=cvd-trit-drop] cvd written');
-      const trit = wcag.cvd.warnings.find((w) => w.cvdType === 'tritanopia');
+      const cvdTrit = output!.state.metadata['contrast:cvd'] as CvdMetaShape | undefined;
+      assert.ok(cvdTrit !== undefined, '[cell=5, scenario=cvd-trit-drop] cvd written');
+      const trit = cvdTrit.warnings.find((w) => w.cvdType === 'tritanopia');
       assert.ok(trit !== undefined, '[cell=5, scenario=cvd-trit-drop] tritanopia warning fires');
       assert.strictEqual(trit.foreground, 'text',       '[cell=5, scenario=cvd-trit-drop] foreground');
       assert.strictEqual(trit.background, 'background', '[cell=5, scenario=cvd-trit-drop] background');
@@ -896,9 +897,9 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=cvd-achr-floor] no throw');
-      const wcag = output!.state.metadata['wcag'] as WcagMetaShape | undefined;
-      assert.ok(wcag?.cvd !== undefined, '[cell=5, scenario=cvd-achr-floor] cvd written');
-      const achr = wcag.cvd.warnings.find((w) => w.cvdType === 'achromatopsia');
+      const cvdAchr = output!.state.metadata['contrast:cvd'] as CvdMetaShape | undefined;
+      assert.ok(cvdAchr !== undefined, '[cell=5, scenario=cvd-achr-floor] cvd written');
+      const achr = cvdAchr.warnings.find((w) => w.cvdType === 'achromatopsia');
       assert.ok(achr !== undefined, '[cell=5, scenario=cvd-achr-floor] achromatopsia warning fires');
       assert.strictEqual(achr.dropThreshold,        0,   '[cell=5, scenario=cvd-achr-floor] dropThreshold=0 by BT.709 invariance');
       assert.strictEqual(achr.minSimulatedContrast, 3.0, '[cell=5, scenario=cvd-achr-floor] floor=3.0 (SC-1.4.11)');
@@ -924,12 +925,12 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=cvd-clean-pass] no throw');
-      const wcag = output!.state.metadata['wcag'] as WcagMetaShape | undefined;
-      assert.ok(wcag?.cvd !== undefined,          '[cell=5, scenario=cvd-clean-pass] cvd slot written');
-      assert.ok(Array.isArray(wcag.cvd.warnings), '[cell=5, scenario=cvd-clean-pass] warnings array present');
+      const cvdClean = output!.state.metadata['contrast:cvd'] as CvdMetaShape | undefined;
+      assert.ok(cvdClean !== undefined,               '[cell=5, scenario=cvd-clean-pass] cvd slot written');
+      assert.ok(Array.isArray(cvdClean.warnings),     '[cell=5, scenario=cvd-clean-pass] warnings array present');
       assert.strictEqual(
-        wcag.cvd.warnings.length, 0,
-        `[cell=5, scenario=cvd-clean-pass] black-on-white must produce 0 CVD warnings; got ${wcag.cvd.warnings.length}`,
+        cvdClean.warnings.length, 0,
+        `[cell=5, scenario=cvd-clean-pass] black-on-white must produce 0 CVD warnings; got ${cvdClean.warnings.length}`,
       );
     },
   },
@@ -948,8 +949,8 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=cvd-no-pairs] no throw');
-      const wcag = output!.state.metadata['wcag'] as WcagMetaShape | undefined;
-      assert.ok(wcag?.cvd === undefined, '[cell=5, scenario=cvd-no-pairs] cvd slot absent when no pairs');
+      const cvdNoPairs = output!.state.metadata['contrast:cvd'] as CvdMetaShape | undefined;
+      assert.ok(cvdNoPairs === undefined, '[cell=5, scenario=cvd-no-pairs] cvd slot absent when no pairs');
     },
   },
   {
@@ -1024,7 +1025,7 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=ec-adjusted] no throw');
-      const report = output!.state.metadata['contrastReport'] as readonly ContrastReportShape[] | undefined;
+      const report = output!.state.metadata['core:contrastReport'] as readonly ContrastReportShape[] | undefined;
       assert.ok(report !== undefined,           '[cell=6, scenario=ec-adjusted] contrastReport written');
       assert.strictEqual(report.length, 1,       '[cell=6, scenario=ec-adjusted] one pair processed');
       const entry = report[0]!;
@@ -1060,7 +1061,7 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=ec-passing] no throw');
-      const report = output!.state.metadata['contrastReport'] as readonly ContrastReportShape[] | undefined;
+      const report = output!.state.metadata['core:contrastReport'] as readonly ContrastReportShape[] | undefined;
       const entry = report?.[0]!;
       assert.ok(entry !== undefined,            '[cell=6, scenario=ec-passing] pair present');
       assert.strictEqual(entry.adjusted, false, '[cell=6, scenario=ec-passing] adjusted=false when already passing');
@@ -1084,7 +1085,7 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=ec-no-pairs] no throw');
-      const report = output!.state.metadata['contrastReport'] as readonly ContrastReportShape[] | undefined;
+      const report = output!.state.metadata['core:contrastReport'] as readonly ContrastReportShape[] | undefined;
       assert.ok(
         report === undefined || report.length === 0,
         '[cell=6, scenario=ec-no-pairs] contrastReport absent or empty when no pairs',
@@ -1105,7 +1106,7 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=ec-boundary] no throw');
-      const report = output!.state.metadata['contrastReport'] as readonly ContrastReportShape[] | undefined;
+      const report = output!.state.metadata['core:contrastReport'] as readonly ContrastReportShape[] | undefined;
       const entry = report?.[0]!;
       assert.ok(entry !== undefined, '[cell=6, scenario=ec-boundary] pair present');
       assert.ok(entry.ratio >= 4.5,

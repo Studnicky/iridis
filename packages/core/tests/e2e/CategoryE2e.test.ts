@@ -66,9 +66,9 @@ type CapacitorOutput = {
 // Cell 1 — full pipeline populates colors and roles
 //
 // A single hex seed must flow through all eight pipeline stages and populate
-// state.colors (≥1), state.roles (≥1 key), state.outputs.cssVars, and
-// state.outputs.capacitor. Empty colors or roles indicates an intake or
-// resolve failure.
+// state.colors (≥1), state.roles (≥1 key), state.outputs['stylesheet:cssVars'],
+// and state.outputs['capacitor:statusBar']. Empty colors or roles indicates
+// an intake or resolve failure.
 // ---------------------------------------------------------------------------
 
 interface FullPipelineInput  {
@@ -91,8 +91,8 @@ const fullPipelineScenarios: readonly ScenarioInterface<FullPipelineInput, FullP
       assert.strictEqual(error, undefined,            '[cell=1, scenario=single-seed] no throw');
       assert.ok(output!.colorsLength >= 1,            '[cell=1, scenario=single-seed] colors populated by intake');
       assert.ok(output!.rolesCount   >= 1,            '[cell=1, scenario=single-seed] roles populated by resolve');
-      assert.strictEqual(output!.hasCssVars,   true,  '[cell=1, scenario=single-seed] cssVars output present');
-      assert.strictEqual(output!.hasCapacitor, true,  '[cell=1, scenario=single-seed] capacitor output present');
+      assert.strictEqual(output!.hasCssVars,   true,  '[cell=1, scenario=single-seed] stylesheet:cssVars output present');
+      assert.strictEqual(output!.hasCapacitor, true,  '[cell=1, scenario=single-seed] capacitor:statusBar output present');
     },
   },
   {
@@ -103,8 +103,8 @@ const fullPipelineScenarios: readonly ScenarioInterface<FullPipelineInput, FullP
       assert.strictEqual(error, undefined,           '[cell=1, scenario=three-seeds] no throw');
       assert.ok(output!.colorsLength >= 3,           '[cell=1, scenario=three-seeds] all seeds parsed');
       assert.ok(output!.rolesCount   >= 1,           '[cell=1, scenario=three-seeds] roles populated');
-      assert.strictEqual(output!.hasCssVars,   true, '[cell=1, scenario=three-seeds] cssVars present');
-      assert.strictEqual(output!.hasCapacitor, true, '[cell=1, scenario=three-seeds] capacitor present');
+      assert.strictEqual(output!.hasCssVars,   true, '[cell=1, scenario=three-seeds] stylesheet:cssVars present');
+      assert.strictEqual(output!.hasCapacitor, true, '[cell=1, scenario=three-seeds] capacitor:statusBar present');
     },
   },
   {
@@ -129,8 +129,8 @@ const fullPipelineScenarios: readonly ScenarioInterface<FullPipelineInput, FullP
     },
     assert(output, error) {
       assert.strictEqual(error, undefined,           '[cell=1, scenario=unicode-meta] no throw with unicode metadata');
-      assert.strictEqual(output!.hasCssVars,   true, '[cell=1, scenario=unicode-meta] cssVars still produced');
-      assert.strictEqual(output!.hasCapacitor, true, '[cell=1, scenario=unicode-meta] capacitor still produced');
+      assert.strictEqual(output!.hasCssVars,   true, '[cell=1, scenario=unicode-meta] stylesheet:cssVars still produced');
+      assert.strictEqual(output!.hasCapacitor, true, '[cell=1, scenario=unicode-meta] capacitor:statusBar still produced');
     },
   },
 ];
@@ -149,8 +149,8 @@ new ScenarioRunner<FullPipelineInput, FullPipelineOutput>(
     return {
       colorsLength: state.colors.length,
       rolesCount:   Object.keys(state.roles).length,
-      hasCssVars:   !!state.outputs['cssVars'],
-      hasCapacitor: !!state.outputs['capacitor'],
+      hasCssVars:   !!state.outputs['stylesheet:cssVars'],
+      hasCapacitor: !!state.outputs['capacitor:statusBar'],
     };
   },
 ).run(fullPipelineScenarios);
@@ -158,9 +158,9 @@ new ScenarioRunner<FullPipelineInput, FullPipelineOutput>(
 // ---------------------------------------------------------------------------
 // Cell 2 — output field shape contracts
 //
-// cssVars.full must contain a `:root` block. cssVars.map must be a non-empty
-// object. capacitor.statusBar.backgroundColor must be a 6-digit lowercase hex.
-// capacitor.statusBar.style must be exactly 'DARK' or 'LIGHT'.
+// stylesheet:cssVars.full must contain a `:root` block. stylesheet:cssVars.map
+// must be a non-empty object. capacitor:statusBar.backgroundColor must be a
+// 6-digit lowercase hex. capacitor:statusBar.style must be 'DARK' or 'LIGHT'.
 // ---------------------------------------------------------------------------
 
 interface OutputShapeInput  { readonly colors: string[] }
@@ -205,13 +205,13 @@ new ScenarioRunner<OutputShapeInput, OutputShapeOutput>(
       'contrast': { 'level': 'AA', 'algorithm': 'wcag21' },
       'metadata': { ...BASE_METADATA },
     });
-    const cssVars   = state.outputs['cssVars'] as CssVarsOutput;
-    const capacitor = state.outputs['capacitor'] as CapacitorOutput;
+    const cssVars   = state.outputs['stylesheet:cssVars'] as CssVarsOutput;
+    const statusBar = state.outputs['capacitor:statusBar'] as CapacitorOutput['statusBar'];
     return {
       cssVarsFull:         cssVars.full,
       cssVarsMapKeyCount:  Object.keys(cssVars.map).length,
-      statusBarBgColor:    capacitor.statusBar.backgroundColor,
-      statusBarStyle:      capacitor.statusBar.style,
+      statusBarBgColor:    statusBar.backgroundColor,
+      statusBarStyle:      statusBar.style,
     };
   },
 ).run(outputShapeScenarios);

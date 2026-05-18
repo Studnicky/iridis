@@ -417,7 +417,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
 // synthesise the role from the declared range centers:
 //   - L = center of lightnessRange
 //   - C = center of chromaRange
-//   - state.metadata.rolesSynthesized records the synthesised name
+//   - state.metadata['core:rolesSynthesized'] records the synthesised name
 // ---------------------------------------------------------------------------
 
 interface Cell4Input {
@@ -463,7 +463,7 @@ const cell4Scenarios: readonly ScenarioInterface<Cell4Input, Cell4Output>[] = [
       );
       assert.ok(
         output!.synthesized.includes('accent'),
-        `[cell=4, scenario=synth-required] accent in state.metadata.rolesSynthesized`,
+        `[cell=4, scenario=synth-required] accent in state.metadata['core:rolesSynthesized']`,
       );
     },
   },
@@ -495,7 +495,7 @@ new ScenarioRunner<Cell4Input, Cell4Output>(
     const engine = freshEngine(['resolve:roles']);
     const state  = await engine.run({ 'colors': [], 'roles': input.roles });
     const assigned = state.roles[input.role];
-    const synthesized = (state.metadata['rolesSynthesized'] as string[] | undefined) ?? [];
+    const synthesized = (state.metadata['core:rolesSynthesized'] as string[] | undefined) ?? [];
     return {
       assigned:   assigned ?? colorRecordFactory.fromOklch(0, 0, 0),
       roleExists: assigned !== undefined,

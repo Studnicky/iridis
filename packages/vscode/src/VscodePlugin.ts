@@ -18,38 +18,24 @@ const semanticRuleEntrySchema = {
   },
 } as const;
 
-const vscodeOutputSchema = {
-  'type': 'object',
-  'additionalProperties': false,
-  'properties': {
-    'workbenchColors': {
-      'type':                 'object',
-      'additionalProperties': { 'type': 'string' },
-    },
-    'semanticTokenRules': {
-      'type':                 'object',
-      'additionalProperties': semanticRuleEntrySchema,
-    },
-    'themeJson': {
-      'type': 'object',
-      'additionalProperties': true,
-    },
-  },
+const vscodeWorkbenchColorsSchema = {
+  'type':                 'object',
+  'additionalProperties': { 'type': 'string' },
 } as const;
 
-const vscodeMetadataSchema = {
-  'type': 'object',
-  'additionalProperties': false,
-  'properties': {
-    'baseTokens': {
-      'type':                 'object',
-      'additionalProperties': true,
-    },
-    'semanticTokenRules': {
-      'type':                 'object',
-      'additionalProperties': semanticRuleEntrySchema,
-    },
-  },
+const vscodeSemanticTokenRulesSchema = {
+  'type':                 'object',
+  'additionalProperties': semanticRuleEntrySchema,
+} as const;
+
+const vscodeThemeJsonSchema = {
+  'type':                 'object',
+  'additionalProperties': true,
+} as const;
+
+const vscodeBaseTokensSchema = {
+  'type':                 'object',
+  'additionalProperties': true,
 } as const;
 
 /**
@@ -82,8 +68,15 @@ export class VscodePlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs':  { 'vscode': vscodeOutputSchema },
-      'metadata': { 'vscode': vscodeMetadataSchema },
+      'outputs': {
+        'vscode:themeJson':          vscodeThemeJsonSchema,
+        'vscode:workbenchColors':    vscodeWorkbenchColorsSchema,
+        'vscode:semanticTokenRules': vscodeSemanticTokenRulesSchema,
+      },
+      'metadata': {
+        'vscode:baseTokens':         vscodeBaseTokensSchema,
+        'vscode:semanticTokenRules': vscodeSemanticTokenRulesSchema,
+      },
     };
   }
 }

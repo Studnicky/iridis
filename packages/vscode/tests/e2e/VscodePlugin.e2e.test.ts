@@ -46,8 +46,6 @@ import {
   emitVscodeThemeJson,
 } from '@studnicky/iridis-vscode';
 import type {
-  VscodeOutputSlotInterface,
-  VscodeMetaSlotInterface,
   SemanticRuleEntryInterface,
   ThemeJsonInterface,
 } from '@studnicky/iridis-vscode/types';
@@ -382,10 +380,10 @@ const workbenchColorsScenarios: readonly ScenarioInterface<WorkbenchColorsInput,
 new ScenarioRunner<WorkbenchColorsInput, WorkbenchColorsOutput>(
   'VscodePlugin :: cell-2 :: workbench-colors',
   async (input) => {
-    const state  = await runFull(input.seeds, input.pipeline);
-    const out    = state.outputs['vscode'] as VscodeOutputSlotInterface | undefined;
-    const colors = out?.workbenchColors ?? {};
-    const themeType = (out?.themeJson?.type as string | undefined) ?? 'unknown';
+    const state     = await runFull(input.seeds, input.pipeline);
+    const colors    = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
+    const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterface | undefined;
+    const themeType = (themeJson?.type as string | undefined) ?? 'unknown';
     return { colors, themeType, colorCount: Object.keys(colors).length };
   },
 ).run(workbenchColorsScenarios);
@@ -510,11 +508,9 @@ new ScenarioRunner<SemanticRulesInput, SemanticRulesOutput>(
     // Use PIPELINE_ANY to accept both seed sets
     const pipeline = input.seeds === SEEDS_WITH_P3 ? PIPELINE_ANY : PIPELINE_HEX;
     const state    = await runFull(input.seeds, pipeline);
-    const meta     = state.metadata['vscode'] as VscodeMetaSlotInterface | undefined;
-    const out      = state.outputs['vscode'] as VscodeOutputSlotInterface | undefined;
     return {
-      metaRules:   (meta?.semanticTokenRules ?? {}) as Record<string, SemanticRuleEntryInterface>,
-      outputRules: (out?.semanticTokenRules ?? {})  as Record<string, SemanticRuleEntryInterface>,
+      metaRules:   (state.metadata['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterface>,
+      outputRules: (state.outputs['vscode:semanticTokenRules'] ?? {})  as Record<string, SemanticRuleEntryInterface>,
     };
   },
 ).run(semanticRulesScenarios);
@@ -640,10 +636,9 @@ new ScenarioRunner<ThemeJsonInput, ThemeJsonOutput>(
   'VscodePlugin :: cell-4 :: theme-json-assembly',
   async (input) => {
     const state = await runFull(input.seeds, input.pipeline);
-    const out   = state.outputs['vscode'] as VscodeOutputSlotInterface | undefined;
     return {
-      themeJson: out!.themeJson as ThemeJsonInterface,
-      workbench: out!.workbenchColors as Record<string, string>,
+      themeJson: state.outputs['vscode:themeJson'] as ThemeJsonInterface,
+      workbench: (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>,
     };
   },
 ).run(themeJsonScenarios);
@@ -725,8 +720,8 @@ new ScenarioRunner<TokenColorsInput, TokenColorsOutput>(
   async (input) => {
     const pipeline  = input.seeds === SEEDS_WITH_P3 ? PIPELINE_ANY : PIPELINE_HEX;
     const state     = await runFull(input.seeds, pipeline);
-    const out       = state.outputs['vscode'] as VscodeOutputSlotInterface | undefined;
-    const tokenColors = (out?.themeJson?.tokenColors ?? []) as readonly {
+    const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterface | undefined;
+    const tokenColors = (themeJson?.tokenColors ?? []) as readonly {
       name: string;
       scope: unknown;
       settings: { foreground?: string };
@@ -810,8 +805,7 @@ new ScenarioRunner<P3PropagationInput, P3PropagationOutput>(
     const pipeline = input.seeds === SEEDS_WITH_P3 ? PIPELINE_ANY : PIPELINE_HEX;
     const state    = await runFull(input.seeds, pipeline);
     const keyword  = state.roles['keyword'];
-    const out      = state.outputs['vscode'] as VscodeOutputSlotInterface | undefined;
-    const colors   = out?.workbenchColors ?? {};
+    const colors   = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
     return {
       keywordDisplayP3: keyword?.displayP3 !== undefined,
       cursorForeground: colors['editorCursor.foreground'] ?? '',
@@ -906,8 +900,7 @@ new ScenarioRunner<MathDerivedInput, MathDerivedOutput>(
   async (input) => {
     const pipeline = input.seeds === SEEDS_WITH_P3 ? PIPELINE_ANY : PIPELINE_HEX;
     const state    = await runFull(input.seeds, pipeline);
-    const out      = state.outputs['vscode'] as VscodeOutputSlotInterface | undefined;
-    const colors   = out?.workbenchColors ?? {};
+    const colors   = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
     const slots: Record<string, string> = {};
     for (const slot of MATH_DERIVED_SLOTS) {
       slots[slot] = colors[slot] ?? '';
@@ -1090,8 +1083,7 @@ new ScenarioRunner<UnhappyInput, UnhappyOutput>(
 
 test('VscodePlugin :: golden :: themeJson key set is stable across refactors', async () => {
   const state = await runFull(SEEDS_SRGB, PIPELINE_HEX);
-  const out   = state.outputs['vscode'] as VscodeOutputSlotInterface | undefined;
-  const tj    = out?.themeJson;
+  const tj    = state.outputs['vscode:themeJson'] as ThemeJsonInterface | undefined;
 
   assert.ok(tj !== undefined, '[golden] themeJson present');
 

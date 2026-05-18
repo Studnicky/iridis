@@ -352,9 +352,8 @@ new ScenarioRunner<Cell2Input, Cell2Output>(
     const warnings: string[] = [];
     const state = makeState(input.roles, {}, input.metadata);
     emitCapacitorStatusBar.run(state, makeCtx(warnings));
-    const cap = state.outputs['capacitor'] as Record<string, unknown> | undefined;
     return {
-      statusBar: cap?.['statusBar'] as StatusBarOutputInterface | undefined,
+      statusBar: state.outputs['capacitor:statusBar'] as StatusBarOutputInterface | undefined,
       warnings,
     };
   },
@@ -508,8 +507,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
   (input) => {
     const state = makeState(input.roles, input.variants);
     emitCapacitorTheme.run(state, makeCtx());
-    const cap = state.outputs['capacitor'] as Record<string, unknown> | undefined;
-    return { theme: cap?.['theme'] as CapacitorThemeOutputInterface | undefined };
+    return { theme: state.outputs['capacitor:theme'] as CapacitorThemeOutputInterface | undefined };
   },
 ).run(cell3Scenarios);
 
@@ -646,9 +644,8 @@ new ScenarioRunner<Cell4Input, Cell4Output>(
     const warnings: string[] = [];
     const state = makeState(input.roles, {}, input.metadata);
     emitCapacitorSplashScreen.run(state, makeCtx(warnings));
-    const cap = state.outputs['capacitor'] as Record<string, unknown> | undefined;
     return {
-      splashScreen: cap?.['splashScreen'] as SplashScreenOutputInterface | undefined,
+      splashScreen: state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterface | undefined,
       warnings,
     };
   },
@@ -800,19 +797,14 @@ new ScenarioRunner<Cell5Input, Cell5Output>(
   (input) => {
     const state = makeState(input.roles);
     // Pre-seed prior emitter outputs when the scenario requires them
-    if (input.priorStatusBar !== undefined || input.priorSplashScreen !== undefined) {
-      state.outputs['capacitor'] = {
-        ...(input.priorStatusBar !== undefined
-          ? { statusBar: { backgroundColor: input.priorStatusBar, style: 'DARK' as const, overlay: false } }
-          : {}),
-        ...(input.priorSplashScreen !== undefined
-          ? { splashScreen: { backgroundColor: input.priorSplashScreen } }
-          : {}),
-      };
+    if (input.priorStatusBar !== undefined) {
+      state.outputs['capacitor:statusBar'] = { backgroundColor: input.priorStatusBar, style: 'DARK' as const, overlay: false };
+    }
+    if (input.priorSplashScreen !== undefined) {
+      state.outputs['capacitor:splashScreen'] = { backgroundColor: input.priorSplashScreen };
     }
     emitAndroidThemeXml.run(state, makeCtx());
-    const cap = state.outputs['capacitor'] as Record<string, unknown> | undefined;
-    const xml = cap?.['androidThemeXml'] as string | undefined;
+    const xml = state.outputs['capacitor:androidThemeXml'] as string | undefined;
     const statusBarColor = input.priorStatusBar;
     return { xml, statusBarColor };
   },
@@ -859,32 +851,30 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=full-pipeline] no throw');
-      const cap = output!.state.outputs['capacitor'] as Record<string, unknown>;
-      assert.ok(cap, '[cell=6, scenario=full-pipeline] capacitor namespace present');
 
-      const statusBar = cap['statusBar'] as StatusBarOutputInterface;
+      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterface | undefined;
       assert.ok(statusBar, '[cell=6, scenario=full-pipeline] statusBar present');
-      assert.match(statusBar.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=6, scenario=full-pipeline] statusBar.backgroundColor is hex');
-      assert.ok(['DARK', 'LIGHT'].includes(statusBar.style), '[cell=6, scenario=full-pipeline] statusBar.style is DARK or LIGHT');
-      assert.strictEqual(typeof statusBar.overlay, 'boolean', '[cell=6, scenario=full-pipeline] statusBar.overlay is boolean');
+      assert.match(statusBar!.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=6, scenario=full-pipeline] statusBar.backgroundColor is hex');
+      assert.ok(['DARK', 'LIGHT'].includes(statusBar!.style), '[cell=6, scenario=full-pipeline] statusBar.style is DARK or LIGHT');
+      assert.strictEqual(typeof statusBar!.overlay, 'boolean', '[cell=6, scenario=full-pipeline] statusBar.overlay is boolean');
 
-      const theme = cap['theme'] as CapacitorThemeOutputInterface;
+      const theme = output!.state.outputs['capacitor:theme'] as CapacitorThemeOutputInterface | undefined;
       assert.ok(theme, '[cell=6, scenario=full-pipeline] theme present');
-      assert.strictEqual(Object.keys(theme).length, 13, '[cell=6, scenario=full-pipeline] theme has 13 slots');
+      assert.strictEqual(Object.keys(theme!).length, 13, '[cell=6, scenario=full-pipeline] theme has 13 slots');
 
-      const splash = cap['splashScreen'] as SplashScreenOutputInterface;
+      const splash = output!.state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterface | undefined;
       assert.ok(splash, '[cell=6, scenario=full-pipeline] splashScreen present');
-      assert.match(splash.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=6, scenario=full-pipeline] splash.backgroundColor is hex');
+      assert.match(splash!.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=6, scenario=full-pipeline] splash.backgroundColor is hex');
 
-      const xml = cap['androidThemeXml'] as string;
+      const xml = output!.state.outputs['capacitor:androidThemeXml'] as string | undefined;
       assert.ok(xml, '[cell=6, scenario=full-pipeline] androidThemeXml present');
-      assert.ok(xml.includes('<resources>'), '[cell=6, scenario=full-pipeline] XML has <resources>');
-      assert.ok(xml.includes('AppTheme.NoActionBarLaunch'), '[cell=6, scenario=full-pipeline] XML has splash theme style');
+      assert.ok(xml!.includes('<resources>'), '[cell=6, scenario=full-pipeline] XML has <resources>');
+      assert.ok(xml!.includes('AppTheme.NoActionBarLaunch'), '[cell=6, scenario=full-pipeline] XML has splash theme style');
 
       // Cross-task ordering invariant: androidThemeXml statusBarColor must
       // reference the same value emit:capacitorStatusBar wrote.
       assert.ok(
-        xml.includes(`<item name="android:statusBarColor">${statusBar.backgroundColor}</item>`),
+        xml!.includes(`<item name="android:statusBarColor">${statusBar!.backgroundColor}</item>`),
         '[cell=6, scenario=full-pipeline] androidThemeXml statusBarColor matches statusBar.backgroundColor',
       );
     },
@@ -901,10 +891,9 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=single-color] no throw');
-      const cap = output!.state.outputs['capacitor'] as Record<string, unknown> | undefined;
-      assert.ok(cap, '[cell=6, scenario=single-color] capacitor namespace present');
-      assert.ok((cap?.['statusBar'] as StatusBarOutputInterface | undefined)?.backgroundColor,
-        '[cell=6, scenario=single-color] statusBar backgroundColor present');
+      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterface | undefined;
+      assert.ok(statusBar, '[cell=6, scenario=single-color] capacitor:statusBar present');
+      assert.ok(statusBar?.backgroundColor, '[cell=6, scenario=single-color] statusBar backgroundColor present');
     },
   },
   {
@@ -919,8 +908,7 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=all-white] no throw');
-      const cap = output!.state.outputs['capacitor'] as Record<string, unknown>;
-      const statusBar = cap['statusBar'] as StatusBarOutputInterface;
+      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterface;
       assert.strictEqual(statusBar.style, 'DARK', '[cell=6, scenario=all-white] white bar → DARK style');
     },
   },
@@ -936,8 +924,7 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=all-black] no throw');
-      const cap = output!.state.outputs['capacitor'] as Record<string, unknown>;
-      const statusBar = cap['statusBar'] as StatusBarOutputInterface;
+      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterface;
       assert.strictEqual(statusBar.style, 'LIGHT', '[cell=6, scenario=all-black] black bar → LIGHT style');
     },
   },
@@ -954,8 +941,7 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=overlay-metadata] no throw');
-      const cap = output!.state.outputs['capacitor'] as Record<string, unknown>;
-      const statusBar = cap['statusBar'] as StatusBarOutputInterface;
+      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterface;
       assert.strictEqual(statusBar.overlay, true, '[cell=6, scenario=overlay-metadata] overlay propagated from metadata');
     },
   },
@@ -972,8 +958,7 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=android-splash-resource] no throw');
-      const cap = output!.state.outputs['capacitor'] as Record<string, unknown>;
-      const splash = cap['splashScreen'] as SplashScreenOutputInterface;
+      const splash = output!.state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterface;
       assert.strictEqual(splash.androidSplashResourceName, 'custom_splash', '[cell=6, scenario=android-splash-resource] androidSplashResourceName propagated');
     },
   },
@@ -1025,14 +1010,11 @@ test('CapacitorPlugin :: golden :: androidThemeXml exact structure', () => {
     'primary':   hex('#8b5cf6'),
     'text':      hex('#e2e8f0'),
   });
-  // Seed prior statusBar and splashScreen outputs
-  state.outputs['capacitor'] = {
-    statusBar:   { backgroundColor: '#1a1a2e', style: 'LIGHT', overlay: false },
-    splashScreen: { backgroundColor: '#1a1a2e' },
-  };
+  // Seed prior statusBar and splashScreen outputs as flat colon-keyed slots
+  state.outputs['capacitor:statusBar']   = { backgroundColor: '#1a1a2e', style: 'LIGHT', overlay: false };
+  state.outputs['capacitor:splashScreen'] = { backgroundColor: '#1a1a2e' };
   emitAndroidThemeXml.run(state, makeCtx());
-  const cap = state.outputs['capacitor'] as Record<string, unknown>;
-  const xml  = cap['androidThemeXml'] as string;
+  const xml = state.outputs['capacitor:androidThemeXml'] as string;
 
   const expected = [
     '<resources>',

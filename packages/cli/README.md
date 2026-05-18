@@ -61,7 +61,7 @@ The config is validated against `CliConfigSchema`. Required top-level keys:
   ],
   "output": {
     "directory": "./out",
-    "files": { "cssVars": "palette.css" }
+    "files": { "stylesheet:cssVars": "palette.css" }
   }
 }
 ```
@@ -70,9 +70,10 @@ The `enable*` flags determine which plugin packages the CLI `import()`s at
 runtime. Only flags set to `true` trigger a dynamic import, and the
 corresponding package must be installed alongside the CLI.
 
-`output.files` is a `Record<string, string>` keyed by the plugin's
-`PluginOutputsRegistry` slot name (`cssVars`, `tailwind`, `vscode`, `capacitor`,
-`reasoning`, `json`). Each value is written relative to `output.directory`.
+`output.files` is a `Record<string, string>` keyed by the plugin's flat slot name
+(`stylesheet:cssVars`, `tailwind:theme`, `vscode:themeJson`, `capacitor:statusBar`,
+`capacitor:theme`, `rdf:reasoningGraph`, `core:json`). Each value is written
+relative to `output.directory`.
 
 ## Exit codes
 

@@ -410,7 +410,7 @@ new ScenarioRunner<AnnotateInput, AnnotateOutput>(
       'colors': input.colors as InputInterface['colors'],
       'roles':  input.roles,
     });
-    const graph = state.outputs.reasoning?.graph;
+    const graph = state.outputs['rdf:reasoningGraph'] as Iterable<unknown> | undefined;
     let quadCount = 0;
     if (graph) {
       for (const _ of graph) quadCount += 1;
@@ -418,7 +418,7 @@ new ScenarioRunner<AnnotateInput, AnnotateOutput>(
     return {
       graphPresent: graph !== undefined,
       quadCount,
-      serialized:   state.outputs.reasoning?.serialized,
+      serialized:   state.outputs['rdf:serialized'] as string | undefined,
     };
   },
 ).run(annotateScenarios);
@@ -580,12 +580,12 @@ new ScenarioRunner<SerializeFormatInput, SerializeFormatOutput>(
     const runInput: InputInterface = {
       'colors': input.colors as InputInterface['colors'],
       'roles':  input.roles,
-      ...(input.format !== undefined ? { 'metadata': { 'reasoning': { 'format': input.format } } } : {}),
+      ...(input.format !== undefined ? { 'metadata': { 'rdf:format': input.format } } : {}),
     };
     const state = await engine.run(runInput);
     return {
-      serialized:   state.outputs.reasoning?.serialized ?? '',
-      graphPresent: state.outputs.reasoning?.graph !== undefined,
+      serialized:   (state.outputs['rdf:serialized'] as string | undefined) ?? '',
+      graphPresent: state.outputs['rdf:reasoningGraph'] !== undefined,
     };
   },
 ).run(serializeFormatScenarios);
@@ -859,7 +859,7 @@ new ScenarioRunner<RdfContentInput, RdfContentOutput>(
       'roles':  input.roles,
     });
     return {
-      ttl:   state.outputs.reasoning?.serialized ?? '',
+      ttl:   (state.outputs['rdf:serialized'] as string | undefined) ?? '',
       state,
     };
   },
@@ -904,8 +904,8 @@ new ScenarioRunner<MissingGraphInput, MissingGraphOutput>(
       'roles':  SIMPLE_ROLES,
     });
     return {
-      serializedPresent: state.outputs.reasoning?.serialized !== undefined,
-      graphPresent:      state.outputs.reasoning?.graph !== undefined,
+      serializedPresent: state.outputs['rdf:serialized'] !== undefined,
+      graphPresent:      state.outputs['rdf:reasoningGraph'] !== undefined,
     };
   },
 ).run(missingGraphScenarios);
@@ -934,7 +934,7 @@ test('reason:serialize :: golden :: stable seed matches locked Turtle fixture (p
     'roles':  GOLDEN_ROLES,
   });
 
-  const ttl = state.outputs.reasoning?.serialized;
+  const ttl = state.outputs['rdf:serialized'] as string | undefined;
   assert.ok(ttl !== undefined, 'serialized Turtle present');
 
   // Blank-node count: 2 blank nodes (oklch + rgb) per role × 2 roles = 4

@@ -85,8 +85,9 @@
   "output": {
     "directory": "./out",
     "files": {
-      "cssVars":   "music.css",
-      "capacitor": "music.capacitor.json"
+      "stylesheet:cssVars":  "music.css",
+      "capacitor:statusBar": "music-statusbar.json",
+      "capacitor:theme":     "music-theme.json"
     }
   }
 }

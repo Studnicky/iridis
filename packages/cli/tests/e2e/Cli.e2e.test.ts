@@ -45,7 +45,7 @@ function minimalCssConfig(dir: string): CliConfigInterface {
     'input':            { 'colors': ['#8b5cf6'] },
     'enableStylesheet': true,
     'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
-    'output':           { 'directory': dir, 'files': { 'cssVars': 'theme.json' } },
+    'output':           { 'directory': dir, 'files': { 'stylesheet:cssVars': 'theme.json' } },
   };
 }
 
@@ -310,8 +310,8 @@ const writerScenarios: readonly ScenarioInterface<WriterInput, WriterOutput>[] =
         'output': {
           'directory': outDir,
           'files': {
-            'cssVars': 'theme.json',
-            'ghost':   'missing-slot.json',
+            'stylesheet:cssVars': 'theme.json',
+            'ghost':              'missing-slot.json',
           },
         },
       }),
@@ -361,7 +361,7 @@ const writerScenarios: readonly ScenarioInterface<WriterInput, WriterOutput>[] =
         'input':            { 'colors': ['#8b5cf6'] },
         'enableStylesheet': true,
         'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
-        'output':           { 'directory': outDir, 'files': { 'cssVars': 'theme.json' } },
+        'output':           { 'directory': outDir, 'files': { 'stylesheet:cssVars': 'theme.json' } },
       }),
     },
     async assert(output, error) {
@@ -483,7 +483,7 @@ const pipelineExecScenarios: readonly ScenarioInterface<PipelineExecInput, Pipel
           'input':            { 'colors': ['#8b5cf6', '#ec4899'] },
           'enableStylesheet': true,
           'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
-          'output':           { 'directory': outDir, 'files': { 'cssVars': 'theme.json' } },
+          'output':           { 'directory': outDir, 'files': { 'stylesheet:cssVars': 'theme.json' } },
         };
         return writeConfig(dir, cfg);
       },
@@ -526,7 +526,7 @@ const pipelineExecScenarios: readonly ScenarioInterface<PipelineExecInput, Pipel
           'input':            { 'colors': ['oklch(50% 0.2 270)'] },
           'enableStylesheet': true,
           'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
-          'output':           { 'directory': outDir, 'files': { 'cssVars': 'theme.json' } },
+          'output':           { 'directory': outDir, 'files': { 'stylesheet:cssVars': 'theme.json' } },
         };
         return writeConfig(dir, cfg);
       },
@@ -636,7 +636,7 @@ const flagEdgeScenarios: readonly ScenarioInterface<FlagEdgeInput, FlagEdgeOutpu
           'input':            { 'colors': ['#8b5cf6'] },
           'enableStylesheet': true,
           'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
-          'output':           { 'directory': outDir, 'files': { 'cssVars': 'theme.json' } },
+          'output':           { 'directory': outDir, 'files': { 'stylesheet:cssVars': 'theme.json' } },
         };
         return writeConfig(dir, cfg);
       },

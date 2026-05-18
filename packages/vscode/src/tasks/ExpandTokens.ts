@@ -9,7 +9,6 @@ import {
   darken,
   desaturate,
   ensureContrast,
-  getOrCreateMetadata,
   hueShift,
   lighten,
   mixHsl,
@@ -23,12 +22,11 @@ export class ExpandTokens implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'vscode:expandTokens',
     'reads':       ['roles'],
-    'writes':      ['metadata.vscode.baseTokens'],
+    'writes':      ['metadata.vscode:baseTokens'],
     'description': 'Derives 23 VS Code base token colours from the 16 palette roles using DERIVATION_PARAMS.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const meta = getOrCreateMetadata(state, 'vscode');
 
     // Math primitives operate on ColorRecord; keep the records on the
     // role lookups so we don't reconvert at every invoke.
@@ -96,7 +94,7 @@ export class ExpandTokens implements TaskInterface {
       baseTokens[tokenType] = contrasted;
     }
 
-    meta['baseTokens'] = baseTokens;
+    state.metadata['vscode:baseTokens'] = baseTokens;
     ctx.logger.debug('ExpandTokens', 'run', 'Derived base token colours', {
       'count': Object.keys(baseTokens).length,
     });

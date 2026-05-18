@@ -1,10 +1,10 @@
 import type {
+  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { getOrCreateMetadata, getOrCreateOutput } from '@studnicky/iridis';
 import type {
   ThemeJsonInterface,
   TokenColorRuleInterface,
@@ -19,30 +19,29 @@ export class EmitVscodeThemeJson implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:vscodeThemeJson',
     'reads':       [
-      'outputs.vscode.workbenchColors',
-      'outputs.vscode.semanticTokenRules',
-      'metadata.vscode.baseTokens',
+      'outputs.vscode:workbenchColors',
+      'outputs.vscode:semanticTokenRules',
+      'metadata.vscode:baseTokens',
     ],
-    'writes':      ['outputs.vscode.themeJson'],
+    'writes':      ['outputs.vscode:themeJson'],
     'requires':    ['emit:vscodeSemanticRules', 'emit:vscodeUiPalette'],
     'description': 'Assembles the complete VS Code theme JSON: { name, type, colors, semanticTokenColors, tokenColors }.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const out  = getOrCreateOutput(state, 'vscode');
-    const meta = getOrCreateMetadata(state, 'vscode');
-
-    const themeName = (state.input.metadata?.['themeName'] as string | undefined) ?? 'Color Engine Theme';
-    const baseTokens = meta['baseTokens'] ?? {};
+    const themeName   = (state.input.metadata?.['themeName'] as string | undefined) ?? 'Color Engine Theme';
+    const baseTokens  = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterface>;
+    const workbenchColors = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
+    const semanticTokenRules = (state.outputs['vscode:semanticTokenRules'] ?? {}) as Record<string, { 'foreground'?: string; 'fontStyle'?: string }>;
 
     // Determine dark/light from background luminance
     const bgRecord = state.roles['background'];
     const bgLum = bgRecord ? bgRecord.oklch.l : 0;
     const themeType: 'dark' | 'light' = bgLum > 0.5 ? 'light' : 'dark';
 
-    // semanticTokenColors: copy from outputs.vscode.semanticTokenRules
+    // semanticTokenColors: copy from outputs['vscode:semanticTokenRules']
     const semanticTokenColors: Record<string, string | { 'foreground'?: string; 'fontStyle'?: string }> = {};
-    for (const [selector, rule] of Object.entries(out.semanticTokenRules)) {
+    for (const [selector, rule] of Object.entries(semanticTokenRules)) {
       if (rule.fontStyle) {
         semanticTokenColors[selector] = { ...rule };
       } else if (rule.foreground) {
@@ -77,14 +76,14 @@ export class EmitVscodeThemeJson implements TaskInterface {
       'name':                 themeName,
       'type':                 themeType,
       'semanticHighlighting': true,
-      'colors':               out.workbenchColors,
+      'colors':               workbenchColors,
       'semanticTokenColors':  semanticTokenColors,
       'tokenColors':          tokenColors,
     };
 
-    out['themeJson'] = themeJson;
+    state.outputs['vscode:themeJson'] = themeJson;
     ctx.logger.debug('EmitVscodeThemeJson', 'run', 'Assembled theme JSON', {
-      'colors':              Object.keys(out.workbenchColors).length,
+      'colors':              Object.keys(workbenchColors).length,
       'semanticTokenColors': Object.keys(semanticTokenColors).length,
       'tokenColors':         tokenColors.length,
     });

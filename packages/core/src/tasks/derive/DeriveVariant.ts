@@ -40,7 +40,7 @@ function offsetLightness(color: ColorRecordInterface, offset: number): ColorReco
  * Pipeline task that produces alternative framings of every assigned
  * role. With the default config it emits `dark` (lightness inverted)
  * and `light` (lightness untouched) variants; callers can override by
- * setting `state.metadata.variantConfig` to an array of named configs
+ * setting `state.metadata['core:variantConfig']` to an array of named configs
  * with `invertLightness` and/or `lightnessOffset`.
  *
  * Variants live in `state.variants[name]` keyed by role, parallel to

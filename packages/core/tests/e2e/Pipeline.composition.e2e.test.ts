@@ -233,7 +233,7 @@ new ScenarioRunner<VariantInput, VariantOutput>(
     const state = await engine.run({ 'colors': input.colors, 'roles': variantSchema });
     const dark  = state.variants['dark']  as Record<string, ColorRecordInterface> | undefined;
     const light = state.variants['light'] as Record<string, ColorRecordInterface> | undefined;
-    const json  = state.outputs['json']   as JsonOutput | undefined;
+    const json  = state.outputs['core:json']   as JsonOutput | undefined;
     return {
       hasDark:        'dark'  in state.variants,
       hasLight:       'light' in state.variants,
@@ -313,7 +313,7 @@ new ScenarioRunner<ContrastReportInput, ContrastReportOutput>(
       'colors': [input.fgHex, input.bgHex],
       'roles':  contrastReportSchema,
     });
-    const report = state.metadata['contrastReport'] as ContrastReportEntry[] | undefined;
+    const report = state.metadata['core:contrastReport'] as ContrastReportEntry[] | undefined;
     const entry  = Array.isArray(report) ? report[0] : undefined;
     return {
       reportLength:   Array.isArray(report) ? report.length : 0,
@@ -372,7 +372,7 @@ new ScenarioRunner<IdempotentInput, IdempotentOutput>(
       'expand:family', 'enforce:contrast', 'emit:json',
     ]);
     const state  = await engine.run({ 'colors': [input.fgHex, input.bgHex], 'roles': idempotentSchema });
-    const report = state.metadata['contrastReport'] as ContrastReportEntry[] | undefined;
+    const report = state.metadata['core:contrastReport'] as ContrastReportEntry[] | undefined;
     const last   = Array.isArray(report) && report.length > 0 ? report[report.length - 1] : undefined;
     return {
       reportIsArray:     Array.isArray(report),
@@ -449,7 +449,7 @@ new ScenarioRunner<EmptySchemaInput, EmptySchemaOutput>(
       : { 'colors': input.colors };
 
     const state = await engine.run(runInput);
-    const json  = state.outputs['json'] as JsonOutput | undefined;
+    const json  = state.outputs['core:json'] as JsonOutput | undefined;
 
     return {
       rolesEmpty:    Object.keys(state.roles).length    === 0,

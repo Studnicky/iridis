@@ -89,7 +89,7 @@ const fileIoScenarios: readonly ScenarioInterface<FileIoInput, FileIoOutput>[] =
         'enableStylesheet': true,
         'enableVscode':     false,
         'pipeline':         ['intake:hex', 'resolve:roles'],
-        'output':           { 'directory': '/tmp/out', 'files': { 'cssVars': 'theme.css' } },
+        'output':           { 'directory': '/tmp/out', 'files': { 'stylesheet:cssVars': 'theme.css' } },
       })),
     },
     async assert(output, error) {
@@ -490,9 +490,9 @@ const edgeScenarios: readonly ScenarioInterface<EdgeInput, EdgeOutput>[] = [
         'output': {
           'directory': '/tmp',
           'files': {
-            'cssVars':  'theme.css',
-            'tailwind': 'tailwind.config.js',
-            'vscode':   'settings.json',
+            'stylesheet:cssVars': 'theme.css',
+            'tailwind:theme':     'tailwind.config.js',
+            'vscode:themeJson':   'settings.json',
           },
         },
       }),
@@ -501,8 +501,8 @@ const edgeScenarios: readonly ScenarioInterface<EdgeInput, EdgeOutput>[] = [
         const files = (cfg['output'] as Record<string, unknown>)['files'] as Record<string, string>;
         assert.strictEqual(Object.keys(files).length, 3,
           '[cell=4, scenario=multi-files] three output files preserved');
-        assert.strictEqual(files['cssVars'], 'theme.css',
-          '[cell=4, scenario=multi-files] cssVars key preserved');
+        assert.strictEqual(files['stylesheet:cssVars'], 'theme.css',
+          '[cell=4, scenario=multi-files] stylesheet:cssVars key preserved');
       },
     },
     async assert(output, error) {

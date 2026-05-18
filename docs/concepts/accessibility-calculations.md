@@ -68,7 +68,7 @@ Hue and chroma are preserved. The result is a foreground that *looks the same* a
 
 ## CVD simulation, Brettel-Viénot
 
-The `iridis-contrast` plugin (separate package) ships the `enforce:cvdSimulate` task. It applies four CVD transforms (`protanopia`, `deuteranopia`, `tritanopia`, `achromatopsia`) via the Brettel-Viénot matrices in linear sRGB, recomputes WCAG luminance contrast against each simulated pair, and writes warnings to `state.metadata['wcag']?.cvd?.warnings` when the simulated ratio drops more than the per-type stability threshold below the original (or when the simulated contrast falls below the per-type floor).
+The `iridis-contrast` plugin (separate package) ships the `enforce:cvdSimulate` task. It applies four CVD transforms (`protanopia`, `deuteranopia`, `tritanopia`, `achromatopsia`) via the Brettel-Viénot matrices in linear sRGB, recomputes WCAG luminance contrast against each simulated pair, and writes warnings to `state.metadata['contrast:cvd']?.warnings` when the simulated ratio drops more than the per-type stability threshold below the original (or when the simulated contrast falls below the per-type floor).
 
 Each warning entry includes `foreground`, `background`, `cvdType`, `originalLuminanceContrast`, `simulatedLuminanceContrast`, `drop`, `dropThreshold`, and `minSimulatedContrast` so a CI gate can audit which signal fired without cross-referencing the threshold table (sourced from `CVD_THRESHOLDS` in `packages/contrast/src/data/cvdThresholds.ts`).
 

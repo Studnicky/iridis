@@ -4,22 +4,12 @@
  * Subject: the category-w3c pipeline (engine API, not CLI) running the
  * `examples/vue-capacitor/category-w3c.config.json` scenario end-to-end.
  *
- * Why engine API rather than CLI file?
- *   The CLI's `collectWrittenSlots` function rejects the `"capacitor"` output
- *   key because the capacitor task manifests declare sub-slot writes
- *   (`outputs.capacitor.statusBar`, `outputs.capacitor.theme`) while the
- *   config maps the flat key `"capacitor"` to an output file. The slot-check
- *   does not normalise dotted sub-slot paths to their root segment, so it
- *   never adds `"capacitor"` to the written-slots set. This is tracked as
- *   production drift (see "slot-check sub-slot mismatch" below). The engine
- *   itself is correct; only the CLI slot guard is affected.
- *
  * Cells:
  *   1. pipeline ordering  — resolve:roles MUST precede expand:family
  *   2. onAccent derivation — derivedFrom role is populated after the fix
- *   3. capacitor output   — state.outputs['capacitor'] has statusBar + theme
- *   4. css output         — cssVars.full contains expected CSS blocks
- *   5. slot-check drift   — CLI rejects the config; documents production bug
+ *   3. capacitor output   — flat slots capacitor:statusBar and capacitor:theme
+ *   4. css output         — stylesheet:cssVars.full contains expected CSS blocks
+ *   5. slot-check         — CLI accepts per-slot flat output.files keys
  */
 
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
@@ -243,9 +233,8 @@ new ScenarioRunner<OnAccentInput, OnAccentOutput>(
 // ---------------------------------------------------------------------------
 // Cell 3 — capacitor output shape
 //
-// After the correct pipeline, state.outputs['capacitor'] contains both
-// statusBar and theme sub-objects. The OutputWriter can serialize this
-// to JSON using state.outputs['capacitor'] as the value.
+// After the correct pipeline, state.outputs['capacitor:statusBar'] and
+// state.outputs['capacitor:theme'] are written as flat top-level slots.
 // ---------------------------------------------------------------------------
 
 interface CapacitorOutputInput { readonly unused?: never }
@@ -256,6 +245,9 @@ interface CapacitorOutputOutput {
   readonly primaryHex:     string;
   readonly themeKeyCount:  number;
 }
+
+type StatusBarSlot = { style: string };
+type ThemeSlot = Record<string, string>;
 
 const capacitorOutputScenarios: readonly ScenarioInterface<CapacitorOutputInput, CapacitorOutputOutput>[] = [
   {
@@ -306,16 +298,14 @@ new ScenarioRunner<CapacitorOutputInput, CapacitorOutputOutput>(
   'VueCapacitor :: cell-3 :: capacitor-output',
   async () => {
     const state     = await runPipeline(PIPELINE_CORRECT);
-    const capacitor = state.outputs['capacitor'] as {
-      statusBar: { style: string };
-      theme:     Record<string, string>;
-    };
+    const statusBar = state.outputs['capacitor:statusBar'] as StatusBarSlot | undefined;
+    const theme     = state.outputs['capacitor:theme']     as ThemeSlot | undefined;
     return {
-      'hasStatusBar':   'statusBar' in capacitor,
-      'hasTheme':       'theme' in capacitor,
-      'statusBarStyle': capacitor.statusBar.style,
-      'primaryHex':     capacitor.theme['primary'] ?? '',
-      'themeKeyCount':  Object.keys(capacitor.theme).length,
+      'hasStatusBar':   statusBar !== undefined,
+      'hasTheme':       theme !== undefined,
+      'statusBarStyle': statusBar?.style ?? '',
+      'primaryHex':     theme?.['primary'] ?? '',
+      'themeKeyCount':  theme !== undefined ? Object.keys(theme).length : 0,
     };
   },
 ).run(capacitorOutputScenarios);
@@ -323,9 +313,9 @@ new ScenarioRunner<CapacitorOutputInput, CapacitorOutputOutput>(
 // ---------------------------------------------------------------------------
 // Cell 4 — CSS output
 //
-// emit:cssVars writes state.outputs['cssVars'].full. With the music seed
-// and the category-w3c schema, we expect a :root block and a dark-scheme
-// media query (dark variants from derive:variant).
+// emit:cssVars writes state.outputs['stylesheet:cssVars'].full. With the
+// music seed and the category-w3c schema, we expect a :root block and a
+// dark-scheme media query (dark variants from derive:variant).
 // ---------------------------------------------------------------------------
 
 interface CssOutputInput { readonly unused?: never }
@@ -385,7 +375,7 @@ new ScenarioRunner<CssOutputInput, CssOutputOutput>(
   'VueCapacitor :: cell-4 :: css-output',
   async () => {
     const state   = await runPipeline(PIPELINE_CORRECT);
-    const cssVars = state.outputs['cssVars'] as { full: string; rootBlock: string };
+    const cssVars = state.outputs['stylesheet:cssVars'] as { full: string; rootBlock: string };
     const full    = cssVars.full;
     const root    = cssVars.rootBlock;
 
@@ -404,20 +394,12 @@ new ScenarioRunner<CssOutputInput, CssOutputOutput>(
 ).run(cssOutputScenarios);
 
 // ---------------------------------------------------------------------------
-// Cell 5 — slot-check production drift (regression guard)
+// Cell 5 — slot-check accepts per-slot flat output.files keys
 //
-// Cli.run REJECTS the category-w3c config because collectWrittenSlots()
-// extracts 'capacitor.statusBar' and 'capacitor.theme' from the manifest
-// writes entries, but output.files declares the top-level key 'capacitor'.
-//
-// The slot-check normalises manifest writes of 'outputs.X' to 'X', but does
-// NOT normalise sub-slot writes like 'outputs.capacitor.statusBar' to their
-// root segment 'capacitor'. Until collectWrittenSlots is fixed, the config
-// cannot be run through the CLI binary with a capacitor output file declared.
-//
-// This test documents the failure so that CI catches any regression in either
-// direction: if it starts passing unexpectedly, the production fix has landed
-// and a positive e2e test should replace this guard.
+// With the colon-flat grammar, each capacitor task writes a distinct top-level
+// slot ('capacitor:statusBar', 'capacitor:theme'). Cli.run must accept output
+// files that map those exact slot keys, and must also accept the
+// 'stylesheet:cssVars' key. No legacy sub-slot path normalisation is needed.
 // ---------------------------------------------------------------------------
 
 async function makeTmpDir(): Promise<string> {
@@ -433,32 +415,44 @@ interface SlotCheckOutput {
 
 const slotCheckScenarios: readonly ScenarioInterface<SlotCheckInput, SlotCheckOutput>[] = [
   {
-    name: 'capacitor output key rejected by slot-check (production drift)',
-    kind: 'unhappy',
+    name: 'per-slot capacitor keys accepted by slot-check',
+    kind: 'happy',
     input: {
       outputFiles: {
-        'cssVars':   'music.css',
-        'capacitor': 'music.capacitor.json',
+        'stylesheet:cssVars':  'music.css',
+        'capacitor:statusBar': 'music-statusbar.json',
+        'capacitor:theme':     'music-theme.json',
       },
     },
     async assert(_output, error) {
-      assert.ok(error instanceof Error,
-        '[cell=5, scenario=slot-check-drift] CLI throws for capacitor output key');
-      assert.match((error as Error).message, /Config error/,
-        '[cell=5, scenario=slot-check-drift] error is a config-level rejection');
-      assert.match((error as Error).message, /capacitor/,
-        '[cell=5, scenario=slot-check-drift] error names the unresolved capacitor key');
+      assert.strictEqual(error, undefined,
+        '[cell=5, scenario=flat-slots] CLI accepts per-slot flat output keys');
     },
   },
   {
-    name: 'cssVars-only output key passes slot-check',
+    name: 'stylesheet:cssVars-only output key passes slot-check',
     kind: 'happy',
     input: {
-      outputFiles: { 'cssVars': 'music.css' },
+      outputFiles: { 'stylesheet:cssVars': 'music.css' },
     },
     async assert(_output, error) {
       assert.strictEqual(error, undefined,
-        '[cell=5, scenario=css-only] cssVars-only output accepted by slot-check');
+        '[cell=5, scenario=css-only] stylesheet:cssVars output accepted by slot-check');
+    },
+  },
+  {
+    name: 'unknown slot key rejected by slot-check',
+    kind: 'unhappy',
+    input: {
+      outputFiles: { 'stylesheet:cssVars': 'music.css', 'ghost:slot': 'missing.json' },
+    },
+    async assert(_output, error) {
+      assert.ok(error instanceof Error,
+        '[cell=5, scenario=unknown-slot] CLI throws for unknown slot key');
+      assert.match((error as Error).message, /Config error/,
+        '[cell=5, scenario=unknown-slot] error is a config-level rejection');
+      assert.match((error as Error).message, /ghost:slot/,
+        '[cell=5, scenario=unknown-slot] error names the unresolved slot key');
     },
   },
 ];
