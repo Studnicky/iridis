@@ -2,6 +2,17 @@
 
 All notable changes to iridis are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-05-18
+
+Docs and release-pipeline polish.
+
+### Added
+
+- **Versioned README header.** Replaces the static logo with a brand-styled `iridis-node` hex SVG that carries the current release version in a pill below the wordmark. The SVG is referenced via `raw.githubusercontent.com` so it renders correctly in the README on GitHub and in release-notes bodies.
+- **Release-publish workflow** (`.github/workflows/release.yml`). Fires on any `v*` tag push: verifies the stamped SVG matches the tag, extracts the matching `## [<version>]` section from `CHANGELOG.md`, and creates or updates the GitHub release with a body that embeds the per-tag SVG URL. Historical release pages render the version that was tagged at that moment rather than always-latest. Supports `workflow_dispatch` for manual republish.
+- **`scripts/stamp-version.mjs`** reads `packages/core/package.json` and stamps every `docs/public/*.svg.template` into its sibling `.svg` with the current version. `--check` flag is the CI drift guard. Wired into `predocs:build` so the docs site always carries a fresh stamp.
+- **Self-contained `og-image.svg`.** Embeds the favicon vector inline so the SVG renders correctly when uploaded as the GitHub social preview or fetched by link-unfurl bots that don't co-locate adjacent assets.
+
 ## [0.4.1] - 2026-05-18
 
 ### Fixed
