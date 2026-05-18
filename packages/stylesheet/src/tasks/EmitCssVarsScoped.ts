@@ -75,13 +75,13 @@ export class EmitCssVarsScoped implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:cssVarsScoped',
     'reads':       ['roles', 'variants', 'metadata'],
-    'writes':      ['outputs.cssVarsScoped'],
+    'writes':      ['outputs.stylesheet:cssVarsScoped'],
     'description': 'Emit per-category scoped CSS custom property blocks for Vue/Capacitor use cases',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const prefix      = state.metadata['cssVarPrefix'] ?? '--c-';
-    const scopePrefix = state.metadata['scopePrefix']  ?? 'theme';
+    const prefix      = typeof state.metadata['cssVarPrefix'] === 'string' ? state.metadata['cssVarPrefix'] : '--c-';
+    const scopePrefix = typeof state.metadata['scopePrefix']  === 'string' ? state.metadata['scopePrefix']  : 'theme';
 
     const blocks:    Record<string, string> = {};
     const wideGamut: Record<string, string> = {};
@@ -118,7 +118,7 @@ export class EmitCssVarsScoped implements TaskInterface {
       'full':      full,
     };
 
-    state.outputs['cssVarsScoped'] = output;
+    state.outputs['stylesheet:cssVarsScoped'] = output;
 
     ctx.logger.debug('EmitCssVarsScoped', 'run', 'Emitted scoped blocks', {
       'count':         Object.keys(blocks).length,

@@ -2,7 +2,7 @@
   "name": "@studnicky/iridis",
   "version": "0.3.0",
   "type": "module",
-  "description": "Pluggable color derivation pipeline. Variable-input-count seed colors expand into role-resolved, contrast-enforced palettes via a Dagonizer-backed task DAG. Browser- and Node-safe.",
+  "description": "Pluggable color derivation pipeline. Variable-input-count seed colors expand into role-resolved, contrast-enforced palettes via a sequenced task pipeline. Browser- and Node-safe.",
   "exports": {
     ".": "./src/index.ts",
     "./model": "./src/model/index.ts",
@@ -24,11 +24,12 @@
   "engines": {
     "node": ">=24"
   },
-  "dependencies": {
-    "@noocodex/dagonizer": "^0.4.0"
-  },
   "devDependencies": {
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "json-schema-to-ts": "^3.1.1"
   }
 }

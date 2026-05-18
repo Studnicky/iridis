@@ -1,12 +1,56 @@
 import type {
   PluginInterface,
+  PluginSchemaContributionInterface,
   TaskInterface,
 } from '@studnicky/iridis';
-import { applyModifiers } from './tasks/ApplyModifiers.ts';
+import { applyModifiers }          from './tasks/ApplyModifiers.ts';
 import { emitVscodeSemanticRules } from './tasks/EmitVscodeSemanticRules.ts';
-import { emitVscodeThemeJson } from './tasks/EmitVscodeThemeJson.ts';
-import { emitVscodeUiPalette } from './tasks/EmitVscodeUiPalette.ts';
-import { expandTokens } from './tasks/ExpandTokens.ts';
+import { emitVscodeThemeJson }     from './tasks/EmitVscodeThemeJson.ts';
+import { emitVscodeUiPalette }     from './tasks/EmitVscodeUiPalette.ts';
+import { expandTokens }            from './tasks/ExpandTokens.ts';
+
+const semanticRuleEntrySchema = {
+  'type': 'object',
+  'additionalProperties': false,
+  'properties': {
+    'foreground': { 'type': 'string' },
+    'fontStyle':  { 'type': 'string' },
+  },
+} as const;
+
+const vscodeOutputSchema = {
+  'type': 'object',
+  'additionalProperties': false,
+  'properties': {
+    'workbenchColors': {
+      'type':                 'object',
+      'additionalProperties': { 'type': 'string' },
+    },
+    'semanticTokenRules': {
+      'type':                 'object',
+      'additionalProperties': semanticRuleEntrySchema,
+    },
+    'themeJson': {
+      'type': 'object',
+      'additionalProperties': true,
+    },
+  },
+} as const;
+
+const vscodeMetadataSchema = {
+  'type': 'object',
+  'additionalProperties': false,
+  'properties': {
+    'baseTokens': {
+      'type':                 'object',
+      'additionalProperties': true,
+    },
+    'semanticTokenRules': {
+      'type':                 'object',
+      'additionalProperties': semanticRuleEntrySchema,
+    },
+  },
+} as const;
 
 /**
  * VscodePlugin
@@ -34,6 +78,13 @@ export class VscodePlugin implements PluginInterface {
       emitVscodeUiPalette,
       emitVscodeThemeJson,
     ];
+  }
+
+  schemas(): PluginSchemaContributionInterface {
+    return {
+      'outputs':  { 'vscode': vscodeOutputSchema },
+      'metadata': { 'vscode': vscodeMetadataSchema },
+    };
   }
 }
 

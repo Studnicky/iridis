@@ -1,4 +1,5 @@
 import type {
+  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
@@ -70,7 +71,8 @@ function labToRgb(l: number, a: number, b: number): [number, number, number] {
  * point) and converts them through XYZ → linear sRGB → gamma-encoded
  * sRGB. The disambiguation guard rejects entries that also carry HSL
  * (`s`) or OKLCH (`c`, `h`) keys to avoid stealing them from those
- * intakes.
+ * intakes. Non-Lab input throws when using the strict `intake:lab`
+ * task. Use `intake:any` for tolerant dispatch.
  */
 export class IntakeLab implements TaskInterface {
   readonly 'name' = 'intake:lab';
@@ -79,22 +81,44 @@ export class IntakeLab implements TaskInterface {
     'name':        'intake:lab',
     'reads':       ['input.colors'],
     'writes':      ['colors'],
-    'description': 'Parses {l,a,b} CIE Lab D65 into ColorRecord entries.',
+    'description': 'Parses {l,a,b} CIE Lab D65 into ColorRecord entries. Throws on non-Lab input.',
   };
 
+  /**
+   * Parses a single value as a CIE Lab object. Throws when the input is not
+   * a valid `{l,a,b}` object or carries conflicting format keys.
+   * Used by IntakeAny for format dispatch (via try/catch).
+   */
+  parse(raw: unknown): ColorRecordInterface {
+    if (!isLabInput(raw)) {
+      throw new Error(`intake:lab — expected {l,a,b} object, got ${typeof raw}`);
+    }
+
+    const { l, a, b } = raw;
+    const [r, g, bv] = labToRgb(l, a, b);
+    return colorRecordFactory.fromRgb(r, g, bv, 1, 'lab');
+  }
+
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (const raw of state.input.colors) {
-      if (!isLabInput(raw)) {
-        continue;
+    for (let i = 0; i < state.input.colors.length; i++) {
+      const raw = state.input.colors[i];
+      let record: ColorRecordInterface;
+      try {
+        record = this.parse(raw);
+      } catch {
+        throw new Error(
+          `intake:lab — entry at index ${i} is not a CIE Lab object. ` +
+          `Expected {l, a, b} without conflicting format keys (r, s, c, h). ` +
+          `Got: ${JSON.stringify(raw)}`,
+        );
       }
-
-      const { l, a, b } = raw;
-      const [r, g, bv] = labToRgb(l, a, b);
-
-      const record = colorRecordFactory.fromRgb(r, g, bv, 1, 'lab');
-
       state.colors.push(record);
-      ctx.logger.debug('IntakeLab', 'run', 'Parsed lab value', { 'l': l, 'a': a, 'b': b, 'hex': record.hex });
+      ctx.logger.debug('IntakeLab', 'run', 'Parsed lab value', {
+        'l': (raw as { l: number }).l,
+        'a': (raw as { a: number }).a,
+        'b': (raw as { b: number }).b,
+        'hex': record.hex,
+      });
     }
   }
 }

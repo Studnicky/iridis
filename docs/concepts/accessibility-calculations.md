@@ -68,7 +68,7 @@ Hue and chroma are preserved. The result is a foreground that *looks the same* a
 
 ## CVD simulation, Brettel-Viénot
 
-The `iridis-contrast` plugin (separate package) ships the `enforce:cvdSimulate` task. It applies four CVD transforms (`protanopia`, `deuteranopia`, `tritanopia`, `achromatopsia`) via the Brettel-Viénot matrices in linear sRGB, recomputes WCAG luminance contrast against each simulated pair, and writes warnings to `state.metadata.wcag.cvd.warnings` when the simulated ratio drops more than the per-type stability threshold below the original (or when the simulated contrast falls below the per-type floor).
+The `iridis-contrast` plugin (separate package) ships the `enforce:cvdSimulate` task. It applies four CVD transforms (`protanopia`, `deuteranopia`, `tritanopia`, `achromatopsia`) via the Brettel-Viénot matrices in linear sRGB, recomputes WCAG luminance contrast against each simulated pair, and writes warnings to `state.metadata['wcag']?.cvd?.warnings` when the simulated ratio drops more than the per-type stability threshold below the original (or when the simulated contrast falls below the per-type floor).
 
 Each warning entry includes `foreground`, `background`, `cvdType`, `originalLuminanceContrast`, `simulatedLuminanceContrast`, `drop`, `dropThreshold`, and `minSimulatedContrast` so a CI gate can audit which signal fired without cross-referencing the threshold table (sourced from `CVD_THRESHOLDS` in `packages/contrast/src/data/cvdThresholds.ts`).
 
@@ -78,4 +78,4 @@ CVD simulation is advisory: it surfaces palette pairs that collapse under simula
 
 Most palette tools generate first, audit second. iridis flips it: you declare what must be true, the engine produces output that is already true. There is no "accessibility report" because there is no version of the palette that fails. The contract is the schema.
 
-If a pair cannot be satisfied, for instance, a foreground locked into a narrow lightness range that cannot meet 7:1 against a likewise-narrow background, `enforce:contrast` produces the closest reachable approximation and records the remaining gap in `state.metadata.contrastShortfalls`. You see the conflict at run time, in code, not three sprints after launch in a Jira ticket.
+If a pair cannot be satisfied, for instance, a foreground locked into a narrow lightness range that cannot meet 7:1 against a likewise-narrow background, `enforce:contrast` produces the closest reachable approximation and records the remaining gap in `state.metadata['contrastShortfalls']`. You see the conflict at run time, in code, not three sprints after launch in a Jira ticket.

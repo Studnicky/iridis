@@ -53,8 +53,8 @@ The config is validated against `CliConfigSchema`. Required top-level keys:
   "enableRdf":        false,
   "pipeline": [
     "intake:any",
-    "expand:family",
     "resolve:roles",
+    "expand:family",
     "enforce:wcagAA",
     "derive:variant",
     "emit:cssVars"

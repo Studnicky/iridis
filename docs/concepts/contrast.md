@@ -54,11 +54,11 @@ contrastPairs: [
 
 `enforce:cvdSimulate` (`packages/contrast/src/tasks/EnforceCvdSimulate.ts`) is an advisory task, not a corrective one. It simulates protanopia, deuteranopia, and tritanopia using Brettel/Viénot matrices applied in linear sRGB, recomputes the WCAG luminance contrast for each simulated pair, and emits warnings when the simulated contrast drops more than 1.0 below the original.
 
-The warnings are written to `state.metadata.wcag.cvd`:
+The warnings are written to `state.metadata['wcag']`:
 
 ```ts
 // After engine.run()
-const cvd = state.metadata.wcag?.cvd;
+const cvd = state.metadata['wcag']?.cvd;
 for (const w of cvd?.warnings ?? []) {
   console.warn(
     `${w.foreground}/${w.background}: ${w.cvdType} drops contrast by ${w.drop.toFixed(2)}`

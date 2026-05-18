@@ -30,10 +30,6 @@ export class EmitVscodeSemanticRules implements TaskInterface {
     const meta = getOrCreateMetadata(state, 'vscode');
     const semanticRules = meta['semanticTokenRules'];
 
-    if (!semanticRules) {
-      throw new Error('EmitVscodeSemanticRules: metadata.vscode.semanticTokenRules not found; run vscode:applyModifiers first');
-    }
-
     const out = getOrCreateOutput(state, 'vscode');
     const result: Record<string, SemanticRuleEntryInterface> = {};
 

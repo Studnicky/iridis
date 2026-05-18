@@ -149,7 +149,7 @@ export class EmitCssVars implements TaskInterface {
   readonly manifest: TaskManifestInterface = {
     'name':        'emit:cssVars',
     'reads':       ['roles', 'variants', 'metadata'],
-    'writes':      ['outputs.cssVars'],
+    'writes':      ['outputs.stylesheet:cssVars'],
     'description': 'Emit CSS custom property blocks from resolved roles and variants',
   };
 
@@ -157,9 +157,9 @@ export class EmitCssVars implements TaskInterface {
   // but the class only needs TaskInterface
 
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
-    const prefix    = state.metadata['cssVarPrefix'] ?? '--c-';
-    const scopeAttr = state.metadata['scopeAttr'];
-    const themeName = state.metadata['themeName']    ?? 'default';
+    const prefix    = typeof state.metadata['cssVarPrefix'] === 'string' ? state.metadata['cssVarPrefix'] : '--c-';
+    const scopeAttr = typeof state.metadata['scopeAttr']   === 'string' ? state.metadata['scopeAttr']   : undefined;
+    const themeName = typeof state.metadata['themeName']   === 'string' ? state.metadata['themeName']   : 'default';
 
     const darkRoles = state.variants['dark'] ?? null;
 
@@ -188,7 +188,7 @@ export class EmitCssVars implements TaskInterface {
       'map':          map,
     };
 
-    state.outputs['cssVars'] = output;
+    state.outputs['stylesheet:cssVars'] = output;
   }
 }
 

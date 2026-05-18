@@ -61,8 +61,8 @@ const themeJson = out.themeJson;
 |---|---|
 | `vscode:expandTokens` | Materialises 23 base tokens from the resolved 16-role palette. |
 | `vscode:applyModifiers` | Applies 10 colour modifiers to the base tokens, producing 253 semantic-token rules and re-enforcing contrast against the background role. |
-| `emit:vscodeSemanticRules` | Shapes `state.outputs.vscode.semanticTokenRules` from the modifier output. Maps onto `editor.semanticTokenColorCustomizations.rules`. |
-| `emit:vscodeUiPalette` | Writes `state.outputs.vscode.workbenchColors` covering 100+ workbench slots (`editor.background`, `sideBar.foreground`, ...). Selects light/dark variants via the resolved `background` luminance. |
+| `emit:vscodeSemanticRules` | Shapes `state.outputs['vscode']?.semanticTokenRules` from the modifier output. Maps onto `editor.semanticTokenColorCustomizations.rules`. |
+| `emit:vscodeUiPalette` | Writes `state.outputs['vscode']?.workbenchColors` covering 100+ workbench slots (`editor.background`, `sideBar.foreground`, ...). Selects light/dark variants via the resolved `background` luminance. |
 | `emit:vscodeThemeJson` | Composes the previous outputs into a single `theme.json` ready for the `themes` array in `package.json`. Requires `emit:vscodeSemanticRules` AND `emit:vscodeUiPalette`. |
 
 `state.outputs['vscode']` is typed as `VscodeOutputSlotInterface` and carries

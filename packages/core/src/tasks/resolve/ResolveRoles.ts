@@ -104,7 +104,7 @@ function synthesizeForRole(role: RoleDefinitionInterface): ColorRecordInterface 
  * `lightnessRange` / `chromaRange` (and exact `hueOffset` if set), so
  * required roles are guaranteed to satisfy their constraints. Roles
  * that had to be synthesised are recorded in
- * `state.metadata.rolesSynthesized` for diagnostics.
+ * `state.metadata['core:rolesSynthesized']` for diagnostics.
  *
  * Roles with `derivedFrom` are deferred to {@link ExpandFamily} and
  * skipped here.
@@ -182,9 +182,9 @@ export class ResolveRoles implements TaskInterface {
     }
 
     if (synthesized.length > 0) {
-      const existing = state.metadata['rolesSynthesized'];
+      const existing = state.metadata['core:rolesSynthesized'];
       const prior: string[] = Array.isArray(existing) ? (existing as string[]) : [];
-      state.metadata['rolesSynthesized'] = [...prior, ...synthesized];
+      state.metadata['core:rolesSynthesized'] = [...prior, ...synthesized];
     }
   }
 }

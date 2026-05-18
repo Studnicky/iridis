@@ -52,13 +52,13 @@ export class DeriveVariant implements TaskInterface {
 
   readonly 'manifest': TaskManifestInterface = {
     'name':        'derive:variant',
-    'reads':       ['roles', 'metadata.variantConfig'],
+    'reads':       ['roles', 'metadata[\'core:variantConfig\']'],
     'writes':      ['variants'],
     'description': 'Produces light/dark variants by transforming all roles. Reads variantConfig from metadata or uses light/dark defaults.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const configRaw = state.metadata['variantConfig'];
+    const configRaw = state.metadata['core:variantConfig'];
     const configs: readonly VariantConfigInterface[] = Array.isArray(configRaw)
       ? configRaw
       : DEFAULT_VARIANTS;

@@ -50,7 +50,7 @@ Each plugin needs `packages/<plugin>/tests/e2e/<Plugin>.e2e.test.ts`. Use `packa
 |---|---|---|
 | stylesheet | `packages/stylesheet/tests/e2e/Stylesheet.e2e.test.ts` | `emit:cssVars` rootBlock/scopedBlock/darkScheme/forcedColors/wideGamut/full/map populated |
 | tailwind | `packages/tailwind/tests/e2e/Tailwind.e2e.test.ts` | `emit:tailwindTheme` produces colors/cssVars/config; shade-grouping into nested object |
-| vscode | `packages/vscode/tests/e2e/Vscode.e2e.test.ts` | full pipeline with `vscodeRoleSchema16` → `state.outputs.vscode.themeJson` populated; expandTokens=23 base; applyModifiers count = 253 |
+| vscode | `packages/vscode/tests/e2e/Vscode.e2e.test.ts` | full pipeline with `vscodeRoleSchema16` → `state.outputs['vscode']?.themeJson` populated; expandTokens=23 base; applyModifiers count = 253 |
 | contrast | `packages/contrast/tests/e2e/Contrast.e2e.test.ts` | `enforce:wcagAA` lifts a 2:1 pair to ≥4.5; AAA thresholds; APCA Lc; CVD warnings |
 | capacitor | `packages/capacitor/tests/e2e/Capacitor.e2e.test.ts` | `emit:capacitorStatusBar` style picker; theme map; SplashScreen; androidThemeXml is valid XML |
 | image | `packages/image/tests/e2e/Image.e2e.test.ts` | `gallery:extract` reduces N pixels to K; assignRoles; harmonize hue shift |
@@ -81,7 +81,7 @@ Still queued:
 
 | File | Topic | Approx word count |
 |---|---|---|
-| `docs/recipes/vscode-theme.md` | Build a VS Code theme via the vscode plugin: 16 seed colors → `vscodeRoleSchema16` → `state.outputs.vscode.themeJson` → write to extension `themes/` folder | 400 |
+| `docs/recipes/vscode-theme.md` | Build a VS Code theme via the vscode plugin: 16 seed colors → `vscodeRoleSchema16` → `state.outputs['vscode']?.themeJson` → write to extension `themes/` folder | 400 |
 | `docs/reference/plugins.md` | Table of all first-party output plugins with package name, role, exported tasks, math primitives | 400 |
 | `docs/reference/tasks.md` | Full task name registry. For each: reads/writes/prerequisites | 600 |
 | `docs/reference/math.md` | Built-in math primitive table with signatures + brief description; how to override | 400 |

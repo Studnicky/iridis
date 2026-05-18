@@ -30,7 +30,7 @@ export class EmitCapacitorSplashScreen implements TaskInterface {
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const capacitorMeta = getOrCreateMetadata(state, 'capacitor');
-    const splashRole = capacitorMeta['splashRole'];
+    const splashRole = typeof capacitorMeta['splashRole'] === 'string' ? capacitorMeta['splashRole'] : undefined;
 
     const splashColor = resolveSplashColor(state.roles, splashRole);
 
@@ -39,7 +39,9 @@ export class EmitCapacitorSplashScreen implements TaskInterface {
       return;
     }
 
-    const androidSplashResourceName = capacitorMeta['androidSplashResourceName'];
+    const androidSplashResourceName = typeof capacitorMeta['androidSplashResourceName'] === 'string'
+      ? capacitorMeta['androidSplashResourceName']
+      : undefined;
 
     const output: SplashScreenOutputInterface = androidSplashResourceName !== undefined
       ? {

@@ -1,182 +1,221 @@
+import Ajv, { type ErrorObject, type ValidateFunction } from 'ajv';
 import type {
   ValidationErrorInterface,
   ValidationResultInterface,
 } from '../types/index.ts';
+import { ColorRecordSchema }  from './ColorRecordSchema.ts';
+import { InputSchema }        from './InputSchema.ts';
+import { PaletteStateSchema } from './PaletteStateSchema.ts';
+import { PluginSchema }       from './PluginSchema.ts';
+import { RoleSchemaSchema }   from './RoleSchemaSchema.ts';
+import { TaskManifestSchema } from './TaskManifestSchema.ts';
 
 /**
- * A JSON Schema literal as understood by this validator.
- * Only the subset of Draft-07 that the iridis schemas actually use.
+ * A JSON Schema object acceptable to this validator.
+ * Kept for backwards-compatible surface of `SchemaInterface`.
  */
-export interface SchemaInterface {
-  readonly 'type'?:                 string | readonly string[];
-  readonly 'properties'?:          Readonly<Record<string, SchemaInterface>>;
-  readonly 'required'?:            readonly string[];
-  readonly 'additionalProperties'?: boolean | SchemaInterface;
-  readonly 'items'?:               SchemaInterface;
-  readonly 'enum'?:                readonly unknown[];
-  readonly 'minimum'?:             number;
-  readonly 'maximum'?:             number;
-  readonly 'minItems'?:            number;
-  readonly 'maxItems'?:            number;
-  readonly 'pattern'?:             string;
-  /** Ignored during traversal; present only for schema identification. */
-  readonly '$id'?:                 string;
-  readonly '$schema'?:             string;
-  readonly 'description'?:         string;
-  /** $ref: not resolved; schemas that use $ref must be validated elsewhere. */
-  readonly '$ref'?:                string;
-}
+export type SchemaInterface = Record<string, unknown>;
 
-function pushError(
-  errors: ValidationErrorInterface[],
-  path:    string,
-  message: string,
-): void {
-  errors.push({ 'path': path, 'message': message });
-}
-
-function typeOf(value: unknown): string {
-  if (value === null)            return 'null';
-  if (Array.isArray(value))      return 'array';
-  return typeof value;
-}
-
-function validateType(schema: SchemaInterface, value: unknown, path: string, errors: ValidationErrorInterface[]): boolean {
-  const { type } = schema;
-  if (type === undefined) {
-    return true;
-  }
-
-  const types: readonly string[] = Array.isArray(type) ? type : [type];
-  const actual = typeOf(value);
-
-  const matches = types.some((t) => {
-    if (t === 'integer') {
-      return typeof value === 'number' && Number.isInteger(value);
-    }
-    return t === actual;
+function makeAjv(): Ajv {
+  const ajv = new Ajv({
+    strict:           false,
+    allErrors:        true,
+    removeAdditional: false,
   });
-
-  if (!matches) {
-    const expected = types.join(' | ');
-    pushError(errors, path, `expected ${expected}, got ${actual}`);
-    return false;
-  }
-  return true;
+  // Register all cross-referenced schemas up front
+  ajv.addSchema(ColorRecordSchema);
+  ajv.addSchema(InputSchema);
+  ajv.addSchema(PaletteStateSchema);
+  ajv.addSchema(PluginSchema);
+  ajv.addSchema(RoleSchemaSchema);
+  ajv.addSchema(TaskManifestSchema);
+  return ajv;
 }
 
-function walkValue(schema: SchemaInterface, value: unknown, path: string, errors: ValidationErrorInterface[]): void {
-  // $ref: skip; schemas using $ref are not validated via this walker
-  if (schema['$ref'] !== undefined) {
-    return;
-  }
-
-  // type check
-  const typeOk = validateType(schema, value, path, errors);
-  if (!typeOk) {
-    // No point descending if the type is wrong
-    return;
-  }
-
-  // enum
-  if (schema['enum'] !== undefined) {
-    const isIn = schema['enum'].some((v) => v === value);
-    if (!isIn) {
-      pushError(errors, path, `expected one of [${schema['enum'].join(', ')}], got ${String(value)}`);
+/**
+ * Normalise the ajv instancePath ("/a/b/0") to the legacy format ("a.b[0]").
+ * - Leading slash is dropped
+ * - Interior slashes before digit-only segments become "[N]"
+ * - Other interior slashes become "."
+ *
+ * The legacy hand-rolled validator used dot-separated paths with bracket
+ * notation for array indices (e.g. "color.hex", "items[1]"). Tests assert
+ * against this format, so we preserve it here.
+ */
+function normalisePath(instancePath: string, keyword: string, params: Record<string, unknown>): string {
+  if (keyword === 'required') {
+    const missing = params['missingProperty'] as string | undefined;
+    if (missing !== undefined) {
+      const base = instancePath.replace(/^\//, '').replace(/\//g, '.');
+      return base ? `${base}.${missing}` : missing;
     }
   }
 
-  // string checks
-  if (typeof value === 'string') {
-    if (schema['pattern'] !== undefined) {
-      const re = new RegExp(schema['pattern']);
-      if (!re.test(value)) {
-        pushError(errors, path, `value "${value}" does not match pattern ${schema['pattern']}`);
-      }
+  if (!instancePath) { return ''; }
+
+  const segments = instancePath.replace(/^\//, '').split('/');
+  let result = '';
+  for (const seg of segments) {
+    if (/^\d+$/.test(seg)) {
+      result += `[${seg}]`;
+    } else {
+      result += result === '' ? seg : `.${seg}`;
     }
   }
+  return result;
+}
 
-  // number checks
-  if (typeof value === 'number') {
-    if (schema['minimum'] !== undefined && value < schema['minimum']) {
-      pushError(errors, path, `${value} is less than minimum ${schema['minimum']}`);
-    }
-    if (schema['maximum'] !== undefined && value > schema['maximum']) {
-      pushError(errors, path, `${value} is greater than maximum ${schema['maximum']}`);
-    }
-  }
+/**
+ * Normalise an ajv error message to the legacy format the existing tests
+ * expect. The hand-rolled validator produced specific phrasing; we mirror
+ * it here so all tests continue to pass without modification.
+ *
+ * Legacy messages:
+ *   type:                "expected {type}, got {actual}"
+ *   required:            "required property \"{name}\" is missing"
+ *   additionalProperties:"additional property \"{name}\" is not allowed"
+ *   minItems:            "array length {n} is less than minItems {limit}"
+ *   maxItems:            "array length {n} is greater than maxItems {limit}"
+ *   minimum:             "{value} is less than minimum {limit}"
+ *   maximum:             "{value} is greater than maximum {limit}"
+ *   pattern:             "value \"{value}\" does not match pattern {pattern}"
+ *   enum:                "expected one of [{values}], got {value}"
+ */
+function normaliseMessage(
+  e:     ErrorObject,
+  value: unknown,
+): string {
+  const params = e.params as Record<string, unknown>;
 
-  // array checks
-  if (Array.isArray(value)) {
-    if (schema['minItems'] !== undefined && value.length < schema['minItems']) {
-      pushError(errors, path, `array length ${value.length} is less than minItems ${schema['minItems']}`);
-    }
-    if (schema['maxItems'] !== undefined && value.length > schema['maxItems']) {
-      pushError(errors, path, `array length ${value.length} is greater than maxItems ${schema['maxItems']}`);
-    }
-    if (schema['items'] !== undefined) {
-      for (let i = 0; i < value.length; i += 1) {
-        walkValue(schema['items'], value[i], `${path}[${i}]`, errors);
-      }
-    }
-  }
-
-  // object checks
-  if (typeOf(value) === 'object' && !Array.isArray(value) && value !== null) {
-    const obj = value as Record<string, unknown>;
-
-    // required properties
-    if (schema['required'] !== undefined) {
-      for (const key of schema['required']) {
-        if (!(key in obj)) {
-          pushError(errors, path ? `${path}.${key}` : key, `required property "${key}" is missing`);
-        }
-      }
+  switch (e.keyword) {
+    case 'type': {
+      const expected = (params['type'] as string | string[]);
+      const expectedStr = Array.isArray(expected) ? expected.join(' | ') : expected;
+      const actual = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+      return `expected ${expectedStr}, got ${actual}`;
     }
 
-    // property sub-schemas
-    if (schema['properties'] !== undefined) {
-      for (const [key, subSchema] of Object.entries(schema['properties'])) {
-        if (key in obj) {
-          const childPath = path ? `${path}.${key}` : key;
-          walkValue(subSchema, obj[key], childPath, errors);
-        }
-      }
+    case 'required': {
+      const prop = params['missingProperty'] as string;
+      return `required property "${prop}" is missing`;
     }
 
-    // additionalProperties: false
-    if (schema['additionalProperties'] === false && schema['properties'] !== undefined) {
-      const known = new Set(Object.keys(schema['properties']));
-      for (const key of Object.keys(obj)) {
-        if (!known.has(key)) {
-          const childPath = path ? `${path}.${key}` : key;
-          pushError(errors, childPath, `additional property "${key}" is not allowed`);
-        }
-      }
-    } else if (
-      typeof schema['additionalProperties'] === 'object' &&
-      schema['additionalProperties'] !== null &&
-      !Array.isArray(schema['additionalProperties'])
-    ) {
-      // additionalProperties is a schema: validate every value against it
-      const knownKeys = schema['properties'] !== undefined
-        ? new Set(Object.keys(schema['properties']))
-        : new Set<string>();
-      for (const [key, val] of Object.entries(obj)) {
-        if (!knownKeys.has(key)) {
-          const childPath = path ? `${path}.${key}` : key;
-          walkValue(schema['additionalProperties'] as SchemaInterface, val, childPath, errors);
-        }
-      }
+    case 'additionalProperties': {
+      const prop = params['additionalProperty'] as string;
+      return `additional property "${prop}" is not allowed`;
     }
+
+    case 'minItems': {
+      const limit  = params['limit'] as number;
+      const actual = Array.isArray(value) ? value.length : 0;
+      return `array length ${actual} is less than minItems ${limit}`;
+    }
+
+    case 'maxItems': {
+      const limit  = params['limit'] as number;
+      const actual = Array.isArray(value) ? value.length : 0;
+      return `array length ${actual} is greater than maxItems ${limit}`;
+    }
+
+    case 'minimum': {
+      const limit = params['limit'] as number;
+      return `${String(value)} is less than minimum ${limit}`;
+    }
+
+    case 'maximum': {
+      const limit = params['limit'] as number;
+      return `${String(value)} is greater than maximum ${limit}`;
+    }
+
+    case 'pattern': {
+      const pattern = params['pattern'] as string;
+      return `value "${String(value)}" does not match pattern ${pattern}`;
+    }
+
+    case 'enum': {
+      const allowed = params['allowedValues'] as unknown[];
+      return `expected one of [${allowed.join(', ')}], got ${String(value)}`;
+    }
+
+    default:
+      return e.message ?? 'validation error';
   }
 }
 
+/**
+ * Resolve the actual data value at the instancePath for an ajv error.
+ * Used to produce legacy-style messages that reference the actual value.
+ */
+function resolveValue(root: unknown, instancePath: string): unknown {
+  if (!instancePath) { return root; }
+  const segments = instancePath.replace(/^\//, '').split('/');
+  let current: unknown = root;
+  for (const seg of segments) {
+    if (current === null || current === undefined) { return undefined; }
+    if (typeof current === 'object' && !Array.isArray(current)) {
+      current = (current as Record<string, unknown>)[seg];
+    } else if (Array.isArray(current)) {
+      current = current[Number(seg)];
+    } else {
+      return undefined;
+    }
+  }
+  return current;
+}
+
+/**
+ * Cached validator wrapper backed by ajv.
+ *
+ * `compile()` cost is paid once per unique schema object (identity cache).
+ * Subsequent `validate()` calls with the same schema object are O(1) lookup
+ * + O(n) walk — no recompilation.
+ *
+ * Error messages are normalised to match the legacy hand-rolled validator
+ * format so all existing test assertions continue to pass.
+ */
 export class Validator {
+  private readonly ajv:   Ajv;
+  private readonly cache: WeakMap<object, ValidateFunction>;
+
+  constructor() {
+    this.ajv   = makeAjv();
+    this.cache = new WeakMap();
+  }
+
   validate(schema: SchemaInterface, value: unknown): ValidationResultInterface {
-    const errors: ValidationErrorInterface[] = [];
-    walkValue(schema, value, '', errors);
-    return { 'valid': errors.length === 0, 'errors': errors };
+    let fn = this.cache.get(schema);
+    if (fn === undefined) {
+      fn = this.ajv.compile(schema);
+      this.cache.set(schema, fn);
+    }
+
+    const valid = fn(value);
+    if (valid) {
+      return { 'valid': true, 'errors': [] };
+    }
+
+    const errors: ValidationErrorInterface[] = (fn.errors ?? []).map((e) => {
+      const params = e.params as Record<string, unknown>;
+      const path   = normalisePath(e.instancePath, e.keyword, params);
+      const actual = resolveValue(value, e.instancePath);
+      const msg    = normaliseMessage(e, actual);
+      return { 'path': path, 'message': msg };
+    });
+
+    return { 'valid': false, 'errors': errors };
+  }
+
+  /**
+   * Attempt to compile a schema to verify it is well-formed.
+   * Returns true if the schema compiles without error, false otherwise.
+   */
+  tryCompile(schema: SchemaInterface): boolean {
+    try {
+      this.ajv.compile(schema);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 

@@ -5,7 +5,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { colorRecordFactory, getOrCreateMetadata } from '@studnicky/iridis';
+import { colorRecordFactory } from '@studnicky/iridis';
 
 /**
  * `gallery:histogram`
@@ -59,7 +59,7 @@ export class GalleryHistogram implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'gallery:histogram',
     'reads':       ['colors'],
-    'writes':      ['colors', 'metadata.gallery.histogram'],
+    'writes':      ['colors', 'metadata.gallery:histogram'],
     'description': 'Quantise pixels into a 5-bit-per-channel histogram; emits weighted records keyed by bin centroid.',
   };
 
@@ -70,7 +70,7 @@ export class GalleryHistogram implements TaskInterface {
     }
 
     const galleryConfig = state.metadata['gallery'] as
-      | { 'histogramBits'?: number; 'lightnessRange'?: readonly [number, number]; 'chromaRange'?: readonly [number, number] }
+      | { 'histogramBits'?: number; 'lightnessRange'?: readonly [number, number]; 'chromaRange'?: readonly [number, number]; }
       | undefined;
     const rawBits = galleryConfig?.histogramBits ?? DEFAULT_BITS_PER_CHANNEL;
     const bits = Math.max(3, Math.min(7, Math.floor(rawBits)));
@@ -124,8 +124,7 @@ export class GalleryHistogram implements TaskInterface {
 
     binSummary.sort((x, y) => y.weight - x.weight);
 
-    const galleryMeta = getOrCreateMetadata(state, 'gallery');
-    galleryMeta['histogram'] = {
+    state.metadata['gallery:histogram'] = {
       'bins':        binSummary,
       'totalPixels': totalPixels,
       'binCount':    binSummary.length,

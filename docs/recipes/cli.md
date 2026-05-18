@@ -84,8 +84,8 @@ The config is a plain JSON file validated against the `CliConfigSchema` (`packag
   "enableRdf":        false,
   "pipeline": [
     "intake:any",
-    "expand:family",
     "resolve:roles",
+    "expand:family",
     "enforce:wcagAA",
     "derive:variant",
     "emit:cssVars"
@@ -126,8 +126,8 @@ The `pipeline` array maps directly to `engine.pipeline()` in the library API. Ta
   "enableCapacitor":  true,
   "pipeline": [
     "intake:any",
-    "expand:family",
     "resolve:roles",
+    "expand:family",
     "enforce:wcagAA",
     "derive:variant",
     "emit:cssVars",

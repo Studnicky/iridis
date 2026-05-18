@@ -35,10 +35,6 @@ export class ApplyModifiers implements TaskInterface {
     const meta = getOrCreateMetadata(state, 'vscode');
     const baseTokens = meta['baseTokens'];
 
-    if (!baseTokens) {
-      throw new Error('ApplyModifiers: metadata.vscode.baseTokens not found; run vscode:expandTokens first');
-    }
-
     const bgRecord = state.roles['background'] ?? colorRecordFactory.fromHex('#000000');
     const rules: Record<string, SemanticRuleEntryInterface> = {};
 

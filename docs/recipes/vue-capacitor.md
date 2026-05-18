@@ -32,8 +32,8 @@ export class CategoryColorService {
 
     this.engine.pipeline([
       'intake:any',
-      'expand:family',
       'resolve:roles',
+      'expand:family',
       'enforce:wcagAA',
       'derive:variant',
       'emit:cssVars',
@@ -144,7 +144,7 @@ async function onCategoryChange(category: string, seed: string) {
 
 ## Capacitor StatusBar
 
-The `emit:capacitorStatusBar` task writes `state.outputs.capacitor.statusBar.backgroundColor` (the resolved `accent` role hex) and `statusBar.style` (`'DARK'` or `'LIGHT'` depending on the background luminance). Pass these directly to the Capacitor `StatusBar` plugin.
+The `emit:capacitorStatusBar` task writes `state.outputs['capacitor']?.statusBar.backgroundColor` (the resolved `accent` role hex) and `statusBar.style` (`'DARK'` or `'LIGHT'` depending on the background luminance). Pass these directly to the Capacitor `StatusBar` plugin.
 
 ## On dynamic re-skinning
 

@@ -57,7 +57,8 @@ export class ReasonSerialize implements TaskInterface {
   };
 
   async run(state: PaletteStateInterface, ctx: PipelineContextInterface): Promise<void> {
-    const graph = state.outputs.reasoning?.graph;
+    const reasoningSlot = state.outputs['reasoning'] as { graph?: IterableStoreInterface; serialized?: string } | undefined;
+    const graph = reasoningSlot?.graph;
     if (!graph) {
       ctx.logger.warn('ReasonSerialize', 'run', 'outputs.reasoning.graph is absent; run reason:annotate first');
 

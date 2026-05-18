@@ -24,8 +24,8 @@ export class CategoryColorService {
        demonstrates the maximal-correctness configuration. */
     this.engine.pipeline([
       'intake:any',
-      'expand:family',
       'resolve:roles',
+      'expand:family',
       'enforce:wcagAA',
       'enforce:wcagAAA',
       'enforce:apca',

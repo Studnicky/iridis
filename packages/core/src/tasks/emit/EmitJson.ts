@@ -29,8 +29,8 @@ export class EmitJson implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'emit:json',
     'reads':       ['colors', 'roles', 'variants'],
-    'writes':      ['outputs.json'],
-    'description': 'Writes state.outputs.json with {colors, roles, variants} flattened to hex strings.',
+    'writes':      ['outputs[\'core:json\']'],
+    'description': 'Writes state.outputs[\'core:json\'] with {colors, roles, variants} flattened to hex strings.',
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
@@ -51,7 +51,7 @@ export class EmitJson implements TaskInterface {
     }
 
     const output: JsonOutput = { colors, roles, variants };
-    state.outputs['json'] = output;
+    state.outputs['core:json'] = output;
 
     ctx.logger.debug('EmitJson', 'run', 'Wrote json output', {
       'colors':   colors.length,

@@ -1,4 +1,5 @@
 import type {
+  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
@@ -160,9 +161,8 @@ const CSS_NAMED_COLORS: Readonly<Record<string, string>> = {
 /**
  * Intake task that resolves CSS named colors (e.g. `"rebeccapurple"`)
  * via an embedded lookup table covering every CSS Color Module Level 4
- * keyword. Case-insensitive. Skips strings that aren't recognised so
- * `IntakeAny` can hand them off to other intakes (notably hex, which
- * accepts unprefixed `cabbed` etc.).
+ * keyword. Case-insensitive. Non-named-color input throws when using
+ * the strict `intake:named` task. Use `intake:any` for tolerant dispatch.
  */
 export class IntakeNamed implements TaskInterface {
   readonly 'name' = 'intake:named';
@@ -171,22 +171,39 @@ export class IntakeNamed implements TaskInterface {
     'name':        'intake:named',
     'reads':       ['input.colors'],
     'writes':      ['colors'],
-    'description': 'Parses CSS named color strings (e.g. "rebeccapurple") into ColorRecord entries.',
+    'description': 'Parses CSS named color strings (e.g. "rebeccapurple") into ColorRecord entries. Throws on unrecognised input.',
   };
 
+  /**
+   * Parses a single value as a CSS named color. Throws when the input is not
+   * a recognized CSS named color string.
+   * Used by IntakeAny for format dispatch (via try/catch).
+   */
+  parse(raw: unknown): ColorRecordInterface {
+    if (typeof raw !== 'string') {
+      throw new Error(`intake:named — expected a string, got ${typeof raw}`);
+    }
+    const key = raw.trim().toLowerCase();
+    const hex = CSS_NAMED_COLORS[key];
+    if (!hex) {
+      throw new Error(`intake:named — not a recognized CSS named color: "${raw}"`);
+    }
+    return colorRecordFactory.fromHex(hex, undefined, 'named');
+  }
+
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (const raw of state.input.colors) {
-      if (typeof raw !== 'string') {
-        continue;
+    for (let i = 0; i < state.input.colors.length; i++) {
+      const raw = state.input.colors[i];
+      let record: ColorRecordInterface;
+      try {
+        record = this.parse(raw);
+      } catch {
+        throw new Error(
+          `intake:named — entry at index ${i} is not a CSS named color. ` +
+          `Expected a string like "rebeccapurple" from the CSS Color Level 4 keyword list. ` +
+          `Got: ${JSON.stringify(raw)}`,
+        );
       }
-      const key = raw.trim().toLowerCase();
-      const hex = CSS_NAMED_COLORS[key];
-      if (!hex) {
-        continue;
-      }
-
-      const record = colorRecordFactory.fromHex(hex, undefined, 'named');
-
       state.colors.push(record);
       ctx.logger.debug('IntakeNamed', 'run', 'Parsed named color', { 'name': raw, 'hex': record.hex });
     }

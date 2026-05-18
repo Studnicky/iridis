@@ -1,4 +1,5 @@
 import type {
+  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
@@ -29,7 +30,8 @@ function isHslInput(v: unknown): v is HslInput {
  * Auto-detects whether saturation/lightness are 0..1 or 0..100 by the
  * max-value heuristic, so both CSS-style and float literals work
  * without an explicit unit flag. Hue is taken in degrees and wrapped
- * to [0, 360) before conversion.
+ * to [0, 360) before conversion. Non-HSL input throws when using the
+ * strict `intake:hsl` task. Use `intake:any` for tolerant dispatch.
  */
 export class IntakeHsl implements TaskInterface {
   readonly 'name' = 'intake:hsl';
@@ -38,27 +40,46 @@ export class IntakeHsl implements TaskInterface {
     'name':        'intake:hsl',
     'reads':       ['input.colors'],
     'writes':      ['colors'],
-    'description': 'Parses {h,s,l,a?} (h: deg, s/l: 0..1 or 0..100) into ColorRecord entries.',
+    'description': 'Parses {h,s,l,a?} (h: deg, s/l: 0..1 or 0..100) into ColorRecord entries. Throws on non-HSL input.',
   };
 
+  /**
+   * Parses a single value as an HSL object. Throws when the input is not a
+   * valid `{h,s,l}` object or carries keys from a different format (r/c).
+   * Used by IntakeAny for format dispatch (via try/catch).
+   */
+  parse(raw: unknown): ColorRecordInterface {
+    if (!isHslInput(raw)) {
+      throw new Error(`intake:hsl — expected {h,s,l} object, got ${typeof raw}`);
+    }
+
+    const { h, s, l } = raw;
+    const a = typeof raw['a'] === 'number' ? raw['a'] : 1;
+    const alpha = a > 1 ? a / 100 : a;
+    const sat = s > 1 ? s / 100 : s;
+    const lig = l > 1 ? l / 100 : l;
+
+    return colorRecordFactory.fromHsl(h, sat, lig, clamp01.apply(alpha), 'hsl');
+  }
+
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (const raw of state.input.colors) {
-      if (!isHslInput(raw)) {
-        continue;
+    for (let i = 0; i < state.input.colors.length; i++) {
+      const raw = state.input.colors[i];
+      let record: ColorRecordInterface;
+      try {
+        record = this.parse(raw);
+      } catch {
+        throw new Error(
+          `intake:hsl — entry at index ${i} is not an HSL object. ` +
+          `Expected {h, s, l, a?} with h in degrees, s/l in 0..1 or 0..100. ` +
+          `Got: ${JSON.stringify(raw)}`,
+        );
       }
-
-      const { h, s, l } = raw;
-      const a = typeof raw['a'] === 'number' ? raw['a'] : 1;
-      const alpha = a > 1 ? a / 100 : a;
-
-      // Normalise 0–100 s/l to 0–1 before passing to hslToRgb.
-      const sat = s > 1 ? s / 100 : s;
-      const lig = l > 1 ? l / 100 : l;
-
-      const record = colorRecordFactory.fromHsl(h, sat, lig, clamp01.apply(alpha), 'hsl');
-
+      const typed = raw as { h: number; s: number; l: number };
       state.colors.push(record);
-      ctx.logger.debug('IntakeHsl', 'run', 'Parsed hsl value', { 'h': h, 's': s, 'l': l, 'hex': record.hex });
+      ctx.logger.debug('IntakeHsl', 'run', 'Parsed hsl value', {
+        'h': typed.h, 's': typed.s, 'l': typed.l, 'hex': record.hex,
+      });
     }
   }
 }

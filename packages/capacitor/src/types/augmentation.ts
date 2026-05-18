@@ -1,24 +1,6 @@
-import type {
-  CapacitorThemeOutputInterface,
-  SplashScreenOutputInterface,
-  StatusBarOutputInterface,
-} from './index.ts';
+// Capacitor plugin output and metadata slot descriptions.
+// Previously declared via module augmentation on PluginOutputsRegistry /
+// PluginMetadataRegistry. Schemas are now contributed at plugin registration
+// time via CapacitorPlugin.schemas() and validated by the engine at run exit.
 
-declare module '@studnicky/iridis' {
-  interface PluginOutputsRegistry {
-    'capacitor': {
-      'statusBar'?:       StatusBarOutputInterface;
-      'splashScreen'?:    SplashScreenOutputInterface;
-      'theme'?:           CapacitorThemeOutputInterface;
-      'androidThemeXml'?: string;
-    };
-  }
-
-  interface PluginMetadataRegistry {
-    'capacitor': {
-      'statusBarOverlay'?:          boolean;
-      'splashRole'?:                string;
-      'androidSplashResourceName'?: string;
-    };
-  }
-}
+export type {};

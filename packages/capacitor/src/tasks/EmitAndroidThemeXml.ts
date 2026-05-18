@@ -6,6 +6,7 @@ import type {
   TaskManifestInterface,
 } from '@studnicky/iridis';
 import { getOrCreateOutput } from '@studnicky/iridis';
+import type { SplashScreenOutputInterface, StatusBarOutputInterface } from '../types/index.ts';
 
 function resolveHexRole(
   roles: Record<string, ColorRecordInterface>,
@@ -39,10 +40,13 @@ export class EmitAndroidThemeXml implements TaskInterface {
 
     const capacitorOut = getOrCreateOutput(state, 'capacitor');
 
-    const statusBarColor = capacitorOut.statusBar?.backgroundColor
+    const priorStatusBar   = capacitorOut['statusBar']   as StatusBarOutputInterface   | undefined;
+    const priorSplashScreen = capacitorOut['splashScreen'] as SplashScreenOutputInterface | undefined;
+
+    const statusBarColor = priorStatusBar?.backgroundColor
       ?? resolveHexRole(roles, 'topBar', 'surface', 'base');
 
-    const splashColor = capacitorOut.splashScreen?.backgroundColor
+    const splashColor = priorSplashScreen?.backgroundColor
       ?? resolveHexRole(roles, 'surface', 'background', 'base');
 
     const windowBackground  = resolveHexRole(roles, 'background', 'surface', 'base');

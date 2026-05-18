@@ -6,7 +6,7 @@ import type {
   TaskInterface,
   TaskManifestInterface,
 } from '@studnicky/iridis';
-import { contrastApca, ensureContrast, getOrCreateMetadata } from '@studnicky/iridis';
+import { contrastApca, ensureContrast } from '@studnicky/iridis';
 import type { ApcaPairResultInterface } from '../types/augmentation.ts';
 
 // APCA Lc target selection per WCAG 3 Bronze level working draft (2023).
@@ -46,7 +46,7 @@ export class EnforceApca implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'enforce:apca',
     'reads':       ['input.roles.contrastPairs', 'roles'],
-    'writes':      ['roles', 'metadata.wcag.apca'],
+    'writes':      ['roles', 'metadata[\'contrast:apca\']'],
     'description': 'Enforce APCA (WCAG 3 draft) Lc targets: Lc 75 body text, Lc 60 fluent text, Lc 45 non-text UI.',
   };
 
@@ -114,12 +114,11 @@ export class EnforceApca implements TaskInterface {
       });
     }
 
-    const wcagMeta = getOrCreateMetadata(state, 'wcag');
-    wcagMeta['apca'] = { 'pairs': results };
+    state.metadata['contrast:apca'] = { 'pairs': results };
 
     ctx.logger.debug('EnforceApca', 'run', 'Processed APCA pairs', {
       'pairCount': results.length,
-      'apcaMeta':  wcagMeta['apca'],
+      'apcaMeta':  state.metadata['contrast:apca'],
     });
   }
 }

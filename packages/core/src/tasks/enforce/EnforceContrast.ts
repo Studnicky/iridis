@@ -45,7 +45,7 @@ export class EnforceContrast implements TaskInterface {
   readonly 'manifest': TaskManifestInterface = {
     'name':        'enforce:contrast',
     'reads':       ['roles', 'input.roles', 'input.contrast'],
-    'writes':      ['roles', 'metadata.contrastReport'],
+    'writes':      ['roles', 'metadata[\'core:contrastReport\']'],
     'requires':    ['contrastWcag21', 'contrastApca', 'ensureContrast'],
     'description': 'Checks and nudges foreground role colors to meet minRatio for each contrast pair.',
   };
@@ -115,7 +115,7 @@ export class EnforceContrast implements TaskInterface {
       });
     }
 
-    state.metadata['contrastReport'] = report;
+    state.metadata['core:contrastReport'] = report;
   }
 }
 
