@@ -68,7 +68,7 @@ jobs:
           REPO='${{ github.repository }}'
           SVG_URL="https://raw.githubusercontent.com/${REPO}/${TAG}/docs/public/readme-header.svg"
           {
-            echo "<p align=\"center\"><img src=\"${SVG_URL}\" alt=\"iridis ${TAG}\" width=\"200\" /></p>"
+            echo "<p align=\"center\"><img src=\"${SVG_URL}\" alt=\"iridis ${TAG}\" width=\"720\" /></p>"
             echo
             cat /tmp/section.md
           } > /tmp/body.md
