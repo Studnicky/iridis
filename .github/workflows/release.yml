@@ -1,7 +1,7 @@
 name: Publish GitHub release
 
 # Fires when a version tag is pushed. Reads the matching CHANGELOG section
-# and the per-tag iridis-node.svg, composes a release body, and creates or
+# and the per-tag readme-header.svg, composes a release body, and creates or
 # updates the GitHub release. The SVG URL uses the tag ref so each release
 # page renders the version that was stamped at tag time.
 
@@ -39,10 +39,10 @@ jobs:
 
       - name: Verify stamped SVG matches tag version
         run: |
-          STAMPED=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' docs/public/iridis-node.svg | head -1 || true)
+          STAMPED=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' docs/public/readme-header.svg | head -1 || true)
           EXPECTED='${{ steps.tag.outputs.tag }}'
           if [ "$STAMPED" != "$EXPECTED" ]; then
-            echo "::error::iridis-node.svg carries '$STAMPED' but the tag is '$EXPECTED'. Run 'npm run stamp-version' before tagging."
+            echo "::error::readme-header.svg carries '$STAMPED' but the tag is '$EXPECTED'. Run 'npm run stamp-version' before tagging."
             exit 1
           fi
 
@@ -66,7 +66,7 @@ jobs:
         run: |
           TAG='${{ steps.tag.outputs.tag }}'
           REPO='${{ github.repository }}'
-          SVG_URL="https://raw.githubusercontent.com/${REPO}/${TAG}/docs/public/iridis-node.svg"
+          SVG_URL="https://raw.githubusercontent.com/${REPO}/${TAG}/docs/public/readme-header.svg"
           {
             echo "<p align=\"center\"><img src=\"${SVG_URL}\" alt=\"iridis ${TAG}\" width=\"200\" /></p>"
             echo
