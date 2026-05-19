@@ -178,15 +178,12 @@ function onToggleLock(name: string, record: ColorRecordInterface): void {
    passing standard, or 'fail' when any required pair fell short. */
 function roleBadge(name: string): string {
   if (state.value === null) return '';
-  const wcag = state.value.metadata['wcag'] as
-    | { 'aa'?:  { 'pairs': readonly { 'foreground': string; 'pass': boolean }[] };
-        'aaa'?: { 'pairs': readonly { 'foreground': string; 'pass': boolean }[] };
-        'apca'?:{ 'pairs': readonly { 'foreground': string; 'pass': boolean; 'afterLc': number }[] }; }
-    | undefined;
-  if (wcag === undefined) return '';
-  const aa   = wcag.aa  ?.pairs.filter((p) => p.foreground === name) ?? [];
-  const aaa  = wcag.aaa ?.pairs.filter((p) => p.foreground === name) ?? [];
-  const apca = wcag.apca?.pairs.filter((p) => p.foreground === name) ?? [];
+  const aaMeta   = state.value.metadata['contrast:aa']   as { 'pairs': readonly { 'foreground': string; 'pass': boolean }[] } | undefined;
+  const aaaMeta  = state.value.metadata['contrast:aaa']  as { 'pairs': readonly { 'foreground': string; 'pass': boolean }[] } | undefined;
+  const apcaMeta = state.value.metadata['contrast:apca'] as { 'pairs': readonly { 'foreground': string; 'pass': boolean; 'afterLc': number }[] } | undefined;
+  const aa   = aaMeta  ?.pairs.filter((p) => p.foreground === name) ?? [];
+  const aaa  = aaaMeta ?.pairs.filter((p) => p.foreground === name) ?? [];
+  const apca = apcaMeta?.pairs.filter((p) => p.foreground === name) ?? [];
   if (aa.length + aaa.length + apca.length === 0) return '';
   if (aa.length > 0 && !aa.every((p) => p.pass)) return 'fail';
   if (apca.length > 0 && !apca.every((p) => p.pass)) return 'fail';
