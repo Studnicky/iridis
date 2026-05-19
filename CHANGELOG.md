@@ -2,6 +2,13 @@
 
 All notable changes to iridis are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.5] - 2026-05-19
+
+### Fixed
+
+- **Image-mode theming** now drives the docs cascade end-to-end. `ImageToTheme` was reading `state.metadata['gallery'].dominantColors` and `.histogram`, but the engine writes outputs to the colon-prefixed `state.metadata['gallery:dominantColors']` and `state.metadata['gallery:histogram']` keys. The extractor silently produced an empty seed list every run, so `configStore.paletteColors` never updated and dropping an image or picking a preset left every `--iridis-*` variable on the page unchanged. The component now reads the canonical keys; the spectrograph and the docs-wide theme both track the extracted palette and re-resolve through dark/light framing toggles.
+- **WCAG / APCA role badges** in `BuildResolvedRoles` were sourced from a non-existent `state.metadata['wcag']` blob. The contrast plugin writes three separate keys — `state.metadata['contrast:aa']`, `['contrast:aaa']`, `['contrast:apca']`. `roleBadge` now reads each key directly so the AA / AAA / APCA·Bronze indicators render again.
+
 ## [0.4.4] - 2026-05-18
 
 ### Changed
