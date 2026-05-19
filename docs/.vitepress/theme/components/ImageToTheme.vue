@@ -170,7 +170,7 @@ async function runForUrl(src: string, label: string): Promise<void> {
        projector; we don't fork to a separate cascade.
        Capped at 8 because docsConfigSchema enforces maxItems: 8 on
        paletteColors. */
-    const dominant = (result.metadata['gallery'] as { 'dominantColors'?: readonly ColorRecordInterface[] } | undefined)?.dominantColors ?? [];
+    const dominant = (result.metadata['gallery:dominantColors'] as readonly ColorRecordInterface[] | undefined) ?? [];
     const seeds = dominant
       .slice(0, 8)
       .map((c) => c.hex)
@@ -352,8 +352,8 @@ const EMPTY_SPECTROGRAPH: SpectrographDataInterface = {
 
 const spectrograph = computed<SpectrographDataInterface>(() => {
   if (state.value === null) return EMPTY_SPECTROGRAPH;
-  const dominant = (state.value.metadata['gallery'] as { 'dominantColors'?: readonly ColorRecordInterface[] } | undefined)?.dominantColors ?? [];
-  const histogram = (state.value.metadata['gallery'] as { 'histogram'?: { 'bins': readonly { 'hex': string; 'weight': number }[]; 'totalPixels': number } } | undefined)?.histogram;
+  const dominant = (state.value.metadata['gallery:dominantColors'] as readonly ColorRecordInterface[] | undefined) ?? [];
+  const histogram = state.value.metadata['gallery:histogram'] as { 'bins': readonly { 'hex': string; 'weight': number }[]; 'totalPixels': number } | undefined;
   if (dominant.length === 0 || histogram === undefined) return EMPTY_SPECTROGRAPH;
   const strip = [...dominant]
     .map((d) => ({ 'hex': d.hex, 'weight': d.hints?.weight ?? 1 }))
