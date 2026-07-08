@@ -14,13 +14,13 @@ function select(m: Mode): void { mode.value = m; }
 <template>
   <UButtonGroup>
     <UButton
-      icon="i-lucide-pipette"
+      icon="i-material-symbols-colorize-rounded"
       :color="mode === 'picker' ? 'primary' : 'neutral'"
       :variant="mode === 'picker' ? 'solid' : 'outline'"
       @click="select('picker')"
     >Color picker</UButton>
     <UButton
-      icon="i-lucide-image"
+      icon="i-material-symbols-image-rounded"
       :color="mode === 'image' ? 'primary' : 'neutral'"
       :variant="mode === 'image' ? 'solid' : 'outline'"
       @click="select('image')"
