@@ -36,6 +36,16 @@ function offsetLightness(color: ColorRecordInterface, offset: number): ColorReco
   );
 }
 
+function targetLightness(color: ColorRecordInterface, target: number): ColorRecordInterface {
+  const { c, h } = color.oklch;
+  return colorRecordFactory.fromOklch(
+    clamp01.apply(target),
+    clamp.apply(0, 0.5, c),
+    h,
+    color.alpha,
+  );
+}
+
 /**
  * Pipeline task that produces alternative framings of every assigned
  * role. With the default config it emits `dark` (lightness inverted)
@@ -79,6 +89,8 @@ export class DeriveVariant implements TaskInterface {
 
         if (config.invertLightness) {
           variantRoles[roleName] = invertLightness(color);
+        } else if (config.lightnessTarget !== undefined) {
+          variantRoles[roleName] = targetLightness(color, config.lightnessTarget);
         } else if (config.lightnessOffset !== undefined) {
           variantRoles[roleName] = offsetLightness(color, config.lightnessOffset);
         } else {

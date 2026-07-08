@@ -50,16 +50,16 @@ const PIPELINE: readonly string[] = ['intake:hex', 'resolve:roles'];
  * this is appropriate for one-shot use; prefer a long-lived `Engine`
  * for anything that runs more than a handful of times.
  */
-export async function quickPalette(
+export function quickPalette(
   seeds: readonly string[],
   framing: FramingType = 'dark',
-): Promise<QuickPaletteInterface> {
+): QuickPaletteInterface {
   const engine = new Engine();
   for (const t of coreTasks)    engine.tasks.register(t);
   engine.pipeline(PIPELINE);
 
   const schema = framing === 'light' ? SCHEMA_LIGHT : SCHEMA_DARK;
-  const state = await engine.run({
+  const state = engine.run({
     'colors':  seeds,
     'roles':   schema,
     'runtime': { 'framing': framing },

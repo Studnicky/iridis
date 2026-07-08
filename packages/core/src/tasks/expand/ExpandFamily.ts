@@ -22,9 +22,11 @@ function deriveColor(
 
   const targetL = role.lightnessRange ? rangeCenter(role.lightnessRange) : l;
   const targetC = role.chromaRange    ? rangeCenter(role.chromaRange)    : c;
-  const targetH = role.hueOffset !== undefined
-    ? ((h + role.hueOffset) % 360 + 360) % 360
-    : h;
+  const targetH = role.hue !== undefined
+    ? ((role.hue % 360) + 360) % 360
+    : role.hueOffset !== undefined
+      ? ((h + role.hueOffset) % 360 + 360) % 360
+      : h;
 
   return colorRecordFactory.fromOklch(
     clamp01.apply(targetL),

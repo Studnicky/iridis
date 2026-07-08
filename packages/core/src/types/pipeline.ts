@@ -31,5 +31,5 @@ export interface TaskManifestInterface {
 export interface TaskInterface {
   readonly name:      string;
   readonly manifest?: TaskManifestInterface;
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): Promise<void> | void;
+  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void;
 }

@@ -205,7 +205,7 @@ export class Engine implements EngineInterface {
    *   - PaletteStateSchema on final state at exit
    *   - Plugin-contributed output/metadata schemas at exit
    */
-  async run(input: InputInterface): Promise<PaletteStateInterface> {
+  run(input: InputInterface): PaletteStateInterface {
     const inputResult = this.validator.validate(InputSchema, input);
     if (!inputResult.valid) {
       const first = inputResult.errors[0];
@@ -241,7 +241,7 @@ export class Engine implements EngineInterface {
     };
 
     for (const hook of this.tasks.hooks('onRunStart')) {
-      await hook.run(state, ctx);
+      hook.run(state, ctx);
     }
 
     if (this.sequence === null) {
@@ -254,11 +254,11 @@ export class Engine implements EngineInterface {
       if (task.manifest?.phase) {
         continue;
       }
-      await task.run(state, ctx);
+      task.run(state, ctx);
     }
 
     for (const hook of this.tasks.hooks('onRunEnd')) {
-      await hook.run(state, ctx);
+      hook.run(state, ctx);
     }
 
     const stateResult = this.validator.validate(PaletteStateSchema, state);

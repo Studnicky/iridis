@@ -1,6 +1,6 @@
 {
   "name": "@studnicky/iridis-image",
-  "version": "0.3.4",
+  "version": "0.5.0",
   "type": "module",
   "exports": {
     ".":       "./src/index.ts",
@@ -16,6 +16,6 @@
     "prebuild":  "rm -rf dist"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.4.0"
+    "@studnicky/iridis": "^0.5.0"
   }
 }

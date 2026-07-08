@@ -6,5 +6,5 @@ export interface EngineInterface {
   readonly tasks: TaskRegistryInterface;
   adopt(plugin: PluginInterface): void;
   pipeline(order: readonly string[]): void;
-  run(input: InputInterface): Promise<PaletteStateInterface>;
+  run(input: InputInterface): PaletteStateInterface;
 }

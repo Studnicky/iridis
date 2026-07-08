@@ -59,7 +59,9 @@ function nudgeIntoRole(
 
   const targetL = role.lightnessRange ? clampToRange(l, role.lightnessRange) : l;
   const targetC = role.chromaRange    ? clampToRange(c, role.chromaRange)    : c;
-  const targetH = role.hueOffset !== undefined ? role.hueOffset             : h;
+  const targetH = role.hue !== undefined ? (((role.hue % 360) + 360) % 360)
+    : role.hueOffset !== undefined ? role.hueOffset
+    : h;
 
   const needsRangeNudge = targetL !== l || targetC !== c || targetH !== h;
   const needsIntent     = role.intent !== undefined && candidate.hints?.intent !== role.intent;
@@ -85,7 +87,9 @@ function nudgeIntoRole(
 function synthesizeForRole(role: RoleDefinitionInterface): ColorRecordInterface {
   const l = role.lightnessRange ? rangeCenter(role.lightnessRange) : 0.5;
   const c = role.chromaRange    ? rangeCenter(role.chromaRange)    : 0;
-  const h = role.hueOffset !== undefined ? role.hueOffset           : 0;
+  const h = role.hue !== undefined ? (((role.hue % 360) + 360) % 360)
+    : role.hueOffset !== undefined ? role.hueOffset
+    : 0;
   const hints: ColorHintsInterface | undefined = role.intent !== undefined
     ? { 'intent': role.intent }
     : undefined;

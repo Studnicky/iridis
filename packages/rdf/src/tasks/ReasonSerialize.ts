@@ -24,25 +24,25 @@ function resolveFormat(raw: unknown): SerializationFormatType {
   return 'Turtle';
 }
 
-function serializeStore(store: IterableStoreInterface, format: SerializationFormatType): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const writer = new Writer({ 'format': format });
+function serializeStore(store: IterableStoreInterface, format: SerializationFormatType): string {
+  const writer = new Writer({ 'format': format });
 
-    for (const quad of store) {
-      // quad is typed as unknown in IterableStoreInterface to avoid cross-package
-      // @types/n3 vs @rdfjs/types conflicts; the store is always an n3 Store here.
-      writer.addQuad(quad as Quad);
-    }
+  for (const quad of store) {
+    // quad is typed as unknown in IterableStoreInterface to avoid cross-package
+    // @types/n3 vs @rdfjs/types conflicts; the store is always an n3 Store here.
+    writer.addQuad(quad as Quad);
+  }
 
-    writer.end((err, result) => {
-      if (err) {
-        reject(err);
-
-        return;
-      }
-      resolve(result);
-    });
+  // n3's Writer.end invokes its callback synchronously for in-memory string
+  // output (no I/O), so the result is available before end() returns.
+  let result = '';
+  let failure: Error | null = null;
+  writer.end((err, output) => {
+    if (err) failure = err;
+    else result = output;
   });
+  if (failure) throw failure;
+  return result;
 }
 
 export class ReasonSerialize implements TaskInterface {
@@ -55,7 +55,7 @@ export class ReasonSerialize implements TaskInterface {
     'description': 'Serialize rdf:reasoningGraph to Turtle / TriG / N-Quads / JSON-LD',
   };
 
-  async run(state: PaletteStateInterface, ctx: PipelineContextInterface): Promise<void> {
+  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const graph = state.outputs['rdf:reasoningGraph'] as IterableStoreInterface | undefined;
     if (!graph) {
       ctx.logger.warn('ReasonSerialize', 'run', 'rdf:reasoningGraph is absent; run reason:annotate first');
@@ -70,7 +70,7 @@ export class ReasonSerialize implements TaskInterface {
     let serialized: string;
 
     try {
-      serialized = await serializeStore(graph, format);
+      serialized = serializeStore(graph, format);
     } catch (err) {
       ctx.logger.error('ReasonSerialize', 'run', 'serialization failed', { 'error': err });
 

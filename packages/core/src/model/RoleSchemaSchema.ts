@@ -34,6 +34,7 @@ export const RoleSchemaSchema = {
             'items':    { 'type': 'number', 'minimum': 0, 'maximum': 0.5 },
           },
           'hueOffset':  { 'type': 'number', 'minimum': -360, 'maximum': 360 },
+          'hue':        { 'type': 'number', 'minimum':    0, 'maximum': 360 },
         },
       },
     },

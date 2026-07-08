@@ -44,6 +44,13 @@ export interface VariantConfigInterface {
   readonly 'name':             string;
   readonly 'invertLightness':  boolean;
   readonly 'lightnessOffset'?: number;
+  /**
+   * Absolute target OKLCH lightness for every role in this variant. Takes
+   * precedence over `lightnessOffset`. Lets a caller request a fixed tonal
+   * step (e.g. an 11-stop 50→950 scale) resolved through the engine's own
+   * `colorRecordFactory` rather than computing the ramp downstream.
+   */
+  readonly 'lightnessTarget'?: number;
 }
 
 export interface PaletteStateInterface {
