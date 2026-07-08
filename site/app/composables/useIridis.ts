@@ -6,26 +6,26 @@
  * from hueOffset on the schema roles. The projector only reads those hexes.
  */
 
-import { ref, computed, watch } from 'vue';
-import { Engine, coreTasks } from '@studnicky/iridis';
+import type { RoleDefinitionInterfaceType, RoleSchemaInterfaceType } from '@studnicky/iridis/model';
+
+import { coreTasks, Engine } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { imagePlugin } from '@studnicky/iridis-image';
-import type { RoleSchemaInterface, RoleDefinitionInterface } from '@studnicky/iridis/model';
+import { computed, ref, watch } from 'vue';
 
-import { roleSchemaByName } from '../theme/roleSchemas.ts';
-import { mapEngineToTokens, applyTokens, SHADE_KEYS } from '../theme/iridisProjector.ts';
-import type { Framing, RoleHexMap, ScaleMap } from '../theme/iridisProjector.ts';
+import type {
+  FramingType, GalleryAlgorithmType, HistogramBinType, ModeType, RoleHexMapType, RoleViewType, ScaleMapType
+} from './types/index.ts';
 
-export type Mode = 'picker' | 'image';
-export interface HistogramBin { readonly hex: string; readonly weight: number }
-export interface RoleView { readonly name: string; readonly hex: string; readonly l: number; readonly c: number; readonly h: number }
+import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
+import { Tokens } from '../theme/Tokens.ts';
 
 /** Absolute OKLCH lightness per shade — resolved through the engine, not here. */
 const SHADE_L: Record<number, number> = {
-  50: 0.985, 100: 0.955, 200: 0.915, 300: 0.855, 400: 0.775, 500: 0.685,
-  600: 0.595, 700: 0.505, 800: 0.415, 900: 0.335, 950: 0.235,
+  '100': 0.955, '200': 0.915, '300': 0.855, '400': 0.775, '50': 0.985, '500': 0.685,
+  '600': 0.595, '700': 0.505, '800': 0.415, '900': 0.335, '950': 0.235
 };
-const VARIANT_CONFIG = SHADE_KEYS.map((s) => ({ 'name': `s${s}`, 'invertLightness': false, 'lightnessTarget': SHADE_L[s] as number }));
+const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => {return { 'invertLightness': false, 'lightnessTarget': SHADE_L[s]!, 'name': `s${s}` };});
 
 /**
  * Semantic hue targets, applied as a BOUNDED nudge (the engine rotates each role
@@ -34,56 +34,54 @@ const VARIANT_CONFIG = SHADE_KEYS.map((s) => ({ 'name': `s${s}`, 'invertLightnes
  * warm-leaning semantics rather than pure green/blue that appear nowhere in it.
  * Schema authoring; the engine still resolves the real color.
  */
-const SEMANTIC_HUE: Record<string, number> = { 'success': 150, 'warning': 85, 'error': 27, 'info': 250 };
+const SEMANTIC_HUE: Record<string, number> = { 'error': 27, 'info': 250, 'success': 150, 'warning': 85 };
 const SEMANTIC_HUE_CLAMP = 55;
 
 const COLOR_PIPELINE = [
   'intake:hex', 'resolve:roles', 'expand:family',
   'enforce:contrast', 'enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate',
-  'derive:variant',
+  'derive:variant'
 ];
 const IMAGE_PIPELINE = [
   'intake:imagePixels', 'gallery:histogram', 'gallery:extract', 'gallery:harmonize',
   'resolve:roles', 'expand:family',
   'enforce:contrast', 'enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate',
-  'derive:variant',
+  'derive:variant'
 ];
 
-export type GalleryAlgorithm = 'median-cut' | 'delta-e';
-
 const engine = new Engine();
-for (const t of coreTasks) engine.tasks.register(t);
+for (const t of coreTasks) {engine.tasks.register(t);}
 engine.adopt(contrastPlugin);
 engine.adopt(imagePlugin);
 
 /** Author hue targets onto the schema's semantic roles (engine resolves them). */
-function withSemanticHues(schema: RoleSchemaInterface): RoleSchemaInterface {
+function withSemanticHues(schema: RoleSchemaInterfaceType): RoleSchemaInterfaceType {
   return {
     ...schema,
-    'roles': schema.roles.map((r: RoleDefinitionInterface) =>
-      (SEMANTIC_HUE[r.name] !== undefined)
-        ? { ...r, 'hue': SEMANTIC_HUE[r.name], 'hueClamp': SEMANTIC_HUE_CLAMP }
-        : r),
+    'roles': schema.roles.map((r: RoleDefinitionInterfaceType) =>
+    {return (SEMANTIC_HUE[r.name] !== undefined)
+      ? { ...r, 'hue': SEMANTIC_HUE[r.name], 'hueClamp': SEMANTIC_HUE_CLAMP }
+      : r;})
   };
 }
 
 /* ─── shared reactive state ─── */
-const mode = ref<Mode>('picker');
+const mode = ref<ModeType>('picker');
 const pickerSeeds = ref<string[]>(['#7c3aed', '#06b6d4', '#f59e0b']);
 const imageSeeds = ref<string[]>([]);
-const framing = ref<Framing>('dark');
+const framing = ref<FramingType>('dark');
 const schemaName = ref<string>('iridis-32');
 const contrastLevel = ref<'AA' | 'AAA'>('AAA');
 
-const roles = ref<RoleHexMap>({});
-const roleViews = ref<RoleView[]>([]);
-const scales = ref<ScaleMap>({});
-const histogram = ref<HistogramBin[]>([]);
+const roles = ref<RoleHexMapType>({});
+const roleViews = ref<RoleViewType[]>([]);
+const scales = ref<ScaleMapType>({});
+const histogram = ref<HistogramBinType[]>([]);
 const running = ref<boolean>(false);
 const error = ref<string | null>(null);
 
 /* Image-extraction controls (mirror the engine's gallery config knobs). */
-const imgAlgorithm = ref<GalleryAlgorithm>('median-cut');
+const imgAlgorithm = ref<GalleryAlgorithmType>('median-cut');
 const imgK = ref<number>(8);
 const imgHistogramBits = ref<number>(5);
 const imgDeltaECap = ref<number>(128);
@@ -92,107 +90,44 @@ const imgLightnessRange = ref<[number, number]>([0, 1]);
 const imgChromaRange = ref<[number, number]>([0, 0.5]);
 const lastImageSrc = ref<string | null>(null);
 
-const activeSeeds = computed<string[]>(() => (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value));
+const activeSeeds = computed<string[]>(() => {return (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value);});
 
-function ingest(state: { roles: Record<string, { hex: string; oklch: { l: number; c: number; h: number } }>; variants: Record<string, Record<string, { hex: string }>> }): void {
-  const roleHex: RoleHexMap = {};
-  const views: RoleView[] = [];
+function ingest(state: { 'roles': Record<string, { 'hex': string; 'oklch': { 'c': number; 'h': number; 'l': number; } }>; 'variants': Record<string, Record<string, { 'hex': string }>> }): void {
+  const roleHex: RoleHexMapType = {};
+  const views: RoleViewType[] = [];
   for (const [name, r] of Object.entries(state.roles)) {
     roleHex[name] = r.hex;
-    views.push({ 'name': name, 'hex': r.hex, 'l': r.oklch.l, 'c': r.oklch.c, 'h': r.oklch.h });
+    views.push({ 'c': r.oklch.c, 'h': r.oklch.h, 'hex': r.hex, 'l': r.oklch.l, 'name': name });
   }
-  const sc: ScaleMap = {};
-  for (const s of SHADE_KEYS) {
+  const sc: ScaleMapType = {};
+  for (const s of Tokens.SHADE_KEYS) {
     const variant = state.variants[`s${s}`];
-    if (!variant) continue;
-    const perShade: RoleHexMap = {};
-    for (const [name, rec] of Object.entries(variant)) perShade[name] = rec.hex;
+    if (variant === undefined) {continue;}
+    const perShade: RoleHexMapType = {};
+    for (const [name, rec] of Object.entries(variant)) {perShade[name] = rec.hex;}
     sc[s] = perShade;
   }
   roles.value = roleHex;
   roleViews.value = views;
   scales.value = sc;
-  applyTokens(mapEngineToTokens(roleHex, sc), framing.value);
+  Tokens.apply(Tokens.mapFromEngine(roleHex, sc), framing.value);
 }
 
-async function run(): Promise<void> {
+function run(): void {
   const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
-  if (!pair || activeSeeds.value.length === 0) return;
+  if (pair === undefined || activeSeeds.value.length === 0) {return;}
   running.value = true;
   error.value = null;
   try {
     engine.pipeline([...COLOR_PIPELINE]);
-    const state = await engine.run({
-      'colors':   activeSeeds.value,
-      'roles':    withSemanticHues(pair[framing.value]),
-      'contrast': { 'level': contrastLevel.value, 'algorithm': 'wcag21' },
-      'runtime':  { 'framing': framing.value, 'colorSpace': 'srgb' },
-      'metadata': { 'core:variantConfig': VARIANT_CONFIG },
-    });
-    ingest(state as never);
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e);
-  } finally {
-    running.value = false;
-  }
-}
-
-async function decodeToPixels(src: string): Promise<{ data: Uint8ClampedArray; width: number; height: number }> {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error('Image load failed'));
-    img.src = src;
-  });
-  const MAX = 180;
-  const long = Math.max(img.naturalWidth, img.naturalHeight);
-  const scale = long > MAX ? MAX / long : 1;
-  const w = Math.max(1, Math.round(img.naturalWidth * scale));
-  const h = Math.max(1, Math.round(img.naturalHeight * scale));
-  const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d', { 'willReadFrequently': true });
-  if (!ctx) throw new Error('no 2D context');
-  ctx.drawImage(img, 0, 0, w, h);
-  return { 'data': ctx.getImageData(0, 0, w, h).data, 'width': w, 'height': h };
-}
-
-/** Run the image pipeline: capture histogram, dominant seeds; switch to image mode. */
-async function extractFromImage(fileOrUrl: File | string): Promise<void> {
-  if (typeof document === 'undefined') return;
-  running.value = true;
-  error.value = null;
-  try {
-    const src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
-    lastImageSrc.value = src;
-    const pixels = await decodeToPixels(src);
-    const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
-    engine.pipeline([...IMAGE_PIPELINE]);
     const state = engine.run({
-      'colors':   [pixels],
-      'roles':    withSemanticHues(pair![framing.value]),
-      'contrast': { 'level': contrastLevel.value, 'algorithm': 'wcag21' },
-      'runtime':  { 'framing': framing.value, 'colorSpace': 'srgb' },
-      'metadata': {
-        'gallery': {
-          'k':                  imgK.value,
-          'algorithm':          imgAlgorithm.value,
-          'histogramBits':      imgHistogramBits.value,
-          'deltaECap':          imgDeltaECap.value,
-          'harmonizeThreshold': imgHarmonize.value,
-          'lightnessRange':     [...imgLightnessRange.value] as [number, number],
-          'chromaRange':        [...imgChromaRange.value] as [number, number],
-        },
-        'core:variantConfig': VARIANT_CONFIG,
-      },
+      'colors':   activeSeeds.value,
+      'contrast': { 'algorithm': 'wcag21', 'level': contrastLevel.value },
+      'metadata': { 'core:variantConfig': VARIANT_CONFIG },
+      'roles':    withSemanticHues(pair[framing.value]),
+      'runtime':  { 'colorSpace': 'srgb', 'framing': framing.value }
     });
-    const hist = (state.metadata['gallery:histogram'] as { bins?: HistogramBin[] } | undefined)?.bins ?? [];
-    histogram.value = [...hist].sort((a, b) => b.weight - a.weight).slice(0, 96);
-    const dominant = (state.metadata['gallery:dominantColors'] as Array<{ hex: string }> | undefined) ?? [];
-    imageSeeds.value = dominant.map((c) => c.hex).filter((hex) => /^#[0-9a-fA-F]{6}$/.test(hex)).slice(0, 8);
-    mode.value = 'image';
-    ingest(state as never);
+    ingest(state);
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
   } finally {
@@ -200,36 +135,109 @@ async function extractFromImage(fileOrUrl: File | string): Promise<void> {
   }
 }
 
-function addSeed(hex = '#888888'): void { if (pickerSeeds.value.length < 8) pickerSeeds.value = [...pickerSeeds.value, hex]; }
-function removeSeed(i: number): void { if (pickerSeeds.value.length > 1) pickerSeeds.value = pickerSeeds.value.filter((_, idx) => idx !== i); }
-function setSeed(i: number, hex: string): void { pickerSeeds.value = pickerSeeds.value.map((s, idx) => (idx === i ? hex : s)); }
+/** Decode an image source into raw pixel data, downscaled for the gallery pipeline. */
+class ToPixels {
+  static async decode(src: string): Promise<{ 'data': Uint8ClampedArray; 'height': number; 'width': number; }> {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => { const result = resolve(); return result; };
+      img.onerror = () => { const result = reject(new Error('Image load failed')); return result; };
+      img.src = src;
+    });
+    const MAX = 180;
+    const long = Math.max(img.naturalWidth, img.naturalHeight);
+    const scale = long > MAX ? MAX / long : 1;
+    const w = Math.max(1, Math.round(img.naturalWidth * scale));
+    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d', { 'willReadFrequently': true });
+    if (ctx === null) {throw new Error('no 2D context');}
+    ctx.drawImage(img, 0, 0, w, h);
+    return { 'data': ctx.getImageData(0, 0, w, h).data, 'height': h, 'width': w };
+  }
+}
+
+/** Extracts dominant seeds and histogram data from a decoded image. */
+class FromImage {
+  /** Run the image pipeline: capture histogram, dominant seeds; switch to image mode. */
+  static async extract(fileOrUrl: File | string): Promise<void> {
+    if (typeof document === 'undefined') {return;}
+    running.value = true;
+    error.value = null;
+    try {
+      const src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
+      lastImageSrc.value = src;
+      const pixels = await ToPixels.decode(src);
+      const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
+      engine.pipeline([...IMAGE_PIPELINE]);
+      const state = engine.run({
+        'colors':   [pixels],
+        'contrast': { 'algorithm': 'wcag21', 'level': contrastLevel.value },
+        'metadata': {
+          'core:variantConfig': VARIANT_CONFIG,
+          'gallery': {
+            'algorithm':          imgAlgorithm.value,
+            'chromaRange':        [...imgChromaRange.value] as [number, number],
+            'deltaECap':          imgDeltaECap.value,
+            'harmonizeThreshold': imgHarmonize.value,
+            'histogramBits':      imgHistogramBits.value,
+            'k':                  imgK.value,
+            'lightnessRange':     [...imgLightnessRange.value] as [number, number]
+          }
+        },
+        'roles':    withSemanticHues(pair![framing.value]),
+        'runtime':  { 'colorSpace': 'srgb', 'framing': framing.value }
+      });
+      const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
+      histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
+      const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string }[] | undefined) ?? [];
+      imageSeeds.value = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { const result = /^#[0-9a-fA-F]{6}$/.test(hex); return result; }).slice(0, 8);
+      mode.value = 'image';
+      ingest(state);
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e);
+    } finally {
+      running.value = false;
+    }
+  }
+}
+
+function addSeed(hex = '#888888'): void { if (pickerSeeds.value.length < 8) {pickerSeeds.value = [...pickerSeeds.value, hex];} }
+function removeSeed(i: number): void { if (pickerSeeds.value.length > 1) {pickerSeeds.value = pickerSeeds.value.filter((_, idx) => {return idx !== i;});} }
+
+/** Overwrites one picker seed by index. */
+class Seed {
+  static set(i: number, hex: string): void { pickerSeeds.value = pickerSeeds.value.map((s, idx) => {return (idx === i ? hex : s);}); }
+}
 
 let booted = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
 function schedule(): void {
-  if (typeof window === 'undefined') return;
-  if (timer) clearTimeout(timer);
-  timer = setTimeout(() => { void run(); }, 120);
+  if (typeof window === 'undefined') {return;}
+  if (timer !== undefined) {clearTimeout(timer);}
+  timer = setTimeout(() => { run(); }, 120);
 }
 
 let extractTimer: ReturnType<typeof setTimeout> | undefined;
 function scheduleReextract(): void {
-  if (typeof window === 'undefined' || !lastImageSrc.value || mode.value !== 'image') return;
-  if (extractTimer) clearTimeout(extractTimer);
-  extractTimer = setTimeout(() => { void extractFromImage(lastImageSrc.value as string); }, 180);
+  if (typeof window === 'undefined' || lastImageSrc.value === null || mode.value !== 'image') {return;}
+  if (extractTimer !== undefined) {clearTimeout(extractTimer);}
+  extractTimer = setTimeout(() => { void FromImage.extract(lastImageSrc.value!); }, 180);
 }
 
 export function useIridis() {
   if (!booted && typeof window !== 'undefined') {
     booted = true;
-    void run();
+    run();
     watch([pickerSeeds, imageSeeds, framing, schemaName, contrastLevel, mode], schedule, { 'deep': true });
     watch([imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
   }
   return {
-    mode, pickerSeeds, imageSeeds, activeSeeds, framing, schemaName, contrastLevel,
-    roles, roleViews, scales, histogram, running, error,
-    imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
-    run, addSeed, removeSeed, setSeed, extractFromImage,
+    'activeSeeds': activeSeeds, 'addSeed': addSeed, 'contrastLevel': contrastLevel, 'error': error, 'extractFromImage': FromImage.extract, 'framing': framing, 'histogram': histogram,
+    'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
+    'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'mode': mode, 'pickerSeeds': pickerSeeds, 'removeSeed': removeSeed, 'roles': roles, 'roleViews': roleViews,
+    'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName, 'setSeed': Seed.set
   };
 }

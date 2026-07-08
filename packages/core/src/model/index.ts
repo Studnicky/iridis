@@ -1,11 +1,11 @@
-export * from '../types/index.ts';
+export type * from '../types/index.ts';
 export { ColorRecordSchema }    from './ColorRecordSchema.ts';
+export { getOrCreateMetadata } from './getOrCreateMetadata.ts';
+export { getOrCreateOutput }   from './getOrCreateOutput.ts';
 export { InputSchema }          from './InputSchema.ts';
 export { PaletteStateSchema }   from './PaletteStateSchema.ts';
 export { PluginSchema }         from './PluginSchema.ts';
 export { RoleSchemaSchema }     from './RoleSchemaSchema.ts';
 export { TaskManifestSchema }   from './TaskManifestSchema.ts';
-export { Validator, validator } from './Validator.ts';
-export type { SchemaInterface } from './Validator.ts';
-export { getOrCreateOutput, getOrCreateMetadata } from './getOrCreateOutput.ts';
-export { toCssVarName } from './CssVar.ts';
+export { toCssVarName } from './ToCssVarName.ts';
+export { Validator } from './Validator.ts';

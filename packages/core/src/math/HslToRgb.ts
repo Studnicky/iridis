@@ -1,4 +1,5 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
@@ -28,12 +29,12 @@ function hslToRgbComponents(h: number, s: number, l: number): [number, number, n
   return [r + m, g + m, b + m];
 }
 
-export class HslToRgb {
+class HslToRgb {
   readonly 'name' = 'hslToRgb';
 
-  apply(h: number, s: number, l: number, alpha: number = 1): ColorRecordInterface {
+  apply(h: number, s: number, l: number, alpha = 1): ColorRecordInterfaceType {
     const [r, g, b] = hslToRgbComponents(((h % 360) + 360) % 360, clamp01.apply(s), clamp01.apply(l));
-    return colorRecordFactory.fromRgb(r, g, b, alpha);
+    return colorRecordFactory.fromRgb(r, g, b, { 'alpha': alpha });
   }
 }
 

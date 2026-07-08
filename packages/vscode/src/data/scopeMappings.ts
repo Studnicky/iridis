@@ -28,7 +28,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // Java annotations
     'storage.type.annotation.java',
     // Go struct tags
-    'entity.other.attribute-name.go',
+    'entity.other.attribute-name.go'
   ],
 
   'boolean': [
@@ -42,7 +42,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // JSON booleans
     'constant.language.json',
     // Shell
-    'constant.language.boolean.shell',
+    'constant.language.boolean.shell'
   ],
 
   'bracket': [
@@ -62,7 +62,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'punctuation.section.parens',
     'meta.brace.curly',
     'meta.brace.round',
-    'meta.brace.square',
+    'meta.brace.square'
   ],
 
   'builtin': [
@@ -85,7 +85,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // PHP builtins
     'support.function.construct.php',
     // Ruby builtins
-    'support.function.kernel.ruby',
+    'support.function.kernel.ruby'
   ],
 
   'class': [
@@ -103,7 +103,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'meta.class entity.name.type',
     // Struct (C/Go/Rust)
     'entity.name.type.struct',
-    'entity.name.struct',
+    'entity.name.struct'
   ],
 
   'comment': [
@@ -122,7 +122,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'comment.line.number-sign.shell',
     // SQL comments
     'comment.line.double-dash.sql',
-    'comment.block.sql',
+    'comment.block.sql'
   ],
 
   'comparison': [
@@ -132,7 +132,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'keyword.operator.comparison.ts',
     'keyword.operator.comparison.python',
     'keyword.operator.comparison.go',
-    'keyword.operator.comparison.rust',
+    'keyword.operator.comparison.rust'
   ],
 
   'constant': [
@@ -156,7 +156,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'constant.other.go',
     // PHP
     'constant.other.php',
-    'support.constant.core.php',
+    'support.constant.core.php'
   ],
 
   'control': [
@@ -186,7 +186,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // SQL
     'keyword.control.sql',
     // Rust
-    'keyword.control.rust',
+    'keyword.control.rust'
   ],
 
   'cssProperty': [
@@ -198,7 +198,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'support.type.property-name.sass',
     'support.type.property-name.less',
     'meta.property-name.scss',
-    'support.type.property-name.media.css',
+    'support.type.property-name.media.css'
   ],
 
   'cssPseudo': [
@@ -206,7 +206,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'entity.other.attribute-name.pseudo-element.css',
     // SCSS
     'entity.other.attribute-name.pseudo-class.scss',
-    'entity.other.attribute-name.pseudo-element.scss',
+    'entity.other.attribute-name.pseudo-element.scss'
   ],
 
   'cssSelector': [
@@ -224,7 +224,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'variable.scss',
     // At-rules
     'keyword.control.at-rule.css',
-    'keyword.control.at-rule.scss',
+    'keyword.control.at-rule.scss'
   ],
 
   'cssUnit': [
@@ -232,7 +232,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'constant.numeric.css',
     // SCSS
     'keyword.other.unit.scss',
-    'constant.numeric.scss',
+    'constant.numeric.scss'
   ],
 
   'cssValue': [
@@ -245,7 +245,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'support.function.calc.css',
     // SCSS
     'support.constant.property-value.scss',
-    'support.function.misc.scss',
+    'support.function.misc.scss'
   ],
 
   'decorator': [
@@ -265,13 +265,13 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // C# attributes
     'punctuation.squarebracket.open.cs',
     // Rust attributes
-    'meta.attribute.rust',
+    'meta.attribute.rust'
   ],
 
   'deprecated': [
     'invalid.deprecated',
     'entity.name.function.deprecated',
-    'entity.name.type.deprecated',
+    'entity.name.type.deprecated'
   ],
 
   'docComment': [
@@ -291,7 +291,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // Go doc
     'comment.line.documentation.go',
     // PHP doc
-    'comment.block.documentation.phpdoc',
+    'comment.block.documentation.phpdoc'
   ],
 
   'docKeyword': [
@@ -306,7 +306,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // Rust doc
     'entity.name.tag.documentation.rust',
     // Java doc
-    'keyword.other.documentation.javadoc',
+    'keyword.other.documentation.javadoc'
   ],
 
   'enum': [
@@ -317,7 +317,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'entity.name.type.enum.rust',
     'entity.name.type.enum.go',
     'entity.name.type.enum.java',
-    'entity.name.type.enum.csharp',
+    'entity.name.type.enum.csharp'
   ],
 
   'enumMember': [
@@ -327,7 +327,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // Language-specific
     'variable.other.enummember.ts',
     'constant.other.enum.rust',
-    'constant.other.enum.go',
+    'constant.other.enum.go'
   ],
 
   'escape': [
@@ -344,7 +344,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // Shell
     'punctuation.definition.variable.shell',
     // Regex escapes
-    'constant.character.escape.regexp',
+    'constant.character.escape.regexp'
   ],
 
   'function': [
@@ -370,7 +370,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'support.function.sql',
     'entity.name.function.sql',
     // GraphQL
-    'entity.name.function.graphql',
+    'entity.name.function.graphql'
   ],
 
   'import': [
@@ -390,7 +390,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'keyword.control.require',
     // Module paths
     'entity.name.import',
-    'entity.name.package.go',
+    'entity.name.package.go'
   ],
 
   'interface': [
@@ -404,14 +404,14 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'entity.name.type.interface.csharp',
     'entity.name.type.trait.rust',
     'entity.name.type.trait.php',
-    'entity.name.type.protocol.swift',
+    'entity.name.type.protocol.swift'
   ],
 
   'invalid': [
     'invalid',
     'invalid.illegal',
     'invalid.broken',
-    'invalid.unimplemented',
+    'invalid.unimplemented'
   ],
 
   'jsonKey': [
@@ -421,14 +421,14 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // JSONC (JSON with comments)
     'support.type.property-name.jsonc',
     // JSON5
-    'support.type.property-name.json5',
+    'support.type.property-name.json5'
   ],
 
   'jsonValue': [
     'string.quoted.double.json',
     'meta.structure.dictionary.value.json string',
     // JSONC
-    'string.quoted.double.jsonc',
+    'string.quoted.double.jsonc'
   ],
 
   'keyword': [
@@ -452,7 +452,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // Shell
     'keyword.other.shell',
     // GraphQL
-    'keyword.graphql',
+    'keyword.graphql'
   ],
 
   'library': [
@@ -469,7 +469,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'support.type.dom',
     // Node.js
     'support.class.node',
-    'support.module.node',
+    'support.module.node'
   ],
 
   'logical': [
@@ -480,7 +480,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'keyword.operator.logical.go',
     'keyword.operator.or',
     'keyword.operator.and',
-    'keyword.operator.not',
+    'keyword.operator.not'
   ],
 
   'macro': [
@@ -501,13 +501,13 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'meta.macro.rust',
     // Make
     'keyword.control.makefile',
-    'entity.name.function.target.makefile',
+    'entity.name.function.target.makefile'
   ],
 
   'markdownBold': [
     'markup.bold',
     'punctuation.definition.bold.markdown',
-    'markup.bold.markdown',
+    'markup.bold.markdown'
   ],
 
   'markdownCode': [
@@ -516,7 +516,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'fenced_code.block.language',
     'markup.raw.block',
     'markup.inline.raw.string.markdown',
-    'markup.raw.inline.markdown',
+    'markup.raw.inline.markdown'
   ],
 
   'markdownHeading': [
@@ -524,13 +524,13 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'entity.name.section.markdown',
     'punctuation.definition.heading.markdown',
     'markup.heading.setext',
-    'markup.heading.markdown',
+    'markup.heading.markdown'
   ],
 
   'markdownItalic': [
     'markup.italic',
     'punctuation.definition.italic.markdown',
-    'markup.italic.markdown',
+    'markup.italic.markdown'
   ],
 
   'markdownLink': [
@@ -539,13 +539,13 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'meta.link',
     'meta.link.inline.markdown',
     'meta.link.reference.markdown',
-    'string.other.link.title.markdown',
+    'string.other.link.title.markdown'
   ],
 
   'markdownQuote': [
     'markup.quote',
     'punctuation.definition.quote.begin.markdown',
-    'markup.quote.markdown',
+    'markup.quote.markdown'
   ],
 
   'method': [
@@ -558,7 +558,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'entity.name.function.method.python',
     'entity.name.function.method.go',
     'entity.name.function.method.rust',
-    'entity.name.function.method.java',
+    'entity.name.function.method.java'
   ],
 
   'modifier': [
@@ -579,7 +579,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'storage.modifier.ts',
     'storage.modifier.java',
     'storage.modifier.rust',
-    'storage.modifier.go',
+    'storage.modifier.go'
   ],
 
   'namespace': [
@@ -598,7 +598,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'entity.other.attribute-name.namespace.xml',
     // RDF namespace prefix
     'entity.name.namespace.prefix.turtle',
-    'entity.name.namespace.prefix.sparql',
+    'entity.name.namespace.prefix.sparql'
   ],
 
   'number': [
@@ -624,7 +624,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // TOML
     'constant.numeric.toml',
     // SQL
-    'constant.numeric.sql',
+    'constant.numeric.sql'
   ],
 
   'operator': [
@@ -646,7 +646,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'keyword.operator.fat-arrow',
     'keyword.operator.type.annotation',
     'keyword.operator.rust',
-    'keyword.operator.go',
+    'keyword.operator.go'
   ],
 
   'parameter': [
@@ -659,7 +659,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'variable.parameter.python',
     'variable.parameter.rust',
     'variable.parameter.go',
-    'variable.parameter.java',
+    'variable.parameter.java'
   ],
 
   'property': [
@@ -677,13 +677,13 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // TOML keys
     'support.type.property-name.toml',
     // INI keys
-    'keyword.other.definition.ini',
+    'keyword.other.definition.ini'
   ],
 
   'propertyReadonly': [
     'variable.other.property.readonly',
     'variable.other.constant.property',
-    'variable.other.object.property.readonly',
+    'variable.other.object.property.readonly'
   ],
 
   'punctuation': [
@@ -701,7 +701,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'punctuation.semi',
     'punctuation.separator.key-value',
     'punctuation.definition.generic',
-    'punctuation.separator.namespace',
+    'punctuation.separator.namespace'
   ],
 
   'regexp': [
@@ -714,7 +714,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'keyword.operator.or.regexp',
     'punctuation.definition.character-class.regexp',
     'constant.other.character-class.regexp',
-    'punctuation.definition.group.assertion.regexp',
+    'punctuation.definition.group.assertion.regexp'
   ],
 
   'storage': [
@@ -738,7 +738,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'storage.type.built-in',
     'storage.type.string',
     'storage.type.number',
-    'storage.type.boolean',
+    'storage.type.boolean'
   ],
 
   'string': [
@@ -773,7 +773,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // SQL
     'string.quoted.single.sql',
     // XML/HTML CDATA
-    'string.unquoted.cdata.xml',
+    'string.unquoted.cdata.xml'
   ],
 
   'tag': [
@@ -796,7 +796,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // RDF/XML
     'entity.name.tag.rdf',
     // XSLT
-    'entity.name.tag.xsl',
+    'entity.name.tag.xsl'
   ],
 
   'tagAttribute': [
@@ -812,7 +812,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // Vue
     'entity.other.attribute-name.vue',
     // RDF attributes
-    'entity.other.attribute-name.rdf',
+    'entity.other.attribute-name.rdf'
   ],
 
   'tagPunctuation': [
@@ -820,7 +820,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'punctuation.definition.tag.end',
     'punctuation.definition.tag.html',
     'punctuation.definition.tag.xml',
-    'meta.tag.punctuation.tag-close',
+    'meta.tag.punctuation.tag-close'
   ],
 
   'this': [
@@ -834,7 +834,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'variable.language.self.rust',
     'variable.language.self.ruby',
     'variable.language.this.php',
-    'variable.language.special.self',
+    'variable.language.special.self'
   ],
 
   'type': [
@@ -857,7 +857,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'entity.name.class.rdf',
     // GraphQL types
     'entity.name.type.graphql',
-    'support.type.graphql',
+    'support.type.graphql'
   ],
 
   'typeParameter': [
@@ -869,7 +869,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'entity.name.type.parameter.rust',
     'entity.name.type.parameter.java',
     'entity.name.type.parameter.go',
-    'punctuation.definition.typeparameters',
+    'punctuation.definition.typeparameters'
   ],
 
   'variable': [
@@ -897,7 +897,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     // GraphQL variables
     'variable.graphql',
     // Environment variables
-    'variable.other.environment',
+    'variable.other.environment'
   ],
 
   'variableReadonly': [
@@ -909,7 +909,7 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
     'variable.other.constant.rust',
     'variable.other.constant.go',
     'variable.other.constant.java',
-    'variable.other.constant.ruby',
-  ],
+    'variable.other.constant.ruby'
+  ]
 
 } as const;

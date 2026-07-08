@@ -20,12 +20,24 @@
   },
   "devDependencies": {
     "@primeuix/themes": "^2.0.3",
+    "@studnicky/eslint-config": "^5.0.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^25.6.2",
+    "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "@typescript-eslint/parser": "^8.63.0",
+    "eslint": "^10.6.0",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-perfectionist": "^5.10.0",
+    "eslint-plugin-regexp": "^3.1.1",
+    "eslint-plugin-unused-imports": "^4.4.1",
+    "eslint-plugin-vue": "^10.9.2",
     "mermaid": "^11.15.0",
     "primevue": "^4.5.5",
+    "typescript-eslint": "^8.63.0",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17",
-    "vue": "^3.5.34"
+    "vue": "^3.5.34",
+    "vue-eslint-parser": "^10.4.1"
   },
   "engines": {
     "node": ">=24"
@@ -36,5 +48,34 @@
       "bingSiteVerification": "",
       "twitterHandle": ""
     }
+  },
+  "dependencies": {
+    "@studnicky/batch": "^4.0.0",
+    "@studnicky/cache": "^4.0.0",
+    "@studnicky/circular-buffer": "^4.0.0",
+    "@studnicky/clock": "^4.0.0",
+    "@studnicky/concurrency": "^4.0.0",
+    "@studnicky/config": "^4.0.0",
+    "@studnicky/context": "^4.0.0",
+    "@studnicky/errors": "^4.0.0",
+    "@studnicky/event-bus": "^4.0.0",
+    "@studnicky/fetch": "^4.0.0",
+    "@studnicky/file-lock": "^4.0.0",
+    "@studnicky/fsm": "^4.0.0",
+    "@studnicky/json": "^4.0.0",
+    "@studnicky/logger": "^4.0.0",
+    "@studnicky/mutex": "^4.0.0",
+    "@studnicky/pipeline": "^4.0.0",
+    "@studnicky/predicates": "^4.0.0",
+    "@studnicky/resilience": "^4.0.0",
+    "@studnicky/retry": "^4.0.0",
+    "@studnicky/sample-buffer": "^4.0.0",
+    "@studnicky/scheduler": "^4.0.0",
+    "@studnicky/signal": "^4.0.0",
+    "@studnicky/system": "^4.0.0",
+    "@studnicky/throttle": "^4.0.0",
+    "@studnicky/timing": "^4.0.0",
+    "@studnicky/types": "^4.0.0",
+    "@studnicky/virtual-fs": "^4.0.0"
   }
 }

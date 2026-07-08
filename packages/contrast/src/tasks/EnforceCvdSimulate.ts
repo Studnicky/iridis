@@ -1,57 +1,64 @@
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
 import { clamp01, contrastWcag21, linearToSrgb, srgbToLinear } from '@studnicky/iridis';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
+import type { CvdPairWarningInterfaceType } from '../types/augmentation.ts';
+import type { CvdMatrixInterfaceType } from '../types/index.ts';
+
 import { cvdMatrices } from '../data/cvdMatrices.ts';
 import { CVD_THRESHOLDS } from '../data/cvdThresholds.ts';
-import type { CvdMatrixInterface } from '../types/index.ts';
-import type { CvdPairWarningInterface } from '../types/augmentation.ts';
 
-function applyMatrix(
-  cvd: CvdMatrixInterface,
-  r: number,
-  g: number,
-  b: number,
-): readonly [number, number, number] {
-  const m = cvd.matrix;
-  // Row-major: [m0 m1 m2 / m3 m4 m5 / m6 m7 m8]
-  const rp = m[0]! * r + m[1]! * g + m[2]! * b;
-  const gp = m[3]! * r + m[4]! * g + m[5]! * b;
-  const bp = m[6]! * r + m[7]! * g + m[8]! * b;
-  return [
-    clamp01.apply(rp),
-    clamp01.apply(gp),
-    clamp01.apply(bp),
-  ] as const;
+class Matrix {
+  static apply(
+    cvd: CvdMatrixInterfaceType,
+    r: number,
+    g: number,
+    b: number
+  ): readonly [number, number, number] {
+    const m = cvd.matrix;
+    // Row-major: [m0 m1 m2 / m3 m4 m5 / m6 m7 m8]
+    const rp = m[0] * r + m[1] * g + m[2] * b;
+    const gp = m[3] * r + m[4] * g + m[5] * b;
+    const bp = m[6] * r + m[7] * g + m[8] * b;
+    return [
+      clamp01.apply(rp),
+      clamp01.apply(gp),
+      clamp01.apply(bp)
+    ] as const;
+  }
 }
 
 function simulateColor(
-  color: ColorRecordInterface,
-  cvd: CvdMatrixInterface,
-): { readonly r: number; readonly g: number; readonly b: number } {
+  color: ColorRecordInterfaceType,
+  cvd: CvdMatrixInterfaceType
+): { readonly 'b': number; readonly 'g': number; readonly 'r': number; } {
   // Convert gamma-encoded sRGB → linear sRGB
   const lin = srgbToLinear.apply(color.rgb.r, color.rgb.g, color.rgb.b);
 
   // Apply CVD matrix in linear sRGB
-  const [rp, gp, bp] = applyMatrix(cvd, lin.r, lin.g, lin.b);
+  const [rp, gp, bp] = Matrix.apply(cvd, lin.r, lin.g, lin.b);
 
   // Convert back to gamma-encoded sRGB
   const encoded = linearToSrgb.apply(rp, gp, bp);
-  return { 'r': encoded.r, 'g': encoded.g, 'b': encoded.b };
+  return { 'b': encoded.b, 'g': encoded.g, 'r': encoded.r };
 }
 
-function simulatedLuminance(sim: { readonly r: number; readonly g: number; readonly b: number }): number {
+function simulatedLuminance(sim: { readonly 'b': number; readonly 'g': number; readonly 'r': number; }): number {
   const lin = srgbToLinear.apply(sim.r, sim.g, sim.b);
   return 0.2126 * lin.r + 0.7152 * lin.g + 0.0722 * lin.b;
 }
 
 function simulatedContrast(
-  fg: { readonly r: number; readonly g: number; readonly b: number },
-  bg: { readonly r: number; readonly g: number; readonly b: number },
+  fg: { readonly 'b': number; readonly 'g': number; readonly 'r': number; },
+  bg: { readonly 'b': number; readonly 'g': number; readonly 'r': number; }
 ): number {
   const l1 = simulatedLuminance(fg);
   const l2 = simulatedLuminance(bg);
@@ -74,14 +81,14 @@ function simulatedContrast(
  *
  * Advisory only; the task does not auto-fix.
  */
-export class EnforceCvdSimulate implements TaskInterface {
+class EnforceCvdSimulate implements TaskInterface {
   readonly 'name' = 'enforce:cvdSimulate';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Advisory CVD simulation against published thresholds: protanopia, deuteranopia, tritanopia, achromatopsia. Warns but does not auto-fix.',
     'name':        'enforce:cvdSimulate',
     'reads':       ['input.roles.contrastPairs', 'roles'],
-    'writes':      ['metadata[\'contrast:cvd\']'],
-    'description': 'Advisory CVD simulation against published thresholds: protanopia, deuteranopia, tritanopia, achromatopsia. Warns but does not auto-fix.',
+    'writes':      ['metadata[\'contrast:cvd\']']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
@@ -90,13 +97,13 @@ export class EnforceCvdSimulate implements TaskInterface {
       return;
     }
 
-    const warnings: CvdPairWarningInterface[] = [];
+    const warnings: CvdPairWarningInterfaceType[] = [];
 
     for (const pair of pairs) {
       const fgRecord = state.roles[pair.foreground];
       const bgRecord = state.roles[pair.background];
 
-      if (!fgRecord || !bgRecord) {
+      if (fgRecord === undefined || bgRecord === undefined) {
         continue;
       }
 
@@ -120,37 +127,50 @@ export class EnforceCvdSimulate implements TaskInterface {
           continue;
         }
 
-        const warning: CvdPairWarningInterface = {
-          'foreground':                  pair.foreground,
+        const warning: CvdPairWarningInterfaceType = {
           'background':                  pair.background,
           'cvdType':                     cvd.name,
-          'originalLuminanceContrast':   originalContrast,
-          'simulatedLuminanceContrast':  simContrast,
           'drop':                        drop,
           'dropThreshold':               threshold.dropMagnitude,
+          'foreground':                  pair.foreground,
           'minSimulatedContrast':        threshold.minSimulatedContrast,
+          'originalLuminanceContrast':   originalContrast,
+          'simulatedLuminanceContrast':  simContrast
         };
         warnings.push(warning);
-        ctx.logger.warn('EnforceCvdSimulate', 'run', 'CVD advisory: pair fails perceptual-stability threshold', {
-          'foreground':         pair.foreground,
-          'background':         pair.background,
-          'cvdType':            cvd.name,
-          'originalContrast':   originalContrast,
-          'simulatedContrast':  simContrast,
-          'drop':               drop,
-          'dropThreshold':      threshold.dropMagnitude,
-          'minSimulatedContrast': threshold.minSimulatedContrast,
-          'reason':             exceedsDrop ? 'drop' : 'floor',
-        });
+        ctx.logger.warn(
+          LogBody.create()
+            .component('EnforceCvdSimulate')
+            .operation('run')
+            .status(LOG_STATUS.PARTIAL)
+            .message('CVD advisory: pair fails perceptual-stability threshold')
+            .context({
+              'background':            pair.background,
+              'cvdType':               cvd.name,
+              'drop':                  drop,
+              'dropThreshold':         threshold.dropMagnitude,
+              'foreground':            pair.foreground,
+              'minSimulatedContrast':  threshold.minSimulatedContrast,
+              'originalContrast':      originalContrast,
+              'reason':                exceedsDrop ? 'drop' : 'floor',
+              'simulatedContrast':     simContrast
+            })
+            .build()
+        );
       }
     }
 
     state.metadata['contrast:cvd'] = { 'warnings': warnings };
 
-    ctx.logger.debug('EnforceCvdSimulate', 'run', 'CVD simulation complete', {
-      'warningCount': warnings.length,
-      'cvdMeta':      state.metadata['contrast:cvd'],
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('EnforceCvdSimulate')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('CVD simulation complete')
+        .context({ 'cvdMeta': state.metadata['contrast:cvd'], 'warningCount': warnings.length })
+        .build()
+    );
   }
 }
 

@@ -1,10 +1,11 @@
-import type { RgbInterface } from '../types/index.ts';
+import type { RgbInterfaceType } from '../types/index.ts';
+
 import { clamp01 } from './Clamp01.ts';
 import { linearToSrgb } from './LinearToSrgb.ts';
 
 /**
  * OKLCH → linear sRGB → gamma sRGB conversion that returns RGB without
- * allocating a {@link import('../types/index.ts').ColorRecordInterface}.
+ * allocating a {@link import('../types/index.ts').ColorRecordInterfaceType}.
  * Hot path for `EnsureContrast`'s scalar loop and an internal step inside
  * {@link import('./ColorRecordFactory.ts').ColorRecordFactory.fromOklch}.
  * Uses the same Björn Ottosson OKLab matrices and gamma curve as the full
@@ -12,10 +13,10 @@ import { linearToSrgb } from './LinearToSrgb.ts';
  * Inputs are not clamped; callers iterating on a scalar L value are
  * expected to clamp themselves before invoking.
  */
-export class OklchToRgbRaw {
+class OklchToRgbRaw {
   readonly 'name' = 'oklchToRgbRaw';
 
-  apply(l: number, c: number, h: number): RgbInterface {
+  apply(l: number, c: number, h: number): RgbInterfaceType {
     const hRad = (h * Math.PI) / 180;
     const a = c * Math.cos(hRad);
     const b = c * Math.sin(hRad);
@@ -35,9 +36,9 @@ export class OklchToRgbRaw {
     const encoded = linearToSrgb.apply(rLin, gLin, bLin);
 
     return {
-      'r': clamp01.apply(encoded.r),
-      'g': clamp01.apply(encoded.g),
       'b': clamp01.apply(encoded.b),
+      'g': clamp01.apply(encoded.g),
+      'r': clamp01.apply(encoded.r)
     };
   }
 }

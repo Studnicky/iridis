@@ -1,4 +1,4 @@
-import type { RoleSchemaInterface } from '@studnicky/iridis';
+import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
 
 /**
  * 16-role schema for VS Code theme generation.
@@ -14,169 +14,169 @@ import type { RoleSchemaInterface } from '@studnicky/iridis';
  * The engine's expand:family task fills any role whose hex is absent in the
  * input by deriving it from the role listed in `derivedFrom`.
  */
-export const vscodeRoleSchema16: RoleSchemaInterface = {
-  'name':        'vscode-16-dark',
+export const vscodeRoleSchema16: RoleSchemaInterfaceType = {
+  'contrastPairs': [
+    { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'foreground',  'minRatio': 7.0 },
+    { 'algorithm': 'wcag21',    'background': 'background', 'foreground': 'comment',  'minRatio': 3.0 },
+    { 'algorithm': 'wcag21',    'background': 'background', 'foreground': 'keyword',  'minRatio': 4.5 },
+    { 'algorithm': 'wcag21',       'background': 'background', 'foreground': 'type',  'minRatio': 4.5 },
+    { 'algorithm': 'wcag21',   'background': 'background', 'foreground': 'function',  'minRatio': 4.5 },
+    { 'algorithm': 'wcag21',   'background': 'background', 'foreground': 'variable',  'minRatio': 4.5 },
+    { 'algorithm': 'wcag21',     'background': 'background', 'foreground': 'string',  'minRatio': 4.5 },
+    { 'algorithm': 'wcag21',     'background': 'background', 'foreground': 'number',  'minRatio': 4.5 },
+    { 'algorithm': 'wcag21',   'background': 'background', 'foreground': 'constant',  'minRatio': 4.5 },
+    { 'algorithm': 'wcag21',      'background': 'background', 'foreground': 'error',  'minRatio': 4.5 }
+  ],
   'description': '16-role schema for VS Code dark-theme generation. Ranges sourced from arcade-blaster DARK_CLAMPS.',
+  'name':        'vscode-16-dark',
   'roles': [
     {
-      'name':           'background',
+      'chromaRange':    [0.00, 0.12],
       'description':    'Editor and chrome background',
       'intent':         'background',
-      'required':       true,
       // DARK_CLAMPS.background: lMin 3, lMax 20 → OKLCh ≈ 0.03–0.20; sMin 0, sMax 30 → chroma ≈ 0–0.12
       'lightnessRange': [0.03, 0.20],
-      'chromaRange':    [0.00, 0.12],
+      'name':           'background',
+      'required':       true
     },
     {
-      'name':           'foreground',
+      'chromaRange':    [0.00, 0.08],
       'description':    'Primary text / editor foreground',
       'intent':         'text',
-      'required':       true,
       // DARK_CLAMPS.foreground: lMin 85, lMax 98 → OKLCh ≈ 0.85–0.98; sMin 0, sMax 20 → chroma ≈ 0–0.08
       'lightnessRange': [0.85, 0.98],
-      'chromaRange':    [0.00, 0.08],
+      'name':           'foreground',
+      'required':       true
     },
     {
-      'name':           'surface',
+      'chromaRange':    [0.00, 0.14],
+      'derivedFrom':    'background',
       'description':    'Sidebar, panels, activity bar background',
       'intent':         'background',
-      'required':       true,
-      'derivedFrom':    'background',
       // DARK_CLAMPS.surface: lMin 5, lMax 22; sMin 0, sMax 35 → chroma ≈ 0–0.14
       'lightnessRange': [0.05, 0.22],
-      'chromaRange':    [0.00, 0.14],
+      'name':           'surface',
+      'required':       true
     },
     {
-      'name':           'muted',
+      'chromaRange':    [0.00, 0.10],
+      'derivedFrom':    'foreground',
       'description':    'Inactive/subdued text, gutters',
       'intent':         'muted',
-      'required':       true,
-      'derivedFrom':    'foreground',
       // DARK_CLAMPS.muted: lMin 35, lMax 60; sMin 0, sMax 25 → chroma ≈ 0–0.10
       'lightnessRange': [0.35, 0.60],
-      'chromaRange':    [0.00, 0.10],
+      'name':           'muted',
+      'required':       true
     },
     {
-      'name':           'keyword',
+      'chromaRange':    [0.16, 0.40],
       'description':    'Keywords, accent colour, primary interactive',
       'intent':         'accent',
-      'required':       true,
       // DARK_CLAMPS.accent: lMin 50, lMax 85; sMin 40, sMax 100 → chroma ≈ 0.16–0.40
       'lightnessRange': [0.50, 0.85],
-      'chromaRange':    [0.16, 0.40],
+      'name':           'keyword',
+      'required':       true
     },
     {
-      'name':           'type',
+      'chromaRange':    [0.16, 0.40],
+      'derivedFrom':    'keyword',
       'description':    'Types, classes, interfaces, structs',
       'intent':         'accent',
-      'required':       true,
-      'derivedFrom':    'keyword',
       // DARK_CLAMPS.semantic: lMin 55, lMax 85; sMin 40, sMax 100 → chroma ≈ 0.16–0.40
       'lightnessRange': [0.55, 0.85],
-      'chromaRange':    [0.16, 0.40],
+      'name':           'type',
+      'required':       true
     },
     {
-      'name':           'function',
+      'chromaRange':    [0.16, 0.40],
+      'derivedFrom':    'keyword',
       'description':    'Functions, methods, decorators, events',
       'intent':         'accent',
-      'required':       true,
-      'derivedFrom':    'keyword',
       'lightnessRange': [0.55, 0.85],
-      'chromaRange':    [0.16, 0.40],
+      'name':           'function',
+      'required':       true
     },
     {
-      'name':           'variable',
+      'chromaRange':    [0.16, 0.40],
+      'derivedFrom':    'foreground',
       'description':    'Variables, parameters, properties',
       'intent':         'accent',
-      'required':       true,
-      'derivedFrom':    'foreground',
       'lightnessRange': [0.55, 0.85],
-      'chromaRange':    [0.16, 0.40],
+      'name':           'variable',
+      'required':       true
     },
     {
-      'name':           'string',
+      'chromaRange':    [0.16, 0.40],
+      'derivedFrom':    'function',
       'description':    'String literals, regular expressions',
       'intent':         'accent',
-      'required':       true,
-      'derivedFrom':    'function',
       'lightnessRange': [0.55, 0.85],
-      'chromaRange':    [0.16, 0.40],
+      'name':           'string',
+      'required':       true
     },
     {
-      'name':           'number',
+      'chromaRange':    [0.16, 0.40],
+      'derivedFrom':    'string',
       'description':    'Numeric literals',
       'intent':         'accent',
-      'required':       true,
-      'derivedFrom':    'string',
       'lightnessRange': [0.55, 0.85],
-      'chromaRange':    [0.16, 0.40],
+      'name':           'number',
+      'required':       true
     },
     {
-      'name':           'constant',
+      'chromaRange':    [0.16, 0.40],
+      'derivedFrom':    'number',
       'description':    'Constants, enum members',
       'intent':         'accent',
-      'required':       true,
-      'derivedFrom':    'number',
       'lightnessRange': [0.55, 0.85],
-      'chromaRange':    [0.16, 0.40],
+      'name':           'constant',
+      'required':       true
     },
     {
-      'name':           'comment',
+      'chromaRange':    [0.03, 0.20],
+      'derivedFrom':    'muted',
       'description':    'Comments, doc-comments',
       'intent':         'muted',
-      'required':       true,
-      'derivedFrom':    'muted',
       // DARK_CLAMPS.comment: lMin 40, lMax 65; sMin 8, sMax 50 → chroma ≈ 0.03–0.20
       'lightnessRange': [0.40, 0.65],
-      'chromaRange':    [0.03, 0.20],
+      'name':           'comment',
+      'required':       true
     },
     {
-      'name':           'error',
+      'chromaRange':    [0.20, 0.40],
       'description':    'Error diagnostics',
       'intent':         'critical',
-      'required':       true,
       // DARK_CLAMPS.diagnostics: lMin 55, lMax 80; sMin 50, sMax 100 → chroma ≈ 0.20–0.40
       'lightnessRange': [0.55, 0.80],
-      'chromaRange':    [0.20, 0.40],
+      'name':           'error',
+      'required':       true
     },
     {
-      'name':           'warning',
+      'chromaRange':    [0.20, 0.40],
+      'derivedFrom':    'error',
       'description':    'Warning diagnostics',
       'intent':         'muted',
-      'required':       true,
-      'derivedFrom':    'error',
       'lightnessRange': [0.55, 0.80],
-      'chromaRange':    [0.20, 0.40],
+      'name':           'warning',
+      'required':       true
     },
     {
-      'name':           'info',
+      'chromaRange':    [0.20, 0.40],
+      'derivedFrom':    'error',
       'description':    'Info diagnostics, async hint colour',
       'intent':         'muted',
-      'required':       true,
-      'derivedFrom':    'error',
       'lightnessRange': [0.55, 0.80],
-      'chromaRange':    [0.20, 0.40],
+      'name':           'info',
+      'required':       true
     },
     {
-      'name':           'success',
+      'chromaRange':    [0.20, 0.40],
+      'derivedFrom':    'error',
       'description':    'Success / positive diagnostics, git added',
       'intent':         'positive',
-      'required':       true,
-      'derivedFrom':    'error',
       'lightnessRange': [0.55, 0.80],
-      'chromaRange':    [0.20, 0.40],
-    },
-  ],
-  'contrastPairs': [
-    { 'foreground': 'foreground', 'background': 'background', 'minRatio': 7.0,  'algorithm': 'wcag21' },
-    { 'foreground': 'comment',    'background': 'background', 'minRatio': 3.0,  'algorithm': 'wcag21' },
-    { 'foreground': 'keyword',    'background': 'background', 'minRatio': 4.5,  'algorithm': 'wcag21' },
-    { 'foreground': 'type',       'background': 'background', 'minRatio': 4.5,  'algorithm': 'wcag21' },
-    { 'foreground': 'function',   'background': 'background', 'minRatio': 4.5,  'algorithm': 'wcag21' },
-    { 'foreground': 'variable',   'background': 'background', 'minRatio': 4.5,  'algorithm': 'wcag21' },
-    { 'foreground': 'string',     'background': 'background', 'minRatio': 4.5,  'algorithm': 'wcag21' },
-    { 'foreground': 'number',     'background': 'background', 'minRatio': 4.5,  'algorithm': 'wcag21' },
-    { 'foreground': 'constant',   'background': 'background', 'minRatio': 4.5,  'algorithm': 'wcag21' },
-    { 'foreground': 'error',      'background': 'background', 'minRatio': 4.5,  'algorithm': 'wcag21' },
-  ],
+      'name':           'success',
+      'required':       true
+    }
+  ]
 };

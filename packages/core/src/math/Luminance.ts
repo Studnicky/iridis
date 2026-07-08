@@ -1,10 +1,11 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { srgbToLinear } from './SrgbToLinear.ts';
 
-export class Luminance {
+class Luminance {
   readonly 'name' = 'luminance';
 
-  apply(color: ColorRecordInterface): number {
+  apply(color: ColorRecordInterfaceType): number {
     const lin = srgbToLinear.apply(color.rgb.r, color.rgb.g, color.rgb.b);
     return 0.2126 * lin.r + 0.7152 * lin.g + 0.0722 * lin.b;
   }

@@ -9,20 +9,20 @@
 import type { FromSchema } from 'json-schema-to-ts';
 
 export const DerivationParamsSchema = {
-  'type': 'object',
   'additionalProperties': false,
   'properties': {
     'hue':   { 'type': 'number' },
-    'sat':   { 'type': 'number' },
     'light': { 'type': 'number' },
+    'sat':   { 'type': 'number' }
   },
+  'type': 'object'
 } as const;
 
-export interface DerivationParamsInterface {
-  readonly 'hue'?: number;
-  readonly 'sat'?: number;
-  readonly 'light'?: number;
-}
+export type DerivationParamsInterfaceType = {
+  'hue'?: number;
+  'light'?: number;
+  'sat'?: number;
+};
 
 /** Schema-derived type for derivation parameters (validation shape). */
 export type DerivationParamsSchemaType = FromSchema<typeof DerivationParamsSchema>;

@@ -35,7 +35,10 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
                radial gradient in a different engine hue; their opacity pulses
                out of phase and screen-blends where they overlap, so the halo
                flows and shifts color as it fades outward. -->
-          <div class="halo" aria-hidden="true">
+          <div
+            class="halo"
+            aria-hidden="true"
+          >
             <span
               v-for="(c, i) in halo"
               :key="c"
@@ -56,12 +59,18 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
         </div>
       </div>
 
-      <h1 class="font-display text-5xl font-black uppercase tracking-tight glow-text sm:text-6xl" style="color: var(--ui-text-highlighted, #fff)">
+      <h1
+        class="font-display text-5xl font-black uppercase tracking-tight glow-text sm:text-6xl"
+        style="color: var(--ui-text-highlighted, #fff)"
+      >
         iridis
       </h1>
       <p class="mx-auto mt-3 max-w-xl text-sm text-muted sm:text-base">
         A chromatic engine that resolves any seeds — or any image — into a full,
-        contrast-enforced, <span class="font-semibold" style="color: var(--ui-color-primary-400)">OKLCH-native</span> palette.
+        contrast-enforced, <span
+          class="font-semibold"
+          style="color: var(--ui-color-primary-400)"
+        >OKLCH-native</span> palette.
         Every pixel here is <code class="font-mono">engine.run()</code>.
       </p>
     </div>

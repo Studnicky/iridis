@@ -33,7 +33,11 @@ const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-3
       </p>
 
       <div class="flex flex-wrap items-center gap-3">
-        <div v-for="(hex, i) in pickerSeeds" :key="i" class="flex items-center gap-1.5 rounded-lg border border-default p-1.5">
+        <div
+          v-for="(hex, i) in pickerSeeds"
+          :key="i"
+          class="flex items-center gap-1.5 rounded-lg border border-default p-1.5"
+        >
           <input
             :value="hex"
             type="color"
@@ -41,19 +45,44 @@ const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-3
             @input="setSeed(i, ($event.target as HTMLInputElement).value)"
           >
           <span class="font-mono text-xs text-muted">{{ hex }}</span>
-          <UButton icon="i-material-symbols-close-rounded" color="neutral" variant="ghost" size="xs" :disabled="pickerSeeds.length <= 1" @click="removeSeed(i)" />
+          <UButton
+            icon="i-material-symbols-close-rounded"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :disabled="pickerSeeds.length <= 1"
+            @click="removeSeed(i)"
+          />
         </div>
-        <UButton icon="i-material-symbols-add-rounded" color="primary" variant="soft" size="sm" :disabled="pickerSeeds.length >= 8" @click="addSeed()">
+        <UButton
+          icon="i-material-symbols-add-rounded"
+          color="primary"
+          variant="soft"
+          size="sm"
+          :disabled="pickerSeeds.length >= 8"
+          @click="addSeed()"
+        >
           Add seed
         </UButton>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
-        <UFormField label="Role schema" help="How many roles to resolve">
-          <USelect v-model="schemaName" :items="schemaItems" class="w-full" />
+        <UFormField
+          label="Role schema"
+          help="How many roles to resolve"
+        >
+          <USelect
+            v-model="schemaName"
+            :items="schemaItems"
+            class="w-full"
+          />
         </UFormField>
         <UFormField label="Contrast target">
-          <USelect v-model="contrastLevel" :items="['AA', 'AAA']" class="w-full" />
+          <USelect
+            v-model="contrastLevel"
+            :items="['AA', 'AAA']"
+            class="w-full"
+          />
         </UFormField>
       </div>
     </div>

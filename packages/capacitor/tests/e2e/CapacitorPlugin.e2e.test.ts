@@ -19,15 +19,16 @@ import { Engine }     from '@studnicky/iridis/engine';
 import { coreTasks }  from '@studnicky/iridis/tasks';
 import { colorRecordFactory } from '@studnicky/iridis/math';
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   InputInterface,
   PaletteStateInterface,
   PipelineContextInterface,
-  RoleSchemaInterface,
+  RoleSchemaInterfaceType,
   TaskRegistryInterface,
   EngineInterface,
-  LoggerInterface,
 } from '@studnicky/iridis';
+import type { LoggerInterface } from '@studnicky/logger/interfaces';
+import type { LogDataType } from '@studnicky/logger/types';
 import {
   capacitorPlugin,
   CapacitorPlugin,
@@ -39,9 +40,9 @@ import {
   emitAndroidThemeXml,
 } from '@studnicky/iridis-capacitor';
 import type {
-  StatusBarOutputInterface,
-  CapacitorThemeOutputInterface,
-  SplashScreenOutputInterface,
+  StatusBarOutputInterfaceType,
+  CapacitorThemeOutputInterfaceType,
+  SplashScreenOutputInterfaceType,
 } from '@studnicky/iridis-capacitor/types';
 import {
   ScenarioRunner,
@@ -59,8 +60,9 @@ function makeCtx(warnings: string[] = []): PipelineContextInterface {
     trace() {},
     debug() {},
     info()  {},
-    warn(_scope, _op, message) { warnings.push(message); },
+    warn(data: LogDataType) { warnings.push(data.message); },
     error() {},
+    child() { return logger; },
   };
   // Engine and tasks are not exercised by unit-level task calls; cast to satisfy
   // the interface without a full engine setup.
@@ -74,8 +76,8 @@ function makeCtx(warnings: string[] = []): PipelineContextInterface {
 
 /** Build a minimal PaletteStateInterface with the given roles pre-populated. */
 function makeState(
-  roles: Record<string, ColorRecordInterface> = {},
-  variants: Record<string, Record<string, ColorRecordInterface>> = {},
+  roles: Record<string, ColorRecordInterfaceType> = {},
+  variants: Record<string, Record<string, ColorRecordInterfaceType>> = {},
   metadata: Record<string, unknown> = {},
 ): PaletteStateInterface {
   return {
@@ -90,10 +92,11 @@ function makeState(
 }
 
 /** Build a color record from a hex string (sRGB only, no displayP3). */
-function hex(h: string, intent?: string): ColorRecordInterface {
-  return colorRecordFactory.fromHex(h, undefined, 'hex',
-    intent !== undefined ? { intent: intent as import('@studnicky/iridis').ColorIntentType } : undefined,
-  );
+function hex(h: string, intent?: string): ColorRecordInterfaceType {
+  return colorRecordFactory.fromHex(h, {
+    'hints':        intent !== undefined ? { intent: intent as import('@studnicky/iridis').ColorIntentType } : undefined,
+    'sourceFormat': 'hex',
+  });
 }
 
 /** Canonical full-pipeline engine. */
@@ -104,7 +107,7 @@ function freshEngine(): Engine {
   return engine;
 }
 
-const FULL_ROLES: RoleSchemaInterface = {
+const FULL_ROLES: RoleSchemaInterfaceType = {
   'name': 'full',
   'roles': [
     { 'name': 'primary',    'required': true,  'intent': 'background' },
@@ -197,11 +200,11 @@ new ScenarioRunner<Cell1Input, Cell1Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell2Input {
-  readonly roles:    Record<string, ColorRecordInterface>;
+  readonly roles:    Record<string, ColorRecordInterfaceType>;
   readonly metadata: Record<string, unknown>;
 }
 interface Cell2Output {
-  readonly statusBar: StatusBarOutputInterface | undefined;
+  readonly statusBar: StatusBarOutputInterfaceType | undefined;
   readonly warnings:  readonly string[];
 }
 
@@ -353,7 +356,7 @@ new ScenarioRunner<Cell2Input, Cell2Output>(
     const state = makeState(input.roles, {}, input.metadata);
     emitCapacitorStatusBar.run(state, makeCtx(warnings));
     return {
-      statusBar: state.outputs['capacitor:statusBar'] as StatusBarOutputInterface | undefined,
+      statusBar: state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType | undefined,
       warnings,
     };
   },
@@ -372,11 +375,11 @@ new ScenarioRunner<Cell2Input, Cell2Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell3Input {
-  readonly roles:    Record<string, ColorRecordInterface>;
-  readonly variants: Record<string, Record<string, ColorRecordInterface>>;
+  readonly roles:    Record<string, ColorRecordInterfaceType>;
+  readonly variants: Record<string, Record<string, ColorRecordInterfaceType>>;
 }
 interface Cell3Output {
-  readonly theme: CapacitorThemeOutputInterface | undefined;
+  readonly theme: CapacitorThemeOutputInterfaceType | undefined;
 }
 
 const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
@@ -507,7 +510,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
   (input) => {
     const state = makeState(input.roles, input.variants);
     emitCapacitorTheme.run(state, makeCtx());
-    return { theme: state.outputs['capacitor:theme'] as CapacitorThemeOutputInterface | undefined };
+    return { theme: state.outputs['capacitor:theme'] as CapacitorThemeOutputInterfaceType | undefined };
   },
 ).run(cell3Scenarios);
 
@@ -524,11 +527,11 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell4Input {
-  readonly roles:    Record<string, ColorRecordInterface>;
+  readonly roles:    Record<string, ColorRecordInterfaceType>;
   readonly metadata: Record<string, unknown>;
 }
 interface Cell4Output {
-  readonly splashScreen: SplashScreenOutputInterface | undefined;
+  readonly splashScreen: SplashScreenOutputInterfaceType | undefined;
   readonly warnings:     readonly string[];
 }
 
@@ -645,7 +648,7 @@ new ScenarioRunner<Cell4Input, Cell4Output>(
     const state = makeState(input.roles, {}, input.metadata);
     emitCapacitorSplashScreen.run(state, makeCtx(warnings));
     return {
-      splashScreen: state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterface | undefined,
+      splashScreen: state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterfaceType | undefined,
       warnings,
     };
   },
@@ -665,7 +668,7 @@ new ScenarioRunner<Cell4Input, Cell4Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell5Input {
-  readonly roles:         Record<string, ColorRecordInterface>;
+  readonly roles:         Record<string, ColorRecordInterfaceType>;
   readonly priorStatusBar?:    string;   // pre-seeded into outputs.capacitor.statusBar
   readonly priorSplashScreen?: string;  // pre-seeded into outputs.capacitor.splashScreen
 }
@@ -852,17 +855,17 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=full-pipeline] no throw');
 
-      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterface | undefined;
+      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType | undefined;
       assert.ok(statusBar, '[cell=6, scenario=full-pipeline] statusBar present');
       assert.match(statusBar!.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=6, scenario=full-pipeline] statusBar.backgroundColor is hex');
       assert.ok(['DARK', 'LIGHT'].includes(statusBar!.style), '[cell=6, scenario=full-pipeline] statusBar.style is DARK or LIGHT');
       assert.strictEqual(typeof statusBar!.overlay, 'boolean', '[cell=6, scenario=full-pipeline] statusBar.overlay is boolean');
 
-      const theme = output!.state.outputs['capacitor:theme'] as CapacitorThemeOutputInterface | undefined;
+      const theme = output!.state.outputs['capacitor:theme'] as CapacitorThemeOutputInterfaceType | undefined;
       assert.ok(theme, '[cell=6, scenario=full-pipeline] theme present');
       assert.strictEqual(Object.keys(theme!).length, 13, '[cell=6, scenario=full-pipeline] theme has 13 slots');
 
-      const splash = output!.state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterface | undefined;
+      const splash = output!.state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterfaceType | undefined;
       assert.ok(splash, '[cell=6, scenario=full-pipeline] splashScreen present');
       assert.match(splash!.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=6, scenario=full-pipeline] splash.backgroundColor is hex');
 
@@ -891,7 +894,7 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=single-color] no throw');
-      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterface | undefined;
+      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType | undefined;
       assert.ok(statusBar, '[cell=6, scenario=single-color] capacitor:statusBar present');
       assert.ok(statusBar?.backgroundColor, '[cell=6, scenario=single-color] statusBar backgroundColor present');
     },
@@ -908,7 +911,7 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=all-white] no throw');
-      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterface;
+      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType;
       assert.strictEqual(statusBar.style, 'DARK', '[cell=6, scenario=all-white] white bar → DARK style');
     },
   },
@@ -924,7 +927,7 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=all-black] no throw');
-      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterface;
+      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType;
       assert.strictEqual(statusBar.style, 'LIGHT', '[cell=6, scenario=all-black] black bar → LIGHT style');
     },
   },
@@ -941,7 +944,7 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=overlay-metadata] no throw');
-      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterface;
+      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType;
       assert.strictEqual(statusBar.overlay, true, '[cell=6, scenario=overlay-metadata] overlay propagated from metadata');
     },
   },
@@ -958,7 +961,7 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=android-splash-resource] no throw');
-      const splash = output!.state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterface;
+      const splash = output!.state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterfaceType;
       assert.strictEqual(splash.androidSplashResourceName, 'custom_splash', '[cell=6, scenario=android-splash-resource] androidSplashResourceName propagated');
     },
   },

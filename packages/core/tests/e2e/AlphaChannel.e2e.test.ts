@@ -171,7 +171,7 @@ const fromOklchScenarios: readonly ScenarioInterface<FromOklchInput, FromOklchOu
 new ScenarioRunner<FromOklchInput, FromOklchOutput>(
   'AlphaChannel :: cell-2 :: fromOklch',
   (input) => {
-    const c = colorRecordFactory.fromOklch(input.l, input.c, input.h, input.alpha);
+    const c = colorRecordFactory.fromOklch(input.l, input.c, input.h, { 'alpha': input.alpha });
     return { alpha: (c as { alpha: number }).alpha };
   },
 ).run(fromOklchScenarios);
@@ -240,8 +240,8 @@ const mixOklchScenarios: readonly ScenarioInterface<MixOklchInput, MixOklchOutpu
 new ScenarioRunner<MixOklchInput, MixOklchOutput>(
   'AlphaChannel :: cell-3 :: mixOklch',
   (input) => {
-    const a = colorRecordFactory.fromOklch(0.5, 0.1, 0, input.alphaA);
-    const b = colorRecordFactory.fromOklch(0.5, 0.1, 0, input.alphaB);
+    const a = colorRecordFactory.fromOklch(0.5, 0.1, 0, { 'alpha': input.alphaA });
+    const b = colorRecordFactory.fromOklch(0.5, 0.1, 0, { 'alpha': input.alphaB });
     const mixed = mixOklch.apply(a, b, input.t);
     return { alpha: (mixed as { alpha: number }).alpha };
   },
@@ -332,7 +332,7 @@ const modifierScenarios: readonly ScenarioInterface<ModifierInput, ModifierOutpu
 new ScenarioRunner<ModifierInput, ModifierOutput>(
   'AlphaChannel :: cell-4 :: modifiers',
   (input) => {
-    const base = colorRecordFactory.fromOklch(0.5, 0.1, 200, input.sourceAlpha);
+    const base = colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'alpha': input.sourceAlpha });
     let result: { alpha: number };
     switch (input.modifier) {
       case 'lighten':     result = lighten.apply(base,     input.amount) as { alpha: number }; break;
@@ -393,8 +393,8 @@ const ensureContrastScenarios: readonly ScenarioInterface<EnsureContrastInput, E
 new ScenarioRunner<EnsureContrastInput, EnsureContrastOutput>(
   'AlphaChannel :: cell-5 :: ensureContrast',
   (input) => {
-    const fg  = colorRecordFactory.fromOklch(0.50, 0.05, 200, input.fgAlpha);
-    const bg  = colorRecordFactory.fromOklch(0.55, 0.05, 200, input.bgAlpha);
+    const fg  = colorRecordFactory.fromOklch(0.50, 0.05, 200, { 'alpha': input.fgAlpha });
+    const bg  = colorRecordFactory.fromOklch(0.55, 0.05, 200, { 'alpha': input.bgAlpha });
     const out = ensureContrast.apply(fg, bg, input.minRatio, 'wcag21') as { alpha: number };
     return { resultAlpha: out.alpha };
   },

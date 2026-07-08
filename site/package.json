@@ -7,7 +7,9 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxi typecheck",
+    "test": "node --import tsx --test 'test/**/*.test.ts'"
   },
   "dependencies": {
     "@formkit/auto-animate": "^0.9.0",
@@ -47,6 +49,8 @@
     "vue-router": "^5.1.0"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.116"
+    "@iconify-json/lucide": "^1.2.116",
+    "tsx": "^4.23.0",
+    "vue-tsc": "^3.3.7"
   }
 }

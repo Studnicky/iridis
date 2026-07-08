@@ -35,17 +35,35 @@ const rows = computed(() => roleViews.value.map((r) => {
     <template #header>
       <div class="flex items-center justify-between">
         <span class="font-semibold text-highlighted">Resolved roles</span>
-        <UBadge color="neutral" variant="soft">{{ rows.length }} roles</UBadge>
+        <UBadge
+          color="neutral"
+          variant="soft"
+        >
+          {{ rows.length }} roles
+        </UBadge>
       </div>
     </template>
     <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-      <div v-for="r in rows" :key="r.name" class="flex items-center gap-2 rounded-lg border border-default p-2">
-        <div class="h-9 w-9 shrink-0 rounded-md border border-default" :style="{ backgroundColor: r.hex }" />
+      <div
+        v-for="r in rows"
+        :key="r.name"
+        class="flex items-center gap-2 rounded-lg border border-default p-2"
+      >
+        <div
+          class="h-9 w-9 shrink-0 rounded-md border border-default"
+          :style="{ backgroundColor: r.hex }"
+        />
         <div class="min-w-0">
-          <div class="truncate text-xs font-medium text-highlighted">{{ r.name }}</div>
+          <div class="truncate text-xs font-medium text-highlighted">
+            {{ r.name }}
+          </div>
           <div class="flex items-center gap-1">
             <span class="font-mono text-[10px] text-muted">{{ r.hex }}</span>
-            <UBadge :color="r.aaa ? 'success' : r.aa ? 'primary' : 'neutral'" variant="soft" size="xs">
+            <UBadge
+              :color="r.aaa ? 'success' : r.aa ? 'primary' : 'neutral'"
+              variant="soft"
+              size="xs"
+            >
               {{ r.aaa ? 'AAA' : r.aa ? 'AA' : r.ratio.toFixed(1) }}
             </UBadge>
           </div>

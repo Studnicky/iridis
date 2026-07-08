@@ -1,54 +1,53 @@
 export const CliConfigSchema = {
-  '$schema': 'http://json-schema.org/draft-07/schema#',
-  'type': 'object',
-  'required': ['input', 'pipeline', 'output'],
   'properties': {
+    'enableCapacitor':  { 'type': 'boolean' },
+    'enableContrast':   { 'type': 'boolean' },
+    'enableImage':      { 'type': 'boolean' },
+    'enableRdf':        { 'type': 'boolean' },
+    'enableStylesheet': { 'type': 'boolean' },
+    'enableTailwind':   { 'type': 'boolean' },
+    'enableVscode':     { 'type': 'boolean' },
     'input': {
-      'type': 'object',
-      'required': ['colors'],
       'properties': {
         'colors': {
-          'type': 'array',
           'items': { 'type': 'string' },
-          'minItems': 1
-        },
-        'roles': {
-          'type': 'object'
+          'minItems': 1,
+          'type': 'array'
         },
         'contrast': {
-          'type': 'object',
           'properties': {
-            'level': { 'type': 'string' },
-            'algorithm': { 'type': 'string' }
-          }
+            'algorithm': { 'type': 'string' },
+            'level': { 'type': 'string' }
+          },
+          'type': 'object'
         },
         'metadata': {
           'type': 'object'
+        },
+        'roles': {
+          'type': 'object'
         }
-      }
-    },
-    'enableVscode':     { 'type': 'boolean' },
-    'enableStylesheet': { 'type': 'boolean' },
-    'enableTailwind':   { 'type': 'boolean' },
-    'enableImage':      { 'type': 'boolean' },
-    'enableContrast':   { 'type': 'boolean' },
-    'enableCapacitor':  { 'type': 'boolean' },
-    'enableRdf':        { 'type': 'boolean' },
-    'pipeline': {
-      'type': 'array',
-      'items': { 'type': 'string' },
-      'minItems': 1
+      },
+      'required': ['colors'],
+      'type': 'object'
     },
     'output': {
-      'type': 'object',
-      'required': ['directory', 'files'],
       'properties': {
         'directory': { 'type': 'string' },
         'files': {
-          'type': 'object',
-          'additionalProperties': { 'type': 'string' }
+          'additionalProperties': { 'type': 'string' },
+          'type': 'object'
         }
-      }
+      },
+      'required': ['directory', 'files'],
+      'type': 'object'
+    },
+    'pipeline': {
+      'items': { 'type': 'string' },
+      'minItems': 1,
+      'type': 'array'
     }
-  }
+  },
+  'required': ['input', 'pipeline', 'output'],
+  'type': 'object'
 } as const;

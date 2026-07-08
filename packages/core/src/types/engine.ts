@@ -1,10 +1,10 @@
+import type { PluginInterface } from './plugin.ts';
 import type { TaskRegistryInterface } from './registry.ts';
 import type { InputInterface, PaletteStateInterface } from './state.ts';
-import type { PluginInterface } from './plugin.ts';
 
 export interface EngineInterface {
-  readonly tasks: TaskRegistryInterface;
   adopt(plugin: PluginInterface): void;
   pipeline(order: readonly string[]): void;
   run(input: InputInterface): PaletteStateInterface;
+  readonly 'tasks': TaskRegistryInterface;
 }

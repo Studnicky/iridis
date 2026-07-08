@@ -25,15 +25,15 @@ import {
   oklchToRgb,
   rgbToOklch,
 } from '@studnicky/iridis/math';
-import type { ColorRecordInterface } from '@studnicky/iridis/model';
+import type { ColorRecordInterfaceType } from '@studnicky/iridis/model';
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
 /** Build N ColorRecords spanning L=0..1, chroma=0, hue=0 (grey ramp). */
-function greyRamp(n: number): ColorRecordInterface[] {
-  const records: ColorRecordInterface[] = [];
+function greyRamp(n: number): ColorRecordInterfaceType[] {
+  const records: ColorRecordInterfaceType[] = [];
   for (let i = 0; i < n; i++) {
     records.push(oklchToRgb.apply(i / Math.max(n - 1, 1), 0, 0));
   }

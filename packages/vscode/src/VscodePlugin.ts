@@ -1,8 +1,9 @@
 import type {
   PluginInterface,
   PluginSchemaContributionInterface,
-  TaskInterface,
+  TaskInterface
 } from '@studnicky/iridis';
+
 import { applyModifiers }          from './tasks/ApplyModifiers.ts';
 import { emitVscodeSemanticRules } from './tasks/EmitVscodeSemanticRules.ts';
 import { emitVscodeThemeJson }     from './tasks/EmitVscodeThemeJson.ts';
@@ -10,32 +11,32 @@ import { emitVscodeUiPalette }     from './tasks/EmitVscodeUiPalette.ts';
 import { expandTokens }            from './tasks/ExpandTokens.ts';
 
 const semanticRuleEntrySchema = {
-  'type': 'object',
   'additionalProperties': false,
   'properties': {
-    'foreground': { 'type': 'string' },
     'fontStyle':  { 'type': 'string' },
+    'foreground': { 'type': 'string' }
   },
+  'type': 'object'
 } as const;
 
 const vscodeWorkbenchColorsSchema = {
-  'type':                 'object',
   'additionalProperties': { 'type': 'string' },
+  'type':                 'object'
 } as const;
 
 const vscodeSemanticTokenRulesSchema = {
-  'type':                 'object',
   'additionalProperties': semanticRuleEntrySchema,
+  'type':                 'object'
 } as const;
 
 const vscodeThemeJsonSchema = {
-  'type':                 'object',
   'additionalProperties': true,
+  'type':                 'object'
 } as const;
 
 const vscodeBaseTokensSchema = {
-  'type':                 'object',
   'additionalProperties': true,
+  'type':                 'object'
 } as const;
 
 /**
@@ -51,7 +52,7 @@ const vscodeBaseTokensSchema = {
  *   → emit:vscodeUiPalette      (parallel with emit:vscodeSemanticRules)
  *   → emit:vscodeThemeJson
  */
-export class VscodePlugin implements PluginInterface {
+class VscodePlugin implements PluginInterface {
   readonly 'name'    = 'vscode';
 
   readonly 'version' = '0.1.0';
@@ -62,21 +63,21 @@ export class VscodePlugin implements PluginInterface {
       applyModifiers,
       emitVscodeSemanticRules,
       emitVscodeUiPalette,
-      emitVscodeThemeJson,
+      emitVscodeThemeJson
     ];
   }
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs': {
-        'vscode:themeJson':          vscodeThemeJsonSchema,
-        'vscode:workbenchColors':    vscodeWorkbenchColorsSchema,
-        'vscode:semanticTokenRules': vscodeSemanticTokenRulesSchema,
-      },
       'metadata': {
         'vscode:baseTokens':         vscodeBaseTokensSchema,
-        'vscode:semanticTokenRules': vscodeSemanticTokenRulesSchema,
+        'vscode:semanticTokenRules': vscodeSemanticTokenRulesSchema
       },
+      'outputs': {
+        'vscode:semanticTokenRules': vscodeSemanticTokenRulesSchema,
+        'vscode:themeJson':          vscodeThemeJsonSchema,
+        'vscode:workbenchColors':    vscodeWorkbenchColorsSchema
+      }
     };
   }
 }

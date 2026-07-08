@@ -1,39 +1,28 @@
 /**
- * Fetch-or-init helpers for plugin output and metadata slots.
+ * Fetch-or-init helper for a plugin's `state.outputs` slot.
  *
- * Each plugin writes its own slot in state.outputs / state.metadata.
- * These helpers create the slot object on first access and return it
- * so subsequent emit tasks in the same plugin family share the same reference.
+ * Each plugin writes its own slot in state.outputs. This helper creates
+ * the slot object on first access and returns it so subsequent emit
+ * tasks in the same plugin family share the same reference.
  *
- * The returned type is `Record<string, unknown>` — plugin tasks cast
+ * The returned type is `JsonObjectType` — plugin tasks cast
  * to their own concrete types after retrieval. This is safe because the
  * plugin owns and controls the slot; no other plugin writes to it.
  */
+
+import type { JsonObjectType } from '@studnicky/types';
 
 import type { PaletteStateInterface } from '../types/index.ts';
 
 export function getOrCreateOutput(
   state: PaletteStateInterface,
-  key:   string,
-): Record<string, unknown> {
+  key:   string
+): JsonObjectType {
   const existing = state.outputs[key];
   if (existing !== null && existing !== undefined) {
-    return existing as Record<string, unknown>;
+    return existing as JsonObjectType;
   }
-  const fresh: Record<string, unknown> = {};
+  const fresh: JsonObjectType = {};
   state.outputs[key] = fresh;
-  return fresh;
-}
-
-export function getOrCreateMetadata(
-  state: PaletteStateInterface,
-  key:   string,
-): Record<string, unknown> {
-  const existing = state.metadata[key];
-  if (existing !== null && existing !== undefined) {
-    return existing as Record<string, unknown>;
-  }
-  const fresh: Record<string, unknown> = {};
-  state.metadata[key] = fresh;
   return fresh;
 }

@@ -12,7 +12,7 @@
  */
 
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   InputInterface,
   PaletteStateInterface,
   PipelineContextInterface,
@@ -31,7 +31,7 @@ import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makeEngine(seed: ColorRecordInterface): Engine {
+function makeEngine(seed: ColorRecordInterfaceType): Engine {
   const engine = new Engine();
   for (const t of coreTasks) engine.tasks.register(t);
   const seedTask: TaskInterface = {
@@ -59,13 +59,13 @@ function makeEngine(seed: ColorRecordInterface): Engine {
 // ---------------------------------------------------------------------------
 
 interface Cell1Input {
-  readonly seed:  ColorRecordInterface;
+  readonly seed:  ColorRecordInterfaceType;
   readonly input: InputInterface;
 }
 interface Cell1Output {
-  readonly color:     ColorRecordInterface;
+  readonly color:     ColorRecordInterfaceType;
   readonly isSameRef: boolean;
-  readonly seed:      ColorRecordInterface;
+  readonly seed:      ColorRecordInterfaceType;
 }
 
 const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
@@ -87,7 +87,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
     name: 'role hint + schema defines range: in-range under tight bounds → identity',
     kind: 'happy',
     input: {
-      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'accent' }),
+      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'accent' } }),
       input: {
         'colors': [],
         'roles': {
@@ -108,7 +108,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
     name: 'role hint + role in schema but no ranges → falls back to defaults → identity',
     kind: 'edge',
     input: {
-      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'mystery' }),
+      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'mystery' } }),
       input: {
         'colors': [],
         'roles': {
@@ -127,7 +127,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
     name: 'role hint pointing to an absent role → defaults apply → identity',
     kind: 'edge',
     input: {
-      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'unknown-role' }),
+      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'unknown-role' } }),
       input: {
         'colors': [],
         'roles': {
@@ -164,7 +164,7 @@ new ScenarioRunner<Cell1Input, Cell1Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell2Input {
-  readonly seed:  ColorRecordInterface;
+  readonly seed:  ColorRecordInterfaceType;
   readonly input: InputInterface;
   readonly lMax:  number;
   readonly cMax:  number;
@@ -172,9 +172,9 @@ interface Cell2Input {
   readonly cMin:  number;
 }
 interface Cell2Output {
-  readonly color:      ColorRecordInterface;
+  readonly color:      ColorRecordInterfaceType;
   readonly isSameRef:  boolean;
-  readonly seed:       ColorRecordInterface;
+  readonly seed:       ColorRecordInterfaceType;
   readonly lMin:       number;
   readonly lMax:       number;
   readonly cMin:       number;
@@ -220,7 +220,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     name: 'role-defined chromaRange: C exceeding role ceiling is clamped',
     kind: 'happy',
     input: {
-      seed: colorRecordFactory.fromOklch(0.5, 0.30, 200, 1, 'oklch', { 'role': 'accent' }),
+      seed: colorRecordFactory.fromOklch(0.5, 0.30, 200, { 'hints': { 'role': 'accent' } }),
       input: {
         'colors': [],
         'roles': {
@@ -243,7 +243,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     name: 'sourceFormat preserved through rebuild',
     kind: 'happy',
     input: {
-      seed: colorRecordFactory.fromOklch(0.999, 0.1, 200, 1, 'hex'),
+      seed: colorRecordFactory.fromOklch(0.999, 0.1, 200, { 'sourceFormat': 'hex' }),
       input: { 'colors': [] },
       lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
     },
@@ -256,7 +256,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     name: 'hints preserved through rebuild (role + other keys)',
     kind: 'happy',
     input: {
-      seed: colorRecordFactory.fromOklch(0.999, 0.1, 200, 1, 'oklch', { 'role': 'bg', 'weight': 5 }),
+      seed: colorRecordFactory.fromOklch(0.999, 0.1, 200, { 'hints': { 'role': 'bg', 'weight': 5 } }),
       input: { 'colors': [] },
       lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
     },
@@ -317,7 +317,7 @@ new ScenarioRunner<Cell2Input, Cell2Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell3Input {
-  readonly seed:  ColorRecordInterface;
+  readonly seed:  ColorRecordInterfaceType;
   readonly input: InputInterface;
 }
 interface Cell3Output {

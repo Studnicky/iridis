@@ -13,61 +13,61 @@
  *   comment  → comment  (pass-through)
  *   muted    → operator (mix with foreground)
  */
-import type { DerivationParamsInterface } from '../types/index.ts';
+import type { DerivationParamsInterfaceType } from '../types/index.ts';
 
-export const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterface>> = {
+const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfaceType>> = {
   // Slightly brighter, concrete
   'class': {
     'light': 5,
-    'sat': 5,
+    'sat': 5
   },
   // From palette.comment: pass-through
   'comment': {},
   // Meta, annotation feel
   'decorator': {
     'hue': -35,
-    'sat': 10,
+    'sat': 10
   },
   // Distinct from class
   'enum': {
     'hue': -25,
-    'sat': 5,
+    'sat': 5
   },
   // From palette.constant: pass-through
   'enumMember': {},
   // Reactive, callback feel
   'event': {
     'hue': 25,
-    'sat': 8,
+    'sat': 8
   },
   // Base color: pass-through
   'function': {},
   // Shifted, abstract feel
   'interface': {
     'hue': 20,
-    'sat': -8,
+    'sat': -8
   },
   // Base color: pass-through
   'keyword': {},
   // Warmer, stands out in goto/break
   'label': {
     'hue': 15,
-    'light': 5,
+    'light': 5
   },
   // Slightly cooler, preprocessor feel
   'macro': {
     'hue': -20,
-    'sat': 5,
+    'sat': 5
   },
   // Slightly brighter, OOP context
   'method': {
     'light': 8,
-    'sat': 5,
+    'sat': 5
   },
   // Muted, organizational
   'namespace': {
     'light': -5,
-    'sat': -20,
+    'sat': -20
   },
   // From palette.number: pass-through
   'number': {},
@@ -76,41 +76,41 @@ export const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfac
   // Input, argument feel
   'parameter': {
     'hue': 12,
-    'light': 3,
+    'light': 3
   },
   // Member access, slightly muted
   'property': {
     'light': -5,
-    'sat': -5,
+    'sat': -5
   },
   // Distinct pattern feel
   'regexp': {
     'hue': -45,
-    'sat': 15,
+    'sat': 15
   },
   // Base color: pass-through
   'string': {},
   // Cooler, low-level feel
   'struct': {
     'hue': -10,
-    'light': -3,
+    'light': -3
   },
   // Base color: pass-through
   'type': {},
   // Generic, abstract
   'typeParameter': {
     'hue': 35,
-    'sat': -5,
+    'sat': -5
   },
   // Base color: pass-through
-  'variable': {},
+  'variable': {}
 } as const;
 
 /**
  * Family root mapping: which role supplies the base hue for each token type.
  * Keys match the 23 VS Code token type names in TOKEN_TYPES.
  */
-export const TOKEN_FAMILY: Readonly<Record<string, string>> = {
+const TOKEN_FAMILY: Readonly<Record<string, string>> = {
   'class':         'type',
   'comment':       'comment',
   'decorator':     'function',
@@ -133,11 +133,11 @@ export const TOKEN_FAMILY: Readonly<Record<string, string>> = {
   'struct':        'type',
   'type':          'type',
   'typeParameter': 'type',
-  'variable':      'variable',
+  'variable':      'variable'
 } as const;
 
 /** The 23 VS Code semantic token type names (insertion order = VS Code rendering order). */
-export const TOKEN_TYPES = [
+const TOKEN_TYPES = [
   'namespace',
   'class',
   'enum',
@@ -160,11 +160,11 @@ export const TOKEN_TYPES = [
   'keyword',
   'number',
   'regexp',
-  'operator',
+  'operator'
 ] as const;
 
 /** The 10 VS Code semantic token modifier names. */
-export const TOKEN_MODIFIERS = [
+const TOKEN_MODIFIERS = [
   'declaration',
   'definition',
   'readonly',
@@ -174,5 +174,13 @@ export const TOKEN_MODIFIERS = [
   'async',
   'modification',
   'documentation',
-  'defaultLibrary',
+  'defaultLibrary'
 ] as const;
+
+/** Namespaced data bag for VS Code token derivation constants. */
+export const VscodeTokenData = {
+  'DERIVATION_PARAMS': DERIVATION_PARAMS,
+  'TOKEN_FAMILY':      TOKEN_FAMILY,
+  'TOKEN_MODIFIERS':   TOKEN_MODIFIERS,
+  'TOKEN_TYPES':       TOKEN_TYPES
+} as const;

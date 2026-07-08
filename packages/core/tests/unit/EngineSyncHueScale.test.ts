@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { Engine } from '@studnicky/iridis';
 import { coreTasks } from '@studnicky/iridis/tasks';
 import { rgbToOklch } from '@studnicky/iridis/math';
-import type { RoleSchemaInterface } from '@studnicky/iridis';
+import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
 
 function engineFor(pipeline: readonly string[]): Engine {
   const engine = new Engine();
@@ -21,7 +21,7 @@ function engineFor(pipeline: readonly string[]): Engine {
   return engine;
 }
 
-const SCHEMA: RoleSchemaInterface = {
+const SCHEMA: RoleSchemaInterfaceType = {
   'name': 'test',
   'roles': [
     { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },
@@ -62,7 +62,7 @@ test('absolute hue pins a derived role (overrides brand-relative)', () => {
 });
 
 test('hueClamp bounds the nudge so semantics stay rooted in the palette', () => {
-  const clamped: RoleSchemaInterface = {
+  const clamped: RoleSchemaInterfaceType = {
     'name': 'clamped',
     'roles': [
       { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },

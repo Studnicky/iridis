@@ -1,7 +1,7 @@
 import { Engine, coreTasks }                                    from '@studnicky/iridis';
 import { contrastPlugin }                                          from '@studnicky/iridis-contrast';
 import { stylesheetPlugin }                                        from '@studnicky/iridis-stylesheet';
-import type { CssVarsOutputInterface }                             from '@studnicky/iridis-stylesheet/types';
+import type { CssVarsOutputInterfaceType }                             from '@studnicky/iridis-stylesheet/types';
 import { capacitorPlugin }                                         from '@studnicky/iridis-capacitor';
 import type { StatusBarOutputInterface }                           from '@studnicky/iridis-capacitor/types';
 import { categoryW3cRoleSchema }                                   from './categoryW3cRoleSchema.ts';
@@ -48,7 +48,7 @@ export class CategoryColorService {
   }
 
   async apply(category: string, seed: string): Promise<{
-    readonly cssVars:   CssVarsOutputInterface;
+    readonly cssVars:   CssVarsOutputInterfaceType;
     readonly statusBar: StatusBarOutputInterface;
   }> {
     const state = await this.engine.run({
@@ -63,7 +63,7 @@ export class CategoryColorService {
         'themeName':    category,
       },
     });
-    const cssVars   = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterface;
+    const cssVars   = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType;
     const capacitor = state.outputs['capacitor:statusBar'] as StatusBarOutputInterface;
     const sheetId   = `ce-${category}-styles`;
     let   sheet     = document.getElementById(sheetId) as HTMLStyleElement | null;

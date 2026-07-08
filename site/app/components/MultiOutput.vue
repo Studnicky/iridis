@@ -5,7 +5,7 @@ import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
 import { tailwindPlugin } from '@studnicky/iridis-tailwind';
 import { useIridis } from '~/composables/useIridis.ts';
-import { roleSchemaByName } from '~/theme/roleSchemas.ts';
+import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 
 /**
  * One palette, many outputs. The active seeds are emitted as cascading CSS
@@ -53,7 +53,14 @@ const active = ref<string>('0');
     <template #header>
       <div class="flex items-center justify-between">
         <span class="font-semibold text-highlighted">Multi-output</span>
-        <UButton color="primary" variant="soft" size="sm" @click="generate">{{ done ? 'Regenerate' : 'Generate outputs' }}</UButton>
+        <UButton
+          color="primary"
+          variant="soft"
+          size="sm"
+          @click="generate"
+        >
+          {{ done ? 'Regenerate' : 'Generate outputs' }}
+        </UButton>
       </div>
     </template>
     <div class="space-y-3">
@@ -62,9 +69,15 @@ const active = ref<string>('0');
         targets ship as plugins too.
       </p>
       <template v-if="outputs.length">
-        <UTabs v-model="active" :items="tabItems" :content="false" />
+        <UTabs
+          v-model="active"
+          :items="tabItems"
+          :content="false"
+        />
         <CodeBlock :code="outputs[Number(active)]?.text || ''" />
-        <p class="text-[10px] text-dimmed">Highlighted with the engine's own <code>syntax-*</code> roles.</p>
+        <p class="text-[10px] text-dimmed">
+          Highlighted with the engine's own <code>syntax-*</code> roles.
+        </p>
       </template>
     </div>
   </UCard>

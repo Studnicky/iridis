@@ -35,14 +35,24 @@ const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
       :pagination="{ clickable: true }"
       class="palette-carousel !pb-12"
     >
-      <SwiperSlide v-for="a in aliases" :key="a.key" class="carousel-slide">
+      <SwiperSlide
+        v-for="a in aliases"
+        :key="a.key"
+        class="carousel-slide"
+      >
         <div
           class="glass scanlines float h-full p-5"
           :style="{ '--glow': `var(--ui-color-${a.key}-500)` }"
         >
           <div class="mb-3 flex items-center justify-between">
-            <span class="font-display text-sm font-bold uppercase tracking-widest glow-text" :style="{ color: `var(--ui-color-${a.key}-400)` }">{{ a.label }}</span>
-            <span class="h-3 w-3 rounded-full pulse" :style="{ backgroundColor: `var(--ui-color-${a.key}-500)` }" />
+            <span
+              class="font-display text-sm font-bold uppercase tracking-widest glow-text"
+              :style="{ color: `var(--ui-color-${a.key}-400)` }"
+            >{{ a.label }}</span>
+            <span
+              class="h-3 w-3 rounded-full pulse"
+              :style="{ backgroundColor: `var(--ui-color-${a.key}-500)` }"
+            />
           </div>
 
           <div class="mb-4 grid grid-cols-11 gap-0.5 overflow-hidden rounded-lg">
@@ -56,10 +66,33 @@ const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <UButton :color="a.key === 'neutral' ? 'neutral' : (a.key as never)" size="xs">Solid</UButton>
-            <UButton :color="a.key === 'neutral' ? 'neutral' : (a.key as never)" variant="soft" size="xs">Soft</UButton>
-            <UButton :color="a.key === 'neutral' ? 'neutral' : (a.key as never)" variant="outline" size="xs">Line</UButton>
-            <UBadge :color="a.key === 'neutral' ? 'neutral' : (a.key as never)" variant="soft" size="sm">500</UBadge>
+            <UButton
+              :color="a.key === 'neutral' ? 'neutral' : (a.key as never)"
+              size="xs"
+            >
+              Solid
+            </UButton>
+            <UButton
+              :color="a.key === 'neutral' ? 'neutral' : (a.key as never)"
+              variant="soft"
+              size="xs"
+            >
+              Soft
+            </UButton>
+            <UButton
+              :color="a.key === 'neutral' ? 'neutral' : (a.key as never)"
+              variant="outline"
+              size="xs"
+            >
+              Line
+            </UButton>
+            <UBadge
+              :color="a.key === 'neutral' ? 'neutral' : (a.key as never)"
+              variant="soft"
+              size="sm"
+            >
+              500
+            </UBadge>
           </div>
         </div>
       </SwiperSlide>

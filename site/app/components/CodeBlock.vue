@@ -46,21 +46,17 @@ const colors = computed(() => ({
   'text': compliant(role('text')),
 }));
 
-function esc(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
 const TOKEN = /(\/\*[\s\S]*?\*\/|\/\/[^\n]*)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|(#[0-9a-fA-F]{3,8}\b)|(--[a-zA-Z0-9-]+)|([a-zA-Z_][\w-]*(?=\s*\())|(-?\d+\.?\d*(?:px|rem|em|%|deg|s|ms)?\b)|([A-Z][a-zA-Z0-9]+\b)|([{}:;,()[\]])/g;
 
-const html = computed(() => {
+type ColorSpanType = { 'color': string; 'text': string };
+
+const spans = computed<ColorSpanType[]>(() => {
   const c = colors.value;
   const code = props.code;
-  let out = '';
+  const out: ColorSpanType[] = [];
   let last = 0;
-  let m: RegExpExecArray | null;
-  TOKEN.lastIndex = 0;
-  while ((m = TOKEN.exec(code)) !== null) {
-    out += `<span style="color:${c.text}">${esc(code.slice(last, m.index))}</span>`;
+  for (const m of code.matchAll(TOKEN)) {
+    out.push({ 'color': c.text, 'text': code.slice(last, m.index) });
     const [full, comment, str, hex, cssvar, fn, num, type, punc] = m;
     let color = c.text;
     if (comment) color = c.comment;
@@ -71,16 +67,23 @@ const html = computed(() => {
     else if (num) color = c.number;
     else if (type) color = c.type;
     else if (punc) color = c.punc;
-    out += `<span style="color:${color}">${esc(full)}</span>`;
+    out.push({ 'color': color, 'text': full });
     last = m.index + full.length;
   }
-  out += `<span style="color:${c.text}">${esc(code.slice(last))}</span>`;
+  out.push({ 'color': c.text, 'text': code.slice(last) });
   return out;
 });
 </script>
 
 <template>
-  <pre class="code-block max-h-72 overflow-auto rounded-lg p-3 text-xs leading-relaxed" :style="{ backgroundColor: bgHex }"><code v-html="html" /></pre>
+  <pre
+    class="code-block max-h-72 overflow-auto rounded-lg p-3 text-xs leading-relaxed"
+    :style="{ backgroundColor: bgHex }"
+  ><code><span
+    v-for="(span, i) in spans"
+    :key="i"
+    :style="{ color: span.color }"
+  >{{ span.text }}</span></code></pre>
 </template>
 
 <style scoped>

@@ -9,6 +9,9 @@
   "files": [
     "src"
   ],
+  "dependencies": {
+    "@studnicky/logger": "^4.0.0"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test":      "node --import tsx --test 'tests/**/*.test.ts'",

@@ -1,19 +1,26 @@
+import type { JsonObjectType } from '@studnicky/types';
+
+import { ModuleError, ValidationError } from '@studnicky/errors';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
   EngineInterface,
   InputInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   PluginInterface,
-  TaskInterface,
+  TaskInterface
 } from '../types/index.ts';
-import { TaskRegistry }        from '../registry/TaskRegistry.ts';
-import { consoleLogger }       from './ConsoleLogger.ts';
-import { Validator }           from '../model/Validator.ts';
+
 import { InputSchema }         from '../model/InputSchema.ts';
-import { PluginSchema }        from '../model/PluginSchema.ts';
 import { PaletteStateSchema }  from '../model/PaletteStateSchema.ts';
+import { PluginSchema }        from '../model/PluginSchema.ts';
 import { RoleSchemaSchema }    from '../model/RoleSchemaSchema.ts';
 import { TaskManifestSchema }  from '../model/TaskManifestSchema.ts';
+import { Validator }           from '../model/Validator.ts';
+import { TaskRegistry }        from '../registry/TaskRegistry.ts';
+import { consoleLogger }       from './ConsoleLogger.ts';
 
 /**
  * The single composition root of the iridis pipeline. An Engine owns one
@@ -47,20 +54,20 @@ export class Engine implements EngineInterface {
    * Each Engine gets its own Validator so plugin-contributed schemas registered
    * into one Engine's validator don't leak to another.
    */
-  private readonly validator: Validator = new Validator();
+  private readonly validator: InstanceType<typeof Validator> = new Validator();
 
   /**
    * Accumulated plugin output schema contributions.
    * Key: slot name (e.g. 'json', 'cssVars'). Value: the JSON Schema to validate
    * state.outputs[key] against at run exit.
    */
-  private readonly outputSchemas:   Map<string, Record<string, unknown>> = new Map();
+  private readonly outputSchemas:   Map<string, JsonObjectType> = new Map();
 
   /**
    * Accumulated plugin metadata schema contributions.
    * Key: slot name. Value: the JSON Schema to validate state.metadata[key] against.
    */
-  private readonly metadataSchemas: Map<string, Record<string, unknown>> = new Map();
+  private readonly metadataSchemas: Map<string, JsonObjectType> = new Map();
 
   /**
    * Registers every task and math primitive a plugin contributes in a
@@ -76,14 +83,22 @@ export class Engine implements EngineInterface {
     const pluginResult = this.validator.validate(PluginSchema, plugin);
     if (!pluginResult.valid) {
       const first = pluginResult.errors[0];
-      throw new Error(
-        `Engine.adopt: plugin invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-      );
+      throw ValidationError.create({
+        'message':    `plugin invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+        'path':       'plugin',
+        'violations': pluginResult.errors
+      });
     }
 
     if (this.adoptedPlugins.has(plugin.name)) {
-      console.warn(
-        `Engine.adopt: plugin '${plugin.name}' (v${plugin.version}) is already adopted; re-adopting will overwrite its tasks`,
+      consoleLogger.warn(
+        LogBody.create()
+          .component('Engine')
+          .operation('adopt')
+          .status(LOG_STATUS.PARTIAL)
+          .message(`Plugin '${plugin.name}' (v${plugin.version}) is already adopted; re-adopting will overwrite its tasks`)
+          .context({ 'plugin': plugin.name, 'version': plugin.version })
+          .build()
       );
     }
     this.adoptedPlugins.add(plugin.name);
@@ -93,14 +108,16 @@ export class Engine implements EngineInterface {
         const manifestResult = this.validator.validate(TaskManifestSchema, task.manifest);
         if (!manifestResult.valid) {
           const first = manifestResult.errors[0];
-          throw new Error(
-            `Engine.adopt: task '${task.name}' manifest invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-          );
+          throw ValidationError.create({
+            'message':    `manifest invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+            'path':       `plugin.tasks['${task.name}'].manifest`,
+            'violations': manifestResult.errors
+          });
         }
       }
 
       const phase = task.manifest?.phase;
-      if (phase) {
+      if (phase !== undefined) {
         this.tasks.hook(phase, task);
       } else {
         this.tasks.register(task);
@@ -114,8 +131,12 @@ export class Engine implements EngineInterface {
       if (contrib.outputs !== undefined) {
         for (const [slot, schema] of Object.entries(contrib.outputs)) {
           if (!this.validator.tryCompile(schema)) {
-            throw new Error(
-              `Engine.adopt: plugin '${plugin.name}' contributed malformed output schema for slot '${slot}'`,
+            throw ModuleError.create(
+              `plugin '${plugin.name}' contributed malformed output schema for slot '${slot}'`,
+              {
+                'context':  { 'kind': 'outputs', 'plugin': plugin.name, 'slot': slot },
+                'scenario': 'CONFIGURATION'
+              }
             );
           }
           this.outputSchemas.set(slot, schema);
@@ -125,8 +146,12 @@ export class Engine implements EngineInterface {
       if (contrib.metadata !== undefined) {
         for (const [slot, schema] of Object.entries(contrib.metadata)) {
           if (!this.validator.tryCompile(schema)) {
-            throw new Error(
-              `Engine.adopt: plugin '${plugin.name}' contributed malformed metadata schema for slot '${slot}'`,
+            throw ModuleError.create(
+              `plugin '${plugin.name}' contributed malformed metadata schema for slot '${slot}'`,
+              {
+                'context':  { 'kind': 'metadata', 'plugin': plugin.name, 'slot': slot },
+                'scenario': 'CONFIGURATION'
+              }
             );
           }
           this.metadataSchemas.set(slot, schema);
@@ -151,16 +176,19 @@ export class Engine implements EngineInterface {
   pipeline(order: readonly string[]): void {
     for (const name of order) {
       if (!this.tasks.has(name)) {
-        throw new Error(`Engine.pipeline: task '${name}' is not registered`);
+        throw ModuleError.create(`Engine.pipeline: task '${name}' is not registered`, {
+          'context':  { 'operation': 'pipeline', 'taskName': name },
+          'scenario': 'NOT_FOUND'
+        });
       }
     }
 
     for (let i = 0; i < order.length; i++) {
-      const name     = order[i] as string;
+      const name     = order[i]!;
       const task     = this.tasks.resolve(name);
       const requires = task.manifest?.requires;
 
-      if (!requires) {
+      if (requires === undefined) {
         continue;
       }
 
@@ -175,21 +203,29 @@ export class Engine implements EngineInterface {
         const depIndex = order.indexOf(dep);
 
         if (depIndex === -1) {
-          throw new Error(
+          throw ModuleError.create(
             `Engine.pipeline: task '${name}' requires '${dep}', which is missing from the pipeline entirely`,
+            {
+              'context':  { 'dependency': dep, 'operation': 'pipeline', 'reason': 'missing-from-pipeline', 'taskName': name },
+              'scenario': 'CONFIGURATION'
+            }
           );
         }
 
         if (depIndex >= i) {
-          throw new Error(
+          throw ModuleError.create(
             `Engine.pipeline: task '${name}' requires '${dep}', which must appear earlier in the pipeline`,
+            {
+              'context':  { 'dependency': dep, 'operation': 'pipeline', 'reason': 'out-of-order', 'taskName': name },
+              'scenario': 'CONFIGURATION'
+            }
           );
         }
       }
     }
 
     this.order    = order;
-    this.sequence = order.map((name) => this.tasks.resolve(name));
+    this.sequence = order.map((name) => { const result = this.tasks.resolve(name); return result; });
   }
 
   /**
@@ -209,49 +245,51 @@ export class Engine implements EngineInterface {
     const inputResult = this.validator.validate(InputSchema, input);
     if (!inputResult.valid) {
       const first = inputResult.errors[0];
-      throw new Error(
-        `Engine.run: input invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-      );
+      throw ValidationError.create({
+        'message':    `input invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+        'path':       'input',
+        'violations': inputResult.errors
+      });
     }
 
     if (input.roles !== undefined) {
       const rolesResult = this.validator.validate(RoleSchemaSchema, input.roles);
       if (!rolesResult.valid) {
         const first = rolesResult.errors[0];
-        throw new Error(
-          `Engine.run: input.roles invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-        );
+        throw ValidationError.create({
+          'message':    `input.roles invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+          'path':       'input.roles',
+          'violations': rolesResult.errors
+        });
       }
     }
 
     const state: PaletteStateInterface = {
-      'input':    input,
-      'runtime':  { ...input.runtime },
       'colors':   [],
-      'roles':    {},
-      'variants': {},
-      'outputs':  {},
+      'input':    input,
       'metadata': { ...input.metadata },
+      'outputs':  {},
+      'roles':    {},
+      'runtime':  { ...input.runtime },
+      'variants': {}
     };
     const ctx: PipelineContextInterface = {
       'engine':    this,
-      'tasks':     this.tasks,
       'logger':    consoleLogger,
       'startedAt': Date.now(),
+      'tasks':     this.tasks
     };
 
     for (const hook of this.tasks.hooks('onRunStart')) {
       hook.run(state, ctx);
     }
 
-    if (this.sequence === null) {
-      this.sequence = this.order.length > 0
-        ? this.order.map((name) => this.tasks.resolve(name))
-        : this.tasks.list().map((manifest) => this.tasks.resolve(manifest.name));
-    }
+    this.sequence ??= this.order.length > 0
+      ? this.order.map((name) => { const result = this.tasks.resolve(name); return result; })
+      : this.tasks.list().map((manifest) => { const result = this.tasks.resolve(manifest.name); return result; });
 
     for (const task of this.sequence) {
-      if (task.manifest?.phase) {
+      if (task.manifest?.phase !== undefined) {
         continue;
       }
       task.run(state, ctx);
@@ -264,9 +302,11 @@ export class Engine implements EngineInterface {
     const stateResult = this.validator.validate(PaletteStateSchema, state);
     if (!stateResult.valid) {
       const first = stateResult.errors[0];
-      throw new Error(
-        `Engine.run: output state invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-      );
+      throw ValidationError.create({
+        'message':    `output state invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+        'path':       'state',
+        'violations': stateResult.errors
+      });
     }
 
     // Validate plugin-contributed output slot schemas
@@ -276,9 +316,11 @@ export class Engine implements EngineInterface {
         const slotResult = this.validator.validate(schema, slotValue);
         if (!slotResult.valid) {
           const first = slotResult.errors[0];
-          throw new Error(
-            `Engine.run: outputs['${slot}'] failed plugin schema: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-          );
+          throw ValidationError.create({
+            'message':    `failed plugin schema: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+            'path':       `outputs['${slot}']`,
+            'violations': slotResult.errors
+          });
         }
       }
     }
@@ -290,9 +332,11 @@ export class Engine implements EngineInterface {
         const slotResult = this.validator.validate(schema, slotValue);
         if (!slotResult.valid) {
           const first = slotResult.errors[0];
-          throw new Error(
-            `Engine.run: metadata['${slot}'] failed plugin schema: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-          );
+          throw ValidationError.create({
+            'message':    `failed plugin schema: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
+            'path':       `metadata['${slot}']`,
+            'violations': slotResult.errors
+          });
         }
       }
     }

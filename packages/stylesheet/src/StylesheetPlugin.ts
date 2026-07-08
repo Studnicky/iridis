@@ -1,36 +1,37 @@
 import type {
   PluginInterface,
   PluginSchemaContributionInterface,
-  TaskInterface,
+  TaskInterface
 } from '@studnicky/iridis';
+
 import { emitCssVars }       from './tasks/EmitCssVars.ts';
 import { emitCssVarsScoped } from './tasks/EmitCssVarsScoped.ts';
 
 const cssVarsOutputSchema = {
-  'type': 'object',
   'additionalProperties': false,
   'properties': {
-    'rootBlock':    { 'type': 'string' },
-    'scopedBlock':  { 'type': 'string' },
     'darkScheme':   { 'type': 'string' },
     'forcedColors': { 'type': 'string' },
-    'wideGamut':    { 'type': 'string' },
     'full':         { 'type': 'string' },
-    'map':          { 'type': 'object', 'additionalProperties': { 'type': 'string' } },
+    'map':          { 'additionalProperties': { 'type': 'string' }, 'type': 'object' },
+    'rootBlock':    { 'type': 'string' },
+    'scopedBlock':  { 'type': 'string' },
+    'wideGamut':    { 'type': 'string' }
   },
+  'type': 'object'
 } as const;
 
 const cssVarsScopedOutputSchema = {
-  'type': 'object',
   'additionalProperties': false,
   'properties': {
-    'blocks':    { 'type': 'object', 'additionalProperties': { 'type': 'string' } },
-    'wideGamut': { 'type': 'object', 'additionalProperties': { 'type': 'string' } },
+    'blocks':    { 'additionalProperties': { 'type': 'string' }, 'type': 'object' },
     'full':      { 'type': 'string' },
+    'wideGamut': { 'additionalProperties': { 'type': 'string' }, 'type': 'object' }
   },
+  'type': 'object'
 } as const;
 
-export class StylesheetPlugin implements PluginInterface {
+class StylesheetPlugin implements PluginInterface {
   readonly 'name'    = 'stylesheet';
 
   readonly 'version' = '0.1.0';
@@ -43,8 +44,8 @@ export class StylesheetPlugin implements PluginInterface {
     return {
       'outputs': {
         'stylesheet:cssVars':       cssVarsOutputSchema,
-        'stylesheet:cssVarsScoped': cssVarsScopedOutputSchema,
-      },
+        'stylesheet:cssVarsScoped': cssVarsScopedOutputSchema
+      }
     };
   }
 }

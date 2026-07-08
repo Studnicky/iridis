@@ -1,72 +1,99 @@
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
-import { getOrCreateMetadata, luminance } from '@studnicky/iridis';
-import type { StatusBarOutputInterface } from '../types/index.ts';
 
-function pickBarStyle(barColor: ColorRecordInterface): 'DARK' | 'LIGHT' {
+import { getOrCreateMetadata, luminance } from '@studnicky/iridis';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
+import type { StatusBarOutputInterfaceType } from '../types/index.ts';
+
+function pickBarStyle(barColor: ColorRecordInterfaceType): 'DARK' | 'LIGHT' {
   // LIGHT style = light icons/text on dark bar. DARK style = dark icons/text on light bar.
   return luminance.apply(barColor) < 0.18 ? 'LIGHT' : 'DARK';
 }
 
-function resolveBarColor(
-  roles: Record<string, ColorRecordInterface>,
-): ColorRecordInterface | undefined {
-  // Preference: topBar > surface > base > first role
-  return roles['topBar'] ?? roles['surface'] ?? roles['base'] ?? Object.values(roles)[0];
+class BarColor {
+  static resolve(
+    roles: Record<string, ColorRecordInterfaceType>
+  ): ColorRecordInterfaceType | undefined {
+    // Preference: topBar > surface > base > first role
+    return roles.topBar ?? roles.surface ?? roles.base ?? Object.values(roles)[0];
+  }
 }
 
-function resolveTextColor(
-  roles: Record<string, ColorRecordInterface>,
-): ColorRecordInterface | undefined {
-  return roles['text'] ?? roles['onSurface'] ?? Object.values(roles)[1];
+class TextColor {
+  static resolve(
+    roles: Record<string, ColorRecordInterfaceType>
+  ): ColorRecordInterfaceType | undefined {
+    return roles.text ?? roles.onSurface ?? Object.values(roles)[1];
+  }
 }
 
-export class EmitCapacitorStatusBar implements TaskInterface {
+class EmitCapacitorStatusBar implements TaskInterface {
   readonly 'name' = 'emit:capacitorStatusBar';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Emit Capacitor StatusBar configuration from surface/topBar role.',
     'name':        'emit:capacitorStatusBar',
     'reads':       ['roles'],
-    'writes':      ['outputs.capacitor:statusBar'],
-    'description': 'Emit Capacitor StatusBar configuration from surface/topBar role.',
+    'writes':      ['outputs.capacitor:statusBar']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const barColor = resolveBarColor(state.roles);
+    const barColor = BarColor.resolve(state.roles);
 
-    if (!barColor) {
-      ctx.logger.warn('EmitCapacitorStatusBar', 'run', 'No suitable role found for status bar background; skipping.');
+    if (barColor === undefined) {
+      ctx.logger.warn(
+        LogBody.create()
+          .component('EmitCapacitorStatusBar')
+          .operation('run')
+          .status(LOG_STATUS.SKIPPED)
+          .message('No suitable role found for status bar background; skipping.')
+          .context({})
+          .build()
+      );
       return;
     }
 
     // Resolve consumer overlay preference from metadata
     const capacitorMeta = getOrCreateMetadata(state, 'capacitor');
-    const overlay = capacitorMeta['statusBarOverlay'] === true;
+    const overlay = capacitorMeta.statusBarOverlay === true;
 
-    const textColor = resolveTextColor(state.roles);
+    const textColor = TextColor.resolve(state.roles);
     // Prefer text-aware style derivation when text role exists.
-    const style: 'DARK' | 'LIGHT' = textColor
-      ? (luminance.apply(textColor) > 0.18 ? 'DARK' : 'LIGHT')
-      : pickBarStyle(barColor);
+    let style: 'DARK' | 'LIGHT';
+    if (textColor !== undefined) {
+      style = luminance.apply(textColor) > 0.18 ? 'DARK' : 'LIGHT';
+    } else {
+      style = pickBarStyle(barColor);
+    }
 
-    const output: StatusBarOutputInterface = {
+    const output: StatusBarOutputInterfaceType = {
       'backgroundColor': barColor.hex,
-      'style':           style,
       'overlay':         overlay,
+      'style':           style
     };
 
     state.outputs['capacitor:statusBar'] = output;
 
-    ctx.logger.debug('EmitCapacitorStatusBar', 'run', 'StatusBar emitted', {
-      'backgroundColor': output.backgroundColor,
-      'style':           output.style,
-      'overlay':         output.overlay,
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('EmitCapacitorStatusBar')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('StatusBar emitted')
+        .context({
+          'backgroundColor': output.backgroundColor,
+          'overlay':         output.overlay,
+          'style':           output.style
+        })
+        .build()
+    );
   }
 }
 

@@ -103,19 +103,35 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
         :style="faceStyle(i)"
         @click="!isActive(i) && select(i)"
       >
-        <div class="glass scanlines cyl-card" :class="{ float: !isActive(i) }" :style="{ '--glow': 'var(--ui-primary)' }">
+        <div
+          class="glass scanlines cyl-card"
+          :class="{ float: !isActive(i) }"
+          :style="{ '--glow': 'var(--ui-primary)' }"
+        >
           <div class="cyl-card-tag font-display">
             <span class="cyl-dotlight" />{{ item.label }}
           </div>
           <div class="cyl-card-body">
-            <slot :item="item" :active="isActive(i)" :index="i" />
+            <slot
+              :item="item"
+              :active="isActive(i)"
+              :index="i"
+            />
           </div>
         </div>
       </div>
     </div>
 
     <div class="cyl-controls">
-      <UButton icon="i-material-symbols-chevron-left-rounded" color="neutral" variant="soft" size="lg" class="pulse" aria-label="Previous" @click="go(-1)" />
+      <UButton
+        icon="i-material-symbols-chevron-left-rounded"
+        color="neutral"
+        variant="soft"
+        size="lg"
+        class="pulse"
+        aria-label="Previous"
+        @click="go(-1)"
+      />
       <div class="cyl-dots">
         <button
           v-for="(item, i) in items"
@@ -123,9 +139,19 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
           class="cyl-dot font-display"
           :class="{ on: isActive(i) }"
           @click="select(i)"
-        >{{ item.label }}</button>
+        >
+          {{ item.label }}
+        </button>
       </div>
-      <UButton icon="i-material-symbols-chevron-right-rounded" color="neutral" variant="soft" size="lg" class="pulse" aria-label="Next" @click="go(1)" />
+      <UButton
+        icon="i-material-symbols-chevron-right-rounded"
+        color="neutral"
+        variant="soft"
+        size="lg"
+        class="pulse"
+        aria-label="Next"
+        @click="go(1)"
+      />
     </div>
   </div>
 </template>

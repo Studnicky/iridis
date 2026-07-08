@@ -1,10 +1,12 @@
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
+import { ModuleError } from '@studnicky/errors';
 import {
   darken,
   desaturate,
@@ -12,75 +14,99 @@ import {
   hueShift,
   lighten,
   mixHsl,
-  saturate,
+  saturate
 } from '@studnicky/iridis';
-import { DERIVATION_PARAMS, TOKEN_FAMILY, TOKEN_TYPES } from '../data/derivationParams.ts';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
 
-export class ExpandTokens implements TaskInterface {
+import { VscodeTokenData } from '../data/VscodeTokenData.ts';
+
+class ExpandTokens implements TaskInterface {
   readonly 'name' = 'vscode:expandTokens';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Derives 23 VS Code base token colours from the 16 palette roles using DERIVATION_PARAMS.',
     'name':        'vscode:expandTokens',
     'reads':       ['roles'],
-    'writes':      ['metadata.vscode:baseTokens'],
-    'description': 'Derives 23 VS Code base token colours from the 16 palette roles using DERIVATION_PARAMS.',
+    'writes':      ['metadata.vscode:baseTokens']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
 
     // Math primitives operate on ColorRecord; keep the records on the
     // role lookups so we don't reconvert at every invoke.
-    const bgRec    = state.roles['background'];
-    const mutedRec = state.roles['muted'];
-    const fgRec    = state.roles['foreground'];
-    if (!bgRec || !mutedRec || !fgRec) {
-      throw new Error('ExpandTokens: requires roles background, muted, foreground');
+    const bgRec    = state.roles.background;
+    const mutedRec = state.roles.muted;
+    const fgRec    = state.roles.foreground;
+    if (bgRec === undefined || mutedRec === undefined || fgRec === undefined) {
+      const missingRoles = [
+        bgRec === undefined    ? 'background' : undefined,
+        mutedRec === undefined ? 'muted'      : undefined,
+        fgRec === undefined    ? 'foreground' : undefined
+      ].filter((r): r is string => { return r !== undefined; });
+      throw ModuleError.create('ExpandTokens: requires roles background, muted, foreground', {
+        'context':  { 'missingRoles': missingRoles, 'task': 'ExpandTokens' },
+        'scenario': 'NOT_FOUND'
+      });
     }
 
-    const baseTokens: Record<string, ColorRecordInterface> = {};
+    const baseTokens: Record<string, ColorRecordInterfaceType> = {};
 
-    const len = TOKEN_TYPES.length;
+    const len = VscodeTokenData.TOKEN_TYPES.length;
     for (let i = 0; i < len; i++) {
-      const tokenType = TOKEN_TYPES[i];
-      if (!tokenType) continue;
+      const tokenType = VscodeTokenData.TOKEN_TYPES[i];
+      if (tokenType === undefined) {continue;}
 
-      const familyRole = TOKEN_FAMILY[tokenType];
-      if (!familyRole) {
-        ctx.logger.warn('ExpandTokens', 'run', 'No family role for token type', { 'tokenType': tokenType });
+      const familyRole = VscodeTokenData.TOKEN_FAMILY[tokenType];
+      if (familyRole === undefined) {
+        ctx.logger.warn(
+          LogBody.create()
+            .component('ExpandTokens')
+            .operation('run')
+            .status(LOG_STATUS.NOT_FOUND)
+            .message('No family role for token type')
+            .context({ 'tokenType': tokenType })
+            .build()
+        );
         continue;
       }
 
-      const params = DERIVATION_PARAMS[tokenType] ?? {};
+      const params = VscodeTokenData.DERIVATION_PARAMS[tokenType] ?? {};
 
       // operator is special: mix muted + foreground
       if (tokenType === 'operator') {
         const mixed = mixHsl.apply(mutedRec, fgRec, 0.4);
         const contrasted = ensureContrast.apply(mixed, bgRec, 3.5);
-        baseTokens['operator'] = contrasted;
+        baseTokens.operator = contrasted;
         continue;
       }
 
       const familyRec = state.roles[familyRole];
-      if (!familyRec) {
-        ctx.logger.warn('ExpandTokens', 'run', 'No role record for family', {
-          'familyRole': familyRole,
-          'tokenType':  tokenType,
-        });
+      if (familyRec === undefined) {
+        ctx.logger.warn(
+          LogBody.create()
+            .component('ExpandTokens')
+            .operation('run')
+            .status(LOG_STATUS.NOT_FOUND)
+            .message('No role record for family')
+            .context({ 'familyRole': familyRole, 'tokenType': tokenType })
+            .build()
+        );
         continue;
       }
-      let color: ColorRecordInterface = familyRec;
+      let color: ColorRecordInterfaceType = familyRec;
 
-      if (params.hue) {
+      if (params.hue !== undefined && params.hue !== 0) {
         color = hueShift.apply(color, params.hue);
       }
-      if (params.sat) {
+      if (params.sat !== undefined && params.sat !== 0) {
         if (params.sat > 0) {
           color = saturate.apply(color, params.sat);
         } else {
           color = desaturate.apply(color, -params.sat);
         }
       }
-      if (params.light) {
+      if (params.light !== undefined && params.light !== 0) {
         if (params.light > 0) {
           color = lighten.apply(color, params.light);
         } else {
@@ -95,9 +121,15 @@ export class ExpandTokens implements TaskInterface {
     }
 
     state.metadata['vscode:baseTokens'] = baseTokens;
-    ctx.logger.debug('ExpandTokens', 'run', 'Derived base token colours', {
-      'count': Object.keys(baseTokens).length,
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('ExpandTokens')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('Derived base token colours')
+        .context({ 'count': Object.keys(baseTokens).length })
+        .build()
+    );
   }
 }
 

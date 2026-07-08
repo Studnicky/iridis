@@ -1,12 +1,15 @@
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
 import { toCssVarName } from '@studnicky/iridis';
-import type { CssVarsOutputInterface } from '../types/index.ts';
+
+import type { CssVarsOutputInterfaceType } from '../types/index.ts';
+
 import { serializeP3 } from '../util/serializeP3.ts';
 
 /**
@@ -32,73 +35,84 @@ import { serializeP3 } from '../util/serializeP3.ts';
  * schemas remain legible against a default Canvas background rather
  * than disappearing into it. Roles that need a different forced-colors
  * mapping MUST declare an `intent` on the schema; see
- * {@link RoleDefinitionInterface.intent}.
+ * {@link RoleDefinitionInterfaceType.intent}.
  */
-function forcedColorsToken(record: ColorRecordInterface): string {
+function forcedColorsToken(record: ColorRecordInterfaceType): string {
   switch (record.hints?.intent) {
-    case 'text':       return 'CanvasText';
-    case 'background': return 'Canvas';
     case 'accent':     return 'Highlight';
-    case 'muted':      return 'GrayText';
-    case 'critical':   return 'CanvasText';
-    case 'positive':   return 'CanvasText';
-    case 'link':       return 'LinkText';
+    case 'background': return 'Canvas';
     case 'button':     return 'ButtonFace';
+    case 'critical':   return 'CanvasText';
+    case 'link':       return 'LinkText';
+    case 'muted':      return 'GrayText';
     case 'onAccent':   return 'HighlightText';
     case 'onButton':   return 'ButtonText';
+    case 'positive':   return 'CanvasText';
+    case 'text':       return 'CanvasText';
     default:           return 'CanvasText';
   }
 }
 
-function buildDeclarations(
-  roles: Record<string, ColorRecordInterface>,
-  prefix: string,
-): string[] {
-  return Object.entries(roles).map(([role, record]) => {
-    const varName = toCssVarName(role, prefix);
-    return `  ${varName}: ${record.hex};`;
-  });
+class Declarations {
+  static build(
+    roles: Record<string, ColorRecordInterfaceType>,
+    prefix: string
+  ): string[] {
+    const result = Object.entries(roles).map(([role, record]) => {
+      const varName = toCssVarName(role, prefix);
+      return `  ${varName}: ${record.hex};`;
+    });
+    return result;
+  }
 }
 
-function buildRootBlock(
-  roles: Record<string, ColorRecordInterface>,
-  prefix: string,
-): string {
-  const decls = buildDeclarations(roles, prefix);
-  return `:root {\n${decls.join('\n')}\n}`;
+class RootBlock {
+  static build(
+    roles: Record<string, ColorRecordInterfaceType>,
+    prefix: string
+  ): string {
+    const decls = Declarations.build(roles, prefix);
+    return `:root {\n${decls.join('\n')}\n}`;
+  }
 }
 
-function buildScopedBlock(
-  roles: Record<string, ColorRecordInterface>,
-  prefix: string,
-  scopeAttr: string | undefined,
-  scopeName: string,
-): string {
-  const decls = buildDeclarations(roles, prefix);
-  const selector = scopeAttr
-    ? `[${scopeAttr}='${scopeName}']`
-    : `[data-theme='${scopeName}']`;
-  return `${selector} {\n${decls.join('\n')}\n}`;
+class ScopedBlock {
+  static build(
+    roles: Record<string, ColorRecordInterfaceType>,
+    prefix: string,
+    scopeAttr: string | undefined,
+    scopeName: string
+  ): string {
+    const decls = Declarations.build(roles, prefix);
+    const selector = typeof scopeAttr === 'string' && scopeAttr.length > 0
+      ? `[${scopeAttr}='${scopeName}']`
+      : `[data-theme='${scopeName}']`;
+    return `${selector} {\n${decls.join('\n')}\n}`;
+  }
 }
 
-function buildDarkSchemeBlock(
-  darkRoles: Record<string, ColorRecordInterface>,
-  prefix: string,
-): string {
-  const decls = buildDeclarations(darkRoles, prefix);
-  return `@media (prefers-color-scheme: dark) {\n  :root {\n${decls.map((d) => `  ${d}`).join('\n')}\n  }\n}`;
+class DarkSchemeBlock {
+  static build(
+    darkRoles: Record<string, ColorRecordInterfaceType>,
+    prefix: string
+  ): string {
+    const decls = Declarations.build(darkRoles, prefix);
+    return `@media (prefers-color-scheme: dark) {\n  :root {\n${decls.map((d) => { const result = `  ${d}`; return result; }).join('\n')}\n  }\n}`;
+  }
 }
 
-function buildForcedColorsBlock(
-  roles: Record<string, ColorRecordInterface>,
-  prefix: string,
-): string {
-  const decls = Object.entries(roles).map(([role, record]) => {
-    const varName = toCssVarName(role, prefix);
-    const token = forcedColorsToken(record);
-    return `  ${varName}: ${token};`;
-  });
-  return `@media (forced-colors: active) {\n  :root {\n${decls.map((d) => `  ${d}`).join('\n')}\n  }\n}`;
+class ForcedColorsBlock {
+  static build(
+    roles: Record<string, ColorRecordInterfaceType>,
+    prefix: string
+  ): string {
+    const decls = Object.entries(roles).map(([role, record]) => {
+      const varName = toCssVarName(role, prefix);
+      const token = forcedColorsToken(record);
+      return `  ${varName}: ${token};`;
+    });
+    return `@media (forced-colors: active) {\n  :root {\n${decls.map((d) => { const result = `  ${d}`; return result; }).join('\n')}\n  }\n}`;
+  }
 }
 
 /**
@@ -116,58 +130,61 @@ function buildForcedColorsBlock(
  * Returns an empty string when no role has `displayP3` populated so the
  * caller can omit the block entirely.
  */
-function buildWideGamutBlock(
-  roles: Record<string, ColorRecordInterface>,
-  prefix: string,
-): string {
-  const p3Decls: string[] = [];
-  for (const [role, record] of Object.entries(roles)) {
-    if (record.displayP3) {
-      const varName = toCssVarName(role, prefix);
-      p3Decls.push(`  ${varName}: ${serializeP3(record.displayP3)};`);
+class WideGamutBlock {
+  static build(
+    roles: Record<string, ColorRecordInterfaceType>,
+    prefix: string
+  ): string {
+    const p3Decls: string[] = [];
+    for (const [role, record] of Object.entries(roles)) {
+      if (record.displayP3 !== undefined) {
+        const varName = toCssVarName(role, prefix);
+        p3Decls.push(`  ${varName}: ${serializeP3(record.displayP3)};`);
+      }
     }
+    if (p3Decls.length === 0) {return '';}
+    return `@supports (color: color(display-p3 0 0 0)) {\n  :root {\n${p3Decls.map((d) => { const result = `  ${d}`; return result; }).join('\n')}\n  }\n}`;
   }
-  if (p3Decls.length === 0) return '';
-  return `@supports (color: color(display-p3 0 0 0)) {\n  :root {\n${p3Decls.map((d) => `  ${d}`).join('\n')}\n  }\n}`;
 }
 
-function buildVarMap(
-  roles: Record<string, ColorRecordInterface>,
-  prefix: string,
-): Record<string, string> {
-  const map: Record<string, string> = {};
-  for (const role of Object.keys(roles)) {
-    map[role] = toCssVarName(role, prefix);
+class VarMap {
+  static build(
+    roles: Record<string, ColorRecordInterfaceType>,
+    prefix: string
+  ): Record<string, string> {
+    const map: Record<string, string> = {};
+    for (const role of Object.keys(roles)) {
+      map[role] = toCssVarName(role, prefix);
+    }
+    return map;
   }
-  return map;
 }
 
-
-export class EmitCssVars implements TaskInterface {
+class EmitCssVars implements TaskInterface {
   readonly name = 'emit:cssVars';
 
-  readonly manifest: TaskManifestInterface = {
+  readonly manifest: TaskManifestInterfaceType = {
+    'description': 'Emit CSS custom property blocks from resolved roles and variants',
     'name':        'emit:cssVars',
     'reads':       ['roles', 'variants', 'metadata'],
-    'writes':      ['outputs.stylesheet:cssVars'],
-    'description': 'Emit CSS custom property blocks from resolved roles and variants',
+    'writes':      ['outputs.stylesheet:cssVars']
   };
 
   // math() accessor satisfies PluginInterface if ever used standalone; not required here
   // but the class only needs TaskInterface
 
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
-    const prefix    = typeof state.metadata['cssVarPrefix'] === 'string' ? state.metadata['cssVarPrefix'] : '--c-';
-    const scopeAttr = typeof state.metadata['scopeAttr']   === 'string' ? state.metadata['scopeAttr']   : undefined;
-    const themeName = typeof state.metadata['themeName']   === 'string' ? state.metadata['themeName']   : 'default';
+    const prefix    = typeof state.metadata.cssVarPrefix === 'string' ? state.metadata.cssVarPrefix : '--c-';
+    const scopeAttr = typeof state.metadata.scopeAttr   === 'string' ? state.metadata.scopeAttr   : undefined;
+    const themeName = typeof state.metadata.themeName   === 'string' ? state.metadata.themeName   : 'default';
 
-    const darkRoles = state.variants['dark'] ?? null;
+    const darkRoles = state.variants.dark;
 
-    const rootBlock    = buildRootBlock(state.roles, prefix);
-    const scopedBlock  = buildScopedBlock(state.roles, prefix, scopeAttr, themeName);
-    const darkScheme   = darkRoles ? buildDarkSchemeBlock(darkRoles, prefix) : '';
-    const forcedColors = buildForcedColorsBlock(state.roles, prefix);
-    const wideGamut    = buildWideGamutBlock(state.roles, prefix);
+    const rootBlock    = RootBlock.build(state.roles, prefix);
+    const scopedBlock  = ScopedBlock.build(state.roles, prefix, scopeAttr, themeName);
+    const darkScheme   = darkRoles !== undefined ? DarkSchemeBlock.build(darkRoles, prefix) : '';
+    const forcedColors = ForcedColorsBlock.build(state.roles, prefix);
+    const wideGamut    = WideGamutBlock.build(state.roles, prefix);
 
     // Cascade order: sRGB defaults → dark-scheme override → wide-gamut
     // override (P3-capable browsers) → forced-colors override (Windows
@@ -176,16 +193,16 @@ export class EmitCssVars implements TaskInterface {
     // value emitted above them.
     const parts = [rootBlock, darkScheme, wideGamut, forcedColors].filter(Boolean);
     const full  = parts.join('\n\n');
-    const map   = buildVarMap(state.roles, prefix);
+    const map   = VarMap.build(state.roles, prefix);
 
-    const output: CssVarsOutputInterface = {
-      'rootBlock':    rootBlock,
-      'scopedBlock':  scopedBlock,
+    const output: CssVarsOutputInterfaceType = {
       'darkScheme':   darkScheme,
       'forcedColors': forcedColors,
-      'wideGamut':    wideGamut,
       'full':         full,
       'map':          map,
+      'rootBlock':    rootBlock,
+      'scopedBlock':  scopedBlock,
+      'wideGamut':    wideGamut
     };
 
     state.outputs['stylesheet:cssVars'] = output;

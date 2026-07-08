@@ -1,48 +1,52 @@
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
-  VariantConfigInterface,
+  TaskManifestInterfaceType,
+  VariantConfigInterfaceType
 } from '../../types/index.ts';
+
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
-const DEFAULT_VARIANTS: readonly VariantConfigInterface[] = [
-  { 'name': 'dark',  'invertLightness': true  },
-  { 'name': 'light', 'invertLightness': false },
+const DEFAULT_VARIANTS: readonly VariantConfigInterfaceType[] = [
+  { 'invertLightness': true,  'name': 'dark'  },
+  { 'invertLightness': false, 'name': 'light' }
 ];
 
-function invertLightness(color: ColorRecordInterface): ColorRecordInterface {
-  const { l, c, h } = color.oklch;
+function invertLightness(color: ColorRecordInterfaceType): ColorRecordInterfaceType {
+  const { c, h, l } = color.oklch;
   const inverted = 1 - l;
   return colorRecordFactory.fromOklch(
     clamp01.apply(inverted),
     clamp.apply(0, 0.5, c),
     h,
-    color.alpha,
+    { 'alpha': color.alpha }
   );
 }
 
-function offsetLightness(color: ColorRecordInterface, offset: number): ColorRecordInterface {
-  const { l, c, h } = color.oklch;
+function offsetLightness(color: ColorRecordInterfaceType, offset: number): ColorRecordInterfaceType {
+  const { c, h, l } = color.oklch;
   return colorRecordFactory.fromOklch(
     clamp01.apply(l + offset),
     clamp.apply(0, 0.5, c),
     h,
-    color.alpha,
+    { 'alpha': color.alpha }
   );
 }
 
-function targetLightness(color: ColorRecordInterface, target: number): ColorRecordInterface {
+function targetLightness(color: ColorRecordInterfaceType, target: number): ColorRecordInterfaceType {
   const { c, h } = color.oklch;
   return colorRecordFactory.fromOklch(
     clamp01.apply(target),
     clamp.apply(0, 0.5, c),
     h,
-    color.alpha,
+    { 'alpha': color.alpha }
   );
 }
 
@@ -57,35 +61,43 @@ function targetLightness(color: ColorRecordInterface, target: number): ColorReco
  * `state.roles`. Emitters consume both surfaces: the canonical role
  * set for the active framing and the variants for the inverse.
  */
-export class DeriveVariant implements TaskInterface {
+class DeriveVariant implements TaskInterface {
   readonly 'name' = 'derive:variant';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Produces light/dark variants by transforming all roles. Reads variantConfig from metadata or uses light/dark defaults.',
     'name':        'derive:variant',
     'reads':       ['roles', 'metadata[\'core:variantConfig\']'],
-    'writes':      ['variants'],
-    'description': 'Produces light/dark variants by transforming all roles. Reads variantConfig from metadata or uses light/dark defaults.',
+    'writes':      ['variants']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const configRaw = state.metadata['core:variantConfig'];
-    const configs: readonly VariantConfigInterface[] = Array.isArray(configRaw)
+    const configs: readonly VariantConfigInterfaceType[] = Array.isArray(configRaw)
       ? configRaw
       : DEFAULT_VARIANTS;
 
     const roleNames = Object.keys(state.roles);
 
     if (roleNames.length === 0) {
-      ctx.logger.debug('DeriveVariant', 'run', 'No roles assigned; skipping variant derivation');
+      ctx.logger.debug(
+        LogBody.create()
+          .component('DeriveVariant')
+          .operation('run')
+          .status(LOG_STATUS.SKIPPED)
+          .message('No roles assigned; skipping variant derivation')
+          .context({})
+          .build()
+      );
       return;
     }
 
     for (const config of configs) {
-      const variantRoles: Record<string, ColorRecordInterface> = {};
+      const variantRoles: Record<string, ColorRecordInterfaceType> = {};
 
       for (const roleName of roleNames) {
         const color = state.roles[roleName];
-        if (!color) continue;
+        if (color === undefined) {continue;}
 
         if (config.invertLightness) {
           variantRoles[roleName] = invertLightness(color);
@@ -99,10 +111,18 @@ export class DeriveVariant implements TaskInterface {
       }
 
       state.variants[config.name] = variantRoles;
-      ctx.logger.debug('DeriveVariant', 'run', 'Derived variant', {
-        'variant':   config.name,
-        'roleCount': roleNames.length,
-      });
+      ctx.logger.debug(
+        LogBody.create()
+          .component('DeriveVariant')
+          .operation('run')
+          .status(LOG_STATUS.SUCCESS)
+          .message('Derived variant')
+          .context({
+            'roleCount': roleNames.length,
+            'variant':   config.name
+          })
+          .build()
+      );
     }
   }
 }

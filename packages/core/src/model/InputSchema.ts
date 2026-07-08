@@ -1,38 +1,38 @@
 export const InputSchema = {
   '$id':                'https://studnicky.dev/iridis/Input',
-  'type':               'object',
-  'required':           ['colors'],
   'additionalProperties': false,
   'properties': {
-    'colors':     { 'type': 'array' },
-    'roles':      { 'type': 'object' },
-    'contrast': {
-      'type': 'object',
-      'additionalProperties': false,
-      'properties': {
-        'level':     { 'type': 'string' },
-        'algorithm': { 'type': 'string', 'enum': ['wcag21', 'apca'] },
-        'extra':     { 'type': 'array' },
-      },
-    },
-    'maxColors': { 'type': 'number', 'minimum': 1 },
     'bypass':    { 'type': 'boolean' },
-    'emit': {
-      'type':  'array',
-      'items': { 'type': 'string' },
-    },
-    'runtime': {
-      'type': 'object',
+    'colors':     { 'type': 'array' },
+    'contrast': {
       'additionalProperties': false,
       'properties': {
-        'framing':    { 'type': 'string', 'enum': ['dark', 'light'] },
-        'colorSpace': { 'type': 'string', 'enum': ['srgb', 'displayP3'] },
-        'extra':      { 'type': 'object', 'additionalProperties': true },
+        'algorithm': { 'enum': ['wcag21', 'apca'], 'type': 'string' },
+        'extra':     { 'type': 'array' },
+        'level':     { 'type': 'string' }
       },
+      'type': 'object'
     },
+    'emit': {
+      'items': { 'type': 'string' },
+      'type':  'array'
+    },
+    'maxColors': { 'minimum': 1, 'type': 'number' },
     'metadata': {
-      'type':                 'object',
       'additionalProperties': true,
+      'type':                 'object'
     },
+    'roles':      { 'type': 'object' },
+    'runtime': {
+      'additionalProperties': false,
+      'properties': {
+        'colorSpace': { 'enum': ['srgb', 'displayP3'], 'type': 'string' },
+        'extra':      { 'additionalProperties': true, 'type': 'object' },
+        'framing':    { 'enum': ['dark', 'light'], 'type': 'string' }
+      },
+      'type': 'object'
+    }
   },
+  'required':           ['colors'],
+  'type':               'object'
 } as const;

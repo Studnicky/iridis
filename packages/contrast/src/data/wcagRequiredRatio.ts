@@ -1,12 +1,12 @@
-import type { ColorRecordInterface, ContrastPairInterface } from '@studnicky/iridis';
+import type { ColorRecordInterfaceType, ContrastPairInterfaceType } from '@studnicky/iridis';
 
 function isTextPair(
-  pair: ContrastPairInterface,
-  roles: Record<string, ColorRecordInterface>,
+  pair: ContrastPairInterfaceType,
+  roles: Record<string, ColorRecordInterfaceType>
 ): boolean {
   const fgRecord = roles[pair.foreground];
   const bgRecord = roles[pair.background];
-  if (!fgRecord || !bgRecord) {
+  if (fgRecord === undefined || bgRecord === undefined) {
     return false;
   }
   const fgIntent = fgRecord.hints?.intent;
@@ -17,13 +17,13 @@ function isTextPair(
   );
 }
 
-export class WcagRequiredRatio {
+class WcagRequiredRatio {
   readonly 'name' = 'wcagRequiredRatio';
 
   apply(
     level: 'aa' | 'aaa',
-    pair: ContrastPairInterface,
-    roles: Record<string, ColorRecordInterface>,
+    pair: ContrastPairInterfaceType,
+    roles: Record<string, ColorRecordInterfaceType>
   ): number {
     if (pair.minRatio > 0) {
       return pair.minRatio;
@@ -38,7 +38,7 @@ export class WcagRequiredRatio {
     }
 
     // AAA level: roles must exist; default to 7.0 when absent.
-    if (!roles[pair.foreground] || !roles[pair.background]) {
+    if (roles[pair.foreground] === undefined || roles[pair.background] === undefined) {
       return 7.0;
     }
     if (isTextPair(pair, roles)) {

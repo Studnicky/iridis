@@ -23,4 +23,14 @@ export default defineNuxtConfig({
   app: {
     baseURL: process.env.NUXT_APP_BASE_URL || '/',
   },
+  // The @studnicky/iridis* workspace packages ship source .ts files with
+  // explicit .ts import extensions (bundler moduleResolution). Nuxt's
+  // generated tsconfig doesn't enable this by default.
+  typescript: {
+    tsConfig: {
+      compilerOptions: {
+        allowImportingTsExtensions: true,
+      },
+    },
+  },
 })

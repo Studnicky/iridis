@@ -10,12 +10,13 @@
  */
 
 import type { FromSchema } from 'json-schema-to-ts';
-import { ColorRecordSchema }  from '../model/ColorRecordSchema.ts';
-import { InputSchema }        from '../model/InputSchema.ts';
-import { PaletteStateSchema } from '../model/PaletteStateSchema.ts';
-import { PluginSchema }       from '../model/PluginSchema.ts';
-import { RoleSchemaSchema }   from '../model/RoleSchemaSchema.ts';
-import { TaskManifestSchema } from '../model/TaskManifestSchema.ts';
+
+import type { ColorRecordSchema }  from '../model/ColorRecordSchema.ts';
+import type { InputSchema }        from '../model/InputSchema.ts';
+import type { PaletteStateSchema } from '../model/PaletteStateSchema.ts';
+import type { PluginSchema }       from '../model/PluginSchema.ts';
+import type { RoleSchemaSchema }   from '../model/RoleSchemaSchema.ts';
+import type { TaskManifestSchema } from '../model/TaskManifestSchema.ts';
 
 /** Schema-derived type for a color record (validation shape). */
 export type ColorRecordSchemaType    = FromSchema<typeof ColorRecordSchema>;

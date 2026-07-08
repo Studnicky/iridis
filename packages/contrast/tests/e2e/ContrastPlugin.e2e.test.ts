@@ -19,7 +19,7 @@ import type {
   ColorIntentType,
   InputInterface,
   PaletteStateInterface,
-  RoleSchemaInterface,
+  RoleSchemaInterfaceType,
 } from '@studnicky/iridis';
 import { Engine }    from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
@@ -59,7 +59,7 @@ function wcagAaRoles(
   fgName: string,
   bgName: string,
   minRatio = 4.5,
-): RoleSchemaInterface {
+): RoleSchemaInterfaceType {
   return {
     'name':  'wcag-aa',
     'roles': [
@@ -81,7 +81,7 @@ function wcagAaRoles(
 function wcagAaaRoles(
   fgName: string,
   bgName: string,
-): RoleSchemaInterface {
+): RoleSchemaInterfaceType {
   return {
     'name':  'wcag-aaa',
     'roles': [
@@ -95,7 +95,7 @@ function wcagAaaRoles(
 }
 
 /** RoleSchema with intent hints for APCA target selection. */
-function apcaRoles(fgIntent: ColorIntentType, bgIntent: ColorIntentType): RoleSchemaInterface {
+function apcaRoles(fgIntent: ColorIntentType, bgIntent: ColorIntentType): RoleSchemaInterfaceType {
   return {
     'name':  'apca',
     'roles': [
@@ -119,7 +119,7 @@ function apcaRoles(fgIntent: ColorIntentType, bgIntent: ColorIntentType): RoleSc
 // CVD role schemas — hue offsets and lightness bands pin the distance-picker.
 
 /** Red foreground / green background (protanopia / deuteranopia family). */
-const CVD_RED_GREEN_ROLES: RoleSchemaInterface = {
+const CVD_RED_GREEN_ROLES: RoleSchemaInterfaceType = {
   'name':  'cvd-red-green',
   'roles': [
     { 'name': 'text',       'required': true, 'lightnessRange': [0.40, 0.70], 'chromaRange': [0.10, 0.40], 'hueOffset': 29  },
@@ -131,7 +131,7 @@ const CVD_RED_GREEN_ROLES: RoleSchemaInterface = {
 };
 
 /** Blue foreground / yellow background (tritanopia family). */
-const CVD_BLUE_YELLOW_ROLES: RoleSchemaInterface = {
+const CVD_BLUE_YELLOW_ROLES: RoleSchemaInterfaceType = {
   'name':  'cvd-blue-yellow',
   'roles': [
     { 'name': 'text',       'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.40], 'hueOffset': 264 },
@@ -143,7 +143,7 @@ const CVD_BLUE_YELLOW_ROLES: RoleSchemaInterface = {
 };
 
 /** Near-iso-luminant red/green (achromatopsia floor signal). */
-const CVD_ISOLUM_ROLES: RoleSchemaInterface = {
+const CVD_ISOLUM_ROLES: RoleSchemaInterfaceType = {
   'name':  'cvd-isolum',
   'roles': [
     { 'name': 'text',       'required': true, 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.20, 0.30], 'hueOffset': 29  },
@@ -155,7 +155,7 @@ const CVD_ISOLUM_ROLES: RoleSchemaInterface = {
 };
 
 /** Black-on-white: canonical maximum-contrast pair (CVD negative case). */
-const CVD_BLACK_WHITE_ROLES: RoleSchemaInterface = {
+const CVD_BLACK_WHITE_ROLES: RoleSchemaInterfaceType = {
   'name':  'cvd-black-white',
   'roles': [
     { 'name': 'text',       'required': true, 'lightnessRange': [0.00, 0.20], 'chromaRange': [0.00, 0.05] },
@@ -173,7 +173,7 @@ const CVD_BLACK_WHITE_ROLES: RoleSchemaInterface = {
  *   - #aaaaaa (L≈0.70, in range) → before≈2.3:1, adjusted=true
  *   - #494949 (L≈0.41, in range) → before≈9:1, adjusted=false
  */
-const ENFORCE_CONTRAST_ROLES: RoleSchemaInterface = {
+const ENFORCE_CONTRAST_ROLES: RoleSchemaInterfaceType = {
   'name':  'enforce-contrast-adj',
   'roles': [
     { 'name': 'text',       'required': true, 'lightnessRange': [0.40, 0.90] },

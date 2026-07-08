@@ -1,56 +1,56 @@
 export const ColorRecordSchema = {
   '$id':       'https://studnicky.dev/iridis/ColorRecord',
-  'type':      'object',
-  'required':  ['oklch', 'rgb', 'hex', 'alpha', 'sourceFormat'],
   'additionalProperties': false,
   'properties': {
-    'oklch': {
-      'type':     'object',
-      'required': ['l', 'c', 'h'],
+    'alpha':        { 'maximum': 1, 'minimum': 0, 'type': 'number' },
+    'displayP3': {
       'additionalProperties': false,
       'properties': {
-        'l': { 'type': 'number', 'minimum': 0, 'maximum': 1 },
-        'c': { 'type': 'number', 'minimum': 0, 'maximum': 0.5 },
-        'h': { 'type': 'number', 'minimum': 0, 'maximum': 360 },
+        'b': { 'maximum': 1, 'minimum': 0, 'type': 'number' },
+        'g': { 'maximum': 1, 'minimum': 0, 'type': 'number' },
+        'r': { 'maximum': 1, 'minimum': 0, 'type': 'number' }
       },
+      'required': ['r', 'g', 'b'],
+      'type':     'object'
+    },
+    'hex':          { 'pattern': '^#[0-9a-fA-F]{6}$', 'type': 'string' },
+    'hints': {
+      'additionalProperties': false,
+      'properties': {
+        'intent': {
+          'enum': ['text', 'background', 'accent', 'muted', 'critical', 'positive', 'link', 'button', 'onAccent', 'onButton'],
+          'type': 'string'
+        },
+        'role':   { 'type': 'string' },
+        'weight': { 'minimum': 0, 'type': 'number' }
+      },
+      'type':     'object'
+    },
+    'oklch': {
+      'additionalProperties': false,
+      'properties': {
+        'c': { 'maximum': 0.5, 'minimum': 0, 'type': 'number' },
+        'h': { 'maximum': 360, 'minimum': 0, 'type': 'number' },
+        'l': { 'maximum': 1, 'minimum': 0, 'type': 'number' }
+      },
+      'required': ['l', 'c', 'h'],
+      'type':     'object'
     },
     'rgb': {
-      'type':     'object',
-      'required': ['r', 'g', 'b'],
       'additionalProperties': false,
       'properties': {
-        'r': { 'type': 'number', 'minimum': 0, 'maximum': 1 },
-        'g': { 'type': 'number', 'minimum': 0, 'maximum': 1 },
-        'b': { 'type': 'number', 'minimum': 0, 'maximum': 1 },
+        'b': { 'maximum': 1, 'minimum': 0, 'type': 'number' },
+        'g': { 'maximum': 1, 'minimum': 0, 'type': 'number' },
+        'r': { 'maximum': 1, 'minimum': 0, 'type': 'number' }
       },
+      'required': ['r', 'g', 'b'],
+      'type':     'object'
     },
-    'hex':          { 'type': 'string', 'pattern': '^#[0-9a-fA-F]{6}$' },
-    'alpha':        { 'type': 'number', 'minimum': 0, 'maximum': 1 },
     'sourceFormat': {
-      'type': 'string',
       'enum': ['hex', 'rgb', 'hsl', 'oklch', 'lab', 'named', 'imagePixel', 'displayP3'],
-    },
-    'displayP3': {
-      'type':     'object',
-      'required': ['r', 'g', 'b'],
-      'additionalProperties': false,
-      'properties': {
-        'r': { 'type': 'number', 'minimum': 0, 'maximum': 1 },
-        'g': { 'type': 'number', 'minimum': 0, 'maximum': 1 },
-        'b': { 'type': 'number', 'minimum': 0, 'maximum': 1 },
-      },
-    },
-    'hints': {
-      'type':     'object',
-      'additionalProperties': false,
-      'properties': {
-        'role':   { 'type': 'string' },
-        'intent': {
-          'type': 'string',
-          'enum': ['text', 'background', 'accent', 'muted', 'critical', 'positive', 'link', 'button', 'onAccent', 'onButton'],
-        },
-        'weight': { 'type': 'number', 'minimum': 0 },
-      },
-    },
+      'type': 'string'
+    }
   },
+  'required':  ['oklch', 'rgb', 'hex', 'alpha', 'sourceFormat'],
+  'type':      'object'
 } as const;

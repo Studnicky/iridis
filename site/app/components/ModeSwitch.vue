@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { ModeType } from '~/composables/types/mode.ts';
+
 import { useIridis } from '~/composables/useIridis.ts';
-import type { Mode } from '~/composables/useIridis.ts';
 
 /**
  * Mode selector. The demo is EITHER a color picker OR an image extractor, never
@@ -8,7 +9,7 @@ import type { Mode } from '~/composables/useIridis.ts';
  * the page (the engine re-runs against the newly-active seeds).
  */
 const { mode } = useIridis();
-function select(m: Mode): void { mode.value = m; }
+function select(m: ModeType): void { mode.value = m; }
 </script>
 
 <template>
@@ -18,12 +19,16 @@ function select(m: Mode): void { mode.value = m; }
       :color="mode === 'picker' ? 'primary' : 'neutral'"
       :variant="mode === 'picker' ? 'solid' : 'outline'"
       @click="select('picker')"
-    >Color picker</UButton>
+    >
+      Color picker
+    </UButton>
     <UButton
       icon="i-material-symbols-image-rounded"
       :color="mode === 'image' ? 'primary' : 'neutral'"
       :variant="mode === 'image' ? 'solid' : 'outline'"
       @click="select('image')"
-    >Image</UButton>
+    >
+      Image
+    </UButton>
   </UButtonGroup>
 </template>

@@ -27,11 +27,11 @@ import {
 
 import { Engine }                                   from '@studnicky/iridis/engine';
 import { coreTasks }                                from '@studnicky/iridis/tasks';
-import type { InputInterface, RoleSchemaInterface } from '@studnicky/iridis';
-import { stylesheetPlugin, StylesheetPlugin }       from '@studnicky/iridis-stylesheet';
+import type { InputInterface, RoleSchemaInterfaceType } from '@studnicky/iridis';
+import { stylesheetPlugin }                         from '@studnicky/iridis-stylesheet';
 import type {
-  CssVarsOutputInterface,
-  CssVarsScopedOutputInterface,
+  CssVarsOutputInterfaceType,
+  CssVarsScopedOutputInterfaceType,
 } from '@studnicky/iridis-stylesheet/types';
 
 // ---------------------------------------------------------------------------
@@ -54,13 +54,13 @@ function cssVarsScopedPipeline(extra: readonly string[] = []): readonly string[]
 }
 
 // Single-role schema — minimal baseline
-const SINGLE_ROLE: RoleSchemaInterface = {
+const SINGLE_ROLE: RoleSchemaInterfaceType = {
   'name': 'single',
   'roles': [{ 'name': 'primary', 'required': true }],
 };
 
 // Two-role schema — covers a real-world "foreground + background" pair
-const TWO_ROLES: RoleSchemaInterface = {
+const TWO_ROLES: RoleSchemaInterfaceType = {
   'name': 'two',
   'roles': [
     { 'name': 'primary',   'required': true },
@@ -69,7 +69,7 @@ const TWO_ROLES: RoleSchemaInterface = {
 };
 
 // All-intent schema — exercises every forcedColorsToken branch
-const ALL_INTENT_ROLES: RoleSchemaInterface = {
+const ALL_INTENT_ROLES: RoleSchemaInterfaceType = {
   'name': 'all-intent',
   'roles': [
     { 'name': 'bg',        'required': true,  'intent': 'background' },
@@ -86,7 +86,7 @@ const ALL_INTENT_ROLES: RoleSchemaInterface = {
 };
 
 // Wide-gamut role — permissive chroma so resolve:roles doesn't shrink the OKLCH
-const WIDE_GAMUT_ROLE: RoleSchemaInterface = {
+const WIDE_GAMUT_ROLE: RoleSchemaInterfaceType = {
   'name': 'wide-gamut',
   'roles': [
     {
@@ -100,7 +100,7 @@ const WIDE_GAMUT_ROLE: RoleSchemaInterface = {
 };
 
 // CamelCase role name — exercises toCssVarName kebab conversion
-const CAMEL_ROLE: RoleSchemaInterface = {
+const CAMEL_ROLE: RoleSchemaInterfaceType = {
   'name': 'camel',
   'roles': [
     { 'name': 'primaryText', 'required': true },
@@ -119,22 +119,22 @@ const CAMEL_ROLE: RoleSchemaInterface = {
 
 interface PluginShapeInput  { readonly run: true }
 interface PluginShapeOutput {
-  readonly isInstance:   boolean;
-  readonly name:         string;
-  readonly version:      string;
-  readonly taskNames:    readonly string[];
+  readonly satisfiesPluginShape: boolean;
+  readonly name:                 string;
+  readonly version:              string;
+  readonly taskNames:            readonly string[];
 }
 
 const pluginShapeScenarios: readonly ScenarioInterface<PluginShapeInput, PluginShapeOutput>[] = [
   {
-    name: 'singleton is an instance of StylesheetPlugin with stable name and version',
+    name: 'singleton satisfies the plugin shape with stable name and version',
     kind: 'happy',
     input: { run: true },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=singleton] no throw');
-      assert.strictEqual(output!.isInstance, true,        '[cell=1, scenario=singleton] instanceof StylesheetPlugin');
-      assert.strictEqual(output!.name,       'stylesheet', '[cell=1, scenario=singleton] name is stylesheet');
-      assert.strictEqual(output!.version,    '0.1.0',     '[cell=1, scenario=singleton] version is 0.1.0');
+      assert.strictEqual(output!.satisfiesPluginShape, true,        '[cell=1, scenario=singleton] satisfies PluginInterface shape');
+      assert.strictEqual(output!.name,                 'stylesheet', '[cell=1, scenario=singleton] name is stylesheet');
+      assert.strictEqual(output!.version,              '0.1.0',     '[cell=1, scenario=singleton] version is 0.1.0');
     },
   },
   {
@@ -158,10 +158,13 @@ new ScenarioRunner<PluginShapeInput, PluginShapeOutput>(
   'StylesheetPlugin :: cell-1 :: plugin-shape',
   (_input) => {
     return {
-      isInstance:  stylesheetPlugin instanceof StylesheetPlugin,
-      name:        stylesheetPlugin.name,
-      version:     stylesheetPlugin.version,
-      taskNames:   stylesheetPlugin.tasks().map((t) => t.name),
+      satisfiesPluginShape: typeof stylesheetPlugin.tasks === 'function'
+        && typeof stylesheetPlugin.schemas === 'function'
+        && typeof stylesheetPlugin.name === 'string'
+        && typeof stylesheetPlugin.version === 'string',
+      name:                 stylesheetPlugin.name,
+      version:              stylesheetPlugin.version,
+      taskNames:            stylesheetPlugin.tasks().map((t) => t.name),
     };
   },
 ).run(pluginShapeScenarios);
@@ -179,12 +182,12 @@ new ScenarioRunner<PluginShapeInput, PluginShapeOutput>(
 
 interface CssVarsBasicInput {
   readonly colors: InputInterface['colors'];
-  readonly roles:  RoleSchemaInterface;
+  readonly roles:  RoleSchemaInterfaceType;
   readonly pipeline: readonly string[];
   readonly metadata?: InputInterface['metadata'];
 }
 interface CssVarsBasicOutput {
-  readonly cssVars: CssVarsOutputInterface;
+  readonly cssVars: CssVarsOutputInterfaceType;
 }
 
 const cssVarsBasicScenarios: readonly ScenarioInterface<CssVarsBasicInput, CssVarsBasicOutput>[] = [
@@ -284,7 +287,7 @@ new ScenarioRunner<CssVarsBasicInput, CssVarsBasicOutput>(
       'roles':    input.roles,
       ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
     });
-    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterface | undefined;
+    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
     if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
     return { cssVars };
   },
@@ -301,12 +304,12 @@ new ScenarioRunner<CssVarsBasicInput, CssVarsBasicOutput>(
 
 interface CssVarsCascadeInput {
   readonly colors:    InputInterface['colors'];
-  readonly roles:     RoleSchemaInterface;
+  readonly roles:     RoleSchemaInterfaceType;
   readonly pipeline:  readonly string[];
   readonly metadata?: InputInterface['metadata'];
 }
 interface CssVarsCascadeOutput {
-  readonly cssVars: CssVarsOutputInterface;
+  readonly cssVars: CssVarsOutputInterfaceType;
 }
 
 const FORCED_TOKENS: Readonly<Record<string, string>> = {
@@ -465,7 +468,7 @@ new ScenarioRunner<CssVarsCascadeInput, CssVarsCascadeOutput>(
       'roles':    input.roles,
       ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
     });
-    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterface | undefined;
+    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
     if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
     return { cssVars };
   },
@@ -482,12 +485,12 @@ new ScenarioRunner<CssVarsCascadeInput, CssVarsCascadeOutput>(
 
 interface CssVarsNamingInput {
   readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterface;
+  readonly roles:    RoleSchemaInterfaceType;
   readonly pipeline: readonly string[];
   readonly metadata: InputInterface['metadata'];
 }
 interface CssVarsNamingOutput {
-  readonly cssVars: CssVarsOutputInterface;
+  readonly cssVars: CssVarsOutputInterfaceType;
 }
 
 const cssVarsNamingScenarios: readonly ScenarioInterface<CssVarsNamingInput, CssVarsNamingOutput>[] = [
@@ -589,7 +592,7 @@ new ScenarioRunner<CssVarsNamingInput, CssVarsNamingOutput>(
       ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
     };
     const state = await engine.run(runInput);
-    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterface | undefined;
+    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
     if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
     return { cssVars };
   },
@@ -611,12 +614,12 @@ new ScenarioRunner<CssVarsNamingInput, CssVarsNamingOutput>(
 
 interface CssVarsWideGamutInput {
   readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterface;
+  readonly roles:    RoleSchemaInterfaceType;
   readonly pipeline: readonly string[];
   readonly metadata?: InputInterface['metadata'];
 }
 interface CssVarsWideGamutOutput {
-  readonly cssVars: CssVarsOutputInterface;
+  readonly cssVars: CssVarsOutputInterfaceType;
   readonly displayP3?: { r: number; g: number; b: number } | undefined;
 }
 
@@ -713,7 +716,7 @@ new ScenarioRunner<CssVarsWideGamutInput, CssVarsWideGamutOutput>(
       'roles':  input.roles,
       ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
     });
-    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterface | undefined;
+    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
     if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
     const displayP3 = state.roles['primary']?.displayP3;
     return { cssVars, displayP3 };
@@ -733,12 +736,12 @@ new ScenarioRunner<CssVarsWideGamutInput, CssVarsWideGamutOutput>(
 
 interface CssVarsScopedBasicInput {
   readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterface;
+  readonly roles:    RoleSchemaInterfaceType;
   readonly pipeline: readonly string[];
   readonly metadata?: InputInterface['metadata'];
 }
 interface CssVarsScopedBasicOutput {
-  readonly scoped: CssVarsScopedOutputInterface;
+  readonly scoped: CssVarsScopedOutputInterfaceType;
 }
 
 const cssVarsScopedBasicScenarios: readonly ScenarioInterface<CssVarsScopedBasicInput, CssVarsScopedBasicOutput>[] = [
@@ -827,7 +830,7 @@ new ScenarioRunner<CssVarsScopedBasicInput, CssVarsScopedBasicOutput>(
       'roles':  input.roles,
       ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
     });
-    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterface | undefined;
+    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
     if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
     return { scoped };
   },
@@ -844,12 +847,12 @@ new ScenarioRunner<CssVarsScopedBasicInput, CssVarsScopedBasicOutput>(
 
 interface CssVarsScopedVariantsInput {
   readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterface;
+  readonly roles:    RoleSchemaInterfaceType;
   readonly pipeline: readonly string[];
   readonly metadata?: InputInterface['metadata'];
 }
 interface CssVarsScopedVariantsOutput {
-  readonly scoped: CssVarsScopedOutputInterface;
+  readonly scoped: CssVarsScopedOutputInterfaceType;
 }
 
 const cssVarsScopedVariantsScenarios: readonly ScenarioInterface<CssVarsScopedVariantsInput, CssVarsScopedVariantsOutput>[] = [
@@ -919,7 +922,7 @@ new ScenarioRunner<CssVarsScopedVariantsInput, CssVarsScopedVariantsOutput>(
       'roles':  input.roles,
       ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
     });
-    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterface | undefined;
+    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
     if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
     return { scoped };
   },
@@ -936,12 +939,12 @@ new ScenarioRunner<CssVarsScopedVariantsInput, CssVarsScopedVariantsOutput>(
 
 interface CssVarsScopedWideGamutInput {
   readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterface;
+  readonly roles:    RoleSchemaInterfaceType;
   readonly pipeline: readonly string[];
   readonly metadata?: InputInterface['metadata'];
 }
 interface CssVarsScopedWideGamutOutput {
-  readonly scoped: CssVarsScopedOutputInterface;
+  readonly scoped: CssVarsScopedOutputInterfaceType;
 }
 
 const cssVarsScopedWideGamutScenarios: readonly ScenarioInterface<CssVarsScopedWideGamutInput, CssVarsScopedWideGamutOutput>[] = [
@@ -1016,7 +1019,7 @@ new ScenarioRunner<CssVarsScopedWideGamutInput, CssVarsScopedWideGamutOutput>(
       'roles':  input.roles,
       ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
     });
-    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterface | undefined;
+    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
     if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
     return { scoped };
   },
@@ -1032,12 +1035,12 @@ new ScenarioRunner<CssVarsScopedWideGamutInput, CssVarsScopedWideGamutOutput>(
 
 interface CssVarsScopedPrefixInput {
   readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterface;
+  readonly roles:    RoleSchemaInterfaceType;
   readonly pipeline: readonly string[];
   readonly metadata: InputInterface['metadata'];
 }
 interface CssVarsScopedPrefixOutput {
-  readonly scoped: CssVarsScopedOutputInterface;
+  readonly scoped: CssVarsScopedOutputInterfaceType;
 }
 
 const cssVarsScopedPrefixScenarios: readonly ScenarioInterface<CssVarsScopedPrefixInput, CssVarsScopedPrefixOutput>[] = [
@@ -1118,7 +1121,7 @@ new ScenarioRunner<CssVarsScopedPrefixInput, CssVarsScopedPrefixOutput>(
       ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
     };
     const state = await engine.run(runInput);
-    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterface | undefined;
+    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
     if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
     return { scoped };
   },
@@ -1137,7 +1140,7 @@ const CSS_VARS_GOLDEN = new URL(
   import.meta.url,
 );
 
-const GOLDEN_ROLES: RoleSchemaInterface = {
+const GOLDEN_ROLES: RoleSchemaInterfaceType = {
   'name':  'golden-cssvars',
   'roles': [
     { 'name': 'background', 'required': true, 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'chromaRange': [0.00, 0.03] },
@@ -1164,7 +1167,7 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
     'roles':  GOLDEN_ROLES,
   });
 
-  const out = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterface | undefined;
+  const out = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
   assert.ok(out !== undefined, 'cssVars output present');
   const actual = `${out.full}\n`;
 

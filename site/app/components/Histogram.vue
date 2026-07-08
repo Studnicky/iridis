@@ -27,8 +27,13 @@ const bars = computed(() => {
 </script>
 
 <template>
-  <div v-if="bars.length" class="space-y-2">
-    <div class="text-xs font-medium text-muted">Histogram · {{ bars.length }} bins</div>
+  <div
+    v-if="bars.length"
+    class="space-y-2"
+  >
+    <div class="text-xs font-medium text-muted">
+      Histogram · {{ bars.length }} bins
+    </div>
     <div class="flex h-24 items-end gap-px overflow-hidden rounded-lg border border-default bg-elevated p-1">
       <div
         v-for="(bar, i) in bars"

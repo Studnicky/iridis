@@ -1,9 +1,14 @@
-export interface ValidationErrorInterface {
-  readonly 'path':    string;
-  readonly 'message': string;
-}
+/**
+ * A JSON Schema object acceptable to {@link import('../model/Validator.ts').Validator}.
+ */
+export type SchemaInterfaceType = Record<string, unknown>;
 
-export interface ValidationResultInterface {
-  readonly 'valid':  boolean;
-  readonly 'errors': ValidationErrorInterface[];
-}
+export type ValidationErrorInterfaceType = {
+  'message': string;
+  'path':    string;
+};
+
+export type ValidationResultInterfaceType = {
+  'errors': ValidationErrorInterfaceType[];
+  'valid':  boolean;
+};

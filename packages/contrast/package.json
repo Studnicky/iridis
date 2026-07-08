@@ -15,6 +15,9 @@
     "clean":     "rm -rf dist",
     "prebuild":  "rm -rf dist"
   },
+  "dependencies": {
+    "@studnicky/logger": "^4.0.0"
+  },
   "peerDependencies": {
     "@studnicky/iridis": "^0.5.0"
   }

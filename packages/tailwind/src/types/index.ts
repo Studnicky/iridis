@@ -1,7 +1,7 @@
-export interface TailwindOutputInterface {
-  readonly 'colors':  Record<string, string | Record<string, string>>;
-  readonly 'cssVars': string;
-  readonly 'config':  string;
-}
+export type TailwindOutputInterfaceType = {
+  'colors':  Record<string, string | Record<string, string>>;
+  'config':  string;
+  'cssVars': string;
+};
 
 export type * from './augmentation.ts';

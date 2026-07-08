@@ -1,7 +1,7 @@
 // Delta E 2000 computed via OKLCH-derived Lab (D65). OKLCH is a direct reparametrisation
 // of OKLab, so (L, a*, b*) = (oklch.l, c*cos(h), c*sin(h)) in the OKLab encoding.
 // The CIE ΔE 2000 formula is applied to these Lab values per Sharma et al. 2005.
-import type { ColorRecordInterface } from '../types/index.ts';
+import type { ColorRecordInterfaceType } from '../types/index.ts';
 
 function oklchToOklab(l: number, c: number, h: number): [number, number, number] {
   const hRad = (h * Math.PI) / 180;
@@ -16,18 +16,18 @@ function rad(d: number): number {
   return (d * Math.PI) / 180;
 }
 
-export class DeltaE2000 {
+class DeltaE2000 {
   readonly 'name' = 'deltaE2000';
 
-  apply(a: ColorRecordInterface, b: ColorRecordInterface): number {
+  apply(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType): number {
     const [L1, a1, b1] = oklchToOklab(a.oklch.l, a.oklch.c, a.oklch.h);
     const [L2, a2, b2] = oklchToOklab(b.oklch.l, b.oklch.c, b.oklch.h);
 
     // OKLab L is 0..1; CIE Lab L is 0..100. Scale so the formula's hard-coded
     // constants (Sharma et al. 2005) operate on the magnitudes they expect.
     const scale = 100;
-    const sL1 = L1 * scale, sa1 = a1 * scale, sb1 = b1 * scale;
-    const sL2 = L2 * scale, sa2 = a2 * scale, sb2 = b2 * scale;
+    const sa1 = a1 * scale; const sb1 = b1 * scale; const sL1 = L1 * scale;
+    const sa2 = a2 * scale; const sb2 = b2 * scale; const sL2 = L2 * scale;
 
     const C1 = Math.sqrt(sa1 * sa1 + sb1 * sb1);
     const C2 = Math.sqrt(sa2 * sa2 + sb2 * sb2);
@@ -42,9 +42,9 @@ export class DeltaE2000 {
     const C2p = Math.sqrt(a2p * a2p + sb2 * sb2);
 
     let h1p = deg(Math.atan2(sb1, a1p));
-    if (h1p < 0) h1p += 360;
+    if (h1p < 0) {h1p += 360;}
     let h2p = deg(Math.atan2(sb2, a2p));
-    if (h2p < 0) h2p += 360;
+    if (h2p < 0) {h2p += 360;}
 
     const dLp = sL2 - sL1;
     const dCp = C2p - C1p;
@@ -91,12 +91,12 @@ export class DeltaE2000 {
     const dTheta = 30 * Math.exp(-Math.pow((Hp - 275) / 25, 2));
     const RT = -Math.sin(rad(2 * dTheta)) * RC;
 
-    const kL = 1, kC = 1, kH = 1;
+    const kC = 1; const kH = 1; const kL = 1;
     return Math.sqrt(
       Math.pow(dLp  / (kL * SL), 2) +
       Math.pow(dCp  / (kC * SC), 2) +
       Math.pow(dHp  / (kH * SH), 2) +
-      RT * (dCp / (kC * SC)) * (dHp / (kH * SH)),
+      RT * (dCp / (kC * SC)) * (dHp / (kH * SH))
     );
   }
 }

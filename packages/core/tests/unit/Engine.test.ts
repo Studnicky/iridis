@@ -40,7 +40,7 @@ function makeTask(
   name:     string,
   options?: {
     phase?:    'onRunStart' | 'onRunEnd';
-    requires?: readonly string[];
+    requires?: string[];
     onRun?:    (state: PaletteStateInterface, ctx: PipelineContextInterface) => void;
   },
 ): TaskInterface {

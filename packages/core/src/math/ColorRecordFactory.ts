@@ -1,10 +1,13 @@
+import { ValidationError } from '@studnicky/errors';
+
 import type {
-  ColorHintsInterface,
-  ColorRecordInterface,
-  OklchInterface,
-  RgbInterface,
-  SourceFormatType,
+  ColorHintsInterfaceType,
+  ColorRecordInterfaceType,
+  OklchInterfaceType,
+  RgbInterfaceType,
+  SourceFormatType
 } from '../types/index.ts';
+
 import { clamp } from './Clamp.ts';
 import { clamp01 } from './Clamp01.ts';
 import { gamutMapSrgb } from './GamutMapSrgb.ts';
@@ -13,8 +16,8 @@ import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
 import { rgbToHex } from './RgbToHex.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
-function rgbToOklchRaw(r: number, g: number, b: number): OklchInterface {
-  const { r: rl, g: gl, b: bl } = srgbToLinear.apply(r, g, b);
+function rgbToOklchRaw(r: number, g: number, b: number): OklchInterfaceType {
+  const { 'b': bl, 'g': gl, 'r': rl } = srgbToLinear.apply(r, g, b);
 
   let x = 0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl;
   let y = 0.2119034982 * rl + 0.6806995451 * gl + 0.1073969566 * bl;
@@ -35,13 +38,13 @@ function rgbToOklchRaw(r: number, g: number, b: number): OklchInterface {
   }
 
   return {
-    'l': clamp01.apply(labL),
     'c': clamp.apply(0, 0.5, c),
     'h': h % 360,
+    'l': clamp01.apply(labL)
   };
 }
 
-function hslToRgbRaw(h: number, s: number, l: number): RgbInterface {
+function hslToRgbRaw(h: number, s: number, l: number): RgbInterfaceType {
   const hh = ((h % 360) + 360) % 360;
   const ss = clamp01.apply(s);
   const ll = clamp01.apply(l);
@@ -68,11 +71,11 @@ function hslToRgbRaw(h: number, s: number, l: number): RgbInterface {
     r = c; g = 0; b = x;
   }
 
-  return { 'r': clamp01.apply(r + m), 'g': clamp01.apply(g + m), 'b': clamp01.apply(b + m) };
+  return { 'b': clamp01.apply(b + m), 'g': clamp01.apply(g + m), 'r': clamp01.apply(r + m) };
 }
 
 /**
- * Factory for canonical {@link ColorRecordInterface} values. Every record
+ * Factory for canonical {@link ColorRecordInterfaceType} values. Every record
  * leaves this factory with all three encodings (`oklch`, `rgb`, `hex`)
  * populated and consistent: the OKLCH/RGB transforms below round-trip
  * through the Björn Ottosson OKLab matrices, and the hex string is
@@ -80,16 +83,18 @@ function hslToRgbRaw(h: number, s: number, l: number): RgbInterface {
  * encoding ranges (L/C/alpha into [0,1]/[0,0.5]/[0,1]; hue mod 360).
  *
  * Every record is allocated with the SAME field set in the SAME key
- * order (`oklch`, `rgb`, `hex`, `alpha`, `sourceFormat`, `displayP3`,
- * `hints`) so V8 collapses all records into a single hidden class.
- * Optional fields default to `undefined` (explicit, not absent) so
+ * order (`alpha`, `displayP3`, `hex`, `hints`, `oklch`, `rgb`,
+ * `sourceFormat` — alphabetical, enforced by the workspace's
+ * perfectionist/sort-objects eslint rule) so V8 collapses all records
+ * into a single hidden class. Optional fields default to `undefined`
+ * (explicit, not absent) so
  * downstream code can read `record.hints?.role` without forcing a
  * second hidden class to materialise on the spread/append path.
  *
  * Use the singleton `colorRecordFactory` rather than `new`; it has no
  * state and registries assume reference identity.
  */
-export class ColorRecordFactory {
+class ColorRecordFactory {
   /**
    * Builds a record from OKLCH coordinates. `l` is normalised lightness
    * (0..1), `c` is chroma (0..0.5), `h` is hue in degrees (any real
@@ -130,36 +135,35 @@ export class ColorRecordFactory {
    * post-call spread.
    */
   fromOklch(
-    l:            number,
-    c:            number,
-    h:            number,
-    alpha:        number             = 1,
-    sourceFormat: SourceFormatType   = 'oklch',
-    hints:        ColorHintsInterface | undefined = undefined,
-  ): ColorRecordInterface {
+    l: number,
+    c: number,
+    h: number,
+    opts?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
+  ): ColorRecordInterfaceType {
+    const { alpha = 1, hints, sourceFormat = 'oklch' } = opts ?? {};
     const mapped = gamutMapSrgb.apply(l, c, h);
     const rgb    = oklchToRgbRaw.apply(mapped.l, mapped.c, mapped.h);
 
-    let displayP3: { 'r': number; 'g': number; 'b': number } | undefined;
+    let displayP3: { 'b': number; 'g': number; 'r': number; } | undefined;
     if (!mapped.inGamut) {
       const p3 = oklchToDisplayP3.apply(l, c, h);
       displayP3 = {
-        'r': clamp01.apply(p3.r),
-        'g': clamp01.apply(p3.g),
         'b': clamp01.apply(p3.b),
+        'g': clamp01.apply(p3.g),
+        'r': clamp01.apply(p3.r)
       };
     } else {
       displayP3 = undefined;
     }
 
     return {
-      'oklch':        { 'l': clamp01.apply(l), 'c': clamp.apply(0, 0.5, c), 'h': ((h % 360) + 360) % 360 },
-      'rgb':          rgb,
-      'hex':          rgbToHex.apply(rgb.r, rgb.g, rgb.b),
       'alpha':        clamp01.apply(alpha),
-      'sourceFormat': sourceFormat,
       'displayP3':    displayP3,
+      'hex':          rgbToHex.apply(rgb.r, rgb.g, rgb.b),
       'hints':        hints,
+      'oklch':        { 'c': clamp.apply(0, 0.5, c), 'h': ((h % 360) + 360) % 360, 'l': clamp01.apply(l) },
+      'rgb':          rgb,
+      'sourceFormat': sourceFormat
     };
   }
 
@@ -175,22 +179,21 @@ export class ColorRecordFactory {
    * they actually consumed.
    */
   fromRgb(
-    r:            number,
-    g:            number,
-    b:            number,
-    alpha:        number             = 1,
-    sourceFormat: SourceFormatType   = 'rgb',
-    hints:        ColorHintsInterface | undefined = undefined,
-  ): ColorRecordInterface {
+    r: number,
+    g: number,
+    b: number,
+    opts?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
+  ): ColorRecordInterfaceType {
+    const { alpha = 1, hints, sourceFormat = 'rgb' } = opts ?? {};
     const oklch = rgbToOklchRaw(r, g, b);
     return {
-      'oklch':        oklch,
-      'rgb':          { 'r': clamp01.apply(r), 'g': clamp01.apply(g), 'b': clamp01.apply(b) },
-      'hex':          rgbToHex.apply(r, g, b),
       'alpha':        clamp01.apply(alpha),
-      'sourceFormat': sourceFormat,
       'displayP3':    undefined,
+      'hex':          rgbToHex.apply(r, g, b),
       'hints':        hints,
+      'oklch':        oklch,
+      'rgb':          { 'b': clamp01.apply(b), 'g': clamp01.apply(g), 'r': clamp01.apply(r) },
+      'sourceFormat': sourceFormat
     };
   }
 
@@ -208,14 +211,21 @@ export class ColorRecordFactory {
    * the hex string (or `1` for 6-digit input) is used.
    */
   fromHex(
-    hex:           string,
-    alphaOverride: number | undefined = undefined,
-    sourceFormat:  SourceFormatType   = 'hex',
-    hints:         ColorHintsInterface | undefined = undefined,
-  ): ColorRecordInterface {
+    hex: string,
+    opts?: { 'alphaOverride'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
+  ): ColorRecordInterfaceType {
+    const { alphaOverride, hints, sourceFormat = 'hex' } = opts ?? {};
     const cleaned = hex.replace(/^#/, '');
-    if (!/^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(cleaned)) {
-      throw new Error(`ColorRecordFactory.fromHex: invalid hex '${hex}'`);
+    if (!/^[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/.test(cleaned)) {
+      throw ValidationError.create({
+        'message': 'ColorRecordFactory.fromHex: invalid hex string',
+        'path':    'hex',
+        'violations': [{
+          'details': { 'expectedFormat': '6 or 8 hex digits, with or without leading #', 'received': hex },
+          'message': 'value is not a valid hex color string',
+          'path':    'hex'
+        }]
+      });
     }
     const r = parseInt(cleaned.slice(0, 2), 16) / 255;
     const g = parseInt(cleaned.slice(2, 4), 16) / 255;
@@ -223,16 +233,16 @@ export class ColorRecordFactory {
     const parsedAlpha = cleaned.length === 8
       ? parseInt(cleaned.slice(6, 8), 16) / 255
       : 1;
-    const alpha = alphaOverride !== undefined ? alphaOverride : parsedAlpha;
+    const alpha = alphaOverride ?? parsedAlpha;
     const oklch = rgbToOklchRaw(r, g, b);
     return {
-      'oklch':        oklch,
-      'rgb':          { 'r': r, 'g': g, 'b': b },
-      'hex':          `#${cleaned.slice(0, 6).toLowerCase()}`,
       'alpha':        clamp01.apply(alpha),
-      'sourceFormat': sourceFormat,
       'displayP3':    undefined,
+      'hex':          `#${cleaned.slice(0, 6).toLowerCase()}`,
       'hints':        hints,
+      'oklch':        oklch,
+      'rgb':          { 'b': b, 'g': g, 'r': r },
+      'sourceFormat': sourceFormat
     };
   }
 
@@ -243,15 +253,14 @@ export class ColorRecordFactory {
    * RGB triple. `sourceFormat` defaults to `'hsl'`.
    */
   fromHsl(
-    h:            number,
-    s:            number,
-    l:            number,
-    alpha:        number             = 1,
-    sourceFormat: SourceFormatType   = 'hsl',
-    hints:        ColorHintsInterface | undefined = undefined,
-  ): ColorRecordInterface {
+    h: number,
+    s: number,
+    l: number,
+    opts?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
+  ): ColorRecordInterfaceType {
+    const { alpha = 1, hints, sourceFormat = 'hsl' } = opts ?? {};
     const rgb = hslToRgbRaw(h, s, l);
-    return this.fromRgb(rgb.r, rgb.g, rgb.b, alpha, sourceFormat, hints);
+    return this.fromRgb(rgb.r, rgb.g, rgb.b, { 'alpha': alpha, 'hints': hints, 'sourceFormat': sourceFormat });
   }
 }
 

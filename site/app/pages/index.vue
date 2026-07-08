@@ -46,8 +46,15 @@ const sections = [
 
     <UContainer>
       <div class="mb-4 text-center">
-        <h2 class="font-display text-xl font-bold uppercase tracking-widest glow-text" style="color: var(--ui-text-highlighted)">Spectrum</h2>
-        <p class="mt-1 text-xs text-muted">Every scale, engine-generated. Spin it.</p>
+        <h2
+          class="font-display text-xl font-bold uppercase tracking-widest glow-text"
+          style="color: var(--ui-text-highlighted)"
+        >
+          Spectrum
+        </h2>
+        <p class="mt-1 text-xs text-muted">
+          Every scale, engine-generated. Spin it.
+        </p>
       </div>
       <PaletteCarousel />
     </UContainer>

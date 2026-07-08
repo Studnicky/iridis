@@ -50,14 +50,27 @@ const rows = computed(() => {
 
 <template>
   <UCard>
-    <template #header><span class="font-semibold text-highlighted">Color spaces</span></template>
+    <template #header>
+      <span class="font-semibold text-highlighted">Color spaces</span>
+    </template>
     <div class="space-y-4">
       <div class="flex items-center gap-3">
-        <div class="h-10 w-10 rounded-md border border-default" :style="{ backgroundColor: role?.hex }" />
-        <USelect v-model="selected" :items="names" class="w-48" />
+        <div
+          class="h-10 w-10 rounded-md border border-default"
+          :style="{ backgroundColor: role?.hex }"
+        />
+        <USelect
+          v-model="selected"
+          :items="names"
+          class="w-48"
+        />
       </div>
       <div class="divide-y divide-default">
-        <div v-for="row in rows" :key="row.space" class="flex items-center justify-between py-1.5">
+        <div
+          v-for="row in rows"
+          :key="row.space"
+          class="flex items-center justify-between py-1.5"
+        >
           <span class="text-xs font-medium text-muted">{{ row.space }}</span>
           <span class="font-mono text-xs text-highlighted">{{ row.value }}</span>
         </div>

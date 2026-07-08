@@ -1,21 +1,25 @@
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   ContrastAlgorithmType,
-  ContrastPairInterface,
-  ContrastReportEntryInterface,
+  ContrastPairInterfaceType,
+  ContrastReportEntryInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '../../types/index.ts';
-import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
+
 import { contrastApca }   from '../../math/ContrastApca.ts';
+import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
 
 function measureContrast(
   algorithm: ContrastAlgorithmType,
-  fg: ColorRecordInterface,
-  bg: ColorRecordInterface,
+  fg: ColorRecordInterfaceType,
+  bg: ColorRecordInterfaceType
 ): number {
   if (algorithm === 'apca') {
     return contrastApca.apply(fg, bg);
@@ -34,20 +38,20 @@ function measureContrast(
  * value wins. The level is a global minimum; it never lowers a pair's ratio.
  */
 function levelFloor(level: string | undefined): number {
-  if (level === 'AAA') return 7.0;
-  if (level === 'AA')  return 4.5;
+  if (level === 'AAA') {return 7.0;}
+  if (level === 'AA')  {return 4.5;}
   return 1.0;
 }
 
-export class EnforceContrast implements TaskInterface {
+class EnforceContrast implements TaskInterface {
   readonly 'name' = 'enforce:contrast';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Checks and nudges foreground role colors to meet minRatio for each contrast pair.',
     'name':        'enforce:contrast',
     'reads':       ['roles', 'input.roles', 'input.contrast'],
-    'writes':      ['roles', 'metadata[\'core:contrastReport\']'],
     'requires':    ['contrastWcag21', 'contrastApca', 'ensureContrast'],
-    'description': 'Checks and nudges foreground role colors to meet minRatio for each contrast pair.',
+    'writes':      ['roles', 'metadata[\'core:contrastReport\']']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
@@ -56,23 +60,31 @@ export class EnforceContrast implements TaskInterface {
     const defaultAlgo  = state.input.contrast?.algorithm   ?? 'wcag21';
     const floor        = levelFloor(state.input.contrast?.level);
 
-    const allPairs: readonly ContrastPairInterface[] = [...schemaPairs, ...extraPairs];
+    const allPairs: readonly ContrastPairInterfaceType[] = [...schemaPairs, ...extraPairs];
 
     if (allPairs.length === 0) {
       return;
     }
 
-    const report: ContrastReportEntryInterface[] = [];
+    const report: ContrastReportEntryInterfaceType[] = [];
 
     for (const pair of allPairs) {
       const fgColor = state.roles[pair.foreground];
       const bgColor = state.roles[pair.background];
 
-      if (!fgColor || !bgColor) {
-        ctx.logger.warn('EnforceContrast', 'run', 'Contrast pair has missing role(s)', {
-          'foreground': pair.foreground,
-          'background': pair.background,
-        });
+      if (fgColor === undefined || bgColor === undefined) {
+        ctx.logger.warn(
+          LogBody.create()
+            .component('EnforceContrast')
+            .operation('run')
+            .status(LOG_STATUS.INVALID)
+            .message('Contrast pair has missing role(s)')
+            .context({
+              'background': pair.background,
+              'foreground': pair.foreground
+            })
+            .build()
+        );
         continue;
       }
 
@@ -87,12 +99,20 @@ export class EnforceContrast implements TaskInterface {
       let finalFg = fgColor;
 
       if (!passed) {
-        ctx.logger.info('EnforceContrast', 'run', 'Pair below minimum ratio; nudging', {
-          'foreground': pair.foreground,
-          'background': pair.background,
-          'ratio':      ratio,
-          'minRatio':   minRatio,
-        });
+        ctx.logger.info(
+          LogBody.create()
+            .component('EnforceContrast')
+            .operation('run')
+            .status(LOG_STATUS.PARTIAL)
+            .message('Pair below minimum ratio; nudging')
+            .context({
+              'background': pair.background,
+              'foreground': pair.foreground,
+              'minRatio':   minRatio,
+              'ratio':      ratio
+            })
+            .build()
+        );
 
         finalFg = ensureContrast.apply(fgColor, bgColor, minRatio, algo);
 
@@ -105,13 +125,13 @@ export class EnforceContrast implements TaskInterface {
         : ratio;
 
       report.push({
-        'foreground': pair.foreground,
-        'background': pair.background,
+        'adjusted':   adjusted,
         'algorithm':  algo,
-        'ratio':      finalRatio,
+        'background': pair.background,
+        'foreground': pair.foreground,
         'minRatio':   minRatio,
         'passed':     finalRatio >= minRatio,
-        'adjusted':   adjusted,
+        'ratio':      finalRatio
       });
     }
 

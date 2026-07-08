@@ -1,11 +1,12 @@
 import './types/augmentation.ts';
+import { ContrastPlugin } from './ContrastPlugin.ts';
 
-export { ContrastPlugin, contrastPlugin }         from './ContrastPlugin.ts';
-export { EnforceWcagAa, enforceWcagAa }            from './tasks/EnforceWcagAa.ts';
-export { EnforceWcagAaa, enforceWcagAaa }          from './tasks/EnforceWcagAaa.ts';
-export { EnforceApca, enforceApca }                from './tasks/EnforceApca.ts';
-export { EnforceCvdSimulate, enforceCvdSimulate }  from './tasks/EnforceCvdSimulate.ts';
-export { cvdMatrices, protanopiaMatrix, deuteranopiaMatrix, tritanopiaMatrix, achromatopsiaMatrix } from './data/cvdMatrices.ts';
-export { CVD_THRESHOLDS }                                from './data/cvdThresholds.ts';
-export type { CvdThresholdInterface }                    from './data/cvdThresholds.ts';
-export type { CvdMatrixInterface }                       from './types/index.ts';
+export { ContrastPlugin } from './ContrastPlugin.ts';
+export const contrastPlugin = new ContrastPlugin();
+export { cvdMatrices }        from './data/cvdMatrices.ts';
+export { CVD_THRESHOLDS }     from './data/cvdThresholds.ts';
+export { enforceApca }        from './tasks/EnforceApca.ts';
+export { enforceCvdSimulate } from './tasks/EnforceCvdSimulate.ts';
+export { enforceWcagAa }      from './tasks/EnforceWcagAa.ts';
+export { enforceWcagAaa }     from './tasks/EnforceWcagAaa.ts';
+export type { CvdMatrixInterfaceType } from './types/index.ts';

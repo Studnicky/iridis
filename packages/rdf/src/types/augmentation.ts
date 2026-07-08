@@ -7,4 +7,4 @@ export interface IterableStoreInterface {
   [Symbol.iterator](): Iterator<unknown>;
 }
 
-export type {};
+
