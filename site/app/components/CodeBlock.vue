@@ -1,30 +1,49 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { colorRecordFactory, ensureContrast } from '@studnicky/iridis';
 import { useIridis } from '~/composables/useIridis.ts';
 
 /**
- * Syntax-highlighted code, colored by the ENGINE's resolved syntax-* roles.
- * The very tokens the engine derives (syntax-keyword/string/number/function/…)
- * are what paint this code — so the output panel demonstrates the syntax palette
- * it just generated. Single-pass tokenizer (no nested-replace corruption).
+ * Syntax-highlighted code whose colors are contrast-enforced by iridis itself.
+ * Each token color starts from the engine's resolved syntax-* role, then is run
+ * through `ensureContrast` against THIS block's background at the active target
+ * ratio (AAA = 7, AA = 4.5). So the highlighting isn't just engine-colored — it
+ * is provably compliant, which is the whole point of the demo. Single-pass
+ * tokenizer (no nested-replace corruption).
  */
 const props = defineProps<{ code: string }>();
-const { roles } = useIridis();
+const { roles, contrastLevel } = useIridis();
 
-/** Resolve a syntax role with graceful fallbacks for sparser schema tiers. */
+/** Raw resolved syntax role with graceful fallbacks for sparser tiers. */
 function role(...names: string[]): string {
   for (const n of names) { const v = roles.value[n]; if (v) return v; }
-  return 'var(--ui-text)';
+  return roles.value['text'] ?? '#e6e6e6';
 }
+
+const bgHex = computed<string>(() => role('code-bg', 'bg-soft', 'surface', 'background'));
+const target = computed<number>(() => (contrastLevel.value === 'AAA' ? 7 : 4.5));
+
+/** Lift a color until it meets the target ratio against this block's bg. */
+function compliant(hex: string): string {
+  try {
+    const fg = colorRecordFactory.fromHex(hex);
+    const bg = colorRecordFactory.fromHex(bgHex.value);
+    return ensureContrast.apply(fg, bg, target.value, 'wcag21').hex;
+  } catch {
+    return hex;
+  }
+}
+
 const colors = computed(() => ({
-  'comment': role('syntax-comment', 'text-subtle', 'muted'),
-  'string': role('syntax-string', 'success'),
-  'number': role('syntax-number', 'warning'),
-  'func': role('syntax-function', 'info', 'brand'),
-  'attr': role('syntax-attribute', 'syntax-keyword', 'brand'),
-  'keyword': role('syntax-keyword', 'brand'),
-  'punc': role('syntax-punctuation', 'text-subtle', 'muted'),
-  'type': role('syntax-type', 'info'),
+  'comment': compliant(role('syntax-comment', 'text-subtle', 'muted')),
+  'string': compliant(role('syntax-string', 'success')),
+  'number': compliant(role('syntax-number', 'warning')),
+  'func': compliant(role('syntax-function', 'info', 'brand')),
+  'attr': compliant(role('syntax-attribute', 'syntax-keyword', 'brand')),
+  'keyword': compliant(role('syntax-keyword', 'brand')),
+  'punc': compliant(role('syntax-punctuation', 'text-subtle', 'muted')),
+  'type': compliant(role('syntax-type', 'info')),
+  'text': compliant(role('text')),
 }));
 
 function esc(s: string): string {
@@ -41,9 +60,9 @@ const html = computed(() => {
   let m: RegExpExecArray | null;
   TOKEN.lastIndex = 0;
   while ((m = TOKEN.exec(code)) !== null) {
-    out += esc(code.slice(last, m.index));
+    out += `<span style="color:${c.text}">${esc(code.slice(last, m.index))}</span>`;
     const [full, comment, str, hex, cssvar, fn, num, type, punc] = m;
-    let color = 'inherit';
+    let color = c.text;
     if (comment) color = c.comment;
     else if (str) color = c.string;
     else if (hex) color = c.string;
@@ -55,19 +74,18 @@ const html = computed(() => {
     out += `<span style="color:${color}">${esc(full)}</span>`;
     last = m.index + full.length;
   }
-  out += esc(code.slice(last));
+  out += `<span style="color:${c.text}">${esc(code.slice(last))}</span>`;
   return out;
 });
 </script>
 
 <template>
-  <pre class="code-block max-h-72 overflow-auto rounded-lg p-3 text-xs leading-relaxed"><code v-html="html" /></pre>
+  <pre class="code-block max-h-72 overflow-auto rounded-lg p-3 text-xs leading-relaxed" :style="{ backgroundColor: bgHex }"><code v-html="html" /></pre>
 </template>
 
 <style scoped>
 .code-block {
   font-family: var(--font-mono);
-  background: color-mix(in oklch, var(--ui-color-neutral-950, #0a0a0a) 70%, var(--ui-bg));
   border: 1px solid color-mix(in oklch, var(--ui-primary) 18%, transparent);
 }
 </style>

@@ -73,7 +73,7 @@ const pickerSeeds = ref<string[]>(['#7c3aed', '#06b6d4', '#f59e0b']);
 const imageSeeds = ref<string[]>([]);
 const framing = ref<Framing>('dark');
 const schemaName = ref<string>('iridis-32');
-const contrastLevel = ref<'AA' | 'AAA'>('AA');
+const contrastLevel = ref<'AA' | 'AAA'>('AAA');
 
 const roles = ref<RoleHexMap>({});
 const roleViews = ref<RoleView[]>([]);
