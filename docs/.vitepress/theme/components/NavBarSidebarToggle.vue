@@ -9,8 +9,13 @@
  *
  * Toggles the iridis-sidebar-collapsed class on documentElement. The
  * class drives a fixed-position overlay drawer at every width (see
- * base.css). On mount the toggle starts uncollapsed at every viewport
- * so the pages drawer is open by default.
+ * base.css). The initial class is seeded by a pre-hydration script
+ * injected into `<head>` (see config.ts) before this component ever
+ * mounts: desktop (>=1100px) defaults to open, mobile/tablet defaults
+ * to collapsed, and a user's persisted explicit choice (see
+ * `stores/sidebarPersistence.ts`) overrides both defaults. This
+ * component never seeds or resets that class on mount — it only reads
+ * the current state and reacts to user interaction from here on.
  *
  * In addition to the navbar toggle button, this component teleports a
  * matching close `×` button INTO the VPSidebar element so the drawer
@@ -21,6 +26,7 @@
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import Button from 'primevue/button';
+import { persistSidebarCollapsed } from '../stores/sidebarPersistence.ts';
 
 const collapsed = ref(false);
 const teleportReady = ref(false);
@@ -48,9 +54,9 @@ function onMqlChange(event: MediaQueryListEvent): void {
 
 onMounted(() => {
   if (typeof document === 'undefined') return;
-  // Always start uncollapsed at every viewport. The user can collapse
-  // via this toggle; we never seed the collapsed state from matchMedia.
-  document.documentElement.classList.remove('iridis-sidebar-collapsed');
+  // The collapsed class is already correct by the time this component
+  // mounts — seeded by the pre-hydration script in <head> (see
+  // config.ts). Just read the current state; never write it here.
   syncFromDom();
   syncViewport();
   observer = new MutationObserver(syncFromDom);
@@ -78,12 +84,14 @@ function toggle(): void {
   const next = !collapsed.value;
   collapsed.value = next;
   document.documentElement.classList.toggle('iridis-sidebar-collapsed', next);
+  persistSidebarCollapsed(next);
 }
 
 function close(): void {
   if (typeof document === 'undefined') return;
   collapsed.value = true;
   document.documentElement.classList.add('iridis-sidebar-collapsed');
+  persistSidebarCollapsed(true);
 }
 
 const showDrawerClose = computed<boolean>(() => isDesktop.value && !collapsed.value);

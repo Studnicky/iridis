@@ -6,6 +6,7 @@ import { withMermaid }  from 'vitepress-plugin-mermaid';
 import { iridisBrandPlugin } from './plugins/iridis-brand.mjs';
 import { themeConfig }       from './theme.config.js';
 import { iridisShikiTheme }  from './theme/shikiTheme.ts';
+import { SIDEBAR_STORAGE_KEY } from './theme/stores/sidebarPersistence.ts';
 import pkg                   from '../../package.json' with { type: 'json' };
 
 /**
@@ -62,6 +63,30 @@ const VERIFY_BING          = seo.bingSiteVerification;
    `twitter:site` resolves to a deleted account. Set in `package.json`
    → `iridis.seo.twitterHandle` (include the `@`). */
 const SITE_TWITTER_HANDLE  = seo.twitterHandle;
+
+/**
+ * Pre-hydration guard against the sidebar drawer FOUC. Runs synchronously
+ * as the first thing in `<head>`, before `<body>` parses, so the
+ * `iridis-sidebar-collapsed` class lands on `<html>` before first paint —
+ * no visible flash of the drawer opening then closing.
+ *
+ * Precedence: a persisted explicit user choice (see
+ * `theme/stores/sidebarPersistence.ts`) always wins. Absent that, mobile
+ * and tablet viewports (<1100px) default to collapsed; desktop defaults
+ * to open (the CSS default is "no class = open", so desktop needs no
+ * class added at all).
+ *
+ * The storage key is duplicated here as a literal instead of imported at
+ * runtime because this script is injected as inline HTML text — it runs
+ * before any JS module graph loads and has no access to imports.
+ */
+const SIDEBAR_FOUC_GUARD = `(function () {
+  try {
+    var raw = window.localStorage.getItem('${SIDEBAR_STORAGE_KEY}');
+    var collapsed = raw === 'true' ? true : raw === 'false' ? false : window.matchMedia('(max-width: 1099px)').matches;
+    if (collapsed) document.documentElement.classList.add('iridis-sidebar-collapsed');
+  } catch (e) {}
+})();`;
 
 const sidebar = [
   {
@@ -163,6 +188,10 @@ export default withMermaid(defineConfig({
     'hostname': SITE_URL,
   },
   'head': [
+    /* Sidebar FOUC guard: must run before any other head content paints
+       or blocks so the collapsed/open class is on <html> at first paint. */
+    ['script', {}, SIDEBAR_FOUC_GUARD],
+
     /* Favicon stack. The SVG is the canonical icon (modern browsers,
        crisp at every size, ~600 bytes). The PNG variants stay as
        fallbacks for crawlers and iOS home-screen / Android-shortcut

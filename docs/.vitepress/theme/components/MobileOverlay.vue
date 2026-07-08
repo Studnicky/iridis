@@ -9,6 +9,7 @@
  * captured. Tapping the backdrop closes the drawer.
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { persistSidebarCollapsed } from '../stores/sidebarPersistence.ts';
 
 const sidebarCollapsed = ref(true);
 const isNarrow = ref(false);
@@ -52,6 +53,7 @@ const visible = computed<boolean>(() => isNarrow.value && !sidebarCollapsed.valu
 function dismiss(): void {
   if (typeof document === 'undefined') return;
   document.documentElement.classList.add('iridis-sidebar-collapsed');
+  persistSidebarCollapsed(true);
 }
 </script>
 
