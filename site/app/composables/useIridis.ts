@@ -28,12 +28,14 @@ const SHADE_L: Record<number, number> = {
 const VARIANT_CONFIG = SHADE_KEYS.map((s) => ({ 'name': `s${s}`, 'invertLightness': false, 'lightnessTarget': SHADE_L[s] as number }));
 
 /**
- * Absolute target hues declared onto the schema's semantic roles. This is schema
- * authoring (a `hue` field the engine resolves), NOT color computation — the
- * engine still produces the actual color, inheriting each role's chroma/lightness
- * character from `derivedFrom` while pinning the hue so success stays green, etc.
+ * Semantic hue targets, applied as a BOUNDED nudge (the engine rotates each role
+ * toward the target by at most SEMANTIC_HUE_CLAMP degrees). This keeps success/
+ * warning/error/info rooted in the actual palette — a red-dominant image yields
+ * warm-leaning semantics rather than pure green/blue that appear nowhere in it.
+ * Schema authoring; the engine still resolves the real color.
  */
 const SEMANTIC_HUE: Record<string, number> = { 'success': 150, 'warning': 85, 'error': 27, 'info': 250 };
+const SEMANTIC_HUE_CLAMP = 55;
 
 const COLOR_PIPELINE = [
   'intake:hex', 'resolve:roles', 'expand:family',
@@ -41,10 +43,13 @@ const COLOR_PIPELINE = [
   'derive:variant',
 ];
 const IMAGE_PIPELINE = [
-  'intake:imagePixels', 'gallery:histogram', 'gallery:extract', 'resolve:roles', 'expand:family',
+  'intake:imagePixels', 'gallery:histogram', 'gallery:extract', 'gallery:harmonize',
+  'resolve:roles', 'expand:family',
   'enforce:contrast', 'enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate',
   'derive:variant',
 ];
+
+export type GalleryAlgorithm = 'median-cut' | 'delta-e';
 
 const engine = new Engine();
 for (const t of coreTasks) engine.tasks.register(t);
@@ -57,7 +62,7 @@ function withSemanticHues(schema: RoleSchemaInterface): RoleSchemaInterface {
     ...schema,
     'roles': schema.roles.map((r: RoleDefinitionInterface) =>
       (SEMANTIC_HUE[r.name] !== undefined)
-        ? { ...r, 'hue': SEMANTIC_HUE[r.name] }
+        ? { ...r, 'hue': SEMANTIC_HUE[r.name], 'hueClamp': SEMANTIC_HUE_CLAMP }
         : r),
   };
 }
@@ -76,6 +81,16 @@ const scales = ref<ScaleMap>({});
 const histogram = ref<HistogramBin[]>([]);
 const running = ref<boolean>(false);
 const error = ref<string | null>(null);
+
+/* Image-extraction controls (mirror the engine's gallery config knobs). */
+const imgAlgorithm = ref<GalleryAlgorithm>('median-cut');
+const imgK = ref<number>(8);
+const imgHistogramBits = ref<number>(5);
+const imgDeltaECap = ref<number>(128);
+const imgHarmonize = ref<number>(10);
+const imgLightnessRange = ref<[number, number]>([0, 1]);
+const imgChromaRange = ref<[number, number]>([0, 0.5]);
+const lastImageSrc = ref<string | null>(null);
 
 const activeSeeds = computed<string[]>(() => (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value));
 
@@ -144,21 +159,33 @@ async function decodeToPixels(src: string): Promise<{ data: Uint8ClampedArray; w
 }
 
 /** Run the image pipeline: capture histogram, dominant seeds; switch to image mode. */
-async function extractFromImage(fileOrUrl: File | string, k = 6): Promise<void> {
+async function extractFromImage(fileOrUrl: File | string): Promise<void> {
   if (typeof document === 'undefined') return;
   running.value = true;
   error.value = null;
   try {
     const src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
+    lastImageSrc.value = src;
     const pixels = await decodeToPixels(src);
     const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
     engine.pipeline([...IMAGE_PIPELINE]);
-    const state = await engine.run({
+    const state = engine.run({
       'colors':   [pixels],
       'roles':    withSemanticHues(pair![framing.value]),
       'contrast': { 'level': contrastLevel.value, 'algorithm': 'wcag21' },
       'runtime':  { 'framing': framing.value, 'colorSpace': 'srgb' },
-      'metadata': { 'gallery': { 'k': k, 'algorithm': 'medianCut' }, 'core:variantConfig': VARIANT_CONFIG },
+      'metadata': {
+        'gallery': {
+          'k':                  imgK.value,
+          'algorithm':          imgAlgorithm.value,
+          'histogramBits':      imgHistogramBits.value,
+          'deltaECap':          imgDeltaECap.value,
+          'harmonizeThreshold': imgHarmonize.value,
+          'lightnessRange':     [...imgLightnessRange.value] as [number, number],
+          'chromaRange':        [...imgChromaRange.value] as [number, number],
+        },
+        'core:variantConfig': VARIANT_CONFIG,
+      },
     });
     const hist = (state.metadata['gallery:histogram'] as { bins?: HistogramBin[] } | undefined)?.bins ?? [];
     histogram.value = [...hist].sort((a, b) => b.weight - a.weight).slice(0, 96);
@@ -185,15 +212,24 @@ function schedule(): void {
   timer = setTimeout(() => { void run(); }, 120);
 }
 
+let extractTimer: ReturnType<typeof setTimeout> | undefined;
+function scheduleReextract(): void {
+  if (typeof window === 'undefined' || !lastImageSrc.value || mode.value !== 'image') return;
+  if (extractTimer) clearTimeout(extractTimer);
+  extractTimer = setTimeout(() => { void extractFromImage(lastImageSrc.value as string); }, 180);
+}
+
 export function useIridis() {
   if (!booted && typeof window !== 'undefined') {
     booted = true;
     void run();
     watch([pickerSeeds, imageSeeds, framing, schemaName, contrastLevel, mode], schedule, { 'deep': true });
+    watch([imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
   }
   return {
     mode, pickerSeeds, imageSeeds, activeSeeds, framing, schemaName, contrastLevel,
     roles, roleViews, scales, histogram, running, error,
+    imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
     run, addSeed, removeSeed, setSeed, extractFromImage,
   };
 }
