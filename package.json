@@ -25,6 +25,9 @@
     "vitepress-plugin-mermaid": "^2.0.17",
     "vue": "^3.5.34"
   },
+  "overrides": {
+    "dompurify": "^3.4.11"
+  },
   "engines": {
     "node": ">=24"
   },
