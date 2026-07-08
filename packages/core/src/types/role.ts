@@ -36,13 +36,20 @@ export interface RoleDefinitionInterface {
    */
   readonly hueOffset?:      number;
   /**
-   * Absolute target hue in OKLCH degrees [0, 360). Takes precedence over
-   * `hueOffset` in every resolution path, so a role can inherit its source's
-   * lightness/chroma character via `derivedFrom` while pinning a fixed hue
-   * (e.g. `success` stays green regardless of the brand). Resolved by the
-   * engine, not the consumer.
+   * Target hue in OKLCH degrees [0, 360). Takes precedence over `hueOffset` in
+   * every resolution path. On its own it pins the hue absolutely; paired with
+   * `hueClamp` it becomes a BOUNDED nudge — the resolved color is rotated toward
+   * the target by at most `hueClamp` degrees along the shortest arc, so semantic
+   * roles lean toward their meaning (success → green) while staying rooted in the
+   * actual palette. Resolved by the engine, not the consumer.
    */
   readonly hue?:            number;
+  /**
+   * Maximum degrees the resolved hue may rotate toward `hue`. Bounds the nudge
+   * so a red-dominant palette yields a warm-leaning `success` rather than a pure
+   * green that appears nowhere in the theme. Ignored unless `hue` is set.
+   */
+  readonly hueClamp?:       number;
 }
 
 export interface ContrastPairInterface {

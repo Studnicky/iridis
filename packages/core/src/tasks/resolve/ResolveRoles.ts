@@ -9,6 +9,17 @@ import type {
 } from '../../types/index.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
+/**
+ * Rotate `src` toward `target` along the shortest arc, by at most `maxDeg`
+ * degrees. A bounded nudge: keeps the resolved hue rooted in the palette while
+ * leaning it toward a semantic target.
+ */
+function hueTowards(src: number, target: number, maxDeg: number): number {
+  const delta = ((target - src + 540) % 360) - 180;
+  const clamped = Math.max(-maxDeg, Math.min(maxDeg, delta));
+  return (((src + clamped) % 360) + 360) % 360;
+}
+
 function rangeCenter(range: readonly [number, number]): number {
   return (range[0] + range[1]) / 2;
 }
@@ -59,7 +70,8 @@ function nudgeIntoRole(
 
   const targetL = role.lightnessRange ? clampToRange(l, role.lightnessRange) : l;
   const targetC = role.chromaRange    ? clampToRange(c, role.chromaRange)    : c;
-  const targetH = role.hue !== undefined ? (((role.hue % 360) + 360) % 360)
+  const targetH = role.hue !== undefined
+    ? (role.hueClamp !== undefined ? hueTowards(h, role.hue, role.hueClamp) : (((role.hue % 360) + 360) % 360))
     : role.hueOffset !== undefined ? role.hueOffset
     : h;
 

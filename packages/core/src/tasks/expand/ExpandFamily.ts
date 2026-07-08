@@ -14,6 +14,13 @@ function rangeCenter(range: readonly [number, number]): number {
   return (range[0] + range[1]) / 2;
 }
 
+/** Rotate `src` toward `target` along the shortest arc, by at most `maxDeg`. */
+function hueTowards(src: number, target: number, maxDeg: number): number {
+  const delta = ((target - src + 540) % 360) - 180;
+  const clamped = Math.max(-maxDeg, Math.min(maxDeg, delta));
+  return (((src + clamped) % 360) + 360) % 360;
+}
+
 function deriveColor(
   source: ColorRecordInterface,
   role: RoleDefinitionInterface,
@@ -23,7 +30,7 @@ function deriveColor(
   const targetL = role.lightnessRange ? rangeCenter(role.lightnessRange) : l;
   const targetC = role.chromaRange    ? rangeCenter(role.chromaRange)    : c;
   const targetH = role.hue !== undefined
-    ? ((role.hue % 360) + 360) % 360
+    ? (role.hueClamp !== undefined ? hueTowards(h, role.hue, role.hueClamp) : (((role.hue % 360) + 360) % 360))
     : role.hueOffset !== undefined
       ? ((h + role.hueOffset) % 360 + 360) % 360
       : h;

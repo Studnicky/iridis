@@ -61,6 +61,25 @@ test('absolute hue pins a derived role (overrides brand-relative)', () => {
   assert.ok(h > 120 && h < 180, `success hue ${h} is green, not brand-derived`);
 });
 
+test('hueClamp bounds the nudge so semantics stay rooted in the palette', () => {
+  const clamped: RoleSchemaInterface = {
+    'name': 'clamped',
+    'roles': [
+      { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },
+      { 'name': 'brand',      'intent': 'accent',     'required': true, 'lightnessRange': [0.45, 0.65], 'chromaRange': [0.12, 0.30] },
+      // target green (150) but clamp the rotation to 40°
+      { 'name': 'success',    'intent': 'positive', 'derivedFrom': 'brand', 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.14, 0.26], 'hue': 150, 'hueClamp': 40 },
+    ],
+  };
+  const engine = engineFor(['intake:hex', 'resolve:roles', 'expand:family']);
+  const state = engine.run({ 'colors': ['#b11e12'], 'roles': clamped }); // red brand (~hue 30)
+  const brandHue = hueOf(state.roles['brand']!.hex);
+  const successHue = hueOf(state.roles['success']!.hex);
+  const delta = Math.abs(((successHue - brandHue + 540) % 360) - 180);
+  assert.ok(delta <= 45, `success nudged only ${delta.toFixed(0)}° from brand (bounded), not jumped to pure green`);
+  assert.ok(successHue < 120, `success hue ${successHue} stays warm/palette-rooted, not pure green`);
+});
+
 test('lightnessTarget produces an engine-resolved tonal step', () => {
   const engine = engineFor(['intake:hex', 'resolve:roles', 'derive:variant']);
   const state = engine.run({
