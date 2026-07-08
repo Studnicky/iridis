@@ -1,2 +1,147 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/* ─── Futuristic type system ─── */
+@theme {
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Orbitron", "Space Grotesk", sans-serif;
+}
+
+:root {
+  /* engine-driven glow color; falls back before the projector runs */
+  --glow: var(--ui-primary, #7c3aed);
+  --glow-2: var(--ui-color-info-500, #06b6d4);
+  /* one shared window every color animates over, in unison */
+  --iridis-tune: 550ms;
+  --iridis-ease: cubic-bezier(0.33, 0, 0.2, 1);
+}
+
+/* Every element re-tones over the SAME window when the engine rewrites its
+   --ui-* tokens, so the whole page transitions in unison rather than snapping.
+   Only color-family properties animate; transforms/opacity stay per-component. */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, outline-color, text-shadow;
+  transition-duration: var(--iridis-tune);
+  transition-timing-function: var(--iridis-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0ms; }
+}
+
+.font-display { font-family: var(--font-display); letter-spacing: 0.02em; }
+
+/* ─── Sci-fi backdrop: animated grid + drifting engine-colored aurora ─── */
+body {
+  position: relative;
+  background: var(--ui-bg, #05040a);
+  overflow-x: hidden;
+}
+body::before {
+  /* perspective grid floor */
+  content: "";
+  position: fixed;
+  inset: -50% 0 0 0;
+  background-image:
+    linear-gradient(color-mix(in oklch, var(--glow) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--glow) 22%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 10%, transparent 70%);
+  opacity: 0.16;
+  animation: grid-pan 18s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  /* drifting aurora blobs, engine-tinted */
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(40rem 40rem at 15% 0%, color-mix(in oklch, var(--glow) 30%, transparent), transparent 60%),
+    radial-gradient(36rem 36rem at 90% 20%, color-mix(in oklch, var(--glow-2) 26%, transparent), transparent 60%);
+  filter: blur(40px);
+  opacity: 0.28;
+  animation: aurora 24s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+#__nuxt { position: relative; z-index: 1; }
+
+@keyframes grid-pan { to { background-position: 0 44px, 44px 0; } }
+@keyframes aurora {
+  0%   { transform: translate3d(0,0,0) scale(1); }
+  50%  { transform: translate3d(3%, 2%, 0) scale(1.08); }
+  100% { transform: translate3d(-2%, -1%, 0) scale(1.03); }
+}
+
+/* ─── Glass panels with an engine-colored holo edge ─── */
+.glass {
+  position: relative;
+  background: color-mix(in oklch, var(--ui-bg-elevated, #12101f) 93%, transparent);
+  backdrop-filter: blur(8px) saturate(1.15);
+  border: 1px solid color-mix(in oklch, var(--glow) 35%, transparent);
+  border-radius: 1rem;
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--glow) 12%, transparent),
+    0 8px 40px -12px color-mix(in oklch, var(--glow) 40%, transparent),
+    inset 0 1px 0 color-mix(in oklch, #fff 8%, transparent);
+  transition: transform 0.35s cubic-bezier(.2,.8,.2,1), box-shadow 0.35s ease;
+}
+.glass:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--glow) 25%, transparent),
+    0 18px 60px -14px color-mix(in oklch, var(--glow) 55%, transparent);
+}
+.glass::before {
+  /* animated top sheen line */
+  content: "";
+  position: absolute; inset: 0 0 auto 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glow), transparent);
+  opacity: 0.7;
+  animation: sheen 4s ease-in-out infinite;
+}
+@keyframes sheen { 0%,100%{ opacity:.2 } 50%{ opacity:.9 } }
+
+/* Engine-lit glass card (applied to every UCard via app.config). */
+.iridis-card {
+  position: relative;
+  background: color-mix(in oklch, var(--ui-bg-elevated, #12101f) 94%, transparent);
+  backdrop-filter: blur(8px) saturate(1.15);
+  border: 1px solid color-mix(in oklch, var(--glow) 22%, transparent);
+  box-shadow:
+    0 8px 40px -16px color-mix(in oklch, var(--glow) 40%, transparent),
+    inset 0 1px 0 color-mix(in oklch, #fff 6%, transparent);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.iridis-card:hover {
+  border-color: color-mix(in oklch, var(--glow) 40%, transparent);
+  box-shadow: 0 14px 54px -16px color-mix(in oklch, var(--glow) 55%, transparent);
+}
+
+/* ─── Glow / pulse / float utilities ─── */
+.glow-text {
+  text-shadow: 0 0 12px color-mix(in oklch, var(--glow) 70%, transparent),
+               0 0 40px color-mix(in oklch, var(--glow) 40%, transparent);
+}
+.pulse { animation: pulse-glow 3s ease-in-out infinite; }
+@keyframes pulse-glow {
+  0%,100% { filter: drop-shadow(0 0 4px color-mix(in oklch, var(--glow) 45%, transparent)); }
+  50%     { filter: drop-shadow(0 0 16px color-mix(in oklch, var(--glow) 85%, transparent)); }
+}
+.float { animation: float 7s ease-in-out infinite; }
+@keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-10px) } }
+.spin-slow { animation: spin 26s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  body::before, body::after, .float, .pulse, .spin-slow, .glass::before { animation: none !important; }
+}
+
+/* ─── Scanline overlay for the hacker feel (very subtle) ─── */
+.scanlines::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent 0 2px, color-mix(in oklch, #000 22%, transparent) 2px 3px);
+  pointer-events: none; opacity: 0.1; border-radius: inherit;
+}
