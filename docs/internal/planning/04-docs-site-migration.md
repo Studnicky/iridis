@@ -61,14 +61,58 @@ bundle fixes there keep the *current* site healthy until this migration ships.
 | Custom `IridisPicker`, `RoleSchemaEditor`, `SchemaForm`, `ImageToTheme`, dispatcher | Keep — swap only their inner PrimeVue atoms |
 | Forms (`SchemaForm`, `RoleSchemaEditor`) | Nuxt UI `UForm` + vee-validate/zod, or keep the current schema-driven form logic |
 
-## Theming strategy (the differentiator)
+## Theming strategy — THE core of the migration
 
-1. Define the Nuxt UI / Tailwind v4 design tokens as CSS variables under `:root` / `.dark`.
-2. Point the engine's projector (`applyConfigToDocument.ts` equivalent) at *those* variable
-   names, so `engine.run()` output writes the actual design-system tokens.
-3. Result: every Nuxt UI component (buttons, inputs, cards, code blocks) recolors through the
-   engine with no per-component override — the whole site is one live `engine.run()`, which is
-   the original dogfooding thesis, finally native.
+Color tokens are the product. The site exists to prove the engine, so the engine must
+*generate the entire Nuxt UI design-token set*, not merely tint an accent. This section is
+the make-or-break integration and the first thing built (see execution step 2).
+
+### How Nuxt UI v4 exposes tokens (verified)
+
+Nuxt UI v4 theming is a three-layer CSS-variable system:
+1. **Raw scale** — `--ui-color-{alias}-{50..950}` for each of 7 semantic aliases
+   (`primary`, `secondary`, `success`, `info`, `warning`, `error`, `neutral`), declared via
+   Tailwind v4 `@theme` in `main.css`.
+2. **Derived shortcuts** — `--ui-primary`, `--ui-bg`, `--ui-bg-muted`, `--ui-bg-elevated`,
+   `--ui-text`, `--ui-text-muted`, `--ui-border`, etc., defined as `var(--ui-color-*-N)`.
+3. **Semantic mapping** — `app.config.ts → ui.colors` binds aliases to scales.
+
+Every one of these is a plain CSS variable on `:root` / `.dark`, so it is **runtime-overridable
+via `document.documentElement.style.setProperty(...)`** — exactly the projector mechanism the
+current dispatcher already uses for `--iridis-*`.
+
+### The engine → Nuxt UI token bridge
+
+The projector (successor to `applyConfigToDocument.ts`) runs `engine.run(seeds, framing, schema)`
+and writes the results directly onto Nuxt UI's variables:
+
+| iridis role output | Nuxt UI token(s) |
+|---|---|
+| `brand` role + its OKLCH lightness ramp | `--ui-color-primary-50..950` (full scale) + `--ui-primary` |
+| `background` / `surface` / `bgSoft` | `--ui-bg` / `--ui-bg-elevated` / `--ui-bg-muted` |
+| `text` / `muted` | `--ui-text` / `--ui-text-muted`, `--ui-border` |
+| `success` / `warning` / `error` (iridis-12 tier) | `--ui-color-{success,warning,error}-*` + shortcuts |
+| `secondary` / `info` roles | `--ui-color-{secondary,info}-*` + shortcuts |
+| `neutral` from `muted`/`text` ramp | `--ui-color-neutral-*` |
+| 14 syntax roles (iridis-16) | code-block / Shiki theme variables |
+
+**Key fit:** Nuxt UI wants an 11-step (50–950) scale per semantic color. iridis's
+`expand:family` / `derive:variant` tasks already produce exactly that kind of OKLCH lightness
+ramp from a single seed. So the engine generates the *full* Tailwind/Nuxt UI scale set — not one
+color per role — and the entire component library (buttons, inputs, cards, sliders, code blocks)
+recolors live, with zero per-component override.
+
+### Deliverables for the theming spine
+
+1. A role schema (`iridis-nuxt`, extending iridis-32) whose roles map 1:1 onto the Nuxt UI
+   semantic-token set above, including the shade-ramp requirement.
+2. A projector that writes `--ui-color-*` + `--ui-*` + syntax vars for both framings
+   (`:root` and `.dark`), driven by the state-machine dispatcher (ported as-is).
+3. A proof page: several `UButton`/`UCard`/`UInput`/`USlider`/`UBadge` + a code block, all
+   recoloring on seed change — before porting any breadth.
+
+If this spine does not land cleanly, the whole migration stops here for a rethink — it is the
+one non-negotiable integration.
 
 ## Deploy
 
