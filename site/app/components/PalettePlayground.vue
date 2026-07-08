@@ -6,18 +6,23 @@ import { useIridis } from '~/composables/useIridis.ts';
  * (1–8); the engine expands and resolves them into the selected role schema and
  * re-themes the page. Only active when mode === 'picker'.
  */
-const { pickerSeeds, framing, schemaName, contrastLevel, running, addSeed, removeSeed, setSeed } = useIridis();
+const { pickerSeeds, framing, schemaName, contrastLevel, addSeed, removeSeed, setSeed } = useIridis();
 const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-32'];
 </script>
 
 <template>
   <UCard>
     <template #header>
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-3">
         <span class="font-semibold text-highlighted">Additive palette</span>
-        <UBadge :color="running ? 'warning' : 'success'" variant="soft">
-          {{ running ? 'resolving…' : `${pickerSeeds.length} seed${pickerSeeds.length === 1 ? '' : 's'}` }}
-        </UBadge>
+        <USwitch
+          :model-value="framing === 'dark'"
+          size="lg"
+          unchecked-icon="material-symbols:light-mode-rounded"
+          checked-icon="material-symbols:dark-mode-rounded"
+          :aria-label="framing === 'dark' ? 'Dark framing' : 'Light framing'"
+          @update:model-value="framing = $event ? 'dark' : 'light'"
+        />
       </div>
     </template>
 
@@ -36,26 +41,19 @@ const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-3
             @input="setSeed(i, ($event.target as HTMLInputElement).value)"
           >
           <span class="font-mono text-xs text-muted">{{ hex }}</span>
-          <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" :disabled="pickerSeeds.length <= 1" @click="removeSeed(i)" />
+          <UButton icon="i-material-symbols-close-rounded" color="neutral" variant="ghost" size="xs" :disabled="pickerSeeds.length <= 1" @click="removeSeed(i)" />
         </div>
-        <UButton icon="i-lucide-plus" color="primary" variant="soft" size="sm" :disabled="pickerSeeds.length >= 8" @click="addSeed()">
+        <UButton icon="i-material-symbols-add-rounded" color="primary" variant="soft" size="sm" :disabled="pickerSeeds.length >= 8" @click="addSeed()">
           Add seed
         </UButton>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2">
         <UFormField label="Role schema" help="How many roles to resolve">
           <USelect v-model="schemaName" :items="schemaItems" class="w-full" />
         </UFormField>
         <UFormField label="Contrast target">
           <USelect v-model="contrastLevel" :items="['AA', 'AAA']" class="w-full" />
-        </UFormField>
-        <UFormField label="Framing">
-          <USwitch
-            :model-value="framing === 'dark'"
-            :label="framing === 'dark' ? 'Dark' : 'Light'"
-            @update:model-value="framing = $event ? 'dark' : 'light'"
-          />
         </UFormField>
       </div>
     </div>

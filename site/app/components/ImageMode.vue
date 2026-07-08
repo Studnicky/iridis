@@ -53,9 +53,9 @@ async function sample(): Promise<void> {
 
     <div class="space-y-5">
       <div class="flex flex-wrap items-center gap-3">
-        <UButton icon="i-lucide-upload" color="primary" variant="soft" size="sm" @click="($refs.file as HTMLInputElement).click()">Upload image</UButton>
+        <UButton icon="i-material-symbols-upload-rounded" color="primary" variant="soft" size="sm" @click="($refs.file as HTMLInputElement).click()">Upload image</UButton>
         <input ref="file" type="file" accept="image/*" class="hidden" @change="onFile" >
-        <UButton icon="i-lucide-sparkles" color="neutral" variant="soft" size="sm" @click="sample">Try a sample</UButton>
+        <UButton icon="i-material-symbols-auto-awesome-rounded" color="neutral" variant="soft" size="sm" @click="sample">Try a sample</UButton>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">

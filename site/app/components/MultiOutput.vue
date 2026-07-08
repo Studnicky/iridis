@@ -63,7 +63,8 @@ const active = ref<string>('0');
       </p>
       <template v-if="outputs.length">
         <UTabs v-model="active" :items="tabItems" :content="false" />
-        <pre class="max-h-72 overflow-auto rounded-lg bg-elevated p-3 text-xs"><code>{{ outputs[Number(active)]?.text }}</code></pre>
+        <CodeBlock :code="outputs[Number(active)]?.text || ''" />
+        <p class="text-[10px] text-dimmed">Highlighted with the engine's own <code>syntax-*</code> roles.</p>
       </template>
     </div>
   </UCard>
