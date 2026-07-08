@@ -10,10 +10,14 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@studnicky/iridis": "*",
-    "@studnicky/iridis-contrast": "*",
     "@nuxt/content": "^3.15.0",
     "@nuxt/ui": "^4.9.0",
+    "@studnicky/iridis": "*",
+    "@studnicky/iridis-contrast": "*",
+    "@studnicky/iridis-image": "*",
+    "@studnicky/iridis-rdf": "*",
+    "@studnicky/iridis-stylesheet": "*",
+    "@studnicky/iridis-tailwind": "*",
     "@tiptap/core": "^3.27.3",
     "@tiptap/extension-bubble-menu": "^3.27.3",
     "@tiptap/extension-code": "^3.27.3",
@@ -37,5 +41,8 @@
     "typescript": "^6.0.3",
     "vue": "^3.5.39",
     "vue-router": "^5.1.0"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.116"
   }
 }
