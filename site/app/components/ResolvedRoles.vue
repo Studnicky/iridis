@@ -3,32 +3,30 @@ import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 
 /**
- * The resolved role palette. Shows every role the engine produced from the seeds
- * plus its WCAG 2.1 contrast against the resolved background, with an AA/AAA
- * badge — demonstrating role resolution + contrast enforcement.
+ * The resolved role palette (the engine's role output, not the semantic UI
+ * colors). Every role the engine produced from the active seeds, with its WCAG
+ * 2.1 contrast against the resolved background and an AA/AAA badge.
  */
-const { roleList, resolvedRoles } = useIridis();
+const { roleViews, roles } = useIridis();
 
 function channel(v: number): number {
   const s = v / 255;
   return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
 }
 function luminance(hex: string): number {
-  const r = channel(parseInt(hex.slice(1, 3), 16));
-  const g = channel(parseInt(hex.slice(3, 5), 16));
-  const b = channel(parseInt(hex.slice(5, 7), 16));
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return 0.2126 * channel(parseInt(hex.slice(1, 3), 16))
+    + 0.7152 * channel(parseInt(hex.slice(3, 5), 16))
+    + 0.0722 * channel(parseInt(hex.slice(5, 7), 16));
 }
 function ratio(fg: string, bg: string): number {
-  const a = luminance(fg); const b = luminance(bg);
-  const hi = Math.max(a, b); const lo = Math.min(a, b);
-  return (hi + 0.05) / (lo + 0.05);
+  const a = luminance(fg), b = luminance(bg);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-const bg = computed<string>(() => resolvedRoles.value['background']?.hex ?? '#000000');
-const rows = computed(() => roleList.value.map((r) => {
+const bg = computed<string>(() => roles.value['background'] ?? '#000000');
+const rows = computed(() => roleViews.value.map((r) => {
   const cr = ratio(r.hex, bg.value);
-  return { ...r, 'ratio': cr, 'aa': cr >= 4.5, 'aaa': cr >= 7 };
+  return { 'name': r.name, 'hex': r.hex, 'ratio': cr, 'aa': cr >= 4.5, 'aaa': cr >= 7 };
 }));
 </script>
 

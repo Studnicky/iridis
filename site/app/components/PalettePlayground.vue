@@ -2,12 +2,11 @@
 import { useIridis } from '~/composables/useIridis.ts';
 
 /**
- * Additive palette playground. Demonstrates iridis's variable-input-count intake:
- * add, remove, or edit any number of seed colors (1–8) and the whole page
- * re-resolves and re-themes live. This is the core "additive palette" feature.
+ * Color-picker mode. Additive palette: add, remove, or edit any number of seeds
+ * (1–8); the engine expands and resolves them into the selected role schema and
+ * re-themes the page. Only active when mode === 'picker'.
  */
-const { seeds, framing, schemaName, contrastLevel, running, addSeed, removeSeed, setSeed } = useIridis();
-
+const { pickerSeeds, framing, schemaName, contrastLevel, running, addSeed, removeSeed, setSeed } = useIridis();
 const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-32'];
 </script>
 
@@ -17,19 +16,19 @@ const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-3
       <div class="flex items-center justify-between">
         <span class="font-semibold text-highlighted">Additive palette</span>
         <UBadge :color="running ? 'warning' : 'success'" variant="soft">
-          {{ running ? 'resolving…' : `${seeds.length} seed${seeds.length === 1 ? '' : 's'}` }}
+          {{ running ? 'resolving…' : `${pickerSeeds.length} seed${pickerSeeds.length === 1 ? '' : 's'}` }}
         </UBadge>
       </div>
     </template>
 
     <div class="space-y-5">
       <p class="text-sm text-muted">
-        Feed the engine any number of seeds. It expands and resolves them into the role schema below,
+        Feed the engine any number of seeds. It expands and resolves them into the role schema,
         enforces contrast, and re-themes every component on this page.
       </p>
 
       <div class="flex flex-wrap items-center gap-3">
-        <div v-for="(hex, i) in seeds" :key="i" class="flex items-center gap-1.5 rounded-lg border border-default p-1.5">
+        <div v-for="(hex, i) in pickerSeeds" :key="i" class="flex items-center gap-1.5 rounded-lg border border-default p-1.5">
           <input
             :value="hex"
             type="color"
@@ -37,16 +36,9 @@ const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-3
             @input="setSeed(i, ($event.target as HTMLInputElement).value)"
           >
           <span class="font-mono text-xs text-muted">{{ hex }}</span>
-          <UButton
-            icon="i-lucide-x"
-            color="neutral"
-            variant="ghost"
-            size="xs"
-            :disabled="seeds.length <= 1"
-            @click="removeSeed(i)"
-          />
+          <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" :disabled="pickerSeeds.length <= 1" @click="removeSeed(i)" />
         </div>
-        <UButton icon="i-lucide-plus" color="primary" variant="soft" size="sm" :disabled="seeds.length >= 8" @click="addSeed()">
+        <UButton icon="i-lucide-plus" color="primary" variant="soft" size="sm" :disabled="pickerSeeds.length >= 8" @click="addSeed()">
           Add seed
         </UButton>
       </div>
