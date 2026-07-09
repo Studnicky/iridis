@@ -1,11 +1,15 @@
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
-  RoleDefinitionInterface,
+  RoleDefinitionInterfaceType,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '../../types/index.ts';
+
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
@@ -14,23 +18,38 @@ function rangeCenter(range: readonly [number, number]): number {
   return (range[0] + range[1]) / 2;
 }
 
-function deriveColor(
-  source: ColorRecordInterface,
-  role: RoleDefinitionInterface,
-): ColorRecordInterface {
-  const { l, c, h } = source.oklch;
+/** Rotate `src` toward `target` along the shortest arc, by at most `maxDeg`. */
+function hueTowards(src: number, target: number, maxDeg: number): number {
+  const delta = ((target - src + 540) % 360) - 180;
+  const clamped = Math.max(-maxDeg, Math.min(maxDeg, delta));
+  return (((src + clamped) % 360) + 360) % 360;
+}
 
-  const targetL = role.lightnessRange ? rangeCenter(role.lightnessRange) : l;
-  const targetC = role.chromaRange    ? rangeCenter(role.chromaRange)    : c;
-  const targetH = role.hueOffset !== undefined
-    ? ((h + role.hueOffset) % 360 + 360) % 360
-    : h;
+function deriveColor(
+  source: ColorRecordInterfaceType,
+  role: RoleDefinitionInterfaceType
+): ColorRecordInterfaceType {
+  const { c, h, l } = source.oklch;
+
+  const targetL = role.lightnessRange !== undefined ? rangeCenter(role.lightnessRange) : l;
+  const targetC = role.chromaRange    !== undefined ? rangeCenter(role.chromaRange)    : c;
+
+  let targetH: number;
+  if (role.hue !== undefined) {
+    targetH = role.hueClamp !== undefined
+      ? hueTowards(h, role.hue, role.hueClamp)
+      : (((role.hue % 360) + 360) % 360);
+  } else if (role.hueOffset !== undefined) {
+    targetH = ((h + role.hueOffset) % 360 + 360) % 360;
+  } else {
+    targetH = h;
+  }
 
   return colorRecordFactory.fromOklch(
     clamp01.apply(targetL),
     clamp.apply(0, 0.5, targetC),
     targetH,
-    source.alpha,
+    { 'alpha': source.alpha }
   );
 }
 
@@ -45,47 +64,79 @@ function deriveColor(
  * are warned about and skipped rather than throwing, on the principle
  * that a partially-rendered palette is more useful than a hard failure.
  */
-export class ExpandFamily implements TaskInterface {
+class ExpandFamily implements TaskInterface {
   readonly 'name' = 'expand:family';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Derives missing roles that have derivedFrom set. Applies OKLCH deltas from the source role. Never overwrites an already-assigned role.',
     'name':        'expand:family',
     'reads':       ['roles', 'input.roles'],
-    'writes':      ['roles'],
-    'description': 'Derives missing roles that have derivedFrom set. Applies OKLCH deltas from the source role. Never overwrites an already-assigned role.',
+    'writes':      ['roles']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    if (!state.input.roles) {
-      ctx.logger.debug('ExpandFamily', 'run', 'No role schema; skipping');
+    if (state.input.roles === undefined) {
+      ctx.logger.debug(
+        LogBody.create()
+          .component('ExpandFamily')
+          .operation('run')
+          .status(LOG_STATUS.SKIPPED)
+          .message('No role schema; skipping')
+          .context({})
+          .build()
+      );
       return;
     }
 
     for (const role of state.input.roles.roles) {
-      if (!role.derivedFrom) {
+      if (role.derivedFrom === undefined || role.derivedFrom === '') {
         continue;
       }
 
-      if (state.roles[role.name]) {
-        ctx.logger.debug('ExpandFamily', 'run', 'Role already assigned; skipping', { 'role': role.name });
+      if (state.roles[role.name] !== undefined) {
+        ctx.logger.debug(
+          LogBody.create()
+            .component('ExpandFamily')
+            .operation('run')
+            .status(LOG_STATUS.SKIPPED)
+            .message('Role already assigned; skipping')
+            .context({ 'role': role.name })
+            .build()
+        );
         continue;
       }
 
       const sourceColor = state.roles[role.derivedFrom];
 
-      if (!sourceColor) {
-        ctx.logger.warn('ExpandFamily', 'run', 'Role derivedFrom source is not assigned', {
-          'role':        role.name,
-          'derivedFrom': role.derivedFrom,
-        });
+      if (sourceColor === undefined) {
+        ctx.logger.warn(
+          LogBody.create()
+            .component('ExpandFamily')
+            .operation('run')
+            .status(LOG_STATUS.INVALID)
+            .message('Role derivedFrom source is not assigned')
+            .context({
+              'derivedFrom': role.derivedFrom,
+              'role':        role.name
+            })
+            .build()
+        );
         continue;
       }
 
       state.roles[role.name] = deriveColor(sourceColor, role);
-      ctx.logger.debug('ExpandFamily', 'run', 'Derived role from source', {
-        'role':        role.name,
-        'derivedFrom': role.derivedFrom,
-      });
+      ctx.logger.debug(
+        LogBody.create()
+          .component('ExpandFamily')
+          .operation('run')
+          .status(LOG_STATUS.SUCCESS)
+          .message('Derived role from source')
+          .context({
+            'derivedFrom': role.derivedFrom,
+            'role':        role.name
+          })
+          .build()
+      );
     }
   }
 }

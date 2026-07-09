@@ -1,21 +1,22 @@
 import type { InputInterface } from '@studnicky/iridis/model';
 import type { FromSchema }    from 'json-schema-to-ts';
-import { CliConfigSchema }    from '../CliConfigSchema.ts';
+
+import type { CliConfigSchema }    from '../CliConfigSchema.ts';
 
 export interface CliConfigInterface {
-  readonly 'input':             InputInterface;
-  readonly 'enableVscode'?:     boolean;
+  readonly 'enableCapacitor'?:  boolean;
+  readonly 'enableContrast'?:   boolean;
+  readonly 'enableImage'?:      boolean;
+  readonly 'enableRdf'?:        boolean;
   readonly 'enableStylesheet'?: boolean;
   readonly 'enableTailwind'?:   boolean;
-  readonly 'enableImage'?:      boolean;
-  readonly 'enableContrast'?:   boolean;
-  readonly 'enableCapacitor'?:  boolean;
-  readonly 'enableRdf'?:        boolean;
-  readonly 'pipeline':          readonly string[];
+  readonly 'enableVscode'?:     boolean;
+  readonly 'input':             InputInterface;
   readonly 'output': {
     readonly 'directory': string;
     readonly 'files':     Record<string, string>;
   };
+  readonly 'pipeline':          readonly string[];
 }
 
 /** Schema-derived type for CLI config (validation shape from CliConfigSchema). */

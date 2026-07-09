@@ -1,9 +1,9 @@
 /**
  * ColorRecordShape — scenario-matrix suite.
  *
- * Subject: `ColorRecordInterface` monomorphic hidden-class discipline.
+ * Subject: `ColorRecordInterfaceType` monomorphic hidden-class discipline.
  *
- * Every `ColorRecordInterface` allocation MUST produce a record with the
+ * Every `ColorRecordInterfaceType` allocation MUST produce a record with the
  * same key set in the same insertion order so V8 collapses them into a
  * single hidden class. The factory is the canonical allocation point;
  * intake tasks and ClampOklch route through it.
@@ -15,11 +15,13 @@
  *   3. clamp      — clamp:oklch preserves canonical key order on the rebuilt record
  *   4. stability  — all factory paths produce identical Object.keys arrays
  *
- * Canonical order: oklch · rgb · hex · alpha · sourceFormat · displayP3 · hints
+ * Canonical order: alpha · displayP3 · hex · hints · oklch · rgb · sourceFormat
+ * (alphabetical — enforced automatically by the workspace's
+ * perfectionist/sort-objects eslint rule, so it can never silently drift).
  */
 
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   InputInterface,
   PaletteStateInterface,
   PipelineContextInterface,
@@ -40,16 +42,16 @@ import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 // ---------------------------------------------------------------------------
 
 const CANONICAL_KEYS: readonly string[] = [
+  'alpha',
+  'displayP3',
+  'hex',
+  'hints',
   'oklch',
   'rgb',
-  'hex',
-  'alpha',
   'sourceFormat',
-  'displayP3',
-  'hints',
 ];
 
-function keysOf(record: ColorRecordInterface): readonly string[] {
+function keysOf(record: ColorRecordInterfaceType): readonly string[] {
   return Object.keys(record);
 }
 
@@ -72,7 +74,7 @@ function makeEngine(): Engine {
 
 interface Cell1Input {
   readonly label:  string;
-  readonly record: ColorRecordInterface;
+  readonly record: ColorRecordInterfaceType;
 }
 interface Cell1Output {
   readonly actual:    readonly string[];
@@ -94,7 +96,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
     kind: 'happy',
     input: {
       label:  'fromOklch+hints',
-      record: colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'accent' }),
+      record: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'accent' } }),
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=fromOklch-hints] must not throw');
@@ -113,7 +115,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
   {
     name: 'fromRgb with sourceFormat=lab produces canonical key order',
     kind: 'happy',
-    input: { label: 'fromRgb+lab', record: colorRecordFactory.fromRgb(0.3, 0.6, 0.9, 1, 'lab') },
+    input: { label: 'fromRgb+lab', record: colorRecordFactory.fromRgb(0.3, 0.6, 0.9, { 'sourceFormat': 'lab' }) },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=fromRgb-lab] must not throw');
       assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromRgb-lab] key order: ${output!.label}`);
@@ -140,7 +142,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
   {
     name: 'fromHex with alpha override produces canonical key order',
     kind: 'happy',
-    input: { label: 'fromHex+alpha', record: colorRecordFactory.fromHex('#3b82f6', 0.5) },
+    input: { label: 'fromHex+alpha', record: colorRecordFactory.fromHex('#3b82f6', { 'alphaOverride': 0.5 }) },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=fromHex-alpha] must not throw');
       assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromHex-alpha] key order: ${output!.label}`);
@@ -149,7 +151,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
   {
     name: 'fromHex with sourceFormat=named produces canonical key order',
     kind: 'happy',
-    input: { label: 'fromHex+named', record: colorRecordFactory.fromHex('#ff0000', undefined, 'named') },
+    input: { label: 'fromHex+named', record: colorRecordFactory.fromHex('#ff0000', { 'sourceFormat': 'named' }) },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=fromHex-named] must not throw');
       assert.deepStrictEqual(output!.actual, CANONICAL_KEYS, `[cell=1, scenario=fromHex-named] key order: ${output!.label}`);
@@ -205,7 +207,7 @@ interface Cell2Input {
   readonly label:    string;
 }
 interface Cell2Output {
-  readonly records: readonly ColorRecordInterface[];
+  readonly records: readonly ColorRecordInterfaceType[];
   readonly label:   string;
 }
 
@@ -345,10 +347,10 @@ interface Cell3Input {
   readonly pipeline: readonly string[];
   readonly input:    InputInterface;
   readonly seedHook: boolean;
-  readonly hinted:   ColorRecordInterface | null;
+  readonly hinted:   ColorRecordInterfaceType | null;
 }
 interface Cell3Output {
-  readonly record:   ColorRecordInterface;
+  readonly record:   ColorRecordInterfaceType;
   readonly label:    string;
 }
 
@@ -388,7 +390,7 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
         },
       },
       seedHook: true,
-      hinted:   colorRecordFactory.fromHex('#3b82f6', undefined, 'hex', { 'role': 'background' }),
+      hinted:   colorRecordFactory.fromHex('#3b82f6', { 'hints': { 'role': 'background' }, 'sourceFormat': 'hex' }),
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=clamp-hinted] must not throw');
@@ -432,15 +434,15 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
 // ---------------------------------------------------------------------------
 
 test('ColorRecordShape :: cell-4 :: stability :: every factory path returns identical key sets', () => {
-  const records: readonly ColorRecordInterface[] = [
+  const records: readonly ColorRecordInterfaceType[] = [
     colorRecordFactory.fromOklch(0.5, 0.1, 200),
-    colorRecordFactory.fromOklch(0.5, 0.1, 200, 1, 'oklch', { 'role': 'r' }),
+    colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'r' } }),
     colorRecordFactory.fromRgb(0.3, 0.6, 0.9),
-    colorRecordFactory.fromRgb(0.3, 0.6, 0.9, 1, 'lab'),
+    colorRecordFactory.fromRgb(0.3, 0.6, 0.9, { 'sourceFormat': 'lab' }),
     colorRecordFactory.fromHex('#abcdef'),
     colorRecordFactory.fromHex('#abcdef80'),
-    colorRecordFactory.fromHex('#abcdef', 0.5),
-    colorRecordFactory.fromHex('#abcdef', undefined, 'named'),
+    colorRecordFactory.fromHex('#abcdef', { 'alphaOverride': 0.5 }),
+    colorRecordFactory.fromHex('#abcdef', { 'sourceFormat': 'named' }),
     colorRecordFactory.fromHsl(0, 1, 0.5),
   ];
 

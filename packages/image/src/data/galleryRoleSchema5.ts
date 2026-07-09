@@ -1,4 +1,4 @@
-import type { RoleSchemaInterface } from '@studnicky/iridis';
+import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
 
 /**
  * Five-role schema for art-gallery chrome re-skinning.
@@ -14,70 +14,70 @@ import type { RoleSchemaInterface } from '@studnicky/iridis';
  * muted:  low-chroma non-neutral (caption background, secondary UI). C ≤ 0.08.
  * text:   derived: white or black depending on canvas lightness.
  */
-export const galleryRoleSchema5: RoleSchemaInterface = {
-  'name':        'gallery-5',
-  'description': 'Five-role palette for art-gallery web chrome re-skinning',
-  'roles': [
-    {
-      'name':           'canvas',
-      'description':    'Darkest neutral, page and frame background',
-      'intent':         'background',
-      'required':       true,
-      'lightnessRange': [0.0, 0.40],
-      'chromaRange':    [0.0, 0.06],
-    },
-    {
-      'name':           'frame',
-      'description':    'Mid-luminance neutral, gallery moulding and borders',
-      'intent':         'muted',
-      'required':       true,
-      'lightnessRange': [0.30, 0.70],
-      'chromaRange':    [0.0, 0.10],
-    },
-    {
-      'name':           'accent',
-      'description':    'Highest-chroma color, call-to-action and hover highlight',
-      'intent':         'accent',
-      'required':       true,
-      'lightnessRange': [0.30, 0.80],
-      'chromaRange':    [0.10, 0.40],
-    },
-    {
-      'name':           'muted',
-      'description':    'Low-chroma non-neutral, caption background and secondary UI',
-      'intent':         'muted',
-      'required':       true,
-      'lightnessRange': [0.40, 0.85],
-      'chromaRange':    [0.0, 0.08],
-    },
-    {
-      'name':           'text',
-      'description':    'Auto-derived: white when canvas is dark, black when canvas is light',
-      'intent':         'text',
-      'required':       true,
-      'derivedFrom':    'canvas',
-      'lightnessRange': [0.0, 1.0],
-      'chromaRange':    [0.0, 0.0],
-    },
-  ],
+export const galleryRoleSchema5: RoleSchemaInterfaceType = {
   'contrastPairs': [
     {
-      'foreground': 'text',
-      'background': 'canvas',
-      'minRatio':   7.0,
       'algorithm':  'wcag21',
+      'background': 'canvas',
+      'foreground': 'text',
+      'minRatio':   7.0
     },
     {
-      'foreground': 'text',
+      'algorithm':  'wcag21',
       'background': 'frame',
-      'minRatio':   4.5,
-      'algorithm':  'wcag21',
+      'foreground': 'text',
+      'minRatio':   4.5
     },
     {
-      'foreground': 'accent',
-      'background': 'canvas',
-      'minRatio':   3.0,
       'algorithm':  'wcag21',
-    },
+      'background': 'canvas',
+      'foreground': 'accent',
+      'minRatio':   3.0
+    }
   ],
+  'description': 'Five-role palette for art-gallery web chrome re-skinning',
+  'name':        'gallery-5',
+  'roles': [
+    {
+      'chromaRange':    [0.0, 0.06],
+      'description':    'Darkest neutral, page and frame background',
+      'intent':         'background',
+      'lightnessRange': [0.0, 0.40],
+      'name':           'canvas',
+      'required':       true
+    },
+    {
+      'chromaRange':    [0.0, 0.10],
+      'description':    'Mid-luminance neutral, gallery moulding and borders',
+      'intent':         'muted',
+      'lightnessRange': [0.30, 0.70],
+      'name':           'frame',
+      'required':       true
+    },
+    {
+      'chromaRange':    [0.10, 0.40],
+      'description':    'Highest-chroma color, call-to-action and hover highlight',
+      'intent':         'accent',
+      'lightnessRange': [0.30, 0.80],
+      'name':           'accent',
+      'required':       true
+    },
+    {
+      'chromaRange':    [0.0, 0.08],
+      'description':    'Low-chroma non-neutral, caption background and secondary UI',
+      'intent':         'muted',
+      'lightnessRange': [0.40, 0.85],
+      'name':           'muted',
+      'required':       true
+    },
+    {
+      'chromaRange':    [0.0, 0.0],
+      'derivedFrom':    'canvas',
+      'description':    'Auto-derived: white when canvas is dark, black when canvas is light',
+      'intent':         'text',
+      'lightnessRange': [0.0, 1.0],
+      'name':           'text',
+      'required':       true
+    }
+  ]
 };

@@ -16,7 +16,7 @@ import type {
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType,
 } from '@studnicky/iridis';
 import { Engine, TaskRegistry } from '@studnicky/iridis';
 import {
@@ -34,7 +34,7 @@ function makeTask(
   calls?: string[],
   phase?: LifecyclePhaseType,
 ): TaskInterface {
-  const manifest: TaskManifestInterface = {
+  const manifest: TaskManifestInterfaceType = {
     'name': name,
     ...(phase !== undefined ? { 'phase': phase } : {}),
   };

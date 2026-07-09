@@ -1,4 +1,4 @@
-import type { RgbInterface } from '../types/index.ts';
+import type { RgbInterfaceType } from '../types/index.ts';
 
 /**
  * OKLCH → linear sRGB → linear Display-P3 → gamma-encoded Display-P3.
@@ -20,10 +20,10 @@ import type { RgbInterface } from '../types/index.ts';
  * downstream (the factory clips to `[0, 1]` after this returns; the
  * gamut-map step occurs against sRGB, not against P3).
  */
-export class OklchToDisplayP3 {
+class OklchToDisplayP3 {
   readonly 'name' = 'oklchToDisplayP3';
 
-  apply(l: number, c: number, h: number): RgbInterface {
+  apply(l: number, c: number, h: number): RgbInterfaceType {
     const hRad = (h * Math.PI) / 180;
     const a = c * Math.cos(hRad);
     const b = c * Math.sin(hRad);
@@ -49,21 +49,23 @@ export class OklchToDisplayP3 {
 
     // Display-P3 transfer function (same gamma curve as sRGB).
     return {
-      'r': encodeP3(p3rLin),
-      'g': encodeP3(p3gLin),
-      'b': encodeP3(p3bLin),
+      'b': P3.encode(p3bLin),
+      'g': P3.encode(p3gLin),
+      'r': P3.encode(p3rLin)
     };
   }
 }
 
-function encodeP3(v: number): number {
-  // Mirror sign so the curve works on out-of-gamut negative channels too.
-  const sign = v < 0 ? -1 : 1;
-  const abs  = Math.abs(v);
-  if (abs <= 0.0031308) {
-    return sign * 12.92 * abs;
+class P3 {
+  static encode(v: number): number {
+    // Mirror sign so the curve works on out-of-gamut negative channels too.
+    const sign = v < 0 ? -1 : 1;
+    const abs  = Math.abs(v);
+    if (abs <= 0.0031308) {
+      return sign * 12.92 * abs;
+    }
+    return sign * (1.055 * Math.pow(abs, 1 / 2.4) - 0.055);
   }
-  return sign * (1.055 * Math.pow(abs, 1 / 2.4) - 0.055);
 }
 
 /** Singleton instance registered as the `oklchToDisplayP3` math primitive. */

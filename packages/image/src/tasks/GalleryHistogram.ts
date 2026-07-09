@@ -1,18 +1,21 @@
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
 import { colorRecordFactory } from '@studnicky/iridis';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
 
 /**
  * `gallery:histogram`
  *
  * Bucket every record in `state.colors` into a 5-bit-per-channel sRGB
  * histogram (32 768 bins). Replaces `state.colors` with one weighted
- * `ColorRecordInterface` per non-empty bin: the centroid is the
+ * `ColorRecordInterfaceType` per non-empty bin: the centroid is the
  * weighted-mean RGB of the bin's contributors, and `hints.weight` is
  * the count. Downstream clustering tasks (median-cut, deltaE-merge)
  * read `hints.weight` and proportionally cluster by pixel density.
@@ -32,13 +35,13 @@ import { colorRecordFactory } from '@studnicky/iridis';
  *     should not bias clustering.
  */
 
-interface BinAccumulatorInterface {
-  rSum:   number;
-  gSum:   number;
-  bSum:   number;
-  aSum:   number;
-  weight: number;
-}
+type BinAccumulatorInterface = {
+  'aSum':   number;
+  'bSum':   number;
+  'gSum':   number;
+  'rSum':   number;
+  'weight': number;
+};
 
 const DEFAULT_BITS_PER_CHANNEL = 5;
 
@@ -53,24 +56,32 @@ function packBin(r: number, g: number, b: number, bits: number): number {
   return (ri << (2 * bits)) | (gi << bits) | bi;
 }
 
-export class GalleryHistogram implements TaskInterface {
+class GalleryHistogram implements TaskInterface {
   readonly 'name' = 'gallery:histogram';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Quantise pixels into a 5-bit-per-channel histogram; emits weighted records keyed by bin centroid.',
     'name':        'gallery:histogram',
     'reads':       ['colors'],
-    'writes':      ['colors', 'metadata.gallery:histogram'],
-    'description': 'Quantise pixels into a 5-bit-per-channel histogram; emits weighted records keyed by bin centroid.',
+    'writes':      ['colors', 'metadata.gallery:histogram']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     if (state.colors.length === 0) {
-      ctx.logger.warn('GalleryHistogram', 'run', 'state.colors is empty; nothing to histogram');
+      ctx.logger.warn(
+        LogBody.create()
+          .component('GalleryHistogram')
+          .operation('run')
+          .status(LOG_STATUS.INVALID)
+          .message('state.colors is empty; nothing to histogram')
+          .context({})
+          .build()
+      );
       return;
     }
 
-    const galleryConfig = state.metadata['gallery'] as
-      | { 'histogramBits'?: number; 'lightnessRange'?: readonly [number, number]; 'chromaRange'?: readonly [number, number]; }
+    const galleryConfig = state.metadata.gallery as
+      | { 'chromaRange'?: readonly [number, number]; 'histogramBits'?: number; 'lightnessRange'?: readonly [number, number]; }
       | undefined;
     const rawBits = galleryConfig?.histogramBits ?? DEFAULT_BITS_PER_CHANNEL;
     const bits = Math.max(3, Math.min(7, Math.floor(rawBits)));
@@ -82,7 +93,7 @@ export class GalleryHistogram implements TaskInterface {
     let droppedFiltered = 0;
 
     for (const c of state.colors) {
-      if (c.alpha === 0) continue;
+      if (c.alpha === 0) {continue;}
       // Range filters skip pixels outside the requested OKLCH lightness
       // or chroma envelope. Useful for ignoring black bars (low L) or
       // a near-neutral background (low C) so the cluster budget goes
@@ -94,11 +105,11 @@ export class GalleryHistogram implements TaskInterface {
       const existing = bins.get(key);
       if (existing === undefined) {
         bins.set(key, {
-          'rSum':   c.rgb.r * w,
-          'gSum':   c.rgb.g * w,
-          'bSum':   c.rgb.b * w,
           'aSum':   c.alpha * w,
-          'weight': w,
+          'bSum':   c.rgb.b * w,
+          'gSum':   c.rgb.g * w,
+          'rSum':   c.rgb.r * w,
+          'weight': w
         });
       } else {
         existing.rSum   += c.rgb.r * w;
@@ -110,34 +121,42 @@ export class GalleryHistogram implements TaskInterface {
       totalPixels += w;
     }
 
-    const records: ColorRecordInterface[] = [];
+    const records: ColorRecordInterfaceType[] = [];
     const binSummary: { 'hex': string; 'weight': number }[] = [];
     for (const acc of bins.values()) {
       const r = acc.rSum / acc.weight;
       const g = acc.gSum / acc.weight;
       const b = acc.bSum / acc.weight;
       const a = acc.aSum / acc.weight;
-      const record = colorRecordFactory.fromRgb(r, g, b, a, 'imagePixel', { 'weight': acc.weight });
+      const record = colorRecordFactory.fromRgb(r, g, b, { 'alpha': a, 'hints': { 'weight': acc.weight }, 'sourceFormat': 'imagePixel' });
       records.push(record);
       binSummary.push({ 'hex': record.hex, 'weight': acc.weight });
     }
 
-    binSummary.sort((x, y) => y.weight - x.weight);
+    binSummary.sort((x, y) => {return y.weight - x.weight;});
 
     state.metadata['gallery:histogram'] = {
-      'bins':        binSummary,
-      'totalPixels': totalPixels,
       'binCount':    binSummary.length,
+      'bins':        binSummary,
+      'totalPixels': totalPixels
     };
 
     state.colors.splice(0, state.colors.length, ...records);
 
-    ctx.logger.info('GalleryHistogram', 'run', 'histogram built', {
-      'inputPixels':     totalPixels,
-      'bins':            binSummary.length,
-      'bitsPerChannel':  bits,
-      'droppedFiltered': droppedFiltered,
-    });
+    ctx.logger.info(
+      LogBody.create()
+        .component('GalleryHistogram')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('histogram built')
+        .context({
+          'bins':            binSummary.length,
+          'bitsPerChannel':  bits,
+          'droppedFiltered': droppedFiltered,
+          'inputPixels':     totalPixels
+        })
+        .build()
+    );
   }
 }
 

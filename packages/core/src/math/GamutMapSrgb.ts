@@ -1,4 +1,4 @@
-import type { OklchInterface } from '../types/index.ts';
+import type { GamutMapResultInterfaceType } from '../types/index.ts';
 
 /**
  * CSS Color Module Level 4 §13.2.2 gamut-mapping algorithm: reduces
@@ -24,18 +24,18 @@ import type { OklchInterface } from '../types/index.ts';
  * Each iteration does one OKLab→linear-sRGB matmul (10 multiplies + 6
  * adds + 3 cubes). Acceptable for the factory hot path.
  */
-export class GamutMapSrgb {
+class GamutMapSrgb {
   readonly 'name' = 'gamutMapSrgb';
 
-  apply(l: number, c: number, h: number): GamutMapResultInterface {
+  apply(l: number, c: number, h: number): GamutMapResultInterfaceType {
     if (inSrgbGamut(l, c, h)) {
-      return { 'l': l, 'c': c, 'h': h, 'inGamut': true };
+      return { 'c': c, 'h': h, 'inGamut': true, 'l': l };
     }
     if (l <= 0) {
-      return { 'l': 0, 'c': 0, 'h': h, 'inGamut': false };
+      return { 'c': 0, 'h': h, 'inGamut': false, 'l': 0 };
     }
     if (l >= 1) {
-      return { 'l': 1, 'c': 0, 'h': h, 'inGamut': false };
+      return { 'c': 0, 'h': h, 'inGamut': false, 'l': 1 };
     }
 
     // Binary search chroma in [0, c]. Invariant: `lo` always in-gamut,
@@ -52,19 +52,14 @@ export class GamutMapSrgb {
         hi = mid;
       }
     }
-    return { 'l': l, 'c': lo, 'h': h, 'inGamut': false };
+    return { 'c': lo, 'h': h, 'inGamut': false, 'l': l };
   }
-}
-
-export interface GamutMapResultInterface extends OklchInterface {
-  /** `true` when the input OKLCH was already inside sRGB (no chroma reduction applied). */
-  readonly inGamut: boolean;
 }
 
 /**
  * UNCLAMPED OKLCH → linear sRGB check. A channel outside `[0, 1]`
  * indicates the point is outside the sRGB gamut. Encapsulated here so
- * the gamut-map binary search doesn't allocate `RgbInterface` records.
+ * the gamut-map binary search doesn't allocate `RgbInterfaceType` records.
  */
 function inSrgbGamut(l: number, c: number, h: number): boolean {
   const hRad = (h * Math.PI) / 180;

@@ -1,10 +1,10 @@
-import type { LifecyclePhaseType, TaskInterface, TaskManifestInterface } from './pipeline.ts';
+import type { LifecyclePhaseType, TaskInterface, TaskManifestInterfaceType } from './pipeline.ts';
 
 export interface TaskRegistryInterface {
-  register(task: TaskInterface): void;
-  hook(phase: LifecyclePhaseType, task: TaskInterface): void;
-  resolve(name: string): TaskInterface;
   has(name: string): boolean;
-  list(): readonly TaskManifestInterface[];
+  hook(phase: LifecyclePhaseType, task: TaskInterface): void;
   hooks(phase: LifecyclePhaseType): readonly TaskInterface[];
+  list(): readonly TaskManifestInterfaceType[];
+  register(task: TaskInterface): void;
+  resolve(name: string): TaskInterface;
 }

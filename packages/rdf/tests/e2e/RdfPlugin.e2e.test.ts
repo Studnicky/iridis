@@ -23,7 +23,7 @@ import { coreTasks }  from '@studnicky/iridis/tasks';
 import type {
   InputInterface,
   PaletteStateInterface,
-  RoleSchemaInterface,
+  RoleSchemaInterfaceType,
 } from '@studnicky/iridis';
 
 import {
@@ -36,8 +36,6 @@ import {
   rdfPlugin,
   RdfPlugin,
   colorologyVocab,
-  ReasonAnnotate,
-  ReasonSerialize,
   reasonAnnotate,
   reasonSerialize,
 } from '@studnicky/iridis-rdf';
@@ -83,7 +81,7 @@ function normaliseTurtle(ttl: string): string {
   return stable.sort().join('\n');
 }
 
-const SIMPLE_ROLES: RoleSchemaInterface = {
+const SIMPLE_ROLES: RoleSchemaInterfaceType = {
   'name': 'simple',
   'roles': [
     { 'name': 'primary',    'required': true },
@@ -91,7 +89,7 @@ const SIMPLE_ROLES: RoleSchemaInterface = {
   ],
 };
 
-const WIDE_GAMUT_ROLES: RoleSchemaInterface = {
+const WIDE_GAMUT_ROLES: RoleSchemaInterfaceType = {
   'name':  'wide-gamut',
   'roles': [
     {
@@ -105,7 +103,7 @@ const WIDE_GAMUT_ROLES: RoleSchemaInterface = {
   ],
 };
 
-const GOLDEN_ROLES: RoleSchemaInterface = {
+const GOLDEN_ROLES: RoleSchemaInterfaceType = {
   'name':  'golden-rdf',
   'roles': [
     { 'name': 'primary',    'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.25] },
@@ -289,7 +287,7 @@ new ScenarioRunner<VocabInput, VocabOutput>(
 
 interface AnnotateInput {
   readonly colors:  readonly (string | { l: number; c: number; h: number })[];
-  readonly roles:   RoleSchemaInterface;
+  readonly roles:   RoleSchemaInterfaceType;
   readonly pipeline: readonly string[];
 }
 interface AnnotateOutput {
@@ -435,7 +433,7 @@ interface SerializeFormatInput {
   readonly format:   string | undefined;
   readonly pipeline: readonly string[];
   readonly colors:   readonly string[];
-  readonly roles:    RoleSchemaInterface;
+  readonly roles:    RoleSchemaInterfaceType;
 }
 interface SerializeFormatOutput {
   readonly serialized: string;
@@ -600,7 +598,7 @@ new ScenarioRunner<SerializeFormatInput, SerializeFormatOutput>(
 
 interface RdfContentInput {
   readonly colors:   readonly (string | { l: number; c: number; h: number })[];
-  readonly roles:    RoleSchemaInterface;
+  readonly roles:    RoleSchemaInterfaceType;
   readonly pipeline: readonly string[];
 }
 interface RdfContentOutput {

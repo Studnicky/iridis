@@ -16,11 +16,11 @@
  */
 
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   InputInterface,
   PaletteStateInterface,
   PipelineContextInterface,
-  RoleSchemaInterface,
+  RoleSchemaInterfaceType,
   SourceFormatType,
   TaskInterface,
 } from '@studnicky/iridis';
@@ -44,7 +44,7 @@ function freshEngine(): Engine {
   return engine;
 }
 
-const SIMPLE_ROLES: RoleSchemaInterface = {
+const SIMPLE_ROLES: RoleSchemaInterfaceType = {
   'name': 'simple',
   'roles': [
     { 'name': 'primary',   'required': true,  'lightnessRange': [0.3, 0.7] },
@@ -75,7 +75,7 @@ function makeColors(count: number): string[] {
 
 interface IntakeHexInput {
   readonly colors: string[];
-  readonly roles:  RoleSchemaInterface;
+  readonly roles:  RoleSchemaInterfaceType;
 }
 interface IntakeHexOutput {
   readonly colorsLength: number;
@@ -215,8 +215,8 @@ new ScenarioRunner<IntakeAnyInput, IntakeAnyOutput>(
     const state = await engine.run({ 'colors': input.colors as InputInterface['colors'] });
     return {
       count:         state.colors.length,
-      sourceFormats: state.colors.map((c) => (c as ColorRecordInterface).sourceFormat),
-      hexValues:     state.colors.map((c) => (c as ColorRecordInterface).hex),
+      sourceFormats: state.colors.map((c) => (c as ColorRecordInterfaceType).sourceFormat),
+      hexValues:     state.colors.map((c) => (c as ColorRecordInterfaceType).hex),
     };
   },
 ).run(intakeAnyScenarios);
@@ -371,7 +371,7 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
   },
 ];
 
-const highContrastRoles: RoleSchemaInterface = {
+const highContrastRoles: RoleSchemaInterfaceType = {
   'name': 'hi-contrast',
   'roles': [
     { 'name': 'text',       'required': true },

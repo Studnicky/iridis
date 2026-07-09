@@ -1,6 +1,8 @@
+import type { PaletteStateInterface } from '@studnicky/iridis/model';
+
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
-import type { PaletteStateInterface } from '@studnicky/iridis/model';
+
 import type { CliConfigInterface } from './types/index.ts';
 
 export class OutputWriter {
@@ -12,7 +14,7 @@ export class OutputWriter {
     for (const [key, filename] of Object.entries(config.output.files)) {
       // User-supplied config keys are arbitrary strings mapping to plugin output slots.
       // Cast is safe: missing slots produce undefined → serialized as "undefined".
-      const outputs = state.outputs as Record<string, unknown>;
+      const outputs = state.outputs;
       const value   = outputs[key];
       const content = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
       const target  = join(config.output.directory, filename);

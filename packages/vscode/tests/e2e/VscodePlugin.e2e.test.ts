@@ -9,7 +9,7 @@
  *   1. plugin-shape        — singleton, version, task list, manifest fields
  *   2. workbench-colors    — 101-slot palette, key slots present, sRGB/P3 routing
  *   3. semantic-rules      — base rules, modifier-selector cross-product, fontStyle
- *   4. theme-json-assembly — assembled ThemeJsonInterface shape invariants
+ *   4. theme-json-assembly — assembled ThemeJsonInterfaceType shape invariants
  *   5. token-colors        — tokenColors array from SCOPE_MAPPINGS + baseTokens
  *   6. p3-propagation      — wide-gamut input surfaces P3 form in direct-passthrough slots
  *   7. math-derived-slots  — math-derived and alpha-suffix slots never emit P3
@@ -31,23 +31,17 @@ import type {
   TaskInterface,
 } from '@studnicky/iridis';
 import {
-  VscodePlugin,
   vscodePlugin,
   vscodeRoleSchema16,
-  ExpandTokens,
   expandTokens,
-  ApplyModifiers,
   applyModifiers,
-  EmitVscodeSemanticRules,
   emitVscodeSemanticRules,
-  EmitVscodeUiPalette,
   emitVscodeUiPalette,
-  EmitVscodeThemeJson,
   emitVscodeThemeJson,
 } from '@studnicky/iridis-vscode';
 import type {
-  SemanticRuleEntryInterface,
-  ThemeJsonInterface,
+  SemanticRuleEntryInterfaceType,
+  ThemeJsonInterfaceType,
 } from '@studnicky/iridis-vscode/types';
 
 // ---------------------------------------------------------------------------
@@ -160,12 +154,12 @@ const pluginShapeScenarios: readonly ScenarioInterface<PluginShapeInput, PluginS
     },
   },
   {
-    name: 'vscodePlugin is instance of VscodePlugin',
+    name: 'vscodePlugin is a singleton class instance',
     kind: 'happy',
     input: { plugin: vscodePlugin },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=class-instance] no throw');
-      assert.ok(vscodePlugin instanceof VscodePlugin, '[cell=1, scenario=class-instance] is VscodePlugin');
+      assert.strictEqual(vscodePlugin.constructor.name, 'VscodePlugin', '[cell=1, scenario=class-instance] is VscodePlugin');
       assert.ok(output!.name.length > 0,              '[cell=1, scenario=class-instance] name non-empty');
     },
   },
@@ -175,11 +169,11 @@ const pluginShapeScenarios: readonly ScenarioInterface<PluginShapeInput, PluginS
     input: { plugin: vscodePlugin },
     assert(_output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=task-classes] no throw');
-      assert.ok(expandTokens         instanceof ExpandTokens,          '[cell=1, scenario=task-classes] expandTokens class');
-      assert.ok(applyModifiers       instanceof ApplyModifiers,        '[cell=1, scenario=task-classes] applyModifiers class');
-      assert.ok(emitVscodeSemanticRules instanceof EmitVscodeSemanticRules, '[cell=1, scenario=task-classes] emitVscodeSemanticRules class');
-      assert.ok(emitVscodeUiPalette  instanceof EmitVscodeUiPalette,   '[cell=1, scenario=task-classes] emitVscodeUiPalette class');
-      assert.ok(emitVscodeThemeJson  instanceof EmitVscodeThemeJson,   '[cell=1, scenario=task-classes] emitVscodeThemeJson class');
+      assert.strictEqual(expandTokens.constructor.name,            'ExpandTokens',            '[cell=1, scenario=task-classes] expandTokens class');
+      assert.strictEqual(applyModifiers.constructor.name,          'ApplyModifiers',          '[cell=1, scenario=task-classes] applyModifiers class');
+      assert.strictEqual(emitVscodeSemanticRules.constructor.name, 'EmitVscodeSemanticRules', '[cell=1, scenario=task-classes] emitVscodeSemanticRules class');
+      assert.strictEqual(emitVscodeUiPalette.constructor.name,     'EmitVscodeUiPalette',     '[cell=1, scenario=task-classes] emitVscodeUiPalette class');
+      assert.strictEqual(emitVscodeThemeJson.constructor.name,     'EmitVscodeThemeJson',     '[cell=1, scenario=task-classes] emitVscodeThemeJson class');
       // Manifest names match task names
       assert.strictEqual(expandTokens.manifest.name,            'vscode:expandTokens',         '[cell=1, scenario=task-classes] expandTokens manifest.name');
       assert.strictEqual(applyModifiers.manifest.name,          'vscode:applyModifiers',       '[cell=1, scenario=task-classes] applyModifiers manifest.name');
@@ -382,7 +376,7 @@ new ScenarioRunner<WorkbenchColorsInput, WorkbenchColorsOutput>(
   async (input) => {
     const state     = await runFull(input.seeds, input.pipeline);
     const colors    = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
-    const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterface | undefined;
+    const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
     const themeType = (themeJson?.type as string | undefined) ?? 'unknown';
     return { colors, themeType, colorCount: Object.keys(colors).length };
   },
@@ -391,10 +385,10 @@ new ScenarioRunner<WorkbenchColorsInput, WorkbenchColorsOutput>(
 // ---------------------------------------------------------------------------
 // Cell 3 — semantic token rules (metadata.vscode.semanticTokenRules)
 //
-// vscode:applyModifiers builds one base rule per token type (23 total) and
-// one modifier-selector rule per type × modifier (23 × 10 = 230). Rules
+// vscode:applyModifiers builds one base rule per token type (27 total) and
+// one modifier-selector rule per type × modifier (27 × 10 = 270). Rules
 // must:
-//   - include the 23 base selectors (no dot)
+//   - include the 27 base selectors (no dot)
 //   - include at least one modifier selector (type.modifier dot form)
 //   - carry a foreground string on every rule
 //   - carry fontStyle where the transform specifies it
@@ -406,13 +400,13 @@ interface SemanticRulesInput {
   readonly seeds: readonly string[];
 }
 interface SemanticRulesOutput {
-  readonly metaRules:   Record<string, SemanticRuleEntryInterface>;
-  readonly outputRules: Record<string, SemanticRuleEntryInterface>;
+  readonly metaRules:   Record<string, SemanticRuleEntryInterfaceType>;
+  readonly outputRules: Record<string, SemanticRuleEntryInterfaceType>;
 }
 
 const semanticRulesScenarios: readonly ScenarioInterface<SemanticRulesInput, SemanticRulesOutput>[] = [
   {
-    name: 'metadata contains 23 base rules and 230 modifier-selector rules',
+    name: 'metadata contains 27 base rules and 270 modifier-selector rules',
     kind: 'happy',
     input: { seeds: SEEDS_SRGB },
     assert(output, error) {
@@ -420,8 +414,8 @@ const semanticRulesScenarios: readonly ScenarioInterface<SemanticRulesInput, Sem
       const selectors    = Object.keys(output!.metaRules);
       const baseRules    = selectors.filter((s) => !s.includes('.'));
       const modRules     = selectors.filter((s) => s.includes('.'));
-      assert.strictEqual(baseRules.length, 23,  '[cell=3, scenario=rule-count] 23 base rules');
-      assert.strictEqual(modRules.length,  230, '[cell=3, scenario=rule-count] 230 modifier-selector rules');
+      assert.strictEqual(baseRules.length, 27,  '[cell=3, scenario=rule-count] 27 base rules');
+      assert.strictEqual(modRules.length,  270, '[cell=3, scenario=rule-count] 270 modifier-selector rules');
     },
   },
   {
@@ -509,8 +503,8 @@ new ScenarioRunner<SemanticRulesInput, SemanticRulesOutput>(
     const pipeline = input.seeds === SEEDS_WITH_P3 ? PIPELINE_ANY : PIPELINE_HEX;
     const state    = await runFull(input.seeds, pipeline);
     return {
-      metaRules:   (state.metadata['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterface>,
-      outputRules: (state.outputs['vscode:semanticTokenRules'] ?? {})  as Record<string, SemanticRuleEntryInterface>,
+      metaRules:   (state.metadata['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterfaceType>,
+      outputRules: (state.outputs['vscode:semanticTokenRules'] ?? {})  as Record<string, SemanticRuleEntryInterfaceType>,
     };
   },
 ).run(semanticRulesScenarios);
@@ -518,7 +512,7 @@ new ScenarioRunner<SemanticRulesInput, SemanticRulesOutput>(
 // ---------------------------------------------------------------------------
 // Cell 4 — theme JSON assembly (outputs.vscode.themeJson)
 //
-// emit:vscodeThemeJson assembles the full ThemeJsonInterface from three
+// emit:vscodeThemeJson assembles the full ThemeJsonInterfaceType from three
 // upstream slots. Shape invariants:
 //   - name: non-empty string (default or from metadata.themeName)
 //   - type: 'dark' | 'light' (by background luminance)
@@ -535,7 +529,7 @@ interface ThemeJsonInput {
   readonly themeName?: string;
 }
 interface ThemeJsonOutput {
-  readonly themeJson:   ThemeJsonInterface;
+  readonly themeJson:   ThemeJsonInterfaceType;
   readonly workbench:   Record<string, string>;
 }
 
@@ -637,7 +631,7 @@ new ScenarioRunner<ThemeJsonInput, ThemeJsonOutput>(
   async (input) => {
     const state = await runFull(input.seeds, input.pipeline);
     return {
-      themeJson: state.outputs['vscode:themeJson'] as ThemeJsonInterface,
+      themeJson: state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType,
       workbench: (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>,
     };
   },
@@ -720,7 +714,7 @@ new ScenarioRunner<TokenColorsInput, TokenColorsOutput>(
   async (input) => {
     const pipeline  = input.seeds === SEEDS_WITH_P3 ? PIPELINE_ANY : PIPELINE_HEX;
     const state     = await runFull(input.seeds, pipeline);
-    const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterface | undefined;
+    const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
     const tokenColors = (themeJson?.tokenColors ?? []) as readonly {
       name: string;
       scope: unknown;
@@ -1083,7 +1077,7 @@ new ScenarioRunner<UnhappyInput, UnhappyOutput>(
 
 test('VscodePlugin :: golden :: themeJson key set is stable across refactors', async () => {
   const state = await runFull(SEEDS_SRGB, PIPELINE_HEX);
-  const tj    = state.outputs['vscode:themeJson'] as ThemeJsonInterface | undefined;
+  const tj    = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
 
   assert.ok(tj !== undefined, '[golden] themeJson present');
 

@@ -1,17 +1,17 @@
-export interface CssVarsOutputInterface {
-  readonly 'rootBlock':    string;
-  readonly 'scopedBlock':  string;
-  readonly 'darkScheme':   string;
-  readonly 'forcedColors': string;
-  readonly 'wideGamut':    string;
-  readonly 'full':         string;
-  readonly 'map':          Record<string, string>;
-}
+export type CssVarsOutputInterfaceType = {
+  'darkScheme':   string;
+  'forcedColors': string;
+  'full':         string;
+  'map':          Record<string, string>;
+  'rootBlock':    string;
+  'scopedBlock':  string;
+  'wideGamut':    string;
+};
 
-export interface CssVarsScopedOutputInterface {
-  readonly 'blocks':    Record<string, string>;
-  readonly 'wideGamut': Record<string, string>;
-  readonly 'full':      string;
-}
+export type CssVarsScopedOutputInterfaceType = {
+  'blocks':    Record<string, string>;
+  'full':      string;
+  'wideGamut': Record<string, string>;
+};
 
 export type * from './augmentation.ts';

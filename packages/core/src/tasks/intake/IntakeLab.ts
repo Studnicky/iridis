@@ -1,29 +1,34 @@
+import { ValidationError } from '@studnicky/errors';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '../../types/index.ts';
+
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
-interface LabInput {
-  'l': number;
+type LabInput = {
   'a': number;
   'b': number;
-}
+  'l': number;
+};
 
 function isLabInput(v: unknown): v is LabInput {
-  if (typeof v !== 'object' || v === null) return false;
+  if (typeof v !== 'object' || v === null) {return false;}
   const o = v as Record<string, unknown>;
-  return typeof o['l'] === 'number'
-    && typeof o['a'] === 'number'
-    && typeof o['b'] === 'number'
-    && typeof o['r'] !== 'number'
-    && typeof o['s'] !== 'number'
-    && typeof o['c'] !== 'number'
-    && typeof o['h'] !== 'number';
+  return typeof o.l === 'number'
+    && typeof o.a === 'number'
+    && typeof o.b === 'number'
+    && typeof o.r !== 'number'
+    && typeof o.s !== 'number'
+    && typeof o.c !== 'number'
+    && typeof o.h !== 'number';
 }
 
 function labToRgb(l: number, a: number, b: number): [number, number, number] {
@@ -51,7 +56,7 @@ function labToRgb(l: number, a: number, b: number): [number, number, number] {
   let bv =  0.0556434 * x - 0.2040259 * y + 1.0572252 * z;
 
   const linearToSrgb = (v: number): number => {
-    if (v <= 0.0031308) return 12.92 * v;
+    if (v <= 0.0031308) {return 12.92 * v;}
     return 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
   };
 
@@ -62,7 +67,7 @@ function labToRgb(l: number, a: number, b: number): [number, number, number] {
   return [
     clamp01.apply(r),
     clamp01.apply(g),
-    clamp01.apply(bv),
+    clamp01.apply(bv)
   ];
 }
 
@@ -74,14 +79,14 @@ function labToRgb(l: number, a: number, b: number): [number, number, number] {
  * intakes. Non-Lab input throws when using the strict `intake:lab`
  * task. Use `intake:any` for tolerant dispatch.
  */
-export class IntakeLab implements TaskInterface {
+class IntakeLab implements TaskInterface {
   readonly 'name' = 'intake:lab';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Parses {l,a,b} CIE Lab D65 into ColorRecord entries. Throws on non-Lab input.',
     'name':        'intake:lab',
     'reads':       ['input.colors'],
-    'writes':      ['colors'],
-    'description': 'Parses {l,a,b} CIE Lab D65 into ColorRecord entries. Throws on non-Lab input.',
+    'writes':      ['colors']
   };
 
   /**
@@ -89,36 +94,68 @@ export class IntakeLab implements TaskInterface {
    * a valid `{l,a,b}` object or carries conflicting format keys.
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: unknown): ColorRecordInterface {
+  parse(raw: unknown): ColorRecordInterfaceType {
     if (!isLabInput(raw)) {
-      throw new Error(`intake:lab — expected {l,a,b} object, got ${typeof raw}`);
+      throw ValidationError.create({
+        'message': 'intake:lab — expected an {l,a,b} object',
+        'path':    'raw',
+        'violations': [{
+          'details': { 'expectedShape': '{l: number, a: number, b: number} (no conflicting r/s/c/h keys)', 'receivedType': typeof raw },
+          'message': 'input is not a CIE Lab object',
+          'path':    'raw'
+        }]
+      });
     }
 
-    const { l, a, b } = raw;
+    const { a, b, l } = raw;
     const [r, g, bv] = labToRgb(l, a, b);
-    return colorRecordFactory.fromRgb(r, g, bv, 1, 'lab');
+    return colorRecordFactory.fromRgb(r, g, bv, { 'sourceFormat': 'lab' });
+  }
+
+  /**
+   * Parses a single entry, rethrowing with index/context on failure.
+   * Extracted from {@link IntakeLab.run} so the loop body contains only
+   * a function call, not a try-catch, per V8 optimization guidance.
+   */
+  private parseEntry(raw: unknown, index: number): ColorRecordInterfaceType {
+    try {
+      return this.parse(raw);
+    } catch {
+      throw ValidationError.create({
+        'message': `intake:lab — entry at index ${index} is not a CIE Lab object`,
+        'path':    `input.colors[${index}]`,
+        'violations': [{
+          'details': {
+            'expectedShape': '{l, a, b} without conflicting format keys (r, s, c, h)',
+            'index':         index,
+            'received':      JSON.stringify(raw) ?? 'undefined'
+          },
+          'message': 'entry does not match the CIE Lab object shape',
+          'path':    `input.colors[${index}]`
+        }]
+      });
+    }
   }
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     for (let i = 0; i < state.input.colors.length; i++) {
       const raw = state.input.colors[i];
-      let record: ColorRecordInterface;
-      try {
-        record = this.parse(raw);
-      } catch {
-        throw new Error(
-          `intake:lab — entry at index ${i} is not a CIE Lab object. ` +
-          `Expected {l, a, b} without conflicting format keys (r, s, c, h). ` +
-          `Got: ${JSON.stringify(raw)}`,
-        );
-      }
+      const record = this.parseEntry(raw, i);
       state.colors.push(record);
-      ctx.logger.debug('IntakeLab', 'run', 'Parsed lab value', {
-        'l': (raw as { l: number }).l,
-        'a': (raw as { a: number }).a,
-        'b': (raw as { b: number }).b,
-        'hex': record.hex,
-      });
+      ctx.logger.debug(
+        LogBody.create()
+          .component('IntakeLab')
+          .operation('run')
+          .status(LOG_STATUS.SUCCESS)
+          .message('Parsed lab value')
+          .context({
+            'a': (raw as { 'a': number }).a,
+            'b': (raw as { 'b': number }).b,
+            'hex': record.hex,
+            'l': (raw as { 'l': number }).l
+          })
+          .build()
+      );
     }
   }
 }

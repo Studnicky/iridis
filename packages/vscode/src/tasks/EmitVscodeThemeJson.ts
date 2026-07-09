@@ -1,50 +1,55 @@
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
-  ThemeJsonInterface,
-  TokenColorRuleInterface,
+  ThemeJsonInterfaceType,
+  TokenColorRuleInterfaceType
 } from '../types/augmentation.ts';
+
 import { FONT_STYLES } from '../data/fontStyles.ts';
 import { SCOPE_MAPPINGS } from '../data/scopeMappings.ts';
 import { recordToVscodeColor } from '../util/recordToVscodeColor.ts';
 
-export class EmitVscodeThemeJson implements TaskInterface {
+class EmitVscodeThemeJson implements TaskInterface {
   readonly 'name' = 'emit:vscodeThemeJson';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Assembles the complete VS Code theme JSON: { name, type, colors, semanticTokenColors, tokenColors }.',
     'name':        'emit:vscodeThemeJson',
     'reads':       [
       'outputs.vscode:workbenchColors',
       'outputs.vscode:semanticTokenRules',
-      'metadata.vscode:baseTokens',
+      'metadata.vscode:baseTokens'
     ],
-    'writes':      ['outputs.vscode:themeJson'],
     'requires':    ['emit:vscodeSemanticRules', 'emit:vscodeUiPalette'],
-    'description': 'Assembles the complete VS Code theme JSON: { name, type, colors, semanticTokenColors, tokenColors }.',
+    'writes':      ['outputs.vscode:themeJson']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const themeName   = (state.input.metadata?.['themeName'] as string | undefined) ?? 'Color Engine Theme';
-    const baseTokens  = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterface>;
+    const themeName   = (state.input.metadata?.themeName as string | undefined) ?? 'Color Engine Theme';
+    const baseTokens  = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterfaceType>;
     const workbenchColors = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
-    const semanticTokenRules = (state.outputs['vscode:semanticTokenRules'] ?? {}) as Record<string, { 'foreground'?: string; 'fontStyle'?: string }>;
+    const semanticTokenRules = (state.outputs['vscode:semanticTokenRules'] ?? {}) as Record<string, { 'fontStyle'?: string; 'foreground'?: string; }>;
 
     // Determine dark/light from background luminance
-    const bgRecord = state.roles['background'];
-    const bgLum = bgRecord ? bgRecord.oklch.l : 0;
+    const bgRecord = state.roles.background;
+    const bgLum = bgRecord !== undefined ? bgRecord.oklch.l : 0;
     const themeType: 'dark' | 'light' = bgLum > 0.5 ? 'light' : 'dark';
 
     // semanticTokenColors: copy from outputs['vscode:semanticTokenRules']
-    const semanticTokenColors: Record<string, string | { 'foreground'?: string; 'fontStyle'?: string }> = {};
+    const semanticTokenColors: Record<string, string | { 'fontStyle'?: string; 'foreground'?: string; }> = {};
     for (const [selector, rule] of Object.entries(semanticTokenRules)) {
-      if (rule.fontStyle) {
+      if (rule.fontStyle !== undefined && rule.fontStyle.length > 0) {
         semanticTokenColors[selector] = { ...rule };
-      } else if (rule.foreground) {
+      } else if (rule.foreground !== undefined && rule.foreground.length > 0) {
         semanticTokenColors[selector] = rule.foreground;
       }
     }
@@ -53,40 +58,48 @@ export class EmitVscodeThemeJson implements TaskInterface {
     // Each foreground is serialised via {@link recordToVscodeColor} so any
     // record carrying `displayP3` emits `color(display-p3 r g b)` instead
     // of the gamut-mapped hex; sRGB-only records stay as hex.
-    const tokenColors: TokenColorRuleInterface[] = [];
+    const tokenColors: TokenColorRuleInterfaceType[] = [];
     for (const [paletteKey, scopes] of Object.entries(SCOPE_MAPPINGS)) {
       const foregroundRecord = baseTokens[paletteKey];
-      if (!foregroundRecord) continue;
+      if (foregroundRecord === undefined) {continue;}
 
       const fontStyle = FONT_STYLES[paletteKey];
-      const settings: TokenColorRuleInterface['settings'] = {
-        'foreground': recordToVscodeColor(foregroundRecord),
+      const settings: TokenColorRuleInterfaceType['settings'] = {
+        'foreground': recordToVscodeColor(foregroundRecord)
       };
-      if (fontStyle) {
-        settings['fontStyle'] = fontStyle;
+      if (fontStyle !== undefined && fontStyle.length > 0) {
+        settings.fontStyle = fontStyle;
       }
       tokenColors.push({
         'name':     paletteKey,
-        'scope':    scopes,
-        'settings': settings,
+        'scope':    [...scopes],
+        'settings': settings
       });
     }
 
-    const themeJson: ThemeJsonInterface = {
-      'name':                 themeName,
-      'type':                 themeType,
-      'semanticHighlighting': true,
+    const themeJson: ThemeJsonInterfaceType = {
       'colors':               workbenchColors,
+      'name':                 themeName,
+      'semanticHighlighting': true,
       'semanticTokenColors':  semanticTokenColors,
       'tokenColors':          tokenColors,
+      'type':                 themeType
     };
 
     state.outputs['vscode:themeJson'] = themeJson;
-    ctx.logger.debug('EmitVscodeThemeJson', 'run', 'Assembled theme JSON', {
-      'colors':              Object.keys(workbenchColors).length,
-      'semanticTokenColors': Object.keys(semanticTokenColors).length,
-      'tokenColors':         tokenColors.length,
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('EmitVscodeThemeJson')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('Assembled theme JSON')
+        .context({
+          'colors':              Object.keys(workbenchColors).length,
+          'semanticTokenColors': Object.keys(semanticTokenColors).length,
+          'tokenColors':         tokenColors.length
+        })
+        .build()
+    );
   }
 }
 

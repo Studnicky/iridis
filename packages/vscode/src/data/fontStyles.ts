@@ -51,5 +51,5 @@ export const FONT_STYLES: Readonly<Partial<Record<string, string>>> = {
   'this':            'italic',
   'typeParameter':   'italic',
 
-  'variableReadonly': 'bold',
+  'variableReadonly': 'bold'
 } as const;

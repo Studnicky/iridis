@@ -1,5 +1,9 @@
 import './types/augmentation.ts';
+import { TailwindPlugin }    from './TailwindPlugin.ts';
+import { EmitTailwindTheme } from './tasks/EmitTailwindTheme.ts';
 
-export { TailwindPlugin, tailwindPlugin }       from './TailwindPlugin.ts';
-export { EmitTailwindTheme, emitTailwindTheme } from './tasks/EmitTailwindTheme.ts';
-export type { TailwindOutputInterface }         from './types/index.ts';
+export { TailwindPlugin };
+export { EmitTailwindTheme };
+export const tailwindPlugin    = new TailwindPlugin();
+export const emitTailwindTheme = new EmitTailwindTheme();
+export type { TailwindOutputInterfaceType } from './types/index.ts';

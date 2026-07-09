@@ -1,11 +1,12 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { luminance }          from './Luminance.ts';
 
-export class ContrastText {
+class ContrastText {
   readonly 'name' = 'contrastText';
 
-  apply(background: ColorRecordInterface, threshold: number = 0.179): ColorRecordInterface {
+  apply(background: ColorRecordInterfaceType, threshold = 0.179): ColorRecordInterfaceType {
     const lum = luminance.apply(background);
 
     if (lum > threshold) {

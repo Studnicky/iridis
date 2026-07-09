@@ -1,9 +1,12 @@
+import type { PaletteStateInterface } from '@studnicky/iridis/model';
+
+import { CliExitError } from '@studnicky/errors';
 import { Engine }       from '@studnicky/iridis/engine';
 import { coreTasks }    from '@studnicky/iridis/tasks';
-import type { PaletteStateInterface } from '@studnicky/iridis/model';
+
 import { ConfigLoader }  from './ConfigLoader.ts';
-import { PluginResolver } from './PluginResolver.ts';
 import { OutputWriter }  from './OutputWriter.ts';
+import { PluginResolver } from './PluginResolver.ts';
 
 /**
  * Collects the union of `state.outputs.*` slot names that the given pipeline
@@ -26,7 +29,7 @@ function collectWrittenSlots(engine: Engine, pipeline: readonly string[]): Set<s
 }
 
 export class Cli {
-  async run(configPath: string): Promise<{ readonly 'state': PaletteStateInterface; readonly 'outputsWritten': readonly string[] }> {
+  async run(configPath: string): Promise<{ readonly 'outputsWritten': readonly string[]; readonly 'state': PaletteStateInterface; }> {
     const loader   = new ConfigLoader();
     const resolver = new PluginResolver();
     const writer   = new OutputWriter();
@@ -48,21 +51,21 @@ export class Cli {
     const declaredFileKeys = Object.keys(config.output.files);
     if (declaredFileKeys.length > 0) {
       const writtenSlots  = collectWrittenSlots(engine, config.pipeline);
-      const unwrittenKeys = declaredFileKeys.filter((k) => !writtenSlots.has(k));
+      const unwrittenKeys = declaredFileKeys.filter((k) => {return !writtenSlots.has(k);});
 
       if (unwrittenKeys.length > 0) {
         const produced = writtenSlots.size > 0
           ? `Slots produced by this pipeline: ${[...writtenSlots].join(', ')}.`
           : 'No tasks in this pipeline produce any output slots.';
-        throw new Error(
-          `Config error: output.files references slot(s) that no pipeline task writes: ${unwrittenKeys.join(', ')}. ${produced}`,
-        );
+        const error = new CliExitError(1);
+        error.message = `Config error: output.files references slot(s) that no pipeline task writes: ${unwrittenKeys.join(', ')}. ${produced}`;
+        throw error;
       }
     }
 
-    const state          = await engine.run(config.input);
+    const state          = engine.run(config.input);
     const outputsWritten = await writer.write(state, config);
 
-    return { 'state': state, 'outputsWritten': outputsWritten };
+    return { 'outputsWritten': outputsWritten, 'state': state };
   }
 }

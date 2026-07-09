@@ -2,20 +2,25 @@ import type {
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
-import { contrastWcag21, ensureContrast } from '@studnicky/iridis';
-import { wcagRequiredRatio } from '../data/wcagRequiredRatio.ts';
-import type { WcagPairResultInterface } from '../types/augmentation.ts';
 
-export class EnforceWcagAaa implements TaskInterface {
+import { contrastWcag21, ensureContrast } from '@studnicky/iridis';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
+import type { WcagPairResultInterfaceType } from '../types/augmentation.ts';
+
+import { wcagRequiredRatio } from '../data/wcagRequiredRatio.ts';
+
+class EnforceWcagAaa implements TaskInterface {
   readonly 'name' = 'enforce:wcagAAA';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Enforce WCAG 2.1 AAA contrast (7:1 normal text, 4.5:1 large/UI) on all role pairs.',
     'name':        'enforce:wcagAAA',
     'reads':       ['input.roles.contrastPairs', 'roles'],
-    'writes':      ['roles', 'metadata[\'contrast:aaa\']'],
-    'description': 'Enforce WCAG 2.1 AAA contrast (7:1 normal text, 4.5:1 large/UI) on all role pairs.',
+    'writes':      ['roles', 'metadata[\'contrast:aaa\']']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
@@ -24,7 +29,7 @@ export class EnforceWcagAaa implements TaskInterface {
       return;
     }
 
-    const results: WcagPairResultInterface[] = [];
+    const results: WcagPairResultInterfaceType[] = [];
 
     for (const pair of pairs) {
       const algo = pair.algorithm ?? 'wcag21';
@@ -35,11 +40,16 @@ export class EnforceWcagAaa implements TaskInterface {
       const fgRecord = state.roles[pair.foreground];
       const bgRecord = state.roles[pair.background];
 
-      if (!fgRecord || !bgRecord) {
-        ctx.logger.warn('EnforceWcagAaa', 'run', 'Role not found for pair', {
-          'foreground': pair.foreground,
-          'background': pair.background,
-        });
+      if (fgRecord === undefined || bgRecord === undefined) {
+        ctx.logger.warn(
+          LogBody.create()
+            .component('EnforceWcagAaa')
+            .operation('run')
+            .status(LOG_STATUS.INVALID)
+            .message('Role not found for pair')
+            .context({ 'background': pair.background, 'foreground': pair.foreground })
+            .build()
+        );
         continue;
       }
 
@@ -50,33 +60,46 @@ export class EnforceWcagAaa implements TaskInterface {
       const current   = contrastWcag21.apply(currentFg, bgRecord);
 
       if (current < required) {
-        ctx.logger.warn('EnforceWcagAaa', 'run', 'Pair could not reach required ratio', {
-          'foreground': pair.foreground,
-          'background': pair.background,
-          'required':   required,
-          'achieved':   current,
-        });
+        ctx.logger.warn(
+          LogBody.create()
+            .component('EnforceWcagAaa')
+            .operation('run')
+            .status(LOG_STATUS.PARTIAL)
+            .message('Pair could not reach required ratio')
+            .context({
+              'achieved':   current,
+              'background': pair.background,
+              'foreground': pair.foreground,
+              'required':   required
+            })
+            .build()
+        );
       }
 
       state.roles[pair.foreground] = currentFg;
 
       results.push({
-        'foreground': pair.foreground,
-        'background': pair.background,
-        'algorithm':  'wcag21',
-        'required':   required,
-        'before':     before,
         'after':      current,
+        'algorithm':  'wcag21',
+        'background': pair.background,
+        'before':     before,
+        'foreground': pair.foreground,
         'pass':       current >= required,
+        'required':   required
       });
     }
 
     state.metadata['contrast:aaa'] = { 'pairs': results };
 
-    ctx.logger.debug('EnforceWcagAaa', 'run', 'Processed pairs', {
-      'pairCount': results.length,
-      'aaaMeta':   state.metadata['contrast:aaa'],
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('EnforceWcagAaa')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('Processed pairs')
+        .context({ 'aaaMeta': state.metadata['contrast:aaa'], 'pairCount': results.length })
+        .build()
+    );
   }
 }
 

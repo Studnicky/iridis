@@ -2,9 +2,12 @@ import type {
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
 import { deltaE2000, hueShift } from '@studnicky/iridis';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
 
 /**
  * `gallery:harmonize`
@@ -18,34 +21,58 @@ import { deltaE2000, hueShift } from '@studnicky/iridis';
  *   state.metadata['gallery:harmonizeDetails']: { before, after, deltaE } if changed
  */
 
-export class GalleryHarmonize implements TaskInterface {
+class GalleryHarmonize implements TaskInterface {
   readonly 'name' = 'gallery:harmonize';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Shift accent hue by 30° when deltaE2000 vs frame is < 10',
     'name':        'gallery:harmonize',
     'reads':       ['roles', 'metadata.gallery'],
-    'writes':      ['roles.accent', 'metadata.gallery:harmonized'],
-    'description': 'Shift accent hue by 30° when deltaE2000 vs frame is < 10',
+    'writes':      ['roles.accent', 'metadata.gallery:harmonized']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const accent = state.roles['accent'];
-    const frame  = state.roles['frame'];
+    const accent = state.roles.accent;
+    const frame  = state.roles.frame;
 
-    if (!accent || !frame) {
-      ctx.logger.warn('GalleryHarmonize', 'run', 'accent or frame role missing; skipping harmonize');
+    if (accent === undefined || frame === undefined) {
+      ctx.logger.warn(
+        LogBody.create()
+          .component('GalleryHarmonize')
+          .operation('run')
+          .status(LOG_STATUS.SKIPPED)
+          .message('accent or frame role missing; skipping harmonize')
+          .context({})
+          .build()
+      );
       state.metadata['gallery:harmonized'] = false;
       return;
     }
 
-    const galleryConfig = state.metadata['gallery'] as { 'harmonizeThreshold'?: number } | undefined;
+    const galleryConfig = state.metadata.gallery as { 'harmonizeThreshold'?: number } | undefined;
     const threshold = galleryConfig?.harmonizeThreshold ?? 10;
     const deltaE = deltaE2000.apply(accent, frame);
 
-    ctx.logger.debug('GalleryHarmonize', 'run', 'deltaE2000 between accent and frame', { 'deltaE': deltaE, 'threshold': threshold });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('GalleryHarmonize')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('deltaE2000 between accent and frame')
+        .context({ 'deltaE': deltaE, 'threshold': threshold })
+        .build()
+    );
 
     if (deltaE >= threshold) {
-      ctx.logger.info('GalleryHarmonize', 'run', 'accent hue is sufficiently distinct; no shift needed', { 'deltaE': deltaE });
+      ctx.logger.info(
+        LogBody.create()
+          .component('GalleryHarmonize')
+          .operation('run')
+          .status(LOG_STATUS.SKIPPED)
+          .message('accent hue is sufficiently distinct; no shift needed')
+          .context({ 'deltaE': deltaE })
+          .build()
+      );
       state.metadata['gallery:harmonized'] = false;
       return;
     }
@@ -59,22 +86,30 @@ export class GalleryHarmonize implements TaskInterface {
     const shift     = diff > 0 ? 30 : -30;
     const newAccent = hueShift.apply(accent, shift);
 
-    state.roles['accent'] = newAccent;
+    state.roles.accent = newAccent;
 
     state.metadata['gallery:harmonized'] = true;
     state.metadata['gallery:harmonizeDetails'] = {
-      'before':   accent.hex,
       'after':    newAccent.hex,
+      'before':   accent.hex,
       'deltaE':   deltaE,
-      'hueShift': shift,
+      'hueShift': shift
     };
 
-    ctx.logger.info('GalleryHarmonize', 'run', 'accent hue shifted', {
-      'before':  accent.hex,
-      'after':   newAccent.hex,
-      'shift':   shift,
-      'deltaE':  deltaE,
-    });
+    ctx.logger.info(
+      LogBody.create()
+        .component('GalleryHarmonize')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('accent hue shifted')
+        .context({
+          'after':   newAccent.hex,
+          'before':  accent.hex,
+          'deltaE':  deltaE,
+          'shift':   shift
+        })
+        .build()
+    );
   }
 }
 

@@ -18,24 +18,24 @@ import {
 } from '../_runner/ScenarioRunner.ts';
 import { colorRecordFactory }          from '../../src/math/ColorRecordFactory.ts';
 import { clusterMedianCutWeighted }    from '../../src/math/ClusterMedianCutWeighted.ts';
-import type { ColorRecordInterface }   from '@studnicky/iridis';
+import type { ColorRecordInterfaceType }   from '@studnicky/iridis';
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function rgb(r: number, g: number, b: number, weight?: number): ColorRecordInterface {
-  return colorRecordFactory.fromRgb(
-    r, g, b, 1, 'rgb',
-    weight !== undefined ? { 'weight': weight } : undefined,
-  );
+function rgb(r: number, g: number, b: number, weight?: number): ColorRecordInterfaceType {
+  return colorRecordFactory.fromRgb(r, g, b, {
+    'hints': weight !== undefined ? { 'weight': weight } : undefined,
+    'sourceFormat': 'rgb',
+  });
 }
 
-function hex(code: string, weight?: number): ColorRecordInterface {
-  return colorRecordFactory.fromHex(
-    code, undefined, 'hex',
-    weight !== undefined ? { 'weight': weight } : undefined,
-  );
+function hex(code: string, weight?: number): ColorRecordInterfaceType {
+  return colorRecordFactory.fromHex(code, {
+    'hints': weight !== undefined ? { 'weight': weight } : undefined,
+    'sourceFormat': 'hex',
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -48,11 +48,11 @@ function hex(code: string, weight?: number): ColorRecordInterface {
 // ---------------------------------------------------------------------------
 
 interface Cell1Input {
-  readonly colors: readonly ColorRecordInterface[];
+  readonly colors: readonly ColorRecordInterfaceType[];
   readonly k: number;
 }
 interface Cell1Output {
-  readonly result: ColorRecordInterface[];
+  readonly result: ColorRecordInterfaceType[];
 }
 
 const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
@@ -124,11 +124,11 @@ new ScenarioRunner<Cell1Input, Cell1Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell2Input {
-  readonly colors: readonly ColorRecordInterface[];
+  readonly colors: readonly ColorRecordInterfaceType[];
   readonly k: number;
 }
 interface Cell2Output {
-  readonly clusters: ColorRecordInterface[];
+  readonly clusters: ColorRecordInterfaceType[];
 }
 
 const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
@@ -240,7 +240,7 @@ new ScenarioRunner<Cell2Input, Cell2Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell3Input {
-  readonly colors: readonly ColorRecordInterface[];
+  readonly colors: readonly ColorRecordInterfaceType[];
   readonly k: number;
 }
 interface Cell3Output {
@@ -321,7 +321,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell4Input {
-  readonly colors: readonly ColorRecordInterface[];
+  readonly colors: readonly ColorRecordInterfaceType[];
   readonly k: number;
 }
 interface Cell4Output {
@@ -363,7 +363,7 @@ const cell4Scenarios: readonly ScenarioInterface<Cell4Input, Cell4Output>[] = [
     input: {
       colors: [
         colorRecordFactory.fromRgb(0.1, 0.1, 0.1), // weight=1 (absent)
-        colorRecordFactory.fromRgb(0.9, 0.1, 0.1, 1, 'rgb', { 'weight': 9 }),
+        colorRecordFactory.fromRgb(0.9, 0.1, 0.1, { 'hints': { 'weight': 9 }, 'sourceFormat': 'rgb' }),
       ],
       k: 2,
     },

@@ -1,21 +1,25 @@
 {
   "name": "@studnicky/iridis-capacitor",
-  "version": "0.3.4",
+  "description": "Emits Capacitor status bar, splash screen, native theme config, and Android theme.xml from a resolved palette.",
+  "version": "0.6.0",
   "type": "module",
   "exports": {
-    ".":       "./src/index.ts",
+    ".": "./src/index.ts",
     "./types": "./src/types/index.ts"
   },
   "files": [
     "src"
   ],
+  "dependencies": {
+    "@studnicky/logger": "^4.0.0"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test":      "node --import tsx --test 'tests/**/*.test.ts'",
-    "clean":     "rm -rf dist",
-    "prebuild":  "rm -rf dist"
+    "test": "node --import tsx --test 'tests/**/*.test.ts'",
+    "clean": "rm -rf dist",
+    "prebuild": "rm -rf dist"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.4.0"
+    "@studnicky/iridis": "^0.6.0"
   }
 }

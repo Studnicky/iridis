@@ -1,55 +1,62 @@
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
-import type { SplashScreenOutputInterface, StatusBarOutputInterface } from '../types/index.ts';
 
-function resolveHexRole(
-  roles: Record<string, ColorRecordInterface>,
-  ...names: string[]
-): string {
-  for (const name of names) {
-    const record = roles[name];
-    if (record) {
-      return record.hex;
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
+import type { SplashScreenOutputInterfaceType, StatusBarOutputInterfaceType } from '../types/index.ts';
+
+class HexRole {
+  static resolve(
+    roles: Record<string, ColorRecordInterfaceType>,
+    ...names: string[]
+  ): string {
+    for (const name of names) {
+      const record = roles[name];
+      if (record !== undefined) {
+        return record.hex;
+      }
     }
+    return '#000000';
   }
-  return '#000000';
 }
 
 function xmlItem(name: string, value: string): string {
-  return `        <item name="${name}">${value}</item>`;
+  const result = `        <item name="${name}">${value}</item>`;
+  return result;
 }
 
-export class EmitAndroidThemeXml implements TaskInterface {
+class EmitAndroidThemeXml implements TaskInterface {
   readonly 'name' = 'emit:androidThemeXml';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Emit Android themes.xml fragment for Capacitor splash screen and status bar.',
     'name':        'emit:androidThemeXml',
     'reads':       ['roles', 'outputs.capacitor:statusBar', 'outputs.capacitor:splashScreen'],
-    'writes':      ['outputs.capacitor:androidThemeXml'],
-    'description': 'Emit Android themes.xml fragment for Capacitor splash screen and status bar.',
+    'writes':      ['outputs.capacitor:androidThemeXml']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const roles = state.roles;
 
-    const priorStatusBar    = state.outputs['capacitor:statusBar']    as StatusBarOutputInterface   | undefined;
-    const priorSplashScreen = state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterface | undefined;
+    const priorStatusBar    = state.outputs['capacitor:statusBar']    as StatusBarOutputInterfaceType   | undefined;
+    const priorSplashScreen = state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterfaceType | undefined;
 
     const statusBarColor = priorStatusBar?.backgroundColor
-      ?? resolveHexRole(roles, 'topBar', 'surface', 'base');
+      ?? HexRole.resolve(roles, 'topBar', 'surface', 'base');
 
     const splashColor = priorSplashScreen?.backgroundColor
-      ?? resolveHexRole(roles, 'surface', 'background', 'base');
+      ?? HexRole.resolve(roles, 'surface', 'background', 'base');
 
-    const windowBackground  = resolveHexRole(roles, 'background', 'surface', 'base');
-    const primaryColor      = resolveHexRole(roles, 'primary', 'base', 'accent');
-    const navigationBarColor = resolveHexRole(roles, 'navigationBar', 'surface', 'base');
-    const textColorPrimary  = resolveHexRole(roles, 'text', 'onSurface');
+    const windowBackground  = HexRole.resolve(roles, 'background', 'surface', 'base');
+    const primaryColor      = HexRole.resolve(roles, 'primary', 'base', 'accent');
+    const navigationBarColor = HexRole.resolve(roles, 'navigationBar', 'surface', 'base');
+    const textColorPrimary  = HexRole.resolve(roles, 'text', 'onSurface');
 
     const items = [
       xmlItem('android:statusBarColor',            statusBarColor),
@@ -59,7 +66,7 @@ export class EmitAndroidThemeXml implements TaskInterface {
       xmlItem('android:colorPrimaryDark',           statusBarColor),
       xmlItem('android:colorBackground',            windowBackground),
       xmlItem('android:textColorPrimary',           textColorPrimary),
-      xmlItem('postSplashScreenTheme',              '@style/AppTheme'),
+      xmlItem('postSplashScreenTheme',              '@style/AppTheme')
     ].join('\n');
 
     const xml = [
@@ -67,12 +74,20 @@ export class EmitAndroidThemeXml implements TaskInterface {
       '    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">',
       items,
       '    </style>',
-      '</resources>',
+      '</resources>'
     ].join('\n');
 
     state.outputs['capacitor:androidThemeXml'] = xml;
 
-    ctx.logger.debug('EmitAndroidThemeXml', 'run', 'Android themes.xml fragment generated');
+    ctx.logger.debug(
+      LogBody.create()
+        .component('EmitAndroidThemeXml')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('Android themes.xml fragment generated')
+        .context({})
+        .build()
+    );
   }
 }
 

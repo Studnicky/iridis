@@ -1,13 +1,16 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import { ValidationError } from '@studnicky/errors';
+
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { deltaE2000 } from './DeltaE2000.ts';
 
-interface ClusterInterface {
-  centroid:  ColorRecordInterface;
-  weight:    number;
-}
+type ClusterInterface = {
+  'centroid':  ColorRecordInterfaceType;
+  'weight':    number;
+};
 
-function recordWeight(record: ColorRecordInterface): number {
+function recordWeight(record: ColorRecordInterfaceType): number {
   const w = record.hints?.weight;
   return typeof w === 'number' && w > 0 ? w : 1;
 }
@@ -18,31 +21,33 @@ function recordWeight(record: ColorRecordInterface): number {
  * chroma+hue) so hue wrap-around is handled by the projection rather
  * than by a circular-mean correction.
  */
-function mergeCentroids(a: ClusterInterface, b: ClusterInterface): ClusterInterface {
-  // Treat zero-weight inputs as weight=1 so the weighted average stays
-  // defined. A zero-weight cluster is degenerate (the upstream task
-  // should not produce one), but guarding here keeps a single bad input
-  // from NaN-poisoning every subsequent merge.
-  const wa = a.weight > 0 ? a.weight : 1;
-  const wb = b.weight > 0 ? b.weight : 1;
-  const tot = wa + wb;
-  const aRad = (a.centroid.oklch.h * Math.PI) / 180;
-  const bRad = (b.centroid.oklch.h * Math.PI) / 180;
-  const aA = a.centroid.oklch.c * Math.cos(aRad);
-  const aB = a.centroid.oklch.c * Math.sin(aRad);
-  const bA = b.centroid.oklch.c * Math.cos(bRad);
-  const bB = b.centroid.oklch.c * Math.sin(bRad);
-  const L = (a.centroid.oklch.l * wa + b.centroid.oklch.l * wb) / tot;
-  const aMean = (aA * wa + bA * wb) / tot;
-  const bMean = (aB * wa + bB * wb) / tot;
-  const C = Math.sqrt(aMean * aMean + bMean * bMean);
-  let H = (Math.atan2(bMean, aMean) * 180) / Math.PI;
-  if (H < 0) H += 360;
-  const alpha = (a.centroid.alpha * wa + b.centroid.alpha * wb) / tot;
-  return {
-    'centroid': colorRecordFactory.fromOklch(L, C, H, alpha, 'oklch', { 'weight': tot }),
-    'weight':   tot,
-  };
+class Centroids {
+  static merge(a: ClusterInterface, b: ClusterInterface): ClusterInterface {
+    // Treat zero-weight inputs as weight=1 so the weighted average stays
+    // defined. A zero-weight cluster is degenerate (the upstream task
+    // should not produce one), but guarding here keeps a single bad input
+    // from NaN-poisoning every subsequent merge.
+    const wa = a.weight > 0 ? a.weight : 1;
+    const wb = b.weight > 0 ? b.weight : 1;
+    const tot = wa + wb;
+    const aRad = (a.centroid.oklch.h * Math.PI) / 180;
+    const bRad = (b.centroid.oklch.h * Math.PI) / 180;
+    const aA = a.centroid.oklch.c * Math.cos(aRad);
+    const aB = a.centroid.oklch.c * Math.sin(aRad);
+    const bA = b.centroid.oklch.c * Math.cos(bRad);
+    const bB = b.centroid.oklch.c * Math.sin(bRad);
+    const L = (a.centroid.oklch.l * wa + b.centroid.oklch.l * wb) / tot;
+    const aMean = (aA * wa + bA * wb) / tot;
+    const bMean = (aB * wa + bB * wb) / tot;
+    const C = Math.sqrt(aMean * aMean + bMean * bMean);
+    let H = (Math.atan2(bMean, aMean) * 180) / Math.PI;
+    if (H < 0) {H += 360;}
+    const alpha = (a.centroid.alpha * wa + b.centroid.alpha * wb) / tot;
+    return {
+      'centroid': colorRecordFactory.fromOklch(L, C, H, { 'alpha': alpha, 'hints': { 'weight': tot }, 'sourceFormat': 'oklch' }),
+      'weight':   tot
+    };
+  }
 }
 
 /**
@@ -60,13 +65,21 @@ function mergeCentroids(a: ClusterInterface, b: ClusterInterface): ClusterInterf
  * Calling against raw pixel arrays will be slow; feed it the output
  * of `gallery:histogram` instead.
  */
-export class ClusterDeltaEMerge {
+class ClusterDeltaEMerge {
   readonly 'name' = 'clusterDeltaEMerge';
 
-  apply(colors: readonly ColorRecordInterface[], k: number): ColorRecordInterface[] {
-    if (colors.length === 0) return [];
+  apply(colors: readonly ColorRecordInterfaceType[], k: number): ColorRecordInterfaceType[] {
+    if (colors.length === 0) {return [];}
     if (k < 1) {
-      throw new Error('ClusterDeltaEMerge.apply: k must be a positive number');
+      throw ValidationError.create({
+        'message': 'ClusterDeltaEMerge.apply: k must be a positive number',
+        'path':    'k',
+        'violations': [{
+          'details': { 'expected': 'k >= 1', 'received': k },
+          'message': 'k is not a positive number',
+          'path':    'k'
+        }]
+      });
     }
     const targetK = Math.min(Math.floor(k), colors.length);
     if (targetK >= colors.length) {
@@ -74,20 +87,20 @@ export class ClusterDeltaEMerge {
          a weight is already declared (preserves `displayP3` + every hint
          the upstream task attached); otherwise reallocate via the factory
          (the only sanctioned allocation point; spread-append would
-         break the monomorphic hidden class per ColorRecordInterface
+         break the monomorphic hidden class per ColorRecordInterfaceType
          docs) while merging existing hint keys (`role`, `intent`, etc.)
          with the stamped `weight: 1`. */
       return colors.map((c) => {
-        if (typeof c.hints?.weight === 'number' && c.hints.weight > 0) return c;
+        if (typeof c.hints?.weight === 'number' && c.hints.weight > 0) {return c;}
         const hints = { ...(c.hints ?? {}), 'weight': 1 };
-        return colorRecordFactory.fromOklch(c.oklch.l, c.oklch.c, c.oklch.h, c.alpha, c.sourceFormat, hints);
+        return colorRecordFactory.fromOklch(c.oklch.l, c.oklch.c, c.oklch.h, { 'alpha': c.alpha, 'hints': hints, 'sourceFormat': c.sourceFormat });
       });
     }
 
-    let clusters: ClusterInterface[] = colors.map((c) => ({
+    let clusters: ClusterInterface[] = colors.map((c) => {return {
       'centroid': c,
-      'weight':   recordWeight(c),
-    }));
+      'weight':   recordWeight(c)
+    };});
 
     while (clusters.length > targetK) {
       let bestI = 0;
@@ -95,10 +108,10 @@ export class ClusterDeltaEMerge {
       let bestD = Infinity;
       for (let i = 0; i < clusters.length; i++) {
         const a = clusters[i];
-        if (a === undefined) continue;
+        if (a === undefined) {continue;}
         for (let j = i + 1; j < clusters.length; j++) {
           const b = clusters[j];
-          if (b === undefined) continue;
+          if (b === undefined) {continue;}
           // Non-finite distances (NaN from a degenerate centroid, e.g.
           // zero-chroma both sides where the deltaE branch divides by
           // C1p*C2p === 0) would silently skip the pair otherwise and,
@@ -124,17 +137,17 @@ export class ClusterDeltaEMerge {
       }
       const a = clusters[bestI];
       const b = clusters[bestJ];
-      if (a === undefined || b === undefined) break;
-      const merged = mergeCentroids(a, b);
+      if (a === undefined || b === undefined) {break;}
+      const merged = Centroids.merge(a, b);
       clusters = [
         ...clusters.slice(0, bestI),
         merged,
         ...clusters.slice(bestI + 1, bestJ),
-        ...clusters.slice(bestJ + 1),
+        ...clusters.slice(bestJ + 1)
       ];
     }
 
-    return clusters.map((cl) => cl.centroid);
+    return clusters.map((cl) => { const result = cl.centroid; return result; });
   }
 }
 

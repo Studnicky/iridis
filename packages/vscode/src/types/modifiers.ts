@@ -8,11 +8,11 @@
 
 export type FontStyleType = 'bold' | 'bold italic' | 'italic' | 'strikethrough' | 'underline';
 
-export interface ModifierTransformInterface {
-  readonly 'fontStyle'?: FontStyleType;
-  readonly 'lightness'?: number;
-  readonly 'saturation'?: number;
+export type ModifierTransformInterfaceType = {
+  'fontStyle'?: FontStyleType;
+  'lightness'?: number;
+  'mixWeight'?: number;
   /** Role name to mix toward: 'muted' | 'constant' | 'warning' | 'comment' | 'info' */
-  readonly 'mixWith'?: string;
-  readonly 'mixWeight'?: number;
-}
+  'mixWith'?: string;
+  'saturation'?: number;
+};

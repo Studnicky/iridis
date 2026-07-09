@@ -1,13 +1,15 @@
-import { DataFactory, Store } from 'n3';
-
 import type {
-  ColorRecordInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
 import { contrastWcag21 } from '@studnicky/iridis';
+import { LogBody }        from '@studnicky/logger/builders';
+import { LOG_STATUS }     from '@studnicky/logger/constants';
+import { DataFactory, Store } from 'n3';
+
 import { colorologyVocab } from '../data/colorologyVocab.ts';
 
 const xsdDecimal = 'http://www.w3.org/2001/XMLSchema#decimal';
@@ -15,26 +17,29 @@ const xsdString  = 'http://www.w3.org/2001/XMLSchema#string';
 const rdfType    = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
 function colorIri(hex: string): string {
-  return `https://studnicky.dev/colorology/color/${hex.replace('#', '')}`;
+  const result = `https://studnicky.dev/colorology/color/${hex.replace('#', '')}`;
+  return result;
 }
 
 function roleIri(name: string): string {
-  return `https://studnicky.dev/colorology/role/${name}`;
+  const result = `https://studnicky.dev/colorology/role/${name}`;
+  return result;
 }
 
 function paletteIri(startedAt: number): string {
-  return `https://studnicky.dev/colorology/palette/run-${startedAt}`;
+  const result = `https://studnicky.dev/colorology/palette/run-${startedAt}`;
+  return result;
 }
 
 
-export class ReasonAnnotate implements TaskInterface {
+class ReasonAnnotate implements TaskInterface {
   readonly 'name' = 'reason:annotate';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Annotate palette with RDF triples via n3 Store',
     'name':        'reason:annotate',
     'reads':       ['roles', 'colors'],
-    'writes':      ['rdf:reasoningGraph'],
-    'description': 'Annotate palette with RDF triples via n3 Store',
+    'writes':      ['rdf:reasoningGraph']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
@@ -69,7 +74,7 @@ export class ReasonAnnotate implements TaskInterface {
       // `color(display-p3 r g b)` semantics; SPARQL consumers can join
       // these triples with the hex literal to surface the wide-gamut
       // form when supported, fall back to hex when not.
-      if (color.displayP3) {
+      if (color.displayP3 !== undefined) {
         store.addQuad(DataFactory.quad(colorN, p3RNode, DataFactory.literal(color.displayP3.r.toFixed(4), xsdDecimalNode)));
         store.addQuad(DataFactory.quad(colorN, p3GNode, DataFactory.literal(color.displayP3.g.toFixed(4), xsdDecimalNode)));
         store.addQuad(DataFactory.quad(colorN, p3BNode, DataFactory.literal(color.displayP3.b.toFixed(4), xsdDecimalNode)));
@@ -85,24 +90,30 @@ export class ReasonAnnotate implements TaskInterface {
         if (i === j) {
           continue;
         }
-        const [fgName, fg] = roleEntries[i] as [string, ColorRecordInterface];
-        const [bgName, bg] = roleEntries[j] as [string, ColorRecordInterface];
+        const [fgName, fg] = roleEntries[i]!;
+        const [bgName, bg] = roleEntries[j]!;
         const pairIri      = `https://studnicky.dev/colorology/pair/${fgName}-on-${bgName}`;
         const ratio        = contrastWcag21.apply(fg, bg);
 
         store.addQuad(DataFactory.quad(
           DataFactory.namedNode(pairIri),
           ratioNode,
-          DataFactory.literal(ratio.toFixed(2), DataFactory.namedNode(xsdDecimal)),
+          DataFactory.literal(ratio.toFixed(2), DataFactory.namedNode(xsdDecimal))
         ));
       }
     }
 
     state.outputs['rdf:reasoningGraph'] = store;
 
-    ctx.logger.info('ReasonAnnotate', 'run', 'RDF annotation complete', {
-      'roleCount': Object.keys(state.roles).length,
-    });
+    ctx.logger.info(
+      LogBody.create()
+        .component('ReasonAnnotate')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('RDF annotation complete')
+        .context({ 'roleCount': Object.keys(state.roles).length })
+        .build()
+    );
   }
 }
 

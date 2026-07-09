@@ -1,8 +1,9 @@
 import type {
   PluginInterface,
   PluginSchemaContributionInterface,
-  TaskInterface,
+  TaskInterface
 } from '@studnicky/iridis';
+
 import { reasonAnnotate }  from './tasks/ReasonAnnotate.ts';
 import { reasonSerialize } from './tasks/ReasonSerialize.ts';
 
@@ -31,15 +32,13 @@ export class RdfPlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs': {
-        'rdf:reasoningGraph': { 'type': 'object', 'description': 'n3 Store of RDF triples for the palette' },
-        'rdf:serialized':     { 'type': 'string', 'description': 'Serialized RDF graph (Turtle / TriG / N-Quads / JSON-LD)' },
-      },
       'metadata': {
-        'rdf:format': { 'description': 'Serialization format hint for reason:serialize (string; invalid values fall back to Turtle)' },
+        'rdf:format': { 'description': 'Serialization format hint for reason:serialize (string; invalid values fall back to Turtle)' }
       },
+      'outputs': {
+        'rdf:reasoningGraph': { 'description': 'n3 Store of RDF triples for the palette', 'type': 'object' },
+        'rdf:serialized':     { 'description': 'Serialized RDF graph (Turtle / TriG / N-Quads / JSON-LD)', 'type': 'string' }
+      }
     };
   }
 }
-
-export const rdfPlugin = new RdfPlugin();

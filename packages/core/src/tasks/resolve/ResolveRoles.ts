@@ -1,34 +1,65 @@
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
-  ColorHintsInterface,
-  ColorRecordInterface,
+  ColorHintsInterfaceType,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
-  RoleDefinitionInterface,
+  RoleDefinitionInterfaceType,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '../../types/index.ts';
+
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
+
+/**
+ * Rotate `src` toward `target` along the shortest arc, by at most `maxDeg`
+ * degrees. A bounded nudge: keeps the resolved hue rooted in the palette while
+ * leaning it toward a semantic target.
+ */
+function hueTowards(src: number, target: number, maxDeg: number): number {
+  const delta = ((target - src + 540) % 360) - 180;
+  const clamped = Math.max(-maxDeg, Math.min(maxDeg, delta));
+  return (((src + clamped) % 360) + 360) % 360;
+}
+
+/**
+ * Resolves the target hue for a candidate being nudged into a role:
+ * an absolute/clamped `hue` target wins when set, otherwise `hueOffset`
+ * is used as-is, otherwise the candidate's own hue is left unchanged.
+ */
+class TargetHue {
+  static resolve(h: number, role: RoleDefinitionInterfaceType): number {
+    if (role.hue !== undefined) {
+      return role.hueClamp !== undefined
+        ? hueTowards(h, role.hue, role.hueClamp)
+        : (((role.hue % 360) + 360) % 360);
+    }
+    return role.hueOffset ?? h;
+  }
+}
 
 function rangeCenter(range: readonly [number, number]): number {
   return (range[0] + range[1]) / 2;
 }
 
 function clampToRange(value: number, range: readonly [number, number]): number {
-  if (value < range[0]) return range[0];
-  if (value > range[1]) return range[1];
+  if (value < range[0]) {return range[0];}
+  if (value > range[1]) {return range[1];}
   return value;
 }
 
-function distanceToRoleCenter(color: ColorRecordInterface, role: RoleDefinitionInterface): number {
-  const { l, c, h } = color.oklch;
+function distanceToRoleCenter(color: ColorRecordInterfaceType, role: RoleDefinitionInterfaceType): number {
+  const { c, h, l } = color.oklch;
   let distance = 0;
 
-  if (role.lightnessRange) {
+  if (role.lightnessRange !== undefined) {
     const target = rangeCenter(role.lightnessRange);
     distance += Math.abs(l - target) * 2;
   }
 
-  if (role.chromaRange) {
+  if (role.chromaRange !== undefined) {
     const target = rangeCenter(role.chromaRange);
     distance += Math.abs(c - target);
   }
@@ -49,17 +80,17 @@ function distanceToRoleCenter(color: ColorRecordInterface, role: RoleDefinitionI
  * that the candidate's hints lack, in which case a new record is
  * allocated through the factory so `hints.intent` is propagated onto
  * the resolved record (the schema's intent is authoritative; see the
- * JSDoc on {@link RoleDefinitionInterface.intent}).
+ * JSDoc on {@link RoleDefinitionInterfaceType.intent}).
  */
 function nudgeIntoRole(
-  candidate: ColorRecordInterface,
-  role: RoleDefinitionInterface,
-): ColorRecordInterface {
-  const { l, c, h } = candidate.oklch;
+  candidate: ColorRecordInterfaceType,
+  role: RoleDefinitionInterfaceType
+): ColorRecordInterfaceType {
+  const { c, h, l } = candidate.oklch;
 
-  const targetL = role.lightnessRange ? clampToRange(l, role.lightnessRange) : l;
-  const targetC = role.chromaRange    ? clampToRange(c, role.chromaRange)    : c;
-  const targetH = role.hueOffset !== undefined ? role.hueOffset             : h;
+  const targetL = role.lightnessRange !== undefined ? clampToRange(l, role.lightnessRange) : l;
+  const targetC = role.chromaRange    !== undefined ? clampToRange(c, role.chromaRange)    : c;
+  const targetH = TargetHue.resolve(h, role);
 
   const needsRangeNudge = targetL !== l || targetC !== c || targetH !== h;
   const needsIntent     = role.intent !== undefined && candidate.hints?.intent !== role.intent;
@@ -68,7 +99,7 @@ function nudgeIntoRole(
     return candidate;
   }
 
-  const nextHints: ColorHintsInterface | undefined = role.intent !== undefined
+  const nextHints: ColorHintsInterfaceType | undefined = role.intent !== undefined
     ? { ...candidate.hints, 'intent': role.intent }
     : candidate.hints;
 
@@ -76,20 +107,25 @@ function nudgeIntoRole(
     targetL,
     targetC,
     targetH,
-    candidate.alpha,
-    candidate.sourceFormat,
-    nextHints,
+    { 'alpha': candidate.alpha, 'hints': nextHints, 'sourceFormat': candidate.sourceFormat }
   );
 }
 
-function synthesizeForRole(role: RoleDefinitionInterface): ColorRecordInterface {
-  const l = role.lightnessRange ? rangeCenter(role.lightnessRange) : 0.5;
-  const c = role.chromaRange    ? rangeCenter(role.chromaRange)    : 0;
-  const h = role.hueOffset !== undefined ? role.hueOffset           : 0;
-  const hints: ColorHintsInterface | undefined = role.intent !== undefined
+function synthesizedHue(role: RoleDefinitionInterfaceType): number {
+  if (role.hue !== undefined) {
+    return (((role.hue % 360) + 360) % 360);
+  }
+  return role.hueOffset ?? 0;
+}
+
+function synthesizeForRole(role: RoleDefinitionInterfaceType): ColorRecordInterfaceType {
+  const l = role.lightnessRange !== undefined ? rangeCenter(role.lightnessRange) : 0.5;
+  const c = role.chromaRange    !== undefined ? rangeCenter(role.chromaRange)    : 0;
+  const h = synthesizedHue(role);
+  const hints: ColorHintsInterfaceType | undefined = role.intent !== undefined
     ? { 'intent': role.intent }
     : undefined;
-  return colorRecordFactory.fromOklch(l, c, h, 1, 'oklch', hints);
+  return colorRecordFactory.fromOklch(l, c, h, { 'alpha': 1, 'hints': hints, 'sourceFormat': 'oklch' });
 }
 
 /**
@@ -109,19 +145,27 @@ function synthesizeForRole(role: RoleDefinitionInterface): ColorRecordInterface 
  * Roles with `derivedFrom` are deferred to {@link ExpandFamily} and
  * skipped here.
  */
-export class ResolveRoles implements TaskInterface {
+class ResolveRoles implements TaskInterface {
   readonly 'name' = 'resolve:roles';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Assigns colors to schema roles by hint match then OKLCH distance to range center, then nudges the assigned color into the role\'s declared ranges. Required roles are guaranteed populated and constraint-satisfying.',
     'name':        'resolve:roles',
     'reads':       ['colors', 'input.roles'],
-    'writes':      ['roles', 'metadata'],
-    'description': 'Assigns colors to schema roles by hint match then OKLCH distance to range center, then nudges the assigned color into the role\'s declared ranges. Required roles are guaranteed populated and constraint-satisfying.',
+    'writes':      ['roles', 'metadata']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    if (!state.input.roles) {
-      ctx.logger.debug('ResolveRoles', 'run', 'No role schema provided; skipping');
+    if (state.input.roles === undefined) {
+      ctx.logger.debug(
+        LogBody.create()
+          .component('ResolveRoles')
+          .operation('run')
+          .status(LOG_STATUS.SKIPPED)
+          .message('No role schema provided; skipping')
+          .context({})
+          .build()
+      );
       return;
     }
 
@@ -129,32 +173,46 @@ export class ResolveRoles implements TaskInterface {
     const synthesized: string[] = [];
 
     for (const role of schema.roles) {
-      if (role.derivedFrom) {
+      if (role.derivedFrom !== undefined && role.derivedFrom.length > 0) {
         continue;
       }
 
       // Hint match takes priority: explicit user intent.
-      const hintMatch = state.colors.find((c) => c.hints?.['role'] === role.name);
-      if (hintMatch) {
+      const hintMatch = state.colors.find((c) => {return c.hints?.role === role.name;});
+      if (hintMatch !== undefined) {
         state.roles[role.name] = nudgeIntoRole(hintMatch, role);
-        ctx.logger.debug('ResolveRoles', 'run', 'Role assigned by hint match', { 'role': role.name });
+        ctx.logger.debug(
+          LogBody.create()
+            .component('ResolveRoles')
+            .operation('run')
+            .status(LOG_STATUS.SUCCESS)
+            .message('Role assigned by hint match')
+            .context({ 'role': role.name })
+            .build()
+        );
         continue;
       }
 
       // No candidate colors at all: synthesize required roles from constraints.
       if (state.colors.length === 0) {
-        if (role.required) {
+        if (role.required === true) {
           state.roles[role.name] = synthesizeForRole(role);
           synthesized.push(role.name);
-          ctx.logger.debug('ResolveRoles', 'run', 'Role synthesized from constraints; no input colors', {
-            'role': role.name,
-          });
+          ctx.logger.debug(
+            LogBody.create()
+              .component('ResolveRoles')
+              .operation('run')
+              .status(LOG_STATUS.PARTIAL)
+              .message('Role synthesized from constraints; no input colors')
+              .context({ 'role': role.name })
+              .build()
+          );
         }
         continue;
       }
 
       // Pick closest candidate by distance to constraint center.
-      let best: ColorRecordInterface | undefined;
+      let best: ColorRecordInterfaceType | undefined;
       let bestDist = Infinity;
       for (const color of state.colors) {
         const dist = distanceToRoleCenter(color, role);
@@ -166,13 +224,21 @@ export class ResolveRoles implements TaskInterface {
 
       // Nudge the candidate into the role's ranges so required roles are
       // guaranteed to satisfy lightnessRange, chromaRange, and hueOffset.
-      if (best) {
+      if (best !== undefined) {
         state.roles[role.name] = nudgeIntoRole(best, role);
-        ctx.logger.debug('ResolveRoles', 'run', 'Role assigned by distance and nudged into range', {
-          'role':     role.name,
-          'distance': bestDist,
-        });
-      } else if (role.required) {
+        ctx.logger.debug(
+          LogBody.create()
+            .component('ResolveRoles')
+            .operation('run')
+            .status(LOG_STATUS.SUCCESS)
+            .message('Role assigned by distance and nudged into range')
+            .context({
+              'distance': bestDist,
+              'role':     role.name
+            })
+            .build()
+        );
+      } else if (role.required === true) {
         // Defensive: state.colors was non-empty above, so this only fires
         // if every distance computation produced Infinity. Synthesise to
         // honour the required contract.

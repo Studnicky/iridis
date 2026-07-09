@@ -14,10 +14,10 @@
  */
 
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   InputInterface,
   PaletteStateInterface,
-  RoleSchemaInterface,
+  RoleSchemaInterfaceType,
   TaskInterface,
 } from '@studnicky/iridis';
 import { Engine }    from '@studnicky/iridis';
@@ -49,7 +49,7 @@ function makeHintedRecord(
   r: number, g: number, b: number,
   hex: string,
   role: string,
-): ColorRecordInterface {
+): ColorRecordInterfaceType {
   return {
     'oklch':        { l, c, h },
     'rgb':          { r, g, b },
@@ -83,7 +83,7 @@ interface RoleAssignmentOutput {
 const hintedAccent  = makeHintedRecord(0.6, 0.15, 250, 0.3, 0.2, 0.8, '#4d33cc', 'accent');
 const hintedSurface = makeHintedRecord(0.95, 0.01, 0, 0.95, 0.95, 0.95, '#f2f2f2', 'surface');
 
-const hintSchema: RoleSchemaInterface = {
+const hintSchema: RoleSchemaInterfaceType = {
   'name': 'hint-schema',
   'roles': [
     { 'name': 'accent',  'required': true },
@@ -91,7 +91,7 @@ const hintSchema: RoleSchemaInterface = {
   ],
 };
 
-const distanceSchema: RoleSchemaInterface = {
+const distanceSchema: RoleSchemaInterfaceType = {
   'name': 'hint-test',
   'roles': [
     { 'name': 'accent',  'required': true },
@@ -176,7 +176,7 @@ new ScenarioRunner<RoleAssignmentInput, RoleAssignmentOutput>(
 // emit:json must capture the variants in its output.
 // ---------------------------------------------------------------------------
 
-const variantSchema: RoleSchemaInterface = {
+const variantSchema: RoleSchemaInterfaceType = {
   'name':  'variant-test',
   'roles': [
     { 'name': 'primary', 'required': true },
@@ -231,8 +231,8 @@ new ScenarioRunner<VariantInput, VariantOutput>(
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles', 'derive:variant', 'emit:json']);
     const state = await engine.run({ 'colors': input.colors, 'roles': variantSchema });
-    const dark  = state.variants['dark']  as Record<string, ColorRecordInterface> | undefined;
-    const light = state.variants['light'] as Record<string, ColorRecordInterface> | undefined;
+    const dark  = state.variants['dark']  as Record<string, ColorRecordInterfaceType> | undefined;
+    const light = state.variants['light'] as Record<string, ColorRecordInterfaceType> | undefined;
     const json  = state.outputs['core:json']   as JsonOutput | undefined;
     return {
       hasDark:        'dark'  in state.variants,
@@ -255,7 +255,7 @@ new ScenarioRunner<VariantInput, VariantOutput>(
 // Each entry must have foreground, background, ratio, minRatio, passed, adjusted.
 // ---------------------------------------------------------------------------
 
-const contrastReportSchema: RoleSchemaInterface = {
+const contrastReportSchema: RoleSchemaInterfaceType = {
   'name': 'contrast-report-test',
   'roles': [
     { 'name': 'text',    'required': true },
@@ -335,7 +335,7 @@ new ScenarioRunner<ContrastReportInput, ContrastReportOutput>(
 // re-adjust it.
 // ---------------------------------------------------------------------------
 
-const idempotentSchema: RoleSchemaInterface = {
+const idempotentSchema: RoleSchemaInterfaceType = {
   'name': 'idempotent-test',
   'roles': [
     { 'name': 'text',      'required': true },

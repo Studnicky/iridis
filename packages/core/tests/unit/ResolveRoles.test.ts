@@ -15,7 +15,7 @@
 import type {
   PaletteStateInterface,
   PipelineContextInterface,
-  RoleSchemaInterface,
+  RoleSchemaInterfaceType,
   TaskInterface,
 } from '@studnicky/iridis';
 import { Engine }             from '@studnicky/iridis';
@@ -51,7 +51,7 @@ function freshEngine(pipeline: readonly string[] = ['intake:hex', 'resolve:roles
 
 interface Cell1Input {
   readonly colors:  readonly string[];
-  readonly roles:   RoleSchemaInterface;
+  readonly roles:   RoleSchemaInterfaceType;
   readonly role:    string;
 }
 interface Cell1Output {
@@ -210,7 +210,7 @@ new ScenarioRunner<Cell1Input, Cell1Output>(
 
 interface Cell2Input {
   readonly colors: readonly string[];
-  readonly roles:  RoleSchemaInterface;
+  readonly roles:  RoleSchemaInterfaceType;
   readonly role:   string;
   readonly lMin:   number;
   readonly lMax:   number;
@@ -323,7 +323,7 @@ interface Cell3Input {
   readonly colors:    readonly string[];
   readonly hintedHex: string;
   readonly hintRole:  string;
-  readonly roles:     RoleSchemaInterface;
+  readonly roles:     RoleSchemaInterfaceType;
 }
 interface Cell3Output {
   readonly assignedHex: string;
@@ -384,8 +384,9 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
     for (const t of coreTasks) engine.tasks.register(t);
 
     // Build the hinted record directly via factory
-    const hintedRecord = colorRecordFactory.fromHex(input.hintedHex, undefined, 'hex', {
-      'role': input.hintRole,
+    const hintedRecord = colorRecordFactory.fromHex(input.hintedHex, {
+      'hints': { 'role': input.hintRole },
+      'sourceFormat': 'hex',
     });
 
     // Seed state with both the hinted record and the other colors via hooks
@@ -421,7 +422,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell4Input {
-  readonly roles: RoleSchemaInterface;
+  readonly roles: RoleSchemaInterfaceType;
   readonly role:  string;
   readonly lMid:  number;
   readonly cMid:  number;

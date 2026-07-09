@@ -1,11 +1,13 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
-export class HexToRgb {
+class HexToRgb {
   readonly 'name' = 'hexToRgb';
 
-  apply(hex: string): ColorRecordInterface {
-    return colorRecordFactory.fromHex(hex);
+  apply(hex: string): ColorRecordInterfaceType {
+    const result = colorRecordFactory.fromHex(hex);
+    return result;
   }
 }
 

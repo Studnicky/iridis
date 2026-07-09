@@ -1,25 +1,26 @@
 {
   "name": "@studnicky/iridis-cli",
-  "version": "0.3.4",
+  "description": "Command-line interface for running the pipeline against a config file and writing outputs to disk.",
+  "version": "0.6.0",
   "type": "module",
   "bin": {
     "iridis": "./src/main.ts"
   },
   "exports": {
-    ".":       "./src/index.ts",
+    ".": "./src/index.ts",
     "./types": "./src/types/index.ts",
-    "./Cli":   "./src/Cli.ts"
+    "./Cli": "./src/Cli.ts"
   },
   "files": [
     "src"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test":      "node --import tsx --test 'tests/**/*.test.ts'",
-    "clean":     "rm -rf dist",
-    "prebuild":  "rm -rf dist"
+    "test": "node --import tsx --test 'tests/**/*.test.ts'",
+    "clean": "rm -rf dist",
+    "prebuild": "rm -rf dist"
   },
   "dependencies": {
-    "@studnicky/iridis": "^0.4.0"
+    "@studnicky/iridis": "^0.6.0"
   }
 }

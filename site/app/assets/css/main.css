@@ -1,0 +1,209 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* ─── Futuristic type system ─── */
+@theme {
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Orbitron", "Space Grotesk", sans-serif;
+}
+
+:root {
+  /* engine-driven glow color; falls back before the projector runs */
+  --glow: var(--ui-primary, #7c3aed);
+  --glow-2: var(--ui-color-info-500, #06b6d4);
+  /* one shared window every color animates over, in unison — kept under
+     300ms so a framing/palette swap reads as instant-but-smooth, not a
+     visible fade. */
+  --iridis-tune: 260ms;
+  --iridis-ease: ease;
+}
+
+/* Every element re-tones over the SAME window when the engine rewrites its
+   --ui-* tokens, so the whole page transitions in unison rather than snapping.
+   Only color-family properties animate; transforms/opacity stay per-component. */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, outline-color, text-shadow;
+  transition-duration: var(--iridis-tune);
+  transition-timing-function: var(--iridis-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0ms; }
+}
+
+.font-display { font-family: var(--font-display); letter-spacing: 0.02em; }
+
+/* ─── Scrollbars, themed — native scrollbars never inherit --ui-* on their
+   own, so every scrollable surface (code panels, carousel card bodies,
+   overflow lists) would otherwise show the browser's flat default thumb
+   regardless of the active palette. Firefox reads scrollbar-color directly;
+   WebKit/Blink need the ::-webkit-scrollbar-* pseudo-elements. ─── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--ui-primary) 45%, transparent) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklch, var(--ui-primary) 45%, transparent);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklch, var(--ui-primary) 65%, transparent);
+  background-clip: padding-box;
+}
+
+/* ─── Sci-fi backdrop: base color; layered grid/starfield/aurora lives in AmbientBackground.vue ─── */
+body {
+  position: relative;
+  background: var(--ui-bg, #05040a);
+  overflow-x: hidden;
+}
+#__nuxt { position: relative; z-index: 1; }
+
+/* Reka UI teleports popover content (USelect, UDropdownMenu, etc.) to a wrapper
+   under <body> with `z-index: auto` by default — it loses to CylinderCarousel's
+   local stacking context (front card z-index up to 40). Pin it comfortably above. */
+[data-reka-popper-content-wrapper] { z-index: 1000 !important; }
+
+/* ─── Glass panels with an engine-colored holo edge ─── */
+.glass {
+  position: relative;
+  background: color-mix(in oklch, var(--ui-bg-elevated, #12101f) 93%, transparent);
+  backdrop-filter: blur(8px) saturate(1.15);
+  border: 1px solid color-mix(in oklch, var(--glow) 35%, transparent);
+  border-radius: 1rem;
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--glow) 12%, transparent),
+    0 8px 40px -12px color-mix(in oklch, var(--glow) 40%, transparent),
+    inset 0 1px 0 color-mix(in oklch, #fff 8%, transparent);
+  transition: transform 0.35s cubic-bezier(.2,.8,.2,1), box-shadow 0.35s ease;
+}
+.glass:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--glow) 25%, transparent),
+    0 18px 60px -14px color-mix(in oklch, var(--glow) 55%, transparent);
+}
+.glass::before {
+  /* animated top sheen line */
+  content: "";
+  position: absolute; inset: 0 0 auto 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glow), transparent);
+  opacity: 0.7;
+  animation: sheen 4s ease-in-out infinite;
+}
+@keyframes sheen { 0%,100%{ opacity:.2 } 50%{ opacity:.9 } }
+
+/* Engine-lit glass card (applied to every UCard via app.config). */
+.iridis-card {
+  position: relative;
+  background: color-mix(in oklch, var(--ui-bg-elevated, #12101f) 94%, transparent);
+  backdrop-filter: blur(8px) saturate(1.15);
+  border: 1px solid color-mix(in oklch, var(--glow) 22%, transparent);
+  box-shadow:
+    0 8px 40px -16px color-mix(in oklch, var(--glow) 40%, transparent),
+    inset 0 1px 0 color-mix(in oklch, #fff 6%, transparent);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.iridis-card:hover {
+  border-color: color-mix(in oklch, var(--glow) 40%, transparent);
+  box-shadow: 0 14px 54px -16px color-mix(in oklch, var(--glow) 55%, transparent);
+}
+
+/* Nearly-invisible drifting micro-grid on every card/panel — shared via
+   .iridis-card/.glass so it applies uniformly with no per-component markup.
+   Opacity is kept low enough that it only ever reads as texture/depth,
+   never as a competing pattern against card content. */
+.iridis-card::after, .glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image:
+    linear-gradient(color-mix(in oklch, var(--glow) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--glow) 45%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.035;
+  animation: card-texture-pan 34s linear infinite;
+}
+@keyframes card-texture-pan { to { background-position: 22px 22px; } }
+
+/* ─── Glow / pulse / float utilities ─── */
+.glow-text {
+  text-shadow: 0 0 12px color-mix(in oklch, var(--glow) 70%, transparent),
+               0 0 40px color-mix(in oklch, var(--glow) 40%, transparent);
+}
+.pulse { animation: pulse-glow 3s ease-in-out infinite; }
+@keyframes pulse-glow {
+  0%,100% { filter: drop-shadow(0 0 4px color-mix(in oklch, var(--glow) 45%, transparent)); }
+  50%     { filter: drop-shadow(0 0 16px color-mix(in oklch, var(--glow) 85%, transparent)); }
+}
+.float { animation: float 7s ease-in-out infinite; }
+@keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-10px) } }
+.spin-slow { animation: spin 26s linear infinite; }
+
+/* ── Orbit: three rings, each its own palette role, spinning at independent
+   speeds/directions while the whole rig slowly precesses — genuinely three
+   colors in motion at once, not one dot re-tinted. Adapted from a uiverse.io
+   multi-orbit loader technique. ── */
+.orbit-rig { position: relative; width: 100%; height: 100%; animation: orbit-precess 14s linear infinite; }
+.orbit-ring { position: absolute; inset: 5px; border-radius: 50%; animation: spin linear infinite; }
+.orbit-ring.r1 { animation-duration: 2.2s; }
+.orbit-ring.r2 { inset: 11px; animation-duration: 3s; animation-direction: reverse; }
+.orbit-ring.r3 { inset: 17px; animation-duration: 3.8s; }
+.orbit-orb {
+  position: absolute; top: -3px; left: 50%;
+  width: 6px; height: 6px; margin-left: -3px;
+  border-radius: 50%; box-shadow: 0 0 7px currentColor;
+}
+.orbit-ring.r1 .orbit-orb { background: var(--ui-primary); color: var(--ui-primary); }
+.orbit-ring.r2 .orbit-orb { background: var(--ui-color-info-500); color: var(--ui-color-info-500); }
+.orbit-ring.r3 .orbit-orb { background: var(--ui-color-secondary-500); color: var(--ui-color-secondary-500); }
+@keyframes orbit-precess { to { transform: rotate(360deg); } }
+
+/* ── Sonar: four cardinal dots, each a distinct semantic role, blipping in
+   sequence around a fading radar ring — dynamic across FOUR palette colors
+   at once. Adapted from a uiverse.io radar/sonar loader technique. ── */
+.sonar-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid color-mix(in oklch, var(--ui-primary) 30%, transparent); animation: sonar-sweep 2.4s linear infinite; }
+.sonar-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; animation: sonar-blip 2.4s ease-in-out infinite; }
+.sonar-dot.n { top: 2px; left: 50%; margin-left: -3px; background: var(--ui-color-success-500); box-shadow: 0 0 7px var(--ui-color-success-500); animation-delay: 0s; }
+.sonar-dot.e { top: 50%; right: 2px; margin-top: -3px; background: var(--ui-color-warning-500); box-shadow: 0 0 7px var(--ui-color-warning-500); animation-delay: 0.5s; }
+.sonar-dot.s { bottom: 2px; left: 50%; margin-left: -3px; background: var(--ui-color-error-500); box-shadow: 0 0 7px var(--ui-color-error-500); animation-delay: 1s; }
+.sonar-dot.w { top: 50%; left: 2px; margin-top: -3px; background: var(--ui-primary); box-shadow: 0 0 7px var(--ui-primary); animation-delay: 1.5s; }
+@keyframes sonar-sweep { 0% { opacity: 0.6; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.15); } }
+@keyframes sonar-blip { 0%, 100% { transform: scale(0.6); opacity: 0.35; } 50% { transform: scale(1.35); opacity: 1; } }
+
+/* ── Radar: a two-color conic sweep, accent bleeding into secondary as it
+   rotates — one continuous gradient, two roles cross-fading through it every
+   revolution. Adapted from a uiverse.io radar-sweep loader technique. ── */
+.radar-sweep { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; animation: spin 2.6s linear infinite; }
+.radar-sweep::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    var(--ui-primary) 0deg,
+    color-mix(in oklch, var(--ui-color-secondary-500) 70%, transparent) 90deg,
+    transparent 180deg);
+  opacity: 0.85;
+}
+
+/* ── Chroma: the accent hue itself cycles the full wheel — the most literal
+   "colors in motion" demo, a live hue-rotate filter over a solid swatch. ── */
+.chroma-cycle { width: 100%; height: 100%; border-radius: 50%; background: var(--ui-primary); animation: chroma-hue 4s linear infinite; }
+@keyframes chroma-hue { to { filter: hue-rotate(360deg) saturate(1.4); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .float, .pulse, .spin-slow, .glass::before, .iridis-card::after, .glass::after,
+  .orbit-rig, .orbit-ring, .sonar-ring, .sonar-dot, .radar-sweep, .chroma-cycle { animation: none !important; }
+}
+
+/* ─── Scanline overlay for the hacker feel (very subtle) ─── */
+.scanlines::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent 0 2px, color-mix(in oklch, #000 22%, transparent) 2px 3px);
+  pointer-events: none; opacity: 0.1; border-radius: inherit;
+}

@@ -95,7 +95,7 @@
 
 import type { CvdType } from '@studnicky/iridis';
 
-export interface CvdThresholdInterface {
+type CvdThresholdInterfaceType = {
   /**
    * Maximum allowed |WCAG-21 contrast drop| between trichromat and
    * CVD-simulated perception. A pair exceeding this magnitude raises a
@@ -103,7 +103,7 @@ export interface CvdThresholdInterface {
    * preserves luminance exactly, so the drop signal is meaningless for
    * that type; the `minSimulatedContrast` signal carries the weight.
    */
-  readonly 'dropMagnitude':        number;
+  'dropMagnitude':        number;
   /**
    * Minimum WCAG-21 luminance contrast the CVD-simulated pair must
    * still meet. [WCAG21] SC 1.4.11 cites 3:1 as the non-text legibility
@@ -111,26 +111,10 @@ export interface CvdThresholdInterface {
    * affordance regardless of how close it stayed to trichromat
    * perception.
    */
-  readonly 'minSimulatedContrast': number;
-}
+  'minSimulatedContrast': number;
+};
 
-export const CVD_THRESHOLDS: Readonly<Record<CvdType, CvdThresholdInterface>> = {
-  /* Protanopia: red/green confusion is the most prevalent CVD class
-     (~1 % of males [WONG11]). 0.5 corresponds to the ΔE76 ≈ 2.3
-     just-noticeable boundary [CIE76] when mapped to WCAG-21
-     contrast-ratio space across the mid-luminance band. */
-  'protanopia':    { 'dropMagnitude': 0.5, 'minSimulatedContrast': 3.0 },
-
-  /* Deuteranopia: same red/green confusion family as protanopia, same
-     prevalence (~1 % of males [WONG11]). Same threshold by symmetry of
-     the [VBM99] confusion-plane projection. */
-  'deuteranopia':  { 'dropMagnitude': 0.5, 'minSimulatedContrast': 3.0 },
-
-  /* Tritanopia: blue/yellow confusion, rarer (~0.01 % [WONG11]). [BVM97]
-     uses the same two-half-plane model so the perceptible-difference
-     threshold derivation mirrors the dichromacies above. */
-  'tritanopia':    { 'dropMagnitude': 0.5, 'minSimulatedContrast': 3.0 },
-
+export const CVD_THRESHOLDS: Readonly<Record<CvdType, CvdThresholdInterfaceType>> = {
   /* Achromatopsia: rod monochromacy preserves luminance contrast
      exactly, so the drop signal is identically 0 [WS82]. We never want
      this signal to fire on its own, hence threshold 0 (any non-zero
@@ -140,4 +124,20 @@ export const CVD_THRESHOLDS: Readonly<Record<CvdType, CvdThresholdInterface>> = 
      reduced to grayscale. 3.0 is the [WCAG21] SC-1.4.11 non-text
      minimum. */
   'achromatopsia': { 'dropMagnitude': 0,   'minSimulatedContrast': 3.0 },
+
+  /* Deuteranopia: same red/green confusion family as protanopia, same
+     prevalence (~1 % of males [WONG11]). Same threshold by symmetry of
+     the [VBM99] confusion-plane projection. */
+  'deuteranopia':  { 'dropMagnitude': 0.5, 'minSimulatedContrast': 3.0 },
+
+  /* Protanopia: red/green confusion is the most prevalent CVD class
+     (~1 % of males [WONG11]). 0.5 corresponds to the ΔE76 ≈ 2.3
+     just-noticeable boundary [CIE76] when mapped to WCAG-21
+     contrast-ratio space across the mid-luminance band. */
+  'protanopia':    { 'dropMagnitude': 0.5, 'minSimulatedContrast': 3.0 },
+
+  /* Tritanopia: blue/yellow confusion, rarer (~0.01 % [WONG11]). [BVM97]
+     uses the same two-half-plane model so the perceptible-difference
+     threshold derivation mirrors the dichromacies above. */
+  'tritanopia':    { 'dropMagnitude': 0.5, 'minSimulatedContrast': 3.0 }
 } as const;

@@ -1,28 +1,28 @@
-export interface StatusBarOutputInterface {
-  readonly 'backgroundColor': string;
-  readonly 'style':           'DARK' | 'LIGHT';
-  readonly 'overlay':         boolean;
-}
+export type StatusBarOutputInterfaceType = {
+  'backgroundColor': string;
+  'overlay':         boolean;
+  'style':           'DARK' | 'LIGHT';
+};
 
-export interface CapacitorThemeOutputInterface {
-  readonly 'primary':        string;
-  readonly 'primaryDark':    string;
-  readonly 'primaryLight':   string;
-  readonly 'accent':         string;
-  readonly 'background':     string;
-  readonly 'surface':        string;
-  readonly 'error':          string;
-  readonly 'warning':        string;
-  readonly 'success':        string;
-  readonly 'info':           string;
-  readonly 'text':           string;
-  readonly 'textOnPrimary':  string;
-  readonly 'textOnAccent':   string;
-}
+export type CapacitorThemeOutputInterfaceType = {
+  'accent':         string;
+  'background':     string;
+  'error':          string;
+  'info':           string;
+  'primary':        string;
+  'primaryDark':    string;
+  'primaryLight':   string;
+  'success':        string;
+  'surface':        string;
+  'text':           string;
+  'textOnAccent':   string;
+  'textOnPrimary':  string;
+  'warning':        string;
+};
 
-export interface SplashScreenOutputInterface {
-  readonly 'backgroundColor':            string;
-  readonly 'androidSplashResourceName'?: string;
-}
+export type SplashScreenOutputInterfaceType = {
+  'androidSplashResourceName'?: string;
+  'backgroundColor':            string;
+};
 
 export type * from './augmentation.ts';

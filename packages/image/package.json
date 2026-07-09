@@ -1,9 +1,10 @@
 {
   "name": "@studnicky/iridis-image",
-  "version": "0.3.4",
+  "description": "Extracts a palette from image pixels — histogram, dominant-color clustering, and harmonization tasks.",
+  "version": "0.6.0",
   "type": "module",
   "exports": {
-    ".":       "./src/index.ts",
+    ".": "./src/index.ts",
     "./types": "./src/types/index.ts"
   },
   "files": [
@@ -11,11 +12,14 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test":      "node --import tsx --test 'tests/**/*.test.ts'",
-    "clean":     "rm -rf dist",
-    "prebuild":  "rm -rf dist"
+    "test": "node --import tsx --test 'tests/**/*.test.ts'",
+    "clean": "rm -rf dist",
+    "prebuild": "rm -rf dist"
+  },
+  "dependencies": {
+    "@studnicky/logger": "^4.0.0"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.4.0"
+    "@studnicky/iridis": "^0.6.0"
   }
 }

@@ -14,14 +14,16 @@
  *   7. engine-boundary — Engine.run and Engine.adopt validation at the boundary
  */
 
-import { Validator, validator, InputSchema } from '@studnicky/iridis/model';
+import { Validator, InputSchema } from '@studnicky/iridis/model';
 import { Engine }                            from '@studnicky/iridis/engine';
-import type { SchemaInterface }              from '@studnicky/iridis/model';
+import type { SchemaInterfaceType }              from '@studnicky/iridis/model';
 import {
   ScenarioRunner,
   assert,
   type ScenarioInterface,
 } from '../_runner/ScenarioRunner.ts';
+
+const validator = new Validator();
 
 // ---------------------------------------------------------------------------
 // Cell 1 — type checking
@@ -36,7 +38,7 @@ import {
 // ---------------------------------------------------------------------------
 
 interface Cell1Input {
-  readonly schema: SchemaInterface;
+  readonly schema: SchemaInterfaceType;
   readonly value:  unknown;
 }
 interface Cell1Output {
@@ -156,7 +158,7 @@ new ScenarioRunner<Cell1Input, Cell1Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell2Input {
-  readonly schema: SchemaInterface;
+  readonly schema: SchemaInterfaceType;
   readonly value:  unknown;
 }
 interface Cell2Output {
@@ -306,7 +308,7 @@ new ScenarioRunner<Cell2Input, Cell2Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell3Input {
-  readonly schema: SchemaInterface;
+  readonly schema: SchemaInterfaceType;
   readonly value:  unknown;
 }
 interface Cell3Output {
@@ -402,7 +404,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell4Input {
-  readonly schema: SchemaInterface;
+  readonly schema: SchemaInterfaceType;
   readonly value:  unknown;
 }
 interface Cell4Output {
@@ -470,7 +472,7 @@ new ScenarioRunner<Cell4Input, Cell4Output>(
 // ---------------------------------------------------------------------------
 
 interface Cell5Input {
-  readonly schema: SchemaInterface;
+  readonly schema: SchemaInterfaceType;
   readonly value:  unknown;
 }
 interface Cell5Output {
@@ -731,11 +733,11 @@ new ScenarioRunner<Cell7AdoptInput, Cell7AdoptOutput>(
 ).run(cell7AdoptScenarios);
 
 // ---------------------------------------------------------------------------
-// Singleton fixture — validator is an instance of Validator
+// Construction fixture — every instance is a Validator
 // ---------------------------------------------------------------------------
 
 import { test } from 'node:test';
 
-test('Validator :: cell-0 :: singleton :: validator is an instance of Validator', () => {
-  assert.ok(validator instanceof Validator, '[cell=0, scenario=singleton] validator instanceof Validator');
+test('Validator :: cell-0 :: construction :: is an instance of Validator', () => {
+  assert.ok(validator instanceof Validator, '[cell=0, scenario=construction] validator instanceof Validator');
 });

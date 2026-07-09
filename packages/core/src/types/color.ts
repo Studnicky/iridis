@@ -65,33 +65,29 @@ export type SourceFormatType =
 
 export type ColorSpaceType = 'srgb' | 'displayP3';
 
-export interface OklchInterface {
-  readonly l: number;
-  readonly c: number;
-  readonly h: number;
-}
+export type OklchInterfaceType = {
+  'c': number;
+  'h': number;
+  'l': number;
+};
 
-export interface RgbInterface {
-  readonly r: number;
-  readonly g: number;
-  readonly b: number;
-}
+/** Result of {@link import('../math/GamutMapSrgb.ts')}'s sRGB gamut-mapping search. */
+export type GamutMapResultInterfaceType = OklchInterfaceType & {
+  /** `true` when the input OKLCH was already inside sRGB (no chroma reduction applied). */
+  'inGamut': boolean;
+};
 
-/** HSL conversion result. Hue 0-360, saturation/lightness 0-1, alpha 0-1.
- *  Distinct from RgbInterface so callers can keep the channel semantics
- *  in their type system instead of overloading triple-number tuples. */
-export interface HslResultInterface {
-  readonly h:     number;
-  readonly s:     number;
-  readonly l:     number;
-  readonly alpha: number;
-}
+export type RgbInterfaceType = {
+  'b': number;
+  'g': number;
+  'r': number;
+};
 
-export interface ColorHintsInterface {
-  readonly role?:   string;
-  readonly intent?: ColorIntentType;
-  readonly weight?: number;
-}
+export type ColorHintsInterfaceType = {
+  'intent'?: ColorIntentType;
+  'role'?:   string;
+  'weight'?: number;
+};
 
 /**
  * Canonical color record. Every record allocated anywhere in iridis
@@ -128,12 +124,12 @@ export interface ColorHintsInterface {
  *    the pipeline; the schema-declared `intent` overrides intake-level
  *    intent at `resolve:roles`.
  */
-export interface ColorRecordInterface {
-  readonly oklch:        OklchInterface;
-  readonly rgb:          RgbInterface;
-  readonly hex:          string;
-  readonly alpha:        number;
-  readonly sourceFormat: SourceFormatType;
-  readonly displayP3:    RgbInterface | undefined;
-  readonly hints:        ColorHintsInterface | undefined;
-}
+export type ColorRecordInterfaceType = {
+  'alpha':        number;
+  'displayP3':    RgbInterfaceType | undefined;
+  'hex':          string;
+  'hints':        ColorHintsInterfaceType | undefined;
+  'oklch':        OklchInterfaceType;
+  'rgb':          RgbInterfaceType;
+  'sourceFormat': SourceFormatType;
+};

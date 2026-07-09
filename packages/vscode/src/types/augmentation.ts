@@ -2,48 +2,45 @@
 // Module augmentation on PluginOutputsRegistry / PluginMetadataRegistry
 // has been replaced with explicit schema contribution via VscodePlugin.schemas().
 
-import type { ColorRecordInterface } from '@studnicky/iridis';
+import type { ColorRecordInterfaceType } from '@studnicky/iridis';
 
 /** Semantic token rule entry as written to outputs.vscode.semanticTokenRules */
-export interface SemanticRuleEntryInterface {
-  'foreground'?: string;
-  'fontStyle'?:  string;
-}
+export type SemanticRuleEntryInterfaceType = Partial<Record<'fontStyle' | 'foreground', string>>;
 
 /** VS Code tokenColors rule */
-export interface TokenColorRuleInterface {
+export type TokenColorRuleInterfaceType = {
   'name':     string;
-  'scope':    string | readonly string[];
+  'scope':    string | string[];
   'settings': {
-    'foreground'?: string;
     'fontStyle'?:  string;
+    'foreground'?: string;
   };
-}
+};
 
 /** VS Code theme.json shape */
-export interface ThemeJsonInterface {
-  'name':                 string;
-  'type':                 'dark' | 'light' | 'hc-dark' | 'hc-light';
-  'semanticHighlighting': true;
+export type ThemeJsonInterfaceType = {
   'colors':               Record<string, string>;
-  'semanticTokenColors':  Record<string, string | { 'foreground'?: string; 'fontStyle'?: string }>;
-  'tokenColors':          TokenColorRuleInterface[];
-}
+  'name':                 string;
+  'semanticHighlighting': true;
+  'semanticTokenColors':  Record<string, string | { 'fontStyle'?: string; 'foreground'?: string; }>;
+  'tokenColors':          TokenColorRuleInterfaceType[];
+  'type':                 'dark' | 'light' | 'hc-dark' | 'hc-light';
+};
 
 /**
  * Fields written by vscode emit tasks to state.outputs['vscode'].
  * All fields optional: any single task may be the first or only one in the pipeline.
  */
-export interface VscodeOutputSlotInterface {
+export type VscodeOutputSlotInterfaceType = {
+  'semanticTokenRules'?: Record<string, SemanticRuleEntryInterfaceType>;
+  'themeJson'?:          ThemeJsonInterfaceType;
   'workbenchColors'?:    Record<string, string>;
-  'semanticTokenRules'?: Record<string, SemanticRuleEntryInterface>;
-  'themeJson'?:          ThemeJsonInterface;
-}
+};
 
 /**
  * Fields written by vscode tasks to state.metadata['vscode'].
  */
-export interface VscodeMetaSlotInterface {
-  'baseTokens'?:         Record<string, ColorRecordInterface>;
-  'semanticTokenRules'?: Record<string, SemanticRuleEntryInterface>;
-}
+export type VscodeMetaSlotInterfaceType = {
+  'baseTokens'?:         Record<string, ColorRecordInterfaceType>;
+  'semanticTokenRules'?: Record<string, SemanticRuleEntryInterfaceType>;
+};
