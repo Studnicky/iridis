@@ -2,6 +2,19 @@
 
 All notable changes to iridis are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+CVD correction, real syntax highlighting, and site-wide accessibility/UI polish.
+
+### Added
+
+- **`enforce:cvdSimulate` can now correct color-vision-deficiency failures, not just warn.** Set `input.contrast.cvdCorrect: true` and a failing pair is walked along the OKLCH lightness axis (mirroring `ensureContrast`'s idiom), then desaturated as a fallback, until every failing CVD type clears its threshold or the search budget is exhausted — gated so the pair's trichromat contrast never regresses below its pre-correction baseline. `state.metadata['contrast:cvd']` gains a `corrections` array reporting which pairs were fixed and which CVD types (if any) still fail. Simulate-only mode (the default) is unchanged.
+
+### Fixed
+
+- **`packages/vscode` token derivation had a units bug** that could clamp derived syntax-highlight colors straight to black: `DERIVATION_PARAMS.sat`/`.light` are percentage-point magnitudes, but `ExpandTokens.ts` passed them directly into `lighten`/`darken`/`saturate`/`desaturate`, which expect a raw 0–1 (lightness) / 0–0.5 (chroma) delta. Values are now divided by 100 before use.
+- **JSON/JS syntax highlighting was under-differentiated** (2 colors instead of 4+) whenever fewer than the full 16 seeds were pinned. The accent-role chain (`keyword → type/function → variable/string → number → constant`) had no `hue`/`hueOffset` on most roles, so `ExpandFamily`'s hue fallback (unchanged source hue) collapsed the whole chain onto ~2 hue families. Added `hueOffset` across the chain in `vscodeRoleSchema16.ts` so it fans out across the wheel regardless of how sparse the seed set is. Also added `jsonKey`, `boolean`, `constant`, and `punctuation` to `VscodeTokenData.TOKEN_TYPES`, which previously had no derived color at all and silently fell through to default/black text.
+
 ## [0.5.0] - 2026-07-07
 
 Synchronous engine and complete engine-driven palettes.
