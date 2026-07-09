@@ -33,6 +33,28 @@
 
 .font-display { font-family: var(--font-display); letter-spacing: 0.02em; }
 
+/* ─── Scrollbars, themed — native scrollbars never inherit --ui-* on their
+   own, so every scrollable surface (code panels, carousel card bodies,
+   overflow lists) would otherwise show the browser's flat default thumb
+   regardless of the active palette. Firefox reads scrollbar-color directly;
+   WebKit/Blink need the ::-webkit-scrollbar-* pseudo-elements. ─── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--ui-primary) 45%, transparent) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklch, var(--ui-primary) 45%, transparent);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklch, var(--ui-primary) 65%, transparent);
+  background-clip: padding-box;
+}
+
 /* ─── Sci-fi backdrop: base color; layered grid/starfield/aurora lives in AmbientBackground.vue ─── */
 body {
   position: relative;
@@ -124,8 +146,58 @@ body {
 @keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-10px) } }
 .spin-slow { animation: spin 26s linear infinite; }
 
+/* ── Orbit: three rings, each its own palette role, spinning at independent
+   speeds/directions while the whole rig slowly precesses — genuinely three
+   colors in motion at once, not one dot re-tinted. Adapted from a uiverse.io
+   multi-orbit loader technique. ── */
+.orbit-rig { position: relative; width: 100%; height: 100%; animation: orbit-precess 14s linear infinite; }
+.orbit-ring { position: absolute; inset: 5px; border-radius: 50%; animation: spin linear infinite; }
+.orbit-ring.r1 { animation-duration: 2.2s; }
+.orbit-ring.r2 { inset: 11px; animation-duration: 3s; animation-direction: reverse; }
+.orbit-ring.r3 { inset: 17px; animation-duration: 3.8s; }
+.orbit-orb {
+  position: absolute; top: -3px; left: 50%;
+  width: 6px; height: 6px; margin-left: -3px;
+  border-radius: 50%; box-shadow: 0 0 7px currentColor;
+}
+.orbit-ring.r1 .orbit-orb { background: var(--ui-primary); color: var(--ui-primary); }
+.orbit-ring.r2 .orbit-orb { background: var(--ui-color-info-500); color: var(--ui-color-info-500); }
+.orbit-ring.r3 .orbit-orb { background: var(--ui-color-secondary-500); color: var(--ui-color-secondary-500); }
+@keyframes orbit-precess { to { transform: rotate(360deg); } }
+
+/* ── Sonar: four cardinal dots, each a distinct semantic role, blipping in
+   sequence around a fading radar ring — dynamic across FOUR palette colors
+   at once. Adapted from a uiverse.io radar/sonar loader technique. ── */
+.sonar-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid color-mix(in oklch, var(--ui-primary) 30%, transparent); animation: sonar-sweep 2.4s linear infinite; }
+.sonar-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; animation: sonar-blip 2.4s ease-in-out infinite; }
+.sonar-dot.n { top: 2px; left: 50%; margin-left: -3px; background: var(--ui-color-success-500); box-shadow: 0 0 7px var(--ui-color-success-500); animation-delay: 0s; }
+.sonar-dot.e { top: 50%; right: 2px; margin-top: -3px; background: var(--ui-color-warning-500); box-shadow: 0 0 7px var(--ui-color-warning-500); animation-delay: 0.5s; }
+.sonar-dot.s { bottom: 2px; left: 50%; margin-left: -3px; background: var(--ui-color-error-500); box-shadow: 0 0 7px var(--ui-color-error-500); animation-delay: 1s; }
+.sonar-dot.w { top: 50%; left: 2px; margin-top: -3px; background: var(--ui-primary); box-shadow: 0 0 7px var(--ui-primary); animation-delay: 1.5s; }
+@keyframes sonar-sweep { 0% { opacity: 0.6; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.15); } }
+@keyframes sonar-blip { 0%, 100% { transform: scale(0.6); opacity: 0.35; } 50% { transform: scale(1.35); opacity: 1; } }
+
+/* ── Radar: a two-color conic sweep, accent bleeding into secondary as it
+   rotates — one continuous gradient, two roles cross-fading through it every
+   revolution. Adapted from a uiverse.io radar-sweep loader technique. ── */
+.radar-sweep { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; animation: spin 2.6s linear infinite; }
+.radar-sweep::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    var(--ui-primary) 0deg,
+    color-mix(in oklch, var(--ui-color-secondary-500) 70%, transparent) 90deg,
+    transparent 180deg);
+  opacity: 0.85;
+}
+
+/* ── Chroma: the accent hue itself cycles the full wheel — the most literal
+   "colors in motion" demo, a live hue-rotate filter over a solid swatch. ── */
+.chroma-cycle { width: 100%; height: 100%; border-radius: 50%; background: var(--ui-primary); animation: chroma-hue 4s linear infinite; }
+@keyframes chroma-hue { to { filter: hue-rotate(360deg) saturate(1.4); } }
+
 @media (prefers-reduced-motion: reduce) {
-  .float, .pulse, .spin-slow, .glass::before, .iridis-card::after, .glass::after { animation: none !important; }
+  .float, .pulse, .spin-slow, .glass::before, .iridis-card::after, .glass::after,
+  .orbit-rig, .orbit-ring, .sonar-ring, .sonar-dot, .radar-sweep, .chroma-cycle { animation: none !important; }
 }
 
 /* ─── Scanline overlay for the hacker feel (very subtle) ─── */

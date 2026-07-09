@@ -38,11 +38,18 @@ watch(easeKey, (key) => {
   document.documentElement.style.setProperty('--iridis-ease', EASE_PRESETS[key] ?? EASE_PRESETS['Smooth (default)']!);
 });
 
-const NAMED_ANIMATIONS = [
-  { 'class': 'pulse', 'duration': '3s', 'label': 'pulse-glow', 'note': 'carousel arrows, active dot' },
-  { 'class': 'float', 'duration': '7s', 'label': 'float', 'note': 'hero logo, floating orbs' },
-  { 'class': 'spin-slow', 'duration': '26s', 'label': 'spin', 'note': 'ambient background accent' },
-  { 'class': 'glass', 'duration': '4s', 'label': 'sheen', 'note': 'every glass panel’s top edge' }
+/** `kind: 'dot'` swatches share one template (a colored dot inside a glass
+ * circle); everything else renders its own markup below since a single
+ * accent dot can't show off a multi-color technique. */
+const NAMED_ANIMATIONS: { kind: 'dot' | 'orbit' | 'sonar' | 'radar' | 'chroma'; class?: string; duration: string; label: string; note: string }[] = [
+  { 'kind': 'dot', 'class': 'pulse', 'duration': '3s', 'label': 'pulse-glow', 'note': 'carousel arrows, active dot' },
+  { 'kind': 'dot', 'class': 'float', 'duration': '7s', 'label': 'float', 'note': 'hero logo, floating orbs' },
+  { 'kind': 'dot', 'class': 'spin-slow', 'duration': '26s', 'label': 'spin', 'note': 'ambient background accent' },
+  { 'kind': 'dot', 'class': 'glass', 'duration': '4s', 'label': 'sheen', 'note': 'every glass panel’s top edge' },
+  { 'kind': 'orbit', 'duration': '2.2-3.8s', 'label': 'orbit', 'note': 'three roles, three independent rings' },
+  { 'kind': 'sonar', 'duration': '2.4s', 'label': 'sonar', 'note': 'success/warning/error/primary in sequence' },
+  { 'kind': 'radar', 'duration': '2.6s', 'label': 'radar', 'note': 'primary bleeding into secondary, one sweep' },
+  { 'kind': 'chroma', 'duration': '4s', 'label': 'chroma', 'note': 'the accent hue cycling the full wheel' }
 ];
 </script>
 
@@ -93,13 +100,47 @@ const NAMED_ANIMATIONS = [
           :key="a.label"
           class="flex flex-col items-center gap-2 rounded-lg border border-default p-3 text-center"
         >
-          <div
-            class="glass flex h-12 w-12 items-center justify-center rounded-full"
-            :class="a.class !== 'glass' ? a.class : ''"
-          >
-            <span
-              class="h-3 w-3 rounded-full"
-              :style="{ backgroundColor: 'var(--ui-primary)' }"
+          <div class="relative flex h-14 w-14 items-center justify-center">
+            <div
+              v-if="a.kind === 'dot'"
+              class="glass flex h-12 w-12 items-center justify-center rounded-full"
+              :class="a.class !== 'glass' ? a.class : ''"
+            >
+              <span
+                class="h-3 w-3 rounded-full"
+                :style="{ backgroundColor: 'var(--ui-primary)' }"
+              />
+            </div>
+            <div
+              v-else-if="a.kind === 'orbit'"
+              class="orbit-rig"
+            >
+              <div class="orbit-ring r1">
+                <span class="orbit-orb" />
+              </div>
+              <div class="orbit-ring r2">
+                <span class="orbit-orb" />
+              </div>
+              <div class="orbit-ring r3">
+                <span class="orbit-orb" />
+              </div>
+            </div>
+            <template v-else-if="a.kind === 'sonar'">
+              <span class="sonar-ring" />
+              <span class="sonar-dot n" />
+              <span class="sonar-dot e" />
+              <span class="sonar-dot s" />
+              <span class="sonar-dot w" />
+            </template>
+            <div
+              v-else-if="a.kind === 'radar'"
+              class="glass h-12 w-12 rounded-full"
+            >
+              <span class="radar-sweep" />
+            </div>
+            <div
+              v-else-if="a.kind === 'chroma'"
+              class="chroma-cycle"
             />
           </div>
           <div class="font-mono text-[11px] text-highlighted">

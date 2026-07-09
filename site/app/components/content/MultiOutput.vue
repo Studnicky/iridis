@@ -185,6 +185,7 @@ const active = ref<string>('0');
         :items="tabItems"
         :content="false"
         class="output-tabs"
+        :ui="{ indicator: 'hidden' }"
       />
       <CodeBlock
         :code="outputs[Number(active)]?.text || ''"
@@ -200,7 +201,12 @@ const active = ref<string>('0');
 
 <style scoped>
 /* Full labels over truncation — let the tab list wrap onto as many rows as
-   it needs instead of clipping ("CSS variab...") or scrolling sideways. */
+   it needs instead of clipping ("CSS variab...") or scrolling sideways.
+   Reka UI's sliding TabsIndicator only tracks a single row (it computes an
+   x-offset/width, not a per-row position) — it drifts and overlaps once
+   tabs wrap onto row 2+, so it's hidden (see :ui="{indicator:'hidden'}" on
+   the component) and each trigger paints its own active background here
+   instead, which is correct regardless of how many rows there are. */
 .output-tabs :deep([role='tablist']) {
   flex-wrap: wrap;
   height: auto;
@@ -208,5 +214,11 @@ const active = ref<string>('0');
 }
 .output-tabs :deep([role='tab']) {
   flex: none;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.output-tabs :deep([role='tab'][data-state='active']) {
+  background: var(--ui-primary);
+  color: var(--ui-bg);
 }
 </style>

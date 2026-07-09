@@ -28,6 +28,16 @@ export default defineNuxtConfig({
   // time (env var, not just here) so _nuxt/* asset paths get the prefix.
   app: {
     baseURL: process.env.NUXT_APP_BASE_URL || '/',
+    head: {
+      link: [
+        // Explicit despite Nuxt's /favicon.ico convention-based serving —
+        // baseURL isn't applied to bare convention paths, only to entries
+        // declared here, so this is what actually makes the icon resolve
+        // correctly once deployed under /iridis/ on GitHub Pages.
+        { rel: 'icon', type: 'image/x-icon', href: `${process.env.NUXT_APP_BASE_URL || '/'}favicon.ico` },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: `${process.env.NUXT_APP_BASE_URL || '/'}apple-touch-icon.png` },
+      ],
+    },
   },
   // The @studnicky/iridis* workspace packages ship source .ts files with
   // explicit .ts import extensions (bundler moduleResolution). Nuxt's

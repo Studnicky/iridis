@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { CvdType } from '@studnicky/iridis';
 import { OPTIONAL_STAGE_NAMES, useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 
@@ -24,7 +23,7 @@ import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
  */
 const {
   pickerSeeds, pinnableRoles, framing, schemaName, contrastLevel, mode, imageSeeds, running,
-  enabledOptionalStages, toggleOptionalStage, cvdCorrect, cvdPreviewType, contrastReport
+  enabledOptionalStages, toggleOptionalStage, cvdCorrect, contrastReport
 } = useIridis();
 const { send } = useIridisUiMachine();
 
@@ -32,23 +31,13 @@ const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-3
 const UNPINNED = '__unpinned__';
 const roleItems = computed(() => [{ 'label': 'Unpinned', 'value': UNPINNED }, ...pinnableRoles.value.map((r) => {return { 'label': r, 'value': r };})]);
 
-/** The four simulable CVD types, in display order; a fifth "Off" pill clears the preview. */
-const CVD_PREVIEW_TYPES: { label: string; value: CvdType }[] = [
-  { label: 'Protanopia',     value: 'protanopia' },
-  { label: 'Deuteranopia',   value: 'deuteranopia' },
-  { label: 'Tritanopia',     value: 'tritanopia' },
-  { label: 'Achromatopsia',  value: 'achromatopsia' }
-];
-
 /** Human labels for the optional contrast-check stages, in display order. */
 const OPTIONAL_STAGE_LABELS: Record<string, string> = {
-  'enforce:apca':        'APCA',
-  'enforce:cvdSimulate':  'CVD simulate',
-  'enforce:wcagAA':      'WCAG AA',
-  'enforce:wcagAAA':     'WCAG AAA'
+  'enforce:apca':    'APCA',
+  'enforce:wcagAA':  'WCAG AA',
+  'enforce:wcagAAA': 'WCAG AAA'
 };
 const optionalStageItems = computed(() => OPTIONAL_STAGE_NAMES.map((name) => {return { label: OPTIONAL_STAGE_LABELS[name] ?? name, name };}));
-const cvdSimulateEnabled = computed(() => enabledOptionalStages.value.has('enforce:cvdSimulate'));
 
 /** Compact pass/fail summary badges for whichever optional stages are currently enabled. */
 const stageSummaries = computed(() => {
@@ -69,14 +58,14 @@ const stageSummaries = computed(() => {
     const passing = pairs.filter((p) => {return p.pass;}).length;
     summaries.push({ color: passing === pairs.length ? 'success' : 'warning', key: 'apca', label: 'APCA', text: `${passing}/${pairs.length} pairs passing` });
   }
-  if (cvdSimulateEnabled.value && report.cvd !== undefined) {
+  if (report.cvd !== undefined) {
     const cvd = report.cvd as { warnings: unknown[]; corrections?: unknown[] };
     const corrected = cvd.corrections?.length ?? 0;
     const color = cvd.warnings.length === 0 ? 'success' : (corrected > 0 ? 'warning' : 'neutral');
     const text = cvd.warnings.length === 0
       ? 'no warnings'
       : `${cvd.warnings.length} warning${cvd.warnings.length === 1 ? '' : 's'}${corrected > 0 ? ` (${corrected} auto-corrected)` : ''}`;
-    summaries.push({ color, key: 'cvd', label: 'CVD simulate', text });
+    summaries.push({ color, key: 'cvd', label: 'CVD check', text });
   }
   return summaries;
 });
@@ -97,7 +86,7 @@ function sample(): void {
   <div class="space-y-5">
   <UCard>
     <template #header>
-      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+      <div class="mx-auto grid w-full max-w-4xl grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div class="flex flex-wrap items-center gap-3">
           <ModeSwitch />
         </div>
@@ -117,7 +106,7 @@ function sample(): void {
 
     <div
       v-auto-animate
-      class="space-y-5"
+      class="mx-auto w-full max-w-4xl space-y-5"
     >
       <p
         v-if="mode === 'picker'"
@@ -136,7 +125,7 @@ function sample(): void {
       <div
         v-if="mode === 'picker'"
         v-auto-animate
-        class="flex flex-wrap items-stretch gap-3 rounded-lg border-2 border-dashed border-default p-4"
+        class="flex flex-wrap items-stretch justify-center gap-3 rounded-lg border-2 border-dashed border-default p-4"
       >
         <div
           v-for="(seed, i) in pickerSeeds"
@@ -206,7 +195,7 @@ function sample(): void {
               color="primary"
               variant="soft"
               size="sm"
-              @click="open()"
+              @click.stop="open()"
             >
               Browse
             </UButton>
@@ -215,7 +204,7 @@ function sample(): void {
               color="neutral"
               variant="soft"
               size="sm"
-              @click="sample"
+              @click.stop="sample"
             >
               Try a sample
             </UButton>
@@ -287,6 +276,16 @@ function sample(): void {
             minimum: 4.5:1 for normal text, 3:1 for large text (18pt+, or 14pt+ bold).
             <strong class="text-highlighted">AAA</strong> is the enhanced level: 7:1 / 4.5:1.
           </p>
+          <div class="flex items-center justify-between gap-3 rounded-md border border-default p-2.5 pl-3">
+            <div class="flex flex-col">
+              <span class="text-sm font-medium">Auto-correct CVD failures</span>
+              <span class="text-xs text-muted">Also always-on — adjusts the palette itself, same as the level above.</span>
+            </div>
+            <USwitch
+              :model-value="cvdCorrect"
+              @update:model-value="cvdCorrect = $event"
+            />
+          </div>
         </div>
 
         <div class="space-y-2">
@@ -295,8 +294,9 @@ function sample(): void {
           </p>
           <p class="text-sm text-muted">
             Opt-in, independent verification/correction passes layered on top of the base
-            corrector above — each checks against its own standard: WCAG 2.1, APCA (a
-            perceptual contrast algorithm), or a color-vision-deficiency simulation.
+            corrector above — each checks against its own standard: WCAG 2.1 or APCA (a
+            perceptual contrast algorithm). Color-vision-deficiency checking runs always —
+            see the CVD card in the carousel below.
           </p>
           <div class="space-y-1.5">
             <UCheckbox
@@ -307,50 +307,6 @@ function sample(): void {
               @update:model-value="toggleOptionalStage(item.name)"
             />
           </div>
-        </div>
-      </div>
-
-      <div
-        v-if="cvdSimulateEnabled"
-        class="grid gap-3 border-t border-default pt-4 sm:grid-cols-2"
-      >
-        <div class="flex items-center justify-between gap-3 rounded-md border border-default p-2.5 pl-3">
-          <div class="flex flex-col">
-            <span class="text-sm font-medium">Auto-correct CVD failures</span>
-            <span class="text-xs text-muted">Adjusts the palette itself.</span>
-          </div>
-          <USwitch
-            :model-value="cvdCorrect"
-            @update:model-value="cvdCorrect = $event"
-          />
-        </div>
-
-        <div class="space-y-1.5 rounded-md border border-dashed border-primary/50 bg-primary/5 p-2.5 pl-3">
-          <div class="flex items-center justify-between gap-3">
-            <span class="text-sm font-medium">Simulate CVD vision</span>
-            <UButton
-              v-if="cvdPreviewType"
-              label="Off"
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              @click="cvdPreviewType = null;"
-            />
-          </div>
-          <div class="flex flex-wrap gap-1">
-            <UButton
-              v-for="t in CVD_PREVIEW_TYPES"
-              :key="t.value"
-              :label="t.label"
-              size="xs"
-              :color="cvdPreviewType === t.value ? 'primary' : 'neutral'"
-              :variant="cvdPreviewType === t.value ? 'solid' : 'soft'"
-              @click="cvdPreviewType = cvdPreviewType === t.value ? null : t.value;"
-            />
-          </div>
-          <p class="text-xs text-muted">
-            Changes how this page looks to you — it does not touch the palette.
-          </p>
         </div>
       </div>
 
