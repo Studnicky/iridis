@@ -2,6 +2,12 @@
 
 All notable changes to iridis are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`npm ci` failed in CI with `Missing: search-insights@2.17.3 from lock file`**, which silently blocked the "Deploy docs to GitHub Pages" workflow. `search-insights` is only an optional peer of `@docsearch/react` (pulled in transitively via `vitepress`), and npm's optional-peer auto-install resolves inconsistently across environments. Pinned as an explicit devDependency so lockfile resolution is deterministic.
+
 ## [0.6.0] - 2026-07-09
 
 CVD correction, real syntax highlighting, and site-wide accessibility/UI polish.
