@@ -68,16 +68,19 @@ export const COLOR_PIPELINE = [
   'enforce:contrast', 'enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate',
   'derive:variant'
 ];
+/** enforce:cvdSimulate is always on, not user-toggleable — CVD accessibility
+ * reporting/correction isn't opt-in the way the other standards are. */
 const REQUIRED_COLOR_STAGES = [
-  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'expand:family', 'enforce:contrast', 'derive:variant'
+  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'expand:family',
+  'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
 ];
 const REQUIRED_IMAGE_STAGES = [
   'intake:imagePixels', 'gallery:histogram', 'gallery:extract', 'gallery:harmonize',
-  'resolve:roles', 'expand:family', 'enforce:contrast', 'derive:variant'
+  'resolve:roles', 'expand:family', 'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
 ];
 
 /** Toggleable contrast checks, in the order they slot in after enforce:contrast. */
-export const OPTIONAL_STAGE_NAMES: readonly string[] = ['enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate'];
+export const OPTIONAL_STAGE_NAMES: readonly string[] = ['enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca'];
 
 /** Which optional stages currently run — mutate via toggleOptionalStage(), not directly. */
 const enabledOptionalStages = ref<Set<string>>(new Set(['enforce:wcagAA']));
@@ -147,11 +150,19 @@ const cvdCorrect = ref<boolean>(false);
  * other: a user can correct without previewing (never sees simulated
  * vision, just sees their palette get more distinguishable), preview
  * without correcting (sees the CURRENT palette through a CVD filter,
- * unmodified), or both. `null` = preview off. Consumed by a display-layer
- * component (an SVG filter overlay), not by the engine pipeline — changing
- * it never triggers a recompute.
+ * unmodified), or both. A `Set` because real CVD isn't always a single
+ * condition — combined/comorbid deficiencies exist, so more than one type
+ * can be active at once (CvdPreviewOverlay.vue chains their filters).
+ * Empty = preview off. Consumed by a display-layer component, not by the
+ * engine pipeline — changing it never triggers a recompute.
  */
-const cvdPreviewType = ref<CvdType | null>(null);
+const cvdPreviewTypes = ref<Set<CvdType>>(new Set());
+
+function toggleCvdPreviewType(type: CvdType): void {
+  const next = new Set(cvdPreviewTypes.value);
+  if (next.has(type)) {next.delete(type);} else {next.add(type);}
+  cvdPreviewTypes.value = next;
+}
 
 const roles = ref<RoleHexMapType>({});
 const roleViews = ref<RoleViewType[]>([]);
@@ -414,7 +425,7 @@ export function useIridis() {
   }
   return {
     'activeSeeds': activeSeeds, 'contrastLevel': contrastLevel, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
-    'cvdPreviewType': cvdPreviewType,
+    'cvdPreviewTypes': cvdPreviewTypes, 'toggleCvdPreviewType': toggleCvdPreviewType,
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
     'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
     'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'lastImageSrc': lastImageSrc, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,

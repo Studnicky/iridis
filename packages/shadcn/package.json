@@ -1,18 +1,19 @@
 {
   "name": "@studnicky/iridis-shadcn",
+  "description": "Emits shadcn/ui CSS variables from resolved roles.",
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".":       "./src/index.ts",
+    ".": "./src/index.ts",
     "./types": "./src/types/index.ts"
   },
   "files": [
     "src"
   ],
   "scripts": {
-    "prebuild":  "rm -rf dist",
+    "prebuild": "rm -rf dist",
     "typecheck": "tsc --noEmit",
-    "clean":     "rm -rf dist"
+    "clean": "rm -rf dist"
   },
   "engines": {
     "node": ">=24"

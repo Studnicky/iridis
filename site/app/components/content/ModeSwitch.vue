@@ -6,29 +6,24 @@ import { useIridis } from '~/composables/useIridis.ts';
 /**
  * Mode selector. The demo is EITHER a color picker OR an image extractor, never
  * both — each mode owns its own palette, and switching swaps which palette themes
- * the page (the engine re-runs against the newly-active seeds).
+ * the page (the engine re-runs against the newly-active seeds). A tab pair, not a
+ * button group — matches every other choice-between-two/many surface on the site
+ * (Multi-output's format tabs, the carousel's own tab-styled dots).
  */
 const { mode } = useIridis();
-function select(m: ModeType): void { mode.value = m; }
+
+const items = [
+  { 'icon': 'i-material-symbols-palette-outline-rounded', 'label': 'Color picker', 'value': 'picker' },
+  { 'icon': 'i-material-symbols-add-photo-alternate-outline-rounded', 'label': 'Image', 'value': 'image' }
+];
 </script>
 
 <template>
-  <div class="isolate inline-flex -space-x-px rounded-md">
-    <UButton
-      icon="i-material-symbols-colorize-rounded"
-      :color="mode === 'picker' ? 'primary' : 'neutral'"
-      :variant="mode === 'picker' ? 'solid' : 'outline'"
-      @click="select('picker')"
-    >
-      Color picker
-    </UButton>
-    <UButton
-      icon="i-material-symbols-image-rounded"
-      :color="mode === 'image' ? 'primary' : 'neutral'"
-      :variant="mode === 'image' ? 'solid' : 'outline'"
-      @click="select('image')"
-    >
-      Image
-    </UButton>
-  </div>
+  <UTabs
+    :model-value="mode"
+    :items="items"
+    :content="false"
+    size="sm"
+    @update:model-value="mode = ($event as ModeType)"
+  />
 </template>

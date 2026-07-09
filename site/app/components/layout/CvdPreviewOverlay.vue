@@ -8,7 +8,14 @@
  * to what everyone sees. This overlay is the inverse: it never touches the
  * palette, it only changes what THIS viewer sees, so a non-affected user can
  * observe the current (corrected or not) palette through simulated eyes.
- * `cvdPreviewType` is read-only here; the toggle UI lives in PaletteControls.vue.
+ * `cvdPreviewTypes` is read-only here; the toggle UI lives in PaletteControls.vue.
+ * It's a Set, not a single value — real CVD isn't always one condition, so
+ * more than one type can be active at once. When it is, their filters chain:
+ * `filter: url(#a) url(#b)` applies the first simulation's full output as the
+ * SECOND simulation's input, i.e. "what a deuteranope sees when looking at
+ * what a protanope already sees" — a reasonable approximation for a combined
+ * deficiency, composed from the same real per-type matrices rather than an
+ * invented blended one.
  *
  * Filter graph mirrors EnforceCvdSimulate.ts's simulateColor(): gamma-decode
  * sRGB -> linear, apply the 3x3 CVD matrix from `cvdMatrices`, gamma-encode
@@ -16,7 +23,7 @@
  * curves, not sRGB's actual piecewise transfer function, so both transfer
  * steps use the standard gamma-2.2 approximation — the same approximation
  * browsers' own accessibility/CVD-simulation tools use for real-time filters.
- * All four filters are predefined so switching `cvdPreviewType` is instant.
+ * All four filters are predefined so toggling any combination is instant.
  */
 import type { CvdMatrixInterfaceType } from '@studnicky/iridis-contrast';
 
@@ -25,7 +32,7 @@ import { computed } from 'vue';
 
 import { useIridis } from '~/composables/useIridis.ts';
 
-const { cvdPreviewType } = useIridis();
+const { cvdPreviewTypes } = useIridis();
 
 const SRGB_GAMMA = 2.2;
 
@@ -42,8 +49,12 @@ function toFeColorMatrixValues(m: CvdMatrixInterfaceType): string {
 
 const filterId = (name: string): string => {return `cvd-${name}`;};
 
-const activeFilterId = computed<string | null>(() => {
-  return cvdPreviewType.value === null ? null : filterId(cvdPreviewType.value);
+/** Insertion order of the Set = the order types were toggled on, i.e. the
+ * order their filters chain — the most recently added simulates "looking at"
+ * whatever the earlier ones already produced. */
+const activeFilterChain = computed<string>(() => {
+  const ids = [...cvdPreviewTypes.value].map((t) => {return `url(#${filterId(t)})`;});
+  return ids.length > 0 ? ids.join(' ') : 'none';
 });
 </script>
 
@@ -110,7 +121,7 @@ const activeFilterId = computed<string | null>(() => {
   </svg>
   <div
     class="cvd-preview-wrap"
-    :style="{ filter: activeFilterId ? `url(#${activeFilterId})` : 'none' }"
+    :style="{ filter: activeFilterChain }"
   >
     <slot />
   </div>

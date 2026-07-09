@@ -16,6 +16,7 @@ const sections = [
   { 'key': 'pipeline', 'label': 'Pipeline' },
   { 'key': 'schema', 'label': 'Schema' },
   { 'key': 'motion', 'label': 'Motion' },
+  { 'key': 'cvd', 'label': 'CVD vision' },
   { 'key': 'spectrum', 'label': 'Spectrum' },
 ];
 </script>
@@ -38,6 +39,7 @@ const sections = [
           <PipelineExplainer v-else-if="item.key === 'pipeline'" />
           <SchemaTree v-else-if="item.key === 'schema'" />
           <MotionShowcase v-else-if="item.key === 'motion'" />
+          <CvdVision v-else-if="item.key === 'cvd'" />
           <div
             v-else-if="item.key === 'spectrum'"
             class="space-y-3"
