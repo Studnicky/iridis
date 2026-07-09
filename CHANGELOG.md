@@ -2,7 +2,7 @@
 
 All notable changes to iridis are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.0] - 2026-07-09
 
 CVD correction, real syntax highlighting, and site-wide accessibility/UI polish.
 
