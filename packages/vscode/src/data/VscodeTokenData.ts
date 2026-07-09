@@ -21,6 +21,13 @@ const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfaceType>>
     'light': 5,
     'sat': 5
   },
+  // From palette.constant: pass-through (true/false/null read as language constants)
+  'boolean': {},
+  // From palette.property derivation: JSON object keys read like property names
+  'jsonKey': {
+    'light': -5,
+    'sat': -5
+  },
   // From palette.comment: pass-through
   'comment': {},
   // Meta, annotation feel
@@ -33,6 +40,8 @@ const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfaceType>>
     'hue': -25,
     'sat': 5
   },
+  // From palette.constant: pass-through
+  'constant':   {},
   // From palette.constant: pass-through
   'enumMember': {},
   // Reactive, callback feel
@@ -83,6 +92,8 @@ const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfaceType>>
     'light': -5,
     'sat': -5
   },
+  // From palette.muted: pass-through (braces, colons, commas read as chrome, not content)
+  'punctuation': {},
   // Distinct pattern feel
   'regexp': {
     'hue': -45,
@@ -108,17 +119,24 @@ const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfaceType>>
 
 /**
  * Family root mapping: which role supplies the base hue for each token type.
- * Keys match the 23 VS Code token type names in TOKEN_TYPES.
+ * Keys match the entries in TOKEN_TYPES: the 23 standard VS Code semantic
+ * token type names, plus a few TextMate-only categories ('boolean',
+ * 'jsonKey', 'punctuation') that have no LSP semantic-token equivalent but
+ * still need a derived baseToken so EmitVscodeThemeJson emits a tokenColors
+ * rule for their SCOPE_MAPPINGS entry instead of silently skipping it.
  */
 const TOKEN_FAMILY: Readonly<Record<string, string>> = {
+  'boolean':       'constant',
   'class':         'type',
   'comment':       'comment',
+  'constant':      'constant',
   'decorator':     'function',
   'enum':          'type',
   'enumMember':    'constant',
   'event':         'function',
   'function':      'function',
   'interface':     'type',
+  'jsonKey':       'variable',
   'keyword':       'keyword',
   'label':         'keyword',
   'macro':         'keyword',
@@ -128,6 +146,7 @@ const TOKEN_FAMILY: Readonly<Record<string, string>> = {
   'operator':      'muted',
   'parameter':     'variable',
   'property':      'variable',
+  'punctuation':   'muted',
   'regexp':        'string',
   'string':        'string',
   'struct':        'type',
@@ -136,7 +155,11 @@ const TOKEN_FAMILY: Readonly<Record<string, string>> = {
   'variable':      'variable'
 } as const;
 
-/** The 23 VS Code semantic token type names (insertion order = VS Code rendering order). */
+/**
+ * The 23 standard VS Code semantic token type names plus 'boolean',
+ * 'jsonKey', and 'punctuation' (TextMate-only, see TOKEN_FAMILY doc above).
+ * Insertion order = VS Code rendering order for the standard 23.
+ */
 const TOKEN_TYPES = [
   'namespace',
   'class',
@@ -160,7 +183,11 @@ const TOKEN_TYPES = [
   'keyword',
   'number',
   'regexp',
-  'operator'
+  'operator',
+  'boolean',
+  'constant',
+  'jsonKey',
+  'punctuation'
 ] as const;
 
 /** The 10 VS Code semantic token modifier names. */

@@ -41,8 +41,16 @@ export type CvdPairWarningInterfaceType = {
   'simulatedLuminanceContrast': number;
 };
 
+export type CvdCorrectionInterfaceType = {
+  'background':         string;
+  'cvdTypesFixed':      string[];
+  'cvdTypesRemaining':  string[];
+  'foreground':         string;
+};
+
 export type CvdResultSetInterfaceType = {
-  'warnings': CvdPairWarningInterfaceType[];
+  'corrections'?: CvdCorrectionInterfaceType[];
+  'warnings':     CvdPairWarningInterfaceType[];
 };
 
 export type WcagMetaSlotInterfaceType = {

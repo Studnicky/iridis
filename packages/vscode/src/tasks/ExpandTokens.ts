@@ -100,17 +100,23 @@ class ExpandTokens implements TaskInterface {
         color = hueShift.apply(color, params.hue);
       }
       if (params.sat !== undefined && params.sat !== 0) {
+        // DERIVATION_PARAMS.sat is a percentage point (e.g. -5 = 5%); the
+        // saturate/desaturate primitives take a raw 0-0.5 chroma delta.
+        const deltaC = Math.abs(params.sat) / 100;
         if (params.sat > 0) {
-          color = saturate.apply(color, params.sat);
+          color = saturate.apply(color, deltaC);
         } else {
-          color = desaturate.apply(color, -params.sat);
+          color = desaturate.apply(color, deltaC);
         }
       }
       if (params.light !== undefined && params.light !== 0) {
+        // DERIVATION_PARAMS.light is a percentage point; lighten/darken
+        // take a raw 0-1 OKLCH lightness delta.
+        const deltaL = Math.abs(params.light) / 100;
         if (params.light > 0) {
-          color = lighten.apply(color, params.light);
+          color = lighten.apply(color, deltaL);
         } else {
-          color = darken.apply(color, -params.light);
+          color = darken.apply(color, deltaL);
         }
       }
 

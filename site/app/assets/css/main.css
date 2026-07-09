@@ -12,9 +12,11 @@
   /* engine-driven glow color; falls back before the projector runs */
   --glow: var(--ui-primary, #7c3aed);
   --glow-2: var(--ui-color-info-500, #06b6d4);
-  /* one shared window every color animates over, in unison */
-  --iridis-tune: 550ms;
-  --iridis-ease: cubic-bezier(0.33, 0, 0.2, 1);
+  /* one shared window every color animates over, in unison — kept under
+     300ms so a framing/palette swap reads as instant-but-smooth, not a
+     visible fade. */
+  --iridis-tune: 260ms;
+  --iridis-ease: ease;
 }
 
 /* Every element re-tones over the SAME window when the engine rewrites its
@@ -31,49 +33,18 @@
 
 .font-display { font-family: var(--font-display); letter-spacing: 0.02em; }
 
-/* ─── Sci-fi backdrop: animated grid + drifting engine-colored aurora ─── */
+/* ─── Sci-fi backdrop: base color; layered grid/starfield/aurora lives in AmbientBackground.vue ─── */
 body {
   position: relative;
   background: var(--ui-bg, #05040a);
   overflow-x: hidden;
 }
-body::before {
-  /* perspective grid floor */
-  content: "";
-  position: fixed;
-  inset: -50% 0 0 0;
-  background-image:
-    linear-gradient(color-mix(in oklch, var(--glow) 22%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in oklch, var(--glow) 22%, transparent) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 10%, transparent 70%);
-  opacity: 0.16;
-  animation: grid-pan 18s linear infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-body::after {
-  /* drifting aurora blobs, engine-tinted */
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(40rem 40rem at 15% 0%, color-mix(in oklch, var(--glow) 30%, transparent), transparent 60%),
-    radial-gradient(36rem 36rem at 90% 20%, color-mix(in oklch, var(--glow-2) 26%, transparent), transparent 60%);
-  filter: blur(40px);
-  opacity: 0.28;
-  animation: aurora 24s ease-in-out infinite alternate;
-  pointer-events: none;
-  z-index: 0;
-}
 #__nuxt { position: relative; z-index: 1; }
 
-@keyframes grid-pan { to { background-position: 0 44px, 44px 0; } }
-@keyframes aurora {
-  0%   { transform: translate3d(0,0,0) scale(1); }
-  50%  { transform: translate3d(3%, 2%, 0) scale(1.08); }
-  100% { transform: translate3d(-2%, -1%, 0) scale(1.03); }
-}
+/* Reka UI teleports popover content (USelect, UDropdownMenu, etc.) to a wrapper
+   under <body> with `z-index: auto` by default — it loses to CylinderCarousel's
+   local stacking context (front card z-index up to 40). Pin it comfortably above. */
+[data-reka-popper-content-wrapper] { z-index: 1000 !important; }
 
 /* ─── Glass panels with an engine-colored holo edge ─── */
 .glass {
@@ -120,6 +91,25 @@ body::after {
   box-shadow: 0 14px 54px -16px color-mix(in oklch, var(--glow) 55%, transparent);
 }
 
+/* Nearly-invisible drifting micro-grid on every card/panel — shared via
+   .iridis-card/.glass so it applies uniformly with no per-component markup.
+   Opacity is kept low enough that it only ever reads as texture/depth,
+   never as a competing pattern against card content. */
+.iridis-card::after, .glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image:
+    linear-gradient(color-mix(in oklch, var(--glow) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--glow) 45%, transparent) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 0.035;
+  animation: card-texture-pan 34s linear infinite;
+}
+@keyframes card-texture-pan { to { background-position: 22px 22px; } }
+
 /* ─── Glow / pulse / float utilities ─── */
 .glow-text {
   text-shadow: 0 0 12px color-mix(in oklch, var(--glow) 70%, transparent),
@@ -135,7 +125,7 @@ body::after {
 .spin-slow { animation: spin 26s linear infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  body::before, body::after, .float, .pulse, .spin-slow, .glass::before { animation: none !important; }
+  .float, .pulse, .spin-slow, .glass::before, .iridis-card::after, .glass::after { animation: none !important; }
 }
 
 /* ─── Scanline overlay for the hacker feel (very subtle) ─── */

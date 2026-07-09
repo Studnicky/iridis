@@ -12,9 +12,10 @@ export interface InputInterface {
   readonly 'bypass'?:    boolean;
   readonly 'colors':    readonly unknown[];
   readonly 'contrast'?: {
-    readonly 'algorithm'?: ContrastAlgorithmType;
-    readonly 'extra'?:     readonly ContrastPairInterfaceType[];
-    readonly 'level'?:     string;
+    readonly 'algorithm'?:   ContrastAlgorithmType;
+    readonly 'cvdCorrect'?:  boolean;
+    readonly 'extra'?:       readonly ContrastPairInterfaceType[];
+    readonly 'level'?:       string;
   };
   /**
    * Selective emit filter: names of output slots to produce. Reserved for

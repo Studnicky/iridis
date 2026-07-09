@@ -52,6 +52,17 @@ const cvdWarningSchema = {
   'type': 'object'
 } as const;
 
+const cvdCorrectionSchema = {
+  'additionalProperties': false,
+  'properties': {
+    'background':        { 'type': 'string' },
+    'cvdTypesFixed':     { 'items': { 'type': 'string' }, 'type': 'array' },
+    'cvdTypesRemaining': { 'items': { 'type': 'string' }, 'type': 'array' },
+    'foreground':        { 'type': 'string' }
+  },
+  'type': 'object'
+} as const;
+
 const wcagMetadataSchema = {
   'additionalProperties': false,
   'properties': {
@@ -72,7 +83,10 @@ const wcagMetadataSchema = {
     },
     'cvd': {
       'additionalProperties': false,
-      'properties': { 'warnings': { 'items': cvdWarningSchema, 'type': 'array' } },
+      'properties': {
+        'corrections': { 'items': cvdCorrectionSchema, 'type': 'array' },
+        'warnings':    { 'items': cvdWarningSchema, 'type': 'array' }
+      },
       'type': 'object'
     }
   },

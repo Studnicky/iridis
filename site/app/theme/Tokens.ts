@@ -79,4 +79,18 @@ export class Tokens {
     root.classList.toggle('dark', framing === 'dark');
     root.dataset.iridisFraming = framing;
   }
+
+  /** Serializes engine tokens as a `:root` rule for SSR head injection — first paint matches Tokens.apply(). */
+  static toCssText(tokens: RoleHexMapType): string {
+    const decls = Object.entries(tokens).map(([k, v]) => {return `${k}:${v}`;}).join(';');
+    return `:root{${decls}}`;
+  }
+
+  /** Every role name this mapper ever reads by name — the ground truth for "does pinning this role actually show up anywhere". */
+  static candidateRoleNames(): readonly string[] {
+    const names = new Set<string>();
+    for (const candidates of Object.values(ALIAS_SOURCE)) {for (const c of candidates) {names.add(c);}}
+    for (const candidates of Object.values(SHORTCUT_SOURCE)) {for (const c of candidates) {names.add(c);}}
+    return [...names];
+  }
 }

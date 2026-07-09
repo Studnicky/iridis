@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
+import { contrastRatio } from '~/theme/ContrastRatio.ts';
 
 /**
  * The resolved role palette (the engine's role output, not the semantic UI
@@ -9,23 +10,9 @@ import { useIridis } from '~/composables/useIridis.ts';
  */
 const { roleViews, roles } = useIridis();
 
-function channel(v: number): number {
-  const s = v / 255;
-  return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-}
-function luminance(hex: string): number {
-  return 0.2126 * channel(parseInt(hex.slice(1, 3), 16))
-    + 0.7152 * channel(parseInt(hex.slice(3, 5), 16))
-    + 0.0722 * channel(parseInt(hex.slice(5, 7), 16));
-}
-function ratio(fg: string, bg: string): number {
-  const a = luminance(fg), b = luminance(bg);
-  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-}
-
 const bg = computed<string>(() => roles.value['background'] ?? '#000000');
 const rows = computed(() => roleViews.value.map((r) => {
-  const cr = ratio(r.hex, bg.value);
+  const cr = contrastRatio(r.hex, bg.value);
   return { 'name': r.name, 'hex': r.hex, 'ratio': cr, 'aa': cr >= 4.5, 'aaa': cr >= 7 };
 }));
 </script>
@@ -33,17 +20,19 @@ const rows = computed(() => roleViews.value.map((r) => {
 <template>
   <UCard>
     <template #header>
-      <div class="flex items-center justify-between">
-        <span class="font-semibold text-highlighted">Resolved roles</span>
+      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <span />
+        <span class="text-center font-semibold text-highlighted">Resolved roles</span>
         <UBadge
           color="neutral"
           variant="soft"
+          class="justify-self-end"
         >
           {{ rows.length }} roles
         </UBadge>
       </div>
     </template>
-    <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
       <div
         v-for="r in rows"
         :key="r.name"
@@ -57,8 +46,8 @@ const rows = computed(() => roleViews.value.map((r) => {
           <div class="truncate text-xs font-medium text-highlighted">
             {{ r.name }}
           </div>
-          <div class="flex items-center gap-1">
-            <span class="font-mono text-[10px] text-muted">{{ r.hex }}</span>
+          <div class="flex flex-wrap items-center gap-1">
+            <span class="truncate font-mono text-[10px] text-muted">{{ r.hex }}</span>
             <UBadge
               :color="r.aaa ? 'success' : r.aa ? 'primary' : 'neutral'"
               variant="soft"

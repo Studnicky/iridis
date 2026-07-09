@@ -10,6 +10,12 @@ export default defineNuxtConfig({
     'nuxt-swiper',
   ],
   css: ['~/assets/css/main.css'],
+  // Explicit layers: content/ renders data, layout/ arranges it. pathPrefix:false
+  // keeps <HeroBanner>/<CylinderCarousel> unprefixed regardless of subfolder.
+  components: [
+    { path: '~/components/content', pathPrefix: false },
+    { path: '~/components/layout', pathPrefix: false },
+  ],
   googleFonts: {
     display: 'swap',
     families: {

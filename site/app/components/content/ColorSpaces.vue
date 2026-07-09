@@ -51,7 +51,7 @@ const rows = computed(() => {
 <template>
   <UCard>
     <template #header>
-      <span class="font-semibold text-highlighted">Color spaces</span>
+      <span class="block text-center font-semibold text-highlighted">Color spaces</span>
     </template>
     <div class="space-y-4">
       <div class="flex items-center gap-3">

@@ -13,7 +13,7 @@ function select(m: ModeType): void { mode.value = m; }
 </script>
 
 <template>
-  <UButtonGroup>
+  <div class="isolate inline-flex -space-x-px rounded-md">
     <UButton
       icon="i-material-symbols-colorize-rounded"
       :color="mode === 'picker' ? 'primary' : 'neutral'"
@@ -30,5 +30,5 @@ function select(m: ModeType): void { mode.value = m; }
     >
       Image
     </UButton>
-  </UButtonGroup>
+  </div>
 </template>

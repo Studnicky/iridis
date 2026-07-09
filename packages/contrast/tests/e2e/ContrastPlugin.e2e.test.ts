@@ -216,7 +216,16 @@ interface CvdWarningShape {
 interface AaMetaShape  { readonly pairs: readonly WcagPairShape[] }
 interface AaaMetaShape { readonly pairs: readonly WcagPairShape[] }
 interface ApcaMetaShape { readonly pairs: readonly ApcaPairShape[] }
-interface CvdMetaShape  { readonly warnings: readonly CvdWarningShape[] }
+interface CvdCorrectionShape {
+  readonly foreground:        string;
+  readonly background:        string;
+  readonly cvdTypesFixed:     readonly string[];
+  readonly cvdTypesRemaining: readonly string[];
+}
+interface CvdMetaShape  {
+  readonly warnings:     readonly CvdWarningShape[];
+  readonly corrections?: readonly CvdCorrectionShape[];
+}
 interface ContrastReportShape {
   readonly foreground: string;
   readonly background: string;
@@ -974,6 +983,147 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
       assert.ok(
         textHex.toLowerCase() !== bgHex.toLowerCase(),
         '[cell=5, scenario=cvd-advisory-only] roles remain distinct (no auto-fix applied)',
+      );
+    },
+  },
+  {
+    name: 'cvdCorrect=true improves a deliberately-bad pair and mutates the foreground role',
+    kind: 'happy',
+    input: {
+      pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
+      input: {
+        'colors': ['#d00000', '#008000'],
+        'roles':  CVD_RED_GREEN_ROLES,
+        'contrast': { 'cvdCorrect': true },
+      },
+    },
+    async assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=5, scenario=cvd-correct-improves] no throw');
+      const textHex = output!.state.roles['text']?.hex;
+      assert.ok(textHex !== undefined, '[cell=5, scenario=cvd-correct-improves] text role assigned');
+
+      // Baseline: same fixture, resolve:roles only (pre-correction hex),
+      // so the comparison isolates enforce:cvdSimulate's own mutation.
+      const baselineEngine = makeEngine();
+      baselineEngine.pipeline(['intake:hex', 'resolve:roles']);
+      const baselineState = await baselineEngine.run({
+        'colors': ['#d00000', '#008000'],
+        'roles':  CVD_RED_GREEN_ROLES,
+      });
+      assert.ok(
+        textHex!.toLowerCase() !== baselineState.roles['text']?.hex.toLowerCase(),
+        `[cell=5, scenario=cvd-correct-improves] text role hex ${textHex} differs from pre-correction hex ${baselineState.roles['text']?.hex}`,
+      );
+
+      const cvd = output!.state.metadata['contrast:cvd'] as CvdMetaShape | undefined;
+      assert.ok(cvd !== undefined, '[cell=5, scenario=cvd-correct-improves] cvd slot written');
+      const deuterStillWarns = cvd.warnings.some((w) => w.cvdType === 'deuteranopia');
+      const correction = (cvd.corrections ?? []).find((c) => c.foreground === 'text');
+      const deuterFixed = correction?.cvdTypesFixed.includes('deuteranopia') ?? false;
+      assert.ok(
+        !deuterStillWarns || deuterFixed,
+        '[cell=5, scenario=cvd-correct-improves] deuteranopia is either resolved (absent from warnings) or reported fixed in corrections',
+      );
+    },
+  },
+  {
+    name: 'cvdCorrect=true does not regress an already-passing pair',
+    kind: 'happy',
+    input: {
+      pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
+      input: {
+        'colors': ['#000000', '#ffffff'],
+        'roles':  CVD_BLACK_WHITE_ROLES,
+        'contrast': { 'cvdCorrect': true },
+      },
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=5, scenario=cvd-correct-no-regress] no throw');
+      const cvd = output!.state.metadata['contrast:cvd'] as CvdMetaShape | undefined;
+      assert.ok(cvd !== undefined, '[cell=5, scenario=cvd-correct-no-regress] cvd slot written');
+      assert.strictEqual(
+        cvd.warnings.length, 0,
+        `[cell=5, scenario=cvd-correct-no-regress] black-on-white must still produce 0 warnings under cvdCorrect; got ${cvd.warnings.length}`,
+      );
+      assert.ok(
+        (cvd.corrections ?? []).length === 0,
+        '[cell=5, scenario=cvd-correct-no-regress] no corrections recorded — nothing needed fixing',
+      );
+      const textHex = output!.state.roles['text']?.hex;
+      assert.strictEqual(
+        textHex, '#000000',
+        '[cell=5, scenario=cvd-correct-no-regress] text role untouched — no correction was applied',
+      );
+    },
+  },
+  {
+    name: 'cvdCorrect=true reports accurate pass/fail split on a hard-to-fully-resolve pair',
+    kind: 'edge',
+    input: {
+      pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
+      input: {
+        'colors': ['#ff0000', '#00d800'],
+        'roles':  CVD_ISOLUM_ROLES,
+        'contrast': { 'cvdCorrect': true },
+      },
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=5, scenario=cvd-correct-partial] no throw');
+      const cvd = output!.state.metadata['contrast:cvd'] as CvdMetaShape | undefined;
+      assert.ok(cvd !== undefined, '[cell=5, scenario=cvd-correct-partial] cvd slot written');
+      const correction = (cvd.corrections ?? []).find((c) => c.foreground === 'text');
+      if (correction !== undefined) {
+        for (const w of cvd.warnings) {
+          assert.ok(
+            correction.cvdTypesRemaining.includes(w.cvdType),
+            `[cell=5, scenario=cvd-correct-partial] warning for ${w.cvdType} must be reflected in cvdTypesRemaining`,
+          );
+        }
+        for (const remaining of correction.cvdTypesRemaining) {
+          assert.ok(
+            cvd.warnings.some((w) => w.cvdType === remaining),
+            `[cell=5, scenario=cvd-correct-partial] cvdTypesRemaining entry ${remaining} must have a matching warning`,
+          );
+        }
+      }
+    },
+  },
+  {
+    name: 'simulate-only mode (cvdCorrect unset) leaves the same deliberately-bad pair untouched',
+    kind: 'edge',
+    input: {
+      pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
+      input: {
+        'colors': ['#d00000', '#008000'],
+        'roles':  CVD_RED_GREEN_ROLES,
+      },
+    },
+    async assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=5, scenario=cvd-correct-gated-off] no throw');
+      const textHex = output!.state.roles['text']?.hex;
+
+      // Baseline: resolve:roles alone, with no enforce task in the pipeline —
+      // proves enforce:cvdSimulate wrote nothing to roles when cvdCorrect is unset.
+      const baselineEngine = makeEngine();
+      baselineEngine.pipeline(['intake:hex', 'resolve:roles']);
+      const baselineState = await baselineEngine.run({
+        'colors': ['#d00000', '#008000'],
+        'roles':  CVD_RED_GREEN_ROLES,
+      });
+      assert.strictEqual(
+        textHex, baselineState.roles['text']?.hex,
+        '[cell=5, scenario=cvd-correct-gated-off] roles NOT mutated when cvdCorrect is unset',
+      );
+
+      const cvd = output!.state.metadata['contrast:cvd'] as CvdMetaShape | undefined;
+      assert.ok(cvd !== undefined, '[cell=5, scenario=cvd-correct-gated-off] cvd slot written');
+      assert.ok(
+        cvd.warnings.some((w) => w.cvdType === 'deuteranopia'),
+        '[cell=5, scenario=cvd-correct-gated-off] deuteranopia warning still fires without correction',
+      );
+      assert.strictEqual(
+        cvd.corrections, undefined,
+        '[cell=5, scenario=cvd-correct-gated-off] corrections key absent when cvdCorrect is unset',
       );
     },
   },

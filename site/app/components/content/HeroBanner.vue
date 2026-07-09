@@ -13,8 +13,10 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
 
 <template>
   <section class="relative overflow-hidden rounded-3xl px-6 pt-12 pb-8 sm:pt-16">
-    <!-- floating engine-colored orbs -->
-    <div class="pointer-events-none absolute inset-0 -z-10">
+    <!-- floating engine-colored orbs. Masked to fade to zero opacity well
+         before the section's own overflow-hidden edge, so the clip boundary
+         is never crossed at visible alpha — no hard seam. -->
+    <div class="hero-orb-field pointer-events-none absolute inset-0 -z-10">
       <div
         v-for="(o, i) in orbs"
         :key="o"
@@ -78,6 +80,10 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
 </template>
 
 <style scoped>
+.hero-orb-field {
+  mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, #000 0%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, #000 0%, transparent 85%);
+}
 .halo {
   position: absolute;
   inset: 0;

@@ -7,9 +7,10 @@ export const InputSchema = {
     'contrast': {
       'additionalProperties': false,
       'properties': {
-        'algorithm': { 'enum': ['wcag21', 'apca'], 'type': 'string' },
-        'extra':     { 'type': 'array' },
-        'level':     { 'type': 'string' }
+        'algorithm':  { 'enum': ['wcag21', 'apca'], 'type': 'string' },
+        'cvdCorrect': { 'type': 'boolean' },
+        'extra':      { 'type': 'array' },
+        'level':      { 'type': 'string' }
       },
       'type': 'object'
     },

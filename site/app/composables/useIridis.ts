@@ -6,6 +6,7 @@
  * from hueOffset on the schema roles. The projector only reads those hexes.
  */
 
+import type { CvdType } from '@studnicky/iridis';
 import type { RoleDefinitionInterfaceType, RoleSchemaInterfaceType } from '@studnicky/iridis/model';
 
 import { coreTasks, Engine } from '@studnicky/iridis';
@@ -14,11 +15,27 @@ import { imagePlugin } from '@studnicky/iridis-image';
 import { computed, ref, watch } from 'vue';
 
 import type {
-  FramingType, GalleryAlgorithmType, HistogramBinType, ModeType, RoleHexMapType, RoleViewType, ScaleMapType
+  FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType
 } from './types/index.ts';
 
+type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': 'MUTATE_SEEDS' }>;
+type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': 'SET_PALETTE_PARAM' }>;
+type ExtractImageEffectType = Extract<IridisUiEffectType, { 'variant': 'EXTRACT_IMAGE' }>;
+type PinSeedRoleEffectType = Extract<IridisUiEffectType, { 'variant': 'PIN_SEED_ROLE' }>;
+
+import { intakeHexHint } from '../theme/IntakeHexHint.ts';
+import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
 import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
 import { Tokens } from '../theme/Tokens.ts';
+import { useIridisUiMachine } from './useIridisUiMachine.ts';
+
+/** Mirrors CodeBlock.vue's role(...) lookups — the only other place a role is read by name. */
+const CODE_BLOCK_ROLES = [
+  'code-bg', 'syntax-comment', 'syntax-string', 'syntax-number', 'syntax-function',
+  'syntax-attribute', 'syntax-keyword', 'syntax-punctuation', 'syntax-type'
+];
+/** Every role name actually consumed somewhere on the page (Tokens.ts + CodeBlock.vue) — the ground truth for pinnable roles. */
+const USED_ROLE_NAMES = new Set([...Tokens.candidateRoleNames(), ...CODE_BLOCK_ROLES]);
 
 /** Absolute OKLCH lightness per shade — resolved through the engine, not here. */
 const SHADE_L: Record<number, number> = {
@@ -37,20 +54,54 @@ const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => {return { 'invertLightness':
 const SEMANTIC_HUE: Record<string, number> = { 'error': 27, 'info': 250, 'success': 150, 'warning': 85 };
 const SEMANTIC_HUE_CLAMP = 55;
 
-const COLOR_PIPELINE = [
-  'intake:hex', 'resolve:roles', 'expand:family',
+/**
+ * Exported so PipelineExplainer.vue can walk the same stage order and pull each
+ * task's own manifest. pin:derivedRoles runs between resolve:roles and
+ * expand:family — see PinDerivedRoles.ts for why that ordering is load-bearing.
+ * This is the full superset of stages (required + every optional check) for
+ * documentation purposes; the actual per-run pipeline is built by
+ * buildPipeline() below from REQUIRED_*_STAGES plus whichever OPTIONAL_STAGE_NAMES
+ * are currently enabled.
+ */
+export const COLOR_PIPELINE = [
+  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'expand:family',
   'enforce:contrast', 'enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate',
   'derive:variant'
 ];
-const IMAGE_PIPELINE = [
+const REQUIRED_COLOR_STAGES = [
+  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'expand:family', 'enforce:contrast', 'derive:variant'
+];
+const REQUIRED_IMAGE_STAGES = [
   'intake:imagePixels', 'gallery:histogram', 'gallery:extract', 'gallery:harmonize',
-  'resolve:roles', 'expand:family',
-  'enforce:contrast', 'enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate',
-  'derive:variant'
+  'resolve:roles', 'expand:family', 'enforce:contrast', 'derive:variant'
 ];
+
+/** Toggleable contrast checks, in the order they slot in after enforce:contrast. */
+export const OPTIONAL_STAGE_NAMES: readonly string[] = ['enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate'];
+
+/** Which optional stages currently run — mutate via toggleOptionalStage(), not directly. */
+const enabledOptionalStages = ref<Set<string>>(new Set(['enforce:wcagAA']));
+
+function toggleOptionalStage(name: string): void {
+  if (!OPTIONAL_STAGE_NAMES.includes(name)) {return;}
+  const next = new Set(enabledOptionalStages.value);
+  if (next.has(name)) {next.delete(name);} else {next.add(name);}
+  enabledOptionalStages.value = next;
+}
+
+/** Slots the currently-enabled optional stages into `required` right after enforce:contrast. */
+function buildPipeline(required: readonly string[]): string[] {
+  const idx = required.indexOf('enforce:contrast');
+  const optional = OPTIONAL_STAGE_NAMES.filter((n) => {return enabledOptionalStages.value.has(n);});
+  const result = [...required];
+  result.splice(idx + 1, 0, ...optional);
+  return result;
+}
 
 const engine = new Engine();
 for (const t of coreTasks) {engine.tasks.register(t);}
+engine.tasks.register(intakeHexHint);
+engine.tasks.register(pinDerivedRoles);
 engine.adopt(contrastPlugin);
 engine.adopt(imagePlugin);
 
@@ -66,12 +117,41 @@ function withSemanticHues(schema: RoleSchemaInterfaceType): RoleSchemaInterfaceT
 }
 
 /* ─── shared reactive state ─── */
-const mode = ref<ModeType>('picker');
-const pickerSeeds = ref<string[]>(['#7c3aed', '#06b6d4', '#f59e0b']);
+const {
+  'registerExtractImageHandler': registerExtractImageHandler, 'registerMutateSeedsHandler': registerMutateSeedsHandler,
+  'registerPinSeedRoleHandler': registerPinSeedRoleHandler, 'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
+  'send': sendUiEvent, 'state': uiState
+} = useIridisUiMachine();
+/** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
+const mode = computed<ModeType>({
+  'get': () => { const result = uiState.value.mode; return result; },
+  'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': 'SELECT_MODE' }); return result; }
+});
+const pickerSeeds = ref<PickerSeedType[]>([{ 'hex': '#7c3aed' }, { 'hex': '#06b6d4' }, { 'hex': '#f59e0b' }]);
 const imageSeeds = ref<string[]>([]);
 const framing = ref<FramingType>('dark');
 const schemaName = ref<string>('iridis-32');
 const contrastLevel = ref<'AA' | 'AAA'>('AAA');
+/**
+ * CVD "correct" mode flag, threaded through as `input.contrast.cvdCorrect` —
+ * when true, enforce:cvdSimulate (packages/contrast) auto-corrects failing
+ * pairs instead of only warning. Off by default (advisory-only).
+ */
+const cvdCorrect = ref<boolean>(false);
+
+/**
+ * Visual CVD preview — purely a display-time filter over whatever the engine
+ * already resolved, genuinely independent of `cvdCorrect`. This is the "see
+ * it as an afflicted person would" toggle; `cvdCorrect` is the "fix the
+ * colors so everyone can distinguish them" toggle. Neither implies the
+ * other: a user can correct without previewing (never sees simulated
+ * vision, just sees their palette get more distinguishable), preview
+ * without correcting (sees the CURRENT palette through a CVD filter,
+ * unmodified), or both. `null` = preview off. Consumed by a display-layer
+ * component (an SVG filter overlay), not by the engine pipeline — changing
+ * it never triggers a recompute.
+ */
+const cvdPreviewType = ref<CvdType | null>(null);
 
 const roles = ref<RoleHexMapType>({});
 const roleViews = ref<RoleViewType[]>([]);
@@ -79,6 +159,9 @@ const scales = ref<ScaleMapType>({});
 const histogram = ref<HistogramBinType[]>([]);
 const running = ref<boolean>(false);
 const error = ref<string | null>(null);
+
+/** Raw contrast-check metadata from the last run, keyed by the same metadata names the contrastPlugin tasks write. */
+const contrastReport = ref<{ 'aa'?: unknown; 'aaa'?: unknown; 'apca'?: unknown; 'cvd'?: unknown }>({});
 
 /* Image-extraction controls (mirror the engine's gallery config knobs). */
 const imgAlgorithm = ref<GalleryAlgorithmType>('median-cut');
@@ -90,9 +173,26 @@ const imgLightnessRange = ref<[number, number]>([0, 1]);
 const imgChromaRange = ref<[number, number]>([0, 0.5]);
 const lastImageSrc = ref<string | null>(null);
 
-const activeSeeds = computed<string[]>(() => {return (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value);});
+const activeSeeds = computed<(string | PickerSeedType)[]>(() => {return (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value);});
 
-function ingest(state: { 'roles': Record<string, { 'hex': string; 'oklch': { 'c': number; 'h': number; 'l': number; } }>; 'variants': Record<string, Record<string, { 'hex': string }>> }): void {
+/**
+ * Role names a seed can actually be pinned to for the active schema+framing —
+ * restricted to USED_ROLE_NAMES so the list matches roles the demo page really
+ * renders somewhere distinct (a Nuxt UI alias, a --ui-* CSS var, a syntax-*
+ * token color), not just whatever the schema happens to declare. Both
+ * independently-resolved roles (background/text/brand/muted/error) AND
+ * schema-derived ones (success/warning/info/accent-alt/syntax-*) work now —
+ * pin:derivedRoles (in the pipeline between resolve:roles and expand:family)
+ * overrides ExpandFamily's hue-rotation for whichever role a seed is pinned to.
+ */
+const pinnableRoles = computed<string[]>(() => {
+  const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
+  const schema = pair?.[framing.value];
+  if (schema === undefined) {return [];}
+  return schema.roles.filter((r) => {return USED_ROLE_NAMES.has(r.name);}).map((r) => {return r.name;});
+});
+
+function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<string, { 'hex': string; 'oklch': { 'c': number; 'h': number; 'l': number; } }>; 'variants': Record<string, Record<string, { 'hex': string }>> }): void {
   const roleHex: RoleHexMapType = {};
   const views: RoleViewType[] = [];
   for (const [name, r] of Object.entries(state.roles)) {
@@ -110,23 +210,41 @@ function ingest(state: { 'roles': Record<string, { 'hex': string; 'oklch': { 'c'
   roles.value = roleHex;
   roleViews.value = views;
   scales.value = sc;
+  contrastReport.value = {
+    'aa':   state.metadata['contrast:aa'],
+    'aaa':  state.metadata['contrast:aaa'],
+    'apca': state.metadata['contrast:apca'],
+    'cvd':  state.metadata['contrast:cvd']
+  };
   Tokens.apply(Tokens.mapFromEngine(roleHex, sc), framing.value);
 }
 
-function run(): void {
+/**
+ * `framingOverride`, when given, is the target framing of an in-flight
+ * dark/light swap: the engine resolves the FULL new token set against it
+ * BEFORE `framing.value` (and therefore `<html class="dark">`, read
+ * directly off that ref in app.vue) ever changes. Only once the new state
+ * is ready do we commit `framing.value` and call `ingest()` — one
+ * synchronous block, so the class toggle and the actual color repaint land
+ * in the same tick instead of the class flipping instantly while the old
+ * colors linger for a debounce window.
+ */
+function run(framingOverride?: FramingType): void {
+  const targetFraming = framingOverride ?? framing.value;
   const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
   if (pair === undefined || activeSeeds.value.length === 0) {return;}
   running.value = true;
   error.value = null;
   try {
-    engine.pipeline([...COLOR_PIPELINE]);
+    engine.pipeline(buildPipeline(REQUIRED_COLOR_STAGES));
     const state = engine.run({
       'colors':   activeSeeds.value,
-      'contrast': { 'algorithm': 'wcag21', 'level': contrastLevel.value },
+      'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastLevel.value },
       'metadata': { 'core:variantConfig': VARIANT_CONFIG },
-      'roles':    withSemanticHues(pair[framing.value]),
-      'runtime':  { 'colorSpace': 'srgb', 'framing': framing.value }
+      'roles':    withSemanticHues(pair[targetFraming]),
+      'runtime':  { 'colorSpace': 'srgb', 'framing': targetFraming }
     });
+    if (framingOverride !== undefined) {framing.value = framingOverride;}
     ingest(state);
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
@@ -171,10 +289,10 @@ class FromImage {
       lastImageSrc.value = src;
       const pixels = await ToPixels.decode(src);
       const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
-      engine.pipeline([...IMAGE_PIPELINE]);
+      engine.pipeline(buildPipeline(REQUIRED_IMAGE_STAGES));
       const state = engine.run({
         'colors':   [pixels],
-        'contrast': { 'algorithm': 'wcag21', 'level': contrastLevel.value },
+        'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastLevel.value },
         'metadata': {
           'core:variantConfig': VARIANT_CONFIG,
           'gallery': {
@@ -204,13 +322,66 @@ class FromImage {
   }
 }
 
-function addSeed(hex = '#888888'): void { if (pickerSeeds.value.length < 8) {pickerSeeds.value = [...pickerSeeds.value, hex];} }
-function removeSeed(i: number): void { if (pickerSeeds.value.length > 1) {pickerSeeds.value = pickerSeeds.value.filter((_, idx) => {return idx !== i;});} }
-
-/** Overwrites one picker seed by index. */
-class Seed {
-  static set(i: number, hex: string): void { pickerSeeds.value = pickerSeeds.value.map((s, idx) => {return (idx === i ? hex : s);}); }
+/**
+ * Performs the picker-seed array mutation for the FSM's MUTATE_SEEDS effect.
+ * Registered once below via registerMutateSeedsHandler — PalettePlayground.vue
+ * triggers this indirectly via useIridisUiMachine().send({type:'ADD_SEED'|...}),
+ * never by calling array mutation directly.
+ */
+function mutateSeeds(effect: MutateSeedsEffectType): void {
+  if (effect.op === 'add') {
+    if (pickerSeeds.value.length < 8) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? '#888888' }];}
+  } else if (effect.op === 'remove') {
+    if (pickerSeeds.value.length > 1) {pickerSeeds.value = pickerSeeds.value.filter((_, idx) => {return idx !== effect.index;});}
+  } else if (effect.op === 'set') {
+    pickerSeeds.value = pickerSeeds.value.map((s, idx) => {return (idx === effect.index ? { ...s, 'hex': effect.hex } : s);});
+  }
 }
+registerMutateSeedsHandler(mutateSeeds);
+
+/**
+ * Performs the seed-role pin/unpin mutation for the FSM's PIN_SEED_ROLE effect.
+ * Pinning attaches `hints.role` (via IntakeHexHint) so ResolveRoles assigns that
+ * seed to the named role directly instead of by nearest-OKLCH-distance.
+ */
+function pinSeedRole(effect: PinSeedRoleEffectType): void {
+  pickerSeeds.value = pickerSeeds.value.map((s, idx) => {return (idx === effect.index ? { ...s, 'role': effect.role } : s);});
+}
+registerPinSeedRoleHandler(pinSeedRole);
+
+/**
+ * Performs the framing/schemaName/contrastLevel/imgAlgorithm mutation for the
+ * FSM's SET_PALETTE_PARAM effect. Registered below via
+ * registerSetPaletteParamHandler — components send SET_FRAMING/SET_SCHEMA/
+ * SET_CONTRAST/SET_IMAGE_ALGORITHM events rather than assigning these refs directly.
+ */
+function setPaletteParam(effect: SetPaletteParamEffectType): void {
+  // Framing swaps skip the debounce entirely — see run()'s framingOverride doc.
+  // Everything else still goes through the debounced schedule() below.
+  if (effect.op === 'framing') {run(effect.value);}
+  else if (effect.op === 'schemaName') {schemaName.value = effect.value;}
+  else if (effect.op === 'contrastLevel') {contrastLevel.value = effect.value;}
+  else if (effect.op === 'imgAlgorithm') {imgAlgorithm.value = effect.value;}
+}
+registerSetPaletteParamHandler(setPaletteParam);
+
+/** Mirrors HeroBanner.vue's `${base}logo.png` resolution — the sample extraction source. */
+function logoUrl(): string {
+  const base = useRuntimeConfig().app.baseURL;
+  return `${base}logo.png`;
+}
+
+/**
+ * Performs image extraction for the FSM's EXTRACT_IMAGE effect (an uploaded
+ * file, or the built-in sample — the iridis logo). Registered below via
+ * registerExtractImageHandler — ImageMode.vue sends EXTRACT_IMAGE events
+ * rather than calling FromImage.extract directly.
+ */
+async function extractImageEffect(effect: ExtractImageEffectType): Promise<void> {
+  const src = effect.source === 'file' ? effect.file : logoUrl();
+  await FromImage.extract(src);
+}
+registerExtractImageHandler(extractImageEffect);
 
 let booted = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -228,16 +399,26 @@ function scheduleReextract(): void {
 }
 
 export function useIridis() {
-  if (!booted && typeof window !== 'undefined') {
+  if (!booted) {
     booted = true;
+    // Runs on the server too: engine.run() is pure computation, and Tokens.apply()
+    // no-ops without `document`. This makes the SSR-rendered palette identical to
+    // the client's, so hydration never has to re-theme the page.
     run();
-    watch([pickerSeeds, imageSeeds, framing, schemaName, contrastLevel, mode], schedule, { 'deep': true });
-    watch([imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
+    if (typeof window !== 'undefined') {
+      // framing is intentionally absent here — its swap is dispatched synchronously
+      // by setPaletteParam() via run(effect.value), not through this debounce.
+      watch([pickerSeeds, imageSeeds, schemaName, contrastLevel, mode, enabledOptionalStages, cvdCorrect], schedule, { 'deep': true });
+      watch([imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
+    }
   }
   return {
-    'activeSeeds': activeSeeds, 'addSeed': addSeed, 'contrastLevel': contrastLevel, 'error': error, 'extractFromImage': FromImage.extract, 'framing': framing, 'histogram': histogram,
+    'activeSeeds': activeSeeds, 'contrastLevel': contrastLevel, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
+    'cvdPreviewType': cvdPreviewType,
+    'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
     'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
-    'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'mode': mode, 'pickerSeeds': pickerSeeds, 'removeSeed': removeSeed, 'roles': roles, 'roleViews': roleViews,
-    'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName, 'setSeed': Seed.set
+    'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'lastImageSrc': lastImageSrc, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
+    'roles': roles, 'roleViews': roleViews, 'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName,
+    'toggleOptionalStage': toggleOptionalStage
   };
 }

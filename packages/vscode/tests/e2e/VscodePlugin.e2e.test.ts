@@ -385,10 +385,10 @@ new ScenarioRunner<WorkbenchColorsInput, WorkbenchColorsOutput>(
 // ---------------------------------------------------------------------------
 // Cell 3 — semantic token rules (metadata.vscode.semanticTokenRules)
 //
-// vscode:applyModifiers builds one base rule per token type (23 total) and
-// one modifier-selector rule per type × modifier (23 × 10 = 230). Rules
+// vscode:applyModifiers builds one base rule per token type (27 total) and
+// one modifier-selector rule per type × modifier (27 × 10 = 270). Rules
 // must:
-//   - include the 23 base selectors (no dot)
+//   - include the 27 base selectors (no dot)
 //   - include at least one modifier selector (type.modifier dot form)
 //   - carry a foreground string on every rule
 //   - carry fontStyle where the transform specifies it
@@ -406,7 +406,7 @@ interface SemanticRulesOutput {
 
 const semanticRulesScenarios: readonly ScenarioInterface<SemanticRulesInput, SemanticRulesOutput>[] = [
   {
-    name: 'metadata contains 23 base rules and 230 modifier-selector rules',
+    name: 'metadata contains 27 base rules and 270 modifier-selector rules',
     kind: 'happy',
     input: { seeds: SEEDS_SRGB },
     assert(output, error) {
@@ -414,8 +414,8 @@ const semanticRulesScenarios: readonly ScenarioInterface<SemanticRulesInput, Sem
       const selectors    = Object.keys(output!.metaRules);
       const baseRules    = selectors.filter((s) => !s.includes('.'));
       const modRules     = selectors.filter((s) => s.includes('.'));
-      assert.strictEqual(baseRules.length, 23,  '[cell=3, scenario=rule-count] 23 base rules');
-      assert.strictEqual(modRules.length,  230, '[cell=3, scenario=rule-count] 230 modifier-selector rules');
+      assert.strictEqual(baseRules.length, 27,  '[cell=3, scenario=rule-count] 27 base rules');
+      assert.strictEqual(modRules.length,  270, '[cell=3, scenario=rule-count] 270 modifier-selector rules');
     },
   },
   {

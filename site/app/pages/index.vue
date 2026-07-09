@@ -1,62 +1,56 @@
 <script setup lang="ts">
-import { useIridis } from '~/composables/useIridis.ts';
-
 /**
- * iridis × Nuxt UI. A compact hero, then the demo sections as faces of a 3D
- * coverflow carousel — the palette/image deriver is the front face on load;
- * spin the drum and the front face snaps forward and becomes interactive while
- * the rest curl away in parallax. Every color is produced by engine.run().
+ * iridis × Nuxt UI. A compact hero, then PaletteControls (the engine's one
+ * input surface: seeds or an image, schema, contrast, framing), then the demo
+ * sections as faces of a 3D coverflow carousel — each card is a read-only,
+ * interactively-tunable view of what PaletteControls fed the engine — and
+ * finally Multi-output, the deliverable: every emit format for the current
+ * palette. Every color is produced by engine.run().
  */
-const { mode } = useIridis();
-
 const sections = [
-  { 'key': 'palette', 'label': 'Palette' },
+  { 'key': 'histogram', 'label': 'Histogram' },
   { 'key': 'components', 'label': 'Components' },
   { 'key': 'roles', 'label': 'Roles' },
+  { 'key': 'rolesTable', 'label': 'Roles table' },
   { 'key': 'spaces', 'label': 'Spaces' },
-  { 'key': 'outputs', 'label': 'Outputs' },
+  { 'key': 'pipeline', 'label': 'Pipeline' },
+  { 'key': 'schema', 'label': 'Schema' },
+  { 'key': 'motion', 'label': 'Motion' },
+  { 'key': 'spectrum', 'label': 'Spectrum' },
 ];
 </script>
 
 <template>
   <div class="space-y-8 pb-24">
+    <TableOfContentsBar :items="sections" />
     <HeroBanner />
 
-    <UContainer>
-      <div class="mb-5 flex flex-col items-center gap-3">
-        <ModeSwitch />
-        <p class="text-xs text-muted">
-          Drag, swipe, or use the arrows — the front card is live.
-        </p>
-      </div>
+    <UContainer class="space-y-5">
+      <PaletteControls />
 
       <CylinderCarousel :items="sections">
         <template #default="{ item }">
-          <template v-if="item.key === 'palette'">
-            <PalettePlayground v-if="mode === 'picker'" />
-            <ImageMode v-else />
-          </template>
+          <HistogramDemo v-if="item.key === 'histogram'" />
           <LiveComponents v-else-if="item.key === 'components'" />
           <ResolvedRoles v-else-if="item.key === 'roles'" />
+          <RolesTable v-else-if="item.key === 'rolesTable'" />
           <ColorSpaces v-else-if="item.key === 'spaces'" />
-          <MultiOutput v-else-if="item.key === 'outputs'" />
+          <PipelineExplainer v-else-if="item.key === 'pipeline'" />
+          <SchemaTree v-else-if="item.key === 'schema'" />
+          <MotionShowcase v-else-if="item.key === 'motion'" />
+          <div
+            v-else-if="item.key === 'spectrum'"
+            class="space-y-3"
+          >
+            <p class="text-sm text-muted">
+              The full 50→950 ramp per alias — swipe it, or let it autoplay.
+            </p>
+            <PaletteCarousel />
+          </div>
         </template>
       </CylinderCarousel>
-    </UContainer>
 
-    <UContainer>
-      <div class="mb-4 text-center">
-        <h2
-          class="font-display text-xl font-bold uppercase tracking-widest glow-text"
-          style="color: var(--ui-text-highlighted)"
-        >
-          Spectrum
-        </h2>
-        <p class="mt-1 text-xs text-muted">
-          Every scale, engine-generated. Spin it.
-        </p>
-      </div>
-      <PaletteCarousel />
+      <MultiOutput />
     </UContainer>
   </div>
 </template>
