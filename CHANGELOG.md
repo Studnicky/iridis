@@ -2,6 +2,20 @@
 
 All notable changes to iridis are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+## [0.6.1] - 2026-07-09
+
+### Fixed
+
+- **`npm ci` failed in CI with `Missing: search-insights@2.17.3 from lock file`**, which silently blocked the "Deploy docs to GitHub Pages" workflow. `search-insights` is only an optional peer of `@docsearch/react` (pulled in transitively via `vitepress`), and npm's optional-peer auto-install resolves inconsistently across environments. Pinned as an explicit devDependency so lockfile resolution is deterministic.
+
 ## [0.6.0] - 2026-07-09
 
 CVD correction, real syntax highlighting, and site-wide accessibility/UI polish.
@@ -314,3 +328,5 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 - v0.2: Living-color animation engine (`@studnicky/iridis-anima`), reactive signal bindings (`-pulse`), palette state machine (`-fsm`), curated animation trajectories (`-trajectory`), palette algebra (`-algebra`). See [docs/v2-living-color.md](docs/v2-living-color.md).
 
 [Unreleased]: https://github.com/Studnicky/iridis/compare/v0.0.0...HEAD
+
+[0.6.1]: https://github.com/Studnicky/iridis/compare/v0.6.0...v0.6.1

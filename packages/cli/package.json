@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-cli",
   "description": "Command-line interface for running the pipeline against a config file and writing outputs to disk.",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "bin": {
     "iridis": "./src/main.ts"
@@ -21,6 +21,6 @@
     "prebuild": "rm -rf dist"
   },
   "dependencies": {
-    "@studnicky/iridis": "^0.6.0"
+    "@studnicky/iridis": "^0.6.1"
   }
 }

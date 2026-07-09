@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-capacitor",
   "description": "Emits Capacitor status bar, splash screen, native theme config, and Android theme.xml from a resolved palette.",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -20,6 +20,6 @@
     "prebuild": "rm -rf dist"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.6.0"
+    "@studnicky/iridis": "^0.6.1"
   }
 }
