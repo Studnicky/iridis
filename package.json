@@ -78,6 +78,5 @@
     "@studnicky/timing": "^4.0.0",
     "@studnicky/types": "^4.0.0",
     "@studnicky/virtual-fs": "^4.0.0"
-  },
-  "version": "0.6.1"
+  }
 }
