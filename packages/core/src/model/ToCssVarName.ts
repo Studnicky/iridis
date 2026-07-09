@@ -6,6 +6,6 @@
  * toCssVarName('primaryText', '--c-') // '--c-primary-text'
  */
 export function toCssVarName(role: string, prefix: string): string {
-  const kebab = role.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`);
+  const kebab = role.replace(/[A-Z]/g, (m) => { const result = `-${m.toLowerCase()}`; return result; });
   return `${prefix}${kebab}`;
 }

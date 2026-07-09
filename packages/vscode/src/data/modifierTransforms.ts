@@ -15,37 +15,37 @@
  *   defaultLibrary:         Subtle, blend toward muted (built-in, not user code)
  */
 
-import type { ModifierTransformInterface } from '../types/index.ts';
+import type { ModifierTransformInterfaceType } from '../types/index.ts';
 
-export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInterface>> = {
+export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInterfaceType>> = {
 
   'abstract': {
     'fontStyle':   'italic',
     'lightness':    3,
-    'saturation':  -8,
+    'saturation':  -8
   },
 
   'async': {
     'fontStyle':   'italic',
     'mixWeight':    0.12,
-    'mixWith':     'info',
+    'mixWith':     'info'
   },
 
   'declaration': {
     'fontStyle':   'bold',
-    'lightness':    5,
+    'lightness':    5
   },
 
   'defaultLibrary': {
     'lightness':   -5,
     'mixWeight':    0.15,
     'mixWith':     'muted',
-    'saturation': -10,
+    'saturation': -10
   },
 
   'definition': {
     'fontStyle':   'bold',
-    'lightness':    5,
+    'lightness':    5
   },
 
   'deprecated': {
@@ -53,14 +53,14 @@ export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInter
     'lightness':  -10,
     'mixWeight':    0.3,
     'mixWith':     'muted',
-    'saturation': -40,
+    'saturation': -40
   },
 
   'documentation': {
     'fontStyle':   'italic',
     'mixWeight':    0.25,
     'mixWith':     'comment',
-    'saturation': -15,
+    'saturation': -15
   },
 
   'modification': {
@@ -68,7 +68,7 @@ export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInter
     'lightness':    3,
     'mixWeight':    0.1,
     'mixWith':     'warning',
-    'saturation':   8,
+    'saturation':   8
   },
 
   'readonly': {
@@ -76,12 +76,12 @@ export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInter
     'lightness':    8,
     'mixWeight':    0.15,
     'mixWith':     'constant',
-    'saturation':  -5,
+    'saturation':  -5
   },
 
   'static': {
     'fontStyle':   'underline',
-    'saturation': -12,
-  },
+    'saturation': -12
+  }
 
 } as const;

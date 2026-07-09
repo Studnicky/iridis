@@ -1,6 +1,6 @@
-import type { RoleSchemaInterface } from '@studnicky/iridis/model';
+import type { RoleSchemaInterfaceType } from '@studnicky/iridis/model';
 
-export const categoryW3cRoleSchema: RoleSchemaInterface = {
+export const categoryW3cRoleSchema: RoleSchemaInterfaceType = {
   'name':        'category-w3c',
   'description': 'WCAG 2.1 AA role schema for category colour palettes',
   'roles': [

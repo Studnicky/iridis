@@ -1,27 +1,30 @@
+import { ValidationError } from '@studnicky/errors';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
+  OklchInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '../../types/index.ts';
+
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
-interface OklchInput {
-  'l': number;
-  'c': number;
-  'h': number;
+type OklchInput = OklchInterfaceType & {
   'a'?: number;
-}
+};
 
 function isOklchInput(v: unknown): v is OklchInput {
-  if (typeof v !== 'object' || v === null) return false;
+  if (typeof v !== 'object' || v === null) {return false;}
   const o = v as Record<string, unknown>;
-  return typeof o['l'] === 'number'
-    && typeof o['c'] === 'number'
-    && typeof o['h'] === 'number'
-    && typeof o['r'] !== 'number'
-    && typeof o['s'] !== 'number';
+  return typeof o.l === 'number'
+    && typeof o.c === 'number'
+    && typeof o.h === 'number'
+    && typeof o.r !== 'number'
+    && typeof o.s !== 'number';
 }
 
 /**
@@ -32,14 +35,14 @@ function isOklchInput(v: unknown): v is OklchInput {
  * throws when using the strict `intake:oklch` task. Use `intake:any`
  * for tolerant dispatch.
  */
-export class IntakeOklch implements TaskInterface {
+class IntakeOklch implements TaskInterface {
   readonly 'name' = 'intake:oklch';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Parses {l,c,h,a?} OKLCH (l: 0..1, c: 0..0.5, h: 0..360) into ColorRecord entries. Throws on non-OKLCH input.',
     'name':        'intake:oklch',
     'reads':       ['input.colors'],
-    'writes':      ['colors'],
-    'description': 'Parses {l,c,h,a?} OKLCH (l: 0..1, c: 0..0.5, h: 0..360) into ColorRecord entries. Throws on non-OKLCH input.',
+    'writes':      ['colors']
   };
 
   /**
@@ -47,34 +50,67 @@ export class IntakeOklch implements TaskInterface {
    * valid `{l,c,h}` object or carries keys from a different format (r/s).
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: unknown): ColorRecordInterface {
+  parse(raw: unknown): ColorRecordInterfaceType {
     if (!isOklchInput(raw)) {
-      throw new Error(`intake:oklch — expected {l,c,h} object, got ${typeof raw}`);
+      throw ValidationError.create({
+        'message': 'intake:oklch — expected an {l,c,h} object',
+        'path':    'raw',
+        'violations': [{
+          'details': { 'expectedShape': '{l: number, c: number, h: number, a?: number}', 'receivedType': typeof raw },
+          'message': 'input is not an OKLCH object',
+          'path':    'raw'
+        }]
+      });
     }
 
-    const { l, c, h } = raw;
-    const a = typeof raw['a'] === 'number' ? raw['a'] : 1;
-    return colorRecordFactory.fromOklch(l, c, h, a);
+    const { c, h, l } = raw;
+    const a = typeof raw.a === 'number' ? raw.a : 1;
+    return colorRecordFactory.fromOklch(l, c, h, { 'alpha': a });
+  }
+
+  /**
+   * Wraps {@link IntakeOklch.parse} so the dispatch loop in
+   * {@link IntakeOklch.run} does not carry a try/catch in its body (V8
+   * de-optimises try/catch inside hot loops).
+   */
+  #tryParse(raw: unknown): ColorRecordInterfaceType | undefined {
+    try {
+      return this.parse(raw);
+    } catch {
+      return undefined;
+    }
   }
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     for (let i = 0; i < state.input.colors.length; i++) {
       const raw = state.input.colors[i];
-      let record: ColorRecordInterface;
-      try {
-        record = this.parse(raw);
-      } catch {
-        throw new Error(
-          `intake:oklch — entry at index ${i} is not an OKLCH object. ` +
-          `Expected {l, c, h, a?} with l: 0..1, c: 0..0.5, h: 0..360. ` +
-          `Got: ${JSON.stringify(raw)}`,
-        );
+      const record = this.#tryParse(raw);
+      if (record === undefined) {
+        throw ValidationError.create({
+          'message': `intake:oklch — entry at index ${i} is not an OKLCH object`,
+          'path':    `input.colors[${i}]`,
+          'violations': [{
+            'details': {
+              'expectedShape': '{l: 0..1, c: 0..0.5, h: 0..360, a?: number}',
+              'index':         i,
+              'received':      JSON.stringify(raw) ?? 'undefined'
+            },
+            'message': 'entry does not match the OKLCH object shape',
+            'path':    `input.colors[${i}]`
+          }]
+        });
       }
-      const typed = raw as { l: number; c: number; h: number };
+      const typed = raw as { 'c': number; 'h': number; 'l': number; };
       state.colors.push(record);
-      ctx.logger.debug('IntakeOklch', 'run', 'Parsed oklch value', {
-        'l': typed.l, 'c': typed.c, 'h': typed.h, 'hex': record.hex,
-      });
+      ctx.logger.debug(
+        LogBody.create()
+          .component('IntakeOklch')
+          .operation('run')
+          .status(LOG_STATUS.SUCCESS)
+          .message('Parsed oklch value')
+          .context({ 'c': typed.c, 'h': typed.h, 'hex': record.hex, 'l': typed.l })
+          .build()
+      );
     }
   }
 }

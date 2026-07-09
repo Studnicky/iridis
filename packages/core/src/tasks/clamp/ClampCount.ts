@@ -1,9 +1,13 @@
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '../../types/index.ts';
+
 import { clusterMedianCut } from '../../math/ClusterMedianCut.ts';
 
 const DEFAULT_MAX = 64;
@@ -17,19 +21,19 @@ const DEFAULT_MAX = 64;
  * Mutates `state.colors` in place rather than reassigning so other
  * tasks holding a reference (rare, but legal) see the new contents.
  */
-export class ClampCount implements TaskInterface {
+class ClampCount implements TaskInterface {
   readonly 'name' = 'clamp:count';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Reduces state.colors to maxColors (default 64) via median-cut clustering when the limit is exceeded and bypass is not set.',
     'name':        'clamp:count',
     'reads':       ['colors', 'input.maxColors', 'input.bypass'],
-    'writes':      ['colors'],
     'requires':    ['clusterMedianCut'],
-    'description': 'Reduces state.colors to maxColors (default 64) via median-cut clustering when the limit is exceeded and bypass is not set.',
+    'writes':      ['colors']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    if (state.input.bypass) {
+    if (state.input.bypass === true) {
       return;
     }
 
@@ -39,10 +43,18 @@ export class ClampCount implements TaskInterface {
       return;
     }
 
-    ctx.logger.info('ClampCount', 'run', 'Reducing colors via clusterMedianCut', {
-      'from': state.colors.length,
-      'to':   max,
-    });
+    ctx.logger.info(
+      LogBody.create()
+        .component('ClampCount')
+        .operation('run')
+        .status(LOG_STATUS.PARTIAL)
+        .message('Reducing colors via clusterMedianCut')
+        .context({
+          'from': state.colors.length,
+          'to':   max
+        })
+        .build()
+    );
 
     const clustered = clusterMedianCut.apply(state.colors, max);
 

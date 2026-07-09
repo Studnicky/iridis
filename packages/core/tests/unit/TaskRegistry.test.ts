@@ -15,7 +15,7 @@ import type {
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType,
 } from '@studnicky/iridis';
 import { TaskRegistry } from '@studnicky/iridis/registry';
 import {
@@ -29,7 +29,7 @@ import {
 // ---------------------------------------------------------------------------
 
 function makeTask(name: string, phase?: 'onRunStart' | 'onRunEnd'): TaskInterface {
-  const manifest: TaskManifestInterface = { 'name': name, ...(phase ? { 'phase': phase } : {}) };
+  const manifest: TaskManifestInterfaceType = { 'name': name, ...(phase ? { 'phase': phase } : {}) };
   return {
     'name':     name,
     'manifest': manifest,
@@ -56,7 +56,7 @@ interface Cell1Input {
 interface Cell1Output {
   readonly boolResult?: boolean;
   readonly taskResult?: TaskInterface;
-  readonly listResult?: readonly TaskManifestInterface[];
+  readonly listResult?: readonly TaskManifestInterfaceType[];
 }
 
 const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [

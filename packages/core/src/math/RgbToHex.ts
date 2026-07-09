@@ -1,6 +1,6 @@
 import { clamp01 } from './Clamp01.ts';
 
-export class RgbToHex {
+class RgbToHex {
   readonly 'name' = 'rgbToHex';
 
   apply(r: number, g: number, b: number): string {

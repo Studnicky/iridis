@@ -1,12 +1,13 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
-export class HueShift {
+class HueShift {
   readonly 'name' = 'hueShift';
 
-  apply(color: ColorRecordInterface, degrees: number): ColorRecordInterface {
+  apply(color: ColorRecordInterfaceType, degrees: number): ColorRecordInterfaceType {
     const h = ((color.oklch.h + degrees) % 360 + 360) % 360;
-    return colorRecordFactory.fromOklch(color.oklch.l, color.oklch.c, h, color.alpha);
+    return colorRecordFactory.fromOklch(color.oklch.l, color.oklch.c, h, { 'alpha': color.alpha });
   }
 }
 

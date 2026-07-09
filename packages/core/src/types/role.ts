@@ -2,9 +2,31 @@ import type { ColorIntentType } from './color.ts';
 
 export type ContrastAlgorithmType = 'wcag21' | 'apca';
 
-export interface RoleDefinitionInterface {
-  readonly name:           string;
-  readonly description?:   string;
+export type RoleDefinitionInterfaceType = {
+  'chromaRange'?:    [number, number];
+  'derivedFrom'?:   string;
+  'description'?:   string;
+  /**
+   * Target hue in OKLCH degrees [0, 360). Takes precedence over `hueOffset` in
+   * every resolution path. On its own it pins the hue absolutely; paired with
+   * `hueClamp` it becomes a BOUNDED nudge — the resolved color is rotated toward
+   * the target by at most `hueClamp` degrees along the shortest arc, so semantic
+   * roles lean toward their meaning (success → green) while staying rooted in the
+   * actual palette. Resolved by the engine, not the consumer.
+   */
+  'hue'?:            number;
+  /**
+   * Maximum degrees the resolved hue may rotate toward `hue`. Bounds the nudge
+   * so a red-dominant palette yields a warm-leaning `success` rather than a pure
+   * green that appears nowhere in the theme. Ignored unless `hue` is set.
+   */
+  'hueClamp'?:       number;
+  /**
+   * Relative hue rotation applied when the role is DERIVED from another
+   * (`expand:family` adds it to the source role's hue). For a role resolved
+   * directly by `resolve:roles`, it is treated as an absolute target hue.
+   */
+  'hueOffset'?:      number;
   /**
    * Canonical ontology hook for downstream semantic mapping. When set,
    * `ResolveRoles` propagates this value onto the resolved record's
@@ -24,24 +46,22 @@ export interface RoleDefinitionInterface {
    * overlay with their own role schema; that overlay's `intent` value
    * flows through identically.
    */
-  readonly intent?:        ColorIntentType;
-  readonly required?:      boolean;
-  readonly derivedFrom?:   string;
-  readonly lightnessRange?: readonly [number, number];
-  readonly chromaRange?:    readonly [number, number];
-  readonly hueOffset?:      number;
-}
+  'intent'?:        ColorIntentType;
+  'lightnessRange'?: [number, number];
+  'name':           string;
+  'required'?:      boolean;
+};
 
-export interface ContrastPairInterface {
-  readonly foreground: string;
-  readonly background: string;
-  readonly minRatio:   number;
-  readonly algorithm?: ContrastAlgorithmType;
-}
+export type ContrastPairInterfaceType = {
+  'algorithm'?: ContrastAlgorithmType;
+  'background': string;
+  'foreground': string;
+  'minRatio':   number;
+};
 
-export interface RoleSchemaInterface {
-  readonly name:           string;
-  readonly description?:   string;
-  readonly roles:          readonly RoleDefinitionInterface[];
-  readonly contrastPairs?: readonly ContrastPairInterface[];
-}
+export type RoleSchemaInterfaceType = {
+  'contrastPairs'?: ContrastPairInterfaceType[];
+  'description'?:   string;
+  'name':           string;
+  'roles':          RoleDefinitionInterfaceType[];
+};

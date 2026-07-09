@@ -1,13 +1,18 @@
+import { ValidationError } from '@studnicky/errors';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
-  ColorHintsInterface,
-  ColorRecordInterface,
-  OklchInterface,
+  ColorHintsInterfaceType,
+  ColorRecordInterfaceType,
+  OklchInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
-  RgbInterface,
+  RgbInterfaceType,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '../../types/index.ts';
+
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { gamutMapSrgb } from '../../math/GamutMapSrgb.ts';
@@ -25,7 +30,7 @@ const P3_PATTERN = /^color\(\s*display-p3\s+(-?\d*\.?\d+)\s+(-?\d*\.?\d+)\s+(-?\
 
 /**
  * Intake task that parses CSS Color 4 `color(display-p3 r g b [/alpha])`
- * strings into {@link ColorRecordInterface} entries with `displayP3`
+ * strings into {@link ColorRecordInterfaceType} entries with `displayP3`
  * populated directly from the input and `rgb` gamut-mapped down to sRGB
  * so sRGB-only consumers stay safe.
  *
@@ -45,14 +50,14 @@ const P3_PATTERN = /^color\(\s*display-p3\s+(-?\d*\.?\d+)\s+(-?\d*\.?\d+)\s+(-?\
  *   - `oklch`:     derived from the original wide-gamut point.
  *   - `sourceFormat: 'displayP3'`.
  */
-export class IntakeP3 implements TaskInterface {
+class IntakeP3 implements TaskInterface {
   readonly 'name' = 'intake:p3';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Parses CSS color(display-p3 r g b [/ alpha]) strings into ColorRecord entries with displayP3 populated.',
     'name':        'intake:p3',
     'reads':       ['input.colors'],
-    'writes':      ['colors'],
-    'description': 'Parses CSS color(display-p3 r g b [/ alpha]) strings into ColorRecord entries with displayP3 populated.',
+    'writes':      ['colors']
   };
 
   /**
@@ -60,13 +65,29 @@ export class IntakeP3 implements TaskInterface {
    * the input is not a string or does not match the Display-P3 pattern.
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: unknown): ColorRecordInterface {
+  parse(raw: unknown): ColorRecordInterfaceType {
     if (typeof raw !== 'string') {
-      throw new Error(`intake:p3 — expected a string, got ${typeof raw}`);
+      throw ValidationError.create({
+        'message': 'intake:p3 — expected a string input',
+        'path':    'raw',
+        'violations': [{
+          'details': { 'expectedType': 'string', 'receivedType': typeof raw },
+          'message': 'input is not a string',
+          'path':    'raw'
+        }]
+      });
     }
     const match = P3_PATTERN.exec(raw.trim());
-    if (!match) {
-      throw new Error(`intake:p3 — not a display-p3 string: "${raw}"`);
+    if (match === null) {
+      throw ValidationError.create({
+        'message': 'intake:p3 — not a display-p3 string',
+        'path':    'raw',
+        'violations': [{
+          'details': { 'expectedFormat': 'color(display-p3 r g b [/ alpha])', 'received': raw },
+          'message': 'value does not match the display-p3 CSS syntax',
+          'path':    'raw'
+        }]
+      });
     }
 
     const p3R   = parseFloat(match[1]!);
@@ -77,24 +98,48 @@ export class IntakeP3 implements TaskInterface {
     return recordFromP3(p3R, p3G, p3B, alpha, undefined);
   }
 
+  /**
+   * Parses a single entry, rethrowing with index/context on failure.
+   * Extracted from {@link IntakeP3.run} so the loop body contains only
+   * a function call, not a try-catch, per V8 optimization guidance.
+   */
+  private parseEntry(raw: unknown, index: number): ColorRecordInterfaceType {
+    try {
+      return this.parse(raw);
+    } catch {
+      throw ValidationError.create({
+        'message': `intake:p3 — entry at index ${index} is not a Display-P3 string`,
+        'path':    `input.colors[${index}]`,
+        'violations': [{
+          'details': {
+            'expectedFormat': 'color(display-p3 r g b [/ alpha])',
+            'index':          index,
+            'received':       JSON.stringify(raw) ?? 'undefined'
+          },
+          'message': 'entry does not match the display-p3 CSS syntax',
+          'path':    `input.colors[${index}]`
+        }]
+      });
+    }
+  }
+
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     for (let i = 0; i < state.input.colors.length; i++) {
       const raw = state.input.colors[i];
-      let record: ColorRecordInterface;
-      try {
-        record = this.parse(raw);
-      } catch {
-        throw new Error(
-          `intake:p3 — entry at index ${i} is not a Display-P3 string. ` +
-          `Expected CSS color(display-p3 r g b [/ alpha]) syntax. ` +
-          `Got: ${JSON.stringify(raw)}`,
-        );
-      }
+      const record = this.parseEntry(raw, i);
       state.colors.push(record);
-      ctx.logger.debug('IntakeP3', 'run', 'Parsed display-p3 value', {
-        'raw': raw,
-        'hex': record.hex,
-      });
+      ctx.logger.debug(
+        LogBody.create()
+          .component('IntakeP3')
+          .operation('run')
+          .status(LOG_STATUS.SUCCESS)
+          .message('Parsed display-p3 value')
+          .context({
+            'hex': record.hex,
+            'raw': raw
+          })
+          .build()
+      );
     }
   }
 }
@@ -113,14 +158,14 @@ function recordFromP3(
   p3G:   number,
   p3B:   number,
   alpha: number,
-  hints: ColorHintsInterface | undefined,
-): ColorRecordInterface {
+  hints: ColorHintsInterfaceType | undefined
+): ColorRecordInterfaceType {
   // 1. Display-P3 gamma → linear Display-P3 (sign-preserving for
   //    out-of-range floats; spec guarantees inputs in [0, 1] but be
   //    tolerant of slightly-out-of-range floats).
-  const lp3R = decodeP3(p3R);
-  const lp3G = decodeP3(p3G);
-  const lp3B = decodeP3(p3B);
+  const lp3R = P3.decode(p3R);
+  const lp3G = P3.decode(p3G);
+  const lp3B = P3.decode(p3B);
 
   // 2. Linear Display-P3 → linear sRGB. Matrix is the inverse of the
   //    composed `linearSrgb → XYZ-D65 → linearP3` chain. Source: CSS
@@ -142,48 +187,50 @@ function recordFromP3(
     lsG >= 0 && lsG <= 1 &&
     lsB >= 0 && lsB <= 1;
 
-  let safeRgb: RgbInterface;
+  let safeRgb: RgbInterfaceType;
   if (inSrgb) {
     const encoded = linearToSrgb.apply(lsR, lsG, lsB);
     safeRgb = {
-      'r': clamp01.apply(encoded.r),
-      'g': clamp01.apply(encoded.g),
       'b': clamp01.apply(encoded.b),
+      'g': clamp01.apply(encoded.g),
+      'r': clamp01.apply(encoded.r)
     };
   } else {
     const mapped     = gamutMapSrgb.apply(oklch.l, oklch.c, oklch.h);
     const mappedLin  = oklchToLinearSrgb(mapped.l, mapped.c, mapped.h);
     const mappedSrgb = linearToSrgb.apply(mappedLin.r, mappedLin.g, mappedLin.b);
     safeRgb = {
-      'r': clamp01.apply(mappedSrgb.r),
-      'g': clamp01.apply(mappedSrgb.g),
       'b': clamp01.apply(mappedSrgb.b),
+      'g': clamp01.apply(mappedSrgb.g),
+      'r': clamp01.apply(mappedSrgb.r)
     };
   }
 
   return {
+    'alpha':        clamp01.apply(alpha),
+    'displayP3':    {
+      'b': clamp01.apply(p3B),
+      'g': clamp01.apply(p3G),
+      'r': clamp01.apply(p3R)
+    },
+    'hex':          rgbToHex.apply(safeRgb.r, safeRgb.g, safeRgb.b),
+    'hints':        hints,
     'oklch':        oklch,
     'rgb':          safeRgb,
-    'hex':          rgbToHex.apply(safeRgb.r, safeRgb.g, safeRgb.b),
-    'alpha':        clamp01.apply(alpha),
-    'sourceFormat': 'displayP3',
-    'displayP3':    {
-      'r': clamp01.apply(p3R),
-      'g': clamp01.apply(p3G),
-      'b': clamp01.apply(p3B),
-    },
-    'hints':        hints,
+    'sourceFormat': 'displayP3'
   };
 }
 
 /** Display-P3 inverse gamma (same curve as sRGB; sign-preserving). */
-function decodeP3(v: number): number {
-  const sign = v < 0 ? -1 : 1;
-  const abs  = Math.abs(v);
-  if (abs <= 0.04045) {
-    return sign * (abs / 12.92);
+class P3 {
+  static decode(v: number): number {
+    const sign = v < 0 ? -1 : 1;
+    const abs  = Math.abs(v);
+    if (abs <= 0.04045) {
+      return sign * (abs / 12.92);
+    }
+    return sign * Math.pow((abs + 0.055) / 1.055, 2.4);
   }
-  return sign * Math.pow((abs + 0.055) / 1.055, 2.4);
 }
 
 /**
@@ -192,7 +239,7 @@ function decodeP3(v: number): number {
  * linear) and avoid clamping for out-of-gamut inputs. Same Björn
  * Ottosson matrices.
  */
-function linearSrgbToOklch(rl: number, gl: number, bl: number): OklchInterface {
+function linearSrgbToOklch(rl: number, gl: number, bl: number): OklchInterfaceType {
   let x = 0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl;
   let y = 0.2119034982 * rl + 0.6806995451 * gl + 0.1073969566 * bl;
   let z = 0.0883024619 * rl + 0.2817188376 * gl + 0.6299787005 * bl;
@@ -214,20 +261,20 @@ function linearSrgbToOklch(rl: number, gl: number, bl: number): OklchInterface {
   }
 
   return {
-    'l': clamp01.apply(labL),
     'c': clamp.apply(0, 0.5, c),
     'h': h % 360,
+    'l': clamp01.apply(labL)
   };
 }
 
 function signCbrt(v: number): number {
-  if (v < 0) return -Math.cbrt(-v);
+  if (v < 0) {return -Math.cbrt(-v);}
   return Math.cbrt(v);
 }
 
 /** OKLCH → linear sRGB (Björn Ottosson). Local helper; mirrors the
  *  matrix used in OklchToRgbRaw/OklchToDisplayP3. */
-function oklchToLinearSrgb(l: number, c: number, h: number): RgbInterface {
+function oklchToLinearSrgb(l: number, c: number, h: number): RgbInterfaceType {
   const hRad = (h * Math.PI) / 180;
   const a = c * Math.cos(hRad);
   const b = c * Math.sin(hRad);
@@ -241,8 +288,8 @@ function oklchToLinearSrgb(l: number, c: number, h: number): RgbInterface {
   z = z * z * z;
 
   return {
-    'r': +4.0767416621 * x - 3.3077115913 * y + 0.2309699292 * z,
-    'g': -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z,
     'b': -0.0041960863 * x - 0.7034186147 * y + 1.707614701  * z,
+    'g': -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z,
+    'r': +4.0767416621 * x - 3.3077115913 * y + 0.2309699292 * z
   };
 }

@@ -1,62 +1,84 @@
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
-import { getOrCreateMetadata } from '@studnicky/iridis';
-import type { SplashScreenOutputInterface } from '../types/index.ts';
 
-function resolveSplashColor(
-  roles: Record<string, ColorRecordInterface>,
-  splashRole: string | undefined,
-): ColorRecordInterface | undefined {
-  if (splashRole !== undefined) {
-    return roles[splashRole];
+import { getOrCreateMetadata } from '@studnicky/iridis';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
+import type { SplashScreenOutputInterfaceType } from '../types/index.ts';
+
+class SplashColor {
+  static resolve(
+    roles: Record<string, ColorRecordInterfaceType>,
+    splashRole: string | undefined
+  ): ColorRecordInterfaceType | undefined {
+    if (splashRole !== undefined) {
+      return roles[splashRole];
+    }
+    return roles.surface ?? roles.background ?? roles.base ?? Object.values(roles)[0];
   }
-  return roles['surface'] ?? roles['background'] ?? roles['base'] ?? Object.values(roles)[0];
 }
 
-export class EmitCapacitorSplashScreen implements TaskInterface {
+class EmitCapacitorSplashScreen implements TaskInterface {
   readonly 'name' = 'emit:capacitorSplashScreen';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Emit Capacitor splash screen configuration from surface or input-specified splashRole.',
     'name':        'emit:capacitorSplashScreen',
     'reads':       ['roles', 'metadata.capacitor.splashRole', 'metadata.capacitor.androidSplashResourceName'],
-    'writes':      ['outputs.capacitor:splashScreen'],
-    'description': 'Emit Capacitor splash screen configuration from surface or input-specified splashRole.',
+    'writes':      ['outputs.capacitor:splashScreen']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const capacitorMeta = getOrCreateMetadata(state, 'capacitor');
-    const splashRole = typeof capacitorMeta['splashRole'] === 'string' ? capacitorMeta['splashRole'] : undefined;
+    const splashRole = typeof capacitorMeta.splashRole === 'string' ? capacitorMeta.splashRole : undefined;
 
-    const splashColor = resolveSplashColor(state.roles, splashRole);
+    const splashColor = SplashColor.resolve(state.roles, splashRole);
 
-    if (!splashColor) {
-      ctx.logger.warn('EmitCapacitorSplashScreen', 'run', 'No suitable role found for splash screen background; skipping.');
+    if (splashColor === undefined) {
+      ctx.logger.warn(
+        LogBody.create()
+          .component('EmitCapacitorSplashScreen')
+          .operation('run')
+          .status(LOG_STATUS.SKIPPED)
+          .message('No suitable role found for splash screen background; skipping.')
+          .context({})
+          .build()
+      );
       return;
     }
 
-    const androidSplashResourceName = typeof capacitorMeta['androidSplashResourceName'] === 'string'
-      ? capacitorMeta['androidSplashResourceName']
+    const androidSplashResourceName = typeof capacitorMeta.androidSplashResourceName === 'string'
+      ? capacitorMeta.androidSplashResourceName
       : undefined;
 
-    const output: SplashScreenOutputInterface = androidSplashResourceName !== undefined
+    const output: SplashScreenOutputInterfaceType = androidSplashResourceName !== undefined
       ? {
-          'backgroundColor':           splashColor.hex,
-          'androidSplashResourceName': androidSplashResourceName,
-        }
+        'androidSplashResourceName': androidSplashResourceName,
+        'backgroundColor':           splashColor.hex
+      }
       : {
-          'backgroundColor': splashColor.hex,
-        };
+        'backgroundColor': splashColor.hex
+      };
 
     state.outputs['capacitor:splashScreen'] = output;
 
-    ctx.logger.debug('EmitCapacitorSplashScreen', 'run', 'SplashScreen emitted', {
-      'backgroundColor': output.backgroundColor,
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('EmitCapacitorSplashScreen')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('SplashScreen emitted')
+        .context({
+          'backgroundColor': output.backgroundColor
+        })
+        .build()
+    );
   }
 }
 

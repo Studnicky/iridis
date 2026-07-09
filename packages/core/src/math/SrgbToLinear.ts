@@ -1,4 +1,4 @@
-import type { RgbInterface } from '../types/index.ts';
+import type { RgbInterfaceType } from '../types/index.ts';
 
 function decode(v: number): number {
   if (v <= 0.04045) {
@@ -7,14 +7,14 @@ function decode(v: number): number {
   return Math.pow((v + 0.055) / 1.055, 2.4);
 }
 
-export class SrgbToLinear {
+class SrgbToLinear {
   readonly 'name' = 'srgbToLinear';
 
-  apply(r: number, g: number, b: number): RgbInterface {
+  apply(r: number, g: number, b: number): RgbInterfaceType {
     return {
-      'r': decode(r),
-      'g': decode(g),
       'b': decode(b),
+      'g': decode(g),
+      'r': decode(r)
     };
   }
 }

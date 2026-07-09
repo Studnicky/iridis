@@ -1,18 +1,19 @@
 import type {
   PluginInterface,
   PluginSchemaContributionInterface,
-  TaskInterface,
+  TaskInterface
 } from '@studnicky/iridis';
-import { emitTailwindTheme } from './tasks/EmitTailwindTheme.ts';
+
+import { EmitTailwindTheme } from './tasks/EmitTailwindTheme.ts';
 
 const tailwindOutputSchema = {
-  'type': 'object',
   'additionalProperties': false,
   'properties': {
-    'colors':  { 'type': 'object', 'additionalProperties': true },
-    'cssVars': { 'type': 'string' },
+    'colors':  { 'additionalProperties': true, 'type': 'object' },
     'config':  { 'type': 'string' },
+    'cssVars': { 'type': 'string' }
   },
+  'type': 'object'
 } as const;
 
 export class TailwindPlugin implements PluginInterface {
@@ -21,14 +22,12 @@ export class TailwindPlugin implements PluginInterface {
   readonly 'version' = '0.1.0';
 
   tasks(): readonly TaskInterface[] {
-    return [emitTailwindTheme];
+    return [new EmitTailwindTheme()];
   }
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs': { 'tailwind:theme': tailwindOutputSchema },
+      'outputs': { 'tailwind:theme': tailwindOutputSchema }
     };
   }
 }
-
-export const tailwindPlugin = new TailwindPlugin();

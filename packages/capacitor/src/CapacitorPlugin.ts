@@ -1,61 +1,62 @@
 import type {
   PluginInterface,
   PluginSchemaContributionInterface,
-  TaskInterface,
+  TaskInterface
 } from '@studnicky/iridis';
+
 import { emitAndroidThemeXml }       from './tasks/EmitAndroidThemeXml.ts';
 import { emitCapacitorSplashScreen } from './tasks/EmitCapacitorSplashScreen.ts';
 import { emitCapacitorStatusBar }    from './tasks/EmitCapacitorStatusBar.ts';
 import { emitCapacitorTheme }        from './tasks/EmitCapacitorTheme.ts';
 
 const statusBarOutputSchema = {
-  'type': 'object',
   'additionalProperties': false,
   'properties': {
     'backgroundColor': { 'type': 'string' },
-    'style':           { 'type': 'string', 'enum': ['DARK', 'LIGHT'] },
     'overlay':         { 'type': 'boolean' },
+    'style':           { 'enum': ['DARK', 'LIGHT'], 'type': 'string' }
   },
   'required': ['backgroundColor', 'style', 'overlay'],
+  'type': 'object'
 } as const;
 
 const themeOutputSchema = {
-  'type': 'object',
   'additionalProperties': false,
   'properties': {
+    'accent':         { 'type': 'string' },
+    'background':     { 'type': 'string' },
+    'error':          { 'type': 'string' },
+    'info':           { 'type': 'string' },
     'primary':        { 'type': 'string' },
     'primaryDark':    { 'type': 'string' },
     'primaryLight':   { 'type': 'string' },
-    'accent':         { 'type': 'string' },
-    'background':     { 'type': 'string' },
-    'surface':        { 'type': 'string' },
-    'error':          { 'type': 'string' },
-    'warning':        { 'type': 'string' },
     'success':        { 'type': 'string' },
-    'info':           { 'type': 'string' },
+    'surface':        { 'type': 'string' },
     'text':           { 'type': 'string' },
-    'textOnPrimary':  { 'type': 'string' },
     'textOnAccent':   { 'type': 'string' },
+    'textOnPrimary':  { 'type': 'string' },
+    'warning':        { 'type': 'string' }
   },
   'required': [
     'primary', 'primaryDark', 'primaryLight', 'accent',
     'background', 'surface', 'error', 'warning', 'success',
-    'info', 'text', 'textOnPrimary', 'textOnAccent',
+    'info', 'text', 'textOnPrimary', 'textOnAccent'
   ],
+  'type': 'object'
 } as const;
 
 const splashScreenOutputSchema = {
-  'type': 'object',
   'additionalProperties': false,
   'properties': {
-    'backgroundColor':            { 'type': 'string' },
     'androidSplashResourceName':  { 'type': 'string' },
+    'backgroundColor':            { 'type': 'string' }
   },
   'required': ['backgroundColor'],
+  'type': 'object'
 } as const;
 
 const androidThemeXmlOutputSchema = {
-  'type': 'string',
+  'type': 'string'
 } as const;
 
 export class CapacitorPlugin implements PluginInterface {
@@ -68,20 +69,18 @@ export class CapacitorPlugin implements PluginInterface {
       emitCapacitorStatusBar,
       emitCapacitorTheme,
       emitCapacitorSplashScreen,
-      emitAndroidThemeXml,
+      emitAndroidThemeXml
     ];
   }
 
   schemas(): PluginSchemaContributionInterface {
     return {
       'outputs': {
-        'capacitor:statusBar':       statusBarOutputSchema,
-        'capacitor:theme':           themeOutputSchema,
-        'capacitor:splashScreen':    splashScreenOutputSchema,
         'capacitor:androidThemeXml': androidThemeXmlOutputSchema,
-      },
+        'capacitor:splashScreen':    splashScreenOutputSchema,
+        'capacitor:statusBar':       statusBarOutputSchema,
+        'capacitor:theme':           themeOutputSchema
+      }
     };
   }
 }
-
-export const capacitorPlugin = new CapacitorPlugin();

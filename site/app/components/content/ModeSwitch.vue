@@ -1,0 +1,34 @@
+<script setup lang="ts">
+import type { ModeType } from '~/composables/types/mode.ts';
+
+import { useIridis } from '~/composables/useIridis.ts';
+
+/**
+ * Mode selector. The demo is EITHER a color picker OR an image extractor, never
+ * both — each mode owns its own palette, and switching swaps which palette themes
+ * the page (the engine re-runs against the newly-active seeds).
+ */
+const { mode } = useIridis();
+function select(m: ModeType): void { mode.value = m; }
+</script>
+
+<template>
+  <div class="isolate inline-flex -space-x-px rounded-md">
+    <UButton
+      icon="i-material-symbols-colorize-rounded"
+      :color="mode === 'picker' ? 'primary' : 'neutral'"
+      :variant="mode === 'picker' ? 'solid' : 'outline'"
+      @click="select('picker')"
+    >
+      Color picker
+    </UButton>
+    <UButton
+      icon="i-material-symbols-image-rounded"
+      :color="mode === 'image' ? 'primary' : 'neutral'"
+      :variant="mode === 'image' ? 'solid' : 'outline'"
+      @click="select('image')"
+    >
+      Image
+    </UButton>
+  </div>
+</template>

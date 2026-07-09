@@ -1,19 +1,25 @@
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
+import type { ColorRecordInterfaceType } from '../../types/color.ts';
 import type {
-  ColorRecordInterface,
-  PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
-} from '../../types/index.ts';
+  TaskManifestInterfaceType
+} from '../../types/pipeline.ts';
+import type { PaletteStateInterface } from '../../types/state.ts';
 
-interface JsonOutput {
+type JsonOutput = {
   'colors':   string[];
   'roles':    Record<string, string>;
   'variants': Record<string, Record<string, string>>;
-}
+};
 
-function toHex(color: ColorRecordInterface): string {
-  return color.hex;
+class Hex {
+  static to(color: ColorRecordInterfaceType): string {
+    const result = color.hex;
+    return result;
+  }
 }
 
 /**
@@ -23,41 +29,49 @@ function toHex(color: ColorRecordInterface): string {
  * that can read JSON can consume it, with no knowledge of the OKLCH /
  * Display P3 enrichments still present on the original records.
  */
-export class EmitJson implements TaskInterface {
+class EmitJson implements TaskInterface {
   readonly 'name' = 'emit:json';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Writes state.outputs[\'core:json\'] with {colors, roles, variants} flattened to hex strings.',
     'name':        'emit:json',
     'reads':       ['colors', 'roles', 'variants'],
-    'writes':      ['outputs[\'core:json\']'],
-    'description': 'Writes state.outputs[\'core:json\'] with {colors, roles, variants} flattened to hex strings.',
+    'writes':      ['outputs[\'core:json\']']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const colors = state.colors.map(toHex);
+    const colors = state.colors.map(Hex.to);
 
     const roles: Record<string, string> = {};
     for (const [name, color] of Object.entries(state.roles)) {
-      roles[name] = toHex(color);
+      roles[name] = Hex.to(color);
     }
 
     const variants: Record<string, Record<string, string>> = {};
     for (const [variantName, variantRoles] of Object.entries(state.variants)) {
       const flat: Record<string, string> = {};
       for (const [roleName, color] of Object.entries(variantRoles)) {
-        flat[roleName] = toHex(color);
+        flat[roleName] = Hex.to(color);
       }
       variants[variantName] = flat;
     }
 
-    const output: JsonOutput = { colors, roles, variants };
+    const output: JsonOutput = { 'colors': colors, 'roles': roles, 'variants': variants };
     state.outputs['core:json'] = output;
 
-    ctx.logger.debug('EmitJson', 'run', 'Wrote json output', {
-      'colors':   colors.length,
-      'roles':    Object.keys(roles).length,
-      'variants': Object.keys(variants).length,
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('EmitJson')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('Wrote json output')
+        .context({
+          'colors':   colors.length,
+          'roles':    Object.keys(roles).length,
+          'variants': Object.keys(variants).length
+        })
+        .build()
+    );
   }
 }
 

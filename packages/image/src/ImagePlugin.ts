@@ -1,29 +1,30 @@
 import type {
   PluginInterface,
   PluginSchemaContributionInterface,
-  TaskInterface,
+  TaskInterface
 } from '@studnicky/iridis';
+
 import { galleryAssignRoles } from './tasks/GalleryAssignRoles.ts';
 import { galleryExtract }     from './tasks/GalleryExtract.ts';
 import { galleryHarmonize }   from './tasks/GalleryHarmonize.ts';
 import { galleryHistogram }   from './tasks/GalleryHistogram.ts';
 
 const galleryHistogramSchema = {
-  'type': 'object',
   'additionalProperties': false,
   'properties': {
+    'binCount':    { 'minimum': 0, 'type': 'number' },
     'bins':        { 'type': 'array' },
-    'totalPixels': { 'type': 'number', 'minimum': 0 },
-    'binCount':    { 'type': 'number', 'minimum': 0 },
+    'totalPixels': { 'minimum': 0, 'type': 'number' }
   },
+  'type': 'object'
 } as const;
 
 const galleryDominantColorsSchema = {
-  'type': 'array',
+  'type': 'array'
 } as const;
 
 const galleryHarmonizedSchema = {
-  'type': 'boolean',
+  'type': 'boolean'
 } as const;
 
 /**
@@ -47,12 +48,10 @@ export class ImagePlugin implements PluginInterface {
   schemas(): PluginSchemaContributionInterface {
     return {
       'metadata': {
-        'gallery:histogram':     galleryHistogramSchema,
         'gallery:dominantColors': galleryDominantColorsSchema,
         'gallery:harmonized':    galleryHarmonizedSchema,
-      },
+        'gallery:histogram':     galleryHistogramSchema
+      }
     };
   }
 }
-
-export const imagePlugin = new ImagePlugin();

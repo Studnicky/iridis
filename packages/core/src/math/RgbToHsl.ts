@@ -1,10 +1,11 @@
-import type { HslResultInterface } from '../types/index.ts';
+import type { HslResultInterfaceType } from '../types/index.ts';
+
 import { clamp01 } from './Clamp01.ts';
 
-export class RgbToHsl {
+class RgbToHsl {
   readonly 'name' = 'rgbToHsl';
 
-  apply(r: number, g: number, b: number, alpha: number = 1): HslResultInterface {
+  apply(r: number, g: number, b: number, alpha = 1): HslResultInterfaceType {
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const delta = max - min;
@@ -30,10 +31,10 @@ export class RgbToHsl {
     }
 
     return {
-      'h':     h,
-      's':     s,
-      'l':     l,
       'alpha': clamp01.apply(alpha),
+      'h':     h,
+      'l':     l,
+      's':     s
     };
   }
 }

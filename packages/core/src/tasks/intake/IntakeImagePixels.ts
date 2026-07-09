@@ -1,25 +1,17 @@
+import { ValidationError } from '@studnicky/errors';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '../../types/index.ts';
+
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
-
-interface ImagePixelInput {
-  'data':   Uint8ClampedArray;
-  'width':  number;
-  'height': number;
-}
-
-export function isImagePixelInput(v: unknown): v is ImagePixelInput {
-  if (typeof v !== 'object' || v === null) return false;
-  const o = v as Record<string, unknown>;
-  return o['data'] instanceof Uint8ClampedArray
-    && typeof o['width'] === 'number'
-    && typeof o['height'] === 'number';
-}
+import { isImagePixelInput }  from './IsImagePixelInput.ts';
 
 /**
  * Intake task for `ImageData`-shaped inputs (`{data: Uint8ClampedArray,
@@ -34,14 +26,14 @@ export function isImagePixelInput(v: unknown): v is ImagePixelInput {
  * Non-ImageData input throws when using the strict `intake:imagePixels`
  * task. Use `intake:any` for tolerant dispatch.
  */
-export class IntakeImagePixels implements TaskInterface {
+class IntakeImagePixels implements TaskInterface {
   readonly 'name' = 'intake:imagePixels';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Parses ImageData or {data: Uint8ClampedArray, width, height} and pushes non-transparent pixels. Throws on non-image input.',
     'name':        'intake:imagePixels',
     'reads':       ['input.colors'],
-    'writes':      ['colors'],
-    'description': 'Parses ImageData or {data: Uint8ClampedArray, width, height} and pushes non-transparent pixels. Throws on non-image input.',
+    'writes':      ['colors']
   };
 
   /**
@@ -51,9 +43,17 @@ export class IntakeImagePixels implements TaskInterface {
    * Used by IntakeAny for format dispatch (via try/catch).
    * The full pixel set is pushed separately via {@link pushAllPixels}.
    */
-  parse(raw: unknown): ColorRecordInterface {
+  parse(raw: unknown): ColorRecordInterfaceType {
     if (!isImagePixelInput(raw)) {
-      throw new Error(`intake:imagePixels — expected {data: Uint8ClampedArray, width, height}, got ${typeof raw}`);
+      throw ValidationError.create({
+        'message': 'intake:imagePixels — expected an ImageData-shaped object',
+        'path':    'raw',
+        'violations': [{
+          'details': { 'expectedShape': '{data: Uint8ClampedArray, width: number, height: number}', 'receivedType': typeof raw },
+          'message': 'input is not an ImageData-shaped object',
+          'path':    'raw'
+        }]
+      });
     }
     const { data } = raw;
     const pixelCount = raw.width * raw.height;
@@ -66,10 +66,18 @@ export class IntakeImagePixels implements TaskInterface {
       const r = (data[offset] ?? 0) / 255;
       const g = (data[offset + 1] ?? 0) / 255;
       const b = (data[offset + 2] ?? 0) / 255;
-      return colorRecordFactory.fromRgb(r, g, b, alpha / 255, 'imagePixel');
+      return colorRecordFactory.fromRgb(r, g, b, { 'alpha': alpha / 255, 'sourceFormat': 'imagePixel' });
     }
     // All pixels transparent — no opaque pixels to parse.
-    throw new Error('intake:imagePixels — image has no non-transparent pixels');
+    throw ValidationError.create({
+      'message': 'intake:imagePixels — image has no non-transparent pixels',
+      'path':    'raw',
+      'violations': [{
+        'details': { 'height': raw.height, 'pixelCount': pixelCount, 'width': raw.width },
+        'message': 'every pixel in the image has alpha 0',
+        'path':    'raw'
+      }]
+    });
   }
 
   /**
@@ -79,12 +87,12 @@ export class IntakeImagePixels implements TaskInterface {
   pushAllPixels(
     raw: unknown,
     state: PaletteStateInterface,
-    ctx: PipelineContextInterface,
+    ctx: PipelineContextInterface
   ): void {
     if (!isImagePixelInput(raw)) {
       return;
     }
-    const { data, width, height } = raw;
+    const { data, height, width } = raw;
     const pixelCount = width * height;
     let pushed = 0;
 
@@ -97,15 +105,23 @@ export class IntakeImagePixels implements TaskInterface {
       const r = (data[offset] ?? 0) / 255;
       const g = (data[offset + 1] ?? 0) / 255;
       const b = (data[offset + 2] ?? 0) / 255;
-      state.colors.push(colorRecordFactory.fromRgb(r, g, b, alpha / 255, 'imagePixel'));
+      state.colors.push(colorRecordFactory.fromRgb(r, g, b, { 'alpha': alpha / 255, 'sourceFormat': 'imagePixel' }));
       pushed++;
     }
 
-    ctx.logger.debug('IntakeImagePixels', 'pushAllPixels', 'Pushed pixels from image', {
-      'pushed': pushed,
-      'width':  width,
-      'height': height,
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('IntakeImagePixels')
+        .operation('pushAllPixels')
+        .status(LOG_STATUS.SUCCESS)
+        .message('Pushed pixels from image')
+        .context({
+          'height': height,
+          'pushed': pushed,
+          'width':  width
+        })
+        .build()
+    );
   }
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
@@ -115,7 +131,15 @@ export class IntakeImagePixels implements TaskInterface {
         // Non-image entries are skipped so that intake:imagePixels can
         // coexist in a pipeline with intake:hex / intake:any for mixed inputs.
         // Strict single-format validation is the caller's responsibility.
-        ctx.logger.trace('IntakeImagePixels', 'run', 'Skipping non-image entry', { index: i });
+        ctx.logger.trace(
+          LogBody.create()
+            .component('IntakeImagePixels')
+            .operation('run')
+            .status(LOG_STATUS.SKIPPED)
+            .message('Skipping non-image entry')
+            .context({ 'index': i })
+            .build()
+        );
         continue;
       }
       this.pushAllPixels(raw, state, ctx);

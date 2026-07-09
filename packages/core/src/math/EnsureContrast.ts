@@ -1,4 +1,5 @@
-import type { ColorRecordInterface, ContrastAlgorithmType, RgbInterface, SourceFormatType } from '../types/index.ts';
+import type { ColorRecordInterfaceType, ContrastAlgorithmType, RgbInterfaceType, SourceFormatType } from '../types/index.ts';
+
 import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
@@ -15,7 +16,7 @@ const APCA_OFFSET   = 0.027;
 /** sRGB-family source formats. When the original foreground was sourced from
  *  one of these, the adjusted record must remain sRGB (no displayP3 slot).   */
 const SRGB_FORMATS: ReadonlySet<SourceFormatType> = new Set([
-  'hex', 'rgb', 'hsl', 'lab', 'named', 'imagePixel',
+  'hex', 'hsl', 'imagePixel', 'lab', 'named', 'rgb'
 ]);
 
 /** WCAG 2.1 relative luminance from a gamma-encoded sRGB triple in 0..1.
@@ -58,17 +59,17 @@ function apcaLcFromYtxt(Ytxt: number, Ybg: number): number {
   let Lc = 0;
   if (bgClamp > txtClamp) {
     Lc = (Math.pow(bgClamp, APCA_NORM_BG) - Math.pow(txtClamp, APCA_NORM_TXT)) * APCA_SCALE;
-    if (Lc < APCA_LOW_CLIP) return 0;
+    if (Lc < APCA_LOW_CLIP) {return 0;}
     Lc = Lc - APCA_OFFSET;
   } else {
     Lc = (Math.pow(bgClamp, 0.62) - Math.pow(txtClamp, 0.65)) * APCA_SCALE;
-    if (Lc > -APCA_LOW_CLIP) return 0;
+    if (Lc > -APCA_LOW_CLIP) {return 0;}
     Lc = Lc + APCA_OFFSET;
   }
   return Math.abs(Lc * 100);
 }
 
-export class EnsureContrast {
+class EnsureContrast {
   readonly 'name' = 'ensureContrast';
 
   /**
@@ -87,19 +88,19 @@ export class EnsureContrast {
    * used so the wide-gamut `displayP3` slot is re-derived as expected.
    */
   apply(
-    foreground: ColorRecordInterface,
-    background: ColorRecordInterface,
+    foreground: ColorRecordInterfaceType,
+    background: ColorRecordInterfaceType,
     minRatio: number,
-    algorithm: ContrastAlgorithmType = 'wcag21',
-  ): ColorRecordInterface {
+    algorithm: ContrastAlgorithmType = 'wcag21'
+  ): ColorRecordInterfaceType {
     // Precompute background luminance once; it never changes during the loop.
-    const bgRgb: RgbInterface = background.rgb;
+    const bgRgb: RgbInterfaceType = background.rgb;
     const Ybg = algorithm === 'wcag21'
       ? rgbLuminance(bgRgb.r, bgRgb.g, bgRgb.b)
       : apcaBg(bgRgb.r, bgRgb.g, bgRgb.b);
 
     // Compute initial foreground contrast from its existing rgb.
-    const fgRgb: RgbInterface = foreground.rgb;
+    const fgRgb: RgbInterfaceType = foreground.rgb;
     const initialContrast = algorithm === 'wcag21'
       ? wcagRatio(rgbLuminance(fgRgb.r, fgRgb.g, fgRgb.b), Ybg)
       : apcaLcFromYtxt(apcaFg(fgRgb.r, fgRgb.g, fgRgb.b), Ybg);
@@ -119,7 +120,7 @@ export class EnsureContrast {
 
     let currentL = fgL;
     let lastL    = currentL;
-    let lastRgb: RgbInterface = fgRgb;
+    let lastRgb: RgbInterfaceType = fgRgb;
 
     for (let i = 0; i < 50; i++) {
       const newL = clamp01.apply(currentL + step);
@@ -134,22 +135,22 @@ export class EnsureContrast {
 
       if (ratio >= minRatio) {
         return isSrgb
-          ? colorRecordFactory.fromRgb(rgb.r, rgb.g, rgb.b, a, fmt, hints)
-          : colorRecordFactory.fromOklch(newL, c, h, a, fmt, hints);
+          ? colorRecordFactory.fromRgb(rgb.r, rgb.g, rgb.b, { 'alpha': a, 'hints': hints, 'sourceFormat': fmt })
+          : colorRecordFactory.fromOklch(newL, c, h, { 'alpha': a, 'hints': hints, 'sourceFormat': fmt });
       }
 
       if (newL === 0 || newL === 1) {
         return isSrgb
-          ? colorRecordFactory.fromRgb(rgb.r, rgb.g, rgb.b, a, fmt, hints)
-          : colorRecordFactory.fromOklch(newL, c, h, a, fmt, hints);
+          ? colorRecordFactory.fromRgb(rgb.r, rgb.g, rgb.b, { 'alpha': a, 'hints': hints, 'sourceFormat': fmt })
+          : colorRecordFactory.fromOklch(newL, c, h, { 'alpha': a, 'hints': hints, 'sourceFormat': fmt });
       }
 
       currentL = newL;
     }
 
     return isSrgb
-      ? colorRecordFactory.fromRgb(lastRgb.r, lastRgb.g, lastRgb.b, a, fmt, hints)
-      : colorRecordFactory.fromOklch(lastL, c, h, a, fmt, hints);
+      ? colorRecordFactory.fromRgb(lastRgb.r, lastRgb.g, lastRgb.b, { 'alpha': a, 'hints': hints, 'sourceFormat': fmt })
+      : colorRecordFactory.fromOklch(lastL, c, h, { 'alpha': a, 'hints': hints, 'sourceFormat': fmt });
   }
 }
 

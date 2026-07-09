@@ -2,52 +2,60 @@
 // Module augmentation on PluginMetadataRegistry has been replaced with
 // explicit schema contribution via ContrastPlugin.schemas().
 
-export interface WcagPairResultInterface {
-  readonly 'foreground': string;
-  readonly 'background': string;
-  readonly 'algorithm':  'wcag21' | 'apca';
-  readonly 'required':   number;
-  readonly 'before':     number;
-  readonly 'after':      number;
-  readonly 'pass':       boolean;
-}
+export type WcagPairResultInterfaceType = {
+  'after':      number;
+  'algorithm':  'wcag21' | 'apca';
+  'background': string;
+  'before':     number;
+  'foreground': string;
+  'pass':       boolean;
+  'required':   number;
+};
 
-export interface WcagPairResultSetInterface {
-  readonly 'pairs': readonly WcagPairResultInterface[];
-}
+export type WcagPairResultSetInterfaceType = {
+  'pairs': WcagPairResultInterfaceType[];
+};
 
-export interface ApcaPairResultInterface {
-  readonly 'foreground': string;
-  readonly 'background': string;
-  readonly 'algorithm':  'apca';
-  readonly 'requiredLc': number;
-  readonly 'beforeLc':   number;
-  readonly 'afterLc':    number;
-  readonly 'pass':       boolean;
-}
+export type ApcaPairResultInterfaceType = {
+  'afterLc':    number;
+  'algorithm':  'apca';
+  'background': string;
+  'beforeLc':   number;
+  'foreground': string;
+  'pass':       boolean;
+  'requiredLc': number;
+};
 
-export interface ApcaPairResultSetInterface {
-  readonly 'pairs': readonly ApcaPairResultInterface[];
-}
+export type ApcaPairResultSetInterfaceType = {
+  'pairs': ApcaPairResultInterfaceType[];
+};
 
-export interface CvdPairWarningInterface {
-  readonly 'foreground':                 string;
-  readonly 'background':                 string;
-  readonly 'cvdType':                    string;
-  readonly 'originalLuminanceContrast':  number;
-  readonly 'simulatedLuminanceContrast': number;
-  readonly 'drop':                       number;
-  readonly 'dropThreshold':              number;
-  readonly 'minSimulatedContrast':       number;
-}
+export type CvdPairWarningInterfaceType = {
+  'background':                 string;
+  'cvdType':                    string;
+  'drop':                       number;
+  'dropThreshold':              number;
+  'foreground':                 string;
+  'minSimulatedContrast':       number;
+  'originalLuminanceContrast':  number;
+  'simulatedLuminanceContrast': number;
+};
 
-export interface CvdResultSetInterface {
-  readonly 'warnings': readonly CvdPairWarningInterface[];
-}
+export type CvdCorrectionInterfaceType = {
+  'background':         string;
+  'cvdTypesFixed':      string[];
+  'cvdTypesRemaining':  string[];
+  'foreground':         string;
+};
 
-export interface WcagMetaSlotInterface {
-  'aa'?:   WcagPairResultSetInterface;
-  'aaa'?:  WcagPairResultSetInterface;
-  'apca'?: ApcaPairResultSetInterface;
-  'cvd'?:  CvdResultSetInterface;
-}
+export type CvdResultSetInterfaceType = {
+  'corrections'?: CvdCorrectionInterfaceType[];
+  'warnings':     CvdPairWarningInterfaceType[];
+};
+
+export type WcagMetaSlotInterfaceType = {
+  'aa'?:   WcagPairResultSetInterfaceType;
+  'aaa'?:  WcagPairResultSetInterfaceType;
+  'apca'?: ApcaPairResultSetInterfaceType;
+  'cvd'?:  CvdResultSetInterfaceType;
+};

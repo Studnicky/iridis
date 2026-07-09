@@ -4,11 +4,13 @@
  * overhead. Hot path in every record-allocation site and every gamut
  * encoder.
  */
-export class Clamp01 {
+class Clamp01 {
   readonly 'name' = 'clamp01';
 
   apply(v: number): number {
-    return v < 0 ? 0 : v > 1 ? 1 : v;
+    if (v < 0) {return 0;}
+    if (v > 1) {return 1;}
+    return v;
   }
 }
 

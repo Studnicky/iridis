@@ -1,15 +1,19 @@
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
 import {
   clusterDeltaEMerge,
   clusterMedianCut,
-  clusterMedianCutWeighted,
+  clusterMedianCutWeighted
 } from '@studnicky/iridis';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type { GalleryAlgorithmType } from '../types/augmentation.ts';
 
 /**
@@ -41,9 +45,9 @@ import type { GalleryAlgorithmType } from '../types/augmentation.ts';
    to the weighted reducer. The previous predicate excluded `weight === 1`
    and silently fell back to `clusterMedianCut`, losing the weight
    bookkeeping the upstream histogram had set up. */
-function hasAnyWeight(colors: readonly ColorRecordInterface[]): boolean {
+function hasAnyWeight(colors: readonly ColorRecordInterfaceType[]): boolean {
   for (const c of colors) {
-    if (typeof c.hints?.weight === 'number' && c.hints.weight > 0) return true;
+    if (typeof c.hints?.weight === 'number' && c.hints.weight > 0) {return true;}
   }
   return false;
 }
@@ -60,52 +64,76 @@ function hasAnyWeight(colors: readonly ColorRecordInterface[]): boolean {
  */
 const DELTA_E_INPUT_CAP_DEFAULT = 128;
 
-function trimByWeightDescending(colors: readonly ColorRecordInterface[], cap: number): readonly ColorRecordInterface[] {
-  if (colors.length <= cap) return colors;
-  const sorted = [...colors].sort((a, b) => (b.hints?.weight ?? 1) - (a.hints?.weight ?? 1));
+function trimByWeightDescending(colors: readonly ColorRecordInterfaceType[], cap: number): readonly ColorRecordInterfaceType[] {
+  if (colors.length <= cap) {return colors;}
+  const sorted = [...colors].sort((a, b) => {return (b.hints?.weight ?? 1) - (a.hints?.weight ?? 1);});
   return sorted.slice(0, cap);
 }
 
-export class GalleryExtract implements TaskInterface {
+class GalleryExtract implements TaskInterface {
   readonly 'name' = 'gallery:extract';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Reduce input records to K dominant colors via median-cut (weighted) or deltaE-merge clustering',
     'name':        'gallery:extract',
     'reads':       ['colors', 'metadata.gallery'],
-    'writes':      ['colors', 'metadata.gallery:dominantColors'],
-    'description': 'Reduce input records to K dominant colors via median-cut (weighted) or deltaE-merge clustering',
+    'writes':      ['colors', 'metadata.gallery:dominantColors']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const galleryConfig = state.metadata['gallery'] as
-      | { 'k'?: number; 'algorithm'?: GalleryAlgorithmType; 'deltaECap'?: number }
+    const galleryConfig = state.metadata.gallery as
+      | { 'algorithm'?: GalleryAlgorithmType; 'deltaECap'?: number; 'k'?: number; }
       | undefined;
     const k = galleryConfig?.k ?? 5;
     const algorithm: GalleryAlgorithmType = galleryConfig?.algorithm ?? 'median-cut';
 
-    ctx.logger.debug('GalleryExtract', 'run', 'extracting dominant colors', {
-      'inputCount': state.colors.length,
-      'k':          k,
-      'algorithm':  algorithm,
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('GalleryExtract')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('extracting dominant colors')
+        .context({
+          'algorithm':  algorithm,
+          'inputCount': state.colors.length,
+          'k':          k
+        })
+        .build()
+    );
 
     if (state.colors.length === 0) {
-      ctx.logger.warn('GalleryExtract', 'run', 'state.colors is empty; nothing to extract');
+      ctx.logger.warn(
+        LogBody.create()
+          .component('GalleryExtract')
+          .operation('run')
+          .status(LOG_STATUS.INVALID)
+          .message('state.colors is empty; nothing to extract')
+          .context({})
+          .build()
+      );
       return;
     }
 
     const clamp = Math.min(k, state.colors.length);
 
-    let dominant: ColorRecordInterface[];
+    let dominant: ColorRecordInterfaceType[];
     if (algorithm === 'delta-e') {
       const cap = Math.max(8, Math.min(512, Math.floor(galleryConfig?.deltaECap ?? DELTA_E_INPUT_CAP_DEFAULT)));
       const trimmed = trimByWeightDescending(state.colors, cap);
       if (trimmed.length < state.colors.length) {
-        ctx.logger.debug('GalleryExtract', 'run', 'trimmed delta-E input by weight', {
-          'before': state.colors.length,
-          'after':  trimmed.length,
-          'cap':    cap,
-        });
+        ctx.logger.debug(
+          LogBody.create()
+            .component('GalleryExtract')
+            .operation('run')
+            .status(LOG_STATUS.PARTIAL)
+            .message('trimmed delta-E input by weight')
+            .context({
+              'after':  trimmed.length,
+              'before': state.colors.length,
+              'cap':    cap
+            })
+            .build()
+        );
       }
       dominant = clusterDeltaEMerge.apply(trimmed, clamp);
     } else if (hasAnyWeight(state.colors)) {
@@ -118,10 +146,18 @@ export class GalleryExtract implements TaskInterface {
 
     state.colors.splice(0, state.colors.length, ...dominant);
 
-    ctx.logger.info('GalleryExtract', 'run', 'extraction complete', {
-      'dominantCount': dominant.length,
-      'algorithm':     algorithm,
-    });
+    ctx.logger.info(
+      LogBody.create()
+        .component('GalleryExtract')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('extraction complete')
+        .context({
+          'algorithm':     algorithm,
+          'dominantCount': dominant.length
+        })
+        .build()
+    );
   }
 }
 

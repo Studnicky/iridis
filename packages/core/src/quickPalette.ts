@@ -6,41 +6,30 @@
  * for any non-trivial use case.
  */
 
+import type { FramingType, QuickPaletteInterfaceType, RoleSchemaInterfaceType } from './types/index.ts';
+
 import { Engine }                  from './engine/Engine.ts';
 import { coreTasks }               from './tasks/index.ts';
-import type { FramingType, RoleSchemaInterface } from './types/index.ts';
 
-const SCHEMA_DARK: RoleSchemaInterface = {
+const SCHEMA_DARK: RoleSchemaInterfaceType = {
   'name':  'quick-dark',
   'roles': [
-    { 'name': 'background', 'required': true, 'intent': 'background',   'lightnessRange': [0.05, 0.12], 'chromaRange': [0, 0.04] },
-    { 'name': 'foreground', 'required': true, 'intent': 'text',   'lightnessRange': [0.94, 0.99], 'chromaRange': [0, 0.03] },
-    { 'name': 'accent',     'required': true, 'intent': 'accent', 'lightnessRange': [0.62, 0.78], 'chromaRange': [0.14, 0.28] },
-    { 'name': 'muted',      'required': true, 'intent': 'muted',  'lightnessRange': [0.55, 0.70], 'chromaRange': [0, 0.05] },
-  ],
+    { 'chromaRange': [0, 0.04], 'intent': 'background', 'lightnessRange': [0.05, 0.12],   'name': 'background', 'required': true },
+    { 'chromaRange': [0, 0.03], 'intent': 'text', 'lightnessRange': [0.94, 0.99],   'name': 'foreground', 'required': true },
+    { 'chromaRange': [0.14, 0.28],     'intent': 'accent', 'lightnessRange': [0.62, 0.78], 'name': 'accent', 'required': true },
+    { 'chromaRange': [0, 0.05],      'intent': 'muted', 'lightnessRange': [0.55, 0.70],  'name': 'muted', 'required': true }
+  ]
 };
 
-const SCHEMA_LIGHT: RoleSchemaInterface = {
+const SCHEMA_LIGHT: RoleSchemaInterfaceType = {
   'name':  'quick-light',
   'roles': [
-    { 'name': 'background', 'required': true, 'intent': 'background',   'lightnessRange': [0.96, 1.0],  'chromaRange': [0, 0.02] },
-    { 'name': 'foreground', 'required': true, 'intent': 'text',   'lightnessRange': [0.10, 0.20], 'chromaRange': [0, 0.03] },
-    { 'name': 'accent',     'required': true, 'intent': 'accent', 'lightnessRange': [0.42, 0.55], 'chromaRange': [0.12, 0.24] },
-    { 'name': 'muted',      'required': true, 'intent': 'muted',  'lightnessRange': [0.40, 0.55], 'chromaRange': [0, 0.04] },
-  ],
+    { 'chromaRange': [0, 0.02], 'intent': 'background', 'lightnessRange': [0.96, 1.0],   'name': 'background',  'required': true },
+    { 'chromaRange': [0, 0.03], 'intent': 'text', 'lightnessRange': [0.10, 0.20],   'name': 'foreground', 'required': true },
+    { 'chromaRange': [0.12, 0.24],     'intent': 'accent', 'lightnessRange': [0.42, 0.55], 'name': 'accent', 'required': true },
+    { 'chromaRange': [0, 0.04],      'intent': 'muted', 'lightnessRange': [0.40, 0.55],  'name': 'muted', 'required': true }
+  ]
 };
-
-/**
- * Output shape of {@link quickPalette}: the four canonical roles, each
- * resolved to a 6-digit hex string. Frozen by convention: callers
- * read; the engine writes.
- */
-export interface QuickPaletteInterface {
-  readonly background: string;
-  readonly foreground: string;
-  readonly accent:     string;
-  readonly muted:      string;
-}
 
 const PIPELINE: readonly string[] = ['intake:hex', 'resolve:roles'];
 
@@ -50,25 +39,25 @@ const PIPELINE: readonly string[] = ['intake:hex', 'resolve:roles'];
  * this is appropriate for one-shot use; prefer a long-lived `Engine`
  * for anything that runs more than a handful of times.
  */
-export async function quickPalette(
+export function quickPalette(
   seeds: readonly string[],
-  framing: FramingType = 'dark',
-): Promise<QuickPaletteInterface> {
+  framing: FramingType = 'dark'
+): QuickPaletteInterfaceType {
   const engine = new Engine();
-  for (const t of coreTasks)    engine.tasks.register(t);
+  for (const t of coreTasks)    {engine.tasks.register(t);}
   engine.pipeline(PIPELINE);
 
   const schema = framing === 'light' ? SCHEMA_LIGHT : SCHEMA_DARK;
-  const state = await engine.run({
+  const state = engine.run({
     'colors':  seeds,
     'roles':   schema,
-    'runtime': { 'framing': framing },
+    'runtime': { 'framing': framing }
   });
 
   return {
-    'background': state.roles['background']!.hex,
-    'foreground': state.roles['foreground']!.hex,
-    'accent':     state.roles['accent']!.hex,
-    'muted':      state.roles['muted']!.hex,
+    'accent':     state.roles.accent!.hex,
+    'background': state.roles.background!.hex,
+    'foreground': state.roles.foreground!.hex,
+    'muted':      state.roles.muted!.hex
   };
 }

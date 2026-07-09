@@ -1,18 +1,23 @@
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
+import { ModuleError } from '@studnicky/errors';
 import {
   colorRecordFactory,
   contrastText,
   darken,
   lighten,
   luminance,
-  mixHsl,
+  mixHsl
 } from '@studnicky/iridis';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import { recordToVscodeColor } from '../util/recordToVscodeColor.ts';
 
 /**
@@ -23,36 +28,41 @@ import { recordToVscodeColor } from '../util/recordToVscodeColor.ts';
  * imports (no string-keyed dispatch).
  */
 
-function getRole(state: PaletteStateInterface, name: string): ColorRecordInterface {
-  const record = state.roles[name];
-  if (!record) {
-    throw new Error(`EmitVscodeUiPalette: role '${name}' not found in state.roles`);
+class Role {
+  static get(state: PaletteStateInterface, name: string): ColorRecordInterfaceType {
+    const record = state.roles[name];
+    if (record === undefined) {
+      throw ModuleError.create(`EmitVscodeUiPalette: role '${name}' not found in state.roles`, {
+        'context':  { 'role': name, 'task': 'EmitVscodeUiPalette' },
+        'scenario': 'NOT_FOUND'
+      });
+    }
+    return record;
   }
-  return record;
 }
 
-export class EmitVscodeUiPalette implements TaskInterface {
+class EmitVscodeUiPalette implements TaskInterface {
   readonly 'name' = 'emit:vscodeUiPalette';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Derives 101 VS Code workbench colors from the 16-role palette. Lifts uiPaletteGenerator.ts derivation.',
     'name':        'emit:vscodeUiPalette',
     'reads':       ['roles'],
-    'writes':      ['outputs.vscode:workbenchColors'],
-    'description': 'Derives 101 VS Code workbench colors from the 16-role palette. Lifts uiPaletteGenerator.ts derivation.',
+    'writes':      ['outputs.vscode:workbenchColors']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const bgRole      = getRole(state, 'background');
-    const fgRole      = getRole(state, 'foreground');
-    const accentRole  = getRole(state, 'keyword');
-    const mutedRole   = getRole(state, 'muted');
-    const surfaceRole = getRole(state, 'surface');
-    const errorRole   = getRole(state, 'error');
-    const infoRole    = getRole(state, 'info');
-    const successRole = getRole(state, 'success');
-    const warningRole = getRole(state, 'warning');
-    const fnRole      = getRole(state, 'function');
-    const typeRole    = getRole(state, 'type');
+    const bgRole      = Role.get(state, 'background');
+    const fgRole      = Role.get(state, 'foreground');
+    const accentRole  = Role.get(state, 'keyword');
+    const mutedRole   = Role.get(state, 'muted');
+    const surfaceRole = Role.get(state, 'surface');
+    const errorRole   = Role.get(state, 'error');
+    const infoRole    = Role.get(state, 'info');
+    const successRole = Role.get(state, 'success');
+    const warningRole = Role.get(state, 'warning');
+    const fnRole      = Role.get(state, 'function');
+    const typeRole    = Role.get(state, 'type');
 
     // Two parallel strings per role:
     //  - `*_HEX` for math/composition paths (mixHsl/lighten/darken/contrastText)
@@ -65,7 +75,6 @@ export class EmitVscodeUiPalette implements TaskInterface {
     const fg_HEX      = fgRole.hex;
     const accent_HEX  = accentRole.hex;
     const muted_HEX   = mutedRole.hex;
-    const surface_HEX = surfaceRole.hex;
     const error_HEX   = errorRole.hex;
     const info_HEX    = infoRole.hex;
     const success_HEX = successRole.hex;
@@ -89,16 +98,16 @@ export class EmitVscodeUiPalette implements TaskInterface {
     const bgLum   = luminance.apply(bgRole);
     const isLight = bgLum > 0.5;
 
-    const fromHex = (h: string): ColorRecordInterface => colorRecordFactory.fromHex(h);
+    const fromHex = (h: string): ColorRecordInterfaceType => { const result = colorRecordFactory.fromHex(h); return result; };
 
     const mixHslHex = (a: string, b: string, w: number): string =>
-      mixHsl.apply(fromHex(a), fromHex(b), w).hex;
+    { const result = mixHsl.apply(fromHex(a), fromHex(b), w).hex; return result; };
     const lightenHex = (c: string, a: number): string =>
-      lighten.apply(fromHex(c), a).hex;
+    { const result = lighten.apply(fromHex(c), a).hex; return result; };
     const darkenHex = (c: string, a: number): string =>
-      darken.apply(fromHex(c), a).hex;
+    { const result = darken.apply(fromHex(c), a).hex; return result; };
     const contrastTextHex = (c: string): string =>
-      contrastText.apply(fromHex(c)).hex;
+    { const result = contrastText.apply(fromHex(c)).hex; return result; };
 
     // Math-derived intermediates always work in hex; the math helpers
     // (`fromHex` → core math → `.hex`) cannot accept a P3 functional
@@ -141,8 +150,12 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'editorBracketMatch.background':                 `${selection}60`,
       'editorBracketMatch.border':                     `${accent_HEX}80`,
       'editorCursor.foreground':                       accent,
+      'editorGroupHeader.tabsBackground':              surface,
+      'editorGroupHeader.tabsBorder':                  border,
+      'editorHint.foreground':                         success,
       'editorIndentGuide.activeBackground1':           mixHslHex(bg_HEX, fg_HEX, 0.2),
       'editorIndentGuide.background1':                 border,
+      'editorInfo.foreground':                         info,
       'editorLineNumber.activeForeground':             fg,
       'editorLineNumber.foreground':                   muted,
       'editorWhitespace.foreground':                   border,
@@ -154,8 +167,6 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'gitDecoration.ignoredResourceForeground':       muted,
       'gitDecoration.modifiedResourceForeground':      info,
       'gitDecoration.untrackedResourceForeground':     warning,
-      'editorHint.foreground':                         success,
-      'editorInfo.foreground':                         info,
       'input.background':                              inputBackground,
       'input.border':                                  border,
       'input.foreground':                              fg,
@@ -192,9 +203,6 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'tab.hoverBackground':                           hover,
       'tab.inactiveBackground':                        surface,
       'tab.inactiveForeground':                        muted,
-      'editorGroupHeader.tabsBackground':              surface,
-      'editorGroupHeader.tabsBorder':                  border,
-      'terminal.background':                           bg,
       'terminal.ansiBlack':                            border,
       'terminal.ansiBlue':                             info,
       'terminal.ansiBrightBlack':                      muted,
@@ -206,24 +214,31 @@ export class EmitVscodeUiPalette implements TaskInterface {
       'terminal.ansiBrightWhite':                      '#ffffff',
       'terminal.ansiBrightYellow':                     lightenHex(warning_HEX, 0.15),
       'terminal.ansiCyan':                             fn_,
-      'terminal.foreground':                           fg,
       'terminal.ansiGreen':                            success,
       'terminal.ansiMagenta':                          type_,
       'terminal.ansiRed':                              error,
       'terminal.ansiWhite':                            fg,
       'terminal.ansiYellow':                           warning,
+      'terminal.background':                           bg,
+      'terminal.foreground':                           fg,
       'titleBar.activeBackground':                     chromeBackground,
       'titleBar.activeForeground':                     mixHslHex(fg_HEX, muted_HEX, 0.3),
       'titleBar.border':                               border,
       'titleBar.inactiveBackground':                   chromeInactiveBackground,
       'titleBar.inactiveForeground':                   muted,
-      'warningForeground':                             warning,
+      'warningForeground':                             warning
     };
 
     state.outputs['vscode:workbenchColors'] = workbenchColors;
-    ctx.logger.debug('EmitVscodeUiPalette', 'run', 'Derived workbench colors', {
-      'count': Object.keys(workbenchColors).length,
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('EmitVscodeUiPalette')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('Derived workbench colors')
+        .context({ 'count': Object.keys(workbenchColors).length })
+        .build()
+    );
   }
 }
 

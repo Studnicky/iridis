@@ -1,35 +1,29 @@
-import type { TaskRegistryInterface } from './registry.ts';
+import type { LoggerInterface } from '@studnicky/logger/interfaces';
+
 import type { EngineInterface } from './engine.ts';
+import type { TaskRegistryInterface } from './registry.ts';
 import type { PaletteStateInterface } from './state.ts';
 
 export type LifecyclePhaseType = 'onRunStart' | 'onRunEnd';
 
-export interface LoggerInterface {
-  trace(scope: string, op: string, message: string, context?: Record<string, unknown>): void;
-  debug(scope: string, op: string, message: string, context?: Record<string, unknown>): void;
-  info(scope: string, op: string, message: string, context?: Record<string, unknown>):  void;
-  warn(scope: string, op: string, message: string, context?: Record<string, unknown>):  void;
-  error(scope: string, op: string, message: string, context?: Record<string, unknown>): void;
-}
-
 export interface PipelineContextInterface {
-  readonly engine:    EngineInterface;
-  readonly tasks:     TaskRegistryInterface;
-  readonly logger:    LoggerInterface;
-  readonly startedAt: number;
+  readonly 'engine':    EngineInterface;
+  readonly 'logger':    LoggerInterface;
+  readonly 'startedAt': number;
+  readonly 'tasks':     TaskRegistryInterface;
 }
 
-export interface TaskManifestInterface {
-  readonly name:           string;
-  readonly phase?:         LifecyclePhaseType;
-  readonly reads?:         readonly string[];
-  readonly writes?:        readonly string[];
-  readonly requires?:      readonly string[];
-  readonly description?:   string;
-}
+export type TaskManifestInterfaceType = {
+  'description'?:   string;
+  'name':           string;
+  'phase'?:         LifecyclePhaseType;
+  'reads'?:         string[];
+  'requires'?:      string[];
+  'writes'?:        string[];
+};
 
 export interface TaskInterface {
-  readonly name:      string;
-  readonly manifest?: TaskManifestInterface;
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): Promise<void> | void;
+  readonly 'manifest'?: TaskManifestInterfaceType;
+  readonly 'name':      string;
+  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void;
 }

@@ -22,7 +22,7 @@ import {
 } from '../_runner/ScenarioRunner.ts';
 import { Engine }    from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
-import type { PaletteStateInterface } from '@studnicky/iridis/model';
+import type { PaletteStateInterface, RoleSchemaInterfaceType } from '@studnicky/iridis/model';
 import { Cli }       from '@studnicky/iridis-cli';
 import type { CliConfigInterface } from '@studnicky/iridis-cli/types';
 
@@ -50,7 +50,7 @@ const ROLE_SCHEMA = {
     { 'foreground': 'onAccent', 'background': 'accent',  'minRatio': 4.5, 'algorithm': 'wcag21' as const },
     { 'foreground': 'border',   'background': 'canvas',  'minRatio': 3.0, 'algorithm': 'wcag21' as const },
   ],
-} as const;
+} satisfies RoleSchemaInterfaceType;
 
 const PIPELINE_CORRECT = [
   'intake:any',

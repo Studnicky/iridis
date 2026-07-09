@@ -1,68 +1,81 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import { ValidationError } from '@studnicky/errors';
+
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
-interface BucketInterface {
-  colors: ColorRecordInterface[];
-}
+type BucketInterface = {
+  'colors': ColorRecordInterfaceType[];
+};
 
-function bucketMedian(bucket: BucketInterface): ColorRecordInterface {
+function bucketMedian(bucket: BucketInterface): ColorRecordInterfaceType {
   const n = bucket.colors.length;
   if (n === 0) {
     return colorRecordFactory.fromOklch(0.5, 0, 0);
   }
-  let sumL = 0, sumC = 0, sumH = 0, sumAlpha = 0;
+  let sumAlpha = 0; let sumC = 0; let sumH = 0; let sumL = 0;
   for (let i = 0; i < n; i++) {
     const col = bucket.colors[i];
-    if (col === undefined) continue;
+    if (col === undefined) {continue;}
     sumL += col.oklch.l;
     sumC += col.oklch.c;
     sumH += col.oklch.h;
     sumAlpha += col.alpha;
   }
-  return colorRecordFactory.fromOklch(sumL / n, sumC / n, sumH / n, sumAlpha / n);
+  return colorRecordFactory.fromOklch(sumL / n, sumC / n, sumH / n, { 'alpha': sumAlpha / n });
 }
 
-function rangeOf(colors: ColorRecordInterface[], channel: 'l' | 'c' | 'h'): number {
-  if (colors.length === 0) return 0;
-  let min = Infinity, max = -Infinity;
+function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c' | 'h'): number {
+  if (colors.length === 0) {return 0;}
+  let max = -Infinity; let min = Infinity;
   for (let i = 0; i < colors.length; i++) {
     const v = colors[i]?.oklch[channel] ?? 0;
-    if (v < min) min = v;
-    if (v > max) max = v;
+    if (v < min) {min = v;}
+    if (v > max) {max = v;}
   }
   return max - min;
 }
 
-function splitBucket(bucket: BucketInterface): [BucketInterface, BucketInterface] {
-  const colors = bucket.colors;
-  const lRange = rangeOf(colors, 'l');
-  const cRange = rangeOf(colors, 'c');
-  const hRange = rangeOf(colors, 'h') / 360;
+class Bucket {
+  static split(bucket: BucketInterface): [BucketInterface, BucketInterface] {
+    const colors = bucket.colors;
+    const lRange = rangeOf(colors, 'l');
+    const cRange = rangeOf(colors, 'c');
+    const hRange = rangeOf(colors, 'h') / 360;
 
-  let channel: 'l' | 'c' | 'h' = 'l';
-  if (cRange > lRange && cRange > hRange) channel = 'c';
-  else if (hRange > lRange) channel = 'h';
+    let channel: 'l' | 'c' | 'h' = 'l';
+    if (cRange > lRange && cRange > hRange) {channel = 'c';}
+    else if (hRange > lRange) {channel = 'h';}
 
-  const sorted = [...colors].sort((a, b) => a.oklch[channel] - b.oklch[channel]);
-  const mid = Math.floor(sorted.length / 2);
+    const sorted = [...colors].sort((a, b) => {return a.oklch[channel] - b.oklch[channel];});
+    const mid = Math.floor(sorted.length / 2);
 
-  return [
-    { colors: sorted.slice(0, mid) },
-    { colors: sorted.slice(mid) },
-  ];
+    return [
+      { 'colors': sorted.slice(0, mid) },
+      { 'colors': sorted.slice(mid) }
+    ];
+  }
 }
 
-export class ClusterMedianCut {
+class ClusterMedianCut {
   readonly 'name' = 'clusterMedianCut';
 
-  apply(colors: readonly ColorRecordInterface[], k: number): ColorRecordInterface[] {
-    if (colors.length === 0) return [];
+  apply(colors: readonly ColorRecordInterfaceType[], k: number): ColorRecordInterfaceType[] {
+    if (colors.length === 0) {return [];}
     if (k < 1) {
-      throw new Error('ClusterMedianCut.apply: k must be a positive number');
+      throw ValidationError.create({
+        'message': 'ClusterMedianCut.apply: k must be a positive number',
+        'path':    'k',
+        'violations': [{
+          'details': { 'expected': 'k >= 1', 'received': k },
+          'message': 'k is not a positive number',
+          'path':    'k'
+        }]
+      });
     }
 
     const targetK = Math.min(Math.floor(k), colors.length);
-    let buckets: BucketInterface[] = [{ colors: [...colors] }];
+    let buckets: BucketInterface[] = [{ 'colors': [...colors] }];
 
     while (buckets.length < targetK) {
       let maxSize = 0;
@@ -75,14 +88,14 @@ export class ClusterMedianCut {
         }
       }
       const target = buckets[maxIdx];
-      if (target === undefined || target.colors.length <= 1) break;
+      if (target === undefined || target.colors.length <= 1) {break;}
 
-      const [left, right] = splitBucket(target);
+      const [left, right] = Bucket.split(target);
       buckets = [
         ...buckets.slice(0, maxIdx),
         left,
         right,
-        ...buckets.slice(maxIdx + 1),
+        ...buckets.slice(maxIdx + 1)
       ];
     }
 

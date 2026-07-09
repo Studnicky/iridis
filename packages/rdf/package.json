@@ -1,6 +1,6 @@
 {
   "name": "@studnicky/iridis-rdf",
-  "version": "0.3.4",
+  "version": "0.5.0",
   "type": "module",
   "exports": {
     ".":       "./src/index.ts",
@@ -16,13 +16,14 @@
     "prebuild":  "rm -rf dist"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.4.0"
+    "@studnicky/iridis": "^0.5.0"
   },
   "dependencies": {
-    "n3": "^1.21.0"
+    "@studnicky/logger": "^4.0.0",
+    "n3": "^2.1.1"
   },
   "devDependencies": {
-    "@types/n3": "^1.21.0",
-    "typescript": "^5.6.0"
+    "@types/n3": "^1.26.1",
+    "typescript": "^6.0.0"
   }
 }

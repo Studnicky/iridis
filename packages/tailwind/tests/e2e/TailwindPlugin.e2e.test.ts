@@ -3,7 +3,7 @@
  *
  * Subject: `TailwindPlugin` + `emit:tailwindTheme` task. Drives the full
  * intake → resolve → emit:tailwindTheme pipeline and asserts the correct
- * TailwindOutputInterface written to state.outputs['tailwind:theme'].
+ * TailwindOutputInterfaceType written to state.outputs['tailwind:theme'].
  *
  * Cells:
  *   1. plugin shape        — singleton identity, task registration
@@ -25,11 +25,11 @@ import { Engine }       from '@studnicky/iridis/engine';
 import { coreTasks }    from '@studnicky/iridis/tasks';
 import type {
   InputInterface,
-  RoleSchemaInterface,
+  RoleSchemaInterfaceType,
   PaletteStateInterface,
 } from '@studnicky/iridis';
 import { tailwindPlugin, TailwindPlugin } from '@studnicky/iridis-tailwind';
-import type { TailwindOutputInterface }   from '@studnicky/iridis-tailwind/types';
+import type { TailwindOutputInterfaceType }   from '@studnicky/iridis-tailwind/types';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -44,8 +44,8 @@ function freshEngine(): Engine {
 
 function makeRoles(
   roleNames: readonly string[],
-  opts: { lightnessRange?: readonly [number, number]; chromaRange?: readonly [number, number] } = {},
-): RoleSchemaInterface {
+  opts: { lightnessRange?: [number, number]; chromaRange?: [number, number] } = {},
+): RoleSchemaInterfaceType {
   return {
     name:  'test-schema',
     roles: roleNames.map((name) => ({
@@ -57,8 +57,8 @@ function makeRoles(
   };
 }
 
-function tailwindOut(state: PaletteStateInterface): TailwindOutputInterface | undefined {
-  return state.outputs['tailwind:theme'] as TailwindOutputInterface | undefined;
+function tailwindOut(state: PaletteStateInterface): TailwindOutputInterfaceType | undefined {
+  return state.outputs['tailwind:theme'] as TailwindOutputInterfaceType | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,7 +115,7 @@ new ScenarioRunner<ShapeInput, ShapeOutput>(
 // ---------------------------------------------------------------------------
 // Cell 2 — theme config shape: all three output fields present and typed
 //
-// emit:tailwindTheme must write a TailwindOutputInterface with:
+// emit:tailwindTheme must write a TailwindOutputInterfaceType with:
 //   - `colors`  — object (Record<string, string | Record<string, string>>)
 //   - `cssVars` — string (CSS text)
 //   - `config`  — string (JS module text containing 'export default')
@@ -126,7 +126,7 @@ interface ConfigShapeInput {
   readonly input:    InputInterface;
 }
 interface ConfigShapeOutput {
-  readonly out: TailwindOutputInterface;
+  readonly out: TailwindOutputInterfaceType;
 }
 
 const configShapeScenarios: readonly ScenarioInterface<ConfigShapeInput, ConfigShapeOutput>[] = [

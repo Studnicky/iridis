@@ -1,13 +1,14 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { clamp } from './Clamp.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
-export class Saturate {
+class Saturate {
   readonly 'name' = 'saturate';
 
-  apply(color: ColorRecordInterface, deltaC: number): ColorRecordInterface {
+  apply(color: ColorRecordInterfaceType, deltaC: number): ColorRecordInterfaceType {
     const c = clamp.apply(0, 0.5, color.oklch.c + deltaC);
-    return colorRecordFactory.fromOklch(color.oklch.l, c, color.oklch.h, color.alpha);
+    return colorRecordFactory.fromOklch(color.oklch.l, c, color.oklch.h, { 'alpha': color.alpha });
   }
 }
 

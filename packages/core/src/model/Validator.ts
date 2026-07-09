@@ -1,8 +1,13 @@
-import Ajv, { type ErrorObject, type ValidateFunction } from 'ajv';
+import type { ErrorObject, ValidateFunction } from 'ajv';
+
+import { SchemaValidator } from '@studnicky/json';
+
 import type {
-  ValidationErrorInterface,
-  ValidationResultInterface,
+  SchemaInterfaceType,
+  ValidationErrorInterfaceType,
+  ValidationResultInterfaceType
 } from '../types/index.ts';
+
 import { ColorRecordSchema }  from './ColorRecordSchema.ts';
 import { InputSchema }        from './InputSchema.ts';
 import { PaletteStateSchema } from './PaletteStateSchema.ts';
@@ -11,25 +16,26 @@ import { RoleSchemaSchema }   from './RoleSchemaSchema.ts';
 import { TaskManifestSchema } from './TaskManifestSchema.ts';
 
 /**
- * A JSON Schema object acceptable to this validator.
- * Kept for backwards-compatible surface of `SchemaInterface`.
+ * Pre-compiles the cross-referenced schemas against `SchemaValidator`'s
+ * shared, process-wide Ajv singleton, so `$ref`s such as
+ * `PaletteStateSchema.properties.colors.items` → `ColorRecordSchema` resolve
+ * regardless of which schema is validated first.
+ *
+ * `SchemaValidator.compile()` is idempotent for a given schema object
+ * reference (Ajv caches by identity), so re-running this for every
+ * `new Validator()` is safe — it never re-registers or throws after the
+ * first call. `ColorRecordSchema` is compiled first because
+ * `PaletteStateSchema` `$ref`s it.
  */
-export type SchemaInterface = Record<string, unknown>;
-
-function makeAjv(): Ajv {
-  const ajv = new Ajv({
-    strict:           false,
-    allErrors:        true,
-    removeAdditional: false,
-  });
-  // Register all cross-referenced schemas up front
-  ajv.addSchema(ColorRecordSchema);
-  ajv.addSchema(InputSchema);
-  ajv.addSchema(PaletteStateSchema);
-  ajv.addSchema(PluginSchema);
-  ajv.addSchema(RoleSchemaSchema);
-  ajv.addSchema(TaskManifestSchema);
-  return ajv;
+class CrossReferenceRegistry {
+  static ensure(): void {
+    SchemaValidator.compile(ColorRecordSchema);
+    SchemaValidator.compile(InputSchema);
+    SchemaValidator.compile(PaletteStateSchema);
+    SchemaValidator.compile(PluginSchema);
+    SchemaValidator.compile(RoleSchemaSchema);
+    SchemaValidator.compile(TaskManifestSchema);
+  }
 }
 
 /**
@@ -44,14 +50,14 @@ function makeAjv(): Ajv {
  */
 function normalisePath(instancePath: string, keyword: string, params: Record<string, unknown>): string {
   if (keyword === 'required') {
-    const missing = params['missingProperty'] as string | undefined;
+    const missing = params.missingProperty as string | undefined;
     if (missing !== undefined) {
       const base = instancePath.replace(/^\//, '').replace(/\//g, '.');
-      return base ? `${base}.${missing}` : missing;
+      return base.length > 0 ? `${base}.${missing}` : missing;
     }
   }
 
-  if (!instancePath) { return ''; }
+  if (instancePath === '') { return ''; }
 
   const segments = instancePath.replace(/^\//, '').split('/');
   let result = '';
@@ -66,9 +72,8 @@ function normalisePath(instancePath: string, keyword: string, params: Record<str
 }
 
 /**
- * Normalise an ajv error message to the legacy format the existing tests
- * expect. The hand-rolled validator produced specific phrasing; we mirror
- * it here so all tests continue to pass without modification.
+ * Per-keyword ajv error formatters, normalising to the legacy hand-rolled
+ * validator's message format so existing test assertions keep passing.
  *
  * Legacy messages:
  *   type:                "expected {type}, got {actual}"
@@ -81,90 +86,96 @@ function normalisePath(instancePath: string, keyword: string, params: Record<str
  *   pattern:             "value \"{value}\" does not match pattern {pattern}"
  *   enum:                "expected one of [{values}], got {value}"
  */
+const MESSAGE_FORMATTERS: Record<string, (params: Record<string, unknown>, value: unknown) => string> = {
+  'additionalProperties': (params) => {
+    const result = `additional property "${params.additionalProperty as string}" is not allowed`;
+    return result;
+  },
+  'enum': (params, value) => {
+    const allowed = params.allowedValues as unknown[];
+    return `expected one of [${allowed.join(', ')}], got ${String(value)}`;
+  },
+  'maximum': (params, value) => {
+    const result = `${String(value)} is greater than maximum ${params.limit as number}`;
+    return result;
+  },
+  'maxItems': (params, value) => {
+    const actual = Array.isArray(value) ? value.length : 0;
+    return `array length ${actual} is greater than maxItems ${params.limit as number}`;
+  },
+  'minimum': (params, value) => {
+    const result = `${String(value)} is less than minimum ${params.limit as number}`;
+    return result;
+  },
+  'minItems': (params, value) => {
+    const actual = Array.isArray(value) ? value.length : 0;
+    return `array length ${actual} is less than minItems ${params.limit as number}`;
+  },
+  'pattern': (params, value) => {
+    const result = `value "${String(value)}" does not match pattern ${params.pattern as string}`;
+    return result;
+  },
+  'required': (params) => {
+    const result = `required property "${params.missingProperty as string}" is missing`;
+    return result;
+  },
+  'type': (params, value) => {
+    const expected = params.type as string | string[];
+    const expectedStr = Array.isArray(expected) ? expected.join(' | ') : expected;
+    let actual: string;
+    if (value === null) { actual = 'null'; }
+    else if (Array.isArray(value)) { actual = 'array'; }
+    else { actual = typeof value; }
+    return `expected ${expectedStr}, got ${actual}`;
+  }
+};
+
+/**
+ * Normalise an ajv error message to the legacy format the existing tests
+ * expect via the per-keyword {@link MESSAGE_FORMATTERS} table.
+ */
 function normaliseMessage(
   e:     ErrorObject,
-  value: unknown,
+  value: unknown
 ): string {
-  const params = e.params as Record<string, unknown>;
-
-  switch (e.keyword) {
-    case 'type': {
-      const expected = (params['type'] as string | string[]);
-      const expectedStr = Array.isArray(expected) ? expected.join(' | ') : expected;
-      const actual = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
-      return `expected ${expectedStr}, got ${actual}`;
-    }
-
-    case 'required': {
-      const prop = params['missingProperty'] as string;
-      return `required property "${prop}" is missing`;
-    }
-
-    case 'additionalProperties': {
-      const prop = params['additionalProperty'] as string;
-      return `additional property "${prop}" is not allowed`;
-    }
-
-    case 'minItems': {
-      const limit  = params['limit'] as number;
-      const actual = Array.isArray(value) ? value.length : 0;
-      return `array length ${actual} is less than minItems ${limit}`;
-    }
-
-    case 'maxItems': {
-      const limit  = params['limit'] as number;
-      const actual = Array.isArray(value) ? value.length : 0;
-      return `array length ${actual} is greater than maxItems ${limit}`;
-    }
-
-    case 'minimum': {
-      const limit = params['limit'] as number;
-      return `${String(value)} is less than minimum ${limit}`;
-    }
-
-    case 'maximum': {
-      const limit = params['limit'] as number;
-      return `${String(value)} is greater than maximum ${limit}`;
-    }
-
-    case 'pattern': {
-      const pattern = params['pattern'] as string;
-      return `value "${String(value)}" does not match pattern ${pattern}`;
-    }
-
-    case 'enum': {
-      const allowed = params['allowedValues'] as unknown[];
-      return `expected one of [${allowed.join(', ')}], got ${String(value)}`;
-    }
-
-    default:
-      return e.message ?? 'validation error';
-  }
+  const params    = e.params as Record<string, unknown>;
+  const formatter = MESSAGE_FORMATTERS[e.keyword];
+  if (formatter !== undefined) { return formatter(params, value); }
+  return e.message ?? 'validation error';
 }
 
 /**
- * Resolve the actual data value at the instancePath for an ajv error.
+ * Resolves the actual data value at the instancePath for an ajv error.
  * Used to produce legacy-style messages that reference the actual value.
  */
-function resolveValue(root: unknown, instancePath: string): unknown {
-  if (!instancePath) { return root; }
-  const segments = instancePath.replace(/^\//, '').split('/');
-  let current: unknown = root;
-  for (const seg of segments) {
-    if (current === null || current === undefined) { return undefined; }
-    if (typeof current === 'object' && !Array.isArray(current)) {
-      current = (current as Record<string, unknown>)[seg];
-    } else if (Array.isArray(current)) {
-      current = current[Number(seg)];
-    } else {
-      return undefined;
+class Value {
+  static resolve(root: unknown, instancePath: string): unknown {
+    if (instancePath === '') { return root; }
+    const segments = instancePath.replace(/^\//, '').split('/');
+    let current: unknown = root;
+    for (const seg of segments) {
+      if (current === null || current === undefined) { return undefined; }
+      if (typeof current === 'object' && !Array.isArray(current)) {
+        current = (current as Record<string, unknown>)[seg];
+      } else if (Array.isArray(current)) {
+        current = current[Number(seg)];
+      } else {
+        return undefined;
+      }
     }
+    return current;
   }
-  return current;
 }
 
 /**
- * Cached validator wrapper backed by ajv.
+ * Cached validator wrapper backed by `@studnicky/json`'s `SchemaValidator`,
+ * which compiles against a shared, process-wide Ajv singleton (2020-12,
+ * strict mode). There is no per-instance Ajv scope: compiled schemas and
+ * their `$id`s are visible to every `Validator` in the process, matching
+ * `SchemaValidator`'s own public surface (static `compile()` only, no
+ * instance/`addSchema` API). Two distinct schema objects that declare the
+ * same `$id` and are compiled anywhere in the process will throw on the
+ * second compile — see {@link Engine.adopt}'s `tryCompile` usage.
  *
  * `compile()` cost is paid once per unique schema object (identity cache).
  * Subsequent `validate()` calls with the same schema object are O(1) lookup
@@ -173,45 +184,44 @@ function resolveValue(root: unknown, instancePath: string): unknown {
  * Error messages are normalised to match the legacy hand-rolled validator
  * format so all existing test assertions continue to pass.
  */
-export class Validator {
-  private readonly ajv:   Ajv;
-  private readonly cache: WeakMap<object, ValidateFunction>;
+class ValidatorClass {
+  readonly #cache: WeakMap<object, ValidateFunction>;
 
   constructor() {
-    this.ajv   = makeAjv();
-    this.cache = new WeakMap();
+    this.#cache = new WeakMap();
+    CrossReferenceRegistry.ensure();
   }
 
-  validate(schema: SchemaInterface, value: unknown): ValidationResultInterface {
-    let fn = this.cache.get(schema);
+  validate(schema: SchemaInterfaceType, value: unknown): ValidationResultInterfaceType {
+    let fn = this.#cache.get(schema);
     if (fn === undefined) {
-      fn = this.ajv.compile(schema);
-      this.cache.set(schema, fn);
+      fn = SchemaValidator.compile(schema);
+      this.#cache.set(schema, fn);
     }
 
     const valid = fn(value);
     if (valid) {
-      return { 'valid': true, 'errors': [] };
+      return { 'errors': [], 'valid': true };
     }
 
-    const errors: ValidationErrorInterface[] = (fn.errors ?? []).map((e) => {
+    const errors: ValidationErrorInterfaceType[] = (fn.errors ?? []).map((e) => {
       const params = e.params as Record<string, unknown>;
       const path   = normalisePath(e.instancePath, e.keyword, params);
-      const actual = resolveValue(value, e.instancePath);
+      const actual = Value.resolve(value, e.instancePath);
       const msg    = normaliseMessage(e, actual);
-      return { 'path': path, 'message': msg };
+      return { 'message': msg, 'path': path };
     });
 
-    return { 'valid': false, 'errors': errors };
+    return { 'errors': errors, 'valid': false };
   }
 
   /**
    * Attempt to compile a schema to verify it is well-formed.
    * Returns true if the schema compiles without error, false otherwise.
    */
-  tryCompile(schema: SchemaInterface): boolean {
+  tryCompile(schema: SchemaInterfaceType): boolean {
     try {
-      this.ajv.compile(schema);
+      SchemaValidator.compile(schema);
       return true;
     } catch {
       return false;
@@ -219,4 +229,9 @@ export class Validator {
   }
 }
 
-export const validator = new Validator();
+/**
+ * Cached validator wrapper backed by `SchemaValidator`'s shared Ajv
+ * singleton. Re-exported as a const binding (rather than the `class`
+ * keyword directly).
+ */
+export const Validator = ValidatorClass;

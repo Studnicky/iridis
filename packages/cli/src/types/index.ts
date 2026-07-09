@@ -1,1 +1,1 @@
-export * from './config.ts';
+export type * from './config.ts';

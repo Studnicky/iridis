@@ -1,36 +1,41 @@
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
 import type {
-  ColorRecordInterface,
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '../../types/index.ts';
+
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 const DEFAULT_L_RANGE: readonly [number, number] = [0.05, 0.95];
 const DEFAULT_C_RANGE: readonly [number, number] = [0.0,  0.40];
 
 function clampToRange(value: number, range: readonly [number, number]): number {
-  return Math.max(range[0], Math.min(range[1], value));
+  const result = Math.max(range[0], Math.min(range[1], value));
+  return result;
 }
 
 function roleRangeFor(
-  color: ColorRecordInterface,
-  state: PaletteStateInterface,
-): { 'lRange': readonly [number, number]; 'cRange': readonly [number, number] } {
-  const roleName = color.hints?.['role'];
+  color: ColorRecordInterfaceType,
+  state: PaletteStateInterface
+): { 'cRange': readonly [number, number]; 'lRange': readonly [number, number]; } {
+  const roleName = color.hints?.role;
 
-  if (roleName && state.input.roles) {
-    const def = state.input.roles.roles.find((r) => r.name === roleName);
-    if (def) {
+  if (roleName !== undefined && state.input.roles !== undefined) {
+    const def = state.input.roles.roles.find((r) => {return r.name === roleName;});
+    if (def !== undefined) {
       return {
-        'lRange': def.lightnessRange ?? DEFAULT_L_RANGE,
         'cRange': def.chromaRange   ?? DEFAULT_C_RANGE,
+        'lRange': def.lightnessRange ?? DEFAULT_L_RANGE
       };
     }
   }
 
-  return { 'lRange': DEFAULT_L_RANGE, 'cRange': DEFAULT_C_RANGE };
+  return { 'cRange': DEFAULT_C_RANGE, 'lRange': DEFAULT_L_RANGE };
 }
 
 /**
@@ -43,23 +48,23 @@ function roleRangeFor(
  * on candidates that already live inside their target envelope. A color
  * that's already inside its range is returned untouched (no allocation).
  */
-export class ClampOklch implements TaskInterface {
+class ClampOklch implements TaskInterface {
   readonly 'name' = 'clamp:oklch';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Clamps each color OKLCH L and C into role-defined ranges (or sensible defaults). Preserves hue.',
     'name':        'clamp:oklch',
     'reads':       ['colors', 'input.roles'],
-    'writes':      ['colors'],
-    'description': 'Clamps each color OKLCH L and C into role-defined ranges (or sensible defaults). Preserves hue.',
+    'writes':      ['colors']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     for (let i = 0; i < state.colors.length; i++) {
       const color = state.colors[i];
-      if (!color) continue;
+      if (color === undefined) {continue;}
 
-      const { lRange, cRange } = roleRangeFor(color, state);
-      const { l, c, h } = color.oklch;
+      const { cRange, lRange } = roleRangeFor(color, state);
+      const { c, h, l } = color.oklch;
 
       const clampedL = clampToRange(l, lRange);
       const clampedC = clampToRange(c, cRange);
@@ -72,19 +77,25 @@ export class ClampOklch implements TaskInterface {
         clampedL,
         clampedC,
         h,
-        color.alpha,
-        color.sourceFormat,
-        color.hints,
+        { 'alpha': color.alpha, 'hints': color.hints, 'sourceFormat': color.sourceFormat }
       );
 
       state.colors[i] = updated;
-      ctx.logger.debug('ClampOklch', 'run', 'Clamped color', {
-        'index':    i,
-        'lFrom':    l,
-        'lTo':      clampedL,
-        'cFrom':    c,
-        'cTo':      clampedC,
-      });
+      ctx.logger.debug(
+        LogBody.create()
+          .component('ClampOklch')
+          .operation('run')
+          .status(LOG_STATUS.SUCCESS)
+          .message('Clamped color')
+          .context({
+            'cFrom':    c,
+            'cTo':      clampedC,
+            'index':    i,
+            'lFrom':    l,
+            'lTo':      clampedL
+          })
+          .build()
+      );
     }
   }
 }

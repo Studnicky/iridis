@@ -1,19 +1,20 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { clamp01 } from './Clamp01.ts';
 import { hslToRgb } from './HslToRgb.ts';
 import { rgbToHsl } from './RgbToHsl.ts';
 
 function lerpAngle(a: number, b: number, t: number): number {
   let diff = b - a;
-  if (diff > 180) diff -= 360;
-  if (diff < -180) diff += 360;
+  if (diff > 180) {diff -= 360;}
+  if (diff < -180) {diff += 360;}
   return ((a + diff * t) % 360 + 360) % 360;
 }
 
-export class MixHsl {
+class MixHsl {
   readonly 'name' = 'mixHsl';
 
-  apply(a: ColorRecordInterface, b: ColorRecordInterface, t: number): ColorRecordInterface {
+  apply(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType, t: number): ColorRecordInterfaceType {
     const tc = clamp01.apply(t);
 
     const hslA = rgbToHsl.apply(a.rgb.r, a.rgb.g, a.rgb.b);

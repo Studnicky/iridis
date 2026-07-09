@@ -1,7 +1,7 @@
-import type { ColorRecordInterface } from '@studnicky/iridis';
+import type { ColorRecordInterfaceType } from '@studnicky/iridis';
 
 /**
- * Serialises a {@link ColorRecordInterface} to the VS Code colour string
+ * Serialises a {@link ColorRecordInterfaceType} to the VS Code colour string
  * form: `color(display-p3 r g b)` at 4 decimal places when the record
  * carries `displayP3` (out-of-sRGB OKLCH input or `intake:p3` origin);
  * the canonical sRGB hex otherwise.
@@ -17,9 +17,9 @@ import type { ColorRecordInterface } from '@studnicky/iridis';
  * pixels to the same record routed through VS Code's theme JSON on a
  * P3-capable browser/editor.
  */
-export function recordToVscodeColor(record: ColorRecordInterface): string {
+export function recordToVscodeColor(record: ColorRecordInterfaceType): string {
   const p3 = record.displayP3;
-  if (!p3) return record.hex;
+  if (p3 === undefined) {return record.hex;}
   const r = p3.r.toFixed(4);
   const g = p3.g.toFixed(4);
   const b = p3.b.toFixed(4);

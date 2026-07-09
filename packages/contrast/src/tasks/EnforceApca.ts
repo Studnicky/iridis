@@ -1,13 +1,17 @@
 import type {
-  ColorRecordInterface,
-  ContrastPairInterface,
+  ColorRecordInterfaceType,
+  ContrastPairInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterface,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
 import { contrastApca, ensureContrast } from '@studnicky/iridis';
-import type { ApcaPairResultInterface } from '../types/augmentation.ts';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+
+import type { ApcaPairResultInterfaceType } from '../types/augmentation.ts';
 
 // APCA Lc target selection per WCAG 3 Bronze level working draft (2023).
 // Reference: https://www.w3.org/WAI/GL/task-forces/silver/wiki/Visual_Contrast_of_Text_Subgroup
@@ -15,12 +19,12 @@ import type { ApcaPairResultInterface } from '../types/augmentation.ts';
 // Lc 60: fluent / headline / large text (≥18pt or ≥14pt bold).
 // Lc 45: non-text UI components (icons, separators, input borders).
 function apcaLcTarget(
-  pair: ContrastPairInterface,
-  roles: Record<string, ColorRecordInterface>,
+  pair: ContrastPairInterfaceType,
+  roles: Record<string, ColorRecordInterfaceType>
 ): number {
   const fgRecord = roles[pair.foreground];
   const bgRecord = roles[pair.background];
-  if (!fgRecord || !bgRecord) {
+  if (fgRecord === undefined || bgRecord === undefined) {
     return 75;
   }
   const fgIntent = fgRecord.hints?.intent;
@@ -40,37 +44,42 @@ function apcaLcTarget(
   return 45;
 }
 
-export class EnforceApca implements TaskInterface {
+class EnforceApca implements TaskInterface {
   readonly 'name' = 'enforce:apca';
 
-  readonly 'manifest': TaskManifestInterface = {
+  readonly 'manifest': TaskManifestInterfaceType = {
+    'description': 'Enforce APCA (WCAG 3 draft) Lc targets: Lc 75 body text, Lc 60 fluent text, Lc 45 non-text UI.',
     'name':        'enforce:apca',
     'reads':       ['input.roles.contrastPairs', 'roles'],
-    'writes':      ['roles', 'metadata[\'contrast:apca\']'],
-    'description': 'Enforce APCA (WCAG 3 draft) Lc targets: Lc 75 body text, Lc 60 fluent text, Lc 45 non-text UI.',
+    'writes':      ['roles', 'metadata[\'contrast:apca\']']
   };
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const pairs = state.input.roles?.contrastPairs ?? [];
     const extraPairs = state.input.contrast?.extra ?? [];
-    const allPairs: readonly ContrastPairInterface[] = [...pairs, ...extraPairs];
+    const allPairs: readonly ContrastPairInterfaceType[] = [...pairs, ...extraPairs];
 
-    const apcaPairs = allPairs.filter((p) => (p.algorithm ?? 'wcag21') === 'apca');
+    const apcaPairs = allPairs.filter((p) => {return (p.algorithm ?? 'wcag21') === 'apca';});
     if (apcaPairs.length === 0) {
       return;
     }
 
-    const results: ApcaPairResultInterface[] = [];
+    const results: ApcaPairResultInterfaceType[] = [];
 
     for (const pair of apcaPairs) {
       const fgRecord = state.roles[pair.foreground];
       const bgRecord = state.roles[pair.background];
 
-      if (!fgRecord || !bgRecord) {
-        ctx.logger.warn('EnforceApca', 'run', 'Role not found for pair', {
-          'foreground': pair.foreground,
-          'background': pair.background,
-        });
+      if (fgRecord === undefined || bgRecord === undefined) {
+        ctx.logger.warn(
+          LogBody.create()
+            .component('EnforceApca')
+            .operation('run')
+            .status(LOG_STATUS.INVALID)
+            .message('Role not found for pair')
+            .context({ 'background': pair.background, 'foreground': pair.foreground })
+            .build()
+        );
         continue;
       }
 
@@ -92,34 +101,47 @@ export class EnforceApca implements TaskInterface {
       }
 
       if (current < requiredLc) {
-        ctx.logger.warn('EnforceApca', 'run', 'Pair could not reach required Lc after iterations', {
-          'foreground':    pair.foreground,
-          'background':    pair.background,
-          'requiredLc':    requiredLc,
-          'achievedLc':    current,
-          'maxIterations': maxIterations,
-        });
+        ctx.logger.warn(
+          LogBody.create()
+            .component('EnforceApca')
+            .operation('run')
+            .status(LOG_STATUS.PARTIAL)
+            .message('Pair could not reach required Lc after iterations')
+            .context({
+              'achievedLc':    current,
+              'background':    pair.background,
+              'foreground':    pair.foreground,
+              'maxIterations': maxIterations,
+              'requiredLc':    requiredLc
+            })
+            .build()
+        );
       }
 
       state.roles[pair.foreground] = currentFg;
 
       results.push({
-        'foreground': pair.foreground,
-        'background': pair.background,
-        'algorithm':  'apca',
-        'requiredLc': requiredLc,
-        'beforeLc':   beforeLc,
         'afterLc':    current,
+        'algorithm':  'apca',
+        'background': pair.background,
+        'beforeLc':   beforeLc,
+        'foreground': pair.foreground,
         'pass':       current >= requiredLc,
+        'requiredLc': requiredLc
       });
     }
 
     state.metadata['contrast:apca'] = { 'pairs': results };
 
-    ctx.logger.debug('EnforceApca', 'run', 'Processed APCA pairs', {
-      'pairCount': results.length,
-      'apcaMeta':  state.metadata['contrast:apca'],
-    });
+    ctx.logger.debug(
+      LogBody.create()
+        .component('EnforceApca')
+        .operation('run')
+        .status(LOG_STATUS.SUCCESS)
+        .message('Processed APCA pairs')
+        .context({ 'apcaMeta': state.metadata['contrast:apca'], 'pairCount': results.length })
+        .build()
+    );
   }
 }
 

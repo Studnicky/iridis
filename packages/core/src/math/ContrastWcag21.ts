@@ -1,10 +1,11 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { luminance } from './Luminance.ts';
 
-export class ContrastWcag21 {
+class ContrastWcag21 {
   readonly 'name' = 'contrastWcag21';
 
-  apply(a: ColorRecordInterface, b: ColorRecordInterface): number {
+  apply(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType): number {
     const l1 = luminance.apply(a);
     const l2 = luminance.apply(b);
     const lighter = Math.max(l1, l2);

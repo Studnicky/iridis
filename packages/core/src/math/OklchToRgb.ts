@@ -1,11 +1,13 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
-export class OklchToRgb {
+class OklchToRgb {
   readonly 'name' = 'oklchToRgb';
 
-  apply(l: number, c: number, h: number, alpha: number = 1): ColorRecordInterface {
-    return colorRecordFactory.fromOklch(l, c, h, alpha);
+  apply(l: number, c: number, h: number, alpha = 1): ColorRecordInterfaceType {
+    const result = colorRecordFactory.fromOklch(l, c, h, { 'alpha': alpha });
+    return result;
   }
 }
 

@@ -1,21 +1,22 @@
-import type { ColorRecordInterface } from './color.ts';
+import type { JsonObjectType } from '@studnicky/types';
+
+import type { ColorRecordInterfaceType } from './color.ts';
 import type {
   ContrastAlgorithmType,
-  ContrastPairInterface,
-  RoleSchemaInterface,
+  ContrastPairInterfaceType,
+  RoleSchemaInterfaceType
 } from './role.ts';
 import type { RuntimeOptionsInterface } from './runtime.ts';
 
 export interface InputInterface {
-  readonly colors:    readonly unknown[];
-  readonly roles?:    RoleSchemaInterface;
-  readonly contrast?: {
-    readonly level?:     'AA' | 'AAA' | string;
-    readonly algorithm?: ContrastAlgorithmType;
-    readonly extra?:     readonly ContrastPairInterface[];
+  readonly 'bypass'?:    boolean;
+  readonly 'colors':    readonly unknown[];
+  readonly 'contrast'?: {
+    readonly 'algorithm'?:   ContrastAlgorithmType;
+    readonly 'cvdCorrect'?:  boolean;
+    readonly 'extra'?:       readonly ContrastPairInterfaceType[];
+    readonly 'level'?:       string;
   };
-  readonly maxColors?: number;
-  readonly bypass?:    boolean;
   /**
    * Selective emit filter: names of output slots to produce. Reserved for
    * the planned `@studnicky/iridis-anima` animation/interpolation engine,
@@ -23,35 +24,30 @@ export interface InputInterface {
    * interpolation frame (avoiding unnecessary emit work on hot paths).
    * No current task reads this field; it is public API for future consumers.
    */
-  readonly emit?:      readonly string[];
-  readonly runtime?:   RuntimeOptionsInterface;
-  readonly metadata?:  Record<string, unknown>;
+  readonly 'emit'?:      readonly string[];
+  readonly 'maxColors'?: number;
+  readonly 'metadata'?:  JsonObjectType;
+  readonly 'roles'?:    RoleSchemaInterfaceType;
+  readonly 'runtime'?:   RuntimeOptionsInterface;
 }
 
 /** Shape of a single contrast report entry (written by enforce:contrast). */
-export interface ContrastReportEntryInterface {
-  readonly 'foreground': string;
-  readonly 'background': string;
-  readonly 'algorithm':  string;
-  readonly 'ratio':      number;
-  readonly 'minRatio':   number;
-  readonly 'passed':     boolean;
-  readonly 'adjusted':   boolean;
-}
-
-/** Shape of a single variant configuration entry (read by derive:variant). */
-export interface VariantConfigInterface {
-  readonly 'name':             string;
-  readonly 'invertLightness':  boolean;
-  readonly 'lightnessOffset'?: number;
-}
+export type ContrastReportEntryInterfaceType = {
+  'adjusted':   boolean;
+  'algorithm':  string;
+  'background': string;
+  'foreground': string;
+  'minRatio':   number;
+  'passed':     boolean;
+  'ratio':      number;
+};
 
 export interface PaletteStateInterface {
-  readonly input:    InputInterface;
-  readonly runtime:  RuntimeOptionsInterface;
-  colors:            ColorRecordInterface[];
-  roles:             Record<string, ColorRecordInterface>;
-  variants:          Record<string, Record<string, ColorRecordInterface>>;
-  outputs:           Record<string, unknown>;
-  metadata:          Record<string, unknown>;
+  'colors':            ColorRecordInterfaceType[];
+  readonly 'input':    InputInterface;
+  'metadata':          JsonObjectType;
+  'outputs':           JsonObjectType;
+  'roles':             Record<string, ColorRecordInterfaceType>;
+  readonly 'runtime':  RuntimeOptionsInterface;
+  'variants':          Record<string, Record<string, ColorRecordInterfaceType>>;
 }

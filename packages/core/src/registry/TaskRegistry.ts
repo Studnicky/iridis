@@ -1,8 +1,10 @@
+import { ModuleError, ValidationError } from '@studnicky/errors';
+
 import type {
   LifecyclePhaseType,
   TaskInterface,
-  TaskManifestInterface,
-  TaskRegistryInterface,
+  TaskManifestInterfaceType,
+  TaskRegistryInterface
 } from '../types/index.ts';
 
 /**
@@ -23,15 +25,15 @@ export class TaskRegistry implements TaskRegistryInterface {
   private readonly onRunEnd:   TaskInterface[] = [];
 
   register(task: TaskInterface): void {
-    if (!task.name) {
-      throw new Error('TaskRegistry.register: task.name is required');
+    if (task.name === '') {
+      throw ValidationError.create({ 'message': 'task.name is required', 'path': 'TaskRegistry.register' });
     }
     this.entries.set(task.name, task);
   }
 
   hook(phase: LifecyclePhaseType, task: TaskInterface): void {
-    if (!task.name) {
-      throw new Error('TaskRegistry.hook: task.name is required');
+    if (task.name === '') {
+      throw ValidationError.create({ 'message': 'task.name is required', 'path': 'TaskRegistry.hook' });
     }
     this.entries.set(task.name, task);
     if (phase === 'onRunStart') {
@@ -45,19 +47,23 @@ export class TaskRegistry implements TaskRegistryInterface {
   resolve(name: string): TaskInterface {
     const task = this.entries.get(name);
 
-    if (!task) {
-      throw new Error(`TaskRegistry.resolve: no task registered with name '${name}'`);
+    if (task === undefined) {
+      throw ModuleError.create(`TaskRegistry.resolve: no task registered with name '${name}'`, {
+        'context':  { 'taskName': name },
+        'scenario': 'NOT_FOUND'
+      });
     }
 
     return task;
   }
 
   has(name: string): boolean {
-    return this.entries.has(name);
+    const result = this.entries.has(name);
+    return result;
   }
 
-  list(): readonly TaskManifestInterface[] {
-    const out: TaskManifestInterface[] = [];
+  list(): readonly TaskManifestInterfaceType[] {
+    const out: TaskManifestInterfaceType[] = [];
 
     for (const task of this.entries.values()) {
       out.push(task.manifest ?? { 'name': task.name });

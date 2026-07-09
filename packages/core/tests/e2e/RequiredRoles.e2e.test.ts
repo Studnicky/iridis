@@ -18,7 +18,7 @@
  *   6. optional-roles   — non-required with input nudged; zero input not synthesized
  */
 
-import type { RoleSchemaInterface } from '@studnicky/iridis';
+import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
 import { Engine }                   from '@studnicky/iridis';
 import { coreTasks }                from '@studnicky/iridis/tasks';
 import {
@@ -102,7 +102,7 @@ const lightnessRangeScenarios: readonly ScenarioInterface<LightnessRangeInput, L
 new ScenarioRunner<LightnessRangeInput, LightnessRangeOutput>(
   'RequiredRoles :: cell-1 :: lightnessRange',
   async (input) => {
-    const schema: RoleSchemaInterface = {
+    const schema: RoleSchemaInterfaceType = {
       'name': 'lr-schema',
       'roles': [{ 'name': input.roleName, 'required': true, 'lightnessRange': input.range }],
     };
@@ -162,7 +162,7 @@ const chromaRangeScenarios: readonly ScenarioInterface<ChromaRangeInput, ChromaR
 new ScenarioRunner<ChromaRangeInput, ChromaRangeOutput>(
   'RequiredRoles :: cell-2 :: chromaRange',
   async (input) => {
-    const schema: RoleSchemaInterface = {
+    const schema: RoleSchemaInterfaceType = {
       'name': 'cr-schema',
       'roles': [{ 'name': 'neutral', 'required': true, 'chromaRange': input.range }],
     };
@@ -216,7 +216,7 @@ const hueOffsetScenarios: readonly ScenarioInterface<HueOffsetInput, HueOffsetOu
 new ScenarioRunner<HueOffsetInput, HueOffsetOutput>(
   'RequiredRoles :: cell-3 :: hueOffset',
   async (input) => {
-    const schema: RoleSchemaInterface = {
+    const schema: RoleSchemaInterfaceType = {
       'name': 'ho-schema',
       'roles': [{ 'name': 'anchor', 'required': true, 'hueOffset': input.hueOffset }],
     };
@@ -273,7 +273,7 @@ const combinedScenarios: readonly ScenarioInterface<CombinedInput, CombinedOutpu
 new ScenarioRunner<CombinedInput, CombinedOutput>(
   'RequiredRoles :: cell-4 :: combined-constraints',
   async (input) => {
-    const schema: RoleSchemaInterface = {
+    const schema: RoleSchemaInterfaceType = {
       'name': 'cc-schema',
       'roles': [{
         'name':           'tight',
@@ -347,7 +347,7 @@ const synthesisScenarios: readonly ScenarioInterface<SynthesisInput, SynthesisOu
 new ScenarioRunner<SynthesisInput, SynthesisOutput>(
   'RequiredRoles :: cell-5 :: synthesis',
   async (input) => {
-    const schema: RoleSchemaInterface = {
+    const schema: RoleSchemaInterfaceType = {
       'name': 'synth-schema',
       'roles': [{
         'name':           'synth',
@@ -432,7 +432,7 @@ const optionalRoleScenarios: readonly ScenarioInterface<OptionalRoleInput, Optio
 new ScenarioRunner<OptionalRoleInput, OptionalRoleOutput>(
   'RequiredRoles :: cell-6 :: optional-roles',
   async (input) => {
-    const schema: RoleSchemaInterface = {
+    const schema: RoleSchemaInterfaceType = {
       'name': 'opt-schema',
       'roles': [{ 'name': 'maybe', 'required': false, 'lightnessRange': input.range }],
     };

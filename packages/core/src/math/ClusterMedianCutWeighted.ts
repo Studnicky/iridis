@@ -1,26 +1,29 @@
-import type { ColorRecordInterface } from '../types/index.ts';
+import { ValidationError } from '@studnicky/errors';
+
+import type { ColorRecordInterfaceType } from '../types/index.ts';
+
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
-interface BucketInterface {
-  colors: ColorRecordInterface[];
-  totalWeight: number;
-}
+type BucketInterface = {
+  'colors': ColorRecordInterfaceType[];
+  'totalWeight': number;
+};
 
-function recordWeight(record: ColorRecordInterface): number {
+function recordWeight(record: ColorRecordInterfaceType): number {
   const w = record.hints?.weight;
   return typeof w === 'number' && w > 0 ? w : 1;
 }
 
-function bucketCentroid(bucket: BucketInterface): ColorRecordInterface {
+function bucketCentroid(bucket: BucketInterface): ColorRecordInterfaceType {
   const colors = bucket.colors;
   const n = colors.length;
   if (n === 0) {
     return colorRecordFactory.fromOklch(0.5, 0, 0);
   }
-  let sumL = 0, sumA = 0, sumB = 0, sumAlpha = 0, sumW = 0;
+  let sumA = 0; let sumAlpha = 0; let sumB = 0; let sumL = 0; let sumW = 0;
   for (let i = 0; i < n; i++) {
     const col = colors[i];
-    if (col === undefined) continue;
+    if (col === undefined) {continue;}
     const w = recordWeight(col);
     const hRad = (col.oklch.h * Math.PI) / 180;
     sumL     += col.oklch.l * w;
@@ -37,58 +40,60 @@ function bucketCentroid(bucket: BucketInterface): ColorRecordInterface {
   const bMean = sumB / sumW;
   const C = Math.sqrt(aMean * aMean + bMean * bMean);
   let H = (Math.atan2(bMean, aMean) * 180) / Math.PI;
-  if (H < 0) H += 360;
-  return colorRecordFactory.fromOklch(L, C, H, sumAlpha / sumW, 'oklch', { 'weight': sumW });
+  if (H < 0) {H += 360;}
+  return colorRecordFactory.fromOklch(L, C, H, { 'alpha': sumAlpha / sumW, 'hints': { 'weight': sumW }, 'sourceFormat': 'oklch' });
 }
 
-function rangeOf(colors: ColorRecordInterface[], channel: 'l' | 'c' | 'h'): number {
-  if (colors.length === 0) return 0;
-  let min = Infinity, max = -Infinity;
+function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c' | 'h'): number {
+  if (colors.length === 0) {return 0;}
+  let max = -Infinity; let min = Infinity;
   for (let i = 0; i < colors.length; i++) {
     const v = colors[i]?.oklch[channel] ?? 0;
-    if (v < min) min = v;
-    if (v > max) max = v;
+    if (v < min) {min = v;}
+    if (v > max) {max = v;}
   }
   return max - min;
 }
 
-function splitBucket(bucket: BucketInterface): [BucketInterface, BucketInterface] {
-  const colors = bucket.colors;
-  const lRange = rangeOf(colors, 'l');
-  const cRange = rangeOf(colors, 'c');
-  const hRange = rangeOf(colors, 'h') / 360;
+class Bucket {
+  static split(bucket: BucketInterface): [BucketInterface, BucketInterface] {
+    const colors = bucket.colors;
+    const lRange = rangeOf(colors, 'l');
+    const cRange = rangeOf(colors, 'c');
+    const hRange = rangeOf(colors, 'h') / 360;
 
-  let channel: 'l' | 'c' | 'h' = 'l';
-  if (cRange > lRange && cRange > hRange) channel = 'c';
-  else if (hRange > lRange) channel = 'h';
+    let channel: 'l' | 'c' | 'h' = 'l';
+    if (cRange > lRange && cRange > hRange) {channel = 'c';}
+    else if (hRange > lRange) {channel = 'h';}
 
-  const sorted = [...colors].sort((a, b) => a.oklch[channel] - b.oklch[channel]);
+    const sorted = [...colors].sort((a, b) => {return a.oklch[channel] - b.oklch[channel];});
 
-  const half = bucket.totalWeight / 2;
-  let acc = 0;
-  let splitIdx = 0;
-  for (let i = 0; i < sorted.length; i++) {
-    const col = sorted[i];
-    if (col === undefined) continue;
-    acc += recordWeight(col);
-    if (acc >= half) {
-      splitIdx = i + 1;
-      break;
+    const half = bucket.totalWeight / 2;
+    let acc = 0;
+    let splitIdx = 0;
+    for (let i = 0; i < sorted.length; i++) {
+      const col = sorted[i];
+      if (col === undefined) {continue;}
+      acc += recordWeight(col);
+      if (acc >= half) {
+        splitIdx = i + 1;
+        break;
+      }
     }
-  }
-  if (splitIdx <= 0)              splitIdx = 1;
-  if (splitIdx >= sorted.length)  splitIdx = sorted.length - 1;
+    if (splitIdx <= 0)              {splitIdx = 1;}
+    if (splitIdx >= sorted.length)  {splitIdx = sorted.length - 1;}
 
-  const left  = sorted.slice(0, splitIdx);
-  const right = sorted.slice(splitIdx);
-  let lw = 0;
-  for (const col of left)  lw += recordWeight(col);
-  let rw = 0;
-  for (const col of right) rw += recordWeight(col);
-  return [
-    { 'colors': left,  'totalWeight': lw },
-    { 'colors': right, 'totalWeight': rw },
-  ];
+    const left  = sorted.slice(0, splitIdx);
+    const right = sorted.slice(splitIdx);
+    let lw = 0;
+    for (const col of left)  {lw += recordWeight(col);}
+    let rw = 0;
+    for (const col of right) {rw += recordWeight(col);}
+    return [
+      { 'colors': left,  'totalWeight': lw },
+      { 'colors': right, 'totalWeight': rw }
+    ];
+  }
 }
 
 /**
@@ -107,18 +112,26 @@ function splitBucket(bucket: BucketInterface): [BucketInterface, BucketInterface
  *   the reduction toward separating dense regions of color space
  *   rather than thinly-populated outliers.
  */
-export class ClusterMedianCutWeighted {
+class ClusterMedianCutWeighted {
   readonly 'name' = 'clusterMedianCutWeighted';
 
-  apply(colors: readonly ColorRecordInterface[], k: number): ColorRecordInterface[] {
-    if (colors.length === 0) return [];
+  apply(colors: readonly ColorRecordInterfaceType[], k: number): ColorRecordInterfaceType[] {
+    if (colors.length === 0) {return [];}
     if (k < 1) {
-      throw new Error('ClusterMedianCutWeighted.apply: k must be a positive number');
+      throw ValidationError.create({
+        'message': 'ClusterMedianCutWeighted.apply: k must be a positive number',
+        'path':    'k',
+        'violations': [{
+          'details': { 'expected': 'k >= 1', 'received': k },
+          'message': 'k is not a positive number',
+          'path':    'k'
+        }]
+      });
     }
 
     const targetK = Math.min(Math.floor(k), colors.length);
     let totalW = 0;
-    for (const col of colors) totalW += recordWeight(col);
+    for (const col of colors) {totalW += recordWeight(col);}
     let buckets: BucketInterface[] = [{ 'colors': [...colors], 'totalWeight': totalW }];
 
     while (buckets.length < targetK) {
@@ -126,7 +139,7 @@ export class ClusterMedianCutWeighted {
       let bestIdx = 0;
       for (let i = 0; i < buckets.length; i++) {
         const bucket = buckets[i];
-        if (bucket === undefined || bucket.colors.length <= 1) continue;
+        if (bucket === undefined || bucket.colors.length <= 1) {continue;}
         // Bucket-selection score: weight × widest_range.
         //
         // Selecting purely by weight makes a huge uniform region (page
@@ -152,14 +165,14 @@ export class ClusterMedianCutWeighted {
         }
       }
       const target = buckets[bestIdx];
-      if (target === undefined || target.colors.length <= 1) break;
+      if (target === undefined || target.colors.length <= 1) {break;}
 
-      const [left, right] = splitBucket(target);
+      const [left, right] = Bucket.split(target);
       buckets = [
         ...buckets.slice(0, bestIdx),
         left,
         right,
-        ...buckets.slice(bestIdx + 1),
+        ...buckets.slice(bestIdx + 1)
       ];
     }
 

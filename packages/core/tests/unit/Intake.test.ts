@@ -25,14 +25,14 @@ import type {
   PipelineContextInterface,
 } from '@studnicky/iridis';
 import {
-  IntakeHex,
-  IntakeRgb,
-  IntakeHsl,
-  IntakeOklch,
-  IntakeLab,
-  IntakeNamed,
-  IntakeP3,
-  IntakeAny,
+  intakeHex,
+  intakeRgb,
+  intakeHsl,
+  intakeOklch,
+  intakeLab,
+  intakeNamed,
+  intakeP3,
+  intakeAny,
 } from '@studnicky/iridis/tasks';
 import {
   ScenarioRunner,
@@ -60,6 +60,7 @@ const noopCtx: PipelineContextInterface = {
   'engine':    {} as PipelineContextInterface['engine'],
   'tasks':     {} as PipelineContextInterface['tasks'],
   'logger':    {
+    child()  { return noopCtx.logger; },
     trace() { /* no-op */ },
     debug() { /* no-op */ },
     info()  { /* no-op */ },
@@ -72,14 +73,14 @@ const noopCtx: PipelineContextInterface = {
 // ---------------------------------------------------------------------------
 // Cell 1 — IntakeHex.parse: canonical parse contract
 //
-// parse() returns a ColorRecordInterface on valid hex, throws on any other
+// parse() returns a ColorRecordInterfaceType on valid hex, throws on any other
 // input (non-string, non-hex string, wrong format). Side-effect-free.
 // ---------------------------------------------------------------------------
 
 interface Cell1Input  { raw: unknown }
-interface Cell1Output { result: import('@studnicky/iridis').ColorRecordInterface }
+interface Cell1Output { result: import('@studnicky/iridis').ColorRecordInterfaceType }
 
-const hex = new IntakeHex();
+const hex = intakeHex;
 
 const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
   {
@@ -227,7 +228,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
 new ScenarioRunner<Cell2Input, Cell2Output>(
   'Intake :: cell-2 :: IntakeHex.run',
   (input) => {
-    const task = new IntakeHex();
+    const task = intakeHex;
     const state = makeState(input.colors);
     task.run(state, noopCtx);
     return { count: state.colors.length };
@@ -287,7 +288,7 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
 new ScenarioRunner<Cell3Input, Cell3Output>(
   'Intake :: cell-3 :: IntakeRgb.run',
   (input) => {
-    const task = new IntakeRgb();
+    const task = intakeRgb;
     const state = makeState(input.colors);
     task.run(state, noopCtx);
     return { count: state.colors.length };
@@ -345,7 +346,7 @@ const cell4Scenarios: readonly ScenarioInterface<Cell4Input, Cell4Output>[] = [
 new ScenarioRunner<Cell4Input, Cell4Output>(
   'Intake :: cell-4 :: IntakeHsl.run',
   (input) => {
-    const task = new IntakeHsl();
+    const task = intakeHsl;
     const state = makeState(input.colors);
     task.run(state, noopCtx);
     return { count: state.colors.length };
@@ -395,7 +396,7 @@ const cell5Scenarios: readonly ScenarioInterface<Cell5Input, Cell5Output>[] = [
 new ScenarioRunner<Cell5Input, Cell5Output>(
   'Intake :: cell-5 :: IntakeOklch.run',
   (input) => {
-    const task = new IntakeOklch();
+    const task = intakeOklch;
     const state = makeState(input.colors);
     task.run(state, noopCtx);
     return { count: state.colors.length };
@@ -445,7 +446,7 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
 new ScenarioRunner<Cell6Input, Cell6Output>(
   'Intake :: cell-6 :: IntakeLab.run',
   (input) => {
-    const task = new IntakeLab();
+    const task = intakeLab;
     const state = makeState(input.colors);
     task.run(state, noopCtx);
     return { count: state.colors.length };
@@ -506,7 +507,7 @@ const cell7Scenarios: readonly ScenarioInterface<Cell7Input, Cell7Output>[] = [
 new ScenarioRunner<Cell7Input, Cell7Output>(
   'Intake :: cell-7 :: IntakeNamed.run',
   (input) => {
-    const task = new IntakeNamed();
+    const task = intakeNamed;
     const state = makeState(input.colors);
     task.run(state, noopCtx);
     return { count: state.colors.length, hex: state.colors[0]?.hex ?? null };
@@ -565,7 +566,7 @@ const cell8Scenarios: readonly ScenarioInterface<Cell8Input, Cell8Output>[] = [
 new ScenarioRunner<Cell8Input, Cell8Output>(
   'Intake :: cell-8 :: IntakeP3.run',
   (input) => {
-    const task = new IntakeP3();
+    const task = intakeP3;
     const state = makeState(input.colors);
     task.run(state, noopCtx);
     return { count: state.colors.length };
@@ -689,7 +690,7 @@ const cell9Scenarios: readonly ScenarioInterface<Cell9Input, Cell9Output>[] = [
 new ScenarioRunner<Cell9Input, Cell9Output>(
   'Intake :: cell-9 :: IntakeAny.run',
   (input) => {
-    const task = new IntakeAny();
+    const task = intakeAny;
     const state = makeState(input.colors);
     task.run(state, noopCtx);
     return { count: state.colors.length };
