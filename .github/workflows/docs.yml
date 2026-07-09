@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
   pages: write
   id-token: write
 
@@ -23,6 +24,8 @@ jobs:
       - uses: actions/setup-node@v6
         with: { node-version: 24, cache: npm }
       - run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm run docs:build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v5
