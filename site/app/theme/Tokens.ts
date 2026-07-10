@@ -71,10 +71,10 @@ export class Tokens {
     return tokens;
   }
 
-  /** Serializes engine tokens as a `:root` rule for SSR head injection. */
+  /** Serializes engine tokens as a highly specific rule for SSR head injection to override UI framework defaults. */
   static toCssText(tokens: RoleHexMapType): string {
     const decls = Object.entries(tokens).map(([k, v]) => {return `${k}:${v}`;}).join(';');
-    return `:root{${decls}}`;
+    return `html:root, html:root.dark, html:root:not(.dark) {${decls}}`;
   }
 
   /** Every role name this mapper ever reads by name — the ground truth for "does pinning this role actually show up anywhere". */
