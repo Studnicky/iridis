@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAsyncData } from '#imports'
+
 /**
  * iridis × Nuxt UI. A compact hero, then PaletteControls (the engine's one
  * input surface: seeds or an image, schema, contrast, framing), then the demo
@@ -8,17 +10,33 @@
  * palette. Every color is produced by engine.run().
  */
 const sections = [
-  { 'key': 'histogram', 'label': 'Histogram' },
-  { 'key': 'components', 'label': 'Components' },
-  { 'key': 'roles', 'label': 'Roles' },
-  { 'key': 'rolesTable', 'label': 'Roles table' },
-  { 'key': 'spaces', 'label': 'Spaces' },
   { 'key': 'pipeline', 'label': 'Pipeline' },
-  { 'key': 'schema', 'label': 'Schema' },
-  { 'key': 'motion', 'label': 'Motion' },
+  { 'key': 'rolesTable', 'label': 'Roles table' },
   { 'key': 'cvd', 'label': 'CVD vision' },
+  { 'key': 'roles', 'label': 'Roles' },
+  { 'key': 'components', 'label': 'Components' },
   { 'key': 'spectrum', 'label': 'Spectrum' },
+  { 'key': 'motion', 'label': 'Motion' },
+  { 'key': 'spaces', 'label': 'Spaces' },
+  { 'key': 'schema', 'label': 'Schema' },
 ];
+
+const mermaidCode = `flowchart TD
+    A["input.colors<br/>(raw strings / objects)"]
+    B["state.colors<br/>(ColorRecord[])"]
+    C["state.roles<br/>(Record<string, ColorRecord>)"]
+    D["state.roles<br/>(contrast-adjusted)"]
+    E["state.variants<br/>(light / dark)"]
+    F["state.outputs<br/>(cssVars, tailwind, shadcn ...)"]
+
+    A -->|intake tasks| B
+    B -->|resolve:roles| C
+    C -->|enforce:contrast| D
+    D -->|derive:variant| E
+    D -->|emit tasks| F
+    E -->|emit tasks| F`;
+
+const { data: allDocs } = await useAsyncData('alldocs', () => queryCollection('docs').all())
 </script>
 
 <template>
@@ -31,8 +49,7 @@ const sections = [
 
       <CylinderCarousel :items="sections">
         <template #default="{ item }">
-          <HistogramDemo v-if="item.key === 'histogram'" />
-          <LiveComponents v-else-if="item.key === 'components'" />
+          <LiveComponents v-if="item.key === 'components'" />
           <ResolvedRoles v-else-if="item.key === 'roles'" />
           <RolesTable v-else-if="item.key === 'rolesTable'" />
           <ColorSpaces v-else-if="item.key === 'spaces'" />
@@ -45,7 +62,7 @@ const sections = [
             class="space-y-3"
           >
             <p class="text-sm text-muted">
-              The full 50→950 ramp per alias — swipe it, or let it autoplay.
+              The full 50→950 ramp per alias.
             </p>
             <PaletteCarousel />
           </div>
@@ -53,6 +70,31 @@ const sections = [
       </CylinderCarousel>
 
       <MultiOutput />
+      
+      <div class="mt-12 space-y-4">
+        <h2 class="text-2xl font-bold tracking-tight text-highlighted text-center">Pipeline Architecture</h2>
+        <MermaidDiagram :code="mermaidCode" />
+      </div>
+      
+      <div v-if="allDocs && allDocs.length > 0" class="mt-32 space-y-12 border-t border-default pt-24">
+        <UCard
+          v-for="doc in allDocs"
+          :key="doc.path"
+          :id="doc.path.replace(/[^a-zA-Z0-9-]/g, '-').replace(/^-+|-+$/g, '')"
+          class="scroll-mt-24"
+        >
+          <template #header>
+            <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+              <span />
+              <h2 class="text-center text-xl font-bold tracking-tight text-highlighted">{{ doc.title || doc.path }}</h2>
+              <span />
+            </div>
+          </template>
+          <article class="prose prose-primary dark:prose-invert max-w-none">
+            <ContentRenderer :value="doc" />
+          </article>
+        </UCard>
+      </div>
     </UContainer>
   </div>
 </template>

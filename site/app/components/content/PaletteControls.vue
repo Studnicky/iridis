@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { OPTIONAL_STAGE_NAMES, useIridis } from '~/composables/useIridis.ts';
+import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 
 /**
@@ -22,22 +22,21 @@ import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
  * pin can never silently do nothing.
  */
 const {
-  pickerSeeds, pinnableRoles, framing, schemaName, contrastLevel, mode, imageSeeds, running,
-  enabledOptionalStages, toggleOptionalStage, cvdCorrect, contrastReport
+  pickerSeeds, pinnableRoles, framing, schemaName, contrastStrictness, colorSpace, mode, imageSeeds, running,
+  enabledOptionalStages, cvdCorrect, contrastReport,
+  imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
+  cvdPreviewTypes, toggleCvdPreviewType
 } = useIridis();
 const { send } = useIridisUiMachine();
 
 const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-32'];
+const algorithmItems = [
+  { 'label': 'ΔE (delta-e)', 'value': 'delta-e' },
+  { 'label': 'Median cut', 'value': 'median-cut' }
+];
 const UNPINNED = '__unpinned__';
-const roleItems = computed(() => [{ 'label': 'Unpinned', 'value': UNPINNED }, ...pinnableRoles.value.map((r) => {return { 'label': r, 'value': r };})]);
 
-/** Human labels for the optional contrast-check stages, in display order. */
-const OPTIONAL_STAGE_LABELS: Record<string, string> = {
-  'enforce:apca':    'APCA',
-  'enforce:wcagAA':  'WCAG AA',
-  'enforce:wcagAAA': 'WCAG AAA'
-};
-const optionalStageItems = computed(() => OPTIONAL_STAGE_NAMES.map((name) => {return { label: OPTIONAL_STAGE_LABELS[name] ?? name, name };}));
+
 
 /** Compact pass/fail summary badges for whichever optional stages are currently enabled. */
 const stageSummaries = computed(() => {
@@ -72,9 +71,12 @@ const stageSummaries = computed(() => {
 
 /** UFileUpload owns this ref; picking a file here is the only trigger for the EXTRACT_IMAGE(file) effect. */
 const uploadedFile = ref<File | null>(null);
-watch(uploadedFile, (file) => {
-  if (file) {send({ file, 'source': 'file', 'type': 'EXTRACT_IMAGE' });}
-});
+const handleFile = (file: File | null) => {
+  if (file) {
+    send({ file, 'source': 'file', 'type': 'EXTRACT_IMAGE' });
+  }
+};
+watch(uploadedFile, handleFile);
 
 function sample(): void {
   uploadedFile.value = null;
@@ -88,7 +90,7 @@ function sample(): void {
     <template #header>
       <div class="mx-auto grid w-full max-w-4xl grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div class="flex flex-wrap items-center gap-3">
-          <ModeSwitch />
+          <!-- ModeSwitch moved to body -->
         </div>
         <span class="text-center font-semibold text-highlighted">Palette</span>
         <div class="flex justify-end">
@@ -108,6 +110,8 @@ function sample(): void {
       v-auto-animate
       class="mx-auto w-full max-w-4xl space-y-5"
     >
+      <ModeSwitch class="mb-8" />
+      
       <p
         v-if="mode === 'picker'"
         class="text-sm text-muted"
@@ -119,7 +123,7 @@ function sample(): void {
         v-else
         class="text-sm text-muted"
       >
-        Drop an image or try a sample. Tune the extraction itself in the Histogram card below.
+        Drop an image or try a sample to generate a palette. Tune the extraction knobs below.
       </p>
 
       <div
@@ -156,7 +160,7 @@ function sample(): void {
           </div>
           <USelect
             :model-value="seed.role ?? UNPINNED"
-            :items="roleItems"
+            :items="[{ label: 'Unpinned', value: UNPINNED }, ...pinnableRoles.map((r) => ({ label: r, value: r, disabled: pickerSeeds.some((s, sIdx) => sIdx !== i && s.role === r) }))]"
             value-key="value"
             size="xs"
             class="w-full"
@@ -169,7 +173,7 @@ function sample(): void {
             color="primary"
             variant="soft"
             size="sm"
-            :disabled="pickerSeeds.length >= 8"
+            :disabled="pickerSeeds.length >= 32"
             @click="send({ type: 'ADD_SEED' })"
           >
             Add seed
@@ -210,35 +214,100 @@ function sample(): void {
             </UButton>
           </template>
         </UFileUpload>
-        <UBadge
-          :color="running ? 'warning' : 'success'"
-          variant="soft"
-        >
-          {{ running ? 'extracting…' : `${imageSeeds.length} colors` }}
-        </UBadge>
+        <div class="space-y-4 my-6 relative">
+          <!-- Spinner Overlay -->
+          <div v-if="running" class="absolute inset-0 z-10 flex items-center justify-center bg-elevated/50 backdrop-blur-sm rounded-lg">
+            <UIcon name="i-material-symbols-progress-activity" class="size-8 animate-spin text-primary" />
+          </div>
+
+          <Histogram />
+          <div class="space-y-1">
+            <div class="text-xs font-medium text-muted">
+              Extracted seeds
+            </div>
+            <div
+              v-auto-animate
+              class="flex flex-wrap gap-1 min-h-[30px]"
+            >
+              <div v-if="imageSeeds.length === 0" class="text-sm text-muted italic">None</div>
+              <div
+                v-for="(hex, i) in imageSeeds"
+                :key="i"
+                class="h-7 w-7 rounded-md border border-default"
+                :style="{ backgroundColor: hex }"
+                :title="hex"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="grid gap-x-6 gap-y-4 rounded-lg border border-default p-4 sm:grid-cols-2 mt-4">
+          <UFormField label="Clustering algorithm">
+            <USelect
+              :model-value="imgAlgorithm"
+              :items="algorithmItems"
+              value-key="value"
+              class="w-full"
+              @update:model-value="send({ algorithm: $event as 'median-cut' | 'delta-e', type: 'SET_IMAGE_ALGORITHM' })"
+            />
+          </UFormField>
+          <UFormField :label="`Colors (k) · ${imgK}`">
+            <USlider
+              :model-value="imgK"
+              :min="2"
+              :max="16"
+              :step="1"
+              @update:model-value="send({ k: $event as number, type: 'SET_IMAGE_K' })"
+            />
+          </UFormField>
+          <UFormField :label="`Histogram bits · ${imgHistogramBits}`">
+            <USlider
+              :model-value="imgHistogramBits"
+              :min="3"
+              :max="7"
+              :step="1"
+              @update:model-value="send({ bits: $event as number, type: 'SET_IMAGE_HISTOGRAM_BITS' })"
+            />
+          </UFormField>
+          <UFormField :label="`ΔE cap · ${imgDeltaECap}${imgAlgorithm !== 'delta-e' ? ' (delta-e only)' : ''}`">
+            <USlider
+              :model-value="imgDeltaECap"
+              :min="16"
+              :max="256"
+              :step="8"
+              :disabled="imgAlgorithm !== 'delta-e'"
+              @update:model-value="send({ cap: $event as number, type: 'SET_IMAGE_DELTA_E_CAP' })"
+            />
+          </UFormField>
+          <UFormField :label="`Harmonize threshold · ${imgHarmonize}`">
+            <USlider
+              :model-value="imgHarmonize"
+              :min="0"
+              :max="30"
+              :step="1"
+              @update:model-value="send({ threshold: $event as number, type: 'SET_IMAGE_HARMONIZE' })"
+            />
+          </UFormField>
+          <UFormField :label="`Lightness range · ${imgLightnessRange[0].toFixed(2)}–${imgLightnessRange[1].toFixed(2)}`">
+            <USlider
+              :model-value="imgLightnessRange"
+              :min="0"
+              :max="1"
+              :step="0.01"
+              @update:model-value="send({ range: $event as [number, number], type: 'SET_IMAGE_LIGHTNESS_RANGE' })"
+            />
+          </UFormField>
+          <UFormField :label="`Chroma range · ${imgChromaRange[0].toFixed(2)}–${imgChromaRange[1].toFixed(2)}`">
+            <USlider
+              :model-value="imgChromaRange"
+              :min="0"
+              :max="0.5"
+              :step="0.01"
+              @update:model-value="send({ range: $event as [number, number], type: 'SET_IMAGE_CHROMA_RANGE' })"
+            />
+          </UFormField>
+        </div>
       </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-3 border-t border-default pt-4">
-        <div class="flex items-center gap-1.5">
-          <UIcon
-            name="i-material-symbols-layers-rounded"
-            class="size-4 text-primary"
-          />
-          <span class="text-sm font-medium text-highlighted">Role schema</span>
-        </div>
-        <USelect
-          :model-value="schemaName"
-          :items="schemaItems"
-          size="sm"
-          class="w-40"
-          @update:model-value="send({ schemaName: $event as string, type: 'SET_SCHEMA' })"
-        />
-      </div>
-      <p class="-mt-3 text-sm text-muted">
-        How many roles to resolve — <strong class="text-highlighted">iridis-4</strong> is
-        the minimal set, <strong class="text-highlighted">iridis-32</strong> resolves the
-        full token surface this site renders.
-      </p>
 
     </div>
   </UCard>
@@ -249,10 +318,10 @@ function sample(): void {
         <span />
         <span class="flex items-center justify-center gap-1.5 text-center font-semibold text-highlighted">
           <UIcon
-            name="i-material-symbols-contrast-rounded"
+            name="i-material-symbols-settings-rounded"
             class="size-4 text-primary"
           />
-          Contrast target
+          Schema & Compliance
         </span>
         <span />
       </div>
@@ -260,79 +329,149 @@ function sample(): void {
 
     <div class="space-y-4">
       <div class="grid gap-4 sm:grid-cols-2">
-        <div class="space-y-2">
-          <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
-            Base contrast target
-          </p>
-          <USelect
-            :model-value="contrastLevel"
-            :items="['AA', 'AAA']"
-            class="w-full"
-            @update:model-value="send({ contrastLevel: $event as 'AA' | 'AAA', type: 'SET_CONTRAST' })"
-          />
-          <p class="text-sm text-muted">
-            The level the always-on corrector (<code class="font-mono text-xs">enforce:contrast</code>)
-            targets for every role pair. <strong class="text-highlighted">AA</strong> is the WCAG 2.1
-            minimum: 4.5:1 for normal text, 3:1 for large text (18pt+, or 14pt+ bold).
-            <strong class="text-highlighted">AAA</strong> is the enhanced level: 7:1 / 4.5:1.
-          </p>
-          <div class="flex items-center justify-between gap-3 rounded-md border border-default p-2.5 pl-3">
-            <div class="flex flex-col">
-              <span class="text-sm font-medium">Auto-correct CVD failures</span>
-              <span class="text-xs text-muted">Also always-on — adjusts the palette itself, same as the level above.</span>
+        <!-- LEFT COLUMN: Schema & Color Space -->
+        <div class="space-y-4">
+          <div class="space-y-2">
+            <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
+              Role schema
+            </p>
+            <USelect
+              :model-value="schemaName"
+              :items="schemaItems"
+              class="w-full"
+              @update:model-value="($event) => { send({ schemaName: $event as string, type: 'SET_SCHEMA' }); send({ index: 5, type: 'SELECT_CARD' }); }"
+            />
+            <p class="text-sm text-muted">
+              How many roles to resolve — <strong class="text-highlighted">iridis-4</strong> is the minimal set, <strong class="text-highlighted">iridis-32</strong> resolves the full token surface this site renders.
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
+              Color Space
+            </p>
+            <USelect
+              :model-value="colorSpace"
+              :items="[{ label: 'sRGB', value: 'srgb' }, { label: 'Display P3', value: 'displayP3' }]"
+              value-key="value"
+              class="w-full"
+              @update:model-value="($event) => { send({ colorSpace: $event as 'srgb' | 'displayP3', type: 'SET_COLOR_SPACE' }); send({ index: 3, type: 'SELECT_CARD' }); }"
+            />
+            <p class="text-sm text-muted">
+              The color space used when exporting CSS variables. <strong class="text-highlighted">Display P3</strong> allows for much wider gamut colors on compatible displays.
+            </p>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Contrast Target -->
+        <div class="space-y-4">
+          <div class="space-y-2">
+            <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
+              Base contrast target
+            </p>
+            <UFormField label="Compliance strictness">
+              <div class="w-full space-y-1 pt-2">
+                <USlider
+                  :model-value="contrastStrictness"
+                  :min="0"
+                  :max="2"
+                  :step="1"
+                  @update:model-value="($event) => { send({ strictness: $event as number, type: 'SET_CONTRAST_STRICTNESS' }); send({ index: 4, type: 'SELECT_CARD' }); }"
+                />
+                <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
+                  <span :class="contrastStrictness === 0 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 0, type: 'SET_CONTRAST_STRICTNESS' }); send({ index: 4, type: 'SELECT_CARD' }); }">AA</span>
+                  <span :class="contrastStrictness === 1 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 1, type: 'SET_CONTRAST_STRICTNESS' }); send({ index: 4, type: 'SELECT_CARD' }); }">AAA</span>
+                  <span :class="contrastStrictness === 2 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 2, type: 'SET_CONTRAST_STRICTNESS' }); send({ index: 4, type: 'SELECT_CARD' }); }">APCA</span>
+                </div>
+              </div>
+            </UFormField>
+            <p class="text-sm text-muted">
+              <template v-if="contrastStrictness === 0">
+                <strong class="text-highlighted">AA</strong> is the WCAG 2.1 minimum: 4.5:1 (3:1 for large text).
+              </template>
+              <template v-else-if="contrastStrictness === 1">
+                <strong class="text-highlighted">AAA</strong> is the enhanced WCAG 2.1 level: 7:1 (4.5:1 for large text).
+              </template>
+              <template v-else>
+                <strong class="text-highlighted">APCA</strong> is the modern perceptual contrast algorithm (target Lc).
+              </template>
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between gap-3 rounded-md border border-default p-2.5 pl-3">
+              <div class="flex flex-col">
+                <span class="text-sm font-medium">Auto-correct CVD failures</span>
+                <span class="text-xs text-muted">Also always-on — adjusts the palette itself, same as the level above.</span>
+              </div>
+              <USwitch
+                :model-value="cvdCorrect"
+                @update:model-value="($event) => { send({ cvdCorrect: $event as boolean, type: 'SET_CVD_CORRECT' }); send({ index: 7, type: 'SELECT_CARD' }); }"
+              />
             </div>
-            <USwitch
-              :model-value="cvdCorrect"
-              @update:model-value="cvdCorrect = $event"
-            />
-          </div>
-        </div>
-
-        <div class="space-y-2">
-          <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
-            Additional checks
-          </p>
-          <p class="text-sm text-muted">
-            Opt-in, independent verification/correction passes layered on top of the base
-            corrector above — each checks against its own standard: WCAG 2.1 or APCA (a
-            perceptual contrast algorithm). Color-vision-deficiency checking runs always —
-            see the CVD card in the carousel below.
-          </p>
-          <div class="space-y-1.5">
-            <UCheckbox
-              v-for="item in optionalStageItems"
-              :key="item.name"
-              :model-value="enabledOptionalStages.has(item.name)"
-              :label="item.label"
-              @update:model-value="toggleOptionalStage(item.name)"
-            />
+            <div class="space-y-1.5 rounded-md border border-dashed border-primary/50 bg-primary/5 p-2.5 pl-3">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm font-medium">Simulate CVD vision</span>
+                <UButton
+                  v-if="cvdPreviewTypes.size > 0"
+                  label="Off"
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                  @click="cvdPreviewTypes.forEach(t => toggleCvdPreviewType(t))"
+                />
+              </div>
+              <div class="flex flex-wrap gap-1">
+                <UButton
+                  v-for="t in [
+                    { label: 'Protanopia', value: 'protanopia' },
+                    { label: 'Deuteranopia', value: 'deuteranopia' },
+                    { label: 'Tritanopia', value: 'tritanopia' },
+                    { label: 'Achromatopsia', value: 'achromatopsia' }
+                  ]"
+                  :key="t.value"
+                  :label="t.label"
+                  size="xs"
+                  :color="cvdPreviewTypes.has(t.value as any) ? 'primary' : 'neutral'"
+                  :variant="cvdPreviewTypes.has(t.value as any) ? 'solid' : 'soft'"
+                  @click="toggleCvdPreviewType(t.value as any)"
+                />
+              </div>
+              <p class="text-xs text-muted">
+                Changes how this page looks to you — it does not touch the palette.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div
-        v-if="stageSummaries.length"
-        class="flex flex-wrap gap-1.5"
-      >
-        <UBadge
-          v-for="s in stageSummaries"
-          :key="s.key"
-          :color="s.color"
-          variant="soft"
-          size="sm"
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mt-6 pt-4 border-t border-default/50">
+        <!-- Links on left -->
+        <a
+          href="https://www.w3.org/WAI/WCAG21/quickref/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1 text-sm text-primary underline underline-offset-2 hover:text-primary/80"
         >
-          {{ s.label }}: {{ s.text }}
-        </UBadge>
-      </div>
+          WCAG 2.1 quick reference ↗
+        </a>
 
-      <a
-        href="https://www.w3.org/WAI/WCAG21/quickref/"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="inline-flex items-center gap-1 text-sm text-primary underline underline-offset-2 hover:text-primary/80"
-      >
-        WCAG 2.1 quick reference ↗
-      </a>
+        <!-- Warnings on right -->
+        <div
+          v-if="stageSummaries.length"
+          class="flex flex-wrap justify-end gap-1.5"
+        >
+          <UBadge
+            v-for="s in stageSummaries"
+            :key="s.key"
+            :color="s.color"
+            variant="soft"
+            size="sm"
+          >
+            {{ s.label }}: {{ s.text }}
+          </UBadge>
+        </div>
+      </div>
     </div>
   </UCard>
   </div>

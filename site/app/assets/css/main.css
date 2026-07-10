@@ -15,8 +15,18 @@
   /* one shared window every color animates over, in unison — kept under
      300ms so a framing/palette swap reads as instant-but-smooth, not a
      visible fade. */
-  --iridis-tune: 260ms;
-  --iridis-ease: ease;
+  --iridis-tune: 150ms;
+  --iridis-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When the engine orchestrates a dark/light swap, force ALL elements to use the same
+   transition duration regardless of their local Tailwind utility classes, preventing
+   the chaotic staggered fading of different components. */
+html.is-switching-theme *,
+html.is-switching-theme *::before,
+html.is-switching-theme *::after {
+  transition-duration: var(--iridis-tune) !important;
+  transition-timing-function: var(--iridis-ease) !important;
 }
 
 /* Every element re-tones over the SAME window when the engine rewrites its

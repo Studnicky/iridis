@@ -18,7 +18,15 @@ export type IridisUiEventType =
   | { 'index': number; 'role': string | undefined; 'type': 'PIN_SEED_ROLE' }
   | { 'framing': FramingType; 'type': 'SET_FRAMING' }
   | { 'schemaName': string; 'type': 'SET_SCHEMA' }
-  | { 'contrastLevel': 'AA' | 'AAA'; 'type': 'SET_CONTRAST' }
+  | { 'strictness': number; 'type': 'SET_CONTRAST_STRICTNESS' }
+  | { 'colorSpace': 'srgb' | 'displayP3'; 'type': 'SET_COLOR_SPACE' }
+  | { 'cvdCorrect': boolean; 'type': 'SET_CVD_CORRECT' }
   | { 'algorithm': GalleryAlgorithmType; 'type': 'SET_IMAGE_ALGORITHM' }
+  | { 'k': number; 'type': 'SET_IMAGE_K' }
+  | { 'bits': number; 'type': 'SET_IMAGE_HISTOGRAM_BITS' }
+  | { 'cap': number; 'type': 'SET_IMAGE_DELTA_E_CAP' }
+  | { 'threshold': number; 'type': 'SET_IMAGE_HARMONIZE' }
+  | { 'range': [number, number]; 'type': 'SET_IMAGE_LIGHTNESS_RANGE' }
+  | { 'range': [number, number]; 'type': 'SET_IMAGE_CHROMA_RANGE' }
   | { 'source': 'sample'; 'type': 'EXTRACT_IMAGE' }
   | { 'file': File; 'source': 'file'; 'type': 'EXTRACT_IMAGE' };

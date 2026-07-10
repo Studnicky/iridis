@@ -82,15 +82,13 @@ const REQUIRED_IMAGE_STAGES = [
 /** Toggleable contrast checks, in the order they slot in after enforce:contrast. */
 export const OPTIONAL_STAGE_NAMES: readonly string[] = ['enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca'];
 
-/** Which optional stages currently run — mutate via toggleOptionalStage(), not directly. */
-const enabledOptionalStages = ref<Set<string>>(new Set(['enforce:wcagAA']));
-
-function toggleOptionalStage(name: string): void {
-  if (!OPTIONAL_STAGE_NAMES.includes(name)) {return;}
-  const next = new Set(enabledOptionalStages.value);
-  if (next.has(name)) {next.delete(name);} else {next.add(name);}
-  enabledOptionalStages.value = next;
-}
+/** Which optional stages currently run based on strictness. */
+const enabledOptionalStages = computed<Set<string>>(() => {
+  if (contrastStrictness.value === 0) {return new Set(['enforce:wcagAA']);}
+  if (contrastStrictness.value === 1) {return new Set(['enforce:wcagAAA']);}
+  if (contrastStrictness.value === 2) {return new Set(['enforce:apca']);}
+  return new Set();
+});
 
 /** Slots the currently-enabled optional stages into `required` right after enforce:contrast. */
 function buildPipeline(required: readonly string[]): string[] {
@@ -130,17 +128,18 @@ const mode = computed<ModeType>({
   'get': () => { const result = uiState.value.mode; return result; },
   'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': 'SELECT_MODE' }); return result; }
 });
-const pickerSeeds = ref<PickerSeedType[]>([{ 'hex': '#7c3aed' }, { 'hex': '#06b6d4' }, { 'hex': '#f59e0b' }]);
+const pickerSeeds = ref<PickerSeedType[]>([{ 'hex': '#7c3aed' }, { 'hex': '#06b6d4' }, { 'hex': '#f59e0b' }, { 'hex': '#ec4899' }]);
 const imageSeeds = ref<string[]>([]);
 const framing = ref<FramingType>('dark');
 const schemaName = ref<string>('iridis-32');
-const contrastLevel = ref<'AA' | 'AAA'>('AAA');
+const contrastStrictness = ref<number>(2);
+const colorSpace = ref<'srgb' | 'displayP3'>('srgb');
 /**
  * CVD "correct" mode flag, threaded through as `input.contrast.cvdCorrect` —
  * when true, enforce:cvdSimulate (packages/contrast) auto-corrects failing
- * pairs instead of only warning. Off by default (advisory-only).
+ * pairs instead of only warning. On by default.
  */
-const cvdCorrect = ref<boolean>(false);
+const cvdCorrect = ref<boolean>(true);
 
 /**
  * Visual CVD preview — purely a display-time filter over whatever the engine
@@ -175,7 +174,7 @@ const error = ref<string | null>(null);
 const contrastReport = ref<{ 'aa'?: unknown; 'aaa'?: unknown; 'apca'?: unknown; 'cvd'?: unknown }>({});
 
 /* Image-extraction controls (mirror the engine's gallery config knobs). */
-const imgAlgorithm = ref<GalleryAlgorithmType>('median-cut');
+const imgAlgorithm = ref<GalleryAlgorithmType>('delta-e');
 const imgK = ref<number>(8);
 const imgHistogramBits = ref<number>(5);
 const imgDeltaECap = ref<number>(128);
@@ -250,12 +249,25 @@ function run(framingOverride?: FramingType): void {
     engine.pipeline(buildPipeline(REQUIRED_COLOR_STAGES));
     const state = engine.run({
       'colors':   activeSeeds.value,
-      'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastLevel.value },
+      'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
       'metadata': { 'core:variantConfig': VARIANT_CONFIG },
       'roles':    withSemanticHues(pair[targetFraming]),
-      'runtime':  { 'colorSpace': 'srgb', 'framing': targetFraming }
+      'runtime':  { 'colorSpace': colorSpace.value, 'framing': targetFraming }
     });
-    if (framingOverride !== undefined) {framing.value = framingOverride;}
+    if (framingOverride !== undefined) {
+      framing.value = framingOverride;
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.add('is-switching-theme');
+        if (framingOverride === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        setTimeout(() => {
+          document.documentElement.classList.remove('is-switching-theme');
+        }, 180); // slightly longer than --iridis-tune (150ms)
+      }
+    }
     ingest(state);
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
@@ -303,7 +315,7 @@ class FromImage {
       engine.pipeline(buildPipeline(REQUIRED_IMAGE_STAGES));
       const state = engine.run({
         'colors':   [pixels],
-        'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastLevel.value },
+        'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
         'metadata': {
           'core:variantConfig': VARIANT_CONFIG,
           'gallery': {
@@ -317,7 +329,7 @@ class FromImage {
           }
         },
         'roles':    withSemanticHues(pair![framing.value]),
-        'runtime':  { 'colorSpace': 'srgb', 'framing': framing.value }
+        'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
       });
       const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
       histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
@@ -341,7 +353,7 @@ class FromImage {
  */
 function mutateSeeds(effect: MutateSeedsEffectType): void {
   if (effect.op === 'add') {
-    if (pickerSeeds.value.length < 8) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? '#888888' }];}
+    if (pickerSeeds.value.length < 32) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? '#888888' }];}
   } else if (effect.op === 'remove') {
     if (pickerSeeds.value.length > 1) {pickerSeeds.value = pickerSeeds.value.filter((_, idx) => {return idx !== effect.index;});}
   } else if (effect.op === 'set') {
@@ -354,9 +366,15 @@ registerMutateSeedsHandler(mutateSeeds);
  * Performs the seed-role pin/unpin mutation for the FSM's PIN_SEED_ROLE effect.
  * Pinning attaches `hints.role` (via IntakeHexHint) so ResolveRoles assigns that
  * seed to the named role directly instead of by nearest-OKLCH-distance.
+ * Ensures that a role can only be pinned to one seed at a time.
  */
 function pinSeedRole(effect: PinSeedRoleEffectType): void {
-  pickerSeeds.value = pickerSeeds.value.map((s, idx) => {return (idx === effect.index ? { ...s, 'role': effect.role } : s);});
+  pickerSeeds.value = pickerSeeds.value.map((s, idx) => {
+    if (effect.role && s.role === effect.role && idx !== effect.index) {
+      return { ...s, role: undefined };
+    }
+    return (idx === effect.index ? { ...s, 'role': effect.role } : s);
+  });
 }
 registerPinSeedRoleHandler(pinSeedRole);
 
@@ -371,8 +389,16 @@ function setPaletteParam(effect: SetPaletteParamEffectType): void {
   // Everything else still goes through the debounced schedule() below.
   if (effect.op === 'framing') {run(effect.value);}
   else if (effect.op === 'schemaName') {schemaName.value = effect.value;}
-  else if (effect.op === 'contrastLevel') {contrastLevel.value = effect.value;}
+  else if (effect.op === 'strictness') {contrastStrictness.value = effect.value;}
+  else if (effect.op === 'colorSpace') {colorSpace.value = effect.value;}
+  else if (effect.op === 'cvdCorrect') {cvdCorrect.value = effect.value;}
   else if (effect.op === 'imgAlgorithm') {imgAlgorithm.value = effect.value;}
+  else if (effect.op === 'imgK') {imgK.value = effect.value;}
+  else if (effect.op === 'imgHistogramBits') {imgHistogramBits.value = effect.value;}
+  else if (effect.op === 'imgDeltaECap') {imgDeltaECap.value = effect.value;}
+  else if (effect.op === 'imgHarmonize') {imgHarmonize.value = effect.value;}
+  else if (effect.op === 'imgLightnessRange') {imgLightnessRange.value = effect.value;}
+  else if (effect.op === 'imgChromaRange') {imgChromaRange.value = effect.value;}
 }
 registerSetPaletteParamHandler(setPaletteParam);
 
@@ -419,17 +445,16 @@ export function useIridis() {
     if (typeof window !== 'undefined') {
       // framing is intentionally absent here — its swap is dispatched synchronously
       // by setPaletteParam() via run(effect.value), not through this debounce.
-      watch([pickerSeeds, imageSeeds, schemaName, contrastLevel, mode, enabledOptionalStages, cvdCorrect], schedule, { 'deep': true });
+      watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect], schedule, { 'deep': true });
       watch([imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
     }
   }
   return {
-    'activeSeeds': activeSeeds, 'contrastLevel': contrastLevel, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
+    'activeSeeds': activeSeeds, 'contrastStrictness': contrastStrictness, 'colorSpace': colorSpace, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
     'cvdPreviewTypes': cvdPreviewTypes, 'toggleCvdPreviewType': toggleCvdPreviewType,
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
     'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
     'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'lastImageSrc': lastImageSrc, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
-    'roles': roles, 'roleViews': roleViews, 'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName,
-    'toggleOptionalStage': toggleOptionalStage
+    'roles': roles, 'roleViews': roleViews, 'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName
   };
 }

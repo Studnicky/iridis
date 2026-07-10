@@ -32,10 +32,26 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
         return { 'effects': [{ 'op': 'framing', 'value': event.framing, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
       case 'SET_SCHEMA':
         return { 'effects': [{ 'op': 'schemaName', 'value': event.schemaName, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
-      case 'SET_CONTRAST':
-        return { 'effects': [{ 'op': 'contrastLevel', 'value': event.contrastLevel, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
+      case 'SET_CONTRAST_STRICTNESS':
+        return { 'effects': [{ 'op': 'strictness', 'value': event.strictness, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
+      case 'SET_COLOR_SPACE':
+        return { 'effects': [{ 'op': 'colorSpace', 'value': event.colorSpace, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
+      case 'SET_CVD_CORRECT':
+        return { 'effects': [{ 'op': 'cvdCorrect', 'value': event.cvdCorrect, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
       case 'SET_IMAGE_ALGORITHM':
         return { 'effects': [{ 'op': 'imgAlgorithm', 'value': event.algorithm, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
+      case 'SET_IMAGE_K':
+        return { 'effects': [{ 'op': 'imgK', 'value': event.k, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
+      case 'SET_IMAGE_HISTOGRAM_BITS':
+        return { 'effects': [{ 'op': 'imgHistogramBits', 'value': event.bits, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
+      case 'SET_IMAGE_DELTA_E_CAP':
+        return { 'effects': [{ 'op': 'imgDeltaECap', 'value': event.cap, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
+      case 'SET_IMAGE_HARMONIZE':
+        return { 'effects': [{ 'op': 'imgHarmonize', 'value': event.threshold, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
+      case 'SET_IMAGE_LIGHTNESS_RANGE':
+        return { 'effects': [{ 'op': 'imgLightnessRange', 'value': event.range, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
+      case 'SET_IMAGE_CHROMA_RANGE':
+        return { 'effects': [{ 'op': 'imgChromaRange', 'value': event.range, 'variant': 'SET_PALETTE_PARAM' }], 'state': state };
       case 'PIN_SEED_ROLE':
         return { 'effects': [{ 'index': event.index, 'role': event.role, 'variant': 'PIN_SEED_ROLE' }], 'state': state };
       case 'EXTRACT_IMAGE':
@@ -61,7 +77,7 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
         case 'SELECT_CARD':
           return { 'effects': [], 'state': { ...state, 'activeIndex': event.index } };
         case 'SELECT_MODE':
-          return { 'effects': [], 'state': { 'activeIndex': 0, 'mode': event.mode, 'variant': 'idle' } };
+          return { 'effects': [], 'state': { 'activeIndex': event.mode === 'image' ? 0 : 1, 'mode': event.mode, 'variant': 'idle' } };
         case 'SET_SEED':
           return { 'effects': [{ 'hex': event.hex, 'index': event.index, 'op': 'set', 'variant': 'MUTATE_SEEDS' }], 'state': state };
         default:

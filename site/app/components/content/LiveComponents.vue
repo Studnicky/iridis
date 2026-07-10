@@ -11,7 +11,7 @@ import { contrastRatio } from '~/theme/ContrastRatio.ts';
  */
 const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 const toast = useToast();
-const { roleViews, roles, contrastLevel } = useIridis();
+const { roleViews, roles, contrastStrictness } = useIridis();
 
 const COLORS = ['primary', 'secondary', 'success', 'warning', 'error', 'info', 'neutral'] as const;
 type ColorType = (typeof COLORS)[number];
@@ -37,7 +37,8 @@ function removeAlert(id: number): void {
 }
 
 const bg = computed<string>(() => roles.value['background'] ?? '#000000');
-const target = computed<number>(() => (contrastLevel.value === 'AAA' ? 7 : 4.5));
+const target = computed<number>(() => (contrastStrictness.value === 1 ? 7 : 4.5));
+const complianceLabel = computed(() => ['AA', 'AAA', 'APCA'][contrastStrictness.value] ?? 'AA');
 const compliancePct = computed<number>(() => {
   if (roleViews.value.length === 0) {return 0;}
   const passing = roleViews.value.filter((r) => {return contrastRatio(r.hex, bg.value) >= target.value;}).length;
@@ -99,7 +100,7 @@ const compliancePct = computed<number>(() => {
 
     <div class="space-y-1">
       <div class="flex items-center justify-between text-xs font-medium text-muted">
-        <span>{{ contrastLevel }} compliance</span>
+        <span>{{ complianceLabel }} compliance</span>
         <span>{{ compliancePct }}%</span>
       </div>
       <UProgress :model-value="compliancePct" />

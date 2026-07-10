@@ -73,19 +73,19 @@ const activeFilterChain = computed<string>(() => {
         <feComponentTransfer result="linear">
           <feFuncR
             type="gamma"
-            :exponent="SRGB_GAMMA"
+            :exponent.attr="SRGB_GAMMA"
             amplitude="1"
             offset="0"
           />
           <feFuncG
             type="gamma"
-            :exponent="SRGB_GAMMA"
+            :exponent.attr="SRGB_GAMMA"
             amplitude="1"
             offset="0"
           />
           <feFuncB
             type="gamma"
-            :exponent="SRGB_GAMMA"
+            :exponent.attr="SRGB_GAMMA"
             amplitude="1"
             offset="0"
           />
@@ -93,25 +93,25 @@ const activeFilterChain = computed<string>(() => {
         <feColorMatrix
           in="linear"
           type="matrix"
-          :values="toFeColorMatrixValues(m)"
+          :values.attr="toFeColorMatrixValues(m)"
           result="simulated"
         />
         <feComponentTransfer in="simulated">
           <feFuncR
             type="gamma"
-            :exponent="1 / SRGB_GAMMA"
+            :exponent.attr="1 / SRGB_GAMMA"
             amplitude="1"
             offset="0"
           />
           <feFuncG
             type="gamma"
-            :exponent="1 / SRGB_GAMMA"
+            :exponent.attr="1 / SRGB_GAMMA"
             amplitude="1"
             offset="0"
           />
           <feFuncB
             type="gamma"
-            :exponent="1 / SRGB_GAMMA"
+            :exponent.attr="1 / SRGB_GAMMA"
             amplitude="1"
             offset="0"
           />

@@ -112,23 +112,25 @@ const lavaBlobField = lavaBlobs(18);
         </filter>
       </defs>
     </svg>
-    <div class="ambient-lava">
-      <div
-        v-for="b in lavaBlobField"
-        :key="b.id"
-        class="lava-blob"
-        :style="b.style"
-      />
-    </div>
+    <ClientOnly>
+      <div class="ambient-lava">
+        <div
+          v-for="b in lavaBlobField"
+          :key="b.id"
+          class="lava-blob"
+          :style="b.style"
+        />
+      </div>
 
-    <div
-      class="star-layer star-far"
-      :style="{ boxShadow: starsFar }"
-    />
-    <div
-      class="star-layer star-near"
-      :style="{ boxShadow: starsNear }"
-    />
+      <div
+        class="star-layer star-far"
+        :style="{ boxShadow: starsFar }"
+      />
+      <div
+        class="star-layer star-near"
+        :style="{ boxShadow: starsNear }"
+      />
+    </ClientOnly>
   </div>
 </template>
 
