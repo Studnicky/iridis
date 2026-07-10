@@ -185,7 +185,7 @@ const active = ref<string>('0');
           <button
             type="button"
             class="flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors"
-            :class="String(i) === active ? 'bg-primary text-bg shadow-[0_0_12px_color-mix(in_oklch,var(--ui-primary)_50%,transparent)]' : 'bg-elevated/50 text-muted hover:text-highlighted hover:bg-elevated'"
+            :class="String(i) === active ? 'bg-primary text-[var(--ui-primary-contrast)] shadow-[0_0_12px_color-mix(in_oklch,var(--ui-primary)_50%,transparent)]' : 'bg-elevated/50 text-muted hover:text-highlighted hover:bg-elevated'"
             @click="active = String(i)"
           >
             {{ item.label }}

@@ -68,7 +68,7 @@ function select(i: number): void { send({ 'index': i, 'type': 'SELECT_CARD' }); 
 }
 .toc-pill:hover { color: var(--ui-text-highlighted); border-color: color-mix(in oklch, var(--ui-primary) 45%, transparent); }
 .toc-pill.on {
-  color: var(--ui-bg); background: var(--ui-primary); border-color: var(--ui-primary);
+  color: var(--ui-primary-contrast); background: var(--ui-primary); border-color: var(--ui-primary);
   box-shadow: 0 0 16px color-mix(in oklch, var(--ui-primary) 70%, transparent);
 }
 </style>
