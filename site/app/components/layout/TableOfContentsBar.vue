@@ -22,17 +22,19 @@ function select(i: number): void { send({ 'index': i, 'type': 'SELECT_CARD' }); 
     class="toc-bar"
     aria-label="Jump to section"
   >
-    <div class="toc-scroll">
-      <button
-        v-for="(item, i) in props.items"
-        :key="item.key"
-        type="button"
-        class="toc-pill font-display"
-        :class="{ on: i === active }"
-        @click="select(i)"
-      >
-        {{ item.label }}
-      </button>
+    <div class="toc-scroll w-full max-w-6xl mx-auto">
+      <BalancedWrap :items="[...props.items]" :min-width="100" :gap="8">
+        <template #default="{ item, index: i }">
+          <button
+            type="button"
+            class="toc-pill font-display flex-1"
+            :class="{ on: i === active }"
+            @click="select(i)"
+          >
+            {{ item.label }}
+          </button>
+        </template>
+      </BalancedWrap>
     </div>
   </nav>
 </template>
@@ -47,22 +49,12 @@ function select(i: number): void { send({ 'index': i, 'type': 'SELECT_CARD' }); 
   backdrop-filter: blur(10px) saturate(1.15);
   border-bottom: 1px solid color-mix(in oklch, var(--ui-primary) 18%, transparent);
 }
-/* Fully responsive by construction, not by breakpoint: the pill row scrolls
-   horizontally whenever it doesn't fit, on any viewport, with no JS layout
-   logic and no hamburger/collapse state to maintain. */
 .toc-scroll {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
-  overflow-x: auto;
-  scrollbar-width: none;
   padding: 0 1rem;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 1.5rem, #000 calc(100% - 1.5rem), transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0, #000 1.5rem, #000 calc(100% - 1.5rem), transparent 100%);
 }
-.toc-scroll::-webkit-scrollbar { display: none; }
 .toc-pill {
-  flex: none;
   padding: 0.4rem 0.9rem;
   font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase;
   border-radius: 9999px;
@@ -72,6 +64,7 @@ function select(i: number): void { send({ 'index': i, 'type': 'SELECT_CARD' }); 
   transition: all .25s ease;
   white-space: nowrap;
   cursor: pointer;
+  text-align: center;
 }
 .toc-pill:hover { color: var(--ui-text-highlighted); border-color: color-mix(in oklch, var(--ui-primary) 45%, transparent); }
 .toc-pill.on {

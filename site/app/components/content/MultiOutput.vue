@@ -180,13 +180,18 @@ const active = ref<string>('0');
       <p class="text-sm text-muted">
         Every output format with a real emit plugin — one palette, {{ outputs.length }} targets.
       </p>
-      <UTabs
-        v-model="active"
-        :items="tabItems"
-        :content="false"
-        class="output-tabs"
-        :ui="{ indicator: 'hidden' }"
-      />
+      <BalancedWrap :items="tabItems" :min-width="120" :gap="8" class="mb-4">
+        <template #default="{ item, index: i }">
+          <button
+            type="button"
+            class="flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors"
+            :class="String(i) === active ? 'bg-primary text-bg shadow-[0_0_12px_color-mix(in_oklch,var(--ui-primary)_50%,transparent)]' : 'bg-elevated/50 text-muted hover:text-highlighted hover:bg-elevated'"
+            @click="active = String(i)"
+          >
+            {{ item.label }}
+          </button>
+        </template>
+      </BalancedWrap>
       <CodeBlock
         :code="outputs[Number(active)]?.text || ''"
         :lang="outputs[Number(active)]?.lang || 'json'"
@@ -199,26 +204,4 @@ const active = ref<string>('0');
   </UCard>
 </template>
 
-<style scoped>
-/* Full labels over truncation — let the tab list wrap onto as many rows as
-   it needs instead of clipping ("CSS variab...") or scrolling sideways.
-   Reka UI's sliding TabsIndicator only tracks a single row (it computes an
-   x-offset/width, not a per-row position) — it drifts and overlaps once
-   tabs wrap onto row 2+, so it's hidden (see :ui="{indicator:'hidden'}" on
-   the component) and each trigger paints its own active background here
-   instead, which is correct regardless of how many rows there are. */
-.output-tabs :deep([role='tablist']) {
-  flex-wrap: wrap;
-  height: auto;
-  width: auto;
-}
-.output-tabs :deep([role='tab']) {
-  flex: none;
-  border-radius: 0.375rem;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-.output-tabs :deep([role='tab'][data-state='active']) {
-  background: var(--ui-primary);
-  color: var(--ui-bg);
-}
-</style>
+
