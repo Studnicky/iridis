@@ -51,8 +51,8 @@ const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => {return { 'invertLightness':
  * warm-leaning semantics rather than pure green/blue that appear nowhere in it.
  * Schema authoring; the engine still resolves the real color.
  */
-const SEMANTIC_HUE: Record<string, number> = { 'error': 27, 'info': 250, 'success': 150, 'warning': 85 };
-const SEMANTIC_HUE_CLAMP = 55;
+const SEMANTIC_HUE: Record<string, number> = { 'error': 25, 'info': 230, 'success': 160, 'warning': 60 };
+const SEMANTIC_HUE_CLAMP = 90;
 
 /**
  * Exported so PipelineExplainer.vue can walk the same stage order and pull each
