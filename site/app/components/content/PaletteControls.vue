@@ -126,60 +126,67 @@ function sample(): void {
         Drop an image or try a sample to generate a palette. Tune the extraction knobs below.
       </p>
 
-      <div
+      <BalancedWrap
         v-if="mode === 'picker'"
         v-auto-animate
-        class="flex flex-wrap items-stretch justify-center gap-3 rounded-lg border-2 border-dashed border-default p-4"
+        :items="[...pickerSeeds, { isAddBtn: true }]"
+        :min-width="210"
+        :gap="12"
+        class="rounded-lg border-2 border-dashed border-default p-4"
       >
-        <div
-          v-for="(seed, i) in pickerSeeds"
-          :key="i"
-          class="flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5"
-        >
-          <div class="flex items-center gap-2">
-            <input
-              :value="seed.hex"
-              type="color"
-              class="h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent"
-              @input="send({ type: 'SET_SEED', index: i, hex: ($event.target as HTMLInputElement).value })"
-            >
-            <div class="flex flex-col">
-              <span class="font-mono text-xs text-muted">{{ seed.hex }}</span>
-              <UButton
-                icon="i-material-symbols-close-rounded"
-                color="neutral"
-                variant="link"
-                size="xs"
-                class="-ml-1.5 p-0"
-                :disabled="pickerSeeds.length <= 1"
-                @click="send({ type: 'REMOVE_SEED', index: i })"
-              >
-                Remove
-              </UButton>
-            </div>
-          </div>
-          <USelect
-            :model-value="seed.role ?? UNPINNED"
-            :items="[{ label: 'Unpinned', value: UNPINNED }, ...pinnableRoles.map((r) => ({ label: r, value: r, disabled: pickerSeeds.some((s, sIdx) => sIdx !== i && s.role === r) }))]"
-            value-key="value"
-            size="xs"
-            class="w-full"
-            @update:model-value="send({ index: i, role: $event === UNPINNED ? undefined : ($event as string), type: 'PIN_SEED_ROLE' })"
-          />
-        </div>
-        <div class="flex min-h-full items-center">
-          <UButton
-            icon="i-material-symbols-add-rounded"
-            color="primary"
-            variant="soft"
-            size="sm"
-            :disabled="pickerSeeds.length >= 32"
-            @click="send({ type: 'ADD_SEED' })"
+        <template #default="{ item: seed, index: i }">
+          <div
+            v-if="seed.isAddBtn"
+            class="flex min-h-full items-center justify-center flex-1 rounded-lg border border-transparent p-2.5"
           >
-            Add seed
-          </UButton>
-        </div>
-      </div>
+            <UButton
+              icon="i-material-symbols-add-rounded"
+              color="primary"
+              variant="soft"
+              size="sm"
+              :disabled="pickerSeeds.length >= 32"
+              @click="send({ type: 'ADD_SEED' })"
+            >
+              Add seed
+            </UButton>
+          </div>
+          <div
+            v-else
+            class="flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5 flex-1"
+          >
+            <div class="flex items-center gap-2">
+              <input
+                :value="seed.hex"
+                type="color"
+                class="h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent flex-none"
+                @input="send({ type: 'SET_SEED', index: i, hex: ($event.target as HTMLInputElement).value })"
+              >
+              <div class="flex flex-col min-w-0 flex-1">
+                <span class="font-mono text-xs text-muted truncate">{{ seed.hex }}</span>
+                <UButton
+                  icon="i-material-symbols-close-rounded"
+                  color="neutral"
+                  variant="link"
+                  size="xs"
+                  class="-ml-1.5 p-0 self-start"
+                  :disabled="pickerSeeds.length <= 1"
+                  @click="send({ type: 'REMOVE_SEED', index: i })"
+                >
+                  Remove
+                </UButton>
+              </div>
+            </div>
+            <USelect
+              :model-value="seed.role ?? UNPINNED"
+              :items="[{ label: 'Unpinned', value: UNPINNED }, ...pinnableRoles.map((r) => ({ label: r, value: r, disabled: pickerSeeds.some((s, sIdx) => sIdx !== i && s.role === r) }))]"
+              value-key="value"
+              size="xs"
+              class="w-full"
+              @update:model-value="send({ index: i, role: $event === UNPINNED ? undefined : ($event as string), type: 'PIN_SEED_ROLE' })"
+            />
+          </div>
+        </template>
+      </BalancedWrap>
 
       <div
         v-else
@@ -335,12 +342,18 @@ function sample(): void {
             <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
               Role schema
             </p>
-            <USelect
-              :model-value="schemaName"
-              :items="schemaItems"
-              class="w-full"
-              @update:model-value="($event) => { send({ schemaName: $event as string, type: 'SET_SCHEMA' }); send({ index: 5, type: 'SELECT_CARD' }); }"
-            />
+            <BalancedWrap :items="schemaItems" :min-width="80" :gap="8">
+              <template #default="{ item: s }">
+                <UButton
+                  :label="s.replace('iridis-', '')"
+                  :color="schemaName === s ? 'primary' : 'neutral'"
+                  :variant="schemaName === s ? 'solid' : 'soft'"
+                  size="sm"
+                  class="flex-1 justify-center"
+                  @click="send({ type: 'SET_SCHEMA', schema: s })"
+                />
+              </template>
+            </BalancedWrap>
             <p class="text-sm text-muted">
               How many roles to resolve — <strong class="text-highlighted">iridis-4</strong> is the minimal set, <strong class="text-highlighted">iridis-32</strong> resolves the full token surface this site renders.
             </p>
@@ -421,22 +434,27 @@ function sample(): void {
                   @click="cvdPreviewTypes.forEach(t => toggleCvdPreviewType(t))"
                 />
               </div>
-              <div class="flex flex-wrap gap-1">
-                <UButton
-                  v-for="t in [
-                    { label: 'Protanopia', value: 'protanopia' },
-                    { label: 'Deuteranopia', value: 'deuteranopia' },
-                    { label: 'Tritanopia', value: 'tritanopia' },
-                    { label: 'Achromatopsia', value: 'achromatopsia' }
-                  ]"
-                  :key="t.value"
-                  :label="t.label"
-                  size="xs"
-                  :color="cvdPreviewTypes.has(t.value as any) ? 'primary' : 'neutral'"
-                  :variant="cvdPreviewTypes.has(t.value as any) ? 'solid' : 'soft'"
-                  @click="toggleCvdPreviewType(t.value as any)"
-                />
-              </div>
+              <BalancedWrap
+                :items="[
+                  { label: 'Protanopia', value: 'protanopia' },
+                  { label: 'Deuteranopia', value: 'deuteranopia' },
+                  { label: 'Tritanopia', value: 'tritanopia' },
+                  { label: 'Achromatopsia', value: 'achromatopsia' }
+                ]"
+                :min-width="80"
+                :gap="4"
+              >
+                <template #default="{ item: t }">
+                  <UButton
+                    :label="t.label"
+                    size="xs"
+                    :color="cvdPreviewTypes.has(t.value as any) ? 'primary' : 'neutral'"
+                    :variant="cvdPreviewTypes.has(t.value as any) ? 'solid' : 'soft'"
+                    class="flex-1 justify-center"
+                    @click="toggleCvdPreviewType(t.value as any)"
+                  />
+                </template>
+              </BalancedWrap>
               <p class="text-xs text-muted">
                 Changes how this page looks to you — it does not touch the palette.
               </p>

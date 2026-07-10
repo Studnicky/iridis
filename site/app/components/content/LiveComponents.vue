@@ -52,16 +52,17 @@ const compliancePct = computed<number>(() => {
       <div class="mb-2 text-xs font-medium text-muted">
         Click to fire a real UToast
       </div>
-      <div class="flex flex-wrap gap-2">
-        <UButton
-          v-for="c in COLORS"
-          :key="c"
-          :color="c"
-          @click="fireToast(c)"
-        >
-          {{ c }}
-        </UButton>
-      </div>
+      <BalancedWrap :items="[...COLORS]" :min-width="80" :gap="8">
+        <template #default="{ item: c }">
+          <UButton
+            :color="c"
+            @click="fireToast(c)"
+            class="flex-1 justify-center"
+          >
+            {{ c }}
+          </UButton>
+        </template>
+      </BalancedWrap>
     </div>
 
     <div>
