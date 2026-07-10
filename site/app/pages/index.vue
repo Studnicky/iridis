@@ -19,6 +19,7 @@ const sections = [
   { 'key': 'motion', 'label': 'Motion' },
   { 'key': 'spaces', 'label': 'Spaces' },
   { 'key': 'schema', 'label': 'Schema' },
+  { 'key': 'clamps', 'label': 'Clamps' },
 ];
 
 
@@ -43,6 +44,7 @@ const { data: allDocs } = await useAsyncData('alldocs', () => queryCollection('d
           <SchemaTree v-else-if="item.key === 'schema'" />
           <MotionShowcase v-else-if="item.key === 'motion'" />
           <CvdVision v-else-if="item.key === 'cvd'" />
+          <RoleClamps v-else-if="item.key === 'clamps'" />
           <div
             v-else-if="item.key === 'spectrum'"
             class="space-y-3"
