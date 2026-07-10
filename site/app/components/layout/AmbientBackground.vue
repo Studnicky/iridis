@@ -22,8 +22,12 @@ function starField(count: number, colorVar: string, blur: string = '0'): string 
   return dots.join(',');
 }
 
-const starsFar = starField(140, 'color-mix(in oklch, var(--ui-text) 75%, transparent)', '0');
-const starsNear = starField(60, 'color-mix(in oklch, var(--ui-primary) 95%, transparent)', '1px');
+const starsFar1 = starField(120, 'color-mix(in oklch, var(--ui-text) 75%, transparent)', '0');
+const starsFar2 = starField(120, 'color-mix(in oklch, var(--ui-text) 60%, transparent)', '0');
+const starsFar3 = starField(120, 'color-mix(in oklch, var(--ui-text) 85%, transparent)', '0');
+
+const starsNear1 = starField(70, 'color-mix(in oklch, var(--ui-primary) 95%, transparent)', '1px');
+const starsNear2 = starField(70, 'color-mix(in oklch, var(--ui-primary) 80%, transparent)', '1px');
 
 /** Engine roles the lava blobs cycle through — each blob blends two adjacent roles. */
 const LAVA_ROLES = ['primary', 'info', 'secondary', 'success', 'warning', 'error'];
@@ -122,14 +126,12 @@ const lavaBlobField = lavaBlobs(18);
         />
       </div>
 
-      <div
-        class="star-layer star-far"
-        :style="{ boxShadow: starsFar }"
-      />
-      <div
-        class="star-layer star-near"
-        :style="{ boxShadow: starsNear }"
-      />
+      <div class="star-layer star-far-1" :style="{ boxShadow: starsFar1 }" />
+      <div class="star-layer star-far-2" :style="{ boxShadow: starsFar2 }" />
+      <div class="star-layer star-far-3" :style="{ boxShadow: starsFar3 }" />
+
+      <div class="star-layer star-near-1" :style="{ boxShadow: starsNear1 }" />
+      <div class="star-layer star-near-2" :style="{ boxShadow: starsNear2 }" />
     </ClientOnly>
   </div>
 </template>
@@ -189,12 +191,18 @@ const lavaBlobField = lavaBlobs(18);
   width: 1.5px; height: 1.5px;
   background: transparent;
   border-radius: 50%;
+  transform-origin: 50vw 50vh;
 }
-.star-far { animation: ambient-twinkle 6s ease-in-out infinite; }
-.star-near { width: 2.5px; height: 2.5px; animation: ambient-twinkle 4s ease-in-out infinite reverse; }
+.star-far-1 { animation: ambient-twinkle 6s ease-in-out infinite, star-rotate 400s linear infinite; }
+.star-far-2 { animation: ambient-twinkle 8s ease-in-out infinite 3s, star-rotate 500s linear infinite reverse; }
+.star-far-3 { animation: ambient-twinkle 10s ease-in-out infinite 1s, star-rotate 600s linear infinite; }
+
+.star-near-1 { width: 2.5px; height: 2.5px; animation: ambient-twinkle 5s ease-in-out infinite reverse, star-rotate 250s linear infinite reverse; }
+.star-near-2 { width: 2.5px; height: 2.5px; animation: ambient-twinkle 7s ease-in-out infinite reverse 2s, star-rotate 350s linear infinite; }
 
 @keyframes ambient-grid-pan { to { background-position: 0 44px, 44px 0; } }
 @keyframes ambient-twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+@keyframes star-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 /* Primary lava-lamp motion: rise from below the viewport, swell at the
    midpoint, keep rising off the top, then reverse (animation-direction is
    set per-blob to alternate/alternate-reverse so they don't all rise in
@@ -216,7 +224,7 @@ const lavaBlobField = lavaBlobs(18);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-grid, .lava-blob, .star-far, .star-near {
+  .ambient-grid, .lava-blob, .star-far-1, .star-far-2, .star-far-3, .star-near-1, .star-near-2 {
     animation: none !important;
   }
 }
