@@ -342,18 +342,25 @@ function sample(): void {
             <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
               Role schema
             </p>
-            <BalancedWrap :items="schemaItems" :min-width="80" :gap="8">
-              <template #default="{ item: s }">
-                <UButton
-                  :label="s.replace('iridis-', '')"
-                  :color="schemaName === s ? 'primary' : 'neutral'"
-                  :variant="schemaName === s ? 'solid' : 'soft'"
-                  size="sm"
-                  class="flex-1 justify-center"
+            <div class="w-full space-y-1 pt-2">
+              <USlider
+                :model-value="schemaItems.indexOf(schemaName)"
+                :min="0"
+                :max="schemaItems.length - 1"
+                :step="1"
+                @update:model-value="send({ type: 'SET_SCHEMA', schema: schemaItems[$event as number] })"
+              />
+              <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
+                <span
+                  v-for="(s, i) in schemaItems"
+                  :key="s"
+                  :class="schemaName === s ? 'text-primary' : 'cursor-pointer hover:text-muted'"
                   @click="send({ type: 'SET_SCHEMA', schema: s })"
-                />
-              </template>
-            </BalancedWrap>
+                >
+                  {{ s.replace('iridis-', '') }}
+                </span>
+              </div>
+            </div>
             <p class="text-sm text-muted">
               How many roles to resolve — <strong class="text-highlighted">iridis-4</strong> is the minimal set, <strong class="text-highlighted">iridis-32</strong> resolves the full token surface this site renders.
             </p>

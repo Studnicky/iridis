@@ -33,7 +33,7 @@ type OutputRowType = { 'label': string; 'lang': SupportedLangType; 'text': strin
 
 const { activeSeeds, framing, schemaName } = useIridis();
 const outputs = ref<OutputRowType[]>([]);
-const vscodeTheme = ref<object>({});
+import { globalVscodeTheme } from '~/composables/useVscodeTheme';
 
 function stringify(v: unknown): string {
   if (typeof v === 'string') {return v;}
@@ -132,7 +132,7 @@ function buildVscodeOutput(): OutputRowType | undefined {
   });
   const themeJson = (st.outputs as Record<string, unknown>)['vscode:themeJson'];
   if (themeJson === undefined) {return undefined;}
-  vscodeTheme.value = themeJson as object;
+  globalVscodeTheme.value = themeJson as object;
   return { 'label': 'VS Code theme', 'lang': 'javascript', 'text': stringifyLoose(themeJson) };
 }
 
@@ -195,7 +195,7 @@ const active = ref<string>('0');
       <CodeBlock
         :code="outputs[Number(active)]?.text || ''"
         :lang="outputs[Number(active)]?.lang || 'json'"
-        :vscode-theme="vscodeTheme"
+        :vscode-theme="globalVscodeTheme"
       />
       <p class="text-[10px] text-dimmed">
         Highlighted by Shiki, colored by this site's own VS Code theme output — not a static theme.

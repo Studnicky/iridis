@@ -21,20 +21,6 @@ const sections = [
   { 'key': 'schema', 'label': 'Schema' },
 ];
 
-const mermaidCode = `flowchart TD
-    A["input.colors<br/>(raw strings / objects)"]
-    B["state.colors<br/>(ColorRecord[])"]
-    C["state.roles<br/>(Record<string, ColorRecord>)"]
-    D["state.roles<br/>(contrast-adjusted)"]
-    E["state.variants<br/>(light / dark)"]
-    F["state.outputs<br/>(cssVars, tailwind, shadcn ...)"]
-
-    A -->|intake tasks| B
-    B -->|resolve:roles| C
-    C -->|enforce:contrast| D
-    D -->|derive:variant| E
-    D -->|emit tasks| F
-    E -->|emit tasks| F`;
 
 const { data: allDocs } = await useAsyncData('alldocs', () => queryCollection('docs').all())
 </script>
@@ -70,11 +56,6 @@ const { data: allDocs } = await useAsyncData('alldocs', () => queryCollection('d
       </CylinderCarousel>
 
       <MultiOutput />
-      
-      <div class="mt-12 space-y-4">
-        <h2 class="text-2xl font-bold tracking-tight text-highlighted text-center">Pipeline Architecture</h2>
-        <MermaidDiagram :code="mermaidCode" />
-      </div>
       
       <div v-if="allDocs && allDocs.length > 0" class="mt-32 space-y-12 border-t border-default pt-24">
         <UCard

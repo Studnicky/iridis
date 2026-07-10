@@ -19,20 +19,6 @@ const TASKS_BY_NAME = new Map([...coreTasks, intakeHexHint, pinDerivedRoles, ...
 const { enabledOptionalStages, cvdCorrect, contrastReport } = useIridis();
 const { send } = useIridisUiMachine();
 
-const mermaidCode = `flowchart TD
-    A["input.colors<br/>(raw strings / objects)"]
-    B["state.colors<br/>(ColorRecord[])"]
-    C["state.roles<br/>(Record<string, ColorRecord>)"]
-    D["state.roles<br/>(contrast-adjusted)"]
-    E["state.variants<br/>(light / dark)"]
-    F["state.outputs<br/>(cssVars, tailwind, shadcn ...)"]
-
-    A -->|intake tasks| B
-    B -->|resolve:roles| C
-    C -->|enforce:contrast| D
-    D -->|derive:variant| E
-    D -->|emit tasks| F
-    E -->|emit tasks| F`;
 
 type ContrastPairsType = { pairs: { foreground: string; background: string; before: number; after: number; required: number; pass: boolean; algorithm: string }[] };
 type CvdReportType = {

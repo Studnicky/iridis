@@ -156,13 +156,13 @@ const renderMermaid = async () => {
       startOnLoad: false,
       theme: 'base',
       themeVariables: {
-        fontFamily: 'Space Grotesk, sans-serif',
-        primaryColor: colorMode.value === 'dark' ? '#1f2937' : '#f3f4f6',
-        primaryTextColor: colorMode.value === 'dark' ? '#f9fafb' : '#111827',
-        primaryBorderColor: colorMode.value === 'dark' ? '#374151' : '#d1d5db',
-        lineColor: colorMode.value === 'dark' ? '#9ca3af' : '#6b7280',
-        secondaryColor: colorMode.value === 'dark' ? '#374151' : '#e5e7eb',
-        tertiaryColor: colorMode.value === 'dark' ? '#1f2937' : '#f3f4f6',
+        fontFamily: 'var(--font-display)',
+        primaryColor: 'var(--ui-bg-elevated)',
+        primaryTextColor: 'var(--ui-text-highlighted)',
+        primaryBorderColor: 'var(--ui-primary)',
+        lineColor: 'var(--ui-primary)',
+        secondaryColor: 'var(--ui-bg-elevated)',
+        tertiaryColor: 'var(--ui-bg)',
       }
     });
     
@@ -190,8 +190,28 @@ const renderMermaid = async () => {
   }
 };
 
+let resizeObserver: ResizeObserver | null = null;
+
 onMounted(() => {
   renderMermaid();
+  
+  if (viewportRef.value) {
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+          fitToView();
+        }
+      }
+    });
+    resizeObserver.observe(viewportRef.value);
+  }
+});
+
+import { onUnmounted } from 'vue';
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+  }
 });
 
 watch([() => props.code, () => colorMode.value], renderMermaid);

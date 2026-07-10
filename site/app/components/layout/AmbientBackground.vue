@@ -12,18 +12,18 @@
  */
 
 /** One box-shadow entry per star: a viewport-relative dot so the field scales with the window instead of clipping on a fixed px canvas. */
-function starField(count: number, colorVar: string): string {
+function starField(count: number, colorVar: string, blur: string = '0'): string {
   const dots: string[] = [];
   for (let i = 0; i < count; i += 1) {
     const x = (Math.random() * 100).toFixed(2);
     const y = (Math.random() * 100).toFixed(2);
-    dots.push(`${x}vw ${y}vh 0 ${colorVar}`);
+    dots.push(`${x}vw ${y}vh ${blur} ${colorVar}`);
   }
   return dots.join(',');
 }
 
-const starsFar = starField(140, 'color-mix(in oklch, var(--ui-text) 55%, transparent)');
-const starsNear = starField(60, 'color-mix(in oklch, var(--ui-primary) 75%, transparent)');
+const starsFar = starField(140, 'color-mix(in oklch, var(--ui-text) 75%, transparent)', '0');
+const starsNear = starField(60, 'color-mix(in oklch, var(--ui-primary) 95%, transparent)', '1px');
 
 /** Engine roles the lava blobs cycle through — each blob blends two adjacent roles. */
 const LAVA_ROLES = ['primary', 'info', 'secondary', 'success', 'warning', 'error'];
@@ -186,15 +186,15 @@ const lavaBlobField = lavaBlobs(18);
 .star-layer {
   position: absolute;
   top: 0; left: 0;
-  width: 1px; height: 1px;
+  width: 1.5px; height: 1.5px;
   background: transparent;
   border-radius: 50%;
 }
 .star-far { animation: ambient-twinkle 6s ease-in-out infinite; }
-.star-near { animation: ambient-twinkle 4s ease-in-out infinite reverse; }
+.star-near { width: 2.5px; height: 2.5px; animation: ambient-twinkle 4s ease-in-out infinite reverse; }
 
 @keyframes ambient-grid-pan { to { background-position: 0 44px, 44px 0; } }
-@keyframes ambient-twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.85; } }
+@keyframes ambient-twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
 /* Primary lava-lamp motion: rise from below the viewport, swell at the
    midpoint, keep rising off the top, then reverse (animation-direction is
    set per-blob to alternate/alternate-reverse so they don't all rise in
