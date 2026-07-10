@@ -159,7 +159,7 @@ function sample(): void {
                 :value="seed.hex"
                 type="color"
                 class="h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent flex-none"
-                @input="send({ type: 'SET_SEED', index: i, hex: ($event.target as HTMLInputElement).value })"
+                @change="send({ type: 'SET_SEED', index: i, hex: ($event.target as HTMLInputElement).value })"
               >
               <div class="flex flex-col min-w-0 flex-1">
                 <span class="font-mono text-xs text-muted truncate">{{ seed.hex }}</span>
