@@ -226,7 +226,6 @@ function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<st
     'apca': state.metadata['contrast:apca'],
     'cvd':  state.metadata['contrast:cvd']
   };
-  Tokens.apply(Tokens.mapFromEngine(roleHex, sc), framing.value);
 }
 
 /**
@@ -438,9 +437,9 @@ function scheduleReextract(): void {
 export function useIridis() {
   if (!booted) {
     booted = true;
-    // Runs on the server too: engine.run() is pure computation, and Tokens.apply()
-    // no-ops without `document`. This makes the SSR-rendered palette identical to
-    // the client's, so hydration never has to re-theme the page.
+    // Runs on the server too: engine.run() is pure computation.
+    // This makes the SSR-rendered palette identical to the client's,
+    // so hydration never has to re-theme the page.
     run();
     if (typeof window !== 'undefined') {
       // framing is intentionally absent here — its swap is dispatched synchronously

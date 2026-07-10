@@ -71,34 +71,7 @@ export class Tokens {
     return tokens;
   }
 
-  /** DOM writer. SSR-guarded; call only in the browser. */
-  static apply(tokens: RoleHexMapType, framing: FramingType): void {
-    if (typeof document === 'undefined') {return;}
-    const root = document.documentElement;
-    
-    // Prevent staggered transition flashes during dark/light toggle or full palette swap
-    let style = document.getElementById('iridis-transition-disable');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'iridis-transition-disable';
-      style.textContent = '*, *::before, *::after { transition: none !important; }';
-      document.head.appendChild(style);
-    }
-    
-    for (const [k, v] of Object.entries(tokens)) {root.style.setProperty(k, v);}
-    root.classList.toggle('dark', framing === 'dark');
-    root.dataset.iridisFraming = framing;
-    
-    // Force a reflow so the transition-none applies to the changes instantly
-    void window.getComputedStyle(root).opacity;
-    
-    // Re-enable transitions
-    if (style && style.parentNode) {
-      style.parentNode.removeChild(style);
-    }
-  }
-
-  /** Serializes engine tokens as a `:root` rule for SSR head injection — first paint matches Tokens.apply(). */
+  /** Serializes engine tokens as a `:root` rule for SSR head injection. */
   static toCssText(tokens: RoleHexMapType): string {
     const decls = Object.entries(tokens).map(([k, v]) => {return `${k}:${v}`;}).join(';');
     return `:root{${decls}}`;
