@@ -6,6 +6,14 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.8.0] - 2026-07-11
+
+### Added
+
 - Shared `LearnMoreSection.vue` accordion component, replacing 5 independently-built "Learn more" implementations across the demo cards with one consistent, collapsible pattern
 - FSM wiring for the pipeline diagram's reset/fit controls (`DIAGRAM_RESET`/`DIAGRAM_FIT`), previously defined and handled but never dispatched
 - A build-time source-snippet import (`<<< @/path#region`), resolved via Nuxt Content's `content:file:beforeParse` hook, so docs can embed real, drift-proof source instead of hand-typed paraphrases
@@ -397,5 +405,6 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 
 [Unreleased]: https://github.com/Studnicky/iridis/compare/v0.0.0...HEAD
 
+[0.8.0]: https://github.com/Studnicky/iridis/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/Studnicky/iridis/compare/v0.1.1...v0.7.1
 [0.6.1]: https://github.com/Studnicky/iridis/compare/v0.6.0...v0.6.1
