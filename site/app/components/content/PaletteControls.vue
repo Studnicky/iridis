@@ -3,6 +3,7 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed, ref, watch } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
+import DerivationSettings from './DerivationSettings.vue';
 
 /**
  * The engine's single input surface: pick seeds or an image, choose the
@@ -24,7 +25,7 @@ import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
  */
 const {
   pickerSeeds, pinnableRoles, framing, schemaName, contrastStrictness, colorSpace, mode, imageSeeds, running,
-  enabledOptionalStages, cvdCorrect, contrastReport,
+  enabledOptionalStages, cvdCorrect, contrastReport, histogram,
   imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
   cvdPreviewTypes
 } = useIridis();
@@ -471,6 +472,10 @@ function sample(): void {
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-default/50">
+        <DerivationSettings />
       </div>
 
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mt-6 pt-4 border-t border-default/50">
