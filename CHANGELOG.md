@@ -4,6 +4,14 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+## [0.7.1] - 2026-07-11
+
 ### Changed
 
 - Retired the VitePress docs site (`docs/`) and consolidated on the Nuxt app (`site/`) as the single app — it now runs the engine live, doubles as the interactive demo, and hosts all documentation
@@ -373,4 +381,5 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 
 [Unreleased]: https://github.com/Studnicky/iridis/compare/v0.0.0...HEAD
 
+[0.7.1]: https://github.com/Studnicky/iridis/compare/v0.1.1...v0.7.1
 [0.6.1]: https://github.com/Studnicky/iridis/compare/v0.6.0...v0.6.1
