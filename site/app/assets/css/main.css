@@ -192,30 +192,76 @@ body {
   display: grid;
   place-items: center;
   pointer-events: none;
-  animation: halo-drift 30s linear infinite;
 }
 .halo-ring {
   position: absolute;
-  border-radius: 9999px;
-  background: radial-gradient(circle, color-mix(in oklch, var(--c) 75%, transparent) 0%, color-mix(in oklch, var(--c) 30%, transparent) 45%, transparent 68%);
+  border-radius: 46%;
+  background: radial-gradient(circle, color-mix(in oklch, var(--c) 85%, transparent) 0%, color-mix(in oklch, var(--c) 35%, transparent) 50%, transparent 75%);
   mix-blend-mode: screen;
-  filter: blur(5px);
-  opacity: 0.18;
-  animation: halo-pulse 5s ease-in-out infinite;
+  filter: blur(7px);
+  animation-name: halo-rise, halo-sway;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform;
 }
-.halo-ring:nth-child(1) { width: 5.5rem; height: 5.5rem; animation-delay: 0s; }
-.halo-ring:nth-child(2) { width: 7.9rem; height: 7.9rem; animation-delay: 0.8s; }
-.halo-ring:nth-child(3) { width: 10.3rem; height: 10.3rem; animation-delay: 1.6s; }
-.halo-ring:nth-child(4) { width: 12.7rem; height: 12.7rem; animation-delay: 2.4s; }
-.halo-ring:nth-child(5) { width: 15.1rem; height: 15.1rem; animation-delay: 3.2s; }
-.halo-ring:nth-child(6) { width: 17.5rem; height: 17.5rem; animation-delay: 4.0s; }
+.halo-ring:nth-child(1) {
+  width: 5.5rem; height: 5.5rem;
+  animation-duration: 7.2s, 6.8s;
+  animation-delay: -3.1s, -2.4s;
+  animation-direction: alternate, alternate-reverse;
+  --halo-sway: 16px;
+}
+.halo-ring:nth-child(2) {
+  width: 8.2rem; height: 8.2rem;
+  animation-duration: 8.5s, 8.1s;
+  animation-delay: -1.8s, -3.2s;
+  animation-direction: alternate-reverse, alternate;
+  --halo-sway: 20px;
+}
+.halo-ring:nth-child(3) {
+  width: 10.8rem; height: 10.8rem;
+  animation-duration: 9.3s, 9.7s;
+  animation-delay: -2.7s, -1.5s;
+  animation-direction: alternate, alternate;
+  --halo-sway: 18px;
+}
+.halo-ring:nth-child(4) {
+  width: 13.2rem; height: 13.2rem;
+  animation-duration: 10.1s, 10.4s;
+  animation-delay: -4.2s, -2.8s;
+  animation-direction: alternate-reverse, alternate-reverse;
+  --halo-sway: 22px;
+}
+.halo-ring:nth-child(5) {
+  width: 15.6rem; height: 15.6rem;
+  animation-duration: 11.4s, 11.2s;
+  animation-delay: -3.5s, -3.9s;
+  animation-direction: alternate, alternate-reverse;
+  --halo-sway: 19px;
+}
+.halo-ring:nth-child(6) {
+  width: 18.0rem; height: 18.0rem;
+  animation-duration: 12.3s, 12.6s;
+  animation-delay: -2.3s, -4.1s;
+  animation-direction: alternate-reverse, alternate;
+  --halo-sway: 21px;
+}
 
-@keyframes halo-pulse {
-  0%, 100% { opacity: 0.1; transform: scale(0.82); }
-  50%      { opacity: 0.6; transform: scale(1.14); }
+/* Primary motion: rise from below, scale at midpoint, scale back as they rise off top.
+   Per-ring delays and directions so they don't move in lockstep. */
+@keyframes halo-rise {
+  0%   { translate: 0 60px; scale: 0.85; opacity: 0.15; }
+  50%  { translate: 0 -30px; scale: 1.15; opacity: 0.55; }
+  100% { translate: 0 -90px; scale: 0.85; opacity: 0.15; }
 }
-@keyframes halo-drift {
-  to { transform: rotate(360deg); }
+
+/* Horizontal sway layered on top of rise motion — composed as a separate
+   animation so it doesn't interfere with the vertical rise. Amplitude varies
+   per ring via --halo-sway custom property. */
+@keyframes halo-sway {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(var(--halo-sway)); }
+  75%      { transform: translateX(calc(var(--halo-sway) * -1)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .halo, .halo-ring { animation: none; }
