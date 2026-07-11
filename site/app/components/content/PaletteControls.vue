@@ -26,7 +26,7 @@ const {
   pickerSeeds, pinnableRoles, framing, schemaName, contrastStrictness, colorSpace, mode, imageSeeds, running,
   enabledOptionalStages, cvdCorrect, contrastReport,
   imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
-  cvdPreviewTypes, toggleCvdPreviewType
+  cvdPreviewTypes
 } = useIridis();
 const { send } = useIridisUiMachine();
 
@@ -130,14 +130,14 @@ function sample(): void {
       <BalancedWrap
         v-if="mode === 'picker'"
         v-auto-animate
-        :items="[...pickerSeeds, { isAddBtn: true }]"
+        :items="[{ isAddBtn: true }, ...pickerSeeds]"
         :min-width="210"
         :gap="12"
         class="rounded-lg border-2 border-dashed border-default p-4"
       >
-        <template #default="{ item: seed, index: i }">
+        <template #default="{ item: hue, index: i }">
           <div
-            v-if="seed.isAddBtn"
+            v-if="hue.isAddBtn"
             class="flex min-h-full items-center justify-center flex-1 rounded-lg border border-transparent p-2.5"
           >
             <UButton
@@ -148,43 +148,55 @@ function sample(): void {
               :disabled="pickerSeeds.length >= 32"
               @click="send({ type: IridisUiActionType.ADD_SEED })"
             >
-              Add seed
+              Add hue
             </UButton>
           </div>
           <div
             v-else
-            class="flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5 flex-1"
+            class="relative flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5 flex-1"
           >
+            <UButton
+              icon="i-material-symbols-close-rounded"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              class="absolute top-1 right-1 p-0.5"
+              :disabled="pickerSeeds.length <= 1"
+              @click="send({ type: IridisUiActionType.REMOVE_SEED, index: i - 1 })"
+            />
             <div class="flex items-center gap-2">
               <input
-                :value="seed.hex"
+                :value="hue.hex"
                 type="color"
                 class="h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent flex-none"
-                @change="send({ type: IridisUiActionType.SET_SEED, index: i, hex: ($event.target as HTMLInputElement).value })"
+                @change="send({ type: IridisUiActionType.SET_SEED, index: i - 1, hex: ($event.target as HTMLInputElement).value })"
               >
               <div class="flex flex-col min-w-0 flex-1">
-                <span class="font-mono text-xs text-muted truncate">{{ seed.hex }}</span>
-                <UButton
-                  icon="i-material-symbols-close-rounded"
-                  color="neutral"
-                  variant="link"
-                  size="xs"
-                  class="-ml-1.5 p-0 self-start"
-                  :disabled="pickerSeeds.length <= 1"
-                  @click="send({ type: IridisUiActionType.REMOVE_SEED, index: i })"
-                >
-                  Remove
-                </UButton>
+                <span class="font-mono text-xs text-muted truncate">{{ hue.hex }}</span>
               </div>
             </div>
-            <USelect
-              :model-value="seed.role ?? UNPINNED"
-              :items="[{ label: 'Unpinned', value: UNPINNED }, ...pinnableRoles.map((r) => ({ label: r, value: r, disabled: pickerSeeds.some((s, sIdx) => sIdx !== i && s.role === r) }))]"
-              value-key="value"
-              size="xs"
-              class="w-full"
-              @update:model-value="send({ index: i, role: $event === UNPINNED ? undefined : ($event as string), type: IridisUiActionType.PIN_SEED_ROLE })"
-            />
+            <div class="space-y-1">
+              <p class="text-xs font-medium uppercase tracking-wide text-dimmed">Pin to role</p>
+              <div class="flex flex-wrap gap-1">
+                <UButton
+                  label="Unpinned"
+                  size="xs"
+                  :color="hue.role ? 'neutral' : 'primary'"
+                  :variant="hue.role ? 'soft' : 'solid'"
+                  @click="send({ index: i - 1, role: undefined, type: IridisUiActionType.PIN_SEED_ROLE })"
+                />
+                <UButton
+                  v-for="r in pinnableRoles"
+                  :key="r"
+                  :label="r"
+                  size="xs"
+                  :color="hue.role === r ? 'primary' : 'neutral'"
+                  :variant="hue.role === r ? 'solid' : 'soft'"
+                  :disabled="pickerSeeds.some((s, sIdx) => sIdx !== i - 1 && s.role === r)"
+                  @click="send({ index: i - 1, role: hue.role === r ? undefined : r, type: IridisUiActionType.PIN_SEED_ROLE })"
+                />
+              </div>
+            </div>
           </div>
         </template>
       </BalancedWrap>
@@ -231,7 +243,7 @@ function sample(): void {
           <Histogram />
           <div class="space-y-1">
             <div class="text-xs font-medium text-muted">
-              Extracted seeds
+              Extracted hues
             </div>
             <div
               v-auto-animate
@@ -343,14 +355,10 @@ function sample(): void {
             <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
               Role schema
             </p>
-            <div class="w-full space-y-1 pt-2">
-              <USlider
-                :model-value="Math.max(0, schemaItems.indexOf(schemaName))"
-                :min="0"
-                :max="schemaItems.length - 1"
-                :step="1"
-                @update:model-value="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: schemaItems[Number($event)] || 'iridis-32' })"
-              />
+            <p class="text-sm text-muted">
+              How many roles to resolve — <strong class="text-highlighted">iridis-4</strong> is the minimal set, <strong class="text-highlighted">iridis-32</strong> resolves the full token surface this site renders.
+            </p>
+            <div class="w-full space-y-2">
               <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
                 <span
                   v-for="(s, i) in schemaItems"
@@ -361,10 +369,14 @@ function sample(): void {
                   {{ s.replace('iridis-', '') }}
                 </span>
               </div>
+              <USlider
+                :model-value="Math.max(0, schemaItems.indexOf(schemaName))"
+                :min="0"
+                :max="schemaItems.length - 1"
+                :step="1"
+                @update:model-value="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: schemaItems[Number($event)] || 'iridis-32' })"
+              />
             </div>
-            <p class="text-sm text-muted">
-              How many roles to resolve — <strong class="text-highlighted">iridis-4</strong> is the minimal set, <strong class="text-highlighted">iridis-32</strong> resolves the full token surface this site renders.
-            </p>
           </div>
 
           <div class="space-y-2">
@@ -390,20 +402,6 @@ function sample(): void {
             <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
               Compliance strictness
             </p>
-            <div class="w-full space-y-1 pt-2">
-              <USlider
-                :model-value="contrastStrictness"
-                :min="0"
-                :max="2"
-                :step="1"
-                @update:model-value="($event) => { send({ strictness: $event as number, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }"
-              />
-              <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
-                <span :class="contrastStrictness === 0 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 0, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">AA</span>
-                <span :class="contrastStrictness === 1 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 1, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">AAA</span>
-                <span :class="contrastStrictness === 2 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 2, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">APCA</span>
-              </div>
-            </div>
             <p class="text-sm text-muted">
               <template v-if="contrastStrictness === 0">
                 <strong class="text-highlighted">AA</strong> is the WCAG 2.1 minimum: 4.5:1 (3:1 for large text).
@@ -415,6 +413,20 @@ function sample(): void {
                 <strong class="text-highlighted">APCA</strong> is the modern perceptual contrast algorithm (target Lc).
               </template>
             </p>
+            <div class="w-full space-y-2">
+              <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
+                <span :class="contrastStrictness === 0 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 0, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">AA</span>
+                <span :class="contrastStrictness === 1 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 1, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">AAA</span>
+                <span :class="contrastStrictness === 2 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 2, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">APCA</span>
+              </div>
+              <USlider
+                :model-value="contrastStrictness"
+                :min="0"
+                :max="2"
+                :step="1"
+                @update:model-value="($event) => { send({ strictness: $event as number, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }"
+              />
+            </div>
           </div>
 
           <div class="space-y-2">
@@ -437,7 +449,7 @@ function sample(): void {
                   :disabled="cvdPreviewTypes.size === 0"
                   variant="ghost"
                   size="xs"
-                  @click="cvdPreviewTypes.forEach(t => toggleCvdPreviewType(t))"
+                  @click="send({ type: IridisUiActionType.CVD_CLEAR_PREVIEWS })"
                 />
               </div>
               <BalancedWrap
@@ -457,7 +469,7 @@ function sample(): void {
                     :color="cvdPreviewTypes.has(t.value as any) ? 'primary' : 'neutral'"
                     :variant="cvdPreviewTypes.has(t.value as any) ? 'solid' : 'soft'"
                     class="flex-1 justify-center"
-                    @click="toggleCvdPreviewType(t.value as any)"
+                    @click="send({ cvdType: t.value, type: IridisUiActionType.CVD_TOGGLE_PREVIEW })"
                   />
                 </template>
               </BalancedWrap>
