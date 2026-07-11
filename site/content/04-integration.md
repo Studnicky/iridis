@@ -74,42 +74,7 @@ A worked example of the mapping strategy above: `examples/vue-capacitor/category
 
 `CategoryColorService` is a singleton that owns a single `Engine` instance configured at construction time. The engine is set up once; individual calls to `apply(category, seed)` just invoke `engine.run()` with a new input.
 
-```ts
-import { Engine, coreTasks } from '@studnicky/iridis';
-import { contrastPlugin }   from '@studnicky/iridis-contrast';
-import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
-import { capacitorPlugin }  from '@studnicky/iridis-capacitor';
-import { categoryW3cRoleSchema } from './categoryW3cRoleSchema.ts';
-
-export class CategoryColorService {
-  private readonly engine: Engine;
-
-  private constructor() {
-    this.engine = new Engine();
-
-    for (const task of coreTasks) this.engine.tasks.register(task);
-
-    this.engine.adopt(contrastPlugin);
-    this.engine.adopt(stylesheetPlugin);
-    this.engine.adopt(capacitorPlugin);
-
-    this.engine.pipeline([
-      'intake:any',
-      'resolve:roles',
-      'expand:family',
-      'enforce:wcagAA',
-      'derive:variant',
-      'emit:cssVars',
-      'emit:capacitorStatusBar',
-      'emit:capacitorTheme',
-    ]);
-  }
-
-  static shared(): CategoryColorService { /* singleton */ }
-
-  async apply(category: string, seed: string): Promise<{ cssVars, statusBar }> { /* ... */ }
-}
-```
+<<< @/examples/vue-capacitor/categoryColorService.ts#construct
 
 The `private constructor` + `static shared()` pattern wires the engine once. Each service owns its own `Engine` instance and therefore its own isolated `TaskRegistry`, which matters when multiple services in the same application need different pipeline configurations.
 
