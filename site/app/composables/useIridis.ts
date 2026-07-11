@@ -129,7 +129,7 @@ const mode = computed<ModeType>({
   'get': () => { const result = uiState.value.mode; return result; },
   'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': IridisUiActionType.SELECT_MODE }); return result; }
 });
-const pickerSeeds = ref<PickerSeedType[]>([{ 'hex': '#7c3aed' }, { 'hex': '#06b6d4' }, { 'hex': '#f59e0b' }, { 'hex': '#ec4899' }]);
+const pickerSeeds = ref<PickerSeedType[]>([]);
 const imageSeeds = ref<string[]>([]);
 const framing = ref<FramingType>('dark');
 const schemaName = ref<string>('iridis-32');
@@ -138,9 +138,9 @@ const colorSpace = ref<'srgb' | 'displayP3'>('srgb');
 /**
  * CVD "correct" mode flag, threaded through as `input.contrast.cvdCorrect` —
  * when true, enforce:cvdSimulate (packages/contrast) auto-corrects failing
- * pairs instead of only warning. On by default.
+ * pairs instead of only warning. Off by default.
  */
-const cvdCorrect = ref<boolean>(true);
+const cvdCorrect = ref<boolean>(false);
 
 /**
  * Visual CVD preview — purely a display-time filter over whatever the engine

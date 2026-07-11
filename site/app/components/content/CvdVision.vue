@@ -91,6 +91,7 @@ const cvdReport = computed(() => {
               size="xs"
               :color="cvdPreviewTypes.has(t.value) ? 'primary' : 'neutral'"
               :variant="cvdPreviewTypes.has(t.value) ? 'solid' : 'soft'"
+              class="min-w-[80px]"
               @click="toggleCvdPreviewType(t.value)"
             />
           </div>

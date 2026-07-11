@@ -388,24 +388,22 @@ function sample(): void {
         <div class="space-y-4">
           <div class="space-y-2">
             <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
-              Base contrast target
+              Compliance strictness
             </p>
-            <UFormField label="Compliance strictness">
-              <div class="w-full space-y-1 pt-2">
-                <USlider
-                  :model-value="contrastStrictness"
-                  :min="0"
-                  :max="2"
-                  :step="1"
-                  @update:model-value="($event) => { send({ strictness: $event as number, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }"
-                />
-                <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
-                  <span :class="contrastStrictness === 0 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 0, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">AA</span>
-                  <span :class="contrastStrictness === 1 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 1, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">AAA</span>
-                  <span :class="contrastStrictness === 2 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 2, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">APCA</span>
-                </div>
+            <div class="w-full space-y-1 pt-2">
+              <USlider
+                :model-value="contrastStrictness"
+                :min="0"
+                :max="2"
+                :step="1"
+                @update:model-value="($event) => { send({ strictness: $event as number, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }"
+              />
+              <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
+                <span :class="contrastStrictness === 0 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 0, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">AA</span>
+                <span :class="contrastStrictness === 1 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 1, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">AAA</span>
+                <span :class="contrastStrictness === 2 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 2, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">APCA</span>
               </div>
-            </UFormField>
+            </div>
             <p class="text-sm text-muted">
               <template v-if="contrastStrictness === 0">
                 <strong class="text-highlighted">AA</strong> is the WCAG 2.1 minimum: 4.5:1 (3:1 for large text).
@@ -434,9 +432,9 @@ function sample(): void {
               <div class="flex items-center justify-between gap-3">
                 <span class="text-sm font-medium">Simulate CVD vision</span>
                 <UButton
-                  v-if="cvdPreviewTypes.size > 0"
                   label="Off"
-                  color="neutral"
+                  :color="cvdPreviewTypes.size > 0 ? 'neutral' : 'gray'"
+                  :disabled="cvdPreviewTypes.size === 0"
                   variant="ghost"
                   size="xs"
                   @click="cvdPreviewTypes.forEach(t => toggleCvdPreviewType(t))"
