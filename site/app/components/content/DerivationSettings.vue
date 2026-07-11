@@ -8,7 +8,16 @@ import { PRESET_DEFAULTS } from '~/composables/types/colorDerivation.ts';
 const { derivationConfig } = useIridis();
 const { send } = useIridisUiMachine();
 
-const hueAlgorithms: HueAlgorithm[] = ['monochromatic', 'complementary', 'analogous', 'triadic', 'tetradic', 'split-complementary', 'compound', 'freeform'];
+const hueAlgorithmOptions = [
+  { label: 'Monochromatic', value: 'monochromatic' as HueAlgorithm },
+  { label: 'Complementary', value: 'complementary' as HueAlgorithm },
+  { label: 'Analogous', value: 'analogous' as HueAlgorithm },
+  { label: 'Triadic', value: 'triadic' as HueAlgorithm },
+  { label: 'Tetradic', value: 'tetradic' as HueAlgorithm },
+  { label: 'Split-complementary', value: 'split-complementary' as HueAlgorithm },
+  { label: 'Compound', value: 'compound' as HueAlgorithm },
+  { label: 'Freeform', value: 'freeform' as HueAlgorithm }
+];
 
 const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
 
@@ -45,20 +54,14 @@ function formatLabel(text: string): string {
     <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
       <div v-for="role in roles" :key="role" class="space-y-1.5">
         <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-400">{{ formatLabel(role) }}</label>
-        <USelectMenu
+        <USelect
           :model-value="getRoleAlgorithm(role)"
-          :options="hueAlgorithms"
+          :options="hueAlgorithmOptions"
+          value-key="value"
           @update:model-value="updateAlgorithm(role, $event)"
           size="sm"
-          :ui="{ base: 'w-full' }"
-        >
-          <template #label>
-            {{ formatLabel(getRoleAlgorithm(role)) }}
-          </template>
-          <template #option="{ option }">
-            {{ formatLabel(option) }}
-          </template>
-        </USelectMenu>
+          class="w-full"
+        />
       </div>
     </div>
   </div>
