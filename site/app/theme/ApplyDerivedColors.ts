@@ -20,25 +20,43 @@ class ApplyDerivedColors implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
-    const derivationConfig = state.metadata['derivation:config'] as DerivationConfig | undefined;
-    if (!derivationConfig || !state.colors.length) return;
+    try {
+      const derivationConfig = state.metadata['derivation:config'] as DerivationConfig | undefined;
+      if (!derivationConfig || !state.colors.length) {
+        console.log('[derive:colors] Skipping - no config or colors');
+        return;
+      }
 
-    // state.colors is ColorRecordInterfaceType[] - extract hex strings
-    const baseHues = state.colors.map(c => c.hex);
-    const derivedHues = deriveColors(baseHues, derivationConfig.roles, baseHues.length);
+      console.log('[derive:colors] Running with', state.colors.length, 'colors');
 
-    const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
-    for (const roleType of roles) {
-      const derived = derivedHues[roleType];
-      if (!derived?.length) continue;
+      // state.colors is ColorRecordInterfaceType[] - extract hex strings
+      const baseHues = state.colors.map(c => c.hex);
+      const derivedHues = deriveColors(baseHues, derivationConfig.roles, baseHues.length);
 
-      const role = state.roles[roleType];
-      if (!role?.oklch) continue;
+      console.log('[derive:colors] Derived hues:', Object.keys(derivedHues).filter(k => derivedHues[k as RoleType]?.length));
 
-      state.roles[roleType] = {
-        ...role,
-        oklch: { ...role.oklch, h: derived[0].hue }
-      };
+      const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
+      for (const roleType of roles) {
+        const derived = derivedHues[roleType];
+        if (!derived?.length) continue;
+
+        const role = state.roles[roleType];
+        if (!role?.oklch) {
+          console.log('[derive:colors] Role', roleType, 'missing or has no oklch');
+          continue;
+        }
+
+        console.log('[derive:colors] Updating', roleType, 'hue:', role.oklch.h, '→', derived[0].hue);
+
+        state.roles[roleType] = {
+          ...role,
+          oklch: { ...role.oklch, h: derived[0].hue }
+        };
+      }
+      console.log('[derive:colors] Complete');
+    } catch (e) {
+      console.error('[derive:colors] Error:', e);
+      throw e;
     }
   }
 }
