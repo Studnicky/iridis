@@ -15,9 +15,9 @@ import { imagePlugin } from '@studnicky/iridis-image';
 import { computed, ref, watch } from 'vue';
 
 import type {
-  FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType
+  DerivationConfig, FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType
 } from './types/index.ts';
-import { IridisUiActionType, IridisUiEffectVariant } from './types/index.ts';
+import { IridisUiActionType, IridisUiEffectVariant, PRESET_DEFAULTS } from './types/index.ts';
 
 type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.MUTATE_SEEDS }>;
 type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>;
@@ -27,6 +27,7 @@ type UpdateDiagramViewEffectType = Extract<IridisUiEffectType, { 'variant': Irid
 type UpdateCvdPreviewEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>;
 type PopulatePickerFromImageEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }>;
 
+import { applyDerivedColors } from '../theme/ApplyDerivedColors.ts';
 import { intakeHexHint } from '../theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
 import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
@@ -68,19 +69,19 @@ const SEMANTIC_HUE_CLAMP = 90;
  * are currently enabled.
  */
 export const COLOR_PIPELINE = [
-  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'expand:family',
+  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'derive:colors', 'expand:family',
   'enforce:contrast', 'enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate',
   'derive:variant'
 ];
 /** enforce:cvdSimulate is always on, not user-toggleable — CVD accessibility
  * reporting/correction isn't opt-in the way the other standards are. */
 const REQUIRED_COLOR_STAGES = [
-  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'expand:family',
+  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'derive:colors', 'expand:family',
   'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
 ];
 const REQUIRED_IMAGE_STAGES = [
   'intake:imagePixels', 'gallery:histogram', 'gallery:extract', 'gallery:harmonize',
-  'resolve:roles', 'expand:family', 'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
+  'resolve:roles', 'derive:colors', 'expand:family', 'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
 ];
 
 /** Toggleable contrast checks, in the order they slot in after enforce:contrast. */
@@ -107,6 +108,7 @@ const engine = new Engine();
 for (const t of coreTasks) {engine.tasks.register(t);}
 engine.tasks.register(intakeHexHint);
 engine.tasks.register(pinDerivedRoles);
+engine.tasks.register(applyDerivedColors);
 engine.adopt(contrastPlugin);
 engine.adopt(imagePlugin);
 
@@ -146,6 +148,13 @@ const colorSpace = ref<'srgb' | 'displayP3'>('srgb');
  * pairs instead of only warning. Off by default.
  */
 const cvdCorrect = ref<boolean>(false);
+
+/**
+ * Color derivation configuration — allows users to select hue algorithms
+ * (monochromatic, complementary, analogous, etc.) for each role. Passed
+ * through metadata to ApplyDerivedColors task in the pipeline.
+ */
+const derivationConfig = ref<DerivationConfig>(PRESET_DEFAULTS);
 
 /**
  * Visual CVD preview — purely a display-time filter over whatever the engine
@@ -265,7 +274,7 @@ function run(framingOverride?: FramingType): void {
     const state = engine.run({
       'colors':   activeSeeds.value,
       'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
-      'metadata': { 'core:variantConfig': VARIANT_CONFIG },
+      'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig.value },
       'roles':    withSemanticHues(pair[targetFraming]),
       'runtime':  { 'colorSpace': colorSpace.value, 'framing': targetFraming }
     });
@@ -336,6 +345,7 @@ class FromImage {
         'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
         'metadata': {
           'core:variantConfig': VARIANT_CONFIG,
+          'derivation:config': derivationConfig.value,
           'gallery': {
             'algorithm':          imgAlgorithm.value,
             'chromaRange':        [...imgChromaRange.value] as [number, number],
@@ -516,13 +526,13 @@ export function useIridis() {
     if (typeof window !== 'undefined') {
       // framing is intentionally absent here — its swap is dispatched synchronously
       // by setPaletteParam() via run(effect.value), not through this debounce.
-      watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect], schedule, { 'deep': true });
+      watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig], schedule, { 'deep': true });
       watch([schemaName, imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
     }
   }
   return {
     'activeSeeds': activeSeeds, 'contrastStrictness': contrastStrictness, 'colorSpace': colorSpace, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
-    'cvdPreviewTypes': cvdPreviewTypes,
+    'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig,
     'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale, 'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
     'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
