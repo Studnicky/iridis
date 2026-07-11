@@ -8,7 +8,14 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ### Changed
 
+- Standardized card and section styling across the docs site's demo components: unified eyebrow-label typography, card-title scale, and border-radius/color conventions; converted hand-rolled pill-nav buttons in `TableOfContentsBar` and `CylinderCarousel` to `UButton`
+- The carousel's Pipeline card no longer duplicates the data-flow diagram already shown in the docs section below — it now links to it instead
+- The "pin to role" seed control is now a compact hover-expand dropdown grouped by role category, replacing an unbounded tag-cloud of buttons that could grow wider than its card and disable roles already pinned elsewhere (clicking a taken role now swaps the pin instead)
+
 ### Fixed
+
+- Broken `keyboard-arrow-left`/`keyboard-arrow-right` icon names in the pipeline diagram's D-pad controls (that icon family only ships `-rounded` variants for up/down)
+- The pipeline diagram's full-screen mode being clipped or mispositioned when rendered inside a 3D-transformed carousel card ancestor, by teleporting the expanded view to `<body>`
 
 ## [0.8.0] - 2026-07-11
 
