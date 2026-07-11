@@ -318,9 +318,9 @@ class ToPixels {
   }
 }
 
-/** Extracts dominant seeds and histogram data from a decoded image. */
+/** Extracts dominant hues from image to populate picker palette. */
 class FromImage {
-  /** Run the image pipeline: capture histogram, dominant seeds; switch to image mode. */
+  /** Decode image and extract N hues matching schema count; populate picker seeds. */
   static async extract(fileOrUrl: File | string): Promise<void> {
     if (typeof document === 'undefined') {return;}
     running.value = true;
@@ -352,8 +352,10 @@ class FromImage {
       const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
       histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
       const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string }[] | undefined) ?? [];
-      imageSeeds.value = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { const result = /^#[0-9a-fA-F]{6}$/.test(hex); return result; }).slice(0, 8);
-      mode.value = 'image';
+      const schemaCount = parseInt(schemaName.value.replace('iridis-', ''), 10) || 32;
+      const extracted = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { const result = /^#[0-9a-fA-F]{6}$/.test(hex); return result; }).slice(0, schemaCount);
+      imageSeeds.value = extracted;
+      sendUiEvent({ 'hues': extracted, 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE });
       ingest(state);
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e);
@@ -461,6 +463,16 @@ function updateCvdPreview(effect: UpdateCvdPreviewEffectType): void {
 }
 registerUpdateCvdPreviewHandler(updateCvdPreview);
 
+/**
+ * Populates picker palette from extracted hues. Called when image extraction
+ * completes or when extraction settings change, replacing picker seeds with
+ * the N extracted hues (where N = schema count).
+ */
+function populatePickerFromImage(effect: PopulatePickerFromImageEffectType): void {
+  pickerSeeds.value = effect.hues.map((hex) => ({ 'hex': hex }));
+}
+registerPopulatePickerFromImageHandler(populatePickerFromImage);
+
 /** Mirrors HeroBanner.vue's `${base}logo.png` resolution — the sample extraction source. */
 function logoUrl(): string {
   const base = useRuntimeConfig().app.baseURL;
@@ -489,7 +501,7 @@ function schedule(): void {
 
 let extractTimer: ReturnType<typeof setTimeout> | undefined;
 function scheduleReextract(): void {
-  if (typeof window === 'undefined' || lastImageSrc.value === null || mode.value !== 'image') {return;}
+  if (typeof window === 'undefined' || lastImageSrc.value === null) {return;}
   if (extractTimer !== undefined) {clearTimeout(extractTimer);}
   extractTimer = setTimeout(() => { void FromImage.extract(lastImageSrc.value!); }, 180);
 }
@@ -505,7 +517,7 @@ export function useIridis() {
       // framing is intentionally absent here — its swap is dispatched synchronously
       // by setPaletteParam() via run(effect.value), not through this debounce.
       watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect], schedule, { 'deep': true });
-      watch([imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
+      watch([schemaName, imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
     }
   }
   return {
