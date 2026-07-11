@@ -29,6 +29,7 @@ jobs:
       - run: cd site && npm run generate
         env:
           NUXT_APP_BASE_URL: /iridis/
+          NUXT_PUBLIC_BASE_URL: /iridis/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v5
         with: { path: site/.output/public }
