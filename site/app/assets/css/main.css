@@ -205,32 +205,32 @@ body {
 }
 .halo-ring:nth-child(1) {
   width: 5.5rem; height: 5.5rem;
-  animation: orbit-1 7.2s ease-in-out infinite, pulse-glow 3.8s ease-in-out infinite;
+  animation: orbit-1 7.2s ease-in-out infinite, halo-pulse 3.8s ease-in-out infinite;
   animation-delay: -2.1s, -1.4s;
 }
 .halo-ring:nth-child(2) {
   width: 8.2rem; height: 8.2rem;
-  animation: orbit-2 8.5s ease-in-out infinite, pulse-glow 4.2s ease-in-out infinite;
+  animation: orbit-2 8.5s ease-in-out infinite, halo-pulse 4.2s ease-in-out infinite;
   animation-delay: -1.8s, -0.9s;
 }
 .halo-ring:nth-child(3) {
   width: 10.8rem; height: 10.8rem;
-  animation: orbit-3 9.3s ease-in-out infinite, pulse-glow 4.6s ease-in-out infinite;
+  animation: orbit-3 9.3s ease-in-out infinite, halo-pulse 4.6s ease-in-out infinite;
   animation-delay: -3.2s, -2.1s;
 }
 .halo-ring:nth-child(4) {
   width: 13.2rem; height: 13.2rem;
-  animation: orbit-4 10.1s ease-in-out infinite, pulse-glow 5.0s ease-in-out infinite;
+  animation: orbit-4 10.1s ease-in-out infinite, halo-pulse 5.0s ease-in-out infinite;
   animation-delay: -2.8s, -1.2s;
 }
 .halo-ring:nth-child(5) {
   width: 15.6rem; height: 15.6rem;
-  animation: orbit-5 11.4s ease-in-out infinite, pulse-glow 5.4s ease-in-out infinite;
+  animation: orbit-5 11.4s ease-in-out infinite, halo-pulse 5.4s ease-in-out infinite;
   animation-delay: -3.5s, -2.7s;
 }
 .halo-ring:nth-child(6) {
   width: 18.0rem; height: 18.0rem;
-  animation: orbit-6 12.3s ease-in-out infinite, pulse-glow 5.8s ease-in-out infinite;
+  animation: orbit-6 12.3s ease-in-out infinite, halo-pulse 5.8s ease-in-out infinite;
   animation-delay: -4.1s, -0.6s;
 }
 
@@ -292,10 +292,10 @@ body {
   100% { transform: translate(0, 0) scale(0.87); opacity: 0.19; }
 }
 
-/* Color pulse animation — simulates lava lamp brightness fluctuations */
-@keyframes pulse-glow {
-  0%, 100% { filter: blur(7px) brightness(0.9); }
-  50%      { filter: blur(6px) brightness(1.2); }
+/* Lava lamp opacity pulsing — layered on orbital motion */
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.18; }
+  50%      { opacity: 0.55; }
 }
 @media (prefers-reduced-motion: reduce) {
   .halo, .halo-ring { animation: none; }
