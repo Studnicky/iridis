@@ -6,9 +6,33 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ### Added
 
+- **Clamps view in carousel** shows seed-to-resolved envelope corrections visually
+- **Dynamic button row balancing** (BalancedWrap component) distributes items optimally across viewport
+- **Mermaid diagram enhancements** with improved centering and theme styling
+- **Increased ambient stars** with rotating animation layers for enhanced visual ambiance
+- **ProsePre syntax highlighting override** for unified code block styling
+
 ### Changed
 
+- Replaced Carousel with CSS grid in PaletteCarousel for better layout control
+- Moved Mermaid diagram from PipelineExplainer to bottom of index.vue
+- Updated role schema controls to marked slider
+- Refactored TableOfContentsBar with BalancedWrap for improved tab distribution
+- Enhanced MultiOutput format targets layout with BalancedWrap
+- Improved HeroBanner and RoleClamps component layouts
+
 ### Fixed
+
+- **ModeSwitch casting issue** causing FSM desynchronization
+- **D-pad in MermaidDiagram** and set default wheel behavior to zoom
+- **CVD hydration errors** and SVG attribute bindings
+- **WCAG contrast enforcement** for active navigation and solid buttons using engine-generated contrast tokens
+- **Color picker sluggishness** by changing event from @input to @change
+- **CSS specificity** of SSR-injected tokens to override Nuxt UI defaults
+- **Style bouncing on hydration** by removing imperative Tokens.apply mutation
+- **UI contrast and state regressions** with derivation explanations
+- **Theme token generation** and CSS styling improvements
+- **Nuxt configuration refinements** for better UX
 
 ## [0.6.1] - 2026-07-09
 

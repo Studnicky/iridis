@@ -1,8 +1,8 @@
 export type * from './framing.ts';
 export type * from './galleryAlgorithm.ts';
 export type * from './histogramBin.ts';
-export type * from './iridisUiEffect.ts';
-export type * from './iridisUiEvent.ts';
+export * from './iridisUiEffect.ts';
+export * from './iridisUiEvent.ts';
 export type * from './iridisUiState.ts';
 export type * from './mode.ts';
 export type * from './pickerSeed.ts';

@@ -1,3 +1,10 @@
+export enum IridisUiEffectVariant {
+  MUTATE_SEEDS = 'MUTATE_SEEDS',
+  PIN_SEED_ROLE = 'PIN_SEED_ROLE',
+  SET_PALETTE_PARAM = 'SET_PALETTE_PARAM',
+  EXTRACT_IMAGE = 'EXTRACT_IMAGE'
+}
+
 import type { FramingType } from './framing.ts';
 import type { GalleryAlgorithmType } from './galleryAlgorithm.ts';
 
@@ -9,13 +16,21 @@ import type { GalleryAlgorithmType } from './galleryAlgorithm.ts';
  * actual mutation.
  */
 export type IridisUiEffectType =
-  | { 'hex'?: string; 'op': 'add'; 'variant': 'MUTATE_SEEDS' }
-  | { 'index': number; 'op': 'remove'; 'variant': 'MUTATE_SEEDS' }
-  | { 'hex': string; 'index': number; 'op': 'set'; 'variant': 'MUTATE_SEEDS' }
-  | { 'index': number; 'role': string | undefined; 'variant': 'PIN_SEED_ROLE' }
-  | { 'op': 'framing'; 'value': FramingType; 'variant': 'SET_PALETTE_PARAM' }
-  | { 'op': 'schemaName'; 'value': string; 'variant': 'SET_PALETTE_PARAM' }
-  | { 'op': 'contrastLevel'; 'value': 'AA' | 'AAA'; 'variant': 'SET_PALETTE_PARAM' }
-  | { 'op': 'imgAlgorithm'; 'value': GalleryAlgorithmType; 'variant': 'SET_PALETTE_PARAM' }
-  | { 'source': 'sample'; 'variant': 'EXTRACT_IMAGE' }
-  | { 'file': File; 'source': 'file'; 'variant': 'EXTRACT_IMAGE' };
+  | { 'hex'?: string; 'op': 'add'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
+  | { 'index': number; 'op': 'remove'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
+  | { 'hex': string; 'index': number; 'op': 'set'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
+  | { 'index': number; 'role': string | undefined; 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }
+  | { op: 'framing'; value: FramingType; variant: IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { op: 'schemaName'; value: string; variant: IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { op: 'strictness'; value: number; variant: IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { op: 'colorSpace'; value: 'srgb' | 'displayP3'; variant: IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'cvdCorrect'; 'value': boolean; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'imgAlgorithm'; 'value': GalleryAlgorithmType; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'imgK'; 'value': number; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'imgHistogramBits'; 'value': number; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'imgDeltaECap'; 'value': number; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'imgHarmonize'; 'value': number; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'imgLightnessRange'; 'value': [number, number]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'imgChromaRange'; 'value': [number, number]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'source': 'sample'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
+  | { 'file': File; 'source': 'file'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE };

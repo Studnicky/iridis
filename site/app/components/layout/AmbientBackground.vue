@@ -12,18 +12,21 @@
  */
 
 /** One box-shadow entry per star: a viewport-relative dot so the field scales with the window instead of clipping on a fixed px canvas. */
-function starField(count: number, colorVar: string): string {
+function starField(count: number, colorVar: string, blur: string = '0'): string {
   const dots: string[] = [];
   for (let i = 0; i < count; i += 1) {
     const x = (Math.random() * 100).toFixed(2);
     const y = (Math.random() * 100).toFixed(2);
-    dots.push(`${x}vw ${y}vh 0 ${colorVar}`);
+    dots.push(`${x}vw ${y}vh ${blur} ${colorVar}`);
   }
   return dots.join(',');
 }
+const starsFar1 = starField(200, 'color-mix(in oklch, var(--ui-primary) 70%, transparent)', '0');
+const starsFar2 = starField(200, 'color-mix(in oklch, var(--ui-info) 70%, transparent)', '0');
+const starsFar3 = starField(200, 'color-mix(in oklch, var(--ui-success) 70%, transparent)', '0');
 
-const starsFar = starField(140, 'color-mix(in oklch, var(--ui-text) 55%, transparent)');
-const starsNear = starField(60, 'color-mix(in oklch, var(--ui-primary) 75%, transparent)');
+const starsNear1 = starField(100, 'color-mix(in oklch, var(--ui-warning) 85%, transparent)', '1px');
+const starsNear2 = starField(100, 'color-mix(in oklch, var(--ui-error) 85%, transparent)', '1px');
 
 /** Engine roles the lava blobs cycle through — each blob blends two adjacent roles. */
 const LAVA_ROLES = ['primary', 'info', 'secondary', 'success', 'warning', 'error'];
@@ -112,23 +115,23 @@ const lavaBlobField = lavaBlobs(18);
         </filter>
       </defs>
     </svg>
-    <div class="ambient-lava">
-      <div
-        v-for="b in lavaBlobField"
-        :key="b.id"
-        class="lava-blob"
-        :style="b.style"
-      />
-    </div>
+    <ClientOnly>
+      <div class="ambient-lava">
+        <div
+          v-for="b in lavaBlobField"
+          :key="b.id"
+          class="lava-blob"
+          :style="b.style"
+        />
+      </div>
 
-    <div
-      class="star-layer star-far"
-      :style="{ boxShadow: starsFar }"
-    />
-    <div
-      class="star-layer star-near"
-      :style="{ boxShadow: starsNear }"
-    />
+      <div class="star-layer star-far-1" :style="{ boxShadow: starsFar1 }" />
+      <div class="star-layer star-far-2" :style="{ boxShadow: starsFar2 }" />
+      <div class="star-layer star-far-3" :style="{ boxShadow: starsFar3 }" />
+
+      <div class="star-layer star-near-1" :style="{ boxShadow: starsNear1 }" />
+      <div class="star-layer star-near-2" :style="{ boxShadow: starsNear2 }" />
+    </ClientOnly>
   </div>
 </template>
 
@@ -184,15 +187,21 @@ const lavaBlobField = lavaBlobs(18);
 .star-layer {
   position: absolute;
   top: 0; left: 0;
-  width: 1px; height: 1px;
+  width: 1.5px; height: 1.5px;
   background: transparent;
   border-radius: 50%;
+  transform-origin: 50vw 50vh;
 }
-.star-far { animation: ambient-twinkle 6s ease-in-out infinite; }
-.star-near { animation: ambient-twinkle 4s ease-in-out infinite reverse; }
+.star-far-1 { animation: ambient-twinkle 4s ease-in-out infinite, star-rotate 200s linear infinite; }
+.star-far-2 { animation: ambient-twinkle 5s ease-in-out infinite 2s, star-rotate 300s linear infinite reverse; }
+.star-far-3 { animation: ambient-twinkle 6s ease-in-out infinite 1s, star-rotate 400s linear infinite; }
+
+.star-near-1 { width: 3px; height: 3px; animation: ambient-twinkle 3.5s ease-in-out infinite reverse, star-rotate 150s linear infinite reverse; }
+.star-near-2 { width: 3px; height: 3px; animation: ambient-twinkle 4.5s ease-in-out infinite reverse 1.5s, star-rotate 250s linear infinite; }
 
 @keyframes ambient-grid-pan { to { background-position: 0 44px, 44px 0; } }
-@keyframes ambient-twinkle { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.85; } }
+@keyframes ambient-twinkle { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.95; } }
+@keyframes star-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 /* Primary lava-lamp motion: rise from below the viewport, swell at the
    midpoint, keep rising off the top, then reverse (animation-direction is
    set per-blob to alternate/alternate-reverse so they don't all rise in
@@ -214,7 +223,7 @@ const lavaBlobField = lavaBlobs(18);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-grid, .lava-blob, .star-far, .star-near {
+  .ambient-grid, .lava-blob, .star-far-1, .star-far-2, .star-far-3, .star-near-1, .star-near-2 {
     animation: none !important;
   }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed } from 'vue';
 import { coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
@@ -6,6 +7,7 @@ import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, Accord
 import { COLOR_PIPELINE, OPTIONAL_STAGE_NAMES, useIridis } from '~/composables/useIridis.ts';
 import { intakeHexHint } from '~/theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '~/theme/PinDerivedRoles.ts';
+import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 
 /**
  * The actual pipeline this site runs on every palette change, walked stage by
@@ -15,7 +17,9 @@ import { pinDerivedRoles } from '~/theme/PinDerivedRoles.ts';
  */
 const TASKS_BY_NAME = new Map([...coreTasks, intakeHexHint, pinDerivedRoles, ...contrastPlugin.tasks()].map((t) => {return [t.name, t] as const;}));
 
-const { enabledOptionalStages, toggleOptionalStage, cvdCorrect, contrastReport } = useIridis();
+const { enabledOptionalStages, cvdCorrect, contrastReport } = useIridis();
+const { send } = useIridisUiMachine();
+
 
 type ContrastPairsType = { pairs: { foreground: string; background: string; before: number; after: number; required: number; pass: boolean; algorithm: string }[] };
 type CvdReportType = {
@@ -55,11 +59,16 @@ function cvdCorrectionSummary(report: unknown): string | undefined {
 <template>
   <UCard>
     <template #header>
-      <span class="block text-center font-semibold text-highlighted">Pipeline</span>
+      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <span />
+        <span class="text-center font-semibold text-highlighted">Pipeline</span>
+        <span />
+      </div>
     </template>
-    <p class="mb-3 text-sm text-muted">
+    
+    <p class="mb-3 mt-6 text-sm text-muted">
       Expand a stage — the description underneath is that task's own manifest, not marketing copy.
-      Optional stages can be switched on or off; the change is live on the next palette recompute.
+      Optional stages are automatically switched on or off depending on the compliance strictness setting.
     </p>
     <AccordionRoot
       type="multiple"
@@ -79,12 +88,14 @@ function cvdCorrectionSummary(report: unknown): string | undefined {
               class="ml-auto size-4 transition-transform data-[state=open]:rotate-180"
             />
           </AccordionTrigger>
-          <USwitch
+          <UBadge
             v-if="stage.optional"
-            :model-value="enabledOptionalStages.has(stage.value)"
-            :aria-label="`Toggle ${stage.value}`"
-            @update:model-value="toggleOptionalStage(stage.value)"
-          />
+            :color="enabledOptionalStages.has(stage.value) ? 'primary' : 'neutral'"
+            :variant="enabledOptionalStages.has(stage.value) ? 'soft' : 'subtle'"
+            size="sm"
+          >
+            {{ enabledOptionalStages.has(stage.value) ? 'enabled' : 'disabled' }}
+          </UBadge>
           <UBadge
             v-else
             color="neutral"
@@ -134,7 +145,7 @@ function cvdCorrectionSummary(report: unknown): string | undefined {
             <span class="text-sm">Auto-correct failing pairs</span>
             <USwitch
               :model-value="cvdCorrect"
-              @update:model-value="cvdCorrect = $event"
+              @update:model-value="send({ type: IridisUiActionType.SET_CVD_CORRECT, cvdCorrect: $event as boolean })"
             />
           </div>
 
