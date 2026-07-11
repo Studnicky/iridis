@@ -3,7 +3,7 @@
  * Stamp the current core version into versioned SVG assets.
  *
  * Reads `packages/core/package.json` for the canonical version, then for each
- * `.svg.template` under `docs/public/`, writes a sibling `.svg` with every
+ * `.svg.template` at the repo root, writes a sibling `.svg` with every
  * `__VERSION__` placeholder replaced by `v<version>`.
  *
  * Designed to be run before release commits so the SVG referenced by the
@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT          = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CORE_PKG_PATH = join(ROOT, 'packages/core/package.json');
-const PUBLIC_DIR    = join(ROOT, 'docs/public');
+const PUBLIC_DIR    = ROOT;
 
 const corePkg = JSON.parse(readFileSync(CORE_PKG_PATH, 'utf8'));
 const version = corePkg.version;
@@ -28,7 +28,7 @@ const tag     = `v${version}`;
 
 const templates = readdirSync(PUBLIC_DIR).filter((f) => f.endsWith('.svg.template'));
 if (templates.length === 0) {
-  console.error('stamp-version: no .svg.template files under docs/public/');
+  console.error('stamp-version: no .svg.template files at repo root');
   process.exit(1);
 }
 
