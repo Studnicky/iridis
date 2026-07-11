@@ -1,5 +1,5 @@
 ---
-title: 5. Recipe: Vue + Capacitor Per-Category Palettes
+title: "5. Recipe: Vue + Capacitor Per-Category Palettes"
 description: A worked example wiring Iridis into a Vue 3 + Capacitor app for per-category dynamic palettes.
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: 12. Roadmap: Living Color
+title: "12. Roadmap: Living Color"
 description: The v2 thesis — animating between palette points while every constraint keeps holding on each frame.
 ---
 
