@@ -1,6 +1,7 @@
 export type * from './color.ts';
 export type * from './engine.ts';
 export type * from './hsl.ts';
+export type * from './metadata.ts';
 export type * from './pipeline.ts';
 export type * from './plugin.ts';
 export type * from './quickPalette.ts';

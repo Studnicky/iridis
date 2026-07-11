@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, h, resolveComponent } from 'vue';
-import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from 'reka-ui';
 import { useIridis } from '~/composables/useIridis.ts';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 
@@ -100,18 +99,7 @@ const columns = [
       </UTable>
     </div>
 
-    <AccordionRoot type="multiple" class="mt-4 w-full border-t border-default pt-1">
-      <AccordionItem value="contrast-detail" class="border-b border-default">
-        <AccordionHeader>
-          <AccordionTrigger class="flex w-full items-center gap-2 py-3 text-left hover:text-highlighted">
-            <span class="font-medium text-sm">Learn more: how contrast is measured and enforced</span>
-            <UIcon
-              name="i-lucide-chevron-down"
-              class="ml-auto size-4 transition-transform data-[state=open]:rotate-180"
-            />
-          </AccordionTrigger>
-        </AccordionHeader>
-        <AccordionContent class="space-y-4 pb-4 text-sm text-muted">
+    <LearnMoreSection title="Learn more: how contrast is measured and enforced" value="contrast-detail">
           <p>
             The <strong class="text-highlighted">Ratio</strong> column above is a WCAG 2.1 luminance ratio — the
             same number this section explains. It comes from <code class="font-mono text-xs">contrastRatio(role.hex, background)</code>,
@@ -161,8 +149,6 @@ const columns = [
             rewrite roles the way <code class="font-mono text-xs">enforce:contrast</code> does, because hue
             selection under CVD is a design decision the engine leaves to you.
           </p>
-        </AccordionContent>
-      </AccordionItem>
-    </AccordionRoot>
+    </LearnMoreSection>
   </UCard>
 </template>

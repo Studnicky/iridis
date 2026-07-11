@@ -6,11 +6,12 @@
  * from hueOffset on the schema roles. The projector only reads those hexes.
  */
 
-import type { CvdType } from '@studnicky/iridis';
+import type { CvdType, RoleClampMapInterfaceType, RoleDistanceMapInterfaceType } from '@studnicky/iridis';
 import type { RoleDefinitionInterfaceType, RoleSchemaInterfaceType } from '@studnicky/iridis/model';
+import type { ApcaPairResultSetInterfaceType, CvdResultSetInterfaceType, WcagPairResultSetInterfaceType } from '@studnicky/iridis-contrast';
 
-import { coreTasks, Engine } from '@studnicky/iridis';
-import { contrastPlugin } from '@studnicky/iridis-contrast';
+import { coreTasks, Engine, getEngineMetadata } from '@studnicky/iridis';
+import { contrastPlugin, getContrastMetadata } from '@studnicky/iridis-contrast';
 import { imagePlugin } from '@studnicky/iridis-image';
 import { computed, ref, watch } from 'vue';
 
@@ -180,8 +181,8 @@ const diagramIsExpanded = ref<boolean>(false);
 
 const roles = ref<RoleHexMapType>({});
 const roleViews = ref<RoleViewType[]>([]);
-const roleClamps = ref<Record<string, { seedHex: string, seedOklch: {l: number, c: number, h: number}, resolvedHex: string, resolvedOklch: {l: number, c: number, h: number} }>>({});
-const roleDistances = ref<Record<string, Record<string, number>>>({});
+const roleClamps = ref<RoleClampMapInterfaceType>({});
+const roleDistances = ref<RoleDistanceMapInterfaceType>({});
 const rolesSynthesized = ref<string[]>([]);
 const rolesPinned = ref<string[]>([]);
 const rolesDerived = ref<string[]>([]);
@@ -190,8 +191,13 @@ const histogram = ref<HistogramBinType[]>([]);
 const running = ref<boolean>(false);
 const error = ref<string | null>(null);
 
-/** Raw contrast-check metadata from the last run, keyed by the same metadata names the contrastPlugin tasks write. */
-const contrastReport = ref<{ 'aa'?: unknown; 'aaa'?: unknown; 'apca'?: unknown; 'cvd'?: unknown }>({});
+/** Raw contrast-check metadata from the last run, keyed by algorithm rather than the `contrast:*` metadata prefix. */
+const contrastReport = ref<{
+  'aa'?:   WcagPairResultSetInterfaceType;
+  'aaa'?:  WcagPairResultSetInterfaceType;
+  'apca'?: ApcaPairResultSetInterfaceType;
+  'cvd'?:  CvdResultSetInterfaceType;
+}>({});
 
 /* Image-extraction controls (mirror the engine's gallery config knobs). */
 const imgAlgorithm = ref<GalleryAlgorithmType>('delta-e');
@@ -239,17 +245,17 @@ function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<st
   }
   roles.value = roleHex;
   roleViews.value = views;
-  roleClamps.value = (state.metadata['core:roleClamps'] as any) || {};
-  roleDistances.value = (state.metadata['core:roleDistances'] as any) || {};
-  rolesSynthesized.value = (state.metadata['core:rolesSynthesized'] as any) || [];
-  rolesPinned.value = (state.metadata['core:rolesPinned'] as any) || [];
-  rolesDerived.value = (state.metadata['core:rolesDerived'] as any) || [];
+  roleClamps.value = getEngineMetadata(state.metadata, 'core:roleClamps') ?? {};
+  roleDistances.value = getEngineMetadata(state.metadata, 'core:roleDistances') ?? {};
+  rolesSynthesized.value = getEngineMetadata(state.metadata, 'core:rolesSynthesized') ?? [];
+  rolesPinned.value = getEngineMetadata(state.metadata, 'core:rolesPinned') ?? [];
+  rolesDerived.value = getEngineMetadata(state.metadata, 'core:rolesDerived') ?? [];
   scales.value = sc;
   contrastReport.value = {
-    'aa':   state.metadata['contrast:aa'],
-    'aaa':  state.metadata['contrast:aaa'],
-    'apca': state.metadata['contrast:apca'],
-    'cvd':  state.metadata['contrast:cvd']
+    'aa':   getContrastMetadata(state.metadata, 'contrast:aa'),
+    'aaa':  getContrastMetadata(state.metadata, 'contrast:aaa'),
+    'apca': getContrastMetadata(state.metadata, 'contrast:apca'),
+    'cvd':  getContrastMetadata(state.metadata, 'contrast:cvd')
   };
   if (typeof document !== 'undefined') {
     Tokens.apply(Tokens.mapFromEngine(roleHex, sc), framing.value);

@@ -88,13 +88,11 @@ const worked = computed(() => {
         </div>
       </div>
 
-      <div
+      <LearnMoreSection
         v-if="worked"
-        class="border-t border-default pt-3"
+        :title="`Learn more — how each space above is derived, worked through ${role?.name}'s own values`"
+        value="color-spaces-detail"
       >
-        <p class="mb-2 text-xs text-muted">
-          Learn more — how each space above is derived, worked through {{ role?.name }}'s own values.
-        </p>
         <AccordionRoot
           type="multiple"
           class="w-full"
@@ -363,7 +361,7 @@ ratio = (max(Y₁, Y₂) + 0.05) / (min(Y₁, Y₂) + 0.05)</pre>
             </AccordionContent>
           </AccordionItem>
         </AccordionRoot>
-      </div>
+      </LearnMoreSection>
     </div>
   </UCard>
 </template>
