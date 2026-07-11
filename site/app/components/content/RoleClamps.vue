@@ -37,6 +37,7 @@ const mathList = computed(() => {
       isPinned,
       isDerived,
       parentRole: def?.derivedFrom,
+      def: def as any,
       candidates,
       clamp: clamp ? {
         seedHex: clamp.seedHex.toLowerCase(),
@@ -77,8 +78,34 @@ const mathList = computed(() => {
         <div v-if="role.synthesized" class="text-xs text-muted italic">
           No seed was close enough (all candidates exceeded the maximum acceptable OKLCH distance for this role's semantic hue/chroma). A new color was mathematically synthesized.
         </div>
-        <div v-else-if="role.isDerived" class="text-xs text-muted italic">
-          This role is derived from <strong>{{ role.parentRole }}</strong>. Its exact color is mathematically offset based on the schema's lightness and chroma instructions.
+        <div v-else-if="role.isDerived" class="text-xs text-muted italic space-y-2">
+          <div>This role is derived from <strong class="text-highlighted uppercase">{{ role.parentRole }}</strong>. Its color is computed by offsetting the parent's OKLCH values according to the schema below.</div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+            <div class="bg-black/10 dark:bg-black/30 p-2 rounded border border-default/30 flex flex-col" v-if="role.def?.lightnessTarget !== undefined">
+              <span class="text-dimmed uppercase text-[10px]">Lightness Target</span>
+              <span class="text-primary font-mono font-bold">{{ role.def.lightnessTarget.toFixed(3) }}</span>
+            </div>
+            <div class="bg-black/10 dark:bg-black/30 p-2 rounded border border-default/30 flex flex-col" v-if="role.def?.lightnessClamp !== undefined">
+              <span class="text-dimmed uppercase text-[10px]">Lightness Clamp</span>
+              <span class="text-primary font-mono font-bold">{{ role.def.lightnessClamp.toFixed(3) }}</span>
+            </div>
+            <div class="bg-black/10 dark:bg-black/30 p-2 rounded border border-default/30 flex flex-col" v-if="role.def?.chromaTarget !== undefined">
+              <span class="text-dimmed uppercase text-[10px]">Chroma Target</span>
+              <span class="text-primary font-mono font-bold">{{ role.def.chromaTarget.toFixed(3) }}</span>
+            </div>
+            <div class="bg-black/10 dark:bg-black/30 p-2 rounded border border-default/30 flex flex-col" v-if="role.def?.chromaClamp !== undefined">
+              <span class="text-dimmed uppercase text-[10px]">Chroma Clamp</span>
+              <span class="text-primary font-mono font-bold">{{ role.def.chromaClamp.toFixed(3) }}</span>
+            </div>
+            <div class="bg-black/10 dark:bg-black/30 p-2 rounded border border-default/30 flex flex-col" v-if="role.def?.hue !== undefined">
+              <span class="text-dimmed uppercase text-[10px]">Hue Angle</span>
+              <span class="text-primary font-mono font-bold">{{ role.def.hue }}&deg;</span>
+            </div>
+            <div class="bg-black/10 dark:bg-black/30 p-2 rounded border border-default/30 flex flex-col" v-if="role.def?.hueClamp !== undefined">
+              <span class="text-dimmed uppercase text-[10px]">Hue Clamp</span>
+              <span class="text-primary font-mono font-bold">{{ role.def.hueClamp }}&deg;</span>
+            </div>
+          </div>
         </div>
         <div v-else-if="role.isPinned" class="text-xs text-muted italic">
           This role was explicitly pinned to a seed by the user. Distance matching was skipped.

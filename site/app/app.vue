@@ -18,10 +18,7 @@ useHead({
   },
   'bodyAttrs': {
     'class': 'preload'
-  },
-  'style': [
-    { 'key': 'iridis-theme', 'innerHTML': computed(() => {return Tokens.toCssText(Tokens.mapFromEngine(roles.value, scales.value));}) }
-  ]
+  }
 });
 
 onMounted(() => {

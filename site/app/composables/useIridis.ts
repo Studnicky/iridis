@@ -251,6 +251,9 @@ function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<st
     'apca': state.metadata['contrast:apca'],
     'cvd':  state.metadata['contrast:cvd']
   };
+  if (typeof document !== 'undefined') {
+    Tokens.apply(Tokens.mapFromEngine(roleHex, sc), framing.value);
+  }
 }
 
 /**
