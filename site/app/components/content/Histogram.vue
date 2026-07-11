@@ -27,11 +27,13 @@ const bars = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-2">
-    <div class="text-xs font-medium text-muted">
-      Histogram · {{ bars.length }} bins
-    </div>
-    <div class="flex h-24 items-end gap-px overflow-hidden rounded-lg border border-default bg-elevated p-1 relative">
+  <UCard>
+    <template #header>
+      <span class="text-xs font-medium uppercase tracking-wide text-dimmed">
+        Histogram · {{ bars.length }} bins
+      </span>
+    </template>
+    <div class="flex h-24 items-end gap-px overflow-hidden rounded-lg border border-default bg-elevated/50 p-1 relative">
       <div v-if="bars.length === 0" class="absolute inset-0 flex items-center justify-center text-sm text-muted">
         No image data
       </div>
@@ -43,5 +45,5 @@ const bars = computed(() => {
         :title="bar.hex"
       />
     </div>
-  </div>
+  </UCard>
 </template>
