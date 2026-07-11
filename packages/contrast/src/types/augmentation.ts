@@ -59,3 +59,19 @@ export type WcagMetaSlotInterfaceType = {
   'apca'?: ApcaPairResultSetInterfaceType;
   'cvd'?:  CvdResultSetInterfaceType;
 };
+
+/** Known `state.metadata` keys written by the contrast enforcement tasks. */
+export interface ContrastMetadataInterfaceType {
+  'contrast:aa'?:   WcagPairResultSetInterfaceType;
+  'contrast:aaa'?:  WcagPairResultSetInterfaceType;
+  'contrast:apca'?: ApcaPairResultSetInterfaceType;
+  'contrast:cvd'?:  CvdResultSetInterfaceType;
+}
+
+/** Type-safe accessor for a known contrast `state.metadata` key, returning `undefined` when unset. */
+export function getContrastMetadata<K extends keyof ContrastMetadataInterfaceType>(
+  metadata: Record<string, unknown>,
+  key: K
+): ContrastMetadataInterfaceType[K] {
+  return metadata[key] as ContrastMetadataInterfaceType[K];
+}

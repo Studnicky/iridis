@@ -135,9 +135,8 @@ const fieldDetails: FieldDetailType[] = [
       </template>
     </UTree>
 
-    <div class="mt-6 border-t border-default pt-4">
-      <span class="block font-semibold text-highlighted">What a role schema is</span>
-      <p class="mt-2 text-sm text-muted">
+    <LearnMoreSection title="Learn more: what a role schema is" value="schema-detail">
+      <p>
         A role schema is a consumer-authored contract: a <code class="font-mono text-xs">name</code>, an optional
         <code class="font-mono text-xs">description</code>, an array of <code class="font-mono text-xs">roles</code>,
         and an optional array of <code class="font-mono text-xs">contrastPairs</code>. iridis never infers meaning
@@ -173,6 +172,6 @@ const fieldDetails: FieldDetailType[] = [
           </AccordionContent>
         </AccordionItem>
       </AccordionRoot>
-    </div>
+    </LearnMoreSection>
   </UCard>
 </template>
