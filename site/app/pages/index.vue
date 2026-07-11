@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { useAsyncData } from '#imports'
+import { watch } from 'vue';
+import { useIridis } from '~/composables/useIridis.ts';
+import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
+import { IridisUiActionType } from '~/composables/types/index.ts';
+import { CAROUSEL_SECTIONS } from '~/composables/CarouselSections.ts';
 
 /**
  * iridis × Nuxt UI. A compact hero, then PaletteControls (the engine's one
@@ -9,21 +14,31 @@ import { useAsyncData } from '#imports'
  * finally Multi-output, the deliverable: every emit format for the current
  * palette. Every color is produced by engine.run().
  */
-const sections = [
-  { 'key': 'pipeline', 'label': 'Pipeline' },
-  { 'key': 'rolesTable', 'label': 'Roles table' },
-  { 'key': 'cvd', 'label': 'CVD vision' },
-  { 'key': 'roles', 'label': 'Roles' },
-  { 'key': 'components', 'label': 'Components' },
-  { 'key': 'spectrum', 'label': 'Spectrum' },
-  { 'key': 'motion', 'label': 'Motion' },
-  { 'key': 'spaces', 'label': 'Spaces' },
-  { 'key': 'schema', 'label': 'Schema' },
-  { 'key': 'clamps', 'label': 'Clamps' },
-];
-
+const sections = CAROUSEL_SECTIONS;
 
 const { data: allDocs } = await useAsyncData('alldocs', () => queryCollection('docs').all())
+
+const { 'send': send } = useIridis();
+const { 'registerDocTargets': registerDocTargets } = useNavigationTargets();
+watch(allDocs, (docs) => { if (docs) {registerDocTargets(docs);} }, { 'immediate': true });
+
+/**
+ * Prose content (docs cards, "Learn more" sections) links to other sections
+ * via plain `<a href="#id">` anchors. Native anchor-jump conflicts with
+ * nothing here today, but routing it through NAVIGATE_TO_TARGET instead of
+ * `preventDefault`-free default behavior keeps every internal navigation —
+ * carousel dots, the ToC bar, and prose links alike — going through the same
+ * FSM event, which is what a future navigation-helper feature dispatches
+ * against too.
+ */
+function onDocsClick(e: MouseEvent): void {
+  const anchor = (e.target as HTMLElement).closest('a[href^="#"]');
+  if (!anchor) {return;}
+  const targetId = anchor.getAttribute('href')!.slice(1);
+  if (!targetId) {return;}
+  e.preventDefault();
+  send({ 'targetId': targetId, 'type': IridisUiActionType.NAVIGATE_TO_TARGET });
+}
 </script>
 
 <template>
@@ -59,7 +74,7 @@ const { data: allDocs } = await useAsyncData('alldocs', () => queryCollection('d
 
       <MultiOutput />
       
-      <div v-if="allDocs && allDocs.length > 0" class="mt-32 space-y-12 border-t border-default pt-24">
+      <div v-if="allDocs && allDocs.length > 0" class="mt-32 space-y-12 border-t border-default pt-24" @click="onDocsClick">
         <UCard
           v-for="doc in allDocs"
           :key="doc.path"

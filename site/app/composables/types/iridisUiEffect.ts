@@ -5,7 +5,8 @@ export enum IridisUiEffectVariant {
   EXTRACT_IMAGE = 'EXTRACT_IMAGE',
   POPULATE_PICKER_FROM_IMAGE = 'POPULATE_PICKER_FROM_IMAGE',
   UPDATE_DIAGRAM_VIEW = 'UPDATE_DIAGRAM_VIEW',
-  UPDATE_CVD_PREVIEW = 'UPDATE_CVD_PREVIEW'
+  UPDATE_CVD_PREVIEW = 'UPDATE_CVD_PREVIEW',
+  NAVIGATE_TO_TARGET = 'NAVIGATE_TO_TARGET'
 }
 
 import type { FramingType } from './framing.ts';
@@ -46,4 +47,5 @@ export type IridisUiEffectType =
   | { 'op': 'fit'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
   | { 'op': 'toggleExpand'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
   | { 'cvdType': string; 'op': 'toggle'; 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }
-  | { 'op': 'clear'; 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW };
+  | { 'op': 'clear'; 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }
+  | { 'targetId': string; 'variant': IridisUiEffectVariant.NAVIGATE_TO_TARGET };
