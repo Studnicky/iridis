@@ -112,23 +112,44 @@ function sample(): void {
       class="mx-auto w-full max-w-4xl space-y-5"
     >
       <ModeSwitch class="mb-8" />
-      
-      <p
-        v-if="mode === 'picker'"
-        class="text-sm text-muted"
-      >
-        Feed the engine any number of seeds — pin one to a role to skip the auto-resolver
-        entirely.
-      </p>
-      <p
-        v-else
-        class="text-sm text-muted"
-      >
-        Drop an image or try a sample to generate a palette. Tune the extraction knobs below.
-      </p>
+
+      <div class="space-y-3">
+        <p class="text-sm text-muted">
+          Create a palette by uploading an image, using a sample, or manually adding hues. Adjust extraction parameters to re-cluster and regenerate.
+        </p>
+
+        <UFileUpload
+          v-model="uploadedFile"
+          accept="image/*"
+          icon="i-material-symbols-upload-rounded"
+          label="Drop an image or click to browse"
+          description="PNG, JPG, WEBP — extracts dominant hues based on your schema"
+          class="w-full"
+        >
+          <template #actions="{ open }">
+            <UButton
+              icon="i-material-symbols-upload-rounded"
+              color="primary"
+              variant="soft"
+              size="sm"
+              @click.stop="open()"
+            >
+              Browse
+            </UButton>
+            <UButton
+              icon="i-material-symbols-auto-awesome-rounded"
+              color="neutral"
+              variant="soft"
+              size="sm"
+              @click.stop="sample"
+            >
+              Try a sample
+            </UButton>
+          </template>
+        </UFileUpload>
+      </div>
 
       <BalancedWrap
-        v-if="mode === 'picker'"
         v-auto-animate
         :items="[{ isAddBtn: true }, ...pickerSeeds]"
         :min-width="210"
@@ -202,38 +223,9 @@ function sample(): void {
       </BalancedWrap>
 
       <div
-        v-else
+        v-if="histogram.length > 0"
         class="space-y-3"
       >
-        <UFileUpload
-          v-model="uploadedFile"
-          accept="image/*"
-          icon="i-material-symbols-upload-rounded"
-          label="Drop an image, or click to browse"
-          description="PNG, JPG, WEBP — extracts dominant colors on drop."
-          class="w-full"
-        >
-          <template #actions="{ open }">
-            <UButton
-              icon="i-material-symbols-upload-rounded"
-              color="primary"
-              variant="soft"
-              size="sm"
-              @click.stop="open()"
-            >
-              Browse
-            </UButton>
-            <UButton
-              icon="i-material-symbols-auto-awesome-rounded"
-              color="neutral"
-              variant="soft"
-              size="sm"
-              @click.stop="sample"
-            >
-              Try a sample
-            </UButton>
-          </template>
-        </UFileUpload>
         <div class="space-y-4 my-6 relative">
           <!-- Spinner Overlay -->
           <div v-if="running" class="absolute inset-0 z-10 flex items-center justify-center bg-elevated/50 backdrop-blur-sm rounded-lg">
