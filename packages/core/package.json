@@ -1,6 +1,6 @@
 {
   "name": "@studnicky/iridis",
-  "version": "0.6.1",
+  "version": "0.7.1",
   "type": "module",
   "description": "Pluggable color derivation pipeline. Variable-input-count seed colors expand into role-resolved, contrast-enforced palettes via a sequenced task pipeline. Browser- and Node-safe.",
   "exports": {

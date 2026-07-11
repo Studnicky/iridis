@@ -1,4 +1,4 @@
-<p align="center"><a href="https://studnicky.github.io/iridis/"><img src="https://raw.githubusercontent.com/Studnicky/iridis/main/docs/public/readme-header.svg" alt="iridis: chromatic pipeline for dynamic palette derivation — OKLCH-native, contrast-enforced, schema-validated, plugin-extensible" width="720" /></a></p>
+<p align="center"><a href="https://studnicky.github.io/iridis/"><img src="https://raw.githubusercontent.com/Studnicky/iridis/main/readme-header.svg" alt="iridis: chromatic pipeline for dynamic palette derivation — OKLCH-native, contrast-enforced, schema-validated, plugin-extensible" width="720" /></a></p>
 
 # iridis
 
@@ -73,7 +73,7 @@ cd iridis
 npm install
 npm run typecheck
 npm test
-npm run docs:dev
+cd site && npm run dev
 ```
 
 iridis ships source, not a build step — `typecheck` is the closest equivalent to `build` in this workspace.

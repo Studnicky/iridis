@@ -54,6 +54,34 @@ function cvdCorrectionSummary(report: unknown): string | undefined {
   const stillFailing = corrections.filter((c) => {return c.cvdTypesRemaining.length > 0;}).length;
   return `${autoCorrected} pairs auto-corrected, ${stillFailing} still failing`;
 }
+
+const dataFlowDiagram = `flowchart TD
+    A["input.colors\\n(raw strings / objects)"]
+    B["state.colors\\n(ColorRecord[])"]
+    C["state.roles\\n(Record<string, ColorRecord>)"]
+    D["state.roles\\n(contrast-adjusted)"]
+    E["state.variants\\n(light / dark)"]
+    F["state.outputs\\n(cssVars, themeJson, capacitor ...)"]
+
+    A -->|intake tasks| B
+    B -->|resolve:roles| C
+    C -->|enforce:contrast| D
+    D -->|derive:variant| E
+    D -->|emit tasks| F
+    E -->|emit tasks| F`;
+
+/** Stage names actually present in the accordion above, grouped by their `phase:task` prefix. */
+const stageNamesByPrefix = computed(() => {
+  const byPrefix = new Map<string, string[]>();
+  for (const stage of stages.value) {
+    const prefix = stage.value.split(':')[0] ?? stage.value;
+    const list = byPrefix.get(prefix) ?? [];
+    list.push(stage.value);
+    byPrefix.set(prefix, list);
+  }
+  return byPrefix;
+});
+const enforceStageNames = computed(() => stageNamesByPrefix.value.get('enforce') ?? []);
 </script>
 
 <template>
@@ -190,5 +218,105 @@ function cvdCorrectionSummary(report: unknown): string | undefined {
         </AccordionContent>
       </AccordionItem>
     </AccordionRoot>
+
+    <div class="mt-8 border-t border-default pt-6">
+      <h3 class="text-sm font-semibold text-highlighted">
+        How the pipeline works
+      </h3>
+      <p class="mt-2 text-sm text-muted">
+        iridis is a task pipeline. You register primitives and tasks, declare an execution order, pass an input, and get a
+        fully resolved palette out. The engine does not know or care what the pipeline contains &mdash; that is your
+        configuration, expressed as the ordered stage list rendered above.
+      </p>
+
+      <h4 class="mt-5 text-sm font-semibold text-highlighted">
+        The four conceptual stages
+      </h4>
+      <p class="mt-2 text-sm text-muted">
+        Every useful iridis pipeline passes through four conceptual stages, even though the task names above are explicit
+        and the order is yours to define: <span class="font-mono text-xs">intake &rarr; resolve &rarr; enforce &rarr; emit</span>.
+        This site's live pipeline runs
+        <UBadge
+          v-for="name in stageNamesByPrefix.get('intake') ?? []"
+          :key="name"
+          color="neutral"
+          variant="soft"
+          size="xs"
+          class="mx-0.5 font-mono"
+        >
+          {{ name }}
+        </UBadge>
+        for intake, then
+        <UBadge
+          v-for="name in stageNamesByPrefix.get('resolve') ?? []"
+          :key="name"
+          color="neutral"
+          variant="soft"
+          size="xs"
+          class="mx-0.5 font-mono"
+        >
+          {{ name }}
+        </UBadge>
+        to assign colors to named roles, then walks the {{ enforceStageNames.length }} enforce stages listed above
+        (<span class="font-mono text-xs">{{ enforceStageNames.join(', ') }}</span>) to nudge foreground colors until
+        every contrast pair meets its required ratio. Emit tasks aren't part of this palette-building pipeline &mdash;
+        they run afterward, writing the resolved state into consumer-shaped output such as CSS variables, a VS Code
+        theme JSON, or Capacitor status bar parameters.
+      </p>
+
+      <h4 class="mt-5 text-sm font-semibold text-highlighted">
+        The data flow
+      </h4>
+      <p class="mt-2 text-sm text-muted">
+        Each stage above reads from and writes to a shared, mutable state object. The <span class="font-mono text-xs">reads</span>
+        and <span class="font-mono text-xs">writes</span> badges shown per stage are pulled from that task's own manifest,
+        the same manifest depicted structurally below:
+      </p>
+      <MermaidDiagram :code="dataFlowDiagram" />
+
+      <h4 class="mt-5 text-sm font-semibold text-highlighted">
+        TaskRegistry, the spine
+      </h4>
+      <p class="mt-2 text-sm text-muted">
+        A <span class="font-mono text-xs">TaskRegistry</span> is a <span class="font-mono text-xs">Map&lt;string, TaskInterface&gt;</span>.
+        Every task has a string <span class="font-mono text-xs">name</span> &mdash; the same strings badged above, like
+        <span class="font-mono text-xs">'{{ stages[0]?.value }}'</span>. The engine owns one registry instance; when you
+        call <span class="font-mono text-xs">engine.pipeline([...])</span> with the stage names in this accordion, it
+        validates every name is registered before storing the order, then executes them in that order during
+        <span class="font-mono text-xs">engine.run()</span>. Lifecycle hooks (<span class="font-mono text-xs">onRunStart</span>,
+        <span class="font-mono text-xs">onRunEnd</span>) let plugins initialize or flush state without occupying a
+        pipeline slot.
+      </p>
+
+      <h4 class="mt-5 text-sm font-semibold text-highlighted">
+        Plugins bring the optional stages
+      </h4>
+      <p class="mt-2 text-sm text-muted">
+        Stages marked <span class="font-medium">required</span> above come from iridis core; stages marked
+        <span class="font-medium">optional</span> &mdash; the WCAG AA/AAA, APCA, and CVD simulate enforce stages &mdash;
+        are contributed by the <span class="font-mono text-xs">@studnicky/iridis-contrast</span> plugin and switched on
+        or off by this site's compliance strictness setting. A plugin is any object satisfying
+        <span class="font-mono text-xs">PluginInterface</span> (a <span class="font-mono text-xs">name</span>, a
+        <span class="font-mono text-xs">version</span>, and a <span class="font-mono text-xs">tasks()</span> method);
+        <span class="font-mono text-xs">engine.adopt(plugin)</span> registers all of a plugin's tasks in one call. iridis
+        ships seven plugins beyond the core task set: <span class="font-mono text-xs">@studnicky/iridis-vscode</span>,
+        <span class="font-mono text-xs">-stylesheet</span>, <span class="font-mono text-xs">-tailwind</span>,
+        <span class="font-mono text-xs">-image</span>, <span class="font-mono text-xs">-contrast</span>,
+        <span class="font-mono text-xs">-capacitor</span>, and <span class="font-mono text-xs">-rdf</span>. Each is a
+        separate package; install only what a project needs.
+      </p>
+
+      <h4 class="mt-5 text-sm font-semibold text-highlighted">
+        State as the shared medium
+      </h4>
+      <p class="mt-2 text-sm text-muted">
+        The engine does not enforce dependency ordering at runtime &mdash; that is the pipeline array's job. Each task's
+        <span class="font-mono text-xs">manifest</span> documents its <span class="font-mono text-xs">reads</span> and
+        <span class="font-mono text-xs">writes</span> for documentation and tooling only. If a task writes
+        <span class="font-mono text-xs">state.roles</span> and a later task reads it &mdash; as
+        <span class="font-mono text-xs">{{ stageNamesByPrefix.get('resolve')?.[0] }}</span> writes it and the enforce
+        stages above read it &mdash; the pipeline order must reflect that dependency; nothing checks it for you.
+      </p>
+    </div>
   </UCard>
 </template>

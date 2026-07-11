@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://studnicky.github.io/iridis/sitemap.xml
