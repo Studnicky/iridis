@@ -125,6 +125,10 @@ class ExpandFamily implements TaskInterface {
       }
 
       state.roles[role.name] = deriveColor(sourceColor, role);
+      const existingDerived = state.metadata['core:rolesDerived'];
+      const priorDerived: string[] = Array.isArray(existingDerived) ? (existingDerived as string[]) : [];
+      state.metadata['core:rolesDerived'] = [...priorDerived, role.name];
+
       ctx.logger.debug(
         LogBody.create()
           .component('ExpandFamily')

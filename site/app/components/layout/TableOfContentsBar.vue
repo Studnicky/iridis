@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed } from 'vue';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 
@@ -14,7 +15,7 @@ const props = defineProps<{ items: ReadonlyArray<{ key: string; label: string }>
 const { send, state } = useIridisUiMachine();
 
 const active = computed(() => state.value.activeIndex);
-function select(i: number): void { send({ 'index': i, 'type': 'SELECT_CARD' }); }
+function select(i: number): void { send({ 'index': i, 'type': IridisUiActionType.SELECT_CARD }); }
 </script>
 
 <template>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed } from 'vue';
 import { coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
@@ -144,7 +145,7 @@ function cvdCorrectionSummary(report: unknown): string | undefined {
             <span class="text-sm">Auto-correct failing pairs</span>
             <USwitch
               :model-value="cvdCorrect"
-              @update:model-value="send({ type: 'SET_CVD_CORRECT', cvdCorrect: $event as boolean })"
+              @update:model-value="send({ type: IridisUiActionType.SET_CVD_CORRECT, cvdCorrect: $event as boolean })"
             />
           </div>
 

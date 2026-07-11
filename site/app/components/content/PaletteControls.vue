@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed, ref, watch } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
@@ -73,14 +74,14 @@ const stageSummaries = computed(() => {
 const uploadedFile = ref<File | null>(null);
 const handleFile = (file: File | null) => {
   if (file) {
-    send({ file, 'source': 'file', 'type': 'EXTRACT_IMAGE' });
+    send({ file, 'source': 'file', 'type': IridisUiActionType.EXTRACT_IMAGE });
   }
 };
 watch(uploadedFile, handleFile);
 
 function sample(): void {
   uploadedFile.value = null;
-  send({ 'source': 'sample', 'type': 'EXTRACT_IMAGE' });
+  send({ 'source': 'sample', 'type': IridisUiActionType.EXTRACT_IMAGE });
 }
 </script>
 
@@ -100,7 +101,7 @@ function sample(): void {
             unchecked-icon="material-symbols:light-mode-rounded"
             checked-icon="material-symbols:dark-mode-rounded"
             :aria-label="framing === 'dark' ? 'Dark framing' : 'Light framing'"
-            @update:model-value="send({ framing: $event ? 'dark' : 'light', type: 'SET_FRAMING' })"
+            @update:model-value="send({ framing: $event ? 'dark' : 'light', type: IridisUiActionType.SET_FRAMING })"
           />
         </div>
       </div>
@@ -145,7 +146,7 @@ function sample(): void {
               variant="soft"
               size="sm"
               :disabled="pickerSeeds.length >= 32"
-              @click="send({ type: 'ADD_SEED' })"
+              @click="send({ type: IridisUiActionType.ADD_SEED })"
             >
               Add seed
             </UButton>
@@ -159,7 +160,7 @@ function sample(): void {
                 :value="seed.hex"
                 type="color"
                 class="h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent flex-none"
-                @change="send({ type: 'SET_SEED', index: i, hex: ($event.target as HTMLInputElement).value })"
+                @change="send({ type: IridisUiActionType.SET_SEED, index: i, hex: ($event.target as HTMLInputElement).value })"
               >
               <div class="flex flex-col min-w-0 flex-1">
                 <span class="font-mono text-xs text-muted truncate">{{ seed.hex }}</span>
@@ -170,7 +171,7 @@ function sample(): void {
                   size="xs"
                   class="-ml-1.5 p-0 self-start"
                   :disabled="pickerSeeds.length <= 1"
-                  @click="send({ type: 'REMOVE_SEED', index: i })"
+                  @click="send({ type: IridisUiActionType.REMOVE_SEED, index: i })"
                 >
                   Remove
                 </UButton>
@@ -182,7 +183,7 @@ function sample(): void {
               value-key="value"
               size="xs"
               class="w-full"
-              @update:model-value="send({ index: i, role: $event === UNPINNED ? undefined : ($event as string), type: 'PIN_SEED_ROLE' })"
+              @update:model-value="send({ index: i, role: $event === UNPINNED ? undefined : ($event as string), type: IridisUiActionType.PIN_SEED_ROLE })"
             />
           </div>
         </template>
@@ -254,7 +255,7 @@ function sample(): void {
               :items="algorithmItems"
               value-key="value"
               class="w-full"
-              @update:model-value="send({ algorithm: $event as 'median-cut' | 'delta-e', type: 'SET_IMAGE_ALGORITHM' })"
+              @update:model-value="send({ algorithm: $event as 'median-cut' | 'delta-e', type: IridisUiActionType.SET_IMAGE_ALGORITHM })"
             />
           </UFormField>
           <UFormField :label="`Colors (k) · ${imgK}`">
@@ -263,7 +264,7 @@ function sample(): void {
               :min="2"
               :max="16"
               :step="1"
-              @update:model-value="send({ k: $event as number, type: 'SET_IMAGE_K' })"
+              @update:model-value="send({ k: $event as number, type: IridisUiActionType.SET_IMAGE_K })"
             />
           </UFormField>
           <UFormField :label="`Histogram bits · ${imgHistogramBits}`">
@@ -272,7 +273,7 @@ function sample(): void {
               :min="3"
               :max="7"
               :step="1"
-              @update:model-value="send({ bits: $event as number, type: 'SET_IMAGE_HISTOGRAM_BITS' })"
+              @update:model-value="send({ bits: $event as number, type: IridisUiActionType.SET_IMAGE_HISTOGRAM_BITS })"
             />
           </UFormField>
           <UFormField :label="`ΔE cap · ${imgDeltaECap}${imgAlgorithm !== 'delta-e' ? ' (delta-e only)' : ''}`">
@@ -282,7 +283,7 @@ function sample(): void {
               :max="256"
               :step="8"
               :disabled="imgAlgorithm !== 'delta-e'"
-              @update:model-value="send({ cap: $event as number, type: 'SET_IMAGE_DELTA_E_CAP' })"
+              @update:model-value="send({ cap: $event as number, type: IridisUiActionType.SET_IMAGE_DELTA_E_CAP })"
             />
           </UFormField>
           <UFormField :label="`Harmonize threshold · ${imgHarmonize}`">
@@ -291,7 +292,7 @@ function sample(): void {
               :min="0"
               :max="30"
               :step="1"
-              @update:model-value="send({ threshold: $event as number, type: 'SET_IMAGE_HARMONIZE' })"
+              @update:model-value="send({ threshold: $event as number, type: IridisUiActionType.SET_IMAGE_HARMONIZE })"
             />
           </UFormField>
           <UFormField :label="`Lightness range · ${imgLightnessRange[0].toFixed(2)}–${imgLightnessRange[1].toFixed(2)}`">
@@ -300,7 +301,7 @@ function sample(): void {
               :min="0"
               :max="1"
               :step="0.01"
-              @update:model-value="send({ range: $event as [number, number], type: 'SET_IMAGE_LIGHTNESS_RANGE' })"
+              @update:model-value="send({ range: $event as [number, number], type: IridisUiActionType.SET_IMAGE_LIGHTNESS_RANGE })"
             />
           </UFormField>
           <UFormField :label="`Chroma range · ${imgChromaRange[0].toFixed(2)}–${imgChromaRange[1].toFixed(2)}`">
@@ -309,7 +310,7 @@ function sample(): void {
               :min="0"
               :max="0.5"
               :step="0.01"
-              @update:model-value="send({ range: $event as [number, number], type: 'SET_IMAGE_CHROMA_RANGE' })"
+              @update:model-value="send({ range: $event as [number, number], type: IridisUiActionType.SET_IMAGE_CHROMA_RANGE })"
             />
           </UFormField>
         </div>
@@ -344,18 +345,18 @@ function sample(): void {
             </p>
             <div class="w-full space-y-1 pt-2">
               <USlider
-                :model-value="schemaItems.indexOf(schemaName)"
+                :model-value="Math.max(0, schemaItems.indexOf(schemaName))"
                 :min="0"
                 :max="schemaItems.length - 1"
                 :step="1"
-                @update:model-value="send({ type: 'SET_SCHEMA', schema: schemaItems[$event as number] })"
+                @update:model-value="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: schemaItems[Number($event)] || 'iridis-32' })"
               />
               <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
                 <span
                   v-for="(s, i) in schemaItems"
                   :key="s"
                   :class="schemaName === s ? 'text-primary' : 'cursor-pointer hover:text-muted'"
-                  @click="send({ type: 'SET_SCHEMA', schema: s })"
+                  @click="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: s })"
                 >
                   {{ s.replace('iridis-', '') }}
                 </span>
@@ -375,7 +376,7 @@ function sample(): void {
               :items="[{ label: 'sRGB', value: 'srgb' }, { label: 'Display P3', value: 'displayP3' }]"
               value-key="value"
               class="w-full"
-              @update:model-value="($event) => { send({ colorSpace: $event as 'srgb' | 'displayP3', type: 'SET_COLOR_SPACE' }); send({ index: 3, type: 'SELECT_CARD' }); }"
+              @update:model-value="($event) => { send({ colorSpace: $event as 'srgb' | 'displayP3', type: IridisUiActionType.SET_COLOR_SPACE }); send({ index: 3, type: IridisUiActionType.SELECT_CARD }); }"
             />
             <p class="text-sm text-muted">
               The color space used when exporting CSS variables. <strong class="text-highlighted">Display P3</strong> allows for much wider gamut colors on compatible displays.
@@ -396,12 +397,12 @@ function sample(): void {
                   :min="0"
                   :max="2"
                   :step="1"
-                  @update:model-value="($event) => { send({ strictness: $event as number, type: 'SET_CONTRAST_STRICTNESS' }); send({ index: 4, type: 'SELECT_CARD' }); }"
+                  @update:model-value="($event) => { send({ strictness: $event as number, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }"
                 />
                 <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
-                  <span :class="contrastStrictness === 0 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 0, type: 'SET_CONTRAST_STRICTNESS' }); send({ index: 4, type: 'SELECT_CARD' }); }">AA</span>
-                  <span :class="contrastStrictness === 1 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 1, type: 'SET_CONTRAST_STRICTNESS' }); send({ index: 4, type: 'SELECT_CARD' }); }">AAA</span>
-                  <span :class="contrastStrictness === 2 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 2, type: 'SET_CONTRAST_STRICTNESS' }); send({ index: 4, type: 'SELECT_CARD' }); }">APCA</span>
+                  <span :class="contrastStrictness === 0 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 0, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">AA</span>
+                  <span :class="contrastStrictness === 1 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 1, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">AAA</span>
+                  <span :class="contrastStrictness === 2 ? 'text-primary' : 'cursor-pointer hover:text-muted'" @click="() => { send({ strictness: 2, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ index: 4, type: IridisUiActionType.SELECT_CARD }); }">APCA</span>
                 </div>
               </div>
             </UFormField>
@@ -426,7 +427,7 @@ function sample(): void {
               </div>
               <USwitch
                 :model-value="cvdCorrect"
-                @update:model-value="($event) => { send({ cvdCorrect: $event as boolean, type: 'SET_CVD_CORRECT' }); send({ index: 7, type: 'SELECT_CARD' }); }"
+                @update:model-value="($event) => { send({ cvdCorrect: $event as boolean, type: IridisUiActionType.SET_CVD_CORRECT }); send({ index: 7, type: IridisUiActionType.SELECT_CARD }); }"
               />
             </div>
             <div class="space-y-1.5 rounded-md border border-dashed border-primary/50 bg-primary/5 p-2.5 pl-3">

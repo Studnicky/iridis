@@ -17,11 +17,12 @@ import { computed, ref, watch } from 'vue';
 import type {
   FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType
 } from './types/index.ts';
+import { IridisUiActionType, IridisUiEffectVariant } from './types/index.ts';
 
-type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': 'MUTATE_SEEDS' }>;
-type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': 'SET_PALETTE_PARAM' }>;
-type ExtractImageEffectType = Extract<IridisUiEffectType, { 'variant': 'EXTRACT_IMAGE' }>;
-type PinSeedRoleEffectType = Extract<IridisUiEffectType, { 'variant': 'PIN_SEED_ROLE' }>;
+type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.MUTATE_SEEDS }>;
+type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>;
+type ExtractImageEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }>;
+type PinSeedRoleEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }>;
 
 import { intakeHexHint } from '../theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
@@ -126,7 +127,7 @@ const {
 /** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
 const mode = computed<ModeType>({
   'get': () => { const result = uiState.value.mode; return result; },
-  'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': 'SELECT_MODE' }); return result; }
+  'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': IridisUiActionType.SELECT_MODE }); return result; }
 });
 const pickerSeeds = ref<PickerSeedType[]>([{ 'hex': '#7c3aed' }, { 'hex': '#06b6d4' }, { 'hex': '#f59e0b' }, { 'hex': '#ec4899' }]);
 const imageSeeds = ref<string[]>([]);
@@ -165,6 +166,11 @@ function toggleCvdPreviewType(type: CvdType): void {
 
 const roles = ref<RoleHexMapType>({});
 const roleViews = ref<RoleViewType[]>([]);
+const roleClamps = ref<Record<string, { seedHex: string, seedOklch: {l: number, c: number, h: number}, resolvedHex: string, resolvedOklch: {l: number, c: number, h: number} }>>({});
+const roleDistances = ref<Record<string, Record<string, number>>>({});
+const rolesSynthesized = ref<string[]>([]);
+const rolesPinned = ref<string[]>([]);
+const rolesDerived = ref<string[]>([]);
 const scales = ref<ScaleMapType>({});
 const histogram = ref<HistogramBinType[]>([]);
 const running = ref<boolean>(false);
@@ -219,6 +225,11 @@ function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<st
   }
   roles.value = roleHex;
   roleViews.value = views;
+  roleClamps.value = (state.metadata['core:roleClamps'] as any) || {};
+  roleDistances.value = (state.metadata['core:roleDistances'] as any) || {};
+  rolesSynthesized.value = (state.metadata['core:rolesSynthesized'] as any) || [];
+  rolesPinned.value = (state.metadata['core:rolesPinned'] as any) || [];
+  rolesDerived.value = (state.metadata['core:rolesDerived'] as any) || [];
   scales.value = sc;
   contrastReport.value = {
     'aa':   state.metadata['contrast:aa'],
@@ -347,7 +358,7 @@ class FromImage {
 /**
  * Performs the picker-seed array mutation for the FSM's MUTATE_SEEDS effect.
  * Registered once below via registerMutateSeedsHandler — PalettePlayground.vue
- * triggers this indirectly via useIridisUiMachine().send({type:'ADD_SEED'|...}),
+ * triggers this indirectly via useIridisUiMachine().send({type: IridisUiActionType.ADD_SEED|...}),
  * never by calling array mutation directly.
  */
 function mutateSeeds(effect: MutateSeedsEffectType): void {
@@ -454,6 +465,11 @@ export function useIridis() {
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
     'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
     'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'lastImageSrc': lastImageSrc, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
-    'roles': roles, 'roleViews': roleViews, 'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName
+    'roles': roles, 'roleViews': roleViews, 'roleClamps': roleClamps,
+    'roleDistances': roleDistances,
+    'rolesSynthesized': rolesSynthesized,
+    'rolesPinned': rolesPinned,
+    'rolesDerived': rolesDerived,
+    'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName
   };
 }

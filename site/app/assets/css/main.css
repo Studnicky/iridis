@@ -41,6 +41,11 @@ html.is-switching-theme *::after {
   *, *::before, *::after { transition-duration: 0ms; }
 }
 
+/* Disable transitions during page load to prevent "bouncing" */
+.preload *, .preload *::before, .preload *::after {
+  transition: none !important;
+}
+
 .font-display { font-family: var(--font-display); letter-spacing: 0.02em; }
 
 /* ─── Scrollbars, themed — native scrollbars never inherit --ui-* on their
@@ -216,4 +221,41 @@ body {
   position: absolute; inset: 0;
   background: repeating-linear-gradient(0deg, transparent 0 2px, color-mix(in oklch, #000 22%, transparent) 2px 3px);
   pointer-events: none; opacity: 0.1; border-radius: inherit;
+}
+
+/* ─── Prose Typography mapping to Iridis tokens ─── */
+.prose {
+  --tw-prose-body: var(--ui-text);
+  --tw-prose-headings: var(--ui-text-highlighted);
+  --tw-prose-lead: var(--ui-text-muted);
+  --tw-prose-links: var(--ui-primary);
+  --tw-prose-bold: var(--ui-text-highlighted);
+  --tw-prose-counters: var(--ui-text-muted);
+  --tw-prose-bullets: var(--ui-text-dimmed);
+  --tw-prose-hr: var(--ui-border);
+  --tw-prose-quotes: var(--ui-text-highlighted);
+  --tw-prose-quote-borders: var(--ui-border-accented);
+  --tw-prose-captions: var(--ui-text-muted);
+  --tw-prose-code: var(--ui-primary);
+  --tw-prose-pre-code: var(--ui-text);
+  --tw-prose-pre-bg: var(--ui-bg-muted);
+  --tw-prose-th-borders: var(--ui-border-accented);
+  --tw-prose-td-borders: var(--ui-border);
+  
+  --tw-prose-invert-body: var(--ui-text);
+  --tw-prose-invert-headings: var(--ui-text-highlighted);
+  --tw-prose-invert-lead: var(--ui-text-muted);
+  --tw-prose-invert-links: var(--ui-primary);
+  --tw-prose-invert-bold: var(--ui-text-highlighted);
+  --tw-prose-invert-counters: var(--ui-text-muted);
+  --tw-prose-invert-bullets: var(--ui-text-dimmed);
+  --tw-prose-invert-hr: var(--ui-border);
+  --tw-prose-invert-quotes: var(--ui-text-highlighted);
+  --tw-prose-invert-quote-borders: var(--ui-border-accented);
+  --tw-prose-invert-captions: var(--ui-text-muted);
+  --tw-prose-invert-code: var(--ui-primary);
+  --tw-prose-invert-pre-code: var(--ui-text);
+  --tw-prose-invert-pre-bg: var(--ui-bg-muted);
+  --tw-prose-invert-th-borders: var(--ui-border-accented);
+  --tw-prose-invert-td-borders: var(--ui-border);
 }

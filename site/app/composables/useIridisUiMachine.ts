@@ -1,3 +1,4 @@
+import { IridisUiEffectVariant } from './types/index.ts';
 /**
  * Vue adapter over the shared IridisUiMachine, run through an EffectInterpreter
  * — one module-level singleton, matching useIridis.ts's module-level-ref
@@ -19,10 +20,10 @@ import type { IridisUiEffectType, IridisUiEventType } from './types/index.ts';
 
 import { IridisUiMachine } from './fsm/IridisUiMachine.ts';
 
-type MutateSeedsHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': 'MUTATE_SEEDS' }>) => void;
-type SetPaletteParamHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': 'SET_PALETTE_PARAM' }>) => void;
-type ExtractImageHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': 'EXTRACT_IMAGE' }>) => void;
-type PinSeedRoleHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': 'PIN_SEED_ROLE' }>) => void;
+type MutateSeedsHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.MUTATE_SEEDS }>) => void;
+type SetPaletteParamHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>) => void;
+type ExtractImageHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }>) => void;
+type PinSeedRoleHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }>) => void;
 
 /** Mutable — `EffectInterpreter` reads handler keys dynamically on each drain, so filling this in after construction (once useIridis.ts registers it) still wires correctly. */
 const handlers: {

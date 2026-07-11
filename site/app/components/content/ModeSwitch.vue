@@ -51,6 +51,6 @@ const activeTab = computed({
 }
 .output-tabs :deep([role='tab'][data-state='active']) {
   background: var(--ui-primary);
-  color: var(--ui-bg);
+  color: var(--ui-primary-contrast);
 }
 </style>

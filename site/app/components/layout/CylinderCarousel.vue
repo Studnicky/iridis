@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IridisUiActionType } from '~/composables/types/index.ts';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
@@ -30,13 +31,13 @@ function onDown(e: PointerEvent): void {
   // starts on the card frame, side cards, or empty scene.
   const t = e.target as HTMLElement;
   if (t.closest('.cyl-card-body')) return;
-  send({ 'type': 'DRAG_START' }); startX = e.clientX;
+  send({ 'type': IridisUiActionType.DRAG_START }); startX = e.clientX;
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
 }
 function onMove(e: PointerEvent): void {
   if (state.value.variant !== 'dragging') return;
-  send({ 'dragPx': e.clientX - startX, 'type': 'DRAG_MOVE' });
+  send({ 'dragPx': e.clientX - startX, 'type': IridisUiActionType.DRAG_MOVE });
 }
 function onUp(): void {
   window.removeEventListener('pointermove', onMove);
@@ -44,10 +45,10 @@ function onUp(): void {
   if (state.value.variant !== 'dragging') return;
   const step = cardW.value * 0.55;
   const shiftedBy = Math.round(-dragPx.value / step);
-  send({ 'count': n.value, 'shiftedBy': shiftedBy, 'type': 'DRAG_END' });
+  send({ 'count': n.value, 'shiftedBy': shiftedBy, 'type': IridisUiActionType.DRAG_END });
 }
-function go(d: number): void { send({ 'count': n.value, 'delta': d, 'type': 'NAVIGATE' }); }
-function select(i: number): void { send({ 'index': i, 'type': 'SELECT_CARD' }); }
+function go(d: number): void { send({ 'count': n.value, 'delta': d, 'type': IridisUiActionType.NAVIGATE }); }
+function select(i: number): void { send({ 'index': i, 'type': IridisUiActionType.SELECT_CARD }); }
 function isActive(i: number): boolean { return i === active.value; }
 
 /**
@@ -254,7 +255,7 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
   transition: all .25s ease;
 }
 .cyl-dot.on {
-  color: var(--ui-bg); background: var(--ui-primary); border-color: var(--ui-primary);
+  color: var(--ui-primary-contrast); background: var(--ui-primary); border-color: var(--ui-primary);
   box-shadow: 0 0 16px color-mix(in oklch, var(--ui-primary) 70%, transparent);
 }
 </style>

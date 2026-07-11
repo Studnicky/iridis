@@ -17,14 +17,16 @@ const props = defineProps<{
 const langMap: Record<string, SupportedLangType> = {
   'js': 'javascript',
   'javascript': 'javascript',
-  'ts': 'javascript',
-  'typescript': 'javascript',
+  'ts': 'typescript',
+  'typescript': 'typescript',
   'css': 'css',
   'json': 'json',
   'xml': 'xml',
-  'html': 'xml'
+  'html': 'html',
+  'sh': 'bash',
+  'bash': 'bash'
 };
-const lang = computed(() => langMap[props.language || ''] || 'javascript');
+const lang = computed(() => langMap[props.language || ''] || 'bash');
 </script>
 
 <template>
