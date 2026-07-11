@@ -24,7 +24,7 @@ import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
  */
 const {
   pickerSeeds, pinnableRoles, framing, schemaName, contrastStrictness, colorSpace, mode, imageSeeds, running,
-  enabledOptionalStages, cvdCorrect, contrastReport,
+  enabledOptionalStages, cvdCorrect, contrastReport, histogram,
   imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
   cvdPreviewTypes
 } = useIridis();
