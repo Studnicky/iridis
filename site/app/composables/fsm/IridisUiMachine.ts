@@ -60,6 +60,8 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
           'effects': [event.source === 'file' ? { 'file': event.file, 'source': 'file', 'variant': IridisUiEffectVariant.EXTRACT_IMAGE } : { 'source': 'sample', 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }],
           'state':   state
         };
+      case IridisUiActionType.POPULATE_PICKER_FROM_IMAGE:
+        return { 'effects': [{ 'hues': event.hues, 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }], 'state': state };
       case IridisUiActionType.DIAGRAM_ZOOM:
         return { 'effects': [{ 'factor': event.factor, 'op': 'zoom', 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }], 'state': state };
       case IridisUiActionType.DIAGRAM_PAN:

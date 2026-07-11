@@ -3,6 +3,7 @@ export enum IridisUiEffectVariant {
   PIN_SEED_ROLE = 'PIN_SEED_ROLE',
   SET_PALETTE_PARAM = 'SET_PALETTE_PARAM',
   EXTRACT_IMAGE = 'EXTRACT_IMAGE',
+  POPULATE_PICKER_FROM_IMAGE = 'POPULATE_PICKER_FROM_IMAGE',
   UPDATE_DIAGRAM_VIEW = 'UPDATE_DIAGRAM_VIEW',
   UPDATE_CVD_PREVIEW = 'UPDATE_CVD_PREVIEW'
 }
@@ -36,6 +37,7 @@ export type IridisUiEffectType =
   | { 'op': 'imgChromaRange'; 'value': [number, number]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'source': 'sample'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
   | { 'file': File; 'source': 'file'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
+  | { 'hues': string[]; 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }
   | { 'op': 'zoom'; 'factor': number; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
   | { 'dx': number; 'dy': number; 'op': 'pan'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
   | { 'op': 'reset'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }

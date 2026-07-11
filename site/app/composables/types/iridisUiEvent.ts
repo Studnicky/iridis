@@ -24,6 +24,7 @@ export enum IridisUiActionType {
   SET_IMAGE_LIGHTNESS_RANGE = 'SET_IMAGE_LIGHTNESS_RANGE',
   SET_IMAGE_CHROMA_RANGE = 'SET_IMAGE_CHROMA_RANGE',
   EXTRACT_IMAGE = 'EXTRACT_IMAGE',
+  POPULATE_PICKER_FROM_IMAGE = 'POPULATE_PICKER_FROM_IMAGE',
   DIAGRAM_ZOOM = 'DIAGRAM_ZOOM',
   DIAGRAM_PAN = 'DIAGRAM_PAN',
   DIAGRAM_RESET = 'DIAGRAM_RESET',
@@ -65,6 +66,7 @@ export type IridisUiEventType =
   | { 'range': [number, number]; 'type': IridisUiActionType.SET_IMAGE_CHROMA_RANGE }
   | { 'source': 'sample'; 'type': IridisUiActionType.EXTRACT_IMAGE }
   | { 'file': File; 'source': 'file'; 'type': IridisUiActionType.EXTRACT_IMAGE }
+  | { 'hues': string[]; 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE }
   | { 'factor': number; 'type': IridisUiActionType.DIAGRAM_ZOOM }
   | { 'dx': number; 'dy': number; 'type': IridisUiActionType.DIAGRAM_PAN }
   | { 'type': IridisUiActionType.DIAGRAM_RESET }
