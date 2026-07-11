@@ -15,8 +15,18 @@
   /* one shared window every color animates over, in unison — kept under
      300ms so a framing/palette swap reads as instant-but-smooth, not a
      visible fade. */
-  --iridis-tune: 260ms;
-  --iridis-ease: ease;
+  --iridis-tune: 150ms;
+  --iridis-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When the engine orchestrates a dark/light swap, force ALL elements to use the same
+   transition duration regardless of their local Tailwind utility classes, preventing
+   the chaotic staggered fading of different components. */
+html.is-switching-theme *,
+html.is-switching-theme *::before,
+html.is-switching-theme *::after {
+  transition-duration: var(--iridis-tune) !important;
+  transition-timing-function: var(--iridis-ease) !important;
 }
 
 /* Every element re-tones over the SAME window when the engine rewrites its
@@ -31,7 +41,27 @@
   *, *::before, *::after { transition-duration: 0ms; }
 }
 
+/* Disable transitions during page load to prevent "bouncing" */
+.preload *, .preload *::before, .preload *::after {
+  transition: none !important;
+}
+
 .font-display { font-family: var(--font-display); letter-spacing: 0.02em; }
+
+.iridis-logo {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.025em;
+  color: var(--ui-text-highlighted, #fff);
+}
+@media (min-width: 640px) {
+  .iridis-logo {
+    font-size: 3.75rem;
+  }
+}
 
 /* ─── Scrollbars, themed — native scrollbars never inherit --ui-* on their
    own, so every scrollable surface (code panels, carousel card bodies,
@@ -146,6 +176,52 @@ body {
 @keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-10px) } }
 .spin-slow { animation: spin 26s linear infinite; }
 
+.hero-orb-field {
+  mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, #000 0%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, #000 0%, transparent 85%);
+}
+.hero-orb:nth-child(1) { width: 7rem; height: 7rem; left: 8%; top: 50%; animation-delay: 0s; opacity: 0.45; }
+.hero-orb:nth-child(2) { width: 10rem; height: 10rem; left: 28%; top: 8%; animation-delay: 0.9s; opacity: 0.45; }
+.hero-orb:nth-child(3) { width: 13rem; height: 13rem; left: 48%; top: 50%; animation-delay: 1.8s; opacity: 0.45; }
+.hero-orb:nth-child(4) { width: 16rem; height: 16rem; left: 68%; top: 8%; animation-delay: 2.7s; opacity: 0.45; }
+.hero-orb:nth-child(5) { width: 19rem; height: 19rem; left: 88%; top: 50%; animation-delay: 3.6s; opacity: 0.45; }
+
+.halo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  animation: halo-drift 30s linear infinite;
+}
+.halo-ring {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle, color-mix(in oklch, var(--c) 75%, transparent) 0%, color-mix(in oklch, var(--c) 30%, transparent) 45%, transparent 68%);
+  mix-blend-mode: screen;
+  filter: blur(5px);
+  opacity: 0.18;
+  animation: halo-pulse 5s ease-in-out infinite;
+}
+.halo-ring:nth-child(1) { width: 5.5rem; height: 5.5rem; animation-delay: 0s; }
+.halo-ring:nth-child(2) { width: 7.9rem; height: 7.9rem; animation-delay: 0.8s; }
+.halo-ring:nth-child(3) { width: 10.3rem; height: 10.3rem; animation-delay: 1.6s; }
+.halo-ring:nth-child(4) { width: 12.7rem; height: 12.7rem; animation-delay: 2.4s; }
+.halo-ring:nth-child(5) { width: 15.1rem; height: 15.1rem; animation-delay: 3.2s; }
+.halo-ring:nth-child(6) { width: 17.5rem; height: 17.5rem; animation-delay: 4.0s; }
+
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.1; transform: scale(0.82); }
+  50%      { opacity: 0.6; transform: scale(1.14); }
+}
+@keyframes halo-drift {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .halo, .halo-ring { animation: none; }
+  .halo-ring { opacity: 0.3; }
+}
+
 /* ── Orbit: three rings, each its own palette role, spinning at independent
    speeds/directions while the whole rig slowly precesses — genuinely three
    colors in motion at once, not one dot re-tinted. Adapted from a uiverse.io
@@ -206,4 +282,41 @@ body {
   position: absolute; inset: 0;
   background: repeating-linear-gradient(0deg, transparent 0 2px, color-mix(in oklch, #000 22%, transparent) 2px 3px);
   pointer-events: none; opacity: 0.1; border-radius: inherit;
+}
+
+/* ─── Prose Typography mapping to Iridis tokens ─── */
+.prose {
+  --tw-prose-body: var(--ui-text);
+  --tw-prose-headings: var(--ui-text-highlighted);
+  --tw-prose-lead: var(--ui-text-muted);
+  --tw-prose-links: var(--ui-primary);
+  --tw-prose-bold: var(--ui-text-highlighted);
+  --tw-prose-counters: var(--ui-text-muted);
+  --tw-prose-bullets: var(--ui-text-dimmed);
+  --tw-prose-hr: var(--ui-border);
+  --tw-prose-quotes: var(--ui-text-highlighted);
+  --tw-prose-quote-borders: var(--ui-border-accented);
+  --tw-prose-captions: var(--ui-text-muted);
+  --tw-prose-code: var(--ui-primary);
+  --tw-prose-pre-code: var(--ui-text);
+  --tw-prose-pre-bg: var(--ui-bg-muted);
+  --tw-prose-th-borders: var(--ui-border-accented);
+  --tw-prose-td-borders: var(--ui-border);
+  
+  --tw-prose-invert-body: var(--ui-text);
+  --tw-prose-invert-headings: var(--ui-text-highlighted);
+  --tw-prose-invert-lead: var(--ui-text-muted);
+  --tw-prose-invert-links: var(--ui-primary);
+  --tw-prose-invert-bold: var(--ui-text-highlighted);
+  --tw-prose-invert-counters: var(--ui-text-muted);
+  --tw-prose-invert-bullets: var(--ui-text-dimmed);
+  --tw-prose-invert-hr: var(--ui-border);
+  --tw-prose-invert-quotes: var(--ui-text-highlighted);
+  --tw-prose-invert-quote-borders: var(--ui-border-accented);
+  --tw-prose-invert-captions: var(--ui-text-muted);
+  --tw-prose-invert-code: var(--ui-primary);
+  --tw-prose-invert-pre-code: var(--ui-text);
+  --tw-prose-invert-pre-bg: var(--ui-bg-muted);
+  --tw-prose-invert-th-borders: var(--ui-border-accented);
+  --tw-prose-invert-td-borders: var(--ui-border);
 }

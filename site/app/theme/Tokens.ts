@@ -32,6 +32,11 @@ const SHORTCUT_SOURCE: Record<string, readonly string[]> = {
   '--ui-border-accented': ['border-strong', 'border', 'muted'],
   '--ui-border-muted':    ['divider', 'border', 'muted'],
   '--ui-primary':         ['brand'],
+  '--ui-primary-contrast':['on-brand', 'brand-contrast', 'background'],
+  '--ui-error-contrast':  ['on-error', 'error-contrast', 'background'],
+  '--ui-success-contrast':['on-success', 'success-contrast', 'background'],
+  '--ui-warning-contrast':['on-warning', 'warning-contrast', 'background'],
+  '--ui-info-contrast':   ['on-info', 'info-contrast', 'background'],
   '--ui-text':            ['text'],
   '--ui-text-dimmed':     ['muted', 'text-subtle', 'text'],
   '--ui-text-highlighted': ['text-strong', 'text'],
@@ -57,8 +62,8 @@ export class Tokens {
     for (const [alias, candidates] of Object.entries(ALIAS_SOURCE)) {
       for (const shade of Tokens.SHADE_KEYS) {
         const perShade = scales[shade];
-        if (perShade === undefined) {continue;}
-        const hex = pick(perShade, candidates);
+        let hex = perShade ? pick(perShade, candidates) : undefined;
+        if (hex === undefined) { hex = pick(roles, candidates); }
         if (hex !== undefined) {tokens[`--ui-color-${alias}-${shade}`] = hex;}
       }
     }
@@ -80,10 +85,10 @@ export class Tokens {
     root.dataset.iridisFraming = framing;
   }
 
-  /** Serializes engine tokens as a `:root` rule for SSR head injection — first paint matches Tokens.apply(). */
+  /** Serializes engine tokens as a highly specific rule for SSR head injection to override UI framework defaults. */
   static toCssText(tokens: RoleHexMapType): string {
     const decls = Object.entries(tokens).map(([k, v]) => {return `${k}:${v}`;}).join(';');
-    return `:root{${decls}}`;
+    return `html:root, html:root.dark, html:root:not(.dark) {${decls}}`;
   }
 
   /** Every role name this mapper ever reads by name — the ground truth for "does pinning this role actually show up anywhere". */

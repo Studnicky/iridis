@@ -180,7 +180,29 @@ class ResolveRoles implements TaskInterface {
       // Hint match takes priority: explicit user intent.
       const hintMatch = state.colors.find((c) => {return c.hints?.role === role.name;});
       if (hintMatch !== undefined) {
-        state.roles[role.name] = nudgeIntoRole(hintMatch, role);
+        const resolved = nudgeIntoRole(hintMatch, role);
+        state.roles[role.name] = resolved;
+
+        const isClamped = Math.abs(hintMatch.oklch.l - resolved.oklch.l) > 0.005 ||
+                          Math.abs(hintMatch.oklch.c - resolved.oklch.c) > 0.005 ||
+                          Math.abs(hintMatch.oklch.h - resolved.oklch.h) > 0.5;
+
+        if (isClamped) {
+          if (!state.metadata['core:roleClamps']) {
+            state.metadata['core:roleClamps'] = {};
+          }
+          (state.metadata['core:roleClamps'] as Record<string, any>)[role.name] = {
+            'seedHex': hintMatch.hex,
+            'seedOklch': hintMatch.oklch,
+            'resolvedHex': resolved.hex,
+            'resolvedOklch': resolved.oklch
+          };
+        }
+
+        const existingPinned = state.metadata['core:rolesPinned'];
+        const priorPinned: string[] = Array.isArray(existingPinned) ? (existingPinned as string[]) : [];
+        state.metadata['core:rolesPinned'] = [...priorPinned, role.name];
+
         ctx.logger.debug(
           LogBody.create()
             .component('ResolveRoles')
@@ -214,18 +236,44 @@ class ResolveRoles implements TaskInterface {
       // Pick closest candidate by distance to constraint center.
       let best: ColorRecordInterfaceType | undefined;
       let bestDist = Infinity;
+      const distances: Record<string, number> = {};
+
       for (const color of state.colors) {
         const dist = distanceToRoleCenter(color, role);
+        distances[color.hex] = dist;
         if (dist < bestDist) {
           bestDist = dist;
           best = color;
         }
       }
 
+      if (!state.metadata['core:roleDistances']) {
+        state.metadata['core:roleDistances'] = {};
+      }
+      (state.metadata['core:roleDistances'] as Record<string, any>)[role.name] = distances;
+
       // Nudge the candidate into the role's ranges so required roles are
       // guaranteed to satisfy lightnessRange, chromaRange, and hueOffset.
       if (best !== undefined) {
-        state.roles[role.name] = nudgeIntoRole(best, role);
+        const resolved = nudgeIntoRole(best, role);
+        state.roles[role.name] = resolved;
+        
+        const isClamped = Math.abs(best.oklch.l - resolved.oklch.l) > 0.005 ||
+                          Math.abs(best.oklch.c - resolved.oklch.c) > 0.005 ||
+                          Math.abs(best.oklch.h - resolved.oklch.h) > 0.5;
+
+        if (isClamped) {
+          if (!state.metadata['core:roleClamps']) {
+            state.metadata['core:roleClamps'] = {};
+          }
+          (state.metadata['core:roleClamps'] as Record<string, any>)[role.name] = {
+            'seedHex': best.hex,
+            'seedOklch': best.oklch,
+            'resolvedHex': resolved.hex,
+            'resolvedOklch': resolved.oklch
+          };
+        }
+
         ctx.logger.debug(
           LogBody.create()
             .component('ResolveRoles')

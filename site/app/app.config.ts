@@ -8,6 +8,11 @@ export default defineAppConfig({
         'header': 'p-4 sm:px-6',
         'root': 'iridis-card rounded-2xl'
       }
+    },
+    'button': {
+      'variants': {
+        'solid': 'text-[var(--ui-primary-contrast,white)] dark:text-[var(--ui-primary-contrast,gray-900)]'
+      }
     }
   }
 });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 
 import { useIridis } from '~/composables/useIridis.ts';
 import { Tokens } from '~/theme/Tokens.ts';
@@ -16,9 +16,16 @@ useHead({
     'class': computed(() => {return framing.value === 'dark' ? 'dark' : '';}),
     'data-iridis-framing': framing
   },
-  'style': [
-    { 'key': 'iridis-theme', 'innerHTML': computed(() => {return Tokens.toCssText(Tokens.mapFromEngine(roles.value, scales.value));}) }
-  ]
+  'bodyAttrs': {
+    'class': 'preload'
+  }
+});
+
+onMounted(() => {
+  // Wait a tick for hydration to finish, then enable transitions
+  setTimeout(() => {
+    document.body.classList.remove('preload');
+  }, 50);
 });
 </script>
 

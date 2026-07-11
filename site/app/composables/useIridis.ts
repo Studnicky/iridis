@@ -17,11 +17,12 @@ import { computed, ref, watch } from 'vue';
 import type {
   FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType
 } from './types/index.ts';
+import { IridisUiActionType, IridisUiEffectVariant } from './types/index.ts';
 
-type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': 'MUTATE_SEEDS' }>;
-type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': 'SET_PALETTE_PARAM' }>;
-type ExtractImageEffectType = Extract<IridisUiEffectType, { 'variant': 'EXTRACT_IMAGE' }>;
-type PinSeedRoleEffectType = Extract<IridisUiEffectType, { 'variant': 'PIN_SEED_ROLE' }>;
+type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.MUTATE_SEEDS }>;
+type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>;
+type ExtractImageEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }>;
+type PinSeedRoleEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }>;
 
 import { intakeHexHint } from '../theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
@@ -51,8 +52,8 @@ const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => {return { 'invertLightness':
  * warm-leaning semantics rather than pure green/blue that appear nowhere in it.
  * Schema authoring; the engine still resolves the real color.
  */
-const SEMANTIC_HUE: Record<string, number> = { 'error': 27, 'info': 250, 'success': 150, 'warning': 85 };
-const SEMANTIC_HUE_CLAMP = 55;
+const SEMANTIC_HUE: Record<string, number> = { 'error': 25, 'info': 230, 'success': 160, 'warning': 60 };
+const SEMANTIC_HUE_CLAMP = 90;
 
 /**
  * Exported so PipelineExplainer.vue can walk the same stage order and pull each
@@ -82,15 +83,13 @@ const REQUIRED_IMAGE_STAGES = [
 /** Toggleable contrast checks, in the order they slot in after enforce:contrast. */
 export const OPTIONAL_STAGE_NAMES: readonly string[] = ['enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca'];
 
-/** Which optional stages currently run — mutate via toggleOptionalStage(), not directly. */
-const enabledOptionalStages = ref<Set<string>>(new Set(['enforce:wcagAA']));
-
-function toggleOptionalStage(name: string): void {
-  if (!OPTIONAL_STAGE_NAMES.includes(name)) {return;}
-  const next = new Set(enabledOptionalStages.value);
-  if (next.has(name)) {next.delete(name);} else {next.add(name);}
-  enabledOptionalStages.value = next;
-}
+/** Which optional stages currently run based on strictness. */
+const enabledOptionalStages = computed<Set<string>>(() => {
+  if (contrastStrictness.value === 0) {return new Set(['enforce:wcagAA']);}
+  if (contrastStrictness.value === 1) {return new Set(['enforce:wcagAAA']);}
+  if (contrastStrictness.value === 2) {return new Set(['enforce:apca']);}
+  return new Set();
+});
 
 /** Slots the currently-enabled optional stages into `required` right after enforce:contrast. */
 function buildPipeline(required: readonly string[]): string[] {
@@ -128,19 +127,20 @@ const {
 /** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
 const mode = computed<ModeType>({
   'get': () => { const result = uiState.value.mode; return result; },
-  'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': 'SELECT_MODE' }); return result; }
+  'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': IridisUiActionType.SELECT_MODE }); return result; }
 });
-const pickerSeeds = ref<PickerSeedType[]>([{ 'hex': '#7c3aed' }, { 'hex': '#06b6d4' }, { 'hex': '#f59e0b' }]);
+const pickerSeeds = ref<PickerSeedType[]>([{ 'hex': '#7c3aed' }, { 'hex': '#06b6d4' }, { 'hex': '#f59e0b' }, { 'hex': '#ec4899' }]);
 const imageSeeds = ref<string[]>([]);
 const framing = ref<FramingType>('dark');
 const schemaName = ref<string>('iridis-32');
-const contrastLevel = ref<'AA' | 'AAA'>('AAA');
+const contrastStrictness = ref<number>(2);
+const colorSpace = ref<'srgb' | 'displayP3'>('srgb');
 /**
  * CVD "correct" mode flag, threaded through as `input.contrast.cvdCorrect` —
  * when true, enforce:cvdSimulate (packages/contrast) auto-corrects failing
- * pairs instead of only warning. Off by default (advisory-only).
+ * pairs instead of only warning. On by default.
  */
-const cvdCorrect = ref<boolean>(false);
+const cvdCorrect = ref<boolean>(true);
 
 /**
  * Visual CVD preview — purely a display-time filter over whatever the engine
@@ -166,6 +166,11 @@ function toggleCvdPreviewType(type: CvdType): void {
 
 const roles = ref<RoleHexMapType>({});
 const roleViews = ref<RoleViewType[]>([]);
+const roleClamps = ref<Record<string, { seedHex: string, seedOklch: {l: number, c: number, h: number}, resolvedHex: string, resolvedOklch: {l: number, c: number, h: number} }>>({});
+const roleDistances = ref<Record<string, Record<string, number>>>({});
+const rolesSynthesized = ref<string[]>([]);
+const rolesPinned = ref<string[]>([]);
+const rolesDerived = ref<string[]>([]);
 const scales = ref<ScaleMapType>({});
 const histogram = ref<HistogramBinType[]>([]);
 const running = ref<boolean>(false);
@@ -175,7 +180,7 @@ const error = ref<string | null>(null);
 const contrastReport = ref<{ 'aa'?: unknown; 'aaa'?: unknown; 'apca'?: unknown; 'cvd'?: unknown }>({});
 
 /* Image-extraction controls (mirror the engine's gallery config knobs). */
-const imgAlgorithm = ref<GalleryAlgorithmType>('median-cut');
+const imgAlgorithm = ref<GalleryAlgorithmType>('delta-e');
 const imgK = ref<number>(8);
 const imgHistogramBits = ref<number>(5);
 const imgDeltaECap = ref<number>(128);
@@ -220,6 +225,11 @@ function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<st
   }
   roles.value = roleHex;
   roleViews.value = views;
+  roleClamps.value = (state.metadata['core:roleClamps'] as any) || {};
+  roleDistances.value = (state.metadata['core:roleDistances'] as any) || {};
+  rolesSynthesized.value = (state.metadata['core:rolesSynthesized'] as any) || [];
+  rolesPinned.value = (state.metadata['core:rolesPinned'] as any) || [];
+  rolesDerived.value = (state.metadata['core:rolesDerived'] as any) || [];
   scales.value = sc;
   contrastReport.value = {
     'aa':   state.metadata['contrast:aa'],
@@ -227,7 +237,9 @@ function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<st
     'apca': state.metadata['contrast:apca'],
     'cvd':  state.metadata['contrast:cvd']
   };
-  Tokens.apply(Tokens.mapFromEngine(roleHex, sc), framing.value);
+  if (typeof document !== 'undefined') {
+    Tokens.apply(Tokens.mapFromEngine(roleHex, sc), framing.value);
+  }
 }
 
 /**
@@ -250,13 +262,29 @@ function run(framingOverride?: FramingType): void {
     engine.pipeline(buildPipeline(REQUIRED_COLOR_STAGES));
     const state = engine.run({
       'colors':   activeSeeds.value,
-      'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastLevel.value },
+      'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
       'metadata': { 'core:variantConfig': VARIANT_CONFIG },
       'roles':    withSemanticHues(pair[targetFraming]),
-      'runtime':  { 'colorSpace': 'srgb', 'framing': targetFraming }
+      'runtime':  { 'colorSpace': colorSpace.value, 'framing': targetFraming }
     });
-    if (framingOverride !== undefined) {framing.value = framingOverride;}
+    if (framingOverride !== undefined) {
+      framing.value = framingOverride;
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.add('is-switching-theme');
+        if (framingOverride === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        setTimeout(() => {
+          document.documentElement.classList.remove('is-switching-theme');
+        }, 180); // slightly longer than --iridis-tune (150ms)
+      }
+    }
     ingest(state);
+    if (typeof document !== 'undefined') {
+      Tokens.apply(Tokens.mapFromEngine(roles.value, scales.value), targetFraming);
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
   } finally {
@@ -303,7 +331,7 @@ class FromImage {
       engine.pipeline(buildPipeline(REQUIRED_IMAGE_STAGES));
       const state = engine.run({
         'colors':   [pixels],
-        'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastLevel.value },
+        'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
         'metadata': {
           'core:variantConfig': VARIANT_CONFIG,
           'gallery': {
@@ -317,7 +345,7 @@ class FromImage {
           }
         },
         'roles':    withSemanticHues(pair![framing.value]),
-        'runtime':  { 'colorSpace': 'srgb', 'framing': framing.value }
+        'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
       });
       const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
       histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
@@ -336,12 +364,12 @@ class FromImage {
 /**
  * Performs the picker-seed array mutation for the FSM's MUTATE_SEEDS effect.
  * Registered once below via registerMutateSeedsHandler — PalettePlayground.vue
- * triggers this indirectly via useIridisUiMachine().send({type:'ADD_SEED'|...}),
+ * triggers this indirectly via useIridisUiMachine().send({type: IridisUiActionType.ADD_SEED|...}),
  * never by calling array mutation directly.
  */
 function mutateSeeds(effect: MutateSeedsEffectType): void {
   if (effect.op === 'add') {
-    if (pickerSeeds.value.length < 8) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? '#888888' }];}
+    if (pickerSeeds.value.length < 32) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? '#888888' }];}
   } else if (effect.op === 'remove') {
     if (pickerSeeds.value.length > 1) {pickerSeeds.value = pickerSeeds.value.filter((_, idx) => {return idx !== effect.index;});}
   } else if (effect.op === 'set') {
@@ -354,9 +382,15 @@ registerMutateSeedsHandler(mutateSeeds);
  * Performs the seed-role pin/unpin mutation for the FSM's PIN_SEED_ROLE effect.
  * Pinning attaches `hints.role` (via IntakeHexHint) so ResolveRoles assigns that
  * seed to the named role directly instead of by nearest-OKLCH-distance.
+ * Ensures that a role can only be pinned to one seed at a time.
  */
 function pinSeedRole(effect: PinSeedRoleEffectType): void {
-  pickerSeeds.value = pickerSeeds.value.map((s, idx) => {return (idx === effect.index ? { ...s, 'role': effect.role } : s);});
+  pickerSeeds.value = pickerSeeds.value.map((s, idx) => {
+    if (effect.role && s.role === effect.role && idx !== effect.index) {
+      return { ...s, role: undefined };
+    }
+    return (idx === effect.index ? { ...s, 'role': effect.role } : s);
+  });
 }
 registerPinSeedRoleHandler(pinSeedRole);
 
@@ -371,8 +405,16 @@ function setPaletteParam(effect: SetPaletteParamEffectType): void {
   // Everything else still goes through the debounced schedule() below.
   if (effect.op === 'framing') {run(effect.value);}
   else if (effect.op === 'schemaName') {schemaName.value = effect.value;}
-  else if (effect.op === 'contrastLevel') {contrastLevel.value = effect.value;}
+  else if (effect.op === 'strictness') {contrastStrictness.value = effect.value;}
+  else if (effect.op === 'colorSpace') {colorSpace.value = effect.value;}
+  else if (effect.op === 'cvdCorrect') {cvdCorrect.value = effect.value;}
   else if (effect.op === 'imgAlgorithm') {imgAlgorithm.value = effect.value;}
+  else if (effect.op === 'imgK') {imgK.value = effect.value;}
+  else if (effect.op === 'imgHistogramBits') {imgHistogramBits.value = effect.value;}
+  else if (effect.op === 'imgDeltaECap') {imgDeltaECap.value = effect.value;}
+  else if (effect.op === 'imgHarmonize') {imgHarmonize.value = effect.value;}
+  else if (effect.op === 'imgLightnessRange') {imgLightnessRange.value = effect.value;}
+  else if (effect.op === 'imgChromaRange') {imgChromaRange.value = effect.value;}
 }
 registerSetPaletteParamHandler(setPaletteParam);
 
@@ -412,24 +454,28 @@ function scheduleReextract(): void {
 export function useIridis() {
   if (!booted) {
     booted = true;
-    // Runs on the server too: engine.run() is pure computation, and Tokens.apply()
-    // no-ops without `document`. This makes the SSR-rendered palette identical to
-    // the client's, so hydration never has to re-theme the page.
+    // Runs on the server too: engine.run() is pure computation.
+    // This makes the SSR-rendered palette identical to the client's,
+    // so hydration never has to re-theme the page.
     run();
     if (typeof window !== 'undefined') {
       // framing is intentionally absent here — its swap is dispatched synchronously
       // by setPaletteParam() via run(effect.value), not through this debounce.
-      watch([pickerSeeds, imageSeeds, schemaName, contrastLevel, mode, enabledOptionalStages, cvdCorrect], schedule, { 'deep': true });
+      watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect], schedule, { 'deep': true });
       watch([imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
     }
   }
   return {
-    'activeSeeds': activeSeeds, 'contrastLevel': contrastLevel, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
+    'activeSeeds': activeSeeds, 'contrastStrictness': contrastStrictness, 'colorSpace': colorSpace, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
     'cvdPreviewTypes': cvdPreviewTypes, 'toggleCvdPreviewType': toggleCvdPreviewType,
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
     'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
     'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'lastImageSrc': lastImageSrc, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
-    'roles': roles, 'roleViews': roleViews, 'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName,
-    'toggleOptionalStage': toggleOptionalStage
+    'roles': roles, 'roleViews': roleViews, 'roleClamps': roleClamps,
+    'roleDistances': roleDistances,
+    'rolesSynthesized': rolesSynthesized,
+    'rolesPinned': rolesPinned,
+    'rolesDerived': rolesDerived,
+    'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName
   };
 }
