@@ -15,9 +15,9 @@ import { imagePlugin } from '@studnicky/iridis-image';
 import { computed, ref, watch } from 'vue';
 
 import type {
-  FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType
+  DerivationConfig, FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType
 } from './types/index.ts';
-import { IridisUiActionType, IridisUiEffectVariant } from './types/index.ts';
+import { IridisUiActionType, IridisUiEffectVariant, PRESET_DEFAULTS } from './types/index.ts';
 
 type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.MUTATE_SEEDS }>;
 type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>;
@@ -26,7 +26,9 @@ type PinSeedRoleEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEf
 type UpdateDiagramViewEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }>;
 type UpdateCvdPreviewEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>;
 type PopulatePickerFromImageEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }>;
+type SetDerivationEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_DERIVATION }>;
 
+import { deriveColors } from '../utils/colorDerivation.ts';
 import { intakeHexHint } from '../theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
 import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
@@ -127,6 +129,7 @@ const {
   'registerPinSeedRoleHandler': registerPinSeedRoleHandler, 'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
   'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
   'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler,
+  'registerSetDerivationHandler': registerSetDerivationHandler,
   'send': sendUiEvent, 'state': uiState
 } = useIridisUiMachine();
 /** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
@@ -168,6 +171,14 @@ const diagramScale = ref<number>(1);
 const diagramTranslateX = ref<number>(0);
 const diagramTranslateY = ref<number>(0);
 const diagramIsExpanded = ref<boolean>(false);
+
+/** Per-role hue/variation derivation config — SET_DERIVATION effects (preset select or per-role save/reset) merge into this. */
+const derivationConfig = ref<DerivationConfig>({
+  'roles':    PRESET_DEFAULTS.automatic.roles,
+  'strategy': 'automatic'
+});
+/** Derived color rows produced by deriveColors() from the current pickerSeeds + derivationConfig, keyed by role. Read by PaletteControls/carousel to display the informative derivation view. */
+const derivedRoleColors = ref<Record<string, { 'hue': number; 'lightness'?: number; 'saturation'?: number }[]>>({});
 
 const roles = ref<RoleHexMapType>({});
 const roleViews = ref<RoleViewType[]>([]);
@@ -473,6 +484,35 @@ function populatePickerFromImage(effect: PopulatePickerFromImageEffectType): voi
 }
 registerPopulatePickerFromImageHandler(populatePickerFromImage);
 
+/**
+ * Recomputes the informative per-role derivation preview from the current
+ * pickerSeeds + derivationConfig via deriveColors() (utils/colorDerivation.ts).
+ * This is display-only metadata for the Clamps/derivation view — it does not
+ * feed engine.run(); the resolved palette itself still comes from run().
+ */
+function regeneratePalette(): void {
+  if (pickerSeeds.value.length === 0) {derivedRoleColors.value = {}; return;}
+  const count = parseInt(schemaName.value.replace('iridis-', ''), 10) || 32;
+  const baseHexes = pickerSeeds.value.map((s) => {return s.hex;});
+  derivedRoleColors.value = deriveColors(baseHexes, derivationConfig.value.roles, count);
+}
+
+/**
+ * Performs the derivation-config mutation for the FSM's SET_DERIVATION effect.
+ * SET_DERIVATION_STRATEGY sends a full config (preset roles); SET_ROLE_DERIVATION
+ * and RESET_ROLE_DERIVATION send a partial `roles` record (a single role) with
+ * strategy forced to 'custom' — merge rather than replace so unrelated roles'
+ * configs survive a single-role edit.
+ */
+function setDerivation(effect: SetDerivationEffectType): void {
+  derivationConfig.value = {
+    'roles':    { ...derivationConfig.value.roles, ...effect.config.roles },
+    'strategy': effect.config.strategy
+  };
+  regeneratePalette();
+}
+registerSetDerivationHandler(setDerivation);
+
 /** Mirrors HeroBanner.vue's `${base}logo.png` resolution — the sample extraction source. */
 function logoUrl(): string {
   const base = useRuntimeConfig().app.baseURL;
@@ -518,11 +558,14 @@ export function useIridis() {
       // by setPaletteParam() via run(effect.value), not through this debounce.
       watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect], schedule, { 'deep': true });
       watch([schemaName, imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
+      watch([pickerSeeds, imageSeeds, schemaName, derivationConfig], regeneratePalette, { 'deep': true });
     }
+    regeneratePalette();
   }
   return {
     'activeSeeds': activeSeeds, 'contrastStrictness': contrastStrictness, 'colorSpace': colorSpace, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
     'cvdPreviewTypes': cvdPreviewTypes,
+    'derivationConfig': derivationConfig, 'derivedRoleColors': derivedRoleColors,
     'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale, 'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
     'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
