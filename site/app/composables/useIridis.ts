@@ -528,6 +528,8 @@ export function useIridis() {
     // so hydration never has to re-theme the page.
     run();
     if (typeof window !== 'undefined') {
+      // Load default sample palette on page init
+      void FromImage.extract('/logo.png');
       // framing is intentionally absent here — its swap is dispatched synchronously
       // by setPaletteParam() via run(effect.value), not through this debounce.
       watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig], schedule, { 'deep': true });
