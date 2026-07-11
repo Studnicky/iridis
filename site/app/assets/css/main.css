@@ -48,6 +48,21 @@ html.is-switching-theme *::after {
 
 .font-display { font-family: var(--font-display); letter-spacing: 0.02em; }
 
+.iridis-logo {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.025em;
+  color: var(--ui-text-highlighted, #fff);
+}
+@media (min-width: 640px) {
+  .iridis-logo {
+    font-size: 3.75rem;
+  }
+}
+
 /* ─── Scrollbars, themed — native scrollbars never inherit --ui-* on their
    own, so every scrollable surface (code panels, carousel card bodies,
    overflow lists) would otherwise show the browser's flat default thumb
@@ -160,6 +175,52 @@ body {
 .float { animation: float 7s ease-in-out infinite; }
 @keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-10px) } }
 .spin-slow { animation: spin 26s linear infinite; }
+
+.hero-orb-field {
+  mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, #000 0%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, #000 0%, transparent 85%);
+}
+.hero-orb:nth-child(1) { width: 7rem; height: 7rem; left: 8%; top: 50%; animation-delay: 0s; opacity: 0.45; }
+.hero-orb:nth-child(2) { width: 10rem; height: 10rem; left: 28%; top: 8%; animation-delay: 0.9s; opacity: 0.45; }
+.hero-orb:nth-child(3) { width: 13rem; height: 13rem; left: 48%; top: 50%; animation-delay: 1.8s; opacity: 0.45; }
+.hero-orb:nth-child(4) { width: 16rem; height: 16rem; left: 68%; top: 8%; animation-delay: 2.7s; opacity: 0.45; }
+.hero-orb:nth-child(5) { width: 19rem; height: 19rem; left: 88%; top: 50%; animation-delay: 3.6s; opacity: 0.45; }
+
+.halo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  animation: halo-drift 30s linear infinite;
+}
+.halo-ring {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle, color-mix(in oklch, var(--c) 75%, transparent) 0%, color-mix(in oklch, var(--c) 30%, transparent) 45%, transparent 68%);
+  mix-blend-mode: screen;
+  filter: blur(5px);
+  opacity: 0.18;
+  animation: halo-pulse 5s ease-in-out infinite;
+}
+.halo-ring:nth-child(1) { width: 5.5rem; height: 5.5rem; animation-delay: 0s; }
+.halo-ring:nth-child(2) { width: 7.9rem; height: 7.9rem; animation-delay: 0.8s; }
+.halo-ring:nth-child(3) { width: 10.3rem; height: 10.3rem; animation-delay: 1.6s; }
+.halo-ring:nth-child(4) { width: 12.7rem; height: 12.7rem; animation-delay: 2.4s; }
+.halo-ring:nth-child(5) { width: 15.1rem; height: 15.1rem; animation-delay: 3.2s; }
+.halo-ring:nth-child(6) { width: 17.5rem; height: 17.5rem; animation-delay: 4.0s; }
+
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.1; transform: scale(0.82); }
+  50%      { opacity: 0.6; transform: scale(1.14); }
+}
+@keyframes halo-drift {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .halo, .halo-ring { animation: none; }
+  .halo-ring { opacity: 0.3; }
+}
 
 /* ── Orbit: three rings, each its own palette role, spinning at independent
    speeds/directions while the whole rig slowly precesses — genuinely three

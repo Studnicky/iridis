@@ -18,7 +18,9 @@ export default defineNuxtConfig({
     { path: '~/components/layout', pathPrefix: false },
   ],
   googleFonts: {
-    display: 'swap',
+    display: 'block',
+    preload: true,
+    download: true,
     families: {
       Orbitron: [500, 700, 900],       // futuristic display
       'Space Grotesk': [400, 500, 700], // headings / body

@@ -33,35 +33,40 @@ function withSemanticHues(schema: any) {
   };
 }
 
-const schema = withSemanticHues(roleSchemaByName['iridis-32'].dark);
-const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => ({ 'invertLightness': false, 'lightnessTarget': {
-  '100': 0.955, '200': 0.915, '300': 0.855, '400': 0.775, '50': 0.985, '500': 0.685,
-  '600': 0.595, '700': 0.505, '800': 0.415, '900': 0.335, '950': 0.235
-}[s]!, 'name': `s${s}` }));
+function generate(framing: 'light' | 'dark'): string {
+  const schema = withSemanticHues(roleSchemaByName['iridis-32'][framing]);
+  const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => ({ 'invertLightness': false, 'lightnessTarget': {
+    '100': 0.955, '200': 0.915, '300': 0.855, '400': 0.775, '50': 0.985, '500': 0.685,
+    '600': 0.595, '700': 0.505, '800': 0.415, '900': 0.335, '950': 0.235
+  }[s]!, 'name': `s${s}` }));
+  const result = engine.run({
+    'colors': ['#7c3aed', '#06b6d4', '#f59e0b', '#ec4899'],
+    'contrast': { 'algorithm': 'apca', 'cvdCorrect': true, 'level': 'Lc' },
+    'metadata': { 'core:variantConfig': VARIANT_CONFIG },
+    'roles': schema,
+    'runtime': { 'colorSpace': 'srgb', 'framing': framing }
+  });
 
-const result = engine.run({
-  'colors': ['#7c3aed', '#06b6d4', '#f59e0b', '#ec4899'],
-  'contrast': { 'algorithm': 'apca', 'cvdCorrect': true, 'level': 'Lc' },
-  'metadata': { 'core:variantConfig': VARIANT_CONFIG },
-  'roles': schema,
-  'runtime': { 'colorSpace': 'srgb', 'framing': 'dark' }
-});
-
-const roleHex: Record<string, string> = {};
-for (const [name, r] of Object.entries(result.roles)) {
-  roleHex[name] = r.hex;
-}
-const scaleHex: Record<string, Record<string, string>> = {};
-for (const s of Tokens.SHADE_KEYS) {
-  const variant = result.variants[`s${s}`];
-  if (variant === undefined) continue;
-  const perShade: Record<string, string> = {};
-  for (const [name, rec] of Object.entries(variant)) {
-    perShade[name] = rec.hex;
+  const roleHex: Record<string, string> = {};
+  for (const [name, r] of Object.entries(result.roles)) { roleHex[name] = r.hex; }
+  const scaleHex: Record<string, Record<string, string>> = {};
+  for (const s of Tokens.SHADE_KEYS) {
+    const variant = result.variants[`s${s}`];
+    if (variant === undefined) continue;
+    const perShade: Record<string, string> = {};
+    for (const [name, rec] of Object.entries(variant)) { perShade[name] = rec.hex; }
+    scaleHex[s] = perShade;
   }
-  scaleHex[s] = perShade;
+
+  const css = Tokens.toCssText(Tokens.mapFromEngine(roleHex, scaleHex));
+  if (framing === 'dark') {
+    return css.replace('html:root, html:root.dark, html:root:not(.dark)', 'html:root.dark');
+  } else {
+    return css.replace('html:root, html:root.dark, html:root:not(.dark)', 'html:root, html:root:not(.dark)');
+  }
 }
 
-const css = Tokens.toCssText(Tokens.mapFromEngine(roleHex, scaleHex));
-fs.writeFileSync('./site/app/assets/css/theme-default.css', css);
+const lightCss = generate('light');
+const darkCss = generate('dark');
+fs.writeFileSync('./site/app/assets/css/theme-default.css', lightCss + '\n' + darkCss);
 console.log('wrote theme-default.css');

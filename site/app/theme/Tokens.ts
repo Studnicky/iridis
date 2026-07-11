@@ -62,8 +62,8 @@ export class Tokens {
     for (const [alias, candidates] of Object.entries(ALIAS_SOURCE)) {
       for (const shade of Tokens.SHADE_KEYS) {
         const perShade = scales[shade];
-        if (perShade === undefined) {continue;}
-        const hex = pick(perShade, candidates);
+        let hex = perShade ? pick(perShade, candidates) : undefined;
+        if (hex === undefined) { hex = pick(roles, candidates); }
         if (hex !== undefined) {tokens[`--ui-color-${alias}-${shade}`] = hex;}
       }
     }
@@ -74,6 +74,15 @@ export class Tokens {
     }
 
     return tokens;
+  }
+
+  /** DOM writer. SSR-guarded; call only in the browser. */
+  static apply(tokens: RoleHexMapType, framing: FramingType): void {
+    if (typeof document === 'undefined') {return;}
+    const root = document.documentElement;
+    for (const [k, v] of Object.entries(tokens)) {root.style.setProperty(k, v);}
+    root.classList.toggle('dark', framing === 'dark');
+    root.dataset.iridisFraming = framing;
   }
 
   /** Serializes engine tokens as a highly specific rule for SSR head injection to override UI framework defaults. */
