@@ -279,6 +279,9 @@ function run(framingOverride?: FramingType): void {
       }
     }
     ingest(state);
+    if (typeof document !== 'undefined') {
+      Tokens.apply(Tokens.mapFromEngine(roles.value, scales.value), targetFraming);
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
   } finally {

@@ -62,8 +62,8 @@ export class Tokens {
     for (const [alias, candidates] of Object.entries(ALIAS_SOURCE)) {
       for (const shade of Tokens.SHADE_KEYS) {
         const perShade = scales[shade];
-        if (perShade === undefined) {continue;}
-        const hex = pick(perShade, candidates);
+        let hex = perShade ? pick(perShade, candidates) : undefined;
+        if (hex === undefined) { hex = pick(roles, candidates); }
         if (hex !== undefined) {tokens[`--ui-color-${alias}-${shade}`] = hex;}
       }
     }

@@ -20,12 +20,9 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
       <div
         v-for="(o, i) in orbs"
         :key="o"
-        class="float absolute rounded-full blur-2xl"
+        class="float absolute rounded-full blur-2xl hero-orb"
         :style="{
-          backgroundColor: `color-mix(in oklch, var(--ui-color-${o}-500) 45%, transparent)`,
-          width: `${7 + i * 3}rem`, height: `${7 + i * 3}rem`,
-          left: `${8 + i * 20}%`, top: `${i % 2 ? 50 : 8}%`,
-          animationDelay: `${i * 0.9}s`, opacity: 0.45,
+          backgroundColor: `color-mix(in oklch, var(--ui-color-${o}-500) 45%, transparent)`
         }"
       />
     </div>
@@ -46,9 +43,7 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
               :key="c"
               class="halo-ring"
               :style="{
-                '--c': `var(--ui-color-${c}-500)`,
-                width: `${5.5 + i * 2.4}rem`, height: `${5.5 + i * 2.4}rem`,
-                animationDelay: `${i * 0.8}s`,
+                '--c': `var(--ui-color-${c}-500)`
               }"
             />
           </div>
@@ -61,10 +56,7 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
         </div>
       </div>
 
-      <h1
-        class="font-display text-5xl font-black uppercase tracking-tight glow-text sm:text-6xl"
-        style="color: var(--ui-text-highlighted, #fff)"
-      >
+      <h1 class="iridis-logo glow-text">
         iridis
       </h1>
       <p class="mx-auto mt-3 max-w-xl text-sm text-muted sm:text-base">
@@ -79,38 +71,4 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
   </section>
 </template>
 
-<style scoped>
-.hero-orb-field {
-  mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, #000 0%, transparent 85%);
-  -webkit-mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, #000 0%, transparent 85%);
-}
-.halo {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  animation: halo-drift 30s linear infinite;
-}
-.halo-ring {
-  position: absolute;
-  border-radius: 9999px;
-  /* soft radial glow that fades outward */
-  background: radial-gradient(circle, color-mix(in oklch, var(--c) 75%, transparent) 0%, color-mix(in oklch, var(--c) 30%, transparent) 45%, transparent 68%);
-  mix-blend-mode: screen;
-  filter: blur(5px);
-  opacity: 0.18;
-  animation: halo-pulse 5s ease-in-out infinite;
-}
-@keyframes halo-pulse {
-  0%, 100% { opacity: 0.1; transform: scale(0.82); }
-  50%      { opacity: 0.6; transform: scale(1.14); }
-}
-@keyframes halo-drift {
-  to { transform: rotate(360deg); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .halo, .halo-ring { animation: none; }
-  .halo-ring { opacity: 0.3; }
-}
-</style>
+
