@@ -2,7 +2,9 @@ export enum IridisUiEffectVariant {
   MUTATE_SEEDS = 'MUTATE_SEEDS',
   PIN_SEED_ROLE = 'PIN_SEED_ROLE',
   SET_PALETTE_PARAM = 'SET_PALETTE_PARAM',
-  EXTRACT_IMAGE = 'EXTRACT_IMAGE'
+  EXTRACT_IMAGE = 'EXTRACT_IMAGE',
+  UPDATE_DIAGRAM_VIEW = 'UPDATE_DIAGRAM_VIEW',
+  UPDATE_CVD_PREVIEW = 'UPDATE_CVD_PREVIEW'
 }
 
 import type { FramingType } from './framing.ts';
@@ -33,4 +35,11 @@ export type IridisUiEffectType =
   | { 'op': 'imgLightnessRange'; 'value': [number, number]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'imgChromaRange'; 'value': [number, number]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'source': 'sample'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
-  | { 'file': File; 'source': 'file'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE };
+  | { 'file': File; 'source': 'file'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
+  | { 'op': 'zoom'; 'factor': number; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
+  | { 'dx': number; 'dy': number; 'op': 'pan'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
+  | { 'op': 'reset'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
+  | { 'op': 'fit'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
+  | { 'op': 'toggleExpand'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
+  | { 'cvdType': string; 'op': 'toggle'; 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }
+  | { 'op': 'clear'; 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW };

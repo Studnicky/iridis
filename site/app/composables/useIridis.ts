@@ -23,6 +23,8 @@ type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEf
 type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>;
 type ExtractImageEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }>;
 type PinSeedRoleEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }>;
+type UpdateDiagramViewEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }>;
+type UpdateCvdPreviewEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>;
 
 import { intakeHexHint } from '../theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
@@ -122,6 +124,7 @@ function withSemanticHues(schema: RoleSchemaInterfaceType): RoleSchemaInterfaceT
 const {
   'registerExtractImageHandler': registerExtractImageHandler, 'registerMutateSeedsHandler': registerMutateSeedsHandler,
   'registerPinSeedRoleHandler': registerPinSeedRoleHandler, 'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
+  'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
   'send': sendUiEvent, 'state': uiState
 } = useIridisUiMachine();
 /** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
@@ -158,11 +161,11 @@ const cvdCorrect = ref<boolean>(false);
  */
 const cvdPreviewTypes = ref<Set<CvdType>>(new Set());
 
-function toggleCvdPreviewType(type: CvdType): void {
-  const next = new Set(cvdPreviewTypes.value);
-  if (next.has(type)) {next.delete(type);} else {next.add(type);}
-  cvdPreviewTypes.value = next;
-}
+/** Diagram view state (zoom level, pan offset, expanded fullscreen mode). */
+const diagramScale = ref<number>(1);
+const diagramTranslateX = ref<number>(0);
+const diagramTranslateY = ref<number>(0);
+const diagramIsExpanded = ref<boolean>(false);
 
 const roles = ref<RoleHexMapType>({});
 const roleViews = ref<RoleViewType[]>([]);
@@ -415,6 +418,47 @@ function setPaletteParam(effect: SetPaletteParamEffectType): void {
 }
 registerSetPaletteParamHandler(setPaletteParam);
 
+/**
+ * Performs diagram view state mutations (zoom, pan, expand/collapse) for the
+ * FSM's UPDATE_DIAGRAM_VIEW effect. MermaidDiagram.vue sends DIAGRAM_* events
+ * rather than mutating scale/translate/isExpanded directly.
+ */
+function updateDiagramView(effect: UpdateDiagramViewEffectType): void {
+  if (effect.op === 'zoom') {
+    diagramScale.value = Math.min(8, Math.max(0.05, diagramScale.value * effect.factor));
+  } else if (effect.op === 'pan') {
+    diagramTranslateX.value += effect.dx;
+    diagramTranslateY.value += effect.dy;
+  } else if (effect.op === 'reset' || effect.op === 'fit') {
+    diagramScale.value = 1;
+    diagramTranslateX.value = 0;
+    diagramTranslateY.value = 0;
+  } else if (effect.op === 'toggleExpand') {
+    diagramIsExpanded.value = !diagramIsExpanded.value;
+  }
+}
+registerUpdateDiagramViewHandler(updateDiagramView);
+
+/**
+ * Performs CVD preview type mutations (toggle/clear) for the FSM's
+ * UPDATE_CVD_PREVIEW effect. CvdVision.vue sends CVD_* events rather than
+ * mutating cvdPreviewTypes directly.
+ */
+function updateCvdPreview(effect: UpdateCvdPreviewEffectType): void {
+  if (effect.op === 'toggle') {
+    const next = new Set(cvdPreviewTypes.value);
+    if (next.has(effect.cvdType as CvdType)) {
+      next.delete(effect.cvdType as CvdType);
+    } else {
+      next.add(effect.cvdType as CvdType);
+    }
+    cvdPreviewTypes.value = next;
+  } else if (effect.op === 'clear') {
+    cvdPreviewTypes.value = new Set();
+  }
+}
+registerUpdateCvdPreviewHandler(updateCvdPreview);
+
 /** Mirrors HeroBanner.vue's `${base}logo.png` resolution — the sample extraction source. */
 function logoUrl(): string {
   const base = useRuntimeConfig().app.baseURL;
@@ -464,7 +508,8 @@ export function useIridis() {
   }
   return {
     'activeSeeds': activeSeeds, 'contrastStrictness': contrastStrictness, 'colorSpace': colorSpace, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
-    'cvdPreviewTypes': cvdPreviewTypes, 'toggleCvdPreviewType': toggleCvdPreviewType,
+    'cvdPreviewTypes': cvdPreviewTypes,
+    'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale, 'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
     'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
     'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'lastImageSrc': lastImageSrc, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
@@ -473,6 +518,6 @@ export function useIridis() {
     'rolesSynthesized': rolesSynthesized,
     'rolesPinned': rolesPinned,
     'rolesDerived': rolesDerived,
-    'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName
+    'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName, 'send': sendUiEvent
   };
 }

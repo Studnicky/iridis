@@ -23,7 +23,14 @@ export enum IridisUiActionType {
   SET_IMAGE_HARMONIZE = 'SET_IMAGE_HARMONIZE',
   SET_IMAGE_LIGHTNESS_RANGE = 'SET_IMAGE_LIGHTNESS_RANGE',
   SET_IMAGE_CHROMA_RANGE = 'SET_IMAGE_CHROMA_RANGE',
-  EXTRACT_IMAGE = 'EXTRACT_IMAGE'
+  EXTRACT_IMAGE = 'EXTRACT_IMAGE',
+  DIAGRAM_ZOOM = 'DIAGRAM_ZOOM',
+  DIAGRAM_PAN = 'DIAGRAM_PAN',
+  DIAGRAM_RESET = 'DIAGRAM_RESET',
+  DIAGRAM_FIT = 'DIAGRAM_FIT',
+  DIAGRAM_TOGGLE_EXPAND = 'DIAGRAM_TOGGLE_EXPAND',
+  CVD_TOGGLE_PREVIEW = 'CVD_TOGGLE_PREVIEW',
+  CVD_CLEAR_PREVIEWS = 'CVD_CLEAR_PREVIEWS'
 }
 
 import type { FramingType } from './framing.ts';
@@ -57,4 +64,11 @@ export type IridisUiEventType =
   | { 'range': [number, number]; 'type': IridisUiActionType.SET_IMAGE_LIGHTNESS_RANGE }
   | { 'range': [number, number]; 'type': IridisUiActionType.SET_IMAGE_CHROMA_RANGE }
   | { 'source': 'sample'; 'type': IridisUiActionType.EXTRACT_IMAGE }
-  | { 'file': File; 'source': 'file'; 'type': IridisUiActionType.EXTRACT_IMAGE };
+  | { 'file': File; 'source': 'file'; 'type': IridisUiActionType.EXTRACT_IMAGE }
+  | { 'factor': number; 'type': IridisUiActionType.DIAGRAM_ZOOM }
+  | { 'dx': number; 'dy': number; 'type': IridisUiActionType.DIAGRAM_PAN }
+  | { 'type': IridisUiActionType.DIAGRAM_RESET }
+  | { 'type': IridisUiActionType.DIAGRAM_FIT }
+  | { 'type': IridisUiActionType.DIAGRAM_TOGGLE_EXPAND }
+  | { 'cvdType': string; 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW }
+  | { 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS };

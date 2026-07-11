@@ -60,6 +60,20 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
           'effects': [event.source === 'file' ? { 'file': event.file, 'source': 'file', 'variant': IridisUiEffectVariant.EXTRACT_IMAGE } : { 'source': 'sample', 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }],
           'state':   state
         };
+      case IridisUiActionType.DIAGRAM_ZOOM:
+        return { 'effects': [{ 'factor': event.factor, 'op': 'zoom', 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }], 'state': state };
+      case IridisUiActionType.DIAGRAM_PAN:
+        return { 'effects': [{ 'dx': event.dx, 'dy': event.dy, 'op': 'pan', 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }], 'state': state };
+      case IridisUiActionType.DIAGRAM_RESET:
+        return { 'effects': [{ 'op': 'reset', 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }], 'state': state };
+      case IridisUiActionType.DIAGRAM_FIT:
+        return { 'effects': [{ 'op': 'fit', 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }], 'state': state };
+      case IridisUiActionType.DIAGRAM_TOGGLE_EXPAND:
+        return { 'effects': [{ 'op': 'toggleExpand', 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }], 'state': state };
+      case IridisUiActionType.CVD_TOGGLE_PREVIEW:
+        return { 'effects': [{ 'cvdType': event.cvdType, 'op': 'toggle', 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }], 'state': state };
+      case IridisUiActionType.CVD_CLEAR_PREVIEWS:
+        return { 'effects': [{ 'op': 'clear', 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }], 'state': state };
       default:
         break;
     }

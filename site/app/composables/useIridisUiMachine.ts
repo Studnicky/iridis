@@ -24,11 +24,14 @@ type MutateSeedsHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': 
 type SetPaletteParamHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>) => void;
 type ExtractImageHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }>) => void;
 type PinSeedRoleHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }>) => void;
+type UpdateDiagramViewHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }>) => void;
+type UpdateCvdPreviewHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>) => void;
 
 /** Mutable — `EffectInterpreter` reads handler keys dynamically on each drain, so filling this in after construction (once useIridis.ts registers it) still wires correctly. */
 const handlers: {
   'EXTRACT_IMAGE'?: ExtractImageHandlerType; 'MUTATE_SEEDS'?: MutateSeedsHandlerType;
-  'PIN_SEED_ROLE'?: PinSeedRoleHandlerType; 'SET_PALETTE_PARAM'?: SetPaletteParamHandlerType
+  'PIN_SEED_ROLE'?: PinSeedRoleHandlerType; 'SET_PALETTE_PARAM'?: SetPaletteParamHandlerType;
+  'UPDATE_DIAGRAM_VIEW'?: UpdateDiagramViewHandlerType; 'UPDATE_CVD_PREVIEW'?: UpdateCvdPreviewHandlerType
 } = {};
 
 const interpreter = EffectInterpreter.create({ 'handlers': handlers, 'machine': new IridisUiMachine() });
@@ -69,10 +72,21 @@ function registerPinSeedRoleHandler(handler: PinSeedRoleHandlerType): void {
   handlers.PIN_SEED_ROLE = handler;
 }
 
+/** Registers the UPDATE_DIAGRAM_VIEW effect handler (zoom/pan/reset diagram view). */
+function registerUpdateDiagramViewHandler(handler: UpdateDiagramViewHandlerType): void {
+  handlers.UPDATE_DIAGRAM_VIEW = handler;
+}
+
+/** Registers the UPDATE_CVD_PREVIEW effect handler (toggle/clear CVD preview types). */
+function registerUpdateCvdPreviewHandler(handler: UpdateCvdPreviewHandlerType): void {
+  handlers.UPDATE_CVD_PREVIEW = handler;
+}
+
 export function useIridisUiMachine() {
   return {
     'registerExtractImageHandler': registerExtractImageHandler, 'registerMutateSeedsHandler': registerMutateSeedsHandler,
     'registerPinSeedRoleHandler': registerPinSeedRoleHandler, 'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
+    'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
     'send': send, 'state': state
   };
 }

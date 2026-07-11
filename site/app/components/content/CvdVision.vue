@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import type { CvdType } from '@studnicky/iridis';
 import { useIridis } from '~/composables/useIridis.ts';
+import { IridisUiActionType } from '~/composables/types/index.ts';
 
 /**
  * The CVD home: preview what the current palette looks like under each color
@@ -11,7 +12,7 @@ import { useIridis } from '~/composables/useIridis.ts';
  * (see useIridis.ts's REQUIRED_COLOR_STAGES), so there is nothing to switch on
  * here, only something to look at.
  */
-const { cvdPreviewTypes, toggleCvdPreviewType, contrastReport } = useIridis();
+const { cvdPreviewTypes, contrastReport, send } = useIridis();
 
 const CVD_TYPES: { value: CvdType; label: string; prevalence: string; description: string }[] = [
   {
@@ -73,7 +74,7 @@ const cvdReport = computed(() => {
           color="neutral"
           variant="ghost"
           size="xs"
-          @click="cvdPreviewTypes = new Set();"
+          @click="send({ 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS })"
         />
       </div>
 
@@ -92,7 +93,7 @@ const cvdReport = computed(() => {
               :color="cvdPreviewTypes.has(t.value) ? 'primary' : 'neutral'"
               :variant="cvdPreviewTypes.has(t.value) ? 'solid' : 'soft'"
               class="min-w-[80px]"
-              @click="toggleCvdPreviewType(t.value)"
+              @click="send({ 'cvdType': t.value, 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW })"
             />
           </div>
           <p class="text-xs text-muted">

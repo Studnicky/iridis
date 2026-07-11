@@ -2,6 +2,8 @@
 import { ref, onMounted, watch } from 'vue';
 import mermaid from 'mermaid/dist/mermaid.esm.min.mjs';
 import { useColorMode } from '#imports';
+import { useIridis } from '~/composables/useIridis.ts';
+import { IridisUiActionType } from '~/composables/types/index.ts';
 
 const props = defineProps<{
   code: string;
@@ -10,14 +12,9 @@ const props = defineProps<{
 const svgContent = ref('');
 const renderId = `mermaid-${Math.random().toString(36).substring(2, 9)}`;
 const colorMode = useColorMode();
+const { diagramScale: scale, diagramTranslateX: translateX, diagramTranslateY: translateY, diagramIsExpanded: isExpanded, send } = useIridis();
 
 const viewportRef = ref<HTMLElement | null>(null);
-const isExpanded = ref(false);
-
-// Pan and Zoom state
-const scale = ref(1);
-const translateX = ref(0);
-const translateY = ref(0);
 
 const resetView = () => {
   if (!viewportRef.value) return;
@@ -37,12 +34,12 @@ const fitToView = () => {
   if (!viewportRef.value) return;
   const svg = viewportRef.value.querySelector('svg');
   if (!svg) return;
-  
+
   const vWidth = viewportRef.value.clientWidth;
   const vHeight = viewportRef.value.clientHeight;
   const sWidth = parseFloat(svg.style.width || svg.getAttribute('width') || '0');
   const sHeight = parseFloat(svg.style.height || svg.getAttribute('height') || '0');
-  
+
   if (sWidth > 0 && sHeight > 0) {
     const scaleX = (vWidth * 0.92) / sWidth;
     const scaleY = (vHeight * 0.92) / sHeight;
@@ -53,7 +50,7 @@ const fitToView = () => {
 };
 
 const toggleExpand = () => {
-  isExpanded.value = !isExpanded.value;
+  send({ 'type': IridisUiActionType.DIAGRAM_TOGGLE_EXPAND });
   // Let the layout settle, then fit
   setTimeout(() => fitToView(), 50);
 };
@@ -68,41 +65,25 @@ onMounted(() => {
 });
 
 const pan = (dx: number, dy: number) => {
-  translateX.value += dx;
-  translateY.value += dy;
-};
-
-const zoomAbout = (factor: number, pivotX: number, pivotY: number) => {
-  const next = Math.min(8, Math.max(0.05, scale.value * factor));
-  const ratio = next / scale.value;
-  translateX.value = pivotX - (pivotX - translateX.value) * ratio;
-  translateY.value = pivotY - (pivotY - translateY.value) * ratio;
-  scale.value = next;
+  send({ 'dx': dx, 'dy': dy, 'type': IridisUiActionType.DIAGRAM_PAN });
 };
 
 const zoom = (factor: number) => {
-  if (!viewportRef.value) return;
-  const vWidth = viewportRef.value.clientWidth;
-  const vHeight = viewportRef.value.clientHeight;
-  zoomAbout(factor, vWidth / 2, vHeight / 2);
+  send({ 'factor': factor, 'type': IridisUiActionType.DIAGRAM_ZOOM });
 };
 
 const handleWheel = (e: WheelEvent) => {
   e.preventDefault();
-  
+
   if (e.shiftKey) {
     // Pan when holding shift
-    pan(-e.deltaX, -e.deltaY);
+    send({ 'dx': -e.deltaX, 'dy': -e.deltaY, 'type': IridisUiActionType.DIAGRAM_PAN });
     return;
   }
-  
+
   // Zoom by default
-  if (!viewportRef.value) return;
-  const rect = viewportRef.value.getBoundingClientRect();
-  const pivotX = e.clientX - rect.left;
-  const pivotY = e.clientY - rect.top;
   const factor = Math.exp(-e.deltaY * 0.0015);
-  zoomAbout(factor, pivotX, pivotY);
+  send({ 'factor': factor, 'type': IridisUiActionType.DIAGRAM_ZOOM });
 };
 
 let isDragging = false;
@@ -121,7 +102,7 @@ const onDrag = (e: MouseEvent) => {
   if (!isDragging) return;
   const dx = e.clientX - lastX;
   const dy = e.clientY - lastY;
-  pan(dx, dy);
+  send({ 'dx': dx, 'dy': dy, 'type': IridisUiActionType.DIAGRAM_PAN });
   lastX = e.clientX;
   lastY = e.clientY;
 };
