@@ -28,6 +28,7 @@ function getRoleAlgorithm(role: RoleType): HueAlgorithm {
 
 function updateAlgorithm(role: RoleType, algorithm: HueAlgorithm): void {
   const current = derivationConfig.value || PRESET_DEFAULTS.automatic;
+  if (!current?.roles) {return;}
   const currentRole = current.roles[role];
   const updated: DerivationConfig = {
     ...current,
@@ -56,7 +57,7 @@ function formatLabel(text: string): string {
         <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-400">{{ formatLabel(role) }}</label>
         <USelect
           :model-value="getRoleAlgorithm(role)"
-          :options="hueAlgorithmOptions"
+          :items="hueAlgorithmOptions"
           value-key="value"
           @update:model-value="updateAlgorithm(role, $event)"
           size="sm"
