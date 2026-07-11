@@ -31,13 +31,9 @@ export enum IridisUiActionType {
   DIAGRAM_FIT = 'DIAGRAM_FIT',
   DIAGRAM_TOGGLE_EXPAND = 'DIAGRAM_TOGGLE_EXPAND',
   CVD_TOGGLE_PREVIEW = 'CVD_TOGGLE_PREVIEW',
-  CVD_CLEAR_PREVIEWS = 'CVD_CLEAR_PREVIEWS',
-  SET_DERIVATION_STRATEGY = 'SET_DERIVATION_STRATEGY',
-  SET_ROLE_DERIVATION = 'SET_ROLE_DERIVATION',
-  RESET_ROLE_DERIVATION = 'RESET_ROLE_DERIVATION'
+  CVD_CLEAR_PREVIEWS = 'CVD_CLEAR_PREVIEWS'
 }
 
-import type { DerivationStrategyPreset, RoleDerivation, RoleType } from './colorDerivation.ts';
 import type { FramingType } from './framing.ts';
 import type { GalleryAlgorithmType } from './galleryAlgorithm.ts';
 import type { ModeType } from './mode.ts';
@@ -77,7 +73,4 @@ export type IridisUiEventType =
   | { 'type': IridisUiActionType.DIAGRAM_FIT }
   | { 'type': IridisUiActionType.DIAGRAM_TOGGLE_EXPAND }
   | { 'cvdType': string; 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW }
-  | { 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS }
-  | { 'strategy': DerivationStrategyPreset; 'type': IridisUiActionType.SET_DERIVATION_STRATEGY }
-  | { 'role': RoleType; 'derivation': RoleDerivation; 'type': IridisUiActionType.SET_ROLE_DERIVATION }
-  | { 'role': RoleType; 'type': IridisUiActionType.RESET_ROLE_DERIVATION };
+  | { 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS };

@@ -27,15 +27,13 @@ type PinSeedRoleHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': 
 type UpdateDiagramViewHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }>) => void;
 type UpdateCvdPreviewHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>) => void;
 type PopulatePickerFromImageHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }>) => void;
-type SetDerivationHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_DERIVATION }>) => void;
 
 /** Mutable — `EffectInterpreter` reads handler keys dynamically on each drain, so filling this in after construction (once useIridis.ts registers it) still wires correctly. */
 const handlers: {
   'EXTRACT_IMAGE'?: ExtractImageHandlerType; 'MUTATE_SEEDS'?: MutateSeedsHandlerType;
   'PIN_SEED_ROLE'?: PinSeedRoleHandlerType; 'SET_PALETTE_PARAM'?: SetPaletteParamHandlerType;
   'UPDATE_DIAGRAM_VIEW'?: UpdateDiagramViewHandlerType; 'UPDATE_CVD_PREVIEW'?: UpdateCvdPreviewHandlerType;
-  'POPULATE_PICKER_FROM_IMAGE'?: PopulatePickerFromImageHandlerType;
-  'SET_DERIVATION'?: SetDerivationHandlerType
+  'POPULATE_PICKER_FROM_IMAGE'?: PopulatePickerFromImageHandlerType
 } = {};
 
 const interpreter = EffectInterpreter.create({ 'handlers': handlers, 'machine': new IridisUiMachine() });
@@ -91,18 +89,12 @@ function registerPopulatePickerFromImageHandler(handler: PopulatePickerFromImage
   handlers.POPULATE_PICKER_FROM_IMAGE = handler;
 }
 
-/** Registers the SET_DERIVATION effect handler (derivation strategy preset or per-role derivation change). */
-function registerSetDerivationHandler(handler: SetDerivationHandlerType): void {
-  handlers.SET_DERIVATION = handler;
-}
-
 export function useIridisUiMachine() {
   return {
     'registerExtractImageHandler': registerExtractImageHandler, 'registerMutateSeedsHandler': registerMutateSeedsHandler,
     'registerPinSeedRoleHandler': registerPinSeedRoleHandler, 'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
     'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
     'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler,
-    'registerSetDerivationHandler': registerSetDerivationHandler,
     'send': send, 'state': state
   };
 }

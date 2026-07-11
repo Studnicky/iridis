@@ -89,13 +89,4 @@ export class Tokens {
     for (const candidates of Object.values(SHORTCUT_SOURCE)) {for (const c of candidates) {names.add(c);}}
     return [...names];
   }
-
-  /** Apply mapped engine tokens as CSS variables to document root. */
-  static apply(tokens: RoleHexMapType): void {
-    if (typeof document === 'undefined') return;
-    const root = document.documentElement;
-    for (const [key, value] of Object.entries(tokens)) {
-      root.style.setProperty(key, value);
-    }
-  }
 }
