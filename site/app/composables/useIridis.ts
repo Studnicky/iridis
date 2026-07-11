@@ -81,7 +81,7 @@ const REQUIRED_COLOR_STAGES = [
 ];
 const REQUIRED_IMAGE_STAGES = [
   'intake:imagePixels', 'gallery:histogram', 'gallery:extract', 'gallery:harmonize',
-  'resolve:roles', 'derive:colors', 'expand:family', 'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
+  'resolve:roles', 'expand:family', 'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
 ];
 
 /** Toggleable contrast checks, in the order they slot in after enforce:contrast. */
