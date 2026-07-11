@@ -23,6 +23,7 @@ export enum IridisUiActionType {
   SET_IMAGE_HARMONIZE = 'SET_IMAGE_HARMONIZE',
   SET_IMAGE_LIGHTNESS_RANGE = 'SET_IMAGE_LIGHTNESS_RANGE',
   SET_IMAGE_CHROMA_RANGE = 'SET_IMAGE_CHROMA_RANGE',
+  SET_DERIVATION_CONFIG = 'SET_DERIVATION_CONFIG',
   EXTRACT_IMAGE = 'EXTRACT_IMAGE',
   POPULATE_PICKER_FROM_IMAGE = 'POPULATE_PICKER_FROM_IMAGE',
   DIAGRAM_ZOOM = 'DIAGRAM_ZOOM',
@@ -37,6 +38,7 @@ export enum IridisUiActionType {
 import type { FramingType } from './framing.ts';
 import type { GalleryAlgorithmType } from './galleryAlgorithm.ts';
 import type { ModeType } from './mode.ts';
+import type { DerivationConfig } from './colorDerivation.ts';
 
 /** Events accepted by the shared UI FSM (mode switching, carousel nav/drag, popover gating, seed edits, palette params). */
 export type IridisUiEventType =
@@ -64,6 +66,7 @@ export type IridisUiEventType =
   | { 'threshold': number; 'type': IridisUiActionType.SET_IMAGE_HARMONIZE }
   | { 'range': [number, number]; 'type': IridisUiActionType.SET_IMAGE_LIGHTNESS_RANGE }
   | { 'range': [number, number]; 'type': IridisUiActionType.SET_IMAGE_CHROMA_RANGE }
+  | { 'config': DerivationConfig; 'type': IridisUiActionType.SET_DERIVATION_CONFIG }
   | { 'source': 'sample'; 'type': IridisUiActionType.EXTRACT_IMAGE }
   | { 'file': File; 'source': 'file'; 'type': IridisUiActionType.EXTRACT_IMAGE }
   | { 'hues': string[]; 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE }
