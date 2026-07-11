@@ -4,10 +4,6 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ## [Unreleased]
 
-## [0.7.0] - 2026-07-10
-
-UI theming polish, component layout refinements, and accessibility improvements.
-
 ### Added
 
 - **Clamps view in carousel** shows seed-to-resolved envelope corrections visually
