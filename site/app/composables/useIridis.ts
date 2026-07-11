@@ -27,6 +27,7 @@ type PinSeedRoleEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEf
 type UpdateDiagramViewEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }>;
 type UpdateCvdPreviewEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>;
 type PopulatePickerFromImageEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }>;
+type NavigateToTargetEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.NAVIGATE_TO_TARGET }>;
 
 import { applyDerivedColors } from '../theme/ApplyDerivedColors.ts';
 import { intakeHexHint } from '../theme/IntakeHexHint.ts';
@@ -34,6 +35,7 @@ import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
 import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
 import { Tokens } from '../theme/Tokens.ts';
 import { useIridisUiMachine } from './useIridisUiMachine.ts';
+import { useNavigationTargets } from './useNavigationTargets.ts';
 
 /** Mirrors CodeBlock.vue's role(...) lookups — the only other place a role is read by name. */
 const CODE_BLOCK_ROLES = [
@@ -130,6 +132,7 @@ const {
   'registerPinSeedRoleHandler': registerPinSeedRoleHandler, 'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
   'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
   'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler,
+  'registerNavigateToTargetHandler': registerNavigateToTargetHandler,
   'send': sendUiEvent, 'state': uiState
 } = useIridisUiMachine();
 /** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
@@ -492,6 +495,26 @@ function populatePickerFromImage(effect: PopulatePickerFromImageEffectType): voi
   pickerSeeds.value = effect.hues.map((hex) => ({ 'hex': hex }));
 }
 registerPopulatePickerFromImageHandler(populatePickerFromImage);
+
+const { 'cardIndex': navigationTargetCardIndex, 'resolve': resolveNavigationTarget } = useNavigationTargets();
+
+/**
+ * Resolves a NAVIGATE_TO_TARGET effect's targetId against the navigation
+ * target table and moves there: a card target re-enters the FSM as
+ * SELECT_CARD (the same transition the ToC bar and carousel dots use); a doc
+ * target scrolls its card into view (docs sit outside carousel state
+ * entirely, so there's no card index to select for them).
+ */
+function navigateToTarget(effect: NavigateToTargetEffectType): void {
+  const target = resolveNavigationTarget(effect.targetId);
+  if (!target) {return;}
+  if (target.kind === 'card') {
+    sendUiEvent({ 'index': navigationTargetCardIndex(target.id), 'type': IridisUiActionType.SELECT_CARD });
+  } else if (typeof document !== 'undefined') {
+    document.getElementById(target.id)?.scrollIntoView({ 'behavior': 'smooth', 'block': 'start' });
+  }
+}
+registerNavigateToTargetHandler(navigateToTarget);
 
 /** Mirrors HeroBanner.vue's `${base}logo.png` resolution — the sample extraction source. */
 function logoUrl(): string {

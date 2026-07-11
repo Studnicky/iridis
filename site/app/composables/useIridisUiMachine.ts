@@ -27,13 +27,14 @@ type PinSeedRoleHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': 
 type UpdateDiagramViewHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }>) => void;
 type UpdateCvdPreviewHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>) => void;
 type PopulatePickerFromImageHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }>) => void;
+type NavigateToTargetHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.NAVIGATE_TO_TARGET }>) => void;
 
 /** Mutable — `EffectInterpreter` reads handler keys dynamically on each drain, so filling this in after construction (once useIridis.ts registers it) still wires correctly. */
 const handlers: {
   'EXTRACT_IMAGE'?: ExtractImageHandlerType; 'MUTATE_SEEDS'?: MutateSeedsHandlerType;
   'PIN_SEED_ROLE'?: PinSeedRoleHandlerType; 'SET_PALETTE_PARAM'?: SetPaletteParamHandlerType;
   'UPDATE_DIAGRAM_VIEW'?: UpdateDiagramViewHandlerType; 'UPDATE_CVD_PREVIEW'?: UpdateCvdPreviewHandlerType;
-  'POPULATE_PICKER_FROM_IMAGE'?: PopulatePickerFromImageHandlerType
+  'POPULATE_PICKER_FROM_IMAGE'?: PopulatePickerFromImageHandlerType; 'NAVIGATE_TO_TARGET'?: NavigateToTargetHandlerType
 } = {};
 
 const interpreter = EffectInterpreter.create({ 'handlers': handlers, 'machine': new IridisUiMachine() });
@@ -89,12 +90,18 @@ function registerPopulatePickerFromImageHandler(handler: PopulatePickerFromImage
   handlers.POPULATE_PICKER_FROM_IMAGE = handler;
 }
 
+/** Registers the NAVIGATE_TO_TARGET effect handler (resolve a navigation-target id and move to it — a carousel SELECT_CARD or a doc-card scroll). */
+function registerNavigateToTargetHandler(handler: NavigateToTargetHandlerType): void {
+  handlers.NAVIGATE_TO_TARGET = handler;
+}
+
 export function useIridisUiMachine() {
   return {
     'registerExtractImageHandler': registerExtractImageHandler, 'registerMutateSeedsHandler': registerMutateSeedsHandler,
     'registerPinSeedRoleHandler': registerPinSeedRoleHandler, 'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
     'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
     'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler,
+    'registerNavigateToTargetHandler': registerNavigateToTargetHandler,
     'send': send, 'state': state
   };
 }

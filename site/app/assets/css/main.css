@@ -8,6 +8,15 @@
   --font-display: "Orbitron", "Space Grotesk", sans-serif;
 }
 
+/* Prose-content anchor links (e.g. "see the Roadmap section") jump between
+   docs cards that sit outside the carousel's FSM-driven state entirely —
+   there's no card index to select. A smooth native scroll is the honest fix:
+   it replaces the jarring instant jump without pretending these are FSM
+   transitions they aren't. */
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   /* engine-driven glow color; falls back before the projector runs */
   --glow: var(--ui-primary, #7c3aed);

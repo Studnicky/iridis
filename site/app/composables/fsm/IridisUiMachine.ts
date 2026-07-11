@@ -78,6 +78,8 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
         return { 'effects': [{ 'cvdType': event.cvdType, 'op': 'toggle', 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }], 'state': state };
       case IridisUiActionType.CVD_CLEAR_PREVIEWS:
         return { 'effects': [{ 'op': 'clear', 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }], 'state': state };
+      case IridisUiActionType.NAVIGATE_TO_TARGET:
+        return { 'effects': [{ 'targetId': event.targetId, 'variant': IridisUiEffectVariant.NAVIGATE_TO_TARGET }], 'state': state };
       default:
         break;
     }
