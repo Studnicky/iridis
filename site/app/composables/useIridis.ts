@@ -511,7 +511,7 @@ function navigateToTarget(effect: NavigateToTargetEffectType): void {
   if (target.kind === 'card') {
     sendUiEvent({ 'index': navigationTargetCardIndex(target.id), 'type': IridisUiActionType.SELECT_CARD });
   } else if (typeof document !== 'undefined') {
-    document.getElementById(target.id)?.scrollIntoView({ 'behavior': 'smooth', 'block': 'start' });
+    document.getElementById(target.id)?.scrollIntoView({ 'behavior': 'smooth', 'block': 'start', 'inline': 'nearest' });
   }
 }
 registerNavigateToTargetHandler(navigateToTarget);
