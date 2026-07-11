@@ -1,0 +1,501 @@
+import { o as useCollection, P as Primitive, n as createContext, g as getActiveElement } from './server.mjs';
+import { R as RovingFocusItem_default, a as RovingFocusGroup_default, M as MAP_KEY_TO_FOCUS_INTENT } from './RovingFocusItem-DDD-48Oz.mjs';
+import { u as useDirection } from './useDirection-D6CyCyua.mjs';
+import { defineComponent, computed, openBlock, createBlock, unref, withCtx, createVNode, mergeProps, withModifiers, withKeys, renderSlot, toRefs, ref, nextTick } from 'vue';
+import { refAutoReset } from '@vueuse/shared';
+import { createEventHook, useVModel } from '@vueuse/core';
+import { r as isEqual } from '../nitro/nitro.mjs';
+
+function findValuesBetween(array, start, end) {
+  const startIndex = array.findIndex((i) => isEqual(i, start));
+  const endIndex = array.findIndex((i) => isEqual(i, end));
+  if (startIndex === -1 || endIndex === -1) return [];
+  const [minIndex, maxIndex] = [startIndex, endIndex].sort((a, b) => a - b);
+  return array.slice(minIndex, maxIndex + 1);
+}
+function handleAndDispatchCustomEvent(name, handler, detail) {
+  const target = detail.originalEvent.target;
+  const event = new CustomEvent(name, {
+    bubbles: false,
+    cancelable: true,
+    detail
+  });
+  if (handler) target.addEventListener(name, handler, { once: true });
+  target.dispatchEvent(event);
+}
+function useSelectionBehavior(modelValue, props) {
+  const firstValue = ref();
+  const onSelectItem = (val, condition) => {
+    if (props.multiple && Array.isArray(modelValue.value)) if (props.selectionBehavior === "replace") {
+      modelValue.value = [val];
+      firstValue.value = val;
+    } else {
+      const index = modelValue.value.findIndex((v) => condition(v));
+      if (index !== -1) modelValue.value = modelValue.value.filter((_, i) => i !== index);
+      else modelValue.value = [...modelValue.value, val];
+    }
+    else if (props.selectionBehavior === "replace") modelValue.value = { ...val };
+    else if (!Array.isArray(modelValue.value) && condition(modelValue.value)) modelValue.value = void 0;
+    else modelValue.value = { ...val };
+    return modelValue.value;
+  };
+  function handleMultipleReplace(intent, currentElement, getItems, options) {
+    if (!firstValue?.value || !props.multiple || !Array.isArray(modelValue.value)) return;
+    const collection = getItems().filter((i) => i.ref.dataset.disabled !== "");
+    const lastValue = collection.find((i) => i.ref === currentElement)?.value;
+    if (!lastValue) return;
+    let value = null;
+    switch (intent) {
+      case "prev":
+      case "next": {
+        value = findValuesBetween(options, firstValue.value, lastValue);
+        break;
+      }
+      case "first": {
+        value = findValuesBetween(options, firstValue.value, options?.[0]);
+        break;
+      }
+      case "last": {
+        value = findValuesBetween(options, firstValue.value, options.at(-1));
+        break;
+      }
+    }
+    modelValue.value = value;
+  }
+  return {
+    firstValue,
+    onSelectItem,
+    handleMultipleReplace
+  };
+}
+function useTypeahead(callback) {
+  const search = refAutoReset("", 1e3);
+  const handleTypeaheadSearch = (key, items) => {
+    search.value = search.value + key;
+    {
+      const currentItem = getActiveElement();
+      const itemsWithTextValue = items.map((item) => ({
+        ...item,
+        textValue: item.value?.textValue ?? item.ref.textContent?.trim() ?? ""
+      }));
+      const currentMatch = itemsWithTextValue.find((item) => item.ref === currentItem);
+      const values = itemsWithTextValue.map((item) => item.textValue);
+      const nextMatch = getNextMatch(values, search.value, currentMatch?.textValue);
+      const newItem = itemsWithTextValue.find((item) => item.textValue === nextMatch);
+      if (newItem) newItem.ref.focus();
+      return newItem?.ref;
+    }
+  };
+  const resetTypeahead = () => {
+    search.value = "";
+  };
+  return {
+    search,
+    handleTypeaheadSearch,
+    resetTypeahead
+  };
+}
+function wrapArray(array, startIndex) {
+  return array.map((_, index) => array[(startIndex + index) % array.length]);
+}
+function getNextMatch(values, search, currentMatch) {
+  const isRepeated = search.length > 1 && Array.from(search).every((char) => char === search[0]);
+  const normalizedSearch = isRepeated ? search[0] : search;
+  const currentMatchIndex = currentMatch ? values.indexOf(currentMatch) : -1;
+  let wrappedValues = wrapArray(values, Math.max(currentMatchIndex, 0));
+  const excludeCurrentMatch = normalizedSearch.length === 1;
+  if (excludeCurrentMatch) wrappedValues = wrappedValues.filter((v) => v !== currentMatch);
+  const nextMatch = wrappedValues.find((value) => value.toLowerCase().startsWith(normalizedSearch.toLowerCase()));
+  return nextMatch !== currentMatch ? nextMatch : void 0;
+}
+function flatten(items) {
+  return items.reduce((acc, item) => {
+    acc.push(item);
+    if (item.children) acc.push(...flatten(item.children));
+    return acc;
+  }, []);
+}
+const [injectTreeRootContext, provideTreeRootContext] = /* @__PURE__ */ createContext("TreeRoot");
+var TreeRoot_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "TreeRoot",
+  props: {
+    modelValue: {
+      type: null,
+      required: false
+    },
+    defaultValue: {
+      type: null,
+      required: false
+    },
+    items: {
+      type: Array,
+      required: false
+    },
+    expanded: {
+      type: Array,
+      required: false
+    },
+    defaultExpanded: {
+      type: Array,
+      required: false
+    },
+    getKey: {
+      type: Function,
+      required: true
+    },
+    getChildren: {
+      type: Function,
+      required: false,
+      default: (val) => val.children
+    },
+    selectionBehavior: {
+      type: String,
+      required: false,
+      default: "toggle"
+    },
+    multiple: {
+      type: Boolean,
+      required: false,
+      skipCheck: true
+    },
+    dir: {
+      type: String,
+      required: false
+    },
+    disabled: {
+      type: Boolean,
+      required: false
+    },
+    propagateSelect: {
+      type: Boolean,
+      required: false
+    },
+    bubbleSelect: {
+      type: Boolean,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "ul"
+    }
+  },
+  emits: ["update:modelValue", "update:expanded"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const { items, multiple, disabled, propagateSelect, dir: propDir, bubbleSelect } = toRefs(props);
+    const { handleTypeaheadSearch } = useTypeahead();
+    const dir = useDirection(propDir);
+    const rovingFocusGroupRef = ref();
+    const isVirtual = ref(false);
+    const virtualKeydownHook = createEventHook();
+    const modelValue = useVModel(props, "modelValue", emits, {
+      defaultValue: props.defaultValue ?? (multiple.value ? [] : void 0),
+      passive: true,
+      deep: true
+    });
+    const expanded = useVModel(props, "expanded", emits, {
+      defaultValue: props.defaultExpanded ?? [],
+      passive: props.expanded === void 0,
+      deep: true
+    });
+    const { onSelectItem, handleMultipleReplace } = useSelectionBehavior(modelValue, props);
+    const selectedKeys = computed(() => {
+      if (multiple.value && Array.isArray(modelValue.value)) return modelValue.value.map((i) => props.getKey(i));
+      else return [props.getKey(modelValue.value ?? {})];
+    });
+    function flattenItems(items$1, level = 1, parentItem) {
+      return items$1.reduce((acc, item, index) => {
+        const key = props.getKey(item);
+        const children = props.getChildren(item);
+        const isExpanded = expanded.value.includes(key);
+        const flattenedItem = {
+          _id: key,
+          value: item,
+          index,
+          level,
+          parentItem,
+          hasChildren: !!children,
+          bind: {
+            "value": item,
+            level,
+            "aria-setsize": items$1.length,
+            "aria-posinset": index + 1
+          }
+        };
+        acc.push(flattenedItem);
+        if (children && isExpanded) acc.push(...flattenItems(children, level + 1, item));
+        return acc;
+      }, []);
+    }
+    const expandedItems = computed(() => {
+      const items$1 = props.items;
+      expanded.value.map((i) => i);
+      return flattenItems(items$1 ?? []);
+    });
+    function handleKeydown(event) {
+      if (isVirtual.value) virtualKeydownHook.trigger(event);
+      else {
+        const collections = rovingFocusGroupRef.value?.getItems() ?? [];
+        handleTypeaheadSearch(event.key, collections);
+      }
+    }
+    function handleKeydownNavigation(event) {
+      if (isVirtual.value) return;
+      const intent = MAP_KEY_TO_FOCUS_INTENT[event.key];
+      nextTick(() => {
+        handleMultipleReplace(intent, getActiveElement(), rovingFocusGroupRef.value?.getItems, expandedItems.value.map((i) => i.value));
+      });
+    }
+    function handleBubbleSelect(item) {
+      if (item.parentItem != null && Array.isArray(modelValue.value) && props.multiple) {
+        const parentItem = expandedItems.value.find((i) => {
+          return item.parentItem != null && props.getKey(i.value) === props.getKey(item.parentItem);
+        });
+        if (parentItem != null) {
+          const areAllChilredOfParentSelected = props.getChildren(parentItem.value)?.every((i) => modelValue.value.find((v) => props.getKey(v) === props.getKey(i)));
+          if (areAllChilredOfParentSelected) modelValue.value = [...modelValue.value, parentItem.value];
+          else modelValue.value = modelValue.value.filter((v) => props.getKey(v) !== props.getKey(parentItem.value));
+          handleBubbleSelect(parentItem);
+        }
+      }
+    }
+    provideTreeRootContext({
+      modelValue,
+      selectedKeys,
+      onSelect: (val) => {
+        const condition = (baseValue) => props.getKey(baseValue ?? {}) === props.getKey(val);
+        const exist = props.multiple && Array.isArray(modelValue.value) ? modelValue.value?.findIndex(condition) !== -1 : void 0;
+        onSelectItem(val, condition);
+        if (props.bubbleSelect && props.multiple && Array.isArray(modelValue.value)) {
+          const item = expandedItems.value.find((i) => {
+            return props.getKey(i.value) === props.getKey(val);
+          });
+          if (item != null) handleBubbleSelect(item);
+        }
+        if (props.propagateSelect && props.multiple && Array.isArray(modelValue.value)) {
+          const children = flatten(props.getChildren(val) ?? []);
+          if (exist) modelValue.value = [...modelValue.value].filter((i) => !children.some((child) => props.getKey(i ?? {}) === props.getKey(child)));
+          else modelValue.value = [...modelValue.value, ...children];
+        }
+      },
+      expanded,
+      onToggle(val) {
+        const children = val ? props.getChildren(val) : void 0;
+        if (!children) return;
+        const key = props.getKey(val) ?? val;
+        if (expanded.value.includes(key)) expanded.value = expanded.value.filter((val$1) => val$1 !== key);
+        else expanded.value = [...expanded.value, key];
+      },
+      getKey: props.getKey,
+      getChildren: props.getChildren,
+      items,
+      expandedItems,
+      disabled,
+      multiple,
+      dir,
+      propagateSelect,
+      bubbleSelect,
+      isVirtual,
+      virtualKeydownHook,
+      handleMultipleReplace
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(RovingFocusGroup_default), {
+        ref_key: "rovingFocusGroupRef",
+        ref: rovingFocusGroupRef,
+        "as-child": "",
+        orientation: "vertical",
+        dir: unref(dir)
+      }, {
+        default: withCtx(() => [createVNode(unref(Primitive), {
+          role: "tree",
+          as: _ctx.as,
+          "as-child": _ctx.asChild,
+          "aria-multiselectable": unref(multiple) ? true : void 0,
+          onKeydown: [handleKeydown, withKeys(withModifiers(handleKeydownNavigation, ["shift"]), ["up", "down"])]
+        }, {
+          default: withCtx(() => [renderSlot(_ctx.$slots, "default", {
+            flattenItems: expandedItems.value,
+            modelValue: unref(modelValue),
+            expanded: unref(expanded)
+          })]),
+          _: 3
+        }, 8, [
+          "as",
+          "as-child",
+          "aria-multiselectable",
+          "onKeydown"
+        ])]),
+        _: 3
+      }, 8, ["dir"]);
+    };
+  }
+});
+var TreeRoot_default = TreeRoot_vue_vue_type_script_setup_true_lang_default;
+const TREE_SELECT = "tree.select";
+const TREE_TOGGLE = "tree.toggle";
+var TreeItem_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "TreeItem",
+  props: {
+    value: {
+      type: null,
+      required: true
+    },
+    level: {
+      type: Number,
+      required: true
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "li"
+    }
+  },
+  emits: ["select", "toggle"],
+  setup(__props, { expose: __expose, emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const rootContext = injectTreeRootContext();
+    const { getItems } = useCollection();
+    const hasChildren = computed(() => !!rootContext.getChildren(props.value));
+    const isExpanded = computed(() => {
+      const key = rootContext.getKey(props.value);
+      return rootContext.expanded.value.includes(key);
+    });
+    const isSelected = computed(() => {
+      const key = rootContext.getKey(props.value);
+      return rootContext.selectedKeys.value.includes(key);
+    });
+    const isIndeterminate = computed(() => {
+      if (rootContext.bubbleSelect.value && hasChildren.value && Array.isArray(rootContext.modelValue.value)) {
+        const children = flatten(rootContext.getChildren(props.value) || []);
+        return children.some((child) => rootContext.modelValue.value.find((v) => rootContext.getKey(v) === rootContext.getKey(child))) && !children.every((child) => rootContext.modelValue.value.find((v) => rootContext.getKey(v) === rootContext.getKey(child)));
+      } else if (rootContext.propagateSelect.value && isSelected.value && hasChildren.value && Array.isArray(rootContext.modelValue.value)) {
+        const children = flatten(rootContext.getChildren(props.value) || []);
+        return !children.every((child) => rootContext.modelValue.value.find((v) => rootContext.getKey(v) === rootContext.getKey(child)));
+      } else return void 0;
+    });
+    function handleKeydownRight(ev) {
+      if (!hasChildren.value) return;
+      if (isExpanded.value) {
+        const collection = getItems().map((i) => i.ref);
+        const currentElement = getActiveElement();
+        const currentIndex = collection.indexOf(currentElement);
+        const list = [...collection].slice(currentIndex);
+        const nextElement = list.find((el) => Number(el.getAttribute("data-indent")) === props.level + 1);
+        if (nextElement) nextElement.focus();
+      } else handleToggleCustomEvent(ev);
+    }
+    function handleKeydownLeft(ev) {
+      if (isExpanded.value) handleToggleCustomEvent(ev);
+      else {
+        const collection = getItems().map((i) => i.ref);
+        const currentElement = getActiveElement();
+        const currentIndex = collection.indexOf(currentElement);
+        const list = [...collection].slice(0, currentIndex).reverse();
+        const parentElement = list.find((el) => Number(el.getAttribute("data-indent")) === props.level - 1);
+        if (parentElement) parentElement.focus();
+      }
+    }
+    async function handleSelect(ev) {
+      emits("select", ev);
+      if (ev?.defaultPrevented) return;
+      rootContext.onSelect(props.value);
+    }
+    async function handleToggle(ev) {
+      emits("toggle", ev);
+      if (ev?.defaultPrevented) return;
+      rootContext.onToggle(props.value);
+    }
+    async function handleSelectCustomEvent(ev) {
+      if (!ev) return;
+      const eventDetail = {
+        originalEvent: ev,
+        value: props.value,
+        isExpanded: isExpanded.value,
+        isSelected: isSelected.value
+      };
+      handleAndDispatchCustomEvent(TREE_SELECT, handleSelect, eventDetail);
+    }
+    async function handleToggleCustomEvent(ev) {
+      if (!ev) return;
+      const eventDetail = {
+        originalEvent: ev,
+        value: props.value,
+        isExpanded: isExpanded.value,
+        isSelected: isSelected.value
+      };
+      handleAndDispatchCustomEvent(TREE_TOGGLE, handleToggle, eventDetail);
+    }
+    __expose({
+      isExpanded,
+      isSelected,
+      isIndeterminate,
+      handleToggle: () => rootContext.onToggle(props.value),
+      handleSelect: () => rootContext.onSelect(props.value)
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(RovingFocusItem_default), {
+        "as-child": "",
+        value: _ctx.value,
+        "allow-shift-key": ""
+      }, {
+        default: withCtx(() => [createVNode(unref(Primitive), mergeProps(_ctx.$attrs, {
+          role: "treeitem",
+          as: _ctx.as,
+          "as-child": _ctx.asChild,
+          "aria-selected": isSelected.value,
+          "aria-expanded": hasChildren.value ? isExpanded.value : void 0,
+          "aria-level": _ctx.level,
+          "data-indent": _ctx.level,
+          "data-selected": isSelected.value ? "" : void 0,
+          "data-expanded": isExpanded.value ? "" : void 0,
+          onKeydown: [
+            withKeys(withModifiers(handleSelectCustomEvent, ["self", "prevent"]), ["enter", "space"]),
+            _cache[0] || (_cache[0] = withKeys(withModifiers((ev) => unref(rootContext).dir.value === "ltr" ? handleKeydownRight(ev) : handleKeydownLeft(ev), ["prevent"]), ["right"])),
+            _cache[1] || (_cache[1] = withKeys(withModifiers((ev) => unref(rootContext).dir.value === "ltr" ? handleKeydownLeft(ev) : handleKeydownRight(ev), ["prevent"]), ["left"]))
+          ],
+          onClick: _cache[2] || (_cache[2] = withModifiers((ev) => {
+            handleSelectCustomEvent(ev);
+            handleToggleCustomEvent(ev);
+          }, ["stop"]))
+        }), {
+          default: withCtx(() => [renderSlot(_ctx.$slots, "default", {
+            isExpanded: isExpanded.value,
+            isSelected: isSelected.value,
+            isIndeterminate: isIndeterminate.value,
+            handleSelect: () => unref(rootContext).onSelect(_ctx.value),
+            handleToggle: () => unref(rootContext).onToggle(_ctx.value)
+          })]),
+          _: 3
+        }, 16, [
+          "as",
+          "as-child",
+          "aria-selected",
+          "aria-expanded",
+          "aria-level",
+          "data-indent",
+          "data-selected",
+          "data-expanded",
+          "onKeydown"
+        ])]),
+        _: 3
+      }, 8, ["value"]);
+    };
+  }
+});
+var TreeItem_default = TreeItem_vue_vue_type_script_setup_true_lang_default;
+
+export { TreeItem_default as T, TreeRoot_default as a, getNextMatch as g, handleAndDispatchCustomEvent as h, injectTreeRootContext as i, useTypeahead as u };
+//# sourceMappingURL=TreeItem-BEtChUhZ.mjs.map

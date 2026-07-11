@@ -1,0 +1,27 @@
+{
+  "contextPercentage": 18,
+  "updatedAt": "2026-05-19T17:50:22.300Z",
+  "lastBranch": "develop",
+  "selectedLinearKey": null,
+  "promptSummary": "Yes do it release it to main and publish",
+  "taskClassification": "unknown",
+  "taskKeywords": [
+    "yes",
+    "release",
+    "main",
+    "publish"
+  ],
+  "compactionGrepCount": 0,
+  "compactionGrepPatterns": [],
+  "sessionName": null,
+  "promptCount": 7,
+  "confidence": 85,
+  "confidenceUpdatedAt": "2026-05-19T17:36:30.186Z",
+  "accessedPaths": [
+    "/Users/studs/Workspace/iridis/docs/.vitepress/theme/components/ImageToTheme.vue",
+    "/Users/studs/Workspace/iridis/docs/.vitepress/theme/components/BuildResolvedRoles.vue",
+    "/Users/studs/Workspace/iridis/CHANGELOG.md",
+    "/Users/studs/Workspace/iridis/packages/core/package.json"
+  ],
+  "githubState": null
+}

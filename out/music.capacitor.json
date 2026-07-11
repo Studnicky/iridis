@@ -1,0 +1,22 @@
+{
+  "statusBar": {
+    "backgroundColor": "#d2c9fb",
+    "style": "LIGHT",
+    "overlay": false
+  },
+  "theme": {
+    "primary": "#e5e0fe",
+    "primaryDark": "#e5e0fe",
+    "primaryLight": "#e5e0fe",
+    "accent": "#8b5cf6",
+    "background": "#e5e0fe",
+    "surface": "#d2c9fb",
+    "error": "#b00020",
+    "warning": "#8b5cf6",
+    "success": "#10b981",
+    "info": "#8b5cf6",
+    "text": "#28015b",
+    "textOnPrimary": "#28015b",
+    "textOnAccent": "#28015b"
+  }
+}

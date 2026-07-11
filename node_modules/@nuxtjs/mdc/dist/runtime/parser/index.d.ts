@@ -1,0 +1,13 @@
+import type { Options as VFileOptions } from 'vfile';
+import type { MDCParseOptions, MDCParserResult, MDCRoot } from '@nuxtjs/mdc';
+export declare const createParseProcessor: (inlineOptions?: MDCParseOptions) => Promise<import("unified").Processor<undefined, undefined, undefined, undefined, undefined>>;
+export declare const createMarkdownParser: (inlineOptions?: MDCParseOptions) => Promise<(md: string, { fileOptions }?: {
+    fileOptions?: VFileOptions;
+}) => Promise<MDCParserResult>>;
+export declare const parseMarkdown: (md: string, markdownParserOptions?: MDCParseOptions, parseOptions?: {
+    fileOptions?: VFileOptions;
+}) => Promise<MDCParserResult>;
+export declare function contentHeading(body: MDCRoot): {
+    title: string;
+    description: string;
+};

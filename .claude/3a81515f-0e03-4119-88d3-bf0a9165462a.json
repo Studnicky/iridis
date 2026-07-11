@@ -1,0 +1,43 @@
+{
+  "contextPercentage": 90,
+  "updatedAt": "2026-07-09T14:55:05.915Z",
+  "lastBranch": "develop",
+  "selectedLinearKey": null,
+  "promptSummary": "[Image #2] <- this needs UI overhaul to layout and respect …",
+  "taskClassification": "unknown",
+  "taskKeywords": [
+    "[image",
+    "#2]",
+    "needs",
+    "overhaul",
+    "layout",
+    "respect",
+    "concepts",
+    "gestalt",
+    "fluidity",
+    "alignment",
+    "balance",
+    "inteded",
+    "look",
+    "feel",
+    "also",
+    "broke",
+    "button",
+    "opening",
+    "image",
+    "selection"
+  ],
+  "compactionGrepCount": 0,
+  "compactionGrepPatterns": [],
+  "sessionName": null,
+  "promptCount": 6,
+  "accessedPaths": [
+    "/Users/studs/Workspace/iridis/site/app/pages/index.vue",
+    "/Users/studs/Workspace/iridis/.gitignore",
+    "/Users/studs/Workspace/iridis/site/app/components/content/PaletteControls.vue",
+    "/Users/studs/Workspace/iridis/README.md",
+    "/Users/studs/Workspace/iridis/CHANGELOG.md",
+    "/Users/studs/Workspace/iridis/packages/cli/package.json"
+  ],
+  "githubState": null
+}

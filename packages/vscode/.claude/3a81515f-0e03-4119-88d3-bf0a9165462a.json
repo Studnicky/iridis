@@ -1,0 +1,27 @@
+{
+  "accessedPaths": [
+    "/Users/studs/Workspace/iridis/site/app/app.vue",
+    "/Users/studs/Workspace/iridis/site/app/assets/css/main.css",
+    "/Users/studs/Workspace/iridis/site/app/components/layout/AmbientBackground.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/CodeBlock.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/MultiOutput.vue"
+  ],
+  "updatedAt": "2026-07-09T14:29:19.644Z",
+  "promptSummary": "Ship it. Full git flow to release after reconciling all wor…",
+  "taskClassification": "unknown",
+  "taskKeywords": [
+    "ship",
+    "full",
+    "git",
+    "flow",
+    "release",
+    "after",
+    "reconciling",
+    "all",
+    "worktrees/stashes/branches"
+  ],
+  "compactionGrepCount": 0,
+  "compactionGrepPatterns": [],
+  "sessionName": null,
+  "promptCount": 5
+}

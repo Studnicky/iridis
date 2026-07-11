@@ -1,0 +1,19709 @@
+import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};import { defineComponent, withAsyncContext, mergeProps, withCtx, openBlock, createBlock, createVNode, createCommentVNode, unref, toDisplayString, Fragment, renderList, computed, renderSlot, useSlots, createTextVNode, ref, watch, resolveDirective, withModifiers, withDirectives, toRaw, toRef, useTemplateRef, resolveDynamicComponent, useModel, toRefs, withKeys, mergeModels, inject, useId, provide, useAttrs, resolveComponent, defineAsyncComponent, createElementBlock, normalizeProps, guardReactiveProps, Teleport, reactive, normalizeStyle, h, cloneVNode, nextTick, watchEffect, getCurrentInstance, toValue, createElementVNode, watchPostEffect, toHandlers, Text, Comment, mergeDefaults, useSSRContext } from 'vue';
+import { ssrRenderAttrs, ssrRenderComponent, ssrRenderList, ssrInterpolate, ssrRenderSlot, ssrRenderClass, ssrRenderStyle, ssrRenderAttr, ssrGetDirectiveProps, ssrRenderVNode } from 'vue/server-renderer';
+import { ac as useAsyncData, ab as tryUseNuxtApp, _ as _export_sfc, z as useComponentProps, B as useAppConfig, C as tv, P as Primitive, w as useIridisUiMachine, x as useIridis, y as useRuntimeConfig, U as _sfc_main$a$1, G as _sfc_main$f$1, $ as useToast, a0 as _sfc_main$9$1, a1 as coreTasks, a2 as intakeHexHint, a3 as pinDerivedRoles, a4 as contrastPlugin, a5 as COLOR_PIPELINE, a6 as OPTIONAL_STAGE_NAMES, a7 as roleSchemaByName, D as useForwardProps, H as usePortal, F as useFormField, I as useFieldGroup, J as useComponentIcons, K as isArrayOfArray, L as _sfc_main$d$1, M as FieldGroupReset, N as get$1, O as _sfc_main$e$1, S as useLocale, V as VisuallyHidden_default, W as formErrorsInjectionKey, X as formInputsInjectionKey, Y as inputIdInjectionKey, Z as formFieldInjectionKey, e as isNullish, o as useCollection, Q as looseToNumber, d as useForwardExpose, R as getDisplayValue, T as Teleport_default, p as Presence_default, q as injectTooltipProviderContext, g as getActiveElement, aa as Engine, n as createContext, b as useForwardProps$1, c as useEmitAsProps, i as injectConfigProviderContext, A as AUTOFOCUS_ON_MOUNT, f as focusFirst$1, h as getTabbableCandidates, j as focus, k as AUTOFOCUS_ON_UNMOUNT, m as usePrimitiveElement, r as luminance$1, a8 as ensureContrast, a9 as hueShift, s as colorRecordFactory, E as EVENT_OPTIONS, l as getTabbableEdges, t as clamp01, v as clamp$1 } from './server.mjs';
+import { reactivePick, createReusableTemplate, createRef, useVModel, useParentElement, refAutoReset, unrefElement, useTimeoutFn, useMounted, onKeyStroke, useResizeObserver, createSharedComposable, useEventListener, computedEager, createGlobalState } from '@vueuse/core';
+import { _ as _sfc_main$z } from './Tabs-Co96UC_3.mjs';
+import { u as useDirection } from './useDirection-D6CyCyua.mjs';
+import { offset, flip, shift, limitShift, size, arrow, hide, useFloating, autoUpdate } from '@floating-ui/vue';
+import { isClient, tryOnBeforeUnmount, isIOS, refAutoReset as refAutoReset$1, tryOnScopeDispose, createEventHook } from '@vueuse/shared';
+import { G as pascalCase, H as kebabCase, C as withoutTrailingSlash, l as defu, I as upperFirst, r as isEqual, a as destr, J as getRequestHeaders } from '../nitro/nitro.mjs';
+import { hideOthers } from 'aria-hidden';
+import { T as TreeItem_default, a as TreeRoot_default, u as useTypeahead, i as injectTreeRootContext, g as getNextMatch, h as handleAndDispatchCustomEvent } from './TreeItem-BEtChUhZ.mjs';
+import { u as useId$1 } from './useId-DlF9G45c.mjs';
+import { _ as _sfc_main$A } from './Kbd-D12chYH3.mjs';
+import { _ as _sfc_main$y } from './Badge-BckZTFui.mjs';
+import { useVueTable, getExpandedRowModel, getSortedRowModel, getFilteredRowModel, getCoreRowModel, FlexRender } from '@tanstack/vue-table';
+import { useVirtualizer } from '@tanstack/vue-virtual';
+import { A as AccordionRoot_default, a as AccordionItem_default, b as AccordionHeader_default, c as AccordionTrigger_default, d as AccordionContent_default } from './AccordionTrigger-CJcLvdgk.mjs';
+import { M as MAP_KEY_TO_FOCUS_INTENT } from './RovingFocusItem-DDD-48Oz.mjs';
+import { createHighlighter } from 'shiki';
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+import { ModuleError } from '@studnicky/errors';
+import { Logger, ConsoleTransport } from '@studnicky/logger';
+import { find, html } from 'property-information';
+import { f as flatUnwrap, n as nodeTextContent } from './node-CIB8iVlG.mjs';
+import { toHast } from 'minimark/hast';
+import 'vue-router';
+import '@iconify/vue';
+import 'tailwindcss/colors';
+import 'tailwind-variants';
+import '@iconify/utils/lib/css/icon';
+import '@studnicky/json';
+import '@studnicky/fsm';
+import '../routes/renderer.mjs';
+import 'vue-bundle-renderer/runtime';
+import 'unhead/server';
+import 'devalue';
+import 'unhead/utils';
+import 'node:http';
+import 'node:https';
+import 'node:events';
+import 'node:buffer';
+import 'node:fs';
+import 'node:path';
+import 'node:crypto';
+import 'node:url';
+import '@iconify/utils';
+import 'consola';
+import 'better-sqlite3';
+import './TabsTrigger-D-Z4Hpql.mjs';
+import './CollapsibleTrigger-Ci7Nuceh.mjs';
+
+function clamp(value, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY) {
+  return Math.min(max, Math.max(min, value));
+}
+const useBodyLockStackCount = createSharedComposable(() => {
+  const map = ref(/* @__PURE__ */ new Map());
+  const initialOverflow = ref();
+  const locked = computed(() => {
+    for (const value of map.value.values()) if (value) return true;
+    return false;
+  });
+  const context2 = injectConfigProviderContext({ scrollBody: ref(true) });
+  let stopTouchMoveListener = null;
+  const resetBodyStyle = () => {
+    (void 0).body.style.paddingRight = "";
+    (void 0).body.style.marginRight = "";
+    (void 0).body.style.pointerEvents = "";
+    (void 0).documentElement.style.removeProperty("--scrollbar-width");
+    (void 0).body.style.overflow = initialOverflow.value ?? "";
+    isIOS && stopTouchMoveListener?.();
+    initialOverflow.value = void 0;
+  };
+  watch(locked, (val, oldVal) => {
+    if (!isClient) return;
+    if (!val) {
+      if (oldVal) resetBodyStyle();
+      return;
+    }
+    if (initialOverflow.value === void 0) initialOverflow.value = (void 0).body.style.overflow;
+    const verticalScrollbarWidth = (void 0).innerWidth - (void 0).documentElement.clientWidth;
+    const defaultConfig = {
+      padding: verticalScrollbarWidth,
+      margin: 0
+    };
+    const config = context2.scrollBody?.value ? typeof context2.scrollBody.value === "object" ? defu({
+      padding: context2.scrollBody.value.padding === true ? verticalScrollbarWidth : context2.scrollBody.value.padding,
+      margin: context2.scrollBody.value.margin === true ? verticalScrollbarWidth : context2.scrollBody.value.margin
+    }, defaultConfig) : defaultConfig : {
+      padding: 0,
+      margin: 0
+    };
+    if (verticalScrollbarWidth > 0) {
+      (void 0).body.style.paddingRight = typeof config.padding === "number" ? `${config.padding}px` : String(config.padding);
+      (void 0).body.style.marginRight = typeof config.margin === "number" ? `${config.margin}px` : String(config.margin);
+      (void 0).documentElement.style.setProperty("--scrollbar-width", `${verticalScrollbarWidth}px`);
+      (void 0).body.style.overflow = "hidden";
+    }
+    if (isIOS) stopTouchMoveListener = useEventListener(void 0, "touchmove", (e) => preventDefault(e), { passive: false });
+    nextTick(() => {
+      if (!locked.value) return;
+      (void 0).body.style.pointerEvents = "none";
+      (void 0).body.style.overflow = "hidden";
+    });
+  }, {
+    immediate: true,
+    flush: "sync"
+  });
+  return map;
+});
+function useBodyScrollLock(initialState) {
+  const id = Math.random().toString(36).substring(2, 7);
+  const map = useBodyLockStackCount();
+  map.value.set(id, initialState ?? false);
+  const locked = computed({
+    get: () => map.value.get(id) ?? false,
+    set: (value) => map.value.set(id, value)
+  });
+  tryOnBeforeUnmount(() => {
+    map.value.delete(id);
+  });
+  return locked;
+}
+function checkOverflowScroll(ele) {
+  const style = (void 0).getComputedStyle(ele);
+  if (style.overflowX === "scroll" || style.overflowY === "scroll" || style.overflowX === "auto" && ele.clientWidth < ele.scrollWidth || style.overflowY === "auto" && ele.clientHeight < ele.scrollHeight) return true;
+  else {
+    const parent = ele.parentNode;
+    if (!(parent instanceof Element) || parent.tagName === "BODY") return false;
+    return checkOverflowScroll(parent);
+  }
+}
+function preventDefault(rawEvent) {
+  const e = rawEvent || (void 0).event;
+  const _target = e.target;
+  if (_target instanceof Element && checkOverflowScroll(_target)) return false;
+  if (e.touches.length > 1) return true;
+  if (e.preventDefault && e.cancelable) e.preventDefault();
+  return false;
+}
+let count = 0;
+function useFocusGuards() {
+  watchEffect((cleanupFn) => {
+    if (!isClient) return;
+    const edgeGuards = (void 0).querySelectorAll("[data-reka-focus-guard]");
+    (void 0).body.insertAdjacentElement("afterbegin", edgeGuards[0] ?? createFocusGuard());
+    (void 0).body.insertAdjacentElement("beforeend", edgeGuards[1] ?? createFocusGuard());
+    count++;
+    cleanupFn(() => {
+      if (count === 1) (void 0).querySelectorAll("[data-reka-focus-guard]").forEach((node) => node.remove());
+      count--;
+    });
+  });
+}
+function createFocusGuard() {
+  const element = (void 0).createElement("span");
+  element.setAttribute("data-reka-focus-guard", "");
+  element.tabIndex = 0;
+  element.style.outline = "none";
+  element.style.opacity = "0";
+  element.style.position = "fixed";
+  element.style.pointerEvents = "none";
+  return element;
+}
+function useFormControl(el) {
+  return computed(() => toValue(el) ? Boolean(unrefElement(el)?.closest("form")) : true);
+}
+function useForwardPropsEmits(props, emit) {
+  const parsedProps = useForwardProps$1(props);
+  const emitsAsProps = emit ? useEmitAsProps(emit) : {};
+  return computed(() => ({
+    ...parsedProps.value,
+    ...emitsAsProps
+  }));
+}
+function useGraceArea(triggerElement, containerElement) {
+  const isPointerInTransit = refAutoReset$1(false, 300);
+  tryOnScopeDispose(() => {
+    isPointerInTransit.value = false;
+  });
+  const pointerGraceArea = ref(null);
+  const pointerExit = createEventHook();
+  function handleRemoveGraceArea() {
+    pointerGraceArea.value = null;
+    isPointerInTransit.value = false;
+  }
+  function handleCreateGraceArea(event, hoverTarget) {
+    if (!hoverTarget) return;
+    const currentTarget = event.currentTarget;
+    const exitPoint = {
+      x: event.clientX,
+      y: event.clientY
+    };
+    const exitSide = getExitSideFromRect(exitPoint, currentTarget.getBoundingClientRect());
+    const paddedExitPoints = getPaddedExitPoints(exitPoint, exitSide, 1);
+    const hoverTargetPoints = getPointsFromRect(hoverTarget.getBoundingClientRect());
+    const graceArea = getHull([...paddedExitPoints, ...hoverTargetPoints]);
+    pointerGraceArea.value = graceArea;
+    isPointerInTransit.value = true;
+  }
+  watchEffect((cleanupFn) => {
+    if (triggerElement.value && containerElement.value) {
+      const handleTriggerLeave = (event) => handleCreateGraceArea(event, containerElement.value);
+      const handleContentLeave = (event) => handleCreateGraceArea(event, triggerElement.value);
+      triggerElement.value.addEventListener("pointerleave", handleTriggerLeave);
+      containerElement.value.addEventListener("pointerleave", handleContentLeave);
+      cleanupFn(() => {
+        triggerElement.value?.removeEventListener("pointerleave", handleTriggerLeave);
+        containerElement.value?.removeEventListener("pointerleave", handleContentLeave);
+      });
+    }
+  });
+  watchEffect((cleanupFn) => {
+    if (pointerGraceArea.value) {
+      const handleTrackPointerGrace = (event) => {
+        if (!pointerGraceArea.value || !(event.target instanceof Element)) return;
+        const target = event.target;
+        const pointerPosition = {
+          x: event.clientX,
+          y: event.clientY
+        };
+        const hasEnteredTarget = triggerElement.value?.contains(target) || containerElement.value?.contains(target);
+        const isPointerOutsideGraceArea = !isPointInPolygon(pointerPosition, pointerGraceArea.value);
+        const isAnotherGraceAreaTrigger = !!target.closest("[data-grace-area-trigger]");
+        if (hasEnteredTarget) handleRemoveGraceArea();
+        else if (isPointerOutsideGraceArea || isAnotherGraceAreaTrigger) {
+          handleRemoveGraceArea();
+          pointerExit.trigger();
+        }
+      };
+      triggerElement.value?.ownerDocument.addEventListener("pointermove", handleTrackPointerGrace);
+      cleanupFn(() => triggerElement.value?.ownerDocument.removeEventListener("pointermove", handleTrackPointerGrace));
+    }
+  });
+  return {
+    isPointerInTransit,
+    onPointerExit: pointerExit.on
+  };
+}
+function getExitSideFromRect(point, rect) {
+  const top = Math.abs(rect.top - point.y);
+  const bottom = Math.abs(rect.bottom - point.y);
+  const right = Math.abs(rect.right - point.x);
+  const left = Math.abs(rect.left - point.x);
+  switch (Math.min(top, bottom, right, left)) {
+    case left:
+      return "left";
+    case right:
+      return "right";
+    case top:
+      return "top";
+    case bottom:
+      return "bottom";
+    default:
+      throw new Error("unreachable");
+  }
+}
+function getPaddedExitPoints(exitPoint, exitSide, padding = 5) {
+  const paddedExitPoints = [];
+  switch (exitSide) {
+    case "top":
+      paddedExitPoints.push({
+        x: exitPoint.x - padding,
+        y: exitPoint.y + padding
+      }, {
+        x: exitPoint.x + padding,
+        y: exitPoint.y + padding
+      });
+      break;
+    case "bottom":
+      paddedExitPoints.push({
+        x: exitPoint.x - padding,
+        y: exitPoint.y - padding
+      }, {
+        x: exitPoint.x + padding,
+        y: exitPoint.y - padding
+      });
+      break;
+    case "left":
+      paddedExitPoints.push({
+        x: exitPoint.x + padding,
+        y: exitPoint.y - padding
+      }, {
+        x: exitPoint.x + padding,
+        y: exitPoint.y + padding
+      });
+      break;
+    case "right":
+      paddedExitPoints.push({
+        x: exitPoint.x - padding,
+        y: exitPoint.y - padding
+      }, {
+        x: exitPoint.x - padding,
+        y: exitPoint.y + padding
+      });
+      break;
+  }
+  return paddedExitPoints;
+}
+function getPointsFromRect(rect) {
+  const { top, right, bottom, left } = rect;
+  return [
+    {
+      x: left,
+      y: top
+    },
+    {
+      x: right,
+      y: top
+    },
+    {
+      x: right,
+      y: bottom
+    },
+    {
+      x: left,
+      y: bottom
+    }
+  ];
+}
+function isPointInPolygon(point, polygon) {
+  const { x, y } = point;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x;
+    const yi = polygon[i].y;
+    const xj = polygon[j].x;
+    const yj = polygon[j].y;
+    const intersect = yi > y !== yj > y && x < (xj - xi) * (y - yi) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+function getHull(points) {
+  const newPoints = points.slice();
+  newPoints.sort((a, b) => {
+    if (a.x < b.x) return -1;
+    else if (a.x > b.x) return 1;
+    else if (a.y < b.y) return -1;
+    else if (a.y > b.y) return 1;
+    else return 0;
+  });
+  return getHullPresorted(newPoints);
+}
+function getHullPresorted(points) {
+  if (points.length <= 1) return points.slice();
+  const upperHull = [];
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    while (upperHull.length >= 2) {
+      const q = upperHull.at(-1);
+      const r = upperHull[upperHull.length - 2];
+      if ((q.x - r.x) * (p.y - r.y) >= (q.y - r.y) * (p.x - r.x)) upperHull.pop();
+      else break;
+    }
+    upperHull.push(p);
+  }
+  upperHull.pop();
+  const lowerHull = [];
+  for (let i = points.length - 1; i >= 0; i--) {
+    const p = points[i];
+    while (lowerHull.length >= 2) {
+      const q = lowerHull.at(-1);
+      const r = lowerHull[lowerHull.length - 2];
+      if ((q.x - r.x) * (p.y - r.y) >= (q.y - r.y) * (p.x - r.x)) lowerHull.pop();
+      else break;
+    }
+    lowerHull.push(p);
+  }
+  lowerHull.pop();
+  if (upperHull.length === 1 && lowerHull.length === 1 && upperHull[0].x === lowerHull[0].x && upperHull[0].y === lowerHull[0].y) return upperHull;
+  else return upperHull.concat(lowerHull);
+}
+function useHideOthers(target) {
+  let undo;
+  watch(() => unrefElement(target), (el) => {
+    let isInsideClosedPopover = false;
+    try {
+      isInsideClosedPopover = !!el?.closest("[popover]:not(:popover-open)");
+    } catch {
+    }
+    if (el && !isInsideClosedPopover) undo = hideOthers(el);
+    else if (undo) undo();
+  });
+}
+function useSize(element) {
+  const size2 = ref();
+  const width = computed(() => size2.value?.width ?? 0);
+  const height = computed(() => size2.value?.height ?? 0);
+  return {
+    width,
+    height
+  };
+}
+const POINTER_DOWN_OUTSIDE = "dismissableLayer.pointerDownOutside";
+const FOCUS_OUTSIDE = "dismissableLayer.focusOutside";
+function isLayerExist(layerElement, targetElement) {
+  if (!(targetElement instanceof Element)) return false;
+  const targetLayer = targetElement.closest("[data-dismissable-layer]");
+  const mainLayer = layerElement.dataset.dismissableLayer === "" ? layerElement : layerElement.querySelector("[data-dismissable-layer]");
+  const nodeList = Array.from(layerElement.ownerDocument.querySelectorAll("[data-dismissable-layer]"));
+  if (targetLayer && (mainLayer === targetLayer || nodeList.indexOf(mainLayer) < nodeList.indexOf(targetLayer))) return true;
+  else return false;
+}
+function usePointerDownOutside(onPointerDownOutside, element, enabled = true) {
+  const ownerDocument = element?.value?.ownerDocument ?? globalThis?.document;
+  const isPointerInsideDOMTree = ref(false);
+  const handleClickRef = ref(() => {
+  });
+  watchEffect((cleanupFn) => {
+    if (!isClient || !toValue(enabled)) return;
+    const handlePointerDown = async (event) => {
+      const target = event.target;
+      if (!element?.value || !target) return;
+      if (isLayerExist(element.value, target)) {
+        isPointerInsideDOMTree.value = false;
+        return;
+      }
+      if (event.target && !isPointerInsideDOMTree.value) {
+        let handleAndDispatchPointerDownOutsideEvent = function() {
+          handleAndDispatchCustomEvent(POINTER_DOWN_OUTSIDE, onPointerDownOutside, eventDetail);
+        };
+        const eventDetail = { originalEvent: event };
+        if (event.pointerType === "touch") {
+          ownerDocument.removeEventListener("click", handleClickRef.value);
+          handleClickRef.value = handleAndDispatchPointerDownOutsideEvent;
+          ownerDocument.addEventListener("click", handleClickRef.value, { once: true });
+        } else handleAndDispatchPointerDownOutsideEvent();
+      } else ownerDocument.removeEventListener("click", handleClickRef.value);
+      isPointerInsideDOMTree.value = false;
+    };
+    const timerId = (void 0).setTimeout(() => {
+      ownerDocument.addEventListener("pointerdown", handlePointerDown);
+    }, 0);
+    cleanupFn(() => {
+      (void 0).clearTimeout(timerId);
+      ownerDocument.removeEventListener("pointerdown", handlePointerDown);
+      ownerDocument.removeEventListener("click", handleClickRef.value);
+    });
+  });
+  return { onPointerDownCapture: () => {
+    if (!toValue(enabled)) return;
+    isPointerInsideDOMTree.value = true;
+  } };
+}
+function useFocusOutside(onFocusOutside, element, enabled = true) {
+  const ownerDocument = element?.value?.ownerDocument ?? globalThis?.document;
+  const isFocusInsideDOMTree = ref(false);
+  watchEffect((cleanupFn) => {
+    if (!isClient || !toValue(enabled)) return;
+    const handleFocus = async (event) => {
+      if (!element?.value) return;
+      await nextTick();
+      await nextTick();
+      const target = event.target;
+      if (!element.value || !target || isLayerExist(element.value, target)) return;
+      if (event.target && !isFocusInsideDOMTree.value) {
+        const eventDetail = { originalEvent: event };
+        handleAndDispatchCustomEvent(FOCUS_OUTSIDE, onFocusOutside, eventDetail);
+      }
+    };
+    ownerDocument.addEventListener("focusin", handleFocus);
+    cleanupFn(() => ownerDocument.removeEventListener("focusin", handleFocus));
+  });
+  return {
+    onFocusCapture: () => {
+      if (!toValue(enabled)) return;
+      isFocusInsideDOMTree.value = true;
+    },
+    onBlurCapture: () => {
+      if (!toValue(enabled)) return;
+      isFocusInsideDOMTree.value = false;
+    }
+  };
+}
+const context = /* @__PURE__ */ reactive({
+  layersRoot: /* @__PURE__ */ new Set(),
+  layersWithOutsidePointerEventsDisabled: /* @__PURE__ */ new Set(),
+  originalBodyPointerEvents: void 0,
+  branches: /* @__PURE__ */ new Set()
+});
+var DismissableLayer_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "DismissableLayer",
+  props: {
+    disableOutsidePointerEvents: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  },
+  emits: [
+    "escapeKeyDown",
+    "pointerDownOutside",
+    "focusOutside",
+    "interactOutside",
+    "dismiss"
+  ],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const { forwardRef, currentElement: layerElement } = useForwardExpose();
+    const ownerDocument = computed(() => layerElement.value?.ownerDocument ?? globalThis.document);
+    const layers = computed(() => context.layersRoot);
+    const index2 = computed(() => {
+      return layerElement.value ? Array.from(layers.value).indexOf(layerElement.value) : -1;
+    });
+    const isBodyPointerEventsDisabled = computed(() => {
+      return context.layersWithOutsidePointerEventsDisabled.size > 0;
+    });
+    const isPointerEventsEnabled = computed(() => {
+      const localLayers = Array.from(layers.value);
+      const [highestLayerWithOutsidePointerEventsDisabled] = [...context.layersWithOutsidePointerEventsDisabled].slice(-1);
+      const highestLayerWithOutsidePointerEventsDisabledIndex = localLayers.indexOf(highestLayerWithOutsidePointerEventsDisabled);
+      return index2.value >= highestLayerWithOutsidePointerEventsDisabledIndex;
+    });
+    const pointerDownOutside = usePointerDownOutside(async (event) => {
+      const isPointerDownOnBranch = [...context.branches].some((branch) => branch?.contains(event.target));
+      if (!isPointerEventsEnabled.value || isPointerDownOnBranch) return;
+      emits("pointerDownOutside", event);
+      emits("interactOutside", event);
+      await nextTick();
+      if (!event.defaultPrevented) emits("dismiss");
+    }, layerElement);
+    const focusOutside = useFocusOutside((event) => {
+      const isFocusInBranch = [...context.branches].some((branch) => branch?.contains(event.target));
+      if (isFocusInBranch) return;
+      emits("focusOutside", event);
+      emits("interactOutside", event);
+      if (!event.defaultPrevented) emits("dismiss");
+    }, layerElement);
+    onKeyStroke("Escape", (event) => {
+      const isHighestLayer = index2.value === layers.value.size - 1;
+      if (!isHighestLayer) return;
+      emits("escapeKeyDown", event);
+      if (!event.defaultPrevented) emits("dismiss");
+    });
+    watch([layerElement, () => props.disableOutsidePointerEvents], ([element, disableOutsidePointerEvents], _, onCleanup) => {
+      if (!element) return;
+      if (disableOutsidePointerEvents) {
+        if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
+          context.originalBodyPointerEvents = ownerDocument.value.body.style.pointerEvents;
+          ownerDocument.value.body.style.pointerEvents = "none";
+        }
+        context.layersWithOutsidePointerEventsDisabled.add(element);
+        onCleanup(() => {
+          context.layersWithOutsidePointerEventsDisabled.delete(element);
+          if (context.layersWithOutsidePointerEventsDisabled.size === 0 && !isNullish(context.originalBodyPointerEvents)) ownerDocument.value.body.style.pointerEvents = context.originalBodyPointerEvents;
+        });
+      }
+      layers.value.add(element);
+    }, { immediate: true });
+    watchEffect((cleanupFn) => {
+      cleanupFn(() => {
+        if (!layerElement.value) return;
+        layers.value.delete(layerElement.value);
+        context.layersWithOutsidePointerEventsDisabled.delete(layerElement.value);
+      });
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), {
+        ref: unref(forwardRef),
+        "as-child": _ctx.asChild,
+        as: _ctx.as,
+        "data-dismissable-layer": "",
+        style: normalizeStyle({ pointerEvents: isBodyPointerEventsDisabled.value ? isPointerEventsEnabled.value ? "auto" : "none" : void 0 }),
+        onFocusCapture: unref(focusOutside).onFocusCapture,
+        onBlurCapture: unref(focusOutside).onBlurCapture,
+        onPointerdownCapture: unref(pointerDownOutside).onPointerDownCapture
+      }, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 8, [
+        "as-child",
+        "as",
+        "style",
+        "onFocusCapture",
+        "onBlurCapture",
+        "onPointerdownCapture"
+      ]);
+    };
+  }
+});
+var DismissableLayer_default = DismissableLayer_vue_vue_type_script_setup_true_lang_default;
+const useFocusStackState = createGlobalState(() => {
+  const stack = ref([]);
+  return stack;
+});
+function createFocusScopesStack() {
+  const stack = useFocusStackState();
+  return {
+    add(focusScope) {
+      const activeFocusScope = stack.value[0];
+      if (focusScope !== activeFocusScope) activeFocusScope?.pause();
+      stack.value = arrayRemove(stack.value, focusScope);
+      stack.value.unshift(focusScope);
+    },
+    remove(focusScope) {
+      stack.value = arrayRemove(stack.value, focusScope);
+      stack.value[0]?.resume();
+    }
+  };
+}
+function arrayRemove(array, item) {
+  const updatedArray = [...array];
+  const index2 = updatedArray.indexOf(item);
+  if (index2 !== -1) updatedArray.splice(index2, 1);
+  return updatedArray;
+}
+var FocusScope_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "FocusScope",
+  props: {
+    loop: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    trapped: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  },
+  emits: ["mountAutoFocus", "unmountAutoFocus"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const { currentRef, currentElement } = useForwardExpose();
+    const lastFocusedElementRef = ref(null);
+    const focusScopesStack = createFocusScopesStack();
+    const focusScope = /* @__PURE__ */ reactive({
+      paused: false,
+      pause() {
+        this.paused = true;
+      },
+      resume() {
+        this.paused = false;
+      }
+    });
+    watchEffect((cleanupFn) => {
+      if (!isClient) return;
+      const container = currentElement.value;
+      if (!props.trapped) return;
+      function handleFocusIn(event) {
+        if (focusScope.paused || !container) return;
+        const target = event.target;
+        if (container.contains(target)) lastFocusedElementRef.value = target;
+        else focus(lastFocusedElementRef.value, { select: true });
+      }
+      function handleFocusOut(event) {
+        if (focusScope.paused || !container) return;
+        const relatedTarget = event.relatedTarget;
+        if (relatedTarget === null) return;
+        if (!container.contains(relatedTarget)) focus(lastFocusedElementRef.value, { select: true });
+      }
+      function handleMutations(mutations) {
+        const lastFocusedElement = lastFocusedElementRef.value;
+        if (lastFocusedElement === null) return;
+        const anyNodesRemoved = mutations.some((m) => m.removedNodes.length > 0);
+        if (!anyNodesRemoved) return;
+        const isLastFocusedElementExist = container.contains(lastFocusedElement);
+        if (!isLastFocusedElementExist) focus(container);
+      }
+      (void 0).addEventListener("focusin", handleFocusIn);
+      (void 0).addEventListener("focusout", handleFocusOut);
+      const mutationObserver = new MutationObserver(handleMutations);
+      if (container) mutationObserver.observe(container, {
+        childList: true,
+        subtree: true
+      });
+      cleanupFn(() => {
+        (void 0).removeEventListener("focusin", handleFocusIn);
+        (void 0).removeEventListener("focusout", handleFocusOut);
+        mutationObserver.disconnect();
+      });
+    });
+    watchEffect(async (cleanupFn) => {
+      const container = currentElement.value;
+      await nextTick();
+      if (!container) return;
+      focusScopesStack.add(focusScope);
+      const previouslyFocusedElement = getActiveElement();
+      const hasFocusedCandidate = container.contains(previouslyFocusedElement);
+      if (!hasFocusedCandidate) {
+        const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS);
+        container.addEventListener(AUTOFOCUS_ON_MOUNT, (ev) => emits("mountAutoFocus", ev));
+        container.dispatchEvent(mountEvent);
+        if (!mountEvent.defaultPrevented) {
+          focusFirst$1(getTabbableCandidates(container), { select: true });
+          if (getActiveElement() === previouslyFocusedElement) focus(container);
+        }
+      }
+      cleanupFn(() => {
+        container.removeEventListener(AUTOFOCUS_ON_MOUNT, (ev) => emits("mountAutoFocus", ev));
+        const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS);
+        const unmountEventHandler = (ev) => {
+          emits("unmountAutoFocus", ev);
+        };
+        container.addEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler);
+        container.dispatchEvent(unmountEvent);
+        container.setAttribute("data-focus-scope-unmounting", "");
+        setTimeout(() => {
+          if (!unmountEvent.defaultPrevented) focus(previouslyFocusedElement ?? (void 0).body, { select: true });
+          container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, unmountEventHandler);
+          focusScopesStack.remove(focusScope);
+          container.removeAttribute("data-focus-scope-unmounting");
+        }, 0);
+      });
+    });
+    function handleKeyDown(event) {
+      if (!props.loop && !props.trapped) return;
+      if (focusScope.paused) return;
+      const isTabKey = event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey;
+      const focusedElement = getActiveElement();
+      if (isTabKey && focusedElement) {
+        const container = event.currentTarget;
+        const [first, last] = getTabbableEdges(container);
+        const hasTabbableElementsInside = first && last;
+        if (!hasTabbableElementsInside) {
+          if (focusedElement === container) event.preventDefault();
+        } else if (!event.shiftKey && focusedElement === last) {
+          event.preventDefault();
+          if (props.loop) focus(first, { select: true });
+        } else if (event.shiftKey && focusedElement === first) {
+          event.preventDefault();
+          if (props.loop) focus(last, { select: true });
+        }
+      }
+    }
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), {
+        ref_key: "currentRef",
+        ref: currentRef,
+        tabindex: "-1",
+        "as-child": _ctx.asChild,
+        as: _ctx.as,
+        onKeydown: handleKeyDown
+      }, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 8, ["as-child", "as"]);
+    };
+  }
+});
+var FocusScope_default = FocusScope_vue_vue_type_script_setup_true_lang_default;
+function focusFirst(candidates) {
+  const PREVIOUSLY_FOCUSED_ELEMENT = getActiveElement();
+  for (const candidate of candidates) {
+    if (candidate === PREVIOUSLY_FOCUSED_ELEMENT) return;
+    candidate.focus();
+    if (getActiveElement() !== PREVIOUSLY_FOCUSED_ELEMENT) return;
+  }
+}
+var VisuallyHiddenInputBubble_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "VisuallyHiddenInputBubble",
+  props: {
+    name: {
+      type: String,
+      required: true
+    },
+    value: {
+      type: null,
+      required: true
+    },
+    checked: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    },
+    required: {
+      type: Boolean,
+      required: false
+    },
+    disabled: {
+      type: Boolean,
+      required: false
+    },
+    feature: {
+      type: String,
+      required: false,
+      default: "fully-hidden"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const { primitiveElement, currentElement } = usePrimitiveElement();
+    const valueState = computed(() => props.checked ?? props.value);
+    watch(valueState, (cur, prev) => {
+      if (!currentElement.value) return;
+      const input = currentElement.value;
+      const inputProto = (void 0).HTMLInputElement.prototype;
+      const descriptor = Object.getOwnPropertyDescriptor(inputProto, "value");
+      const setValue = descriptor.set;
+      if (setValue && cur !== prev) {
+        const inputEvent = new Event("input", { bubbles: true });
+        const changeEvent = new Event("change", { bubbles: true });
+        setValue.call(input, cur);
+        input.dispatchEvent(inputEvent);
+        input.dispatchEvent(changeEvent);
+      }
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(VisuallyHidden_default, mergeProps({
+        ref_key: "primitiveElement",
+        ref: primitiveElement
+      }, {
+        ...props,
+        ..._ctx.$attrs
+      }, { as: "input" }), null, 16);
+    };
+  }
+});
+var VisuallyHiddenInputBubble_default = VisuallyHiddenInputBubble_vue_vue_type_script_setup_true_lang_default;
+var VisuallyHiddenInput_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "VisuallyHiddenInput",
+  props: {
+    name: {
+      type: String,
+      required: true
+    },
+    value: {
+      type: null,
+      required: true
+    },
+    checked: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    },
+    required: {
+      type: Boolean,
+      required: false
+    },
+    disabled: {
+      type: Boolean,
+      required: false
+    },
+    feature: {
+      type: String,
+      required: false,
+      default: "fully-hidden"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const isFormArrayEmptyAndRequired = computed(() => typeof props.value === "object" && Array.isArray(props.value) && props.value.length === 0 && props.required);
+    const parsedValue = computed(() => {
+      if (typeof props.value === "string" || typeof props.value === "number" || typeof props.value === "boolean" || props.value === null || props.value === void 0) return [{
+        name: props.name,
+        value: props.value
+      }];
+      else if (typeof props.value === "object" && Array.isArray(props.value)) return props.value.flatMap((obj, index2) => {
+        if (typeof obj === "object") return Object.entries(obj).map(([key, value]) => ({
+          name: `${props.name}[${index2}][${key}]`,
+          value
+        }));
+        else return {
+          name: `${props.name}[${index2}]`,
+          value: obj
+        };
+      });
+      else if (props.value !== null && typeof props.value === "object" && !Array.isArray(props.value)) return Object.entries(props.value).map(([key, value]) => ({
+        name: `${props.name}[${key}]`,
+        value
+      }));
+      return [];
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock(Fragment, null, [createCommentVNode(" We render single input if it's required "), isFormArrayEmptyAndRequired.value ? (openBlock(), createBlock(VisuallyHiddenInputBubble_default, mergeProps({ key: _ctx.name }, {
+        ...props,
+        ..._ctx.$attrs
+      }, {
+        name: _ctx.name,
+        value: _ctx.value
+      }), null, 16, ["name", "value"])) : (openBlock(true), createElementBlock(Fragment, { key: 1 }, renderList(parsedValue.value, (parsed) => {
+        return openBlock(), createBlock(VisuallyHiddenInputBubble_default, mergeProps({ key: parsed.name }, { ref_for: true }, {
+          ...props,
+          ..._ctx.$attrs
+        }, {
+          name: parsed.name,
+          value: parsed.value
+        }), null, 16, ["name", "value"]);
+      }), 128))], 2112);
+    };
+  }
+});
+var VisuallyHiddenInput_default = VisuallyHiddenInput_vue_vue_type_script_setup_true_lang_default;
+const [injectPopperRootContext, providePopperRootContext] = /* @__PURE__ */ createContext("PopperRoot");
+var PopperRoot_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "PopperRoot",
+  setup(__props) {
+    const anchor = ref();
+    providePopperRootContext({
+      anchor,
+      onAnchorChange: (element) => anchor.value = element
+    });
+    return (_ctx, _cache) => {
+      return renderSlot(_ctx.$slots, "default");
+    };
+  }
+});
+var PopperRoot_default = PopperRoot_vue_vue_type_script_setup_true_lang_default;
+var PopperAnchor_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "PopperAnchor",
+  props: {
+    reference: {
+      type: null,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const { forwardRef, currentElement } = useForwardExpose();
+    const rootContext = injectPopperRootContext();
+    watchPostEffect(() => {
+      rootContext.onAnchorChange(props.reference ?? currentElement.value);
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), {
+        ref: unref(forwardRef),
+        as: _ctx.as,
+        "as-child": _ctx.asChild
+      }, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 8, ["as", "as-child"]);
+    };
+  }
+});
+var PopperAnchor_default = PopperAnchor_vue_vue_type_script_setup_true_lang_default;
+const _hoisted_1$2 = {
+  key: 0,
+  d: "M0 0L6 6L12 0"
+};
+const _hoisted_2 = {
+  key: 1,
+  d: "M0 0L4.58579 4.58579C5.36683 5.36683 6.63316 5.36684 7.41421 4.58579L12 0"
+};
+var Arrow_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "Arrow",
+  props: {
+    width: {
+      type: Number,
+      required: false,
+      default: 10
+    },
+    height: {
+      type: Number,
+      required: false,
+      default: 5
+    },
+    rounded: {
+      type: Boolean,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "svg"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    useForwardExpose();
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), mergeProps(props, {
+        width: _ctx.width,
+        height: _ctx.height,
+        viewBox: _ctx.asChild ? void 0 : "0 0 12 6",
+        preserveAspectRatio: _ctx.asChild ? void 0 : "none"
+      }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default", {}, () => [!_ctx.rounded ? (openBlock(), createElementBlock("path", _hoisted_1$2)) : (openBlock(), createElementBlock("path", _hoisted_2))])]),
+        _: 3
+      }, 16, [
+        "width",
+        "height",
+        "viewBox",
+        "preserveAspectRatio"
+      ]);
+    };
+  }
+});
+var Arrow_default = Arrow_vue_vue_type_script_setup_true_lang_default;
+function isNotNull(value) {
+  return value !== null;
+}
+function transformOrigin(options) {
+  return {
+    name: "transformOrigin",
+    options,
+    fn(data) {
+      const { placement, rects, middlewareData } = data;
+      const cannotCenterArrow = middlewareData.arrow?.centerOffset !== 0;
+      const isArrowHidden = cannotCenterArrow;
+      const arrowWidth = isArrowHidden ? 0 : options.arrowWidth;
+      const arrowHeight = isArrowHidden ? 0 : options.arrowHeight;
+      const [placedSide, placedAlign] = getSideAndAlignFromPlacement(placement);
+      const noArrowAlign = {
+        start: "0%",
+        center: "50%",
+        end: "100%"
+      }[placedAlign];
+      const arrowXCenter = (middlewareData.arrow?.x ?? 0) + arrowWidth / 2;
+      const arrowYCenter = (middlewareData.arrow?.y ?? 0) + arrowHeight / 2;
+      let x = "";
+      let y = "";
+      if (placedSide === "bottom") {
+        x = isArrowHidden ? noArrowAlign : `${arrowXCenter}px`;
+        y = `${-arrowHeight}px`;
+      } else if (placedSide === "top") {
+        x = isArrowHidden ? noArrowAlign : `${arrowXCenter}px`;
+        y = `${rects.floating.height + arrowHeight}px`;
+      } else if (placedSide === "right") {
+        x = `${-arrowHeight}px`;
+        y = isArrowHidden ? noArrowAlign : `${arrowYCenter}px`;
+      } else if (placedSide === "left") {
+        x = `${rects.floating.width + arrowHeight}px`;
+        y = isArrowHidden ? noArrowAlign : `${arrowYCenter}px`;
+      }
+      return { data: {
+        x,
+        y
+      } };
+    }
+  };
+}
+function getSideAndAlignFromPlacement(placement) {
+  const [side, align = "center"] = placement.split("-");
+  return [side, align];
+}
+const PopperContentPropsDefaultValue = {
+  side: "bottom",
+  sideOffset: 0,
+  sideFlip: true,
+  align: "center",
+  alignOffset: 0,
+  alignFlip: true,
+  arrowPadding: 0,
+  hideShiftedArrow: true,
+  avoidCollisions: true,
+  collisionBoundary: () => [],
+  collisionPadding: 0,
+  sticky: "partial",
+  hideWhenDetached: false,
+  positionStrategy: "fixed",
+  updatePositionStrategy: "optimized",
+  prioritizePosition: false
+};
+const [injectPopperContentContext, providePopperContentContext] = /* @__PURE__ */ createContext("PopperContent");
+var PopperContent_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "PopperContent",
+  props: /* @__PURE__ */ mergeDefaults({
+    side: {
+      type: null,
+      required: false
+    },
+    sideOffset: {
+      type: Number,
+      required: false
+    },
+    sideFlip: {
+      type: Boolean,
+      required: false
+    },
+    align: {
+      type: null,
+      required: false
+    },
+    alignOffset: {
+      type: Number,
+      required: false
+    },
+    alignFlip: {
+      type: Boolean,
+      required: false
+    },
+    avoidCollisions: {
+      type: Boolean,
+      required: false
+    },
+    collisionBoundary: {
+      type: null,
+      required: false
+    },
+    collisionPadding: {
+      type: [Number, Object],
+      required: false
+    },
+    arrowPadding: {
+      type: Number,
+      required: false
+    },
+    hideShiftedArrow: {
+      type: Boolean,
+      required: false
+    },
+    sticky: {
+      type: String,
+      required: false
+    },
+    hideWhenDetached: {
+      type: Boolean,
+      required: false
+    },
+    positionStrategy: {
+      type: String,
+      required: false
+    },
+    updatePositionStrategy: {
+      type: String,
+      required: false
+    },
+    disableUpdateOnLayoutShift: {
+      type: Boolean,
+      required: false
+    },
+    prioritizePosition: {
+      type: Boolean,
+      required: false
+    },
+    reference: {
+      type: null,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  }, { ...PopperContentPropsDefaultValue }),
+  emits: ["placed"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const rootContext = injectPopperRootContext();
+    const { forwardRef, currentElement: contentElement } = useForwardExpose();
+    const floatingRef = ref();
+    const arrow$1 = ref();
+    const { width: arrowWidth, height: arrowHeight } = useSize();
+    const desiredPlacement = computed(() => props.side + (props.align !== "center" ? `-${props.align}` : ""));
+    const collisionPadding = computed(() => {
+      return typeof props.collisionPadding === "number" ? props.collisionPadding : {
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        ...props.collisionPadding
+      };
+    });
+    const boundary = computed(() => {
+      return Array.isArray(props.collisionBoundary) ? props.collisionBoundary : [props.collisionBoundary];
+    });
+    const detectOverflowOptions = computed(() => {
+      return {
+        padding: collisionPadding.value,
+        boundary: boundary.value.filter(isNotNull),
+        altBoundary: boundary.value.length > 0
+      };
+    });
+    const flipOptions = computed(() => {
+      return {
+        mainAxis: props.sideFlip,
+        crossAxis: props.alignFlip
+      };
+    });
+    const computedMiddleware = computedEager(() => {
+      return [
+        offset({
+          mainAxis: props.sideOffset + arrowHeight.value,
+          alignmentAxis: props.alignOffset
+        }),
+        props.prioritizePosition && props.avoidCollisions && flip({
+          ...detectOverflowOptions.value,
+          ...flipOptions.value
+        }),
+        props.avoidCollisions && shift({
+          mainAxis: true,
+          crossAxis: !!props.prioritizePosition,
+          limiter: props.sticky === "partial" ? limitShift() : void 0,
+          ...detectOverflowOptions.value
+        }),
+        !props.prioritizePosition && props.avoidCollisions && flip({
+          ...detectOverflowOptions.value,
+          ...flipOptions.value
+        }),
+        size({
+          ...detectOverflowOptions.value,
+          apply: ({ elements, rects, availableWidth, availableHeight }) => {
+            const { width: anchorWidth, height: anchorHeight } = rects.reference;
+            const contentStyle = elements.floating.style;
+            contentStyle.setProperty("--reka-popper-available-width", `${availableWidth}px`);
+            contentStyle.setProperty("--reka-popper-available-height", `${availableHeight}px`);
+            contentStyle.setProperty("--reka-popper-anchor-width", `${anchorWidth}px`);
+            contentStyle.setProperty("--reka-popper-anchor-height", `${anchorHeight}px`);
+          }
+        }),
+        arrow$1.value && arrow({
+          element: arrow$1.value,
+          padding: props.arrowPadding
+        }),
+        transformOrigin({
+          arrowWidth: arrowWidth.value,
+          arrowHeight: arrowHeight.value
+        }),
+        props.hideWhenDetached && hide({
+          strategy: "referenceHidden",
+          ...detectOverflowOptions.value
+        })
+      ];
+    });
+    const reference = computed(() => props.reference ?? rootContext.anchor.value);
+    const { floatingStyles, placement, isPositioned, middlewareData, update } = useFloating(reference, floatingRef, {
+      strategy: props.positionStrategy,
+      placement: desiredPlacement,
+      whileElementsMounted: (...args) => {
+        const cleanup = autoUpdate(...args, {
+          layoutShift: !props.disableUpdateOnLayoutShift,
+          animationFrame: props.updatePositionStrategy === "always"
+        });
+        return cleanup;
+      },
+      middleware: computedMiddleware
+    });
+    const placedSide = computed(() => getSideAndAlignFromPlacement(placement.value)[0]);
+    const placedAlign = computed(() => getSideAndAlignFromPlacement(placement.value)[1]);
+    watchPostEffect(() => {
+      if (isPositioned.value) emits("placed");
+    });
+    const shouldHideArrow = computed(() => {
+      const cannotCenterArrow = middlewareData.value.arrow?.centerOffset !== 0;
+      return props.hideShiftedArrow && cannotCenterArrow;
+    });
+    const contentZIndex = ref("");
+    watchEffect(() => {
+      if (contentElement.value) contentZIndex.value = (void 0).getComputedStyle(contentElement.value).zIndex;
+    });
+    const arrowX = computed(() => middlewareData.value.arrow?.x ?? 0);
+    const arrowY = computed(() => middlewareData.value.arrow?.y ?? 0);
+    providePopperContentContext({
+      placedSide,
+      onArrowChange: (element) => arrow$1.value = element,
+      arrowX,
+      arrowY,
+      shouldHideArrow
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", {
+        ref_key: "floatingRef",
+        ref: floatingRef,
+        "data-reka-popper-content-wrapper": "",
+        style: normalizeStyle({
+          ...unref(floatingStyles),
+          transform: unref(isPositioned) ? unref(floatingStyles).transform : "translate(0, -200%)",
+          minWidth: "max-content",
+          zIndex: contentZIndex.value,
+          ["--reka-popper-transform-origin"]: [unref(middlewareData).transformOrigin?.x, unref(middlewareData).transformOrigin?.y].join(" "),
+          ...unref(middlewareData).hide?.referenceHidden && {
+            visibility: "hidden",
+            pointerEvents: "none"
+          }
+        })
+      }, [createVNode(unref(Primitive), mergeProps({ ref: unref(forwardRef) }, _ctx.$attrs, {
+        "as-child": props.asChild,
+        as: _ctx.as,
+        "data-side": placedSide.value,
+        "data-align": placedAlign.value,
+        style: { animation: !unref(isPositioned) ? "none" : void 0 }
+      }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16, [
+        "as-child",
+        "as",
+        "data-side",
+        "data-align",
+        "style"
+      ])], 4);
+    };
+  }
+});
+var PopperContent_default = PopperContent_vue_vue_type_script_setup_true_lang_default;
+const OPPOSITE_SIDE = {
+  top: "bottom",
+  right: "left",
+  bottom: "top",
+  left: "right"
+};
+var PopperArrow_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "PopperArrow",
+  props: {
+    width: {
+      type: Number,
+      required: false
+    },
+    height: {
+      type: Number,
+      required: false
+    },
+    rounded: {
+      type: Boolean,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "svg"
+    }
+  },
+  setup(__props) {
+    const { forwardRef } = useForwardExpose();
+    const contentContext = injectPopperContentContext();
+    const baseSide = computed(() => OPPOSITE_SIDE[contentContext.placedSide.value]);
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("span", {
+        ref: (el) => {
+          unref(contentContext).onArrowChange(el ?? void 0);
+          return void 0;
+        },
+        style: normalizeStyle({
+          position: "absolute",
+          left: unref(contentContext).arrowX?.value ? `${unref(contentContext).arrowX?.value}px` : void 0,
+          top: unref(contentContext).arrowY?.value ? `${unref(contentContext).arrowY?.value}px` : void 0,
+          [baseSide.value]: 0,
+          transformOrigin: {
+            top: "",
+            right: "0 0",
+            bottom: "center 0",
+            left: "100% 0"
+          }[unref(contentContext).placedSide.value],
+          transform: {
+            top: "translateY(100%)",
+            right: "translateY(50%) rotate(90deg) translateX(-50%)",
+            bottom: `rotate(180deg)`,
+            left: "translateY(50%) rotate(-90deg) translateX(50%)"
+          }[unref(contentContext).placedSide.value],
+          visibility: unref(contentContext).shouldHideArrow.value ? "hidden" : void 0
+        })
+      }, [createVNode(Arrow_default, mergeProps(_ctx.$attrs, {
+        ref: unref(forwardRef),
+        style: { display: "block" },
+        as: _ctx.as,
+        "as-child": _ctx.asChild,
+        rounded: _ctx.rounded,
+        width: _ctx.width,
+        height: _ctx.height
+      }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16, [
+        "as",
+        "as-child",
+        "rounded",
+        "width",
+        "height"
+      ])], 4);
+    };
+  }
+});
+var PopperArrow_default = PopperArrow_vue_vue_type_script_setup_true_lang_default;
+function useNonce(nonce) {
+  const context2 = injectConfigProviderContext({ nonce: ref() });
+  return computed(() => nonce?.value || context2.nonce?.value);
+}
+function getNextSortedValues(prevValues = [], nextValue, atIndex) {
+  const nextValues = [...prevValues];
+  nextValues[atIndex] = nextValue;
+  return nextValues.sort((a, b) => a - b);
+}
+function convertValueToPercentage(value, min, max) {
+  const maxSteps = max - min;
+  const percentPerStep = 100 / maxSteps;
+  const percentage = percentPerStep * (value - min);
+  return clamp(percentage, 0, 100);
+}
+function getLabel(index2, totalValues) {
+  if (totalValues > 2) return `Value ${index2 + 1} of ${totalValues}`;
+  else if (totalValues === 2) return ["Minimum", "Maximum"][index2];
+  else return void 0;
+}
+function getClosestValueIndex(values, nextValue) {
+  if (values.length === 1) return 0;
+  const distances = values.map((value) => Math.abs(value - nextValue));
+  const closestDistance = Math.min(...distances);
+  return distances.indexOf(closestDistance);
+}
+function getThumbInBoundsOffset(width, left, direction) {
+  const halfWidth = width / 2;
+  const halfPercent = 50;
+  const offset2 = linearScale([0, halfPercent], [0, halfWidth]);
+  return (halfWidth - offset2(left) * direction) * direction;
+}
+function getStepsBetweenValues(values) {
+  return values.slice(0, -1).map((value, index2) => values[index2 + 1] - value);
+}
+function hasMinStepsBetweenValues(values, minStepsBetweenValues) {
+  if (minStepsBetweenValues > 0) {
+    const stepsBetweenValues = getStepsBetweenValues(values);
+    const actualMinStepsBetweenValues = Math.min(...stepsBetweenValues);
+    return actualMinStepsBetweenValues >= minStepsBetweenValues;
+  }
+  return true;
+}
+function linearScale(input, output) {
+  return (value) => {
+    if (input[0] === input[1] || output[0] === output[1]) return output[0];
+    const ratio = (output[1] - output[0]) / (input[1] - input[0]);
+    return output[0] + ratio * (value - input[0]);
+  };
+}
+function getDecimalCount(value) {
+  return (String(value).split(".")[1] || "").length;
+}
+function roundValue(value, decimalCount) {
+  const rounder = 10 ** decimalCount;
+  return Math.round(value * rounder) / rounder;
+}
+const PAGE_KEYS = ["PageUp", "PageDown"];
+const ARROW_KEYS = [
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight"
+];
+const BACK_KEYS = {
+  "from-left": [
+    "Home",
+    "PageDown",
+    "ArrowDown",
+    "ArrowLeft"
+  ],
+  "from-right": [
+    "Home",
+    "PageDown",
+    "ArrowDown",
+    "ArrowRight"
+  ],
+  "from-bottom": [
+    "Home",
+    "PageDown",
+    "ArrowDown",
+    "ArrowLeft"
+  ],
+  "from-top": [
+    "Home",
+    "PageUp",
+    "ArrowUp",
+    "ArrowLeft"
+  ]
+};
+const [injectSliderOrientationContext, provideSliderOrientationContext] = /* @__PURE__ */ createContext(["SliderVertical", "SliderHorizontal"]);
+var SliderHorizontal_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SliderHorizontal",
+  props: {
+    dir: {
+      type: String,
+      required: false
+    },
+    min: {
+      type: Number,
+      required: true
+    },
+    max: {
+      type: Number,
+      required: true
+    },
+    inverted: {
+      type: Boolean,
+      required: true
+    }
+  },
+  emits: [
+    "slideEnd",
+    "slideStart",
+    "slideMove",
+    "homeKeyDown",
+    "endKeyDown",
+    "stepKeyDown"
+  ],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const { max, min, dir, inverted } = toRefs(props);
+    const { forwardRef, currentElement: sliderElement } = useForwardExpose();
+    const rootContext = injectSliderRootContext();
+    const offsetPosition = ref();
+    const rectRef = ref();
+    const isSlidingFromLeft = computed(() => dir?.value !== "rtl" && !inverted.value || dir?.value !== "ltr" && inverted.value);
+    function getValueFromPointerEvent(event, slideStart) {
+      const rect = rectRef.value || sliderElement.value.getBoundingClientRect();
+      const thumb = [...rootContext.thumbElements.value][rootContext.valueIndexToChangeRef.value];
+      const thumbWidth = rootContext.thumbAlignment.value === "contain" ? thumb.clientWidth : 0;
+      if (!offsetPosition.value && !slideStart && rootContext.thumbAlignment.value === "contain") offsetPosition.value = event.clientX - thumb.getBoundingClientRect().left;
+      const input = [0, rect.width - thumbWidth];
+      const output = isSlidingFromLeft.value ? [min.value, max.value] : [max.value, min.value];
+      const value = linearScale(input, output);
+      rectRef.value = rect;
+      const position = slideStart ? event.clientX - rect.left - thumbWidth / 2 : event.clientX - rect.left - (offsetPosition.value ?? 0);
+      return value(position);
+    }
+    const startEdge = computed(() => isSlidingFromLeft.value ? "left" : "right");
+    const endEdge = computed(() => isSlidingFromLeft.value ? "right" : "left");
+    const direction = computed(() => isSlidingFromLeft.value ? 1 : -1);
+    provideSliderOrientationContext({
+      startEdge,
+      endEdge,
+      direction,
+      size: "width"
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(SliderImpl_default, {
+        ref: unref(forwardRef),
+        dir: unref(dir),
+        "data-orientation": "horizontal",
+        style: normalizeStyle({ ["--reka-slider-thumb-transform"]: !isSlidingFromLeft.value && unref(rootContext).thumbAlignment.value === "overflow" ? "translateX(50%)" : "translateX(-50%)" }),
+        onSlideStart: _cache[0] || (_cache[0] = (event) => {
+          const value = getValueFromPointerEvent(event, true);
+          emits("slideStart", value);
+        }),
+        onSlideMove: _cache[1] || (_cache[1] = (event) => {
+          const value = getValueFromPointerEvent(event);
+          emits("slideMove", value);
+        }),
+        onSlideEnd: _cache[2] || (_cache[2] = () => {
+          rectRef.value = void 0;
+          offsetPosition.value = void 0;
+          emits("slideEnd");
+        }),
+        onStepKeyDown: _cache[3] || (_cache[3] = (event) => {
+          const slideDirection = isSlidingFromLeft.value ? "from-left" : "from-right";
+          const isBackKey = unref(BACK_KEYS)[slideDirection].includes(event.key);
+          emits("stepKeyDown", event, isBackKey ? -1 : 1);
+        }),
+        onEndKeyDown: _cache[4] || (_cache[4] = ($event) => emits("endKeyDown", $event)),
+        onHomeKeyDown: _cache[5] || (_cache[5] = ($event) => emits("homeKeyDown", $event))
+      }, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 8, ["dir", "style"]);
+    };
+  }
+});
+var SliderHorizontal_default = SliderHorizontal_vue_vue_type_script_setup_true_lang_default;
+var SliderVertical_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SliderVertical",
+  props: {
+    min: {
+      type: Number,
+      required: true
+    },
+    max: {
+      type: Number,
+      required: true
+    },
+    inverted: {
+      type: Boolean,
+      required: true
+    }
+  },
+  emits: [
+    "slideEnd",
+    "slideStart",
+    "slideMove",
+    "homeKeyDown",
+    "endKeyDown",
+    "stepKeyDown"
+  ],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const { max, min, inverted } = toRefs(props);
+    const rootContext = injectSliderRootContext();
+    const { forwardRef, currentElement: sliderElement } = useForwardExpose();
+    const offsetPosition = ref();
+    const rectRef = ref();
+    const isSlidingFromBottom = computed(() => !inverted.value);
+    function getValueFromPointerEvent(event, slideStart) {
+      const rect = rectRef.value || sliderElement.value.getBoundingClientRect();
+      const thumb = [...rootContext.thumbElements.value][rootContext.valueIndexToChangeRef.value];
+      const thumbHeight = rootContext.thumbAlignment.value === "contain" ? thumb.clientHeight : 0;
+      if (!offsetPosition.value && !slideStart && rootContext.thumbAlignment.value === "contain") offsetPosition.value = event.clientY - thumb.getBoundingClientRect().top;
+      const input = [0, rect.height - thumbHeight];
+      const output = isSlidingFromBottom.value ? [max.value, min.value] : [min.value, max.value];
+      const value = linearScale(input, output);
+      const position = slideStart ? event.clientY - rect.top - thumbHeight / 2 : event.clientY - rect.top - (offsetPosition.value ?? 0);
+      rectRef.value = rect;
+      return value(position);
+    }
+    const startEdge = computed(() => isSlidingFromBottom.value ? "bottom" : "top");
+    const endEdge = computed(() => isSlidingFromBottom.value ? "top" : "bottom");
+    const direction = computed(() => isSlidingFromBottom.value ? 1 : -1);
+    provideSliderOrientationContext({
+      startEdge,
+      endEdge,
+      direction,
+      size: "height"
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(SliderImpl_default, {
+        ref: unref(forwardRef),
+        "data-orientation": "vertical",
+        style: normalizeStyle({ ["--reka-slider-thumb-transform"]: !isSlidingFromBottom.value && unref(rootContext).thumbAlignment.value === "overflow" ? "translateY(-50%)" : "translateY(50%)" }),
+        onSlideStart: _cache[0] || (_cache[0] = (event) => {
+          const value = getValueFromPointerEvent(event, true);
+          emits("slideStart", value);
+        }),
+        onSlideMove: _cache[1] || (_cache[1] = (event) => {
+          const value = getValueFromPointerEvent(event);
+          emits("slideMove", value);
+        }),
+        onSlideEnd: _cache[2] || (_cache[2] = () => {
+          rectRef.value = void 0;
+          offsetPosition.value = void 0;
+          emits("slideEnd");
+        }),
+        onStepKeyDown: _cache[3] || (_cache[3] = (event) => {
+          const slideDirection = isSlidingFromBottom.value ? "from-bottom" : "from-top";
+          const isBackKey = unref(BACK_KEYS)[slideDirection].includes(event.key);
+          emits("stepKeyDown", event, isBackKey ? -1 : 1);
+        }),
+        onEndKeyDown: _cache[4] || (_cache[4] = ($event) => emits("endKeyDown", $event)),
+        onHomeKeyDown: _cache[5] || (_cache[5] = ($event) => emits("homeKeyDown", $event))
+      }, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 8, ["style"]);
+    };
+  }
+});
+var SliderVertical_default = SliderVertical_vue_vue_type_script_setup_true_lang_default;
+const [injectSliderRootContext, provideSliderRootContext] = /* @__PURE__ */ createContext("SliderRoot");
+var SliderRoot_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "SliderRoot",
+  props: {
+    defaultValue: {
+      type: Array,
+      required: false,
+      default: () => [0]
+    },
+    modelValue: {
+      type: [Array, null],
+      required: false
+    },
+    disabled: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    orientation: {
+      type: String,
+      required: false,
+      default: "horizontal"
+    },
+    dir: {
+      type: String,
+      required: false
+    },
+    inverted: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    min: {
+      type: Number,
+      required: false,
+      default: 0
+    },
+    max: {
+      type: Number,
+      required: false,
+      default: 100
+    },
+    step: {
+      type: Number,
+      required: false,
+      default: 1
+    },
+    minStepsBetweenThumbs: {
+      type: Number,
+      required: false,
+      default: 0
+    },
+    thumbAlignment: {
+      type: String,
+      required: false,
+      default: "contain"
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "span"
+    },
+    name: {
+      type: String,
+      required: false
+    },
+    required: {
+      type: Boolean,
+      required: false
+    }
+  },
+  emits: ["update:modelValue", "valueCommit"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const { min, max, step, minStepsBetweenThumbs, orientation, disabled, thumbAlignment, dir: propDir } = toRefs(props);
+    const dir = useDirection(propDir);
+    const { forwardRef, currentElement } = useForwardExpose();
+    const isFormControl = useFormControl(currentElement);
+    const { CollectionSlot } = useCollection({ isProvider: true });
+    const modelValue = useVModel(props, "modelValue", emits, {
+      defaultValue: props.defaultValue,
+      passive: props.modelValue === void 0
+    });
+    const currentModelValue = computed(() => Array.isArray(modelValue.value) ? [...modelValue.value] : []);
+    const valueIndexToChangeRef = ref(0);
+    const valuesBeforeSlideStartRef = ref(currentModelValue.value);
+    function handleSlideStart(value) {
+      const closestIndex = getClosestValueIndex(currentModelValue.value, value);
+      updateValues(value, closestIndex);
+    }
+    function handleSlideMove(value) {
+      updateValues(value, valueIndexToChangeRef.value);
+    }
+    function handleSlideEnd() {
+      const prevValue = valuesBeforeSlideStartRef.value[valueIndexToChangeRef.value];
+      const nextValue = currentModelValue.value[valueIndexToChangeRef.value];
+      const hasChanged = nextValue !== prevValue;
+      if (hasChanged) emits("valueCommit", toRaw(currentModelValue.value));
+    }
+    function updateValues(value, atIndex, { commit } = { commit: false }) {
+      const decimalCount = getDecimalCount(step.value);
+      const snapToStep = roundValue(Math.round((value - min.value) / step.value) * step.value + min.value, decimalCount);
+      const nextValue = clamp(snapToStep, min.value, max.value);
+      const nextValues = getNextSortedValues(currentModelValue.value, nextValue, atIndex);
+      if (hasMinStepsBetweenValues(nextValues, minStepsBetweenThumbs.value * step.value)) {
+        valueIndexToChangeRef.value = nextValues.indexOf(nextValue);
+        const hasChanged = String(nextValues) !== String(modelValue.value);
+        if (hasChanged && commit) emits("valueCommit", nextValues);
+        if (hasChanged) {
+          thumbElements.value[valueIndexToChangeRef.value]?.focus();
+          modelValue.value = nextValues;
+        }
+      }
+    }
+    const thumbElements = ref([]);
+    provideSliderRootContext({
+      modelValue,
+      currentModelValue,
+      valueIndexToChangeRef,
+      thumbElements,
+      orientation,
+      min,
+      max,
+      disabled,
+      thumbAlignment
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(CollectionSlot), null, {
+        default: withCtx(() => [(openBlock(), createBlock(resolveDynamicComponent(unref(orientation) === "horizontal" ? SliderHorizontal_default : SliderVertical_default), mergeProps(_ctx.$attrs, {
+          ref: unref(forwardRef),
+          "as-child": _ctx.asChild,
+          as: _ctx.as,
+          min: unref(min),
+          max: unref(max),
+          dir: unref(dir),
+          inverted: _ctx.inverted,
+          "aria-disabled": unref(disabled),
+          "data-disabled": unref(disabled) ? "" : void 0,
+          onPointerdown: _cache[0] || (_cache[0] = () => {
+            if (!unref(disabled)) valuesBeforeSlideStartRef.value = currentModelValue.value;
+          }),
+          onSlideStart: _cache[1] || (_cache[1] = ($event) => !unref(disabled) && handleSlideStart($event)),
+          onSlideMove: _cache[2] || (_cache[2] = ($event) => !unref(disabled) && handleSlideMove($event)),
+          onSlideEnd: _cache[3] || (_cache[3] = ($event) => !unref(disabled) && handleSlideEnd()),
+          onHomeKeyDown: _cache[4] || (_cache[4] = ($event) => !unref(disabled) && updateValues(unref(min), 0, { commit: true })),
+          onEndKeyDown: _cache[5] || (_cache[5] = ($event) => !unref(disabled) && updateValues(unref(max), currentModelValue.value.length - 1, { commit: true })),
+          onStepKeyDown: _cache[6] || (_cache[6] = (event, direction) => {
+            if (!unref(disabled)) {
+              const isPageKey = unref(PAGE_KEYS).includes(event.key);
+              const isSkipKey = isPageKey || event.shiftKey && unref(ARROW_KEYS).includes(event.key);
+              const multiplier = isSkipKey ? 10 : 1;
+              const atIndex = valueIndexToChangeRef.value;
+              const value = currentModelValue.value[atIndex];
+              const stepInDirection = unref(step) * multiplier * direction;
+              updateValues(value + stepInDirection, atIndex, { commit: true });
+            }
+          })
+        }), {
+          default: withCtx(() => [renderSlot(_ctx.$slots, "default", { modelValue: unref(modelValue) }), unref(isFormControl) && _ctx.name ? (openBlock(), createBlock(unref(VisuallyHiddenInput_default), {
+            key: 0,
+            type: "number",
+            value: unref(modelValue),
+            name: _ctx.name,
+            required: _ctx.required,
+            disabled: unref(disabled),
+            step: unref(step)
+          }, null, 8, [
+            "value",
+            "name",
+            "required",
+            "disabled",
+            "step"
+          ])) : createCommentVNode("v-if", true)]),
+          _: 3
+        }, 16, [
+          "as-child",
+          "as",
+          "min",
+          "max",
+          "dir",
+          "inverted",
+          "aria-disabled",
+          "data-disabled"
+        ]))]),
+        _: 3
+      });
+    };
+  }
+});
+var SliderRoot_default = SliderRoot_vue_vue_type_script_setup_true_lang_default;
+var SliderImpl_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SliderImpl",
+  props: {
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "span"
+    }
+  },
+  emits: [
+    "slideStart",
+    "slideMove",
+    "slideEnd",
+    "homeKeyDown",
+    "endKeyDown",
+    "stepKeyDown"
+  ],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const rootContext = injectSliderRootContext();
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), mergeProps({ "data-slider-impl": "" }, props, {
+        onKeydown: _cache[0] || (_cache[0] = (event) => {
+          if (event.key === "Home") {
+            emits("homeKeyDown", event);
+            event.preventDefault();
+          } else if (event.key === "End") {
+            emits("endKeyDown", event);
+            event.preventDefault();
+          } else if (unref(PAGE_KEYS).concat(unref(ARROW_KEYS)).includes(event.key)) {
+            emits("stepKeyDown", event);
+            event.preventDefault();
+          }
+        }),
+        onPointerdown: _cache[1] || (_cache[1] = (event) => {
+          const target = event.target;
+          target.setPointerCapture(event.pointerId);
+          event.preventDefault();
+          if (unref(rootContext).thumbElements.value.includes(target)) target.focus();
+          else emits("slideStart", event);
+        }),
+        onPointermove: _cache[2] || (_cache[2] = (event) => {
+          const target = event.target;
+          if (target.hasPointerCapture(event.pointerId)) emits("slideMove", event);
+        }),
+        onPointerup: _cache[3] || (_cache[3] = (event) => {
+          const target = event.target;
+          if (target.hasPointerCapture(event.pointerId)) {
+            target.releasePointerCapture(event.pointerId);
+            emits("slideEnd", event);
+          }
+        })
+      }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16);
+    };
+  }
+});
+var SliderImpl_default = SliderImpl_vue_vue_type_script_setup_true_lang_default;
+var SliderRange_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SliderRange",
+  props: {
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "span"
+    }
+  },
+  setup(__props) {
+    const rootContext = injectSliderRootContext();
+    const orientation = injectSliderOrientationContext();
+    useForwardExpose();
+    const percentages = computed(() => rootContext.currentModelValue.value.map((value) => convertValueToPercentage(value, rootContext.min.value, rootContext.max.value)));
+    const offsetStart = computed(() => rootContext.currentModelValue.value.length > 1 ? Math.min(...percentages.value) : 0);
+    const offsetEnd = computed(() => 100 - Math.max(...percentages.value, 0));
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), {
+        "data-disabled": unref(rootContext).disabled.value ? "" : void 0,
+        "data-orientation": unref(rootContext).orientation.value,
+        "as-child": _ctx.asChild,
+        as: _ctx.as,
+        style: normalizeStyle({
+          [unref(orientation).startEdge.value]: `${offsetStart.value}%`,
+          [unref(orientation).endEdge.value]: `${offsetEnd.value}%`
+        })
+      }, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 8, [
+        "data-disabled",
+        "data-orientation",
+        "as-child",
+        "as",
+        "style"
+      ]);
+    };
+  }
+});
+var SliderRange_default = SliderRange_vue_vue_type_script_setup_true_lang_default;
+var SliderThumbImpl_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "SliderThumbImpl",
+  props: {
+    index: {
+      type: Number,
+      required: true
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const rootContext = injectSliderRootContext();
+    const orientation = injectSliderOrientationContext();
+    const { forwardRef } = useForwardExpose();
+    const { CollectionItem } = useCollection();
+    const value = computed(() => rootContext.modelValue?.value?.[props.index]);
+    const percent = computed(() => value.value === void 0 ? 0 : convertValueToPercentage(value.value, rootContext.min.value ?? 0, rootContext.max.value ?? 100));
+    const label = computed(() => getLabel(props.index, rootContext.modelValue?.value?.length ?? 0));
+    const size2 = useSize();
+    const orientationSize = computed(() => size2[orientation.size].value);
+    const thumbInBoundsOffset = computed(() => {
+      if (rootContext.thumbAlignment.value === "overflow" || !orientationSize.value) return 0;
+      else return getThumbInBoundsOffset(orientationSize.value, percent.value, orientation.direction.value);
+    });
+    const isMounted = useMounted();
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(CollectionItem), null, {
+        default: withCtx(() => [createVNode(unref(Primitive), mergeProps(_ctx.$attrs, {
+          ref: unref(forwardRef),
+          role: "slider",
+          tabindex: unref(rootContext).disabled.value ? void 0 : 0,
+          "aria-label": _ctx.$attrs["aria-label"] || label.value,
+          "data-disabled": unref(rootContext).disabled.value ? "" : void 0,
+          "data-orientation": unref(rootContext).orientation.value,
+          "aria-valuenow": value.value,
+          "aria-valuemin": unref(rootContext).min.value,
+          "aria-valuemax": unref(rootContext).max.value,
+          "aria-orientation": unref(rootContext).orientation.value,
+          "as-child": _ctx.asChild,
+          as: _ctx.as,
+          style: {
+            transform: "var(--reka-slider-thumb-transform)",
+            position: "absolute",
+            [unref(orientation).startEdge.value]: `calc(${percent.value}% + ${thumbInBoundsOffset.value}px)`,
+            display: !unref(isMounted) && value.value === void 0 ? "none" : void 0
+          },
+          onFocus: _cache[0] || (_cache[0] = () => {
+            unref(rootContext).valueIndexToChangeRef.value = _ctx.index;
+          })
+        }), {
+          default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+          _: 3
+        }, 16, [
+          "tabindex",
+          "aria-label",
+          "data-disabled",
+          "data-orientation",
+          "aria-valuenow",
+          "aria-valuemin",
+          "aria-valuemax",
+          "aria-orientation",
+          "as-child",
+          "as",
+          "style"
+        ])]),
+        _: 3
+      });
+    };
+  }
+});
+var SliderThumbImpl_default = SliderThumbImpl_vue_vue_type_script_setup_true_lang_default;
+var SliderThumb_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SliderThumb",
+  props: {
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "span"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const { getItems } = useCollection();
+    const { forwardRef, currentElement: thumbElement } = useForwardExpose();
+    const index2 = computed(() => thumbElement.value ? getItems(true).findIndex((i) => i.ref === thumbElement.value) : -1);
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(SliderThumbImpl_default, mergeProps({ ref: unref(forwardRef) }, props, { index: index2.value }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16, ["index"]);
+    };
+  }
+});
+var SliderThumb_default = SliderThumb_vue_vue_type_script_setup_true_lang_default;
+var SliderTrack_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SliderTrack",
+  props: {
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "span"
+    }
+  },
+  setup(__props) {
+    const rootContext = injectSliderRootContext();
+    useForwardExpose();
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), {
+        "as-child": _ctx.asChild,
+        as: _ctx.as,
+        "data-disabled": unref(rootContext).disabled.value ? "" : void 0,
+        "data-orientation": unref(rootContext).orientation.value
+      }, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 8, [
+        "as-child",
+        "as",
+        "data-disabled",
+        "data-orientation"
+      ]);
+    };
+  }
+});
+var SliderTrack_default = SliderTrack_vue_vue_type_script_setup_true_lang_default;
+var Label_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "Label",
+  props: {
+    for: {
+      type: String,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "label"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    useForwardExpose();
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), mergeProps(props, { onMousedown: _cache[0] || (_cache[0] = (event) => {
+        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
+      }) }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16);
+    };
+  }
+});
+var Label_default = Label_vue_vue_type_script_setup_true_lang_default;
+const OPEN_KEYS = [
+  " ",
+  "Enter",
+  "ArrowUp",
+  "ArrowDown"
+];
+const SELECTION_KEYS = [" ", "Enter"];
+const CONTENT_MARGIN = 10;
+function valueComparator(value, currentValue, comparator) {
+  if (value === void 0) return false;
+  else if (Array.isArray(value)) return value.some((val) => compare(val, currentValue, comparator));
+  else return compare(value, currentValue, comparator);
+}
+function compare(value, currentValue, comparator) {
+  if (value === void 0 || currentValue === void 0) return false;
+  if (typeof value === "string") return value === currentValue;
+  if (typeof comparator === "function") return comparator(value, currentValue);
+  if (typeof comparator === "string") return value?.[comparator] === currentValue?.[comparator];
+  return isEqual(value, currentValue);
+}
+function shouldShowPlaceholder(value) {
+  return value === void 0 || value === null || value === "" || Array.isArray(value) && value.length === 0;
+}
+const _hoisted_1$1 = {
+  key: 0,
+  value: ""
+};
+const [injectSelectRootContext, provideSelectRootContext] = /* @__PURE__ */ createContext("SelectRoot");
+var SelectRoot_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "SelectRoot",
+  props: {
+    open: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    },
+    defaultOpen: {
+      type: Boolean,
+      required: false
+    },
+    defaultValue: {
+      type: null,
+      required: false
+    },
+    modelValue: {
+      type: null,
+      required: false,
+      default: void 0
+    },
+    by: {
+      type: [String, Function],
+      required: false
+    },
+    dir: {
+      type: String,
+      required: false
+    },
+    multiple: {
+      type: Boolean,
+      required: false
+    },
+    autocomplete: {
+      type: String,
+      required: false
+    },
+    disabled: {
+      type: Boolean,
+      required: false
+    },
+    name: {
+      type: String,
+      required: false
+    },
+    required: {
+      type: Boolean,
+      required: false
+    }
+  },
+  emits: ["update:modelValue", "update:open"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const { required, disabled, multiple, dir: propDir } = toRefs(props);
+    const modelValue = useVModel(props, "modelValue", emits, {
+      defaultValue: props.defaultValue ?? (multiple.value ? [] : void 0),
+      passive: props.modelValue === void 0,
+      deep: true
+    });
+    const open = useVModel(props, "open", emits, {
+      defaultValue: props.defaultOpen,
+      passive: props.open === void 0
+    });
+    const triggerElement = ref();
+    const valueElement = ref();
+    const triggerPointerDownPosRef = ref({
+      x: 0,
+      y: 0
+    });
+    const isEmptyModelValue = computed(() => {
+      if (multiple.value && Array.isArray(modelValue.value)) return modelValue.value?.length === 0;
+      else return isNullish(modelValue.value);
+    });
+    useCollection({ isProvider: true });
+    const dir = useDirection(propDir);
+    const isFormControl = useFormControl(triggerElement);
+    const optionsSet = ref(/* @__PURE__ */ new Set());
+    const nativeSelectKey = computed(() => {
+      return Array.from(optionsSet.value).map((option) => option.value).join(";");
+    });
+    function handleValueChange(value) {
+      if (multiple.value) {
+        const array = Array.isArray(modelValue.value) ? [...modelValue.value] : [];
+        const index2 = array.findIndex((i) => compare(i, value, props.by));
+        index2 === -1 ? array.push(value) : array.splice(index2, 1);
+        modelValue.value = [...array];
+      } else modelValue.value = value;
+    }
+    function getOption(value) {
+      return Array.from(optionsSet.value).find((option) => valueComparator(value, option.value, props.by));
+    }
+    provideSelectRootContext({
+      triggerElement,
+      onTriggerChange: (node) => {
+        triggerElement.value = node;
+      },
+      valueElement,
+      onValueElementChange: (node) => {
+        valueElement.value = node;
+      },
+      contentId: "",
+      modelValue,
+      onValueChange: handleValueChange,
+      by: props.by,
+      open,
+      multiple,
+      required,
+      onOpenChange: (value) => {
+        open.value = value;
+      },
+      dir,
+      triggerPointerDownPosRef,
+      disabled,
+      isEmptyModelValue,
+      optionsSet,
+      onOptionAdd: (option) => {
+        const existingOption = getOption(option.value);
+        if (existingOption) optionsSet.value.delete(existingOption);
+        optionsSet.value.add(option);
+      },
+      onOptionRemove: (option) => {
+        const existingOption = getOption(option.value);
+        if (existingOption) optionsSet.value.delete(existingOption);
+      }
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(PopperRoot_default), null, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default", {
+          modelValue: unref(modelValue),
+          open: unref(open)
+        }), unref(isFormControl) && _ctx.name ? (openBlock(), createBlock(BubbleSelect_default, {
+          key: nativeSelectKey.value,
+          "aria-hidden": "true",
+          tabindex: "-1",
+          multiple: unref(multiple),
+          required: unref(required),
+          name: _ctx.name,
+          autocomplete: _ctx.autocomplete,
+          disabled: unref(disabled),
+          value: unref(modelValue)
+        }, {
+          default: withCtx(() => [unref(isNullish)(unref(modelValue)) ? (openBlock(), createElementBlock("option", _hoisted_1$1)) : createCommentVNode("v-if", true), (openBlock(true), createElementBlock(Fragment, null, renderList(Array.from(optionsSet.value), (option) => {
+            return openBlock(), createElementBlock("option", mergeProps({ key: option.value ?? "" }, { ref_for: true }, option), null, 16);
+          }), 128))]),
+          _: 1
+        }, 8, [
+          "multiple",
+          "required",
+          "name",
+          "autocomplete",
+          "disabled",
+          "value"
+        ])) : createCommentVNode("v-if", true)]),
+        _: 3
+      });
+    };
+  }
+});
+var SelectRoot_default = SelectRoot_vue_vue_type_script_setup_true_lang_default;
+var BubbleSelect_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "BubbleSelect",
+  props: {
+    autocomplete: {
+      type: String,
+      required: false
+    },
+    autofocus: {
+      type: Boolean,
+      required: false
+    },
+    disabled: {
+      type: Boolean,
+      required: false
+    },
+    form: {
+      type: String,
+      required: false
+    },
+    multiple: {
+      type: Boolean,
+      required: false
+    },
+    name: {
+      type: String,
+      required: false
+    },
+    required: {
+      type: Boolean,
+      required: false
+    },
+    size: {
+      type: Number,
+      required: false
+    },
+    value: {
+      type: null,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const selectElement = ref();
+    const rootContext = injectSelectRootContext();
+    watch(() => props.value, (cur, prev) => {
+      const selectProto = (void 0).HTMLSelectElement.prototype;
+      const descriptor = Object.getOwnPropertyDescriptor(selectProto, "value");
+      const setValue = descriptor.set;
+      if (cur !== prev && setValue && selectElement.value) {
+        const event = new Event("change", { bubbles: true });
+        setValue.call(selectElement.value, cur);
+        selectElement.value.dispatchEvent(event);
+      }
+    });
+    function handleInput(event) {
+      rootContext.onValueChange(event.target.value);
+    }
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(VisuallyHidden_default), { "as-child": "" }, {
+        default: withCtx(() => [createElementVNode("select", mergeProps({
+          ref_key: "selectElement",
+          ref: selectElement
+        }, props, { onInput: handleInput }), [renderSlot(_ctx.$slots, "default")], 16)]),
+        _: 3
+      });
+    };
+  }
+});
+var BubbleSelect_default = BubbleSelect_vue_vue_type_script_setup_true_lang_default;
+var SelectPopperPosition_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectPopperPosition",
+  props: {
+    side: {
+      type: null,
+      required: false
+    },
+    sideOffset: {
+      type: Number,
+      required: false
+    },
+    sideFlip: {
+      type: Boolean,
+      required: false
+    },
+    align: {
+      type: null,
+      required: false,
+      default: "start"
+    },
+    alignOffset: {
+      type: Number,
+      required: false
+    },
+    alignFlip: {
+      type: Boolean,
+      required: false
+    },
+    avoidCollisions: {
+      type: Boolean,
+      required: false
+    },
+    collisionBoundary: {
+      type: null,
+      required: false
+    },
+    collisionPadding: {
+      type: [Number, Object],
+      required: false,
+      default: CONTENT_MARGIN
+    },
+    arrowPadding: {
+      type: Number,
+      required: false
+    },
+    hideShiftedArrow: {
+      type: Boolean,
+      required: false
+    },
+    sticky: {
+      type: String,
+      required: false
+    },
+    hideWhenDetached: {
+      type: Boolean,
+      required: false
+    },
+    positionStrategy: {
+      type: String,
+      required: false
+    },
+    updatePositionStrategy: {
+      type: String,
+      required: false
+    },
+    disableUpdateOnLayoutShift: {
+      type: Boolean,
+      required: false
+    },
+    prioritizePosition: {
+      type: Boolean,
+      required: false
+    },
+    reference: {
+      type: null,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const forwarded = useForwardProps$1(props);
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(PopperContent_default), mergeProps(unref(forwarded), { style: {
+        "boxSizing": "border-box",
+        "--reka-select-content-transform-origin": "var(--reka-popper-transform-origin)",
+        "--reka-select-content-available-width": "var(--reka-popper-available-width)",
+        "--reka-select-content-available-height": "var(--reka-popper-available-height)",
+        "--reka-select-trigger-width": "var(--reka-popper-anchor-width)",
+        "--reka-select-trigger-height": "var(--reka-popper-anchor-height)"
+      } }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16);
+    };
+  }
+});
+var SelectPopperPosition_default = SelectPopperPosition_vue_vue_type_script_setup_true_lang_default;
+const SelectContentDefaultContextValue = {
+  onViewportChange: () => {
+  },
+  itemTextRefCallback: () => {
+  },
+  itemRefCallback: () => {
+  }
+};
+const [injectSelectContentContext, provideSelectContentContext] = /* @__PURE__ */ createContext("SelectContent");
+var SelectContentImpl_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectContentImpl",
+  props: {
+    position: {
+      type: String,
+      required: false,
+      default: "item-aligned"
+    },
+    bodyLock: {
+      type: Boolean,
+      required: false,
+      default: true
+    },
+    side: {
+      type: null,
+      required: false
+    },
+    sideOffset: {
+      type: Number,
+      required: false
+    },
+    sideFlip: {
+      type: Boolean,
+      required: false
+    },
+    align: {
+      type: null,
+      required: false,
+      default: "start"
+    },
+    alignOffset: {
+      type: Number,
+      required: false
+    },
+    alignFlip: {
+      type: Boolean,
+      required: false
+    },
+    avoidCollisions: {
+      type: Boolean,
+      required: false
+    },
+    collisionBoundary: {
+      type: null,
+      required: false
+    },
+    collisionPadding: {
+      type: [Number, Object],
+      required: false
+    },
+    arrowPadding: {
+      type: Number,
+      required: false
+    },
+    hideShiftedArrow: {
+      type: Boolean,
+      required: false
+    },
+    sticky: {
+      type: String,
+      required: false
+    },
+    hideWhenDetached: {
+      type: Boolean,
+      required: false
+    },
+    positionStrategy: {
+      type: String,
+      required: false
+    },
+    updatePositionStrategy: {
+      type: String,
+      required: false
+    },
+    disableUpdateOnLayoutShift: {
+      type: Boolean,
+      required: false
+    },
+    prioritizePosition: {
+      type: Boolean,
+      required: false
+    },
+    reference: {
+      type: null,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    },
+    disableOutsidePointerEvents: {
+      type: Boolean,
+      required: false,
+      default: true
+    }
+  },
+  emits: [
+    "closeAutoFocus",
+    "escapeKeyDown",
+    "pointerDownOutside"
+  ],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const rootContext = injectSelectRootContext();
+    useFocusGuards();
+    useBodyScrollLock(props.bodyLock);
+    const { CollectionSlot, getItems } = useCollection();
+    const content = ref();
+    useHideOthers(content);
+    const { search, handleTypeaheadSearch } = useTypeahead();
+    const viewport = ref();
+    const selectedItem = ref();
+    const selectedItemText = ref();
+    const isPositioned = ref(false);
+    const firstValidItemFoundRef = ref(false);
+    const firstSelectedItemInArrayFoundRef = ref(false);
+    function focusSelectedItem() {
+      if (selectedItem.value && content.value) focusFirst([selectedItem.value, content.value]);
+    }
+    watch(isPositioned, () => {
+      focusSelectedItem();
+    });
+    const { onOpenChange, triggerPointerDownPosRef } = rootContext;
+    watchEffect((cleanupFn) => {
+      if (!content.value) return;
+      let pointerMoveDelta = {
+        x: 0,
+        y: 0
+      };
+      const handlePointerMove = (event) => {
+        pointerMoveDelta = {
+          x: Math.abs(Math.round(event.pageX) - (triggerPointerDownPosRef.value?.x ?? 0)),
+          y: Math.abs(Math.round(event.pageY) - (triggerPointerDownPosRef.value?.y ?? 0))
+        };
+      };
+      const handlePointerUp = (event) => {
+        if (event.pointerType === "touch") return;
+        if (pointerMoveDelta.x <= 10 && pointerMoveDelta.y <= 10) event.preventDefault();
+        else if (!content.value?.contains(event.target)) onOpenChange(false);
+        (void 0).removeEventListener("pointermove", handlePointerMove);
+        triggerPointerDownPosRef.value = null;
+      };
+      if (triggerPointerDownPosRef.value !== null) {
+        (void 0).addEventListener("pointermove", handlePointerMove);
+        (void 0).addEventListener("pointerup", handlePointerUp, {
+          capture: true,
+          once: true
+        });
+      }
+      cleanupFn(() => {
+        (void 0).removeEventListener("pointermove", handlePointerMove);
+        (void 0).removeEventListener("pointerup", handlePointerUp, { capture: true });
+      });
+    });
+    function handleKeyDown(event) {
+      const isModifierKey = event.ctrlKey || event.altKey || event.metaKey;
+      if (event.key === "Tab") event.preventDefault();
+      if (!isModifierKey && event.key.length === 1) handleTypeaheadSearch(event.key, getItems());
+      if ([
+        "ArrowUp",
+        "ArrowDown",
+        "Home",
+        "End"
+      ].includes(event.key)) {
+        const collectionItems = getItems().map((i) => i.ref);
+        let candidateNodes = [...collectionItems];
+        if (["ArrowUp", "End"].includes(event.key)) candidateNodes = candidateNodes.slice().reverse();
+        if (["ArrowUp", "ArrowDown"].includes(event.key)) {
+          const currentElement = event.target;
+          const currentIndex = candidateNodes.indexOf(currentElement);
+          candidateNodes = candidateNodes.slice(currentIndex + 1);
+        }
+        setTimeout(() => focusFirst(candidateNodes));
+        event.preventDefault();
+      }
+    }
+    const pickedProps = computed(() => {
+      if (props.position === "popper") return props;
+      else return {};
+    });
+    const forwardedProps = useForwardProps$1(pickedProps.value);
+    provideSelectContentContext({
+      content,
+      viewport,
+      onViewportChange: (node) => {
+        viewport.value = node;
+      },
+      itemRefCallback: (node, value, disabled) => {
+        const isFirstValidItem = !firstValidItemFoundRef.value && !disabled;
+        const isSelectedItem = valueComparator(rootContext.modelValue.value, value, rootContext.by);
+        if (rootContext.multiple.value) {
+          if (firstSelectedItemInArrayFoundRef.value) return;
+          if (isSelectedItem || isFirstValidItem) {
+            selectedItem.value = node;
+            if (isSelectedItem) firstSelectedItemInArrayFoundRef.value = true;
+          }
+        } else if (isSelectedItem || isFirstValidItem) selectedItem.value = node;
+        if (isFirstValidItem) firstValidItemFoundRef.value = true;
+      },
+      selectedItem,
+      selectedItemText,
+      onItemLeave: () => {
+        content.value?.focus();
+      },
+      itemTextRefCallback: (node, value, disabled) => {
+        const isFirstValidItem = !firstValidItemFoundRef.value && !disabled;
+        const isSelectedItem = valueComparator(rootContext.modelValue.value, value, rootContext.by);
+        if (isSelectedItem || isFirstValidItem) selectedItemText.value = node;
+      },
+      focusSelectedItem,
+      position: props.position,
+      isPositioned,
+      searchRef: search
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(CollectionSlot), null, {
+        default: withCtx(() => [createVNode(unref(FocusScope_default), {
+          "as-child": "",
+          onMountAutoFocus: _cache[6] || (_cache[6] = withModifiers(() => {
+          }, ["prevent"])),
+          onUnmountAutoFocus: _cache[7] || (_cache[7] = (event) => {
+            emits("closeAutoFocus", event);
+            if (event.defaultPrevented) return;
+            unref(rootContext).triggerElement.value?.focus({ preventScroll: true });
+            event.preventDefault();
+          })
+        }, {
+          default: withCtx(() => [createVNode(unref(DismissableLayer_default), {
+            "as-child": "",
+            "disable-outside-pointer-events": _ctx.disableOutsidePointerEvents,
+            onFocusOutside: _cache[2] || (_cache[2] = withModifiers(() => {
+            }, ["prevent"])),
+            onDismiss: _cache[3] || (_cache[3] = ($event) => unref(rootContext).onOpenChange(false)),
+            onEscapeKeyDown: _cache[4] || (_cache[4] = ($event) => emits("escapeKeyDown", $event)),
+            onPointerDownOutside: _cache[5] || (_cache[5] = ($event) => emits("pointerDownOutside", $event))
+          }, {
+            default: withCtx(() => [(openBlock(), createBlock(resolveDynamicComponent(_ctx.position === "popper" ? SelectPopperPosition_default : SelectItemAlignedPosition_default), mergeProps({
+              ..._ctx.$attrs,
+              ...unref(forwardedProps)
+            }, {
+              id: unref(rootContext).contentId,
+              ref: (vnode) => {
+                if (!vnode) return void 0;
+                const el = unref(unrefElement)(vnode);
+                if (el?.hasAttribute("data-reka-popper-content-wrapper")) content.value = el.firstElementChild;
+                else content.value = el;
+                return void 0;
+              },
+              role: "listbox",
+              "data-state": unref(rootContext).open.value ? "open" : "closed",
+              dir: unref(rootContext).dir.value,
+              style: {
+                display: "flex",
+                flexDirection: "column",
+                outline: "none"
+              },
+              onContextmenu: _cache[0] || (_cache[0] = withModifiers(() => {
+              }, ["prevent"])),
+              onPlaced: _cache[1] || (_cache[1] = ($event) => isPositioned.value = true),
+              onKeydown: handleKeyDown
+            }), {
+              default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+              _: 3
+            }, 16, [
+              "id",
+              "data-state",
+              "dir",
+              "onKeydown"
+            ]))]),
+            _: 3
+          }, 8, ["disable-outside-pointer-events"])]),
+          _: 3
+        })]),
+        _: 3
+      });
+    };
+  }
+});
+var SelectContentImpl_default = SelectContentImpl_vue_vue_type_script_setup_true_lang_default;
+const [injectSelectItemAlignedPositionContext, provideSelectItemAlignedPositionContext] = /* @__PURE__ */ createContext("SelectItemAlignedPosition");
+var SelectItemAlignedPosition_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "SelectItemAlignedPosition",
+  props: {
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  },
+  emits: ["placed"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const { getItems } = useCollection();
+    const rootContext = injectSelectRootContext();
+    const contentContext = injectSelectContentContext();
+    const shouldExpandOnScrollRef = ref(false);
+    const shouldRepositionRef = ref(true);
+    const contentWrapperElement = ref();
+    const { forwardRef, currentElement: contentElement } = useForwardExpose();
+    const { viewport, selectedItem, selectedItemText, focusSelectedItem } = contentContext;
+    function position() {
+      if (rootContext.triggerElement.value && rootContext.valueElement.value && contentWrapperElement.value && contentElement.value && viewport?.value && selectedItem?.value && selectedItemText?.value) {
+        const triggerRect = rootContext.triggerElement.value.getBoundingClientRect();
+        const contentRect = contentElement.value.getBoundingClientRect();
+        const valueNodeRect = rootContext.valueElement.value.getBoundingClientRect();
+        const itemTextRect = selectedItemText.value.getBoundingClientRect();
+        if (rootContext.dir.value !== "rtl") {
+          const itemTextOffset = itemTextRect.left - contentRect.left;
+          const left = valueNodeRect.left - itemTextOffset;
+          const leftDelta = triggerRect.left - left;
+          const minContentWidth = triggerRect.width + leftDelta;
+          const contentWidth = Math.max(minContentWidth, contentRect.width);
+          const rightEdge = (void 0).innerWidth - CONTENT_MARGIN;
+          const clampedLeft = clamp(left, CONTENT_MARGIN, Math.max(CONTENT_MARGIN, rightEdge - contentWidth));
+          contentWrapperElement.value.style.minWidth = `${minContentWidth}px`;
+          contentWrapperElement.value.style.left = `${clampedLeft}px`;
+        } else {
+          const itemTextOffset = contentRect.right - itemTextRect.right;
+          const right = (void 0).innerWidth - valueNodeRect.right - itemTextOffset;
+          const rightDelta = (void 0).innerWidth - triggerRect.right - right;
+          const minContentWidth = triggerRect.width + rightDelta;
+          const contentWidth = Math.max(minContentWidth, contentRect.width);
+          const leftEdge = (void 0).innerWidth - CONTENT_MARGIN;
+          const clampedRight = clamp(right, CONTENT_MARGIN, Math.max(CONTENT_MARGIN, leftEdge - contentWidth));
+          contentWrapperElement.value.style.minWidth = `${minContentWidth}px`;
+          contentWrapperElement.value.style.right = `${clampedRight}px`;
+        }
+        const items = getItems().map((i) => i.ref);
+        const availableHeight = (void 0).innerHeight - CONTENT_MARGIN * 2;
+        const itemsHeight = viewport.value.scrollHeight;
+        const contentStyles = (void 0).getComputedStyle(contentElement.value);
+        const contentBorderTopWidth = Number.parseInt(contentStyles.borderTopWidth, 10);
+        const contentPaddingTop = Number.parseInt(contentStyles.paddingTop, 10);
+        const contentBorderBottomWidth = Number.parseInt(contentStyles.borderBottomWidth, 10);
+        const contentPaddingBottom = Number.parseInt(contentStyles.paddingBottom, 10);
+        const fullContentHeight = contentBorderTopWidth + contentPaddingTop + itemsHeight + contentPaddingBottom + contentBorderBottomWidth;
+        const minContentHeight = Math.min(selectedItem.value.offsetHeight * 5, fullContentHeight);
+        const viewportStyles = (void 0).getComputedStyle(viewport.value);
+        const viewportPaddingTop = Number.parseInt(viewportStyles.paddingTop, 10);
+        const viewportPaddingBottom = Number.parseInt(viewportStyles.paddingBottom, 10);
+        const topEdgeToTriggerMiddle = triggerRect.top + triggerRect.height / 2 - CONTENT_MARGIN;
+        const triggerMiddleToBottomEdge = availableHeight - topEdgeToTriggerMiddle;
+        const selectedItemHalfHeight = selectedItem.value.offsetHeight / 2;
+        const itemOffsetMiddle = selectedItem.value.offsetTop + selectedItemHalfHeight;
+        const contentTopToItemMiddle = contentBorderTopWidth + contentPaddingTop + itemOffsetMiddle;
+        const itemMiddleToContentBottom = fullContentHeight - contentTopToItemMiddle;
+        const willAlignWithoutTopOverflow = contentTopToItemMiddle <= topEdgeToTriggerMiddle;
+        if (willAlignWithoutTopOverflow) {
+          const isLastItem = selectedItem.value === items.at(-1);
+          contentWrapperElement.value.style.bottom = `0px`;
+          const viewportOffsetBottom = contentElement.value.clientHeight - viewport.value.offsetTop - viewport.value.offsetHeight;
+          const clampedTriggerMiddleToBottomEdge = Math.max(triggerMiddleToBottomEdge, selectedItemHalfHeight + (isLastItem ? viewportPaddingBottom : 0) + viewportOffsetBottom + contentBorderBottomWidth);
+          const height = contentTopToItemMiddle + clampedTriggerMiddleToBottomEdge;
+          contentWrapperElement.value.style.height = `${height}px`;
+        } else {
+          const isFirstItem = selectedItem.value === items[0];
+          contentWrapperElement.value.style.top = `0px`;
+          const clampedTopEdgeToTriggerMiddle = Math.max(topEdgeToTriggerMiddle, contentBorderTopWidth + viewport.value.offsetTop + (isFirstItem ? viewportPaddingTop : 0) + selectedItemHalfHeight);
+          const height = clampedTopEdgeToTriggerMiddle + itemMiddleToContentBottom;
+          contentWrapperElement.value.style.height = `${height}px`;
+          viewport.value.scrollTop = contentTopToItemMiddle - topEdgeToTriggerMiddle + viewport.value.offsetTop;
+        }
+        contentWrapperElement.value.style.margin = `${CONTENT_MARGIN}px 0`;
+        contentWrapperElement.value.style.minHeight = `${minContentHeight}px`;
+        contentWrapperElement.value.style.maxHeight = `${availableHeight}px`;
+        emits("placed");
+        requestAnimationFrame(() => shouldExpandOnScrollRef.value = true);
+      }
+    }
+    const contentZIndex = ref("");
+    function handleScrollButtonChange(node) {
+      if (node && shouldRepositionRef.value === true) {
+        position();
+        focusSelectedItem?.();
+        shouldRepositionRef.value = false;
+      }
+    }
+    useResizeObserver(rootContext.triggerElement, () => {
+      position();
+    });
+    provideSelectItemAlignedPositionContext({
+      contentWrapper: contentWrapperElement,
+      shouldExpandOnScrollRef,
+      onScrollButtonChange: handleScrollButtonChange
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", {
+        ref_key: "contentWrapperElement",
+        ref: contentWrapperElement,
+        style: normalizeStyle({
+          display: "flex",
+          flexDirection: "column",
+          position: "fixed",
+          zIndex: contentZIndex.value
+        })
+      }, [createVNode(unref(Primitive), mergeProps({
+        ref: unref(forwardRef),
+        style: {
+          boxSizing: "border-box",
+          maxHeight: "100%"
+        }
+      }, {
+        ..._ctx.$attrs,
+        ...props
+      }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16)], 4);
+    };
+  }
+});
+var SelectItemAlignedPosition_default = SelectItemAlignedPosition_vue_vue_type_script_setup_true_lang_default;
+var SelectArrow_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectArrow",
+  props: {
+    width: {
+      type: Number,
+      required: false,
+      default: 10
+    },
+    height: {
+      type: Number,
+      required: false,
+      default: 5
+    },
+    rounded: {
+      type: Boolean,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "svg"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const contentContext = injectSelectContentContext(SelectContentDefaultContextValue);
+    return (_ctx, _cache) => {
+      return unref(contentContext).position === "popper" ? (openBlock(), createBlock(unref(PopperArrow_default), normalizeProps(mergeProps({ key: 0 }, props)), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16)) : createCommentVNode("v-if", true);
+    };
+  }
+});
+var SelectArrow_default = SelectArrow_vue_vue_type_script_setup_true_lang_default;
+var SelectProvider_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "SelectProvider",
+  props: { context: {
+    type: Object,
+    required: true
+  } },
+  setup(__props) {
+    const props = __props;
+    provideSelectRootContext(props.context);
+    provideSelectContentContext(SelectContentDefaultContextValue);
+    return (_ctx, _cache) => {
+      return renderSlot(_ctx.$slots, "default");
+    };
+  }
+});
+var SelectProvider_default = SelectProvider_vue_vue_type_script_setup_true_lang_default;
+const _hoisted_1 = { key: 1 };
+var SelectContent_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "SelectContent",
+  props: {
+    forceMount: {
+      type: Boolean,
+      required: false
+    },
+    position: {
+      type: String,
+      required: false
+    },
+    bodyLock: {
+      type: Boolean,
+      required: false
+    },
+    side: {
+      type: null,
+      required: false
+    },
+    sideOffset: {
+      type: Number,
+      required: false
+    },
+    sideFlip: {
+      type: Boolean,
+      required: false
+    },
+    align: {
+      type: null,
+      required: false
+    },
+    alignOffset: {
+      type: Number,
+      required: false
+    },
+    alignFlip: {
+      type: Boolean,
+      required: false
+    },
+    avoidCollisions: {
+      type: Boolean,
+      required: false
+    },
+    collisionBoundary: {
+      type: null,
+      required: false
+    },
+    collisionPadding: {
+      type: [Number, Object],
+      required: false
+    },
+    arrowPadding: {
+      type: Number,
+      required: false
+    },
+    hideShiftedArrow: {
+      type: Boolean,
+      required: false
+    },
+    sticky: {
+      type: String,
+      required: false
+    },
+    hideWhenDetached: {
+      type: Boolean,
+      required: false
+    },
+    positionStrategy: {
+      type: String,
+      required: false
+    },
+    updatePositionStrategy: {
+      type: String,
+      required: false
+    },
+    disableUpdateOnLayoutShift: {
+      type: Boolean,
+      required: false
+    },
+    prioritizePosition: {
+      type: Boolean,
+      required: false
+    },
+    reference: {
+      type: null,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    },
+    disableOutsidePointerEvents: {
+      type: Boolean,
+      required: false
+    }
+  },
+  emits: [
+    "closeAutoFocus",
+    "escapeKeyDown",
+    "pointerDownOutside"
+  ],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const forwarded = useForwardPropsEmits(props, emits);
+    const rootContext = injectSelectRootContext();
+    const fragment = ref();
+    const presenceRef = ref();
+    const present = computed(() => props.forceMount || rootContext.open.value);
+    const renderPresence = ref(present.value);
+    let renderPresenceTimeout;
+    function clearRenderPresenceTimeout() {
+      if (renderPresenceTimeout) {
+        clearTimeout(renderPresenceTimeout);
+        renderPresenceTimeout = void 0;
+      }
+    }
+    watch(present, (_value, _oldValue, onCleanup) => {
+      clearRenderPresenceTimeout();
+      renderPresenceTimeout = setTimeout(() => {
+        renderPresence.value = present.value;
+        renderPresenceTimeout = void 0;
+      });
+      onCleanup(clearRenderPresenceTimeout);
+    });
+    return (_ctx, _cache) => {
+      return present.value || renderPresence.value || presenceRef.value?.present ? (openBlock(), createBlock(unref(Presence_default), {
+        key: 0,
+        ref_key: "presenceRef",
+        ref: presenceRef,
+        present: present.value
+      }, {
+        default: withCtx(() => [createVNode(SelectContentImpl_default, normalizeProps(guardReactiveProps({
+          ...unref(forwarded),
+          ..._ctx.$attrs
+        })), {
+          default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+          _: 3
+        }, 16)]),
+        _: 3
+      }, 8, ["present"])) : fragment.value ? (openBlock(), createElementBlock("div", _hoisted_1, [(openBlock(), createBlock(Teleport, { to: fragment.value }, [createVNode(SelectProvider_default, { context: unref(rootContext) }, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 8, ["context"])], 8, ["to"]))])) : createCommentVNode("v-if", true);
+    };
+  }
+});
+var SelectContent_default = SelectContent_vue_vue_type_script_setup_true_lang_default;
+const [injectSelectGroupContext, provideSelectGroupContext] = /* @__PURE__ */ createContext("SelectGroup");
+var SelectGroup_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectGroup",
+  props: {
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const id = useId$1(void 0, "reka-select-group");
+    provideSelectGroupContext({ id });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), mergeProps({ role: "group" }, props, { "aria-labelledby": unref(id) }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16, ["aria-labelledby"]);
+    };
+  }
+});
+var SelectGroup_default = SelectGroup_vue_vue_type_script_setup_true_lang_default;
+const [injectSelectItemContext, provideSelectItemContext] = /* @__PURE__ */ createContext("SelectItem");
+var SelectItem_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectItem",
+  props: {
+    value: {
+      type: null,
+      required: true
+    },
+    disabled: {
+      type: Boolean,
+      required: false
+    },
+    textValue: {
+      type: String,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  },
+  emits: ["select"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const { disabled } = toRefs(props);
+    const rootContext = injectSelectRootContext();
+    const contentContext = injectSelectContentContext();
+    const { forwardRef } = useForwardExpose();
+    const { CollectionItem } = useCollection();
+    const isSelected = computed(() => valueComparator(rootContext.modelValue?.value, props.value, rootContext.by));
+    const isFocused = ref(false);
+    const textValue = ref(props.textValue ?? "");
+    const textId = useId$1(void 0, "reka-select-item-text");
+    const SELECT_SELECT = "select.select";
+    async function handleSelectCustomEvent(ev) {
+      if (ev.defaultPrevented) return;
+      const eventDetail = {
+        originalEvent: ev,
+        value: props.value
+      };
+      handleAndDispatchCustomEvent(SELECT_SELECT, handleSelect, eventDetail);
+    }
+    async function handleSelect(ev) {
+      await nextTick();
+      emits("select", ev);
+      if (ev.defaultPrevented) return;
+      if (!disabled.value) {
+        rootContext.onValueChange(props.value);
+        if (!rootContext.multiple.value) rootContext.onOpenChange(false);
+      }
+    }
+    async function handlePointerMove(event) {
+      await nextTick();
+      if (event.defaultPrevented) return;
+      if (disabled.value) contentContext.onItemLeave?.();
+      else event.currentTarget?.focus({ preventScroll: true });
+    }
+    async function handlePointerLeave(event) {
+      await nextTick();
+      if (event.defaultPrevented) return;
+      if (event.currentTarget === getActiveElement()) contentContext.onItemLeave?.();
+    }
+    async function handleKeyDown(event) {
+      await nextTick();
+      if (event.defaultPrevented) return;
+      const isTypingAhead = contentContext.searchRef?.value !== "";
+      if (isTypingAhead && event.key === " ") return;
+      if (SELECTION_KEYS.includes(event.key)) handleSelectCustomEvent(event);
+      if (event.key === " ") event.preventDefault();
+    }
+    if (props.value === "") throw new Error("A <SelectItem /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.");
+    provideSelectItemContext({
+      value: props.value,
+      disabled,
+      textId,
+      isSelected,
+      onItemTextChange: (node) => {
+        textValue.value = ((textValue.value || node?.textContent) ?? "").trim();
+      }
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(CollectionItem), { value: { textValue: textValue.value } }, {
+        default: withCtx(() => [createVNode(unref(Primitive), {
+          ref: unref(forwardRef),
+          role: "option",
+          "aria-labelledby": unref(textId),
+          "data-highlighted": isFocused.value ? "" : void 0,
+          "aria-selected": isSelected.value,
+          "data-state": isSelected.value ? "checked" : "unchecked",
+          "aria-disabled": unref(disabled) || void 0,
+          "data-disabled": unref(disabled) ? "" : void 0,
+          tabindex: unref(disabled) ? void 0 : -1,
+          as: _ctx.as,
+          "as-child": _ctx.asChild,
+          onFocus: _cache[0] || (_cache[0] = ($event) => isFocused.value = true),
+          onBlur: _cache[1] || (_cache[1] = ($event) => isFocused.value = false),
+          onPointerup: handleSelectCustomEvent,
+          onPointerdown: _cache[2] || (_cache[2] = (event) => {
+            event.currentTarget.focus({ preventScroll: true });
+          }),
+          onTouchend: _cache[3] || (_cache[3] = withModifiers(() => {
+          }, ["prevent", "stop"])),
+          onPointermove: handlePointerMove,
+          onPointerleave: handlePointerLeave,
+          onKeydown: handleKeyDown
+        }, {
+          default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+          _: 3
+        }, 8, [
+          "aria-labelledby",
+          "data-highlighted",
+          "aria-selected",
+          "data-state",
+          "aria-disabled",
+          "data-disabled",
+          "tabindex",
+          "as",
+          "as-child"
+        ])]),
+        _: 3
+      }, 8, ["value"]);
+    };
+  }
+});
+var SelectItem_default = SelectItem_vue_vue_type_script_setup_true_lang_default;
+var SelectItemIndicator_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectItemIndicator",
+  props: {
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "span"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const itemContext = injectSelectItemContext();
+    return (_ctx, _cache) => {
+      return unref(itemContext).isSelected.value ? (openBlock(), createBlock(unref(Primitive), mergeProps({
+        key: 0,
+        "aria-hidden": "true"
+      }, props), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16)) : createCommentVNode("v-if", true);
+    };
+  }
+});
+var SelectItemIndicator_default = SelectItemIndicator_vue_vue_type_script_setup_true_lang_default;
+var SelectItemText_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  inheritAttrs: false,
+  __name: "SelectItemText",
+  props: {
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "span"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    injectSelectRootContext();
+    injectSelectContentContext();
+    const itemContext = injectSelectItemContext();
+    const { forwardRef, currentElement: itemTextElement } = useForwardExpose();
+    computed(() => {
+      return {
+        value: itemContext.value,
+        disabled: itemContext.disabled.value,
+        textContent: itemTextElement.value?.textContent ?? itemContext.value?.toString() ?? ""
+      };
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), mergeProps({
+        id: unref(itemContext).textId,
+        ref: unref(forwardRef)
+      }, {
+        ...props,
+        ..._ctx.$attrs
+      }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16, ["id"]);
+    };
+  }
+});
+var SelectItemText_default = SelectItemText_vue_vue_type_script_setup_true_lang_default;
+var SelectLabel_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectLabel",
+  props: {
+    for: {
+      type: String,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "div"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const groupContext = injectSelectGroupContext({ id: "" });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), mergeProps(props, { id: unref(groupContext).id }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16, ["id"]);
+    };
+  }
+});
+var SelectLabel_default = SelectLabel_vue_vue_type_script_setup_true_lang_default;
+var SelectPortal_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectPortal",
+  props: {
+    to: {
+      type: null,
+      required: false
+    },
+    disabled: {
+      type: Boolean,
+      required: false
+    },
+    defer: {
+      type: Boolean,
+      required: false
+    },
+    forceMount: {
+      type: Boolean,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Teleport_default), normalizeProps(guardReactiveProps(props)), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16);
+    };
+  }
+});
+var SelectPortal_default = SelectPortal_vue_vue_type_script_setup_true_lang_default;
+var SelectSeparator_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectSeparator",
+  props: {
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), mergeProps({ "aria-hidden": "true" }, props), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16);
+    };
+  }
+});
+var SelectSeparator_default = SelectSeparator_vue_vue_type_script_setup_true_lang_default;
+var SelectTrigger_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectTrigger",
+  props: {
+    disabled: {
+      type: Boolean,
+      required: false
+    },
+    reference: {
+      type: null,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "button"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const rootContext = injectSelectRootContext();
+    const { forwardRef } = useForwardExpose();
+    const isDisabled = computed(() => rootContext.disabled?.value || props.disabled);
+    rootContext.contentId ||= useId$1(void 0, "reka-select-content");
+    const { getItems } = useCollection();
+    const { search, handleTypeaheadSearch, resetTypeahead } = useTypeahead();
+    function handleOpen() {
+      if (!isDisabled.value) {
+        rootContext.onOpenChange(true);
+        resetTypeahead();
+      }
+    }
+    function handlePointerOpen(event) {
+      handleOpen();
+      rootContext.triggerPointerDownPosRef.value = {
+        x: Math.round(event.pageX),
+        y: Math.round(event.pageY)
+      };
+    }
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(PopperAnchor_default), {
+        "as-child": "",
+        reference: _ctx.reference
+      }, {
+        default: withCtx(() => [createVNode(unref(Primitive), {
+          ref: unref(forwardRef),
+          role: "combobox",
+          type: _ctx.as === "button" ? "button" : void 0,
+          "aria-controls": unref(rootContext).contentId,
+          "aria-expanded": unref(rootContext).open.value || false,
+          "aria-required": unref(rootContext).required?.value,
+          "aria-autocomplete": "none",
+          disabled: isDisabled.value,
+          dir: unref(rootContext)?.dir.value,
+          "data-state": unref(rootContext)?.open.value ? "open" : "closed",
+          "data-disabled": isDisabled.value ? "" : void 0,
+          "data-placeholder": unref(shouldShowPlaceholder)(unref(rootContext).modelValue?.value) ? "" : void 0,
+          "as-child": _ctx.asChild,
+          as: _ctx.as,
+          onClick: _cache[0] || (_cache[0] = (event) => {
+            event?.currentTarget?.focus();
+          }),
+          onPointerdown: _cache[1] || (_cache[1] = (event) => {
+            if (event.pointerType === "touch") return event.preventDefault();
+            const target = event.target;
+            if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
+            if (event.button === 0 && event.ctrlKey === false) {
+              handlePointerOpen(event);
+              event.preventDefault();
+            }
+          }),
+          onPointerup: _cache[2] || (_cache[2] = withModifiers((event) => {
+            if (event.pointerType === "touch") handlePointerOpen(event);
+          }, ["prevent"])),
+          onKeydown: _cache[3] || (_cache[3] = (event) => {
+            const isTypingAhead = unref(search) !== "";
+            const isModifierKey = event.ctrlKey || event.altKey || event.metaKey;
+            if (!isModifierKey && event.key.length === 1) {
+              if (isTypingAhead && event.key === " ") return;
+            }
+            unref(handleTypeaheadSearch)(event.key, unref(getItems)());
+            if (unref(OPEN_KEYS).includes(event.key)) {
+              handleOpen();
+              event.preventDefault();
+            }
+          })
+        }, {
+          default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+          _: 3
+        }, 8, [
+          "type",
+          "aria-controls",
+          "aria-expanded",
+          "aria-required",
+          "disabled",
+          "dir",
+          "data-state",
+          "data-disabled",
+          "data-placeholder",
+          "as-child",
+          "as"
+        ])]),
+        _: 3
+      }, 8, ["reference"]);
+    };
+  }
+});
+var SelectTrigger_default = SelectTrigger_vue_vue_type_script_setup_true_lang_default;
+var SelectValue_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectValue",
+  props: {
+    placeholder: {
+      type: String,
+      required: false,
+      default: ""
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "span"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const { forwardRef } = useForwardExpose();
+    const rootContext = injectSelectRootContext();
+    const selectedLabel = computed(() => {
+      let list = [];
+      const options = Array.from(rootContext.optionsSet.value);
+      const getOption = (value) => options.find((option) => valueComparator(value, option.value, rootContext.by));
+      if (Array.isArray(rootContext.modelValue.value)) list = rootContext.modelValue.value.map((value) => getOption(value)?.textContent ?? "");
+      else list = [getOption(rootContext.modelValue.value)?.textContent ?? ""];
+      return list.filter(Boolean);
+    });
+    const slotText = computed(() => {
+      return selectedLabel.value.length ? selectedLabel.value.join(", ") : props.placeholder;
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), {
+        ref: unref(forwardRef),
+        as: _ctx.as,
+        "as-child": _ctx.asChild,
+        style: { pointerEvents: "none" },
+        "data-placeholder": selectedLabel.value.length ? void 0 : props.placeholder
+      }, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default", {
+          selectedLabel: selectedLabel.value,
+          modelValue: unref(rootContext).modelValue.value
+        }, () => [createTextVNode(toDisplayString(slotText.value), 1)])]),
+        _: 3
+      }, 8, [
+        "as",
+        "as-child",
+        "data-placeholder"
+      ]);
+    };
+  }
+});
+var SelectValue_default = SelectValue_vue_vue_type_script_setup_true_lang_default;
+var SelectViewport_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SelectViewport",
+  props: {
+    nonce: {
+      type: String,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const { nonce: propNonce } = toRefs(props);
+    const nonce = useNonce(propNonce);
+    const contentContext = injectSelectContentContext();
+    const alignedPositionContext = contentContext.position === "item-aligned" ? injectSelectItemAlignedPositionContext() : void 0;
+    const { forwardRef } = useForwardExpose();
+    const prevScrollTopRef = ref(0);
+    function handleScroll(event) {
+      const viewport = event.currentTarget;
+      const { shouldExpandOnScrollRef, contentWrapper } = alignedPositionContext ?? {};
+      if (shouldExpandOnScrollRef?.value && contentWrapper?.value) {
+        const scrolledBy = Math.abs(prevScrollTopRef.value - viewport.scrollTop);
+        if (scrolledBy > 0) {
+          const availableHeight = (void 0).innerHeight - CONTENT_MARGIN * 2;
+          const cssMinHeight = Number.parseFloat(contentWrapper.value.style.minHeight);
+          const cssHeight = Number.parseFloat(contentWrapper.value.style.height);
+          const prevHeight = Math.max(cssMinHeight, cssHeight);
+          if (prevHeight < availableHeight) {
+            const nextHeight = prevHeight + scrolledBy;
+            const clampedNextHeight = Math.min(availableHeight, nextHeight);
+            const heightDiff = nextHeight - clampedNextHeight;
+            contentWrapper.value.style.height = `${clampedNextHeight}px`;
+            if (contentWrapper.value.style.bottom === "0px") {
+              viewport.scrollTop = heightDiff > 0 ? heightDiff : 0;
+              contentWrapper.value.style.justifyContent = "flex-end";
+            }
+          }
+        }
+      }
+      prevScrollTopRef.value = viewport.scrollTop;
+    }
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock(Fragment, null, [createVNode(unref(Primitive), mergeProps({
+        ref: unref(forwardRef),
+        "data-reka-select-viewport": "",
+        role: "presentation"
+      }, {
+        ..._ctx.$attrs,
+        ...props
+      }, {
+        style: {
+          position: "relative",
+          flex: 1,
+          overflow: "hidden auto"
+        },
+        onScroll: handleScroll
+      }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16), createVNode(unref(Primitive), {
+        as: "style",
+        nonce: unref(nonce)
+      }, {
+        default: withCtx(() => _cache[0] || (_cache[0] = [createTextVNode(" /* Hide scrollbars cross-browser and enable momentum scroll for touch devices */ [data-reka-select-viewport] { scrollbar-width:none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; } [data-reka-select-viewport]::-webkit-scrollbar { display: none; } ")])),
+        _: 1,
+        __: [0]
+      }, 8, ["nonce"])], 64);
+    };
+  }
+});
+var SelectViewport_default = SelectViewport_vue_vue_type_script_setup_true_lang_default;
+const [injectSwitchRootContext, provideSwitchRootContext] = /* @__PURE__ */ createContext("SwitchRoot");
+var SwitchRoot_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SwitchRoot",
+  props: {
+    defaultValue: {
+      type: null,
+      required: false
+    },
+    modelValue: {
+      type: null,
+      required: false,
+      default: void 0
+    },
+    disabled: {
+      type: Boolean,
+      required: false
+    },
+    id: {
+      type: String,
+      required: false
+    },
+    value: {
+      type: String,
+      required: false,
+      default: "on"
+    },
+    trueValue: {
+      type: null,
+      required: false,
+      default: () => true
+    },
+    falseValue: {
+      type: null,
+      required: false,
+      default: () => false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "button"
+    },
+    name: {
+      type: String,
+      required: false
+    },
+    required: {
+      type: Boolean,
+      required: false
+    }
+  },
+  emits: ["update:modelValue"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emit = __emit;
+    const { disabled } = toRefs(props);
+    const modelValue = useVModel(props, "modelValue", emit, {
+      defaultValue: props.defaultValue ?? props.falseValue,
+      passive: props.modelValue === void 0
+    });
+    const checked = computed(() => modelValue.value === props.trueValue);
+    function toggleCheck() {
+      if (disabled.value) return;
+      modelValue.value = checked.value ? props.falseValue : props.trueValue;
+    }
+    const { forwardRef, currentElement } = useForwardExpose();
+    const isFormControl = useFormControl(currentElement);
+    const ariaLabel = computed(() => props.id && currentElement.value ? (void 0).querySelector(`[for="${props.id}"]`)?.innerText : void 0);
+    provideSwitchRootContext({
+      checked,
+      toggleCheck,
+      disabled
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), mergeProps(_ctx.$attrs, {
+        id: _ctx.id,
+        ref: unref(forwardRef),
+        role: "switch",
+        type: _ctx.as === "button" ? "button" : void 0,
+        value: _ctx.value,
+        "aria-label": _ctx.$attrs["aria-label"] || ariaLabel.value,
+        "aria-checked": checked.value,
+        "aria-required": _ctx.required,
+        "data-state": checked.value ? "checked" : "unchecked",
+        "data-disabled": unref(disabled) ? "" : void 0,
+        "as-child": _ctx.asChild,
+        as: _ctx.as,
+        disabled: unref(disabled),
+        onClick: toggleCheck,
+        onKeydown: withKeys(withModifiers(toggleCheck, ["prevent"]), ["enter"])
+      }), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default", {
+          modelValue: unref(modelValue),
+          checked: checked.value
+        }), unref(isFormControl) && _ctx.name ? (openBlock(), createBlock(unref(VisuallyHiddenInput_default), {
+          key: 0,
+          type: "checkbox",
+          name: _ctx.name,
+          disabled: unref(disabled),
+          required: _ctx.required,
+          value: _ctx.value,
+          checked: checked.value
+        }, null, 8, [
+          "name",
+          "disabled",
+          "required",
+          "value",
+          "checked"
+        ])) : createCommentVNode("v-if", true)]),
+        _: 3
+      }, 16, [
+        "id",
+        "type",
+        "value",
+        "aria-label",
+        "aria-checked",
+        "aria-required",
+        "data-state",
+        "data-disabled",
+        "as-child",
+        "as",
+        "disabled",
+        "onKeydown"
+      ]);
+    };
+  }
+});
+var SwitchRoot_default = SwitchRoot_vue_vue_type_script_setup_true_lang_default;
+var SwitchThumb_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "SwitchThumb",
+  props: {
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "span"
+    }
+  },
+  setup(__props) {
+    const rootContext = injectSwitchRootContext();
+    useForwardExpose();
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Primitive), {
+        "data-state": unref(rootContext).checked.value ? "checked" : "unchecked",
+        "data-disabled": unref(rootContext).disabled.value ? "" : void 0,
+        "as-child": _ctx.asChild,
+        as: _ctx.as
+      }, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 8, [
+        "data-state",
+        "data-disabled",
+        "as-child",
+        "as"
+      ]);
+    };
+  }
+});
+var SwitchThumb_default = SwitchThumb_vue_vue_type_script_setup_true_lang_default;
+var TooltipArrow_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "TooltipArrow",
+  props: {
+    width: {
+      type: Number,
+      required: false,
+      default: 10
+    },
+    height: {
+      type: Number,
+      required: false,
+      default: 5
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "svg"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    useForwardExpose();
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(PopperArrow_default), normalizeProps(guardReactiveProps(props)), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16);
+    };
+  }
+});
+var TooltipArrow_default = TooltipArrow_vue_vue_type_script_setup_true_lang_default;
+const TOOLTIP_OPEN = "tooltip.open";
+const [injectTooltipRootContext, provideTooltipRootContext] = /* @__PURE__ */ createContext("TooltipRoot");
+var TooltipRoot_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "TooltipRoot",
+  props: {
+    defaultOpen: {
+      type: Boolean,
+      required: false,
+      default: false
+    },
+    open: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    },
+    delayDuration: {
+      type: Number,
+      required: false,
+      default: void 0
+    },
+    disableHoverableContent: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    },
+    disableClosingTrigger: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    },
+    disabled: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    },
+    ignoreNonKeyboardFocus: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    }
+  },
+  emits: ["update:open"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emit = __emit;
+    useForwardExpose();
+    const providerContext = injectTooltipProviderContext();
+    const disableHoverableContent = computed(() => props.disableHoverableContent ?? providerContext.disableHoverableContent.value);
+    const disableClosingTrigger = computed(() => props.disableClosingTrigger ?? providerContext.disableClosingTrigger.value);
+    const disableTooltip = computed(() => props.disabled ?? providerContext.disabled.value);
+    const delayDuration = computed(() => props.delayDuration ?? providerContext.delayDuration.value);
+    const ignoreNonKeyboardFocus = computed(() => props.ignoreNonKeyboardFocus ?? providerContext.ignoreNonKeyboardFocus.value);
+    const open = useVModel(props, "open", emit, {
+      defaultValue: props.defaultOpen,
+      passive: props.open === void 0
+    });
+    watch(open, (isOpen) => {
+      if (!providerContext.onClose) return;
+      if (isOpen) {
+        providerContext.onOpen();
+        (void 0).dispatchEvent(new CustomEvent(TOOLTIP_OPEN));
+      } else providerContext.onClose();
+    });
+    const wasOpenDelayedRef = ref(false);
+    const trigger = ref();
+    const stateAttribute = computed(() => {
+      if (!open.value) return "closed";
+      return wasOpenDelayedRef.value ? "delayed-open" : "instant-open";
+    });
+    const { start: startTimer, stop: clearTimer } = useTimeoutFn(() => {
+      wasOpenDelayedRef.value = true;
+      open.value = true;
+    }, delayDuration, { immediate: false });
+    function handleOpen() {
+      clearTimer();
+      wasOpenDelayedRef.value = false;
+      open.value = true;
+    }
+    function handleClose() {
+      clearTimer();
+      open.value = false;
+    }
+    function handleDelayedOpen() {
+      startTimer();
+    }
+    provideTooltipRootContext({
+      contentId: "",
+      open,
+      stateAttribute,
+      trigger,
+      onTriggerChange(el) {
+        trigger.value = el;
+      },
+      onTriggerEnter() {
+        if (providerContext.isOpenDelayed.value) handleDelayedOpen();
+        else handleOpen();
+      },
+      onTriggerLeave() {
+        if (disableHoverableContent.value) handleClose();
+        else clearTimer();
+      },
+      onOpen: handleOpen,
+      onClose: handleClose,
+      disableHoverableContent,
+      disableClosingTrigger,
+      disabled: disableTooltip,
+      ignoreNonKeyboardFocus
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(PopperRoot_default), null, {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default", { open: unref(open) })]),
+        _: 3
+      });
+    };
+  }
+});
+var TooltipRoot_default = TooltipRoot_vue_vue_type_script_setup_true_lang_default;
+var TooltipContentImpl_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "TooltipContentImpl",
+  props: {
+    ariaLabel: {
+      type: String,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    },
+    as: {
+      type: null,
+      required: false
+    },
+    side: {
+      type: null,
+      required: false
+    },
+    sideOffset: {
+      type: Number,
+      required: false
+    },
+    align: {
+      type: null,
+      required: false
+    },
+    alignOffset: {
+      type: Number,
+      required: false
+    },
+    avoidCollisions: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    },
+    collisionBoundary: {
+      type: null,
+      required: false
+    },
+    collisionPadding: {
+      type: [Number, Object],
+      required: false
+    },
+    arrowPadding: {
+      type: Number,
+      required: false
+    },
+    sticky: {
+      type: String,
+      required: false
+    },
+    hideWhenDetached: {
+      type: Boolean,
+      required: false,
+      default: void 0
+    },
+    positionStrategy: {
+      type: String,
+      required: false
+    },
+    updatePositionStrategy: {
+      type: String,
+      required: false
+    }
+  },
+  emits: ["escapeKeyDown", "pointerDownOutside"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const rootContext = injectTooltipRootContext();
+    const providerContext = injectTooltipProviderContext();
+    const { forwardRef, currentElement } = useForwardExpose();
+    const ariaLabel = computed(() => props.ariaLabel || currentElement.value?.textContent);
+    const popperContentProps = computed(() => {
+      const { ariaLabel: _, ...restProps } = props;
+      return defu(restProps, providerContext.content.value ?? {}, {
+        side: "top",
+        sideOffset: 0,
+        align: "center",
+        avoidCollisions: true,
+        collisionBoundary: [],
+        collisionPadding: 0,
+        arrowPadding: 0,
+        sticky: "partial",
+        hideWhenDetached: false
+      });
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(DismissableLayer_default), {
+        "as-child": "",
+        "disable-outside-pointer-events": false,
+        onEscapeKeyDown: _cache[0] || (_cache[0] = ($event) => emits("escapeKeyDown", $event)),
+        onPointerDownOutside: _cache[1] || (_cache[1] = (event) => {
+          if (unref(rootContext).disableClosingTrigger.value && unref(rootContext).trigger.value?.contains(event.target)) event.preventDefault();
+          emits("pointerDownOutside", event);
+        }),
+        onFocusOutside: _cache[2] || (_cache[2] = withModifiers(() => {
+        }, ["prevent"])),
+        onDismiss: _cache[3] || (_cache[3] = ($event) => unref(rootContext).onClose())
+      }, {
+        default: withCtx(() => [createVNode(unref(PopperContent_default), mergeProps({
+          ref: unref(forwardRef),
+          "data-state": unref(rootContext).stateAttribute.value
+        }, {
+          ..._ctx.$attrs,
+          ...popperContentProps.value
+        }, { style: {
+          "--reka-tooltip-content-transform-origin": "var(--reka-popper-transform-origin)",
+          "--reka-tooltip-content-available-width": "var(--reka-popper-available-width)",
+          "--reka-tooltip-content-available-height": "var(--reka-popper-available-height)",
+          "--reka-tooltip-trigger-width": "var(--reka-popper-anchor-width)",
+          "--reka-tooltip-trigger-height": "var(--reka-popper-anchor-height)"
+        } }), {
+          default: withCtx(() => [renderSlot(_ctx.$slots, "default"), createVNode(unref(VisuallyHidden_default), {
+            id: unref(rootContext).contentId,
+            role: "tooltip"
+          }, {
+            default: withCtx(() => [createTextVNode(toDisplayString(ariaLabel.value), 1)]),
+            _: 1
+          }, 8, ["id"])]),
+          _: 3
+        }, 16, ["data-state"])]),
+        _: 3
+      });
+    };
+  }
+});
+var TooltipContentImpl_default = TooltipContentImpl_vue_vue_type_script_setup_true_lang_default;
+var TooltipContentHoverable_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "TooltipContentHoverable",
+  props: {
+    ariaLabel: {
+      type: String,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    },
+    side: {
+      type: null,
+      required: false
+    },
+    sideOffset: {
+      type: Number,
+      required: false
+    },
+    align: {
+      type: null,
+      required: false
+    },
+    alignOffset: {
+      type: Number,
+      required: false
+    },
+    avoidCollisions: {
+      type: Boolean,
+      required: false
+    },
+    collisionBoundary: {
+      type: null,
+      required: false
+    },
+    collisionPadding: {
+      type: [Number, Object],
+      required: false
+    },
+    arrowPadding: {
+      type: Number,
+      required: false
+    },
+    sticky: {
+      type: String,
+      required: false
+    },
+    hideWhenDetached: {
+      type: Boolean,
+      required: false
+    },
+    positionStrategy: {
+      type: String,
+      required: false
+    },
+    updatePositionStrategy: {
+      type: String,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const forwardedProps = useForwardProps$1(props);
+    const { forwardRef, currentElement } = useForwardExpose();
+    const { trigger, onClose } = injectTooltipRootContext();
+    const providerContext = injectTooltipProviderContext();
+    const { isPointerInTransit, onPointerExit } = useGraceArea(trigger, currentElement);
+    providerContext.isPointerInTransitRef = isPointerInTransit;
+    onPointerExit(() => {
+      onClose();
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(TooltipContentImpl_default, mergeProps({ ref: unref(forwardRef) }, unref(forwardedProps)), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16);
+    };
+  }
+});
+var TooltipContentHoverable_default = TooltipContentHoverable_vue_vue_type_script_setup_true_lang_default;
+var TooltipContent_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "TooltipContent",
+  props: {
+    forceMount: {
+      type: Boolean,
+      required: false
+    },
+    ariaLabel: {
+      type: String,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false
+    },
+    side: {
+      type: null,
+      required: false
+    },
+    sideOffset: {
+      type: Number,
+      required: false
+    },
+    align: {
+      type: null,
+      required: false
+    },
+    alignOffset: {
+      type: Number,
+      required: false
+    },
+    avoidCollisions: {
+      type: Boolean,
+      required: false
+    },
+    collisionBoundary: {
+      type: null,
+      required: false
+    },
+    collisionPadding: {
+      type: [Number, Object],
+      required: false
+    },
+    arrowPadding: {
+      type: Number,
+      required: false
+    },
+    sticky: {
+      type: String,
+      required: false
+    },
+    hideWhenDetached: {
+      type: Boolean,
+      required: false
+    },
+    positionStrategy: {
+      type: String,
+      required: false
+    },
+    updatePositionStrategy: {
+      type: String,
+      required: false
+    }
+  },
+  emits: ["escapeKeyDown", "pointerDownOutside"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emits = __emit;
+    const rootContext = injectTooltipRootContext();
+    const forwarded = useForwardPropsEmits(props, emits);
+    const { forwardRef } = useForwardExpose();
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Presence_default), { present: _ctx.forceMount || unref(rootContext).open.value }, {
+        default: withCtx(() => [(openBlock(), createBlock(resolveDynamicComponent(unref(rootContext).disableHoverableContent.value ? TooltipContentImpl_default : TooltipContentHoverable_default), mergeProps({ ref: unref(forwardRef) }, unref(forwarded)), {
+          default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+          _: 3
+        }, 16))]),
+        _: 3
+      }, 8, ["present"]);
+    };
+  }
+});
+var TooltipContent_default = TooltipContent_vue_vue_type_script_setup_true_lang_default;
+var TooltipPortal_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "TooltipPortal",
+  props: {
+    to: {
+      type: null,
+      required: false
+    },
+    disabled: {
+      type: Boolean,
+      required: false
+    },
+    defer: {
+      type: Boolean,
+      required: false
+    },
+    forceMount: {
+      type: Boolean,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(Teleport_default), normalizeProps(guardReactiveProps(props)), {
+        default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+        _: 3
+      }, 16);
+    };
+  }
+});
+var TooltipPortal_default = TooltipPortal_vue_vue_type_script_setup_true_lang_default;
+var TooltipTrigger_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "TooltipTrigger",
+  props: {
+    reference: {
+      type: null,
+      required: false
+    },
+    asChild: {
+      type: Boolean,
+      required: false
+    },
+    as: {
+      type: null,
+      required: false,
+      default: "button"
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const rootContext = injectTooltipRootContext();
+    const providerContext = injectTooltipProviderContext();
+    rootContext.contentId ||= useId$1(void 0, "reka-tooltip-content");
+    const { forwardRef } = useForwardExpose();
+    const isPointerDown = ref(false);
+    const hasPointerMoveOpened = ref(false);
+    const tooltipListeners = computed(() => {
+      if (rootContext.disabled.value) return {};
+      return {
+        click: handleClick,
+        focus: handleFocus,
+        pointermove: handlePointerMove,
+        pointerleave: handlePointerLeave,
+        pointerdown: handlePointerDown,
+        blur: handleBlur
+      };
+    });
+    function handlePointerUp() {
+      setTimeout(() => {
+        isPointerDown.value = false;
+      }, 1);
+    }
+    function handlePointerDown() {
+      if (rootContext.open && !rootContext.disableClosingTrigger.value) rootContext.onClose();
+      isPointerDown.value = true;
+      (void 0).addEventListener("pointerup", handlePointerUp, { once: true });
+    }
+    function handlePointerMove(event) {
+      if (event.pointerType === "touch") return;
+      if (!hasPointerMoveOpened.value && !providerContext.isPointerInTransitRef.value) {
+        rootContext.onTriggerEnter();
+        hasPointerMoveOpened.value = true;
+      }
+    }
+    function handlePointerLeave() {
+      rootContext.onTriggerLeave();
+      hasPointerMoveOpened.value = false;
+    }
+    function handleFocus(event) {
+      if (isPointerDown.value) return;
+      if (rootContext.ignoreNonKeyboardFocus.value && !event.target.matches?.(":focus-visible")) return;
+      rootContext.onOpen();
+    }
+    function handleBlur() {
+      rootContext.onClose();
+    }
+    function handleClick() {
+      if (!rootContext.disableClosingTrigger.value) rootContext.onClose();
+    }
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(unref(PopperAnchor_default), {
+        "as-child": "",
+        reference: _ctx.reference
+      }, {
+        default: withCtx(() => [createVNode(unref(Primitive), mergeProps({
+          ref: unref(forwardRef),
+          "aria-describedby": unref(rootContext).open.value ? unref(rootContext).contentId : void 0,
+          "data-state": unref(rootContext).stateAttribute.value,
+          as: _ctx.as,
+          "as-child": props.asChild,
+          "data-grace-area-trigger": ""
+        }, toHandlers(tooltipListeners.value)), {
+          default: withCtx(() => [renderSlot(_ctx.$slots, "default")]),
+          _: 3
+        }, 16, [
+          "aria-describedby",
+          "data-state",
+          "as",
+          "as-child"
+        ])]),
+        _: 3
+      }, 8, ["reference"]);
+    };
+  }
+});
+var TooltipTrigger_default = TooltipTrigger_vue_vue_type_script_setup_true_lang_default;
+var TreeVirtualizer_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
+  __name: "TreeVirtualizer",
+  props: {
+    overscan: {
+      type: Number,
+      required: false
+    },
+    estimateSize: {
+      type: [Number, Function],
+      required: false
+    },
+    textContent: {
+      type: Function,
+      required: false
+    }
+  },
+  setup(__props) {
+    const props = __props;
+    const slots = useSlots();
+    const rootContext = injectTreeRootContext();
+    const parentEl = useParentElement();
+    const { getItems } = useCollection();
+    const search = refAutoReset("", 1e3);
+    const optionsWithMetadata = computed(() => {
+      const parseTextContent = (option) => {
+        if (props.textContent) return props.textContent(option);
+        else return option.toString().toLowerCase();
+      };
+      return rootContext.expandedItems.value.map((option, index2) => ({
+        index: index2,
+        textContent: parseTextContent(option.value)
+      }));
+    });
+    rootContext.isVirtual.value = true;
+    const padding = computed(() => {
+      const el = parentEl.value;
+      if (!el) return {
+        start: 0,
+        end: 0
+      };
+      else {
+        const styles = (void 0).getComputedStyle(el);
+        return {
+          start: Number.parseFloat(styles.paddingBlockStart || styles.paddingTop),
+          end: Number.parseFloat(styles.paddingBlockEnd || styles.paddingBottom)
+        };
+      }
+    });
+    const virtualizer = useVirtualizer({
+      get scrollPaddingStart() {
+        return padding.value.start;
+      },
+      get scrollPaddingEnd() {
+        return padding.value.end;
+      },
+      get count() {
+        return rootContext.expandedItems.value.length ?? 0;
+      },
+      get horizontal() {
+        return false;
+      },
+      getItemKey(index2) {
+        return index2 + rootContext.getKey(rootContext.expandedItems.value[index2].value);
+      },
+      estimateSize(index2) {
+        if (typeof props.estimateSize === "function") return props.estimateSize(index2);
+        return props.estimateSize ?? 28;
+      },
+      getScrollElement() {
+        return parentEl.value;
+      },
+      overscan: props.overscan ?? 12
+    });
+    const virtualizedItems = computed(() => virtualizer.value.getVirtualItems().map((item) => {
+      return {
+        item,
+        is: cloneVNode(slots.default({
+          item: rootContext.expandedItems.value[item.index],
+          virtualizer: virtualizer.value,
+          virtualItem: item
+        })[0], {
+          "data-index": item.index,
+          "style": {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            transform: `translateY(${item.start}px)`,
+            overflowAnchor: "none"
+          }
+        })
+      };
+    }));
+    function scrollToIndexAndFocus(index2) {
+      virtualizer.value.scrollToIndex(index2, { align: "start" });
+      requestAnimationFrame(() => {
+        const item = parentEl.value.querySelector(`[data-index="${index2}"]`);
+        if (item instanceof HTMLElement) item.focus();
+      });
+    }
+    rootContext.virtualKeydownHook.on((event) => {
+      const isMetaKey = event.altKey || event.ctrlKey || event.metaKey;
+      const isTabKey = event.key === "Tab" && !isMetaKey;
+      if (isTabKey) return;
+      const intent = MAP_KEY_TO_FOCUS_INTENT[event.key];
+      if (["first", "last"].includes(intent)) {
+        event.preventDefault();
+        const index2 = intent === "first" ? 0 : rootContext.expandedItems.value.length - 1;
+        virtualizer.value.scrollToIndex(index2);
+        requestAnimationFrame(() => {
+          const items = getItems();
+          const item = intent === "first" ? items[0] : items.at(-1);
+          item.ref.focus();
+        });
+      } else if (intent === "prev" && event.key !== "ArrowUp") {
+        const currentElement = getActiveElement();
+        const currentIndex = Number(currentElement.getAttribute("data-index"));
+        const currentLevel = Number(currentElement.getAttribute("data-indent"));
+        const list = rootContext.expandedItems.value.slice(0, currentIndex).map((item, index2) => ({
+          ...item,
+          index: index2
+        })).reverse();
+        const parentItem = list.find((item) => item.level === currentLevel - 1);
+        if (parentItem) scrollToIndexAndFocus(parentItem.index);
+      } else if (!intent && !isMetaKey) {
+        search.value += event.key;
+        const currentIndex = Number(getActiveElement()?.getAttribute("data-index"));
+        const currentMatch = optionsWithMetadata.value[currentIndex].textContent;
+        const filteredOptions = optionsWithMetadata.value.map((i) => i.textContent);
+        const next = getNextMatch(filteredOptions, search.value, currentMatch);
+        const nextMatch = optionsWithMetadata.value.find((option) => option.textContent === next);
+        if (nextMatch) scrollToIndexAndFocus(nextMatch.index);
+      }
+      nextTick(() => {
+        if (event.shiftKey && intent) rootContext.handleMultipleReplace(intent, getActiveElement(), getItems, rootContext.expandedItems.value.map((i) => i.value));
+      });
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", {
+        "data-reka-virtualizer": "",
+        style: normalizeStyle({
+          position: "relative",
+          width: "100%",
+          height: `${unref(virtualizer).getTotalSize()}px`
+        })
+      }, [(openBlock(true), createElementBlock(Fragment, null, renderList(virtualizedItems.value, ({ is, item }) => {
+        return openBlock(), createBlock(resolveDynamicComponent(is), { key: item.key });
+      }), 128))], 4);
+    };
+  }
+});
+var TreeVirtualizer_default = TreeVirtualizer_vue_vue_type_script_setup_true_lang_default;
+class ContrastText {
+  "name" = "contrastText";
+  apply(background, threshold = 0.179) {
+    const lum = luminance$1.apply(background);
+    if (lum > threshold) {
+      return colorRecordFactory.fromHex("#000000");
+    }
+    return colorRecordFactory.fromHex("#ffffff");
+  }
+}
+const contrastText = new ContrastText();
+class Darken {
+  "name" = "darken";
+  apply(color, deltaL) {
+    const l = clamp01.apply(color.oklch.l - deltaL);
+    return colorRecordFactory.fromOklch(l, color.oklch.c, color.oklch.h, { "alpha": color.alpha });
+  }
+}
+const darken = new Darken();
+class Desaturate {
+  "name" = "desaturate";
+  apply(color, deltaC) {
+    const c = clamp$1.apply(0, 0.5, color.oklch.c - deltaC);
+    return colorRecordFactory.fromOklch(color.oklch.l, c, color.oklch.h, { "alpha": color.alpha });
+  }
+}
+const desaturate = new Desaturate();
+function hslToRgbComponents(h2, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(h2 / 60 % 2 - 1));
+  const m = l - c / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (h2 < 60) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (h2 < 120) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (h2 < 180) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (h2 < 240) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (h2 < 300) {
+    r = x;
+    g = 0;
+    b = c;
+  } else {
+    r = c;
+    g = 0;
+    b = x;
+  }
+  return [r + m, g + m, b + m];
+}
+class HslToRgb {
+  "name" = "hslToRgb";
+  apply(h2, s, l, alpha = 1) {
+    const [r, g, b] = hslToRgbComponents((h2 % 360 + 360) % 360, clamp01.apply(s), clamp01.apply(l));
+    return colorRecordFactory.fromRgb(r, g, b, { "alpha": alpha });
+  }
+}
+const hslToRgb = new HslToRgb();
+class Lighten {
+  "name" = "lighten";
+  apply(color, deltaL) {
+    const l = clamp01.apply(color.oklch.l + deltaL);
+    return colorRecordFactory.fromOklch(l, color.oklch.c, color.oklch.h, { "alpha": color.alpha });
+  }
+}
+const lighten = new Lighten();
+class RgbToHsl {
+  "name" = "rgbToHsl";
+  apply(r, g, b, alpha = 1) {
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    const l = (max + min) / 2;
+    let h2 = 0;
+    let s = 0;
+    if (delta > 0) {
+      s = delta / (1 - Math.abs(2 * l - 1));
+      if (max === r) {
+        h2 = 60 * ((g - b) / delta % 6);
+      } else if (max === g) {
+        h2 = 60 * ((b - r) / delta + 2);
+      } else {
+        h2 = 60 * ((r - g) / delta + 4);
+      }
+      if (h2 < 0) {
+        h2 += 360;
+      }
+    }
+    return {
+      "alpha": clamp01.apply(alpha),
+      "h": h2,
+      "l": l,
+      "s": s
+    };
+  }
+}
+const rgbToHsl = new RgbToHsl();
+function lerpAngle(a, b, t) {
+  let diff = b - a;
+  if (diff > 180) {
+    diff -= 360;
+  }
+  if (diff < -180) {
+    diff += 360;
+  }
+  return ((a + diff * t) % 360 + 360) % 360;
+}
+class MixHsl {
+  "name" = "mixHsl";
+  apply(a, b, t) {
+    const tc = clamp01.apply(t);
+    const hslA = rgbToHsl.apply(a.rgb.r, a.rgb.g, a.rgb.b);
+    const hslB = rgbToHsl.apply(b.rgb.r, b.rgb.g, b.rgb.b);
+    const h2 = lerpAngle(hslA.h, hslB.h, tc);
+    const s = hslA.s + (hslB.s - hslA.s) * tc;
+    const l = hslA.l + (hslB.l - hslA.l) * tc;
+    const alpha = a.alpha + (b.alpha - a.alpha) * tc;
+    return hslToRgb.apply(h2, s, l, alpha);
+  }
+}
+const mixHsl = new MixHsl();
+class Saturate {
+  "name" = "saturate";
+  apply(color, deltaC) {
+    const c = clamp$1.apply(0, 0.5, color.oklch.c + deltaC);
+    return colorRecordFactory.fromOklch(color.oklch.l, c, color.oklch.h, { "alpha": color.alpha });
+  }
+}
+const saturate = new Saturate();
+function getOrCreateMetadata(state, key) {
+  const existing = state.metadata[key];
+  if (existing !== null && existing !== void 0) {
+    return existing;
+  }
+  const fresh = {};
+  state.metadata[key] = fresh;
+  return fresh;
+}
+function toCssVarName(role, prefix) {
+  const kebab = role.replace(/[A-Z]/g, (m) => {
+    const result = `-${m.toLowerCase()}`;
+    return result;
+  });
+  return `${prefix}${kebab}`;
+}
+var IridisUiActionType = /* @__PURE__ */ ((IridisUiActionType2) => {
+  IridisUiActionType2["SELECT_MODE"] = "SELECT_MODE";
+  IridisUiActionType2["SELECT_CARD"] = "SELECT_CARD";
+  IridisUiActionType2["NAVIGATE"] = "NAVIGATE";
+  IridisUiActionType2["DRAG_START"] = "DRAG_START";
+  IridisUiActionType2["DRAG_MOVE"] = "DRAG_MOVE";
+  IridisUiActionType2["DRAG_END"] = "DRAG_END";
+  IridisUiActionType2["POPOVER_OPEN"] = "POPOVER_OPEN";
+  IridisUiActionType2["POPOVER_CLOSE"] = "POPOVER_CLOSE";
+  IridisUiActionType2["ADD_SEED"] = "ADD_SEED";
+  IridisUiActionType2["REMOVE_SEED"] = "REMOVE_SEED";
+  IridisUiActionType2["SET_SEED"] = "SET_SEED";
+  IridisUiActionType2["PIN_SEED_ROLE"] = "PIN_SEED_ROLE";
+  IridisUiActionType2["SET_FRAMING"] = "SET_FRAMING";
+  IridisUiActionType2["SET_SCHEMA"] = "SET_SCHEMA";
+  IridisUiActionType2["SET_CONTRAST_STRICTNESS"] = "SET_CONTRAST_STRICTNESS";
+  IridisUiActionType2["SET_COLOR_SPACE"] = "SET_COLOR_SPACE";
+  IridisUiActionType2["SET_CVD_CORRECT"] = "SET_CVD_CORRECT";
+  IridisUiActionType2["SET_IMAGE_ALGORITHM"] = "SET_IMAGE_ALGORITHM";
+  IridisUiActionType2["SET_IMAGE_K"] = "SET_IMAGE_K";
+  IridisUiActionType2["SET_IMAGE_HISTOGRAM_BITS"] = "SET_IMAGE_HISTOGRAM_BITS";
+  IridisUiActionType2["SET_IMAGE_DELTA_E_CAP"] = "SET_IMAGE_DELTA_E_CAP";
+  IridisUiActionType2["SET_IMAGE_HARMONIZE"] = "SET_IMAGE_HARMONIZE";
+  IridisUiActionType2["SET_IMAGE_LIGHTNESS_RANGE"] = "SET_IMAGE_LIGHTNESS_RANGE";
+  IridisUiActionType2["SET_IMAGE_CHROMA_RANGE"] = "SET_IMAGE_CHROMA_RANGE";
+  IridisUiActionType2["EXTRACT_IMAGE"] = "EXTRACT_IMAGE";
+  return IridisUiActionType2;
+})(IridisUiActionType || {});
+const _sfc_main$x = /* @__PURE__ */ defineComponent({
+  __name: "BalancedWrap",
+  __ssrInlineRender: true,
+  props: {
+    items: {},
+    minWidth: { default: 200 },
+    gap: { default: 8 }
+  },
+  setup(__props) {
+    const props = __props;
+    const containerRef = ref(null);
+    const containerWidth = ref(0);
+    const rows = computed(() => {
+      if (props.items.length === 0) return [];
+      if (!containerWidth.value) return [props.items];
+      const w = containerWidth.value;
+      let maxCols = Math.floor((w + props.gap) / (props.minWidth + props.gap));
+      maxCols = Math.max(1, maxCols);
+      const N = props.items.length;
+      const R = Math.ceil(N / maxCols);
+      const base = Math.floor(N / R);
+      const remainder = N % R;
+      let topGetsLarger = false;
+      if (remainder > 0) {
+        topGetsLarger = remainder < R - remainder;
+      }
+      const rowSizes = [];
+      let r = remainder;
+      let b = R - remainder;
+      for (let i = 0; i < R; i++) {
+        if (topGetsLarger) {
+          if (r > 0) {
+            rowSizes.push(base + 1);
+            r--;
+          } else {
+            rowSizes.push(base);
+            b--;
+          }
+        } else {
+          if (b > 0) {
+            rowSizes.push(base);
+            b--;
+          } else {
+            rowSizes.push(base + 1);
+            r--;
+          }
+        }
+      }
+      const result = [];
+      let idx = 0;
+      for (const size2 of rowSizes) {
+        result.push(props.items.slice(idx, idx + size2));
+        idx += size2;
+      }
+      return result;
+    });
+    function getAbsoluteIndex(rIdx, iIdx) {
+      let count2 = 0;
+      for (let i = 0; i < rIdx; i++) {
+        count2 += rows.value[i].length;
+      }
+      return count2 + iIdx;
+    }
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(`<div${ssrRenderAttrs(mergeProps({
+        ref_key: "containerRef",
+        ref: containerRef,
+        class: "flex flex-col w-full",
+        style: { gap: `${__props.gap}px` }
+      }, _attrs))}><!--[-->`);
+      ssrRenderList(rows.value, (row, rIdx) => {
+        _push(`<div class="flex w-full" style="${ssrRenderStyle({ gap: `${__props.gap}px` })}"><!--[-->`);
+        ssrRenderList(row, (item, iIdx) => {
+          ssrRenderSlot(_ctx.$slots, "default", {
+            key: iIdx,
+            item,
+            index: getAbsoluteIndex(rIdx, iIdx)
+          }, null, _push, _parent);
+        });
+        _push(`<!--]--></div>`);
+      });
+      _push(`<!--]--></div>`);
+    };
+  }
+});
+const _sfc_setup$x = _sfc_main$x.setup;
+_sfc_main$x.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/layout/BalancedWrap.vue");
+  return _sfc_setup$x ? _sfc_setup$x(props, ctx) : void 0;
+};
+const __nuxt_component_1$1 = Object.assign(_sfc_main$x, { __name: "BalancedWrap" });
+const _sfc_main$w = /* @__PURE__ */ defineComponent({
+  __name: "TableOfContentsBar",
+  __ssrInlineRender: true,
+  props: {
+    items: {}
+  },
+  setup(__props) {
+    const props = __props;
+    const { send, state } = useIridisUiMachine();
+    const active = computed(() => state.value.activeIndex);
+    function select(i) {
+      send({ "index": i, "type": IridisUiActionType.SELECT_CARD });
+    }
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_BalancedWrap = __nuxt_component_1$1;
+      _push(`<nav${ssrRenderAttrs(mergeProps({
+        class: "toc-bar",
+        "aria-label": "Jump to section"
+      }, _attrs))} data-v-b768c955><div class="toc-scroll w-full max-w-6xl mx-auto" data-v-b768c955>`);
+      _push(ssrRenderComponent(_component_BalancedWrap, {
+        items: [...props.items],
+        "min-width": 100,
+        gap: 8
+      }, {
+        default: withCtx(({ item, index: i }, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<button type="button" class="${ssrRenderClass([{ on: i === active.value }, "toc-pill font-display flex-1"])}" data-v-b768c955${_scopeId}>${ssrInterpolate(item.label)}</button>`);
+          } else {
+            return [
+              createVNode("button", {
+                type: "button",
+                class: ["toc-pill font-display flex-1", { on: i === active.value }],
+                onClick: ($event) => select(i)
+              }, toDisplayString(item.label), 11, ["onClick"])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(`</div></nav>`);
+    };
+  }
+});
+const _sfc_setup$w = _sfc_main$w.setup;
+_sfc_main$w.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/layout/TableOfContentsBar.vue");
+  return _sfc_setup$w ? _sfc_setup$w(props, ctx) : void 0;
+};
+const __nuxt_component_0$1 = /* @__PURE__ */ Object.assign(_export_sfc(_sfc_main$w, [["__scopeId", "data-v-b768c955"]]), { __name: "TableOfContentsBar" });
+const _sfc_main$v = /* @__PURE__ */ defineComponent({
+  __name: "HeroBanner",
+  __ssrInlineRender: true,
+  setup(__props) {
+    useIridis();
+    const base = useRuntimeConfig().app.baseURL;
+    const orbs = ["primary", "info", "success", "error", "warning"];
+    const halo = ["primary", "info", "success", "warning", "error", "secondary"];
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(`<section${ssrRenderAttrs(mergeProps({ class: "relative overflow-hidden rounded-3xl px-6 pt-12 pb-8 sm:pt-16" }, _attrs))} data-v-c5d6a543><div class="hero-orb-field pointer-events-none absolute inset-0 -z-10" data-v-c5d6a543><!--[-->`);
+      ssrRenderList(orbs, (o, i) => {
+        _push(`<div class="float absolute rounded-full blur-2xl" style="${ssrRenderStyle({
+          backgroundColor: `color-mix(in oklch, var(--ui-color-${o}-500) 45%, transparent)`,
+          width: `${7 + i * 3}rem`,
+          height: `${7 + i * 3}rem`,
+          left: `${8 + i * 20}%`,
+          top: `${i % 2 ? 50 : 8}%`,
+          animationDelay: `${i * 0.9}s`,
+          opacity: 0.45
+        })}" data-v-c5d6a543></div>`);
+      });
+      _push(`<!--]--></div><div class="relative mx-auto max-w-3xl text-center" data-v-c5d6a543><div class="mb-4 flex justify-center" data-v-c5d6a543><div class="relative flex h-40 w-40 items-center justify-center sm:h-48 sm:w-48" data-v-c5d6a543><div class="halo" aria-hidden="true" data-v-c5d6a543><!--[-->`);
+      ssrRenderList(halo, (c, i) => {
+        _push(`<span class="halo-ring" style="${ssrRenderStyle({
+          "--c": `var(--ui-color-${c}-500)`,
+          width: `${5.5 + i * 2.4}rem`,
+          height: `${5.5 + i * 2.4}rem`,
+          animationDelay: `${i * 0.8}s`
+        })}" data-v-c5d6a543></span>`);
+      });
+      _push(`<!--]--></div><img${ssrRenderAttr("src", `${unref(base)}logo.png`)} alt="iridis" class="float relative z-10 h-24 w-24 sm:h-28 sm:w-28" style="${ssrRenderStyle({ "filter": "drop-shadow(0 0 22px color-mix(in oklch, var(--ui-primary) 65%, transparent))" })}" data-v-c5d6a543></div></div><h1 class="font-display text-5xl font-black uppercase tracking-tight glow-text sm:text-6xl" style="${ssrRenderStyle({ "color": "var(--ui-text-highlighted, #fff)" })}" data-v-c5d6a543> iridis </h1><p class="mx-auto mt-3 max-w-xl text-sm text-muted sm:text-base" data-v-c5d6a543> A chromatic engine that resolves any seeds — or any image — into a full, contrast-enforced, <span class="font-semibold" style="${ssrRenderStyle({ "color": "var(--ui-color-primary-400)" })}" data-v-c5d6a543>OKLCH-native</span> palette. Every pixel here is <code class="font-mono" data-v-c5d6a543>engine.run()</code>. </p></div></section>`);
+    };
+  }
+});
+const _sfc_setup$v = _sfc_main$v.setup;
+_sfc_main$v.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/HeroBanner.vue");
+  return _sfc_setup$v ? _sfc_setup$v(props, ctx) : void 0;
+};
+const __nuxt_component_1 = /* @__PURE__ */ Object.assign(_export_sfc(_sfc_main$v, [["__scopeId", "data-v-c5d6a543"]]), { __name: "HeroBanner" });
+const theme$a = {
+  "base": "w-full max-w-(--ui-container) mx-auto px-4 sm:px-6 lg:px-8"
+};
+const _sfc_main$u = {
+  __name: "UContainer",
+  __ssrInlineRender: true,
+  props: {
+    as: { type: null, required: false },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false }
+  },
+  setup(__props) {
+    const _props = __props;
+    const props = useComponentProps("container", _props);
+    const appConfig = useAppConfig();
+    const ui = computed(() => tv({ extend: tv(theme$a), ...appConfig.ui?.container || {} }));
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(ssrRenderComponent(unref(Primitive), mergeProps({
+        as: unref(props).as,
+        class: ui.value({ class: [unref(props).ui?.base, unref(props).class] })
+      }, _attrs), {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            ssrRenderSlot(_ctx.$slots, "default", {}, null, _push2, _parent2, _scopeId);
+          } else {
+            return [
+              renderSlot(_ctx.$slots, "default")
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+    };
+  }
+};
+const _sfc_setup$u = _sfc_main$u.setup;
+_sfc_main$u.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/Container.vue");
+  return _sfc_setup$u ? _sfc_setup$u(props, ctx) : void 0;
+};
+const theme$9 = {
+  "slots": {
+    "root": "rounded-lg overflow-hidden",
+    "header": "p-4 sm:px-6",
+    "title": "text-highlighted font-semibold",
+    "description": "mt-1 text-muted text-sm",
+    "body": "p-4 sm:p-6",
+    "footer": "p-4 sm:px-6"
+  },
+  "variants": {
+    "variant": {
+      "solid": {
+        "root": "bg-inverted text-inverted",
+        "title": "text-inverted",
+        "description": "text-dimmed"
+      },
+      "outline": {
+        "root": "bg-default ring ring-default divide-y divide-default"
+      },
+      "soft": {
+        "root": "bg-elevated/50 divide-y divide-default"
+      },
+      "subtle": {
+        "root": "bg-elevated/50 ring ring-default divide-y divide-default"
+      }
+    }
+  },
+  "defaultVariants": {
+    "variant": "outline"
+  }
+};
+const _sfc_main$t = {
+  __name: "UCard",
+  __ssrInlineRender: true,
+  props: {
+    as: { type: null, required: false },
+    title: { type: String, required: false },
+    description: { type: String, required: false },
+    variant: { type: null, required: false },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false }
+  },
+  setup(__props) {
+    const _props = __props;
+    const slots = useSlots();
+    const props = useComponentProps("card", _props);
+    const appConfig = useAppConfig();
+    const ui = computed(() => tv({ extend: tv(theme$9), ...appConfig.ui?.card || {} })({
+      variant: props.variant
+    }));
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(ssrRenderComponent(unref(Primitive), mergeProps({
+        as: unref(props).as,
+        "data-slot": "root",
+        class: ui.value.root({ class: [unref(props).ui?.root, unref(props).class] })
+      }, _attrs), {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            if (!!slots.header || (unref(props).title || !!slots.title) || (unref(props).description || !!slots.description)) {
+              _push2(`<div data-slot="header" class="${ssrRenderClass(ui.value.header({ class: unref(props).ui?.header }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "header", {}, () => {
+                if (unref(props).title || !!slots.title) {
+                  _push2(`<div data-slot="title" class="${ssrRenderClass(ui.value.title({ class: unref(props).ui?.title }))}"${_scopeId}>`);
+                  ssrRenderSlot(_ctx.$slots, "title", {}, () => {
+                    _push2(`${ssrInterpolate(unref(props).title)}`);
+                  }, _push2, _parent2, _scopeId);
+                  _push2(`</div>`);
+                } else {
+                  _push2(`<!---->`);
+                }
+                if (unref(props).description || !!slots.description) {
+                  _push2(`<div data-slot="description" class="${ssrRenderClass(ui.value.description({ class: unref(props).ui?.description }))}"${_scopeId}>`);
+                  ssrRenderSlot(_ctx.$slots, "description", {}, () => {
+                    _push2(`${ssrInterpolate(unref(props).description)}`);
+                  }, _push2, _parent2, _scopeId);
+                  _push2(`</div>`);
+                } else {
+                  _push2(`<!---->`);
+                }
+              }, _push2, _parent2, _scopeId);
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            if (!!slots.default) {
+              _push2(`<div data-slot="body" class="${ssrRenderClass(ui.value.body({ class: unref(props).ui?.body }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "default", {}, null, _push2, _parent2, _scopeId);
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            if (!!slots.footer) {
+              _push2(`<div data-slot="footer" class="${ssrRenderClass(ui.value.footer({ class: unref(props).ui?.footer }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "footer", {}, null, _push2, _parent2, _scopeId);
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+          } else {
+            return [
+              !!slots.header || (unref(props).title || !!slots.title) || (unref(props).description || !!slots.description) ? (openBlock(), createBlock("div", {
+                key: 0,
+                "data-slot": "header",
+                class: ui.value.header({ class: unref(props).ui?.header })
+              }, [
+                renderSlot(_ctx.$slots, "header", {}, () => [
+                  unref(props).title || !!slots.title ? (openBlock(), createBlock("div", {
+                    key: 0,
+                    "data-slot": "title",
+                    class: ui.value.title({ class: unref(props).ui?.title })
+                  }, [
+                    renderSlot(_ctx.$slots, "title", {}, () => [
+                      createTextVNode(toDisplayString(unref(props).title), 1)
+                    ])
+                  ], 2)) : createCommentVNode("", true),
+                  unref(props).description || !!slots.description ? (openBlock(), createBlock("div", {
+                    key: 1,
+                    "data-slot": "description",
+                    class: ui.value.description({ class: unref(props).ui?.description })
+                  }, [
+                    renderSlot(_ctx.$slots, "description", {}, () => [
+                      createTextVNode(toDisplayString(unref(props).description), 1)
+                    ])
+                  ], 2)) : createCommentVNode("", true)
+                ])
+              ], 2)) : createCommentVNode("", true),
+              !!slots.default ? (openBlock(), createBlock("div", {
+                key: 1,
+                "data-slot": "body",
+                class: ui.value.body({ class: unref(props).ui?.body })
+              }, [
+                renderSlot(_ctx.$slots, "default")
+              ], 2)) : createCommentVNode("", true),
+              !!slots.footer ? (openBlock(), createBlock("div", {
+                key: 2,
+                "data-slot": "footer",
+                class: ui.value.footer({ class: unref(props).ui?.footer })
+              }, [
+                renderSlot(_ctx.$slots, "footer")
+              ], 2)) : createCommentVNode("", true)
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+    };
+  }
+};
+const _sfc_setup$t = _sfc_main$t.setup;
+_sfc_main$t.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/Card.vue");
+  return _sfc_setup$t ? _sfc_setup$t(props, ctx) : void 0;
+};
+const theme$8 = {
+  "slots": {
+    "root": "relative flex items-start",
+    "base": [
+      "inline-flex items-center shrink-0 rounded-full border-2 border-transparent focus-visible:outline-3 data-[state=unchecked]:bg-accented",
+      "transition-[background] duration-200"
+    ],
+    "container": "flex items-center",
+    "thumb": "group pointer-events-none rounded-full bg-default shadow-lg ring-0 transition-transform duration-200 data-[state=unchecked]:translate-x-0 data-[state=unchecked]:rtl:-translate-x-0 flex items-center justify-center",
+    "icon": [
+      "absolute shrink-0 group-data-[state=unchecked]:text-dimmed opacity-0 size-10/12",
+      "transition-[color,opacity] duration-200"
+    ],
+    "wrapper": "ms-2",
+    "label": "block font-medium text-default",
+    "description": "text-muted"
+  },
+  "variants": {
+    "color": {
+      "primary": {
+        "base": "data-[state=checked]:bg-primary outline-primary/25",
+        "icon": "group-data-[state=checked]:text-primary"
+      },
+      "secondary": {
+        "base": "data-[state=checked]:bg-secondary outline-secondary/25",
+        "icon": "group-data-[state=checked]:text-secondary"
+      },
+      "success": {
+        "base": "data-[state=checked]:bg-success outline-success/25",
+        "icon": "group-data-[state=checked]:text-success"
+      },
+      "info": {
+        "base": "data-[state=checked]:bg-info outline-info/25",
+        "icon": "group-data-[state=checked]:text-info"
+      },
+      "warning": {
+        "base": "data-[state=checked]:bg-warning outline-warning/25",
+        "icon": "group-data-[state=checked]:text-warning"
+      },
+      "error": {
+        "base": "data-[state=checked]:bg-error outline-error/25",
+        "icon": "group-data-[state=checked]:text-error"
+      },
+      "neutral": {
+        "base": "data-[state=checked]:bg-inverted outline-inverted/25",
+        "icon": "group-data-[state=checked]:text-highlighted"
+      }
+    },
+    "size": {
+      "xs": {
+        "base": "w-7",
+        "container": "h-4",
+        "thumb": "size-3 data-[state=checked]:translate-x-3 data-[state=checked]:rtl:-translate-x-3",
+        "wrapper": "text-xs"
+      },
+      "sm": {
+        "base": "w-8",
+        "container": "h-4",
+        "thumb": "size-3.5 data-[state=checked]:translate-x-3.5 data-[state=checked]:rtl:-translate-x-3.5",
+        "wrapper": "text-xs"
+      },
+      "md": {
+        "base": "w-9",
+        "container": "h-5",
+        "thumb": "size-4 data-[state=checked]:translate-x-4 data-[state=checked]:rtl:-translate-x-4",
+        "wrapper": "text-sm"
+      },
+      "lg": {
+        "base": "w-10",
+        "container": "h-5",
+        "thumb": "size-4.5 data-[state=checked]:translate-x-4.5 data-[state=checked]:rtl:-translate-x-4.5",
+        "wrapper": "text-sm"
+      },
+      "xl": {
+        "base": "w-11",
+        "container": "h-6",
+        "thumb": "size-5 data-[state=checked]:translate-x-5 data-[state=checked]:rtl:-translate-x-5",
+        "wrapper": "text-base"
+      }
+    },
+    "checked": {
+      "true": {
+        "icon": "group-data-[state=checked]:opacity-100"
+      }
+    },
+    "unchecked": {
+      "true": {
+        "icon": "group-data-[state=unchecked]:opacity-100"
+      }
+    },
+    "loading": {
+      "true": {
+        "icon": "animate-spin"
+      }
+    },
+    "highlight": {
+      "true": ""
+    },
+    "required": {
+      "true": {
+        "label": "after:content-['*'] after:ms-0.5 after:text-error"
+      }
+    },
+    "disabled": {
+      "true": {
+        "root": "opacity-75",
+        "base": "cursor-not-allowed",
+        "label": "cursor-not-allowed",
+        "description": "cursor-not-allowed"
+      }
+    }
+  },
+  "compoundVariants": [
+    {
+      "color": "primary",
+      "highlight": true,
+      "class": {
+        "base": "ring ring-primary"
+      }
+    },
+    {
+      "color": "secondary",
+      "highlight": true,
+      "class": {
+        "base": "ring ring-secondary"
+      }
+    },
+    {
+      "color": "success",
+      "highlight": true,
+      "class": {
+        "base": "ring ring-success"
+      }
+    },
+    {
+      "color": "info",
+      "highlight": true,
+      "class": {
+        "base": "ring ring-info"
+      }
+    },
+    {
+      "color": "warning",
+      "highlight": true,
+      "class": {
+        "base": "ring ring-warning"
+      }
+    },
+    {
+      "color": "error",
+      "highlight": true,
+      "class": {
+        "base": "ring ring-error"
+      }
+    },
+    {
+      "color": "neutral",
+      "highlight": true,
+      "class": {
+        "base": "ring ring-inverted"
+      }
+    }
+  ],
+  "defaultVariants": {
+    "color": "primary",
+    "size": "md"
+  }
+};
+const _sfc_main$s = /* @__PURE__ */ Object.assign({ inheritAttrs: false }, {
+  __name: "USwitch",
+  __ssrInlineRender: true,
+  props: {
+    as: { type: null, required: false },
+    color: { type: null, required: false },
+    size: { type: null, required: false },
+    highlight: { type: Boolean, required: false },
+    loading: { type: Boolean, required: false },
+    loadingIcon: { type: null, required: false },
+    checkedIcon: { type: null, required: false },
+    uncheckedIcon: { type: null, required: false },
+    label: { type: String, required: false },
+    description: { type: String, required: false },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false },
+    disabled: { type: Boolean, required: false },
+    id: { type: String, required: false },
+    name: { type: String, required: false },
+    required: { type: Boolean, required: false },
+    value: { type: String, required: false },
+    defaultValue: { type: null, required: false },
+    modelValue: { type: null, required: false },
+    trueValue: { type: null, required: false },
+    falseValue: { type: null, required: false }
+  },
+  emits: ["change", "update:modelValue"],
+  setup(__props, { emit: __emit }) {
+    const _props = __props;
+    const slots = useSlots();
+    const emits = __emit;
+    const props = useComponentProps("switch", _props);
+    const appConfig = useAppConfig();
+    const rootProps = useForwardProps(reactivePick(props, "required", "value", "defaultValue", "modelValue", "trueValue", "falseValue"), emits);
+    const { id: _id, emitFormChange, emitFormInput, size: size2, color, highlight, name, disabled, ariaAttrs } = useFormField(_props);
+    const id = _id.value ?? useId();
+    const attrs = useAttrs();
+    const forwardedAttrs = computed(() => {
+      const { "data-state": _, ...rest } = attrs;
+      return rest;
+    });
+    const ui = computed(() => tv({ extend: tv(theme$8), ...appConfig.ui?.switch || {} })({
+      size: size2.value ?? props.size,
+      color: color.value ?? props.color,
+      highlight: highlight.value ?? props.highlight,
+      required: props.required,
+      loading: props.loading,
+      disabled: disabled.value || props.loading
+    }));
+    function onUpdate(value) {
+      const event = new Event("change", { target: { value } });
+      emits("change", event);
+      emitFormChange();
+      emitFormInput();
+    }
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(ssrRenderComponent(unref(Primitive), mergeProps({
+        as: unref(props).as,
+        "data-slot": "root",
+        class: ui.value.root({ class: [unref(props).ui?.root, unref(props).class] })
+      }, _attrs), {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div data-slot="container" class="${ssrRenderClass(ui.value.container({ class: unref(props).ui?.container }))}"${_scopeId}>`);
+            _push2(ssrRenderComponent(unref(SwitchRoot_default), mergeProps({ id: unref(id) }, { ...unref(rootProps), ...forwardedAttrs.value, ...unref(ariaAttrs) }, {
+              name: unref(name),
+              disabled: unref(disabled) || unref(props).loading,
+              "data-slot": "base",
+              class: ui.value.base({ class: unref(props).ui?.base }),
+              "onUpdate:modelValue": onUpdate
+            }), {
+              default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(ssrRenderComponent(unref(SwitchThumb_default), {
+                    "data-slot": "thumb",
+                    class: ui.value.thumb({ class: unref(props).ui?.thumb })
+                  }, {
+                    default: withCtx((_3, _push4, _parent4, _scopeId3) => {
+                      if (_push4) {
+                        if (unref(props).loading) {
+                          _push4(ssrRenderComponent(_sfc_main$f$1, {
+                            name: unref(props).loadingIcon || unref(appConfig).ui.icons.loading,
+                            "data-slot": "icon",
+                            class: ui.value.icon({ class: unref(props).ui?.icon, checked: true, unchecked: true })
+                          }, null, _parent4, _scopeId3));
+                        } else {
+                          _push4(`<!--[-->`);
+                          if (unref(props).checkedIcon) {
+                            _push4(ssrRenderComponent(_sfc_main$f$1, {
+                              name: unref(props).checkedIcon,
+                              "data-slot": "icon",
+                              class: ui.value.icon({ class: unref(props).ui?.icon, checked: true })
+                            }, null, _parent4, _scopeId3));
+                          } else {
+                            _push4(`<!---->`);
+                          }
+                          if (unref(props).uncheckedIcon) {
+                            _push4(ssrRenderComponent(_sfc_main$f$1, {
+                              name: unref(props).uncheckedIcon,
+                              "data-slot": "icon",
+                              class: ui.value.icon({ class: unref(props).ui?.icon, unchecked: true })
+                            }, null, _parent4, _scopeId3));
+                          } else {
+                            _push4(`<!---->`);
+                          }
+                          _push4(`<!--]-->`);
+                        }
+                      } else {
+                        return [
+                          unref(props).loading ? (openBlock(), createBlock(_sfc_main$f$1, {
+                            key: 0,
+                            name: unref(props).loadingIcon || unref(appConfig).ui.icons.loading,
+                            "data-slot": "icon",
+                            class: ui.value.icon({ class: unref(props).ui?.icon, checked: true, unchecked: true })
+                          }, null, 8, ["name", "class"])) : (openBlock(), createBlock(Fragment, { key: 1 }, [
+                            unref(props).checkedIcon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                              key: 0,
+                              name: unref(props).checkedIcon,
+                              "data-slot": "icon",
+                              class: ui.value.icon({ class: unref(props).ui?.icon, checked: true })
+                            }, null, 8, ["name", "class"])) : createCommentVNode("", true),
+                            unref(props).uncheckedIcon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                              key: 1,
+                              name: unref(props).uncheckedIcon,
+                              "data-slot": "icon",
+                              class: ui.value.icon({ class: unref(props).ui?.icon, unchecked: true })
+                            }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                          ], 64))
+                        ];
+                      }
+                    }),
+                    _: 1
+                  }, _parent3, _scopeId2));
+                } else {
+                  return [
+                    createVNode(unref(SwitchThumb_default), {
+                      "data-slot": "thumb",
+                      class: ui.value.thumb({ class: unref(props).ui?.thumb })
+                    }, {
+                      default: withCtx(() => [
+                        unref(props).loading ? (openBlock(), createBlock(_sfc_main$f$1, {
+                          key: 0,
+                          name: unref(props).loadingIcon || unref(appConfig).ui.icons.loading,
+                          "data-slot": "icon",
+                          class: ui.value.icon({ class: unref(props).ui?.icon, checked: true, unchecked: true })
+                        }, null, 8, ["name", "class"])) : (openBlock(), createBlock(Fragment, { key: 1 }, [
+                          unref(props).checkedIcon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                            key: 0,
+                            name: unref(props).checkedIcon,
+                            "data-slot": "icon",
+                            class: ui.value.icon({ class: unref(props).ui?.icon, checked: true })
+                          }, null, 8, ["name", "class"])) : createCommentVNode("", true),
+                          unref(props).uncheckedIcon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                            key: 1,
+                            name: unref(props).uncheckedIcon,
+                            "data-slot": "icon",
+                            class: ui.value.icon({ class: unref(props).ui?.icon, unchecked: true })
+                          }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                        ], 64))
+                      ]),
+                      _: 1
+                    }, 8, ["class"])
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(`</div>`);
+            if (unref(props).label || !!slots.label || (unref(props).description || !!slots.description)) {
+              _push2(`<div data-slot="wrapper" class="${ssrRenderClass(ui.value.wrapper({ class: unref(props).ui?.wrapper }))}"${_scopeId}>`);
+              if (unref(props).label || !!slots.label) {
+                _push2(ssrRenderComponent(unref(Label_default), {
+                  for: unref(id),
+                  "data-slot": "label",
+                  class: ui.value.label({ class: unref(props).ui?.label })
+                }, {
+                  default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                    if (_push3) {
+                      ssrRenderSlot(_ctx.$slots, "label", {
+                        label: unref(props).label
+                      }, () => {
+                        _push3(`${ssrInterpolate(unref(props).label)}`);
+                      }, _push3, _parent3, _scopeId2);
+                    } else {
+                      return [
+                        renderSlot(_ctx.$slots, "label", {
+                          label: unref(props).label
+                        }, () => [
+                          createTextVNode(toDisplayString(unref(props).label), 1)
+                        ])
+                      ];
+                    }
+                  }),
+                  _: 3
+                }, _parent2, _scopeId));
+              } else {
+                _push2(`<!---->`);
+              }
+              if (unref(props).description || !!slots.description) {
+                _push2(`<p data-slot="description" class="${ssrRenderClass(ui.value.description({ class: unref(props).ui?.description }))}"${_scopeId}>`);
+                ssrRenderSlot(_ctx.$slots, "description", {
+                  description: unref(props).description
+                }, () => {
+                  _push2(`${ssrInterpolate(unref(props).description)}`);
+                }, _push2, _parent2, _scopeId);
+                _push2(`</p>`);
+              } else {
+                _push2(`<!---->`);
+              }
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+          } else {
+            return [
+              createVNode("div", {
+                "data-slot": "container",
+                class: ui.value.container({ class: unref(props).ui?.container })
+              }, [
+                createVNode(unref(SwitchRoot_default), mergeProps({ id: unref(id) }, { ...unref(rootProps), ...forwardedAttrs.value, ...unref(ariaAttrs) }, {
+                  name: unref(name),
+                  disabled: unref(disabled) || unref(props).loading,
+                  "data-slot": "base",
+                  class: ui.value.base({ class: unref(props).ui?.base }),
+                  "onUpdate:modelValue": onUpdate
+                }), {
+                  default: withCtx(() => [
+                    createVNode(unref(SwitchThumb_default), {
+                      "data-slot": "thumb",
+                      class: ui.value.thumb({ class: unref(props).ui?.thumb })
+                    }, {
+                      default: withCtx(() => [
+                        unref(props).loading ? (openBlock(), createBlock(_sfc_main$f$1, {
+                          key: 0,
+                          name: unref(props).loadingIcon || unref(appConfig).ui.icons.loading,
+                          "data-slot": "icon",
+                          class: ui.value.icon({ class: unref(props).ui?.icon, checked: true, unchecked: true })
+                        }, null, 8, ["name", "class"])) : (openBlock(), createBlock(Fragment, { key: 1 }, [
+                          unref(props).checkedIcon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                            key: 0,
+                            name: unref(props).checkedIcon,
+                            "data-slot": "icon",
+                            class: ui.value.icon({ class: unref(props).ui?.icon, checked: true })
+                          }, null, 8, ["name", "class"])) : createCommentVNode("", true),
+                          unref(props).uncheckedIcon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                            key: 1,
+                            name: unref(props).uncheckedIcon,
+                            "data-slot": "icon",
+                            class: ui.value.icon({ class: unref(props).ui?.icon, unchecked: true })
+                          }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                        ], 64))
+                      ]),
+                      _: 1
+                    }, 8, ["class"])
+                  ]),
+                  _: 1
+                }, 16, ["id", "name", "disabled", "class"])
+              ], 2),
+              unref(props).label || !!slots.label || (unref(props).description || !!slots.description) ? (openBlock(), createBlock("div", {
+                key: 0,
+                "data-slot": "wrapper",
+                class: ui.value.wrapper({ class: unref(props).ui?.wrapper })
+              }, [
+                unref(props).label || !!slots.label ? (openBlock(), createBlock(unref(Label_default), {
+                  key: 0,
+                  for: unref(id),
+                  "data-slot": "label",
+                  class: ui.value.label({ class: unref(props).ui?.label })
+                }, {
+                  default: withCtx(() => [
+                    renderSlot(_ctx.$slots, "label", {
+                      label: unref(props).label
+                    }, () => [
+                      createTextVNode(toDisplayString(unref(props).label), 1)
+                    ])
+                  ]),
+                  _: 3
+                }, 8, ["for", "class"])) : createCommentVNode("", true),
+                unref(props).description || !!slots.description ? (openBlock(), createBlock("p", {
+                  key: 1,
+                  "data-slot": "description",
+                  class: ui.value.description({ class: unref(props).ui?.description })
+                }, [
+                  renderSlot(_ctx.$slots, "description", {
+                    description: unref(props).description
+                  }, () => [
+                    createTextVNode(toDisplayString(unref(props).description), 1)
+                  ])
+                ], 2)) : createCommentVNode("", true)
+              ], 2)) : createCommentVNode("", true)
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+    };
+  }
+});
+const _sfc_setup$s = _sfc_main$s.setup;
+_sfc_main$s.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/Switch.vue");
+  return _sfc_setup$s ? _sfc_setup$s(props, ctx) : void 0;
+};
+const _sfc_main$r = /* @__PURE__ */ defineComponent({
+  __name: "ModeSwitch",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const { mode } = useIridis();
+    const tabItems = [
+      { label: "Build a palette", icon: "i-lucide-palette", value: "0" },
+      { label: "Extract from image", icon: "i-lucide-image", value: "1" }
+    ];
+    const activeTab = computed({
+      get: () => mode.value === "picker" ? 0 : 1,
+      set: (val) => {
+        mode.value = Number(val) === 0 ? "picker" : "image";
+      }
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UTabs = _sfc_main$z;
+      _push(`<div${ssrRenderAttrs(mergeProps({ class: "flex justify-center w-full mb-6" }, _attrs))} data-v-f2bc758c>`);
+      _push(ssrRenderComponent(_component_UTabs, {
+        modelValue: activeTab.value,
+        "onUpdate:modelValue": ($event) => activeTab.value = $event,
+        items: tabItems,
+        content: false,
+        class: "w-full max-w-sm output-tabs",
+        ui: { indicator: "hidden" }
+      }, null, _parent));
+      _push(`</div>`);
+    };
+  }
+});
+const _sfc_setup$r = _sfc_main$r.setup;
+_sfc_main$r.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/ModeSwitch.vue");
+  return _sfc_setup$r ? _sfc_setup$r(props, ctx) : void 0;
+};
+const __nuxt_component_2 = /* @__PURE__ */ Object.assign(_export_sfc(_sfc_main$r, [["__scopeId", "data-v-f2bc758c"]]), { __name: "ModeSwitch" });
+const theme$7 = {
+  "slots": {
+    "base": [
+      "relative group rounded-md inline-flex items-center disabled:cursor-not-allowed disabled:opacity-75",
+      "transition-colors"
+    ],
+    "leading": "absolute inset-y-0 start-0 flex items-center",
+    "leadingIcon": "shrink-0 text-dimmed",
+    "leadingAvatar": "shrink-0",
+    "leadingAvatarSize": "",
+    "trailing": "absolute inset-y-0 end-0 flex items-center",
+    "trailingIcon": "shrink-0 text-dimmed",
+    "value": "truncate pointer-events-none",
+    "placeholder": "truncate text-dimmed",
+    "arrow": "fill-bg stroke-default",
+    "content": "max-h-[min(15rem,var(--reka-select-content-available-height,15rem))] w-(--reka-select-trigger-width) bg-default shadow-lg rounded-md ring ring-default overflow-hidden origin-(--reka-select-content-transform-origin) pointer-events-auto flex flex-col",
+    "viewport": "relative divide-y divide-default scroll-py-1 overflow-y-auto flex-1",
+    "group": "p-1 isolate",
+    "empty": "text-center text-muted",
+    "label": "font-semibold text-highlighted",
+    "separator": "-mx-1 my-1 h-px bg-border",
+    "item": [
+      "group relative w-full flex items-start select-none outline-none before:absolute before:z-[-1] before:inset-px before:rounded-md data-disabled:cursor-not-allowed data-disabled:opacity-75 text-default data-highlighted:not-data-disabled:text-highlighted data-highlighted:not-data-disabled:before:bg-elevated/50",
+      "transition-colors before:transition-colors"
+    ],
+    "itemLeadingIcon": [
+      "shrink-0 text-dimmed group-data-highlighted:not-group-data-disabled:text-default",
+      "transition-colors"
+    ],
+    "itemLeadingAvatar": "shrink-0",
+    "itemLeadingAvatarSize": "",
+    "itemLeadingChip": "shrink-0",
+    "itemLeadingChipSize": "",
+    "itemTrailing": "ms-auto inline-flex gap-1.5 items-center",
+    "itemTrailingIcon": "shrink-0",
+    "itemWrapper": "flex-1 flex flex-col min-w-0",
+    "itemLabel": "truncate",
+    "itemDescription": "truncate text-muted"
+  },
+  "variants": {
+    "fieldGroup": {
+      "horizontal": "not-only:first:rounded-e-none not-only:last:rounded-s-none not-last:not-first:rounded-none focus-visible:z-[1]",
+      "vertical": "not-only:first:rounded-b-none not-only:last:rounded-t-none not-last:not-first:rounded-none focus-visible:z-[1]"
+    },
+    "size": {
+      "xs": {
+        "base": "px-2 py-1 text-xs gap-1",
+        "leading": "ps-2",
+        "trailing": "pe-2",
+        "leadingIcon": "size-4",
+        "leadingAvatarSize": "3xs",
+        "trailingIcon": "size-4",
+        "label": "p-1 text-[10px]/3 gap-1",
+        "item": "p-1 text-xs gap-1",
+        "itemLeadingIcon": "size-4",
+        "itemLeadingAvatarSize": "3xs",
+        "itemLeadingChip": "size-4",
+        "itemLeadingChipSize": "sm",
+        "itemTrailingIcon": "size-4",
+        "empty": "p-2 text-xs"
+      },
+      "sm": {
+        "base": "px-2.5 py-1.5 text-xs gap-1.5",
+        "leading": "ps-2.5",
+        "trailing": "pe-2.5",
+        "leadingIcon": "size-4",
+        "leadingAvatarSize": "3xs",
+        "trailingIcon": "size-4",
+        "label": "p-1.5 text-[10px]/3 gap-1.5",
+        "item": "p-1.5 text-xs gap-1.5",
+        "itemLeadingIcon": "size-4",
+        "itemLeadingAvatarSize": "3xs",
+        "itemLeadingChip": "size-4",
+        "itemLeadingChipSize": "sm",
+        "itemTrailingIcon": "size-4",
+        "empty": "p-2.5 text-xs"
+      },
+      "md": {
+        "base": "px-2.5 py-1.5 text-sm gap-1.5",
+        "leading": "ps-2.5",
+        "trailing": "pe-2.5",
+        "leadingIcon": "size-5",
+        "leadingAvatarSize": "2xs",
+        "trailingIcon": "size-5",
+        "label": "p-1.5 text-xs gap-1.5",
+        "item": "p-1.5 text-sm gap-1.5",
+        "itemLeadingIcon": "size-5",
+        "itemLeadingAvatarSize": "2xs",
+        "itemLeadingChip": "size-5",
+        "itemLeadingChipSize": "md",
+        "itemTrailingIcon": "size-5",
+        "empty": "p-2.5 text-sm"
+      },
+      "lg": {
+        "base": "px-3 py-2 text-sm gap-2",
+        "leading": "ps-3",
+        "trailing": "pe-3",
+        "leadingIcon": "size-5",
+        "leadingAvatarSize": "2xs",
+        "trailingIcon": "size-5",
+        "label": "p-2 text-xs gap-2",
+        "item": "p-2 text-sm gap-2",
+        "itemLeadingIcon": "size-5",
+        "itemLeadingAvatarSize": "2xs",
+        "itemLeadingChip": "size-5",
+        "itemLeadingChipSize": "md",
+        "itemTrailingIcon": "size-5",
+        "empty": "p-3 text-sm"
+      },
+      "xl": {
+        "base": "px-3 py-2 text-base gap-2",
+        "leading": "ps-3",
+        "trailing": "pe-3",
+        "leadingIcon": "size-6",
+        "leadingAvatarSize": "xs",
+        "trailingIcon": "size-6",
+        "label": "p-2 text-sm gap-2",
+        "item": "p-2 text-base gap-2",
+        "itemLeadingIcon": "size-6",
+        "itemLeadingAvatarSize": "xs",
+        "itemLeadingChip": "size-6",
+        "itemLeadingChipSize": "lg",
+        "itemTrailingIcon": "size-6",
+        "empty": "p-3 text-base"
+      }
+    },
+    "variant": {
+      "outline": "text-highlighted bg-default ring ring-inset ring-accented hover:bg-elevated disabled:bg-default",
+      "soft": "text-highlighted bg-elevated/50 hover:bg-elevated focus:bg-elevated disabled:bg-elevated/50",
+      "subtle": "text-highlighted bg-elevated ring ring-inset ring-accented hover:bg-accented/75 disabled:bg-elevated",
+      "ghost": "text-highlighted bg-transparent hover:bg-elevated focus:bg-elevated disabled:bg-transparent dark:disabled:bg-transparent",
+      "none": "text-highlighted bg-transparent focus:outline-none"
+    },
+    "color": {
+      "primary": "",
+      "secondary": "",
+      "success": "",
+      "info": "",
+      "warning": "",
+      "error": "",
+      "neutral": ""
+    },
+    "leading": {
+      "true": ""
+    },
+    "trailing": {
+      "true": ""
+    },
+    "loading": {
+      "true": ""
+    },
+    "highlight": {
+      "true": ""
+    },
+    "fixed": {
+      "false": ""
+    },
+    "type": {
+      "file": "file:me-1.5 file:font-medium file:text-muted file:outline-none"
+    },
+    "position": {
+      "popper": {
+        "content": "data-[state=open]:animate-[scale-in_100ms_ease-out] data-[state=closed]:animate-[scale-out_100ms_ease-in]"
+      },
+      "item-aligned": {
+        "content": ""
+      }
+    },
+    "multiple": {
+      "true": ""
+    }
+  },
+  "compoundVariants": [
+    {
+      "color": "primary",
+      "variant": [
+        "outline",
+        "subtle"
+      ],
+      "class": "outline-primary/25 focus-visible:outline-3 focus-visible:ring-primary"
+    },
+    {
+      "color": "secondary",
+      "variant": [
+        "outline",
+        "subtle"
+      ],
+      "class": "outline-secondary/25 focus-visible:outline-3 focus-visible:ring-secondary"
+    },
+    {
+      "color": "success",
+      "variant": [
+        "outline",
+        "subtle"
+      ],
+      "class": "outline-success/25 focus-visible:outline-3 focus-visible:ring-success"
+    },
+    {
+      "color": "info",
+      "variant": [
+        "outline",
+        "subtle"
+      ],
+      "class": "outline-info/25 focus-visible:outline-3 focus-visible:ring-info"
+    },
+    {
+      "color": "warning",
+      "variant": [
+        "outline",
+        "subtle"
+      ],
+      "class": "outline-warning/25 focus-visible:outline-3 focus-visible:ring-warning"
+    },
+    {
+      "color": "error",
+      "variant": [
+        "outline",
+        "subtle"
+      ],
+      "class": "outline-error/25 focus-visible:outline-3 focus-visible:ring-error"
+    },
+    {
+      "color": "primary",
+      "variant": [
+        "soft",
+        "ghost"
+      ],
+      "class": "outline-primary/25 focus-visible:outline-3"
+    },
+    {
+      "color": "secondary",
+      "variant": [
+        "soft",
+        "ghost"
+      ],
+      "class": "outline-secondary/25 focus-visible:outline-3"
+    },
+    {
+      "color": "success",
+      "variant": [
+        "soft",
+        "ghost"
+      ],
+      "class": "outline-success/25 focus-visible:outline-3"
+    },
+    {
+      "color": "info",
+      "variant": [
+        "soft",
+        "ghost"
+      ],
+      "class": "outline-info/25 focus-visible:outline-3"
+    },
+    {
+      "color": "warning",
+      "variant": [
+        "soft",
+        "ghost"
+      ],
+      "class": "outline-warning/25 focus-visible:outline-3"
+    },
+    {
+      "color": "error",
+      "variant": [
+        "soft",
+        "ghost"
+      ],
+      "class": "outline-error/25 focus-visible:outline-3"
+    },
+    {
+      "color": "primary",
+      "highlight": true,
+      "class": "ring ring-inset ring-primary"
+    },
+    {
+      "color": "secondary",
+      "highlight": true,
+      "class": "ring ring-inset ring-secondary"
+    },
+    {
+      "color": "success",
+      "highlight": true,
+      "class": "ring ring-inset ring-success"
+    },
+    {
+      "color": "info",
+      "highlight": true,
+      "class": "ring ring-inset ring-info"
+    },
+    {
+      "color": "warning",
+      "highlight": true,
+      "class": "ring ring-inset ring-warning"
+    },
+    {
+      "color": "error",
+      "highlight": true,
+      "class": "ring ring-inset ring-error"
+    },
+    {
+      "color": "neutral",
+      "variant": [
+        "outline",
+        "subtle"
+      ],
+      "class": "outline-inverted/25 focus-visible:outline-3 focus-visible:ring-inverted"
+    },
+    {
+      "color": "neutral",
+      "variant": [
+        "soft",
+        "ghost"
+      ],
+      "class": "outline-inverted/25 focus-visible:outline-3"
+    },
+    {
+      "color": "neutral",
+      "highlight": true,
+      "class": "ring ring-inset ring-inverted"
+    },
+    {
+      "leading": true,
+      "size": "xs",
+      "class": "ps-7"
+    },
+    {
+      "leading": true,
+      "size": "sm",
+      "class": "ps-8"
+    },
+    {
+      "leading": true,
+      "size": "md",
+      "class": "ps-9"
+    },
+    {
+      "leading": true,
+      "size": "lg",
+      "class": "ps-10"
+    },
+    {
+      "leading": true,
+      "size": "xl",
+      "class": "ps-11"
+    },
+    {
+      "trailing": true,
+      "size": "xs",
+      "class": "pe-7"
+    },
+    {
+      "trailing": true,
+      "size": "sm",
+      "class": "pe-8"
+    },
+    {
+      "trailing": true,
+      "size": "md",
+      "class": "pe-9"
+    },
+    {
+      "trailing": true,
+      "size": "lg",
+      "class": "pe-10"
+    },
+    {
+      "trailing": true,
+      "size": "xl",
+      "class": "pe-11"
+    },
+    {
+      "loading": true,
+      "leading": true,
+      "class": {
+        "leadingIcon": "animate-spin"
+      }
+    },
+    {
+      "loading": true,
+      "leading": false,
+      "trailing": true,
+      "class": {
+        "trailingIcon": "animate-spin"
+      }
+    },
+    {
+      "fixed": false,
+      "size": "xs",
+      "class": "md:text-xs"
+    },
+    {
+      "fixed": false,
+      "size": "sm",
+      "class": "md:text-xs"
+    },
+    {
+      "fixed": false,
+      "size": "md",
+      "class": "md:text-sm"
+    },
+    {
+      "fixed": false,
+      "size": "lg",
+      "class": "md:text-sm"
+    }
+  ],
+  "defaultVariants": {
+    "size": "md",
+    "color": "primary",
+    "variant": "outline",
+    "position": "popper"
+  }
+};
+const _sfc_main$q = /* @__PURE__ */ Object.assign({ inheritAttrs: false }, {
+  __name: "USelect",
+  __ssrInlineRender: true,
+  props: {
+    id: { type: String, required: false },
+    placeholder: { type: String, required: false },
+    color: { type: null, required: false },
+    variant: { type: null, required: false },
+    size: { type: null, required: false },
+    trailingIcon: { type: null, required: false },
+    selectedIcon: { type: null, required: false },
+    content: { type: Object, required: false },
+    arrow: { type: [Boolean, Object], required: false },
+    portal: { type: [Boolean, String], required: false, skipCheck: true, default: true },
+    valueKey: { type: null, required: false, default: "value" },
+    labelKey: { type: null, required: false, default: "label" },
+    descriptionKey: { type: null, required: false, default: "description" },
+    items: { type: null, required: false },
+    defaultValue: { type: null, required: false },
+    modelValue: { type: null, required: false },
+    modelModifiers: { type: null, required: false },
+    multiple: { type: Boolean, required: false },
+    highlight: { type: Boolean, required: false },
+    autofocus: { type: Boolean, required: false },
+    autofocusDelay: { type: Number, required: false, default: 0 },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false },
+    open: { type: Boolean, required: false },
+    defaultOpen: { type: Boolean, required: false },
+    autocomplete: { type: String, required: false },
+    disabled: { type: Boolean, required: false },
+    name: { type: String, required: false },
+    required: { type: Boolean, required: false },
+    icon: { type: null, required: false },
+    avatar: { type: Object, required: false },
+    leading: { type: Boolean, required: false },
+    leadingIcon: { type: null, required: false },
+    trailing: { type: Boolean, required: false },
+    loading: { type: Boolean, required: false },
+    loadingIcon: { type: null, required: false }
+  },
+  emits: ["change", "blur", "focus", "update:modelValue", "update:open"],
+  setup(__props, { expose: __expose, emit: __emit }) {
+    const _props = __props;
+    const emits = __emit;
+    const slots = useSlots();
+    const props = useComponentProps("select", _props);
+    const appConfig = useAppConfig();
+    const rootProps = useForwardProps(reactivePick(props, "open", "defaultOpen", "disabled", "autocomplete", "required", "multiple"), emits);
+    const portalProps = usePortal(toRef(() => props.portal));
+    const position = computed(() => props.content?.position ?? appConfig.ui?.select?.defaultVariants?.position ?? theme$7.defaultVariants?.position);
+    const contentProps = toRef(() => defu(props.content, { side: "bottom", sideOffset: 8, collisionPadding: 8, position: position.value }));
+    const arrowProps = toRef(() => defu(props.arrow, { rounded: true }));
+    const { emitFormChange, emitFormInput, emitFormBlur, emitFormFocus, size: formFieldSize, color, id, name, highlight, disabled, ariaAttrs } = useFormField(_props);
+    const { orientation, size: fieldGroupSize } = useFieldGroup(_props);
+    const { isLeading, isTrailing, leadingIconName, trailingIconName } = useComponentIcons(toRef(() => defu(props, { trailingIcon: appConfig.ui.icons.chevronDown })));
+    const selectSize = computed(() => fieldGroupSize.value || formFieldSize.value);
+    const isItemAligned = computed(() => position.value === "item-aligned");
+    const ui = computed(() => tv({ extend: tv(theme$7), ...appConfig.ui?.select || {} })({
+      color: color.value ?? props.color,
+      variant: props.variant,
+      size: selectSize.value ?? props.size,
+      loading: props.loading,
+      highlight: highlight.value ?? props.highlight,
+      leading: isLeading.value || !!props.avatar || !!slots.leading,
+      trailing: isTrailing.value || !!slots.trailing,
+      fieldGroup: orientation.value,
+      position: position.value,
+      multiple: props.multiple
+    }));
+    const groups = computed(
+      () => props.items?.length ? isArrayOfArray(props.items) ? props.items : [props.items] : []
+    );
+    const items = computed(() => groups.value.flatMap((group) => group));
+    function displayValue(value) {
+      if (props.multiple && Array.isArray(value)) {
+        const displayedValues = value.map((item) => getDisplayValue(items.value, item, {
+          labelKey: props.labelKey,
+          valueKey: props.valueKey
+        })).filter((v) => v != null && v !== "");
+        return displayedValues.length > 0 ? displayedValues.join(", ") : void 0;
+      }
+      return getDisplayValue(items.value, value, {
+        labelKey: props.labelKey,
+        valueKey: props.valueKey
+      });
+    }
+    const triggerRef = useTemplateRef("triggerRef");
+    function onUpdate(value) {
+      if (props.modelModifiers?.trim && (typeof value === "string" || value === null || value === void 0)) {
+        value = value?.trim() ?? null;
+      }
+      if (props.modelModifiers?.number) {
+        value = looseToNumber(value);
+      }
+      if (props.modelModifiers?.nullable) {
+        value ??= null;
+      }
+      if (props.modelModifiers?.optional && !props.modelModifiers?.nullable && value !== null) {
+        value ??= void 0;
+      }
+      const event = new Event("change", { target: { value } });
+      emits("change", event);
+      emitFormChange();
+      emitFormInput();
+    }
+    function onUpdateOpen(value) {
+      if (!value) {
+        const event = new FocusEvent("blur");
+        emits("blur", event);
+        emitFormBlur();
+      } else {
+        const event = new FocusEvent("focus");
+        emits("focus", event);
+        emitFormFocus();
+      }
+    }
+    function isSelectItem(item) {
+      return typeof item === "object" && item !== null;
+    }
+    function onTriggerClick(open) {
+      if (!open) {
+        triggerRef.value?.$el?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 }));
+      }
+    }
+    const viewportRef = useTemplateRef("viewportRef");
+    __expose({
+      triggerRef: toRef(() => triggerRef.value?.$el),
+      viewportRef: toRef(() => {
+        const instance = viewportRef.value;
+        return instance && typeof instance === "object" && "$el" in instance ? instance.$el : instance;
+      })
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(ssrRenderComponent(unref(SelectRoot_default), mergeProps({ name: unref(name) }, unref(rootProps), {
+        autocomplete: unref(props).autocomplete,
+        disabled: unref(disabled),
+        "default-value": unref(props).defaultValue,
+        "model-value": __props.modelValue,
+        "onUpdate:modelValue": onUpdate,
+        "onUpdate:open": onUpdateOpen
+      }, _attrs), {
+        default: withCtx(({ modelValue, open }, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(ssrRenderComponent(unref(SelectTrigger_default), mergeProps({
+              id: unref(id),
+              ref_key: "triggerRef",
+              ref: triggerRef,
+              "data-slot": "base",
+              class: ui.value.base({ class: [unref(props).ui?.base, unref(props).class] })
+            }, { ..._ctx.$attrs, ...unref(ariaAttrs) }, {
+              onClick: ($event) => onTriggerClick(open)
+            }), {
+              default: withCtx((_, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  if (unref(isLeading) || !!unref(props).avatar || !!slots.leading) {
+                    _push3(`<span data-slot="leading" class="${ssrRenderClass(ui.value.leading({ class: unref(props).ui?.leading }))}"${_scopeId2}>`);
+                    ssrRenderSlot(_ctx.$slots, "leading", {
+                      modelValue,
+                      open,
+                      ui: ui.value
+                    }, () => {
+                      if (unref(isLeading) && unref(leadingIconName)) {
+                        _push3(ssrRenderComponent(_sfc_main$f$1, {
+                          name: unref(leadingIconName),
+                          "data-slot": "leadingIcon",
+                          class: ui.value.leadingIcon({ class: unref(props).ui?.leadingIcon })
+                        }, null, _parent3, _scopeId2));
+                      } else if (!!unref(props).avatar) {
+                        _push3(ssrRenderComponent(_sfc_main$d$1, mergeProps({
+                          size: unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                        }, unref(props).avatar, {
+                          "data-slot": "itemLeadingAvatar",
+                          class: ui.value.itemLeadingAvatar({ class: unref(props).ui?.itemLeadingAvatar })
+                        }), null, _parent3, _scopeId2));
+                      } else {
+                        _push3(`<!---->`);
+                      }
+                    }, _push3, _parent3, _scopeId2);
+                    _push3(`</span>`);
+                  } else {
+                    _push3(`<!---->`);
+                  }
+                  _push3(`<!--[-->`);
+                  ssrRenderList([displayValue(modelValue)], (displayedModelValue) => {
+                    _push3(ssrRenderComponent(unref(SelectValue_default), {
+                      "data-slot": displayedModelValue != null ? "value" : "placeholder",
+                      class: displayedModelValue != null ? ui.value.value({ class: unref(props).ui?.value }) : ui.value.placeholder({ class: unref(props).ui?.placeholder })
+                    }, {
+                      default: withCtx((_2, _push4, _parent4, _scopeId3) => {
+                        if (_push4) {
+                          ssrRenderSlot(_ctx.$slots, "default", {
+                            modelValue,
+                            open,
+                            ui: ui.value
+                          }, () => {
+                            _push4(`${ssrInterpolate(displayedModelValue ?? (unref(props).placeholder ?? " "))}`);
+                          }, _push4, _parent4, _scopeId3);
+                        } else {
+                          return [
+                            renderSlot(_ctx.$slots, "default", {
+                              modelValue,
+                              open,
+                              ui: ui.value
+                            }, () => [
+                              createTextVNode(toDisplayString(displayedModelValue ?? (unref(props).placeholder ?? " ")), 1)
+                            ])
+                          ];
+                        }
+                      }),
+                      _: 2
+                    }, _parent3, _scopeId2));
+                  });
+                  _push3(`<!--]-->`);
+                  if (unref(isTrailing) || !!slots.trailing) {
+                    _push3(`<span data-slot="trailing" class="${ssrRenderClass(ui.value.trailing({ class: unref(props).ui?.trailing }))}"${_scopeId2}>`);
+                    ssrRenderSlot(_ctx.$slots, "trailing", {
+                      modelValue,
+                      open,
+                      ui: ui.value
+                    }, () => {
+                      if (unref(trailingIconName)) {
+                        _push3(ssrRenderComponent(_sfc_main$f$1, {
+                          name: unref(trailingIconName),
+                          "data-slot": "trailingIcon",
+                          class: ui.value.trailingIcon({ class: unref(props).ui?.trailingIcon })
+                        }, null, _parent3, _scopeId2));
+                      } else {
+                        _push3(`<!---->`);
+                      }
+                    }, _push3, _parent3, _scopeId2);
+                    _push3(`</span>`);
+                  } else {
+                    _push3(`<!---->`);
+                  }
+                } else {
+                  return [
+                    unref(isLeading) || !!unref(props).avatar || !!slots.leading ? (openBlock(), createBlock("span", {
+                      key: 0,
+                      "data-slot": "leading",
+                      class: ui.value.leading({ class: unref(props).ui?.leading })
+                    }, [
+                      renderSlot(_ctx.$slots, "leading", {
+                        modelValue,
+                        open,
+                        ui: ui.value
+                      }, () => [
+                        unref(isLeading) && unref(leadingIconName) ? (openBlock(), createBlock(_sfc_main$f$1, {
+                          key: 0,
+                          name: unref(leadingIconName),
+                          "data-slot": "leadingIcon",
+                          class: ui.value.leadingIcon({ class: unref(props).ui?.leadingIcon })
+                        }, null, 8, ["name", "class"])) : !!unref(props).avatar ? (openBlock(), createBlock(_sfc_main$d$1, mergeProps({
+                          key: 1,
+                          size: unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                        }, unref(props).avatar, {
+                          "data-slot": "itemLeadingAvatar",
+                          class: ui.value.itemLeadingAvatar({ class: unref(props).ui?.itemLeadingAvatar })
+                        }), null, 16, ["size", "class"])) : createCommentVNode("", true)
+                      ])
+                    ], 2)) : createCommentVNode("", true),
+                    (openBlock(true), createBlock(Fragment, null, renderList([displayValue(modelValue)], (displayedModelValue) => {
+                      return openBlock(), createBlock(unref(SelectValue_default), {
+                        key: displayedModelValue,
+                        "data-slot": displayedModelValue != null ? "value" : "placeholder",
+                        class: displayedModelValue != null ? ui.value.value({ class: unref(props).ui?.value }) : ui.value.placeholder({ class: unref(props).ui?.placeholder })
+                      }, {
+                        default: withCtx(() => [
+                          renderSlot(_ctx.$slots, "default", {
+                            modelValue,
+                            open,
+                            ui: ui.value
+                          }, () => [
+                            createTextVNode(toDisplayString(displayedModelValue ?? (unref(props).placeholder ?? " ")), 1)
+                          ])
+                        ]),
+                        _: 2
+                      }, 1032, ["data-slot", "class"]);
+                    }), 128)),
+                    unref(isTrailing) || !!slots.trailing ? (openBlock(), createBlock("span", {
+                      key: 1,
+                      "data-slot": "trailing",
+                      class: ui.value.trailing({ class: unref(props).ui?.trailing })
+                    }, [
+                      renderSlot(_ctx.$slots, "trailing", {
+                        modelValue,
+                        open,
+                        ui: ui.value
+                      }, () => [
+                        unref(trailingIconName) ? (openBlock(), createBlock(_sfc_main$f$1, {
+                          key: 0,
+                          name: unref(trailingIconName),
+                          "data-slot": "trailingIcon",
+                          class: ui.value.trailingIcon({ class: unref(props).ui?.trailingIcon })
+                        }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                      ])
+                    ], 2)) : createCommentVNode("", true)
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent2, _scopeId));
+            _push2(ssrRenderComponent(unref(SelectPortal_default), unref(portalProps), {
+              default: withCtx((_, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(ssrRenderComponent(unref(FieldGroupReset), null, {
+                    default: withCtx((_2, _push4, _parent4, _scopeId3) => {
+                      if (_push4) {
+                        _push4(ssrRenderComponent(unref(SelectContent_default), mergeProps({
+                          "data-slot": "content",
+                          class: ui.value.content({ class: unref(props).ui?.content })
+                        }, contentProps.value), {
+                          default: withCtx((_3, _push5, _parent5, _scopeId4) => {
+                            if (_push5) {
+                              ssrRenderSlot(_ctx.$slots, "content-top", {}, null, _push5, _parent5, _scopeId4);
+                              ssrRenderVNode(_push5, createVNode(resolveDynamicComponent(isItemAligned.value ? unref(SelectViewport_default) : "div"), {
+                                ref_key: "viewportRef",
+                                ref: viewportRef,
+                                role: "presentation",
+                                "data-slot": "viewport",
+                                class: ui.value.viewport({ class: unref(props).ui?.viewport })
+                              }, {
+                                default: withCtx((_4, _push6, _parent6, _scopeId5) => {
+                                  if (_push6) {
+                                    _push6(`<!--[-->`);
+                                    ssrRenderList(groups.value, (group, groupIndex) => {
+                                      _push6(ssrRenderComponent(unref(SelectGroup_default), {
+                                        key: `group-${groupIndex}`,
+                                        "data-slot": "group",
+                                        class: ui.value.group({ class: unref(props).ui?.group })
+                                      }, {
+                                        default: withCtx((_5, _push7, _parent7, _scopeId6) => {
+                                          if (_push7) {
+                                            _push7(`<!--[-->`);
+                                            ssrRenderList(group, (item, index2) => {
+                                              _push7(`<!--[-->`);
+                                              if (isSelectItem(item) && item.type === "label") {
+                                                _push7(ssrRenderComponent(unref(SelectLabel_default), {
+                                                  "data-slot": "label",
+                                                  class: ui.value.label({ class: [unref(props).ui?.label, item.ui?.label, item.class] })
+                                                }, {
+                                                  default: withCtx((_6, _push8, _parent8, _scopeId7) => {
+                                                    if (_push8) {
+                                                      _push8(`${ssrInterpolate(unref(get$1)(item, unref(props).labelKey))}`);
+                                                    } else {
+                                                      return [
+                                                        createTextVNode(toDisplayString(unref(get$1)(item, unref(props).labelKey)), 1)
+                                                      ];
+                                                    }
+                                                  }),
+                                                  _: 2
+                                                }, _parent7, _scopeId6));
+                                              } else if (isSelectItem(item) && item.type === "separator") {
+                                                _push7(ssrRenderComponent(unref(SelectSeparator_default), {
+                                                  "data-slot": "separator",
+                                                  class: ui.value.separator({ class: [unref(props).ui?.separator, item.ui?.separator, item.class] })
+                                                }, null, _parent7, _scopeId6));
+                                              } else {
+                                                _push7(ssrRenderComponent(unref(SelectItem_default), {
+                                                  "data-slot": "item",
+                                                  class: ui.value.item({ class: [unref(props).ui?.item, isSelectItem(item) && item.ui?.item, isSelectItem(item) && item.class] }),
+                                                  disabled: isSelectItem(item) && item.disabled,
+                                                  value: isSelectItem(item) ? unref(get$1)(item, unref(props).valueKey) : item,
+                                                  onSelect: ($event) => isSelectItem(item) && item.onSelect?.($event)
+                                                }, {
+                                                  default: withCtx((_6, _push8, _parent8, _scopeId7) => {
+                                                    if (_push8) {
+                                                      ssrRenderSlot(_ctx.$slots, "item", {
+                                                        item,
+                                                        index: index2,
+                                                        ui: ui.value
+                                                      }, () => {
+                                                        ssrRenderSlot(_ctx.$slots, "item-leading", {
+                                                          item,
+                                                          index: index2,
+                                                          ui: ui.value
+                                                        }, () => {
+                                                          if (isSelectItem(item) && item.icon) {
+                                                            _push8(ssrRenderComponent(_sfc_main$f$1, {
+                                                              name: item.icon,
+                                                              "data-slot": "itemLeadingIcon",
+                                                              class: ui.value.itemLeadingIcon({ class: [unref(props).ui?.itemLeadingIcon, item.ui?.itemLeadingIcon] })
+                                                            }, null, _parent8, _scopeId7));
+                                                          } else if (isSelectItem(item) && item.avatar) {
+                                                            _push8(ssrRenderComponent(_sfc_main$d$1, mergeProps({
+                                                              size: item.ui?.itemLeadingAvatarSize || unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                                                            }, { ref_for: true }, item.avatar, {
+                                                              "data-slot": "itemLeadingAvatar",
+                                                              class: ui.value.itemLeadingAvatar({ class: [unref(props).ui?.itemLeadingAvatar, item.ui?.itemLeadingAvatar] })
+                                                            }), null, _parent8, _scopeId7));
+                                                          } else if (isSelectItem(item) && item.chip) {
+                                                            _push8(ssrRenderComponent(_sfc_main$e$1, mergeProps({
+                                                              size: item.ui?.itemLeadingChipSize || unref(props).ui?.itemLeadingChipSize || ui.value.itemLeadingChipSize(),
+                                                              inset: "",
+                                                              standalone: ""
+                                                            }, { ref_for: true }, item.chip, {
+                                                              "data-slot": "itemLeadingChip",
+                                                              class: ui.value.itemLeadingChip({ class: [unref(props).ui?.itemLeadingChip, item.ui?.itemLeadingChip] })
+                                                            }), null, _parent8, _scopeId7));
+                                                          } else {
+                                                            _push8(`<!---->`);
+                                                          }
+                                                        }, _push8, _parent8, _scopeId7);
+                                                        _push8(`<span data-slot="itemWrapper" class="${ssrRenderClass(ui.value.itemWrapper({ class: [unref(props).ui?.itemWrapper, isSelectItem(item) && item.ui?.itemWrapper] }))}"${_scopeId7}>`);
+                                                        _push8(ssrRenderComponent(unref(SelectItemText_default), {
+                                                          "data-slot": "itemLabel",
+                                                          class: ui.value.itemLabel({ class: [unref(props).ui?.itemLabel, isSelectItem(item) && item.ui?.itemLabel] })
+                                                        }, {
+                                                          default: withCtx((_7, _push9, _parent9, _scopeId8) => {
+                                                            if (_push9) {
+                                                              ssrRenderSlot(_ctx.$slots, "item-label", {
+                                                                item,
+                                                                index: index2
+                                                              }, () => {
+                                                                _push9(`${ssrInterpolate(isSelectItem(item) ? unref(get$1)(item, unref(props).labelKey) : item)}`);
+                                                              }, _push9, _parent9, _scopeId8);
+                                                            } else {
+                                                              return [
+                                                                renderSlot(_ctx.$slots, "item-label", {
+                                                                  item,
+                                                                  index: index2
+                                                                }, () => [
+                                                                  createTextVNode(toDisplayString(isSelectItem(item) ? unref(get$1)(item, unref(props).labelKey) : item), 1)
+                                                                ])
+                                                              ];
+                                                            }
+                                                          }),
+                                                          _: 2
+                                                        }, _parent8, _scopeId7));
+                                                        if (isSelectItem(item) && (unref(get$1)(item, unref(props).descriptionKey) || !!slots["item-description"])) {
+                                                          _push8(`<span data-slot="itemDescription" class="${ssrRenderClass(ui.value.itemDescription({ class: [unref(props).ui?.itemDescription, isSelectItem(item) && item.ui?.itemDescription] }))}"${_scopeId7}>`);
+                                                          ssrRenderSlot(_ctx.$slots, "item-description", {
+                                                            item,
+                                                            index: index2
+                                                          }, () => {
+                                                            _push8(`${ssrInterpolate(unref(get$1)(item, unref(props).descriptionKey))}`);
+                                                          }, _push8, _parent8, _scopeId7);
+                                                          _push8(`</span>`);
+                                                        } else {
+                                                          _push8(`<!---->`);
+                                                        }
+                                                        _push8(`</span><span data-slot="itemTrailing" class="${ssrRenderClass(ui.value.itemTrailing({ class: [unref(props).ui?.itemTrailing, isSelectItem(item) && item.ui?.itemTrailing] }))}"${_scopeId7}>`);
+                                                        ssrRenderSlot(_ctx.$slots, "item-trailing", {
+                                                          item,
+                                                          index: index2,
+                                                          ui: ui.value
+                                                        }, null, _push8, _parent8, _scopeId7);
+                                                        _push8(ssrRenderComponent(unref(SelectItemIndicator_default), { "as-child": "" }, {
+                                                          default: withCtx((_7, _push9, _parent9, _scopeId8) => {
+                                                            if (_push9) {
+                                                              _push9(ssrRenderComponent(_sfc_main$f$1, {
+                                                                name: unref(props).selectedIcon || unref(appConfig).ui.icons.check,
+                                                                "data-slot": "itemTrailingIcon",
+                                                                class: ui.value.itemTrailingIcon({ class: [unref(props).ui?.itemTrailingIcon, isSelectItem(item) && item.ui?.itemTrailingIcon] })
+                                                              }, null, _parent9, _scopeId8));
+                                                            } else {
+                                                              return [
+                                                                createVNode(_sfc_main$f$1, {
+                                                                  name: unref(props).selectedIcon || unref(appConfig).ui.icons.check,
+                                                                  "data-slot": "itemTrailingIcon",
+                                                                  class: ui.value.itemTrailingIcon({ class: [unref(props).ui?.itemTrailingIcon, isSelectItem(item) && item.ui?.itemTrailingIcon] })
+                                                                }, null, 8, ["name", "class"])
+                                                              ];
+                                                            }
+                                                          }),
+                                                          _: 2
+                                                        }, _parent8, _scopeId7));
+                                                        _push8(`</span>`);
+                                                      }, _push8, _parent8, _scopeId7);
+                                                    } else {
+                                                      return [
+                                                        renderSlot(_ctx.$slots, "item", {
+                                                          item,
+                                                          index: index2,
+                                                          ui: ui.value
+                                                        }, () => [
+                                                          renderSlot(_ctx.$slots, "item-leading", {
+                                                            item,
+                                                            index: index2,
+                                                            ui: ui.value
+                                                          }, () => [
+                                                            isSelectItem(item) && item.icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                                              key: 0,
+                                                              name: item.icon,
+                                                              "data-slot": "itemLeadingIcon",
+                                                              class: ui.value.itemLeadingIcon({ class: [unref(props).ui?.itemLeadingIcon, item.ui?.itemLeadingIcon] })
+                                                            }, null, 8, ["name", "class"])) : isSelectItem(item) && item.avatar ? (openBlock(), createBlock(_sfc_main$d$1, mergeProps({
+                                                              key: 1,
+                                                              size: item.ui?.itemLeadingAvatarSize || unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                                                            }, { ref_for: true }, item.avatar, {
+                                                              "data-slot": "itemLeadingAvatar",
+                                                              class: ui.value.itemLeadingAvatar({ class: [unref(props).ui?.itemLeadingAvatar, item.ui?.itemLeadingAvatar] })
+                                                            }), null, 16, ["size", "class"])) : isSelectItem(item) && item.chip ? (openBlock(), createBlock(_sfc_main$e$1, mergeProps({
+                                                              key: 2,
+                                                              size: item.ui?.itemLeadingChipSize || unref(props).ui?.itemLeadingChipSize || ui.value.itemLeadingChipSize(),
+                                                              inset: "",
+                                                              standalone: ""
+                                                            }, { ref_for: true }, item.chip, {
+                                                              "data-slot": "itemLeadingChip",
+                                                              class: ui.value.itemLeadingChip({ class: [unref(props).ui?.itemLeadingChip, item.ui?.itemLeadingChip] })
+                                                            }), null, 16, ["size", "class"])) : createCommentVNode("", true)
+                                                          ]),
+                                                          createVNode("span", {
+                                                            "data-slot": "itemWrapper",
+                                                            class: ui.value.itemWrapper({ class: [unref(props).ui?.itemWrapper, isSelectItem(item) && item.ui?.itemWrapper] })
+                                                          }, [
+                                                            createVNode(unref(SelectItemText_default), {
+                                                              "data-slot": "itemLabel",
+                                                              class: ui.value.itemLabel({ class: [unref(props).ui?.itemLabel, isSelectItem(item) && item.ui?.itemLabel] })
+                                                            }, {
+                                                              default: withCtx(() => [
+                                                                renderSlot(_ctx.$slots, "item-label", {
+                                                                  item,
+                                                                  index: index2
+                                                                }, () => [
+                                                                  createTextVNode(toDisplayString(isSelectItem(item) ? unref(get$1)(item, unref(props).labelKey) : item), 1)
+                                                                ])
+                                                              ]),
+                                                              _: 2
+                                                            }, 1032, ["class"]),
+                                                            isSelectItem(item) && (unref(get$1)(item, unref(props).descriptionKey) || !!slots["item-description"]) ? (openBlock(), createBlock("span", {
+                                                              key: 0,
+                                                              "data-slot": "itemDescription",
+                                                              class: ui.value.itemDescription({ class: [unref(props).ui?.itemDescription, isSelectItem(item) && item.ui?.itemDescription] })
+                                                            }, [
+                                                              renderSlot(_ctx.$slots, "item-description", {
+                                                                item,
+                                                                index: index2
+                                                              }, () => [
+                                                                createTextVNode(toDisplayString(unref(get$1)(item, unref(props).descriptionKey)), 1)
+                                                              ])
+                                                            ], 2)) : createCommentVNode("", true)
+                                                          ], 2),
+                                                          createVNode("span", {
+                                                            "data-slot": "itemTrailing",
+                                                            class: ui.value.itemTrailing({ class: [unref(props).ui?.itemTrailing, isSelectItem(item) && item.ui?.itemTrailing] })
+                                                          }, [
+                                                            renderSlot(_ctx.$slots, "item-trailing", {
+                                                              item,
+                                                              index: index2,
+                                                              ui: ui.value
+                                                            }),
+                                                            createVNode(unref(SelectItemIndicator_default), { "as-child": "" }, {
+                                                              default: withCtx(() => [
+                                                                createVNode(_sfc_main$f$1, {
+                                                                  name: unref(props).selectedIcon || unref(appConfig).ui.icons.check,
+                                                                  "data-slot": "itemTrailingIcon",
+                                                                  class: ui.value.itemTrailingIcon({ class: [unref(props).ui?.itemTrailingIcon, isSelectItem(item) && item.ui?.itemTrailingIcon] })
+                                                                }, null, 8, ["name", "class"])
+                                                              ]),
+                                                              _: 2
+                                                            }, 1024)
+                                                          ], 2)
+                                                        ])
+                                                      ];
+                                                    }
+                                                  }),
+                                                  _: 2
+                                                }, _parent7, _scopeId6));
+                                              }
+                                              _push7(`<!--]-->`);
+                                            });
+                                            _push7(`<!--]-->`);
+                                          } else {
+                                            return [
+                                              (openBlock(true), createBlock(Fragment, null, renderList(group, (item, index2) => {
+                                                return openBlock(), createBlock(Fragment, {
+                                                  key: `group-${groupIndex}-${index2}`
+                                                }, [
+                                                  isSelectItem(item) && item.type === "label" ? (openBlock(), createBlock(unref(SelectLabel_default), {
+                                                    key: 0,
+                                                    "data-slot": "label",
+                                                    class: ui.value.label({ class: [unref(props).ui?.label, item.ui?.label, item.class] })
+                                                  }, {
+                                                    default: withCtx(() => [
+                                                      createTextVNode(toDisplayString(unref(get$1)(item, unref(props).labelKey)), 1)
+                                                    ]),
+                                                    _: 2
+                                                  }, 1032, ["class"])) : isSelectItem(item) && item.type === "separator" ? (openBlock(), createBlock(unref(SelectSeparator_default), {
+                                                    key: 1,
+                                                    "data-slot": "separator",
+                                                    class: ui.value.separator({ class: [unref(props).ui?.separator, item.ui?.separator, item.class] })
+                                                  }, null, 8, ["class"])) : (openBlock(), createBlock(unref(SelectItem_default), {
+                                                    key: 2,
+                                                    "data-slot": "item",
+                                                    class: ui.value.item({ class: [unref(props).ui?.item, isSelectItem(item) && item.ui?.item, isSelectItem(item) && item.class] }),
+                                                    disabled: isSelectItem(item) && item.disabled,
+                                                    value: isSelectItem(item) ? unref(get$1)(item, unref(props).valueKey) : item,
+                                                    onSelect: ($event) => isSelectItem(item) && item.onSelect?.($event)
+                                                  }, {
+                                                    default: withCtx(() => [
+                                                      renderSlot(_ctx.$slots, "item", {
+                                                        item,
+                                                        index: index2,
+                                                        ui: ui.value
+                                                      }, () => [
+                                                        renderSlot(_ctx.$slots, "item-leading", {
+                                                          item,
+                                                          index: index2,
+                                                          ui: ui.value
+                                                        }, () => [
+                                                          isSelectItem(item) && item.icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                                            key: 0,
+                                                            name: item.icon,
+                                                            "data-slot": "itemLeadingIcon",
+                                                            class: ui.value.itemLeadingIcon({ class: [unref(props).ui?.itemLeadingIcon, item.ui?.itemLeadingIcon] })
+                                                          }, null, 8, ["name", "class"])) : isSelectItem(item) && item.avatar ? (openBlock(), createBlock(_sfc_main$d$1, mergeProps({
+                                                            key: 1,
+                                                            size: item.ui?.itemLeadingAvatarSize || unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                                                          }, { ref_for: true }, item.avatar, {
+                                                            "data-slot": "itemLeadingAvatar",
+                                                            class: ui.value.itemLeadingAvatar({ class: [unref(props).ui?.itemLeadingAvatar, item.ui?.itemLeadingAvatar] })
+                                                          }), null, 16, ["size", "class"])) : isSelectItem(item) && item.chip ? (openBlock(), createBlock(_sfc_main$e$1, mergeProps({
+                                                            key: 2,
+                                                            size: item.ui?.itemLeadingChipSize || unref(props).ui?.itemLeadingChipSize || ui.value.itemLeadingChipSize(),
+                                                            inset: "",
+                                                            standalone: ""
+                                                          }, { ref_for: true }, item.chip, {
+                                                            "data-slot": "itemLeadingChip",
+                                                            class: ui.value.itemLeadingChip({ class: [unref(props).ui?.itemLeadingChip, item.ui?.itemLeadingChip] })
+                                                          }), null, 16, ["size", "class"])) : createCommentVNode("", true)
+                                                        ]),
+                                                        createVNode("span", {
+                                                          "data-slot": "itemWrapper",
+                                                          class: ui.value.itemWrapper({ class: [unref(props).ui?.itemWrapper, isSelectItem(item) && item.ui?.itemWrapper] })
+                                                        }, [
+                                                          createVNode(unref(SelectItemText_default), {
+                                                            "data-slot": "itemLabel",
+                                                            class: ui.value.itemLabel({ class: [unref(props).ui?.itemLabel, isSelectItem(item) && item.ui?.itemLabel] })
+                                                          }, {
+                                                            default: withCtx(() => [
+                                                              renderSlot(_ctx.$slots, "item-label", {
+                                                                item,
+                                                                index: index2
+                                                              }, () => [
+                                                                createTextVNode(toDisplayString(isSelectItem(item) ? unref(get$1)(item, unref(props).labelKey) : item), 1)
+                                                              ])
+                                                            ]),
+                                                            _: 2
+                                                          }, 1032, ["class"]),
+                                                          isSelectItem(item) && (unref(get$1)(item, unref(props).descriptionKey) || !!slots["item-description"]) ? (openBlock(), createBlock("span", {
+                                                            key: 0,
+                                                            "data-slot": "itemDescription",
+                                                            class: ui.value.itemDescription({ class: [unref(props).ui?.itemDescription, isSelectItem(item) && item.ui?.itemDescription] })
+                                                          }, [
+                                                            renderSlot(_ctx.$slots, "item-description", {
+                                                              item,
+                                                              index: index2
+                                                            }, () => [
+                                                              createTextVNode(toDisplayString(unref(get$1)(item, unref(props).descriptionKey)), 1)
+                                                            ])
+                                                          ], 2)) : createCommentVNode("", true)
+                                                        ], 2),
+                                                        createVNode("span", {
+                                                          "data-slot": "itemTrailing",
+                                                          class: ui.value.itemTrailing({ class: [unref(props).ui?.itemTrailing, isSelectItem(item) && item.ui?.itemTrailing] })
+                                                        }, [
+                                                          renderSlot(_ctx.$slots, "item-trailing", {
+                                                            item,
+                                                            index: index2,
+                                                            ui: ui.value
+                                                          }),
+                                                          createVNode(unref(SelectItemIndicator_default), { "as-child": "" }, {
+                                                            default: withCtx(() => [
+                                                              createVNode(_sfc_main$f$1, {
+                                                                name: unref(props).selectedIcon || unref(appConfig).ui.icons.check,
+                                                                "data-slot": "itemTrailingIcon",
+                                                                class: ui.value.itemTrailingIcon({ class: [unref(props).ui?.itemTrailingIcon, isSelectItem(item) && item.ui?.itemTrailingIcon] })
+                                                              }, null, 8, ["name", "class"])
+                                                            ]),
+                                                            _: 2
+                                                          }, 1024)
+                                                        ], 2)
+                                                      ])
+                                                    ]),
+                                                    _: 2
+                                                  }, 1032, ["class", "disabled", "value", "onSelect"]))
+                                                ], 64);
+                                              }), 128))
+                                            ];
+                                          }
+                                        }),
+                                        _: 2
+                                      }, _parent6, _scopeId5));
+                                    });
+                                    _push6(`<!--]-->`);
+                                  } else {
+                                    return [
+                                      (openBlock(true), createBlock(Fragment, null, renderList(groups.value, (group, groupIndex) => {
+                                        return openBlock(), createBlock(unref(SelectGroup_default), {
+                                          key: `group-${groupIndex}`,
+                                          "data-slot": "group",
+                                          class: ui.value.group({ class: unref(props).ui?.group })
+                                        }, {
+                                          default: withCtx(() => [
+                                            (openBlock(true), createBlock(Fragment, null, renderList(group, (item, index2) => {
+                                              return openBlock(), createBlock(Fragment, {
+                                                key: `group-${groupIndex}-${index2}`
+                                              }, [
+                                                isSelectItem(item) && item.type === "label" ? (openBlock(), createBlock(unref(SelectLabel_default), {
+                                                  key: 0,
+                                                  "data-slot": "label",
+                                                  class: ui.value.label({ class: [unref(props).ui?.label, item.ui?.label, item.class] })
+                                                }, {
+                                                  default: withCtx(() => [
+                                                    createTextVNode(toDisplayString(unref(get$1)(item, unref(props).labelKey)), 1)
+                                                  ]),
+                                                  _: 2
+                                                }, 1032, ["class"])) : isSelectItem(item) && item.type === "separator" ? (openBlock(), createBlock(unref(SelectSeparator_default), {
+                                                  key: 1,
+                                                  "data-slot": "separator",
+                                                  class: ui.value.separator({ class: [unref(props).ui?.separator, item.ui?.separator, item.class] })
+                                                }, null, 8, ["class"])) : (openBlock(), createBlock(unref(SelectItem_default), {
+                                                  key: 2,
+                                                  "data-slot": "item",
+                                                  class: ui.value.item({ class: [unref(props).ui?.item, isSelectItem(item) && item.ui?.item, isSelectItem(item) && item.class] }),
+                                                  disabled: isSelectItem(item) && item.disabled,
+                                                  value: isSelectItem(item) ? unref(get$1)(item, unref(props).valueKey) : item,
+                                                  onSelect: ($event) => isSelectItem(item) && item.onSelect?.($event)
+                                                }, {
+                                                  default: withCtx(() => [
+                                                    renderSlot(_ctx.$slots, "item", {
+                                                      item,
+                                                      index: index2,
+                                                      ui: ui.value
+                                                    }, () => [
+                                                      renderSlot(_ctx.$slots, "item-leading", {
+                                                        item,
+                                                        index: index2,
+                                                        ui: ui.value
+                                                      }, () => [
+                                                        isSelectItem(item) && item.icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                                          key: 0,
+                                                          name: item.icon,
+                                                          "data-slot": "itemLeadingIcon",
+                                                          class: ui.value.itemLeadingIcon({ class: [unref(props).ui?.itemLeadingIcon, item.ui?.itemLeadingIcon] })
+                                                        }, null, 8, ["name", "class"])) : isSelectItem(item) && item.avatar ? (openBlock(), createBlock(_sfc_main$d$1, mergeProps({
+                                                          key: 1,
+                                                          size: item.ui?.itemLeadingAvatarSize || unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                                                        }, { ref_for: true }, item.avatar, {
+                                                          "data-slot": "itemLeadingAvatar",
+                                                          class: ui.value.itemLeadingAvatar({ class: [unref(props).ui?.itemLeadingAvatar, item.ui?.itemLeadingAvatar] })
+                                                        }), null, 16, ["size", "class"])) : isSelectItem(item) && item.chip ? (openBlock(), createBlock(_sfc_main$e$1, mergeProps({
+                                                          key: 2,
+                                                          size: item.ui?.itemLeadingChipSize || unref(props).ui?.itemLeadingChipSize || ui.value.itemLeadingChipSize(),
+                                                          inset: "",
+                                                          standalone: ""
+                                                        }, { ref_for: true }, item.chip, {
+                                                          "data-slot": "itemLeadingChip",
+                                                          class: ui.value.itemLeadingChip({ class: [unref(props).ui?.itemLeadingChip, item.ui?.itemLeadingChip] })
+                                                        }), null, 16, ["size", "class"])) : createCommentVNode("", true)
+                                                      ]),
+                                                      createVNode("span", {
+                                                        "data-slot": "itemWrapper",
+                                                        class: ui.value.itemWrapper({ class: [unref(props).ui?.itemWrapper, isSelectItem(item) && item.ui?.itemWrapper] })
+                                                      }, [
+                                                        createVNode(unref(SelectItemText_default), {
+                                                          "data-slot": "itemLabel",
+                                                          class: ui.value.itemLabel({ class: [unref(props).ui?.itemLabel, isSelectItem(item) && item.ui?.itemLabel] })
+                                                        }, {
+                                                          default: withCtx(() => [
+                                                            renderSlot(_ctx.$slots, "item-label", {
+                                                              item,
+                                                              index: index2
+                                                            }, () => [
+                                                              createTextVNode(toDisplayString(isSelectItem(item) ? unref(get$1)(item, unref(props).labelKey) : item), 1)
+                                                            ])
+                                                          ]),
+                                                          _: 2
+                                                        }, 1032, ["class"]),
+                                                        isSelectItem(item) && (unref(get$1)(item, unref(props).descriptionKey) || !!slots["item-description"]) ? (openBlock(), createBlock("span", {
+                                                          key: 0,
+                                                          "data-slot": "itemDescription",
+                                                          class: ui.value.itemDescription({ class: [unref(props).ui?.itemDescription, isSelectItem(item) && item.ui?.itemDescription] })
+                                                        }, [
+                                                          renderSlot(_ctx.$slots, "item-description", {
+                                                            item,
+                                                            index: index2
+                                                          }, () => [
+                                                            createTextVNode(toDisplayString(unref(get$1)(item, unref(props).descriptionKey)), 1)
+                                                          ])
+                                                        ], 2)) : createCommentVNode("", true)
+                                                      ], 2),
+                                                      createVNode("span", {
+                                                        "data-slot": "itemTrailing",
+                                                        class: ui.value.itemTrailing({ class: [unref(props).ui?.itemTrailing, isSelectItem(item) && item.ui?.itemTrailing] })
+                                                      }, [
+                                                        renderSlot(_ctx.$slots, "item-trailing", {
+                                                          item,
+                                                          index: index2,
+                                                          ui: ui.value
+                                                        }),
+                                                        createVNode(unref(SelectItemIndicator_default), { "as-child": "" }, {
+                                                          default: withCtx(() => [
+                                                            createVNode(_sfc_main$f$1, {
+                                                              name: unref(props).selectedIcon || unref(appConfig).ui.icons.check,
+                                                              "data-slot": "itemTrailingIcon",
+                                                              class: ui.value.itemTrailingIcon({ class: [unref(props).ui?.itemTrailingIcon, isSelectItem(item) && item.ui?.itemTrailingIcon] })
+                                                            }, null, 8, ["name", "class"])
+                                                          ]),
+                                                          _: 2
+                                                        }, 1024)
+                                                      ], 2)
+                                                    ])
+                                                  ]),
+                                                  _: 2
+                                                }, 1032, ["class", "disabled", "value", "onSelect"]))
+                                              ], 64);
+                                            }), 128))
+                                          ]),
+                                          _: 2
+                                        }, 1032, ["class"]);
+                                      }), 128))
+                                    ];
+                                  }
+                                }),
+                                _: 2
+                              }), _parent5, _scopeId4);
+                              ssrRenderSlot(_ctx.$slots, "content-bottom", {}, null, _push5, _parent5, _scopeId4);
+                              if (!!unref(props).arrow) {
+                                _push5(ssrRenderComponent(unref(SelectArrow_default), mergeProps(arrowProps.value, {
+                                  "data-slot": "arrow",
+                                  class: ui.value.arrow({ class: unref(props).ui?.arrow })
+                                }), null, _parent5, _scopeId4));
+                              } else {
+                                _push5(`<!---->`);
+                              }
+                            } else {
+                              return [
+                                renderSlot(_ctx.$slots, "content-top"),
+                                (openBlock(), createBlock(resolveDynamicComponent(isItemAligned.value ? unref(SelectViewport_default) : "div"), {
+                                  ref_key: "viewportRef",
+                                  ref: viewportRef,
+                                  role: "presentation",
+                                  "data-slot": "viewport",
+                                  class: ui.value.viewport({ class: unref(props).ui?.viewport })
+                                }, {
+                                  default: withCtx(() => [
+                                    (openBlock(true), createBlock(Fragment, null, renderList(groups.value, (group, groupIndex) => {
+                                      return openBlock(), createBlock(unref(SelectGroup_default), {
+                                        key: `group-${groupIndex}`,
+                                        "data-slot": "group",
+                                        class: ui.value.group({ class: unref(props).ui?.group })
+                                      }, {
+                                        default: withCtx(() => [
+                                          (openBlock(true), createBlock(Fragment, null, renderList(group, (item, index2) => {
+                                            return openBlock(), createBlock(Fragment, {
+                                              key: `group-${groupIndex}-${index2}`
+                                            }, [
+                                              isSelectItem(item) && item.type === "label" ? (openBlock(), createBlock(unref(SelectLabel_default), {
+                                                key: 0,
+                                                "data-slot": "label",
+                                                class: ui.value.label({ class: [unref(props).ui?.label, item.ui?.label, item.class] })
+                                              }, {
+                                                default: withCtx(() => [
+                                                  createTextVNode(toDisplayString(unref(get$1)(item, unref(props).labelKey)), 1)
+                                                ]),
+                                                _: 2
+                                              }, 1032, ["class"])) : isSelectItem(item) && item.type === "separator" ? (openBlock(), createBlock(unref(SelectSeparator_default), {
+                                                key: 1,
+                                                "data-slot": "separator",
+                                                class: ui.value.separator({ class: [unref(props).ui?.separator, item.ui?.separator, item.class] })
+                                              }, null, 8, ["class"])) : (openBlock(), createBlock(unref(SelectItem_default), {
+                                                key: 2,
+                                                "data-slot": "item",
+                                                class: ui.value.item({ class: [unref(props).ui?.item, isSelectItem(item) && item.ui?.item, isSelectItem(item) && item.class] }),
+                                                disabled: isSelectItem(item) && item.disabled,
+                                                value: isSelectItem(item) ? unref(get$1)(item, unref(props).valueKey) : item,
+                                                onSelect: ($event) => isSelectItem(item) && item.onSelect?.($event)
+                                              }, {
+                                                default: withCtx(() => [
+                                                  renderSlot(_ctx.$slots, "item", {
+                                                    item,
+                                                    index: index2,
+                                                    ui: ui.value
+                                                  }, () => [
+                                                    renderSlot(_ctx.$slots, "item-leading", {
+                                                      item,
+                                                      index: index2,
+                                                      ui: ui.value
+                                                    }, () => [
+                                                      isSelectItem(item) && item.icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                                        key: 0,
+                                                        name: item.icon,
+                                                        "data-slot": "itemLeadingIcon",
+                                                        class: ui.value.itemLeadingIcon({ class: [unref(props).ui?.itemLeadingIcon, item.ui?.itemLeadingIcon] })
+                                                      }, null, 8, ["name", "class"])) : isSelectItem(item) && item.avatar ? (openBlock(), createBlock(_sfc_main$d$1, mergeProps({
+                                                        key: 1,
+                                                        size: item.ui?.itemLeadingAvatarSize || unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                                                      }, { ref_for: true }, item.avatar, {
+                                                        "data-slot": "itemLeadingAvatar",
+                                                        class: ui.value.itemLeadingAvatar({ class: [unref(props).ui?.itemLeadingAvatar, item.ui?.itemLeadingAvatar] })
+                                                      }), null, 16, ["size", "class"])) : isSelectItem(item) && item.chip ? (openBlock(), createBlock(_sfc_main$e$1, mergeProps({
+                                                        key: 2,
+                                                        size: item.ui?.itemLeadingChipSize || unref(props).ui?.itemLeadingChipSize || ui.value.itemLeadingChipSize(),
+                                                        inset: "",
+                                                        standalone: ""
+                                                      }, { ref_for: true }, item.chip, {
+                                                        "data-slot": "itemLeadingChip",
+                                                        class: ui.value.itemLeadingChip({ class: [unref(props).ui?.itemLeadingChip, item.ui?.itemLeadingChip] })
+                                                      }), null, 16, ["size", "class"])) : createCommentVNode("", true)
+                                                    ]),
+                                                    createVNode("span", {
+                                                      "data-slot": "itemWrapper",
+                                                      class: ui.value.itemWrapper({ class: [unref(props).ui?.itemWrapper, isSelectItem(item) && item.ui?.itemWrapper] })
+                                                    }, [
+                                                      createVNode(unref(SelectItemText_default), {
+                                                        "data-slot": "itemLabel",
+                                                        class: ui.value.itemLabel({ class: [unref(props).ui?.itemLabel, isSelectItem(item) && item.ui?.itemLabel] })
+                                                      }, {
+                                                        default: withCtx(() => [
+                                                          renderSlot(_ctx.$slots, "item-label", {
+                                                            item,
+                                                            index: index2
+                                                          }, () => [
+                                                            createTextVNode(toDisplayString(isSelectItem(item) ? unref(get$1)(item, unref(props).labelKey) : item), 1)
+                                                          ])
+                                                        ]),
+                                                        _: 2
+                                                      }, 1032, ["class"]),
+                                                      isSelectItem(item) && (unref(get$1)(item, unref(props).descriptionKey) || !!slots["item-description"]) ? (openBlock(), createBlock("span", {
+                                                        key: 0,
+                                                        "data-slot": "itemDescription",
+                                                        class: ui.value.itemDescription({ class: [unref(props).ui?.itemDescription, isSelectItem(item) && item.ui?.itemDescription] })
+                                                      }, [
+                                                        renderSlot(_ctx.$slots, "item-description", {
+                                                          item,
+                                                          index: index2
+                                                        }, () => [
+                                                          createTextVNode(toDisplayString(unref(get$1)(item, unref(props).descriptionKey)), 1)
+                                                        ])
+                                                      ], 2)) : createCommentVNode("", true)
+                                                    ], 2),
+                                                    createVNode("span", {
+                                                      "data-slot": "itemTrailing",
+                                                      class: ui.value.itemTrailing({ class: [unref(props).ui?.itemTrailing, isSelectItem(item) && item.ui?.itemTrailing] })
+                                                    }, [
+                                                      renderSlot(_ctx.$slots, "item-trailing", {
+                                                        item,
+                                                        index: index2,
+                                                        ui: ui.value
+                                                      }),
+                                                      createVNode(unref(SelectItemIndicator_default), { "as-child": "" }, {
+                                                        default: withCtx(() => [
+                                                          createVNode(_sfc_main$f$1, {
+                                                            name: unref(props).selectedIcon || unref(appConfig).ui.icons.check,
+                                                            "data-slot": "itemTrailingIcon",
+                                                            class: ui.value.itemTrailingIcon({ class: [unref(props).ui?.itemTrailingIcon, isSelectItem(item) && item.ui?.itemTrailingIcon] })
+                                                          }, null, 8, ["name", "class"])
+                                                        ]),
+                                                        _: 2
+                                                      }, 1024)
+                                                    ], 2)
+                                                  ])
+                                                ]),
+                                                _: 2
+                                              }, 1032, ["class", "disabled", "value", "onSelect"]))
+                                            ], 64);
+                                          }), 128))
+                                        ]),
+                                        _: 2
+                                      }, 1032, ["class"]);
+                                    }), 128))
+                                  ]),
+                                  _: 3
+                                }, 8, ["class"])),
+                                renderSlot(_ctx.$slots, "content-bottom"),
+                                !!unref(props).arrow ? (openBlock(), createBlock(unref(SelectArrow_default), mergeProps({ key: 0 }, arrowProps.value, {
+                                  "data-slot": "arrow",
+                                  class: ui.value.arrow({ class: unref(props).ui?.arrow })
+                                }), null, 16, ["class"])) : createCommentVNode("", true)
+                              ];
+                            }
+                          }),
+                          _: 2
+                        }, _parent4, _scopeId3));
+                      } else {
+                        return [
+                          createVNode(unref(SelectContent_default), mergeProps({
+                            "data-slot": "content",
+                            class: ui.value.content({ class: unref(props).ui?.content })
+                          }, contentProps.value), {
+                            default: withCtx(() => [
+                              renderSlot(_ctx.$slots, "content-top"),
+                              (openBlock(), createBlock(resolveDynamicComponent(isItemAligned.value ? unref(SelectViewport_default) : "div"), {
+                                ref_key: "viewportRef",
+                                ref: viewportRef,
+                                role: "presentation",
+                                "data-slot": "viewport",
+                                class: ui.value.viewport({ class: unref(props).ui?.viewport })
+                              }, {
+                                default: withCtx(() => [
+                                  (openBlock(true), createBlock(Fragment, null, renderList(groups.value, (group, groupIndex) => {
+                                    return openBlock(), createBlock(unref(SelectGroup_default), {
+                                      key: `group-${groupIndex}`,
+                                      "data-slot": "group",
+                                      class: ui.value.group({ class: unref(props).ui?.group })
+                                    }, {
+                                      default: withCtx(() => [
+                                        (openBlock(true), createBlock(Fragment, null, renderList(group, (item, index2) => {
+                                          return openBlock(), createBlock(Fragment, {
+                                            key: `group-${groupIndex}-${index2}`
+                                          }, [
+                                            isSelectItem(item) && item.type === "label" ? (openBlock(), createBlock(unref(SelectLabel_default), {
+                                              key: 0,
+                                              "data-slot": "label",
+                                              class: ui.value.label({ class: [unref(props).ui?.label, item.ui?.label, item.class] })
+                                            }, {
+                                              default: withCtx(() => [
+                                                createTextVNode(toDisplayString(unref(get$1)(item, unref(props).labelKey)), 1)
+                                              ]),
+                                              _: 2
+                                            }, 1032, ["class"])) : isSelectItem(item) && item.type === "separator" ? (openBlock(), createBlock(unref(SelectSeparator_default), {
+                                              key: 1,
+                                              "data-slot": "separator",
+                                              class: ui.value.separator({ class: [unref(props).ui?.separator, item.ui?.separator, item.class] })
+                                            }, null, 8, ["class"])) : (openBlock(), createBlock(unref(SelectItem_default), {
+                                              key: 2,
+                                              "data-slot": "item",
+                                              class: ui.value.item({ class: [unref(props).ui?.item, isSelectItem(item) && item.ui?.item, isSelectItem(item) && item.class] }),
+                                              disabled: isSelectItem(item) && item.disabled,
+                                              value: isSelectItem(item) ? unref(get$1)(item, unref(props).valueKey) : item,
+                                              onSelect: ($event) => isSelectItem(item) && item.onSelect?.($event)
+                                            }, {
+                                              default: withCtx(() => [
+                                                renderSlot(_ctx.$slots, "item", {
+                                                  item,
+                                                  index: index2,
+                                                  ui: ui.value
+                                                }, () => [
+                                                  renderSlot(_ctx.$slots, "item-leading", {
+                                                    item,
+                                                    index: index2,
+                                                    ui: ui.value
+                                                  }, () => [
+                                                    isSelectItem(item) && item.icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                                      key: 0,
+                                                      name: item.icon,
+                                                      "data-slot": "itemLeadingIcon",
+                                                      class: ui.value.itemLeadingIcon({ class: [unref(props).ui?.itemLeadingIcon, item.ui?.itemLeadingIcon] })
+                                                    }, null, 8, ["name", "class"])) : isSelectItem(item) && item.avatar ? (openBlock(), createBlock(_sfc_main$d$1, mergeProps({
+                                                      key: 1,
+                                                      size: item.ui?.itemLeadingAvatarSize || unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                                                    }, { ref_for: true }, item.avatar, {
+                                                      "data-slot": "itemLeadingAvatar",
+                                                      class: ui.value.itemLeadingAvatar({ class: [unref(props).ui?.itemLeadingAvatar, item.ui?.itemLeadingAvatar] })
+                                                    }), null, 16, ["size", "class"])) : isSelectItem(item) && item.chip ? (openBlock(), createBlock(_sfc_main$e$1, mergeProps({
+                                                      key: 2,
+                                                      size: item.ui?.itemLeadingChipSize || unref(props).ui?.itemLeadingChipSize || ui.value.itemLeadingChipSize(),
+                                                      inset: "",
+                                                      standalone: ""
+                                                    }, { ref_for: true }, item.chip, {
+                                                      "data-slot": "itemLeadingChip",
+                                                      class: ui.value.itemLeadingChip({ class: [unref(props).ui?.itemLeadingChip, item.ui?.itemLeadingChip] })
+                                                    }), null, 16, ["size", "class"])) : createCommentVNode("", true)
+                                                  ]),
+                                                  createVNode("span", {
+                                                    "data-slot": "itemWrapper",
+                                                    class: ui.value.itemWrapper({ class: [unref(props).ui?.itemWrapper, isSelectItem(item) && item.ui?.itemWrapper] })
+                                                  }, [
+                                                    createVNode(unref(SelectItemText_default), {
+                                                      "data-slot": "itemLabel",
+                                                      class: ui.value.itemLabel({ class: [unref(props).ui?.itemLabel, isSelectItem(item) && item.ui?.itemLabel] })
+                                                    }, {
+                                                      default: withCtx(() => [
+                                                        renderSlot(_ctx.$slots, "item-label", {
+                                                          item,
+                                                          index: index2
+                                                        }, () => [
+                                                          createTextVNode(toDisplayString(isSelectItem(item) ? unref(get$1)(item, unref(props).labelKey) : item), 1)
+                                                        ])
+                                                      ]),
+                                                      _: 2
+                                                    }, 1032, ["class"]),
+                                                    isSelectItem(item) && (unref(get$1)(item, unref(props).descriptionKey) || !!slots["item-description"]) ? (openBlock(), createBlock("span", {
+                                                      key: 0,
+                                                      "data-slot": "itemDescription",
+                                                      class: ui.value.itemDescription({ class: [unref(props).ui?.itemDescription, isSelectItem(item) && item.ui?.itemDescription] })
+                                                    }, [
+                                                      renderSlot(_ctx.$slots, "item-description", {
+                                                        item,
+                                                        index: index2
+                                                      }, () => [
+                                                        createTextVNode(toDisplayString(unref(get$1)(item, unref(props).descriptionKey)), 1)
+                                                      ])
+                                                    ], 2)) : createCommentVNode("", true)
+                                                  ], 2),
+                                                  createVNode("span", {
+                                                    "data-slot": "itemTrailing",
+                                                    class: ui.value.itemTrailing({ class: [unref(props).ui?.itemTrailing, isSelectItem(item) && item.ui?.itemTrailing] })
+                                                  }, [
+                                                    renderSlot(_ctx.$slots, "item-trailing", {
+                                                      item,
+                                                      index: index2,
+                                                      ui: ui.value
+                                                    }),
+                                                    createVNode(unref(SelectItemIndicator_default), { "as-child": "" }, {
+                                                      default: withCtx(() => [
+                                                        createVNode(_sfc_main$f$1, {
+                                                          name: unref(props).selectedIcon || unref(appConfig).ui.icons.check,
+                                                          "data-slot": "itemTrailingIcon",
+                                                          class: ui.value.itemTrailingIcon({ class: [unref(props).ui?.itemTrailingIcon, isSelectItem(item) && item.ui?.itemTrailingIcon] })
+                                                        }, null, 8, ["name", "class"])
+                                                      ]),
+                                                      _: 2
+                                                    }, 1024)
+                                                  ], 2)
+                                                ])
+                                              ]),
+                                              _: 2
+                                            }, 1032, ["class", "disabled", "value", "onSelect"]))
+                                          ], 64);
+                                        }), 128))
+                                      ]),
+                                      _: 2
+                                    }, 1032, ["class"]);
+                                  }), 128))
+                                ]),
+                                _: 3
+                              }, 8, ["class"])),
+                              renderSlot(_ctx.$slots, "content-bottom"),
+                              !!unref(props).arrow ? (openBlock(), createBlock(unref(SelectArrow_default), mergeProps({ key: 0 }, arrowProps.value, {
+                                "data-slot": "arrow",
+                                class: ui.value.arrow({ class: unref(props).ui?.arrow })
+                              }), null, 16, ["class"])) : createCommentVNode("", true)
+                            ]),
+                            _: 3
+                          }, 16, ["class"])
+                        ];
+                      }
+                    }),
+                    _: 2
+                  }, _parent3, _scopeId2));
+                } else {
+                  return [
+                    createVNode(unref(FieldGroupReset), null, {
+                      default: withCtx(() => [
+                        createVNode(unref(SelectContent_default), mergeProps({
+                          "data-slot": "content",
+                          class: ui.value.content({ class: unref(props).ui?.content })
+                        }, contentProps.value), {
+                          default: withCtx(() => [
+                            renderSlot(_ctx.$slots, "content-top"),
+                            (openBlock(), createBlock(resolveDynamicComponent(isItemAligned.value ? unref(SelectViewport_default) : "div"), {
+                              ref_key: "viewportRef",
+                              ref: viewportRef,
+                              role: "presentation",
+                              "data-slot": "viewport",
+                              class: ui.value.viewport({ class: unref(props).ui?.viewport })
+                            }, {
+                              default: withCtx(() => [
+                                (openBlock(true), createBlock(Fragment, null, renderList(groups.value, (group, groupIndex) => {
+                                  return openBlock(), createBlock(unref(SelectGroup_default), {
+                                    key: `group-${groupIndex}`,
+                                    "data-slot": "group",
+                                    class: ui.value.group({ class: unref(props).ui?.group })
+                                  }, {
+                                    default: withCtx(() => [
+                                      (openBlock(true), createBlock(Fragment, null, renderList(group, (item, index2) => {
+                                        return openBlock(), createBlock(Fragment, {
+                                          key: `group-${groupIndex}-${index2}`
+                                        }, [
+                                          isSelectItem(item) && item.type === "label" ? (openBlock(), createBlock(unref(SelectLabel_default), {
+                                            key: 0,
+                                            "data-slot": "label",
+                                            class: ui.value.label({ class: [unref(props).ui?.label, item.ui?.label, item.class] })
+                                          }, {
+                                            default: withCtx(() => [
+                                              createTextVNode(toDisplayString(unref(get$1)(item, unref(props).labelKey)), 1)
+                                            ]),
+                                            _: 2
+                                          }, 1032, ["class"])) : isSelectItem(item) && item.type === "separator" ? (openBlock(), createBlock(unref(SelectSeparator_default), {
+                                            key: 1,
+                                            "data-slot": "separator",
+                                            class: ui.value.separator({ class: [unref(props).ui?.separator, item.ui?.separator, item.class] })
+                                          }, null, 8, ["class"])) : (openBlock(), createBlock(unref(SelectItem_default), {
+                                            key: 2,
+                                            "data-slot": "item",
+                                            class: ui.value.item({ class: [unref(props).ui?.item, isSelectItem(item) && item.ui?.item, isSelectItem(item) && item.class] }),
+                                            disabled: isSelectItem(item) && item.disabled,
+                                            value: isSelectItem(item) ? unref(get$1)(item, unref(props).valueKey) : item,
+                                            onSelect: ($event) => isSelectItem(item) && item.onSelect?.($event)
+                                          }, {
+                                            default: withCtx(() => [
+                                              renderSlot(_ctx.$slots, "item", {
+                                                item,
+                                                index: index2,
+                                                ui: ui.value
+                                              }, () => [
+                                                renderSlot(_ctx.$slots, "item-leading", {
+                                                  item,
+                                                  index: index2,
+                                                  ui: ui.value
+                                                }, () => [
+                                                  isSelectItem(item) && item.icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                                    key: 0,
+                                                    name: item.icon,
+                                                    "data-slot": "itemLeadingIcon",
+                                                    class: ui.value.itemLeadingIcon({ class: [unref(props).ui?.itemLeadingIcon, item.ui?.itemLeadingIcon] })
+                                                  }, null, 8, ["name", "class"])) : isSelectItem(item) && item.avatar ? (openBlock(), createBlock(_sfc_main$d$1, mergeProps({
+                                                    key: 1,
+                                                    size: item.ui?.itemLeadingAvatarSize || unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                                                  }, { ref_for: true }, item.avatar, {
+                                                    "data-slot": "itemLeadingAvatar",
+                                                    class: ui.value.itemLeadingAvatar({ class: [unref(props).ui?.itemLeadingAvatar, item.ui?.itemLeadingAvatar] })
+                                                  }), null, 16, ["size", "class"])) : isSelectItem(item) && item.chip ? (openBlock(), createBlock(_sfc_main$e$1, mergeProps({
+                                                    key: 2,
+                                                    size: item.ui?.itemLeadingChipSize || unref(props).ui?.itemLeadingChipSize || ui.value.itemLeadingChipSize(),
+                                                    inset: "",
+                                                    standalone: ""
+                                                  }, { ref_for: true }, item.chip, {
+                                                    "data-slot": "itemLeadingChip",
+                                                    class: ui.value.itemLeadingChip({ class: [unref(props).ui?.itemLeadingChip, item.ui?.itemLeadingChip] })
+                                                  }), null, 16, ["size", "class"])) : createCommentVNode("", true)
+                                                ]),
+                                                createVNode("span", {
+                                                  "data-slot": "itemWrapper",
+                                                  class: ui.value.itemWrapper({ class: [unref(props).ui?.itemWrapper, isSelectItem(item) && item.ui?.itemWrapper] })
+                                                }, [
+                                                  createVNode(unref(SelectItemText_default), {
+                                                    "data-slot": "itemLabel",
+                                                    class: ui.value.itemLabel({ class: [unref(props).ui?.itemLabel, isSelectItem(item) && item.ui?.itemLabel] })
+                                                  }, {
+                                                    default: withCtx(() => [
+                                                      renderSlot(_ctx.$slots, "item-label", {
+                                                        item,
+                                                        index: index2
+                                                      }, () => [
+                                                        createTextVNode(toDisplayString(isSelectItem(item) ? unref(get$1)(item, unref(props).labelKey) : item), 1)
+                                                      ])
+                                                    ]),
+                                                    _: 2
+                                                  }, 1032, ["class"]),
+                                                  isSelectItem(item) && (unref(get$1)(item, unref(props).descriptionKey) || !!slots["item-description"]) ? (openBlock(), createBlock("span", {
+                                                    key: 0,
+                                                    "data-slot": "itemDescription",
+                                                    class: ui.value.itemDescription({ class: [unref(props).ui?.itemDescription, isSelectItem(item) && item.ui?.itemDescription] })
+                                                  }, [
+                                                    renderSlot(_ctx.$slots, "item-description", {
+                                                      item,
+                                                      index: index2
+                                                    }, () => [
+                                                      createTextVNode(toDisplayString(unref(get$1)(item, unref(props).descriptionKey)), 1)
+                                                    ])
+                                                  ], 2)) : createCommentVNode("", true)
+                                                ], 2),
+                                                createVNode("span", {
+                                                  "data-slot": "itemTrailing",
+                                                  class: ui.value.itemTrailing({ class: [unref(props).ui?.itemTrailing, isSelectItem(item) && item.ui?.itemTrailing] })
+                                                }, [
+                                                  renderSlot(_ctx.$slots, "item-trailing", {
+                                                    item,
+                                                    index: index2,
+                                                    ui: ui.value
+                                                  }),
+                                                  createVNode(unref(SelectItemIndicator_default), { "as-child": "" }, {
+                                                    default: withCtx(() => [
+                                                      createVNode(_sfc_main$f$1, {
+                                                        name: unref(props).selectedIcon || unref(appConfig).ui.icons.check,
+                                                        "data-slot": "itemTrailingIcon",
+                                                        class: ui.value.itemTrailingIcon({ class: [unref(props).ui?.itemTrailingIcon, isSelectItem(item) && item.ui?.itemTrailingIcon] })
+                                                      }, null, 8, ["name", "class"])
+                                                    ]),
+                                                    _: 2
+                                                  }, 1024)
+                                                ], 2)
+                                              ])
+                                            ]),
+                                            _: 2
+                                          }, 1032, ["class", "disabled", "value", "onSelect"]))
+                                        ], 64);
+                                      }), 128))
+                                    ]),
+                                    _: 2
+                                  }, 1032, ["class"]);
+                                }), 128))
+                              ]),
+                              _: 3
+                            }, 8, ["class"])),
+                            renderSlot(_ctx.$slots, "content-bottom"),
+                            !!unref(props).arrow ? (openBlock(), createBlock(unref(SelectArrow_default), mergeProps({ key: 0 }, arrowProps.value, {
+                              "data-slot": "arrow",
+                              class: ui.value.arrow({ class: unref(props).ui?.arrow })
+                            }), null, 16, ["class"])) : createCommentVNode("", true)
+                          ]),
+                          _: 3
+                        }, 16, ["class"])
+                      ]),
+                      _: 3
+                    })
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent2, _scopeId));
+          } else {
+            return [
+              createVNode(unref(SelectTrigger_default), mergeProps({
+                id: unref(id),
+                ref_key: "triggerRef",
+                ref: triggerRef,
+                "data-slot": "base",
+                class: ui.value.base({ class: [unref(props).ui?.base, unref(props).class] })
+              }, { ..._ctx.$attrs, ...unref(ariaAttrs) }, {
+                onClick: ($event) => onTriggerClick(open)
+              }), {
+                default: withCtx(() => [
+                  unref(isLeading) || !!unref(props).avatar || !!slots.leading ? (openBlock(), createBlock("span", {
+                    key: 0,
+                    "data-slot": "leading",
+                    class: ui.value.leading({ class: unref(props).ui?.leading })
+                  }, [
+                    renderSlot(_ctx.$slots, "leading", {
+                      modelValue,
+                      open,
+                      ui: ui.value
+                    }, () => [
+                      unref(isLeading) && unref(leadingIconName) ? (openBlock(), createBlock(_sfc_main$f$1, {
+                        key: 0,
+                        name: unref(leadingIconName),
+                        "data-slot": "leadingIcon",
+                        class: ui.value.leadingIcon({ class: unref(props).ui?.leadingIcon })
+                      }, null, 8, ["name", "class"])) : !!unref(props).avatar ? (openBlock(), createBlock(_sfc_main$d$1, mergeProps({
+                        key: 1,
+                        size: unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                      }, unref(props).avatar, {
+                        "data-slot": "itemLeadingAvatar",
+                        class: ui.value.itemLeadingAvatar({ class: unref(props).ui?.itemLeadingAvatar })
+                      }), null, 16, ["size", "class"])) : createCommentVNode("", true)
+                    ])
+                  ], 2)) : createCommentVNode("", true),
+                  (openBlock(true), createBlock(Fragment, null, renderList([displayValue(modelValue)], (displayedModelValue) => {
+                    return openBlock(), createBlock(unref(SelectValue_default), {
+                      key: displayedModelValue,
+                      "data-slot": displayedModelValue != null ? "value" : "placeholder",
+                      class: displayedModelValue != null ? ui.value.value({ class: unref(props).ui?.value }) : ui.value.placeholder({ class: unref(props).ui?.placeholder })
+                    }, {
+                      default: withCtx(() => [
+                        renderSlot(_ctx.$slots, "default", {
+                          modelValue,
+                          open,
+                          ui: ui.value
+                        }, () => [
+                          createTextVNode(toDisplayString(displayedModelValue ?? (unref(props).placeholder ?? " ")), 1)
+                        ])
+                      ]),
+                      _: 2
+                    }, 1032, ["data-slot", "class"]);
+                  }), 128)),
+                  unref(isTrailing) || !!slots.trailing ? (openBlock(), createBlock("span", {
+                    key: 1,
+                    "data-slot": "trailing",
+                    class: ui.value.trailing({ class: unref(props).ui?.trailing })
+                  }, [
+                    renderSlot(_ctx.$slots, "trailing", {
+                      modelValue,
+                      open,
+                      ui: ui.value
+                    }, () => [
+                      unref(trailingIconName) ? (openBlock(), createBlock(_sfc_main$f$1, {
+                        key: 0,
+                        name: unref(trailingIconName),
+                        "data-slot": "trailingIcon",
+                        class: ui.value.trailingIcon({ class: unref(props).ui?.trailingIcon })
+                      }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                    ])
+                  ], 2)) : createCommentVNode("", true)
+                ]),
+                _: 2
+              }, 1040, ["id", "class", "onClick"]),
+              createVNode(unref(SelectPortal_default), unref(portalProps), {
+                default: withCtx(() => [
+                  createVNode(unref(FieldGroupReset), null, {
+                    default: withCtx(() => [
+                      createVNode(unref(SelectContent_default), mergeProps({
+                        "data-slot": "content",
+                        class: ui.value.content({ class: unref(props).ui?.content })
+                      }, contentProps.value), {
+                        default: withCtx(() => [
+                          renderSlot(_ctx.$slots, "content-top"),
+                          (openBlock(), createBlock(resolveDynamicComponent(isItemAligned.value ? unref(SelectViewport_default) : "div"), {
+                            ref_key: "viewportRef",
+                            ref: viewportRef,
+                            role: "presentation",
+                            "data-slot": "viewport",
+                            class: ui.value.viewport({ class: unref(props).ui?.viewport })
+                          }, {
+                            default: withCtx(() => [
+                              (openBlock(true), createBlock(Fragment, null, renderList(groups.value, (group, groupIndex) => {
+                                return openBlock(), createBlock(unref(SelectGroup_default), {
+                                  key: `group-${groupIndex}`,
+                                  "data-slot": "group",
+                                  class: ui.value.group({ class: unref(props).ui?.group })
+                                }, {
+                                  default: withCtx(() => [
+                                    (openBlock(true), createBlock(Fragment, null, renderList(group, (item, index2) => {
+                                      return openBlock(), createBlock(Fragment, {
+                                        key: `group-${groupIndex}-${index2}`
+                                      }, [
+                                        isSelectItem(item) && item.type === "label" ? (openBlock(), createBlock(unref(SelectLabel_default), {
+                                          key: 0,
+                                          "data-slot": "label",
+                                          class: ui.value.label({ class: [unref(props).ui?.label, item.ui?.label, item.class] })
+                                        }, {
+                                          default: withCtx(() => [
+                                            createTextVNode(toDisplayString(unref(get$1)(item, unref(props).labelKey)), 1)
+                                          ]),
+                                          _: 2
+                                        }, 1032, ["class"])) : isSelectItem(item) && item.type === "separator" ? (openBlock(), createBlock(unref(SelectSeparator_default), {
+                                          key: 1,
+                                          "data-slot": "separator",
+                                          class: ui.value.separator({ class: [unref(props).ui?.separator, item.ui?.separator, item.class] })
+                                        }, null, 8, ["class"])) : (openBlock(), createBlock(unref(SelectItem_default), {
+                                          key: 2,
+                                          "data-slot": "item",
+                                          class: ui.value.item({ class: [unref(props).ui?.item, isSelectItem(item) && item.ui?.item, isSelectItem(item) && item.class] }),
+                                          disabled: isSelectItem(item) && item.disabled,
+                                          value: isSelectItem(item) ? unref(get$1)(item, unref(props).valueKey) : item,
+                                          onSelect: ($event) => isSelectItem(item) && item.onSelect?.($event)
+                                        }, {
+                                          default: withCtx(() => [
+                                            renderSlot(_ctx.$slots, "item", {
+                                              item,
+                                              index: index2,
+                                              ui: ui.value
+                                            }, () => [
+                                              renderSlot(_ctx.$slots, "item-leading", {
+                                                item,
+                                                index: index2,
+                                                ui: ui.value
+                                              }, () => [
+                                                isSelectItem(item) && item.icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                                  key: 0,
+                                                  name: item.icon,
+                                                  "data-slot": "itemLeadingIcon",
+                                                  class: ui.value.itemLeadingIcon({ class: [unref(props).ui?.itemLeadingIcon, item.ui?.itemLeadingIcon] })
+                                                }, null, 8, ["name", "class"])) : isSelectItem(item) && item.avatar ? (openBlock(), createBlock(_sfc_main$d$1, mergeProps({
+                                                  key: 1,
+                                                  size: item.ui?.itemLeadingAvatarSize || unref(props).ui?.itemLeadingAvatarSize || ui.value.itemLeadingAvatarSize()
+                                                }, { ref_for: true }, item.avatar, {
+                                                  "data-slot": "itemLeadingAvatar",
+                                                  class: ui.value.itemLeadingAvatar({ class: [unref(props).ui?.itemLeadingAvatar, item.ui?.itemLeadingAvatar] })
+                                                }), null, 16, ["size", "class"])) : isSelectItem(item) && item.chip ? (openBlock(), createBlock(_sfc_main$e$1, mergeProps({
+                                                  key: 2,
+                                                  size: item.ui?.itemLeadingChipSize || unref(props).ui?.itemLeadingChipSize || ui.value.itemLeadingChipSize(),
+                                                  inset: "",
+                                                  standalone: ""
+                                                }, { ref_for: true }, item.chip, {
+                                                  "data-slot": "itemLeadingChip",
+                                                  class: ui.value.itemLeadingChip({ class: [unref(props).ui?.itemLeadingChip, item.ui?.itemLeadingChip] })
+                                                }), null, 16, ["size", "class"])) : createCommentVNode("", true)
+                                              ]),
+                                              createVNode("span", {
+                                                "data-slot": "itemWrapper",
+                                                class: ui.value.itemWrapper({ class: [unref(props).ui?.itemWrapper, isSelectItem(item) && item.ui?.itemWrapper] })
+                                              }, [
+                                                createVNode(unref(SelectItemText_default), {
+                                                  "data-slot": "itemLabel",
+                                                  class: ui.value.itemLabel({ class: [unref(props).ui?.itemLabel, isSelectItem(item) && item.ui?.itemLabel] })
+                                                }, {
+                                                  default: withCtx(() => [
+                                                    renderSlot(_ctx.$slots, "item-label", {
+                                                      item,
+                                                      index: index2
+                                                    }, () => [
+                                                      createTextVNode(toDisplayString(isSelectItem(item) ? unref(get$1)(item, unref(props).labelKey) : item), 1)
+                                                    ])
+                                                  ]),
+                                                  _: 2
+                                                }, 1032, ["class"]),
+                                                isSelectItem(item) && (unref(get$1)(item, unref(props).descriptionKey) || !!slots["item-description"]) ? (openBlock(), createBlock("span", {
+                                                  key: 0,
+                                                  "data-slot": "itemDescription",
+                                                  class: ui.value.itemDescription({ class: [unref(props).ui?.itemDescription, isSelectItem(item) && item.ui?.itemDescription] })
+                                                }, [
+                                                  renderSlot(_ctx.$slots, "item-description", {
+                                                    item,
+                                                    index: index2
+                                                  }, () => [
+                                                    createTextVNode(toDisplayString(unref(get$1)(item, unref(props).descriptionKey)), 1)
+                                                  ])
+                                                ], 2)) : createCommentVNode("", true)
+                                              ], 2),
+                                              createVNode("span", {
+                                                "data-slot": "itemTrailing",
+                                                class: ui.value.itemTrailing({ class: [unref(props).ui?.itemTrailing, isSelectItem(item) && item.ui?.itemTrailing] })
+                                              }, [
+                                                renderSlot(_ctx.$slots, "item-trailing", {
+                                                  item,
+                                                  index: index2,
+                                                  ui: ui.value
+                                                }),
+                                                createVNode(unref(SelectItemIndicator_default), { "as-child": "" }, {
+                                                  default: withCtx(() => [
+                                                    createVNode(_sfc_main$f$1, {
+                                                      name: unref(props).selectedIcon || unref(appConfig).ui.icons.check,
+                                                      "data-slot": "itemTrailingIcon",
+                                                      class: ui.value.itemTrailingIcon({ class: [unref(props).ui?.itemTrailingIcon, isSelectItem(item) && item.ui?.itemTrailingIcon] })
+                                                    }, null, 8, ["name", "class"])
+                                                  ]),
+                                                  _: 2
+                                                }, 1024)
+                                              ], 2)
+                                            ])
+                                          ]),
+                                          _: 2
+                                        }, 1032, ["class", "disabled", "value", "onSelect"]))
+                                      ], 64);
+                                    }), 128))
+                                  ]),
+                                  _: 2
+                                }, 1032, ["class"]);
+                              }), 128))
+                            ]),
+                            _: 3
+                          }, 8, ["class"])),
+                          renderSlot(_ctx.$slots, "content-bottom"),
+                          !!unref(props).arrow ? (openBlock(), createBlock(unref(SelectArrow_default), mergeProps({ key: 0 }, arrowProps.value, {
+                            "data-slot": "arrow",
+                            class: ui.value.arrow({ class: unref(props).ui?.arrow })
+                          }), null, 16, ["class"])) : createCommentVNode("", true)
+                        ]),
+                        _: 3
+                      }, 16, ["class"])
+                    ]),
+                    _: 3
+                  })
+                ]),
+                _: 3
+              }, 16)
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+    };
+  }
+});
+const _sfc_setup$q = _sfc_main$q.setup;
+_sfc_main$q.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/Select.vue");
+  return _sfc_setup$q ? _sfc_setup$q(props, ctx) : void 0;
+};
+function parseAcceptToDataTypes(accept) {
+  if (!accept || accept === "*") {
+    return void 0;
+  }
+  const types = accept.split(",").map((type) => {
+    const trimmedType = type.trim();
+    if (trimmedType.includes("/") && trimmedType.endsWith("/*")) {
+      return trimmedType.split("/")[0] || trimmedType;
+    }
+    return trimmedType;
+  }).filter((type) => {
+    return !type.startsWith(".");
+  });
+  return types.length > 0 ? types : void 0;
+}
+function useFileUpload(options) {
+  const {
+    accept = "*"
+  } = options;
+  const inputRef = ref();
+  const dropzoneRef = ref();
+  computed(() => parseAcceptToDataTypes(unref(accept)));
+  const isDragging = ref(false);
+  const fileDialog = reactive({
+    open: () => {
+    }
+  });
+  function open() {
+    fileDialog.open();
+  }
+  return {
+    isDragging,
+    open,
+    inputRef,
+    dropzoneRef
+  };
+}
+const theme$6 = {
+  "slots": {
+    "root": "relative flex flex-col",
+    "base": [
+      "w-full flex-1 bg-default border border-default flex flex-col gap-2 items-stretch justify-center rounded-lg focus-visible:outline-3",
+      "transition-[background]"
+    ],
+    "wrapper": "flex flex-col items-center justify-center text-center",
+    "icon": "shrink-0",
+    "avatar": "shrink-0",
+    "label": "font-medium text-default mt-2",
+    "description": "text-muted mt-1",
+    "actions": "flex flex-wrap gap-1.5 shrink-0 mt-4",
+    "files": "",
+    "file": "relative",
+    "fileLeadingAvatar": "shrink-0",
+    "fileWrapper": "flex flex-col min-w-0",
+    "fileName": "text-default truncate",
+    "fileSize": "text-muted truncate",
+    "fileTrailingButton": ""
+  },
+  "variants": {
+    "color": {
+      "primary": "",
+      "secondary": "",
+      "success": "",
+      "info": "",
+      "warning": "",
+      "error": "",
+      "neutral": ""
+    },
+    "variant": {
+      "area": {
+        "wrapper": "px-4 py-3",
+        "base": "p-4"
+      },
+      "button": {}
+    },
+    "size": {
+      "xs": {
+        "base": "text-xs",
+        "icon": "size-4",
+        "file": "text-xs px-2 py-1 gap-1",
+        "fileWrapper": "flex-row gap-1"
+      },
+      "sm": {
+        "base": "text-xs",
+        "icon": "size-4",
+        "file": "text-xs px-2.5 py-1.5 gap-1.5",
+        "fileWrapper": "flex-row gap-1"
+      },
+      "md": {
+        "base": "text-sm",
+        "icon": "size-5",
+        "file": "text-xs px-2.5 py-1.5 gap-1.5"
+      },
+      "lg": {
+        "base": "text-sm",
+        "icon": "size-5",
+        "file": "text-sm px-3 py-2 gap-2",
+        "fileSize": "text-xs"
+      },
+      "xl": {
+        "base": "text-base",
+        "icon": "size-6",
+        "file": "text-sm px-3 py-2 gap-2"
+      }
+    },
+    "layout": {
+      "list": {
+        "root": "gap-2 items-start",
+        "files": "flex flex-col w-full gap-2",
+        "file": "min-w-0 flex items-center border border-default rounded-md w-full",
+        "fileTrailingButton": "ms-auto"
+      },
+      "grid": {
+        "fileWrapper": "hidden",
+        "fileLeadingAvatar": "size-full rounded-lg",
+        "fileTrailingButton": "absolute -top-1.5 -end-1.5 p-0 rounded-full border-2 border-bg"
+      }
+    },
+    "position": {
+      "inside": "",
+      "outside": ""
+    },
+    "dropzone": {
+      "true": "border-dashed data-[dragging=true]:bg-elevated/25"
+    },
+    "interactive": {
+      "true": ""
+    },
+    "highlight": {
+      "true": ""
+    },
+    "multiple": {
+      "true": ""
+    },
+    "disabled": {
+      "true": "cursor-not-allowed opacity-75"
+    }
+  },
+  "compoundVariants": [
+    {
+      "color": "primary",
+      "class": "outline-primary/25 focus-visible:outline-3 focus-visible:border-primary"
+    },
+    {
+      "color": "secondary",
+      "class": "outline-secondary/25 focus-visible:outline-3 focus-visible:border-secondary"
+    },
+    {
+      "color": "success",
+      "class": "outline-success/25 focus-visible:outline-3 focus-visible:border-success"
+    },
+    {
+      "color": "info",
+      "class": "outline-info/25 focus-visible:outline-3 focus-visible:border-info"
+    },
+    {
+      "color": "warning",
+      "class": "outline-warning/25 focus-visible:outline-3 focus-visible:border-warning"
+    },
+    {
+      "color": "error",
+      "class": "outline-error/25 focus-visible:outline-3 focus-visible:border-error"
+    },
+    {
+      "color": "primary",
+      "highlight": true,
+      "class": "border-primary"
+    },
+    {
+      "color": "secondary",
+      "highlight": true,
+      "class": "border-secondary"
+    },
+    {
+      "color": "success",
+      "highlight": true,
+      "class": "border-success"
+    },
+    {
+      "color": "info",
+      "highlight": true,
+      "class": "border-info"
+    },
+    {
+      "color": "warning",
+      "highlight": true,
+      "class": "border-warning"
+    },
+    {
+      "color": "error",
+      "highlight": true,
+      "class": "border-error"
+    },
+    {
+      "color": "neutral",
+      "class": "outline-inverted/25 focus-visible:outline-3 focus-visible:border-inverted"
+    },
+    {
+      "color": "neutral",
+      "highlight": true,
+      "class": "border-inverted"
+    },
+    {
+      "size": "xs",
+      "layout": "list",
+      "class": {
+        "fileTrailingButton": "-me-1"
+      }
+    },
+    {
+      "size": "sm",
+      "layout": "list",
+      "class": {
+        "fileTrailingButton": "-me-1.5"
+      }
+    },
+    {
+      "size": "md",
+      "layout": "list",
+      "class": {
+        "fileTrailingButton": "-me-1.5"
+      }
+    },
+    {
+      "size": "lg",
+      "layout": "list",
+      "class": {
+        "fileTrailingButton": "-me-2"
+      }
+    },
+    {
+      "size": "xl",
+      "layout": "list",
+      "class": {
+        "fileTrailingButton": "-me-2"
+      }
+    },
+    {
+      "variant": "button",
+      "size": "xs",
+      "class": {
+        "base": "p-1"
+      }
+    },
+    {
+      "variant": "button",
+      "size": "sm",
+      "class": {
+        "base": "p-1.5"
+      }
+    },
+    {
+      "variant": "button",
+      "size": "md",
+      "class": {
+        "base": "p-1.5"
+      }
+    },
+    {
+      "variant": "button",
+      "size": "lg",
+      "class": {
+        "base": "p-2"
+      }
+    },
+    {
+      "variant": "button",
+      "size": "xl",
+      "class": {
+        "base": "p-2"
+      }
+    },
+    {
+      "layout": "grid",
+      "multiple": true,
+      "class": {
+        "files": "grid grid-cols-2 md:grid-cols-3 gap-4 w-full",
+        "file": "p-0 aspect-square"
+      }
+    },
+    {
+      "layout": "grid",
+      "multiple": false,
+      "class": {
+        "file": "absolute inset-0 p-0"
+      }
+    },
+    {
+      "interactive": true,
+      "disabled": false,
+      "class": "hover:bg-elevated/25"
+    }
+  ],
+  "defaultVariants": {
+    "color": "primary",
+    "variant": "area",
+    "size": "md"
+  }
+};
+const _sfc_main$p = /* @__PURE__ */ Object.assign({ inheritAttrs: false }, {
+  __name: "UFileUpload",
+  __ssrInlineRender: true,
+  props: /* @__PURE__ */ mergeModels({
+    as: { type: null, required: false },
+    id: { type: String, required: false },
+    name: { type: String, required: false },
+    icon: { type: [String, Boolean], required: false, skipCheck: true },
+    label: { type: String, required: false },
+    description: { type: String, required: false },
+    color: { type: null, required: false },
+    variant: { type: null, required: false },
+    size: { type: null, required: false },
+    layout: { type: null, required: false, default: "grid" },
+    position: { type: null, required: false, default: "outside" },
+    highlight: { type: Boolean, required: false },
+    accept: { type: String, required: false, default: "*" },
+    multiple: { type: Boolean, required: false, default: false },
+    reset: { type: Boolean, required: false, default: false },
+    dropzone: { type: Boolean, required: false, default: true },
+    interactive: { type: Boolean, required: false, default: true },
+    required: { type: Boolean, required: false },
+    disabled: { type: Boolean, required: false },
+    fileIcon: { type: null, required: false },
+    fileImage: { type: Boolean, required: false, default: true },
+    fileDelete: { type: [Boolean, Object], required: false, default: true },
+    fileDeleteIcon: { type: null, required: false },
+    preview: { type: Boolean, required: false, default: true },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false }
+  }, {
+    "modelValue": { type: null },
+    "modelModifiers": {}
+  }),
+  emits: /* @__PURE__ */ mergeModels(["change"], ["update:modelValue"]),
+  setup(__props, { expose: __expose, emit: __emit }) {
+    const _props = __props;
+    const emits = __emit;
+    const slots = useSlots();
+    const modelValue = useModel(__props, "modelValue");
+    const props = useComponentProps("fileUpload", _props);
+    const appConfig = useAppConfig();
+    const { t } = useLocale();
+    const [DefineFilesTemplate, ReuseFilesTemplate] = createReusableTemplate();
+    const { accept, multiple, reset } = toRefs(_props);
+    const { isDragging, open, inputRef, dropzoneRef } = useFileUpload({
+      accept,
+      dropzone: props.dropzone
+    });
+    const { emitFormInput, emitFormChange, id, name, color, highlight, disabled, ariaAttrs } = useFormField(_props);
+    const variant = computed(() => props.multiple ? "area" : props.variant);
+    const layout = computed(() => props.variant === "button" && !props.multiple ? "grid" : props.layout);
+    const position = computed(() => {
+      if (layout.value === "grid" && props.multiple) {
+        return "inside";
+      }
+      if (variant.value === "button") {
+        return "outside";
+      }
+      return props.position;
+    });
+    const ui = computed(() => tv({ extend: tv(theme$6), ...appConfig.ui?.fileUpload || {} })({
+      dropzone: props.dropzone,
+      interactive: props.interactive,
+      color: color.value ?? props.color,
+      size: props.size,
+      variant: variant.value,
+      layout: layout.value,
+      position: position.value,
+      multiple: props.multiple,
+      highlight: highlight.value ?? props.highlight,
+      disabled: props.disabled
+    }));
+    function createObjectUrl(file) {
+      if (!props.fileImage) return void 0;
+      return URL.createObjectURL(file);
+    }
+    function formatFileSize(bytes) {
+      if (bytes === 0) {
+        return "0B";
+      }
+      const k = 1024;
+      const sizes = ["B", "KB", "MB", "GB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      const size2 = bytes / Math.pow(k, i);
+      const formattedSize = i === 0 ? size2.toString() : size2.toFixed(0);
+      return `${formattedSize}${sizes[i]}`;
+    }
+    function onUpdate(files, reset2 = false) {
+      if (props.multiple) {
+        if (reset2) {
+          modelValue.value = files;
+        } else {
+          const existingFiles = modelValue.value || [];
+          modelValue.value = [...existingFiles, ...files || []];
+        }
+      } else {
+        modelValue.value = files?.[0] ?? null;
+      }
+      const event = new Event("change", { target: { value: modelValue.value } });
+      emits("change", event);
+      emitFormChange();
+      emitFormInput();
+    }
+    function removeFile(index2) {
+      if (!modelValue.value) {
+        return;
+      }
+      if (!props.multiple || index2 === void 0) {
+        onUpdate([], true);
+        dropzoneRef.value?.focus();
+        return;
+      }
+      const files = [...modelValue.value];
+      files.splice(index2, 1);
+      onUpdate(files, true);
+      dropzoneRef.value?.focus();
+    }
+    watch(modelValue, (newValue) => {
+      const hasModelReset = props.multiple ? !newValue?.length : !newValue;
+      if (hasModelReset && inputRef.value?.$el) {
+        inputRef.value.$el.value = "";
+      }
+    });
+    __expose({
+      inputRef: toRef(() => inputRef.value?.$el),
+      dropzoneRef
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(`<!--[-->`);
+      _push(ssrRenderComponent(unref(DefineFilesTemplate), null, {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            if (unref(props).preview && modelValue.value && (Array.isArray(modelValue.value) ? modelValue.value.length : true)) {
+              _push2(`<!--[-->`);
+              ssrRenderSlot(_ctx.$slots, "files-top", {
+                files: modelValue.value,
+                open: unref(open),
+                removeFile
+              }, null, _push2, _parent2, _scopeId);
+              _push2(`<div data-slot="files" class="${ssrRenderClass(ui.value.files({ class: unref(props).ui?.files }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "files", {
+                files: modelValue.value,
+                removeFile
+              }, () => {
+                _push2(`<!--[-->`);
+                ssrRenderList(Array.isArray(modelValue.value) ? modelValue.value : [modelValue.value], (file, index2) => {
+                  _push2(`<div data-slot="file" class="${ssrRenderClass(ui.value.file({ class: unref(props).ui?.file }))}"${_scopeId}>`);
+                  ssrRenderSlot(_ctx.$slots, "file", {
+                    file,
+                    index: index2,
+                    removeFile
+                  }, () => {
+                    ssrRenderSlot(_ctx.$slots, "file-leading", {
+                      file,
+                      index: index2,
+                      ui: ui.value
+                    }, () => {
+                      _push2(ssrRenderComponent(_sfc_main$d$1, {
+                        as: { img: "img" },
+                        src: createObjectUrl(file),
+                        icon: unref(props).fileIcon || unref(appConfig).ui.icons.file,
+                        size: unref(props).size,
+                        "data-slot": "fileLeadingAvatar",
+                        class: ui.value.fileLeadingAvatar({ class: unref(props).ui?.fileLeadingAvatar })
+                      }, null, _parent2, _scopeId));
+                    }, _push2, _parent2, _scopeId);
+                    _push2(`<div data-slot="fileWrapper" class="${ssrRenderClass(ui.value.fileWrapper({ class: unref(props).ui?.fileWrapper }))}"${_scopeId}><span data-slot="fileName" class="${ssrRenderClass(ui.value.fileName({ class: unref(props).ui?.fileName }))}"${_scopeId}>`);
+                    ssrRenderSlot(_ctx.$slots, "file-name", {
+                      file,
+                      index: index2
+                    }, () => {
+                      _push2(`${ssrInterpolate(file.name)}`);
+                    }, _push2, _parent2, _scopeId);
+                    _push2(`</span><span data-slot="fileSize" class="${ssrRenderClass(ui.value.fileSize({ class: unref(props).ui?.fileSize }))}"${_scopeId}>`);
+                    ssrRenderSlot(_ctx.$slots, "file-size", {
+                      file,
+                      index: index2
+                    }, () => {
+                      _push2(`${ssrInterpolate(formatFileSize(file.size))}`);
+                    }, _push2, _parent2, _scopeId);
+                    _push2(`</span></div>`);
+                    ssrRenderSlot(_ctx.$slots, "file-trailing", {
+                      file,
+                      index: index2,
+                      ui: ui.value,
+                      removeFile
+                    }, () => {
+                      if (unref(props).fileDelete) {
+                        _push2(ssrRenderComponent(_sfc_main$a$1, mergeProps({ color: "neutral" }, { ref_for: true }, {
+                          ...layout.value === "grid" ? {
+                            variant: "solid",
+                            size: "xs"
+                          } : {
+                            variant: "link",
+                            size: unref(props).size
+                          },
+                          ...typeof unref(props).fileDelete === "object" ? unref(props).fileDelete : void 0
+                        }, {
+                          "aria-label": unref(t)("fileUpload.removeFile", { filename: file.name }),
+                          "trailing-icon": unref(props).fileDeleteIcon || unref(appConfig).ui.icons.close,
+                          "data-slot": "fileTrailingButton",
+                          class: ui.value.fileTrailingButton({ class: unref(props).ui?.fileTrailingButton }),
+                          onClick: ($event) => removeFile(index2)
+                        }), null, _parent2, _scopeId));
+                      } else {
+                        _push2(`<!---->`);
+                      }
+                    }, _push2, _parent2, _scopeId);
+                  }, _push2, _parent2, _scopeId);
+                  _push2(`</div>`);
+                });
+                _push2(`<!--]-->`);
+              }, _push2, _parent2, _scopeId);
+              _push2(`</div>`);
+              ssrRenderSlot(_ctx.$slots, "files-bottom", {
+                files: modelValue.value,
+                open: unref(open),
+                removeFile
+              }, null, _push2, _parent2, _scopeId);
+              _push2(`<!--]-->`);
+            } else {
+              _push2(`<!---->`);
+            }
+          } else {
+            return [
+              unref(props).preview && modelValue.value && (Array.isArray(modelValue.value) ? modelValue.value.length : true) ? (openBlock(), createBlock(Fragment, { key: 0 }, [
+                renderSlot(_ctx.$slots, "files-top", {
+                  files: modelValue.value,
+                  open: unref(open),
+                  removeFile
+                }),
+                createVNode("div", {
+                  "data-slot": "files",
+                  class: ui.value.files({ class: unref(props).ui?.files })
+                }, [
+                  renderSlot(_ctx.$slots, "files", {
+                    files: modelValue.value,
+                    removeFile
+                  }, () => [
+                    (openBlock(true), createBlock(Fragment, null, renderList(Array.isArray(modelValue.value) ? modelValue.value : [modelValue.value], (file, index2) => {
+                      return openBlock(), createBlock("div", {
+                        key: file.name,
+                        "data-slot": "file",
+                        class: ui.value.file({ class: unref(props).ui?.file })
+                      }, [
+                        renderSlot(_ctx.$slots, "file", {
+                          file,
+                          index: index2,
+                          removeFile
+                        }, () => [
+                          renderSlot(_ctx.$slots, "file-leading", {
+                            file,
+                            index: index2,
+                            ui: ui.value
+                          }, () => [
+                            createVNode(_sfc_main$d$1, {
+                              as: { img: "img" },
+                              src: createObjectUrl(file),
+                              icon: unref(props).fileIcon || unref(appConfig).ui.icons.file,
+                              size: unref(props).size,
+                              "data-slot": "fileLeadingAvatar",
+                              class: ui.value.fileLeadingAvatar({ class: unref(props).ui?.fileLeadingAvatar })
+                            }, null, 8, ["src", "icon", "size", "class"])
+                          ]),
+                          createVNode("div", {
+                            "data-slot": "fileWrapper",
+                            class: ui.value.fileWrapper({ class: unref(props).ui?.fileWrapper })
+                          }, [
+                            createVNode("span", {
+                              "data-slot": "fileName",
+                              class: ui.value.fileName({ class: unref(props).ui?.fileName })
+                            }, [
+                              renderSlot(_ctx.$slots, "file-name", {
+                                file,
+                                index: index2
+                              }, () => [
+                                createTextVNode(toDisplayString(file.name), 1)
+                              ])
+                            ], 2),
+                            createVNode("span", {
+                              "data-slot": "fileSize",
+                              class: ui.value.fileSize({ class: unref(props).ui?.fileSize })
+                            }, [
+                              renderSlot(_ctx.$slots, "file-size", {
+                                file,
+                                index: index2
+                              }, () => [
+                                createTextVNode(toDisplayString(formatFileSize(file.size)), 1)
+                              ])
+                            ], 2)
+                          ], 2),
+                          renderSlot(_ctx.$slots, "file-trailing", {
+                            file,
+                            index: index2,
+                            ui: ui.value,
+                            removeFile
+                          }, () => [
+                            unref(props).fileDelete ? (openBlock(), createBlock(_sfc_main$a$1, mergeProps({
+                              key: 0,
+                              color: "neutral"
+                            }, { ref_for: true }, {
+                              ...layout.value === "grid" ? {
+                                variant: "solid",
+                                size: "xs"
+                              } : {
+                                variant: "link",
+                                size: unref(props).size
+                              },
+                              ...typeof unref(props).fileDelete === "object" ? unref(props).fileDelete : void 0
+                            }, {
+                              "aria-label": unref(t)("fileUpload.removeFile", { filename: file.name }),
+                              "trailing-icon": unref(props).fileDeleteIcon || unref(appConfig).ui.icons.close,
+                              "data-slot": "fileTrailingButton",
+                              class: ui.value.fileTrailingButton({ class: unref(props).ui?.fileTrailingButton }),
+                              onClick: withModifiers(($event) => removeFile(index2), ["stop", "prevent"])
+                            }), null, 16, ["aria-label", "trailing-icon", "class", "onClick"])) : createCommentVNode("", true)
+                          ])
+                        ])
+                      ], 2);
+                    }), 128))
+                  ])
+                ], 2),
+                renderSlot(_ctx.$slots, "files-bottom", {
+                  files: modelValue.value,
+                  open: unref(open),
+                  removeFile
+                })
+              ], 64)) : createCommentVNode("", true)
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+      _push(ssrRenderComponent(unref(Primitive), {
+        as: unref(props).as,
+        "data-slot": "root",
+        class: ui.value.root({ class: [unref(props).ui?.root, unref(props).class] })
+      }, {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            ssrRenderSlot(_ctx.$slots, "default", {
+              open: unref(open),
+              removeFile,
+              ui: ui.value
+            }, () => {
+              ssrRenderVNode(_push2, createVNode(resolveDynamicComponent(variant.value === "button" ? "button" : "div"), {
+                ref_key: "dropzoneRef",
+                ref: dropzoneRef,
+                type: variant.value === "button" ? "button" : void 0,
+                role: variant.value === "button" ? void 0 : "button",
+                disabled: variant.value === "button" ? unref(disabled) : void 0,
+                "data-dragging": unref(isDragging),
+                "data-slot": "base",
+                class: ui.value.base({ class: unref(props).ui?.base }),
+                tabindex: unref(props).interactive && !unref(disabled) ? 0 : -1,
+                onClick: ($event) => unref(props).interactive && !unref(disabled) && unref(open)(),
+                onKeydown: () => {
+                },
+                onKeyup: ($event) => unref(props).interactive && !unref(disabled) && unref(open)()
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    if (position.value === "inside") {
+                      _push3(ssrRenderComponent(unref(ReuseFilesTemplate), null, null, _parent3, _scopeId2));
+                    } else {
+                      _push3(`<!---->`);
+                    }
+                    if (position.value === "inside" ? !unref(props).preview || (unref(multiple) ? !modelValue.value?.length : !modelValue.value) : true) {
+                      _push3(`<div data-slot="wrapper" class="${ssrRenderClass(ui.value.wrapper({ class: unref(props).ui?.wrapper }))}"${_scopeId2}>`);
+                      ssrRenderSlot(_ctx.$slots, "leading", { ui: ui.value }, () => {
+                        if (unref(props).icon !== false) {
+                          _push3(`<!--[-->`);
+                          if (variant.value === "button") {
+                            _push3(ssrRenderComponent(_sfc_main$f$1, {
+                              name: unref(props).icon ?? unref(appConfig).ui.icons.upload,
+                              "data-slot": "icon",
+                              class: ui.value.icon({ class: unref(props).ui?.icon })
+                            }, null, _parent3, _scopeId2));
+                          } else {
+                            _push3(ssrRenderComponent(_sfc_main$d$1, {
+                              icon: unref(props).icon ?? unref(appConfig).ui.icons.upload,
+                              size: unref(props).size,
+                              "data-slot": "avatar",
+                              class: ui.value.avatar({ class: unref(props).ui?.avatar })
+                            }, null, _parent3, _scopeId2));
+                          }
+                          _push3(`<!--]-->`);
+                        } else {
+                          _push3(`<!---->`);
+                        }
+                      }, _push3, _parent3, _scopeId2);
+                      if (variant.value !== "button") {
+                        _push3(`<!--[-->`);
+                        if (unref(props).label || !!slots.label) {
+                          _push3(`<div data-slot="label" class="${ssrRenderClass(ui.value.label({ class: unref(props).ui?.label }))}"${_scopeId2}>`);
+                          ssrRenderSlot(_ctx.$slots, "label", {}, () => {
+                            _push3(`${ssrInterpolate(unref(props).label)}`);
+                          }, _push3, _parent3, _scopeId2);
+                          _push3(`</div>`);
+                        } else {
+                          _push3(`<!---->`);
+                        }
+                        if (unref(props).description || !!slots.description) {
+                          _push3(`<div data-slot="description" class="${ssrRenderClass(ui.value.description({ class: unref(props).ui?.description }))}"${_scopeId2}>`);
+                          ssrRenderSlot(_ctx.$slots, "description", {}, () => {
+                            _push3(`${ssrInterpolate(unref(props).description)}`);
+                          }, _push3, _parent3, _scopeId2);
+                          _push3(`</div>`);
+                        } else {
+                          _push3(`<!---->`);
+                        }
+                        if (!!slots.actions) {
+                          _push3(`<div data-slot="actions" class="${ssrRenderClass(ui.value.actions({ class: unref(props).ui?.actions }))}"${_scopeId2}>`);
+                          ssrRenderSlot(_ctx.$slots, "actions", {
+                            files: modelValue.value,
+                            open: unref(open),
+                            removeFile
+                          }, null, _push3, _parent3, _scopeId2);
+                          _push3(`</div>`);
+                        } else {
+                          _push3(`<!---->`);
+                        }
+                        _push3(`<!--]-->`);
+                      } else {
+                        _push3(`<!---->`);
+                      }
+                      _push3(`</div>`);
+                    } else {
+                      _push3(`<!---->`);
+                    }
+                  } else {
+                    return [
+                      position.value === "inside" ? (openBlock(), createBlock(unref(ReuseFilesTemplate), { key: 0 })) : createCommentVNode("", true),
+                      (position.value === "inside" ? !unref(props).preview || (unref(multiple) ? !modelValue.value?.length : !modelValue.value) : true) ? (openBlock(), createBlock("div", {
+                        key: 1,
+                        "data-slot": "wrapper",
+                        class: ui.value.wrapper({ class: unref(props).ui?.wrapper })
+                      }, [
+                        renderSlot(_ctx.$slots, "leading", { ui: ui.value }, () => [
+                          unref(props).icon !== false ? (openBlock(), createBlock(Fragment, { key: 0 }, [
+                            variant.value === "button" ? (openBlock(), createBlock(_sfc_main$f$1, {
+                              key: 0,
+                              name: unref(props).icon ?? unref(appConfig).ui.icons.upload,
+                              "data-slot": "icon",
+                              class: ui.value.icon({ class: unref(props).ui?.icon })
+                            }, null, 8, ["name", "class"])) : (openBlock(), createBlock(_sfc_main$d$1, {
+                              key: 1,
+                              icon: unref(props).icon ?? unref(appConfig).ui.icons.upload,
+                              size: unref(props).size,
+                              "data-slot": "avatar",
+                              class: ui.value.avatar({ class: unref(props).ui?.avatar })
+                            }, null, 8, ["icon", "size", "class"]))
+                          ], 64)) : createCommentVNode("", true)
+                        ]),
+                        variant.value !== "button" ? (openBlock(), createBlock(Fragment, { key: 0 }, [
+                          unref(props).label || !!slots.label ? (openBlock(), createBlock("div", {
+                            key: 0,
+                            "data-slot": "label",
+                            class: ui.value.label({ class: unref(props).ui?.label })
+                          }, [
+                            renderSlot(_ctx.$slots, "label", {}, () => [
+                              createTextVNode(toDisplayString(unref(props).label), 1)
+                            ])
+                          ], 2)) : createCommentVNode("", true),
+                          unref(props).description || !!slots.description ? (openBlock(), createBlock("div", {
+                            key: 1,
+                            "data-slot": "description",
+                            class: ui.value.description({ class: unref(props).ui?.description })
+                          }, [
+                            renderSlot(_ctx.$slots, "description", {}, () => [
+                              createTextVNode(toDisplayString(unref(props).description), 1)
+                            ])
+                          ], 2)) : createCommentVNode("", true),
+                          !!slots.actions ? (openBlock(), createBlock("div", {
+                            key: 2,
+                            "data-slot": "actions",
+                            class: ui.value.actions({ class: unref(props).ui?.actions })
+                          }, [
+                            renderSlot(_ctx.$slots, "actions", {
+                              files: modelValue.value,
+                              open: unref(open),
+                              removeFile
+                            })
+                          ], 2)) : createCommentVNode("", true)
+                        ], 64)) : createCommentVNode("", true)
+                      ], 2)) : createCommentVNode("", true)
+                    ];
+                  }
+                }),
+                _: 3
+              }), _parent2, _scopeId);
+              if (position.value === "outside") {
+                _push2(ssrRenderComponent(unref(ReuseFilesTemplate), null, null, _parent2, _scopeId));
+              } else {
+                _push2(`<!---->`);
+              }
+            }, _push2, _parent2, _scopeId);
+            _push2(ssrRenderComponent(unref(VisuallyHidden_default), mergeProps({
+              id: unref(id),
+              ref_key: "inputRef",
+              ref: inputRef,
+              as: "input",
+              type: "file",
+              feature: "fully-hidden",
+              name: unref(name),
+              accept: unref(accept),
+              multiple: unref(multiple),
+              required: unref(props).required,
+              disabled: unref(disabled)
+            }, { ..._ctx.$attrs, ...unref(ariaAttrs) }), null, _parent2, _scopeId));
+          } else {
+            return [
+              renderSlot(_ctx.$slots, "default", {
+                open: unref(open),
+                removeFile,
+                ui: ui.value
+              }, () => [
+                (openBlock(), createBlock(resolveDynamicComponent(variant.value === "button" ? "button" : "div"), {
+                  ref_key: "dropzoneRef",
+                  ref: dropzoneRef,
+                  type: variant.value === "button" ? "button" : void 0,
+                  role: variant.value === "button" ? void 0 : "button",
+                  disabled: variant.value === "button" ? unref(disabled) : void 0,
+                  "data-dragging": unref(isDragging),
+                  "data-slot": "base",
+                  class: ui.value.base({ class: unref(props).ui?.base }),
+                  tabindex: unref(props).interactive && !unref(disabled) ? 0 : -1,
+                  onClick: ($event) => unref(props).interactive && !unref(disabled) && unref(open)(),
+                  onKeydown: withKeys(withModifiers(() => {
+                  }, ["prevent"]), ["space"]),
+                  onKeyup: withKeys(($event) => unref(props).interactive && !unref(disabled) && unref(open)(), ["enter", "space"])
+                }, {
+                  default: withCtx(() => [
+                    position.value === "inside" ? (openBlock(), createBlock(unref(ReuseFilesTemplate), { key: 0 })) : createCommentVNode("", true),
+                    (position.value === "inside" ? !unref(props).preview || (unref(multiple) ? !modelValue.value?.length : !modelValue.value) : true) ? (openBlock(), createBlock("div", {
+                      key: 1,
+                      "data-slot": "wrapper",
+                      class: ui.value.wrapper({ class: unref(props).ui?.wrapper })
+                    }, [
+                      renderSlot(_ctx.$slots, "leading", { ui: ui.value }, () => [
+                        unref(props).icon !== false ? (openBlock(), createBlock(Fragment, { key: 0 }, [
+                          variant.value === "button" ? (openBlock(), createBlock(_sfc_main$f$1, {
+                            key: 0,
+                            name: unref(props).icon ?? unref(appConfig).ui.icons.upload,
+                            "data-slot": "icon",
+                            class: ui.value.icon({ class: unref(props).ui?.icon })
+                          }, null, 8, ["name", "class"])) : (openBlock(), createBlock(_sfc_main$d$1, {
+                            key: 1,
+                            icon: unref(props).icon ?? unref(appConfig).ui.icons.upload,
+                            size: unref(props).size,
+                            "data-slot": "avatar",
+                            class: ui.value.avatar({ class: unref(props).ui?.avatar })
+                          }, null, 8, ["icon", "size", "class"]))
+                        ], 64)) : createCommentVNode("", true)
+                      ]),
+                      variant.value !== "button" ? (openBlock(), createBlock(Fragment, { key: 0 }, [
+                        unref(props).label || !!slots.label ? (openBlock(), createBlock("div", {
+                          key: 0,
+                          "data-slot": "label",
+                          class: ui.value.label({ class: unref(props).ui?.label })
+                        }, [
+                          renderSlot(_ctx.$slots, "label", {}, () => [
+                            createTextVNode(toDisplayString(unref(props).label), 1)
+                          ])
+                        ], 2)) : createCommentVNode("", true),
+                        unref(props).description || !!slots.description ? (openBlock(), createBlock("div", {
+                          key: 1,
+                          "data-slot": "description",
+                          class: ui.value.description({ class: unref(props).ui?.description })
+                        }, [
+                          renderSlot(_ctx.$slots, "description", {}, () => [
+                            createTextVNode(toDisplayString(unref(props).description), 1)
+                          ])
+                        ], 2)) : createCommentVNode("", true),
+                        !!slots.actions ? (openBlock(), createBlock("div", {
+                          key: 2,
+                          "data-slot": "actions",
+                          class: ui.value.actions({ class: unref(props).ui?.actions })
+                        }, [
+                          renderSlot(_ctx.$slots, "actions", {
+                            files: modelValue.value,
+                            open: unref(open),
+                            removeFile
+                          })
+                        ], 2)) : createCommentVNode("", true)
+                      ], 64)) : createCommentVNode("", true)
+                    ], 2)) : createCommentVNode("", true)
+                  ]),
+                  _: 3
+                }, 40, ["type", "role", "disabled", "data-dragging", "class", "tabindex", "onClick", "onKeydown", "onKeyup"])),
+                position.value === "outside" ? (openBlock(), createBlock(unref(ReuseFilesTemplate), { key: 0 })) : createCommentVNode("", true)
+              ]),
+              createVNode(unref(VisuallyHidden_default), mergeProps({
+                id: unref(id),
+                ref_key: "inputRef",
+                ref: inputRef,
+                as: "input",
+                type: "file",
+                feature: "fully-hidden",
+                name: unref(name),
+                accept: unref(accept),
+                multiple: unref(multiple),
+                required: unref(props).required,
+                disabled: unref(disabled)
+              }, { ..._ctx.$attrs, ...unref(ariaAttrs) }), null, 16, ["id", "name", "accept", "multiple", "required", "disabled"])
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+      _push(`<!--]-->`);
+    };
+  }
+});
+const _sfc_setup$p = _sfc_main$p.setup;
+_sfc_main$p.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/FileUpload.vue");
+  return _sfc_setup$p ? _sfc_setup$p(props, ctx) : void 0;
+};
+const _sfc_main$o = /* @__PURE__ */ defineComponent({
+  __name: "Histogram",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const { histogram } = useIridis();
+    function hue(hex) {
+      const r = parseInt(hex.slice(1, 3), 16) / 255;
+      const g = parseInt(hex.slice(3, 5), 16) / 255;
+      const b = parseInt(hex.slice(5, 7), 16) / 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+      if (d === 0) return 0;
+      let h2 = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      h2 *= 60;
+      return h2 < 0 ? h2 + 360 : h2;
+    }
+    const bars = computed(() => {
+      const bins = [...histogram.value].sort((a, b) => hue(a.hex) - hue(b.hex));
+      const max = Math.max(1, ...bins.map((b) => b.weight));
+      return bins.map((b) => ({ "hex": b.hex, "h": Math.max(6, Math.round(b.weight / max * 100)) }));
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(`<div${ssrRenderAttrs(mergeProps({ class: "space-y-2" }, _attrs))}><div class="text-xs font-medium text-muted"> Histogram · ${ssrInterpolate(bars.value.length)} bins </div><div class="flex h-24 items-end gap-px overflow-hidden rounded-lg border border-default bg-elevated p-1 relative">`);
+      if (bars.value.length === 0) {
+        _push(`<div class="absolute inset-0 flex items-center justify-center text-sm text-muted"> No image data </div>`);
+      } else {
+        _push(`<!---->`);
+      }
+      _push(`<!--[-->`);
+      ssrRenderList(bars.value, (bar, i) => {
+        _push(`<div class="flex-1 rounded-sm" style="${ssrRenderStyle({ height: `${bar.h}%`, backgroundColor: bar.hex, minWidth: "2px" })}"${ssrRenderAttr("title", bar.hex)}></div>`);
+      });
+      _push(`<!--]--></div></div>`);
+    };
+  }
+});
+const _sfc_setup$o = _sfc_main$o.setup;
+_sfc_main$o.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/Histogram.vue");
+  return _sfc_setup$o ? _sfc_setup$o(props, ctx) : void 0;
+};
+const __nuxt_component_8$1 = Object.assign(_sfc_main$o, { __name: "Histogram" });
+const theme$5 = {
+  "slots": {
+    "root": "",
+    "wrapper": "",
+    "labelWrapper": "flex content-center items-center justify-between gap-1",
+    "label": "block font-medium text-default",
+    "container": "relative",
+    "description": "text-muted",
+    "error": "mt-2 text-error",
+    "hint": "text-muted",
+    "help": "mt-2 text-muted"
+  },
+  "variants": {
+    "size": {
+      "xs": {
+        "root": "text-xs"
+      },
+      "sm": {
+        "root": "text-xs"
+      },
+      "md": {
+        "root": "text-sm"
+      },
+      "lg": {
+        "root": "text-sm"
+      },
+      "xl": {
+        "root": "text-base"
+      }
+    },
+    "required": {
+      "true": {
+        "label": "after:content-['*'] after:ms-0.5 after:text-error"
+      }
+    },
+    "orientation": {
+      "vertical": {
+        "container": "mt-1"
+      },
+      "horizontal": {
+        "root": "flex justify-between place-items-baseline gap-2"
+      }
+    }
+  },
+  "defaultVariants": {
+    "size": "md"
+  }
+};
+const _sfc_main$n = {
+  __name: "UFormField",
+  __ssrInlineRender: true,
+  props: {
+    as: { type: null, required: false },
+    name: { type: String, required: false },
+    errorPattern: { type: null, required: false },
+    label: { type: String, required: false },
+    description: { type: String, required: false },
+    help: { type: String, required: false },
+    error: { type: [Boolean, String], required: false, default: void 0 },
+    hint: { type: String, required: false },
+    size: { type: null, required: false },
+    required: { type: Boolean, required: false },
+    eagerValidation: { type: Boolean, required: false },
+    validateOnInputDelay: { type: Number, required: false },
+    orientation: { type: null, required: false, default: "vertical" },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false }
+  },
+  setup(__props) {
+    const _props = __props;
+    const slots = useSlots();
+    const props = useComponentProps("formField", _props);
+    const appConfig = useAppConfig();
+    const ui = computed(() => tv({ extend: tv(theme$5), ...appConfig.ui?.formField || {} })({
+      size: props.size,
+      required: props.required,
+      orientation: props.orientation
+    }));
+    const formErrors = inject(formErrorsInjectionKey, null);
+    const error = computed(() => props.error || formErrors?.value?.find((error2) => error2.name === props.name || props.errorPattern && error2.name?.match(props.errorPattern))?.message);
+    const id = ref(useId());
+    const ariaId = id.value;
+    const formInputs = inject(formInputsInjectionKey, void 0);
+    watch(id, () => {
+      if (formInputs && props.name) {
+        formInputs.value[props.name] = { id: id.value, pattern: props.errorPattern };
+      }
+    }, { immediate: true });
+    provide(inputIdInjectionKey, id);
+    provide(formFieldInjectionKey, computed(() => ({
+      error: error.value,
+      name: props.name,
+      size: props.size,
+      eagerValidation: props.eagerValidation,
+      validateOnInputDelay: props.validateOnInputDelay,
+      errorPattern: props.errorPattern,
+      hint: props.hint,
+      description: props.description,
+      help: props.help,
+      ariaId
+    })));
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(ssrRenderComponent(unref(Primitive), mergeProps({
+        as: unref(props).as,
+        "data-orientation": unref(props).orientation,
+        "data-slot": "root",
+        class: ui.value.root({ class: [unref(props).ui?.root, unref(props).class] })
+      }, _attrs), {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div data-slot="wrapper" class="${ssrRenderClass(ui.value.wrapper({ class: unref(props).ui?.wrapper }))}"${_scopeId}>`);
+            if (unref(props).label || !!slots.label) {
+              _push2(`<div data-slot="labelWrapper" class="${ssrRenderClass(ui.value.labelWrapper({ class: unref(props).ui?.labelWrapper }))}"${_scopeId}>`);
+              _push2(ssrRenderComponent(unref(Label_default), {
+                for: id.value,
+                "data-slot": "label",
+                class: ui.value.label({ class: unref(props).ui?.label })
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    ssrRenderSlot(_ctx.$slots, "label", {
+                      label: unref(props).label
+                    }, () => {
+                      _push3(`${ssrInterpolate(unref(props).label)}`);
+                    }, _push3, _parent3, _scopeId2);
+                  } else {
+                    return [
+                      renderSlot(_ctx.$slots, "label", {
+                        label: unref(props).label
+                      }, () => [
+                        createTextVNode(toDisplayString(unref(props).label), 1)
+                      ])
+                    ];
+                  }
+                }),
+                _: 3
+              }, _parent2, _scopeId));
+              if (unref(props).hint || !!slots.hint) {
+                _push2(`<span${ssrRenderAttr("id", `${unref(ariaId)}-hint`)} data-slot="hint" class="${ssrRenderClass(ui.value.hint({ class: unref(props).ui?.hint }))}"${_scopeId}>`);
+                ssrRenderSlot(_ctx.$slots, "hint", {
+                  hint: unref(props).hint
+                }, () => {
+                  _push2(`${ssrInterpolate(unref(props).hint)}`);
+                }, _push2, _parent2, _scopeId);
+                _push2(`</span>`);
+              } else {
+                _push2(`<!---->`);
+              }
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            if (unref(props).description || !!slots.description) {
+              _push2(`<p${ssrRenderAttr("id", `${unref(ariaId)}-description`)} data-slot="description" class="${ssrRenderClass(ui.value.description({ class: unref(props).ui?.description }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "description", {
+                description: unref(props).description
+              }, () => {
+                _push2(`${ssrInterpolate(unref(props).description)}`);
+              }, _push2, _parent2, _scopeId);
+              _push2(`</p>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(`</div><div class="${ssrRenderClass([(unref(props).label || !!slots.label || unref(props).description || !!slots.description) && ui.value.container({ class: unref(props).ui?.container })])}"${_scopeId}>`);
+            ssrRenderSlot(_ctx.$slots, "default", { error: error.value }, null, _push2, _parent2, _scopeId);
+            if (unref(props).error !== false && (typeof error.value === "string" && error.value || !!slots.error)) {
+              _push2(`<div${ssrRenderAttr("id", `${unref(ariaId)}-error`)} data-slot="error" class="${ssrRenderClass(ui.value.error({ class: unref(props).ui?.error }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "error", { error: error.value }, () => {
+                _push2(`${ssrInterpolate(error.value)}`);
+              }, _push2, _parent2, _scopeId);
+              _push2(`</div>`);
+            } else if (unref(props).help || !!slots.help) {
+              _push2(`<div${ssrRenderAttr("id", `${unref(ariaId)}-help`)} data-slot="help" class="${ssrRenderClass(ui.value.help({ class: unref(props).ui?.help }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "help", {
+                help: unref(props).help
+              }, () => {
+                _push2(`${ssrInterpolate(unref(props).help)}`);
+              }, _push2, _parent2, _scopeId);
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(`</div>`);
+          } else {
+            return [
+              createVNode("div", {
+                "data-slot": "wrapper",
+                class: ui.value.wrapper({ class: unref(props).ui?.wrapper })
+              }, [
+                unref(props).label || !!slots.label ? (openBlock(), createBlock("div", {
+                  key: 0,
+                  "data-slot": "labelWrapper",
+                  class: ui.value.labelWrapper({ class: unref(props).ui?.labelWrapper })
+                }, [
+                  createVNode(unref(Label_default), {
+                    for: id.value,
+                    "data-slot": "label",
+                    class: ui.value.label({ class: unref(props).ui?.label })
+                  }, {
+                    default: withCtx(() => [
+                      renderSlot(_ctx.$slots, "label", {
+                        label: unref(props).label
+                      }, () => [
+                        createTextVNode(toDisplayString(unref(props).label), 1)
+                      ])
+                    ]),
+                    _: 3
+                  }, 8, ["for", "class"]),
+                  unref(props).hint || !!slots.hint ? (openBlock(), createBlock("span", {
+                    key: 0,
+                    id: `${unref(ariaId)}-hint`,
+                    "data-slot": "hint",
+                    class: ui.value.hint({ class: unref(props).ui?.hint })
+                  }, [
+                    renderSlot(_ctx.$slots, "hint", {
+                      hint: unref(props).hint
+                    }, () => [
+                      createTextVNode(toDisplayString(unref(props).hint), 1)
+                    ])
+                  ], 10, ["id"])) : createCommentVNode("", true)
+                ], 2)) : createCommentVNode("", true),
+                unref(props).description || !!slots.description ? (openBlock(), createBlock("p", {
+                  key: 1,
+                  id: `${unref(ariaId)}-description`,
+                  "data-slot": "description",
+                  class: ui.value.description({ class: unref(props).ui?.description })
+                }, [
+                  renderSlot(_ctx.$slots, "description", {
+                    description: unref(props).description
+                  }, () => [
+                    createTextVNode(toDisplayString(unref(props).description), 1)
+                  ])
+                ], 10, ["id"])) : createCommentVNode("", true)
+              ], 2),
+              createVNode("div", {
+                class: [(unref(props).label || !!slots.label || unref(props).description || !!slots.description) && ui.value.container({ class: unref(props).ui?.container })]
+              }, [
+                renderSlot(_ctx.$slots, "default", { error: error.value }),
+                unref(props).error !== false && (typeof error.value === "string" && error.value || !!slots.error) ? (openBlock(), createBlock("div", {
+                  key: 0,
+                  id: `${unref(ariaId)}-error`,
+                  "data-slot": "error",
+                  class: ui.value.error({ class: unref(props).ui?.error })
+                }, [
+                  renderSlot(_ctx.$slots, "error", { error: error.value }, () => [
+                    createTextVNode(toDisplayString(error.value), 1)
+                  ])
+                ], 10, ["id"])) : unref(props).help || !!slots.help ? (openBlock(), createBlock("div", {
+                  key: 1,
+                  id: `${unref(ariaId)}-help`,
+                  "data-slot": "help",
+                  class: ui.value.help({ class: unref(props).ui?.help })
+                }, [
+                  renderSlot(_ctx.$slots, "help", {
+                    help: unref(props).help
+                  }, () => [
+                    createTextVNode(toDisplayString(unref(props).help), 1)
+                  ])
+                ], 10, ["id"])) : createCommentVNode("", true)
+              ], 2)
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+    };
+  }
+};
+const _sfc_setup$n = _sfc_main$n.setup;
+_sfc_main$n.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/FormField.vue");
+  return _sfc_setup$n ? _sfc_setup$n(props, ctx) : void 0;
+};
+const theme$4 = {
+  "slots": {
+    "content": "flex items-center gap-1 bg-default text-highlighted shadow-sm rounded-sm ring ring-default h-6 px-2.5 py-1 text-xs select-none data-[state=delayed-open]:animate-[scale-in_100ms_ease-out] data-[state=closed]:animate-[scale-out_100ms_ease-in] origin-(--reka-tooltip-content-transform-origin) pointer-events-auto",
+    "arrow": "fill-bg stroke-default",
+    "text": "truncate",
+    "kbds": "hidden lg:inline-flex items-center shrink-0 gap-0.5 not-first-of-type:before:content-['·'] not-first-of-type:before:me-0.5",
+    "kbdsSize": "sm"
+  }
+};
+const _sfc_main$m = {
+  __name: "UTooltip",
+  __ssrInlineRender: true,
+  props: {
+    text: { type: String, required: false },
+    kbds: { type: Array, required: false },
+    content: { type: Object, required: false },
+    arrow: { type: [Boolean, Object], required: false },
+    portal: { type: [Boolean, String], required: false, skipCheck: true, default: true },
+    reference: { type: null, required: false },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false },
+    defaultOpen: { type: Boolean, required: false },
+    open: { type: Boolean, required: false },
+    delayDuration: { type: Number, required: false },
+    disableHoverableContent: { type: Boolean, required: false },
+    disableClosingTrigger: { type: Boolean, required: false },
+    disabled: { type: Boolean, required: false },
+    ignoreNonKeyboardFocus: { type: Boolean, required: false }
+  },
+  emits: ["update:open"],
+  setup(__props, { emit: __emit }) {
+    const _props = __props;
+    const emits = __emit;
+    const slots = useSlots();
+    const props = useComponentProps("tooltip", _props);
+    const appConfig = useAppConfig();
+    const providerContext = injectTooltipProviderContext();
+    const rootProps = useForwardProps(reactivePick(props, "defaultOpen", "open", "delayDuration", "disableHoverableContent", "disableClosingTrigger", "ignoreNonKeyboardFocus"), emits);
+    const portalProps = usePortal(toRef(() => props.portal));
+    const contentProps = toRef(() => defu(props.content, providerContext.content.value, { side: "bottom", sideOffset: 8, collisionPadding: 8 }));
+    const arrowProps = toRef(() => defu(props.arrow, { rounded: true }));
+    const ui = computed(() => tv({ extend: tv(theme$4), ...appConfig.ui?.tooltip || {} })({
+      side: contentProps.value.side
+    }));
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(ssrRenderComponent(unref(TooltipRoot_default), mergeProps(unref(rootProps), {
+        disabled: !(unref(props).text || unref(props).kbds?.length || !!slots.content) || unref(props).disabled
+      }, _attrs), {
+        default: withCtx(({ open }, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            if (!!slots.default || !!unref(props).reference) {
+              _push2(ssrRenderComponent(unref(TooltipTrigger_default), mergeProps(_ctx.$attrs, {
+                "as-child": "",
+                reference: unref(props).reference,
+                class: unref(props).class
+              }), {
+                default: withCtx((_, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    ssrRenderSlot(_ctx.$slots, "default", { open }, null, _push3, _parent3, _scopeId2);
+                  } else {
+                    return [
+                      renderSlot(_ctx.$slots, "default", { open })
+                    ];
+                  }
+                }),
+                _: 2
+              }, _parent2, _scopeId));
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(ssrRenderComponent(unref(TooltipPortal_default), unref(portalProps), {
+              default: withCtx((_, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(ssrRenderComponent(unref(FieldGroupReset), null, {
+                    default: withCtx((_2, _push4, _parent4, _scopeId3) => {
+                      if (_push4) {
+                        _push4(ssrRenderComponent(unref(TooltipContent_default), mergeProps(contentProps.value, {
+                          "data-slot": "content",
+                          class: ui.value.content({ class: [!slots.default && unref(props).class, unref(props).ui?.content] })
+                        }), {
+                          default: withCtx((_3, _push5, _parent5, _scopeId4) => {
+                            if (_push5) {
+                              ssrRenderSlot(_ctx.$slots, "content", { ui: ui.value }, () => {
+                                if (unref(props).text) {
+                                  _push5(`<span data-slot="text" class="${ssrRenderClass(ui.value.text({ class: unref(props).ui?.text }))}"${_scopeId4}>${ssrInterpolate(unref(props).text)}</span>`);
+                                } else {
+                                  _push5(`<!---->`);
+                                }
+                                if (unref(props).kbds?.length) {
+                                  _push5(`<span data-slot="kbds" class="${ssrRenderClass(ui.value.kbds({ class: unref(props).ui?.kbds }))}"${_scopeId4}><!--[-->`);
+                                  ssrRenderList(unref(props).kbds, (kbd, index2) => {
+                                    _push5(ssrRenderComponent(_sfc_main$A, mergeProps({
+                                      key: index2,
+                                      size: unref(props).ui?.kbdsSize || ui.value.kbdsSize()
+                                    }, { ref_for: true }, typeof kbd === "string" ? { value: kbd } : kbd), null, _parent5, _scopeId4));
+                                  });
+                                  _push5(`<!--]--></span>`);
+                                } else {
+                                  _push5(`<!---->`);
+                                }
+                              }, _push5, _parent5, _scopeId4);
+                              if (!!unref(props).arrow) {
+                                _push5(ssrRenderComponent(unref(TooltipArrow_default), mergeProps(arrowProps.value, {
+                                  "data-slot": "arrow",
+                                  class: ui.value.arrow({ class: unref(props).ui?.arrow })
+                                }), null, _parent5, _scopeId4));
+                              } else {
+                                _push5(`<!---->`);
+                              }
+                            } else {
+                              return [
+                                renderSlot(_ctx.$slots, "content", { ui: ui.value }, () => [
+                                  unref(props).text ? (openBlock(), createBlock("span", {
+                                    key: 0,
+                                    "data-slot": "text",
+                                    class: ui.value.text({ class: unref(props).ui?.text })
+                                  }, toDisplayString(unref(props).text), 3)) : createCommentVNode("", true),
+                                  unref(props).kbds?.length ? (openBlock(), createBlock("span", {
+                                    key: 1,
+                                    "data-slot": "kbds",
+                                    class: ui.value.kbds({ class: unref(props).ui?.kbds })
+                                  }, [
+                                    (openBlock(true), createBlock(Fragment, null, renderList(unref(props).kbds, (kbd, index2) => {
+                                      return openBlock(), createBlock(_sfc_main$A, mergeProps({
+                                        key: index2,
+                                        size: unref(props).ui?.kbdsSize || ui.value.kbdsSize()
+                                      }, { ref_for: true }, typeof kbd === "string" ? { value: kbd } : kbd), null, 16, ["size"]);
+                                    }), 128))
+                                  ], 2)) : createCommentVNode("", true)
+                                ]),
+                                !!unref(props).arrow ? (openBlock(), createBlock(unref(TooltipArrow_default), mergeProps({ key: 0 }, arrowProps.value, {
+                                  "data-slot": "arrow",
+                                  class: ui.value.arrow({ class: unref(props).ui?.arrow })
+                                }), null, 16, ["class"])) : createCommentVNode("", true)
+                              ];
+                            }
+                          }),
+                          _: 2
+                        }, _parent4, _scopeId3));
+                      } else {
+                        return [
+                          createVNode(unref(TooltipContent_default), mergeProps(contentProps.value, {
+                            "data-slot": "content",
+                            class: ui.value.content({ class: [!slots.default && unref(props).class, unref(props).ui?.content] })
+                          }), {
+                            default: withCtx(() => [
+                              renderSlot(_ctx.$slots, "content", { ui: ui.value }, () => [
+                                unref(props).text ? (openBlock(), createBlock("span", {
+                                  key: 0,
+                                  "data-slot": "text",
+                                  class: ui.value.text({ class: unref(props).ui?.text })
+                                }, toDisplayString(unref(props).text), 3)) : createCommentVNode("", true),
+                                unref(props).kbds?.length ? (openBlock(), createBlock("span", {
+                                  key: 1,
+                                  "data-slot": "kbds",
+                                  class: ui.value.kbds({ class: unref(props).ui?.kbds })
+                                }, [
+                                  (openBlock(true), createBlock(Fragment, null, renderList(unref(props).kbds, (kbd, index2) => {
+                                    return openBlock(), createBlock(_sfc_main$A, mergeProps({
+                                      key: index2,
+                                      size: unref(props).ui?.kbdsSize || ui.value.kbdsSize()
+                                    }, { ref_for: true }, typeof kbd === "string" ? { value: kbd } : kbd), null, 16, ["size"]);
+                                  }), 128))
+                                ], 2)) : createCommentVNode("", true)
+                              ]),
+                              !!unref(props).arrow ? (openBlock(), createBlock(unref(TooltipArrow_default), mergeProps({ key: 0 }, arrowProps.value, {
+                                "data-slot": "arrow",
+                                class: ui.value.arrow({ class: unref(props).ui?.arrow })
+                              }), null, 16, ["class"])) : createCommentVNode("", true)
+                            ]),
+                            _: 3
+                          }, 16, ["class"])
+                        ];
+                      }
+                    }),
+                    _: 2
+                  }, _parent3, _scopeId2));
+                } else {
+                  return [
+                    createVNode(unref(FieldGroupReset), null, {
+                      default: withCtx(() => [
+                        createVNode(unref(TooltipContent_default), mergeProps(contentProps.value, {
+                          "data-slot": "content",
+                          class: ui.value.content({ class: [!slots.default && unref(props).class, unref(props).ui?.content] })
+                        }), {
+                          default: withCtx(() => [
+                            renderSlot(_ctx.$slots, "content", { ui: ui.value }, () => [
+                              unref(props).text ? (openBlock(), createBlock("span", {
+                                key: 0,
+                                "data-slot": "text",
+                                class: ui.value.text({ class: unref(props).ui?.text })
+                              }, toDisplayString(unref(props).text), 3)) : createCommentVNode("", true),
+                              unref(props).kbds?.length ? (openBlock(), createBlock("span", {
+                                key: 1,
+                                "data-slot": "kbds",
+                                class: ui.value.kbds({ class: unref(props).ui?.kbds })
+                              }, [
+                                (openBlock(true), createBlock(Fragment, null, renderList(unref(props).kbds, (kbd, index2) => {
+                                  return openBlock(), createBlock(_sfc_main$A, mergeProps({
+                                    key: index2,
+                                    size: unref(props).ui?.kbdsSize || ui.value.kbdsSize()
+                                  }, { ref_for: true }, typeof kbd === "string" ? { value: kbd } : kbd), null, 16, ["size"]);
+                                }), 128))
+                              ], 2)) : createCommentVNode("", true)
+                            ]),
+                            !!unref(props).arrow ? (openBlock(), createBlock(unref(TooltipArrow_default), mergeProps({ key: 0 }, arrowProps.value, {
+                              "data-slot": "arrow",
+                              class: ui.value.arrow({ class: unref(props).ui?.arrow })
+                            }), null, 16, ["class"])) : createCommentVNode("", true)
+                          ]),
+                          _: 3
+                        }, 16, ["class"])
+                      ]),
+                      _: 3
+                    })
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent2, _scopeId));
+          } else {
+            return [
+              !!slots.default || !!unref(props).reference ? (openBlock(), createBlock(unref(TooltipTrigger_default), mergeProps({ key: 0 }, _ctx.$attrs, {
+                "as-child": "",
+                reference: unref(props).reference,
+                class: unref(props).class
+              }), {
+                default: withCtx(() => [
+                  renderSlot(_ctx.$slots, "default", { open })
+                ]),
+                _: 2
+              }, 1040, ["reference", "class"])) : createCommentVNode("", true),
+              createVNode(unref(TooltipPortal_default), unref(portalProps), {
+                default: withCtx(() => [
+                  createVNode(unref(FieldGroupReset), null, {
+                    default: withCtx(() => [
+                      createVNode(unref(TooltipContent_default), mergeProps(contentProps.value, {
+                        "data-slot": "content",
+                        class: ui.value.content({ class: [!slots.default && unref(props).class, unref(props).ui?.content] })
+                      }), {
+                        default: withCtx(() => [
+                          renderSlot(_ctx.$slots, "content", { ui: ui.value }, () => [
+                            unref(props).text ? (openBlock(), createBlock("span", {
+                              key: 0,
+                              "data-slot": "text",
+                              class: ui.value.text({ class: unref(props).ui?.text })
+                            }, toDisplayString(unref(props).text), 3)) : createCommentVNode("", true),
+                            unref(props).kbds?.length ? (openBlock(), createBlock("span", {
+                              key: 1,
+                              "data-slot": "kbds",
+                              class: ui.value.kbds({ class: unref(props).ui?.kbds })
+                            }, [
+                              (openBlock(true), createBlock(Fragment, null, renderList(unref(props).kbds, (kbd, index2) => {
+                                return openBlock(), createBlock(_sfc_main$A, mergeProps({
+                                  key: index2,
+                                  size: unref(props).ui?.kbdsSize || ui.value.kbdsSize()
+                                }, { ref_for: true }, typeof kbd === "string" ? { value: kbd } : kbd), null, 16, ["size"]);
+                              }), 128))
+                            ], 2)) : createCommentVNode("", true)
+                          ]),
+                          !!unref(props).arrow ? (openBlock(), createBlock(unref(TooltipArrow_default), mergeProps({ key: 0 }, arrowProps.value, {
+                            "data-slot": "arrow",
+                            class: ui.value.arrow({ class: unref(props).ui?.arrow })
+                          }), null, 16, ["class"])) : createCommentVNode("", true)
+                        ]),
+                        _: 3
+                      }, 16, ["class"])
+                    ]),
+                    _: 3
+                  })
+                ]),
+                _: 3
+              }, 16)
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+    };
+  }
+};
+const _sfc_setup$m = _sfc_main$m.setup;
+_sfc_main$m.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/Tooltip.vue");
+  return _sfc_setup$m ? _sfc_setup$m(props, ctx) : void 0;
+};
+const theme$3 = {
+  "slots": {
+    "root": "relative flex items-center select-none touch-none",
+    "track": "relative bg-accented overflow-hidden rounded-full grow",
+    "range": "absolute rounded-full",
+    "thumb": "rounded-full bg-default ring-2 focus-visible:outline-3 focus-visible:outline-offset-2"
+  },
+  "variants": {
+    "color": {
+      "primary": {
+        "range": "bg-primary",
+        "thumb": "ring-primary outline-primary/25"
+      },
+      "secondary": {
+        "range": "bg-secondary",
+        "thumb": "ring-secondary outline-secondary/25"
+      },
+      "success": {
+        "range": "bg-success",
+        "thumb": "ring-success outline-success/25"
+      },
+      "info": {
+        "range": "bg-info",
+        "thumb": "ring-info outline-info/25"
+      },
+      "warning": {
+        "range": "bg-warning",
+        "thumb": "ring-warning outline-warning/25"
+      },
+      "error": {
+        "range": "bg-error",
+        "thumb": "ring-error outline-error/25"
+      },
+      "neutral": {
+        "range": "bg-inverted",
+        "thumb": "ring-inverted outline-inverted/25"
+      }
+    },
+    "size": {
+      "xs": {
+        "thumb": "size-3"
+      },
+      "sm": {
+        "thumb": "size-3.5"
+      },
+      "md": {
+        "thumb": "size-4"
+      },
+      "lg": {
+        "thumb": "size-4.5"
+      },
+      "xl": {
+        "thumb": "size-5"
+      }
+    },
+    "orientation": {
+      "horizontal": {
+        "root": "w-full",
+        "range": "h-full"
+      },
+      "vertical": {
+        "root": "flex-col h-full",
+        "range": "w-full"
+      }
+    },
+    "disabled": {
+      "true": {
+        "root": "opacity-75 cursor-not-allowed"
+      }
+    }
+  },
+  "compoundVariants": [
+    {
+      "orientation": "horizontal",
+      "size": "xs",
+      "class": {
+        "track": "h-[6px]"
+      }
+    },
+    {
+      "orientation": "horizontal",
+      "size": "sm",
+      "class": {
+        "track": "h-[7px]"
+      }
+    },
+    {
+      "orientation": "horizontal",
+      "size": "md",
+      "class": {
+        "track": "h-[8px]"
+      }
+    },
+    {
+      "orientation": "horizontal",
+      "size": "lg",
+      "class": {
+        "track": "h-[9px]"
+      }
+    },
+    {
+      "orientation": "horizontal",
+      "size": "xl",
+      "class": {
+        "track": "h-[10px]"
+      }
+    },
+    {
+      "orientation": "vertical",
+      "size": "xs",
+      "class": {
+        "track": "w-[6px]"
+      }
+    },
+    {
+      "orientation": "vertical",
+      "size": "sm",
+      "class": {
+        "track": "w-[7px]"
+      }
+    },
+    {
+      "orientation": "vertical",
+      "size": "md",
+      "class": {
+        "track": "w-[8px]"
+      }
+    },
+    {
+      "orientation": "vertical",
+      "size": "lg",
+      "class": {
+        "track": "w-[9px]"
+      }
+    },
+    {
+      "orientation": "vertical",
+      "size": "xl",
+      "class": {
+        "track": "w-[10px]"
+      }
+    }
+  ],
+  "defaultVariants": {
+    "size": "md",
+    "color": "primary"
+  }
+};
+const _sfc_main$l = {
+  __name: "USlider",
+  __ssrInlineRender: true,
+  props: /* @__PURE__ */ mergeModels({
+    as: { type: null, required: false },
+    size: { type: null, required: false },
+    color: { type: null, required: false },
+    orientation: { type: null, required: false, default: "horizontal" },
+    tooltip: { type: [Boolean, Object], required: false },
+    defaultValue: { type: [Number, Array], required: false },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false },
+    name: { type: String, required: false },
+    disabled: { type: Boolean, required: false },
+    inverted: { type: Boolean, required: false },
+    min: { type: Number, required: false, default: 0 },
+    max: { type: Number, required: false, default: 100 },
+    step: { type: Number, required: false, default: 1 },
+    minStepsBetweenThumbs: { type: Number, required: false }
+  }, {
+    "modelValue": { type: null },
+    "modelModifiers": {}
+  }),
+  emits: /* @__PURE__ */ mergeModels(["change"], ["update:modelValue"]),
+  setup(__props, { emit: __emit }) {
+    const _props = __props;
+    const emits = __emit;
+    const props = useComponentProps("slider", _props);
+    const modelValue = useModel(__props, "modelValue");
+    const appConfig = useAppConfig();
+    const rootProps = useForwardProps(reactivePick(props, "as", "orientation", "min", "max", "step", "minStepsBetweenThumbs", "inverted"), emits);
+    const { id, emitFormChange, emitFormInput, size: size2, color, name, disabled, ariaAttrs } = useFormField(_props);
+    const defaultSliderValue = computed(() => {
+      if (typeof props.defaultValue === "number") {
+        return [props.defaultValue];
+      }
+      return props.defaultValue;
+    });
+    const sliderValue = computed({
+      get() {
+        if (typeof modelValue.value === "number") {
+          return [modelValue.value];
+        }
+        return modelValue.value ?? defaultSliderValue.value;
+      },
+      set(value) {
+        modelValue.value = value?.length !== 1 ? value : value[0];
+      }
+    });
+    const thumbs = computed(() => sliderValue.value?.length ?? 1);
+    const ui = computed(() => tv({ extend: tv(theme$3), ...appConfig.ui?.slider || {} })({
+      disabled: disabled.value,
+      size: size2.value ?? props.size,
+      color: color.value ?? props.color,
+      orientation: props.orientation
+    }));
+    function onChange(value) {
+      const event = new Event("change", { target: { value } });
+      emits("change", event);
+      emitFormChange();
+    }
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(ssrRenderComponent(unref(SliderRoot_default), mergeProps({ ...unref(rootProps), ...unref(ariaAttrs) }, {
+        id: unref(id),
+        modelValue: sliderValue.value,
+        "onUpdate:modelValue": [($event) => sliderValue.value = $event, ($event) => unref(emitFormInput)()],
+        name: unref(name),
+        disabled: unref(disabled),
+        "data-slot": "root",
+        class: ui.value.root({ class: [unref(props).ui?.root, unref(props).class] }),
+        "default-value": defaultSliderValue.value,
+        onValueCommit: onChange
+      }, _attrs), {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(ssrRenderComponent(unref(SliderTrack_default), {
+              "data-slot": "track",
+              class: ui.value.track({ class: unref(props).ui?.track })
+            }, {
+              default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(ssrRenderComponent(unref(SliderRange_default), {
+                    "data-slot": "range",
+                    class: ui.value.range({ class: unref(props).ui?.range })
+                  }, null, _parent3, _scopeId2));
+                } else {
+                  return [
+                    createVNode(unref(SliderRange_default), {
+                      "data-slot": "range",
+                      class: ui.value.range({ class: unref(props).ui?.range })
+                    }, null, 8, ["class"])
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(`<!--[-->`);
+            ssrRenderList(thumbs.value, (thumb) => {
+              _push2(`<!--[-->`);
+              if (!!unref(props).tooltip) {
+                _push2(ssrRenderComponent(_sfc_main$m, mergeProps({
+                  text: thumbs.value > 1 ? String(sliderValue.value?.[thumb - 1]) : String(sliderValue.value),
+                  "disable-closing-trigger": ""
+                }, { ref_for: true }, typeof unref(props).tooltip === "object" ? unref(props).tooltip : {}), {
+                  default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                    if (_push3) {
+                      _push3(ssrRenderComponent(unref(SliderThumb_default), {
+                        "data-slot": "thumb",
+                        class: ui.value.thumb({ class: unref(props).ui?.thumb }),
+                        "aria-label": thumbs.value === 1 ? "Thumb" : `Thumb ${thumb} of ${thumbs.value}`
+                      }, null, _parent3, _scopeId2));
+                    } else {
+                      return [
+                        createVNode(unref(SliderThumb_default), {
+                          "data-slot": "thumb",
+                          class: ui.value.thumb({ class: unref(props).ui?.thumb }),
+                          "aria-label": thumbs.value === 1 ? "Thumb" : `Thumb ${thumb} of ${thumbs.value}`
+                        }, null, 8, ["class", "aria-label"])
+                      ];
+                    }
+                  }),
+                  _: 2
+                }, _parent2, _scopeId));
+              } else {
+                _push2(ssrRenderComponent(unref(SliderThumb_default), {
+                  "data-slot": "thumb",
+                  class: ui.value.thumb({ class: unref(props).ui?.thumb }),
+                  "aria-label": thumbs.value === 1 ? "Thumb" : `Thumb ${thumb} of ${thumbs.value}`
+                }, null, _parent2, _scopeId));
+              }
+              _push2(`<!--]-->`);
+            });
+            _push2(`<!--]-->`);
+          } else {
+            return [
+              createVNode(unref(SliderTrack_default), {
+                "data-slot": "track",
+                class: ui.value.track({ class: unref(props).ui?.track })
+              }, {
+                default: withCtx(() => [
+                  createVNode(unref(SliderRange_default), {
+                    "data-slot": "range",
+                    class: ui.value.range({ class: unref(props).ui?.range })
+                  }, null, 8, ["class"])
+                ]),
+                _: 1
+              }, 8, ["class"]),
+              (openBlock(true), createBlock(Fragment, null, renderList(thumbs.value, (thumb) => {
+                return openBlock(), createBlock(Fragment, { key: thumb }, [
+                  !!unref(props).tooltip ? (openBlock(), createBlock(_sfc_main$m, mergeProps({
+                    key: 0,
+                    text: thumbs.value > 1 ? String(sliderValue.value?.[thumb - 1]) : String(sliderValue.value),
+                    "disable-closing-trigger": ""
+                  }, { ref_for: true }, typeof unref(props).tooltip === "object" ? unref(props).tooltip : {}), {
+                    default: withCtx(() => [
+                      createVNode(unref(SliderThumb_default), {
+                        "data-slot": "thumb",
+                        class: ui.value.thumb({ class: unref(props).ui?.thumb }),
+                        "aria-label": thumbs.value === 1 ? "Thumb" : `Thumb ${thumb} of ${thumbs.value}`
+                      }, null, 8, ["class", "aria-label"])
+                    ]),
+                    _: 2
+                  }, 1040, ["text"])) : (openBlock(), createBlock(unref(SliderThumb_default), {
+                    key: 1,
+                    "data-slot": "thumb",
+                    class: ui.value.thumb({ class: unref(props).ui?.thumb }),
+                    "aria-label": thumbs.value === 1 ? "Thumb" : `Thumb ${thumb} of ${thumbs.value}`
+                  }, null, 8, ["class", "aria-label"]))
+                ], 64);
+              }), 128))
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+    };
+  }
+};
+const _sfc_setup$l = _sfc_main$l.setup;
+_sfc_main$l.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/Slider.vue");
+  return _sfc_setup$l ? _sfc_setup$l(props, ctx) : void 0;
+};
+const UNPINNED = "__unpinned__";
+const _sfc_main$k = /* @__PURE__ */ defineComponent({
+  __name: "PaletteControls",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const {
+      pickerSeeds,
+      pinnableRoles,
+      framing,
+      schemaName,
+      contrastStrictness,
+      colorSpace,
+      mode,
+      imageSeeds,
+      running,
+      enabledOptionalStages,
+      cvdCorrect,
+      contrastReport,
+      imgAlgorithm,
+      imgK,
+      imgHistogramBits,
+      imgDeltaECap,
+      imgHarmonize,
+      imgLightnessRange,
+      imgChromaRange,
+      cvdPreviewTypes,
+      toggleCvdPreviewType
+    } = useIridis();
+    const { send } = useIridisUiMachine();
+    const schemaItems = ["iridis-4", "iridis-8", "iridis-12", "iridis-16", "iridis-32"];
+    const algorithmItems = [
+      { "label": "ΔE (delta-e)", "value": "delta-e" },
+      { "label": "Median cut", "value": "median-cut" }
+    ];
+    const stageSummaries = computed(() => {
+      const summaries = [];
+      const report = contrastReport.value;
+      if (enabledOptionalStages.value.has("enforce:wcagAA") && report.aa !== void 0) {
+        const pairs = report.aa.pairs;
+        const passing = pairs.filter((p) => {
+          return p.pass;
+        }).length;
+        summaries.push({ color: passing === pairs.length ? "success" : "warning", key: "aa", label: "WCAG AA", text: `${passing}/${pairs.length} pairs passing` });
+      }
+      if (enabledOptionalStages.value.has("enforce:wcagAAA") && report.aaa !== void 0) {
+        const pairs = report.aaa.pairs;
+        const passing = pairs.filter((p) => {
+          return p.pass;
+        }).length;
+        summaries.push({ color: passing === pairs.length ? "success" : "warning", key: "aaa", label: "WCAG AAA", text: `${passing}/${pairs.length} pairs passing` });
+      }
+      if (enabledOptionalStages.value.has("enforce:apca") && report.apca !== void 0) {
+        const pairs = report.apca.pairs;
+        const passing = pairs.filter((p) => {
+          return p.pass;
+        }).length;
+        summaries.push({ color: passing === pairs.length ? "success" : "warning", key: "apca", label: "APCA", text: `${passing}/${pairs.length} pairs passing` });
+      }
+      if (report.cvd !== void 0) {
+        const cvd = report.cvd;
+        const corrected = cvd.corrections?.length ?? 0;
+        const color = cvd.warnings.length === 0 ? "success" : corrected > 0 ? "warning" : "neutral";
+        const text = cvd.warnings.length === 0 ? "no warnings" : `${cvd.warnings.length} warning${cvd.warnings.length === 1 ? "" : "s"}${corrected > 0 ? ` (${corrected} auto-corrected)` : ""}`;
+        summaries.push({ color, key: "cvd", label: "CVD check", text });
+      }
+      return summaries;
+    });
+    const uploadedFile = ref(null);
+    const handleFile = (file) => {
+      if (file) {
+        send({ file, "source": "file", "type": IridisUiActionType.EXTRACT_IMAGE });
+      }
+    };
+    watch(uploadedFile, handleFile);
+    function sample() {
+      uploadedFile.value = null;
+      send({ "source": "sample", "type": IridisUiActionType.EXTRACT_IMAGE });
+    }
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UCard = _sfc_main$t;
+      const _component_USwitch = _sfc_main$s;
+      const _component_ModeSwitch = __nuxt_component_2;
+      const _component_BalancedWrap = __nuxt_component_1$1;
+      const _component_UButton = _sfc_main$a$1;
+      const _component_USelect = _sfc_main$q;
+      const _component_UFileUpload = _sfc_main$p;
+      const _component_UIcon = _sfc_main$f$1;
+      const _component_Histogram = __nuxt_component_8$1;
+      const _component_UFormField = _sfc_main$n;
+      const _component_USlider = _sfc_main$l;
+      const _component_UBadge = _sfc_main$y;
+      const _directive_auto_animate = resolveDirective("auto-animate");
+      _push(`<div${ssrRenderAttrs(mergeProps({ class: "space-y-5" }, _attrs))}>`);
+      _push(ssrRenderComponent(_component_UCard, null, {
+        header: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="mx-auto grid w-full max-w-4xl grid-cols-[1fr_auto_1fr] items-center gap-3"${_scopeId}><div class="flex flex-wrap items-center gap-3"${_scopeId}></div><span class="text-center font-semibold text-highlighted"${_scopeId}>Palette</span><div class="flex justify-end"${_scopeId}>`);
+            _push2(ssrRenderComponent(_component_USwitch, {
+              "model-value": unref(framing) === "dark",
+              size: "lg",
+              "unchecked-icon": "material-symbols:light-mode-rounded",
+              "checked-icon": "material-symbols:dark-mode-rounded",
+              "aria-label": unref(framing) === "dark" ? "Dark framing" : "Light framing",
+              "onUpdate:modelValue": ($event) => unref(send)({ framing: $event ? "dark" : "light", type: unref(IridisUiActionType).SET_FRAMING })
+            }, null, _parent2, _scopeId));
+            _push2(`</div></div>`);
+          } else {
+            return [
+              createVNode("div", { class: "mx-auto grid w-full max-w-4xl grid-cols-[1fr_auto_1fr] items-center gap-3" }, [
+                createVNode("div", { class: "flex flex-wrap items-center gap-3" }),
+                createVNode("span", { class: "text-center font-semibold text-highlighted" }, "Palette"),
+                createVNode("div", { class: "flex justify-end" }, [
+                  createVNode(_component_USwitch, {
+                    "model-value": unref(framing) === "dark",
+                    size: "lg",
+                    "unchecked-icon": "material-symbols:light-mode-rounded",
+                    "checked-icon": "material-symbols:dark-mode-rounded",
+                    "aria-label": unref(framing) === "dark" ? "Dark framing" : "Light framing",
+                    "onUpdate:modelValue": ($event) => unref(send)({ framing: $event ? "dark" : "light", type: unref(IridisUiActionType).SET_FRAMING })
+                  }, null, 8, ["model-value", "aria-label", "onUpdate:modelValue"])
+                ])
+              ])
+            ];
+          }
+        }),
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div${ssrRenderAttrs(mergeProps({ class: "mx-auto w-full max-w-4xl space-y-5" }, ssrGetDirectiveProps(_ctx, _directive_auto_animate)))}${_scopeId}>`);
+            _push2(ssrRenderComponent(_component_ModeSwitch, { class: "mb-8" }, null, _parent2, _scopeId));
+            if (unref(mode) === "picker") {
+              _push2(`<p class="text-sm text-muted"${_scopeId}> Feed the engine any number of seeds — pin one to a role to skip the auto-resolver entirely. </p>`);
+            } else {
+              _push2(`<p class="text-sm text-muted"${_scopeId}> Drop an image or try a sample to generate a palette. Tune the extraction knobs below. </p>`);
+            }
+            if (unref(mode) === "picker") {
+              _push2(ssrRenderComponent(_component_BalancedWrap, mergeProps({
+                items: [...unref(pickerSeeds), { isAddBtn: true }],
+                "min-width": 210,
+                gap: 12,
+                class: "rounded-lg border-2 border-dashed border-default p-4"
+              }, ssrGetDirectiveProps(_ctx, _directive_auto_animate)), {
+                default: withCtx(({ item: seed, index: i }, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    if (seed.isAddBtn) {
+                      _push3(`<div class="flex min-h-full items-center justify-center flex-1 rounded-lg border border-transparent p-2.5"${_scopeId2}>`);
+                      _push3(ssrRenderComponent(_component_UButton, {
+                        icon: "i-material-symbols-add-rounded",
+                        color: "primary",
+                        variant: "soft",
+                        size: "sm",
+                        disabled: unref(pickerSeeds).length >= 32,
+                        onClick: ($event) => unref(send)({ type: unref(IridisUiActionType).ADD_SEED })
+                      }, {
+                        default: withCtx((_2, _push4, _parent4, _scopeId3) => {
+                          if (_push4) {
+                            _push4(` Add seed `);
+                          } else {
+                            return [
+                              createTextVNode(" Add seed ")
+                            ];
+                          }
+                        }),
+                        _: 2
+                      }, _parent3, _scopeId2));
+                      _push3(`</div>`);
+                    } else {
+                      _push3(`<div class="flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5 flex-1"${_scopeId2}><div class="flex items-center gap-2"${_scopeId2}><input${ssrRenderAttr("value", seed.hex)} type="color" class="h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent flex-none"${_scopeId2}><div class="flex flex-col min-w-0 flex-1"${_scopeId2}><span class="font-mono text-xs text-muted truncate"${_scopeId2}>${ssrInterpolate(seed.hex)}</span>`);
+                      _push3(ssrRenderComponent(_component_UButton, {
+                        icon: "i-material-symbols-close-rounded",
+                        color: "neutral",
+                        variant: "link",
+                        size: "xs",
+                        class: "-ml-1.5 p-0 self-start",
+                        disabled: unref(pickerSeeds).length <= 1,
+                        onClick: ($event) => unref(send)({ type: unref(IridisUiActionType).REMOVE_SEED, index: i })
+                      }, {
+                        default: withCtx((_2, _push4, _parent4, _scopeId3) => {
+                          if (_push4) {
+                            _push4(` Remove `);
+                          } else {
+                            return [
+                              createTextVNode(" Remove ")
+                            ];
+                          }
+                        }),
+                        _: 2
+                      }, _parent3, _scopeId2));
+                      _push3(`</div></div>`);
+                      _push3(ssrRenderComponent(_component_USelect, {
+                        "model-value": seed.role ?? UNPINNED,
+                        items: [{ label: "Unpinned", value: UNPINNED }, ...unref(pinnableRoles).map((r) => ({ label: r, value: r, disabled: unref(pickerSeeds).some((s, sIdx) => sIdx !== i && s.role === r) }))],
+                        "value-key": "value",
+                        size: "xs",
+                        class: "w-full",
+                        "onUpdate:modelValue": ($event) => unref(send)({ index: i, role: $event === UNPINNED ? void 0 : $event, type: unref(IridisUiActionType).PIN_SEED_ROLE })
+                      }, null, _parent3, _scopeId2));
+                      _push3(`</div>`);
+                    }
+                  } else {
+                    return [
+                      seed.isAddBtn ? (openBlock(), createBlock("div", {
+                        key: 0,
+                        class: "flex min-h-full items-center justify-center flex-1 rounded-lg border border-transparent p-2.5"
+                      }, [
+                        createVNode(_component_UButton, {
+                          icon: "i-material-symbols-add-rounded",
+                          color: "primary",
+                          variant: "soft",
+                          size: "sm",
+                          disabled: unref(pickerSeeds).length >= 32,
+                          onClick: ($event) => unref(send)({ type: unref(IridisUiActionType).ADD_SEED })
+                        }, {
+                          default: withCtx(() => [
+                            createTextVNode(" Add seed ")
+                          ]),
+                          _: 1
+                        }, 8, ["disabled", "onClick"])
+                      ])) : (openBlock(), createBlock("div", {
+                        key: 1,
+                        class: "flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5 flex-1"
+                      }, [
+                        createVNode("div", { class: "flex items-center gap-2" }, [
+                          createVNode("input", {
+                            value: seed.hex,
+                            type: "color",
+                            class: "h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent flex-none",
+                            onChange: ($event) => unref(send)({ type: unref(IridisUiActionType).SET_SEED, index: i, hex: $event.target.value })
+                          }, null, 40, ["value", "onChange"]),
+                          createVNode("div", { class: "flex flex-col min-w-0 flex-1" }, [
+                            createVNode("span", { class: "font-mono text-xs text-muted truncate" }, toDisplayString(seed.hex), 1),
+                            createVNode(_component_UButton, {
+                              icon: "i-material-symbols-close-rounded",
+                              color: "neutral",
+                              variant: "link",
+                              size: "xs",
+                              class: "-ml-1.5 p-0 self-start",
+                              disabled: unref(pickerSeeds).length <= 1,
+                              onClick: ($event) => unref(send)({ type: unref(IridisUiActionType).REMOVE_SEED, index: i })
+                            }, {
+                              default: withCtx(() => [
+                                createTextVNode(" Remove ")
+                              ]),
+                              _: 1
+                            }, 8, ["disabled", "onClick"])
+                          ])
+                        ]),
+                        createVNode(_component_USelect, {
+                          "model-value": seed.role ?? UNPINNED,
+                          items: [{ label: "Unpinned", value: UNPINNED }, ...unref(pinnableRoles).map((r) => ({ label: r, value: r, disabled: unref(pickerSeeds).some((s, sIdx) => sIdx !== i && s.role === r) }))],
+                          "value-key": "value",
+                          size: "xs",
+                          class: "w-full",
+                          "onUpdate:modelValue": ($event) => unref(send)({ index: i, role: $event === UNPINNED ? void 0 : $event, type: unref(IridisUiActionType).PIN_SEED_ROLE })
+                        }, null, 8, ["model-value", "items", "onUpdate:modelValue"])
+                      ]))
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+            } else {
+              _push2(`<div class="space-y-3"${_scopeId}>`);
+              _push2(ssrRenderComponent(_component_UFileUpload, {
+                modelValue: uploadedFile.value,
+                "onUpdate:modelValue": ($event) => uploadedFile.value = $event,
+                accept: "image/*",
+                icon: "i-material-symbols-upload-rounded",
+                label: "Drop an image, or click to browse",
+                description: "PNG, JPG, WEBP — extracts dominant colors on drop.",
+                class: "w-full"
+              }, {
+                actions: withCtx(({ open }, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(ssrRenderComponent(_component_UButton, {
+                      icon: "i-material-symbols-upload-rounded",
+                      color: "primary",
+                      variant: "soft",
+                      size: "sm",
+                      onClick: ($event) => open()
+                    }, {
+                      default: withCtx((_2, _push4, _parent4, _scopeId3) => {
+                        if (_push4) {
+                          _push4(` Browse `);
+                        } else {
+                          return [
+                            createTextVNode(" Browse ")
+                          ];
+                        }
+                      }),
+                      _: 2
+                    }, _parent3, _scopeId2));
+                    _push3(ssrRenderComponent(_component_UButton, {
+                      icon: "i-material-symbols-auto-awesome-rounded",
+                      color: "neutral",
+                      variant: "soft",
+                      size: "sm",
+                      onClick: sample
+                    }, {
+                      default: withCtx((_2, _push4, _parent4, _scopeId3) => {
+                        if (_push4) {
+                          _push4(` Try a sample `);
+                        } else {
+                          return [
+                            createTextVNode(" Try a sample ")
+                          ];
+                        }
+                      }),
+                      _: 2
+                    }, _parent3, _scopeId2));
+                  } else {
+                    return [
+                      createVNode(_component_UButton, {
+                        icon: "i-material-symbols-upload-rounded",
+                        color: "primary",
+                        variant: "soft",
+                        size: "sm",
+                        onClick: withModifiers(($event) => open(), ["stop"])
+                      }, {
+                        default: withCtx(() => [
+                          createTextVNode(" Browse ")
+                        ]),
+                        _: 1
+                      }, 8, ["onClick"]),
+                      createVNode(_component_UButton, {
+                        icon: "i-material-symbols-auto-awesome-rounded",
+                        color: "neutral",
+                        variant: "soft",
+                        size: "sm",
+                        onClick: withModifiers(sample, ["stop"])
+                      }, {
+                        default: withCtx(() => [
+                          createTextVNode(" Try a sample ")
+                        ]),
+                        _: 1
+                      })
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+              _push2(`<div class="space-y-4 my-6 relative"${_scopeId}>`);
+              if (unref(running)) {
+                _push2(`<div class="absolute inset-0 z-10 flex items-center justify-center bg-elevated/50 backdrop-blur-sm rounded-lg"${_scopeId}>`);
+                _push2(ssrRenderComponent(_component_UIcon, {
+                  name: "i-material-symbols-progress-activity",
+                  class: "size-8 animate-spin text-primary"
+                }, null, _parent2, _scopeId));
+                _push2(`</div>`);
+              } else {
+                _push2(`<!---->`);
+              }
+              _push2(ssrRenderComponent(_component_Histogram, null, null, _parent2, _scopeId));
+              _push2(`<div class="space-y-1"${_scopeId}><div class="text-xs font-medium text-muted"${_scopeId}> Extracted seeds </div><div${ssrRenderAttrs(mergeProps({ class: "flex flex-wrap gap-1 min-h-[30px]" }, ssrGetDirectiveProps(_ctx, _directive_auto_animate)))}${_scopeId}>`);
+              if (unref(imageSeeds).length === 0) {
+                _push2(`<div class="text-sm text-muted italic"${_scopeId}>None</div>`);
+              } else {
+                _push2(`<!---->`);
+              }
+              _push2(`<!--[-->`);
+              ssrRenderList(unref(imageSeeds), (hex, i) => {
+                _push2(`<div class="h-7 w-7 rounded-md border border-default" style="${ssrRenderStyle({ backgroundColor: hex })}"${ssrRenderAttr("title", hex)}${_scopeId}></div>`);
+              });
+              _push2(`<!--]--></div></div></div><div class="grid gap-x-6 gap-y-4 rounded-lg border border-default p-4 sm:grid-cols-2 mt-4"${_scopeId}>`);
+              _push2(ssrRenderComponent(_component_UFormField, { label: "Clustering algorithm" }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(ssrRenderComponent(_component_USelect, {
+                      "model-value": unref(imgAlgorithm),
+                      items: algorithmItems,
+                      "value-key": "value",
+                      class: "w-full",
+                      "onUpdate:modelValue": ($event) => unref(send)({ algorithm: $event, type: unref(IridisUiActionType).SET_IMAGE_ALGORITHM })
+                    }, null, _parent3, _scopeId2));
+                  } else {
+                    return [
+                      createVNode(_component_USelect, {
+                        "model-value": unref(imgAlgorithm),
+                        items: algorithmItems,
+                        "value-key": "value",
+                        class: "w-full",
+                        "onUpdate:modelValue": ($event) => unref(send)({ algorithm: $event, type: unref(IridisUiActionType).SET_IMAGE_ALGORITHM })
+                      }, null, 8, ["model-value", "onUpdate:modelValue"])
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+              _push2(ssrRenderComponent(_component_UFormField, {
+                label: `Colors (k) · ${unref(imgK)}`
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(ssrRenderComponent(_component_USlider, {
+                      "model-value": unref(imgK),
+                      min: 2,
+                      max: 16,
+                      step: 1,
+                      "onUpdate:modelValue": ($event) => unref(send)({ k: $event, type: unref(IridisUiActionType).SET_IMAGE_K })
+                    }, null, _parent3, _scopeId2));
+                  } else {
+                    return [
+                      createVNode(_component_USlider, {
+                        "model-value": unref(imgK),
+                        min: 2,
+                        max: 16,
+                        step: 1,
+                        "onUpdate:modelValue": ($event) => unref(send)({ k: $event, type: unref(IridisUiActionType).SET_IMAGE_K })
+                      }, null, 8, ["model-value", "onUpdate:modelValue"])
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+              _push2(ssrRenderComponent(_component_UFormField, {
+                label: `Histogram bits · ${unref(imgHistogramBits)}`
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(ssrRenderComponent(_component_USlider, {
+                      "model-value": unref(imgHistogramBits),
+                      min: 3,
+                      max: 7,
+                      step: 1,
+                      "onUpdate:modelValue": ($event) => unref(send)({ bits: $event, type: unref(IridisUiActionType).SET_IMAGE_HISTOGRAM_BITS })
+                    }, null, _parent3, _scopeId2));
+                  } else {
+                    return [
+                      createVNode(_component_USlider, {
+                        "model-value": unref(imgHistogramBits),
+                        min: 3,
+                        max: 7,
+                        step: 1,
+                        "onUpdate:modelValue": ($event) => unref(send)({ bits: $event, type: unref(IridisUiActionType).SET_IMAGE_HISTOGRAM_BITS })
+                      }, null, 8, ["model-value", "onUpdate:modelValue"])
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+              _push2(ssrRenderComponent(_component_UFormField, {
+                label: `ΔE cap · ${unref(imgDeltaECap)}${unref(imgAlgorithm) !== "delta-e" ? " (delta-e only)" : ""}`
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(ssrRenderComponent(_component_USlider, {
+                      "model-value": unref(imgDeltaECap),
+                      min: 16,
+                      max: 256,
+                      step: 8,
+                      disabled: unref(imgAlgorithm) !== "delta-e",
+                      "onUpdate:modelValue": ($event) => unref(send)({ cap: $event, type: unref(IridisUiActionType).SET_IMAGE_DELTA_E_CAP })
+                    }, null, _parent3, _scopeId2));
+                  } else {
+                    return [
+                      createVNode(_component_USlider, {
+                        "model-value": unref(imgDeltaECap),
+                        min: 16,
+                        max: 256,
+                        step: 8,
+                        disabled: unref(imgAlgorithm) !== "delta-e",
+                        "onUpdate:modelValue": ($event) => unref(send)({ cap: $event, type: unref(IridisUiActionType).SET_IMAGE_DELTA_E_CAP })
+                      }, null, 8, ["model-value", "disabled", "onUpdate:modelValue"])
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+              _push2(ssrRenderComponent(_component_UFormField, {
+                label: `Harmonize threshold · ${unref(imgHarmonize)}`
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(ssrRenderComponent(_component_USlider, {
+                      "model-value": unref(imgHarmonize),
+                      min: 0,
+                      max: 30,
+                      step: 1,
+                      "onUpdate:modelValue": ($event) => unref(send)({ threshold: $event, type: unref(IridisUiActionType).SET_IMAGE_HARMONIZE })
+                    }, null, _parent3, _scopeId2));
+                  } else {
+                    return [
+                      createVNode(_component_USlider, {
+                        "model-value": unref(imgHarmonize),
+                        min: 0,
+                        max: 30,
+                        step: 1,
+                        "onUpdate:modelValue": ($event) => unref(send)({ threshold: $event, type: unref(IridisUiActionType).SET_IMAGE_HARMONIZE })
+                      }, null, 8, ["model-value", "onUpdate:modelValue"])
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+              _push2(ssrRenderComponent(_component_UFormField, {
+                label: `Lightness range · ${unref(imgLightnessRange)[0].toFixed(2)}–${unref(imgLightnessRange)[1].toFixed(2)}`
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(ssrRenderComponent(_component_USlider, {
+                      "model-value": unref(imgLightnessRange),
+                      min: 0,
+                      max: 1,
+                      step: 0.01,
+                      "onUpdate:modelValue": ($event) => unref(send)({ range: $event, type: unref(IridisUiActionType).SET_IMAGE_LIGHTNESS_RANGE })
+                    }, null, _parent3, _scopeId2));
+                  } else {
+                    return [
+                      createVNode(_component_USlider, {
+                        "model-value": unref(imgLightnessRange),
+                        min: 0,
+                        max: 1,
+                        step: 0.01,
+                        "onUpdate:modelValue": ($event) => unref(send)({ range: $event, type: unref(IridisUiActionType).SET_IMAGE_LIGHTNESS_RANGE })
+                      }, null, 8, ["model-value", "onUpdate:modelValue"])
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+              _push2(ssrRenderComponent(_component_UFormField, {
+                label: `Chroma range · ${unref(imgChromaRange)[0].toFixed(2)}–${unref(imgChromaRange)[1].toFixed(2)}`
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(ssrRenderComponent(_component_USlider, {
+                      "model-value": unref(imgChromaRange),
+                      min: 0,
+                      max: 0.5,
+                      step: 0.01,
+                      "onUpdate:modelValue": ($event) => unref(send)({ range: $event, type: unref(IridisUiActionType).SET_IMAGE_CHROMA_RANGE })
+                    }, null, _parent3, _scopeId2));
+                  } else {
+                    return [
+                      createVNode(_component_USlider, {
+                        "model-value": unref(imgChromaRange),
+                        min: 0,
+                        max: 0.5,
+                        step: 0.01,
+                        "onUpdate:modelValue": ($event) => unref(send)({ range: $event, type: unref(IridisUiActionType).SET_IMAGE_CHROMA_RANGE })
+                      }, null, 8, ["model-value", "onUpdate:modelValue"])
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+              _push2(`</div></div>`);
+            }
+            _push2(`</div>`);
+          } else {
+            return [
+              withDirectives((openBlock(), createBlock("div", { class: "mx-auto w-full max-w-4xl space-y-5" }, [
+                createVNode(_component_ModeSwitch, { class: "mb-8" }),
+                unref(mode) === "picker" ? (openBlock(), createBlock("p", {
+                  key: 0,
+                  class: "text-sm text-muted"
+                }, " Feed the engine any number of seeds — pin one to a role to skip the auto-resolver entirely. ")) : (openBlock(), createBlock("p", {
+                  key: 1,
+                  class: "text-sm text-muted"
+                }, " Drop an image or try a sample to generate a palette. Tune the extraction knobs below. ")),
+                unref(mode) === "picker" ? withDirectives((openBlock(), createBlock(_component_BalancedWrap, {
+                  key: 2,
+                  items: [...unref(pickerSeeds), { isAddBtn: true }],
+                  "min-width": 210,
+                  gap: 12,
+                  class: "rounded-lg border-2 border-dashed border-default p-4"
+                }, {
+                  default: withCtx(({ item: seed, index: i }) => [
+                    seed.isAddBtn ? (openBlock(), createBlock("div", {
+                      key: 0,
+                      class: "flex min-h-full items-center justify-center flex-1 rounded-lg border border-transparent p-2.5"
+                    }, [
+                      createVNode(_component_UButton, {
+                        icon: "i-material-symbols-add-rounded",
+                        color: "primary",
+                        variant: "soft",
+                        size: "sm",
+                        disabled: unref(pickerSeeds).length >= 32,
+                        onClick: ($event) => unref(send)({ type: unref(IridisUiActionType).ADD_SEED })
+                      }, {
+                        default: withCtx(() => [
+                          createTextVNode(" Add seed ")
+                        ]),
+                        _: 1
+                      }, 8, ["disabled", "onClick"])
+                    ])) : (openBlock(), createBlock("div", {
+                      key: 1,
+                      class: "flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5 flex-1"
+                    }, [
+                      createVNode("div", { class: "flex items-center gap-2" }, [
+                        createVNode("input", {
+                          value: seed.hex,
+                          type: "color",
+                          class: "h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent flex-none",
+                          onChange: ($event) => unref(send)({ type: unref(IridisUiActionType).SET_SEED, index: i, hex: $event.target.value })
+                        }, null, 40, ["value", "onChange"]),
+                        createVNode("div", { class: "flex flex-col min-w-0 flex-1" }, [
+                          createVNode("span", { class: "font-mono text-xs text-muted truncate" }, toDisplayString(seed.hex), 1),
+                          createVNode(_component_UButton, {
+                            icon: "i-material-symbols-close-rounded",
+                            color: "neutral",
+                            variant: "link",
+                            size: "xs",
+                            class: "-ml-1.5 p-0 self-start",
+                            disabled: unref(pickerSeeds).length <= 1,
+                            onClick: ($event) => unref(send)({ type: unref(IridisUiActionType).REMOVE_SEED, index: i })
+                          }, {
+                            default: withCtx(() => [
+                              createTextVNode(" Remove ")
+                            ]),
+                            _: 1
+                          }, 8, ["disabled", "onClick"])
+                        ])
+                      ]),
+                      createVNode(_component_USelect, {
+                        "model-value": seed.role ?? UNPINNED,
+                        items: [{ label: "Unpinned", value: UNPINNED }, ...unref(pinnableRoles).map((r) => ({ label: r, value: r, disabled: unref(pickerSeeds).some((s, sIdx) => sIdx !== i && s.role === r) }))],
+                        "value-key": "value",
+                        size: "xs",
+                        class: "w-full",
+                        "onUpdate:modelValue": ($event) => unref(send)({ index: i, role: $event === UNPINNED ? void 0 : $event, type: unref(IridisUiActionType).PIN_SEED_ROLE })
+                      }, null, 8, ["model-value", "items", "onUpdate:modelValue"])
+                    ]))
+                  ]),
+                  _: 1
+                }, 8, ["items"])), [
+                  [_directive_auto_animate]
+                ]) : (openBlock(), createBlock("div", {
+                  key: 3,
+                  class: "space-y-3"
+                }, [
+                  createVNode(_component_UFileUpload, {
+                    modelValue: uploadedFile.value,
+                    "onUpdate:modelValue": ($event) => uploadedFile.value = $event,
+                    accept: "image/*",
+                    icon: "i-material-symbols-upload-rounded",
+                    label: "Drop an image, or click to browse",
+                    description: "PNG, JPG, WEBP — extracts dominant colors on drop.",
+                    class: "w-full"
+                  }, {
+                    actions: withCtx(({ open }) => [
+                      createVNode(_component_UButton, {
+                        icon: "i-material-symbols-upload-rounded",
+                        color: "primary",
+                        variant: "soft",
+                        size: "sm",
+                        onClick: withModifiers(($event) => open(), ["stop"])
+                      }, {
+                        default: withCtx(() => [
+                          createTextVNode(" Browse ")
+                        ]),
+                        _: 1
+                      }, 8, ["onClick"]),
+                      createVNode(_component_UButton, {
+                        icon: "i-material-symbols-auto-awesome-rounded",
+                        color: "neutral",
+                        variant: "soft",
+                        size: "sm",
+                        onClick: withModifiers(sample, ["stop"])
+                      }, {
+                        default: withCtx(() => [
+                          createTextVNode(" Try a sample ")
+                        ]),
+                        _: 1
+                      })
+                    ]),
+                    _: 1
+                  }, 8, ["modelValue", "onUpdate:modelValue"]),
+                  createVNode("div", { class: "space-y-4 my-6 relative" }, [
+                    unref(running) ? (openBlock(), createBlock("div", {
+                      key: 0,
+                      class: "absolute inset-0 z-10 flex items-center justify-center bg-elevated/50 backdrop-blur-sm rounded-lg"
+                    }, [
+                      createVNode(_component_UIcon, {
+                        name: "i-material-symbols-progress-activity",
+                        class: "size-8 animate-spin text-primary"
+                      })
+                    ])) : createCommentVNode("", true),
+                    createVNode(_component_Histogram),
+                    createVNode("div", { class: "space-y-1" }, [
+                      createVNode("div", { class: "text-xs font-medium text-muted" }, " Extracted seeds "),
+                      withDirectives((openBlock(), createBlock("div", { class: "flex flex-wrap gap-1 min-h-[30px]" }, [
+                        unref(imageSeeds).length === 0 ? (openBlock(), createBlock("div", {
+                          key: 0,
+                          class: "text-sm text-muted italic"
+                        }, "None")) : createCommentVNode("", true),
+                        (openBlock(true), createBlock(Fragment, null, renderList(unref(imageSeeds), (hex, i) => {
+                          return openBlock(), createBlock("div", {
+                            key: i,
+                            class: "h-7 w-7 rounded-md border border-default",
+                            style: { backgroundColor: hex },
+                            title: hex
+                          }, null, 12, ["title"]);
+                        }), 128))
+                      ])), [
+                        [_directive_auto_animate]
+                      ])
+                    ])
+                  ]),
+                  createVNode("div", { class: "grid gap-x-6 gap-y-4 rounded-lg border border-default p-4 sm:grid-cols-2 mt-4" }, [
+                    createVNode(_component_UFormField, { label: "Clustering algorithm" }, {
+                      default: withCtx(() => [
+                        createVNode(_component_USelect, {
+                          "model-value": unref(imgAlgorithm),
+                          items: algorithmItems,
+                          "value-key": "value",
+                          class: "w-full",
+                          "onUpdate:modelValue": ($event) => unref(send)({ algorithm: $event, type: unref(IridisUiActionType).SET_IMAGE_ALGORITHM })
+                        }, null, 8, ["model-value", "onUpdate:modelValue"])
+                      ]),
+                      _: 1
+                    }),
+                    createVNode(_component_UFormField, {
+                      label: `Colors (k) · ${unref(imgK)}`
+                    }, {
+                      default: withCtx(() => [
+                        createVNode(_component_USlider, {
+                          "model-value": unref(imgK),
+                          min: 2,
+                          max: 16,
+                          step: 1,
+                          "onUpdate:modelValue": ($event) => unref(send)({ k: $event, type: unref(IridisUiActionType).SET_IMAGE_K })
+                        }, null, 8, ["model-value", "onUpdate:modelValue"])
+                      ]),
+                      _: 1
+                    }, 8, ["label"]),
+                    createVNode(_component_UFormField, {
+                      label: `Histogram bits · ${unref(imgHistogramBits)}`
+                    }, {
+                      default: withCtx(() => [
+                        createVNode(_component_USlider, {
+                          "model-value": unref(imgHistogramBits),
+                          min: 3,
+                          max: 7,
+                          step: 1,
+                          "onUpdate:modelValue": ($event) => unref(send)({ bits: $event, type: unref(IridisUiActionType).SET_IMAGE_HISTOGRAM_BITS })
+                        }, null, 8, ["model-value", "onUpdate:modelValue"])
+                      ]),
+                      _: 1
+                    }, 8, ["label"]),
+                    createVNode(_component_UFormField, {
+                      label: `ΔE cap · ${unref(imgDeltaECap)}${unref(imgAlgorithm) !== "delta-e" ? " (delta-e only)" : ""}`
+                    }, {
+                      default: withCtx(() => [
+                        createVNode(_component_USlider, {
+                          "model-value": unref(imgDeltaECap),
+                          min: 16,
+                          max: 256,
+                          step: 8,
+                          disabled: unref(imgAlgorithm) !== "delta-e",
+                          "onUpdate:modelValue": ($event) => unref(send)({ cap: $event, type: unref(IridisUiActionType).SET_IMAGE_DELTA_E_CAP })
+                        }, null, 8, ["model-value", "disabled", "onUpdate:modelValue"])
+                      ]),
+                      _: 1
+                    }, 8, ["label"]),
+                    createVNode(_component_UFormField, {
+                      label: `Harmonize threshold · ${unref(imgHarmonize)}`
+                    }, {
+                      default: withCtx(() => [
+                        createVNode(_component_USlider, {
+                          "model-value": unref(imgHarmonize),
+                          min: 0,
+                          max: 30,
+                          step: 1,
+                          "onUpdate:modelValue": ($event) => unref(send)({ threshold: $event, type: unref(IridisUiActionType).SET_IMAGE_HARMONIZE })
+                        }, null, 8, ["model-value", "onUpdate:modelValue"])
+                      ]),
+                      _: 1
+                    }, 8, ["label"]),
+                    createVNode(_component_UFormField, {
+                      label: `Lightness range · ${unref(imgLightnessRange)[0].toFixed(2)}–${unref(imgLightnessRange)[1].toFixed(2)}`
+                    }, {
+                      default: withCtx(() => [
+                        createVNode(_component_USlider, {
+                          "model-value": unref(imgLightnessRange),
+                          min: 0,
+                          max: 1,
+                          step: 0.01,
+                          "onUpdate:modelValue": ($event) => unref(send)({ range: $event, type: unref(IridisUiActionType).SET_IMAGE_LIGHTNESS_RANGE })
+                        }, null, 8, ["model-value", "onUpdate:modelValue"])
+                      ]),
+                      _: 1
+                    }, 8, ["label"]),
+                    createVNode(_component_UFormField, {
+                      label: `Chroma range · ${unref(imgChromaRange)[0].toFixed(2)}–${unref(imgChromaRange)[1].toFixed(2)}`
+                    }, {
+                      default: withCtx(() => [
+                        createVNode(_component_USlider, {
+                          "model-value": unref(imgChromaRange),
+                          min: 0,
+                          max: 0.5,
+                          step: 0.01,
+                          "onUpdate:modelValue": ($event) => unref(send)({ range: $event, type: unref(IridisUiActionType).SET_IMAGE_CHROMA_RANGE })
+                        }, null, 8, ["model-value", "onUpdate:modelValue"])
+                      ]),
+                      _: 1
+                    }, 8, ["label"])
+                  ])
+                ]))
+              ])), [
+                [_directive_auto_animate]
+              ])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(ssrRenderComponent(_component_UCard, null, {
+        header: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2"${_scopeId}><span${_scopeId}></span><span class="flex items-center justify-center gap-1.5 text-center font-semibold text-highlighted"${_scopeId}>`);
+            _push2(ssrRenderComponent(_component_UIcon, {
+              name: "i-material-symbols-settings-rounded",
+              class: "size-4 text-primary"
+            }, null, _parent2, _scopeId));
+            _push2(` Schema &amp; Compliance </span><span${_scopeId}></span></div>`);
+          } else {
+            return [
+              createVNode("div", { class: "grid grid-cols-[1fr_auto_1fr] items-center gap-2" }, [
+                createVNode("span"),
+                createVNode("span", { class: "flex items-center justify-center gap-1.5 text-center font-semibold text-highlighted" }, [
+                  createVNode(_component_UIcon, {
+                    name: "i-material-symbols-settings-rounded",
+                    class: "size-4 text-primary"
+                  }),
+                  createTextVNode(" Schema & Compliance ")
+                ]),
+                createVNode("span")
+              ])
+            ];
+          }
+        }),
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="space-y-4"${_scopeId}><div class="grid gap-4 sm:grid-cols-2"${_scopeId}><div class="space-y-4"${_scopeId}><div class="space-y-2"${_scopeId}><p class="text-xs font-medium uppercase tracking-wide text-dimmed"${_scopeId}> Role schema </p><div class="w-full space-y-1 pt-2"${_scopeId}>`);
+            _push2(ssrRenderComponent(_component_USlider, {
+              "model-value": schemaItems.indexOf(unref(schemaName)),
+              min: 0,
+              max: schemaItems.length - 1,
+              step: 1,
+              "onUpdate:modelValue": ($event) => unref(send)({ type: unref(IridisUiActionType).SET_SCHEMA, schemaName: schemaItems[$event] })
+            }, null, _parent2, _scopeId));
+            _push2(`<div class="flex w-full justify-between text-[11px] font-medium text-dimmed"${_scopeId}><!--[-->`);
+            ssrRenderList(schemaItems, (s, i) => {
+              _push2(`<span class="${ssrRenderClass(unref(schemaName) === s ? "text-primary" : "cursor-pointer hover:text-muted")}"${_scopeId}>${ssrInterpolate(s.replace("iridis-", ""))}</span>`);
+            });
+            _push2(`<!--]--></div></div><p class="text-sm text-muted"${_scopeId}> How many roles to resolve — <strong class="text-highlighted"${_scopeId}>iridis-4</strong> is the minimal set, <strong class="text-highlighted"${_scopeId}>iridis-32</strong> resolves the full token surface this site renders. </p></div><div class="space-y-2"${_scopeId}><p class="text-xs font-medium uppercase tracking-wide text-dimmed"${_scopeId}> Color Space </p>`);
+            _push2(ssrRenderComponent(_component_USelect, {
+              "model-value": unref(colorSpace),
+              items: [{ label: "sRGB", value: "srgb" }, { label: "Display P3", value: "displayP3" }],
+              "value-key": "value",
+              class: "w-full",
+              "onUpdate:modelValue": ($event) => {
+                unref(send)({ colorSpace: $event, type: unref(IridisUiActionType).SET_COLOR_SPACE });
+                unref(send)({ index: 3, type: unref(IridisUiActionType).SELECT_CARD });
+              }
+            }, null, _parent2, _scopeId));
+            _push2(`<p class="text-sm text-muted"${_scopeId}> The color space used when exporting CSS variables. <strong class="text-highlighted"${_scopeId}>Display P3</strong> allows for much wider gamut colors on compatible displays. </p></div></div><div class="space-y-4"${_scopeId}><div class="space-y-2"${_scopeId}><p class="text-xs font-medium uppercase tracking-wide text-dimmed"${_scopeId}> Base contrast target </p>`);
+            _push2(ssrRenderComponent(_component_UFormField, { label: "Compliance strictness" }, {
+              default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`<div class="w-full space-y-1 pt-2"${_scopeId2}>`);
+                  _push3(ssrRenderComponent(_component_USlider, {
+                    "model-value": unref(contrastStrictness),
+                    min: 0,
+                    max: 2,
+                    step: 1,
+                    "onUpdate:modelValue": ($event) => {
+                      unref(send)({ strictness: $event, type: unref(IridisUiActionType).SET_CONTRAST_STRICTNESS });
+                      unref(send)({ index: 4, type: unref(IridisUiActionType).SELECT_CARD });
+                    }
+                  }, null, _parent3, _scopeId2));
+                  _push3(`<div class="flex w-full justify-between text-[11px] font-medium text-dimmed"${_scopeId2}><span class="${ssrRenderClass(unref(contrastStrictness) === 0 ? "text-primary" : "cursor-pointer hover:text-muted")}"${_scopeId2}>AA</span><span class="${ssrRenderClass(unref(contrastStrictness) === 1 ? "text-primary" : "cursor-pointer hover:text-muted")}"${_scopeId2}>AAA</span><span class="${ssrRenderClass(unref(contrastStrictness) === 2 ? "text-primary" : "cursor-pointer hover:text-muted")}"${_scopeId2}>APCA</span></div></div>`);
+                } else {
+                  return [
+                    createVNode("div", { class: "w-full space-y-1 pt-2" }, [
+                      createVNode(_component_USlider, {
+                        "model-value": unref(contrastStrictness),
+                        min: 0,
+                        max: 2,
+                        step: 1,
+                        "onUpdate:modelValue": ($event) => {
+                          unref(send)({ strictness: $event, type: unref(IridisUiActionType).SET_CONTRAST_STRICTNESS });
+                          unref(send)({ index: 4, type: unref(IridisUiActionType).SELECT_CARD });
+                        }
+                      }, null, 8, ["model-value", "onUpdate:modelValue"]),
+                      createVNode("div", { class: "flex w-full justify-between text-[11px] font-medium text-dimmed" }, [
+                        createVNode("span", {
+                          class: unref(contrastStrictness) === 0 ? "text-primary" : "cursor-pointer hover:text-muted",
+                          onClick: () => {
+                            unref(send)({ strictness: 0, type: unref(IridisUiActionType).SET_CONTRAST_STRICTNESS });
+                            unref(send)({ index: 4, type: unref(IridisUiActionType).SELECT_CARD });
+                          }
+                        }, "AA", 10, ["onClick"]),
+                        createVNode("span", {
+                          class: unref(contrastStrictness) === 1 ? "text-primary" : "cursor-pointer hover:text-muted",
+                          onClick: () => {
+                            unref(send)({ strictness: 1, type: unref(IridisUiActionType).SET_CONTRAST_STRICTNESS });
+                            unref(send)({ index: 4, type: unref(IridisUiActionType).SELECT_CARD });
+                          }
+                        }, "AAA", 10, ["onClick"]),
+                        createVNode("span", {
+                          class: unref(contrastStrictness) === 2 ? "text-primary" : "cursor-pointer hover:text-muted",
+                          onClick: () => {
+                            unref(send)({ strictness: 2, type: unref(IridisUiActionType).SET_CONTRAST_STRICTNESS });
+                            unref(send)({ index: 4, type: unref(IridisUiActionType).SELECT_CARD });
+                          }
+                        }, "APCA", 10, ["onClick"])
+                      ])
+                    ])
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(`<p class="text-sm text-muted"${_scopeId}>`);
+            if (unref(contrastStrictness) === 0) {
+              _push2(`<!--[--><strong class="text-highlighted"${_scopeId}>AA</strong> is the WCAG 2.1 minimum: 4.5:1 (3:1 for large text). <!--]-->`);
+            } else if (unref(contrastStrictness) === 1) {
+              _push2(`<!--[--><strong class="text-highlighted"${_scopeId}>AAA</strong> is the enhanced WCAG 2.1 level: 7:1 (4.5:1 for large text). <!--]-->`);
+            } else {
+              _push2(`<!--[--><strong class="text-highlighted"${_scopeId}>APCA</strong> is the modern perceptual contrast algorithm (target Lc). <!--]-->`);
+            }
+            _push2(`</p></div><div class="space-y-2"${_scopeId}><div class="flex items-center justify-between gap-3 rounded-md border border-default p-2.5 pl-3"${_scopeId}><div class="flex flex-col"${_scopeId}><span class="text-sm font-medium"${_scopeId}>Auto-correct CVD failures</span><span class="text-xs text-muted"${_scopeId}>Also always-on — adjusts the palette itself, same as the level above.</span></div>`);
+            _push2(ssrRenderComponent(_component_USwitch, {
+              "model-value": unref(cvdCorrect),
+              "onUpdate:modelValue": ($event) => {
+                unref(send)({ cvdCorrect: $event, type: unref(IridisUiActionType).SET_CVD_CORRECT });
+                unref(send)({ index: 7, type: unref(IridisUiActionType).SELECT_CARD });
+              }
+            }, null, _parent2, _scopeId));
+            _push2(`</div><div class="space-y-1.5 rounded-md border border-dashed border-primary/50 bg-primary/5 p-2.5 pl-3"${_scopeId}><div class="flex items-center justify-between gap-3"${_scopeId}><span class="text-sm font-medium"${_scopeId}>Simulate CVD vision</span>`);
+            if (unref(cvdPreviewTypes).size > 0) {
+              _push2(ssrRenderComponent(_component_UButton, {
+                label: "Off",
+                color: "neutral",
+                variant: "ghost",
+                size: "xs",
+                onClick: ($event) => unref(cvdPreviewTypes).forEach((t) => unref(toggleCvdPreviewType)(t))
+              }, null, _parent2, _scopeId));
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(`</div>`);
+            _push2(ssrRenderComponent(_component_BalancedWrap, {
+              items: [
+                { label: "Protanopia", value: "protanopia" },
+                { label: "Deuteranopia", value: "deuteranopia" },
+                { label: "Tritanopia", value: "tritanopia" },
+                { label: "Achromatopsia", value: "achromatopsia" }
+              ],
+              "min-width": 80,
+              gap: 4
+            }, {
+              default: withCtx(({ item: t }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(ssrRenderComponent(_component_UButton, {
+                    label: t.label,
+                    size: "xs",
+                    color: unref(cvdPreviewTypes).has(t.value) ? "primary" : "neutral",
+                    variant: unref(cvdPreviewTypes).has(t.value) ? "solid" : "soft",
+                    class: "flex-1 justify-center",
+                    onClick: ($event) => unref(toggleCvdPreviewType)(t.value)
+                  }, null, _parent3, _scopeId2));
+                } else {
+                  return [
+                    createVNode(_component_UButton, {
+                      label: t.label,
+                      size: "xs",
+                      color: unref(cvdPreviewTypes).has(t.value) ? "primary" : "neutral",
+                      variant: unref(cvdPreviewTypes).has(t.value) ? "solid" : "soft",
+                      class: "flex-1 justify-center",
+                      onClick: ($event) => unref(toggleCvdPreviewType)(t.value)
+                    }, null, 8, ["label", "color", "variant", "onClick"])
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(`<p class="text-xs text-muted"${_scopeId}> Changes how this page looks to you — it does not touch the palette. </p></div></div></div></div><div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mt-6 pt-4 border-t border-default/50"${_scopeId}><a href="https://www.w3.org/WAI/WCAG21/quickref/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-primary underline underline-offset-2 hover:text-primary/80"${_scopeId}> WCAG 2.1 quick reference ↗ </a>`);
+            if (stageSummaries.value.length) {
+              _push2(`<div class="flex flex-wrap justify-end gap-1.5"${_scopeId}><!--[-->`);
+              ssrRenderList(stageSummaries.value, (s) => {
+                _push2(ssrRenderComponent(_component_UBadge, {
+                  key: s.key,
+                  color: s.color,
+                  variant: "soft",
+                  size: "sm"
+                }, {
+                  default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                    if (_push3) {
+                      _push3(`${ssrInterpolate(s.label)}: ${ssrInterpolate(s.text)}`);
+                    } else {
+                      return [
+                        createTextVNode(toDisplayString(s.label) + ": " + toDisplayString(s.text), 1)
+                      ];
+                    }
+                  }),
+                  _: 2
+                }, _parent2, _scopeId));
+              });
+              _push2(`<!--]--></div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(`</div></div>`);
+          } else {
+            return [
+              createVNode("div", { class: "space-y-4" }, [
+                createVNode("div", { class: "grid gap-4 sm:grid-cols-2" }, [
+                  createVNode("div", { class: "space-y-4" }, [
+                    createVNode("div", { class: "space-y-2" }, [
+                      createVNode("p", { class: "text-xs font-medium uppercase tracking-wide text-dimmed" }, " Role schema "),
+                      createVNode("div", { class: "w-full space-y-1 pt-2" }, [
+                        createVNode(_component_USlider, {
+                          "model-value": schemaItems.indexOf(unref(schemaName)),
+                          min: 0,
+                          max: schemaItems.length - 1,
+                          step: 1,
+                          "onUpdate:modelValue": ($event) => unref(send)({ type: unref(IridisUiActionType).SET_SCHEMA, schemaName: schemaItems[$event] })
+                        }, null, 8, ["model-value", "max", "onUpdate:modelValue"]),
+                        createVNode("div", { class: "flex w-full justify-between text-[11px] font-medium text-dimmed" }, [
+                          (openBlock(), createBlock(Fragment, null, renderList(schemaItems, (s, i) => {
+                            return createVNode("span", {
+                              key: s,
+                              class: unref(schemaName) === s ? "text-primary" : "cursor-pointer hover:text-muted",
+                              onClick: ($event) => unref(send)({ type: unref(IridisUiActionType).SET_SCHEMA, schemaName: s })
+                            }, toDisplayString(s.replace("iridis-", "")), 11, ["onClick"]);
+                          }), 64))
+                        ])
+                      ]),
+                      createVNode("p", { class: "text-sm text-muted" }, [
+                        createTextVNode(" How many roles to resolve — "),
+                        createVNode("strong", { class: "text-highlighted" }, "iridis-4"),
+                        createTextVNode(" is the minimal set, "),
+                        createVNode("strong", { class: "text-highlighted" }, "iridis-32"),
+                        createTextVNode(" resolves the full token surface this site renders. ")
+                      ])
+                    ]),
+                    createVNode("div", { class: "space-y-2" }, [
+                      createVNode("p", { class: "text-xs font-medium uppercase tracking-wide text-dimmed" }, " Color Space "),
+                      createVNode(_component_USelect, {
+                        "model-value": unref(colorSpace),
+                        items: [{ label: "sRGB", value: "srgb" }, { label: "Display P3", value: "displayP3" }],
+                        "value-key": "value",
+                        class: "w-full",
+                        "onUpdate:modelValue": ($event) => {
+                          unref(send)({ colorSpace: $event, type: unref(IridisUiActionType).SET_COLOR_SPACE });
+                          unref(send)({ index: 3, type: unref(IridisUiActionType).SELECT_CARD });
+                        }
+                      }, null, 8, ["model-value", "onUpdate:modelValue"]),
+                      createVNode("p", { class: "text-sm text-muted" }, [
+                        createTextVNode(" The color space used when exporting CSS variables. "),
+                        createVNode("strong", { class: "text-highlighted" }, "Display P3"),
+                        createTextVNode(" allows for much wider gamut colors on compatible displays. ")
+                      ])
+                    ])
+                  ]),
+                  createVNode("div", { class: "space-y-4" }, [
+                    createVNode("div", { class: "space-y-2" }, [
+                      createVNode("p", { class: "text-xs font-medium uppercase tracking-wide text-dimmed" }, " Base contrast target "),
+                      createVNode(_component_UFormField, { label: "Compliance strictness" }, {
+                        default: withCtx(() => [
+                          createVNode("div", { class: "w-full space-y-1 pt-2" }, [
+                            createVNode(_component_USlider, {
+                              "model-value": unref(contrastStrictness),
+                              min: 0,
+                              max: 2,
+                              step: 1,
+                              "onUpdate:modelValue": ($event) => {
+                                unref(send)({ strictness: $event, type: unref(IridisUiActionType).SET_CONTRAST_STRICTNESS });
+                                unref(send)({ index: 4, type: unref(IridisUiActionType).SELECT_CARD });
+                              }
+                            }, null, 8, ["model-value", "onUpdate:modelValue"]),
+                            createVNode("div", { class: "flex w-full justify-between text-[11px] font-medium text-dimmed" }, [
+                              createVNode("span", {
+                                class: unref(contrastStrictness) === 0 ? "text-primary" : "cursor-pointer hover:text-muted",
+                                onClick: () => {
+                                  unref(send)({ strictness: 0, type: unref(IridisUiActionType).SET_CONTRAST_STRICTNESS });
+                                  unref(send)({ index: 4, type: unref(IridisUiActionType).SELECT_CARD });
+                                }
+                              }, "AA", 10, ["onClick"]),
+                              createVNode("span", {
+                                class: unref(contrastStrictness) === 1 ? "text-primary" : "cursor-pointer hover:text-muted",
+                                onClick: () => {
+                                  unref(send)({ strictness: 1, type: unref(IridisUiActionType).SET_CONTRAST_STRICTNESS });
+                                  unref(send)({ index: 4, type: unref(IridisUiActionType).SELECT_CARD });
+                                }
+                              }, "AAA", 10, ["onClick"]),
+                              createVNode("span", {
+                                class: unref(contrastStrictness) === 2 ? "text-primary" : "cursor-pointer hover:text-muted",
+                                onClick: () => {
+                                  unref(send)({ strictness: 2, type: unref(IridisUiActionType).SET_CONTRAST_STRICTNESS });
+                                  unref(send)({ index: 4, type: unref(IridisUiActionType).SELECT_CARD });
+                                }
+                              }, "APCA", 10, ["onClick"])
+                            ])
+                          ])
+                        ]),
+                        _: 1
+                      }),
+                      createVNode("p", { class: "text-sm text-muted" }, [
+                        unref(contrastStrictness) === 0 ? (openBlock(), createBlock(Fragment, { key: 0 }, [
+                          createVNode("strong", { class: "text-highlighted" }, "AA"),
+                          createTextVNode(" is the WCAG 2.1 minimum: 4.5:1 (3:1 for large text). ")
+                        ], 64)) : unref(contrastStrictness) === 1 ? (openBlock(), createBlock(Fragment, { key: 1 }, [
+                          createVNode("strong", { class: "text-highlighted" }, "AAA"),
+                          createTextVNode(" is the enhanced WCAG 2.1 level: 7:1 (4.5:1 for large text). ")
+                        ], 64)) : (openBlock(), createBlock(Fragment, { key: 2 }, [
+                          createVNode("strong", { class: "text-highlighted" }, "APCA"),
+                          createTextVNode(" is the modern perceptual contrast algorithm (target Lc). ")
+                        ], 64))
+                      ])
+                    ]),
+                    createVNode("div", { class: "space-y-2" }, [
+                      createVNode("div", { class: "flex items-center justify-between gap-3 rounded-md border border-default p-2.5 pl-3" }, [
+                        createVNode("div", { class: "flex flex-col" }, [
+                          createVNode("span", { class: "text-sm font-medium" }, "Auto-correct CVD failures"),
+                          createVNode("span", { class: "text-xs text-muted" }, "Also always-on — adjusts the palette itself, same as the level above.")
+                        ]),
+                        createVNode(_component_USwitch, {
+                          "model-value": unref(cvdCorrect),
+                          "onUpdate:modelValue": ($event) => {
+                            unref(send)({ cvdCorrect: $event, type: unref(IridisUiActionType).SET_CVD_CORRECT });
+                            unref(send)({ index: 7, type: unref(IridisUiActionType).SELECT_CARD });
+                          }
+                        }, null, 8, ["model-value", "onUpdate:modelValue"])
+                      ]),
+                      createVNode("div", { class: "space-y-1.5 rounded-md border border-dashed border-primary/50 bg-primary/5 p-2.5 pl-3" }, [
+                        createVNode("div", { class: "flex items-center justify-between gap-3" }, [
+                          createVNode("span", { class: "text-sm font-medium" }, "Simulate CVD vision"),
+                          unref(cvdPreviewTypes).size > 0 ? (openBlock(), createBlock(_component_UButton, {
+                            key: 0,
+                            label: "Off",
+                            color: "neutral",
+                            variant: "ghost",
+                            size: "xs",
+                            onClick: ($event) => unref(cvdPreviewTypes).forEach((t) => unref(toggleCvdPreviewType)(t))
+                          }, null, 8, ["onClick"])) : createCommentVNode("", true)
+                        ]),
+                        createVNode(_component_BalancedWrap, {
+                          items: [
+                            { label: "Protanopia", value: "protanopia" },
+                            { label: "Deuteranopia", value: "deuteranopia" },
+                            { label: "Tritanopia", value: "tritanopia" },
+                            { label: "Achromatopsia", value: "achromatopsia" }
+                          ],
+                          "min-width": 80,
+                          gap: 4
+                        }, {
+                          default: withCtx(({ item: t }) => [
+                            createVNode(_component_UButton, {
+                              label: t.label,
+                              size: "xs",
+                              color: unref(cvdPreviewTypes).has(t.value) ? "primary" : "neutral",
+                              variant: unref(cvdPreviewTypes).has(t.value) ? "solid" : "soft",
+                              class: "flex-1 justify-center",
+                              onClick: ($event) => unref(toggleCvdPreviewType)(t.value)
+                            }, null, 8, ["label", "color", "variant", "onClick"])
+                          ]),
+                          _: 1
+                        }),
+                        createVNode("p", { class: "text-xs text-muted" }, " Changes how this page looks to you — it does not touch the palette. ")
+                      ])
+                    ])
+                  ])
+                ]),
+                createVNode("div", { class: "flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mt-6 pt-4 border-t border-default/50" }, [
+                  createVNode("a", {
+                    href: "https://www.w3.org/WAI/WCAG21/quickref/",
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    class: "inline-flex items-center gap-1 text-sm text-primary underline underline-offset-2 hover:text-primary/80"
+                  }, " WCAG 2.1 quick reference ↗ "),
+                  stageSummaries.value.length ? (openBlock(), createBlock("div", {
+                    key: 0,
+                    class: "flex flex-wrap justify-end gap-1.5"
+                  }, [
+                    (openBlock(true), createBlock(Fragment, null, renderList(stageSummaries.value, (s) => {
+                      return openBlock(), createBlock(_component_UBadge, {
+                        key: s.key,
+                        color: s.color,
+                        variant: "soft",
+                        size: "sm"
+                      }, {
+                        default: withCtx(() => [
+                          createTextVNode(toDisplayString(s.label) + ": " + toDisplayString(s.text), 1)
+                        ]),
+                        _: 2
+                      }, 1032, ["color"]);
+                    }), 128))
+                  ])) : createCommentVNode("", true)
+                ])
+              ])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(`</div>`);
+    };
+  }
+});
+const _sfc_setup$k = _sfc_main$k.setup;
+_sfc_main$k.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/PaletteControls.vue");
+  return _sfc_setup$k ? _sfc_setup$k(props, ctx) : void 0;
+};
+const __nuxt_component_3 = Object.assign(_sfc_main$k, { __name: "PaletteControls" });
+const _sfc_main$j = /* @__PURE__ */ defineComponent({
+  __name: "CylinderCarousel",
+  __ssrInlineRender: true,
+  props: {
+    items: {}
+  },
+  setup(__props) {
+    const props = __props;
+    const { send, state } = useIridisUiMachine();
+    const active = computed(() => state.value.activeIndex);
+    const dragging = computed(() => state.value.variant === "dragging");
+    const dragPx = computed(() => state.value.variant === "dragging" ? state.value.dragPx : 0);
+    const n = computed(() => props.items.length);
+    const cardW = ref(760);
+    ref(720);
+    function go(d) {
+      send({ "count": n.value, "delta": d, "type": IridisUiActionType.NAVIGATE });
+    }
+    function isActive(i) {
+      return i === active.value;
+    }
+    function signed(i) {
+      let d = ((i - active.value) % n.value + n.value) % n.value;
+      if (d > n.value / 2) d -= n.value;
+      return d;
+    }
+    function faceStyle(i) {
+      const d = signed(i);
+      const ad = Math.abs(d);
+      const spread = cardW.value * 0.56;
+      const live = dragging.value ? dragPx.value : 0;
+      const transform = ad === 0 ? `translateX(calc(-50% + ${live}px))` : `translateX(calc(-50% + ${d * spread + live}px)) perspective(1300px) rotateY(${d * -32}deg) translateZ(${-ad * 150}px) scale(${Math.max(0.6, 1 - ad * 0.07)})`;
+      return {
+        "transform": transform,
+        "opacity": ad > 2.4 ? "0" : String(Math.max(0.12, 1 - ad * 0.34)),
+        "filter": isActive(i) ? "none" : `blur(${Math.min(5, ad * 1.5)}px)`,
+        "zIndex": String(Math.max(1, 40 - Math.round(ad * 8))),
+        "transition": dragging.value ? "none" : "transform .7s cubic-bezier(.16,.84,.28,1), opacity .5s ease, filter .5s ease"
+      };
+    }
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UButton = _sfc_main$a$1;
+      _push(`<div${ssrRenderAttrs(mergeProps({ class: "cyl" }, _attrs))} data-v-630388ec><div class="cyl-scene-wrap" data-v-630388ec>`);
+      _push(ssrRenderComponent(_component_UButton, {
+        icon: "i-material-symbols-chevron-left-rounded",
+        color: "neutral",
+        variant: "soft",
+        size: "lg",
+        class: "pulse cyl-nav cyl-nav-prev",
+        "aria-label": "Previous",
+        onClick: ($event) => go(-1)
+      }, null, _parent));
+      _push(`<div class="cyl-scene" data-v-630388ec><!--[-->`);
+      ssrRenderList(__props.items, (item, i) => {
+        _push(`<div class="${ssrRenderClass([{ active: isActive(i) }, "cyl-face"])}" style="${ssrRenderStyle(faceStyle(i))}" data-v-630388ec><div class="${ssrRenderClass([{ float: !isActive(i) }, "glass scanlines cyl-card"])}" style="${ssrRenderStyle({ "--glow": "var(--ui-primary)" })}" data-v-630388ec><div class="cyl-card-tag font-display" data-v-630388ec><span class="cyl-dotlight" data-v-630388ec></span><span class="cyl-card-tag-label" data-v-630388ec>${ssrInterpolate(item.label)}</span></div><div class="cyl-card-body" data-v-630388ec>`);
+        ssrRenderSlot(_ctx.$slots, "default", {
+          item,
+          active: isActive(i),
+          index: i
+        }, null, _push, _parent);
+        _push(`</div></div></div>`);
+      });
+      _push(`<!--]--></div>`);
+      _push(ssrRenderComponent(_component_UButton, {
+        icon: "i-material-symbols-chevron-right-rounded",
+        color: "neutral",
+        variant: "soft",
+        size: "lg",
+        class: "pulse cyl-nav cyl-nav-next",
+        "aria-label": "Next",
+        onClick: ($event) => go(1)
+      }, null, _parent));
+      _push(`</div><div class="cyl-controls" data-v-630388ec><div class="cyl-dots" data-v-630388ec><!--[-->`);
+      ssrRenderList(__props.items, (item, i) => {
+        _push(`<button class="${ssrRenderClass([{ on: isActive(i) }, "cyl-dot font-display"])}" data-v-630388ec>${ssrInterpolate(item.label)}</button>`);
+      });
+      _push(`<!--]--></div></div></div>`);
+    };
+  }
+});
+const _sfc_setup$j = _sfc_main$j.setup;
+_sfc_main$j.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/layout/CylinderCarousel.vue");
+  return _sfc_setup$j ? _sfc_setup$j(props, ctx) : void 0;
+};
+const __nuxt_component_4 = /* @__PURE__ */ Object.assign(_export_sfc(_sfc_main$j, [["__scopeId", "data-v-630388ec"]]), { __name: "CylinderCarousel" });
+const theme$2 = {
+  "slots": {
+    "root": "relative overflow-hidden w-full rounded-lg p-4 flex gap-2.5",
+    "wrapper": "min-w-0 flex-1 flex flex-col",
+    "title": "text-sm font-medium",
+    "description": "text-sm opacity-90",
+    "icon": "shrink-0 size-5",
+    "avatar": "shrink-0",
+    "avatarSize": "2xl",
+    "actions": "flex flex-wrap gap-1.5 shrink-0",
+    "close": "p-0"
+  },
+  "variants": {
+    "color": {
+      "primary": "",
+      "secondary": "",
+      "success": "",
+      "info": "",
+      "warning": "",
+      "error": "",
+      "neutral": ""
+    },
+    "variant": {
+      "solid": "",
+      "outline": "",
+      "soft": "",
+      "subtle": ""
+    },
+    "orientation": {
+      "horizontal": {
+        "root": "items-center",
+        "actions": "items-center"
+      },
+      "vertical": {
+        "root": "items-start",
+        "actions": "items-start mt-2.5"
+      }
+    },
+    "title": {
+      "true": {
+        "description": "mt-1"
+      }
+    }
+  },
+  "compoundVariants": [
+    {
+      "color": "primary",
+      "variant": "solid",
+      "class": {
+        "root": "bg-primary text-inverted"
+      }
+    },
+    {
+      "color": "secondary",
+      "variant": "solid",
+      "class": {
+        "root": "bg-secondary text-inverted"
+      }
+    },
+    {
+      "color": "success",
+      "variant": "solid",
+      "class": {
+        "root": "bg-success text-inverted"
+      }
+    },
+    {
+      "color": "info",
+      "variant": "solid",
+      "class": {
+        "root": "bg-info text-inverted"
+      }
+    },
+    {
+      "color": "warning",
+      "variant": "solid",
+      "class": {
+        "root": "bg-warning text-inverted"
+      }
+    },
+    {
+      "color": "error",
+      "variant": "solid",
+      "class": {
+        "root": "bg-error text-inverted"
+      }
+    },
+    {
+      "color": "primary",
+      "variant": "outline",
+      "class": {
+        "root": "text-primary ring ring-inset ring-primary/25"
+      }
+    },
+    {
+      "color": "secondary",
+      "variant": "outline",
+      "class": {
+        "root": "text-secondary ring ring-inset ring-secondary/25"
+      }
+    },
+    {
+      "color": "success",
+      "variant": "outline",
+      "class": {
+        "root": "text-success ring ring-inset ring-success/25"
+      }
+    },
+    {
+      "color": "info",
+      "variant": "outline",
+      "class": {
+        "root": "text-info ring ring-inset ring-info/25"
+      }
+    },
+    {
+      "color": "warning",
+      "variant": "outline",
+      "class": {
+        "root": "text-warning ring ring-inset ring-warning/25"
+      }
+    },
+    {
+      "color": "error",
+      "variant": "outline",
+      "class": {
+        "root": "text-error ring ring-inset ring-error/25"
+      }
+    },
+    {
+      "color": "primary",
+      "variant": "soft",
+      "class": {
+        "root": "bg-primary/10 text-primary"
+      }
+    },
+    {
+      "color": "secondary",
+      "variant": "soft",
+      "class": {
+        "root": "bg-secondary/10 text-secondary"
+      }
+    },
+    {
+      "color": "success",
+      "variant": "soft",
+      "class": {
+        "root": "bg-success/10 text-success"
+      }
+    },
+    {
+      "color": "info",
+      "variant": "soft",
+      "class": {
+        "root": "bg-info/10 text-info"
+      }
+    },
+    {
+      "color": "warning",
+      "variant": "soft",
+      "class": {
+        "root": "bg-warning/10 text-warning"
+      }
+    },
+    {
+      "color": "error",
+      "variant": "soft",
+      "class": {
+        "root": "bg-error/10 text-error"
+      }
+    },
+    {
+      "color": "primary",
+      "variant": "subtle",
+      "class": {
+        "root": "bg-primary/10 text-primary ring ring-inset ring-primary/25"
+      }
+    },
+    {
+      "color": "secondary",
+      "variant": "subtle",
+      "class": {
+        "root": "bg-secondary/10 text-secondary ring ring-inset ring-secondary/25"
+      }
+    },
+    {
+      "color": "success",
+      "variant": "subtle",
+      "class": {
+        "root": "bg-success/10 text-success ring ring-inset ring-success/25"
+      }
+    },
+    {
+      "color": "info",
+      "variant": "subtle",
+      "class": {
+        "root": "bg-info/10 text-info ring ring-inset ring-info/25"
+      }
+    },
+    {
+      "color": "warning",
+      "variant": "subtle",
+      "class": {
+        "root": "bg-warning/10 text-warning ring ring-inset ring-warning/25"
+      }
+    },
+    {
+      "color": "error",
+      "variant": "subtle",
+      "class": {
+        "root": "bg-error/10 text-error ring ring-inset ring-error/25"
+      }
+    },
+    {
+      "color": "neutral",
+      "variant": "solid",
+      "class": {
+        "root": "text-inverted bg-inverted"
+      }
+    },
+    {
+      "color": "neutral",
+      "variant": "outline",
+      "class": {
+        "root": "text-highlighted bg-default ring ring-inset ring-default"
+      }
+    },
+    {
+      "color": "neutral",
+      "variant": "soft",
+      "class": {
+        "root": "text-highlighted bg-elevated/50"
+      }
+    },
+    {
+      "color": "neutral",
+      "variant": "subtle",
+      "class": {
+        "root": "text-highlighted bg-elevated/50 ring ring-inset ring-accented"
+      }
+    }
+  ],
+  "defaultVariants": {
+    "color": "primary",
+    "variant": "solid"
+  }
+};
+const _sfc_main$i = {
+  __name: "UAlert",
+  __ssrInlineRender: true,
+  props: {
+    as: { type: null, required: false },
+    title: { type: String, required: false },
+    description: { type: String, required: false },
+    icon: { type: null, required: false },
+    avatar: { type: Object, required: false },
+    color: { type: null, required: false },
+    variant: { type: null, required: false },
+    orientation: { type: null, required: false, default: "vertical" },
+    actions: { type: Array, required: false },
+    close: { type: [Boolean, Object], required: false },
+    closeIcon: { type: null, required: false },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false }
+  },
+  emits: ["update:open"],
+  setup(__props, { emit: __emit }) {
+    const _props = __props;
+    const emits = __emit;
+    const slots = useSlots();
+    const props = useComponentProps("alert", _props);
+    const { t } = useLocale();
+    const appConfig = useAppConfig();
+    const ui = computed(() => tv({ extend: tv(theme$2), ...appConfig.ui?.alert || {} })({
+      color: props.color,
+      variant: props.variant,
+      orientation: props.orientation,
+      title: !!props.title || !!slots.title
+    }));
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(ssrRenderComponent(unref(Primitive), mergeProps({
+        as: unref(props).as,
+        "data-orientation": unref(props).orientation,
+        "data-slot": "root",
+        class: ui.value.root({ class: [unref(props).ui?.root, unref(props).class] })
+      }, _attrs), {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            ssrRenderSlot(_ctx.$slots, "leading", { ui: ui.value }, () => {
+              if (unref(props).avatar) {
+                _push2(ssrRenderComponent(_sfc_main$d$1, mergeProps({
+                  size: unref(props).ui?.avatarSize || ui.value.avatarSize()
+                }, unref(props).avatar, {
+                  "data-slot": "avatar",
+                  class: ui.value.avatar({ class: unref(props).ui?.avatar })
+                }), null, _parent2, _scopeId));
+              } else if (unref(props).icon) {
+                _push2(ssrRenderComponent(_sfc_main$f$1, {
+                  name: unref(props).icon,
+                  "data-slot": "icon",
+                  class: ui.value.icon({ class: unref(props).ui?.icon })
+                }, null, _parent2, _scopeId));
+              } else {
+                _push2(`<!---->`);
+              }
+            }, _push2, _parent2, _scopeId);
+            _push2(`<div data-slot="wrapper" class="${ssrRenderClass(ui.value.wrapper({ class: unref(props).ui?.wrapper }))}"${_scopeId}>`);
+            if (unref(props).title || !!slots.title) {
+              _push2(`<div data-slot="title" class="${ssrRenderClass(ui.value.title({ class: unref(props).ui?.title }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "title", {}, () => {
+                _push2(`${ssrInterpolate(unref(props).title)}`);
+              }, _push2, _parent2, _scopeId);
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            if (unref(props).description || !!slots.description) {
+              _push2(`<div data-slot="description" class="${ssrRenderClass(ui.value.description({ class: unref(props).ui?.description }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "description", {}, () => {
+                _push2(`${ssrInterpolate(unref(props).description)}`);
+              }, _push2, _parent2, _scopeId);
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            if (unref(props).orientation === "vertical" && (unref(props).actions?.length || !!slots.actions)) {
+              _push2(`<div data-slot="actions" class="${ssrRenderClass(ui.value.actions({ class: unref(props).ui?.actions }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "actions", {}, () => {
+                _push2(`<!--[-->`);
+                ssrRenderList(unref(props).actions, (action, index2) => {
+                  _push2(ssrRenderComponent(_sfc_main$a$1, mergeProps({
+                    key: index2,
+                    size: "xs"
+                  }, { ref_for: true }, action), null, _parent2, _scopeId));
+                });
+                _push2(`<!--]-->`);
+              }, _push2, _parent2, _scopeId);
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(`</div>`);
+            if (unref(props).orientation === "horizontal" && (unref(props).actions?.length || !!slots.actions) || unref(props).close) {
+              _push2(`<div data-slot="actions" class="${ssrRenderClass(ui.value.actions({ class: unref(props).ui?.actions, orientation: "horizontal" }))}"${_scopeId}>`);
+              if (unref(props).orientation === "horizontal" && (unref(props).actions?.length || !!slots.actions)) {
+                ssrRenderSlot(_ctx.$slots, "actions", {}, () => {
+                  _push2(`<!--[-->`);
+                  ssrRenderList(unref(props).actions, (action, index2) => {
+                    _push2(ssrRenderComponent(_sfc_main$a$1, mergeProps({
+                      key: index2,
+                      size: "xs"
+                    }, { ref_for: true }, action), null, _parent2, _scopeId));
+                  });
+                  _push2(`<!--]-->`);
+                }, _push2, _parent2, _scopeId);
+              } else {
+                _push2(`<!---->`);
+              }
+              ssrRenderSlot(_ctx.$slots, "close", { ui: ui.value }, () => {
+                if (unref(props).close) {
+                  _push2(ssrRenderComponent(_sfc_main$a$1, mergeProps({
+                    icon: unref(props).closeIcon || unref(appConfig).ui.icons.close,
+                    color: "neutral",
+                    variant: "link",
+                    "aria-label": unref(t)("alert.close")
+                  }, typeof unref(props).close === "object" ? unref(props).close : {}, {
+                    "data-slot": "close",
+                    class: ui.value.close({ class: unref(props).ui?.close }),
+                    onClick: ($event) => emits("update:open", false)
+                  }), null, _parent2, _scopeId));
+                } else {
+                  _push2(`<!---->`);
+                }
+              }, _push2, _parent2, _scopeId);
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+          } else {
+            return [
+              renderSlot(_ctx.$slots, "leading", { ui: ui.value }, () => [
+                unref(props).avatar ? (openBlock(), createBlock(_sfc_main$d$1, mergeProps({
+                  key: 0,
+                  size: unref(props).ui?.avatarSize || ui.value.avatarSize()
+                }, unref(props).avatar, {
+                  "data-slot": "avatar",
+                  class: ui.value.avatar({ class: unref(props).ui?.avatar })
+                }), null, 16, ["size", "class"])) : unref(props).icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                  key: 1,
+                  name: unref(props).icon,
+                  "data-slot": "icon",
+                  class: ui.value.icon({ class: unref(props).ui?.icon })
+                }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+              ]),
+              createVNode("div", {
+                "data-slot": "wrapper",
+                class: ui.value.wrapper({ class: unref(props).ui?.wrapper })
+              }, [
+                unref(props).title || !!slots.title ? (openBlock(), createBlock("div", {
+                  key: 0,
+                  "data-slot": "title",
+                  class: ui.value.title({ class: unref(props).ui?.title })
+                }, [
+                  renderSlot(_ctx.$slots, "title", {}, () => [
+                    createTextVNode(toDisplayString(unref(props).title), 1)
+                  ])
+                ], 2)) : createCommentVNode("", true),
+                unref(props).description || !!slots.description ? (openBlock(), createBlock("div", {
+                  key: 1,
+                  "data-slot": "description",
+                  class: ui.value.description({ class: unref(props).ui?.description })
+                }, [
+                  renderSlot(_ctx.$slots, "description", {}, () => [
+                    createTextVNode(toDisplayString(unref(props).description), 1)
+                  ])
+                ], 2)) : createCommentVNode("", true),
+                unref(props).orientation === "vertical" && (unref(props).actions?.length || !!slots.actions) ? (openBlock(), createBlock("div", {
+                  key: 2,
+                  "data-slot": "actions",
+                  class: ui.value.actions({ class: unref(props).ui?.actions })
+                }, [
+                  renderSlot(_ctx.$slots, "actions", {}, () => [
+                    (openBlock(true), createBlock(Fragment, null, renderList(unref(props).actions, (action, index2) => {
+                      return openBlock(), createBlock(_sfc_main$a$1, mergeProps({
+                        key: index2,
+                        size: "xs"
+                      }, { ref_for: true }, action), null, 16);
+                    }), 128))
+                  ])
+                ], 2)) : createCommentVNode("", true)
+              ], 2),
+              unref(props).orientation === "horizontal" && (unref(props).actions?.length || !!slots.actions) || unref(props).close ? (openBlock(), createBlock("div", {
+                key: 0,
+                "data-slot": "actions",
+                class: ui.value.actions({ class: unref(props).ui?.actions, orientation: "horizontal" })
+              }, [
+                unref(props).orientation === "horizontal" && (unref(props).actions?.length || !!slots.actions) ? renderSlot(_ctx.$slots, "actions", { key: 0 }, () => [
+                  (openBlock(true), createBlock(Fragment, null, renderList(unref(props).actions, (action, index2) => {
+                    return openBlock(), createBlock(_sfc_main$a$1, mergeProps({
+                      key: index2,
+                      size: "xs"
+                    }, { ref_for: true }, action), null, 16);
+                  }), 128))
+                ]) : createCommentVNode("", true),
+                renderSlot(_ctx.$slots, "close", { ui: ui.value }, () => [
+                  unref(props).close ? (openBlock(), createBlock(_sfc_main$a$1, mergeProps({
+                    key: 0,
+                    icon: unref(props).closeIcon || unref(appConfig).ui.icons.close,
+                    color: "neutral",
+                    variant: "link",
+                    "aria-label": unref(t)("alert.close")
+                  }, typeof unref(props).close === "object" ? unref(props).close : {}, {
+                    "data-slot": "close",
+                    class: ui.value.close({ class: unref(props).ui?.close }),
+                    onClick: ($event) => emits("update:open", false)
+                  }), null, 16, ["icon", "aria-label", "class", "onClick"])) : createCommentVNode("", true)
+                ])
+              ], 2)) : createCommentVNode("", true)
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+    };
+  }
+};
+const _sfc_setup$i = _sfc_main$i.setup;
+_sfc_main$i.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/Alert.vue");
+  return _sfc_setup$i ? _sfc_setup$i(props, ctx) : void 0;
+};
+function channel(v) {
+  const s = v / 255;
+  return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+}
+function luminance(hex) {
+  return 0.2126 * channel(parseInt(hex.slice(1, 3), 16)) + 0.7152 * channel(parseInt(hex.slice(3, 5), 16)) + 0.0722 * channel(parseInt(hex.slice(5, 7), 16));
+}
+function contrastRatio(fg, bg) {
+  const a = luminance(fg);
+  const b = luminance(bg);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+const _sfc_main$h = /* @__PURE__ */ defineComponent({
+  __name: "LiveComponents",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+    const toast = useToast();
+    const { roleViews, roles, contrastStrictness } = useIridis();
+    const COLORS = ["primary", "secondary", "success", "warning", "error", "info", "neutral"];
+    function fireToast(color) {
+      toast.add({
+        "color": color,
+        "description": `A live UToast in the ${color} color — engine-themed, not a mockup.`,
+        "icon": "i-material-symbols-notifications-rounded",
+        "title": `${color[0].toUpperCase()}${color.slice(1)} toast`
+      });
+    }
+    const alerts = ref([]);
+    let alertId = 0;
+    function addAlert() {
+      const color = COLORS[alerts.value.length % COLORS.length];
+      alerts.value = [...alerts.value, { color, "id": alertId++, "title": `Dismissible ${color} alert` }];
+    }
+    function removeAlert(id) {
+      alerts.value = alerts.value.filter((a) => {
+        return a.id !== id;
+      });
+    }
+    const bg = computed(() => roles.value["background"] ?? "#000000");
+    const target = computed(() => contrastStrictness.value === 1 ? 7 : 4.5);
+    const complianceLabel = computed(() => ["AA", "AAA", "APCA"][contrastStrictness.value] ?? "AA");
+    const compliancePct = computed(() => {
+      if (roleViews.value.length === 0) {
+        return 0;
+      }
+      const passing = roleViews.value.filter((r) => {
+        return contrastRatio(r.hex, bg.value) >= target.value;
+      }).length;
+      return Math.round(passing / roleViews.value.length * 100);
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_BalancedWrap = __nuxt_component_1$1;
+      const _component_UButton = _sfc_main$a$1;
+      const _component_UAlert = _sfc_main$i;
+      const _component_UProgress = _sfc_main$9$1;
+      const _directive_auto_animate = resolveDirective("auto-animate");
+      _push(`<div${ssrRenderAttrs(mergeProps({ class: "space-y-5" }, _attrs))}><div><div class="mb-2 text-xs font-medium text-muted"> Click to fire a real UToast </div>`);
+      _push(ssrRenderComponent(_component_BalancedWrap, {
+        items: [...COLORS],
+        "min-width": 80,
+        gap: 8
+      }, {
+        default: withCtx(({ item: c }, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(ssrRenderComponent(_component_UButton, {
+              color: c,
+              onClick: ($event) => fireToast(c),
+              class: "flex-1 justify-center"
+            }, {
+              default: withCtx((_, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`${ssrInterpolate(c)}`);
+                } else {
+                  return [
+                    createTextVNode(toDisplayString(c), 1)
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent2, _scopeId));
+          } else {
+            return [
+              createVNode(_component_UButton, {
+                color: c,
+                onClick: ($event) => fireToast(c),
+                class: "flex-1 justify-center"
+              }, {
+                default: withCtx(() => [
+                  createTextVNode(toDisplayString(c), 1)
+                ]),
+                _: 2
+              }, 1032, ["color", "onClick"])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(`</div><div><div class="mb-2 flex items-center justify-between"><span class="text-xs font-medium text-muted">Dismissible alerts</span>`);
+      _push(ssrRenderComponent(_component_UButton, {
+        icon: "i-material-symbols-add-rounded",
+        size: "xs",
+        variant: "soft",
+        onClick: addAlert
+      }, {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(` Add alert `);
+          } else {
+            return [
+              createTextVNode(" Add alert ")
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(`</div><div${ssrRenderAttrs(mergeProps({ class: "space-y-2" }, ssrGetDirectiveProps(_ctx, _directive_auto_animate)))}><!--[-->`);
+      ssrRenderList(alerts.value, (a) => {
+        _push(ssrRenderComponent(_component_UAlert, {
+          key: a.id,
+          color: a.color,
+          variant: "soft",
+          title: a.title,
+          close: "",
+          "onUpdate:open": ($event) => removeAlert(a.id)
+        }, null, _parent));
+      });
+      _push(`<!--]-->`);
+      if (alerts.value.length === 0) {
+        _push(`<p class="text-xs text-dimmed"> No alerts yet — add one. </p>`);
+      } else {
+        _push(`<!---->`);
+      }
+      _push(`</div></div><div class="space-y-1"><div class="flex items-center justify-between text-xs font-medium text-muted"><span>${ssrInterpolate(complianceLabel.value)} compliance</span><span>${ssrInterpolate(compliancePct.value)}%</span></div>`);
+      _push(ssrRenderComponent(_component_UProgress, { "model-value": compliancePct.value }, null, _parent));
+      _push(`</div><div class="space-y-1"><div class="text-xs font-medium text-muted"> Primary scale </div><div class="flex gap-0.5"><!--[-->`);
+      ssrRenderList(shades, (s) => {
+        _push(`<div class="h-8 flex-1 rounded" style="${ssrRenderStyle({ backgroundColor: `var(--ui-color-primary-${s})` })}"${ssrRenderAttr("title", `primary-${s}`)}></div>`);
+      });
+      _push(`<!--]--></div></div></div>`);
+    };
+  }
+});
+const _sfc_setup$h = _sfc_main$h.setup;
+_sfc_main$h.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/LiveComponents.vue");
+  return _sfc_setup$h ? _sfc_setup$h(props, ctx) : void 0;
+};
+const __nuxt_component_5 = Object.assign(_sfc_main$h, { __name: "LiveComponents" });
+const _sfc_main$g = /* @__PURE__ */ defineComponent({
+  __name: "ResolvedRoles",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const { roleViews, roles } = useIridis();
+    const bg = computed(() => roles.value["background"] ?? "#000000");
+    const rows = computed(() => roleViews.value.map((r) => {
+      const cr = contrastRatio(r.hex, bg.value);
+      return { "name": r.name, "hex": r.hex, "ratio": cr, "aa": cr >= 4.5, "aaa": cr >= 7 };
+    }));
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UCard = _sfc_main$t;
+      const _component_UBadge = _sfc_main$y;
+      _push(ssrRenderComponent(_component_UCard, _attrs, {
+        header: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2"${_scopeId}><span${_scopeId}></span><span class="text-center font-semibold text-highlighted"${_scopeId}>Resolved roles</span>`);
+            _push2(ssrRenderComponent(_component_UBadge, {
+              color: "neutral",
+              variant: "soft",
+              class: "justify-self-end"
+            }, {
+              default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`${ssrInterpolate(rows.value.length)} roles `);
+                } else {
+                  return [
+                    createTextVNode(toDisplayString(rows.value.length) + " roles ", 1)
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(`</div>`);
+          } else {
+            return [
+              createVNode("div", { class: "grid grid-cols-[1fr_auto_1fr] items-center gap-2" }, [
+                createVNode("span"),
+                createVNode("span", { class: "text-center font-semibold text-highlighted" }, "Resolved roles"),
+                createVNode(_component_UBadge, {
+                  color: "neutral",
+                  variant: "soft",
+                  class: "justify-self-end"
+                }, {
+                  default: withCtx(() => [
+                    createTextVNode(toDisplayString(rows.value.length) + " roles ", 1)
+                  ]),
+                  _: 1
+                })
+              ])
+            ];
+          }
+        }),
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"${_scopeId}><!--[-->`);
+            ssrRenderList(rows.value, (r) => {
+              _push2(`<div class="flex items-center gap-2 rounded-lg border border-default p-2"${_scopeId}><div class="h-9 w-9 shrink-0 rounded-md border border-default" style="${ssrRenderStyle({ backgroundColor: r.hex })}"${_scopeId}></div><div class="min-w-0"${_scopeId}><div class="truncate text-xs font-medium text-highlighted"${_scopeId}>${ssrInterpolate(r.name)}</div><div class="flex flex-wrap items-center gap-1"${_scopeId}><span class="truncate font-mono text-[10px] text-muted"${_scopeId}>${ssrInterpolate(r.hex)}</span>`);
+              _push2(ssrRenderComponent(_component_UBadge, {
+                color: r.aaa ? "success" : r.aa ? "primary" : "neutral",
+                variant: "soft",
+                size: "xs"
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(`${ssrInterpolate(r.aaa ? "AAA" : r.aa ? "AA" : r.ratio.toFixed(1))}`);
+                  } else {
+                    return [
+                      createTextVNode(toDisplayString(r.aaa ? "AAA" : r.aa ? "AA" : r.ratio.toFixed(1)), 1)
+                    ];
+                  }
+                }),
+                _: 2
+              }, _parent2, _scopeId));
+              _push2(`</div></div></div>`);
+            });
+            _push2(`<!--]--></div>`);
+          } else {
+            return [
+              createVNode("div", { class: "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3" }, [
+                (openBlock(true), createBlock(Fragment, null, renderList(rows.value, (r) => {
+                  return openBlock(), createBlock("div", {
+                    key: r.name,
+                    class: "flex items-center gap-2 rounded-lg border border-default p-2"
+                  }, [
+                    createVNode("div", {
+                      class: "h-9 w-9 shrink-0 rounded-md border border-default",
+                      style: { backgroundColor: r.hex }
+                    }, null, 4),
+                    createVNode("div", { class: "min-w-0" }, [
+                      createVNode("div", { class: "truncate text-xs font-medium text-highlighted" }, toDisplayString(r.name), 1),
+                      createVNode("div", { class: "flex flex-wrap items-center gap-1" }, [
+                        createVNode("span", { class: "truncate font-mono text-[10px] text-muted" }, toDisplayString(r.hex), 1),
+                        createVNode(_component_UBadge, {
+                          color: r.aaa ? "success" : r.aa ? "primary" : "neutral",
+                          variant: "soft",
+                          size: "xs"
+                        }, {
+                          default: withCtx(() => [
+                            createTextVNode(toDisplayString(r.aaa ? "AAA" : r.aa ? "AA" : r.ratio.toFixed(1)), 1)
+                          ]),
+                          _: 2
+                        }, 1032, ["color"])
+                      ])
+                    ])
+                  ]);
+                }), 128))
+              ])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+    };
+  }
+});
+const _sfc_setup$g = _sfc_main$g.setup;
+_sfc_main$g.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/ResolvedRoles.vue");
+  return _sfc_setup$g ? _sfc_setup$g(props, ctx) : void 0;
+};
+const __nuxt_component_6 = Object.assign(_sfc_main$g, { __name: "ResolvedRoles" });
+const theme$1 = {
+  "slots": {
+    "root": "relative overflow-auto outline-primary/25 focus-visible:outline-3",
+    "base": "min-w-full overflow-clip",
+    "caption": "sr-only",
+    "thead": "relative",
+    "tbody": "isolate [&>tr]:data-[selectable=true]:hover:bg-elevated/50 [&>tr]:data-[selectable=true]:outline-primary/25 [&>tr]:data-[selectable=true]:focus-visible:outline-3 divide-y divide-default",
+    "tfoot": "relative",
+    "tr": "data-[selected=true]:bg-elevated/50",
+    "th": "px-4 py-3.5 text-sm text-highlighted text-left rtl:text-right font-semibold [&:has([role=checkbox])]:pe-0",
+    "td": "p-4 text-sm text-muted whitespace-nowrap [&:has([role=checkbox])]:pe-0",
+    "separator": "absolute z-1 left-0 w-full h-px bg-(--ui-border-accented)",
+    "empty": "py-6 text-center text-sm text-muted",
+    "loading": "py-6 text-center"
+  },
+  "variants": {
+    "pinned": {
+      "true": {
+        "th": "sticky bg-default/75 z-1",
+        "td": "sticky bg-default/75 z-1"
+      }
+    },
+    "sticky": {
+      "true": {
+        "thead": "sticky top-0 inset-x-0 bg-default/75 backdrop-blur z-1",
+        "tfoot": "sticky bottom-0 inset-x-0 bg-default/75 backdrop-blur z-1"
+      },
+      "header": {
+        "thead": "sticky top-0 inset-x-0 bg-default/75 backdrop-blur z-1"
+      },
+      "footer": {
+        "tfoot": "sticky bottom-0 inset-x-0 bg-default/75 backdrop-blur z-1"
+      }
+    },
+    "loading": {
+      "true": {
+        "thead": "after:absolute after:z-1 after:h-px"
+      }
+    },
+    "loadingAnimation": {
+      "carousel": "",
+      "carousel-inverse": "",
+      "swing": "",
+      "elastic": ""
+    },
+    "loadingColor": {
+      "primary": "",
+      "secondary": "",
+      "success": "",
+      "info": "",
+      "warning": "",
+      "error": "",
+      "neutral": ""
+    }
+  },
+  "compoundVariants": [
+    {
+      "loading": true,
+      "loadingColor": "primary",
+      "class": {
+        "thead": "after:bg-primary"
+      }
+    },
+    {
+      "loading": true,
+      "loadingColor": "secondary",
+      "class": {
+        "thead": "after:bg-secondary"
+      }
+    },
+    {
+      "loading": true,
+      "loadingColor": "success",
+      "class": {
+        "thead": "after:bg-success"
+      }
+    },
+    {
+      "loading": true,
+      "loadingColor": "info",
+      "class": {
+        "thead": "after:bg-info"
+      }
+    },
+    {
+      "loading": true,
+      "loadingColor": "warning",
+      "class": {
+        "thead": "after:bg-warning"
+      }
+    },
+    {
+      "loading": true,
+      "loadingColor": "error",
+      "class": {
+        "thead": "after:bg-error"
+      }
+    },
+    {
+      "loading": true,
+      "loadingColor": "neutral",
+      "class": {
+        "thead": "after:bg-inverted"
+      }
+    },
+    {
+      "loading": true,
+      "loadingAnimation": "carousel",
+      "class": {
+        "thead": "after:animate-[carousel_2s_ease-in-out_infinite] rtl:after:animate-[carousel-rtl_2s_ease-in-out_infinite]"
+      }
+    },
+    {
+      "loading": true,
+      "loadingAnimation": "carousel-inverse",
+      "class": {
+        "thead": "after:animate-[carousel-inverse_2s_ease-in-out_infinite] rtl:after:animate-[carousel-inverse-rtl_2s_ease-in-out_infinite]"
+      }
+    },
+    {
+      "loading": true,
+      "loadingAnimation": "swing",
+      "class": {
+        "thead": "after:animate-[swing_2s_ease-in-out_infinite]"
+      }
+    },
+    {
+      "loading": true,
+      "loadingAnimation": "elastic",
+      "class": {
+        "thead": "after:animate-[elastic_2s_ease-in-out_infinite]"
+      }
+    }
+  ],
+  "defaultVariants": {
+    "loadingColor": "primary",
+    "loadingAnimation": "carousel"
+  }
+};
+const _sfc_main$f = /* @__PURE__ */ Object.assign({ inheritAttrs: false }, {
+  __name: "UTable",
+  __ssrInlineRender: true,
+  props: /* @__PURE__ */ mergeModels({
+    as: { type: null, required: false },
+    data: { type: Array, required: false },
+    columns: { type: Array, required: false },
+    caption: { type: String, required: false },
+    meta: { type: Object, required: false },
+    virtualize: { type: [Boolean, Object], required: false, default: false },
+    empty: { type: String, required: false },
+    sticky: { type: [Boolean, String], required: false },
+    loading: { type: Boolean, required: false },
+    loadingColor: { type: null, required: false },
+    loadingAnimation: { type: null, required: false },
+    watchOptions: { type: Object, required: false, default: () => ({
+      deep: true
+    }) },
+    globalFilterOptions: { type: Object, required: false },
+    columnFiltersOptions: { type: Object, required: false },
+    columnPinningOptions: { type: Object, required: false },
+    columnSizingOptions: { type: Object, required: false },
+    visibilityOptions: { type: Object, required: false },
+    sortingOptions: { type: Object, required: false },
+    groupingOptions: { type: Object, required: false },
+    expandedOptions: { type: Object, required: false },
+    rowSelectionOptions: { type: Object, required: false },
+    rowPinningOptions: { type: Object, required: false },
+    paginationOptions: { type: Object, required: false },
+    facetedOptions: { type: Object, required: false },
+    onSelect: { type: Function, required: false },
+    onHover: { type: Function, required: false },
+    onContextmenu: { type: [Function, Array], required: false },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false },
+    state: { type: Object, required: false },
+    onStateChange: { type: Function, required: false },
+    renderFallbackValue: { type: null, required: false },
+    _features: { type: Array, required: false },
+    autoResetAll: { type: Boolean, required: false },
+    debugAll: { type: Boolean, required: false },
+    debugCells: { type: Boolean, required: false },
+    debugColumns: { type: Boolean, required: false },
+    debugHeaders: { type: Boolean, required: false },
+    debugRows: { type: Boolean, required: false },
+    debugTable: { type: Boolean, required: false },
+    defaultColumn: { type: Object, required: false },
+    getRowId: { type: Function, required: false },
+    getSubRows: { type: Function, required: false },
+    initialState: { type: Object, required: false },
+    mergeOptions: { type: Function, required: false }
+  }, {
+    "globalFilter": { type: String },
+    "globalFilterModifiers": {},
+    "columnFilters": { type: Array },
+    "columnFiltersModifiers": {},
+    "columnOrder": { type: Array },
+    "columnOrderModifiers": {},
+    "columnVisibility": { type: Object },
+    "columnVisibilityModifiers": {},
+    "columnPinning": { type: Object },
+    "columnPinningModifiers": {},
+    "columnSizing": { type: Object },
+    "columnSizingModifiers": {},
+    "columnSizingInfo": { type: Object },
+    "columnSizingInfoModifiers": {},
+    "rowSelection": { type: Object },
+    "rowSelectionModifiers": {},
+    "rowPinning": { type: Object },
+    "rowPinningModifiers": {},
+    "sorting": { type: Array },
+    "sortingModifiers": {},
+    "grouping": { type: Array },
+    "groupingModifiers": {},
+    "expanded": { type: [Boolean, Object] },
+    "expandedModifiers": {},
+    "pagination": { type: Object },
+    "paginationModifiers": {}
+  }),
+  emits: ["update:globalFilter", "update:columnFilters", "update:columnOrder", "update:columnVisibility", "update:columnPinning", "update:columnSizing", "update:columnSizingInfo", "update:rowSelection", "update:rowPinning", "update:sorting", "update:grouping", "update:expanded", "update:pagination"],
+  setup(__props, { expose: __expose }) {
+    const _props = __props;
+    const slots = useSlots();
+    const props = useComponentProps("table", _props);
+    const { t } = useLocale();
+    const appConfig = useAppConfig();
+    const data = createRef(props.data ?? [], props.watchOptions?.deep !== false);
+    const meta = computed(() => props.meta ?? {});
+    const columns = computed(() => processColumns(props.columns ?? Object.keys(data.value[0] ?? {}).map((accessorKey) => ({ accessorKey, header: upperFirst(accessorKey) }))));
+    function processColumns(columns2) {
+      return columns2.map((column) => {
+        const col = { ...column };
+        if ("columns" in col && col.columns) {
+          col.columns = processColumns(col.columns);
+        }
+        if (!col.cell) {
+          col.cell = ({ getValue }) => {
+            const value = getValue();
+            if (value === "" || value === null || value === void 0) {
+              return " ";
+            }
+            return String(value);
+          };
+        }
+        return col;
+      });
+    }
+    const ui = computed(() => tv({ extend: tv(theme$1), ...appConfig.ui?.table || {} })({
+      sticky: props.sticky,
+      loading: props.loading,
+      loadingColor: props.loadingColor,
+      loadingAnimation: props.loadingAnimation
+    }));
+    const [DefineTableTemplate, ReuseTableTemplate] = createReusableTemplate();
+    const [DefineRowTemplate, ReuseRowTemplate] = createReusableTemplate({
+      props: {
+        row: {
+          type: Object,
+          required: true
+        },
+        style: {
+          type: Object,
+          required: false
+        }
+      }
+    });
+    const hasFooter = computed(() => {
+      function hasFooterRecursive(columns2) {
+        for (const column of columns2) {
+          if ("footer" in column) {
+            return true;
+          }
+          if ("columns" in column && hasFooterRecursive(column.columns)) {
+            return true;
+          }
+        }
+        return false;
+      }
+      return hasFooterRecursive(columns.value);
+    });
+    const globalFilterState = useModel(__props, "globalFilter");
+    const columnFiltersState = useModel(__props, "columnFilters");
+    const columnOrderState = useModel(__props, "columnOrder");
+    const columnVisibilityState = useModel(__props, "columnVisibility");
+    const columnPinningState = useModel(__props, "columnPinning");
+    const columnSizingState = useModel(__props, "columnSizing");
+    const columnSizingInfoState = useModel(__props, "columnSizingInfo");
+    const rowSelectionState = useModel(__props, "rowSelection");
+    const rowPinningState = useModel(__props, "rowPinning");
+    const sortingState = useModel(__props, "sorting");
+    const groupingState = useModel(__props, "grouping");
+    const expandedState = useModel(__props, "expanded");
+    const paginationState = useModel(__props, "pagination");
+    const rootRef = useTemplateRef("rootRef");
+    const tableRef = useTemplateRef("tableRef");
+    const tableProps = useForwardProps(reactivePick(props, "_features", "autoResetAll", "debugAll", "debugCells", "debugColumns", "debugHeaders", "debugRows", "debugTable", "defaultColumn", "getRowId", "getSubRows", "initialState", "mergeOptions", "renderFallbackValue"));
+    const tableApi = useVueTable({
+      ...tableProps.value,
+      get data() {
+        return data.value;
+      },
+      get columns() {
+        return columns.value;
+      },
+      meta: meta.value,
+      getCoreRowModel: getCoreRowModel(),
+      ...props.globalFilterOptions || {},
+      ...globalFilterState.value !== void 0 && { onGlobalFilterChange: (updaterOrValue) => valueUpdater(updaterOrValue, globalFilterState) },
+      ...props.columnFiltersOptions || {},
+      getFilteredRowModel: getFilteredRowModel(),
+      ...columnFiltersState.value !== void 0 && { onColumnFiltersChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnFiltersState) },
+      ...columnOrderState.value !== void 0 && { onColumnOrderChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnOrderState) },
+      ...props.visibilityOptions || {},
+      ...columnVisibilityState.value !== void 0 && { onColumnVisibilityChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnVisibilityState) },
+      ...props.columnPinningOptions || {},
+      ...columnPinningState.value !== void 0 && { onColumnPinningChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnPinningState) },
+      ...props.columnSizingOptions || {},
+      ...columnSizingState.value !== void 0 && { onColumnSizingChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnSizingState) },
+      ...columnSizingInfoState.value !== void 0 && { onColumnSizingInfoChange: (updaterOrValue) => valueUpdater(updaterOrValue, columnSizingInfoState) },
+      ...props.rowSelectionOptions || {},
+      ...rowSelectionState.value !== void 0 && { onRowSelectionChange: (updaterOrValue) => valueUpdater(updaterOrValue, rowSelectionState) },
+      ...props.rowPinningOptions || {},
+      ...rowPinningState.value !== void 0 && { onRowPinningChange: (updaterOrValue) => valueUpdater(updaterOrValue, rowPinningState) },
+      ...props.sortingOptions || {},
+      getSortedRowModel: getSortedRowModel(),
+      ...sortingState.value !== void 0 && { onSortingChange: (updaterOrValue) => valueUpdater(updaterOrValue, sortingState) },
+      ...props.groupingOptions || {},
+      ...groupingState.value !== void 0 && { onGroupingChange: (updaterOrValue) => valueUpdater(updaterOrValue, groupingState) },
+      ...props.expandedOptions || {},
+      getExpandedRowModel: getExpandedRowModel(),
+      ...expandedState.value !== void 0 && { onExpandedChange: (updaterOrValue) => valueUpdater(updaterOrValue, expandedState) },
+      ...props.paginationOptions || {},
+      ...paginationState.value !== void 0 && { onPaginationChange: (updaterOrValue) => valueUpdater(updaterOrValue, paginationState) },
+      ...props.facetedOptions || {},
+      state: {
+        get globalFilter() {
+          return globalFilterState.value;
+        },
+        get columnFilters() {
+          return columnFiltersState.value;
+        },
+        get columnOrder() {
+          return columnOrderState.value;
+        },
+        get columnVisibility() {
+          return columnVisibilityState.value;
+        },
+        get columnPinning() {
+          return columnPinningState.value;
+        },
+        get expanded() {
+          return expandedState.value;
+        },
+        get rowSelection() {
+          return rowSelectionState.value;
+        },
+        get sorting() {
+          return sortingState.value;
+        },
+        get grouping() {
+          return groupingState.value;
+        },
+        get rowPinning() {
+          return rowPinningState.value;
+        },
+        get columnSizing() {
+          return columnSizingState.value;
+        },
+        get columnSizingInfo() {
+          return columnSizingInfoState.value;
+        },
+        get pagination() {
+          return paginationState.value;
+        }
+      }
+    });
+    const rows = computed(() => tableApi.getRowModel().rows);
+    const topRows = computed(() => props.virtualize ? [] : tableApi.getTopRows());
+    const bottomRows = computed(() => props.virtualize ? [] : tableApi.getBottomRows());
+    const centerRows = computed(() => topRows.value.length || bottomRows.value.length ? tableApi.getCenterRows() : rows.value);
+    const virtualizerProps = toRef(() => defu(typeof props.virtualize === "boolean" ? {} : props.virtualize, {
+      estimateSize: 65,
+      overscan: 12
+    }));
+    const virtualizer = !!props.virtualize && useVirtualizer({
+      ...virtualizerProps.value,
+      get count() {
+        return centerRows.value.length;
+      },
+      getScrollElement: () => rootRef.value?.$el,
+      estimateSize: (index2) => {
+        const estimate = virtualizerProps.value.estimateSize;
+        return typeof estimate === "function" ? estimate(index2) : estimate;
+      }
+    });
+    const virtualItems = computed(() => virtualizer ? virtualizer.value.getVirtualItems() : []);
+    const virtualPaddingTop = computed(() => virtualItems.value[0]?.start ?? 0);
+    const virtualPaddingBottom = computed(() => {
+      if (!virtualizer || !virtualItems.value.length) return 0;
+      return virtualizer.value.getTotalSize() - (virtualItems.value[virtualItems.value.length - 1]?.end ?? 0);
+    });
+    function valueUpdater(updaterOrValue, ref2) {
+      ref2.value = typeof updaterOrValue === "function" ? updaterOrValue(ref2.value) : updaterOrValue;
+    }
+    function onRowSelect(e, row) {
+      if (!props.onSelect) {
+        return;
+      }
+      const target = e.target;
+      const isInteractive = target.closest("button") || target.closest("a");
+      if (isInteractive) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      props.onSelect(e, row);
+    }
+    function onRowHover(e, row) {
+      if (!props.onHover) {
+        return;
+      }
+      props.onHover(e, row);
+    }
+    function onRowContextmenu(e, row) {
+      if (!props.onContextmenu) {
+        return;
+      }
+      if (Array.isArray(props.onContextmenu)) {
+        props.onContextmenu.forEach((fn) => fn(e, row));
+      } else {
+        props.onContextmenu(e, row);
+      }
+    }
+    function resolveValue(prop, arg) {
+      if (typeof prop === "function") {
+        return prop(arg);
+      }
+      return prop;
+    }
+    function getColumnStyles(column) {
+      const styles = {};
+      const pinned = column.getIsPinned();
+      if (pinned === "left") {
+        styles.left = `${column.getStart("left")}px`;
+      } else if (pinned === "right") {
+        styles.right = `${column.getAfter("right")}px`;
+      }
+      return styles;
+    }
+    watch(() => props.data, () => {
+      data.value = props.data ? [...props.data] : [];
+    }, props.watchOptions);
+    __expose({
+      get $el() {
+        return rootRef.value?.$el;
+      },
+      tableRef,
+      tableApi
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(`<!--[-->`);
+      _push(ssrRenderComponent(unref(DefineRowTemplate), null, {
+        default: withCtx(({ row, style }, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<tr${ssrRenderAttr("data-selected", row.getIsSelected())}${ssrRenderAttr("data-selectable", !!unref(props).onSelect || !!unref(props).onHover || !!unref(props).onContextmenu)}${ssrRenderAttr("data-expanded", row.getIsExpanded())}${ssrRenderAttr("data-pinned", row.getIsPinned() || void 0)}${ssrRenderAttr("role", unref(props).onSelect ? "button" : void 0)}${ssrRenderAttr("tabindex", unref(props).onSelect ? 0 : void 0)} data-slot="tr" class="${ssrRenderClass(ui.value.tr({
+              class: [
+                unref(props).ui?.tr,
+                resolveValue(unref(tableApi).options.meta?.class?.tr, row)
+              ]
+            }))}" style="${ssrRenderStyle([resolveValue(unref(tableApi).options.meta?.style?.tr, row), style])}"${_scopeId}><!--[-->`);
+            ssrRenderList(row.getVisibleCells(), (cell) => {
+              _push2(`<td${ssrRenderAttr("data-pinned", cell.column.getIsPinned())}${ssrRenderAttr("colspan", resolveValue(cell.column.columnDef.meta?.colspan?.td, cell))}${ssrRenderAttr("rowspan", resolveValue(cell.column.columnDef.meta?.rowspan?.td, cell))} data-slot="td" class="${ssrRenderClass(ui.value.td({
+                class: [
+                  unref(props).ui?.td,
+                  resolveValue(cell.column.columnDef.meta?.class?.td, cell)
+                ],
+                pinned: !!cell.column.getIsPinned()
+              }))}" style="${ssrRenderStyle([
+                getColumnStyles(cell.column),
+                resolveValue(cell.column.columnDef.meta?.style?.td, cell)
+              ])}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, `${cell.column.id}-cell`, mergeProps({ ref_for: true }, cell.getContext()), () => {
+                _push2(ssrRenderComponent(unref(FlexRender), {
+                  render: cell.column.columnDef.cell,
+                  props: cell.getContext()
+                }, null, _parent2, _scopeId));
+              }, _push2, _parent2, _scopeId);
+              _push2(`</td>`);
+            });
+            _push2(`<!--]--></tr>`);
+            if (row.getIsExpanded()) {
+              _push2(`<tr data-slot="tr" class="${ssrRenderClass(ui.value.tr({ class: [unref(props).ui?.tr] }))}"${_scopeId}><td${ssrRenderAttr("colspan", row.getAllCells().length)} data-slot="td" class="${ssrRenderClass(ui.value.td({ class: [unref(props).ui?.td] }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "expanded", { row }, null, _push2, _parent2, _scopeId);
+              _push2(`</td></tr>`);
+            } else {
+              _push2(`<!---->`);
+            }
+          } else {
+            return [
+              createVNode("tr", {
+                "data-selected": row.getIsSelected(),
+                "data-selectable": !!unref(props).onSelect || !!unref(props).onHover || !!unref(props).onContextmenu,
+                "data-expanded": row.getIsExpanded(),
+                "data-pinned": row.getIsPinned() || void 0,
+                role: unref(props).onSelect ? "button" : void 0,
+                tabindex: unref(props).onSelect ? 0 : void 0,
+                "data-slot": "tr",
+                class: ui.value.tr({
+                  class: [
+                    unref(props).ui?.tr,
+                    resolveValue(unref(tableApi).options.meta?.class?.tr, row)
+                  ]
+                }),
+                style: [resolveValue(unref(tableApi).options.meta?.style?.tr, row), style],
+                onClick: ($event) => onRowSelect($event, row),
+                onPointerenter: ($event) => onRowHover($event, row),
+                onPointerleave: ($event) => onRowHover($event, null),
+                onContextmenu: ($event) => onRowContextmenu($event, row)
+              }, [
+                (openBlock(true), createBlock(Fragment, null, renderList(row.getVisibleCells(), (cell) => {
+                  return openBlock(), createBlock("td", {
+                    key: cell.id,
+                    "data-pinned": cell.column.getIsPinned(),
+                    colspan: resolveValue(cell.column.columnDef.meta?.colspan?.td, cell),
+                    rowspan: resolveValue(cell.column.columnDef.meta?.rowspan?.td, cell),
+                    "data-slot": "td",
+                    class: ui.value.td({
+                      class: [
+                        unref(props).ui?.td,
+                        resolveValue(cell.column.columnDef.meta?.class?.td, cell)
+                      ],
+                      pinned: !!cell.column.getIsPinned()
+                    }),
+                    style: [
+                      getColumnStyles(cell.column),
+                      resolveValue(cell.column.columnDef.meta?.style?.td, cell)
+                    ]
+                  }, [
+                    renderSlot(_ctx.$slots, `${cell.column.id}-cell`, mergeProps({ ref_for: true }, cell.getContext()), () => [
+                      createVNode(unref(FlexRender), {
+                        render: cell.column.columnDef.cell,
+                        props: cell.getContext()
+                      }, null, 8, ["render", "props"])
+                    ])
+                  ], 14, ["data-pinned", "colspan", "rowspan"]);
+                }), 128))
+              ], 46, ["data-selected", "data-selectable", "data-expanded", "data-pinned", "role", "tabindex", "onClick", "onPointerenter", "onPointerleave", "onContextmenu"]),
+              row.getIsExpanded() ? (openBlock(), createBlock("tr", {
+                key: 0,
+                "data-slot": "tr",
+                class: ui.value.tr({ class: [unref(props).ui?.tr] })
+              }, [
+                createVNode("td", {
+                  colspan: row.getAllCells().length,
+                  "data-slot": "td",
+                  class: ui.value.td({ class: [unref(props).ui?.td] })
+                }, [
+                  renderSlot(_ctx.$slots, "expanded", { row })
+                ], 10, ["colspan"])
+              ], 2)) : createCommentVNode("", true)
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+      _push(ssrRenderComponent(unref(DefineTableTemplate), null, {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<table data-slot="base" class="${ssrRenderClass(ui.value.base({ class: [unref(props).ui?.base] }))}"${_scopeId}>`);
+            if (unref(props).caption || !!slots.caption) {
+              _push2(`<caption data-slot="caption" class="${ssrRenderClass(ui.value.caption({ class: [unref(props).ui?.caption] }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "caption", {}, () => {
+                _push2(`${ssrInterpolate(unref(props).caption)}`);
+              }, _push2, _parent2, _scopeId);
+              _push2(`</caption>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(`<thead data-slot="thead" class="${ssrRenderClass(ui.value.thead({ class: [unref(props).ui?.thead] }))}"${_scopeId}><!--[-->`);
+            ssrRenderList(unref(tableApi).getHeaderGroups(), (headerGroup) => {
+              _push2(`<tr data-slot="tr" class="${ssrRenderClass(ui.value.tr({ class: [unref(props).ui?.tr] }))}"${_scopeId}><!--[-->`);
+              ssrRenderList(headerGroup.headers, (header) => {
+                _push2(`<th${ssrRenderAttr("data-pinned", header.column.getIsPinned())}${ssrRenderAttr("scope", header.colSpan > 1 ? "colgroup" : "col")}${ssrRenderAttr("colspan", header.colSpan > 1 ? header.colSpan : void 0)}${ssrRenderAttr("rowspan", header.rowSpan > 1 ? header.rowSpan : void 0)} data-slot="th" class="${ssrRenderClass(ui.value.th({
+                  class: [
+                    unref(props).ui?.th,
+                    resolveValue(header.column.columnDef.meta?.class?.th, header)
+                  ],
+                  pinned: !!header.column.getIsPinned()
+                }))}" style="${ssrRenderStyle([
+                  getColumnStyles(header.column),
+                  resolveValue(header.column.columnDef.meta?.style?.th, header)
+                ])}"${_scopeId}>`);
+                ssrRenderSlot(_ctx.$slots, `${header.id}-header`, mergeProps({ ref_for: true }, header.getContext()), () => {
+                  if (!header.isPlaceholder) {
+                    _push2(ssrRenderComponent(unref(FlexRender), {
+                      render: header.column.columnDef.header,
+                      props: header.getContext()
+                    }, null, _parent2, _scopeId));
+                  } else {
+                    _push2(`<!---->`);
+                  }
+                }, _push2, _parent2, _scopeId);
+                _push2(`</th>`);
+              });
+              _push2(`<!--]--></tr>`);
+            });
+            _push2(`<!--]--><tr data-slot="separator" class="${ssrRenderClass(ui.value.separator({ class: [unref(props).ui?.separator] }))}"${_scopeId}></tr></thead><tbody data-slot="tbody" class="${ssrRenderClass(ui.value.tbody({ class: [unref(props).ui?.tbody] }))}"${_scopeId}>`);
+            ssrRenderSlot(_ctx.$slots, "body-top", {}, null, _push2, _parent2, _scopeId);
+            if (rows.value.length) {
+              _push2(`<!--[--><!--[-->`);
+              ssrRenderList(topRows.value, (row) => {
+                _push2(ssrRenderComponent(unref(ReuseRowTemplate), {
+                  key: row.id,
+                  row
+                }, null, _parent2, _scopeId));
+              });
+              _push2(`<!--]-->`);
+              if (unref(virtualizer)) {
+                _push2(`<!--[-->`);
+                if (virtualPaddingTop.value > 0) {
+                  _push2(`<tr style="${ssrRenderStyle({ height: `${virtualPaddingTop.value}px` })}" aria-hidden="true"${_scopeId}><td${ssrRenderAttr("colspan", unref(tableApi).getAllLeafColumns().length)}${_scopeId}></td></tr>`);
+                } else {
+                  _push2(`<!---->`);
+                }
+                _push2(`<!--[-->`);
+                ssrRenderList(virtualItems.value, (virtualRow) => {
+                  _push2(`<!--[-->`);
+                  if (centerRows.value[virtualRow.index]) {
+                    _push2(ssrRenderComponent(unref(ReuseRowTemplate), {
+                      row: centerRows.value[virtualRow.index],
+                      style: { height: `${virtualRow.size}px` }
+                    }, null, _parent2, _scopeId));
+                  } else {
+                    _push2(`<!---->`);
+                  }
+                  _push2(`<!--]-->`);
+                });
+                _push2(`<!--]-->`);
+                if (virtualPaddingBottom.value > 0) {
+                  _push2(`<tr style="${ssrRenderStyle({ height: `${virtualPaddingBottom.value}px` })}" aria-hidden="true"${_scopeId}><td${ssrRenderAttr("colspan", unref(tableApi).getAllLeafColumns().length)}${_scopeId}></td></tr>`);
+                } else {
+                  _push2(`<!---->`);
+                }
+                _push2(`<!--]-->`);
+              } else {
+                _push2(`<!--[-->`);
+                ssrRenderList(centerRows.value, (row) => {
+                  _push2(ssrRenderComponent(unref(ReuseRowTemplate), {
+                    key: row.id,
+                    row
+                  }, null, _parent2, _scopeId));
+                });
+                _push2(`<!--]-->`);
+              }
+              _push2(`<!--[-->`);
+              ssrRenderList(bottomRows.value, (row) => {
+                _push2(ssrRenderComponent(unref(ReuseRowTemplate), {
+                  key: row.id,
+                  row
+                }, null, _parent2, _scopeId));
+              });
+              _push2(`<!--]--><!--]-->`);
+            } else if (unref(props).loading && !!slots["loading"]) {
+              _push2(`<tr${_scopeId}><td${ssrRenderAttr("colspan", unref(tableApi).getAllLeafColumns().length)} data-slot="loading" class="${ssrRenderClass(ui.value.loading({ class: unref(props).ui?.loading }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "loading", {}, null, _push2, _parent2, _scopeId);
+              _push2(`</td></tr>`);
+            } else {
+              _push2(`<tr${_scopeId}><td${ssrRenderAttr("colspan", unref(tableApi).getAllLeafColumns().length)} data-slot="empty" class="${ssrRenderClass(ui.value.empty({ class: unref(props).ui?.empty }))}"${_scopeId}>`);
+              ssrRenderSlot(_ctx.$slots, "empty", {}, () => {
+                _push2(`${ssrInterpolate(unref(props).empty || unref(t)("table.noData"))}`);
+              }, _push2, _parent2, _scopeId);
+              _push2(`</td></tr>`);
+            }
+            ssrRenderSlot(_ctx.$slots, "body-bottom", {}, null, _push2, _parent2, _scopeId);
+            _push2(`</tbody>`);
+            if (hasFooter.value) {
+              _push2(`<tfoot data-slot="tfoot" class="${ssrRenderClass(ui.value.tfoot({ class: [unref(props).ui?.tfoot] }))}"${_scopeId}><tr data-slot="separator" class="${ssrRenderClass(ui.value.separator({ class: [unref(props).ui?.separator] }))}"${_scopeId}></tr><!--[-->`);
+              ssrRenderList(unref(tableApi).getFooterGroups(), (footerGroup) => {
+                _push2(`<tr data-slot="tr" class="${ssrRenderClass(ui.value.tr({ class: [unref(props).ui?.tr] }))}"${_scopeId}><!--[-->`);
+                ssrRenderList(footerGroup.headers, (header) => {
+                  _push2(`<th${ssrRenderAttr("data-pinned", header.column.getIsPinned())}${ssrRenderAttr("colspan", header.colSpan > 1 ? header.colSpan : void 0)}${ssrRenderAttr("rowspan", header.rowSpan > 1 ? header.rowSpan : void 0)} data-slot="th" class="${ssrRenderClass(ui.value.th({
+                    class: [
+                      unref(props).ui?.th,
+                      resolveValue(header.column.columnDef.meta?.class?.th, header)
+                    ],
+                    pinned: !!header.column.getIsPinned()
+                  }))}" style="${ssrRenderStyle([
+                    getColumnStyles(header.column),
+                    resolveValue(header.column.columnDef.meta?.style?.th, header)
+                  ])}"${_scopeId}>`);
+                  ssrRenderSlot(_ctx.$slots, `${header.id}-footer`, mergeProps({ ref_for: true }, header.getContext()), () => {
+                    if (!header.isPlaceholder) {
+                      _push2(ssrRenderComponent(unref(FlexRender), {
+                        render: header.column.columnDef.footer,
+                        props: header.getContext()
+                      }, null, _parent2, _scopeId));
+                    } else {
+                      _push2(`<!---->`);
+                    }
+                  }, _push2, _parent2, _scopeId);
+                  _push2(`</th>`);
+                });
+                _push2(`<!--]--></tr>`);
+              });
+              _push2(`<!--]--></tfoot>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(`</table>`);
+          } else {
+            return [
+              createVNode("table", {
+                ref_key: "tableRef",
+                ref: tableRef,
+                "data-slot": "base",
+                class: ui.value.base({ class: [unref(props).ui?.base] })
+              }, [
+                unref(props).caption || !!slots.caption ? (openBlock(), createBlock("caption", {
+                  key: 0,
+                  "data-slot": "caption",
+                  class: ui.value.caption({ class: [unref(props).ui?.caption] })
+                }, [
+                  renderSlot(_ctx.$slots, "caption", {}, () => [
+                    createTextVNode(toDisplayString(unref(props).caption), 1)
+                  ])
+                ], 2)) : createCommentVNode("", true),
+                createVNode("thead", {
+                  "data-slot": "thead",
+                  class: ui.value.thead({ class: [unref(props).ui?.thead] })
+                }, [
+                  (openBlock(true), createBlock(Fragment, null, renderList(unref(tableApi).getHeaderGroups(), (headerGroup) => {
+                    return openBlock(), createBlock("tr", {
+                      key: headerGroup.id,
+                      "data-slot": "tr",
+                      class: ui.value.tr({ class: [unref(props).ui?.tr] })
+                    }, [
+                      (openBlock(true), createBlock(Fragment, null, renderList(headerGroup.headers, (header) => {
+                        return openBlock(), createBlock("th", {
+                          key: header.id,
+                          "data-pinned": header.column.getIsPinned(),
+                          scope: header.colSpan > 1 ? "colgroup" : "col",
+                          colspan: header.colSpan > 1 ? header.colSpan : void 0,
+                          rowspan: header.rowSpan > 1 ? header.rowSpan : void 0,
+                          "data-slot": "th",
+                          class: ui.value.th({
+                            class: [
+                              unref(props).ui?.th,
+                              resolveValue(header.column.columnDef.meta?.class?.th, header)
+                            ],
+                            pinned: !!header.column.getIsPinned()
+                          }),
+                          style: [
+                            getColumnStyles(header.column),
+                            resolveValue(header.column.columnDef.meta?.style?.th, header)
+                          ]
+                        }, [
+                          renderSlot(_ctx.$slots, `${header.id}-header`, mergeProps({ ref_for: true }, header.getContext()), () => [
+                            !header.isPlaceholder ? (openBlock(), createBlock(unref(FlexRender), {
+                              key: 0,
+                              render: header.column.columnDef.header,
+                              props: header.getContext()
+                            }, null, 8, ["render", "props"])) : createCommentVNode("", true)
+                          ])
+                        ], 14, ["data-pinned", "scope", "colspan", "rowspan"]);
+                      }), 128))
+                    ], 2);
+                  }), 128)),
+                  createVNode("tr", {
+                    "data-slot": "separator",
+                    class: ui.value.separator({ class: [unref(props).ui?.separator] })
+                  }, null, 2)
+                ], 2),
+                createVNode("tbody", {
+                  "data-slot": "tbody",
+                  class: ui.value.tbody({ class: [unref(props).ui?.tbody] })
+                }, [
+                  renderSlot(_ctx.$slots, "body-top"),
+                  rows.value.length ? (openBlock(), createBlock(Fragment, { key: 0 }, [
+                    (openBlock(true), createBlock(Fragment, null, renderList(topRows.value, (row) => {
+                      return openBlock(), createBlock(unref(ReuseRowTemplate), {
+                        key: row.id,
+                        row
+                      }, null, 8, ["row"]);
+                    }), 128)),
+                    unref(virtualizer) ? (openBlock(), createBlock(Fragment, { key: 0 }, [
+                      virtualPaddingTop.value > 0 ? (openBlock(), createBlock("tr", {
+                        key: 0,
+                        style: { height: `${virtualPaddingTop.value}px` },
+                        "aria-hidden": "true"
+                      }, [
+                        createVNode("td", {
+                          colspan: unref(tableApi).getAllLeafColumns().length
+                        }, null, 8, ["colspan"])
+                      ], 4)) : createCommentVNode("", true),
+                      (openBlock(true), createBlock(Fragment, null, renderList(virtualItems.value, (virtualRow) => {
+                        return openBlock(), createBlock(Fragment, {
+                          key: centerRows.value[virtualRow.index]?.id ?? `virtual-${virtualRow.index}`
+                        }, [
+                          centerRows.value[virtualRow.index] ? (openBlock(), createBlock(unref(ReuseRowTemplate), {
+                            key: 0,
+                            row: centerRows.value[virtualRow.index],
+                            style: { height: `${virtualRow.size}px` }
+                          }, null, 8, ["row", "style"])) : createCommentVNode("", true)
+                        ], 64);
+                      }), 128)),
+                      virtualPaddingBottom.value > 0 ? (openBlock(), createBlock("tr", {
+                        key: 1,
+                        style: { height: `${virtualPaddingBottom.value}px` },
+                        "aria-hidden": "true"
+                      }, [
+                        createVNode("td", {
+                          colspan: unref(tableApi).getAllLeafColumns().length
+                        }, null, 8, ["colspan"])
+                      ], 4)) : createCommentVNode("", true)
+                    ], 64)) : (openBlock(true), createBlock(Fragment, { key: 1 }, renderList(centerRows.value, (row) => {
+                      return openBlock(), createBlock(unref(ReuseRowTemplate), {
+                        key: row.id,
+                        row
+                      }, null, 8, ["row"]);
+                    }), 128)),
+                    (openBlock(true), createBlock(Fragment, null, renderList(bottomRows.value, (row) => {
+                      return openBlock(), createBlock(unref(ReuseRowTemplate), {
+                        key: row.id,
+                        row
+                      }, null, 8, ["row"]);
+                    }), 128))
+                  ], 64)) : unref(props).loading && !!slots["loading"] ? (openBlock(), createBlock("tr", { key: 1 }, [
+                    createVNode("td", {
+                      colspan: unref(tableApi).getAllLeafColumns().length,
+                      "data-slot": "loading",
+                      class: ui.value.loading({ class: unref(props).ui?.loading })
+                    }, [
+                      renderSlot(_ctx.$slots, "loading")
+                    ], 10, ["colspan"])
+                  ])) : (openBlock(), createBlock("tr", { key: 2 }, [
+                    createVNode("td", {
+                      colspan: unref(tableApi).getAllLeafColumns().length,
+                      "data-slot": "empty",
+                      class: ui.value.empty({ class: unref(props).ui?.empty })
+                    }, [
+                      renderSlot(_ctx.$slots, "empty", {}, () => [
+                        createTextVNode(toDisplayString(unref(props).empty || unref(t)("table.noData")), 1)
+                      ])
+                    ], 10, ["colspan"])
+                  ])),
+                  renderSlot(_ctx.$slots, "body-bottom")
+                ], 2),
+                hasFooter.value ? (openBlock(), createBlock("tfoot", {
+                  key: 1,
+                  "data-slot": "tfoot",
+                  class: ui.value.tfoot({ class: [unref(props).ui?.tfoot] })
+                }, [
+                  createVNode("tr", {
+                    "data-slot": "separator",
+                    class: ui.value.separator({ class: [unref(props).ui?.separator] })
+                  }, null, 2),
+                  (openBlock(true), createBlock(Fragment, null, renderList(unref(tableApi).getFooterGroups(), (footerGroup) => {
+                    return openBlock(), createBlock("tr", {
+                      key: footerGroup.id,
+                      "data-slot": "tr",
+                      class: ui.value.tr({ class: [unref(props).ui?.tr] })
+                    }, [
+                      (openBlock(true), createBlock(Fragment, null, renderList(footerGroup.headers, (header) => {
+                        return openBlock(), createBlock("th", {
+                          key: header.id,
+                          "data-pinned": header.column.getIsPinned(),
+                          colspan: header.colSpan > 1 ? header.colSpan : void 0,
+                          rowspan: header.rowSpan > 1 ? header.rowSpan : void 0,
+                          "data-slot": "th",
+                          class: ui.value.th({
+                            class: [
+                              unref(props).ui?.th,
+                              resolveValue(header.column.columnDef.meta?.class?.th, header)
+                            ],
+                            pinned: !!header.column.getIsPinned()
+                          }),
+                          style: [
+                            getColumnStyles(header.column),
+                            resolveValue(header.column.columnDef.meta?.style?.th, header)
+                          ]
+                        }, [
+                          renderSlot(_ctx.$slots, `${header.id}-footer`, mergeProps({ ref_for: true }, header.getContext()), () => [
+                            !header.isPlaceholder ? (openBlock(), createBlock(unref(FlexRender), {
+                              key: 0,
+                              render: header.column.columnDef.footer,
+                              props: header.getContext()
+                            }, null, 8, ["render", "props"])) : createCommentVNode("", true)
+                          ])
+                        ], 14, ["data-pinned", "colspan", "rowspan"]);
+                      }), 128))
+                    ], 2);
+                  }), 128))
+                ], 2)) : createCommentVNode("", true)
+              ], 2)
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+      _push(ssrRenderComponent(unref(Primitive), mergeProps({
+        ref_key: "rootRef",
+        ref: rootRef,
+        as: unref(props).as
+      }, _ctx.$attrs, {
+        "data-slot": "root",
+        class: ui.value.root({ class: [unref(props).ui?.root, unref(props).class] })
+      }), {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(ssrRenderComponent(unref(ReuseTableTemplate), null, null, _parent2, _scopeId));
+          } else {
+            return [
+              createVNode(unref(ReuseTableTemplate))
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(`<!--]-->`);
+    };
+  }
+});
+const _sfc_setup$f = _sfc_main$f.setup;
+_sfc_main$f.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/Table.vue");
+  return _sfc_setup$f ? _sfc_setup$f(props, ctx) : void 0;
+};
+const _sfc_main$e = /* @__PURE__ */ defineComponent({
+  __name: "RolesTable",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const { roleViews, roles } = useIridis();
+    const UBadge = _sfc_main$y;
+    const bg = computed(() => roles.value["background"] ?? "#000000");
+    const data = computed(() => roleViews.value.map((r) => {
+      const ratio = contrastRatio(r.hex, bg.value);
+      return { "aa": ratio >= 4.5, "aaa": ratio >= 7, "c": r.c, "h": r.h, "hex": r.hex, "l": r.l, "name": r.name, "ratio": ratio };
+    }));
+    function sortableHeader(label) {
+      return ({ column }) => {
+        return h(_sfc_main$a$1, {
+          "color": "neutral",
+          "icon": column.getIsSorted() === "asc" ? "i-material-symbols-arrow-upward-rounded" : column.getIsSorted() === "desc" ? "i-material-symbols-arrow-downward-rounded" : "i-material-symbols-unfold-more-rounded",
+          "onClick": () => {
+            column.toggleSorting(column.getIsSorted() === "asc");
+          },
+          "size": "xs",
+          "variant": "ghost"
+        }, () => label);
+      };
+    }
+    const columns = [
+      { "accessorKey": "name", "header": sortableHeader("Role") },
+      { "accessorKey": "hex", "header": "Hex" },
+      { "accessorKey": "l", "header": sortableHeader("L") },
+      { "accessorKey": "c", "header": sortableHeader("C") },
+      { "accessorKey": "h", "header": sortableHeader("H°") },
+      { "accessorKey": "ratio", "header": sortableHeader("Ratio") },
+      { "header": "Compliance", "id": "compliance" }
+    ];
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UCard = _sfc_main$t;
+      const _component_UTable = _sfc_main$f;
+      _push(ssrRenderComponent(_component_UCard, _attrs, {
+        header: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2"${_scopeId}><span${_scopeId}></span><span class="text-center font-semibold text-highlighted"${_scopeId}>Roles table</span>`);
+            _push2(ssrRenderComponent(unref(UBadge), {
+              color: "neutral",
+              variant: "soft",
+              class: "justify-self-end"
+            }, {
+              default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`${ssrInterpolate(data.value.length)} roles `);
+                } else {
+                  return [
+                    createTextVNode(toDisplayString(data.value.length) + " roles ", 1)
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(`</div>`);
+          } else {
+            return [
+              createVNode("div", { class: "grid grid-cols-[1fr_auto_1fr] items-center gap-2" }, [
+                createVNode("span"),
+                createVNode("span", { class: "text-center font-semibold text-highlighted" }, "Roles table"),
+                createVNode(unref(UBadge), {
+                  color: "neutral",
+                  variant: "soft",
+                  class: "justify-self-end"
+                }, {
+                  default: withCtx(() => [
+                    createTextVNode(toDisplayString(data.value.length) + " roles ", 1)
+                  ]),
+                  _: 1
+                })
+              ])
+            ];
+          }
+        }),
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<p class="mb-3 text-sm text-muted"${_scopeId}> Same roles as the grid, laid out for sorting — click a header. </p><div class="overflow-x-auto"${_scopeId}>`);
+            _push2(ssrRenderComponent(_component_UTable, {
+              data: data.value,
+              columns,
+              class: "min-w-[560px]"
+            }, {
+              "hex-cell": withCtx(({ row }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`<span class="inline-flex items-center gap-2"${_scopeId2}><span class="h-4 w-4 shrink-0 rounded border border-default" style="${ssrRenderStyle({ backgroundColor: row.original.hex })}"${_scopeId2}></span><span class="font-mono text-xs"${_scopeId2}>${ssrInterpolate(row.original.hex)}</span></span>`);
+                } else {
+                  return [
+                    createVNode("span", { class: "inline-flex items-center gap-2" }, [
+                      createVNode("span", {
+                        class: "h-4 w-4 shrink-0 rounded border border-default",
+                        style: { backgroundColor: row.original.hex }
+                      }, null, 4),
+                      createVNode("span", { class: "font-mono text-xs" }, toDisplayString(row.original.hex), 1)
+                    ])
+                  ];
+                }
+              }),
+              "l-cell": withCtx(({ row }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`${ssrInterpolate(row.original.l.toFixed(3))}`);
+                } else {
+                  return [
+                    createTextVNode(toDisplayString(row.original.l.toFixed(3)), 1)
+                  ];
+                }
+              }),
+              "c-cell": withCtx(({ row }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`${ssrInterpolate(row.original.c.toFixed(3))}`);
+                } else {
+                  return [
+                    createTextVNode(toDisplayString(row.original.c.toFixed(3)), 1)
+                  ];
+                }
+              }),
+              "h-cell": withCtx(({ row }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`${ssrInterpolate(row.original.h.toFixed(1))}° `);
+                } else {
+                  return [
+                    createTextVNode(toDisplayString(row.original.h.toFixed(1)) + "° ", 1)
+                  ];
+                }
+              }),
+              "ratio-cell": withCtx(({ row }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`${ssrInterpolate(row.original.ratio.toFixed(2))}`);
+                } else {
+                  return [
+                    createTextVNode(toDisplayString(row.original.ratio.toFixed(2)), 1)
+                  ];
+                }
+              }),
+              "compliance-cell": withCtx(({ row }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(ssrRenderComponent(unref(UBadge), {
+                    color: row.original.aaa ? "success" : row.original.aa ? "primary" : "neutral",
+                    variant: "soft",
+                    size: "xs"
+                  }, {
+                    default: withCtx((_2, _push4, _parent4, _scopeId3) => {
+                      if (_push4) {
+                        _push4(`${ssrInterpolate(row.original.aaa ? "AAA" : row.original.aa ? "AA" : "fail")}`);
+                      } else {
+                        return [
+                          createTextVNode(toDisplayString(row.original.aaa ? "AAA" : row.original.aa ? "AA" : "fail"), 1)
+                        ];
+                      }
+                    }),
+                    _: 2
+                  }, _parent3, _scopeId2));
+                } else {
+                  return [
+                    createVNode(unref(UBadge), {
+                      color: row.original.aaa ? "success" : row.original.aa ? "primary" : "neutral",
+                      variant: "soft",
+                      size: "xs"
+                    }, {
+                      default: withCtx(() => [
+                        createTextVNode(toDisplayString(row.original.aaa ? "AAA" : row.original.aa ? "AA" : "fail"), 1)
+                      ]),
+                      _: 2
+                    }, 1032, ["color"])
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(`</div>`);
+          } else {
+            return [
+              createVNode("p", { class: "mb-3 text-sm text-muted" }, " Same roles as the grid, laid out for sorting — click a header. "),
+              createVNode("div", { class: "overflow-x-auto" }, [
+                createVNode(_component_UTable, {
+                  data: data.value,
+                  columns,
+                  class: "min-w-[560px]"
+                }, {
+                  "hex-cell": withCtx(({ row }) => [
+                    createVNode("span", { class: "inline-flex items-center gap-2" }, [
+                      createVNode("span", {
+                        class: "h-4 w-4 shrink-0 rounded border border-default",
+                        style: { backgroundColor: row.original.hex }
+                      }, null, 4),
+                      createVNode("span", { class: "font-mono text-xs" }, toDisplayString(row.original.hex), 1)
+                    ])
+                  ]),
+                  "l-cell": withCtx(({ row }) => [
+                    createTextVNode(toDisplayString(row.original.l.toFixed(3)), 1)
+                  ]),
+                  "c-cell": withCtx(({ row }) => [
+                    createTextVNode(toDisplayString(row.original.c.toFixed(3)), 1)
+                  ]),
+                  "h-cell": withCtx(({ row }) => [
+                    createTextVNode(toDisplayString(row.original.h.toFixed(1)) + "° ", 1)
+                  ]),
+                  "ratio-cell": withCtx(({ row }) => [
+                    createTextVNode(toDisplayString(row.original.ratio.toFixed(2)), 1)
+                  ]),
+                  "compliance-cell": withCtx(({ row }) => [
+                    createVNode(unref(UBadge), {
+                      color: row.original.aaa ? "success" : row.original.aa ? "primary" : "neutral",
+                      variant: "soft",
+                      size: "xs"
+                    }, {
+                      default: withCtx(() => [
+                        createTextVNode(toDisplayString(row.original.aaa ? "AAA" : row.original.aa ? "AA" : "fail"), 1)
+                      ]),
+                      _: 2
+                    }, 1032, ["color"])
+                  ]),
+                  _: 1
+                }, 8, ["data"])
+              ])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+    };
+  }
+});
+const _sfc_setup$e = _sfc_main$e.setup;
+_sfc_main$e.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/RolesTable.vue");
+  return _sfc_setup$e ? _sfc_setup$e(props, ctx) : void 0;
+};
+const __nuxt_component_7 = Object.assign(_sfc_main$e, { __name: "RolesTable" });
+const _sfc_main$d = /* @__PURE__ */ defineComponent({
+  __name: "ColorSpaces",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const { roleViews } = useIridis();
+    const selected = ref("brand");
+    const names = computed(() => roleViews.value.map((r) => r.name));
+    const role = computed(() => roleViews.value.find((r) => r.name === selected.value) ?? roleViews.value.find((r) => r.name === "brand") ?? roleViews.value[0]);
+    function rgb(hex) {
+      return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    }
+    function hsv([r, g, b]) {
+      const rn = r / 255, gn = g / 255, bn = b / 255;
+      const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn), d = max - min;
+      let h2 = 0;
+      if (d !== 0) {
+        h2 = max === rn ? (gn - bn) / d % 6 : max === gn ? (bn - rn) / d + 2 : (rn - gn) / d + 4;
+        h2 *= 60;
+        if (h2 < 0) h2 += 360;
+      }
+      return [Math.round(h2), Math.round((max === 0 ? 0 : d / max) * 100), Math.round(max * 100)];
+    }
+    function cmyk([r, g, b]) {
+      const rn = r / 255, gn = g / 255, bn = b / 255;
+      const k = 1 - Math.max(rn, gn, bn);
+      if (k === 1) return [0, 0, 0, 100];
+      return [Math.round((1 - rn - k) / (1 - k) * 100), Math.round((1 - gn - k) / (1 - k) * 100), Math.round((1 - bn - k) / (1 - k) * 100), Math.round(k * 100)];
+    }
+    const rows = computed(() => {
+      const r = role.value;
+      if (!r) return [];
+      const c = rgb(r.hex);
+      const [h2, s, v] = hsv(c);
+      const [cy, m, ye, k] = cmyk(c);
+      return [
+        { "space": "Hex", "value": r.hex },
+        { "space": "RGB", "value": `rgb(${c[0]}, ${c[1]}, ${c[2]})` },
+        { "space": "HSV", "value": `${h2}°, ${s}%, ${v}%` },
+        { "space": "CMYK", "value": `${cy}%, ${m}%, ${ye}%, ${k}%` },
+        { "space": "OKLCH", "value": `${r.l.toFixed(3)} ${r.c.toFixed(3)} ${r.h.toFixed(1)}°` }
+      ];
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UCard = _sfc_main$t;
+      const _component_USelect = _sfc_main$q;
+      _push(ssrRenderComponent(_component_UCard, _attrs, {
+        header: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<span class="block text-center font-semibold text-highlighted"${_scopeId}>Color spaces</span>`);
+          } else {
+            return [
+              createVNode("span", { class: "block text-center font-semibold text-highlighted" }, "Color spaces")
+            ];
+          }
+        }),
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="space-y-4"${_scopeId}><div class="flex items-center gap-3"${_scopeId}><div class="h-10 w-10 rounded-md border border-default" style="${ssrRenderStyle({ backgroundColor: role.value?.hex })}"${_scopeId}></div>`);
+            _push2(ssrRenderComponent(_component_USelect, {
+              modelValue: selected.value,
+              "onUpdate:modelValue": ($event) => selected.value = $event,
+              items: names.value,
+              class: "w-48"
+            }, null, _parent2, _scopeId));
+            _push2(`</div><div class="divide-y divide-default"${_scopeId}><!--[-->`);
+            ssrRenderList(rows.value, (row) => {
+              _push2(`<div class="flex items-center justify-between py-1.5"${_scopeId}><span class="text-xs font-medium text-muted"${_scopeId}>${ssrInterpolate(row.space)}</span><span class="font-mono text-xs text-highlighted"${_scopeId}>${ssrInterpolate(row.value)}</span></div>`);
+            });
+            _push2(`<!--]--></div></div>`);
+          } else {
+            return [
+              createVNode("div", { class: "space-y-4" }, [
+                createVNode("div", { class: "flex items-center gap-3" }, [
+                  createVNode("div", {
+                    class: "h-10 w-10 rounded-md border border-default",
+                    style: { backgroundColor: role.value?.hex }
+                  }, null, 4),
+                  createVNode(_component_USelect, {
+                    modelValue: selected.value,
+                    "onUpdate:modelValue": ($event) => selected.value = $event,
+                    items: names.value,
+                    class: "w-48"
+                  }, null, 8, ["modelValue", "onUpdate:modelValue", "items"])
+                ]),
+                createVNode("div", { class: "divide-y divide-default" }, [
+                  (openBlock(true), createBlock(Fragment, null, renderList(rows.value, (row) => {
+                    return openBlock(), createBlock("div", {
+                      key: row.space,
+                      class: "flex items-center justify-between py-1.5"
+                    }, [
+                      createVNode("span", { class: "text-xs font-medium text-muted" }, toDisplayString(row.space), 1),
+                      createVNode("span", { class: "font-mono text-xs text-highlighted" }, toDisplayString(row.value), 1)
+                    ]);
+                  }), 128))
+                ])
+              ])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+    };
+  }
+});
+const _sfc_setup$d = _sfc_main$d.setup;
+_sfc_main$d.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/ColorSpaces.vue");
+  return _sfc_setup$d ? _sfc_setup$d(props, ctx) : void 0;
+};
+const __nuxt_component_8 = Object.assign(_sfc_main$d, { __name: "ColorSpaces" });
+const _sfc_main$c = /* @__PURE__ */ defineComponent({
+  __name: "PipelineExplainer",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const TASKS_BY_NAME = new Map([...coreTasks, intakeHexHint, pinDerivedRoles, ...contrastPlugin.tasks()].map((t) => {
+      return [t.name, t];
+    }));
+    const { enabledOptionalStages, cvdCorrect, contrastReport } = useIridis();
+    const { send } = useIridisUiMachine();
+    const stages = computed(() => COLOR_PIPELINE.map((name, i) => {
+      const task = TASKS_BY_NAME.get(name);
+      return {
+        "label": `${i + 1}. ${name}`,
+        "description": task?.manifest?.description ?? "(task not registered)",
+        "optional": OPTIONAL_STAGE_NAMES.includes(name),
+        "reads": task?.manifest?.reads ?? [],
+        "value": name,
+        "writes": task?.manifest?.writes ?? []
+      };
+    }));
+    function pairSummary(report) {
+      const { pairs } = report;
+      const passing = pairs.filter((p) => {
+        return p.pass;
+      }).length;
+      return `${passing}/${pairs.length} pairs passing`;
+    }
+    function cvdCorrectionSummary(report) {
+      const { corrections } = report;
+      if (corrections === void 0) {
+        return void 0;
+      }
+      const autoCorrected = corrections.filter((c) => {
+        return c.cvdTypesRemaining.length === 0;
+      }).length;
+      const stillFailing = corrections.filter((c) => {
+        return c.cvdTypesRemaining.length > 0;
+      }).length;
+      return `${autoCorrected} pairs auto-corrected, ${stillFailing} still failing`;
+    }
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UCard = _sfc_main$t;
+      const _component_UIcon = _sfc_main$f$1;
+      const _component_UBadge = _sfc_main$y;
+      const _component_USwitch = _sfc_main$s;
+      _push(ssrRenderComponent(_component_UCard, _attrs, {
+        header: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2"${_scopeId}><span${_scopeId}></span><span class="text-center font-semibold text-highlighted"${_scopeId}>Pipeline</span><span${_scopeId}></span></div>`);
+          } else {
+            return [
+              createVNode("div", { class: "grid grid-cols-[1fr_auto_1fr] items-center gap-2" }, [
+                createVNode("span"),
+                createVNode("span", { class: "text-center font-semibold text-highlighted" }, "Pipeline"),
+                createVNode("span")
+              ])
+            ];
+          }
+        }),
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<p class="mb-3 mt-6 text-sm text-muted"${_scopeId}> Expand a stage — the description underneath is that task&#39;s own manifest, not marketing copy. Optional stages are automatically switched on or off depending on the compliance strictness setting. </p>`);
+            _push2(ssrRenderComponent(unref(AccordionRoot_default), {
+              type: "multiple",
+              class: "w-full"
+            }, {
+              default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`<!--[-->`);
+                  ssrRenderList(stages.value, (stage) => {
+                    _push3(ssrRenderComponent(unref(AccordionItem_default), {
+                      key: stage.value,
+                      value: stage.value,
+                      class: "border-b border-default"
+                    }, {
+                      default: withCtx((_3, _push4, _parent4, _scopeId3) => {
+                        if (_push4) {
+                          _push4(ssrRenderComponent(unref(AccordionHeader_default), { class: "flex items-center gap-2" }, {
+                            default: withCtx((_4, _push5, _parent5, _scopeId4) => {
+                              if (_push5) {
+                                _push5(ssrRenderComponent(unref(AccordionTrigger_default), { class: "flex flex-1 items-center gap-2 py-3 text-left hover:text-highlighted" }, {
+                                  default: withCtx((_5, _push6, _parent6, _scopeId5) => {
+                                    if (_push6) {
+                                      _push6(`<span class="font-medium"${_scopeId5}>${ssrInterpolate(stage.label)}</span>`);
+                                      _push6(ssrRenderComponent(_component_UIcon, {
+                                        name: "i-lucide-chevron-down",
+                                        class: "ml-auto size-4 transition-transform data-[state=open]:rotate-180"
+                                      }, null, _parent6, _scopeId5));
+                                    } else {
+                                      return [
+                                        createVNode("span", { class: "font-medium" }, toDisplayString(stage.label), 1),
+                                        createVNode(_component_UIcon, {
+                                          name: "i-lucide-chevron-down",
+                                          class: "ml-auto size-4 transition-transform data-[state=open]:rotate-180"
+                                        })
+                                      ];
+                                    }
+                                  }),
+                                  _: 2
+                                }, _parent5, _scopeId4));
+                                if (stage.optional) {
+                                  _push5(ssrRenderComponent(_component_UBadge, {
+                                    color: unref(enabledOptionalStages).has(stage.value) ? "primary" : "neutral",
+                                    variant: unref(enabledOptionalStages).has(stage.value) ? "soft" : "subtle",
+                                    size: "sm"
+                                  }, {
+                                    default: withCtx((_5, _push6, _parent6, _scopeId5) => {
+                                      if (_push6) {
+                                        _push6(`${ssrInterpolate(unref(enabledOptionalStages).has(stage.value) ? "enabled" : "disabled")}`);
+                                      } else {
+                                        return [
+                                          createTextVNode(toDisplayString(unref(enabledOptionalStages).has(stage.value) ? "enabled" : "disabled"), 1)
+                                        ];
+                                      }
+                                    }),
+                                    _: 2
+                                  }, _parent5, _scopeId4));
+                                } else {
+                                  _push5(ssrRenderComponent(_component_UBadge, {
+                                    color: "neutral",
+                                    variant: "subtle",
+                                    size: "sm"
+                                  }, {
+                                    default: withCtx((_5, _push6, _parent6, _scopeId5) => {
+                                      if (_push6) {
+                                        _push6(` required `);
+                                      } else {
+                                        return [
+                                          createTextVNode(" required ")
+                                        ];
+                                      }
+                                    }),
+                                    _: 2
+                                  }, _parent5, _scopeId4));
+                                }
+                              } else {
+                                return [
+                                  createVNode(unref(AccordionTrigger_default), { class: "flex flex-1 items-center gap-2 py-3 text-left hover:text-highlighted" }, {
+                                    default: withCtx(() => [
+                                      createVNode("span", { class: "font-medium" }, toDisplayString(stage.label), 1),
+                                      createVNode(_component_UIcon, {
+                                        name: "i-lucide-chevron-down",
+                                        class: "ml-auto size-4 transition-transform data-[state=open]:rotate-180"
+                                      })
+                                    ]),
+                                    _: 2
+                                  }, 1024),
+                                  stage.optional ? (openBlock(), createBlock(_component_UBadge, {
+                                    key: 0,
+                                    color: unref(enabledOptionalStages).has(stage.value) ? "primary" : "neutral",
+                                    variant: unref(enabledOptionalStages).has(stage.value) ? "soft" : "subtle",
+                                    size: "sm"
+                                  }, {
+                                    default: withCtx(() => [
+                                      createTextVNode(toDisplayString(unref(enabledOptionalStages).has(stage.value) ? "enabled" : "disabled"), 1)
+                                    ]),
+                                    _: 2
+                                  }, 1032, ["color", "variant"])) : (openBlock(), createBlock(_component_UBadge, {
+                                    key: 1,
+                                    color: "neutral",
+                                    variant: "subtle",
+                                    size: "sm"
+                                  }, {
+                                    default: withCtx(() => [
+                                      createTextVNode(" required ")
+                                    ]),
+                                    _: 1
+                                  }))
+                                ];
+                              }
+                            }),
+                            _: 2
+                          }, _parent4, _scopeId3));
+                          _push4(ssrRenderComponent(unref(AccordionContent_default), { class: "pb-4" }, {
+                            default: withCtx((_4, _push5, _parent5, _scopeId4) => {
+                              if (_push5) {
+                                _push5(`<p class="mb-2 text-sm text-muted"${_scopeId4}>${ssrInterpolate(stage.description)}</p><div class="flex flex-wrap gap-3 text-xs"${_scopeId4}>`);
+                                if (stage.reads.length) {
+                                  _push5(`<div${_scopeId4}><span class="text-dimmed"${_scopeId4}>reads </span><!--[-->`);
+                                  ssrRenderList(stage.reads, (r) => {
+                                    _push5(ssrRenderComponent(_component_UBadge, {
+                                      key: r,
+                                      color: "neutral",
+                                      variant: "soft",
+                                      size: "xs",
+                                      class: "mr-1 font-mono"
+                                    }, {
+                                      default: withCtx((_5, _push6, _parent6, _scopeId5) => {
+                                        if (_push6) {
+                                          _push6(`${ssrInterpolate(r)}`);
+                                        } else {
+                                          return [
+                                            createTextVNode(toDisplayString(r), 1)
+                                          ];
+                                        }
+                                      }),
+                                      _: 2
+                                    }, _parent5, _scopeId4));
+                                  });
+                                  _push5(`<!--]--></div>`);
+                                } else {
+                                  _push5(`<!---->`);
+                                }
+                                if (stage.writes.length) {
+                                  _push5(`<div${_scopeId4}><span class="text-dimmed"${_scopeId4}>writes </span><!--[-->`);
+                                  ssrRenderList(stage.writes, (w) => {
+                                    _push5(ssrRenderComponent(_component_UBadge, {
+                                      key: w,
+                                      color: "primary",
+                                      variant: "soft",
+                                      size: "xs",
+                                      class: "mr-1 font-mono"
+                                    }, {
+                                      default: withCtx((_5, _push6, _parent6, _scopeId5) => {
+                                        if (_push6) {
+                                          _push6(`${ssrInterpolate(w)}`);
+                                        } else {
+                                          return [
+                                            createTextVNode(toDisplayString(w), 1)
+                                          ];
+                                        }
+                                      }),
+                                      _: 2
+                                    }, _parent5, _scopeId4));
+                                  });
+                                  _push5(`<!--]--></div>`);
+                                } else {
+                                  _push5(`<!---->`);
+                                }
+                                _push5(`</div>`);
+                                if (stage.value === "enforce:cvdSimulate" && unref(enabledOptionalStages).has("enforce:cvdSimulate")) {
+                                  _push5(`<div class="mt-3 flex items-center justify-between rounded-md border border-default p-2 pl-3"${_scopeId4}><span class="text-sm"${_scopeId4}>Auto-correct failing pairs</span>`);
+                                  _push5(ssrRenderComponent(_component_USwitch, {
+                                    "model-value": unref(cvdCorrect),
+                                    "onUpdate:modelValue": ($event) => unref(send)({ type: unref(IridisUiActionType).SET_CVD_CORRECT, cvdCorrect: $event })
+                                  }, null, _parent5, _scopeId4));
+                                  _push5(`</div>`);
+                                } else {
+                                  _push5(`<!---->`);
+                                }
+                                if (stage.value === "enforce:wcagAA" && unref(enabledOptionalStages).has("enforce:wcagAA") && unref(contrastReport).aa !== void 0) {
+                                  _push5(`<div class="mt-3 text-xs text-muted"${_scopeId4}>${ssrInterpolate(pairSummary(unref(contrastReport).aa))}</div>`);
+                                } else {
+                                  _push5(`<!---->`);
+                                }
+                                if (stage.value === "enforce:wcagAAA" && unref(enabledOptionalStages).has("enforce:wcagAAA") && unref(contrastReport).aaa !== void 0) {
+                                  _push5(`<div class="mt-3 text-xs text-muted"${_scopeId4}>${ssrInterpolate(pairSummary(unref(contrastReport).aaa))}</div>`);
+                                } else {
+                                  _push5(`<!---->`);
+                                }
+                                if (stage.value === "enforce:apca" && unref(enabledOptionalStages).has("enforce:apca") && unref(contrastReport).apca !== void 0) {
+                                  _push5(`<div class="mt-3 text-xs text-muted"${_scopeId4}>${ssrInterpolate(pairSummary(unref(contrastReport).apca))}</div>`);
+                                } else {
+                                  _push5(`<!---->`);
+                                }
+                                if (stage.value === "enforce:cvdSimulate" && unref(enabledOptionalStages).has("enforce:cvdSimulate") && unref(contrastReport).cvd !== void 0) {
+                                  _push5(`<div class="mt-3 flex flex-wrap items-center gap-1.5"${_scopeId4}>`);
+                                  _push5(ssrRenderComponent(_component_UBadge, {
+                                    color: "neutral",
+                                    variant: "soft",
+                                    size: "xs"
+                                  }, {
+                                    default: withCtx((_5, _push6, _parent6, _scopeId5) => {
+                                      if (_push6) {
+                                        _push6(`${ssrInterpolate(unref(contrastReport).cvd.warnings.length)} warnings `);
+                                      } else {
+                                        return [
+                                          createTextVNode(toDisplayString(unref(contrastReport).cvd.warnings.length) + " warnings ", 1)
+                                        ];
+                                      }
+                                    }),
+                                    _: 2
+                                  }, _parent5, _scopeId4));
+                                  if (cvdCorrectionSummary(unref(contrastReport).cvd) !== void 0) {
+                                    _push5(ssrRenderComponent(_component_UBadge, {
+                                      color: "primary",
+                                      variant: "soft",
+                                      size: "xs"
+                                    }, {
+                                      default: withCtx((_5, _push6, _parent6, _scopeId5) => {
+                                        if (_push6) {
+                                          _push6(`${ssrInterpolate(cvdCorrectionSummary(unref(contrastReport).cvd))}`);
+                                        } else {
+                                          return [
+                                            createTextVNode(toDisplayString(cvdCorrectionSummary(unref(contrastReport).cvd)), 1)
+                                          ];
+                                        }
+                                      }),
+                                      _: 2
+                                    }, _parent5, _scopeId4));
+                                  } else {
+                                    _push5(`<!---->`);
+                                  }
+                                  _push5(`</div>`);
+                                } else {
+                                  _push5(`<!---->`);
+                                }
+                              } else {
+                                return [
+                                  createVNode("p", { class: "mb-2 text-sm text-muted" }, toDisplayString(stage.description), 1),
+                                  createVNode("div", { class: "flex flex-wrap gap-3 text-xs" }, [
+                                    stage.reads.length ? (openBlock(), createBlock("div", { key: 0 }, [
+                                      createVNode("span", { class: "text-dimmed" }, "reads "),
+                                      (openBlock(true), createBlock(Fragment, null, renderList(stage.reads, (r) => {
+                                        return openBlock(), createBlock(_component_UBadge, {
+                                          key: r,
+                                          color: "neutral",
+                                          variant: "soft",
+                                          size: "xs",
+                                          class: "mr-1 font-mono"
+                                        }, {
+                                          default: withCtx(() => [
+                                            createTextVNode(toDisplayString(r), 1)
+                                          ]),
+                                          _: 2
+                                        }, 1024);
+                                      }), 128))
+                                    ])) : createCommentVNode("", true),
+                                    stage.writes.length ? (openBlock(), createBlock("div", { key: 1 }, [
+                                      createVNode("span", { class: "text-dimmed" }, "writes "),
+                                      (openBlock(true), createBlock(Fragment, null, renderList(stage.writes, (w) => {
+                                        return openBlock(), createBlock(_component_UBadge, {
+                                          key: w,
+                                          color: "primary",
+                                          variant: "soft",
+                                          size: "xs",
+                                          class: "mr-1 font-mono"
+                                        }, {
+                                          default: withCtx(() => [
+                                            createTextVNode(toDisplayString(w), 1)
+                                          ]),
+                                          _: 2
+                                        }, 1024);
+                                      }), 128))
+                                    ])) : createCommentVNode("", true)
+                                  ]),
+                                  stage.value === "enforce:cvdSimulate" && unref(enabledOptionalStages).has("enforce:cvdSimulate") ? (openBlock(), createBlock("div", {
+                                    key: 0,
+                                    class: "mt-3 flex items-center justify-between rounded-md border border-default p-2 pl-3"
+                                  }, [
+                                    createVNode("span", { class: "text-sm" }, "Auto-correct failing pairs"),
+                                    createVNode(_component_USwitch, {
+                                      "model-value": unref(cvdCorrect),
+                                      "onUpdate:modelValue": ($event) => unref(send)({ type: unref(IridisUiActionType).SET_CVD_CORRECT, cvdCorrect: $event })
+                                    }, null, 8, ["model-value", "onUpdate:modelValue"])
+                                  ])) : createCommentVNode("", true),
+                                  stage.value === "enforce:wcagAA" && unref(enabledOptionalStages).has("enforce:wcagAA") && unref(contrastReport).aa !== void 0 ? (openBlock(), createBlock("div", {
+                                    key: 1,
+                                    class: "mt-3 text-xs text-muted"
+                                  }, toDisplayString(pairSummary(unref(contrastReport).aa)), 1)) : createCommentVNode("", true),
+                                  stage.value === "enforce:wcagAAA" && unref(enabledOptionalStages).has("enforce:wcagAAA") && unref(contrastReport).aaa !== void 0 ? (openBlock(), createBlock("div", {
+                                    key: 2,
+                                    class: "mt-3 text-xs text-muted"
+                                  }, toDisplayString(pairSummary(unref(contrastReport).aaa)), 1)) : createCommentVNode("", true),
+                                  stage.value === "enforce:apca" && unref(enabledOptionalStages).has("enforce:apca") && unref(contrastReport).apca !== void 0 ? (openBlock(), createBlock("div", {
+                                    key: 3,
+                                    class: "mt-3 text-xs text-muted"
+                                  }, toDisplayString(pairSummary(unref(contrastReport).apca)), 1)) : createCommentVNode("", true),
+                                  stage.value === "enforce:cvdSimulate" && unref(enabledOptionalStages).has("enforce:cvdSimulate") && unref(contrastReport).cvd !== void 0 ? (openBlock(), createBlock("div", {
+                                    key: 4,
+                                    class: "mt-3 flex flex-wrap items-center gap-1.5"
+                                  }, [
+                                    createVNode(_component_UBadge, {
+                                      color: "neutral",
+                                      variant: "soft",
+                                      size: "xs"
+                                    }, {
+                                      default: withCtx(() => [
+                                        createTextVNode(toDisplayString(unref(contrastReport).cvd.warnings.length) + " warnings ", 1)
+                                      ]),
+                                      _: 1
+                                    }),
+                                    cvdCorrectionSummary(unref(contrastReport).cvd) !== void 0 ? (openBlock(), createBlock(_component_UBadge, {
+                                      key: 0,
+                                      color: "primary",
+                                      variant: "soft",
+                                      size: "xs"
+                                    }, {
+                                      default: withCtx(() => [
+                                        createTextVNode(toDisplayString(cvdCorrectionSummary(unref(contrastReport).cvd)), 1)
+                                      ]),
+                                      _: 1
+                                    })) : createCommentVNode("", true)
+                                  ])) : createCommentVNode("", true)
+                                ];
+                              }
+                            }),
+                            _: 2
+                          }, _parent4, _scopeId3));
+                        } else {
+                          return [
+                            createVNode(unref(AccordionHeader_default), { class: "flex items-center gap-2" }, {
+                              default: withCtx(() => [
+                                createVNode(unref(AccordionTrigger_default), { class: "flex flex-1 items-center gap-2 py-3 text-left hover:text-highlighted" }, {
+                                  default: withCtx(() => [
+                                    createVNode("span", { class: "font-medium" }, toDisplayString(stage.label), 1),
+                                    createVNode(_component_UIcon, {
+                                      name: "i-lucide-chevron-down",
+                                      class: "ml-auto size-4 transition-transform data-[state=open]:rotate-180"
+                                    })
+                                  ]),
+                                  _: 2
+                                }, 1024),
+                                stage.optional ? (openBlock(), createBlock(_component_UBadge, {
+                                  key: 0,
+                                  color: unref(enabledOptionalStages).has(stage.value) ? "primary" : "neutral",
+                                  variant: unref(enabledOptionalStages).has(stage.value) ? "soft" : "subtle",
+                                  size: "sm"
+                                }, {
+                                  default: withCtx(() => [
+                                    createTextVNode(toDisplayString(unref(enabledOptionalStages).has(stage.value) ? "enabled" : "disabled"), 1)
+                                  ]),
+                                  _: 2
+                                }, 1032, ["color", "variant"])) : (openBlock(), createBlock(_component_UBadge, {
+                                  key: 1,
+                                  color: "neutral",
+                                  variant: "subtle",
+                                  size: "sm"
+                                }, {
+                                  default: withCtx(() => [
+                                    createTextVNode(" required ")
+                                  ]),
+                                  _: 1
+                                }))
+                              ]),
+                              _: 2
+                            }, 1024),
+                            createVNode(unref(AccordionContent_default), { class: "pb-4" }, {
+                              default: withCtx(() => [
+                                createVNode("p", { class: "mb-2 text-sm text-muted" }, toDisplayString(stage.description), 1),
+                                createVNode("div", { class: "flex flex-wrap gap-3 text-xs" }, [
+                                  stage.reads.length ? (openBlock(), createBlock("div", { key: 0 }, [
+                                    createVNode("span", { class: "text-dimmed" }, "reads "),
+                                    (openBlock(true), createBlock(Fragment, null, renderList(stage.reads, (r) => {
+                                      return openBlock(), createBlock(_component_UBadge, {
+                                        key: r,
+                                        color: "neutral",
+                                        variant: "soft",
+                                        size: "xs",
+                                        class: "mr-1 font-mono"
+                                      }, {
+                                        default: withCtx(() => [
+                                          createTextVNode(toDisplayString(r), 1)
+                                        ]),
+                                        _: 2
+                                      }, 1024);
+                                    }), 128))
+                                  ])) : createCommentVNode("", true),
+                                  stage.writes.length ? (openBlock(), createBlock("div", { key: 1 }, [
+                                    createVNode("span", { class: "text-dimmed" }, "writes "),
+                                    (openBlock(true), createBlock(Fragment, null, renderList(stage.writes, (w) => {
+                                      return openBlock(), createBlock(_component_UBadge, {
+                                        key: w,
+                                        color: "primary",
+                                        variant: "soft",
+                                        size: "xs",
+                                        class: "mr-1 font-mono"
+                                      }, {
+                                        default: withCtx(() => [
+                                          createTextVNode(toDisplayString(w), 1)
+                                        ]),
+                                        _: 2
+                                      }, 1024);
+                                    }), 128))
+                                  ])) : createCommentVNode("", true)
+                                ]),
+                                stage.value === "enforce:cvdSimulate" && unref(enabledOptionalStages).has("enforce:cvdSimulate") ? (openBlock(), createBlock("div", {
+                                  key: 0,
+                                  class: "mt-3 flex items-center justify-between rounded-md border border-default p-2 pl-3"
+                                }, [
+                                  createVNode("span", { class: "text-sm" }, "Auto-correct failing pairs"),
+                                  createVNode(_component_USwitch, {
+                                    "model-value": unref(cvdCorrect),
+                                    "onUpdate:modelValue": ($event) => unref(send)({ type: unref(IridisUiActionType).SET_CVD_CORRECT, cvdCorrect: $event })
+                                  }, null, 8, ["model-value", "onUpdate:modelValue"])
+                                ])) : createCommentVNode("", true),
+                                stage.value === "enforce:wcagAA" && unref(enabledOptionalStages).has("enforce:wcagAA") && unref(contrastReport).aa !== void 0 ? (openBlock(), createBlock("div", {
+                                  key: 1,
+                                  class: "mt-3 text-xs text-muted"
+                                }, toDisplayString(pairSummary(unref(contrastReport).aa)), 1)) : createCommentVNode("", true),
+                                stage.value === "enforce:wcagAAA" && unref(enabledOptionalStages).has("enforce:wcagAAA") && unref(contrastReport).aaa !== void 0 ? (openBlock(), createBlock("div", {
+                                  key: 2,
+                                  class: "mt-3 text-xs text-muted"
+                                }, toDisplayString(pairSummary(unref(contrastReport).aaa)), 1)) : createCommentVNode("", true),
+                                stage.value === "enforce:apca" && unref(enabledOptionalStages).has("enforce:apca") && unref(contrastReport).apca !== void 0 ? (openBlock(), createBlock("div", {
+                                  key: 3,
+                                  class: "mt-3 text-xs text-muted"
+                                }, toDisplayString(pairSummary(unref(contrastReport).apca)), 1)) : createCommentVNode("", true),
+                                stage.value === "enforce:cvdSimulate" && unref(enabledOptionalStages).has("enforce:cvdSimulate") && unref(contrastReport).cvd !== void 0 ? (openBlock(), createBlock("div", {
+                                  key: 4,
+                                  class: "mt-3 flex flex-wrap items-center gap-1.5"
+                                }, [
+                                  createVNode(_component_UBadge, {
+                                    color: "neutral",
+                                    variant: "soft",
+                                    size: "xs"
+                                  }, {
+                                    default: withCtx(() => [
+                                      createTextVNode(toDisplayString(unref(contrastReport).cvd.warnings.length) + " warnings ", 1)
+                                    ]),
+                                    _: 1
+                                  }),
+                                  cvdCorrectionSummary(unref(contrastReport).cvd) !== void 0 ? (openBlock(), createBlock(_component_UBadge, {
+                                    key: 0,
+                                    color: "primary",
+                                    variant: "soft",
+                                    size: "xs"
+                                  }, {
+                                    default: withCtx(() => [
+                                      createTextVNode(toDisplayString(cvdCorrectionSummary(unref(contrastReport).cvd)), 1)
+                                    ]),
+                                    _: 1
+                                  })) : createCommentVNode("", true)
+                                ])) : createCommentVNode("", true)
+                              ]),
+                              _: 2
+                            }, 1024)
+                          ];
+                        }
+                      }),
+                      _: 2
+                    }, _parent3, _scopeId2));
+                  });
+                  _push3(`<!--]-->`);
+                } else {
+                  return [
+                    (openBlock(true), createBlock(Fragment, null, renderList(stages.value, (stage) => {
+                      return openBlock(), createBlock(unref(AccordionItem_default), {
+                        key: stage.value,
+                        value: stage.value,
+                        class: "border-b border-default"
+                      }, {
+                        default: withCtx(() => [
+                          createVNode(unref(AccordionHeader_default), { class: "flex items-center gap-2" }, {
+                            default: withCtx(() => [
+                              createVNode(unref(AccordionTrigger_default), { class: "flex flex-1 items-center gap-2 py-3 text-left hover:text-highlighted" }, {
+                                default: withCtx(() => [
+                                  createVNode("span", { class: "font-medium" }, toDisplayString(stage.label), 1),
+                                  createVNode(_component_UIcon, {
+                                    name: "i-lucide-chevron-down",
+                                    class: "ml-auto size-4 transition-transform data-[state=open]:rotate-180"
+                                  })
+                                ]),
+                                _: 2
+                              }, 1024),
+                              stage.optional ? (openBlock(), createBlock(_component_UBadge, {
+                                key: 0,
+                                color: unref(enabledOptionalStages).has(stage.value) ? "primary" : "neutral",
+                                variant: unref(enabledOptionalStages).has(stage.value) ? "soft" : "subtle",
+                                size: "sm"
+                              }, {
+                                default: withCtx(() => [
+                                  createTextVNode(toDisplayString(unref(enabledOptionalStages).has(stage.value) ? "enabled" : "disabled"), 1)
+                                ]),
+                                _: 2
+                              }, 1032, ["color", "variant"])) : (openBlock(), createBlock(_component_UBadge, {
+                                key: 1,
+                                color: "neutral",
+                                variant: "subtle",
+                                size: "sm"
+                              }, {
+                                default: withCtx(() => [
+                                  createTextVNode(" required ")
+                                ]),
+                                _: 1
+                              }))
+                            ]),
+                            _: 2
+                          }, 1024),
+                          createVNode(unref(AccordionContent_default), { class: "pb-4" }, {
+                            default: withCtx(() => [
+                              createVNode("p", { class: "mb-2 text-sm text-muted" }, toDisplayString(stage.description), 1),
+                              createVNode("div", { class: "flex flex-wrap gap-3 text-xs" }, [
+                                stage.reads.length ? (openBlock(), createBlock("div", { key: 0 }, [
+                                  createVNode("span", { class: "text-dimmed" }, "reads "),
+                                  (openBlock(true), createBlock(Fragment, null, renderList(stage.reads, (r) => {
+                                    return openBlock(), createBlock(_component_UBadge, {
+                                      key: r,
+                                      color: "neutral",
+                                      variant: "soft",
+                                      size: "xs",
+                                      class: "mr-1 font-mono"
+                                    }, {
+                                      default: withCtx(() => [
+                                        createTextVNode(toDisplayString(r), 1)
+                                      ]),
+                                      _: 2
+                                    }, 1024);
+                                  }), 128))
+                                ])) : createCommentVNode("", true),
+                                stage.writes.length ? (openBlock(), createBlock("div", { key: 1 }, [
+                                  createVNode("span", { class: "text-dimmed" }, "writes "),
+                                  (openBlock(true), createBlock(Fragment, null, renderList(stage.writes, (w) => {
+                                    return openBlock(), createBlock(_component_UBadge, {
+                                      key: w,
+                                      color: "primary",
+                                      variant: "soft",
+                                      size: "xs",
+                                      class: "mr-1 font-mono"
+                                    }, {
+                                      default: withCtx(() => [
+                                        createTextVNode(toDisplayString(w), 1)
+                                      ]),
+                                      _: 2
+                                    }, 1024);
+                                  }), 128))
+                                ])) : createCommentVNode("", true)
+                              ]),
+                              stage.value === "enforce:cvdSimulate" && unref(enabledOptionalStages).has("enforce:cvdSimulate") ? (openBlock(), createBlock("div", {
+                                key: 0,
+                                class: "mt-3 flex items-center justify-between rounded-md border border-default p-2 pl-3"
+                              }, [
+                                createVNode("span", { class: "text-sm" }, "Auto-correct failing pairs"),
+                                createVNode(_component_USwitch, {
+                                  "model-value": unref(cvdCorrect),
+                                  "onUpdate:modelValue": ($event) => unref(send)({ type: unref(IridisUiActionType).SET_CVD_CORRECT, cvdCorrect: $event })
+                                }, null, 8, ["model-value", "onUpdate:modelValue"])
+                              ])) : createCommentVNode("", true),
+                              stage.value === "enforce:wcagAA" && unref(enabledOptionalStages).has("enforce:wcagAA") && unref(contrastReport).aa !== void 0 ? (openBlock(), createBlock("div", {
+                                key: 1,
+                                class: "mt-3 text-xs text-muted"
+                              }, toDisplayString(pairSummary(unref(contrastReport).aa)), 1)) : createCommentVNode("", true),
+                              stage.value === "enforce:wcagAAA" && unref(enabledOptionalStages).has("enforce:wcagAAA") && unref(contrastReport).aaa !== void 0 ? (openBlock(), createBlock("div", {
+                                key: 2,
+                                class: "mt-3 text-xs text-muted"
+                              }, toDisplayString(pairSummary(unref(contrastReport).aaa)), 1)) : createCommentVNode("", true),
+                              stage.value === "enforce:apca" && unref(enabledOptionalStages).has("enforce:apca") && unref(contrastReport).apca !== void 0 ? (openBlock(), createBlock("div", {
+                                key: 3,
+                                class: "mt-3 text-xs text-muted"
+                              }, toDisplayString(pairSummary(unref(contrastReport).apca)), 1)) : createCommentVNode("", true),
+                              stage.value === "enforce:cvdSimulate" && unref(enabledOptionalStages).has("enforce:cvdSimulate") && unref(contrastReport).cvd !== void 0 ? (openBlock(), createBlock("div", {
+                                key: 4,
+                                class: "mt-3 flex flex-wrap items-center gap-1.5"
+                              }, [
+                                createVNode(_component_UBadge, {
+                                  color: "neutral",
+                                  variant: "soft",
+                                  size: "xs"
+                                }, {
+                                  default: withCtx(() => [
+                                    createTextVNode(toDisplayString(unref(contrastReport).cvd.warnings.length) + " warnings ", 1)
+                                  ]),
+                                  _: 1
+                                }),
+                                cvdCorrectionSummary(unref(contrastReport).cvd) !== void 0 ? (openBlock(), createBlock(_component_UBadge, {
+                                  key: 0,
+                                  color: "primary",
+                                  variant: "soft",
+                                  size: "xs"
+                                }, {
+                                  default: withCtx(() => [
+                                    createTextVNode(toDisplayString(cvdCorrectionSummary(unref(contrastReport).cvd)), 1)
+                                  ]),
+                                  _: 1
+                                })) : createCommentVNode("", true)
+                              ])) : createCommentVNode("", true)
+                            ]),
+                            _: 2
+                          }, 1024)
+                        ]),
+                        _: 2
+                      }, 1032, ["value"]);
+                    }), 128))
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+          } else {
+            return [
+              createVNode("p", { class: "mb-3 mt-6 text-sm text-muted" }, " Expand a stage — the description underneath is that task's own manifest, not marketing copy. Optional stages are automatically switched on or off depending on the compliance strictness setting. "),
+              createVNode(unref(AccordionRoot_default), {
+                type: "multiple",
+                class: "w-full"
+              }, {
+                default: withCtx(() => [
+                  (openBlock(true), createBlock(Fragment, null, renderList(stages.value, (stage) => {
+                    return openBlock(), createBlock(unref(AccordionItem_default), {
+                      key: stage.value,
+                      value: stage.value,
+                      class: "border-b border-default"
+                    }, {
+                      default: withCtx(() => [
+                        createVNode(unref(AccordionHeader_default), { class: "flex items-center gap-2" }, {
+                          default: withCtx(() => [
+                            createVNode(unref(AccordionTrigger_default), { class: "flex flex-1 items-center gap-2 py-3 text-left hover:text-highlighted" }, {
+                              default: withCtx(() => [
+                                createVNode("span", { class: "font-medium" }, toDisplayString(stage.label), 1),
+                                createVNode(_component_UIcon, {
+                                  name: "i-lucide-chevron-down",
+                                  class: "ml-auto size-4 transition-transform data-[state=open]:rotate-180"
+                                })
+                              ]),
+                              _: 2
+                            }, 1024),
+                            stage.optional ? (openBlock(), createBlock(_component_UBadge, {
+                              key: 0,
+                              color: unref(enabledOptionalStages).has(stage.value) ? "primary" : "neutral",
+                              variant: unref(enabledOptionalStages).has(stage.value) ? "soft" : "subtle",
+                              size: "sm"
+                            }, {
+                              default: withCtx(() => [
+                                createTextVNode(toDisplayString(unref(enabledOptionalStages).has(stage.value) ? "enabled" : "disabled"), 1)
+                              ]),
+                              _: 2
+                            }, 1032, ["color", "variant"])) : (openBlock(), createBlock(_component_UBadge, {
+                              key: 1,
+                              color: "neutral",
+                              variant: "subtle",
+                              size: "sm"
+                            }, {
+                              default: withCtx(() => [
+                                createTextVNode(" required ")
+                              ]),
+                              _: 1
+                            }))
+                          ]),
+                          _: 2
+                        }, 1024),
+                        createVNode(unref(AccordionContent_default), { class: "pb-4" }, {
+                          default: withCtx(() => [
+                            createVNode("p", { class: "mb-2 text-sm text-muted" }, toDisplayString(stage.description), 1),
+                            createVNode("div", { class: "flex flex-wrap gap-3 text-xs" }, [
+                              stage.reads.length ? (openBlock(), createBlock("div", { key: 0 }, [
+                                createVNode("span", { class: "text-dimmed" }, "reads "),
+                                (openBlock(true), createBlock(Fragment, null, renderList(stage.reads, (r) => {
+                                  return openBlock(), createBlock(_component_UBadge, {
+                                    key: r,
+                                    color: "neutral",
+                                    variant: "soft",
+                                    size: "xs",
+                                    class: "mr-1 font-mono"
+                                  }, {
+                                    default: withCtx(() => [
+                                      createTextVNode(toDisplayString(r), 1)
+                                    ]),
+                                    _: 2
+                                  }, 1024);
+                                }), 128))
+                              ])) : createCommentVNode("", true),
+                              stage.writes.length ? (openBlock(), createBlock("div", { key: 1 }, [
+                                createVNode("span", { class: "text-dimmed" }, "writes "),
+                                (openBlock(true), createBlock(Fragment, null, renderList(stage.writes, (w) => {
+                                  return openBlock(), createBlock(_component_UBadge, {
+                                    key: w,
+                                    color: "primary",
+                                    variant: "soft",
+                                    size: "xs",
+                                    class: "mr-1 font-mono"
+                                  }, {
+                                    default: withCtx(() => [
+                                      createTextVNode(toDisplayString(w), 1)
+                                    ]),
+                                    _: 2
+                                  }, 1024);
+                                }), 128))
+                              ])) : createCommentVNode("", true)
+                            ]),
+                            stage.value === "enforce:cvdSimulate" && unref(enabledOptionalStages).has("enforce:cvdSimulate") ? (openBlock(), createBlock("div", {
+                              key: 0,
+                              class: "mt-3 flex items-center justify-between rounded-md border border-default p-2 pl-3"
+                            }, [
+                              createVNode("span", { class: "text-sm" }, "Auto-correct failing pairs"),
+                              createVNode(_component_USwitch, {
+                                "model-value": unref(cvdCorrect),
+                                "onUpdate:modelValue": ($event) => unref(send)({ type: unref(IridisUiActionType).SET_CVD_CORRECT, cvdCorrect: $event })
+                              }, null, 8, ["model-value", "onUpdate:modelValue"])
+                            ])) : createCommentVNode("", true),
+                            stage.value === "enforce:wcagAA" && unref(enabledOptionalStages).has("enforce:wcagAA") && unref(contrastReport).aa !== void 0 ? (openBlock(), createBlock("div", {
+                              key: 1,
+                              class: "mt-3 text-xs text-muted"
+                            }, toDisplayString(pairSummary(unref(contrastReport).aa)), 1)) : createCommentVNode("", true),
+                            stage.value === "enforce:wcagAAA" && unref(enabledOptionalStages).has("enforce:wcagAAA") && unref(contrastReport).aaa !== void 0 ? (openBlock(), createBlock("div", {
+                              key: 2,
+                              class: "mt-3 text-xs text-muted"
+                            }, toDisplayString(pairSummary(unref(contrastReport).aaa)), 1)) : createCommentVNode("", true),
+                            stage.value === "enforce:apca" && unref(enabledOptionalStages).has("enforce:apca") && unref(contrastReport).apca !== void 0 ? (openBlock(), createBlock("div", {
+                              key: 3,
+                              class: "mt-3 text-xs text-muted"
+                            }, toDisplayString(pairSummary(unref(contrastReport).apca)), 1)) : createCommentVNode("", true),
+                            stage.value === "enforce:cvdSimulate" && unref(enabledOptionalStages).has("enforce:cvdSimulate") && unref(contrastReport).cvd !== void 0 ? (openBlock(), createBlock("div", {
+                              key: 4,
+                              class: "mt-3 flex flex-wrap items-center gap-1.5"
+                            }, [
+                              createVNode(_component_UBadge, {
+                                color: "neutral",
+                                variant: "soft",
+                                size: "xs"
+                              }, {
+                                default: withCtx(() => [
+                                  createTextVNode(toDisplayString(unref(contrastReport).cvd.warnings.length) + " warnings ", 1)
+                                ]),
+                                _: 1
+                              }),
+                              cvdCorrectionSummary(unref(contrastReport).cvd) !== void 0 ? (openBlock(), createBlock(_component_UBadge, {
+                                key: 0,
+                                color: "primary",
+                                variant: "soft",
+                                size: "xs"
+                              }, {
+                                default: withCtx(() => [
+                                  createTextVNode(toDisplayString(cvdCorrectionSummary(unref(contrastReport).cvd)), 1)
+                                ]),
+                                _: 1
+                              })) : createCommentVNode("", true)
+                            ])) : createCommentVNode("", true)
+                          ]),
+                          _: 2
+                        }, 1024)
+                      ]),
+                      _: 2
+                    }, 1032, ["value"]);
+                  }), 128))
+                ]),
+                _: 1
+              })
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+    };
+  }
+});
+const _sfc_setup$c = _sfc_main$c.setup;
+_sfc_main$c.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/PipelineExplainer.vue");
+  return _sfc_setup$c ? _sfc_setup$c(props, ctx) : void 0;
+};
+const __nuxt_component_9 = Object.assign(_sfc_main$c, { __name: "PipelineExplainer" });
+function getSize(size2, hasDescription) {
+  return {
+    xs: 24,
+    sm: 28,
+    md: 32,
+    lg: 36,
+    xl: 40
+  }[size2];
+}
+function getEstimateSize(items, size2, descriptionKey, hasDescriptionSlot) {
+  const sizeWithoutDescription = getSize(size2);
+  {
+    return () => sizeWithoutDescription;
+  }
+}
+const theme = {
+  "slots": {
+    "root": "relative isolate",
+    "item": "w-full",
+    "listWithChildren": "border-s border-default",
+    "itemWithChildren": "ps-1.5 -ms-px",
+    "link": "relative group w-full flex items-center text-sm select-none before:absolute before:inset-y-px before:inset-x-0 before:z-[-1] before:rounded-md focus:outline-none focus-visible:outline-none focus-visible:before:outline-3",
+    "linkLeadingIcon": "shrink-0 relative",
+    "linkLabel": "truncate",
+    "linkTrailing": "ms-auto inline-flex gap-1.5 items-center",
+    "linkTrailingIcon": "shrink-0 transform transition-transform duration-200 group-data-expanded:rotate-180"
+  },
+  "variants": {
+    "virtualize": {
+      "true": {
+        "root": "overflow-y-auto"
+      }
+    },
+    "color": {
+      "primary": {
+        "link": "before:outline-primary/25"
+      },
+      "secondary": {
+        "link": "before:outline-secondary/25"
+      },
+      "success": {
+        "link": "before:outline-success/25"
+      },
+      "info": {
+        "link": "before:outline-info/25"
+      },
+      "warning": {
+        "link": "before:outline-warning/25"
+      },
+      "error": {
+        "link": "before:outline-error/25"
+      },
+      "neutral": {
+        "link": "before:outline-inverted/25"
+      }
+    },
+    "size": {
+      "xs": {
+        "listWithChildren": "ms-4",
+        "link": "px-2 py-1 text-xs gap-1",
+        "linkLeadingIcon": "size-4",
+        "linkTrailingIcon": "size-4"
+      },
+      "sm": {
+        "listWithChildren": "ms-4.5",
+        "link": "px-2.5 py-1.5 text-xs gap-1.5",
+        "linkLeadingIcon": "size-4",
+        "linkTrailingIcon": "size-4"
+      },
+      "md": {
+        "listWithChildren": "ms-5",
+        "link": "px-2.5 py-1.5 text-sm gap-1.5",
+        "linkLeadingIcon": "size-5",
+        "linkTrailingIcon": "size-5"
+      },
+      "lg": {
+        "listWithChildren": "ms-5.5",
+        "link": "px-3 py-2 text-sm gap-2",
+        "linkLeadingIcon": "size-5",
+        "linkTrailingIcon": "size-5"
+      },
+      "xl": {
+        "listWithChildren": "ms-6",
+        "link": "px-3 py-2 text-base gap-2",
+        "linkLeadingIcon": "size-6",
+        "linkTrailingIcon": "size-6"
+      }
+    },
+    "selected": {
+      "true": {
+        "link": "before:bg-elevated"
+      }
+    },
+    "disabled": {
+      "true": {
+        "link": "cursor-not-allowed opacity-75"
+      }
+    }
+  },
+  "compoundVariants": [
+    {
+      "color": "primary",
+      "selected": true,
+      "class": {
+        "link": "text-primary"
+      }
+    },
+    {
+      "color": "secondary",
+      "selected": true,
+      "class": {
+        "link": "text-secondary"
+      }
+    },
+    {
+      "color": "success",
+      "selected": true,
+      "class": {
+        "link": "text-success"
+      }
+    },
+    {
+      "color": "info",
+      "selected": true,
+      "class": {
+        "link": "text-info"
+      }
+    },
+    {
+      "color": "warning",
+      "selected": true,
+      "class": {
+        "link": "text-warning"
+      }
+    },
+    {
+      "color": "error",
+      "selected": true,
+      "class": {
+        "link": "text-error"
+      }
+    },
+    {
+      "color": "neutral",
+      "selected": true,
+      "class": {
+        "link": "text-highlighted"
+      }
+    },
+    {
+      "selected": false,
+      "disabled": false,
+      "class": {
+        "link": [
+          "hover:text-highlighted hover:before:bg-elevated/50",
+          "transition-colors before:transition-colors"
+        ]
+      }
+    }
+  ],
+  "defaultVariants": {
+    "color": "primary",
+    "size": "md"
+  }
+};
+const _sfc_main$b = /* @__PURE__ */ Object.assign({ inheritAttrs: false }, {
+  __name: "UTree",
+  __ssrInlineRender: true,
+  props: {
+    as: { type: null, required: false },
+    color: { type: null, required: false },
+    size: { type: null, required: false },
+    getKey: { type: Function, required: false },
+    labelKey: { type: null, required: false, default: "label" },
+    trailingIcon: { type: null, required: false },
+    expandedIcon: { type: null, required: false },
+    collapsedIcon: { type: null, required: false },
+    items: { type: null, required: false },
+    modelValue: { type: null, required: false },
+    defaultValue: { type: null, required: false },
+    multiple: { type: Boolean, required: false },
+    nested: { type: Boolean, required: false, default: true },
+    virtualize: { type: [Boolean, Object], required: false, default: false },
+    onSelect: { type: Function, required: false },
+    onToggle: { type: Function, required: false },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false },
+    expanded: { type: Array, required: false },
+    defaultExpanded: { type: Array, required: false },
+    selectionBehavior: { type: String, required: false },
+    propagateSelect: { type: Boolean, required: false },
+    disabled: { type: Boolean, required: false },
+    bubbleSelect: { type: Boolean, required: false }
+  },
+  emits: ["update:modelValue", "update:expanded"],
+  setup(__props, { expose: __expose, emit: __emit }) {
+    const _props = __props;
+    const emits = __emit;
+    const slots = useSlots();
+    const props = useComponentProps("tree", _props);
+    const appConfig = useAppConfig();
+    const rootProps = useForwardProps(reactivePick(props, "items", "multiple", "expanded", "disabled", "propagateSelect", "bubbleSelect"), emits);
+    const as = computed(() => {
+      if (typeof props.as === "string" || typeof props.as?.render === "function") {
+        return { root: props.as, link: "button" };
+      }
+      return defu(props.as, { root: "ul", link: "button" });
+    });
+    const nested = computed(() => props.virtualize ? false : props.nested);
+    const flattenedPaddingFormula = computed(() => {
+      const sizeConfig = {
+        xs: { base: 2, perLevel: 5.5 },
+        // px-2, ms-4 + ps-1.5
+        sm: { base: 2.5, perLevel: 6 },
+        // px-2.5, ms-4.5 + ps-1.5
+        md: { base: 2.5, perLevel: 6.5 },
+        // px-2.5, ms-5 + ps-1.5
+        lg: { base: 3, perLevel: 7 },
+        // px-3, ms-5.5 + ps-1.5
+        xl: { base: 3, perLevel: 7.5 }
+        // px-3, ms-6 + ps-1.5
+      };
+      const config = sizeConfig[props.size || "md"];
+      return (level) => `calc(var(--spacing) * ${(level - 1) * config.perLevel + config.base})`;
+    });
+    const virtualizerProps = toRef(() => {
+      if (!props.virtualize) return false;
+      return defu(typeof props.virtualize === "boolean" ? {} : props.virtualize, {
+        estimateSize: getEstimateSize(props.items || [], props.size || "md")
+      });
+    });
+    const [DefineTreeTemplate, ReuseTreeTemplate] = createReusableTemplate();
+    const [DefineItemTemplate, ReuseItemTemplate] = createReusableTemplate({
+      props: {
+        item: {
+          type: Object,
+          required: true
+        },
+        index: {
+          type: Number,
+          required: true
+        },
+        level: {
+          type: Number,
+          required: true
+        }
+      }
+    });
+    const ui = computed(() => tv({ extend: tv(theme), ...appConfig.ui?.tree || {} })({
+      color: props.color,
+      size: props.size,
+      virtualize: !!props.virtualize
+    }));
+    const rootRef = useTemplateRef("rootRef");
+    function getItemLabel(item) {
+      return get$1(item, props.labelKey);
+    }
+    function getItemKey(item) {
+      return props.getKey ? props.getKey(item) || getItemLabel(item) : getItemLabel(item);
+    }
+    function getDefaultOpenedItems(item) {
+      const currentItem = item.defaultExpanded ? getItemKey(item) : null;
+      const childItems = item.children?.flatMap((child) => getDefaultOpenedItems(child)) ?? [];
+      return [currentItem, ...childItems].filter(Boolean);
+    }
+    const defaultExpanded = computed(() => props.defaultExpanded ?? props.items?.flatMap((item) => getDefaultOpenedItems(item)));
+    __expose({
+      get $el() {
+        return rootRef.value?.$el;
+      }
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(`<!--[-->`);
+      _push(ssrRenderComponent(unref(DefineItemTemplate), null, {
+        default: withCtx(({ item, index: index2, level }, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<li role="presentation" class="${ssrRenderClass(!!nested.value && level > 1 ? ui.value.itemWithChildren({ class: [unref(props).ui?.itemWithChildren, item.ui?.itemWithChildren] }) : ui.value.item({ class: [unref(props).ui?.item, item.ui?.item] }))}"${_scopeId}>`);
+            _push2(ssrRenderComponent(unref(TreeItem_default), {
+              level,
+              value: item,
+              "as-child": "",
+              onToggle: ($event) => (item.onToggle ?? unref(props).onToggle)?.($event, item),
+              onSelect: ($event) => (item.onSelect ?? unref(props).onSelect)?.($event, item)
+            }, {
+              default: withCtx(({ isExpanded, isSelected, isIndeterminate, handleSelect, handleToggle }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  ssrRenderSlot(_ctx.$slots, item.slot ? `${item.slot}-wrapper` : "item-wrapper", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => {
+                    ssrRenderVNode(_push3, createVNode(resolveDynamicComponent(as.value.link), {
+                      type: as.value.link === "button" ? "button" : void 0,
+                      disabled: item.disabled || unref(props).disabled,
+                      "data-slot": "link",
+                      class: ui.value.link({ class: [unref(props).ui?.link, item.ui?.link, item.class], selected: isSelected, disabled: item.disabled || unref(props).disabled }),
+                      style: !nested.value && level > 1 ? { paddingLeft: flattenedPaddingFormula.value(level) } : void 0
+                    }, {
+                      default: withCtx((_, _push4, _parent4, _scopeId3) => {
+                        if (_push4) {
+                          ssrRenderSlot(_ctx.$slots, item.slot || "item", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => {
+                            ssrRenderSlot(_ctx.$slots, item.slot ? `${item.slot}-leading` : "item-leading", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => {
+                              if (item.icon) {
+                                _push4(ssrRenderComponent(_sfc_main$f$1, {
+                                  name: item.icon,
+                                  "data-slot": "linkLeadingIcon",
+                                  class: ui.value.linkLeadingIcon({ class: [unref(props).ui?.linkLeadingIcon, item.ui?.linkLeadingIcon] })
+                                }, null, _parent4, _scopeId3));
+                              } else if (item.children?.length) {
+                                _push4(ssrRenderComponent(_sfc_main$f$1, {
+                                  name: isExpanded ? unref(props).expandedIcon ?? unref(appConfig).ui.icons.folderOpen : unref(props).collapsedIcon ?? unref(appConfig).ui.icons.folder,
+                                  "data-slot": "linkLeadingIcon",
+                                  class: ui.value.linkLeadingIcon({ class: [unref(props).ui?.linkLeadingIcon, item.ui?.linkLeadingIcon] })
+                                }, null, _parent4, _scopeId3));
+                              } else {
+                                _push4(`<!---->`);
+                              }
+                            }, _push4, _parent4, _scopeId3);
+                            if (getItemLabel(item) || !!slots[item.slot ? `${item.slot}-label` : "item-label"]) {
+                              _push4(`<span data-slot="linkLabel" class="${ssrRenderClass(ui.value.linkLabel({ class: [unref(props).ui?.linkLabel, item.ui?.linkLabel] }))}"${_scopeId3}>`);
+                              ssrRenderSlot(_ctx.$slots, item.slot ? `${item.slot}-label` : "item-label", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => {
+                                _push4(`${ssrInterpolate(getItemLabel(item))}`);
+                              }, _push4, _parent4, _scopeId3);
+                              _push4(`</span>`);
+                            } else {
+                              _push4(`<!---->`);
+                            }
+                            if (item.trailingIcon || item.children?.length || !!slots[item.slot ? `${item.slot}-trailing` : "item-trailing"]) {
+                              _push4(`<span data-slot="linkTrailing" class="${ssrRenderClass(ui.value.linkTrailing({ class: [unref(props).ui?.linkTrailing, item.ui?.linkTrailing] }))}"${_scopeId3}>`);
+                              ssrRenderSlot(_ctx.$slots, item.slot ? `${item.slot}-trailing` : "item-trailing", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => {
+                                if (item.trailingIcon) {
+                                  _push4(ssrRenderComponent(_sfc_main$f$1, {
+                                    name: item.trailingIcon,
+                                    "data-slot": "linkTrailingIcon",
+                                    class: ui.value.linkTrailingIcon({ class: [unref(props).ui?.linkTrailingIcon, item.ui?.linkTrailingIcon] })
+                                  }, null, _parent4, _scopeId3));
+                                } else if (item.children?.length) {
+                                  _push4(ssrRenderComponent(_sfc_main$f$1, {
+                                    name: unref(props).trailingIcon ?? unref(appConfig).ui.icons.chevronDown,
+                                    "data-slot": "linkTrailingIcon",
+                                    class: ui.value.linkTrailingIcon({ class: [unref(props).ui?.linkTrailingIcon, item.ui?.linkTrailingIcon] })
+                                  }, null, _parent4, _scopeId3));
+                                } else {
+                                  _push4(`<!---->`);
+                                }
+                              }, _push4, _parent4, _scopeId3);
+                              _push4(`</span>`);
+                            } else {
+                              _push4(`<!---->`);
+                            }
+                          }, _push4, _parent4, _scopeId3);
+                        } else {
+                          return [
+                            renderSlot(_ctx.$slots, item.slot || "item", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                              renderSlot(_ctx.$slots, item.slot ? `${item.slot}-leading` : "item-leading", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                                item.icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                  key: 0,
+                                  name: item.icon,
+                                  "data-slot": "linkLeadingIcon",
+                                  class: ui.value.linkLeadingIcon({ class: [unref(props).ui?.linkLeadingIcon, item.ui?.linkLeadingIcon] })
+                                }, null, 8, ["name", "class"])) : item.children?.length ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                  key: 1,
+                                  name: isExpanded ? unref(props).expandedIcon ?? unref(appConfig).ui.icons.folderOpen : unref(props).collapsedIcon ?? unref(appConfig).ui.icons.folder,
+                                  "data-slot": "linkLeadingIcon",
+                                  class: ui.value.linkLeadingIcon({ class: [unref(props).ui?.linkLeadingIcon, item.ui?.linkLeadingIcon] })
+                                }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                              ]),
+                              getItemLabel(item) || !!slots[item.slot ? `${item.slot}-label` : "item-label"] ? (openBlock(), createBlock("span", {
+                                key: 0,
+                                "data-slot": "linkLabel",
+                                class: ui.value.linkLabel({ class: [unref(props).ui?.linkLabel, item.ui?.linkLabel] })
+                              }, [
+                                renderSlot(_ctx.$slots, item.slot ? `${item.slot}-label` : "item-label", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                                  createTextVNode(toDisplayString(getItemLabel(item)), 1)
+                                ])
+                              ], 2)) : createCommentVNode("", true),
+                              item.trailingIcon || item.children?.length || !!slots[item.slot ? `${item.slot}-trailing` : "item-trailing"] ? (openBlock(), createBlock("span", {
+                                key: 1,
+                                "data-slot": "linkTrailing",
+                                class: ui.value.linkTrailing({ class: [unref(props).ui?.linkTrailing, item.ui?.linkTrailing] })
+                              }, [
+                                renderSlot(_ctx.$slots, item.slot ? `${item.slot}-trailing` : "item-trailing", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                                  item.trailingIcon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                    key: 0,
+                                    name: item.trailingIcon,
+                                    "data-slot": "linkTrailingIcon",
+                                    class: ui.value.linkTrailingIcon({ class: [unref(props).ui?.linkTrailingIcon, item.ui?.linkTrailingIcon] })
+                                  }, null, 8, ["name", "class"])) : item.children?.length ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                    key: 1,
+                                    name: unref(props).trailingIcon ?? unref(appConfig).ui.icons.chevronDown,
+                                    "data-slot": "linkTrailingIcon",
+                                    class: ui.value.linkTrailingIcon({ class: [unref(props).ui?.linkTrailingIcon, item.ui?.linkTrailingIcon] })
+                                  }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                                ])
+                              ], 2)) : createCommentVNode("", true)
+                            ])
+                          ];
+                        }
+                      }),
+                      _: 2
+                    }), _parent3, _scopeId2);
+                  }, _push3, _parent3, _scopeId2);
+                  if (nested.value && item.children?.length && isExpanded) {
+                    _push3(`<ul role="group" data-slot="listWithChildren" class="${ssrRenderClass(ui.value.listWithChildren({ class: [unref(props).ui?.listWithChildren, item.ui?.listWithChildren] }))}"${_scopeId2}>`);
+                    _push3(ssrRenderComponent(unref(ReuseTreeTemplate), {
+                      items: item.children,
+                      level: level + 1
+                    }, null, _parent3, _scopeId2));
+                    _push3(`</ul>`);
+                  } else {
+                    _push3(`<!---->`);
+                  }
+                } else {
+                  return [
+                    renderSlot(_ctx.$slots, item.slot ? `${item.slot}-wrapper` : "item-wrapper", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                      (openBlock(), createBlock(resolveDynamicComponent(as.value.link), {
+                        type: as.value.link === "button" ? "button" : void 0,
+                        disabled: item.disabled || unref(props).disabled,
+                        "data-slot": "link",
+                        class: ui.value.link({ class: [unref(props).ui?.link, item.ui?.link, item.class], selected: isSelected, disabled: item.disabled || unref(props).disabled }),
+                        style: !nested.value && level > 1 ? { paddingLeft: flattenedPaddingFormula.value(level) } : void 0
+                      }, {
+                        default: withCtx(() => [
+                          renderSlot(_ctx.$slots, item.slot || "item", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                            renderSlot(_ctx.$slots, item.slot ? `${item.slot}-leading` : "item-leading", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                              item.icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                key: 0,
+                                name: item.icon,
+                                "data-slot": "linkLeadingIcon",
+                                class: ui.value.linkLeadingIcon({ class: [unref(props).ui?.linkLeadingIcon, item.ui?.linkLeadingIcon] })
+                              }, null, 8, ["name", "class"])) : item.children?.length ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                key: 1,
+                                name: isExpanded ? unref(props).expandedIcon ?? unref(appConfig).ui.icons.folderOpen : unref(props).collapsedIcon ?? unref(appConfig).ui.icons.folder,
+                                "data-slot": "linkLeadingIcon",
+                                class: ui.value.linkLeadingIcon({ class: [unref(props).ui?.linkLeadingIcon, item.ui?.linkLeadingIcon] })
+                              }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                            ]),
+                            getItemLabel(item) || !!slots[item.slot ? `${item.slot}-label` : "item-label"] ? (openBlock(), createBlock("span", {
+                              key: 0,
+                              "data-slot": "linkLabel",
+                              class: ui.value.linkLabel({ class: [unref(props).ui?.linkLabel, item.ui?.linkLabel] })
+                            }, [
+                              renderSlot(_ctx.$slots, item.slot ? `${item.slot}-label` : "item-label", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                                createTextVNode(toDisplayString(getItemLabel(item)), 1)
+                              ])
+                            ], 2)) : createCommentVNode("", true),
+                            item.trailingIcon || item.children?.length || !!slots[item.slot ? `${item.slot}-trailing` : "item-trailing"] ? (openBlock(), createBlock("span", {
+                              key: 1,
+                              "data-slot": "linkTrailing",
+                              class: ui.value.linkTrailing({ class: [unref(props).ui?.linkTrailing, item.ui?.linkTrailing] })
+                            }, [
+                              renderSlot(_ctx.$slots, item.slot ? `${item.slot}-trailing` : "item-trailing", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                                item.trailingIcon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                  key: 0,
+                                  name: item.trailingIcon,
+                                  "data-slot": "linkTrailingIcon",
+                                  class: ui.value.linkTrailingIcon({ class: [unref(props).ui?.linkTrailingIcon, item.ui?.linkTrailingIcon] })
+                                }, null, 8, ["name", "class"])) : item.children?.length ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                  key: 1,
+                                  name: unref(props).trailingIcon ?? unref(appConfig).ui.icons.chevronDown,
+                                  "data-slot": "linkTrailingIcon",
+                                  class: ui.value.linkTrailingIcon({ class: [unref(props).ui?.linkTrailingIcon, item.ui?.linkTrailingIcon] })
+                                }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                              ])
+                            ], 2)) : createCommentVNode("", true)
+                          ])
+                        ]),
+                        _: 2
+                      }, 1032, ["type", "disabled", "class", "style"]))
+                    ]),
+                    nested.value && item.children?.length && isExpanded ? (openBlock(), createBlock("ul", {
+                      key: 0,
+                      role: "group",
+                      "data-slot": "listWithChildren",
+                      class: ui.value.listWithChildren({ class: [unref(props).ui?.listWithChildren, item.ui?.listWithChildren] })
+                    }, [
+                      createVNode(unref(ReuseTreeTemplate), {
+                        items: item.children,
+                        level: level + 1
+                      }, null, 8, ["items", "level"])
+                    ], 2)) : createCommentVNode("", true)
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent2, _scopeId));
+            _push2(`</li>`);
+          } else {
+            return [
+              createVNode("li", {
+                role: "presentation",
+                class: !!nested.value && level > 1 ? ui.value.itemWithChildren({ class: [unref(props).ui?.itemWithChildren, item.ui?.itemWithChildren] }) : ui.value.item({ class: [unref(props).ui?.item, item.ui?.item] })
+              }, [
+                createVNode(unref(TreeItem_default), {
+                  level,
+                  value: item,
+                  "as-child": "",
+                  onToggle: ($event) => (item.onToggle ?? unref(props).onToggle)?.($event, item),
+                  onSelect: ($event) => (item.onSelect ?? unref(props).onSelect)?.($event, item)
+                }, {
+                  default: withCtx(({ isExpanded, isSelected, isIndeterminate, handleSelect, handleToggle }) => [
+                    renderSlot(_ctx.$slots, item.slot ? `${item.slot}-wrapper` : "item-wrapper", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                      (openBlock(), createBlock(resolveDynamicComponent(as.value.link), {
+                        type: as.value.link === "button" ? "button" : void 0,
+                        disabled: item.disabled || unref(props).disabled,
+                        "data-slot": "link",
+                        class: ui.value.link({ class: [unref(props).ui?.link, item.ui?.link, item.class], selected: isSelected, disabled: item.disabled || unref(props).disabled }),
+                        style: !nested.value && level > 1 ? { paddingLeft: flattenedPaddingFormula.value(level) } : void 0
+                      }, {
+                        default: withCtx(() => [
+                          renderSlot(_ctx.$slots, item.slot || "item", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                            renderSlot(_ctx.$slots, item.slot ? `${item.slot}-leading` : "item-leading", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                              item.icon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                key: 0,
+                                name: item.icon,
+                                "data-slot": "linkLeadingIcon",
+                                class: ui.value.linkLeadingIcon({ class: [unref(props).ui?.linkLeadingIcon, item.ui?.linkLeadingIcon] })
+                              }, null, 8, ["name", "class"])) : item.children?.length ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                key: 1,
+                                name: isExpanded ? unref(props).expandedIcon ?? unref(appConfig).ui.icons.folderOpen : unref(props).collapsedIcon ?? unref(appConfig).ui.icons.folder,
+                                "data-slot": "linkLeadingIcon",
+                                class: ui.value.linkLeadingIcon({ class: [unref(props).ui?.linkLeadingIcon, item.ui?.linkLeadingIcon] })
+                              }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                            ]),
+                            getItemLabel(item) || !!slots[item.slot ? `${item.slot}-label` : "item-label"] ? (openBlock(), createBlock("span", {
+                              key: 0,
+                              "data-slot": "linkLabel",
+                              class: ui.value.linkLabel({ class: [unref(props).ui?.linkLabel, item.ui?.linkLabel] })
+                            }, [
+                              renderSlot(_ctx.$slots, item.slot ? `${item.slot}-label` : "item-label", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                                createTextVNode(toDisplayString(getItemLabel(item)), 1)
+                              ])
+                            ], 2)) : createCommentVNode("", true),
+                            item.trailingIcon || item.children?.length || !!slots[item.slot ? `${item.slot}-trailing` : "item-trailing"] ? (openBlock(), createBlock("span", {
+                              key: 1,
+                              "data-slot": "linkTrailing",
+                              class: ui.value.linkTrailing({ class: [unref(props).ui?.linkTrailing, item.ui?.linkTrailing] })
+                            }, [
+                              renderSlot(_ctx.$slots, item.slot ? `${item.slot}-trailing` : "item-trailing", mergeProps({ index: index2, level, expanded: isExpanded, selected: isSelected, indeterminate: isIndeterminate, handleSelect, handleToggle, ui: ui.value }, { item }), () => [
+                                item.trailingIcon ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                  key: 0,
+                                  name: item.trailingIcon,
+                                  "data-slot": "linkTrailingIcon",
+                                  class: ui.value.linkTrailingIcon({ class: [unref(props).ui?.linkTrailingIcon, item.ui?.linkTrailingIcon] })
+                                }, null, 8, ["name", "class"])) : item.children?.length ? (openBlock(), createBlock(_sfc_main$f$1, {
+                                  key: 1,
+                                  name: unref(props).trailingIcon ?? unref(appConfig).ui.icons.chevronDown,
+                                  "data-slot": "linkTrailingIcon",
+                                  class: ui.value.linkTrailingIcon({ class: [unref(props).ui?.linkTrailingIcon, item.ui?.linkTrailingIcon] })
+                                }, null, 8, ["name", "class"])) : createCommentVNode("", true)
+                              ])
+                            ], 2)) : createCommentVNode("", true)
+                          ])
+                        ]),
+                        _: 2
+                      }, 1032, ["type", "disabled", "class", "style"]))
+                    ]),
+                    nested.value && item.children?.length && isExpanded ? (openBlock(), createBlock("ul", {
+                      key: 0,
+                      role: "group",
+                      "data-slot": "listWithChildren",
+                      class: ui.value.listWithChildren({ class: [unref(props).ui?.listWithChildren, item.ui?.listWithChildren] })
+                    }, [
+                      createVNode(unref(ReuseTreeTemplate), {
+                        items: item.children,
+                        level: level + 1
+                      }, null, 8, ["items", "level"])
+                    ], 2)) : createCommentVNode("", true)
+                  ]),
+                  _: 2
+                }, 1032, ["level", "value", "onToggle", "onSelect"])
+              ], 2)
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+      _push(ssrRenderComponent(unref(DefineTreeTemplate), null, {
+        default: withCtx(({ items, level }, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<!--[-->`);
+            ssrRenderList(items, (item, index2) => {
+              _push2(ssrRenderComponent(unref(ReuseItemTemplate), {
+                key: `${level}-${index2}`,
+                item,
+                index: index2,
+                level
+              }, null, _parent2, _scopeId));
+            });
+            _push2(`<!--]-->`);
+          } else {
+            return [
+              (openBlock(true), createBlock(Fragment, null, renderList(items, (item, index2) => {
+                return openBlock(), createBlock(unref(ReuseItemTemplate), {
+                  key: `${level}-${index2}`,
+                  item,
+                  index: index2,
+                  level
+                }, null, 8, ["item", "index", "level"]);
+              }), 128))
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(ssrRenderComponent(unref(TreeRoot_default), mergeProps({
+        ref_key: "rootRef",
+        ref: rootRef
+      }, { ...unref(rootProps), ..._ctx.$attrs }, {
+        as: as.value.root,
+        "model-value": unref(props).modelValue,
+        "default-value": unref(props).defaultValue,
+        "data-slot": "root",
+        class: ui.value.root({ class: [unref(props).ui?.root, unref(props).class] }),
+        "get-key": getItemKey,
+        "default-expanded": defaultExpanded.value,
+        "selection-behavior": unref(props).selectionBehavior
+      }), {
+        default: withCtx(({ flattenItems }, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            if (!!unref(props).virtualize) {
+              _push2(ssrRenderComponent(unref(TreeVirtualizer_default), mergeProps({
+                "text-content": (item2) => getItemLabel(item2.value)
+              }, virtualizerProps.value), {
+                default: withCtx(({ item, virtualItem }, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(ssrRenderComponent(unref(ReuseItemTemplate), {
+                      item: item.value,
+                      index: virtualItem.index,
+                      level: item.level
+                    }, null, _parent3, _scopeId2));
+                  } else {
+                    return [
+                      createVNode(unref(ReuseItemTemplate), {
+                        item: item.value,
+                        index: virtualItem.index,
+                        level: item.level
+                      }, null, 8, ["item", "index", "level"])
+                    ];
+                  }
+                }),
+                _: 2
+              }, _parent2, _scopeId));
+            } else if (!nested.value) {
+              _push2(`<!--[-->`);
+              ssrRenderList(flattenItems, (item, index2) => {
+                _push2(ssrRenderComponent(unref(ReuseItemTemplate), {
+                  key: item._id,
+                  item: item.value,
+                  index: index2,
+                  level: item.level
+                }, null, _parent2, _scopeId));
+              });
+              _push2(`<!--]-->`);
+            } else {
+              _push2(ssrRenderComponent(unref(ReuseTreeTemplate), {
+                items: unref(props).items,
+                level: 1
+              }, null, _parent2, _scopeId));
+            }
+          } else {
+            return [
+              !!unref(props).virtualize ? (openBlock(), createBlock(unref(TreeVirtualizer_default), mergeProps({
+                key: 0,
+                "text-content": (item2) => getItemLabel(item2.value)
+              }, virtualizerProps.value), {
+                default: withCtx(({ item, virtualItem }) => [
+                  createVNode(unref(ReuseItemTemplate), {
+                    item: item.value,
+                    index: virtualItem.index,
+                    level: item.level
+                  }, null, 8, ["item", "index", "level"])
+                ]),
+                _: 1
+              }, 16, ["text-content"])) : !nested.value ? (openBlock(true), createBlock(Fragment, { key: 1 }, renderList(flattenItems, (item, index2) => {
+                return openBlock(), createBlock(unref(ReuseItemTemplate), {
+                  key: item._id,
+                  item: item.value,
+                  index: index2,
+                  level: item.level
+                }, null, 8, ["item", "index", "level"]);
+              }), 128)) : (openBlock(), createBlock(unref(ReuseTreeTemplate), {
+                key: 2,
+                items: unref(props).items,
+                level: 1
+              }, null, 8, ["items"]))
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(`<!--]-->`);
+    };
+  }
+});
+const _sfc_setup$b = _sfc_main$b.setup;
+_sfc_main$b.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/Tree.vue");
+  return _sfc_setup$b ? _sfc_setup$b(props, ctx) : void 0;
+};
+const _sfc_main$a = /* @__PURE__ */ defineComponent({
+  __name: "SchemaTree",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const TIER_ORDER = ["iridis-4", "iridis-8", "iridis-12", "iridis-16", "iridis-32"];
+    const { roles, framing, schemaName } = useIridis();
+    const tree = computed(() => {
+      const seen = /* @__PURE__ */ new Set();
+      return TIER_ORDER.map((tierName) => {
+        const schema = roleSchemaByName[tierName]?.[framing.value];
+        const added = (schema?.roles ?? []).filter((r) => {
+          if (seen.has(r.name)) {
+            return false;
+          }
+          seen.add(r.name);
+          return true;
+        });
+        return {
+          "children": added.map((r) => {
+            return { "derivedFrom": r.derivedFrom, "hex": roles.value[r.name], "label": r.name, "value": `${tierName}:${r.name}` };
+          }),
+          "defaultExpanded": tierName === schemaName.value,
+          "label": tierName,
+          "value": tierName
+        };
+      });
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UCard = _sfc_main$t;
+      const _component_UTree = _sfc_main$b;
+      const _component_UBadge = _sfc_main$y;
+      _push(ssrRenderComponent(_component_UCard, _attrs, {
+        header: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<span class="block text-center font-semibold text-highlighted"${_scopeId}>Schema tree</span>`);
+          } else {
+            return [
+              createVNode("span", { class: "block text-center font-semibold text-highlighted" }, "Schema tree")
+            ];
+          }
+        }),
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<p class="mb-3 text-sm text-muted"${_scopeId}> Each tier adds roles over the last. &quot;resolved&quot; competes for a seed by default; &quot;← source&quot; is hue-derived — pin either one in Palette to override it. </p>`);
+            _push2(ssrRenderComponent(_component_UTree, { items: tree.value }, {
+              "item-leading": withCtx(({ item }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  if (item.hex) {
+                    _push3(`<span class="h-3 w-3 shrink-0 rounded-full border border-default" style="${ssrRenderStyle({ backgroundColor: item.hex })}"${_scopeId2}></span>`);
+                  } else {
+                    _push3(`<!---->`);
+                  }
+                } else {
+                  return [
+                    item.hex ? (openBlock(), createBlock("span", {
+                      key: 0,
+                      class: "h-3 w-3 shrink-0 rounded-full border border-default",
+                      style: { backgroundColor: item.hex }
+                    }, null, 4)) : createCommentVNode("", true)
+                  ];
+                }
+              }),
+              "item-label": withCtx(({ item }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`<span class="flex items-center gap-1.5"${_scopeId2}><span class="font-mono text-xs"${_scopeId2}>${ssrInterpolate(item.label)}</span>`);
+                  if ("derivedFrom" in item) {
+                    _push3(ssrRenderComponent(_component_UBadge, {
+                      color: item.derivedFrom === void 0 ? "success" : "neutral",
+                      variant: "soft",
+                      size: "xs"
+                    }, {
+                      default: withCtx((_2, _push4, _parent4, _scopeId3) => {
+                        if (_push4) {
+                          _push4(`${ssrInterpolate(item.derivedFrom === void 0 ? "resolved" : `← ${item.derivedFrom}`)}`);
+                        } else {
+                          return [
+                            createTextVNode(toDisplayString(item.derivedFrom === void 0 ? "resolved" : `← ${item.derivedFrom}`), 1)
+                          ];
+                        }
+                      }),
+                      _: 2
+                    }, _parent3, _scopeId2));
+                  } else {
+                    _push3(`<!---->`);
+                  }
+                  _push3(`</span>`);
+                } else {
+                  return [
+                    createVNode("span", { class: "flex items-center gap-1.5" }, [
+                      createVNode("span", { class: "font-mono text-xs" }, toDisplayString(item.label), 1),
+                      "derivedFrom" in item ? (openBlock(), createBlock(_component_UBadge, {
+                        key: 0,
+                        color: item.derivedFrom === void 0 ? "success" : "neutral",
+                        variant: "soft",
+                        size: "xs"
+                      }, {
+                        default: withCtx(() => [
+                          createTextVNode(toDisplayString(item.derivedFrom === void 0 ? "resolved" : `← ${item.derivedFrom}`), 1)
+                        ]),
+                        _: 2
+                      }, 1032, ["color"])) : createCommentVNode("", true)
+                    ])
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+          } else {
+            return [
+              createVNode("p", { class: "mb-3 text-sm text-muted" }, ' Each tier adds roles over the last. "resolved" competes for a seed by default; "← source" is hue-derived — pin either one in Palette to override it. '),
+              createVNode(_component_UTree, { items: tree.value }, {
+                "item-leading": withCtx(({ item }) => [
+                  item.hex ? (openBlock(), createBlock("span", {
+                    key: 0,
+                    class: "h-3 w-3 shrink-0 rounded-full border border-default",
+                    style: { backgroundColor: item.hex }
+                  }, null, 4)) : createCommentVNode("", true)
+                ]),
+                "item-label": withCtx(({ item }) => [
+                  createVNode("span", { class: "flex items-center gap-1.5" }, [
+                    createVNode("span", { class: "font-mono text-xs" }, toDisplayString(item.label), 1),
+                    "derivedFrom" in item ? (openBlock(), createBlock(_component_UBadge, {
+                      key: 0,
+                      color: item.derivedFrom === void 0 ? "success" : "neutral",
+                      variant: "soft",
+                      size: "xs"
+                    }, {
+                      default: withCtx(() => [
+                        createTextVNode(toDisplayString(item.derivedFrom === void 0 ? "resolved" : `← ${item.derivedFrom}`), 1)
+                      ]),
+                      _: 2
+                    }, 1032, ["color"])) : createCommentVNode("", true)
+                  ])
+                ]),
+                _: 1
+              }, 8, ["items"])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+    };
+  }
+});
+const _sfc_setup$a = _sfc_main$a.setup;
+_sfc_main$a.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/SchemaTree.vue");
+  return _sfc_setup$a ? _sfc_setup$a(props, ctx) : void 0;
+};
+const __nuxt_component_10 = Object.assign(_sfc_main$a, { __name: "SchemaTree" });
+const _sfc_main$9 = /* @__PURE__ */ defineComponent({
+  __name: "MotionShowcase",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const EASE_PRESETS = {
+      "Bouncy": "cubic-bezier(0.68, -0.55, 0.27, 1.55)",
+      "Ease in/out": "ease-in-out",
+      "Linear": "linear",
+      "Smooth (default)": "cubic-bezier(0.33, 0, 0.2, 1)",
+      "Snappy": "cubic-bezier(0.16, 1, 0.3, 1)"
+    };
+    const tuneMs = ref(550);
+    const easeKey = ref("Smooth (default)");
+    const reducedMotion = ref(false);
+    watch(tuneMs, (ms) => {
+      (void 0).documentElement.style.setProperty("--iridis-tune", `${ms}ms`);
+    });
+    watch(easeKey, (key) => {
+      (void 0).documentElement.style.setProperty("--iridis-ease", EASE_PRESETS[key] ?? EASE_PRESETS["Smooth (default)"]);
+    });
+    const NAMED_ANIMATIONS = [
+      { "kind": "dot", "class": "pulse", "duration": "3s", "label": "pulse-glow", "note": "carousel arrows, active dot" },
+      { "kind": "dot", "class": "float", "duration": "7s", "label": "float", "note": "hero logo, floating orbs" },
+      { "kind": "dot", "class": "spin-slow", "duration": "26s", "label": "spin", "note": "ambient background accent" },
+      { "kind": "dot", "class": "glass", "duration": "4s", "label": "sheen", "note": "every glass panel’s top edge" },
+      { "kind": "orbit", "duration": "2.2-3.8s", "label": "orbit", "note": "three roles, three independent rings" },
+      { "kind": "sonar", "duration": "2.4s", "label": "sonar", "note": "success/warning/error/primary in sequence" },
+      { "kind": "radar", "duration": "2.6s", "label": "radar", "note": "primary bleeding into secondary, one sweep" },
+      { "kind": "chroma", "duration": "4s", "label": "chroma", "note": "the accent hue cycling the full wheel" }
+    ];
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UCard = _sfc_main$t;
+      const _component_UBadge = _sfc_main$y;
+      const _component_UFormField = _sfc_main$n;
+      const _component_USlider = _sfc_main$l;
+      const _component_USelect = _sfc_main$q;
+      _push(ssrRenderComponent(_component_UCard, _attrs, {
+        header: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2"${_scopeId}><span${_scopeId}></span><span class="text-center font-semibold text-highlighted"${_scopeId}>Motion</span>`);
+            if (reducedMotion.value) {
+              _push2(ssrRenderComponent(_component_UBadge, {
+                color: "warning",
+                variant: "soft",
+                class: "justify-self-end"
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(` prefers-reduced-motion is on `);
+                  } else {
+                    return [
+                      createTextVNode(" prefers-reduced-motion is on ")
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(`</div>`);
+          } else {
+            return [
+              createVNode("div", { class: "grid grid-cols-[1fr_auto_1fr] items-center gap-2" }, [
+                createVNode("span"),
+                createVNode("span", { class: "text-center font-semibold text-highlighted" }, "Motion"),
+                reducedMotion.value ? (openBlock(), createBlock(_component_UBadge, {
+                  key: 0,
+                  color: "warning",
+                  variant: "soft",
+                  class: "justify-self-end"
+                }, {
+                  default: withCtx(() => [
+                    createTextVNode(" prefers-reduced-motion is on ")
+                  ]),
+                  _: 1
+                })) : createCommentVNode("", true)
+              ])
+            ];
+          }
+        }),
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="space-y-5"${_scopeId}><p class="text-sm text-muted"${_scopeId}> Drag the duration — every color transition on this page, not just the swatches below, runs on this same clock. </p><div class="grid gap-4 sm:grid-cols-2"${_scopeId}>`);
+            _push2(ssrRenderComponent(_component_UFormField, {
+              label: `Unison duration · ${tuneMs.value}ms`
+            }, {
+              default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(ssrRenderComponent(_component_USlider, {
+                    modelValue: tuneMs.value,
+                    "onUpdate:modelValue": ($event) => tuneMs.value = $event,
+                    min: 100,
+                    max: 1500,
+                    step: 50
+                  }, null, _parent3, _scopeId2));
+                } else {
+                  return [
+                    createVNode(_component_USlider, {
+                      modelValue: tuneMs.value,
+                      "onUpdate:modelValue": ($event) => tuneMs.value = $event,
+                      min: 100,
+                      max: 1500,
+                      step: 50
+                    }, null, 8, ["modelValue", "onUpdate:modelValue"])
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(ssrRenderComponent(_component_UFormField, { label: "Easing" }, {
+              default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(ssrRenderComponent(_component_USelect, {
+                    modelValue: easeKey.value,
+                    "onUpdate:modelValue": ($event) => easeKey.value = $event,
+                    items: Object.keys(EASE_PRESETS),
+                    class: "w-full"
+                  }, null, _parent3, _scopeId2));
+                } else {
+                  return [
+                    createVNode(_component_USelect, {
+                      modelValue: easeKey.value,
+                      "onUpdate:modelValue": ($event) => easeKey.value = $event,
+                      items: Object.keys(EASE_PRESETS),
+                      class: "w-full"
+                    }, null, 8, ["modelValue", "onUpdate:modelValue", "items"])
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(`</div><div class="grid grid-cols-2 gap-3 sm:grid-cols-4"${_scopeId}><!--[-->`);
+            ssrRenderList(NAMED_ANIMATIONS, (a) => {
+              _push2(`<div class="flex flex-col items-center gap-2 rounded-lg border border-default p-3 text-center"${_scopeId}><div class="relative flex h-14 w-14 items-center justify-center"${_scopeId}>`);
+              if (a.kind === "dot") {
+                _push2(`<div class="${ssrRenderClass([a.class !== "glass" ? a.class : "", "glass flex h-12 w-12 items-center justify-center rounded-full"])}"${_scopeId}><span class="h-3 w-3 rounded-full" style="${ssrRenderStyle({ backgroundColor: "var(--ui-primary)" })}"${_scopeId}></span></div>`);
+              } else if (a.kind === "orbit") {
+                _push2(`<div class="orbit-rig"${_scopeId}><div class="orbit-ring r1"${_scopeId}><span class="orbit-orb"${_scopeId}></span></div><div class="orbit-ring r2"${_scopeId}><span class="orbit-orb"${_scopeId}></span></div><div class="orbit-ring r3"${_scopeId}><span class="orbit-orb"${_scopeId}></span></div></div>`);
+              } else if (a.kind === "sonar") {
+                _push2(`<!--[--><span class="sonar-ring"${_scopeId}></span><span class="sonar-dot n"${_scopeId}></span><span class="sonar-dot e"${_scopeId}></span><span class="sonar-dot s"${_scopeId}></span><span class="sonar-dot w"${_scopeId}></span><!--]-->`);
+              } else if (a.kind === "radar") {
+                _push2(`<div class="glass h-12 w-12 rounded-full"${_scopeId}><span class="radar-sweep"${_scopeId}></span></div>`);
+              } else if (a.kind === "chroma") {
+                _push2(`<div class="chroma-cycle"${_scopeId}></div>`);
+              } else {
+                _push2(`<!---->`);
+              }
+              _push2(`</div><div class="font-mono text-[11px] text-highlighted"${_scopeId}>${ssrInterpolate(a.label)} · ${ssrInterpolate(a.duration)}</div><div class="text-[10px] text-dimmed"${_scopeId}>${ssrInterpolate(a.note)}</div></div>`);
+            });
+            _push2(`<!--]--></div></div>`);
+          } else {
+            return [
+              createVNode("div", { class: "space-y-5" }, [
+                createVNode("p", { class: "text-sm text-muted" }, " Drag the duration — every color transition on this page, not just the swatches below, runs on this same clock. "),
+                createVNode("div", { class: "grid gap-4 sm:grid-cols-2" }, [
+                  createVNode(_component_UFormField, {
+                    label: `Unison duration · ${tuneMs.value}ms`
+                  }, {
+                    default: withCtx(() => [
+                      createVNode(_component_USlider, {
+                        modelValue: tuneMs.value,
+                        "onUpdate:modelValue": ($event) => tuneMs.value = $event,
+                        min: 100,
+                        max: 1500,
+                        step: 50
+                      }, null, 8, ["modelValue", "onUpdate:modelValue"])
+                    ]),
+                    _: 1
+                  }, 8, ["label"]),
+                  createVNode(_component_UFormField, { label: "Easing" }, {
+                    default: withCtx(() => [
+                      createVNode(_component_USelect, {
+                        modelValue: easeKey.value,
+                        "onUpdate:modelValue": ($event) => easeKey.value = $event,
+                        items: Object.keys(EASE_PRESETS),
+                        class: "w-full"
+                      }, null, 8, ["modelValue", "onUpdate:modelValue", "items"])
+                    ]),
+                    _: 1
+                  })
+                ]),
+                createVNode("div", { class: "grid grid-cols-2 gap-3 sm:grid-cols-4" }, [
+                  (openBlock(), createBlock(Fragment, null, renderList(NAMED_ANIMATIONS, (a) => {
+                    return createVNode("div", {
+                      key: a.label,
+                      class: "flex flex-col items-center gap-2 rounded-lg border border-default p-3 text-center"
+                    }, [
+                      createVNode("div", { class: "relative flex h-14 w-14 items-center justify-center" }, [
+                        a.kind === "dot" ? (openBlock(), createBlock("div", {
+                          key: 0,
+                          class: ["glass flex h-12 w-12 items-center justify-center rounded-full", a.class !== "glass" ? a.class : ""]
+                        }, [
+                          createVNode("span", {
+                            class: "h-3 w-3 rounded-full",
+                            style: { backgroundColor: "var(--ui-primary)" }
+                          })
+                        ], 2)) : a.kind === "orbit" ? (openBlock(), createBlock("div", {
+                          key: 1,
+                          class: "orbit-rig"
+                        }, [
+                          createVNode("div", { class: "orbit-ring r1" }, [
+                            createVNode("span", { class: "orbit-orb" })
+                          ]),
+                          createVNode("div", { class: "orbit-ring r2" }, [
+                            createVNode("span", { class: "orbit-orb" })
+                          ]),
+                          createVNode("div", { class: "orbit-ring r3" }, [
+                            createVNode("span", { class: "orbit-orb" })
+                          ])
+                        ])) : a.kind === "sonar" ? (openBlock(), createBlock(Fragment, { key: 2 }, [
+                          createVNode("span", { class: "sonar-ring" }),
+                          createVNode("span", { class: "sonar-dot n" }),
+                          createVNode("span", { class: "sonar-dot e" }),
+                          createVNode("span", { class: "sonar-dot s" }),
+                          createVNode("span", { class: "sonar-dot w" })
+                        ], 64)) : a.kind === "radar" ? (openBlock(), createBlock("div", {
+                          key: 3,
+                          class: "glass h-12 w-12 rounded-full"
+                        }, [
+                          createVNode("span", { class: "radar-sweep" })
+                        ])) : a.kind === "chroma" ? (openBlock(), createBlock("div", {
+                          key: 4,
+                          class: "chroma-cycle"
+                        })) : createCommentVNode("", true)
+                      ]),
+                      createVNode("div", { class: "font-mono text-[11px] text-highlighted" }, toDisplayString(a.label) + " · " + toDisplayString(a.duration), 1),
+                      createVNode("div", { class: "text-[10px] text-dimmed" }, toDisplayString(a.note), 1)
+                    ]);
+                  }), 64))
+                ])
+              ])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+    };
+  }
+});
+const _sfc_setup$9 = _sfc_main$9.setup;
+_sfc_main$9.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/MotionShowcase.vue");
+  return _sfc_setup$9 ? _sfc_setup$9(props, ctx) : void 0;
+};
+const __nuxt_component_11 = Object.assign(_sfc_main$9, { __name: "MotionShowcase" });
+const _sfc_main$8 = /* @__PURE__ */ defineComponent({
+  __name: "CvdVision",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const { cvdPreviewTypes, toggleCvdPreviewType, contrastReport } = useIridis();
+    const CVD_TYPES = [
+      {
+        "value": "protanopia",
+        "label": "Protanopia",
+        "prevalence": "~1% of men",
+        "description": "The L-cone (long-wavelength, red-sensitive) is absent. Reds appear darker and can be confused with black, greens, or browns."
+      },
+      {
+        "value": "deuteranopia",
+        "label": "Deuteranopia",
+        "prevalence": "~1% of men",
+        "description": "The M-cone (medium-wavelength, green-sensitive) is absent — the most common dichromacy. Reds and greens both shift toward a shared yellowish-brown."
+      },
+      {
+        "value": "tritanopia",
+        "label": "Tritanopia",
+        "prevalence": "<0.01% of people",
+        "description": "The S-cone (short-wavelength, blue-sensitive) is absent. Rare, and unlike the other two, affects men and women about equally. Blues and greens, or yellows and violets, become hard to tell apart."
+      },
+      {
+        "value": "achromatopsia",
+        "label": "Achromatopsia",
+        "prevalence": "very rare",
+        "description": "Complete absence of color vision (rod monochromacy) — everything resolves to luminance only, the way a black-and-white photo does."
+      }
+    ];
+    const cvdReport = computed(() => {
+      const cvd = contrastReport.value.cvd;
+      if (cvd === void 0) {
+        return void 0;
+      }
+      const corrected = cvd.corrections?.filter((c) => {
+        return c.cvdTypesRemaining.length === 0;
+      }).length ?? 0;
+      const stillFailing = cvd.corrections?.filter((c) => {
+        return c.cvdTypesRemaining.length > 0;
+      }).length ?? Math.max(cvd.warnings.length, 0);
+      return { "corrected": corrected, "stillFailing": stillFailing, "warnings": cvd.warnings.length };
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UCard = _sfc_main$t;
+      const _component_UButton = _sfc_main$a$1;
+      const _component_UBadge = _sfc_main$y;
+      _push(ssrRenderComponent(_component_UCard, _attrs, {
+        header: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<span class="block text-center font-semibold text-highlighted"${_scopeId}>CVD vision</span>`);
+          } else {
+            return [
+              createVNode("span", { class: "block text-center font-semibold text-highlighted" }, "CVD vision")
+            ];
+          }
+        }),
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="space-y-4"${_scopeId}><p class="text-sm text-muted"${_scopeId}> Color vision deficiency (CVD) checking runs on every palette, always — see <code class="font-mono text-xs"${_scopeId}>enforce:cvdSimulate</code> in the Pipeline card. This card is where you actually look: pick any combination of conditions below to preview the <strong class="text-highlighted"${_scopeId}>current palette</strong> the way that vision would see it. This never modifies the palette — for that, see &quot;Auto-correct CVD failures&quot; in the Contrast target card above the carousel. </p><div class="flex items-center justify-between gap-3"${_scopeId}><span class="text-sm font-medium text-highlighted"${_scopeId}>Simulate CVD vision</span>`);
+            if (unref(cvdPreviewTypes).size > 0) {
+              _push2(ssrRenderComponent(_component_UButton, {
+                label: "Clear",
+                color: "neutral",
+                variant: "ghost",
+                size: "xs",
+                onClick: ($event) => {
+                  cvdPreviewTypes.value = /* @__PURE__ */ new Set();
+                }
+              }, null, _parent2, _scopeId));
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(`</div><div class="grid gap-3 sm:grid-cols-2"${_scopeId}><!--[-->`);
+            ssrRenderList(CVD_TYPES, (t) => {
+              _push2(`<div class="${ssrRenderClass([unref(cvdPreviewTypes).has(t.value) ? "border-primary bg-primary/10" : "border-default", "space-y-2 rounded-lg border p-3 transition-colors"])}"${_scopeId}><div class="flex items-center justify-between gap-2"${_scopeId}><span class="font-medium text-highlighted"${_scopeId}>${ssrInterpolate(t.label)}</span>`);
+              _push2(ssrRenderComponent(_component_UButton, {
+                label: unref(cvdPreviewTypes).has(t.value) ? "Previewing" : "Preview",
+                size: "xs",
+                color: unref(cvdPreviewTypes).has(t.value) ? "primary" : "neutral",
+                variant: unref(cvdPreviewTypes).has(t.value) ? "solid" : "soft",
+                onClick: ($event) => unref(toggleCvdPreviewType)(t.value)
+              }, null, _parent2, _scopeId));
+              _push2(`</div><p class="text-xs text-muted"${_scopeId}>${ssrInterpolate(t.description)}</p><p class="text-[10px] text-dimmed"${_scopeId}>${ssrInterpolate(t.prevalence)}</p></div>`);
+            });
+            _push2(`<!--]--></div>`);
+            if (cvdReport.value) {
+              _push2(`<div class="flex flex-wrap items-center gap-1.5"${_scopeId}>`);
+              _push2(ssrRenderComponent(_component_UBadge, {
+                color: cvdReport.value.warnings === 0 ? "success" : "warning",
+                variant: "soft",
+                size: "sm"
+              }, {
+                default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    _push3(`${ssrInterpolate(cvdReport.value.warnings === 0 ? "No contrast warnings under CVD" : `${cvdReport.value.warnings} warning${cvdReport.value.warnings === 1 ? "" : "s"}`)}`);
+                  } else {
+                    return [
+                      createTextVNode(toDisplayString(cvdReport.value.warnings === 0 ? "No contrast warnings under CVD" : `${cvdReport.value.warnings} warning${cvdReport.value.warnings === 1 ? "" : "s"}`), 1)
+                    ];
+                  }
+                }),
+                _: 1
+              }, _parent2, _scopeId));
+              if (cvdReport.value.corrected > 0) {
+                _push2(ssrRenderComponent(_component_UBadge, {
+                  color: "primary",
+                  variant: "soft",
+                  size: "sm"
+                }, {
+                  default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                    if (_push3) {
+                      _push3(`${ssrInterpolate(cvdReport.value.corrected)} pair${ssrInterpolate(cvdReport.value.corrected === 1 ? "" : "s")} auto-corrected `);
+                    } else {
+                      return [
+                        createTextVNode(toDisplayString(cvdReport.value.corrected) + " pair" + toDisplayString(cvdReport.value.corrected === 1 ? "" : "s") + " auto-corrected ", 1)
+                      ];
+                    }
+                  }),
+                  _: 1
+                }, _parent2, _scopeId));
+              } else {
+                _push2(`<!---->`);
+              }
+              _push2(`</div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(`<div class="space-y-1 border-t border-default pt-3 text-xs text-muted"${_scopeId}><p${_scopeId}> Pick any combination above — real CVD isn&#39;t always one condition, and previewing multiple at once chains their filters (see CvdPreviewOverlay.vue). </p><div class="flex flex-wrap gap-x-4 gap-y-1"${_scopeId}><a href="https://www.nei.nih.gov/learn-about-eye-health/eye-conditions-and-diseases/color-blindness" target="_blank" rel="noopener noreferrer" class="text-primary underline underline-offset-2 hover:text-primary/80"${_scopeId}> National Eye Institute: Color Blindness ↗ </a><a href="https://www.colourblindawareness.org/colour-blindness/types-of-colour-blindness/" target="_blank" rel="noopener noreferrer" class="text-primary underline underline-offset-2 hover:text-primary/80"${_scopeId}> Colour Blind Awareness: Types of Colour Blindness ↗ </a></div></div></div>`);
+          } else {
+            return [
+              createVNode("div", { class: "space-y-4" }, [
+                createVNode("p", { class: "text-sm text-muted" }, [
+                  createTextVNode(" Color vision deficiency (CVD) checking runs on every palette, always — see "),
+                  createVNode("code", { class: "font-mono text-xs" }, "enforce:cvdSimulate"),
+                  createTextVNode(" in the Pipeline card. This card is where you actually look: pick any combination of conditions below to preview the "),
+                  createVNode("strong", { class: "text-highlighted" }, "current palette"),
+                  createTextVNode(' the way that vision would see it. This never modifies the palette — for that, see "Auto-correct CVD failures" in the Contrast target card above the carousel. ')
+                ]),
+                createVNode("div", { class: "flex items-center justify-between gap-3" }, [
+                  createVNode("span", { class: "text-sm font-medium text-highlighted" }, "Simulate CVD vision"),
+                  unref(cvdPreviewTypes).size > 0 ? (openBlock(), createBlock(_component_UButton, {
+                    key: 0,
+                    label: "Clear",
+                    color: "neutral",
+                    variant: "ghost",
+                    size: "xs",
+                    onClick: ($event) => {
+                      cvdPreviewTypes.value = /* @__PURE__ */ new Set();
+                    }
+                  }, null, 8, ["onClick"])) : createCommentVNode("", true)
+                ]),
+                createVNode("div", { class: "grid gap-3 sm:grid-cols-2" }, [
+                  (openBlock(), createBlock(Fragment, null, renderList(CVD_TYPES, (t) => {
+                    return createVNode("div", {
+                      key: t.value,
+                      class: ["space-y-2 rounded-lg border p-3 transition-colors", unref(cvdPreviewTypes).has(t.value) ? "border-primary bg-primary/10" : "border-default"]
+                    }, [
+                      createVNode("div", { class: "flex items-center justify-between gap-2" }, [
+                        createVNode("span", { class: "font-medium text-highlighted" }, toDisplayString(t.label), 1),
+                        createVNode(_component_UButton, {
+                          label: unref(cvdPreviewTypes).has(t.value) ? "Previewing" : "Preview",
+                          size: "xs",
+                          color: unref(cvdPreviewTypes).has(t.value) ? "primary" : "neutral",
+                          variant: unref(cvdPreviewTypes).has(t.value) ? "solid" : "soft",
+                          onClick: ($event) => unref(toggleCvdPreviewType)(t.value)
+                        }, null, 8, ["label", "color", "variant", "onClick"])
+                      ]),
+                      createVNode("p", { class: "text-xs text-muted" }, toDisplayString(t.description), 1),
+                      createVNode("p", { class: "text-[10px] text-dimmed" }, toDisplayString(t.prevalence), 1)
+                    ], 2);
+                  }), 64))
+                ]),
+                cvdReport.value ? (openBlock(), createBlock("div", {
+                  key: 0,
+                  class: "flex flex-wrap items-center gap-1.5"
+                }, [
+                  createVNode(_component_UBadge, {
+                    color: cvdReport.value.warnings === 0 ? "success" : "warning",
+                    variant: "soft",
+                    size: "sm"
+                  }, {
+                    default: withCtx(() => [
+                      createTextVNode(toDisplayString(cvdReport.value.warnings === 0 ? "No contrast warnings under CVD" : `${cvdReport.value.warnings} warning${cvdReport.value.warnings === 1 ? "" : "s"}`), 1)
+                    ]),
+                    _: 1
+                  }, 8, ["color"]),
+                  cvdReport.value.corrected > 0 ? (openBlock(), createBlock(_component_UBadge, {
+                    key: 0,
+                    color: "primary",
+                    variant: "soft",
+                    size: "sm"
+                  }, {
+                    default: withCtx(() => [
+                      createTextVNode(toDisplayString(cvdReport.value.corrected) + " pair" + toDisplayString(cvdReport.value.corrected === 1 ? "" : "s") + " auto-corrected ", 1)
+                    ]),
+                    _: 1
+                  })) : createCommentVNode("", true)
+                ])) : createCommentVNode("", true),
+                createVNode("div", { class: "space-y-1 border-t border-default pt-3 text-xs text-muted" }, [
+                  createVNode("p", null, " Pick any combination above — real CVD isn't always one condition, and previewing multiple at once chains their filters (see CvdPreviewOverlay.vue). "),
+                  createVNode("div", { class: "flex flex-wrap gap-x-4 gap-y-1" }, [
+                    createVNode("a", {
+                      href: "https://www.nei.nih.gov/learn-about-eye-health/eye-conditions-and-diseases/color-blindness",
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                      class: "text-primary underline underline-offset-2 hover:text-primary/80"
+                    }, " National Eye Institute: Color Blindness ↗ "),
+                    createVNode("a", {
+                      href: "https://www.colourblindawareness.org/colour-blindness/types-of-colour-blindness/",
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                      class: "text-primary underline underline-offset-2 hover:text-primary/80"
+                    }, " Colour Blind Awareness: Types of Colour Blindness ↗ ")
+                  ])
+                ])
+              ])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+    };
+  }
+});
+const _sfc_setup$8 = _sfc_main$8.setup;
+_sfc_main$8.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/CvdVision.vue");
+  return _sfc_setup$8 ? _sfc_setup$8(props, ctx) : void 0;
+};
+const __nuxt_component_12 = Object.assign(_sfc_main$8, { __name: "CvdVision" });
+const _sfc_main$7 = /* @__PURE__ */ defineComponent({
+  __name: "RoleClamps",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const { roles, roleClamps, roleDistances, rolesSynthesized, schemaName, framing } = useIridis();
+    const mathList = computed(() => {
+      const schema = roleSchemaByName[schemaName.value]?.[framing.value];
+      const roleDefs = schema?.roles || [];
+      return Object.keys(roles.value).map((roleName) => {
+        const clamp2 = roleClamps.value[roleName];
+        const distances = roleDistances.value[roleName] || {};
+        const synthesized = rolesSynthesized.value.includes(roleName);
+        const candidates = Object.entries(distances).map(([hex, dist]) => ({
+          hex,
+          dist,
+          isWinner: false
+        })).sort((a, b) => a.dist - b.dist);
+        const hasCandidates = candidates.length > 0;
+        if (!synthesized && hasCandidates) {
+          candidates[0].isWinner = true;
+          candidates[0].hex;
+        }
+        const def = roleDefs.find((r) => r.name === roleName);
+        const isDerived = def && !!def.derivedFrom;
+        const isPinned = !synthesized && !hasCandidates && !isDerived && Object.keys(roles.value).length > 0;
+        return {
+          name: roleName,
+          synthesized,
+          isPinned,
+          isDerived,
+          parentRole: def?.derivedFrom,
+          candidates,
+          clamp: clamp2 ? {
+            seedHex: clamp2.seedHex.toLowerCase(),
+            resolvedHex: clamp2.resolvedHex.toLowerCase(),
+            seedOklch: `L ${clamp2.seedOklch.l.toFixed(2)} · C ${clamp2.seedOklch.c.toFixed(2)} · H ${Math.round(clamp2.seedOklch.h)}`,
+            roleOklch: `L ${clamp2.resolvedOklch.l.toFixed(2)} · C ${clamp2.resolvedOklch.c.toFixed(2)} · H ${Math.round(clamp2.resolvedOklch.h)}`
+          } : null
+        };
+      });
+    });
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UBadge = _sfc_main$y;
+      const _component_UIcon = _sfc_main$f$1;
+      _push(`<div${ssrRenderAttrs(mergeProps({ class: "space-y-6" }, _attrs))}><p class="text-sm text-muted"> This shows the engine&#39;s hidden &quot;hand&quot; by revealing how every role was selected from the provided seeds. You can see the OKLCH distance for each candidate seed, whether a role had to be synthesized, and where input seeds were forcefully clamped to satisfy lightness, chroma, or semantic hue envelopes. </p>`);
+      if (unref(mathList).length === 0) {
+        _push(`<div class="text-muted text-sm italic py-4"> No roles resolved yet. </div>`);
+      } else {
+        _push(`<div class="grid grid-cols-1 lg:grid-cols-2 gap-4"><!--[-->`);
+        ssrRenderList(unref(mathList), (role) => {
+          _push(`<div class="flex flex-col gap-3 rounded-lg border border-default bg-elevated p-4 text-sm"><div class="flex items-center justify-between"><div class="font-bold text-highlighted uppercase tracking-wider">${ssrInterpolate(role.name)}</div>`);
+          if (role.synthesized) {
+            _push(ssrRenderComponent(_component_UBadge, {
+              color: "warning",
+              variant: "subtle",
+              size: "sm"
+            }, {
+              default: withCtx((_, _push2, _parent2, _scopeId) => {
+                if (_push2) {
+                  _push2(`Synthesized`);
+                } else {
+                  return [
+                    createTextVNode("Synthesized")
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent));
+          } else if (role.isDerived) {
+            _push(ssrRenderComponent(_component_UBadge, {
+              color: "secondary",
+              variant: "subtle",
+              size: "sm"
+            }, {
+              default: withCtx((_, _push2, _parent2, _scopeId) => {
+                if (_push2) {
+                  _push2(`Derived`);
+                } else {
+                  return [
+                    createTextVNode("Derived")
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent));
+          } else if (role.isPinned) {
+            _push(ssrRenderComponent(_component_UBadge, {
+              color: "info",
+              variant: "subtle",
+              size: "sm"
+            }, {
+              default: withCtx((_, _push2, _parent2, _scopeId) => {
+                if (_push2) {
+                  _push2(`Explicit Pin`);
+                } else {
+                  return [
+                    createTextVNode("Explicit Pin")
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent));
+          } else if (role.clamp) {
+            _push(ssrRenderComponent(_component_UBadge, {
+              color: "primary",
+              variant: "subtle",
+              size: "sm"
+            }, {
+              default: withCtx((_, _push2, _parent2, _scopeId) => {
+                if (_push2) {
+                  _push2(`Clamped`);
+                } else {
+                  return [
+                    createTextVNode("Clamped")
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent));
+          } else {
+            _push(ssrRenderComponent(_component_UBadge, {
+              color: "success",
+              variant: "subtle",
+              size: "sm"
+            }, {
+              default: withCtx((_, _push2, _parent2, _scopeId) => {
+                if (_push2) {
+                  _push2(`Direct Match`);
+                } else {
+                  return [
+                    createTextVNode("Direct Match")
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent));
+          }
+          _push(`</div>`);
+          if (role.synthesized) {
+            _push(`<div class="text-xs text-muted italic"> No seed was close enough (all candidates exceeded the maximum acceptable OKLCH distance for this role&#39;s semantic hue/chroma). A new color was mathematically synthesized. </div>`);
+          } else if (role.isDerived) {
+            _push(`<div class="text-xs text-muted italic"> This role is derived from <strong>${ssrInterpolate(role.parentRole)}</strong>. Its exact color is mathematically offset based on the schema&#39;s lightness and chroma instructions. </div>`);
+          } else if (role.isPinned) {
+            _push(`<div class="text-xs text-muted italic"> This role was explicitly pinned to a seed by the user. Distance matching was skipped. </div>`);
+          } else {
+            _push(`<div class="space-y-2"><div class="text-xs font-semibold text-dimmed uppercase">Candidates</div><div class="space-y-1"><!--[-->`);
+            ssrRenderList(role.candidates, (cand) => {
+              _push(`<div class="${ssrRenderClass([cand.isWinner ? "bg-primary/10 border border-primary/20" : "opacity-70", "flex items-center gap-3 p-1.5 rounded-md"])}"><div class="h-5 w-5 rounded shadow-inner flex-none" style="${ssrRenderStyle({ backgroundColor: cand.hex })}"></div><div class="flex-1 text-xs font-mono">${ssrInterpolate(cand.hex.toLowerCase())}</div><div class="${ssrRenderClass([cand.isWinner ? "text-primary font-bold" : "text-muted", "text-xs font-mono"])}"> Δ ${ssrInterpolate(cand.dist.toFixed(4))}</div></div>`);
+            });
+            _push(`<!--]--></div></div>`);
+          }
+          if (role.clamp) {
+            _push(`<div class="mt-2 pt-3 border-t border-default/50 space-y-2"><div class="text-xs font-semibold text-dimmed uppercase">Clamp applied</div><div class="flex items-center gap-3"><div class="h-6 w-6 rounded border border-default shadow-inner flex-none" style="${ssrRenderStyle({ backgroundColor: role.clamp.seedHex })}"></div><div class="flex flex-col min-w-0"><span class="text-[10px] text-muted truncate">${ssrInterpolate(role.clamp.seedOklch)}</span></div></div><div class="flex justify-start ml-2.5 text-muted">`);
+            _push(ssrRenderComponent(_component_UIcon, {
+              name: "i-material-symbols-arrow-downward-rounded",
+              class: "h-3 w-3"
+            }, null, _parent));
+            _push(`</div><div class="flex items-center gap-3"><div class="h-6 w-6 rounded border border-default shadow-inner flex-none" style="${ssrRenderStyle({ backgroundColor: role.clamp.resolvedHex })}"></div><div class="flex flex-col min-w-0"><span class="text-[10px] text-primary truncate">${ssrInterpolate(role.clamp.roleOklch)}</span></div></div></div>`);
+          } else {
+            _push(`<!---->`);
+          }
+          _push(`</div>`);
+        });
+        _push(`<!--]--></div>`);
+      }
+      _push(`</div>`);
+    };
+  }
+});
+const _sfc_setup$7 = _sfc_main$7.setup;
+_sfc_main$7.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/RoleClamps.vue");
+  return _sfc_setup$7 ? _sfc_setup$7(props, ctx) : void 0;
+};
+const __nuxt_component_13 = Object.assign(_sfc_main$7, { __name: "RoleClamps" });
+const _sfc_main$6 = /* @__PURE__ */ defineComponent({
+  __name: "ScaleCard",
+  __ssrInlineRender: true,
+  props: {
+    alias: {}
+  },
+  setup(__props) {
+    const shades = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UButton = _sfc_main$a$1;
+      const _component_UBadge = _sfc_main$y;
+      _push(`<div${ssrRenderAttrs(mergeProps({
+        class: "glass scanlines float h-full p-5",
+        style: { "--glow": `var(--ui-color-${__props.alias.key}-500)` }
+      }, _attrs))}><div class="mb-3 flex items-center justify-between"><span class="font-display text-sm font-bold uppercase tracking-widest glow-text" style="${ssrRenderStyle({ color: `var(--ui-color-${__props.alias.key}-400)` })}">${ssrInterpolate(__props.alias.label)}</span><span class="h-3 w-3 rounded-full pulse" style="${ssrRenderStyle({ backgroundColor: `var(--ui-color-${__props.alias.key}-500)` })}"></span></div><div class="mb-4 grid grid-cols-11 gap-0.5 overflow-hidden rounded-lg"><!--[-->`);
+      ssrRenderList(shades, (s) => {
+        _push(`<div class="h-14" style="${ssrRenderStyle({ backgroundColor: `var(--ui-color-${__props.alias.key}-${s})` })}"${ssrRenderAttr("title", `${__props.alias.key}-${s}`)}></div>`);
+      });
+      _push(`<!--]--></div><div class="flex flex-wrap items-center gap-2">`);
+      _push(ssrRenderComponent(_component_UButton, {
+        color: __props.alias.key === "neutral" ? "neutral" : __props.alias.key,
+        size: "xs"
+      }, {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(` Solid `);
+          } else {
+            return [
+              createTextVNode(" Solid ")
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(ssrRenderComponent(_component_UButton, {
+        color: __props.alias.key === "neutral" ? "neutral" : __props.alias.key,
+        variant: "soft",
+        size: "xs"
+      }, {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(` Soft `);
+          } else {
+            return [
+              createTextVNode(" Soft ")
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(ssrRenderComponent(_component_UButton, {
+        color: __props.alias.key === "neutral" ? "neutral" : __props.alias.key,
+        variant: "outline",
+        size: "xs"
+      }, {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(` Line `);
+          } else {
+            return [
+              createTextVNode(" Line ")
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(ssrRenderComponent(_component_UBadge, {
+        color: __props.alias.key === "neutral" ? "neutral" : __props.alias.key,
+        variant: "soft",
+        size: "sm"
+      }, {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(` 500 `);
+          } else {
+            return [
+              createTextVNode(" 500 ")
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(`</div></div>`);
+    };
+  }
+});
+const _sfc_setup$6 = _sfc_main$6.setup;
+_sfc_main$6.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/ScaleCard.vue");
+  return _sfc_setup$6 ? _sfc_setup$6(props, ctx) : void 0;
+};
+const __nuxt_component_0 = Object.assign(_sfc_main$6, { __name: "ScaleCard" });
+const _sfc_main$5 = /* @__PURE__ */ defineComponent({
+  __name: "PaletteCarousel",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const aliases = [
+      { "key": "primary", "label": "Primary" },
+      { "key": "secondary", "label": "Secondary" },
+      { "key": "success", "label": "Success" },
+      { "key": "warning", "label": "Warning" },
+      { "key": "error", "label": "Error" },
+      { "key": "info", "label": "Info" },
+      { "key": "neutral", "label": "Neutral" }
+    ];
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_ScaleCard = __nuxt_component_0;
+      _push(`<div${ssrRenderAttrs(mergeProps({ class: "palette-grid" }, _attrs))} data-v-881d2c64><!--[-->`);
+      ssrRenderList(aliases, (a) => {
+        _push(`<div class="grid-item" data-v-881d2c64>`);
+        _push(ssrRenderComponent(_component_ScaleCard, { alias: a }, null, _parent));
+        _push(`</div>`);
+      });
+      _push(`<!--]--></div>`);
+    };
+  }
+});
+const _sfc_setup$5 = _sfc_main$5.setup;
+_sfc_main$5.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/layout/PaletteCarousel.vue");
+  return _sfc_setup$5 ? _sfc_setup$5(props, ctx) : void 0;
+};
+const __nuxt_component_14 = /* @__PURE__ */ Object.assign(_export_sfc(_sfc_main$5, [["__scopeId", "data-v-881d2c64"]]), { __name: "PaletteCarousel" });
+const SUPPORTED_LANGS = ["css", "json", "javascript", "typescript", "xml", "html", "bash"];
+let highlighterPromise = null;
+function getHighlighter() {
+  highlighterPromise ??= createHighlighter({
+    "engine": createJavaScriptRegexEngine(),
+    "langs": [...SUPPORTED_LANGS],
+    "themes": []
+  });
+  return highlighterPromise;
+}
+async function highlightCode(code, lang, theme2) {
+  const highlighter = await getHighlighter();
+  return highlighter.codeToHtml(code, { lang, "theme": theme2 });
+}
+const _sfc_main$4 = /* @__PURE__ */ defineComponent({
+  __name: "CodeBlock",
+  __ssrInlineRender: true,
+  props: {
+    code: {},
+    lang: {},
+    vscodeTheme: {}
+  },
+  setup(__props) {
+    const props = __props;
+    const html2 = ref("");
+    watchEffect(async () => {
+      const code = props.code;
+      const lang = props.lang;
+      const theme2 = props.vscodeTheme;
+      html2.value = await highlightCode(code, lang, theme2);
+    });
+    const copied = ref(false);
+    let copiedTimer;
+    async function copy() {
+      if (!props.code) {
+        return;
+      }
+      await (void 0).clipboard.writeText(props.code);
+      copied.value = true;
+      if (copiedTimer !== void 0) {
+        clearTimeout(copiedTimer);
+      }
+      copiedTimer = setTimeout(() => {
+        copied.value = false;
+      }, 1500);
+    }
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UButton = _sfc_main$a$1;
+      _push(`<div${ssrRenderAttrs(mergeProps({ class: "code-block-wrap" }, _attrs))} data-v-d9869622><div class="code-block-toolbar" data-v-d9869622>`);
+      _push(ssrRenderComponent(_component_UButton, {
+        icon: copied.value ? "i-material-symbols-check-rounded" : "i-material-symbols-content-copy-rounded",
+        label: copied.value ? "Copied" : "Copy",
+        color: copied.value ? "success" : "primary",
+        variant: "solid",
+        size: "sm",
+        onClick: copy
+      }, null, _parent));
+      _push(`</div><div class="code-block max-h-[28rem] overflow-auto text-xs leading-relaxed [&amp;_pre]:rounded-none [&amp;_pre]:p-3" data-v-d9869622>${html2.value ?? ""}</div></div>`);
+    };
+  }
+});
+const _sfc_setup$4 = _sfc_main$4.setup;
+_sfc_main$4.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/CodeBlock.vue");
+  return _sfc_setup$4 ? _sfc_setup$4(props, ctx) : void 0;
+};
+const CodeBlock = /* @__PURE__ */ Object.assign(_export_sfc(_sfc_main$4, [["__scopeId", "data-v-d9869622"]]), { __name: "CodeBlock" });
+class HexRole {
+  static resolve(roles, ...names) {
+    for (const name of names) {
+      const record = roles[name];
+      if (record !== void 0) {
+        return record.hex;
+      }
+    }
+    return "#000000";
+  }
+}
+function xmlItem(name, value) {
+  const result = `        <item name="${name}">${value}</item>`;
+  return result;
+}
+class EmitAndroidThemeXml {
+  "name" = "emit:androidThemeXml";
+  "manifest" = {
+    "description": "Emit Android themes.xml fragment for Capacitor splash screen and status bar.",
+    "name": "emit:androidThemeXml",
+    "reads": ["roles", "outputs.capacitor:statusBar", "outputs.capacitor:splashScreen"],
+    "writes": ["outputs.capacitor:androidThemeXml"]
+  };
+  run(state, ctx) {
+    const roles = state.roles;
+    const priorStatusBar = state.outputs["capacitor:statusBar"];
+    const priorSplashScreen = state.outputs["capacitor:splashScreen"];
+    const statusBarColor = priorStatusBar?.backgroundColor ?? HexRole.resolve(roles, "topBar", "surface", "base");
+    const splashColor = priorSplashScreen?.backgroundColor ?? HexRole.resolve(roles, "surface", "background", "base");
+    const windowBackground = HexRole.resolve(roles, "background", "surface", "base");
+    const primaryColor = HexRole.resolve(roles, "primary", "base", "accent");
+    const navigationBarColor = HexRole.resolve(roles, "navigationBar", "surface", "base");
+    const textColorPrimary = HexRole.resolve(roles, "text", "onSurface");
+    const items = [
+      xmlItem("android:statusBarColor", statusBarColor),
+      xmlItem("android:navigationBarColor", navigationBarColor),
+      xmlItem("android:windowBackground", splashColor),
+      xmlItem("android:colorPrimary", primaryColor),
+      xmlItem("android:colorPrimaryDark", statusBarColor),
+      xmlItem("android:colorBackground", windowBackground),
+      xmlItem("android:textColorPrimary", textColorPrimary),
+      xmlItem("postSplashScreenTheme", "@style/AppTheme")
+    ].join("\n");
+    const xml = [
+      "<resources>",
+      '    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">',
+      items,
+      "    </style>",
+      "</resources>"
+    ].join("\n");
+    state.outputs["capacitor:androidThemeXml"] = xml;
+    ctx.logger.debug(
+      LogBody.create().component("EmitAndroidThemeXml").operation("run").status(LOG_STATUS.SUCCESS).message("Android themes.xml fragment generated").context({}).build()
+    );
+  }
+}
+const emitAndroidThemeXml = new EmitAndroidThemeXml();
+class SplashColor {
+  static resolve(roles, splashRole) {
+    if (splashRole !== void 0) {
+      return roles[splashRole];
+    }
+    return roles.surface ?? roles.background ?? roles.base ?? Object.values(roles)[0];
+  }
+}
+class EmitCapacitorSplashScreen {
+  "name" = "emit:capacitorSplashScreen";
+  "manifest" = {
+    "description": "Emit Capacitor splash screen configuration from surface or input-specified splashRole.",
+    "name": "emit:capacitorSplashScreen",
+    "reads": ["roles", "metadata.capacitor.splashRole", "metadata.capacitor.androidSplashResourceName"],
+    "writes": ["outputs.capacitor:splashScreen"]
+  };
+  run(state, ctx) {
+    const capacitorMeta = getOrCreateMetadata(state, "capacitor");
+    const splashRole = typeof capacitorMeta.splashRole === "string" ? capacitorMeta.splashRole : void 0;
+    const splashColor = SplashColor.resolve(state.roles, splashRole);
+    if (splashColor === void 0) {
+      ctx.logger.warn(
+        LogBody.create().component("EmitCapacitorSplashScreen").operation("run").status(LOG_STATUS.SKIPPED).message("No suitable role found for splash screen background; skipping.").context({}).build()
+      );
+      return;
+    }
+    const androidSplashResourceName = typeof capacitorMeta.androidSplashResourceName === "string" ? capacitorMeta.androidSplashResourceName : void 0;
+    const output = androidSplashResourceName !== void 0 ? {
+      "androidSplashResourceName": androidSplashResourceName,
+      "backgroundColor": splashColor.hex
+    } : {
+      "backgroundColor": splashColor.hex
+    };
+    state.outputs["capacitor:splashScreen"] = output;
+    ctx.logger.debug(
+      LogBody.create().component("EmitCapacitorSplashScreen").operation("run").status(LOG_STATUS.SUCCESS).message("SplashScreen emitted").context({
+        "backgroundColor": output.backgroundColor
+      }).build()
+    );
+  }
+}
+const emitCapacitorSplashScreen = new EmitCapacitorSplashScreen();
+function pickBarStyle(barColor) {
+  return luminance$1.apply(barColor) < 0.18 ? "LIGHT" : "DARK";
+}
+class BarColor {
+  static resolve(roles) {
+    return roles.topBar ?? roles.surface ?? roles.base ?? Object.values(roles)[0];
+  }
+}
+class TextColor {
+  static resolve(roles) {
+    return roles.text ?? roles.onSurface ?? Object.values(roles)[1];
+  }
+}
+class EmitCapacitorStatusBar {
+  "name" = "emit:capacitorStatusBar";
+  "manifest" = {
+    "description": "Emit Capacitor StatusBar configuration from surface/topBar role.",
+    "name": "emit:capacitorStatusBar",
+    "reads": ["roles"],
+    "writes": ["outputs.capacitor:statusBar"]
+  };
+  run(state, ctx) {
+    const barColor = BarColor.resolve(state.roles);
+    if (barColor === void 0) {
+      ctx.logger.warn(
+        LogBody.create().component("EmitCapacitorStatusBar").operation("run").status(LOG_STATUS.SKIPPED).message("No suitable role found for status bar background; skipping.").context({}).build()
+      );
+      return;
+    }
+    const capacitorMeta = getOrCreateMetadata(state, "capacitor");
+    const overlay = capacitorMeta.statusBarOverlay === true;
+    const textColor = TextColor.resolve(state.roles);
+    let style;
+    if (textColor !== void 0) {
+      style = luminance$1.apply(textColor) > 0.18 ? "DARK" : "LIGHT";
+    } else {
+      style = pickBarStyle(barColor);
+    }
+    const output = {
+      "backgroundColor": barColor.hex,
+      "overlay": overlay,
+      "style": style
+    };
+    state.outputs["capacitor:statusBar"] = output;
+    ctx.logger.debug(
+      LogBody.create().component("EmitCapacitorStatusBar").operation("run").status(LOG_STATUS.SUCCESS).message("StatusBar emitted").context({
+        "backgroundColor": output.backgroundColor,
+        "overlay": output.overlay,
+        "style": output.style
+      }).build()
+    );
+  }
+}
+const emitCapacitorStatusBar = new EmitCapacitorStatusBar();
+class IntentMapBuilder {
+  static build(roles) {
+    const map = /* @__PURE__ */ new Map();
+    for (const record of Object.values(roles)) {
+      const intent = record.hints?.intent;
+      if (intent !== void 0 && !map.has(intent)) {
+        map.set(intent, record.hex);
+      }
+    }
+    return map;
+  }
+}
+class Hex {
+  static resolve(roles, intentMap, primaryName, fallbackIntent, ultimateFallback) {
+    return roles[primaryName]?.hex ?? intentMap.get(fallbackIntent) ?? ultimateFallback;
+  }
+}
+function variantHex(roles, variants, roleName, variantName, fallback) {
+  return variants[roleName]?.[variantName]?.hex ?? roles[roleName]?.hex ?? fallback;
+}
+class EmitCapacitorTheme {
+  "name" = "emit:capacitorTheme";
+  "manifest" = {
+    "description": "Emit flat Capacitor theme map from resolved roles for native preference storage.",
+    "name": "emit:capacitorTheme",
+    "reads": ["roles", "variants"],
+    "writes": ["outputs.capacitor:theme"]
+  };
+  run(state, ctx) {
+    const roles = state.roles;
+    const variants = state.variants;
+    const intentMap = IntentMapBuilder.build(roles);
+    const FALLBACK = "#000000";
+    const primary = Hex.resolve(roles, intentMap, "primary", "background", FALLBACK);
+    const primaryDark = variantHex(roles, variants, "primary", "dark", primary);
+    const primaryLight = variantHex(roles, variants, "primary", "light", primary);
+    const accent = Hex.resolve(roles, intentMap, "accent", "accent", primary);
+    const background = Hex.resolve(roles, intentMap, "background", "background", "#ffffff");
+    const surface = Hex.resolve(roles, intentMap, "surface", "background", background);
+    const error = Hex.resolve(roles, intentMap, "error", "critical", "#b00020");
+    const warning = Hex.resolve(roles, intentMap, "warning", "muted", "#f59e0b");
+    const success = Hex.resolve(roles, intentMap, "success", "positive", "#10b981");
+    const info = Hex.resolve(roles, intentMap, "info", "accent", "#3b82f6");
+    const text = Hex.resolve(roles, intentMap, "text", "text", "#1f2937");
+    const textOnPrimary = Hex.resolve(roles, intentMap, "textOnPrimary", "text", "#ffffff");
+    const textOnAccent = Hex.resolve(roles, intentMap, "textOnAccent", "text", "#ffffff");
+    const output = {
+      "accent": accent,
+      "background": background,
+      "error": error,
+      "info": info,
+      "primary": primary,
+      "primaryDark": primaryDark,
+      "primaryLight": primaryLight,
+      "success": success,
+      "surface": surface,
+      "text": text,
+      "textOnAccent": textOnAccent,
+      "textOnPrimary": textOnPrimary,
+      "warning": warning
+    };
+    state.outputs["capacitor:theme"] = output;
+    ctx.logger.debug(
+      LogBody.create().component("EmitCapacitorTheme").operation("run").status(LOG_STATUS.SUCCESS).message("Theme emitted").context({
+        "keyCount": Object.keys(output).length
+      }).build()
+    );
+  }
+}
+const emitCapacitorTheme = new EmitCapacitorTheme();
+const statusBarOutputSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "backgroundColor": { "type": "string" },
+    "overlay": { "type": "boolean" },
+    "style": { "enum": ["DARK", "LIGHT"], "type": "string" }
+  },
+  "required": ["backgroundColor", "style", "overlay"],
+  "type": "object"
+};
+const themeOutputSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "accent": { "type": "string" },
+    "background": { "type": "string" },
+    "error": { "type": "string" },
+    "info": { "type": "string" },
+    "primary": { "type": "string" },
+    "primaryDark": { "type": "string" },
+    "primaryLight": { "type": "string" },
+    "success": { "type": "string" },
+    "surface": { "type": "string" },
+    "text": { "type": "string" },
+    "textOnAccent": { "type": "string" },
+    "textOnPrimary": { "type": "string" },
+    "warning": { "type": "string" }
+  },
+  "required": [
+    "primary",
+    "primaryDark",
+    "primaryLight",
+    "accent",
+    "background",
+    "surface",
+    "error",
+    "warning",
+    "success",
+    "info",
+    "text",
+    "textOnPrimary",
+    "textOnAccent"
+  ],
+  "type": "object"
+};
+const splashScreenOutputSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "androidSplashResourceName": { "type": "string" },
+    "backgroundColor": { "type": "string" }
+  },
+  "required": ["backgroundColor"],
+  "type": "object"
+};
+const androidThemeXmlOutputSchema = {
+  "type": "string"
+};
+class CapacitorPlugin {
+  "name" = "capacitor";
+  "version" = "0.1.0";
+  tasks() {
+    return [
+      emitCapacitorStatusBar,
+      emitCapacitorTheme,
+      emitCapacitorSplashScreen,
+      emitAndroidThemeXml
+    ];
+  }
+  schemas() {
+    return {
+      "outputs": {
+        "capacitor:androidThemeXml": androidThemeXmlOutputSchema,
+        "capacitor:splashScreen": splashScreenOutputSchema,
+        "capacitor:statusBar": statusBarOutputSchema,
+        "capacitor:theme": themeOutputSchema
+      }
+    };
+  }
+}
+const capacitorPlugin = new CapacitorPlugin();
+const TIER_SOURCES = [
+  { "source": "light", "tier": "100" },
+  { "source": "roles", "tier": "500" },
+  { "source": "dark", "tier": "900" }
+];
+const FAMILY_ROLE_MAP = [
+  { "family": "brand", "role": "brand" },
+  { "fallback": "brand", "family": "accent", "role": "accent-alt" },
+  { "fallback": "brand", "family": "success", "role": "success" },
+  { "fallback": "brand", "family": "warning", "role": "warning" },
+  { "family": "error", "role": "error" },
+  { "fallback": "brand", "family": "info", "role": "info" },
+  { "fallback": "text", "family": "neutral", "role": "muted" }
+];
+function resolveEffectiveRole(roles, role, fallback) {
+  if (roles[role] !== void 0) {
+    return role;
+  }
+  if (fallback !== void 0 && roles[fallback] !== void 0) {
+    return fallback;
+  }
+  return void 0;
+}
+function buildFamily(roles, variants, effectiveRole) {
+  const family = {};
+  for (const { source, tier } of TIER_SOURCES) {
+    const roleColor = source === "roles" ? roles[effectiveRole] : variants[source]?.[effectiveRole];
+    if (roleColor !== void 0) {
+      family[tier] = roleColor.hex;
+    }
+  }
+  return Object.keys(family).length > 0 ? family : void 0;
+}
+function serializeColorsToJs(colors) {
+  const lines = ["{"];
+  for (const [family, shades] of Object.entries(colors)) {
+    lines.push(`  '${family}': {`);
+    for (const [shade, hex] of Object.entries(shades)) {
+      lines.push(`    '${shade}': '${hex}',`);
+    }
+    lines.push("  },");
+  }
+  lines.push("}");
+  return lines.join("\n");
+}
+class EmitChakraTheme {
+  "name" = "emit:chakraTheme";
+  "manifest" = {
+    "description": "Emit a Chakra UI extendTheme() color-token scale (100/500/900 per family) from resolved roles and dark/light variants",
+    "name": "emit:chakraTheme",
+    "reads": ["roles", "variants"],
+    "writes": ["outputs.chakra:theme"]
+  };
+  run(state, ctx) {
+    const colors = {};
+    for (const mapping of FAMILY_ROLE_MAP) {
+      const effectiveRole = resolveEffectiveRole(state.roles, mapping.role, mapping.fallback);
+      if (effectiveRole === void 0) {
+        continue;
+      }
+      const family = buildFamily(state.roles, state.variants, effectiveRole);
+      if (family === void 0) {
+        continue;
+      }
+      colors[mapping.family] = family;
+    }
+    const colorsJs = serializeColorsToJs(colors);
+    const config = [
+      "import { extendTheme } from '@chakra-ui/react';",
+      "",
+      "export default extendTheme({",
+      `  colors: ${colorsJs.split("\n").map((l, i) => {
+        return i === 0 ? l : `  ${l}`;
+      }).join("\n")},`,
+      "});"
+    ].join("\n");
+    const output = {
+      "colors": colors,
+      "config": config
+    };
+    state.outputs["chakra:theme"] = output;
+    ctx.logger.debug(
+      LogBody.create().component("EmitChakraTheme").operation("run").status(LOG_STATUS.SUCCESS).message("Emitted Chakra theme").context({ "families": Object.keys(colors).length }).build()
+    );
+  }
+}
+const emitChakraTheme = new EmitChakraTheme();
+const chakraOutputSchema = {
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "colors": { "type": "object", "additionalProperties": true },
+    "config": { "type": "string" }
+  }
+};
+class ChakraPlugin {
+  "name" = "chakra";
+  "version" = "0.1.0";
+  tasks() {
+    return [emitChakraTheme];
+  }
+  schemas() {
+    return {
+      "outputs": { "chakra:theme": chakraOutputSchema }
+    };
+  }
+}
+const chakraPlugin = new ChakraPlugin();
+class PaletteFamily {
+  static build(roles, variants, role) {
+    const base = roles[role];
+    if (base === void 0) {
+      return void 0;
+    }
+    const main = base.hex;
+    const light = variants["s300"]?.[role]?.hex ?? main;
+    const dark = variants["s700"]?.[role]?.hex ?? main;
+    const contrastText2 = roles[`on-${role}`]?.hex ?? roles["text"]?.hex ?? "#ffffff";
+    return { "contrastText": contrastText2, "dark": dark, "light": light, "main": main };
+  }
+}
+class PaletteToJs {
+  static serialize(palette, indent = 2) {
+    const pad = " ".repeat(indent);
+    const lines = ["{"];
+    for (const [key, value] of Object.entries(palette)) {
+      if (typeof value === "string") {
+        lines.push(`${pad}'${key}': '${value}',`);
+      } else if (value !== null && typeof value === "object") {
+        const nested = PaletteToJs.serialize(value, indent + 2);
+        lines.push(`${pad}'${key}': ${nested},`);
+      }
+    }
+    lines.push(`${" ".repeat(indent - 2)}}`);
+    return lines.join("\n");
+  }
+}
+class EmitMuiTheme {
+  "name" = "emit:muiTheme";
+  "manifest" = {
+    "description": "Emit an MUI createTheme() palette object from resolved roles and shade variants",
+    "name": "emit:muiTheme",
+    "reads": ["roles", "variants", "runtime"],
+    "writes": ["outputs.mui:theme"]
+  };
+  run(state, ctx) {
+    const { roles, variants } = state;
+    const palette = {};
+    const primary = PaletteFamily.build(roles, variants, "brand");
+    if (primary !== void 0) {
+      palette["primary"] = primary;
+    }
+    const secondary = PaletteFamily.build(roles, variants, "accent-alt") ?? PaletteFamily.build(roles, variants, "brand");
+    if (secondary !== void 0) {
+      palette["secondary"] = secondary;
+    }
+    const error = PaletteFamily.build(roles, variants, "error");
+    if (error !== void 0) {
+      palette["error"] = error;
+    }
+    const warning = PaletteFamily.build(roles, variants, "warning") ?? PaletteFamily.build(roles, variants, "brand");
+    if (warning !== void 0) {
+      palette["warning"] = warning;
+    }
+    const info = PaletteFamily.build(roles, variants, "info") ?? PaletteFamily.build(roles, variants, "brand");
+    if (info !== void 0) {
+      palette["info"] = info;
+    }
+    const success = PaletteFamily.build(roles, variants, "success") ?? PaletteFamily.build(roles, variants, "brand");
+    if (success !== void 0) {
+      palette["success"] = success;
+    }
+    const background = {};
+    if (roles["background"]?.hex !== void 0) {
+      background["default"] = roles["background"].hex;
+    }
+    const paper = roles["surface"]?.hex ?? roles["bg-soft"]?.hex ?? roles["background"]?.hex;
+    if (paper !== void 0) {
+      background["paper"] = paper;
+    }
+    if (Object.keys(background).length > 0) {
+      palette["background"] = background;
+    }
+    const text = {};
+    if (roles["text"]?.hex !== void 0) {
+      text["primary"] = roles["text"].hex;
+    }
+    const secondaryText = roles["text-subtle"]?.hex ?? roles["muted"]?.hex ?? roles["text"]?.hex;
+    if (secondaryText !== void 0) {
+      text["secondary"] = secondaryText;
+    }
+    if (Object.keys(text).length > 0) {
+      palette["text"] = text;
+    }
+    palette["mode"] = state.runtime.framing ?? "light";
+    const config = [
+      "export default {",
+      `  palette: ${PaletteToJs.serialize(palette, 4)},`,
+      "};"
+    ].join("\n");
+    const output = {
+      "config": config,
+      "palette": palette
+    };
+    state.outputs["mui:theme"] = output;
+    ctx.logger.debug(
+      LogBody.create().component("EmitMuiTheme").operation("run").status(LOG_STATUS.SUCCESS).message("Emitted MUI theme palette").context({ "families": Object.keys(palette).length }).build()
+    );
+  }
+}
+const muiOutputSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "config": { "type": "string" },
+    "palette": { "additionalProperties": true, "type": "object" }
+  },
+  "type": "object"
+};
+class MuiPlugin {
+  "name" = "mui";
+  "version" = "0.1.0";
+  tasks() {
+    return [new EmitMuiTheme()];
+  }
+  schemas() {
+    return {
+      "outputs": { "mui:theme": muiOutputSchema }
+    };
+  }
+}
+const muiPlugin = new MuiPlugin();
+const TOKEN_SOURCE = {
+  "primary": ["brand"],
+  "secondary": ["accent-alt", "brand"],
+  "success": ["success", "brand"],
+  "warning": ["warning", "brand"],
+  "error": ["error"],
+  "info": ["info", "brand"],
+  "background": ["background"],
+  "surface": ["surface", "bg-soft", "background"],
+  "text": ["text"],
+  "textMuted": ["text-subtle", "muted", "text"],
+  "border": ["border", "divider", "muted"]
+};
+class TokenColors {
+  static build(roles) {
+    const colors = {};
+    for (const [token, candidates] of Object.entries(TOKEN_SOURCE)) {
+      for (const candidate of candidates) {
+        const record = roles[candidate];
+        if (record !== void 0) {
+          colors[token] = record.hex;
+          break;
+        }
+      }
+    }
+    return colors;
+  }
+}
+class PandaConfigModule {
+  static serialize(colors) {
+    const lines = [
+      "export default defineConfig({",
+      "  theme: {",
+      "    extend: {",
+      "      tokens: {",
+      "        colors: {"
+    ];
+    for (const [key, hex] of Object.entries(colors)) {
+      lines.push(`          '${key}': { value: '${hex}' },`);
+    }
+    lines.push(
+      "        },",
+      "      },",
+      "    },",
+      "  },",
+      "});"
+    );
+    return lines.join("\n");
+  }
+}
+class UnoConfigModule {
+  static serialize(colors) {
+    const lines = [
+      "export default defineConfig({",
+      "  theme: {",
+      "    colors: {"
+    ];
+    for (const [key, hex] of Object.entries(colors)) {
+      lines.push(`      '${key}': '${hex}',`);
+    }
+    lines.push(
+      "    },",
+      "  },",
+      "});"
+    );
+    return lines.join("\n");
+  }
+}
+class EmitPandaTheme {
+  "name" = "emit:pandaTheme";
+  "manifest" = {
+    "description": "Emit Panda CSS token config and a UnoCSS-compatible theme object from the same resolved-role color map",
+    "name": "emit:pandaTheme",
+    "reads": ["roles"],
+    "writes": ["outputs.panda:theme"]
+  };
+  run(state, ctx) {
+    const colors = TokenColors.build(state.roles);
+    const pandaConfig = PandaConfigModule.serialize(colors);
+    const unoConfig = UnoConfigModule.serialize(colors);
+    const output = {
+      "colors": colors,
+      "pandaConfig": pandaConfig,
+      "unoConfig": unoConfig
+    };
+    state.outputs["panda:theme"] = output;
+    ctx.logger.debug(
+      LogBody.create().component("EmitPandaTheme").operation("run").status(LOG_STATUS.SUCCESS).message("Emitted Panda/UnoCSS theme").context({ "tokens": Object.keys(colors).length }).build()
+    );
+  }
+}
+const pandaOutputSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "colors": { "additionalProperties": true, "type": "object" },
+    "pandaConfig": { "type": "string" },
+    "unoConfig": { "type": "string" }
+  },
+  "type": "object"
+};
+class PandaPlugin {
+  "name" = "panda";
+  "version" = "0.1.0";
+  tasks() {
+    return [new EmitPandaTheme()];
+  }
+  schemas() {
+    return {
+      "outputs": { "panda:theme": pandaOutputSchema }
+    };
+  }
+}
+const pandaPlugin = new PandaPlugin();
+const VAR_ROLE_CANDIDATES = {
+  "--accent": ["accent-alt", "brand"],
+  "--accent-foreground": ["text"],
+  "--background": ["background"],
+  "--border": ["border", "divider", "muted"],
+  "--card": ["surface", "background"],
+  "--card-foreground": ["text"],
+  "--destructive": ["error"],
+  "--destructive-foreground": ["text"],
+  "--foreground": ["text"],
+  "--input": ["border", "divider", "muted"],
+  "--muted": ["bg-soft", "background"],
+  "--muted-foreground": ["text-subtle", "muted", "text"],
+  "--popover": ["surface", "background"],
+  "--popover-foreground": ["text"],
+  "--primary": ["brand"],
+  "--primary-foreground": ["on-brand", "text"],
+  "--ring": ["focus-ring", "brand"],
+  "--secondary": ["accent-alt", "brand"],
+  "--secondary-foreground": ["text"]
+};
+class RoleResolver {
+  static resolve(roles, candidates) {
+    for (const role of candidates) {
+      const record = roles[role];
+      if (record !== void 0) {
+        return record;
+      }
+    }
+    return void 0;
+  }
+}
+class OklchTriple {
+  static format(oklch) {
+    const l = oklch.l.toFixed(4);
+    const c = oklch.c.toFixed(4);
+    const h2 = oklch.h.toFixed(2);
+    return `${l} ${c} ${h2}`;
+  }
+}
+class ShadcnTheme {
+  static build(roles) {
+    const colors = {};
+    const decls = [];
+    for (const [varName, candidates] of Object.entries(VAR_ROLE_CANDIDATES)) {
+      const record = RoleResolver.resolve(roles, candidates);
+      if (record === void 0) {
+        continue;
+      }
+      colors[varName] = record.hex;
+      decls.push(`  ${varName}: ${OklchTriple.format(record.oklch)};`);
+    }
+    const cssVars = `:root {
+${decls.join("\n")}
+}`;
+    return { colors, cssVars };
+  }
+}
+class EmitShadcnTheme {
+  "name" = "emit:shadcnTheme";
+  "manifest" = {
+    "description": "Emit a shadcn/ui-compatible CSS custom-property theme (OKLCH, Tailwind v4 convention) from resolved roles",
+    "name": "emit:shadcnTheme",
+    "reads": ["roles"],
+    "writes": ["outputs.shadcn:theme"]
+  };
+  run(state, ctx) {
+    const output = ShadcnTheme.build(state.roles);
+    state.outputs["shadcn:theme"] = output;
+    ctx.logger.debug(
+      LogBody.create().component("EmitShadcnTheme").operation("run").status(LOG_STATUS.SUCCESS).message("Emitted shadcn/ui theme").context({ "variables": Object.keys(output.colors).length }).build()
+    );
+  }
+}
+const shadcnOutputSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "colors": { "additionalProperties": true, "type": "object" },
+    "cssVars": { "type": "string" }
+  },
+  "type": "object"
+};
+class ShadcnPlugin {
+  "name" = "shadcn";
+  "version" = "0.1.0";
+  tasks() {
+    return [new EmitShadcnTheme()];
+  }
+  schemas() {
+    return {
+      "outputs": { "shadcn:theme": shadcnOutputSchema }
+    };
+  }
+}
+const shadcnPlugin = new ShadcnPlugin();
+function serializeP3(p3) {
+  if (p3 === void 0) {
+    return "";
+  }
+  const r = p3.r.toFixed(4);
+  const g = p3.g.toFixed(4);
+  const b = p3.b.toFixed(4);
+  return `color(display-p3 ${r} ${g} ${b})`;
+}
+function forcedColorsToken(record) {
+  switch (record.hints?.intent) {
+    case "accent":
+      return "Highlight";
+    case "background":
+      return "Canvas";
+    case "button":
+      return "ButtonFace";
+    case "critical":
+      return "CanvasText";
+    case "link":
+      return "LinkText";
+    case "muted":
+      return "GrayText";
+    case "onAccent":
+      return "HighlightText";
+    case "onButton":
+      return "ButtonText";
+    case "positive":
+      return "CanvasText";
+    case "text":
+      return "CanvasText";
+    default:
+      return "CanvasText";
+  }
+}
+class Declarations {
+  static build(roles, prefix) {
+    const result = Object.entries(roles).map(([role, record]) => {
+      const varName = toCssVarName(role, prefix);
+      return `  ${varName}: ${record.hex};`;
+    });
+    return result;
+  }
+}
+class RootBlock {
+  static build(roles, prefix) {
+    const decls = Declarations.build(roles, prefix);
+    return `:root {
+${decls.join("\n")}
+}`;
+  }
+}
+class ScopedBlock {
+  static build(roles, prefix, scopeAttr, scopeName) {
+    const decls = Declarations.build(roles, prefix);
+    const selector = typeof scopeAttr === "string" && scopeAttr.length > 0 ? `[${scopeAttr}='${scopeName}']` : `[data-theme='${scopeName}']`;
+    return `${selector} {
+${decls.join("\n")}
+}`;
+  }
+}
+class DarkSchemeBlock {
+  static build(darkRoles, prefix) {
+    const decls = Declarations.build(darkRoles, prefix);
+    return `@media (prefers-color-scheme: dark) {
+  :root {
+${decls.map((d) => {
+      const result = `  ${d}`;
+      return result;
+    }).join("\n")}
+  }
+}`;
+  }
+}
+class ForcedColorsBlock {
+  static build(roles, prefix) {
+    const decls = Object.entries(roles).map(([role, record]) => {
+      const varName = toCssVarName(role, prefix);
+      const token = forcedColorsToken(record);
+      return `  ${varName}: ${token};`;
+    });
+    return `@media (forced-colors: active) {
+  :root {
+${decls.map((d) => {
+      const result = `  ${d}`;
+      return result;
+    }).join("\n")}
+  }
+}`;
+  }
+}
+class WideGamutBlock {
+  static build(roles, prefix) {
+    const p3Decls = [];
+    for (const [role, record] of Object.entries(roles)) {
+      if (record.displayP3 !== void 0) {
+        const varName = toCssVarName(role, prefix);
+        p3Decls.push(`  ${varName}: ${serializeP3(record.displayP3)};`);
+      }
+    }
+    if (p3Decls.length === 0) {
+      return "";
+    }
+    return `@supports (color: color(display-p3 0 0 0)) {
+  :root {
+${p3Decls.map((d) => {
+      const result = `  ${d}`;
+      return result;
+    }).join("\n")}
+  }
+}`;
+  }
+}
+class VarMap {
+  static build(roles, prefix) {
+    const map = {};
+    for (const role of Object.keys(roles)) {
+      map[role] = toCssVarName(role, prefix);
+    }
+    return map;
+  }
+}
+class EmitCssVars {
+  name = "emit:cssVars";
+  manifest = {
+    "description": "Emit CSS custom property blocks from resolved roles and variants",
+    "name": "emit:cssVars",
+    "reads": ["roles", "variants", "metadata"],
+    "writes": ["outputs.stylesheet:cssVars"]
+  };
+  // math() accessor satisfies PluginInterface if ever used standalone; not required here
+  // but the class only needs TaskInterface
+  run(state, _ctx) {
+    const prefix = typeof state.metadata.cssVarPrefix === "string" ? state.metadata.cssVarPrefix : "--c-";
+    const scopeAttr = typeof state.metadata.scopeAttr === "string" ? state.metadata.scopeAttr : void 0;
+    const themeName = typeof state.metadata.themeName === "string" ? state.metadata.themeName : "default";
+    const darkRoles = state.variants.dark;
+    const rootBlock = RootBlock.build(state.roles, prefix);
+    const scopedBlock = ScopedBlock.build(state.roles, prefix, scopeAttr, themeName);
+    const darkScheme = darkRoles !== void 0 ? DarkSchemeBlock.build(darkRoles, prefix) : "";
+    const forcedColors = ForcedColorsBlock.build(state.roles, prefix);
+    const wideGamut = WideGamutBlock.build(state.roles, prefix);
+    const parts = [rootBlock, darkScheme, wideGamut, forcedColors].filter(Boolean);
+    const full = parts.join("\n\n");
+    const map = VarMap.build(state.roles, prefix);
+    const output = {
+      "darkScheme": darkScheme,
+      "forcedColors": forcedColors,
+      "full": full,
+      "map": map,
+      "rootBlock": rootBlock,
+      "scopedBlock": scopedBlock,
+      "wideGamut": wideGamut
+    };
+    state.outputs["stylesheet:cssVars"] = output;
+  }
+}
+const emitCssVars = new EmitCssVars();
+class ScopedCategoryBlock {
+  static build(category, roles, prefix, scopePrefix) {
+    const decls = Object.entries(roles).map(([role, record]) => {
+      const varName = toCssVarName(role, prefix);
+      return `  ${varName}: ${record.hex};`;
+    });
+    const selector = `[data-${scopePrefix}='${category}']`;
+    return `${selector} {
+${decls.join("\n")}
+}`;
+  }
+}
+class ScopedWideGamutBlock {
+  static build(category, roles, prefix, scopePrefix) {
+    const p3Decls = [];
+    for (const [role, record] of Object.entries(roles)) {
+      if (record.displayP3 !== void 0) {
+        const varName = toCssVarName(role, prefix);
+        p3Decls.push(`  ${varName}: ${serializeP3(record.displayP3)};`);
+      }
+    }
+    if (p3Decls.length === 0) {
+      return "";
+    }
+    const selector = `[data-${scopePrefix}='${category}']`;
+    return `@supports (color: color(display-p3 0 0 0)) {
+  ${selector} {
+${p3Decls.map((d) => {
+      const result = `  ${d}`;
+      return result;
+    }).join("\n")}
+  }
+}`;
+  }
+}
+class EmitCssVarsScoped {
+  "name" = "emit:cssVarsScoped";
+  "manifest" = {
+    "description": "Emit per-category scoped CSS custom property blocks for Vue/Capacitor use cases",
+    "name": "emit:cssVarsScoped",
+    "reads": ["roles", "variants", "metadata"],
+    "writes": ["outputs.stylesheet:cssVarsScoped"]
+  };
+  run(state, ctx) {
+    const prefix = typeof state.metadata.cssVarPrefix === "string" ? state.metadata.cssVarPrefix : "--c-";
+    const scopePrefix = typeof state.metadata.scopePrefix === "string" ? state.metadata.scopePrefix : "theme";
+    const blocks = {};
+    const wideGamut = {};
+    blocks.default = ScopedCategoryBlock.build("default", state.roles, prefix, scopePrefix);
+    const defaultP3 = ScopedWideGamutBlock.build("default", state.roles, prefix, scopePrefix);
+    if (defaultP3.length > 0) {
+      wideGamut.default = defaultP3;
+    }
+    for (const [variantName, variantRoles] of Object.entries(state.variants)) {
+      blocks[variantName] = ScopedCategoryBlock.build(variantName, variantRoles, prefix, scopePrefix);
+      const variantP3 = ScopedWideGamutBlock.build(variantName, variantRoles, prefix, scopePrefix);
+      if (variantP3.length > 0) {
+        wideGamut[variantName] = variantP3;
+      }
+    }
+    const parts = [];
+    for (const category of Object.keys(blocks)) {
+      parts.push(blocks[category]);
+      const p3 = wideGamut[category];
+      if (p3 !== void 0 && p3.length > 0) {
+        parts.push(p3);
+      }
+    }
+    const full = parts.join("\n\n");
+    const output = {
+      "blocks": blocks,
+      "full": full,
+      "wideGamut": wideGamut
+    };
+    state.outputs["stylesheet:cssVarsScoped"] = output;
+    ctx.logger.debug(
+      LogBody.create().component("EmitCssVarsScoped").operation("run").status(LOG_STATUS.SUCCESS).message("Emitted scoped blocks").context({
+        "count": Object.keys(blocks).length,
+        "wideGamutCount": Object.keys(wideGamut).length
+      }).build()
+    );
+  }
+}
+const emitCssVarsScoped = new EmitCssVarsScoped();
+const cssVarsOutputSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "darkScheme": { "type": "string" },
+    "forcedColors": { "type": "string" },
+    "full": { "type": "string" },
+    "map": { "additionalProperties": { "type": "string" }, "type": "object" },
+    "rootBlock": { "type": "string" },
+    "scopedBlock": { "type": "string" },
+    "wideGamut": { "type": "string" }
+  },
+  "type": "object"
+};
+const cssVarsScopedOutputSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "blocks": { "additionalProperties": { "type": "string" }, "type": "object" },
+    "full": { "type": "string" },
+    "wideGamut": { "additionalProperties": { "type": "string" }, "type": "object" }
+  },
+  "type": "object"
+};
+class StylesheetPlugin {
+  "name" = "stylesheet";
+  "version" = "0.1.0";
+  tasks() {
+    return [emitCssVars, emitCssVarsScoped];
+  }
+  schemas() {
+    return {
+      "outputs": {
+        "stylesheet:cssVars": cssVarsOutputSchema,
+        "stylesheet:cssVarsScoped": cssVarsScopedOutputSchema
+      }
+    };
+  }
+}
+const stylesheetPlugin = new StylesheetPlugin();
+class P3 {
+  static serialize(p3) {
+    if (p3 === void 0) {
+      return "";
+    }
+    const r = p3.r.toFixed(4);
+    const g = p3.g.toFixed(4);
+    const b = p3.b.toFixed(4);
+    return `color(display-p3 ${r} ${g} ${b})`;
+  }
+}
+const SHADE_ROLE_RE = /^(.+)-(\d+)$/;
+const TAILWIND_SHADES = /* @__PURE__ */ new Set([
+  "50",
+  "100",
+  "150",
+  "200",
+  "250",
+  "300",
+  "350",
+  "400",
+  "450",
+  "500",
+  "550",
+  "600",
+  "650",
+  "700",
+  "750",
+  "800",
+  "850",
+  "900",
+  "950"
+]);
+class ColorsShape {
+  static build(roles) {
+    const groups = {};
+    const flat = {};
+    for (const [role, record] of Object.entries(roles)) {
+      const match = SHADE_ROLE_RE.exec(role);
+      if (match !== null && TAILWIND_SHADES.has(match[2] ?? "")) {
+        const root = match[1];
+        const shade = match[2];
+        groups[root] ??= {};
+        groups[root][shade] = record.hex;
+      } else {
+        flat[role] = record.hex;
+      }
+    }
+    const colors = {};
+    for (const [role, hex] of Object.entries(flat)) {
+      colors[role] = hex;
+    }
+    for (const [root, shades] of Object.entries(groups)) {
+      if (Object.keys(shades).length === 1) {
+        const [[shade, hex]] = Object.entries(shades);
+        colors[`${root}-${shade}`] = hex;
+      } else {
+        colors[root] = shades;
+      }
+    }
+    return colors;
+  }
+}
+class ColorsToJs {
+  static serialize(colors) {
+    const lines = ["{"];
+    for (const [key, value] of Object.entries(colors)) {
+      if (typeof value === "string") {
+        lines.push(`  '${key}': '${value}',`);
+      } else {
+        lines.push(`  '${key}': {`);
+        for (const [shade, hex] of Object.entries(value)) {
+          lines.push(`    '${shade}': '${hex}',`);
+        }
+        lines.push("  },");
+      }
+    }
+    lines.push("}");
+    return lines.join("\n");
+  }
+}
+class CssVarsSheet {
+  static build(roles, prefix) {
+    const decls = Object.entries(roles).map(([role, record]) => {
+      const varName = toCssVarName(role, prefix);
+      return `  ${varName}: ${record.hex};`;
+    });
+    const sRgbBlock = `:root {
+${decls.join("\n")}
+}`;
+    const p3Decls = [];
+    for (const [role, record] of Object.entries(roles)) {
+      if (record.displayP3 !== void 0) {
+        const varName = toCssVarName(role, prefix);
+        p3Decls.push(`  ${varName}: ${P3.serialize(record.displayP3)};`);
+      }
+    }
+    if (p3Decls.length === 0) {
+      return sRgbBlock;
+    }
+    const p3Block = `@supports (color: color(display-p3 0 0 0)) {
+  :root {
+${p3Decls.map((d) => {
+      const result = `  ${d}`;
+      return result;
+    }).join("\n")}
+  }
+}`;
+    return `${sRgbBlock}
+
+${p3Block}`;
+  }
+}
+class EmitTailwindTheme {
+  "name" = "emit:tailwindTheme";
+  "manifest" = {
+    "description": "Emit Tailwind theme.colors object and config module from resolved roles",
+    "name": "emit:tailwindTheme",
+    "reads": ["roles", "metadata"],
+    "writes": ["outputs.tailwind:theme"]
+  };
+  run(state, ctx) {
+    const prefixRaw = state.metadata.cssVarPrefix;
+    const prefix = typeof prefixRaw === "string" ? prefixRaw : "--c-";
+    const colors = ColorsShape.build(state.roles);
+    const cssVars = CssVarsSheet.build(state.roles, prefix);
+    const colorsJs = ColorsToJs.serialize(colors);
+    const config = [
+      "export default {",
+      "  theme: {",
+      "    extend: {",
+      `      colors: ${colorsJs.split("\n").map((l, i) => {
+        return i === 0 ? l : `      ${l}`;
+      }).join("\n")},`,
+      "    },",
+      "  },",
+      "};"
+    ].join("\n");
+    const output = {
+      "colors": colors,
+      "config": config,
+      "cssVars": cssVars
+    };
+    state.outputs["tailwind:theme"] = output;
+    ctx.logger.debug(
+      LogBody.create().component("EmitTailwindTheme").operation("run").status(LOG_STATUS.SUCCESS).message("Emitted Tailwind theme").context({ "colorGroups": Object.keys(colors).length }).build()
+    );
+  }
+}
+const tailwindOutputSchema = {
+  "additionalProperties": false,
+  "properties": {
+    "colors": { "additionalProperties": true, "type": "object" },
+    "config": { "type": "string" },
+    "cssVars": { "type": "string" }
+  },
+  "type": "object"
+};
+class TailwindPlugin {
+  "name" = "tailwind";
+  "version" = "0.1.0";
+  tasks() {
+    return [new EmitTailwindTheme()];
+  }
+  schemas() {
+    return {
+      "outputs": { "tailwind:theme": tailwindOutputSchema }
+    };
+  }
+}
+const tailwindPlugin = new TailwindPlugin();
+const vscodeRoleSchema16 = {
+  "contrastPairs": [
+    { "algorithm": "wcag21", "background": "background", "foreground": "foreground", "minRatio": 7 },
+    { "algorithm": "wcag21", "background": "background", "foreground": "comment", "minRatio": 3 },
+    { "algorithm": "wcag21", "background": "background", "foreground": "keyword", "minRatio": 4.5 },
+    { "algorithm": "wcag21", "background": "background", "foreground": "type", "minRatio": 4.5 },
+    { "algorithm": "wcag21", "background": "background", "foreground": "function", "minRatio": 4.5 },
+    { "algorithm": "wcag21", "background": "background", "foreground": "variable", "minRatio": 4.5 },
+    { "algorithm": "wcag21", "background": "background", "foreground": "string", "minRatio": 4.5 },
+    { "algorithm": "wcag21", "background": "background", "foreground": "number", "minRatio": 4.5 },
+    { "algorithm": "wcag21", "background": "background", "foreground": "constant", "minRatio": 4.5 },
+    { "algorithm": "wcag21", "background": "background", "foreground": "error", "minRatio": 4.5 }
+  ],
+  "description": "16-role schema for VS Code dark-theme generation. Ranges sourced from arcade-blaster DARK_CLAMPS.",
+  "name": "vscode-16-dark",
+  "roles": [
+    {
+      "chromaRange": [0, 0.12],
+      "description": "Editor and chrome background",
+      "intent": "background",
+      // DARK_CLAMPS.background: lMin 3, lMax 20 → OKLCh ≈ 0.03–0.20; sMin 0, sMax 30 → chroma ≈ 0–0.12
+      "lightnessRange": [0.03, 0.2],
+      "name": "background",
+      "required": true
+    },
+    {
+      "chromaRange": [0, 0.08],
+      "description": "Primary text / editor foreground",
+      "intent": "text",
+      // DARK_CLAMPS.foreground: lMin 85, lMax 98 → OKLCh ≈ 0.85–0.98; sMin 0, sMax 20 → chroma ≈ 0–0.08
+      "lightnessRange": [0.85, 0.98],
+      "name": "foreground",
+      "required": true
+    },
+    {
+      "chromaRange": [0, 0.14],
+      "derivedFrom": "background",
+      "description": "Sidebar, panels, activity bar background",
+      "intent": "background",
+      // DARK_CLAMPS.surface: lMin 5, lMax 22; sMin 0, sMax 35 → chroma ≈ 0–0.14
+      "lightnessRange": [0.05, 0.22],
+      "name": "surface",
+      "required": true
+    },
+    {
+      "chromaRange": [0, 0.1],
+      "derivedFrom": "foreground",
+      "description": "Inactive/subdued text, gutters",
+      "intent": "muted",
+      // DARK_CLAMPS.muted: lMin 35, lMax 60; sMin 0, sMax 25 → chroma ≈ 0–0.10
+      "lightnessRange": [0.35, 0.6],
+      "name": "muted",
+      "required": true
+    },
+    {
+      "chromaRange": [0.16, 0.4],
+      "description": "Keywords, accent colour, primary interactive",
+      "intent": "accent",
+      // DARK_CLAMPS.accent: lMin 50, lMax 85; sMin 40, sMax 100 → chroma ≈ 0.16–0.40
+      "lightnessRange": [0.5, 0.85],
+      "name": "keyword",
+      "required": true
+    },
+    {
+      "chromaRange": [0.16, 0.4],
+      "derivedFrom": "keyword",
+      "description": "Types, classes, interfaces, structs",
+      "hueOffset": 150,
+      "intent": "accent",
+      // DARK_CLAMPS.semantic: lMin 55, lMax 85; sMin 40, sMax 100 → chroma ≈ 0.16–0.40
+      "lightnessRange": [0.55, 0.85],
+      "name": "type",
+      "required": true
+    },
+    {
+      "chromaRange": [0.16, 0.4],
+      "derivedFrom": "keyword",
+      "description": "Functions, methods, decorators, events",
+      "hueOffset": 45,
+      "intent": "accent",
+      "lightnessRange": [0.55, 0.85],
+      "name": "function",
+      "required": true
+    },
+    {
+      "chromaRange": [0.16, 0.4],
+      "derivedFrom": "foreground",
+      "description": "Variables, parameters, properties",
+      "intent": "accent",
+      "lightnessRange": [0.55, 0.85],
+      "name": "variable",
+      "required": true
+    },
+    {
+      "chromaRange": [0.16, 0.4],
+      "derivedFrom": "function",
+      "description": "String literals, regular expressions",
+      "hueOffset": 70,
+      "intent": "accent",
+      "lightnessRange": [0.55, 0.85],
+      "name": "string",
+      "required": true
+    },
+    {
+      "chromaRange": [0.16, 0.4],
+      "derivedFrom": "string",
+      "description": "Numeric literals",
+      "hueOffset": 50,
+      "intent": "accent",
+      "lightnessRange": [0.55, 0.85],
+      "name": "number",
+      "required": true
+    },
+    {
+      "chromaRange": [0.16, 0.4],
+      "derivedFrom": "number",
+      "description": "Constants, enum members",
+      "hueOffset": 50,
+      "intent": "accent",
+      "lightnessRange": [0.55, 0.85],
+      "name": "constant",
+      "required": true
+    },
+    {
+      "chromaRange": [0.03, 0.2],
+      "derivedFrom": "muted",
+      "description": "Comments, doc-comments",
+      "intent": "muted",
+      // DARK_CLAMPS.comment: lMin 40, lMax 65; sMin 8, sMax 50 → chroma ≈ 0.03–0.20
+      "lightnessRange": [0.4, 0.65],
+      "name": "comment",
+      "required": true
+    },
+    {
+      "chromaRange": [0.2, 0.4],
+      "description": "Error diagnostics",
+      "intent": "critical",
+      // DARK_CLAMPS.diagnostics: lMin 55, lMax 80; sMin 50, sMax 100 → chroma ≈ 0.20–0.40
+      "lightnessRange": [0.55, 0.8],
+      "name": "error",
+      "required": true
+    },
+    {
+      "chromaRange": [0.2, 0.4],
+      "derivedFrom": "error",
+      "description": "Warning diagnostics",
+      "intent": "muted",
+      "lightnessRange": [0.55, 0.8],
+      "name": "warning",
+      "required": true
+    },
+    {
+      "chromaRange": [0.2, 0.4],
+      "derivedFrom": "error",
+      "description": "Info diagnostics, async hint colour",
+      "intent": "muted",
+      "lightnessRange": [0.55, 0.8],
+      "name": "info",
+      "required": true
+    },
+    {
+      "chromaRange": [0.2, 0.4],
+      "derivedFrom": "error",
+      "description": "Success / positive diagnostics, git added",
+      "intent": "positive",
+      "lightnessRange": [0.55, 0.8],
+      "name": "success",
+      "required": true
+    }
+  ]
+};
+const MODIFIER_TRANSFORMS = {
+  "abstract": {
+    "fontStyle": "italic",
+    "lightness": 3,
+    "saturation": -8
+  },
+  "async": {
+    "fontStyle": "italic",
+    "mixWeight": 0.12,
+    "mixWith": "info"
+  },
+  "declaration": {
+    "fontStyle": "bold",
+    "lightness": 5
+  },
+  "defaultLibrary": {
+    "lightness": -5,
+    "mixWeight": 0.15,
+    "mixWith": "muted",
+    "saturation": -10
+  },
+  "definition": {
+    "fontStyle": "bold",
+    "lightness": 5
+  },
+  "deprecated": {
+    "fontStyle": "strikethrough",
+    "lightness": -10,
+    "mixWeight": 0.3,
+    "mixWith": "muted",
+    "saturation": -40
+  },
+  "documentation": {
+    "fontStyle": "italic",
+    "mixWeight": 0.25,
+    "mixWith": "comment",
+    "saturation": -15
+  },
+  "modification": {
+    "fontStyle": "bold",
+    "lightness": 3,
+    "mixWeight": 0.1,
+    "mixWith": "warning",
+    "saturation": 8
+  },
+  "readonly": {
+    "fontStyle": "bold",
+    "lightness": 8,
+    "mixWeight": 0.15,
+    "mixWith": "constant",
+    "saturation": -5
+  },
+  "static": {
+    "fontStyle": "underline",
+    "saturation": -12
+  }
+};
+const DERIVATION_PARAMS = {
+  // Slightly brighter, concrete
+  "class": {
+    "light": 5,
+    "sat": 5
+  },
+  // From palette.constant: pass-through (true/false/null read as language constants)
+  "boolean": {},
+  // From palette.property derivation: JSON object keys read like property names
+  "jsonKey": {
+    "light": -5,
+    "sat": -5
+  },
+  // From palette.comment: pass-through
+  "comment": {},
+  // Meta, annotation feel
+  "decorator": {
+    "hue": -35,
+    "sat": 10
+  },
+  // Distinct from class
+  "enum": {
+    "hue": -25,
+    "sat": 5
+  },
+  // From palette.constant: pass-through
+  "constant": {},
+  // From palette.constant: pass-through
+  "enumMember": {},
+  // Reactive, callback feel
+  "event": {
+    "hue": 25,
+    "sat": 8
+  },
+  // Base color: pass-through
+  "function": {},
+  // Shifted, abstract feel
+  "interface": {
+    "hue": 20,
+    "sat": -8
+  },
+  // Base color: pass-through
+  "keyword": {},
+  // Warmer, stands out in goto/break
+  "label": {
+    "hue": 15,
+    "light": 5
+  },
+  // Slightly cooler, preprocessor feel
+  "macro": {
+    "hue": -20,
+    "sat": 5
+  },
+  // Slightly brighter, OOP context
+  "method": {
+    "light": 8,
+    "sat": 5
+  },
+  // Muted, organizational
+  "namespace": {
+    "light": -5,
+    "sat": -20
+  },
+  // From palette.number: pass-through
+  "number": {},
+  // Derived from muted/foreground mix; handled in task
+  "operator": {},
+  // Input, argument feel
+  "parameter": {
+    "hue": 12,
+    "light": 3
+  },
+  // Member access, slightly muted
+  "property": {
+    "light": -5,
+    "sat": -5
+  },
+  // From palette.muted: pass-through (braces, colons, commas read as chrome, not content)
+  "punctuation": {},
+  // Distinct pattern feel
+  "regexp": {
+    "hue": -45,
+    "sat": 15
+  },
+  // Base color: pass-through
+  "string": {},
+  // Cooler, low-level feel
+  "struct": {
+    "hue": -10,
+    "light": -3
+  },
+  // Base color: pass-through
+  "type": {},
+  // Generic, abstract
+  "typeParameter": {
+    "hue": 35,
+    "sat": -5
+  },
+  // Base color: pass-through
+  "variable": {}
+};
+const TOKEN_FAMILY = {
+  "boolean": "constant",
+  "class": "type",
+  "comment": "comment",
+  "constant": "constant",
+  "decorator": "function",
+  "enum": "type",
+  "enumMember": "constant",
+  "event": "function",
+  "function": "function",
+  "interface": "type",
+  "jsonKey": "variable",
+  "keyword": "keyword",
+  "label": "keyword",
+  "macro": "keyword",
+  "method": "function",
+  "namespace": "type",
+  "number": "number",
+  "operator": "muted",
+  "parameter": "variable",
+  "property": "variable",
+  "punctuation": "muted",
+  "regexp": "string",
+  "string": "string",
+  "struct": "type",
+  "type": "type",
+  "typeParameter": "type",
+  "variable": "variable"
+};
+const TOKEN_TYPES = [
+  "namespace",
+  "class",
+  "enum",
+  "interface",
+  "struct",
+  "typeParameter",
+  "type",
+  "parameter",
+  "variable",
+  "property",
+  "enumMember",
+  "decorator",
+  "event",
+  "function",
+  "method",
+  "macro",
+  "label",
+  "comment",
+  "string",
+  "keyword",
+  "number",
+  "regexp",
+  "operator",
+  "boolean",
+  "constant",
+  "jsonKey",
+  "punctuation"
+];
+const TOKEN_MODIFIERS = [
+  "declaration",
+  "definition",
+  "readonly",
+  "static",
+  "deprecated",
+  "abstract",
+  "async",
+  "modification",
+  "documentation",
+  "defaultLibrary"
+];
+const VscodeTokenData = {
+  "DERIVATION_PARAMS": DERIVATION_PARAMS,
+  "TOKEN_FAMILY": TOKEN_FAMILY,
+  "TOKEN_MODIFIERS": TOKEN_MODIFIERS,
+  "TOKEN_TYPES": TOKEN_TYPES
+};
+function recordToVscodeColor(record) {
+  const p3 = record.displayP3;
+  if (p3 === void 0) {
+    return record.hex;
+  }
+  const r = p3.r.toFixed(4);
+  const g = p3.g.toFixed(4);
+  const b = p3.b.toFixed(4);
+  return `color(display-p3 ${r} ${g} ${b})`;
+}
+class ApplyModifiers {
+  "name" = "vscode:applyModifiers";
+  "manifest" = {
+    "description": "Produces base + per-modifier semantic token rules from MODIFIER_TRANSFORMS, ensuring each rule meets contrast against the background role.",
+    "name": "vscode:applyModifiers",
+    "reads": ["metadata.vscode:baseTokens", "roles"],
+    "requires": ["vscode:expandTokens"],
+    "writes": ["metadata.vscode:semanticTokenRules"]
+  };
+  run(state, ctx) {
+    const baseTokens = state.metadata["vscode:baseTokens"] ?? {};
+    const bgRecord = state.roles.background ?? colorRecordFactory.fromHex("#000000");
+    const rules = {};
+    const typesLen = VscodeTokenData.TOKEN_TYPES.length;
+    for (let i = 0; i < typesLen; i++) {
+      const tokenType = VscodeTokenData.TOKEN_TYPES[i];
+      if (tokenType === void 0) {
+        continue;
+      }
+      const baseRecord = baseTokens[tokenType];
+      if (baseRecord === void 0) {
+        continue;
+      }
+      rules[tokenType] = { "foreground": recordToVscodeColor(baseRecord) };
+    }
+    const modifiersLen = VscodeTokenData.TOKEN_MODIFIERS.length;
+    for (let i = 0; i < typesLen; i++) {
+      const tokenType = VscodeTokenData.TOKEN_TYPES[i];
+      if (tokenType === void 0) {
+        continue;
+      }
+      const baseRecord = baseTokens[tokenType];
+      if (baseRecord === void 0) {
+        continue;
+      }
+      for (let j = 0; j < modifiersLen; j++) {
+        const modifier = VscodeTokenData.TOKEN_MODIFIERS[j];
+        if (modifier === void 0) {
+          continue;
+        }
+        const transform = MODIFIER_TRANSFORMS[modifier];
+        if (transform === void 0) {
+          continue;
+        }
+        let color = baseRecord;
+        if (transform.lightness !== void 0 && transform.lightness !== 0) {
+          if (transform.lightness > 0) {
+            color = lighten.apply(color, transform.lightness);
+          } else {
+            color = darken.apply(color, -transform.lightness);
+          }
+        }
+        if (transform.saturation !== void 0 && transform.saturation !== 0) {
+          if (transform.saturation > 0) {
+            color = saturate.apply(color, transform.saturation);
+          } else {
+            color = desaturate.apply(color, -transform.saturation);
+          }
+        }
+        if (transform.mixWith !== void 0 && transform.mixWeight !== void 0 && transform.mixWeight !== 0) {
+          const mixRecord = state.roles[transform.mixWith];
+          if (mixRecord !== void 0) {
+            color = mixHsl.apply(color, mixRecord, transform.mixWeight);
+          }
+        }
+        color = ensureContrast.apply(color, bgRecord, 4.5);
+        const selector = `${tokenType}.${modifier}`;
+        const entry = { "foreground": recordToVscodeColor(color) };
+        if (transform.fontStyle !== void 0) {
+          entry.fontStyle = transform.fontStyle;
+        }
+        rules[selector] = entry;
+      }
+    }
+    state.metadata["vscode:semanticTokenRules"] = rules;
+    ctx.logger.debug(
+      LogBody.create().component("ApplyModifiers").operation("run").status(LOG_STATUS.SUCCESS).message("Generated semantic token rules").context({ "count": Object.keys(rules).length }).build()
+    );
+  }
+}
+const applyModifiers = new ApplyModifiers();
+const FONT_STYLES = {
+  "attribute": "italic",
+  "builtin": "bold",
+  // Comments & Documentation
+  "comment": "italic",
+  // Immutable values: bold for emphasis
+  "constant": "bold",
+  // CSS
+  "cssPseudo": "italic",
+  // Metaprogramming
+  "decorator": "italic",
+  // Invalid/Deprecated: visual warnings
+  "deprecated": "strikethrough",
+  "docComment": "italic",
+  "enumMember": "bold",
+  // Special syntax
+  "escape": "bold",
+  // Types & Interfaces: distinguish from classes
+  "interface": "italic",
+  "invalid": "strikethrough",
+  "macro": "bold",
+  // Markdown
+  "markdownBold": "bold",
+  "markdownHeading": "bold",
+  "markdownItalic": "italic",
+  "markdownLink": "underline",
+  "markdownQuote": "italic",
+  "parameter": "italic",
+  "propertyReadonly": "bold",
+  // HTML/XML
+  "tagAttribute": "italic",
+  // Special variables
+  "this": "italic",
+  "typeParameter": "italic",
+  "variableReadonly": "bold"
+};
+const SCOPE_MAPPINGS = {
+  "attribute": [
+    // Generic attributes
+    "entity.other.attribute",
+    "meta.attribute",
+    /*
+     * HTML/XML attributes handled by tagAttribute
+     * Python decorators
+     */
+    "entity.name.function.decorator.python",
+    // Rust attributes
+    "meta.attribute.rust",
+    "punctuation.definition.attribute.rust",
+    // C# attributes
+    "meta.attribute.csharp",
+    // Java annotations
+    "storage.type.annotation.java",
+    // Go struct tags
+    "entity.other.attribute-name.go"
+  ],
+  "boolean": [
+    "constant.language.boolean",
+    "constant.language.true",
+    "constant.language.false",
+    // YAML booleans
+    "constant.language.boolean.yaml",
+    // TOML booleans
+    "constant.language.boolean.toml",
+    // JSON booleans
+    "constant.language.json",
+    // Shell
+    "constant.language.boolean.shell"
+  ],
+  "bracket": [
+    "punctuation.definition.block",
+    "punctuation.definition.parameters",
+    "punctuation.section",
+    "meta.brace",
+    "punctuation.brackets",
+    // Specific brackets
+    "punctuation.definition.arguments",
+    "punctuation.parenthesis",
+    "punctuation.squarebracket",
+    "punctuation.curlybrace",
+    // Language-specific
+    "punctuation.section.block.begin",
+    "punctuation.section.block.end",
+    "punctuation.section.parens",
+    "meta.brace.curly",
+    "meta.brace.round",
+    "meta.brace.square"
+  ],
+  "builtin": [
+    "support.function.builtin",
+    "support.type.builtin",
+    "entity.name.function.builtin",
+    // Python builtins
+    "support.function.builtin.python",
+    "support.type.python",
+    // JavaScript/TypeScript
+    "support.function.console",
+    "support.class.builtin",
+    "support.type.builtin.ts",
+    // Shell builtins
+    "support.function.builtin.shell",
+    // Go builtins
+    "support.function.builtin.go",
+    // Rust std
+    "entity.name.function.std.rust",
+    // PHP builtins
+    "support.function.construct.php",
+    // Ruby builtins
+    "support.function.kernel.ruby"
+  ],
+  "class": [
+    "entity.name.type.class",
+    "entity.name.class",
+    "entity.other.inherited-class",
+    "support.class",
+    // Language-specific
+    "entity.name.type.class.python",
+    "entity.name.type.class.java",
+    "entity.name.type.class.php",
+    "entity.name.type.class.ruby",
+    "entity.name.type.class.csharp",
+    "entity.name.type.class.cpp",
+    "meta.class entity.name.type",
+    // Struct (C/Go/Rust)
+    "entity.name.type.struct",
+    "entity.name.struct"
+  ],
+  "comment": [
+    "comment",
+    "comment.line",
+    "comment.block",
+    "punctuation.definition.comment",
+    // Language-specific
+    "comment.line.double-slash",
+    "comment.line.number-sign",
+    "comment.line.percentage",
+    "comment.line.shebang",
+    "comment.block.c",
+    "comment.block.html",
+    // Shell comments
+    "comment.line.number-sign.shell",
+    // SQL comments
+    "comment.line.double-dash.sql",
+    "comment.block.sql"
+  ],
+  "comparison": [
+    "keyword.operator.comparison",
+    "keyword.operator.relational",
+    // Language-specific
+    "keyword.operator.comparison.ts",
+    "keyword.operator.comparison.python",
+    "keyword.operator.comparison.go",
+    "keyword.operator.comparison.rust"
+  ],
+  "constant": [
+    "constant.language",
+    "constant.other",
+    "variable.other.constant",
+    "entity.name.constant",
+    "support.constant",
+    // Language-specific constants
+    "constant.language.null",
+    "constant.language.undefined",
+    "constant.language.nil",
+    "constant.language.none",
+    // YAML
+    "constant.language.yaml",
+    // Shell
+    "constant.other.shell",
+    // Rust
+    "constant.other.caps.rust",
+    // Go
+    "constant.other.go",
+    // PHP
+    "constant.other.php",
+    "support.constant.core.php"
+  ],
+  "control": [
+    "keyword.control.flow",
+    "keyword.control.return",
+    "keyword.control.conditional",
+    "keyword.control.loop",
+    "keyword.control.exception",
+    "keyword.control.import",
+    // Language-specific
+    "keyword.control.if",
+    "keyword.control.else",
+    "keyword.control.switch",
+    "keyword.control.case",
+    "keyword.control.for",
+    "keyword.control.while",
+    "keyword.control.do",
+    "keyword.control.try",
+    "keyword.control.catch",
+    "keyword.control.finally",
+    "keyword.control.throw",
+    "keyword.control.break",
+    "keyword.control.continue",
+    "keyword.control.yield",
+    // Shell
+    "keyword.control.shell",
+    // SQL
+    "keyword.control.sql",
+    // Rust
+    "keyword.control.rust"
+  ],
+  "cssProperty": [
+    "support.type.property-name.css",
+    "meta.property-name.css",
+    "support.type.vendored.property-name.css",
+    // SCSS/SASS/LESS
+    "support.type.property-name.scss",
+    "support.type.property-name.sass",
+    "support.type.property-name.less",
+    "meta.property-name.scss",
+    "support.type.property-name.media.css"
+  ],
+  "cssPseudo": [
+    "entity.other.attribute-name.pseudo-class.css",
+    "entity.other.attribute-name.pseudo-element.css",
+    // SCSS
+    "entity.other.attribute-name.pseudo-class.scss",
+    "entity.other.attribute-name.pseudo-element.scss"
+  ],
+  "cssSelector": [
+    "entity.other.attribute-name.class.css",
+    "entity.other.attribute-name.id.css",
+    "entity.name.tag.css",
+    // SCSS/SASS
+    "entity.other.attribute-name.class.scss",
+    "entity.other.attribute-name.id.scss",
+    "entity.name.tag.scss",
+    // LESS
+    "entity.other.attribute-name.class.less",
+    // Variables
+    "variable.css",
+    "variable.scss",
+    // At-rules
+    "keyword.control.at-rule.css",
+    "keyword.control.at-rule.scss"
+  ],
+  "cssUnit": [
+    "keyword.other.unit.css",
+    "constant.numeric.css",
+    // SCSS
+    "keyword.other.unit.scss",
+    "constant.numeric.scss"
+  ],
+  "cssValue": [
+    "support.constant.property-value.css",
+    "meta.property-value.css",
+    "support.constant.color.css",
+    // Functions
+    "support.function.misc.css",
+    "support.function.transform.css",
+    "support.function.calc.css",
+    // SCSS
+    "support.constant.property-value.scss",
+    "support.function.misc.scss"
+  ],
+  "decorator": [
+    "meta.decorator",
+    "entity.name.function.decorator",
+    "punctuation.decorator",
+    "meta.annotation",
+    // Python decorators
+    "entity.name.function.decorator.python",
+    "meta.function.decorator.python",
+    // TypeScript/JavaScript decorators
+    "meta.decorator.ts",
+    "meta.decorator.js",
+    // Java annotations
+    "meta.declaration.annotation.java",
+    "punctuation.definition.annotation.java",
+    // C# attributes
+    "punctuation.squarebracket.open.cs",
+    // Rust attributes
+    "meta.attribute.rust"
+  ],
+  "deprecated": [
+    "invalid.deprecated",
+    "entity.name.function.deprecated",
+    "entity.name.type.deprecated"
+  ],
+  "docComment": [
+    "comment.block.documentation",
+    "comment.line.documentation",
+    "string.quoted.docstring",
+    // Python docstrings
+    "string.quoted.docstring.multi.python",
+    // JSDoc/TSDoc
+    "comment.block.documentation.js",
+    "comment.block.documentation.ts",
+    // Rust doc comments
+    "comment.block.documentation.rust",
+    "comment.line.documentation.rust",
+    // Java/Kotlin doc
+    "comment.block.javadoc",
+    // Go doc
+    "comment.line.documentation.go",
+    // PHP doc
+    "comment.block.documentation.phpdoc"
+  ],
+  "docKeyword": [
+    "storage.type.class.jsdoc",
+    "keyword.other.documentation",
+    "variable.other.jsdoc",
+    // JSDoc/TSDoc tags
+    "punctuation.definition.block.tag.jsdoc",
+    "entity.name.tag.inline.jsdoc",
+    // PHPDoc tags
+    "keyword.other.phpdoc.php",
+    // Rust doc
+    "entity.name.tag.documentation.rust",
+    // Java doc
+    "keyword.other.documentation.javadoc"
+  ],
+  "enum": [
+    "entity.name.type.enum",
+    "support.type.enum",
+    // Language-specific
+    "entity.name.type.enum.ts",
+    "entity.name.type.enum.rust",
+    "entity.name.type.enum.go",
+    "entity.name.type.enum.java",
+    "entity.name.type.enum.csharp"
+  ],
+  "enumMember": [
+    "variable.other.enummember",
+    "constant.other.enum",
+    "entity.name.variable.enum-member",
+    // Language-specific
+    "variable.other.enummember.ts",
+    "constant.other.enum.rust",
+    "constant.other.enum.go"
+  ],
+  "escape": [
+    "constant.character.escape",
+    "punctuation.definition.template-expression",
+    "punctuation.section.embedded",
+    "meta.embedded.expression",
+    // Template literals
+    "punctuation.definition.template-expression.begin",
+    "punctuation.definition.template-expression.end",
+    // String interpolation
+    "meta.string-contents.quoted.double",
+    "punctuation.section.interpolation",
+    // Shell
+    "punctuation.definition.variable.shell",
+    // Regex escapes
+    "constant.character.escape.regexp"
+  ],
+  "function": [
+    "entity.name.function",
+    "meta.function-call entity.name.function",
+    "support.function",
+    "meta.function-call",
+    // Language-specific
+    "entity.name.function.python",
+    "entity.name.function.go",
+    "entity.name.function.rust",
+    "entity.name.function.java",
+    "entity.name.function.php",
+    "entity.name.function.ruby",
+    "entity.name.function.swift",
+    "entity.name.function.kotlin",
+    "entity.name.function.scala",
+    "entity.name.function.c",
+    "entity.name.function.cpp",
+    // Shell functions
+    "entity.name.function.shell",
+    // SQL functions
+    "support.function.sql",
+    "entity.name.function.sql",
+    // GraphQL
+    "entity.name.function.graphql"
+  ],
+  "import": [
+    "keyword.control.import",
+    "keyword.control.from",
+    "keyword.control.export",
+    "keyword.other.import",
+    "meta.import",
+    // Language-specific
+    "keyword.control.import.python",
+    "keyword.control.from.python",
+    "keyword.control.import.go",
+    "keyword.control.import.java",
+    "keyword.control.import.rust",
+    "keyword.other.use.rust",
+    "keyword.control.use.php",
+    "keyword.control.require",
+    // Module paths
+    "entity.name.import",
+    "entity.name.package.go"
+  ],
+  "interface": [
+    "entity.name.type.interface",
+    "entity.name.type.trait",
+    "entity.name.type.protocol",
+    // Language-specific
+    "entity.name.type.interface.ts",
+    "entity.name.type.interface.go",
+    "entity.name.type.interface.java",
+    "entity.name.type.interface.csharp",
+    "entity.name.type.trait.rust",
+    "entity.name.type.trait.php",
+    "entity.name.type.protocol.swift"
+  ],
+  "invalid": [
+    "invalid",
+    "invalid.illegal",
+    "invalid.broken",
+    "invalid.unimplemented"
+  ],
+  "jsonKey": [
+    "support.type.property-name.json",
+    "meta.structure.dictionary.key.json",
+    "string.json support.type.property-name",
+    // JSONC (JSON with comments)
+    "support.type.property-name.jsonc",
+    // JSON5
+    "support.type.property-name.json5"
+  ],
+  "jsonValue": [
+    "string.quoted.double.json",
+    "meta.structure.dictionary.value.json string",
+    // JSONC
+    "string.quoted.double.jsonc"
+  ],
+  "keyword": [
+    "keyword",
+    "keyword.control",
+    "keyword.other",
+    // Language-specific
+    "keyword.operator.expression",
+    "keyword.operator.typeof",
+    "keyword.operator.instanceof",
+    "keyword.operator.new",
+    "keyword.operator.delete",
+    "keyword.operator.in",
+    "keyword.operator.of",
+    // Rust
+    "keyword.other.rust",
+    // Go
+    "keyword.go",
+    // SQL
+    "keyword.other.sql",
+    // Shell
+    "keyword.other.shell",
+    // GraphQL
+    "keyword.graphql"
+  ],
+  "library": [
+    "support.type",
+    "support.class",
+    "support.function",
+    "support.constant",
+    // Language-specific libraries
+    "support.class.component",
+    "support.type.primitive",
+    "support.type.object",
+    // Browser APIs
+    "support.class.dom",
+    "support.type.dom",
+    // Node.js
+    "support.class.node",
+    "support.module.node"
+  ],
+  "logical": [
+    "keyword.operator.logical",
+    "keyword.operator.ternary",
+    // Language-specific
+    "keyword.operator.logical.python",
+    "keyword.operator.logical.go",
+    "keyword.operator.or",
+    "keyword.operator.and",
+    "keyword.operator.not"
+  ],
+  "macro": [
+    "entity.name.function.macro",
+    "meta.preprocessor",
+    "keyword.control.directive",
+    // C/C++ preprocessor
+    "keyword.control.directive.define",
+    "keyword.control.directive.include",
+    "keyword.control.directive.ifdef",
+    "keyword.control.directive.ifndef",
+    "keyword.control.directive.endif",
+    "meta.preprocessor.include",
+    "meta.preprocessor.macro",
+    // Rust macros
+    "entity.name.function.macro.rust",
+    "entity.name.function.macro.rules.rust",
+    "meta.macro.rust",
+    // Make
+    "keyword.control.makefile",
+    "entity.name.function.target.makefile"
+  ],
+  "markdownBold": [
+    "markup.bold",
+    "punctuation.definition.bold.markdown",
+    "markup.bold.markdown"
+  ],
+  "markdownCode": [
+    "markup.inline.raw",
+    "markup.fenced_code.block",
+    "fenced_code.block.language",
+    "markup.raw.block",
+    "markup.inline.raw.string.markdown",
+    "markup.raw.inline.markdown"
+  ],
+  "markdownHeading": [
+    "markup.heading",
+    "entity.name.section.markdown",
+    "punctuation.definition.heading.markdown",
+    "markup.heading.setext",
+    "markup.heading.markdown"
+  ],
+  "markdownItalic": [
+    "markup.italic",
+    "punctuation.definition.italic.markdown",
+    "markup.italic.markdown"
+  ],
+  "markdownLink": [
+    "markup.underline.link",
+    "string.other.link",
+    "meta.link",
+    "meta.link.inline.markdown",
+    "meta.link.reference.markdown",
+    "string.other.link.title.markdown"
+  ],
+  "markdownQuote": [
+    "markup.quote",
+    "punctuation.definition.quote.begin.markdown",
+    "markup.quote.markdown"
+  ],
+  "method": [
+    "entity.name.function.member",
+    "meta.method-call entity.name.function",
+    "support.function.method",
+    // Language-specific
+    "entity.name.function.method",
+    "meta.method.declaration entity.name.function",
+    "entity.name.function.method.python",
+    "entity.name.function.method.go",
+    "entity.name.function.method.rust",
+    "entity.name.function.method.java"
+  ],
+  "modifier": [
+    "storage.modifier",
+    "storage.modifier.async",
+    "keyword.other.await",
+    "storage.type.modifier",
+    // Access modifiers
+    "storage.modifier.public",
+    "storage.modifier.private",
+    "storage.modifier.protected",
+    "storage.modifier.static",
+    "storage.modifier.final",
+    "storage.modifier.abstract",
+    "storage.modifier.readonly",
+    "storage.modifier.volatile",
+    // Language-specific
+    "storage.modifier.ts",
+    "storage.modifier.java",
+    "storage.modifier.rust",
+    "storage.modifier.go"
+  ],
+  "namespace": [
+    "entity.name.namespace",
+    "entity.name.module",
+    "entity.name.package",
+    "storage.modifier.package",
+    // Language-specific
+    "entity.name.namespace.cpp",
+    "entity.name.namespace.csharp",
+    "entity.name.namespace.php",
+    "entity.name.module.rust",
+    "entity.name.module.go",
+    "entity.name.module.python",
+    // XML namespace
+    "entity.other.attribute-name.namespace.xml",
+    // RDF namespace prefix
+    "entity.name.namespace.prefix.turtle",
+    "entity.name.namespace.prefix.sparql"
+  ],
+  "number": [
+    "constant.numeric",
+    "constant.numeric.integer",
+    "constant.numeric.float",
+    "constant.numeric.hex",
+    "constant.numeric.octal",
+    "constant.numeric.binary",
+    // Language-specific
+    "constant.numeric.decimal",
+    "constant.numeric.integer.decimal",
+    "constant.numeric.float.decimal",
+    "constant.numeric.integer.hexadecimal",
+    "constant.numeric.integer.octal",
+    "constant.numeric.integer.binary",
+    /*
+     * CSS numbers handled by cssUnit
+     * YAML
+     */
+    "constant.numeric.yaml",
+    // TOML
+    "constant.numeric.toml",
+    // SQL
+    "constant.numeric.sql"
+  ],
+  "operator": [
+    "keyword.operator",
+    "keyword.operator.assignment",
+    "keyword.operator.arithmetic",
+    "punctuation.accessor",
+    // More operators
+    "keyword.operator.increment",
+    "keyword.operator.decrement",
+    "keyword.operator.bitwise",
+    "keyword.operator.spread",
+    "keyword.operator.rest",
+    "keyword.operator.nullish",
+    "keyword.operator.optional",
+    "keyword.operator.pipe",
+    // Language-specific
+    "keyword.operator.arrow",
+    "keyword.operator.fat-arrow",
+    "keyword.operator.type.annotation",
+    "keyword.operator.rust",
+    "keyword.operator.go"
+  ],
+  "parameter": [
+    "variable.parameter",
+    "meta.parameter",
+    "entity.name.variable.parameter",
+    // Language-specific
+    "variable.parameter.function",
+    "variable.parameter.ts",
+    "variable.parameter.python",
+    "variable.parameter.rust",
+    "variable.parameter.go",
+    "variable.parameter.java"
+  ],
+  "property": [
+    "variable.other.property",
+    "variable.other.object.property",
+    "support.variable.property",
+    "meta.object-literal.key",
+    // Language-specific
+    "variable.other.property.ts",
+    "variable.other.property.python",
+    "variable.other.member",
+    "entity.name.variable.field",
+    // YAML keys
+    "entity.name.tag.yaml",
+    // TOML keys
+    "support.type.property-name.toml",
+    // INI keys
+    "keyword.other.definition.ini"
+  ],
+  "propertyReadonly": [
+    "variable.other.property.readonly",
+    "variable.other.constant.property",
+    "variable.other.object.property.readonly"
+  ],
+  "punctuation": [
+    "punctuation.definition",
+    "punctuation.separator",
+    "punctuation.terminator",
+    "punctuation.accessor",
+    // Specific punctuation
+    "punctuation.separator.comma",
+    "punctuation.terminator.statement",
+    "punctuation.separator.colon",
+    "punctuation.separator.period",
+    "punctuation.accessor.optional",
+    // Language-specific
+    "punctuation.semi",
+    "punctuation.separator.key-value",
+    "punctuation.definition.generic",
+    "punctuation.separator.namespace"
+  ],
+  "regexp": [
+    "string.regexp",
+    "keyword.operator.regexp",
+    "punctuation.definition.group.regexp",
+    // Regexp parts
+    "constant.character.escape.regexp",
+    "keyword.operator.quantifier.regexp",
+    "keyword.operator.or.regexp",
+    "punctuation.definition.character-class.regexp",
+    "constant.other.character-class.regexp",
+    "punctuation.definition.group.assertion.regexp"
+  ],
+  "storage": [
+    "storage.type",
+    "storage.type.function",
+    "storage.type.class",
+    "storage.type.interface",
+    "storage.type.type",
+    "keyword.operator.new",
+    // Language-specific
+    "storage.type.var",
+    "storage.type.let",
+    "storage.type.const",
+    "storage.type.ts",
+    "storage.type.rust",
+    "storage.type.go",
+    "storage.type.java",
+    "storage.type.php",
+    // Primitive types
+    "storage.type.primitive",
+    "storage.type.built-in",
+    "storage.type.string",
+    "storage.type.number",
+    "storage.type.boolean"
+  ],
+  "string": [
+    "string",
+    "string.quoted",
+    "string.template",
+    "string.interpolated",
+    "punctuation.definition.string",
+    // Specific string types
+    "string.quoted.single",
+    "string.quoted.double",
+    "string.quoted.triple",
+    "string.quoted.backtick",
+    // Language-specific
+    "string.quoted.single.python",
+    "string.quoted.double.python",
+    "string.quoted.raw.python",
+    "string.quoted.other.rust",
+    "string.quoted.double.go",
+    "string.quoted.raw.go",
+    // YAML
+    "string.unquoted.plain.out.yaml",
+    "string.unquoted.plain.in.yaml",
+    "string.quoted.single.yaml",
+    "string.quoted.double.yaml",
+    // TOML
+    "string.quoted.single.basic.toml",
+    "string.quoted.double.basic.toml",
+    // Shell
+    "string.quoted.single.shell",
+    "string.quoted.double.shell",
+    // SQL
+    "string.quoted.single.sql",
+    // XML/HTML CDATA
+    "string.unquoted.cdata.xml"
+  ],
+  "tag": [
+    "entity.name.tag",
+    "punctuation.definition.tag",
+    "meta.tag",
+    // HTML/XML
+    "entity.name.tag.html",
+    "entity.name.tag.xml",
+    "entity.name.tag.localname.xml",
+    // JSX/TSX
+    "entity.name.tag.jsx",
+    "entity.name.tag.tsx",
+    "support.class.component.jsx",
+    "support.class.component.tsx",
+    // Vue
+    "entity.name.tag.vue",
+    // Svelte
+    "entity.name.tag.svelte",
+    // RDF/XML
+    "entity.name.tag.rdf",
+    // XSLT
+    "entity.name.tag.xsl"
+  ],
+  "tagAttribute": [
+    "entity.other.attribute-name",
+    "meta.attribute",
+    // HTML/XML attributes
+    "entity.other.attribute-name.html",
+    "entity.other.attribute-name.xml",
+    "entity.other.attribute-name.localname.xml",
+    // JSX/TSX
+    "entity.other.attribute-name.jsx",
+    "entity.other.attribute-name.tsx",
+    // Vue
+    "entity.other.attribute-name.vue",
+    // RDF attributes
+    "entity.other.attribute-name.rdf"
+  ],
+  "tagPunctuation": [
+    "punctuation.definition.tag.begin",
+    "punctuation.definition.tag.end",
+    "punctuation.definition.tag.html",
+    "punctuation.definition.tag.xml",
+    "meta.tag.punctuation.tag-close"
+  ],
+  "this": [
+    "variable.language.this",
+    "variable.language.self",
+    "variable.language.super",
+    // Language-specific
+    "variable.language.this.ts",
+    "variable.language.this.java",
+    "variable.language.self.python",
+    "variable.language.self.rust",
+    "variable.language.self.ruby",
+    "variable.language.this.php",
+    "variable.language.special.self"
+  ],
+  "type": [
+    "entity.name.type",
+    "support.type",
+    "entity.name.type.alias",
+    "meta.type.annotation",
+    // Language-specific
+    "entity.name.type.ts",
+    "entity.name.type.rust",
+    "entity.name.type.go",
+    "entity.name.type.java",
+    "entity.name.type.swift",
+    "entity.name.type.kotlin",
+    // Primitive types
+    "support.type.primitive",
+    "storage.type.built-in.primitive",
+    // RDF types
+    "support.type.rdf",
+    "entity.name.class.rdf",
+    // GraphQL types
+    "entity.name.type.graphql",
+    "support.type.graphql"
+  ],
+  "typeParameter": [
+    "entity.name.type.parameter",
+    "meta.type.parameters",
+    "storage.type.generic",
+    // Language-specific
+    "entity.name.type.parameter.ts",
+    "entity.name.type.parameter.rust",
+    "entity.name.type.parameter.java",
+    "entity.name.type.parameter.go",
+    "punctuation.definition.typeparameters"
+  ],
+  "variable": [
+    "variable",
+    "variable.other",
+    "variable.other.readwrite",
+    "meta.definition.variable",
+    // Language-specific
+    "variable.other.ts",
+    "variable.other.python",
+    "variable.other.rust",
+    "variable.other.go",
+    "variable.other.java",
+    "variable.other.php",
+    "variable.other.ruby",
+    // Shell variables
+    "variable.other.shell",
+    "punctuation.definition.variable.shell",
+    // SQL variables
+    "variable.other.sql",
+    // Makefile variables
+    "variable.other.makefile",
+    // SPARQL variables
+    "variable.other.sparql",
+    // GraphQL variables
+    "variable.graphql",
+    // Environment variables
+    "variable.other.environment"
+  ],
+  "variableReadonly": [
+    "variable.other.constant",
+    "variable.other.readonly",
+    "entity.name.constant",
+    // Language-specific
+    "variable.other.constant.ts",
+    "variable.other.constant.rust",
+    "variable.other.constant.go",
+    "variable.other.constant.java",
+    "variable.other.constant.ruby"
+  ]
+};
+function defaultFontStyle(selector) {
+  const baseType = selector.includes(".") ? selector.split(".")[0] : selector;
+  return baseType !== void 0 && baseType.length > 0 ? FONT_STYLES[baseType] ?? void 0 : void 0;
+}
+class EmitVscodeSemanticRules {
+  "name" = "emit:vscodeSemanticRules";
+  "manifest" = {
+    "description": "Shapes the semantic token rule map for VS Code editor.semanticTokenColorCustomizations.rules using SCOPE_MAPPINGS and FONT_STYLES.",
+    "name": "emit:vscodeSemanticRules",
+    "reads": ["metadata.vscode:semanticTokenRules", "metadata.vscode:baseTokens"],
+    "requires": ["vscode:applyModifiers"],
+    "writes": ["outputs.vscode:semanticTokenRules"]
+  };
+  run(state, ctx) {
+    const semanticRules = state.metadata["vscode:semanticTokenRules"] ?? {};
+    const result = {};
+    for (const [selector, rule] of Object.entries(semanticRules)) {
+      const entry = {};
+      if (rule.foreground !== void 0 && rule.foreground.length > 0) {
+        entry.foreground = rule.foreground;
+      }
+      const fontStyle = rule.fontStyle ?? defaultFontStyle(selector);
+      if (fontStyle !== void 0 && fontStyle.length > 0) {
+        entry.fontStyle = fontStyle;
+      }
+      result[selector] = entry;
+    }
+    state.outputs["vscode:semanticTokenRules"] = result;
+    ctx.logger.debug(
+      LogBody.create().component("EmitVscodeSemanticRules").operation("run").status(LOG_STATUS.SUCCESS).message("Emitted semantic token rules").context({ "count": Object.keys(result).length }).build()
+    );
+    const baseTokens = state.metadata["vscode:baseTokens"] ?? {};
+    for (const key of Object.keys(SCOPE_MAPPINGS)) {
+      if (!(key in baseTokens) && !(key in result)) {
+        ctx.logger.debug(
+          LogBody.create().component("EmitVscodeSemanticRules").operation("run").status(LOG_STATUS.SKIPPED).message("No colour assigned for scope group").context({ "scope": key }).build()
+        );
+      }
+    }
+  }
+}
+const emitVscodeSemanticRules = new EmitVscodeSemanticRules();
+class EmitVscodeThemeJson {
+  "name" = "emit:vscodeThemeJson";
+  "manifest" = {
+    "description": "Assembles the complete VS Code theme JSON: { name, type, colors, semanticTokenColors, tokenColors }.",
+    "name": "emit:vscodeThemeJson",
+    "reads": [
+      "outputs.vscode:workbenchColors",
+      "outputs.vscode:semanticTokenRules",
+      "metadata.vscode:baseTokens"
+    ],
+    "requires": ["emit:vscodeSemanticRules", "emit:vscodeUiPalette"],
+    "writes": ["outputs.vscode:themeJson"]
+  };
+  run(state, ctx) {
+    const themeName = state.input.metadata?.themeName ?? "Color Engine Theme";
+    const baseTokens = state.metadata["vscode:baseTokens"] ?? {};
+    const workbenchColors = state.outputs["vscode:workbenchColors"] ?? {};
+    const semanticTokenRules = state.outputs["vscode:semanticTokenRules"] ?? {};
+    const bgRecord = state.roles.background;
+    const bgLum = bgRecord !== void 0 ? bgRecord.oklch.l : 0;
+    const themeType = bgLum > 0.5 ? "light" : "dark";
+    const semanticTokenColors = {};
+    for (const [selector, rule] of Object.entries(semanticTokenRules)) {
+      if (rule.fontStyle !== void 0 && rule.fontStyle.length > 0) {
+        semanticTokenColors[selector] = { ...rule };
+      } else if (rule.foreground !== void 0 && rule.foreground.length > 0) {
+        semanticTokenColors[selector] = rule.foreground;
+      }
+    }
+    const tokenColors = [];
+    for (const [paletteKey, scopes] of Object.entries(SCOPE_MAPPINGS)) {
+      const foregroundRecord = baseTokens[paletteKey];
+      if (foregroundRecord === void 0) {
+        continue;
+      }
+      const fontStyle = FONT_STYLES[paletteKey];
+      const settings = {
+        "foreground": recordToVscodeColor(foregroundRecord)
+      };
+      if (fontStyle !== void 0 && fontStyle.length > 0) {
+        settings.fontStyle = fontStyle;
+      }
+      tokenColors.push({
+        "name": paletteKey,
+        "scope": [...scopes],
+        "settings": settings
+      });
+    }
+    const themeJson = {
+      "colors": workbenchColors,
+      "name": themeName,
+      "semanticHighlighting": true,
+      "semanticTokenColors": semanticTokenColors,
+      "tokenColors": tokenColors,
+      "type": themeType
+    };
+    state.outputs["vscode:themeJson"] = themeJson;
+    ctx.logger.debug(
+      LogBody.create().component("EmitVscodeThemeJson").operation("run").status(LOG_STATUS.SUCCESS).message("Assembled theme JSON").context({
+        "colors": Object.keys(workbenchColors).length,
+        "semanticTokenColors": Object.keys(semanticTokenColors).length,
+        "tokenColors": tokenColors.length
+      }).build()
+    );
+  }
+}
+const emitVscodeThemeJson = new EmitVscodeThemeJson();
+class Role {
+  static get(state, name) {
+    const record = state.roles[name];
+    if (record === void 0) {
+      throw ModuleError.create(`EmitVscodeUiPalette: role '${name}' not found in state.roles`, {
+        "context": { "role": name, "task": "EmitVscodeUiPalette" },
+        "scenario": "NOT_FOUND"
+      });
+    }
+    return record;
+  }
+}
+class EmitVscodeUiPalette {
+  "name" = "emit:vscodeUiPalette";
+  "manifest" = {
+    "description": "Derives 101 VS Code workbench colors from the 16-role palette. Lifts uiPaletteGenerator.ts derivation.",
+    "name": "emit:vscodeUiPalette",
+    "reads": ["roles"],
+    "writes": ["outputs.vscode:workbenchColors"]
+  };
+  run(state, ctx) {
+    const bgRole = Role.get(state, "background");
+    const fgRole = Role.get(state, "foreground");
+    const accentRole = Role.get(state, "keyword");
+    const mutedRole = Role.get(state, "muted");
+    const surfaceRole = Role.get(state, "surface");
+    const errorRole = Role.get(state, "error");
+    const infoRole = Role.get(state, "info");
+    const successRole = Role.get(state, "success");
+    const warningRole = Role.get(state, "warning");
+    const fnRole = Role.get(state, "function");
+    const typeRole = Role.get(state, "type");
+    const bg_HEX = bgRole.hex;
+    const fg_HEX = fgRole.hex;
+    const accent_HEX = accentRole.hex;
+    const muted_HEX = mutedRole.hex;
+    const error_HEX = errorRole.hex;
+    const info_HEX = infoRole.hex;
+    const success_HEX = successRole.hex;
+    const warning_HEX = warningRole.hex;
+    const fn_HEX = fnRole.hex;
+    const type_HEX = typeRole.hex;
+    const bg = recordToVscodeColor(bgRole);
+    const fg = recordToVscodeColor(fgRole);
+    const accent = recordToVscodeColor(accentRole);
+    const muted = recordToVscodeColor(mutedRole);
+    const surface = recordToVscodeColor(surfaceRole);
+    const error = recordToVscodeColor(errorRole);
+    const info = recordToVscodeColor(infoRole);
+    const success = recordToVscodeColor(successRole);
+    const warning = recordToVscodeColor(warningRole);
+    const fn_ = recordToVscodeColor(fnRole);
+    const type_ = recordToVscodeColor(typeRole);
+    const bgLum = luminance$1.apply(bgRole);
+    const isLight = bgLum > 0.5;
+    const fromHex = (h2) => {
+      const result = colorRecordFactory.fromHex(h2);
+      return result;
+    };
+    const mixHslHex = (a, b, w) => {
+      const result = mixHsl.apply(fromHex(a), fromHex(b), w).hex;
+      return result;
+    };
+    const lightenHex = (c, a) => {
+      const result = lighten.apply(fromHex(c), a).hex;
+      return result;
+    };
+    const darkenHex = (c, a) => {
+      const result = darken.apply(fromHex(c), a).hex;
+      return result;
+    };
+    const contrastTextHex = (c) => {
+      const result = contrastText.apply(fromHex(c)).hex;
+      return result;
+    };
+    const activeSelection = mixHslHex(bg_HEX, accent_HEX, isLight ? 0.28 : 0.35);
+    const border = mixHslHex(bg_HEX, fg_HEX, isLight ? 0.14 : 0.12);
+    const chromeBackground = isLight ? mixHslHex(bg_HEX, fg_HEX, 0.06) : darkenHex(bg_HEX, 0.2);
+    const chromeInactiveBackground = isLight ? mixHslHex(bg_HEX, fg_HEX, 0.04) : darkenHex(bg_HEX, 0.15);
+    const hover = mixHslHex(bg_HEX, fg_HEX, isLight ? 0.06 : 0.08);
+    const inputBackground = isLight ? mixHslHex(bg_HEX, fg_HEX, 0.04) : darkenHex(bg_HEX, 0.1);
+    const selection = mixHslHex(bg_HEX, accent_HEX, isLight ? 0.18 : 0.25);
+    const workbenchColors = {
+      "activityBar.background": chromeInactiveBackground,
+      "activityBar.border": border,
+      "activityBar.foreground": fg,
+      "activityBar.inactiveForeground": muted,
+      "activityBarBadge.background": accent,
+      "activityBarBadge.foreground": contrastTextHex(accent_HEX),
+      "badge.background": accent,
+      "badge.foreground": contrastTextHex(accent_HEX),
+      "button.background": accent,
+      "button.foreground": contrastTextHex(accent_HEX),
+      "button.hoverBackground": lightenHex(accent_HEX, 0.1),
+      "button.secondaryBackground": activeSelection,
+      "button.secondaryForeground": fg,
+      "button.secondaryHoverBackground": mixHslHex(activeSelection, fg_HEX, 0.1),
+      "editor.background": bg,
+      "editor.findMatchBackground": `${accent_HEX}40`,
+      "editor.findMatchHighlightBackground": `${accent_HEX}25`,
+      "editor.foreground": fg,
+      "editor.lineHighlightBackground": hover,
+      "editor.selectionBackground": selection,
+      "editor.selectionHighlightBackground": `${selection}80`,
+      "editorBracketMatch.background": `${selection}60`,
+      "editorBracketMatch.border": `${accent_HEX}80`,
+      "editorCursor.foreground": accent,
+      "editorGroupHeader.tabsBackground": surface,
+      "editorGroupHeader.tabsBorder": border,
+      "editorHint.foreground": success,
+      "editorIndentGuide.activeBackground1": mixHslHex(bg_HEX, fg_HEX, 0.2),
+      "editorIndentGuide.background1": border,
+      "editorInfo.foreground": info,
+      "editorLineNumber.activeForeground": fg,
+      "editorLineNumber.foreground": muted,
+      "editorWhitespace.foreground": border,
+      "errorForeground": error,
+      "focusBorder": `${accent_HEX}80`,
+      "gitDecoration.addedResourceForeground": success,
+      "gitDecoration.conflictingResourceForeground": warning,
+      "gitDecoration.deletedResourceForeground": error,
+      "gitDecoration.ignoredResourceForeground": muted,
+      "gitDecoration.modifiedResourceForeground": info,
+      "gitDecoration.untrackedResourceForeground": warning,
+      "input.background": inputBackground,
+      "input.border": border,
+      "input.foreground": fg,
+      "input.placeholderForeground": muted,
+      "inputOption.activeBackground": `${accent_HEX}30`,
+      "inputOption.activeBorder": accent,
+      "list.activeSelectionBackground": activeSelection,
+      "list.activeSelectionForeground": fg,
+      "list.focusBackground": activeSelection,
+      "list.highlightForeground": accent,
+      "list.hoverBackground": hover,
+      "panel.background": surface,
+      "panel.border": border,
+      "panelTitle.activeForeground": fg,
+      "panelTitle.inactiveForeground": muted,
+      "peekView.border": accent,
+      "progressBar.background": accent,
+      "scrollbarSlider.activeBackground": `${muted_HEX}70`,
+      "scrollbarSlider.background": `${muted_HEX}30`,
+      "scrollbarSlider.hoverBackground": `${muted_HEX}50`,
+      "sideBar.background": surface,
+      "sideBar.border": border,
+      "sideBar.foreground": mixHslHex(fg_HEX, muted_HEX, 0.3),
+      "sideBarSectionHeader.foreground": fg,
+      "statusBar.background": chromeBackground,
+      "statusBar.border": border,
+      "statusBar.debuggingBackground": accent,
+      "statusBar.debuggingForeground": contrastTextHex(accent_HEX),
+      "statusBar.foreground": mixHslHex(fg_HEX, muted_HEX, 0.5),
+      "tab.activeBackground": bg,
+      "tab.activeBorder": accent,
+      "tab.activeForeground": fg,
+      "tab.border": border,
+      "tab.hoverBackground": hover,
+      "tab.inactiveBackground": surface,
+      "tab.inactiveForeground": muted,
+      "terminal.ansiBlack": border,
+      "terminal.ansiBlue": info,
+      "terminal.ansiBrightBlack": muted,
+      "terminal.ansiBrightBlue": lightenHex(info_HEX, 0.15),
+      "terminal.ansiBrightCyan": lightenHex(fn_HEX, 0.15),
+      "terminal.ansiBrightGreen": lightenHex(success_HEX, 0.15),
+      "terminal.ansiBrightMagenta": lightenHex(type_HEX, 0.15),
+      "terminal.ansiBrightRed": lightenHex(error_HEX, 0.15),
+      "terminal.ansiBrightWhite": "#ffffff",
+      "terminal.ansiBrightYellow": lightenHex(warning_HEX, 0.15),
+      "terminal.ansiCyan": fn_,
+      "terminal.ansiGreen": success,
+      "terminal.ansiMagenta": type_,
+      "terminal.ansiRed": error,
+      "terminal.ansiWhite": fg,
+      "terminal.ansiYellow": warning,
+      "terminal.background": bg,
+      "terminal.foreground": fg,
+      "titleBar.activeBackground": chromeBackground,
+      "titleBar.activeForeground": mixHslHex(fg_HEX, muted_HEX, 0.3),
+      "titleBar.border": border,
+      "titleBar.inactiveBackground": chromeInactiveBackground,
+      "titleBar.inactiveForeground": muted,
+      "warningForeground": warning
+    };
+    state.outputs["vscode:workbenchColors"] = workbenchColors;
+    ctx.logger.debug(
+      LogBody.create().component("EmitVscodeUiPalette").operation("run").status(LOG_STATUS.SUCCESS).message("Derived workbench colors").context({ "count": Object.keys(workbenchColors).length }).build()
+    );
+  }
+}
+const emitVscodeUiPalette = new EmitVscodeUiPalette();
+class ExpandTokens {
+  "name" = "vscode:expandTokens";
+  "manifest" = {
+    "description": "Derives 23 VS Code base token colours from the 16 palette roles using DERIVATION_PARAMS.",
+    "name": "vscode:expandTokens",
+    "reads": ["roles"],
+    "writes": ["metadata.vscode:baseTokens"]
+  };
+  run(state, ctx) {
+    const bgRec = state.roles.background;
+    const mutedRec = state.roles.muted;
+    const fgRec = state.roles.foreground;
+    if (bgRec === void 0 || mutedRec === void 0 || fgRec === void 0) {
+      const missingRoles = [
+        bgRec === void 0 ? "background" : void 0,
+        mutedRec === void 0 ? "muted" : void 0,
+        fgRec === void 0 ? "foreground" : void 0
+      ].filter((r) => {
+        return r !== void 0;
+      });
+      throw ModuleError.create("ExpandTokens: requires roles background, muted, foreground", {
+        "context": { "missingRoles": missingRoles, "task": "ExpandTokens" },
+        "scenario": "NOT_FOUND"
+      });
+    }
+    const baseTokens = {};
+    const len = VscodeTokenData.TOKEN_TYPES.length;
+    for (let i = 0; i < len; i++) {
+      const tokenType = VscodeTokenData.TOKEN_TYPES[i];
+      if (tokenType === void 0) {
+        continue;
+      }
+      const familyRole = VscodeTokenData.TOKEN_FAMILY[tokenType];
+      if (familyRole === void 0) {
+        ctx.logger.warn(
+          LogBody.create().component("ExpandTokens").operation("run").status(LOG_STATUS.NOT_FOUND).message("No family role for token type").context({ "tokenType": tokenType }).build()
+        );
+        continue;
+      }
+      const params = VscodeTokenData.DERIVATION_PARAMS[tokenType] ?? {};
+      if (tokenType === "operator") {
+        const mixed = mixHsl.apply(mutedRec, fgRec, 0.4);
+        const contrasted2 = ensureContrast.apply(mixed, bgRec, 3.5);
+        baseTokens.operator = contrasted2;
+        continue;
+      }
+      const familyRec = state.roles[familyRole];
+      if (familyRec === void 0) {
+        ctx.logger.warn(
+          LogBody.create().component("ExpandTokens").operation("run").status(LOG_STATUS.NOT_FOUND).message("No role record for family").context({ "familyRole": familyRole, "tokenType": tokenType }).build()
+        );
+        continue;
+      }
+      let color = familyRec;
+      if (params.hue !== void 0 && params.hue !== 0) {
+        color = hueShift.apply(color, params.hue);
+      }
+      if (params.sat !== void 0 && params.sat !== 0) {
+        const deltaC = Math.abs(params.sat) / 100;
+        if (params.sat > 0) {
+          color = saturate.apply(color, deltaC);
+        } else {
+          color = desaturate.apply(color, deltaC);
+        }
+      }
+      if (params.light !== void 0 && params.light !== 0) {
+        const deltaL = Math.abs(params.light) / 100;
+        if (params.light > 0) {
+          color = lighten.apply(color, deltaL);
+        } else {
+          color = darken.apply(color, deltaL);
+        }
+      }
+      const minContrast = tokenType === "comment" ? 3 : 4.5;
+      const contrasted = ensureContrast.apply(color, bgRec, minContrast);
+      baseTokens[tokenType] = contrasted;
+    }
+    state.metadata["vscode:baseTokens"] = baseTokens;
+    ctx.logger.debug(
+      LogBody.create().component("ExpandTokens").operation("run").status(LOG_STATUS.SUCCESS).message("Derived base token colours").context({ "count": Object.keys(baseTokens).length }).build()
+    );
+  }
+}
+const expandTokens = new ExpandTokens();
+const semanticRuleEntrySchema = {
+  "additionalProperties": false,
+  "properties": {
+    "fontStyle": { "type": "string" },
+    "foreground": { "type": "string" }
+  },
+  "type": "object"
+};
+const vscodeWorkbenchColorsSchema = {
+  "additionalProperties": { "type": "string" },
+  "type": "object"
+};
+const vscodeSemanticTokenRulesSchema = {
+  "additionalProperties": semanticRuleEntrySchema,
+  "type": "object"
+};
+const vscodeThemeJsonSchema = {
+  "additionalProperties": true,
+  "type": "object"
+};
+const vscodeBaseTokensSchema = {
+  "additionalProperties": true,
+  "type": "object"
+};
+class VscodePlugin {
+  "name" = "vscode";
+  "version" = "0.1.0";
+  tasks() {
+    return [
+      expandTokens,
+      applyModifiers,
+      emitVscodeSemanticRules,
+      emitVscodeUiPalette,
+      emitVscodeThemeJson
+    ];
+  }
+  schemas() {
+    return {
+      "metadata": {
+        "vscode:baseTokens": vscodeBaseTokensSchema,
+        "vscode:semanticTokenRules": vscodeSemanticTokenRulesSchema
+      },
+      "outputs": {
+        "vscode:semanticTokenRules": vscodeSemanticTokenRulesSchema,
+        "vscode:themeJson": vscodeThemeJsonSchema,
+        "vscode:workbenchColors": vscodeWorkbenchColorsSchema
+      }
+    };
+  }
+}
+const vscodePlugin = new VscodePlugin();
+const logger = Logger.create({
+  "level": "debug",
+  "metadata": { "service": "iridis-site" },
+  "transports": [ConsoleTransport.create()]
+});
+const globalVscodeTheme = ref({});
+const _sfc_main$3 = /* @__PURE__ */ defineComponent({
+  __name: "MultiOutput",
+  __ssrInlineRender: true,
+  setup(__props) {
+    const { activeSeeds, framing, schemaName } = useIridis();
+    const outputs = ref([]);
+    function stringify(v) {
+      if (typeof v === "string") {
+        return v;
+      }
+      if (v && typeof v === "object" && "full" in v) {
+        return String(v["full"]);
+      }
+      return JSON.stringify(v, null, 2);
+    }
+    const IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+    function looseKey(key) {
+      return IDENTIFIER_RE.test(key) ? key : JSON.stringify(key);
+    }
+    function stringifyLoose(v, depth = 0) {
+      if (v && typeof v === "object" && "full" in v) {
+        return JSON.stringify(String(v["full"]));
+      }
+      if (v === null || typeof v !== "object") {
+        return JSON.stringify(v);
+      }
+      const pad = "  ".repeat(depth + 1);
+      const closePad = "  ".repeat(depth);
+      if (Array.isArray(v)) {
+        if (v.length === 0) {
+          return "[]";
+        }
+        const items = v.map((item) => `${pad}${stringifyLoose(item, depth + 1)}`).join(",\n");
+        return `[
+${items}
+${closePad}]`;
+      }
+      const entries = Object.entries(v);
+      if (entries.length === 0) {
+        return "{}";
+      }
+      const lines = entries.map(([k, val]) => `${pad}${looseKey(k)}: ${stringifyLoose(val, depth + 1)}`).join(",\n");
+      return `{
+${lines}
+${closePad}}`;
+    }
+    function buildMainOutputs() {
+      const engine = new Engine();
+      for (const t of coreTasks) {
+        engine.tasks.register(t);
+      }
+      engine.tasks.register(intakeHexHint);
+      engine.tasks.register(pinDerivedRoles);
+      engine.adopt(contrastPlugin);
+      engine.adopt(stylesheetPlugin);
+      engine.adopt(tailwindPlugin);
+      engine.adopt(shadcnPlugin);
+      engine.adopt(muiPlugin);
+      engine.adopt(chakraPlugin);
+      engine.adopt(pandaPlugin);
+      engine.adopt(capacitorPlugin);
+      engine.pipeline([
+        "intake:hexHint",
+        "resolve:roles",
+        "pin:derivedRoles",
+        "expand:family",
+        "enforce:contrast",
+        "emit:cssVars",
+        "emit:cssVarsScoped",
+        "emit:tailwindTheme",
+        "emit:json",
+        "emit:shadcnTheme",
+        "emit:muiTheme",
+        "emit:chakraTheme",
+        "emit:pandaTheme",
+        "emit:capacitorStatusBar",
+        "emit:capacitorSplashScreen",
+        "emit:capacitorTheme",
+        "emit:androidThemeXml"
+      ]);
+      const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName["iridis-16"];
+      const st = engine.run({
+        "colors": activeSeeds.value,
+        "contrast": { "algorithm": "wcag21", "level": "AA" },
+        "roles": pair[framing.value],
+        "runtime": { "colorSpace": "srgb", "framing": framing.value }
+      });
+      const out = st.outputs;
+      const rows = [];
+      if (out["stylesheet:cssVars"]) {
+        rows.push({ "label": "CSS variables", "lang": "css", "text": stringify(out["stylesheet:cssVars"]) });
+      }
+      if (out["stylesheet:cssVarsScoped"]) {
+        rows.push({ "label": "CSS variables (scoped)", "lang": "css", "text": stringify(out["stylesheet:cssVarsScoped"]) });
+      }
+      if (out["tailwind:theme"]) {
+        rows.push({ "label": "Tailwind", "lang": "javascript", "text": out["tailwind:theme"].config });
+      }
+      if (out["shadcn:theme"]) {
+        rows.push({ "label": "shadcn/ui", "lang": "css", "text": out["shadcn:theme"].cssVars });
+      }
+      if (out["mui:theme"]) {
+        rows.push({ "label": "MUI", "lang": "javascript", "text": out["mui:theme"].config });
+      }
+      if (out["chakra:theme"]) {
+        rows.push({ "label": "Chakra UI", "lang": "javascript", "text": out["chakra:theme"].config });
+      }
+      if (out["panda:theme"]) {
+        const panda = out["panda:theme"];
+        rows.push({ "label": "Panda CSS", "lang": "javascript", "text": panda.pandaConfig });
+        rows.push({ "label": "UnoCSS", "lang": "javascript", "text": panda.unoConfig });
+      }
+      if (out["capacitor:theme"]) {
+        rows.push({ "label": "Capacitor", "lang": "javascript", "text": stringifyLoose(out["capacitor:theme"]) });
+      }
+      if (out["capacitor:androidThemeXml"]) {
+        rows.push({ "label": "Android theme.xml", "lang": "xml", "text": out["capacitor:androidThemeXml"] });
+      }
+      if (out["core:json"]) {
+        rows.push({ "label": "JSON", "lang": "javascript", "text": stringifyLoose(out["core:json"]) });
+      }
+      return rows;
+    }
+    function buildVscodeOutput() {
+      const engine = new Engine();
+      for (const t of coreTasks) {
+        engine.tasks.register(t);
+      }
+      engine.tasks.register(intakeHexHint);
+      engine.adopt(contrastPlugin);
+      engine.adopt(vscodePlugin);
+      engine.pipeline([
+        "intake:hexHint",
+        "resolve:roles",
+        "expand:family",
+        "enforce:contrast",
+        "vscode:expandTokens",
+        "vscode:applyModifiers",
+        "emit:vscodeSemanticRules",
+        "emit:vscodeUiPalette",
+        "emit:vscodeThemeJson"
+      ]);
+      const st = engine.run({
+        "colors": activeSeeds.value,
+        "contrast": { "algorithm": "wcag21", "level": "AA" },
+        "roles": vscodeRoleSchema16,
+        "runtime": { "colorSpace": "srgb", "framing": "dark" }
+      });
+      const themeJson = st.outputs["vscode:themeJson"];
+      if (themeJson === void 0) {
+        return void 0;
+      }
+      globalVscodeTheme.value = themeJson;
+      return { "label": "VS Code theme", "lang": "javascript", "text": stringifyLoose(themeJson) };
+    }
+    function generate() {
+      try {
+        const rows = buildMainOutputs();
+        const vscodeRow = buildVscodeOutput();
+        if (vscodeRow) {
+          rows.push(vscodeRow);
+        }
+        outputs.value = rows;
+      } catch (e) {
+        logger.error(
+          LogBody.create().component("MultiOutput").operation("generate").status(LOG_STATUS.FAILED).message("Output pipeline failed; keeping the previous outputs").context({ "error": e instanceof Error ? e.message : String(e) }).build()
+        );
+      }
+    }
+    let timer;
+    function schedule() {
+      if (timer !== void 0) {
+        clearTimeout(timer);
+      }
+      timer = setTimeout(generate, 120);
+    }
+    generate();
+    watch([activeSeeds, framing, schemaName], schedule, { "deep": true });
+    const tabItems = computed(() => outputs.value.map((o, i) => ({ "label": o.label, "value": String(i) })));
+    const active = ref("0");
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_UCard = _sfc_main$t;
+      const _component_BalancedWrap = __nuxt_component_1$1;
+      const _component_CodeBlock = CodeBlock;
+      _push(ssrRenderComponent(_component_UCard, _attrs, {
+        header: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2"${_scopeId}><span${_scopeId}></span><span class="text-center font-semibold text-highlighted"${_scopeId}>What you came here for</span><span${_scopeId}></span></div>`);
+          } else {
+            return [
+              createVNode("div", { class: "grid grid-cols-[1fr_auto_1fr] items-center gap-2" }, [
+                createVNode("span"),
+                createVNode("span", { class: "text-center font-semibold text-highlighted" }, "What you came here for"),
+                createVNode("span")
+              ])
+            ];
+          }
+        }),
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<div class="space-y-3"${_scopeId}><p class="text-sm text-muted"${_scopeId}> Every output format with a real emit plugin — one palette, ${ssrInterpolate(outputs.value.length)} targets. </p>`);
+            _push2(ssrRenderComponent(_component_BalancedWrap, {
+              items: tabItems.value,
+              "min-width": 120,
+              gap: 8,
+              class: "mb-4"
+            }, {
+              default: withCtx(({ item, index: i }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  _push3(`<button type="button" class="${ssrRenderClass([String(i) === active.value ? "bg-primary text-[var(--ui-primary-contrast)] shadow-[0_0_12px_color-mix(in_oklch,var(--ui-primary)_50%,transparent)]" : "bg-elevated/50 text-muted hover:text-highlighted hover:bg-elevated", "flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors"])}"${_scopeId2}>${ssrInterpolate(item.label)}</button>`);
+                } else {
+                  return [
+                    createVNode("button", {
+                      type: "button",
+                      class: ["flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors", String(i) === active.value ? "bg-primary text-[var(--ui-primary-contrast)] shadow-[0_0_12px_color-mix(in_oklch,var(--ui-primary)_50%,transparent)]" : "bg-elevated/50 text-muted hover:text-highlighted hover:bg-elevated"],
+                      onClick: ($event) => active.value = String(i)
+                    }, toDisplayString(item.label), 11, ["onClick"])
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(ssrRenderComponent(_component_CodeBlock, {
+              code: outputs.value[Number(active.value)]?.text || "",
+              lang: outputs.value[Number(active.value)]?.lang || "json",
+              "vscode-theme": unref(globalVscodeTheme)
+            }, null, _parent2, _scopeId));
+            _push2(`<p class="text-[10px] text-dimmed"${_scopeId}> Highlighted by Shiki, colored by this site&#39;s own VS Code theme output — not a static theme. </p></div>`);
+          } else {
+            return [
+              createVNode("div", { class: "space-y-3" }, [
+                createVNode("p", { class: "text-sm text-muted" }, " Every output format with a real emit plugin — one palette, " + toDisplayString(outputs.value.length) + " targets. ", 1),
+                createVNode(_component_BalancedWrap, {
+                  items: tabItems.value,
+                  "min-width": 120,
+                  gap: 8,
+                  class: "mb-4"
+                }, {
+                  default: withCtx(({ item, index: i }) => [
+                    createVNode("button", {
+                      type: "button",
+                      class: ["flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors", String(i) === active.value ? "bg-primary text-[var(--ui-primary-contrast)] shadow-[0_0_12px_color-mix(in_oklch,var(--ui-primary)_50%,transparent)]" : "bg-elevated/50 text-muted hover:text-highlighted hover:bg-elevated"],
+                      onClick: ($event) => active.value = String(i)
+                    }, toDisplayString(item.label), 11, ["onClick"])
+                  ]),
+                  _: 1
+                }, 8, ["items"]),
+                createVNode(_component_CodeBlock, {
+                  code: outputs.value[Number(active.value)]?.text || "",
+                  lang: outputs.value[Number(active.value)]?.lang || "json",
+                  "vscode-theme": unref(globalVscodeTheme)
+                }, null, 8, ["code", "lang", "vscode-theme"]),
+                createVNode("p", { class: "text-[10px] text-dimmed" }, " Highlighted by Shiki, colored by this site's own VS Code theme output — not a static theme. ")
+              ])
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+    };
+  }
+});
+const _sfc_setup$3 = _sfc_main$3.setup;
+_sfc_main$3.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("components/content/MultiOutput.vue");
+  return _sfc_setup$3 ? _sfc_setup$3(props, ctx) : void 0;
+};
+const __nuxt_component_15 = Object.assign(_sfc_main$3, { __name: "MultiOutput" });
+const htmlTags = /* @__PURE__ */ new Set([
+  "a",
+  "abbr",
+  "address",
+  "area",
+  "article",
+  "aside",
+  "audio",
+  "b",
+  "base",
+  "bdi",
+  "bdo",
+  "blockquote",
+  "body",
+  "br",
+  "button",
+  "canvas",
+  "caption",
+  "cite",
+  "code",
+  "col",
+  "colgroup",
+  "data",
+  "datalist",
+  "dd",
+  "del",
+  "details",
+  "dfn",
+  "dialog",
+  "div",
+  "dl",
+  "dt",
+  "em",
+  "embed",
+  "fieldset",
+  "figcaption",
+  "figure",
+  "footer",
+  "form",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "head",
+  "header",
+  "hgroup",
+  "hr",
+  "html",
+  "i",
+  "iframe",
+  "img",
+  "input",
+  "ins",
+  "kbd",
+  "label",
+  "legend",
+  "li",
+  "link",
+  "main",
+  "map",
+  "mark",
+  "math",
+  "menu",
+  "menuitem",
+  "meta",
+  "meter",
+  "nav",
+  "noscript",
+  "object",
+  "ol",
+  "optgroup",
+  "option",
+  "output",
+  "p",
+  "param",
+  "picture",
+  "pre",
+  "progress",
+  "q",
+  "rb",
+  "rp",
+  "rt",
+  "rtc",
+  "ruby",
+  "s",
+  "samp",
+  "script",
+  "section",
+  "select",
+  "slot",
+  "small",
+  "source",
+  "span",
+  "strong",
+  "style",
+  "sub",
+  "summary",
+  "sup",
+  "svg",
+  "table",
+  "tbody",
+  "td",
+  "template",
+  "textarea",
+  "tfoot",
+  "th",
+  "thead",
+  "time",
+  "title",
+  "tr",
+  "track",
+  "u",
+  "ul",
+  "var",
+  "video",
+  "wbr"
+]);
+function pick(obj, keys) {
+  return keys.reduce((acc, key) => {
+    const value = get(obj, key);
+    if (value !== void 0) {
+      acc[key] = value;
+    }
+    return acc;
+  }, {});
+}
+function get(obj, key) {
+  return key.split(".").reduce((acc, k) => acc && acc[k], obj);
+}
+const DEFAULT_SLOT = "default";
+const rxOn = /^@|^v-on:/;
+const rxBind = /^:|^v-bind:/;
+const rxModel = /^v-model/;
+const nativeInputs = ["select", "textarea", "input"];
+const specialParentTags = /* @__PURE__ */ new Set(["math", "svg"]);
+const customElements = /* @__PURE__ */ new Set();
+const proseComponentMap = Object.fromEntries(["p", "a", "blockquote", "code", "pre", "code", "em", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "img", "ul", "ol", "li", "strong", "table", "thead", "tbody", "td", "th", "tr", "script"].map((t) => [t, `prose-${t}`]));
+const dangerousTags = ["script", "base"];
+const _sfc_main$2 = defineComponent({
+  name: "MDCRenderer",
+  props: {
+    /**
+     * Content to render
+     */
+    body: {
+      type: Object,
+      required: true
+    },
+    /**
+     * Document meta data
+     */
+    data: {
+      type: Object,
+      default: () => ({})
+    },
+    /**
+     * Class(es) to bind to the component
+     */
+    class: {
+      type: [String, Object],
+      default: void 0
+    },
+    /**
+     * Root tag to use for rendering
+     */
+    tag: {
+      type: [String, Boolean],
+      default: void 0
+    },
+    /**
+     * Whether or not to render Prose components instead of HTML tags
+     */
+    prose: {
+      type: Boolean,
+      default: void 0
+    },
+    /**
+     * The map of custom components to use for rendering.
+     */
+    components: {
+      type: Object,
+      default: () => ({})
+    },
+    /**
+     * Tags to unwrap separated by spaces
+     * Example: 'ul li'
+     */
+    unwrap: {
+      type: [Boolean, String],
+      default: false
+    }
+  },
+  async setup(props) {
+    const app = getCurrentInstance()?.appContext?.app;
+    const $nuxt = app?.$nuxt;
+    const route = $nuxt?.$route || $nuxt?._route;
+    const { mdc } = $nuxt?.$config?.public || {};
+    const customElementTags = mdc?.components?.customElements || mdc?.components?.custom;
+    if (customElementTags) {
+      customElementTags.forEach((tag) => customElements.add(tag));
+    }
+    const tags = computed(() => ({
+      ...mdc?.components?.prose && props.prose !== false ? proseComponentMap : {},
+      ...mdc?.components?.map || {},
+      ...toRaw(props.data?.mdc?.components || {}),
+      ...props.components
+    }));
+    const contentKey = computed(() => {
+      const components = (props.body?.children || []).map((n) => n.tag || n.type).filter((t) => !ignoreTag(t));
+      return Array.from(new Set(components)).sort().join(".");
+    });
+    const runtimeData = reactive({
+      ...props.data
+    });
+    watch(() => props.data, (newData) => {
+      Object.assign(runtimeData, newData);
+    });
+    await resolveContentComponents(props.body, { tags: tags.value });
+    function updateRuntimeData(code, value) {
+      const lastIndex = code.split(".").length - 1;
+      return code.split(".").reduce((o, k, i) => {
+        if (i == lastIndex && o) {
+          o[k] = value;
+          return o[k];
+        }
+        return typeof o === "object" ? o[k] : void 0;
+      }, runtimeData);
+    }
+    return { tags, contentKey, route, runtimeData, updateRuntimeData };
+  },
+  render(ctx) {
+    const { tags, tag, body, data, contentKey, route, unwrap, runtimeData, updateRuntimeData } = ctx;
+    if (!body) {
+      return null;
+    }
+    const meta = { ...data, tags, $route: route, runtimeData, updateRuntimeData };
+    const component = tag !== false ? resolveComponentInstance(tag || meta.component?.name || meta.component || "div") : void 0;
+    return component ? h(component, { ...meta.component?.props, class: ctx.class, ...this.$attrs, key: contentKey }, { default: defaultSlotRenderer }) : defaultSlotRenderer?.();
+    function defaultSlotRenderer() {
+      const defaultSlot = _renderSlots(body, h, { documentMeta: meta, parentScope: meta, resolveComponent: resolveComponentInstance });
+      if (!defaultSlot?.default) {
+        return null;
+      }
+      if (unwrap) {
+        return flatUnwrap(
+          defaultSlot.default(),
+          typeof unwrap === "string" ? unwrap.split(" ") : ["*"]
+        );
+      }
+      return defaultSlot.default();
+    }
+  }
+});
+function _renderNode(node, h2, options, keyInParent) {
+  const { documentMeta, parentScope, resolveComponent: resolveComponent2 } = options;
+  if (node.type === "text") {
+    return h2(Text, node.value);
+  }
+  if (node.type === "comment") {
+    return h2(Comment, null, node.value);
+  }
+  const originalTag = node.tag;
+  const renderTag = findMappedTag(node, documentMeta.tags);
+  if (node.tag === "binding") {
+    return renderBinding(node, h2, documentMeta, parentScope);
+  }
+  const _resolveComponent = isUnresolvableTag(renderTag) ? (component2) => component2 : resolveComponent2;
+  if (dangerousTags.includes(pascalCase(renderTag).toLowerCase())) {
+    return h2(
+      "pre",
+      { class: "mdc-renderer-dangerous-tag" },
+      "<" + renderTag + ">" + nodeTextContent(node) + "</" + renderTag + ">"
+    );
+  }
+  const component = _resolveComponent(renderTag);
+  if (typeof component === "object") {
+    component.tag = originalTag;
+  }
+  const props = propsToData(node, documentMeta);
+  if (keyInParent) {
+    props.key = keyInParent;
+  }
+  return h2(
+    component,
+    props,
+    _renderSlots(
+      node,
+      h2,
+      {
+        documentMeta,
+        parentScope: { ...parentScope, ...props },
+        resolveComponent: _resolveComponent
+      }
+    )
+  );
+}
+function _renderSlots(node, h2, options) {
+  const { documentMeta, parentScope, resolveComponent: resolveComponent2 } = options;
+  const children = node.children || [];
+  const slotNodes = children.reduce((data, node2) => {
+    if (!isTemplate(node2)) {
+      data[DEFAULT_SLOT].children.push(node2);
+      return data;
+    }
+    const slotName = getSlotName(node2);
+    data[slotName] = data[slotName] || { props: {}, children: [] };
+    if (node2.type === "element") {
+      data[slotName].props = node2.props;
+      data[slotName].children.push(...node2.children || []);
+    }
+    return data;
+  }, {
+    [DEFAULT_SLOT]: { props: {}, children: [] }
+  });
+  const slots = Object.entries(slotNodes).reduce((slots2, [name, { props, children: children2 }]) => {
+    if (!children2.length) {
+      return slots2;
+    }
+    slots2[name] = (data = {}) => {
+      const scopedProps = pick(data, Object.keys(props || {}));
+      let vNodes = children2.map((child, index2) => {
+        return _renderNode(
+          child,
+          h2,
+          {
+            documentMeta,
+            parentScope: { ...parentScope, ...scopedProps },
+            resolveComponent: resolveComponent2
+          },
+          String(child.props?.key || index2)
+        );
+      });
+      if (props?.unwrap) {
+        vNodes = flatUnwrap(vNodes, props.unwrap);
+      }
+      return mergeTextNodes(vNodes);
+    };
+    return slots2;
+  }, {});
+  return slots;
+}
+function renderBinding(node, h2, documentMeta, parentScope = {}) {
+  const data = {
+    ...documentMeta.runtimeData,
+    ...parentScope,
+    $document: documentMeta,
+    $doc: documentMeta
+  };
+  const splitter = /\.|\[(\d+)\]/;
+  const keys = node.props?.value.trim().split(splitter).filter(Boolean);
+  const value = keys.reduce((data2, key) => {
+    if (data2 && key in data2) {
+      if (typeof data2[key] === "function") {
+        return data2[key]();
+      } else {
+        return data2[key];
+      }
+    }
+    return void 0;
+  }, data);
+  const defaultValue = node.props?.defaultValue;
+  return h2(Text, value ?? defaultValue ?? "");
+}
+function propsToData(node, documentMeta) {
+  const { tag = "", props = {} } = node;
+  return Object.keys(props).reduce(function(data, key) {
+    if (key === "__ignoreMap") {
+      return data;
+    }
+    const value = props[key];
+    if (rxModel.test(key)) {
+      return propsToDataRxModel(key, value, data, documentMeta, { native: nativeInputs.includes(tag) });
+    }
+    if (key === "v-bind") {
+      return propsToDataVBind(key, value, data, documentMeta);
+    }
+    if (rxOn.test(key)) {
+      return propsToDataRxOn(key, value, data, documentMeta);
+    }
+    if (rxBind.test(key)) {
+      return propsToDataRxBind(key, value, data, documentMeta);
+    }
+    const { attribute } = find(html, key);
+    if (Array.isArray(value) && value.every((v) => typeof v === "string")) {
+      data[attribute] = value.join(" ");
+      return data;
+    }
+    data[attribute] = value;
+    return data;
+  }, {});
+}
+function propsToDataRxModel(key, value, data, documentMeta, { native }) {
+  const propName = key.match(/^v-model:([^=]+)/)?.[1] || "modelValue";
+  const field = native ? "value" : propName;
+  const event = native ? "onInput" : `onUpdate:${propName}`;
+  data[field] = evalInContext(value, documentMeta.runtimeData);
+  data[event] = (e) => {
+    documentMeta.updateRuntimeData(value, native ? e.target?.value : e);
+  };
+  return data;
+}
+function propsToDataVBind(_key, value, data, documentMeta) {
+  const val = evalInContext(value, documentMeta);
+  data = Object.assign(data, val);
+  return data;
+}
+function propsToDataRxOn(key, value, data, documentMeta) {
+  key = key.replace(rxOn, "");
+  data.on = data.on || {};
+  data.on[key] = () => evalInContext(value, documentMeta);
+  return data;
+}
+function propsToDataRxBind(key, value, data, documentMeta) {
+  key = key.replace(rxBind, "");
+  data[key] = evalInContext(value, documentMeta);
+  return data;
+}
+const resolveComponentInstance = (component) => {
+  if (typeof component === "string") {
+    if (ignoreTag(component)) {
+      return component;
+    }
+    const _component = resolveComponent(pascalCase(component), false);
+    if (!component || _component?.name === "AsyncComponentWrapper") {
+      return _component;
+    }
+    if (typeof _component === "string") {
+      return _component;
+    }
+    if ("setup" in _component) {
+      return defineAsyncComponent(() => new Promise((resolve) => resolve(_component)));
+    }
+    return _component;
+  }
+  return component;
+};
+function evalInContext(code, context2) {
+  const result = code.split(".").reduce((o, k) => typeof o === "object" ? o[k] : void 0, context2);
+  return typeof result === "undefined" ? destr(code) : result;
+}
+function getSlotName(node) {
+  let name = "";
+  for (const propName of Object.keys(node.props || {})) {
+    if (!propName.startsWith("#") && !propName.startsWith("v-slot:")) {
+      continue;
+    }
+    name = propName.split(/[:#]/, 2)[1];
+    break;
+  }
+  return name || DEFAULT_SLOT;
+}
+function isTemplate(node) {
+  return node.tag === "template";
+}
+function isUnresolvableTag(tag) {
+  return specialParentTags.has(tag);
+}
+function mergeTextNodes(nodes) {
+  const mergedNodes = [];
+  for (const node of nodes) {
+    const previousNode = mergedNodes[mergedNodes.length - 1];
+    if (node.type === Text && previousNode?.type === Text) {
+      previousNode.children = previousNode.children + node.children;
+    } else {
+      mergedNodes.push(node);
+    }
+  }
+  return mergedNodes;
+}
+async function resolveContentComponents(body, meta) {
+  if (!body) {
+    return;
+  }
+  const components = Array.from(new Set(loadComponents(body, meta)));
+  await Promise.all(components.map(async (c) => {
+    if (c?.render || c?.ssrRender || c?.__ssrInlineRender) {
+      return;
+    }
+    const resolvedComponent = resolveComponentInstance(c);
+    if (resolvedComponent?.__asyncLoader && !resolvedComponent.__asyncResolved) {
+      await resolvedComponent.__asyncLoader();
+    }
+  }));
+  function loadComponents(node, documentMeta) {
+    const tag = node.tag;
+    if (node.type === "text" || tag === "binding" || node.type === "comment") {
+      return [];
+    }
+    const renderTag = findMappedTag(node, documentMeta.tags);
+    if (isUnresolvableTag(renderTag)) {
+      return [];
+    }
+    const components2 = [];
+    if (node.type !== "root" && !ignoreTag(renderTag)) {
+      components2.push(renderTag);
+    }
+    for (const child of node.children || []) {
+      components2.push(...loadComponents(child, documentMeta));
+    }
+    return components2;
+  }
+}
+function findMappedTag(node, tags) {
+  const tag = node.tag;
+  if (!tag || typeof node.props?.__ignoreMap !== "undefined") {
+    return tag;
+  }
+  return tags[tag] || tags[pascalCase(tag)] || tags[kebabCase(node.tag)] || tag;
+}
+function ignoreTag(tag) {
+  const isCustomEl = typeof tag === "string" ? customElements.has(tag) : false;
+  return isCustomEl || htmlTags.has(tag);
+}
+const _sfc_setup$2 = _sfc_main$2.setup;
+_sfc_main$2.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxtjs/mdc/dist/runtime/components/MDCRenderer.vue");
+  return _sfc_setup$2 ? _sfc_setup$2(props, ctx) : void 0;
+};
+const MDCRenderer = Object.assign(_sfc_main$2, { __name: "MDCRenderer" });
+const pickExport = (mod, exportName, componentName, path) => {
+  const resolved = exportName === "default" ? mod?.default : mod?.[exportName];
+  if (!resolved) {
+    throw new Error(`[nuxt-content] Missing export "${exportName}" for component "${componentName}" in "${path}".`);
+  }
+  return resolved;
+};
+const localComponentLoaders = {
+  MermaidDiagram: () => import('./MermaidDiagram-Bhj2VPdX.mjs').then((m) => pickExport(m, "default", "MermaidDiagram", "./../../../../../app/components/content/MermaidDiagram.vue")),
+  ProsePre: () => import('./ProsePre-CsJwiP-s.mjs').then((m) => pickExport(m, "default", "ProsePre", "./../../../../../app/components/content/ProsePre.vue"))
+};
+const globalComponents = ["ProseA", "ProseAccordion", "ProseAccordionItem", "ProseBadge", "ProseBlockquote", "ProseCallout", "ProseCard", "ProseCardGroup", "ProseCode", "ProseCodeCollapse", "ProseCodeGroup", "ProseCodeIcon", "ProseCodePreview", "ProseCodeTree", "ProseCollapsible", "ProseEm", "ProseField", "ProseFieldGroup", "ProseH1", "ProseH2", "ProseH3", "ProseH4", "ProseHr", "ProseIcon", "ProseImg", "ProseKbd", "ProseLi", "ProseOl", "ProseP", "ProsePrompt", "ProseScript", "ProseSteps", "ProseStrong", "ProseTable", "ProseTabs", "ProseTabsItem", "ProseTbody", "ProseTd", "ProseTh", "ProseThead", "ProseTr", "ProseUl", "ProseCaution", "ProseNote", "ProseTip", "ProseWarning", "ProseH5", "ProseH6", "Icon"];
+const localComponents = ["MermaidDiagram", "ProsePre"];
+const _sfc_main$1 = {
+  __name: "ContentRenderer",
+  __ssrInlineRender: true,
+  props: {
+    /**
+     * Content to render
+     */
+    value: {
+      type: Object,
+      required: true
+    },
+    /**
+     * Render only the excerpt
+     */
+    excerpt: {
+      type: Boolean,
+      default: false
+    },
+    /**
+     * Root tag to use for rendering
+     */
+    tag: {
+      type: String,
+      default: "div"
+    },
+    /**
+     * The map of custom components to use for rendering.
+     */
+    components: {
+      type: Object,
+      default: () => ({})
+    },
+    data: {
+      type: Object,
+      default: () => ({})
+    },
+    /**
+     * Whether or not to render Prose components instead of HTML tags
+     */
+    prose: {
+      type: Boolean,
+      default: void 0
+    },
+    /**
+     * Root tag to use for rendering
+     */
+    class: {
+      type: [String, Object],
+      default: void 0
+    },
+    /**
+     * Tags to unwrap separated by spaces
+     * Example: 'ul li'
+     */
+    unwrap: {
+      type: [Boolean, String],
+      default: false
+    }
+  },
+  setup(__props) {
+    const renderFunctions = ["render", "ssrRender", "__ssrInlineRender"];
+    const props = __props;
+    const debug = globalThis._importMeta_.preview;
+    const body = computed(() => {
+      let body2 = props.value.body || props.value;
+      if (props.excerpt && props.value.excerpt) {
+        body2 = props.value.excerpt;
+      }
+      if (body2.type === "minimal" || body2.type === "minimark") {
+        return toHast({ type: "minimark", value: body2.value });
+      }
+      return body2;
+    });
+    const isEmpty = computed(() => !body.value?.children?.length);
+    const data = computed(() => {
+      const { body: body2, excerpt, ...data2 } = props.value;
+      return {
+        ...data2,
+        ...props.data
+      };
+    });
+    const proseComponentMap2 = Object.fromEntries(["p", "a", "blockquote", "code", "pre", "code", "em", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "img", "ul", "ol", "li", "strong", "table", "thead", "tbody", "td", "th", "tr", "script"].map((t) => [t, `prose-${t}`]));
+    const { mdc } = useRuntimeConfig().public || {};
+    const propsDataMDC = computed(() => props.data.mdc);
+    const tags = computed(() => ({
+      ...mdc?.components?.prose && props.prose !== false ? proseComponentMap2 : {},
+      ...mdc?.components?.map || {},
+      ...toRaw(propsDataMDC.value?.components || {}),
+      ...props.components
+    }));
+    const componentsMap = computed(() => {
+      return body.value ? resolveContentComponents2(body.value, { tags: tags.value }) : {};
+    });
+    function resolveVueComponent(component) {
+      let _component = component;
+      if (typeof component === "string") {
+        if (htmlTags.has(component)) {
+          return component;
+        }
+        if (globalComponents.includes(pascalCase(component))) {
+          _component = resolveComponent(component, false);
+        } else if (localComponents.includes(pascalCase(component))) {
+          const loader = localComponentLoaders[pascalCase(component)];
+          _component = loader ? defineAsyncComponent(loader) : void 0;
+        }
+        if (typeof _component === "string") {
+          return _component;
+        }
+      }
+      if (!_component) {
+        return _component;
+      }
+      const componentObject = _component;
+      if ("__asyncLoader" in componentObject) {
+        return componentObject;
+      }
+      if ("setup" in componentObject) {
+        return defineAsyncComponent(() => Promise.resolve(componentObject));
+      }
+      return componentObject;
+    }
+    function resolveContentComponents2(body2, meta) {
+      if (!body2) {
+        return;
+      }
+      const components = Array.from(new Set(loadComponents(body2, meta)));
+      const result = {};
+      for (const [tag, component] of components) {
+        if (result[tag]) {
+          continue;
+        }
+        if (typeof component === "object" && renderFunctions.some((fn) => Object.hasOwnProperty.call(component, fn))) {
+          result[tag] = component;
+          continue;
+        }
+        result[tag] = resolveVueComponent(component);
+      }
+      return result;
+    }
+    function loadComponents(node, documentMeta) {
+      const tag = node.tag;
+      if (node.type === "text" || tag === "binding" || node.type === "comment") {
+        return [];
+      }
+      const renderTag = findMappedTag2(node, documentMeta.tags);
+      const components2 = [];
+      if (node.type !== "root" && !htmlTags.has(renderTag)) {
+        components2.push([tag, renderTag]);
+      }
+      for (const child of node.children || []) {
+        components2.push(...loadComponents(child, documentMeta));
+      }
+      return components2;
+    }
+    function findMappedTag2(node, tags2) {
+      const tag = node.tag;
+      if (!tag || typeof node.props?.__ignoreMap !== "undefined") {
+        return tag;
+      }
+      return tags2[tag] || tags2[pascalCase(tag)] || tags2[kebabCase(node.tag)] || tag;
+    }
+    return (_ctx, _push, _parent, _attrs) => {
+      if (!isEmpty.value) {
+        _push(ssrRenderComponent(MDCRenderer, mergeProps({
+          body: body.value,
+          data: data.value,
+          class: props.class,
+          tag: props.tag,
+          prose: props.prose,
+          unwrap: props.unwrap,
+          components: componentsMap.value,
+          "data-content-id": unref(debug) ? __props.value.id : void 0
+        }, _attrs), null, _parent));
+      } else {
+        ssrRenderSlot(_ctx.$slots, "empty", {
+          body: body.value,
+          data: data.value,
+          dataContentId: unref(debug) ? __props.value.id : void 0
+        }, null, _push, _parent);
+      }
+    };
+  }
+};
+const _sfc_setup$1 = _sfc_main$1.setup;
+_sfc_main$1.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/content/dist/runtime/components/ContentRenderer.vue");
+  return _sfc_setup$1 ? _sfc_setup$1(props, ctx) : void 0;
+};
+const __nuxt_component_17 = Object.assign(_sfc_main$1, { __name: "ContentRenderer" });
+const checksums = {
+  "docs": "v3.5.0--tJKkz522pazf9KPO8IsLOCK1BOVXgATAfqrp3z-o3ZM"
+};
+const tables = {
+  "docs": "_content_docs",
+  "info": "_content_info"
+};
+const buildGroup = (group, type) => {
+  const conditions = group._conditions;
+  return conditions.length > 0 ? `(${conditions.join(` ${type} `)})` : "";
+};
+const collectionQueryGroup = (collection) => {
+  const conditions = [];
+  const query = {
+    // @ts-expect-error -- internal
+    _conditions: conditions,
+    where(field, operator, value) {
+      let condition;
+      switch (operator.toUpperCase()) {
+        case "IN":
+        case "NOT IN":
+          if (Array.isArray(value)) {
+            const values = value.map((val) => singleQuote(val)).join(", ");
+            condition = `"${String(field)}" ${operator.toUpperCase()} (${values})`;
+          } else {
+            throw new TypeError(`Value for ${operator} must be an array`);
+          }
+          break;
+        case "BETWEEN":
+        case "NOT BETWEEN":
+          if (Array.isArray(value) && value.length === 2) {
+            condition = `"${String(field)}" ${operator.toUpperCase()} ${singleQuote(value[0])} AND ${singleQuote(value[1])}`;
+          } else {
+            throw new Error(`Value for ${operator} must be an array with two elements`);
+          }
+          break;
+        case "IS NULL":
+        case "IS NOT NULL":
+          condition = `"${String(field)}" ${operator.toUpperCase()}`;
+          break;
+        case "LIKE":
+        case "NOT LIKE":
+          condition = `"${String(field)}" ${operator.toUpperCase()} ${singleQuote(value)}`;
+          break;
+        default:
+          condition = `"${String(field)}" ${operator} ${singleQuote(typeof value === "boolean" ? Number(value) : value)}`;
+      }
+      conditions.push(`${condition}`);
+      return query;
+    },
+    andWhere(groupFactory) {
+      const group = groupFactory(collectionQueryGroup());
+      conditions.push(buildGroup(group, "AND"));
+      return query;
+    },
+    orWhere(groupFactory) {
+      const group = groupFactory(collectionQueryGroup());
+      conditions.push(buildGroup(group, "OR"));
+      return query;
+    }
+  };
+  return query;
+};
+const collectionQueryBuilder = (collection, fetch) => {
+  const params = {
+    conditions: [],
+    selectedFields: [],
+    offset: 0,
+    limit: 0,
+    orderBy: [],
+    // Count query
+    count: {
+      field: "",
+      distinct: false
+    }
+  };
+  const query = {
+    // @ts-expect-error -- internal
+    __params: params,
+    andWhere(groupFactory) {
+      const group = groupFactory(collectionQueryGroup());
+      params.conditions.push(buildGroup(group, "AND"));
+      return query;
+    },
+    orWhere(groupFactory) {
+      const group = groupFactory(collectionQueryGroup());
+      params.conditions.push(buildGroup(group, "OR"));
+      return query;
+    },
+    path(path) {
+      return query.where("path", "=", withoutTrailingSlash(path));
+    },
+    skip(skip) {
+      params.offset = skip;
+      return query;
+    },
+    where(field, operator, value) {
+      query.andWhere((group) => group.where(String(field), operator, value));
+      return query;
+    },
+    limit(limit) {
+      params.limit = limit;
+      return query;
+    },
+    select(...fields) {
+      if (fields.length) {
+        params.selectedFields.push(...fields);
+      }
+      return query;
+    },
+    order(field, direction) {
+      params.orderBy.push(`"${String(field)}" ${direction}`);
+      return query;
+    },
+    async all() {
+      return fetch(collection, buildQuery()).then((res) => res || []);
+    },
+    async first() {
+      return fetch(collection, buildQuery({ limit: 1 })).then((res) => res[0] || null);
+    },
+    async count(field = "*", distinct = false) {
+      return fetch(collection, buildQuery({
+        count: { field: String(field), distinct }
+      })).then((m) => m[0].count);
+    }
+  };
+  function buildQuery(opts = {}) {
+    let query2 = "SELECT ";
+    if (opts?.count) {
+      query2 += `COUNT(${opts.count.distinct ? "DISTINCT " : ""}${opts.count.field}) as count`;
+    } else {
+      const fields = Array.from(new Set(params.selectedFields));
+      query2 += fields.length > 0 ? fields.map((f) => `"${String(f)}"`).join(", ") : "*";
+    }
+    query2 += ` FROM ${tables[String(collection)]}`;
+    if (params.conditions.length > 0) {
+      query2 += ` WHERE ${params.conditions.join(" AND ")}`;
+    }
+    if (params.orderBy.length > 0) {
+      query2 += ` ORDER BY ${params.orderBy.join(", ")}`;
+    } else {
+      query2 += ` ORDER BY stem ASC`;
+    }
+    const limit = opts?.limit || params.limit;
+    if (limit > 0) {
+      if (params.offset > 0) {
+        query2 += ` LIMIT ${limit} OFFSET ${params.offset}`;
+      } else {
+        query2 += ` LIMIT ${limit}`;
+      }
+    }
+    return query2;
+  }
+  return query;
+};
+function singleQuote(value) {
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+async function fetchContent(event, collection, path, options) {
+  const headers = event ? getRequestHeaders(event) : {};
+  headers["accept-encoding"] = void 0;
+  const url = `/__nuxt_content/${collection}/${path}`;
+  const fetchOptions = {
+    ...options,
+    headers: {
+      ...headers,
+      ...options.headers
+    },
+    query: { v: checksums[String(collection)], t: void 0 }
+  };
+  return event ? await event.$fetch(url, fetchOptions) : await $fetch(url, fetchOptions);
+}
+async function fetchQuery(event, collection, sql) {
+  return fetchContent(event, collection, "query", {
+    headers: {
+      "content-type": "application/json"
+    },
+    method: "POST",
+    body: {
+      sql
+    }
+  });
+}
+const queryCollection = (collection) => {
+  const event = tryUseNuxtApp()?.ssrContext?.event;
+  return collectionQueryBuilder(collection, (collection2, sql) => executeContentQuery(event, collection2, sql));
+};
+async function executeContentQuery(event, collection, sql) {
+  {
+    return fetchQuery(event, String(collection), sql);
+  }
+}
+const _sfc_main = /* @__PURE__ */ defineComponent({
+  __name: "index",
+  __ssrInlineRender: true,
+  async setup(__props) {
+    let __temp, __restore;
+    const sections = [
+      { "key": "pipeline", "label": "Pipeline" },
+      { "key": "rolesTable", "label": "Roles table" },
+      { "key": "cvd", "label": "CVD vision" },
+      { "key": "roles", "label": "Roles" },
+      { "key": "components", "label": "Components" },
+      { "key": "spectrum", "label": "Spectrum" },
+      { "key": "motion", "label": "Motion" },
+      { "key": "spaces", "label": "Spaces" },
+      { "key": "schema", "label": "Schema" },
+      { "key": "clamps", "label": "Clamps" }
+    ];
+    const { data: allDocs } = ([__temp, __restore] = withAsyncContext(() => useAsyncData("alldocs", () => queryCollection("docs").all())), __temp = await __temp, __restore(), __temp);
+    return (_ctx, _push, _parent, _attrs) => {
+      const _component_TableOfContentsBar = __nuxt_component_0$1;
+      const _component_HeroBanner = __nuxt_component_1;
+      const _component_UContainer = _sfc_main$u;
+      const _component_PaletteControls = __nuxt_component_3;
+      const _component_CylinderCarousel = __nuxt_component_4;
+      const _component_LiveComponents = __nuxt_component_5;
+      const _component_ResolvedRoles = __nuxt_component_6;
+      const _component_RolesTable = __nuxt_component_7;
+      const _component_ColorSpaces = __nuxt_component_8;
+      const _component_PipelineExplainer = __nuxt_component_9;
+      const _component_SchemaTree = __nuxt_component_10;
+      const _component_MotionShowcase = __nuxt_component_11;
+      const _component_CvdVision = __nuxt_component_12;
+      const _component_RoleClamps = __nuxt_component_13;
+      const _component_PaletteCarousel = __nuxt_component_14;
+      const _component_MultiOutput = __nuxt_component_15;
+      const _component_UCard = _sfc_main$t;
+      const _component_ContentRenderer = __nuxt_component_17;
+      _push(`<div${ssrRenderAttrs(mergeProps({ class: "space-y-8 pb-24" }, _attrs))}>`);
+      _push(ssrRenderComponent(_component_TableOfContentsBar, { items: sections }, null, _parent));
+      _push(ssrRenderComponent(_component_HeroBanner, null, null, _parent));
+      _push(ssrRenderComponent(_component_UContainer, { class: "space-y-5" }, {
+        default: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(ssrRenderComponent(_component_PaletteControls, null, null, _parent2, _scopeId));
+            _push2(ssrRenderComponent(_component_CylinderCarousel, { items: sections }, {
+              default: withCtx(({ item }, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  if (item.key === "components") {
+                    _push3(ssrRenderComponent(_component_LiveComponents, null, null, _parent3, _scopeId2));
+                  } else if (item.key === "roles") {
+                    _push3(ssrRenderComponent(_component_ResolvedRoles, null, null, _parent3, _scopeId2));
+                  } else if (item.key === "rolesTable") {
+                    _push3(ssrRenderComponent(_component_RolesTable, null, null, _parent3, _scopeId2));
+                  } else if (item.key === "spaces") {
+                    _push3(ssrRenderComponent(_component_ColorSpaces, null, null, _parent3, _scopeId2));
+                  } else if (item.key === "pipeline") {
+                    _push3(ssrRenderComponent(_component_PipelineExplainer, null, null, _parent3, _scopeId2));
+                  } else if (item.key === "schema") {
+                    _push3(ssrRenderComponent(_component_SchemaTree, null, null, _parent3, _scopeId2));
+                  } else if (item.key === "motion") {
+                    _push3(ssrRenderComponent(_component_MotionShowcase, null, null, _parent3, _scopeId2));
+                  } else if (item.key === "cvd") {
+                    _push3(ssrRenderComponent(_component_CvdVision, null, null, _parent3, _scopeId2));
+                  } else if (item.key === "clamps") {
+                    _push3(ssrRenderComponent(_component_RoleClamps, null, null, _parent3, _scopeId2));
+                  } else if (item.key === "spectrum") {
+                    _push3(`<div class="space-y-3"${_scopeId2}><p class="text-sm text-muted"${_scopeId2}> The full 50→950 ramp per alias. </p>`);
+                    _push3(ssrRenderComponent(_component_PaletteCarousel, null, null, _parent3, _scopeId2));
+                    _push3(`</div>`);
+                  } else {
+                    _push3(`<!---->`);
+                  }
+                } else {
+                  return [
+                    item.key === "components" ? (openBlock(), createBlock(_component_LiveComponents, { key: 0 })) : item.key === "roles" ? (openBlock(), createBlock(_component_ResolvedRoles, { key: 1 })) : item.key === "rolesTable" ? (openBlock(), createBlock(_component_RolesTable, { key: 2 })) : item.key === "spaces" ? (openBlock(), createBlock(_component_ColorSpaces, { key: 3 })) : item.key === "pipeline" ? (openBlock(), createBlock(_component_PipelineExplainer, { key: 4 })) : item.key === "schema" ? (openBlock(), createBlock(_component_SchemaTree, { key: 5 })) : item.key === "motion" ? (openBlock(), createBlock(_component_MotionShowcase, { key: 6 })) : item.key === "cvd" ? (openBlock(), createBlock(_component_CvdVision, { key: 7 })) : item.key === "clamps" ? (openBlock(), createBlock(_component_RoleClamps, { key: 8 })) : item.key === "spectrum" ? (openBlock(), createBlock("div", {
+                      key: 9,
+                      class: "space-y-3"
+                    }, [
+                      createVNode("p", { class: "text-sm text-muted" }, " The full 50→950 ramp per alias. "),
+                      createVNode(_component_PaletteCarousel)
+                    ])) : createCommentVNode("", true)
+                  ];
+                }
+              }),
+              _: 1
+            }, _parent2, _scopeId));
+            _push2(ssrRenderComponent(_component_MultiOutput, null, null, _parent2, _scopeId));
+            if (unref(allDocs) && unref(allDocs).length > 0) {
+              _push2(`<div class="mt-32 space-y-12 border-t border-default pt-24"${_scopeId}><!--[-->`);
+              ssrRenderList(unref(allDocs), (doc) => {
+                _push2(ssrRenderComponent(_component_UCard, {
+                  key: doc.path,
+                  id: doc.path.replace(/[^a-zA-Z0-9-]/g, "-").replace(/^-+|-+$/g, ""),
+                  class: "scroll-mt-24"
+                }, {
+                  header: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                    if (_push3) {
+                      _push3(`<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2"${_scopeId2}><span${_scopeId2}></span><h2 class="text-center text-xl font-bold tracking-tight text-highlighted"${_scopeId2}>${ssrInterpolate(doc.title || doc.path)}</h2><span${_scopeId2}></span></div>`);
+                    } else {
+                      return [
+                        createVNode("div", { class: "grid grid-cols-[1fr_auto_1fr] items-center gap-2" }, [
+                          createVNode("span"),
+                          createVNode("h2", { class: "text-center text-xl font-bold tracking-tight text-highlighted" }, toDisplayString(doc.title || doc.path), 1),
+                          createVNode("span")
+                        ])
+                      ];
+                    }
+                  }),
+                  default: withCtx((_2, _push3, _parent3, _scopeId2) => {
+                    if (_push3) {
+                      _push3(`<article class="prose prose-primary dark:prose-invert max-w-none"${_scopeId2}>`);
+                      _push3(ssrRenderComponent(_component_ContentRenderer, { value: doc }, null, _parent3, _scopeId2));
+                      _push3(`</article>`);
+                    } else {
+                      return [
+                        createVNode("article", { class: "prose prose-primary dark:prose-invert max-w-none" }, [
+                          createVNode(_component_ContentRenderer, { value: doc }, null, 8, ["value"])
+                        ])
+                      ];
+                    }
+                  }),
+                  _: 2
+                }, _parent2, _scopeId));
+              });
+              _push2(`<!--]--></div>`);
+            } else {
+              _push2(`<!---->`);
+            }
+          } else {
+            return [
+              createVNode(_component_PaletteControls),
+              createVNode(_component_CylinderCarousel, { items: sections }, {
+                default: withCtx(({ item }) => [
+                  item.key === "components" ? (openBlock(), createBlock(_component_LiveComponents, { key: 0 })) : item.key === "roles" ? (openBlock(), createBlock(_component_ResolvedRoles, { key: 1 })) : item.key === "rolesTable" ? (openBlock(), createBlock(_component_RolesTable, { key: 2 })) : item.key === "spaces" ? (openBlock(), createBlock(_component_ColorSpaces, { key: 3 })) : item.key === "pipeline" ? (openBlock(), createBlock(_component_PipelineExplainer, { key: 4 })) : item.key === "schema" ? (openBlock(), createBlock(_component_SchemaTree, { key: 5 })) : item.key === "motion" ? (openBlock(), createBlock(_component_MotionShowcase, { key: 6 })) : item.key === "cvd" ? (openBlock(), createBlock(_component_CvdVision, { key: 7 })) : item.key === "clamps" ? (openBlock(), createBlock(_component_RoleClamps, { key: 8 })) : item.key === "spectrum" ? (openBlock(), createBlock("div", {
+                    key: 9,
+                    class: "space-y-3"
+                  }, [
+                    createVNode("p", { class: "text-sm text-muted" }, " The full 50→950 ramp per alias. "),
+                    createVNode(_component_PaletteCarousel)
+                  ])) : createCommentVNode("", true)
+                ]),
+                _: 1
+              }),
+              createVNode(_component_MultiOutput),
+              unref(allDocs) && unref(allDocs).length > 0 ? (openBlock(), createBlock("div", {
+                key: 0,
+                class: "mt-32 space-y-12 border-t border-default pt-24"
+              }, [
+                (openBlock(true), createBlock(Fragment, null, renderList(unref(allDocs), (doc) => {
+                  return openBlock(), createBlock(_component_UCard, {
+                    key: doc.path,
+                    id: doc.path.replace(/[^a-zA-Z0-9-]/g, "-").replace(/^-+|-+$/g, ""),
+                    class: "scroll-mt-24"
+                  }, {
+                    header: withCtx(() => [
+                      createVNode("div", { class: "grid grid-cols-[1fr_auto_1fr] items-center gap-2" }, [
+                        createVNode("span"),
+                        createVNode("h2", { class: "text-center text-xl font-bold tracking-tight text-highlighted" }, toDisplayString(doc.title || doc.path), 1),
+                        createVNode("span")
+                      ])
+                    ]),
+                    default: withCtx(() => [
+                      createVNode("article", { class: "prose prose-primary dark:prose-invert max-w-none" }, [
+                        createVNode(_component_ContentRenderer, { value: doc }, null, 8, ["value"])
+                      ])
+                    ]),
+                    _: 2
+                  }, 1032, ["id"]);
+                }), 128))
+              ])) : createCommentVNode("", true)
+            ];
+          }
+        }),
+        _: 1
+      }, _parent));
+      _push(`</div>`);
+    };
+  }
+});
+const _sfc_setup = _sfc_main.setup;
+_sfc_main.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("pages/index.vue");
+  return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
+};
+const index = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  default: _sfc_main
+}, Symbol.toStringTag, { value: "Module" }));
+
+export { CodeBlock as C, globalVscodeTheme as g, index as i };
+//# sourceMappingURL=index-yCAGl1nt.mjs.map

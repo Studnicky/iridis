@@ -1,0 +1,217 @@
+import { computed, mergeProps, unref, withCtx, renderSlot, createVNode, toDisplayString, useSlots, openBlock, createBlock, createCommentVNode, useSSRContext } from 'vue';
+import { ssrRenderComponent, ssrRenderSlot, ssrRenderClass, ssrInterpolate } from 'vue/server-renderer';
+import { z as useComponentProps, S as useLocale, B as useAppConfig, C as tv, ae as transformUI, G as _sfc_main$f, D as useForwardProps } from './server.mjs';
+import { C as CollapsibleRoot_default, a as CollapsibleTrigger_default, b as CollapsibleContent_default } from './CollapsibleTrigger-Ci7Nuceh.mjs';
+import { reactivePick } from '@vueuse/core';
+import '../nitro/nitro.mjs';
+import 'node:http';
+import 'node:https';
+import 'node:events';
+import 'node:buffer';
+import 'node:fs';
+import 'node:path';
+import 'node:crypto';
+import 'node:url';
+import '@iconify/utils';
+import 'consola';
+import 'better-sqlite3';
+import 'vue-router';
+import '@iconify/vue';
+import 'tailwindcss/colors';
+import '@vueuse/shared';
+import 'tailwind-variants';
+import '@iconify/utils/lib/css/icon';
+import '@studnicky/logger';
+import '@studnicky/errors';
+import '@studnicky/logger/builders';
+import '@studnicky/logger/constants';
+import '@studnicky/json';
+import '@studnicky/fsm';
+import '../routes/renderer.mjs';
+import 'vue-bundle-renderer/runtime';
+import 'unhead/server';
+import 'devalue';
+import 'unhead/utils';
+import './useId-DlF9G45c.mjs';
+
+const theme$1 = {
+  "slots": {
+    "root": "",
+    "content": "data-[state=open]:animate-[collapsible-down_200ms_ease-out] data-[state=closed]:animate-[collapsible-up_200ms_ease-out] data-[state=closed]:overflow-hidden"
+  }
+};
+const _sfc_main$1 = {
+  __name: "UCollapsible",
+  __ssrInlineRender: true,
+  props: {
+    as: { type: null, required: false },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false },
+    defaultOpen: { type: Boolean, required: false },
+    open: { type: Boolean, required: false },
+    disabled: { type: Boolean, required: false },
+    unmountOnHide: { type: Boolean, required: false, default: true }
+  },
+  emits: ["update:open"],
+  setup(__props, { emit: __emit }) {
+    const _props = __props;
+    const emits = __emit;
+    const slots = useSlots();
+    const props = useComponentProps("collapsible", _props);
+    const appConfig = useAppConfig();
+    const rootProps = useForwardProps(reactivePick(props, "as", "defaultOpen", "open", "disabled", "unmountOnHide"), emits);
+    const ui = computed(() => tv({ extend: tv(theme$1), ...appConfig.ui?.collapsible || {} })());
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(ssrRenderComponent(unref(CollapsibleRoot_default), mergeProps(unref(rootProps), {
+        "data-slot": "root",
+        class: ui.value.root({ class: [unref(props).ui?.root, unref(props).class] })
+      }, _attrs), {
+        default: withCtx(({ open }, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            if (!!slots.default) {
+              _push2(ssrRenderComponent(unref(CollapsibleTrigger_default), { "as-child": "" }, {
+                default: withCtx((_, _push3, _parent3, _scopeId2) => {
+                  if (_push3) {
+                    ssrRenderSlot(_ctx.$slots, "default", { open }, null, _push3, _parent3, _scopeId2);
+                  } else {
+                    return [
+                      renderSlot(_ctx.$slots, "default", { open })
+                    ];
+                  }
+                }),
+                _: 2
+              }, _parent2, _scopeId));
+            } else {
+              _push2(`<!---->`);
+            }
+            _push2(ssrRenderComponent(unref(CollapsibleContent_default), {
+              "data-slot": "content",
+              class: ui.value.content({ class: unref(props).ui?.content })
+            }, {
+              default: withCtx((_, _push3, _parent3, _scopeId2) => {
+                if (_push3) {
+                  ssrRenderSlot(_ctx.$slots, "content", {}, null, _push3, _parent3, _scopeId2);
+                } else {
+                  return [
+                    renderSlot(_ctx.$slots, "content")
+                  ];
+                }
+              }),
+              _: 2
+            }, _parent2, _scopeId));
+          } else {
+            return [
+              !!slots.default ? (openBlock(), createBlock(unref(CollapsibleTrigger_default), {
+                key: 0,
+                "as-child": ""
+              }, {
+                default: withCtx(() => [
+                  renderSlot(_ctx.$slots, "default", { open })
+                ]),
+                _: 2
+              }, 1024)) : createCommentVNode("", true),
+              createVNode(unref(CollapsibleContent_default), {
+                "data-slot": "content",
+                class: ui.value.content({ class: unref(props).ui?.content })
+              }, {
+                default: withCtx(() => [
+                  renderSlot(_ctx.$slots, "content")
+                ]),
+                _: 3
+              }, 8, ["class"])
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+    };
+  }
+};
+const _sfc_setup$1 = _sfc_main$1.setup;
+_sfc_main$1.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/Collapsible.vue");
+  return _sfc_setup$1 ? _sfc_setup$1(props, ctx) : void 0;
+};
+const theme = {
+  "slots": {
+    "root": "my-5",
+    "trigger": [
+      "group relative rounded-xs inline-flex items-center gap-1.5 text-muted hover:text-default text-sm outline-primary/25 focus-visible:outline-3",
+      "transition-colors"
+    ],
+    "triggerIcon": "size-4 shrink-0 group-data-[state=open]:rotate-180 transition-transform duration-200",
+    "triggerLabel": "truncate",
+    "content": "*:first:mt-2.5 *:last:mb-0 *:my-1.5"
+  }
+};
+const _sfc_main = {
+  __name: "ProseCollapsible",
+  __ssrInlineRender: true,
+  props: {
+    icon: { type: null, required: false },
+    name: { type: String, required: false },
+    openText: { type: String, required: false },
+    closeText: { type: String, required: false },
+    class: { type: null, required: false },
+    ui: { type: Object, required: false }
+  },
+  setup(__props) {
+    const _props = __props;
+    const props = useComponentProps("prose.collapsible", _props);
+    const { t } = useLocale();
+    const appConfig = useAppConfig();
+    const ui = computed(() => tv({ extend: tv(theme), ...appConfig.ui?.prose?.collapsible || {} })());
+    return (_ctx, _push, _parent, _attrs) => {
+      _push(ssrRenderComponent(_sfc_main$1, mergeProps({
+        "unmount-on-hide": false,
+        class: unref(props).class,
+        ui: unref(transformUI)(ui.value, unref(props).ui)
+      }, _attrs), {
+        default: withCtx(({ open }, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            _push2(`<button class="${ssrRenderClass(ui.value.trigger({ class: unref(props).ui?.trigger }))}"${_scopeId}>`);
+            _push2(ssrRenderComponent(_sfc_main$f, {
+              name: unref(props).icon || unref(appConfig).ui.icons.chevronDown,
+              class: ui.value.triggerIcon({ class: unref(props).ui?.triggerIcon })
+            }, null, _parent2, _scopeId));
+            _push2(`<span class="${ssrRenderClass(ui.value.triggerLabel({ class: unref(props).ui?.triggerLabel }))}"${_scopeId}>${ssrInterpolate(open ? unref(props).closeText || unref(t)("prose.collapsible.closeText") : unref(props).openText || unref(t)("prose.collapsible.openText"))} ${ssrInterpolate(unref(props).name || unref(t)("prose.collapsible.name"))}</span></button>`);
+          } else {
+            return [
+              createVNode("button", {
+                class: ui.value.trigger({ class: unref(props).ui?.trigger })
+              }, [
+                createVNode(_sfc_main$f, {
+                  name: unref(props).icon || unref(appConfig).ui.icons.chevronDown,
+                  class: ui.value.triggerIcon({ class: unref(props).ui?.triggerIcon })
+                }, null, 8, ["name", "class"]),
+                createVNode("span", {
+                  class: ui.value.triggerLabel({ class: unref(props).ui?.triggerLabel })
+                }, toDisplayString(open ? unref(props).closeText || unref(t)("prose.collapsible.closeText") : unref(props).openText || unref(t)("prose.collapsible.openText")) + " " + toDisplayString(unref(props).name || unref(t)("prose.collapsible.name")), 3)
+              ], 2)
+            ];
+          }
+        }),
+        content: withCtx((_, _push2, _parent2, _scopeId) => {
+          if (_push2) {
+            ssrRenderSlot(_ctx.$slots, "default", {}, null, _push2, _parent2, _scopeId);
+          } else {
+            return [
+              renderSlot(_ctx.$slots, "default")
+            ];
+          }
+        }),
+        _: 3
+      }, _parent));
+    };
+  }
+};
+const _sfc_setup = _sfc_main.setup;
+_sfc_main.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("../../node_modules/@nuxt/ui/dist/runtime/components/prose/Collapsible.vue");
+  return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
+};
+
+export { _sfc_main as default };
+//# sourceMappingURL=Collapsible-BFGch9Up.mjs.map

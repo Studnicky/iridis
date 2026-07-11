@@ -1,0 +1,57 @@
+{
+  "name": "vue-bundle-renderer",
+  "version": "2.3.1",
+  "description": "Bundle Renderer for Vue 3.0",
+  "repository": {
+    "type": "git",
+    "url": "nuxt-contrib/vue-bundle-renderer"
+  },
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.mts",
+      "import": "./dist/runtime.mjs",
+      "require": "./dist/runtime.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist",
+    "runtime.d.ts"
+  ],
+  "dependencies": {
+    "ufo": "^1.6.4"
+  },
+  "devDependencies": {
+    "@codspeed/vitest-plugin": "^5.6.0",
+    "@nuxt/eslint-config": "^1.16.0",
+    "@types/node": "^24.13.2",
+    "@types/semver": "^7.7.1",
+    "@vitest/coverage-v8": "^4.1.9",
+    "changelogen": "^0.6.2",
+    "eslint": "^10.5.0",
+    "pkg-pr-new": "^0.0.75",
+    "semver": "^7.8.5",
+    "std-env": "^4.1.0",
+    "tsdown": "0.22.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "4.1.9",
+    "vue": "3.5.38"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "vitest",
+    "lint": "eslint src",
+    "test": "pnpm lint && pnpm vitest run --coverage && tsc --noEmit",
+    "bench": "vitest bench"
+  }
+}

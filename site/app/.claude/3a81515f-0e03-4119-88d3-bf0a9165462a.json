@@ -1,0 +1,19 @@
+{
+  "accessedPaths": [
+    "/Users/studs/Workspace/iridis/site/app/components/content/CodeBlock.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/MultiOutput.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/layout/CylinderCarousel.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/PaletteControls.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/ResolvedRoles.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/RolesTable.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/ColorSpaces.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/CommandPaletteDemo.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/PipelineExplainer.vue",
+    "/Users/studs/Workspace/iridis/site/app/composables/useIridis.ts",
+    "/Users/studs/Workspace/iridis/site/app/components/content/SchemaTree.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/HistogramDemo.vue",
+    "/Users/studs/Workspace/iridis/packages/chakra/src/tasks/EmitChakraTheme.ts",
+    "/Users/studs/Workspace/iridis/site/app/components/content/MotionShowcase.vue"
+  ],
+  "updatedAt": "2026-07-09T05:39:56.676Z"
+}

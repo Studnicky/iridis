@@ -1,0 +1,35 @@
+{
+  "contextPercentage": 17,
+  "updatedAt": "2026-07-09T17:16:09.482Z",
+  "lastBranch": "develop",
+  "selectedLinearKey": null,
+  "promptSummary": "Cleanup branches/stashes/worktrees",
+  "taskClassification": "refactor",
+  "taskKeywords": [
+    "branches/stashes/worktrees"
+  ],
+  "compactionGrepCount": 0,
+  "compactionGrepPatterns": [],
+  "sessionName": null,
+  "promptCount": 14,
+  "githubState": null,
+  "accessedPaths": [
+    "/Users/studs/Workspace/iridis/package.json",
+    "/Users/studs/Workspace/iridis/CHANGELOG.md",
+    "/Users/studs/Workspace/iridis/packages/capacitor/package.json",
+    "/Users/studs/Workspace/iridis/packages/chakra/package.json",
+    "/Users/studs/Workspace/iridis/packages/cli/package.json",
+    "/Users/studs/Workspace/iridis/packages/contrast/package.json",
+    "/Users/studs/Workspace/iridis/packages/core/package.json",
+    "/Users/studs/Workspace/iridis/packages/image/package.json",
+    "/Users/studs/Workspace/iridis/packages/mui/package.json",
+    "/Users/studs/Workspace/iridis/packages/panda/package.json",
+    "/Users/studs/Workspace/iridis/packages/rdf/package.json",
+    "/Users/studs/Workspace/iridis/packages/shadcn/package.json",
+    "/Users/studs/Workspace/iridis/packages/stylesheet/package.json",
+    "/Users/studs/Workspace/iridis/packages/tailwind/package.json",
+    "/Users/studs/Workspace/iridis/packages/vscode/package.json",
+    "/Users/studs/Workspace/iridis/.npmrc",
+    "/Users/studs/Workspace/iridis/.github/workflows/docs.yml"
+  ]
+}

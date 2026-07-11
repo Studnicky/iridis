@@ -1,0 +1,9 @@
+{
+  "pid": 56954,
+  "startedAt": 1783606951534,
+  "command": "dev",
+  "cwd": "/Users/studs/Workspace/iridis/site",
+  "port": 3000,
+  "hostname": "::1",
+  "url": "http://[::1]:3000"
+}

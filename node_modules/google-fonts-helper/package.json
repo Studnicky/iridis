@@ -1,0 +1,48 @@
+{
+  "name": "google-fonts-helper",
+  "version": "3.7.4",
+  "description": "Google Fonts Helper",
+  "repository": "datalogix/google-fonts-helper",
+  "license": "MIT",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "vitest",
+    "lint": "eslint --ext .ts,.js .",
+    "prepack": "unbuild",
+    "release": "pnpm test && pnpm build && changelogen --release --push && pnpm publish",
+    "test": "pnpm lint && vitest run --coverage"
+  },
+  "dependencies": {
+    "deepmerge": "^4.3.1",
+    "hookable": "^5.5.3",
+    "ofetch": "^1.4.1",
+    "ufo": "^1.5.4"
+  },
+  "devDependencies": {
+    "@nuxtjs/eslint-config-typescript": "latest",
+    "@types/fs-extra": "latest",
+    "@vitest/coverage-v8": "latest",
+    "changelogen": "latest",
+    "eslint": "latest",
+    "tempy": "latest",
+    "typescript": "latest",
+    "unbuild": "latest",
+    "vitest": "latest"
+  },
+  "packageManager": "pnpm@10.6.2"
+}

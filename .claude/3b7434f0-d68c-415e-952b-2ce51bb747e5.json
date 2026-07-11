@@ -1,0 +1,33 @@
+{
+  "contextPercentage": 47,
+  "updatedAt": "2026-07-11T01:44:07.943Z",
+  "lastBranch": "gh-pages",
+  "selectedLinearKey": null,
+  "promptSummary": "https://studnicky.github.io/iridis/ <- still the old page i…",
+  "taskClassification": "unknown",
+  "taskKeywords": [
+    "https",
+    "//studnicky",
+    "github",
+    "io/iridis/",
+    "still",
+    "old",
+    "page",
+    "deployed",
+    "via",
+    "workflow",
+    "branch",
+    "claim",
+    "victory",
+    "berore",
+    "verify"
+  ],
+  "compactionGrepCount": 0,
+  "compactionGrepPatterns": [],
+  "sessionName": null,
+  "promptCount": 5,
+  "githubState": null,
+  "accessedPaths": [
+    "/Users/studs/Workspace/iridis/CHANGELOG.md"
+  ]
+}

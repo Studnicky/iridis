@@ -1,0 +1,33 @@
+{
+  "contextPercentage": 87,
+  "updatedAt": "2026-07-09T04:58:43.525Z",
+  "lastBranch": "feature/nuxt-site-sprout",
+  "selectedLinearKey": null,
+  "promptSummary": "/enginseer:confidence",
+  "taskClassification": "unknown",
+  "taskKeywords": [
+    "/enginseer",
+    "confidence"
+  ],
+  "compactionGrepCount": 0,
+  "compactionGrepPatterns": [],
+  "sessionName": null,
+  "promptCount": 11,
+  "accessedPaths": [
+    "/Users/studs/Workspace/iridis/site/app/theme/Tokens.ts",
+    "/Users/studs/Workspace/iridis/site/app/composables/useIridis.ts",
+    "/Users/studs/Workspace/iridis/site/app/app.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/CylinderCarousel.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/ModeSwitch.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/ResolvedRoles.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/CommandPaletteDemo.vue",
+    "/Users/studs/Workspace/iridis/site/app/pages/index.vue",
+    "/Users/studs/Workspace/iridis/site/package.json",
+    "/Users/studs/Workspace/iridis/site/app/components/content/HistogramDemo.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/PipelineExplainer.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/RolesTable.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/LiveComponents.vue",
+    "/Users/studs/Workspace/iridis/site/app/components/content/CodeBlock.vue"
+  ],
+  "githubState": null
+}

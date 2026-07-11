@@ -1,0 +1,17 @@
+{
+  "rootBlock": ":root {\n  --c-canvas: #e5e0fe;\n  --c-surface: #d2c9fb;\n  --c-accent: #8b5cf6;\n  --c-border: #8b5cf6;\n  --c-muted: #8b5cf6;\n  --c-text: #28015b;\n  --c-on-accent: #ffffff;\n}",
+  "scopedBlock": "[data-category='music'] {\n  --c-canvas: #e5e0fe;\n  --c-surface: #d2c9fb;\n  --c-accent: #8b5cf6;\n  --c-border: #8b5cf6;\n  --c-muted: #8b5cf6;\n  --c-text: #28015b;\n  --c-on-accent: #ffffff;\n}",
+  "darkScheme": "@media (prefers-color-scheme: dark) {\n  :root {\n    --c-canvas: #02000a;\n    --c-surface: #0c0222;\n    --c-accent: #5201ad;\n    --c-border: #5201ad;\n    --c-muted: #5201ad;\n    --c-text: #b19cfd;\n    --c-on-accent: #000000;\n  }\n}",
+  "forcedColors": "@media (forced-colors: active) {\n  :root {\n    --c-canvas: Canvas;\n    --c-surface: Canvas;\n    --c-accent: Highlight;\n    --c-border: GrayText;\n    --c-muted: GrayText;\n    --c-text: CanvasText;\n    --c-on-accent: CanvasText;\n  }\n}",
+  "wideGamut": "@supports (color: color(display-p3 0 0 0)) {\n  :root {\n    --c-canvas: color(display-p3 0.8987 0.7743 1.0000);\n    --c-surface: color(display-p3 0.8228 0.6957 1.0000);\n    --c-text: color(display-p3 0.1629 0.0000 0.4694);\n    --c-on-accent: color(display-p3 1.0000 0.8805 1.0000);\n  }\n}",
+  "full": ":root {\n  --c-canvas: #e5e0fe;\n  --c-surface: #d2c9fb;\n  --c-accent: #8b5cf6;\n  --c-border: #8b5cf6;\n  --c-muted: #8b5cf6;\n  --c-text: #28015b;\n  --c-on-accent: #ffffff;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --c-canvas: #02000a;\n    --c-surface: #0c0222;\n    --c-accent: #5201ad;\n    --c-border: #5201ad;\n    --c-muted: #5201ad;\n    --c-text: #b19cfd;\n    --c-on-accent: #000000;\n  }\n}\n\n@supports (color: color(display-p3 0 0 0)) {\n  :root {\n    --c-canvas: color(display-p3 0.8987 0.7743 1.0000);\n    --c-surface: color(display-p3 0.8228 0.6957 1.0000);\n    --c-text: color(display-p3 0.1629 0.0000 0.4694);\n    --c-on-accent: color(display-p3 1.0000 0.8805 1.0000);\n  }\n}\n\n@media (forced-colors: active) {\n  :root {\n    --c-canvas: Canvas;\n    --c-surface: Canvas;\n    --c-accent: Highlight;\n    --c-border: GrayText;\n    --c-muted: GrayText;\n    --c-text: CanvasText;\n    --c-on-accent: CanvasText;\n  }\n}",
+  "map": {
+    "canvas": "--c-canvas",
+    "surface": "--c-surface",
+    "accent": "--c-accent",
+    "border": "--c-border",
+    "muted": "--c-muted",
+    "text": "--c-text",
+    "onAccent": "--c-on-accent"
+  }
+}

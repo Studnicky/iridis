@@ -1,0 +1,8 @@
+const PaletteCarousel_vue_vue_type_style_index_0_scoped_881d2c64_lang = ".palette-grid[data-v-881d2c64]{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;padding-bottom:2rem;width:100%}.grid-item[data-v-881d2c64]{height:260px;width:100%}";
+
+const PaletteCarouselStyles_DXZbUm1O = [
+  PaletteCarousel_vue_vue_type_style_index_0_scoped_881d2c64_lang
+];
+
+export { PaletteCarouselStyles_DXZbUm1O as default };
+//# sourceMappingURL=PaletteCarousel-styles.DXZbUm1O.mjs.map

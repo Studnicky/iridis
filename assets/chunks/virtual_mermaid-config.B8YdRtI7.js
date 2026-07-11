@@ -1,0 +1,1 @@
+const r={securityLevel:"loose",startOnLoad:!1,theme:"base",themeVariables:{fontFamily:"var(--vp-font-family-mono)",background:"var(--iridis-bg-soft)",primaryColor:"var(--iridis-brand)",primaryTextColor:"var(--iridis-on-brand)",lineColor:"var(--iridis-divider)",textColor:"var(--iridis-text)"}};export{r as default};

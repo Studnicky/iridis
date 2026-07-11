@@ -1,0 +1,9 @@
+{
+  "name": "nuxt-component-meta",
+  "configKey": "componentMeta",
+  "version": "0.17.2",
+  "builder": {
+    "@nuxt/module-builder": "1.0.2",
+    "unbuild": "3.6.1"
+  }
+}

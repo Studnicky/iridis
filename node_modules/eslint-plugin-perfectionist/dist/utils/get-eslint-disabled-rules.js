@@ -1,0 +1,116 @@
+/**
+ * Array of all ESLint disable directive types. Used to identify and parse
+ * ESLint disable comments in source code.
+ */
+var eslintDisableDirectives = [
+  'eslint-disable',
+  'eslint-enable',
+  'eslint-disable-line',
+  'eslint-disable-next-line',
+]
+/**
+ * Parses an ESLint disable comment to extract the directive type and affected
+ * rules.
+ *
+ * Analyzes comment text to determine if it contains an ESLint disable directive
+ * and which rules are affected. Returns null if the comment is not a valid
+ * ESLint disable directive.
+ *
+ * @example
+ *
+ * ```ts
+ * getEslintDisabledRules('eslint-disable')
+ * // Returns: { eslintDisableDirective: 'eslint-disable', rules: 'all' }
+ * ```
+ *
+ * @example
+ *
+ * ```ts
+ * getEslintDisabledRules('eslint-disable-next-line no-console, no-alert')
+ * // Returns: {
+ * //   eslintDisableDirective: 'eslint-disable-next-line',
+ * //   rules: ['no-console', 'no-alert']
+ * // }
+ * ```
+ *
+ * @example
+ *
+ * ```ts
+ * getEslintDisabledRules('regular comment')
+ * // Returns: null
+ * ```
+ *
+ * @param comment - Comment text to parse (without comment delimiters).
+ * @returns Object containing directive type and affected rules, or null if not
+ *   a disable comment.
+ */
+function getEslintDisabledRules(comment) {
+  for (let eslintDisableDirective of eslintDisableDirectives) {
+    let disabledRules = getEslintDisabledRulesByType(
+      comment,
+      eslintDisableDirective,
+    )
+    if (disabledRules) {
+      return {
+        eslintDisableDirective,
+        rules: disabledRules,
+      }
+    }
+  }
+  return null
+}
+/**
+ * Extracts disabled rules from a comment for a specific ESLint directive type.
+ *
+ * Attempts to parse the comment as the specified ESLint disable directive.
+ * Returns the list of disabled rules if the comment matches the directive,
+ * 'all' if no specific rules are mentioned (global disable), or null if the
+ * comment doesn't match the directive pattern.
+ *
+ * @example
+ *
+ * ```ts
+ * getEslintDisabledRulesByType('eslint-disable', 'eslint-disable')
+ * // Returns: 'all'
+ * ```
+ *
+ * @example
+ *
+ * ```ts
+ * getEslintDisabledRulesByType(
+ *   'eslint-disable-line rule1, rule2',
+ *   'eslint-disable-line',
+ * )
+ * // Returns: ['rule1', 'rule2']
+ * ```
+ *
+ * @example
+ *
+ * ```ts
+ * getEslintDisabledRulesByType(
+ *   'eslint-disable-line rule1',
+ *   'eslint-disable-next-line',
+ * )
+ * // Returns: null (wrong directive type)
+ * ```
+ *
+ * @param comment - Comment text to parse.
+ * @param eslintDisableDirective - Specific directive type to match against.
+ * @returns Array of rule names, 'all' for global disable, or null if no match.
+ */
+function getEslintDisabledRulesByType(comment, eslintDisableDirective) {
+  let trimmedCommentValue = comment.trim()
+  if (eslintDisableDirective === trimmedCommentValue) {
+    return 'all'
+  }
+  let regexp = new RegExp(String.raw`^${eslintDisableDirective} ((?:.|\s)*)$`)
+  let disableRulesMatchValue = trimmedCommentValue.match(regexp)?.[1]
+  if (!disableRulesMatchValue) {
+    return null
+  }
+  return disableRulesMatchValue
+    .split(',')
+    .map(rule => rule.trim())
+    .filter(rule => !!rule)
+}
+export { getEslintDisabledRules }

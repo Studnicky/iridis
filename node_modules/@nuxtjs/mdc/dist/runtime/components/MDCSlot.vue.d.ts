@@ -1,0 +1,57 @@
+import type { Slot } from 'vue';
+/**
+ * MDCSlot component
+ */
+declare const _default: typeof __VLS_export;
+export default _default;
+declare const __VLS_export: import("vue").DefineComponent<import("vue").ExtractPropTypes<{
+    name: {
+        type: StringConstructor;
+        default: string;
+    };
+    /**
+     * Tags to unwrap separated by spaces
+     * Example: 'ul li'
+     */
+    unwrap: {
+        type: (StringConstructor | BooleanConstructor)[];
+        default: boolean;
+    };
+    /**
+     * VNode to render
+     * This is only useful for render functions
+     */
+    use: {
+        type: FunctionConstructor;
+        default: undefined;
+    };
+}>, {
+    fallbackSlot: Slot<any> | undefined;
+    tags: import("vue").ComputedRef<string[]>;
+    parent: import("vue").ComponentInternalInstance | null;
+}, {}, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, {}, string, import("vue").PublicProps, Readonly<import("vue").ExtractPropTypes<{
+    name: {
+        type: StringConstructor;
+        default: string;
+    };
+    /**
+     * Tags to unwrap separated by spaces
+     * Example: 'ul li'
+     */
+    unwrap: {
+        type: (StringConstructor | BooleanConstructor)[];
+        default: boolean;
+    };
+    /**
+     * VNode to render
+     * This is only useful for render functions
+     */
+    use: {
+        type: FunctionConstructor;
+        default: undefined;
+    };
+}>> & Readonly<{}>, {
+    unwrap: string | boolean;
+    name: string;
+    use: Function;
+}, {}, {}, {}, string, import("vue").ComponentProvideOptions, true, {}, any>;
