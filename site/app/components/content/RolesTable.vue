@@ -3,28 +3,26 @@ import { computed, h, resolveComponent } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 
-/**
- * Every resolved role as a sortable data table — the same roleViews/roles
- * ResolvedRoles.vue shows as a swatch grid, reformatted for a dense, scannable
- * read: click a column header to sort by lightness, chroma, hue, or contrast.
- */
 const { roleViews, roles } = useIridis();
 const UButton = resolveComponent('UButton');
 const UBadge = resolveComponent('UBadge');
 
 const bg = computed<string>(() => roles.value['background'] ?? '#000000');
 
-type RowType = { 'name': string; 'hex': string; 'l': number; 'c': number; 'h': number; 'ratio': number; 'aa': boolean; 'aaa': boolean };
+type RowType = { 'name': string; 'hex': string; 'l': number; 'c': number; 'h': number; 'ratio': number; 'aa': boolean; 'aaa': boolean; 'compliance': string };
 
 const data = computed<RowType[]>(() => roleViews.value.map((r) => {
   const ratio = contrastRatio(r.hex, bg.value);
-  return { 'aa': ratio >= 4.5, 'aaa': ratio >= 7, 'c': r.c, 'h': r.h, 'hex': r.hex, 'l': r.l, 'name': r.name, 'ratio': ratio };
+  const aa = ratio >= 4.5;
+  const aaa = ratio >= 7;
+  return { 'aa': aa, 'aaa': aaa, 'c': r.c, 'compliance': aaa ? 'AAA' : aa ? 'AA' : 'fail', 'h': r.h, 'hex': r.hex, 'l': r.l, 'name': r.name, 'ratio': ratio };
 }));
 
 type SortColumnType = { 'getIsSorted': () => false | 'asc' | 'desc'; 'toggleSorting': (desc?: boolean) => void };
 
 function sortableHeader(label: string) {
   return ({ column }: { column: SortColumnType }) => {return h(UButton, {
+    'class': 'w-full justify-start',
     'color': 'neutral',
     'icon': column.getIsSorted() === 'asc' ? 'i-material-symbols-arrow-upward-rounded' : column.getIsSorted() === 'desc' ? 'i-material-symbols-arrow-downward-rounded' : 'i-material-symbols-unfold-more-rounded',
     'onClick': () => { column.toggleSorting(column.getIsSorted() === 'asc'); },
@@ -34,13 +32,13 @@ function sortableHeader(label: string) {
 }
 
 const columns = [
-  { 'accessorKey': 'name', 'header': sortableHeader('Role') },
-  { 'accessorKey': 'hex', 'header': 'Hex' },
-  { 'accessorKey': 'l', 'header': sortableHeader('L') },
-  { 'accessorKey': 'c', 'header': sortableHeader('C') },
-  { 'accessorKey': 'h', 'header': sortableHeader('H°') },
-  { 'accessorKey': 'ratio', 'header': sortableHeader('Ratio') },
-  { 'header': 'Compliance', 'id': 'compliance' }
+  { 'accessorKey': 'name', 'header': sortableHeader('Role'), 'size': 140 },
+  { 'accessorKey': 'hex', 'header': sortableHeader('Hex'), 'size': 100 },
+  { 'accessorKey': 'l', 'header': sortableHeader('L'), 'size': 60 },
+  { 'accessorKey': 'c', 'header': sortableHeader('C'), 'size': 60 },
+  { 'accessorKey': 'h', 'header': sortableHeader('H°'), 'size': 70 },
+  { 'accessorKey': 'ratio', 'header': sortableHeader('Ratio'), 'size': 70 },
+  { 'accessorKey': 'compliance', 'header': sortableHeader('Compliance'), 'size': 100 }
 ];
 </script>
 
@@ -62,32 +60,32 @@ const columns = [
     <p class="mb-3 text-sm text-muted">
       Same roles as the grid, laid out for sorting — click a header.
     </p>
-    <div class="overflow-x-auto">
+    <div class="w-full overflow-hidden">
       <UTable
         :data="data"
         :columns="columns"
-        class="min-w-[560px]"
+        class="w-full"
       >
         <template #hex-cell="{ row }">
-          <span class="inline-flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5">
             <span
-              class="h-4 w-4 shrink-0 rounded border border-default"
+              class="h-3 w-3 shrink-0 rounded border border-default"
               :style="{ backgroundColor: row.original.hex }"
             />
-            <span class="font-mono text-xs">{{ row.original.hex }}</span>
+            <span class="font-mono text-xs">{{ row.original.hex.slice(1) }}</span>
           </span>
         </template>
         <template #l-cell="{ row }">
-          {{ row.original.l.toFixed(3) }}
+          <span class="text-xs">{{ row.original.l.toFixed(2) }}</span>
         </template>
         <template #c-cell="{ row }">
-          {{ row.original.c.toFixed(3) }}
+          <span class="text-xs">{{ row.original.c.toFixed(2) }}</span>
         </template>
         <template #h-cell="{ row }">
-          {{ row.original.h.toFixed(1) }}°
+          <span class="text-xs">{{ row.original.h.toFixed(0) }}°</span>
         </template>
         <template #ratio-cell="{ row }">
-          {{ row.original.ratio.toFixed(2) }}
+          <span class="text-xs">{{ row.original.ratio.toFixed(2) }}</span>
         </template>
         <template #compliance-cell="{ row }">
           <UBadge
@@ -95,7 +93,7 @@ const columns = [
             variant="soft"
             size="xs"
           >
-            {{ row.original.aaa ? 'AAA' : row.original.aa ? 'AA' : 'fail' }}
+            {{ row.original.compliance }}
           </UBadge>
         </template>
       </UTable>
