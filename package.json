@@ -71,5 +71,5 @@
     "@studnicky/types": "^4.0.0",
     "@studnicky/virtual-fs": "^4.0.0"
   },
-  "version": "0.7.1"
+  "version": "0.8.0"
 }
