@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-rdf",
   "description": "Emits the resolved palette as an RDF/OWL graph with SHACL-shaped reasoning annotations.",
-  "version": "0.6.1",
+  "version": "0.7.1",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
