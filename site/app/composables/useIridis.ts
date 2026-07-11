@@ -154,7 +154,7 @@ const cvdCorrect = ref<boolean>(false);
  * (monochromatic, complementary, analogous, etc.) for each role. Passed
  * through metadata to ApplyDerivedColors task in the pipeline.
  */
-const derivationConfig = ref<DerivationConfig>(PRESET_DEFAULTS);
+const derivationConfig = ref<DerivationConfig>(PRESET_DEFAULTS['automatic']);
 
 /**
  * Visual CVD preview — purely a display-time filter over whatever the engine
