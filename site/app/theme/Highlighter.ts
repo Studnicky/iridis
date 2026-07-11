@@ -4,7 +4,7 @@ import { createHighlighter } from 'shiki';
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 
 /** Every language MultiOutput's tabs actually emit, plus markdown doc block languages. */
-export const SUPPORTED_LANGS = ['css', 'json', 'javascript', 'typescript', 'xml', 'html', 'bash'] as const;
+export const SUPPORTED_LANGS = ['css', 'json', 'javascript', 'typescript', 'xml', 'html', 'bash', 'turtle'] as const;
 export type SupportedLangType = (typeof SUPPORTED_LANGS)[number];
 
 let highlighterPromise: Promise<HighlighterGeneric<never, never>> | null = null;

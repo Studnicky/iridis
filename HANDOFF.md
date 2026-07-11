@@ -1,6 +1,6 @@
 # iridis, Handoff
 
-Pick this up cold? Read this first, then `docs/internal/architecture.md` for the layout and `docs/internal/outstanding.md` for the work queue.
+Pick this up cold? Read this first, then `NOTES/architecture.md` for the layout and `NOTES/outstanding.md` for the work queue.
 
 ## What it is
 
@@ -11,31 +11,30 @@ iridis is a chromatic pipeline for dynamic palette derivation. Pluggable, OKLCH-
 - Workspace monorepo at `/Users/studs/Workspace/iridis/`. npm workspaces (`packages/*`).
 - 9 packages in `packages/`: `core`, `cli`, `vscode`, `stylesheet`, `tailwind`, `image`, `contrast`, `capacitor`, `rdf`. All have lean tsconfigs, package.json `exports` pointing at `./src/*.ts`, and source files in place.
 - **`npx tsc --build` exits 0 across the workspace.** Last verified before this handoff.
-- VitePress docs scaffolded under `docs/` with iridescent brand palette + iridis-brand markdown plugin.
-- GitHub Pages workflow at `.github/workflows/docs.yml`.
-- Logo at `docs/public/logo.png`. Wired into vitepress theme + index hero.
-- Living-color v2 thesis at `docs/v2-living-color.md`.
+- `site/` is the one app: a Nuxt 4 app that runs the engine live, doubles as the interactive demo, and hosts the docs content (Nuxt Content pages under `site/content/`, plus in-page detail sections on the demo cards under `site/app/components/content/`).
+- GitHub Pages workflow at `.github/workflows/docs.yml` builds and deploys `site/` (`nuxt generate`).
+- The old VitePress site (`docs/`) is retired and deleted. Its product/demo pages were superseded by `site/`'s own components; its genuine reference/concept documentation was ported into `site/content/*.md` and detail sections in `site/app/components/content/*.vue`; its internal engineering notes moved to `NOTES/`.
+- Living-color v2 thesis is folded into the "Roadmap" section of `site/content/02-architecture.md`.
 
 ## Current state, outstanding
 
-See `docs/internal/outstanding.md` for the full queue. Top items:
+See `NOTES/outstanding.md` for the full queue. Top items:
 
 - 7 plugin e2e test suites (every plugin needs an e2e test file under `packages/<plugin>/tests/e2e/`)
-- 4 doc pages still queued: `docs/recipes/vscode-theme.md`, `docs/reference/{plugins,tasks,math}.md`
 - CLI smoke test verification (`npx tsx packages/cli/src/main.ts examples/vue-capacitor/category-w3c.config.json`)
 - Vue/Capacitor example service: verify imports still resolve cleanly after the type-hoist + dispatcher work
+- Broader front-end audit of `site/` (perf, a11y, broken interactables, extractable shared components) — planned, not yet started
 
 Verified shipped since the last handoff:
 
 - Type declarations hoisted to `packages/core/src/types/<domain>.ts`
 - Built-in docs schemas renamed to `iridis-4/8/12/16` (4 ⊂ 8 ⊂ 12 ⊂ 16, each a `{ dark, light }` pair)
-- State-machine dispatcher (`docs/.vitepress/theme/stores/themeDispatcher.ts`) replaces the old configStore + bindings
-- 7 color-math reference pages added (`docs/reference/{hex,rgb,hsv,cmyk,oklch,wcag,apca}.md`)
-- v2 thesis moved from "Reference" to "Introduction" sidebar group; new Reference group has `Color spaces` + `Accessibility standards` subsections
+- VitePress (`docs/`) retired; `site/` (Nuxt) consolidated as the single app. Its own FSM (`site/app/composables/fsm/IridisUiMachine.ts` + `useIridisUiMachine.ts`) is the sole UI state machine driving the engine pipeline — the old `docs/.vitepress/theme/stores/themeDispatcher.ts` no longer exists.
+- 7 color-math reference sections ported into `site/app/components/content/ColorSpaces.vue` as a live "Learn more" detail section (hex/rgb/hsv/cmyk/oklch/wcag/apca), with worked examples computed from the currently selected role.
 - Em-dashes, smart quotes, ellipsis chars, NBSPs purged from the markdown corpus
-- TSDoc on every public export across packages and the docs theme
+- TSDoc on every public export across packages
 - 6 per-package READMEs (every package now has one)
-- Markdown corpus cohesion sweep (this pass): terminology consistency, cross-reference integrity
+- Markdown corpus cohesion sweep: terminology consistency, cross-reference integrity
 
 ## Architecture in two sentences
 
@@ -48,8 +47,6 @@ Pipeline shape: `intake:* → clamp:* → resolve:roles → enforce:* → expand
 | Path | Why |
 |---|---|
 | `/Users/studs/Workspace/dollarwise-arch/DollarWise-Prototype/` | Reference for the **ship-source pattern**: `noEmit: true`, exports point at `./src/*.ts`, no per-package dist. iridis mirrors this. |
-| `/Users/studs/Workspace/json-tology/docs/.vitepress/` | Reference for the vitepress + brand-gradient plugin pattern. |
-| `/Users/studs/Workspace/yamete/docs/` | Second vitepress reference. |
 | `/Users/studs/Workspace/vscode-arcade-blaster/dev/themes/tools/` | Source of the VS Code theme generation logic that `packages/vscode/` lifted. |
 
 ## Code standards (binding)
@@ -82,9 +79,9 @@ The litany hook on Edit/Write was previously broken upstream by a sibling projec
 
 1. `cd /Users/studs/Workspace/iridis && npm install`
 2. `npx tsc --build`, should exit 0
-3. Pick a queue item from `docs/internal/outstanding.md`
+3. Pick a queue item from `NOTES/outstanding.md`
 4. For substantial work, dispatch a sonnet/haiku agent with explicit acceptance criteria; for mechanical work, do it inline
-5. Verify with the actual command (`tsx --test`, the CLI binary, `vitepress build`, etc.) before declaring done
+5. Verify with the actual command (`tsx --test`, the CLI binary, `cd site && npm run build`, etc.) before declaring done
 
 ## Naming registry (locked)
 
@@ -109,12 +106,12 @@ Reserved for v2 (post-v1): `iridis-anima`, `iridis-pulse`, `iridis-fsm`, `iridis
 | `README.md` | GitHub repo visitors, pitch + install + sample |
 | `CHANGELOG.md` | Versioned changes |
 | `LICENSE` | MIT |
-| `docs/index.md` | VitePress home page |
-| `docs/getting-started.md` | First-use walkthrough |
-| `docs/concepts/*.md` | Pipeline, role schemas, ColorRecord, contrast |
-| `docs/recipes/*.md` | CLI usage, Vue+Capacitor, VS Code theme (last one missing) |
-| `docs/reference/*.md` | Plugins / tasks / math (all missing) |
-| `docs/v2-living-color.md` | The v2 thesis |
+| `site/` | The one app — live engine demo + docs, deployed to GitHub Pages |
+| `site/content/01-getting-started.md` | First-use walkthrough |
+| `site/content/02-architecture.md` | Architecture + v2 roadmap |
+| `site/content/03-plugins-and-cli.md` | Plugin/CLI reference |
+| `site/content/04-integration.md` | Integration recipes (Vue + Capacitor, etc.) |
+| `site/app/components/content/*.vue` | Live demo cards, each with an in-page "Learn more" detail section (pipeline, contrast, color spaces, role schemas, output formats) |
 | `HANDOFF.md` | This file |
-| `docs/internal/architecture.md` | Detailed layout + decisions |
-| `docs/internal/outstanding.md` | Work queue |
+| `NOTES/architecture.md` | Detailed layout + decisions (internal engineering notes) |
+| `NOTES/outstanding.md` | Work queue (internal engineering notes) |

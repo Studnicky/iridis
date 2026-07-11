@@ -84,3 +84,28 @@ import { luminance, contrastWcag21, oklchToRgb } from '@studnicky/iridis';
 const ratio = contrastWcag21.apply(foreground, background);
 const rgb = oklchToRgb.apply(0.62, 0.18, 290);
 ```
+
+## Two ways to run
+
+iridis works as an NPM library AND as a CLI tool.
+
+### As a library
+
+Construct `new Engine()`, register the core tasks (`coreTasks`), `adopt()` the plugins you want, declare your `pipeline()` order, and call `run(input)`. Math primitives are independent singletons; import any of them directly from `@studnicky/iridis` when you need to call colour math outside the pipeline.
+
+### As a CLI
+
+Install `@studnicky/iridis-cli`, write a JSON config with `enable*` flags, and run:
+
+```bash
+iridis ./palette.config.json
+```
+
+Same engine, same plugins. The CLI dynamically imports only the plugins whose `enable*` flag is true. Use it in build scripts, CI, or one-off generation jobs. See [Plugins & CLI](/plugins-and-cli) for the full config shape.
+
+## Where next
+
+- [Core Architecture](/architecture), how data flows through the shared `PaletteState`, and the v2 living-color roadmap.
+- [Plugins & CLI](/plugins-and-cli), the full plugin ecosystem and CLI config reference.
+- [Seamless Integration](/integration), adopting iridis without rewriting your existing CSS.
+- [GitHub repository](https://github.com/Studnicky/iridis).
