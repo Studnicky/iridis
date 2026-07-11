@@ -12,8 +12,8 @@ import { useIridis } from '~/composables/useIridis.ts';
 const { mode } = useIridis();
 
 const tabItems = [
-  { label: 'Build a palette', icon: 'i-lucide-palette', value: '0' },
-  { label: 'Extract from image', icon: 'i-lucide-image', value: '1' }
+  { label: 'Build a palette', icon: 'i-material-symbols-palette-outline', value: '0' },
+  { label: 'Extract from image', icon: 'i-material-symbols-image-outline-rounded', value: '1' }
 ];
 
 const activeTab = computed({

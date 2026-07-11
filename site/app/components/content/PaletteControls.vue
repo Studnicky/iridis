@@ -45,6 +45,27 @@ const algorithmItems = [
 ];
 const UNPINNED = '__unpinned__';
 
+/** Group order for the role picker: surfaces, text, borders, brand/semantic, then syntax tokens. */
+const ROLE_GROUP_ORDER = [
+  'background', 'bg-soft', 'surface', 'code-bg', 'divider',
+  'text', 'text-strong', 'text-subtle',
+  'border', 'border-strong',
+  'brand', 'on-brand', 'accent-alt', 'muted',
+  'success', 'warning', 'error', 'info',
+  'syntax-keyword', 'syntax-string', 'syntax-number', 'syntax-function', 'syntax-type',
+  'syntax-comment', 'syntax-attribute', 'syntax-punctuation'
+];
+const sortedPinnableRoles = computed(() => {
+  return [...pinnableRoles.value].sort((a, b) => {
+    const ai = ROLE_GROUP_ORDER.indexOf(a);
+    const bi = ROLE_GROUP_ORDER.indexOf(b);
+    if (ai === -1 && bi === -1) return a.localeCompare(b);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+});
+
 
 
 /** Compact pass/fail summary badges for whichever optional stages are currently enabled. */
@@ -194,7 +215,7 @@ function sample(): void {
         <template #default="{ item: hue, index: i }">
           <div
             v-if="hue.isAddBtn"
-            class="flex min-h-full items-center justify-center flex-1 rounded-lg border border-transparent p-2.5"
+            class="flex min-h-full items-center justify-center flex-1 max-w-xs rounded-lg border border-transparent p-2.5"
           >
             <UButton
               icon="i-material-symbols-add-rounded"
@@ -209,7 +230,7 @@ function sample(): void {
           </div>
           <div
             v-else
-            class="relative flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5 flex-1"
+            class="relative flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5 flex-1 max-w-xs"
           >
             <UButton
               icon="i-material-symbols-close-rounded"
@@ -232,28 +253,41 @@ function sample(): void {
                 <span class="font-mono text-xs text-muted truncate">{{ hue.hex }}</span>
               </div>
             </div>
-            <div class="space-y-1">
-              <p class="text-xs font-medium uppercase tracking-wide text-dimmed">Pin to role</p>
-              <div class="flex flex-wrap gap-1">
-                <UButton
-                  label="Unpinned"
-                  size="xs"
-                  :color="hue.role ? 'neutral' : 'primary'"
-                  :variant="hue.role ? 'soft' : 'solid'"
-                  @click="send({ index: i - 1, role: undefined, type: IridisUiActionType.PIN_SEED_ROLE })"
-                />
-                <UButton
-                  v-for="r in pinnableRoles"
-                  :key="r"
-                  :label="r"
-                  size="xs"
-                  :color="hue.role === r ? 'primary' : 'neutral'"
-                  :variant="hue.role === r ? 'solid' : 'soft'"
-                  :disabled="pickerSeeds.some((s, sIdx) => sIdx !== i - 1 && s.role === r)"
-                  @click="send({ index: i - 1, role: hue.role === r ? undefined : r, type: IridisUiActionType.PIN_SEED_ROLE })"
-                />
-              </div>
-            </div>
+            <UPopover
+              mode="hover"
+              :content="{ align: 'start' }"
+            >
+              <UButton
+                :label="hue.role ?? 'Unpinned'"
+                trailing-icon="i-material-symbols-keyboard-arrow-down-rounded"
+                size="xs"
+                :color="hue.role ? 'primary' : 'neutral'"
+                variant="soft"
+                class="w-full justify-between rounded-full"
+              />
+              <template #content>
+                <div class="flex max-h-64 max-w-56 flex-wrap gap-1 overflow-y-auto p-2">
+                  <UButton
+                    label="Unpinned"
+                    size="xs"
+                    :color="hue.role ? 'neutral' : 'primary'"
+                    :variant="hue.role ? 'soft' : 'solid'"
+                    class="rounded-full"
+                    @click="send({ index: i - 1, role: undefined, type: IridisUiActionType.PIN_SEED_ROLE })"
+                  />
+                  <UButton
+                    v-for="r in sortedPinnableRoles"
+                    :key="r"
+                    :label="r"
+                    size="xs"
+                    :color="hue.role === r ? 'primary' : (pickerSeeds.some((s, sIdx) => sIdx !== i - 1 && s.role === r) ? 'warning' : 'neutral')"
+                    :variant="hue.role === r ? 'solid' : 'soft'"
+                    class="rounded-full"
+                    @click="send({ index: i - 1, role: hue.role === r ? undefined : r, type: IridisUiActionType.PIN_SEED_ROLE })"
+                  />
+                </div>
+              </template>
+            </UPopover>
           </div>
         </template>
       </BalancedWrap>
@@ -270,7 +304,7 @@ function sample(): void {
 
           <Histogram />
           <div class="space-y-1">
-            <div class="text-xs font-medium text-muted">
+            <div class="text-xs font-medium uppercase tracking-wide text-dimmed">
               Extracted hues
             </div>
             <div
@@ -389,7 +423,7 @@ function sample(): void {
             <div class="w-full space-y-2">
               <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
                 <span
-                  v-for="(s, i) in schemaItems"
+                  v-for="s in schemaItems"
                   :key="s"
                   :class="schemaName === s ? 'text-primary' : 'cursor-pointer hover:text-muted'"
                   @click="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: s })"

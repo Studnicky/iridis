@@ -26,14 +26,15 @@ function select(i: number): void { send({ 'index': i, 'type': IridisUiActionType
     <div class="toc-scroll w-full max-w-6xl mx-auto">
       <BalancedWrap :items="[...props.items]" :min-width="100" :gap="8">
         <template #default="{ item, index: i }">
-          <button
-            type="button"
-            class="toc-pill font-display flex-1"
-            :class="{ on: i === active }"
+          <UButton
+            :label="item.label"
+            :color="i === active ? 'primary' : 'neutral'"
+            :variant="i === active ? 'solid' : 'soft'"
+            size="xs"
+            class="toc-pill font-display flex-1 justify-center rounded-full"
+            :class="{ 'toc-pill-active': i === active }"
             @click="select(i)"
-          >
-            {{ item.label }}
-          </button>
+          />
         </template>
       </BalancedWrap>
     </div>
@@ -56,20 +57,10 @@ function select(i: number): void { send({ 'index': i, 'type': IridisUiActionType
   padding: 0 1rem;
 }
 .toc-pill {
-  padding: 0.4rem 0.9rem;
   font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase;
-  border-radius: 9999px;
-  border: 1px solid color-mix(in oklch, var(--ui-primary) 25%, transparent);
-  color: var(--ui-text-muted);
-  background: color-mix(in oklch, var(--ui-bg-elevated) 60%, transparent);
-  transition: all .25s ease;
   white-space: nowrap;
-  cursor: pointer;
-  text-align: center;
 }
-.toc-pill:hover { color: var(--ui-text-highlighted); border-color: color-mix(in oklch, var(--ui-primary) 45%, transparent); }
-.toc-pill.on {
-  color: var(--ui-primary-contrast); background: var(--ui-primary); border-color: var(--ui-primary);
+.toc-pill-active {
   box-shadow: 0 0 16px color-mix(in oklch, var(--ui-primary) 70%, transparent);
 }
 </style>

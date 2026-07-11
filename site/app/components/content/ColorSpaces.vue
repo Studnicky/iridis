@@ -83,7 +83,7 @@ const worked = computed(() => {
           :key="row.space"
           class="flex items-center justify-between py-1.5"
         >
-          <span class="text-xs font-medium text-muted">{{ row.space }}</span>
+          <span class="text-xs font-medium uppercase tracking-wide text-dimmed">{{ row.space }}</span>
           <span class="font-mono text-xs text-highlighted">{{ row.value }}</span>
         </div>
       </div>

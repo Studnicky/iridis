@@ -55,21 +55,6 @@ function cvdCorrectionSummary(report: unknown): string | undefined {
   return `${autoCorrected} pairs auto-corrected, ${stillFailing} still failing`;
 }
 
-const dataFlowDiagram = `flowchart TD
-    A["input.colors\\n(raw strings / objects)"]
-    B["state.colors\\n(ColorRecord[])"]
-    C["state.roles\\n(Record<string, ColorRecord>)"]
-    D["state.roles\\n(contrast-adjusted)"]
-    E["state.variants\\n(light / dark)"]
-    F["state.outputs\\n(cssVars, themeJson, capacitor ...)"]
-
-    A -->|intake tasks| B
-    B -->|resolve:roles| C
-    C -->|enforce:contrast| D
-    D -->|derive:variant| E
-    D -->|emit tasks| F
-    E -->|emit tasks| F`;
-
 /** Stage names actually present in the accordion above, grouped by their `phase:task` prefix. */
 const stageNamesByPrefix = computed(() => {
   const byPrefix = new Map<string, string[]>();
@@ -266,10 +251,10 @@ const enforceStageNames = computed(() => stageNamesByPrefix.value.get('enforce')
       </h4>
       <p class="mt-2 text-sm text-muted">
         Each stage above reads from and writes to a shared, mutable state object. The <span class="font-mono text-xs">reads</span>
-        and <span class="font-mono text-xs">writes</span> badges shown per stage are pulled from that task's own manifest,
-        the same manifest depicted structurally below:
+        and <span class="font-mono text-xs">writes</span> badges shown per stage are pulled from that task's own manifest —
+        see <a href="#02-the-four-stages" class="text-primary hover:underline">The Four Stages</a> below for the same
+        manifest depicted structurally as a diagram.
       </p>
-      <MermaidDiagram :code="dataFlowDiagram" />
 
       <h4 class="mt-5 text-sm font-semibold text-highlighted">
         TaskRegistry, the spine
