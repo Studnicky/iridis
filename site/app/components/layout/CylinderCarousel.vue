@@ -174,13 +174,21 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
 </template>
 
 <style scoped>
-.cyl { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+.cyl { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%; overflow-x: hidden; }
 .cyl-scene-wrap { position: relative; width: 100%; }
 .cyl-scene {
   position: relative;
   width: 100%;
   /* Matches the .cyl-face min() sizing below so the scene never resizes after
-     hydration — measure() only keeps the JS spread/drag-step math in sync. */
+     hydration — measure() only keeps the JS spread/drag-step math in sync.
+     Off-active .cyl-face cards translateX() out to roughly ±(n/2 * spread)
+     from center — several thousand px for a 10-card deck — so without
+     overflow-x clipping here, those decorative off-screen cards silently
+     widen the whole PAGE's scrollable area, not just this widget's. Any
+     native horizontal scroll trigger (scrollIntoView, browser autofill
+     focus, etc.) then shifts window.scrollX to "satisfy" them, visibly
+     shoving the entire page sideways. */
+  overflow-x: hidden;
   height: calc(min(720px, 80vh) + 40px);
   touch-action: pan-y;
 }

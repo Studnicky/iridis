@@ -206,11 +206,8 @@ const active = ref<string>('0');
       </p>
     </div>
 
-    <div class="mt-8 border-t border-default pt-6">
-      <h3 class="text-sm font-semibold text-highlighted">
-        Why one palette becomes {{ outputs.length }} outputs
-      </h3>
-      <p class="mt-2 text-sm text-muted">
+    <LearnMoreSection :title="`Learn more: why one palette becomes ${outputs.length} outputs`" value="multi-output-detail">
+      <p>
         Every tab above comes from the same <span class="font-mono text-xs">engine.run()</span> call you saw in
         Pipeline — the palette is resolved to roles exactly once, then a set of emit tasks reads that resolved
         <span class="font-mono text-xs">state.roles</span> and writes it into a consumer-shaped format. The engine
@@ -280,7 +277,7 @@ const active = ref<string>('0');
         engine's first run completes. Reasonable defaults that match your dark/light framing cost one CSS block and
         mean the page never goes blank waiting on JavaScript.
       </p>
-    </div>
+    </LearnMoreSection>
   </UCard>
 </template>
 

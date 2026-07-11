@@ -32,7 +32,8 @@ export enum IridisUiActionType {
   DIAGRAM_FIT = 'DIAGRAM_FIT',
   DIAGRAM_TOGGLE_EXPAND = 'DIAGRAM_TOGGLE_EXPAND',
   CVD_TOGGLE_PREVIEW = 'CVD_TOGGLE_PREVIEW',
-  CVD_CLEAR_PREVIEWS = 'CVD_CLEAR_PREVIEWS'
+  CVD_CLEAR_PREVIEWS = 'CVD_CLEAR_PREVIEWS',
+  NAVIGATE_TO_TARGET = 'NAVIGATE_TO_TARGET'
 }
 
 import type { FramingType } from './framing.ts';
@@ -76,4 +77,5 @@ export type IridisUiEventType =
   | { 'type': IridisUiActionType.DIAGRAM_FIT }
   | { 'type': IridisUiActionType.DIAGRAM_TOGGLE_EXPAND }
   | { 'cvdType': string; 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW }
-  | { 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS };
+  | { 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS }
+  | { 'targetId': string; 'type': IridisUiActionType.NAVIGATE_TO_TARGET };

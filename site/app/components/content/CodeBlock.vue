@@ -15,7 +15,11 @@ import type { SupportedLangType } from '~/theme/Highlighter.ts';
  */
 const props = defineProps<{ code: string; lang: SupportedLangType; vscodeTheme: object }>();
 
-const html = ref<string>('');
+// Top-level await so SSR/prerender waits for the highlighted HTML before
+// serializing the page — a fire-and-forget watch() never resolves in time
+// for a static-generate snapshot, leaving code blocks empty for crawlers
+// and no-JS clients even though hydration would eventually fill them in.
+const html = ref<string>(await highlightCode(props.code, props.lang, props.vscodeTheme));
 
 watch(
   () => [props.code, props.lang, props.vscodeTheme],

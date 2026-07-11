@@ -9,6 +9,7 @@ import { categoryW3cRoleSchema }                                   from './categ
 export class CategoryColorService {
   private readonly engine: Engine;
 
+  // #region construct
   private constructor() {
     this.engine = new Engine();
     for (const task of coreTasks) {
@@ -36,6 +37,7 @@ export class CategoryColorService {
       'emit:capacitorTheme',
     ]);
   }
+  // #endregion construct
 
   private static instance: CategoryColorService | undefined;
 
@@ -47,6 +49,7 @@ export class CategoryColorService {
     return CategoryColorService.instance;
   }
 
+  // #region apply
   async apply(category: string, seed: string): Promise<{
     readonly cssVars:   CssVarsOutputInterfaceType;
     readonly statusBar: StatusBarOutputInterface;
@@ -79,6 +82,7 @@ export class CategoryColorService {
 
     return { 'cssVars': cssVars, 'statusBar': capacitor };
   }
+  // #endregion apply
 }
 
 export const categoryColorService = CategoryColorService.shared();

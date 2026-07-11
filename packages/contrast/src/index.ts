@@ -10,3 +10,10 @@ export { enforceCvdSimulate } from './tasks/EnforceCvdSimulate.ts';
 export { enforceWcagAa }      from './tasks/EnforceWcagAa.ts';
 export { enforceWcagAaa }     from './tasks/EnforceWcagAaa.ts';
 export type { CvdMatrixInterfaceType } from './types/index.ts';
+export type {
+  ApcaPairResultSetInterfaceType,
+  CvdResultSetInterfaceType,
+  WcagMetaSlotInterfaceType,
+  WcagPairResultSetInterfaceType
+} from './types/augmentation.ts';
+export { getContrastMetadata } from './types/augmentation.ts';

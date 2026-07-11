@@ -1,71 +1,11 @@
 ---
-title: 2. Core Architecture
-description: The four conceptual stages of iridis and how data flows through the shared PaletteState.
+title: "12. Roadmap: Living Color"
+description: The v2 thesis — animating between palette points while every constraint keeps holding on each frame.
 ---
-
-The interactive controls above demonstrate *what* the pipeline does. This section covers *how* it works under the hood. 
-
-Every iridis pipeline passes through four conceptual stages, even though the task names and execution order are fully controlled by you:
-
-```
-intake → resolve → enforce → emit
-```
-
-## The Data Flow
-
-::mermaid-diagram
----
-code: |
-  flowchart TD
-      A["input.colors\n(raw strings / objects)"]
-      B["state.colors\n(ColorRecord[])"]
-      C["state.roles\n(Record<string, ColorRecord>)"]
-      D["state.roles\n(contrast-adjusted)"]
-      E["state.variants\n(light / dark)"]
-      F["state.outputs\n(cssVars, tailwind, shadcn ...)"]
-
-      A -->|intake tasks| B
-      B -->|resolve:roles| C
-      C -->|enforce:contrast| D
-      D -->|derive:variant| E
-      D -->|emit tasks| F
-      E -->|emit tasks| F
----
-::
-
-## The Task Registry
-
-The `TaskRegistry` is the spine of the engine. It acts as a map of `TaskInterface` objects. Every task has a string `name` (e.g., `'intake:any'`). 
-
-```ts
-import { TaskRegistry } from '@studnicky/iridis';
-
-const registry = new TaskRegistry();
-registry.register(myCustomTask);
-registry.has('my:custom');          // true
-```
-
-The `Engine` owns one `TaskRegistry` instance (`engine.tasks`). When you call `engine.pipeline(['intake:any', 'resolve:roles', ...])`, the engine validates that every name is registered before storing the execution sequence. 
-
-## Shared State
-
-Every task receives the same mutable `PaletteStateInterface` object during execution. Tasks read from and write to named slots on this state. 
-
-A task's dependencies are documented via the `reads` and `writes` arrays in its manifest (which you can see visualized in the **Pipeline** accordion above).
-
-```ts
-readonly manifest: TaskManifestInterface = {
-  name:    'resolve:roles',
-  reads:   ['colors', 'input.roles'],
-  writes:  ['roles', 'metadata'],
-};
-```
-
-The engine **does not** enforce dependency ordering at runtime—that is your responsibility via the pipeline array. If a task writes `state.roles` and a later task reads `state.roles`, your `engine.pipeline()` array must reflect that execution order.
 
 ## Roadmap: living color
 
-The architecture above derives one point. The v2 thesis is that the same engine can animate between points and continue to enforce the same constraints, WCAG, role schemas, palette algebra, on every frame.
+The architecture described in [Architecture Internals](#11-architecture-internals) derives one point. The v2 thesis is that the same engine can animate between points and continue to enforce the same constraints, WCAG, role schemas, palette algebra, on every frame.
 
 A palette of N roles is a vector in OKLCH × N-roles space, length 3·N:
 

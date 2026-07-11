@@ -10,6 +10,30 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ### Fixed
 
+## [0.8.0] - 2026-07-11
+
+### Added
+
+- Shared `LearnMoreSection.vue` accordion component, replacing 5 independently-built "Learn more" implementations across the demo cards with one consistent, collapsible pattern
+- FSM wiring for the pipeline diagram's reset/fit controls (`DIAGRAM_RESET`/`DIAGRAM_FIT`), previously defined and handled but never dispatched
+- A build-time source-snippet import (`<<< @/path#region`), resolved via Nuxt Content's `content:file:beforeParse` hook, so docs can embed real, drift-proof source instead of hand-typed paraphrases
+- Server-side rendering (`ssr: true`) for `site/`, prerendered via `nuxt generate` — real content is now baked into the static HTML for crawlability instead of an empty client-hydrated shell
+- Restructured the docs from 4 monolithic pages into 12 focused cards, ordered from least to most technical, several now embedding real source via the snippet-import mechanism
+- A navigation-target table (`useNavigationTargets.ts`) and a new `NAVIGATE_TO_TARGET` FSM action/effect — every internal navigation path (carousel dots, ToC bar, prose cross-references) now resolves through one addressable registry, groundwork for a future navigation-helper feature
+
+### Changed
+
+- Typed the engine metadata bag in `useIridis.ts`, replacing 5 unchecked `as any` casts with real types grounded in the actual task-output shapes
+- Extracted the carousel's section list into `CarouselSections.ts` as a single source of truth
+
+### Fixed
+
+- `CodeBlock.vue`'s Shiki highlighting only ran on prop *changes*, never on initial mount — every fenced code block on the docs pages was invisible. Fixed with a top-level `await` so SSR/prerender waits for the highlighted HTML.
+- A leaked `keydown` listener and missing `aria-label`s on the pipeline diagram's icon-only controls
+- Two card titles containing an unquoted YAML colon (`Roadmap: Living Color`, `Recipe: Vue + Capacitor...`) were parsed as nested mappings instead of strings, rendering as `[object Object]`
+- Jarring instant anchor-jump scroll, replaced by smooth FSM-routed navigation
+- Carousel side cards silently widening the whole page's horizontal scroll area, which a native `scrollIntoView` call (from the new doc-anchor navigation) could then shove sideways
+
 ## [0.7.1] - 2026-07-11
 
 ### Changed
@@ -381,5 +405,6 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 
 [Unreleased]: https://github.com/Studnicky/iridis/compare/v0.0.0...HEAD
 
+[0.8.0]: https://github.com/Studnicky/iridis/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/Studnicky/iridis/compare/v0.1.1...v0.7.1
 [0.6.1]: https://github.com/Studnicky/iridis/compare/v0.6.0...v0.6.1

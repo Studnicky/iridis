@@ -1,8 +1,18 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { resolve } from 'node:path';
+import { snippetImporter } from './server/utils/SnippetImporter';
+
+const REPO_ROOT = resolve(import.meta.dirname, '..');
+
 export default defineNuxtConfig({
+  hooks: {
+    'content:file:beforeParse'(ctx) {
+      ctx.file.body = snippetImporter.resolve(ctx.file.body, REPO_ROOT);
+    },
+  },
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  ssr: false, // Iridis is a client-side interactive app; disable SSR for GitHub Pages SPA
+  ssr: true, // Prerendered per-route at build time via `nuxt generate`; no runtime server on GitHub Pages
   modules: [
     '@nuxt/ui',
     '@nuxt/content',

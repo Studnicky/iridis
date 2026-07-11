@@ -219,11 +219,8 @@ const enforceStageNames = computed(() => stageNamesByPrefix.value.get('enforce')
       </AccordionItem>
     </AccordionRoot>
 
-    <div class="mt-8 border-t border-default pt-6">
-      <h3 class="text-sm font-semibold text-highlighted">
-        How the pipeline works
-      </h3>
-      <p class="mt-2 text-sm text-muted">
+    <LearnMoreSection title="Learn more: how the pipeline works" value="pipeline-detail">
+      <p>
         iridis is a task pipeline. You register primitives and tasks, declare an execution order, pass an input, and get a
         fully resolved palette out. The engine does not know or care what the pipeline contains &mdash; that is your
         configuration, expressed as the ordered stage list rendered above.
@@ -317,6 +314,6 @@ const enforceStageNames = computed(() => stageNamesByPrefix.value.get('enforce')
         <span class="font-mono text-xs">{{ stageNamesByPrefix.get('resolve')?.[0] }}</span> writes it and the enforce
         stages above read it &mdash; the pipeline order must reflect that dependency; nothing checks it for you.
       </p>
-    </div>
+    </LearnMoreSection>
   </UCard>
 </template>

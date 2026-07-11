@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-shadcn",
   "description": "Emits shadcn/ui CSS variables from resolved roles.",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -19,7 +19,7 @@
     "node": ">=24"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.7.1"
+    "@studnicky/iridis": "^0.8.0"
   },
   "dependencies": {
     "@studnicky/logger": "^4.0.0"

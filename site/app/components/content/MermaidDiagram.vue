@@ -17,6 +17,7 @@ const { diagramScale: scale, diagramTranslateX: translateX, diagramTranslateY: t
 const viewportRef = ref<HTMLElement | null>(null);
 
 const resetView = () => {
+  send({ 'type': IridisUiActionType.DIAGRAM_RESET });
   if (!viewportRef.value) return;
   const svg = viewportRef.value.querySelector('svg');
   if (!svg) return;
@@ -31,6 +32,7 @@ const resetView = () => {
 };
 
 const fitToView = () => {
+  send({ 'type': IridisUiActionType.DIAGRAM_FIT });
   if (!viewportRef.value) return;
   const svg = viewportRef.value.querySelector('svg');
   if (!svg) return;
@@ -56,12 +58,14 @@ const toggleExpand = () => {
 };
 
 // Handle Escape key to exit expanded mode
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && isExpanded.value) {
+    toggleExpand();
+  }
+};
+
 onMounted(() => {
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isExpanded.value) {
-      toggleExpand();
-    }
-  });
+  document.addEventListener('keydown', handleKeydown);
 });
 
 const pan = (dx: number, dy: number) => {
@@ -110,7 +114,7 @@ const onDrag = (e: MouseEvent) => {
 const endDrag = (e: MouseEvent) => {
   isDragging = false;
   if (viewportRef.value) {
-    try { viewportRef.value.releasePointerCapture(e.pointerId || 1); } catch(err) {}
+    try { viewportRef.value.releasePointerCapture(e.pointerId || 1); } catch (err) { console.warn('releasePointerCapture failed:', err); }
   }
 };
 
@@ -197,6 +201,7 @@ onUnmounted(() => {
   if (resizeObserver) {
     resizeObserver.disconnect();
   }
+  document.removeEventListener('keydown', handleKeydown);
 });
 
 watch([() => props.code, () => colorMode.value], renderMermaid);
@@ -253,13 +258,13 @@ watch([() => props.code, () => colorMode.value], renderMermaid);
 
         <!-- Row 2 -->
         <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-[13px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Pan left" @click="pan(50, 0)">◀</button>
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-[13px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Centre view" @click="resetView">⊙</button>
+        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-[13px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Centre view" aria-label="Centre diagram view" @click="resetView">⊙</button>
         <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-[13px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Pan right" @click="pan(-50, 0)">▶</button>
 
         <!-- Row 3 -->
         <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" :title="isExpanded ? 'Collapse' : 'Expand zoom'" @click="toggleExpand">⛶</button>
         <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-[13px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Pan down" @click="pan(0, -50)">▼</button>
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Fit to view" @click="fitToView">⤢</button>
+        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Fit to view" aria-label="Fit diagram to view" @click="fitToView">⤢</button>
       </div>
     </div>
   </div>
