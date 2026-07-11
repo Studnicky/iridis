@@ -69,7 +69,7 @@ const SEMANTIC_HUE_CLAMP = 90;
  * are currently enabled.
  */
 export const COLOR_PIPELINE = [
-  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'derive:colors', 'expand:family',
+  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'expand:family',
   'enforce:contrast', 'enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate',
   'derive:variant'
 ];

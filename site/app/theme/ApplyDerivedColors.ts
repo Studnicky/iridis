@@ -17,9 +17,9 @@ class ApplyDerivedColors implements TaskInterface {
 
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Applies user-selected derivation algorithms (monochromatic, complementary, analogous, etc.) to transform role hues based on input seed colors.',
-    'name':        'derive:colors',
-    'reads':       ['colors', 'roles', 'metadata'],
-    'writes':      ['roles']
+    'name': 'derive:colors',
+    'reads': ['colors', 'roles', 'metadata'],
+    'writes': ['roles']
   };
 
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
