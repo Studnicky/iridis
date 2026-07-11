@@ -2,8 +2,6 @@ node_modules/
 dist/
 .nuxt/
 .output/
-docs/.vitepress/cache/
-docs/.vitepress/dist/
 *.tsbuildinfo
 .DS_Store
 .env
