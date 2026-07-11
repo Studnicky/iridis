@@ -29,7 +29,14 @@ const {
   imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
   cvdPreviewTypes
 } = useIridis();
-const { send } = useIridisUiMachine();
+const { send, registerExtractImageHandler } = useIridisUiMachine();
+
+// Register handler to track when an image is extracted (for preview)
+registerExtractImageHandler((effect) => {
+  if (effect.file) {
+    previewUrl.value = URL.createObjectURL(effect.file);
+  }
+});
 
 const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-32'];
 const algorithmItems = [
@@ -73,11 +80,24 @@ const stageSummaries = computed(() => {
 
 /** UFileUpload owns this ref; picking a file here is the only trigger for the EXTRACT_IMAGE(file) effect. */
 const uploadedFile = ref<File | null>(null);
+const previewUrl = ref<string>('');
+
 const handleFile = (file: File | null) => {
   if (file) {
+    // Create preview URL for the uploaded image
+    previewUrl.value = URL.createObjectURL(file);
     send({ file, 'source': 'file', 'type': IridisUiActionType.EXTRACT_IMAGE });
   }
 };
+
+const clearImage = () => {
+  uploadedFile.value = null;
+  if (previewUrl.value) {
+    URL.revokeObjectURL(previewUrl.value);
+    previewUrl.value = '';
+  }
+};
+
 watch(uploadedFile, handleFile);
 
 function sample(): void {
@@ -148,6 +168,20 @@ function sample(): void {
             </UButton>
           </template>
         </UFileUpload>
+
+        <!-- Image preview with matching dismiss button -->
+        <div v-if="previewUrl" class="relative rounded-lg overflow-hidden border border-default max-h-96">
+          <img :src="previewUrl" alt="Upload preview" class="w-full h-full object-cover" />
+          <UButton
+            icon="i-material-symbols-close-rounded"
+            color="error"
+            variant="ghost"
+            size="xs"
+            class="absolute top-1 right-1 p-0.5"
+            :aria-label="`Clear uploaded image`"
+            @click="clearImage"
+          />
+        </div>
       </div>
 
       <BalancedWrap
@@ -179,11 +213,12 @@ function sample(): void {
           >
             <UButton
               icon="i-material-symbols-close-rounded"
-              color="neutral"
+              color="error"
               variant="ghost"
               size="xs"
               class="absolute top-1 right-1 p-0.5"
               :disabled="pickerSeeds.length <= 1"
+              :aria-label="`Remove seed ${i}`"
               @click="send({ type: IridisUiActionType.REMOVE_SEED, index: i - 1 })"
             />
             <div class="flex items-center gap-2">
