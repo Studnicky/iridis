@@ -6,15 +6,14 @@ import { deriveColors } from '../utils/colorDerivation.ts';
 import type { DerivationConfig, RoleType } from '../composables/types/colorDerivation.ts';
 
 /**
- * Applies user-selected color derivation algorithms to transform role hues.
- * Modifies oklch hue only (canonical representation).
- * Hex is a projection that the engine derives automatically.
+ * Apply derivation algorithms to role hues (oklch canonical only).
+ * Consumes state.colors normalized by prior pipeline tasks.
  */
 class ApplyDerivedColors implements TaskInterface {
   readonly 'name' = 'derive:colors';
 
   readonly 'manifest': TaskManifestInterfaceType = {
-    'description': 'Apply derivation algorithms to role hues (oklch canonical)',
+    'description': 'Apply derivation algorithms to role hues',
     'name':        'derive:colors',
     'reads':       ['colors', 'roles', 'metadata'],
     'writes':      ['roles']
@@ -22,14 +21,11 @@ class ApplyDerivedColors implements TaskInterface {
 
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
     const derivationConfig = state.metadata['derivation:config'] as DerivationConfig | undefined;
-    if (!derivationConfig) return;
-    if (!state.colors || state.colors.length === 0) return;
+    if (!derivationConfig || !state.colors || state.colors.length === 0) return;
 
-    // Picker mode: state.colors = [{hex: string}, ...]
-    const baseHues = (state.colors as any[]).map((c: any) => c.hex);
+    const baseHues = (state.colors as string[]);
     const derivedHues = deriveColors(baseHues, derivationConfig.roles, baseHues.length);
 
-    // Apply derived hues to roles (oklch only)
     const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
     for (const roleType of roles) {
       const derived = derivedHues[roleType];
@@ -38,10 +34,9 @@ class ApplyDerivedColors implements TaskInterface {
       const role = (state.roles as any)[roleType];
       if (!role?.oklch) continue;
 
-      const newHue = derived[0].hue;
       (state.roles as any)[roleType] = {
         ...role,
-        oklch: { ...role.oklch, h: newHue }
+        oklch: { ...role.oklch, h: derived[0].hue }
       };
     }
   }
