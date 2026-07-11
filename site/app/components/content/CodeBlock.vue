@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue';
+import { ref, watch } from 'vue';
 import { highlightCode } from '~/theme/Highlighter.ts';
 import type { SupportedLangType } from '~/theme/Highlighter.ts';
 
@@ -17,12 +17,13 @@ const props = defineProps<{ code: string; lang: SupportedLangType; vscodeTheme: 
 
 const html = ref<string>('');
 
-watchEffect(async () => {
-  const code = props.code;
-  const lang = props.lang;
-  const theme = props.vscodeTheme;
-  html.value = await highlightCode(code, lang, theme);
-});
+watch(
+  () => [props.code, props.lang, props.vscodeTheme],
+  async ([code, lang, theme]) => {
+    html.value = await highlightCode(code as string, lang as SupportedLangType, theme as object);
+  },
+  { deep: true }
+);
 
 /** Copy-to-clipboard lives here (not the caller) since this component already owns `code`. */
 const copied = ref(false);
