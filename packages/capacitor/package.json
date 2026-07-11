@@ -20,6 +20,6 @@
     "prebuild": "rm -rf dist"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.6.1"
+    "@studnicky/iridis": "^0.7.1"
   }
 }
