@@ -26,12 +26,14 @@ class ApplyDerivedColors implements TaskInterface {
     // Get derivation config from metadata, skip if not present
     const derivationConfig = state.metadata['derivation:config'] as DerivationConfig | undefined;
     if (!derivationConfig || !state.colors || state.colors.length === 0) {return;}
+    if (!derivationConfig.roles) {return;}
 
     // Get base hues from input colors
     const baseHues = state.colors.map(c => c.hex);
 
     // Apply derivation algorithms to generate role hues
     const derivedHues = deriveColors(baseHues, derivationConfig.roles, baseHues.length);
+    if (!derivedHues) {return;}
 
     // Apply derived hues to roles while preserving other properties
     const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
@@ -39,17 +41,13 @@ class ApplyDerivedColors implements TaskInterface {
       const derived = derivedHues[roleType];
       if (!derived || derived.length === 0) {continue;}
 
-      // Find matching role in state
-      const role = Object.values(state.roles).find((r: any) => r.name === roleType);
-      if (!role) {continue;}
+      // Update the role's color using the derived hue
+      const existingColor = state.roles[roleType];
+      if (!existingColor) {continue;}
 
       // Use the first derived hue for this role
       const firstDerived = derived[0];
       const derivedHue = firstDerived.hue;
-
-      // Update the role's color using the derived hue
-      const existingColor = state.roles[roleType];
-      if (!existingColor) {continue;}
 
       // Parse existing color and update hue
       const record = colorRecordFactory.fromHex(existingColor.hex || '#000000');

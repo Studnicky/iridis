@@ -13,13 +13,14 @@ const hueAlgorithms: HueAlgorithm[] = ['monochromatic', 'complementary', 'analog
 const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
 
 function updateAlgorithm(role: RoleType, algorithm: HueAlgorithm): void {
+  const currentRole = derivationConfig.value.roles[role];
   const updated: DerivationConfig = {
     ...derivationConfig.value,
     strategy: 'custom',
     roles: {
       ...derivationConfig.value.roles,
       [role]: {
-        ...derivationConfig.value.roles[role],
+        ...(currentRole || { hueAlgorithm: 'monochromatic', variationAlgorithms: [] }),
         hueAlgorithm: algorithm
       }
     }
