@@ -26,10 +26,12 @@ jobs:
       - run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: npm run docs:build
+      - run: cd site && npm run generate
+        env:
+          NUXT_APP_BASE_URL: /iridis/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v5
-        with: { path: docs/.vitepress/dist }
+        with: { path: site/.output/public }
 
   deploy:
     needs: build
