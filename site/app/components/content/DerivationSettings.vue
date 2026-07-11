@@ -5,20 +5,24 @@ import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { IridisUiActionType } from '~/composables/types/index.ts';
 import type { DerivationConfig, HueAlgorithm, RoleType } from '~/composables/types/colorDerivation.ts';
 
-const { derivationConfig } = useIridis();
+const { derivationConfig: derivationConfigRef } = useIridis();
 const { send } = useIridisUiMachine();
+
+const derivationConfig = computed(() => derivationConfigRef.value ?? { strategy: 'automatic' as const, roles: {} });
 
 const hueAlgorithms: HueAlgorithm[] = ['monochromatic', 'complementary', 'analogous', 'triadic', 'tetradic', 'split-complementary', 'compound', 'freeform'];
 
 const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
 
 function updateAlgorithm(role: RoleType, algorithm: HueAlgorithm): void {
-  const currentRole = derivationConfig.value.roles[role];
+  const current = derivationConfigRef.value;
+  if (!current) {return;}
+  const currentRole = current.roles[role];
   const updated: DerivationConfig = {
-    ...derivationConfig.value,
+    ...current,
     strategy: 'custom',
     roles: {
-      ...derivationConfig.value.roles,
+      ...current.roles,
       [role]: {
         ...(currentRole || { hueAlgorithm: 'monochromatic', variationAlgorithms: [] }),
         hueAlgorithm: algorithm
