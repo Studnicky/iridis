@@ -148,21 +148,25 @@ const naturalSize = (svg: HTMLElement): { w: number, h: number } => {
   return { w: 1024, h: 768 };
 };
 
+const getComputedColor = (varName: string): string => {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  return value || '#ffffff';
+};
+
 const renderMermaid = async () => {
   if (!props.code) return;
-  
+
   try {
     mermaid.initialize({
       startOnLoad: false,
       theme: 'base',
       themeVariables: {
-        fontFamily: 'var(--font-display)',
-        primaryColor: 'var(--ui-bg-elevated)',
-        primaryTextColor: 'var(--ui-text-highlighted)',
-        primaryBorderColor: 'var(--ui-primary)',
-        lineColor: 'var(--ui-primary)',
-        secondaryColor: 'var(--ui-bg-elevated)',
-        tertiaryColor: 'var(--ui-bg)',
+        primaryColor: getComputedColor('--ui-bg-elevated'),
+        primaryTextColor: getComputedColor('--ui-text-highlighted'),
+        primaryBorderColor: getComputedColor('--ui-primary'),
+        lineColor: getComputedColor('--ui-primary'),
+        secondaryColor: getComputedColor('--ui-bg-elevated'),
+        tertiaryColor: getComputedColor('--ui-bg'),
       }
     });
     
