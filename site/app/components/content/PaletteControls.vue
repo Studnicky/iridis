@@ -3,6 +3,14 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed, ref, watch } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
+import type {
+  DerivationStrategyPreset,
+  RoleType,
+  RoleDerivation,
+  HueAlgorithm,
+  VariationAlgorithm
+} from '~/composables/types/colorDerivation.ts';
+import type { PickerSeedType } from '~/composables/types/pickerSeed.ts';
 
 /**
  * The engine's single input surface: pick seeds or an image, choose the
@@ -26,7 +34,7 @@ const {
   pickerSeeds, pinnableRoles, framing, schemaName, contrastStrictness, colorSpace, mode, imageSeeds, running,
   enabledOptionalStages, cvdCorrect, contrastReport,
   imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
-  cvdPreviewTypes
+  cvdPreviewTypes, derivationConfig, histogram
 } = useIridis();
 const { send } = useIridisUiMachine();
 
@@ -36,6 +44,8 @@ const algorithmItems = [
   { 'label': 'Median cut', 'value': 'median-cut' }
 ];
 const UNPINNED = '__unpinned__';
+
+const isAddBtn = (item: { isAddBtn: true } | PickerSeedType): item is { isAddBtn: true } => 'isAddBtn' in item;
 
 
 
@@ -82,6 +92,93 @@ watch(uploadedFile, handleFile);
 function sample(): void {
   uploadedFile.value = null;
   send({ 'source': 'sample', 'type': IridisUiActionType.EXTRACT_IMAGE });
+}
+
+/** Derivation strategy selection — role-level algorithm config lives behind the "Custom" preset. */
+const presets: DerivationStrategyPreset[] = ['automatic', 'brand-focused', 'accessible', 'custom'];
+const hueAlgorithms: HueAlgorithm[] = ['monochromatic', 'complementary', 'analogous', 'triadic', 'tetradic', 'split-complementary', 'compound', 'freeform'];
+const variationAlgorithms: VariationAlgorithm[] = ['tints-shades', 'saturation-gradient', 'value-gradient'];
+const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
+
+const selectedStrategy = ref<DerivationStrategyPreset>('automatic');
+const isModalOpen = ref(false);
+const selectedRole = ref<RoleType | null>(null);
+const roleConfig = ref<RoleDerivation>({
+  'hueAlgorithm': 'monochromatic',
+  'variationAlgorithms': ['tints-shades']
+});
+
+function handleStrategyChange(preset: DerivationStrategyPreset): void {
+  send({ 'strategy': preset, 'type': IridisUiActionType.SET_DERIVATION_STRATEGY });
+}
+
+function openRoleModal(role: RoleType): void {
+  selectedRole.value = role;
+  roleConfig.value = {
+    ...derivationConfig.value.roles[role]
+  };
+  isModalOpen.value = true;
+}
+
+function toggleVariation(algo: VariationAlgorithm): void {
+  const idx = roleConfig.value.variationAlgorithms.indexOf(algo);
+  if (idx >= 0) {
+    roleConfig.value.variationAlgorithms.splice(idx, 1);
+  } else {
+    roleConfig.value.variationAlgorithms.push(algo);
+  }
+}
+
+function saveRoleConfig(): void {
+  if (selectedRole.value) {
+    send({ 'derivation': roleConfig.value, 'role': selectedRole.value, 'type': IridisUiActionType.SET_ROLE_DERIVATION });
+  }
+  isModalOpen.value = false;
+}
+
+function resetRoleToDefault(): void {
+  if (selectedRole.value) {
+    send({ 'role': selectedRole.value, 'type': IridisUiActionType.RESET_ROLE_DERIVATION });
+  }
+  isModalOpen.value = false;
+}
+
+function strategyLabel(preset: DerivationStrategyPreset): string {
+  const labels: Record<DerivationStrategyPreset, string> = {
+    'automatic': 'Automatic',
+    'brand-focused': 'Brand-Focused',
+    'accessible': 'Accessible',
+    'custom': 'Custom'
+  };
+  return labels[preset];
+}
+
+function algorithmBadge(role: RoleType): string {
+  const abbrev: Record<HueAlgorithm, string> = {
+    'monochromatic':        'mono',
+    'complementary':        'comp',
+    'analogous':            'ana',
+    'triadic':              'tri',
+    'tetradic':             'tet',
+    'split-complementary':  'split',
+    'compound':             'cmpd',
+    'freeform':             'free'
+  };
+  const algo = derivationConfig.value.roles[role].hueAlgorithm;
+  return abbrev[algo];
+}
+
+function roleDescription(role: RoleType): string {
+  const desc: Record<RoleType, string> = {
+    'primary': 'Brand primary color',
+    'success': 'Success/positive state',
+    'warning': 'Warning/caution state',
+    'error': 'Error/negative state',
+    'info': 'Information state',
+    'neutral': 'Neutral/text colors',
+    'accent': 'Accent/interactive'
+  };
+  return desc[role];
 }
 </script>
 
@@ -158,7 +255,7 @@ function sample(): void {
       >
         <template #default="{ item: hue, index: i }">
           <div
-            v-if="hue.isAddBtn"
+            v-if="isAddBtn(hue)"
             class="flex min-h-full items-center justify-center flex-1 rounded-lg border border-transparent p-2.5"
           >
             <UButton
@@ -176,6 +273,7 @@ function sample(): void {
             v-else
             class="relative flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5 flex-1"
           >
+            <!-- Type narrowing: hue is PickerSeedType in v-else -->
             <UButton
               icon="i-material-symbols-close-rounded"
               color="neutral"
@@ -187,13 +285,13 @@ function sample(): void {
             />
             <div class="flex items-center gap-2">
               <input
-                :value="hue.hex"
+                :value="(hue as PickerSeedType).hex"
                 type="color"
                 class="h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent flex-none"
                 @change="send({ type: IridisUiActionType.SET_SEED, index: i - 1, hex: ($event.target as HTMLInputElement).value })"
               >
               <div class="flex flex-col min-w-0 flex-1">
-                <span class="font-mono text-xs text-muted truncate">{{ hue.hex }}</span>
+                <span class="font-mono text-xs text-muted truncate">{{ (hue as PickerSeedType).hex }}</span>
               </div>
             </div>
             <div class="space-y-1">
@@ -202,8 +300,8 @@ function sample(): void {
                 <UButton
                   label="Unpinned"
                   size="xs"
-                  :color="hue.role ? 'neutral' : 'primary'"
-                  :variant="hue.role ? 'soft' : 'solid'"
+                  :color="(hue as PickerSeedType).role ? 'neutral' : 'primary'"
+                  :variant="(hue as PickerSeedType).role ? 'soft' : 'solid'"
                   @click="send({ index: i - 1, role: undefined, type: IridisUiActionType.PIN_SEED_ROLE })"
                 />
                 <UButton
@@ -211,10 +309,10 @@ function sample(): void {
                   :key="r"
                   :label="r"
                   size="xs"
-                  :color="hue.role === r ? 'primary' : 'neutral'"
-                  :variant="hue.role === r ? 'solid' : 'soft'"
+                  :color="(hue as PickerSeedType).role === r ? 'primary' : 'neutral'"
+                  :variant="(hue as PickerSeedType).role === r ? 'solid' : 'soft'"
                   :disabled="pickerSeeds.some((s, sIdx) => sIdx !== i - 1 && s.role === r)"
-                  @click="send({ index: i - 1, role: hue.role === r ? undefined : r, type: IridisUiActionType.PIN_SEED_ROLE })"
+                  @click="send({ index: i - 1, role: (hue as PickerSeedType).role === r ? undefined : r, type: IridisUiActionType.PIN_SEED_ROLE })"
                 />
               </div>
             </div>
@@ -371,6 +469,124 @@ function sample(): void {
             </div>
           </div>
 
+          <div class="derivation-section space-y-2">
+            <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
+              Derivation Strategy
+            </p>
+            <p class="text-sm text-muted">
+              How should colors be generated for each role — pick a preset, or go
+              <strong class="text-highlighted">Custom</strong> to configure hue and variation algorithms per role.
+            </p>
+
+            <div class="space-y-1.5">
+              <label
+                v-for="preset in presets"
+                :key="preset"
+                class="flex items-center gap-2 cursor-pointer rounded-md border border-default p-2 pl-3 hover:bg-elevated/50"
+                :class="selectedStrategy === preset ? 'border-primary bg-primary/5' : ''"
+              >
+                <input
+                  v-model="selectedStrategy"
+                  type="radio"
+                  :value="preset"
+                  class="h-4 w-4 accent-primary"
+                  @change="handleStrategyChange(preset)"
+                >
+                <span class="text-sm text-highlighted">
+                  {{ strategyLabel(preset) }}
+                  <span v-if="preset === 'automatic'" class="text-xs text-muted">(recommended)</span>
+                </span>
+              </label>
+            </div>
+
+            <div v-if="selectedStrategy === 'custom'" class="mt-3 space-y-2">
+              <p class="text-xs font-medium uppercase tracking-wide text-dimmed">Configure by role</p>
+              <div class="grid gap-2 sm:grid-cols-2">
+                <div
+                  v-for="role in roles"
+                  :key="role"
+                  class="cursor-pointer rounded-lg border border-default bg-elevated/50 p-2.5 hover:bg-elevated"
+                  @click="openRoleModal(role)"
+                >
+                  <div class="mb-1 flex items-start justify-between gap-2">
+                    <span class="text-sm font-medium capitalize text-highlighted">{{ role }}</span>
+                    <UBadge color="neutral" variant="soft" size="sm">
+                      {{ algorithmBadge(role) }}
+                    </UBadge>
+                  </div>
+                  <p class="text-xs text-muted">
+                    {{ roleDescription(role) }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <UModal v-model:open="isModalOpen">
+              <template #content>
+                <div class="p-6">
+                  <h2 class="mb-4 text-lg font-semibold text-highlighted">
+                    Configure {{ selectedRole }} role
+                  </h2>
+
+                  <div class="mb-6 space-y-2">
+                    <p class="text-sm font-medium text-highlighted">Hue algorithm</p>
+                    <div class="space-y-1.5">
+                      <label
+                        v-for="algo in hueAlgorithms"
+                        :key="algo"
+                        class="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          v-model="roleConfig.hueAlgorithm"
+                          type="radio"
+                          :value="algo"
+                          class="h-4 w-4 accent-primary"
+                        >
+                        <span class="text-sm capitalize text-muted">{{ algo }}</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="mb-6 space-y-2">
+                    <p class="text-sm font-medium text-highlighted">Variation layers</p>
+                    <p class="text-xs text-muted">Applied in order.</p>
+                    <div class="space-y-1.5">
+                      <label
+                        v-for="algo in variationAlgorithms"
+                        :key="algo"
+                        class="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          :checked="roleConfig.variationAlgorithms.includes(algo)"
+                          class="h-4 w-4 accent-primary"
+                          @change="toggleVariation(algo)"
+                        >
+                        <span class="text-sm capitalize text-muted">{{ algo.replace('-', ' ') }}</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="flex justify-end gap-2">
+                    <UButton
+                      label="Reset"
+                      color="neutral"
+                      variant="soft"
+                      size="sm"
+                      @click="resetRoleToDefault"
+                    />
+                    <UButton
+                      label="Save"
+                      color="primary"
+                      size="sm"
+                      @click="saveRoleConfig"
+                    />
+                  </div>
+                </div>
+              </template>
+            </UModal>
+          </div>
+
           <div class="space-y-2">
             <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
               Color Space
@@ -437,7 +653,7 @@ function sample(): void {
                 <span class="text-sm font-medium">Simulate CVD vision</span>
                 <UButton
                   label="Off"
-                  :color="cvdPreviewTypes.size > 0 ? 'neutral' : 'gray'"
+                  :color="cvdPreviewTypes.size > 0 ? 'neutral' : 'neutral'"
                   :disabled="cvdPreviewTypes.size === 0"
                   variant="ghost"
                   size="xs"

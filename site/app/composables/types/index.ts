@@ -1,3 +1,4 @@
+export * from './colorDerivation.ts';
 export type * from './framing.ts';
 export type * from './galleryAlgorithm.ts';
 export type * from './histogramBin.ts';

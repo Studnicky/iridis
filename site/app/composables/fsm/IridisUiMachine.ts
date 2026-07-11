@@ -3,6 +3,9 @@ import type { FsmStepType } from '@studnicky/fsm';
 
 import { StateMachine } from '@studnicky/fsm';
 
+import { PRESET_DEFAULTS } from '../types/colorDerivation.ts';
+
+import type { DerivationConfig } from '../types/colorDerivation.ts';
 import type { IridisUiEffectType, IridisUiEventType, IridisUiStateType } from '../types/index.ts';
 
 /** Wraps a wrap-around index into `[0, count)`. */
@@ -76,6 +79,16 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
         return { 'effects': [{ 'cvdType': event.cvdType, 'op': 'toggle', 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }], 'state': state };
       case IridisUiActionType.CVD_CLEAR_PREVIEWS:
         return { 'effects': [{ 'op': 'clear', 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }], 'state': state };
+      case IridisUiActionType.SET_DERIVATION_STRATEGY:
+        return { 'effects': [{ 'config': { 'strategy': event.strategy, 'roles': PRESET_DEFAULTS[event.strategy].roles }, 'variant': IridisUiEffectVariant.SET_DERIVATION }], 'state': state };
+      case IridisUiActionType.SET_ROLE_DERIVATION:
+        // Emits only the single changed role; useIridis.ts's SET_DERIVATION handler
+        // merges this into the live derivationConfig rather than replacing it.
+        return { 'effects': [{ 'config': { 'strategy': 'custom', 'roles': { [event.role]: event.derivation } as DerivationConfig['roles'] }, 'variant': IridisUiEffectVariant.SET_DERIVATION }], 'state': state };
+      case IridisUiActionType.RESET_ROLE_DERIVATION:
+        // Resets only the single role to its automatic-preset default; useIridis.ts's
+        // SET_DERIVATION handler merges this into the live derivationConfig.
+        return { 'effects': [{ 'config': { 'strategy': 'custom', 'roles': { [event.role]: PRESET_DEFAULTS.automatic.roles[event.role] } as DerivationConfig['roles'] }, 'variant': IridisUiEffectVariant.SET_DERIVATION }], 'state': state };
       default:
         break;
     }
