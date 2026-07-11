@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-tailwind",
   "description": "Emits a Tailwind CSS theme config from resolved roles and shade scales.",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
