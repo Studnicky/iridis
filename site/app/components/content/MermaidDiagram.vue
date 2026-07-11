@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
+// @ts-ignore mermaid types not available
 import mermaid from 'mermaid/dist/mermaid.esm.min.mjs';
 import { useColorMode } from '#imports';
 import { useIridis } from '~/composables/useIridis.ts';
@@ -90,15 +91,14 @@ let isDragging = false;
 let lastX = 0;
 let lastY = 0;
 
-const startDrag = (e: MouseEvent) => {
-  if (e.button !== 0) return;
+const startDrag = (e: MouseEvent | PointerEvent) => {
   isDragging = true;
   lastX = e.clientX;
   lastY = e.clientY;
-  if (viewportRef.value) viewportRef.value.setPointerCapture(e.pointerId || 1);
+  if (viewportRef.value && 'pointerId' in e) viewportRef.value.setPointerCapture((e as PointerEvent).pointerId);
 };
 
-const onDrag = (e: MouseEvent) => {
+const onDrag = (e: MouseEvent | PointerEvent) => {
   if (!isDragging) return;
   const dx = e.clientX - lastX;
   const dy = e.clientY - lastY;
@@ -107,14 +107,14 @@ const onDrag = (e: MouseEvent) => {
   lastY = e.clientY;
 };
 
-const endDrag = (e: MouseEvent) => {
+const endDrag = (e: MouseEvent | PointerEvent) => {
   isDragging = false;
-  if (viewportRef.value) {
-    try { viewportRef.value.releasePointerCapture(e.pointerId || 1); } catch(err) {}
+  if (viewportRef.value && 'pointerId' in e) {
+    try { viewportRef.value.releasePointerCapture((e as PointerEvent).pointerId); } catch(err) {}
   }
 };
 
-const naturalSize = (svg: HTMLElement): { w: number, h: number } => {
+const naturalSize = (svg: SVGSVGElement | Element): { w: number, h: number } => {
   const vb = svg.getAttribute('viewBox');
   if (vb) {
     const parts = vb.trim().split(/[\s,]+/);

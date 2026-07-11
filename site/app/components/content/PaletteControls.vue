@@ -10,6 +10,7 @@ import type {
   HueAlgorithm,
   VariationAlgorithm
 } from '~/composables/types/colorDerivation.ts';
+import type { PickerSeedType } from '~/composables/types/pickerSeed.ts';
 
 /**
  * The engine's single input surface: pick seeds or an image, choose the
@@ -33,7 +34,7 @@ const {
   pickerSeeds, pinnableRoles, framing, schemaName, contrastStrictness, colorSpace, mode, imageSeeds, running,
   enabledOptionalStages, cvdCorrect, contrastReport,
   imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
-  cvdPreviewTypes, derivationConfig
+  cvdPreviewTypes, derivationConfig, histogram
 } = useIridis();
 const { send } = useIridisUiMachine();
 
@@ -43,6 +44,8 @@ const algorithmItems = [
   { 'label': 'Median cut', 'value': 'median-cut' }
 ];
 const UNPINNED = '__unpinned__';
+
+const isAddBtn = (item: { isAddBtn: true } | PickerSeedType): item is { isAddBtn: true } => 'isAddBtn' in item;
 
 
 
@@ -252,7 +255,7 @@ function roleDescription(role: RoleType): string {
       >
         <template #default="{ item: hue, index: i }">
           <div
-            v-if="hue.isAddBtn"
+            v-if="isAddBtn(hue)"
             class="flex min-h-full items-center justify-center flex-1 rounded-lg border border-transparent p-2.5"
           >
             <UButton
@@ -270,6 +273,7 @@ function roleDescription(role: RoleType): string {
             v-else
             class="relative flex flex-col gap-2 rounded-lg border border-default bg-elevated/50 p-2.5 flex-1"
           >
+            <!-- Type narrowing: hue is PickerSeedType in v-else -->
             <UButton
               icon="i-material-symbols-close-rounded"
               color="neutral"
@@ -281,13 +285,13 @@ function roleDescription(role: RoleType): string {
             />
             <div class="flex items-center gap-2">
               <input
-                :value="hue.hex"
+                :value="(hue as PickerSeedType).hex"
                 type="color"
                 class="h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent flex-none"
                 @change="send({ type: IridisUiActionType.SET_SEED, index: i - 1, hex: ($event.target as HTMLInputElement).value })"
               >
               <div class="flex flex-col min-w-0 flex-1">
-                <span class="font-mono text-xs text-muted truncate">{{ hue.hex }}</span>
+                <span class="font-mono text-xs text-muted truncate">{{ (hue as PickerSeedType).hex }}</span>
               </div>
             </div>
             <div class="space-y-1">
@@ -296,8 +300,8 @@ function roleDescription(role: RoleType): string {
                 <UButton
                   label="Unpinned"
                   size="xs"
-                  :color="hue.role ? 'neutral' : 'primary'"
-                  :variant="hue.role ? 'soft' : 'solid'"
+                  :color="(hue as PickerSeedType).role ? 'neutral' : 'primary'"
+                  :variant="(hue as PickerSeedType).role ? 'soft' : 'solid'"
                   @click="send({ index: i - 1, role: undefined, type: IridisUiActionType.PIN_SEED_ROLE })"
                 />
                 <UButton
@@ -305,10 +309,10 @@ function roleDescription(role: RoleType): string {
                   :key="r"
                   :label="r"
                   size="xs"
-                  :color="hue.role === r ? 'primary' : 'neutral'"
-                  :variant="hue.role === r ? 'solid' : 'soft'"
+                  :color="(hue as PickerSeedType).role === r ? 'primary' : 'neutral'"
+                  :variant="(hue as PickerSeedType).role === r ? 'solid' : 'soft'"
                   :disabled="pickerSeeds.some((s, sIdx) => sIdx !== i - 1 && s.role === r)"
-                  @click="send({ index: i - 1, role: hue.role === r ? undefined : r, type: IridisUiActionType.PIN_SEED_ROLE })"
+                  @click="send({ index: i - 1, role: (hue as PickerSeedType).role === r ? undefined : r, type: IridisUiActionType.PIN_SEED_ROLE })"
                 />
               </div>
             </div>
@@ -649,7 +653,7 @@ function roleDescription(role: RoleType): string {
                 <span class="text-sm font-medium">Simulate CVD vision</span>
                 <UButton
                   label="Off"
-                  :color="cvdPreviewTypes.size > 0 ? 'neutral' : 'gray'"
+                  :color="cvdPreviewTypes.size > 0 ? 'neutral' : 'neutral'"
                   :disabled="cvdPreviewTypes.size === 0"
                   variant="ghost"
                   size="xs"
