@@ -53,8 +53,12 @@ const fitToView = () => {
 
 const toggleExpand = () => {
   send({ 'type': IridisUiActionType.DIAGRAM_TOGGLE_EXPAND });
-  // Let the layout settle, then fit
+  // The container's fixed/inset switch animates over 300ms (transition-all
+  // duration-300) — measuring before it settles fits against a mid-animation
+  // size. Fit once early for immediate feedback, then again once the
+  // transition has actually finished so the final fit is accurate.
   setTimeout(() => fitToView(), 50);
+  setTimeout(() => fitToView(), 320);
 };
 
 // Handle Escape key to exit expanded mode
@@ -214,58 +218,148 @@ watch([() => props.code, () => colorMode.value], renderMermaid);
       v-if="isExpanded" 
       class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998] transition-opacity" 
       @click="toggleExpand"
-    ></div>
+    />
   </Teleport>
 
-  <div 
-    class="my-8 w-full border border-default bg-elevated/30 shadow-sm relative group select-none transition-all duration-300 flex flex-col overflow-hidden"
-    :class="isExpanded ? 'fixed inset-6 z-[9999] rounded-xl bg-elevated shadow-2xl' : 'h-[500px] rounded-xl'"
+  <Teleport
+    to="body"
+    :disabled="!isExpanded"
   >
-    <!-- Viewport Container -->
-    <div 
-      ref="viewportRef"
-      class="flex-1 w-full h-full cursor-grab active:cursor-grabbing relative overflow-hidden"
-      @wheel="handleWheel" 
-      @mousedown="startDrag"
-      @mousemove="onDrag"
-      @mouseup="endDrag"
-      @mouseleave="endDrag"
+    <div
+      class="my-8 w-full border border-default bg-elevated/30 shadow-sm relative group select-none transition-all duration-300 flex flex-col overflow-hidden"
+      :class="isExpanded ? 'fixed inset-6 z-[9999] rounded-xl bg-elevated shadow-2xl' : 'h-[500px] rounded-xl'"
     >
-      <!-- Diagram Wrapper -->
+      <!-- Viewport Container -->
       <div 
-        class="origin-top-left absolute top-0 left-0"
-        :style="{ transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`, transition: isDragging ? 'none' : 'transform 75ms ease-out' }"
+        ref="viewportRef"
+        class="flex-1 w-full h-full cursor-grab active:cursor-grabbing relative overflow-hidden"
+        @wheel="handleWheel" 
+        @mousedown="startDrag"
+        @mousemove="onDrag"
+        @mouseup="endDrag"
+        @mouseleave="endDrag"
       >
-        <div v-html="svgContent" class="mermaid-container [&_svg]:max-w-none [&_svg]:w-auto [&_svg]:h-auto" />
+        <!-- Diagram Wrapper -->
+        <div 
+          class="origin-top-left absolute top-0 left-0"
+          :style="{ transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`, transition: isDragging ? 'none' : 'transform 75ms ease-out' }"
+        >
+          <div
+            class="mermaid-container [&_svg]:max-w-none [&_svg]:w-auto [&_svg]:h-auto"
+            v-html="svgContent"
+          />
+        </div>
+      </div>
+
+      <!-- Dagonizer D-PAD & Navigation Overlay -->
+      <div class="absolute bottom-4 right-4 flex flex-col items-end gap-1.5 z-10 pointer-events-none">
+        <!-- Zoom level readout HUD -->
+        <aside class="inline-flex items-center gap-2 px-2.5 py-1 bg-black/55 backdrop-blur-sm border border-default/30 rounded font-mono text-xs text-white">
+          <span class="font-bold text-primary">{{ scale.toFixed(2) }}×</span>
+          <span class="text-muted/90 uppercase tracking-[0.08em] text-[10px]">drag · wheel</span>
+        </aside>
+
+        <!-- 3x3 D-pad grid -->
+        <div class="grid grid-cols-3 grid-rows-3 gap-1 bg-black/30 p-1.5 rounded-lg backdrop-blur-sm pointer-events-auto">
+          <!-- Row 1 -->
+          <button
+            class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Zoom in"
+            @click="zoom(1.2)"
+          >
+            <UIcon
+              name="i-material-symbols-zoom-in-rounded"
+              class="h-4 w-4"
+            />
+          </button>
+          <button
+            class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Pan up"
+            @click="pan(0, 50)"
+          >
+            <UIcon
+              name="i-material-symbols-keyboard-arrow-up-rounded"
+              class="h-4 w-4"
+            />
+          </button>
+          <button
+            class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Zoom out"
+            @click="zoom(0.8)"
+          >
+            <UIcon
+              name="i-material-symbols-zoom-out-rounded"
+              class="h-4 w-4"
+            />
+          </button>
+
+          <!-- Row 2 -->
+          <button
+            class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Pan left"
+            @click="pan(50, 0)"
+          >
+            <UIcon
+              name="i-material-symbols-keyboard-arrow-left"
+              class="h-4 w-4"
+            />
+          </button>
+          <button
+            class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Centre view"
+            aria-label="Centre diagram view"
+            @click="resetView"
+          >
+            <UIcon
+              name="i-material-symbols-restart-alt-rounded"
+              class="h-4 w-4"
+            />
+          </button>
+          <button
+            class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Pan right"
+            @click="pan(-50, 0)"
+          >
+            <UIcon
+              name="i-material-symbols-keyboard-arrow-right"
+              class="h-4 w-4"
+            />
+          </button>
+
+          <!-- Row 3 -->
+          <button
+            class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :title="isExpanded ? 'Collapse' : 'Expand zoom'"
+            @click="toggleExpand"
+          >
+            <UIcon
+              :name="isExpanded ? 'i-material-symbols-close-fullscreen-rounded' : 'i-material-symbols-open-in-full-rounded'"
+              class="h-4 w-4"
+            />
+          </button>
+          <button
+            class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Pan down"
+            @click="pan(0, -50)"
+          >
+            <UIcon
+              name="i-material-symbols-keyboard-arrow-down-rounded"
+              class="h-4 w-4"
+            />
+          </button>
+          <button
+            class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            title="Fit to view"
+            aria-label="Fit diagram to view"
+            @click="fitToView"
+          >
+            <UIcon
+              name="i-material-symbols-fit-screen-rounded"
+              class="h-4 w-4"
+            />
+          </button>
+        </div>
       </div>
     </div>
-
-    <!-- Dagonizer D-PAD & Navigation Overlay -->
-    <div class="absolute bottom-4 right-4 flex flex-col items-end gap-1.5 z-10 pointer-events-none">
-      
-      <!-- Zoom level readout HUD -->
-      <aside class="inline-flex items-center gap-2 px-2.5 py-1 bg-black/55 backdrop-blur-sm border border-default/30 rounded font-mono text-xs text-white">
-        <span class="font-bold text-primary">{{ scale.toFixed(2) }}×</span>
-        <span class="text-muted/90 uppercase tracking-[0.08em] text-[10px]">drag · wheel</span>
-      </aside>
-
-      <!-- 3x3 D-pad grid -->
-      <div class="grid grid-cols-3 grid-rows-3 gap-1 bg-black/30 p-1.5 rounded-lg backdrop-blur-sm pointer-events-auto">
-        <!-- Row 1 -->
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Zoom in" @click="zoom(1.2)">＋</button>
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-[13px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Pan up" @click="pan(0, 50)">▲</button>
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Zoom out" @click="zoom(0.8)">－</button>
-
-        <!-- Row 2 -->
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-[13px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Pan left" @click="pan(50, 0)">◀</button>
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-[13px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Centre view" aria-label="Centre diagram view" @click="resetView">⊙</button>
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-[13px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Pan right" @click="pan(-50, 0)">▶</button>
-
-        <!-- Row 3 -->
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" :title="isExpanded ? 'Collapse' : 'Expand zoom'" @click="toggleExpand">⛶</button>
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-[13px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Pan down" @click="pan(0, -50)">▼</button>
-        <button class="w-8 h-8 flex items-center justify-center bg-elevated border border-default rounded text-muted hover:bg-default hover:text-primary hover:border-primary transition-colors text-sm font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-primary" title="Fit to view" aria-label="Fit diagram to view" @click="fitToView">⤢</button>
-      </div>
-    </div>
-  </div>
+  </Teleport>
 </template>

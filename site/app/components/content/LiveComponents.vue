@@ -67,7 +67,7 @@ const compliancePct = computed<number>(() => {
 
     <div>
       <div class="mb-2 flex items-center justify-between">
-        <span class="text-xs font-medium text-muted">Dismissible alerts</span>
+        <span class="text-xs font-medium uppercase tracking-wide text-dimmed">Dismissible alerts</span>
         <UButton
           icon="i-material-symbols-add-rounded"
           size="xs"
@@ -100,7 +100,7 @@ const compliancePct = computed<number>(() => {
     </div>
 
     <div class="space-y-1">
-      <div class="flex items-center justify-between text-xs font-medium text-muted">
+      <div class="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-dimmed">
         <span>{{ complianceLabel }} compliance</span>
         <span>{{ compliancePct }}%</span>
       </div>
@@ -108,7 +108,7 @@ const compliancePct = computed<number>(() => {
     </div>
 
     <div class="space-y-1">
-      <div class="text-xs font-medium text-muted">
+      <div class="text-xs font-medium uppercase tracking-wide text-dimmed">
         Primary scale
       </div>
       <div class="flex gap-0.5">

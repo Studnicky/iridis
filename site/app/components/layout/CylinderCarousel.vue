@@ -159,15 +159,17 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
 
     <div class="cyl-controls">
       <div class="cyl-dots">
-        <button
+        <UButton
           v-for="(item, i) in items"
           :key="item.key"
-          class="cyl-dot font-display"
-          :class="{ on: isActive(i) }"
+          :label="item.label"
+          :color="isActive(i) ? 'primary' : 'neutral'"
+          :variant="isActive(i) ? 'solid' : 'soft'"
+          size="xs"
+          class="cyl-dot font-display rounded-full"
+          :class="{ 'cyl-dot-active': isActive(i) }"
           @click="select(i)"
-        >
-          {{ item.label }}
-        </button>
+        />
       </div>
     </div>
   </div>
@@ -254,16 +256,9 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
 .cyl-controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
 .cyl-dots { display: flex; gap: 0.35rem; flex-wrap: wrap; justify-content: center; }
 .cyl-dot {
-  padding: 0.32rem 0.75rem;
   font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase;
-  border-radius: 9999px;
-  border: 1px solid color-mix(in oklch, var(--ui-primary) 25%, transparent);
-  color: var(--ui-text-muted);
-  background: color-mix(in oklch, var(--ui-bg-elevated) 60%, transparent);
-  transition: all .25s ease;
 }
-.cyl-dot.on {
-  color: var(--ui-primary-contrast); background: var(--ui-primary); border-color: var(--ui-primary);
+.cyl-dot-active {
   box-shadow: 0 0 16px color-mix(in oklch, var(--ui-primary) 70%, transparent);
 }
 </style>

@@ -67,7 +67,7 @@ const mathList = computed(() => {
         class="flex flex-col gap-3 rounded-lg border border-default bg-elevated p-4 text-sm"
       >
         <div class="flex items-center justify-between">
-          <div class="font-bold text-highlighted uppercase tracking-wider">{{ role.name }}</div>
+          <div class="text-sm font-semibold text-highlighted">{{ role.name }}</div>
           <UBadge v-if="role.synthesized" color="warning" variant="subtle" size="sm">Synthesized</UBadge>
           <UBadge v-else-if="role.isDerived" color="secondary" variant="subtle" size="sm">Derived</UBadge>
           <UBadge v-else-if="role.isPinned" color="info" variant="subtle" size="sm">Explicit Pin</UBadge>
@@ -111,7 +111,7 @@ const mathList = computed(() => {
           This role was explicitly pinned to a seed by the user. Distance matching was skipped.
         </div>
         <div v-else class="space-y-2">
-          <div class="text-xs font-semibold text-dimmed uppercase">Candidates</div>
+          <div class="text-xs font-medium uppercase tracking-wide text-dimmed">Candidates</div>
           <div class="space-y-1">
             <div 
               v-for="cand in role.candidates" 
@@ -130,7 +130,7 @@ const mathList = computed(() => {
 
         <!-- Clamping -->
         <div v-if="role.clamp" class="mt-2 pt-3 border-t border-default/50 space-y-2">
-          <div class="text-xs font-semibold text-dimmed uppercase">Clamp applied</div>
+          <div class="text-xs font-medium uppercase tracking-wide text-dimmed">Clamp applied</div>
           <div class="flex items-center gap-3">
             <div class="h-6 w-6 rounded border border-default shadow-inner flex-none" :style="{ backgroundColor: role.clamp.seedHex }" />
             <div class="flex flex-col min-w-0">

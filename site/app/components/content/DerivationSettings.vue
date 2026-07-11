@@ -54,7 +54,7 @@ function formatLabel(text: string): string {
     <div class="text-sm font-semibold text-highlighted">Derivation Algorithms</div>
     <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
       <div v-for="role in roles" :key="role" class="space-y-1.5">
-        <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-400">{{ formatLabel(role) }}</label>
+        <label class="block text-xs font-medium uppercase tracking-wide text-dimmed">{{ formatLabel(role) }}</label>
         <USelect
           :model-value="getRoleAlgorithm(role)"
           :items="hueAlgorithmOptions"
