@@ -76,6 +76,15 @@ export class Tokens {
     return tokens;
   }
 
+  /** DOM writer. SSR-guarded; call only in the browser. */
+  static apply(tokens: RoleHexMapType, framing: FramingType): void {
+    if (typeof document === 'undefined') {return;}
+    const root = document.documentElement;
+    for (const [k, v] of Object.entries(tokens)) {root.style.setProperty(k, v);}
+    root.classList.toggle('dark', framing === 'dark');
+    root.dataset.iridisFraming = framing;
+  }
+
   /** Serializes engine tokens as a highly specific rule for SSR head injection to override UI framework defaults. */
   static toCssText(tokens: RoleHexMapType): string {
     const decls = Object.entries(tokens).map(([k, v]) => {return `${k}:${v}`;}).join(';');
