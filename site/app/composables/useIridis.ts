@@ -432,6 +432,7 @@ function setPaletteParam(effect: SetPaletteParamEffectType): void {
   else if (effect.op === 'imgHarmonize') {imgHarmonize.value = effect.value;}
   else if (effect.op === 'imgLightnessRange') {imgLightnessRange.value = effect.value;}
   else if (effect.op === 'imgChromaRange') {imgChromaRange.value = effect.value;}
+  else if (effect.op === 'derivation') {derivationConfig.value = effect.value;}
 }
 registerSetPaletteParamHandler(setPaletteParam);
 
