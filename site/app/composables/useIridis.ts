@@ -25,6 +25,7 @@ type ExtractImageEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiE
 type PinSeedRoleEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }>;
 type UpdateDiagramViewEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }>;
 type UpdateCvdPreviewEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>;
+type PopulatePickerFromImageEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }>;
 
 import { intakeHexHint } from '../theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
@@ -125,6 +126,7 @@ const {
   'registerExtractImageHandler': registerExtractImageHandler, 'registerMutateSeedsHandler': registerMutateSeedsHandler,
   'registerPinSeedRoleHandler': registerPinSeedRoleHandler, 'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
   'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
+  'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler,
   'send': sendUiEvent, 'state': uiState
 } = useIridisUiMachine();
 /** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
