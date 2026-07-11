@@ -187,4 +187,4 @@ async function onCategoryChange(category: string, seed: string) {
 
 The `emit:capacitorStatusBar` task writes `state.outputs['capacitor:statusBar'].backgroundColor` (the resolved `surface`/`topBar` role hex) and `.style` (`'DARK'` or `'LIGHT'` depending on background luminance) — pass these directly to the Capacitor `StatusBar` plugin.
 
-In v1, iridis re-derives one category palette per call; calling `apply()` for different categories in sequence is supported, and multiple categories can coexist in the DOM simultaneously as long as they use distinct `data-category` values. Full living-color animation (smooth palette morphing between categories) is a v2 concern — see the [Roadmap section](/architecture#roadmap-living-color) of the architecture page.
+In v1, iridis re-derives one category palette per call; calling `apply()` for different categories in sequence is supported, and multiple categories can coexist in the DOM simultaneously as long as they use distinct `data-category` values. Full living-color animation (smooth palette morphing between categories) is a v2 concern — see the [Roadmap section](#roadmap-living-color) of the architecture page.
