@@ -3,7 +3,7 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed, ref, watch } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
-// import DerivationSettings from './DerivationSettings.vue';
+import DerivationSettings from './DerivationSettings.vue';
 
 /**
  * The engine's single input surface: pick seeds or an image, choose the
@@ -474,8 +474,9 @@ function sample(): void {
         </div>
       </div>
 
-      <!-- DerivationSettings component temporarily disabled pending ref unwrapping fix -->
-      <!-- <DerivationSettings /> -->
+      <div class="mt-6 pt-4 border-t border-default/50">
+        <DerivationSettings />
+      </div>
 
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mt-6 pt-4 border-t border-default/50">
         <!-- Links on left -->

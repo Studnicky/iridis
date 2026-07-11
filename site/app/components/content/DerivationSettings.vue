@@ -1,22 +1,24 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { IridisUiActionType } from '~/composables/types/index.ts';
 import type { DerivationConfig, HueAlgorithm, RoleType } from '~/composables/types/colorDerivation.ts';
+import { PRESET_DEFAULTS } from '~/composables/types/colorDerivation.ts';
 
-const { derivationConfig: derivationConfigRef } = useIridis();
+const { derivationConfig } = useIridis();
 const { send } = useIridisUiMachine();
-
-const derivationConfig = computed(() => derivationConfigRef.value ?? { strategy: 'automatic' as const, roles: {} });
 
 const hueAlgorithms: HueAlgorithm[] = ['monochromatic', 'complementary', 'analogous', 'triadic', 'tetradic', 'split-complementary', 'compound', 'freeform'];
 
 const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
 
+function getRoleAlgorithm(role: RoleType): HueAlgorithm {
+  const val = derivationConfig.value;
+  return val?.roles?.[role]?.hueAlgorithm || 'monochromatic';
+}
+
 function updateAlgorithm(role: RoleType, algorithm: HueAlgorithm): void {
-  const current = derivationConfigRef.value;
-  if (!current) {return;}
+  const current = derivationConfig.value || PRESET_DEFAULTS.automatic;
   const currentRole = current.roles[role];
   const updated: DerivationConfig = {
     ...current,
@@ -44,14 +46,14 @@ function formatLabel(text: string): string {
       <div v-for="role in roles" :key="role" class="space-y-1.5">
         <label class="block text-xs font-medium text-neutral-600 dark:text-neutral-400">{{ formatLabel(role) }}</label>
         <USelectMenu
-          :model-value="derivationConfig.roles[role]?.hueAlgorithm || 'monochromatic'"
+          :model-value="getRoleAlgorithm(role)"
           :options="hueAlgorithms"
           @update:model-value="updateAlgorithm(role, $event)"
           size="sm"
           :ui="{ base: 'w-full' }"
         >
           <template #label>
-            {{ formatLabel(derivationConfig.roles[role]?.hueAlgorithm || 'monochromatic') }}
+            {{ formatLabel(getRoleAlgorithm(role)) }}
           </template>
           <template #option="{ option }">
             {{ formatLabel(option) }}
