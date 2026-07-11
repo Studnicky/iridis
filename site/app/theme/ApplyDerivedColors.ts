@@ -7,7 +7,7 @@ import type { DerivationConfig, RoleType } from '../composables/types/colorDeriv
 
 /**
  * Apply derivation algorithms to role hues (oklch canonical only).
- * Consumes state.colors normalized by prior pipeline tasks.
+ * Works in linear pipeline with multiple entry points.
  */
 class ApplyDerivedColors implements TaskInterface {
   readonly 'name' = 'derive:colors';
@@ -21,9 +21,10 @@ class ApplyDerivedColors implements TaskInterface {
 
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
     const derivationConfig = state.metadata['derivation:config'] as DerivationConfig | undefined;
-    if (!derivationConfig || !state.colors || state.colors.length === 0) return;
+    if (!derivationConfig || !state.colors.length) return;
 
-    const baseHues = (state.colors as string[]);
+    // state.colors is ColorRecordInterfaceType[] - extract hex strings
+    const baseHues = state.colors.map(c => c.hex);
     const derivedHues = deriveColors(baseHues, derivationConfig.roles, baseHues.length);
 
     const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
@@ -31,10 +32,10 @@ class ApplyDerivedColors implements TaskInterface {
       const derived = derivedHues[roleType];
       if (!derived?.length) continue;
 
-      const role = (state.roles as any)[roleType];
+      const role = state.roles[roleType];
       if (!role?.oklch) continue;
 
-      (state.roles as any)[roleType] = {
+      state.roles[roleType] = {
         ...role,
         oklch: { ...role.oklch, h: derived[0].hue }
       };
