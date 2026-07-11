@@ -4,6 +4,22 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ## [Unreleased]
 
+### Changed
+
+- Retired the VitePress docs site (`docs/`) and consolidated on the Nuxt app (`site/`) as the single app — it now runs the engine live, doubles as the interactive demo, and hosts all documentation
+- Ported genuine documentation content (pipeline, contrast, color-space, and role-schema concepts; color-model and role-schema reference; recipes; getting-started; the v2 roadmap) into `site/` as enriched "Learn more" detail sections on the existing demo cards and into `site/content/*.md`
+- Moved internal engineering notes from `docs/internal/` to `NOTES/` at the repo root
+
+### Removed
+
+- `docs/` (VitePress site), its duplicate demo components, its own FSM (`themeDispatcher.ts`), and its projector — all superseded by `site/`'s existing, tested `IridisUiMachine` FSM and pipeline wiring
+- Orphaned nested `site/package-lock.json`; the workspace uses a single root lockfile
+
+### Fixed
+
+- `MultiOutput.vue` now adopts the `@studnicky/iridis-rdf` plugin, which was a declared dependency but was never actually adopted — adds an RDF/Turtle output tab
+- Release pipeline (`scripts/stamp-version.mjs`, `.github/workflows/release.yml`) updated to reference the relocated `readme-header.svg`/`readme-header.svg.template` at the repo root instead of the now-deleted `docs/public/`
+
 ## [0.7.0] - 2026-07-10
 
 UI theming polish, component layout refinements, and accessibility improvements.
