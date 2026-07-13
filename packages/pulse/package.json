@@ -17,7 +17,7 @@
     "prebuild": "rm -rf dist"
   },
   "dependencies": {
-    "@studnicky/iridis-algebra": "^0.8.1",
-    "@studnicky/iridis-anima": "^0.8.1"
+    "@studnicky/iridis-algebra": "*",
+    "@studnicky/iridis-anima": "*"
   }
 }
