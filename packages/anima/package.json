@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-anima",
   "description": "Living-color animation engine — evaluates palette curves over time with easing, chromatic detours, and per-frame contrast enforcement.",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -17,10 +17,10 @@
     "prebuild": "rm -rf dist"
   },
   "dependencies": {
-    "@studnicky/iridis-algebra": "^0.8.1",
-    "@studnicky/iridis-contrast": "^0.8.1"
+    "@studnicky/iridis-algebra": "*",
+    "@studnicky/iridis-contrast": "*"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.8.0"
+    "@studnicky/iridis": "*"
   }
 }
