@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+
+import { useColorStreamHistory, useLivingBackground } from '../../composables/useLivingBackground.ts';
+import { ALIAS_COLOR_NAMES } from '../../theme/Tokens.ts';
 
 /**
  * A "look and feel" motion page — the kind every design system ships one of —
@@ -22,6 +25,19 @@ const EASE_PRESETS: Record<string, string> = {
 const tuneMs = ref<number>(550);
 const easeKey = ref<string>('Smooth (default)');
 const reducedMotion = ref<boolean>(false);
+
+useLivingBackground();
+const colorStreamHistory = useColorStreamHistory();
+
+/** The decorative aliases whose engine-computed current hex we show live below — every alias except neutral, derived from the canonical list rather than a second hardcoded copy. */
+const LIVE_ROLES: readonly string[] = ALIAS_COLOR_NAMES.filter((a) => a !== 'neutral');
+
+/** Current (most recent) hex per decorative role, falling back to the role's static token when the history is still empty. */
+const liveSwatches = computed(() => LIVE_ROLES.map((role) => {
+  const samples = colorStreamHistory[role];
+  const last = samples?.[samples.length - 1];
+  return { role, 'hex': last?.hex ?? `var(--ui-color-${role}-500)` };
+}));
 
 onMounted(() => {
   const styles = getComputedStyle(document.documentElement);
@@ -55,102 +71,125 @@ const NAMED_ANIMATIONS: { kind: 'dot' | 'orbit' | 'sonar' | 'radar' | 'chroma'; 
 
 <template>
   <UCard>
-    <template #header>
-      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <span />
-        <span class="text-center font-semibold text-highlighted">Motion</span>
-        <UBadge
-          v-if="reducedMotion"
-          color="warning"
-          variant="soft"
-          class="justify-self-end"
-        >
-          prefers-reduced-motion is on
-        </UBadge>
-      </div>
-    </template>
+    <UBadge
+      v-if="reducedMotion"
+      color="warning"
+      variant="soft"
+      class="mb-3"
+    >
+      prefers-reduced-motion is on
+    </UBadge>
 
     <div class="space-y-5">
-      <p class="text-sm text-muted">
-        Drag the duration — every color transition on this page, not just the swatches below, runs on
-        this same clock.
-      </p>
-
-      <div class="grid gap-4 sm:grid-cols-2">
-        <UFormField :label="`Unison duration · ${tuneMs}ms`">
-          <USlider
-            v-model="tuneMs"
-            :min="100"
-            :max="1500"
-            :step="50"
-          />
-        </UFormField>
-        <UFormField label="Easing">
-          <USelect
-            v-model="easeKey"
-            :items="Object.keys(EASE_PRESETS)"
-            class="w-full"
-          />
-        </UFormField>
-      </div>
-
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div
-          v-for="a in NAMED_ANIMATIONS"
-          :key="a.label"
-          class="flex flex-col items-center gap-2 rounded-lg border border-default p-3 text-center"
-        >
-          <div class="relative flex h-14 w-14 items-center justify-center">
-            <div
-              v-if="a.kind === 'dot'"
-              class="glass flex h-12 w-12 items-center justify-center rounded-full"
-              :class="a.class !== 'glass' ? a.class : ''"
-            >
-              <span
-                class="h-3 w-3 rounded-full"
-                :style="{ backgroundColor: 'var(--ui-primary)' }"
-              />
-            </div>
-            <div
-              v-else-if="a.kind === 'orbit'"
-              class="orbit-rig"
-            >
-              <div class="orbit-ring r1">
-                <span class="orbit-orb" />
-              </div>
-              <div class="orbit-ring r2">
-                <span class="orbit-orb" />
-              </div>
-              <div class="orbit-ring r3">
-                <span class="orbit-orb" />
-              </div>
-            </div>
-            <template v-else-if="a.kind === 'sonar'">
-              <span class="sonar-ring" />
-              <span class="sonar-dot n" />
-              <span class="sonar-dot e" />
-              <span class="sonar-dot s" />
-              <span class="sonar-dot w" />
-            </template>
-            <div
-              v-else-if="a.kind === 'radar'"
-              class="glass h-12 w-12 rounded-full"
-            >
-              <span class="radar-sweep" />
-            </div>
-            <div
-              v-else-if="a.kind === 'chroma'"
-              class="chroma-cycle"
+      <ControlPlane
+        label="Timing"
+        help="Drag the duration — every color transition on this page, not just the swatches below, runs on this same clock."
+      >
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UFormField :label="`Unison duration · ${tuneMs}ms`">
+            <USlider
+              v-model="tuneMs"
+              :min="100"
+              :max="1500"
+              :step="50"
             />
-          </div>
-          <div class="font-mono text-[11px] text-highlighted">
-            {{ a.label }} · {{ a.duration }}
-          </div>
-          <div class="text-[10px] text-dimmed">
-            {{ a.note }}
+          </UFormField>
+          <UFormField label="Easing">
+            <USelect
+              v-model="easeKey"
+              :items="Object.keys(EASE_PRESETS)"
+              class="w-full"
+            />
+          </UFormField>
+        </div>
+      </ControlPlane>
+
+      <ShowcasePlane
+        label="Live engine swatches"
+        help="These six swatches are engine-computed in real time — the same OKLCH curve evaluation driving the ambient background — not CSS keyframes."
+      >
+        <div class="flex flex-wrap gap-3">
+          <div
+            v-for="swatch in liveSwatches"
+            :key="swatch.role"
+            class="flex flex-col items-center gap-1"
+          >
+            <span
+              class="h-6 w-6 rounded-full border border-default"
+              :style="{ backgroundColor: swatch.hex }"
+            />
+            <span class="text-[10px] text-dimmed">{{ swatch.role }}</span>
           </div>
         </div>
-      </div>
+      </ShowcasePlane>
+
+      <p class="text-xs text-muted">
+        This card is a live demo of <strong class="text-highlighted">Living Color</strong> — the engine's
+        palette-as-animated-vector layer, not just a static derivation. See
+        <a href="#living-color" class="text-primary hover:underline">Living Color</a> for the underlying
+        package (<code>iridis-anima</code>, <code>iridis-pulse</code>, <code>iridis-fsm</code>) that drives every
+        transition here.
+      </p>
+
+      <ShowcasePlane label="Named animation library">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div
+            v-for="a in NAMED_ANIMATIONS"
+            :key="a.label"
+            class="flex flex-col items-center gap-2 rounded-lg border border-default p-3 text-center"
+          >
+            <div class="relative flex h-14 w-14 items-center justify-center">
+              <div
+                v-if="a.kind === 'dot'"
+                class="glass flex h-12 w-12 items-center justify-center rounded-full"
+                :class="a.class !== 'glass' ? a.class : ''"
+              >
+                <span
+                  class="h-3 w-3 rounded-full"
+                  :style="{ backgroundColor: 'var(--ui-primary)' }"
+                />
+              </div>
+              <div
+                v-else-if="a.kind === 'orbit'"
+                class="orbit-rig"
+              >
+                <div class="orbit-ring r1">
+                  <span class="orbit-orb" />
+                </div>
+                <div class="orbit-ring r2">
+                  <span class="orbit-orb" />
+                </div>
+                <div class="orbit-ring r3">
+                  <span class="orbit-orb" />
+                </div>
+              </div>
+              <template v-else-if="a.kind === 'sonar'">
+                <span class="sonar-ring" />
+                <span class="sonar-dot n" />
+                <span class="sonar-dot e" />
+                <span class="sonar-dot s" />
+                <span class="sonar-dot w" />
+              </template>
+              <div
+                v-else-if="a.kind === 'radar'"
+                class="glass h-12 w-12 rounded-full"
+              >
+                <span class="radar-sweep" />
+              </div>
+              <div
+                v-else-if="a.kind === 'chroma'"
+                class="chroma-cycle"
+              />
+            </div>
+            <div class="font-mono text-[11px] text-highlighted">
+              {{ a.label }} · {{ a.duration }}
+            </div>
+            <div class="text-[10px] text-dimmed">
+              {{ a.note }}
+            </div>
+          </div>
+        </div>
+      </ShowcasePlane>
     </div>
   </UCard>
 </template>

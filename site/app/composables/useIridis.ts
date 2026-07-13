@@ -19,6 +19,9 @@ import type {
   DerivationConfig, FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType
 } from './types/index.ts';
 import { IridisUiActionType, IridisUiEffectVariant, PRESET_DEFAULTS } from './types/index.ts';
+import { contrastRatio } from '../theme/ContrastRatio.ts';
+import type { RoleSortKeyType, RoleSortableRowType } from '../utils/roleSort.ts';
+import { complianceFor, sortRoleRows } from '../utils/roleSort.ts';
 
 type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.MUTATE_SEEDS }>;
 type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>;
@@ -192,6 +195,26 @@ const rolesDerived = ref<string[]>([]);
 const scales = ref<ScaleMapType>({});
 const histogram = ref<HistogramBinType[]>([]);
 const running = ref<boolean>(false);
+
+/**
+ * Single source of truth for "sort the role list by ___" — every place the
+ * full resolved-role set is listed (Roles table, Resolved roles, Clamps)
+ * reads the SAME sortedRoleContrastRows / roleSortKeys rather than keeping
+ * its own local sort state, so changing the sort in one place changes it
+ * everywhere else showing the palette. Default matches the compliance-first
+ * ordering Roles table already shipped with.
+ */
+const roleSortKeys = ref<RoleSortKeyType[]>([{ 'desc': true, 'field': 'compliance' }, { 'desc': true, 'field': 'ratio' }]);
+
+const roleContrastRows = computed<(RoleSortableRowType & { hex: string })[]>(() => {
+  const bg = roles.value['background'] ?? '#000000';
+  return roleViews.value.map((r) => {
+    const ratio = contrastRatio(r.hex, bg);
+    return { 'c': r.c, 'compliance': complianceFor(ratio), 'h': r.h, 'hex': r.hex, 'l': r.l, 'name': r.name, 'ratio': ratio };
+  });
+});
+
+const sortedRoleContrastRows = computed(() => sortRoleRows(roleContrastRows.value, roleSortKeys.value));
 const error = ref<string | null>(null);
 
 /** Raw contrast-check metadata from the last run, keyed by algorithm rather than the `contrast:*` metadata prefix. */
@@ -208,9 +231,21 @@ const imgK = ref<number>(8);
 const imgHistogramBits = ref<number>(5);
 const imgDeltaECap = ref<number>(128);
 const imgHarmonize = ref<number>(10);
-const imgLightnessRange = ref<[number, number]>([0, 1]);
-const imgChromaRange = ref<[number, number]>([0, 0.5]);
+/* Each envelope is a UNION of ranges, not a single continuous span — lets a
+ * user keep e.g. two disjoint lightness bands (shadows + highlights) without
+ * also keeping the midtones between them. */
+const imgLightnessRange = ref<[number, number][]>([[0, 1]]);
+const imgChromaRange = ref<[number, number][]>([[0, 0.5]]);
 const lastImageSrc = ref<string | null>(null);
+
+/**
+ * Image extraction's color COUNT is the same concept as the role schema's
+ * role count (iridis-4/8/12/16/32) — not a second, independently-tunable
+ * number. schemaName is the single source of truth; this keeps imgK in sync
+ * whenever it changes (from either the Schema & Compliance control or the
+ * mirrored control in the Image card).
+ */
+watch(schemaName, (v) => { imgK.value = parseInt(v.replace('iridis-', ''), 10) || 32; }, { 'immediate': true });
 
 const activeSeeds = computed<(string | PickerSeedType)[]>(() => {return (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value);});
 
@@ -231,12 +266,12 @@ const pinnableRoles = computed<string[]>(() => {
   return schema.roles.filter((r) => {return USED_ROLE_NAMES.has(r.name);}).map((r) => {return r.name;});
 });
 
-function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<string, { 'hex': string; 'oklch': { 'c': number; 'h': number; 'l': number; } }>; 'variants': Record<string, Record<string, { 'hex': string }>> }): void {
+function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<string, { 'displayP3'?: { 'b': number; 'g': number; 'r': number; }; 'hex': string; 'oklch': { 'c': number; 'h': number; 'l': number; } }>; 'variants': Record<string, Record<string, { 'hex': string }>> }): void {
   const roleHex: RoleHexMapType = {};
   const views: RoleViewType[] = [];
   for (const [name, r] of Object.entries(state.roles)) {
     roleHex[name] = r.hex;
-    views.push({ 'c': r.oklch.c, 'h': r.oklch.h, 'hex': r.hex, 'l': r.oklch.l, 'name': name });
+    views.push({ 'c': r.oklch.c, 'displayP3': r.displayP3, 'h': r.oklch.h, 'hex': r.hex, 'l': r.oklch.l, 'name': name });
   }
   const sc: ScaleMapType = {};
   for (const s of Tokens.SHADE_KEYS) {
@@ -360,12 +395,12 @@ class FromImage {
           'derivation:config': derivationConfig.value,
           'gallery': {
             'algorithm':          imgAlgorithm.value,
-            'chromaRange':        [...imgChromaRange.value] as [number, number],
+            'chromaRange':        imgChromaRange.value.map((r) => { return [...r] as [number, number]; }),
             'deltaECap':          imgDeltaECap.value,
             'harmonizeThreshold': imgHarmonize.value,
             'histogramBits':      imgHistogramBits.value,
             'k':                  imgK.value,
-            'lightnessRange':     [...imgLightnessRange.value] as [number, number]
+            'lightnessRange':     imgLightnessRange.value.map((r) => { return [...r] as [number, number]; })
           }
         },
         'roles':    withSemanticHues(pair![framing.value]),
@@ -389,7 +424,7 @@ class FromImage {
 
 /**
  * Performs the picker-seed array mutation for the FSM's MUTATE_SEEDS effect.
- * Registered once below via registerMutateSeedsHandler — PalettePlayground.vue
+ * Registered once below via registerMutateSeedsHandler — PaletteControls.vue
  * triggers this indirectly via useIridisUiMachine().send({type: IridisUiActionType.ADD_SEED|...}),
  * never by calling array mutation directly.
  */
@@ -401,6 +436,9 @@ function mutateSeeds(effect: MutateSeedsEffectType): void {
   } else if (effect.op === 'set') {
     pickerSeeds.value = pickerSeeds.value.map((s, idx) => {return (idx === effect.index ? { ...s, 'hex': effect.hex } : s);});
   }
+  // Explicit, not just relying on the pickerSeeds deep watch below — every
+  // seed edit is a config change that must re-run the engine.
+  schedule();
 }
 registerMutateSeedsHandler(mutateSeeds);
 
@@ -417,6 +455,7 @@ function pinSeedRole(effect: PinSeedRoleEffectType): void {
     }
     return (idx === effect.index ? { ...s, 'role': effect.role } : s);
   });
+  schedule();
 }
 registerPinSeedRoleHandler(pinSeedRole);
 
@@ -425,23 +464,36 @@ registerPinSeedRoleHandler(pinSeedRole);
  * FSM's SET_PALETTE_PARAM effect. Registered below via
  * registerSetPaletteParamHandler — components send SET_FRAMING/SET_SCHEMA/
  * SET_CONTRAST/SET_IMAGE_ALGORITHM events rather than assigning these refs directly.
+ *
+ * Every branch both mutates its ref AND explicitly triggers the engine
+ * re-run that config implies — never just the mutation, relying on some
+ * other decoupled watcher to notice. Framing skips the debounce entirely
+ * (see run()'s framingOverride doc); every other picker/schema/contrast
+ * param goes through schedule() (the general debounced run()); every
+ * image-extraction param goes through scheduleReextract() (re-runs
+ * FromImage.extract against the currently-loaded image, a no-op if none is
+ * loaded). The deep watches below still exist as a safety net for state
+ * changed outside this handler, but each of THIS handler's own mutations
+ * is responsible for its own re-run, not just relying on being watched.
  */
 function setPaletteParam(effect: SetPaletteParamEffectType): void {
-  // Framing swaps skip the debounce entirely — see run()'s framingOverride doc.
-  // Everything else still goes through the debounced schedule() below.
-  if (effect.op === 'framing') {run(effect.value);}
-  else if (effect.op === 'schemaName') {schemaName.value = effect.value;}
-  else if (effect.op === 'strictness') {contrastStrictness.value = effect.value;}
-  else if (effect.op === 'colorSpace') {colorSpace.value = effect.value;}
-  else if (effect.op === 'cvdCorrect') {cvdCorrect.value = effect.value;}
-  else if (effect.op === 'imgAlgorithm') {imgAlgorithm.value = effect.value;}
-  else if (effect.op === 'imgK') {imgK.value = effect.value;}
-  else if (effect.op === 'imgHistogramBits') {imgHistogramBits.value = effect.value;}
-  else if (effect.op === 'imgDeltaECap') {imgDeltaECap.value = effect.value;}
-  else if (effect.op === 'imgHarmonize') {imgHarmonize.value = effect.value;}
-  else if (effect.op === 'imgLightnessRange') {imgLightnessRange.value = effect.value;}
-  else if (effect.op === 'imgChromaRange') {imgChromaRange.value = effect.value;}
-  else if (effect.op === 'derivation') {derivationConfig.value = effect.value;}
+  if (effect.op === 'framing') {run(effect.value); return;}
+  if (effect.op === 'schemaName') {schemaName.value = effect.value; schedule(); scheduleReextract(); return;}
+  if (effect.op === 'strictness') {contrastStrictness.value = effect.value; schedule(); return;}
+  if (effect.op === 'colorSpace') {colorSpace.value = effect.value; schedule(); return;}
+  if (effect.op === 'cvdCorrect') {cvdCorrect.value = effect.value; schedule(); return;}
+  if (effect.op === 'imgAlgorithm') {imgAlgorithm.value = effect.value; scheduleReextract(); return;}
+  if (effect.op === 'imgK') {imgK.value = effect.value; scheduleReextract(); return;}
+  if (effect.op === 'imgHistogramBits') {imgHistogramBits.value = effect.value; scheduleReextract(); return;}
+  if (effect.op === 'imgDeltaECap') {imgDeltaECap.value = effect.value; scheduleReextract(); return;}
+  if (effect.op === 'imgHarmonize') {imgHarmonize.value = effect.value; scheduleReextract(); return;}
+  if (effect.op === 'imgLightnessRange') {imgLightnessRange.value = effect.value; scheduleReextract(); return;}
+  if (effect.op === 'imgChromaRange') {imgChromaRange.value = effect.value; scheduleReextract(); return;}
+  if (effect.op === 'derivation') {derivationConfig.value = effect.value; schedule(); return;}
+  // Sort order is a pure display concern — it never changes what the engine
+  // derives, so unlike every branch above there's no schedule()/scheduleReextract()
+  // call here on purpose.
+  if (effect.op === 'roleSort') {roleSortKeys.value = effect.value; return;}
 }
 registerSetPaletteParamHandler(setPaletteParam);
 
@@ -558,7 +610,7 @@ export function useIridis() {
     run();
     if (typeof window !== 'undefined') {
       // Load default sample palette on page init
-      void FromImage.extract('/logo.png');
+      void FromImage.extract(logoUrl());
       // framing is intentionally absent here — its swap is dispatched synchronously
       // by setPaletteParam() via run(effect.value), not through this debounce.
       watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig], schedule, { 'deep': true });
@@ -574,6 +626,7 @@ export function useIridis() {
     'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'lastImageSrc': lastImageSrc, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
     'roles': roles, 'roleViews': roleViews, 'roleClamps': roleClamps,
     'roleDistances': roleDistances,
+    'roleSortKeys': roleSortKeys, 'sortedRoleContrastRows': sortedRoleContrastRows,
     'rolesSynthesized': rolesSynthesized,
     'rolesPinned': rolesPinned,
     'rolesDerived': rolesDerived,

@@ -12,6 +12,7 @@ import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
 import { tailwindPlugin } from '@studnicky/iridis-tailwind';
 import { vscodePlugin, vscodeRoleSchema16 } from '@studnicky/iridis-vscode';
 import { useIridis } from '~/composables/useIridis.ts';
+import { IridisUiActionType } from '~/composables/types/index.ts';
 import { intakeHexHint } from '~/theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '~/theme/PinDerivedRoles.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
@@ -32,7 +33,7 @@ import type { SupportedLangType } from '~/theme/Highlighter.ts';
  */
 type OutputRowType = { 'label': string; 'lang': SupportedLangType; 'text': string };
 
-const { activeSeeds, framing, schemaName } = useIridis();
+const { activeSeeds, framing, schemaName, send } = useIridis();
 const outputs = ref<OutputRowType[]>([]);
 import { globalVscodeTheme } from '~/composables/useVscodeTheme';
 
@@ -172,14 +173,12 @@ const active = ref<string>('0');
 </script>
 
 <template>
-  <UCard>
-    <template #header>
-      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <span />
-        <span class="text-center font-semibold text-highlighted">What you came here for</span>
-        <span />
-      </div>
-    </template>
+  <AccordionPanel
+    panel-id="multiOutputCard"
+    title="What you came here for"
+    icon="i-material-symbols-output-rounded"
+    :default-open="false"
+  >
     <div class="space-y-3">
       <p class="text-sm text-muted">
         Every output format with a real emit plugin — one palette, {{ outputs.length }} targets.
@@ -206,79 +205,16 @@ const active = ref<string>('0');
       </p>
     </div>
 
-    <LearnMoreSection :title="`Learn more: why one palette becomes ${outputs.length} outputs`" value="multi-output-detail">
-      <p>
-        Every tab above comes from the same <span class="font-mono text-xs">engine.run()</span> call you saw in
-        Pipeline — the palette is resolved to roles exactly once, then a set of emit tasks reads that resolved
-        <span class="font-mono text-xs">state.roles</span> and writes it into a consumer-shaped format. The engine
-        never re-derives colors per output; it derives once and lets emit tasks translate. That's the same
-        engine-emits, tokens-cascade pattern this site uses on itself: the chrome around this card, the sidebar,
-        the syntax colors in the code block above, all read <span class="font-mono text-xs">--iridis-*</span> CSS
-        variables written by the same kind of pass as the <span class="font-mono text-xs">CSS variables</span> and
-        <span class="font-mono text-xs">CSS variables (scoped)</span> tabs.
-      </p>
-
-      <h4 class="mt-5 text-sm font-semibold text-highlighted">
-        The three-layer cascade
-      </h4>
-      <p class="mt-2 text-sm text-muted">
-        <span class="font-medium">Engine pass</span> — the pipeline above resolves seed colors to named roles and
-        writes every registered emit task's slot into <span class="font-mono text-xs">state.outputs</span>.
-        <span class="font-medium"> Token write</span> — a small mapper (this site's own
-        <span class="font-mono text-xs">applyConfigToDocument</span>, analogous to the
-        <span class="font-mono text-xs">CSS variables</span> tab) copies resolved roles onto
-        <span class="font-mono text-xs">documentElement.style</span> under names the consumer chose, not names the
-        engine chose. <span class="font-medium"> Framework cascade</span> — your existing stylesheet, Tailwind
-        config, or component library (shadcn/ui, MUI, Chakra, Panda) references those variables with
-        <span class="font-mono text-xs">var()</span> and repaints. None of the three layers imports the others;
-        they agree only on variable names.
-      </p>
-
-      <h4 class="mt-5 text-sm font-semibold text-highlighted">
-        Aliases make one schema serve every output
-      </h4>
-      <p class="mt-2 text-sm text-muted">
-        A role schema declares names like <span class="font-mono text-xs">brand</span> or
-        <span class="font-mono text-xs">accent</span>; a consumer's tokens are named whatever that consumer already
-        calls them. Rather than hard-coding one role name into an emit plugin, each output tab's plugin resolves a
-        <span class="font-mono text-xs">candidates</span> chain — first declared role name that exists in
-        <span class="font-mono text-xs">state.roles</span> wins — so the same <span class="font-mono text-xs">iridis-4</span>
-        through <span class="font-mono text-xs">iridis-32</span> schemas that drive the <span class="font-mono text-xs">Tailwind</span>
-        tab also drive <span class="font-mono text-xs">shadcn/ui</span>, <span class="font-mono text-xs">MUI</span>,
-        <span class="font-mono text-xs">Chakra UI</span>, and the <span class="font-mono text-xs">Panda CSS</span> /
-        <span class="font-mono text-xs">UnoCSS</span> pair without each plugin knowing about the others' token
-        naming.
-      </p>
-
-      <h4 class="mt-5 text-sm font-semibold text-highlighted">
-        The VS Code and RDF tabs run a second pass
-      </h4>
-      <p class="mt-2 text-sm text-muted">
-        Most tabs above share one <span class="font-mono text-xs">engine.run()</span> because they read the same role
-        schema. The <span class="font-mono text-xs">VS Code theme</span> tab is a second, dedicated engine instance:
-        the VS Code plugin's token expansion needs roles named <span class="font-mono text-xs">background</span>,
-        <span class="font-mono text-xs">muted</span>, <span class="font-mono text-xs">keyword</span>, and friends
-        that this site's own schema doesn't declare, so it runs its own pipeline against
-        <span class="font-mono text-xs">vscodeRoleSchema16</span> and always themes dark. The
-        <span class="font-mono text-xs">RDF (Turtle)</span> tab, by contrast, rides the main pipeline: after roles
-        resolve and contrast is enforced, <span class="font-mono text-xs">reason:annotate</span> writes the palette
-        as RDF triples (an n3 <span class="font-mono text-xs">Store</span>, colors and roles as subjects and
-        predicates) and <span class="font-mono text-xs">reason:serialize</span> turns that graph into the Turtle
-        text rendered above — the same resolved roles as every other tab, reasoned over instead of templated.
-      </p>
-
-      <h4 class="mt-5 text-sm font-semibold text-highlighted">
-        Fallbacks still matter off this page
-      </h4>
-      <p class="mt-2 text-sm text-muted">
-        This demo re-runs the engine synchronously on every palette change, so every tab is always current. A real
-        app's token-write layer should still declare <span class="font-mono text-xs">:root</span> fallback values
-        for the variables it writes — SSR, the pre-hydration paint, and any error path all need a value before the
-        engine's first run completes. Reasonable defaults that match your dark/light framing cost one CSS block and
-        mean the page never goes blank waiting on JavaScript.
-      </p>
-    </LearnMoreSection>
-  </UCard>
+    <p class="mt-4 text-xs text-muted">
+      One <span class="font-mono text-[10px]">engine.run()</span>, {{ outputs.length }} formats — every tab above reads the
+      same resolved roles, just written differently. Details in
+      <a
+        href="#06-plugin-ecosystem"
+        class="text-primary hover:underline"
+        @click.prevent="send({ 'targetId': '06-plugin-ecosystem', 'type': IridisUiActionType.NAVIGATE_TO_TARGET })"
+      >Plugin Ecosystem</a>.
+    </p>
+  </AccordionPanel>
 </template>
 
 

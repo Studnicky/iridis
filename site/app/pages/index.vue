@@ -18,7 +18,7 @@ const sections = CAROUSEL_SECTIONS;
 
 const { data: allDocs } = await useAsyncData('alldocs', () => queryCollection('docs').all())
 
-const { 'send': send } = useIridis();
+const { 'send': send, 'framing': framing } = useIridis();
 const { 'registerDocTargets': registerDocTargets } = useNavigationTargets();
 watch(allDocs, (docs) => { if (docs) {registerDocTargets(docs);} }, { 'immediate': true });
 
@@ -46,18 +46,29 @@ function onDocsClick(e: MouseEvent): void {
     <TableOfContentsBar :items="sections" />
     <HeroBanner />
 
-    <UContainer class="space-y-5">
-      <PaletteControls />
+    <div class="flex justify-center">
+      <USwitch
+        :model-value="framing === 'dark'"
+        size="lg"
+        unchecked-icon="material-symbols:light-mode-rounded"
+        checked-icon="material-symbols:dark-mode-rounded"
+        :aria-label="framing === 'dark' ? 'Dark framing' : 'Light framing'"
+        @update:model-value="send({ framing: $event ? 'dark' : 'light', type: IridisUiActionType.SET_FRAMING })"
+      />
+    </div>
 
+    <UContainer class="space-y-5">
       <CylinderCarousel :items="sections">
         <template #default="{ item }">
           <LiveComponents v-if="item.key === 'components'" />
+          <InteractablesShowcase v-else-if="item.key === 'interactables'" />
           <ResolvedRoles v-else-if="item.key === 'roles'" />
           <RolesTable v-else-if="item.key === 'rolesTable'" />
-          <ColorSpaces v-else-if="item.key === 'spaces'" />
+          <HueDerivation v-else-if="item.key === 'hueDerivation'" />
           <PipelineExplainer v-else-if="item.key === 'pipeline'" />
           <SchemaTree v-else-if="item.key === 'schema'" />
           <MotionShowcase v-else-if="item.key === 'motion'" />
+          <ColorStreamCard v-else-if="item.key === 'colorStream'" />
           <CvdVision v-else-if="item.key === 'cvd'" />
           <RoleClamps v-else-if="item.key === 'clamps'" />
           <div
@@ -72,26 +83,25 @@ function onDocsClick(e: MouseEvent): void {
         </template>
       </CylinderCarousel>
 
+      <PaletteControls />
+
       <MultiOutput />
       
       <div v-if="allDocs && allDocs.length > 0" class="mt-32 space-y-12 border-t border-default pt-24" @click="onDocsClick">
-        <UCard
-          v-for="doc in allDocs"
+        <AccordionPanel
+          v-for="doc in (allDocs ?? [])"
           :key="doc.path"
           :id="doc.path.replace(/[^a-zA-Z0-9-]/g, '-').replace(/^-+|-+$/g, '')"
+          :panel-id="`doc-${doc.path}`"
+          :title="doc.title || doc.path"
+          icon="i-material-symbols-article-outline-rounded"
+          :default-open="false"
           class="scroll-mt-24"
         >
-          <template #header>
-            <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-              <span />
-              <h2 class="text-center text-xl font-bold tracking-tight text-highlighted">{{ doc.title || doc.path }}</h2>
-              <span />
-            </div>
-          </template>
           <article class="prose prose-primary dark:prose-invert max-w-none">
             <ContentRenderer :value="doc" />
           </article>
-        </UCard>
+        </AccordionPanel>
       </div>
     </UContainer>
   </div>

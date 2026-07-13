@@ -700,3 +700,88 @@ test('GalleryHistogram :: golden :: algorithm string round-trips through state.m
     '[golden, scenario=algorithm-round-trip] algorithm value must echo back from metadata',
   );
 });
+
+// ---------------------------------------------------------------------------
+// Regression — dominant near-black background must not crowd out saturated
+// hues in the delta-E trim step
+//
+// Reproduces the reported bug: a large near-black region (simulating a
+// solid background plus antialiased dark edges) fragments into many heavy
+// low-chroma bins — enough to fill the entire deltaE-merge trim cap (128)
+// before ranking ever reaches a genuinely saturated bin, since each vibrant
+// hue is itself split across several slightly-different shades (diluting
+// its own per-bin weight versus the background's few but heavy bins).
+//
+// Before the fix: trimByWeightDescending ranked purely by linear weight, so
+// the near-black bins (heavier, by pixel count) filled all 128 trim slots
+// and every saturated bin was discarded before delta-E clustering ever saw
+// it — the extracted palette was 100% near-black (max chroma ≈ 0.07).
+//
+// After the fix: bins are tiered chromatic-first (any bin with chroma ≥
+// 0.05) before neutral/near-black bins, so genuinely saturated colors
+// survive the trim and appear in the final K-color output.
+// ---------------------------------------------------------------------------
+
+test('GalleryHistogram :: regression :: saturated hues survive extraction despite dominant near-black background', async () => {
+  const engine = freshEngine();
+  engine.pipeline(['intake:imagePixels', 'gallery:histogram', 'gallery:extract']);
+
+  // Background: 128 distinct near-black/near-neutral shades (5-bit
+  // quantization bins), each carrying substantial weight — simulates a
+  // solid background plus antialiased dark edges fragmenting into many
+  // heavy dark bins, which is exactly the scenario that crowded out
+  // saturated colors under pure linear-weight ranking.
+  const background: [number, number, number, number][] = [];
+  for (let r = 0; r < 8; r++) {
+    for (let g = 0; g < 8; g++) {
+      for (let b = 0; b < 2; b++) {
+        for (let rep = 0; rep < 60; rep++) {
+          background.push(px(r * 8, g * 8, b * 8));
+        }
+      }
+    }
+  }
+  // Saturated patches: each hue spread across a handful of slightly
+  // different shades (antialiased hex-cell edges dilute a hue's own bin
+  // weight), each individually far lighter than any background bin.
+  const hues: readonly [number, number, number][] = [
+    [230, 20, 20],   // red
+    [20, 60, 230],   // blue
+    [20, 200, 60],   // green
+    [240, 130, 10],  // orange
+  ];
+  const saturatedPatches: [number, number, number, number][] = [];
+  for (const [r, g, b] of hues) {
+    for (let i = 0; i < 5; i++) {
+      for (let k = 0; k < 5; k++) {
+        const jr = i * 8 - 16;
+        const jg = k * 8 - 16;
+        saturatedPatches.push(px(
+          Math.max(0, Math.min(255, r + jr)),
+          Math.max(0, Math.min(255, g + jg)),
+          b,
+        ));
+      }
+    }
+  }
+  const pixels = [...background, ...saturatedPatches];
+
+  const state = await engine.run({
+    'colors':   [makeImageData(pixels)],
+    'metadata': {
+      'gallery': {
+        'k':         8,
+        'algorithm': 'delta-e',
+        'deltaECap': 128,
+      },
+    },
+  });
+
+  const chromaticOutputs = state.colors.filter((c) => c.oklch.c >= 0.15);
+  assert.ok(
+    chromaticOutputs.length >= 3,
+    `[regression, scenario=black-bg-vs-saturated-hues] expected ≥3 high-chroma (c≥0.15) colors in output, ` +
+      `got ${String(chromaticOutputs.length)} of ${String(state.colors.length)}: ` +
+      state.colors.map((c) => `${c.hex}(c=${c.oklch.c.toFixed(3)})`).join(', '),
+  );
+});

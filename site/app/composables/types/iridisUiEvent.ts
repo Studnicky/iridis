@@ -33,13 +33,15 @@ export enum IridisUiActionType {
   DIAGRAM_TOGGLE_EXPAND = 'DIAGRAM_TOGGLE_EXPAND',
   CVD_TOGGLE_PREVIEW = 'CVD_TOGGLE_PREVIEW',
   CVD_CLEAR_PREVIEWS = 'CVD_CLEAR_PREVIEWS',
-  NAVIGATE_TO_TARGET = 'NAVIGATE_TO_TARGET'
+  NAVIGATE_TO_TARGET = 'NAVIGATE_TO_TARGET',
+  SET_ROLE_SORT = 'SET_ROLE_SORT'
 }
 
 import type { FramingType } from './framing.ts';
 import type { GalleryAlgorithmType } from './galleryAlgorithm.ts';
 import type { ModeType } from './mode.ts';
 import type { DerivationConfig } from './colorDerivation.ts';
+import type { RoleSortKeyType } from '../../utils/roleSort.ts';
 
 /** Events accepted by the shared UI FSM (mode switching, carousel nav/drag, popover gating, seed edits, palette params). */
 export type IridisUiEventType =
@@ -65,8 +67,8 @@ export type IridisUiEventType =
   | { 'bits': number; 'type': IridisUiActionType.SET_IMAGE_HISTOGRAM_BITS }
   | { 'cap': number; 'type': IridisUiActionType.SET_IMAGE_DELTA_E_CAP }
   | { 'threshold': number; 'type': IridisUiActionType.SET_IMAGE_HARMONIZE }
-  | { 'range': [number, number]; 'type': IridisUiActionType.SET_IMAGE_LIGHTNESS_RANGE }
-  | { 'range': [number, number]; 'type': IridisUiActionType.SET_IMAGE_CHROMA_RANGE }
+  | { 'range': [number, number][]; 'type': IridisUiActionType.SET_IMAGE_LIGHTNESS_RANGE }
+  | { 'range': [number, number][]; 'type': IridisUiActionType.SET_IMAGE_CHROMA_RANGE }
   | { 'config': DerivationConfig; 'type': IridisUiActionType.SET_DERIVATION_CONFIG }
   | { 'source': 'sample'; 'type': IridisUiActionType.EXTRACT_IMAGE }
   | { 'file': File; 'source': 'file'; 'type': IridisUiActionType.EXTRACT_IMAGE }
@@ -78,4 +80,5 @@ export type IridisUiEventType =
   | { 'type': IridisUiActionType.DIAGRAM_TOGGLE_EXPAND }
   | { 'cvdType': string; 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW }
   | { 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS }
-  | { 'targetId': string; 'type': IridisUiActionType.NAVIGATE_TO_TARGET };
+  | { 'targetId': string; 'type': IridisUiActionType.NAVIGATE_TO_TARGET }
+  | { 'keys': RoleSortKeyType[]; 'type': IridisUiActionType.SET_ROLE_SORT };

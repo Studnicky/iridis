@@ -12,6 +12,13 @@
 
 import type { FramingType, RoleHexMapType, ScaleMapType } from '../composables/types/index.ts';
 
+/** The 7 Nuxt UI semantic aliases, in the display order every demo card on
+ * the site uses — the single canonical list. Components previously each
+ * hardcoded their own copy of this array (and had quietly drifted into 3
+ * different orderings/subsets); import this instead of retyping it. */
+export const ALIAS_COLOR_NAMES = ['primary', 'secondary', 'success', 'warning', 'error', 'info', 'neutral'] as const;
+export type AliasColorType = (typeof ALIAS_COLOR_NAMES)[number];
+
 /** Nuxt UI alias → ordered candidate source roles (first present wins). */
 const ALIAS_SOURCE: Record<string, readonly string[]> = {
   'error':     ['error', 'brand'],
@@ -97,5 +104,13 @@ export class Tokens {
     for (const candidates of Object.values(ALIAS_SOURCE)) {for (const c of candidates) {names.add(c);}}
     for (const candidates of Object.values(SHORTCUT_SOURCE)) {for (const c of candidates) {names.add(c);}}
     return [...names];
+  }
+
+  /** Resolve the same engine hex mapFromEngine would write to `--ui-color-${alias}-${shade}`, for callers that need the hex value itself rather than the CSS variable. */
+  static resolveAliasShadeHex(roles: RoleHexMapType, scales: ScaleMapType, alias: string, shade: number): string | undefined {
+    const candidates = ALIAS_SOURCE[alias];
+    if (!candidates) {return undefined;}
+    const perShade = scales[shade];
+    return (perShade ? pick(perShade, candidates) : undefined) ?? pick(roles, candidates);
   }
 }

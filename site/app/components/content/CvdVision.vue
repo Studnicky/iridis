@@ -52,10 +52,6 @@ const cvdReport = computed(() => {
 
 <template>
   <UCard>
-    <template #header>
-      <span class="block text-center font-semibold text-highlighted">CVD vision</span>
-    </template>
-
     <div class="space-y-4">
       <p class="text-sm text-muted">
         Color vision deficiency (CVD) checking runs on every palette, always — see
