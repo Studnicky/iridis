@@ -6,6 +6,8 @@ import type {
   PaletteInterfaceType
 } from './types/index.ts';
 
+export { lerpHue };
+
 export type {
   HueDirectionType,
   LerpOptionsInterfaceType,

@@ -12,6 +12,14 @@ import type { ContrastPairInputInterfaceType, EnforceLevelType } from './types/i
 
 const enforceTaskByLevel = { 'aa': enforceWcagAa, 'aaa': enforceWcagAaa } as const;
 
+/**
+ * Shared placeholder engine for `ctx.engine`/`ctx.tasks`. The enforce tasks
+ * invoked below only read `ctx.logger`, never engine state, so one instance
+ * is safe to reuse across every call instead of allocating a fresh
+ * `TaskRegistry` + ajv `Validator` on every animation frame.
+ */
+const engine = new Engine();
+
 const buildState = (
   palette: PaletteInterfaceType,
   pairs: readonly ContrastPairInputInterfaceType[]
@@ -65,8 +73,7 @@ export const enforceContrast = (
 ): PaletteInterfaceType => {
   if (pairs.length === 0) return palette;
 
-  const state  = buildState(palette, pairs);
-  const engine = new Engine();
+  const state = buildState(palette, pairs);
   const ctx: PipelineContextInterface = {
     'engine':    engine,
     'logger':    consoleLogger,

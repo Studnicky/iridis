@@ -242,6 +242,7 @@ onBeforeUnmount(() => {
           size="xs"
           class="cyl-dot font-display rounded-full"
           :class="{ 'cyl-dot-active': isActive(i) }"
+          :aria-current="isActive(i) ? 'true' : undefined"
           @click="select(i)"
         />
       </div>

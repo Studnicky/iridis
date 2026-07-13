@@ -1,5 +1,5 @@
 import type { InputInterface } from '@studnicky/iridis/model';
-import type { FromSchema }    from 'json-schema-to-ts';
+import type { InferType }     from '@studnicky/json-tology/types';
 
 import type { CliConfigSchema }    from '../CliConfigSchema.ts';
 
@@ -20,4 +20,4 @@ export interface CliConfigInterface {
 }
 
 /** Schema-derived type for CLI config (validation shape from CliConfigSchema). */
-export type CliConfigSchemaType = FromSchema<typeof CliConfigSchema>;
+export type CliConfigSchemaType = InferType<typeof CliConfigSchema>;

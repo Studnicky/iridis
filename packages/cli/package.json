@@ -21,6 +21,7 @@
     "prebuild": "rm -rf dist"
   },
   "dependencies": {
-    "@studnicky/iridis": "*"
+    "@studnicky/iridis": "*",
+    "@studnicky/json-tology": "^0.27.0"
   }
 }

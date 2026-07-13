@@ -89,6 +89,7 @@ const cvdReport = computed(() => {
               :color="cvdPreviewTypes.has(t.value) ? 'primary' : 'neutral'"
               :variant="cvdPreviewTypes.has(t.value) ? 'solid' : 'soft'"
               class="min-w-[80px]"
+              :aria-pressed="cvdPreviewTypes.has(t.value)"
               @click="send({ 'cvdType': t.value, 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW })"
             />
           </div>

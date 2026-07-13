@@ -33,6 +33,7 @@ function select(i: number): void { send({ 'index': i, 'type': IridisUiActionType
             size="xs"
             class="toc-pill font-display flex-1 justify-center rounded-full"
             :class="{ 'toc-pill-active': i === active }"
+            :aria-current="i === active ? 'location' : undefined"
             @click="select(i)"
           />
         </template>
