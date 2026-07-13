@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-algebra",
   "description": "Pure vector-math operations over palettes treated as points in OKLCH×N space — lerp, subtract, nearest, drift, perpendicular.",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
