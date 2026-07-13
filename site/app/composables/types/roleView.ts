@@ -1,1 +1,1 @@
-export type RoleViewType = { 'c': number; 'h': number; 'hex': string; 'l': number; 'name': string; };
+export type RoleViewType = { 'c': number; 'displayP3': { 'b': number; 'g': number; 'r': number; } | undefined; 'h': number; 'hex': string; 'l': number; 'name': string; };

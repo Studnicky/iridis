@@ -1,8 +1,10 @@
 export { clamp            } from './Clamp.ts';
 export { clamp01          } from './Clamp01.ts';
 export { clusterDeltaEMerge       } from './ClusterDeltaEMerge.ts';
+export { clusterKMeans            } from './ClusterKMeans.ts';
 export { clusterMedianCut         } from './ClusterMedianCut.ts';
 export { clusterMedianCutWeighted } from './ClusterMedianCutWeighted.ts';
+export { clusterWuQuantize        } from './ClusterWuQuantize.ts';
 export { colorRecordFactory } from './ColorRecordFactory.ts';
 export { contrastApca     } from './ContrastApca.ts';
 export { contrastText     } from './ContrastText.ts';

@@ -86,17 +86,42 @@ Still queued:
 | `docs/reference/tasks.md` | Full task name registry. For each: reads/writes/prerequisites | 600 |
 | `docs/reference/math.md` | Built-in math primitive table with signatures + brief description; how to override | 400 |
 
+## Living color, shipped
+
+**What it is.** The engine derives a single, static, contrast-enforced palette per run — living color animates *between* palette points while continuously re-enforcing the same WCAG/APCA constraints on every intermediate frame, so a color transition never passes through an illegible or invalid state. A palette is treated as a point in OKLCH×N space (N = role count); animating is walking a curve through that space, not a raw CSS channel tween — which is why it stays perceptually smooth and never muddies through gray/brown the way an RGB `transition:` does.
+
+Thesis in `site/content/12-roadmap-living-color.md`. Implemented as five packages under `packages/*`:
+
+- `@studnicky/iridis-algebra`, palette vector math (`lerp`/`subtract`/`nearest`/`drift`/`perpendicular` over OKLCH×N space)
+- `@studnicky/iridis-anima`, curve/easing evaluation engine (`evaluate`/`evaluateStops`/`evaluateEnforced`, linear/cubicBezier/spring/chromaticDetour easings, per-frame WCAG re-validation via `@studnicky/iridis-contrast`)
+- `@studnicky/iridis-fsm`, palette state machine (`PaletteStateMachine`, tick-driven transitions between caller-defined states)
+- `@studnicky/iridis-pulse`, reactive signal bindings (`ClockBinding`, `ValueBinding`, maps external signals to the curve parameter `t`)
+- `@studnicky/iridis-trajectory`, curated named palette trajectories (`TrajectoryRegistry`, built-in `sunrise`/`focus-pulse`/`dusk-fade`)
+
+729/729 tests passing workspace-wide, `npx tsc --build` clean.
+
+**How to use it.** Minimal two-point animation:
+
+```ts
+import { evaluate } from '@studnicky/iridis-anima';
+import { ClockBinding } from '@studnicky/iridis-pulse';
+
+const clock = ClockBinding.create({ durationMs: 8000, mode: 'real' });
+function tick() {
+  const palette = evaluate(fromPalette, toPalette, clock.t); // Record<role, {l,c,h}>
+  applyPalette(palette); // e.g. write hex-converted values to CSS custom properties
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+```
+
+Swap `evaluate` for `evaluateEnforced` when the animated roles are used as a text/background contrast pair, so every frame is re-validated, not just the two endpoints. Use `iridis-algebra`'s `perpendicular`/`drift` to compute a nearby "to" point for a subtle ambient drift instead of hand-authoring one; use `iridis-trajectory` for a named, curated multi-stop path instead of a single lerp; use `iridis-fsm` when transitions are triggered by discrete app states (idle/alert/focus) rather than a continuous clock; use `iridis-pulse`'s `ValueBinding` to drive `t` from a non-clock signal (scroll position, audio level, sensor reading).
+
+**Live example on this site.** `site/app/composables/useLivingBackground.ts` drives the ambient background blobs/stars in `AmbientBackground.vue` — it restricts the animation to purely decorative roles (never `background`/`text`/`muted`/`border`), rebuilds its "to" target every cycle via `perpendicular`, and writes results straight to the same `--ui-color-*-500` CSS variables the rest of the theme already reads.
+
 ## v0.2, deferred
 
-Tracked in `docs/v2-living-color.md`. Listed for queue completeness:
-
-- `@studnicky/iridis-anima`, animation/interpolation engine
-- `@studnicky/iridis-pulse`, reactive signal bindings
-- `@studnicky/iridis-fsm`, palette state machine (XState-style)
-- `@studnicky/iridis-trajectory`, curated palette paths
-- `@studnicky/iridis-algebra`, palette math
 - Migrate role schemas + `ColorRecord` + `PaletteState` through `@studnicky/json-tology` once json-tology ships a browser-safe entry point
-- Self-referential brand demo: replace static `.iridis-brand` CSS gradient with runtime-driven sweep produced by `iridis-anima`
 - Competitor decomp survey
 
 ## Open questions parked for the user

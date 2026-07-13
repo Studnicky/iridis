@@ -13,13 +13,20 @@ const props = withDefaults(defineProps<{
 const containerRef = ref<HTMLElement | null>(null);
 const containerWidth = ref(0);
 let observer: ResizeObserver | null = null;
+let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 onMounted(() => {
   if (containerRef.value) {
     containerWidth.value = containerRef.value.clientWidth;
     observer = new ResizeObserver((entries) => {
       if (entries[0]) {
-        containerWidth.value = entries[0].contentRect.width;
+        const width = entries[0].contentRect.width;
+        if (resizeDebounceTimer) {
+          clearTimeout(resizeDebounceTimer);
+        }
+        resizeDebounceTimer = setTimeout(() => {
+          containerWidth.value = width;
+        }, 100);
       }
     });
     observer.observe(containerRef.value);
@@ -29,6 +36,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer) {
     observer.disconnect();
+  }
+  if (resizeDebounceTimer) {
+    clearTimeout(resizeDebounceTimer);
   }
 });
 

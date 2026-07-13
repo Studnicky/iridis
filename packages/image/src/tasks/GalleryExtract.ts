@@ -8,8 +8,10 @@ import type {
 
 import {
   clusterDeltaEMerge,
+  clusterKMeans,
   clusterMedianCut,
-  clusterMedianCutWeighted
+  clusterMedianCutWeighted,
+  clusterWuQuantize
 } from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
@@ -19,32 +21,44 @@ import type { GalleryAlgorithmType } from '../types/augmentation.ts';
 /**
  * `gallery:extract`
  *
- * Reduces `state.colors` to K representative colours via one of three
+ * Reduces `state.colors` to K representative colours via one of four
  * clustering primitives, selected by `metadata.gallery.algorithm`:
  *
  *   - `'median-cut'` (default): when at least one input record carries
  *     `hints.weight`, dispatches to `clusterMedianCutWeighted` so pixel
  *     density survives the reduction. Otherwise falls back to the
  *     stateless `clusterMedianCut` for backward compatibility with
- *     non-image inputs (raw hex palettes, RGB triples).
+ *     non-image inputs (raw hex palettes, RGB triples). One-shot, box
+ *     splits at the median — fast, but a median split can bisect a small,
+ *     visually distinct cluster.
  *   - `'delta-e'`: agglomerative deltaE2000 merger. Pair with
  *     `gallery:histogram` upstream so the merger operates over ≤ a few
  *     hundred weighted bins rather than tens of thousands of pixels.
+ *     Tends to keep visually-distinct minority colors that a box-splitting
+ *     algorithm might merge away.
+ *   - `'wu-quantize'`: recursive box splitting like median-cut, but each
+ *     split lands at the point that minimizes combined within-side
+ *     variance (Wu 1992's criterion) instead of at the median — one-shot
+ *     like median-cut, but the split point is chosen to minimize total
+ *     clustering error rather than just bisect the data.
+ *   - `'k-means'`: iterative weighted Lloyd's-algorithm refinement in OKLCH
+ *     space (k-means++ seeded, deterministic). Tends to find a lower-total-
+ *     error partition than any one-shot splitter, at the cost of being
+ *     iterative rather than a single pass.
  *
  * Configuration (via `state.metadata['gallery']`):
  *   k:         number of dominant colors to extract (default: 5)
- *   algorithm: `'median-cut'` (default) | `'delta-e'`
+ *   algorithm: `'median-cut'` (default) | `'delta-e'` | `'wu-quantize'` | `'k-means'`
  *
  * Writes:
  *   state.metadata['gallery:dominantColors']: the K representative colors
  *   state.colors:                             replaced with the K-color set
  */
-/* True when ANY input carries a declared `hints.weight`. The presence
-   of the hint key is the signal (not its magnitude), so a histogram
-   where every bin happens to hold exactly one pixel still dispatches
-   to the weighted reducer. The previous predicate excluded `weight === 1`
-   and silently fell back to `clusterMedianCut`, losing the weight
-   bookkeeping the upstream histogram had set up. */
+/* True when ANY input carries a declared `hints.weight`. The presence of
+   the hint key is the signal (not its magnitude), so a histogram where
+   every bin happens to hold exactly one pixel still dispatches to the
+   weighted reducer, preserving the upstream histogram's weight bookkeeping
+   instead of silently falling back to the unweighted `clusterMedianCut`. */
 function hasAnyWeight(colors: readonly ColorRecordInterfaceType[]): boolean {
   for (const c of colors) {
     if (typeof c.hints?.weight === 'number' && c.hints.weight > 0) {return true;}
@@ -61,13 +75,41 @@ function hasAnyWeight(colors: readonly ColorRecordInterfaceType[]): boolean {
  * pixels falls off, which is the same trade-off median-cut already
  * makes implicitly when its bucket-selection heuristic refuses to
  * split low-weight buckets.
+ *
+ * The trim ranking is NOT raw pixel count. A single enormous flat
+ * region (e.g. a solid-black background covering most of the frame)
+ * would otherwise linearly out-vote many smaller, genuinely saturated
+ * regions whose own weight is split across many slightly-different
+ * quantised bins. Two adjustments make the ranking reflect visual
+ * prominence instead of pixel-count dominance:
+ *
+ *   - weight is dampened via sqrt() before ranking, so a bin 100x
+ *     heavier than another only ranks ~10x higher, not 100x.
+ *   - near-achromatic bins (chroma below CHROMA_EPSILON — grays,
+ *     near-black, near-white) are ranked in a separate, lower tier,
+ *     since in a hue-extraction context they are far more often
+ *     background/neutral than a deliberately chosen palette color.
+ *     Monochrome/grayscale images still extract correctly: neutral
+ *     bins fill remaining cap slots once no chromatic bins are left.
  */
 const DELTA_E_INPUT_CAP_DEFAULT = 128;
+const CHROMA_EPSILON = 0.05;
+
+function trimRank(color: ColorRecordInterfaceType): number {
+  const weight = color.hints?.weight ?? 1;
+  return Math.sqrt(weight);
+}
 
 function trimByWeightDescending(colors: readonly ColorRecordInterfaceType[], cap: number): readonly ColorRecordInterfaceType[] {
   if (colors.length <= cap) {return colors;}
-  const sorted = [...colors].sort((a, b) => {return (b.hints?.weight ?? 1) - (a.hints?.weight ?? 1);});
-  return sorted.slice(0, cap);
+  const chromatic: ColorRecordInterfaceType[] = [];
+  const neutral: ColorRecordInterfaceType[] = [];
+  for (const c of colors) {
+    if (c.oklch.c >= CHROMA_EPSILON) {chromatic.push(c);} else {neutral.push(c);}
+  }
+  chromatic.sort((a, b) => {return trimRank(b) - trimRank(a);});
+  neutral.sort((a, b) => {return trimRank(b) - trimRank(a);});
+  return [...chromatic, ...neutral].slice(0, cap);
 }
 
 class GalleryExtract implements TaskInterface {
@@ -136,6 +178,10 @@ class GalleryExtract implements TaskInterface {
         );
       }
       dominant = clusterDeltaEMerge.apply(trimmed, clamp);
+    } else if (algorithm === 'k-means') {
+      dominant = clusterKMeans.apply(state.colors, clamp);
+    } else if (algorithm === 'wu-quantize') {
+      dominant = clusterWuQuantize.apply(state.colors, clamp);
     } else if (hasAnyWeight(state.colors)) {
       dominant = clusterMedianCutWeighted.apply(state.colors, clamp);
     } else {

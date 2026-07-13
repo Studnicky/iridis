@@ -98,15 +98,15 @@ let isDragging = false;
 let lastX = 0;
 let lastY = 0;
 
-const startDrag = (e: MouseEvent) => {
+const startDrag = (e: PointerEvent) => {
   if (e.button !== 0) return;
   isDragging = true;
   lastX = e.clientX;
   lastY = e.clientY;
-  if (viewportRef.value) viewportRef.value.setPointerCapture(e.pointerId || 1);
+  if (viewportRef.value) viewportRef.value.setPointerCapture(e.pointerId);
 };
 
-const onDrag = (e: MouseEvent) => {
+const onDrag = (e: PointerEvent) => {
   if (!isDragging) return;
   const dx = e.clientX - lastX;
   const dy = e.clientY - lastY;
@@ -115,14 +115,14 @@ const onDrag = (e: MouseEvent) => {
   lastY = e.clientY;
 };
 
-const endDrag = (e: MouseEvent) => {
+const endDrag = (e: PointerEvent) => {
   isDragging = false;
   if (viewportRef.value) {
-    try { viewportRef.value.releasePointerCapture(e.pointerId || 1); } catch (err) { console.warn('releasePointerCapture failed:', err); }
+    try { viewportRef.value.releasePointerCapture(e.pointerId); } catch (err) { console.warn('releasePointerCapture failed:', err); }
   }
 };
 
-const naturalSize = (svg: HTMLElement): { w: number, h: number } => {
+const naturalSize = (svg: SVGSVGElement): { w: number, h: number } => {
   const vb = svg.getAttribute('viewBox');
   if (vb) {
     const parts = vb.trim().split(/[\s,]+/);
@@ -131,7 +131,7 @@ const naturalSize = (svg: HTMLElement): { w: number, h: number } => {
     if (w > 0 && h > 0) return { w, h };
   }
   try {
-    const bbox = (svg as unknown as SVGGraphicsElement).getBBox();
+    const bbox = svg.getBBox();
     if (bbox.width > 0 && bbox.height > 0) return { w: bbox.width, h: bbox.height };
   } catch (e) {}
   return { w: 1024, h: 768 };
@@ -234,10 +234,10 @@ watch([() => props.code, () => colorMode.value], renderMermaid);
         ref="viewportRef"
         class="flex-1 w-full h-full cursor-grab active:cursor-grabbing relative overflow-hidden"
         @wheel="handleWheel" 
-        @mousedown="startDrag"
-        @mousemove="onDrag"
-        @mouseup="endDrag"
-        @mouseleave="endDrag"
+        @pointerdown="startDrag"
+        @pointermove="onDrag"
+        @pointerup="endDrag"
+        @pointerleave="endDrag"
       >
         <!-- Diagram Wrapper -->
         <div 

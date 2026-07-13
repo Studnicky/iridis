@@ -45,6 +45,18 @@ type BinAccumulatorInterface = {
 
 const DEFAULT_BITS_PER_CHANNEL = 5;
 
+/** Accepts either a single range or a list of ranges (union) so callers who only need one envelope don't have to wrap it. */
+type RangeOrRangesType = readonly [number, number] | readonly (readonly [number, number])[];
+
+function toRangeList(range: RangeOrRangesType): readonly (readonly [number, number])[] {
+  return typeof range[0] === 'number' ? [range as readonly [number, number]] : range as readonly (readonly [number, number])[];
+}
+
+/** True if `v` falls inside any range in the list — multiple ranges are a union, not required to be contiguous. */
+function inAnyRange(v: number, ranges: readonly (readonly [number, number])[]): boolean {
+  return ranges.some(([lo, hi]) => {return v >= lo && v <= hi;});
+}
+
 function packBin(r: number, g: number, b: number, bits: number): number {
   // r,g,b are sRGB 0..1 floats; quantise to (2^bits) levels per channel
   // and pack into a single integer key.
@@ -81,12 +93,12 @@ class GalleryHistogram implements TaskInterface {
     }
 
     const galleryConfig = state.metadata.gallery as
-      | { 'chromaRange'?: readonly [number, number]; 'histogramBits'?: number; 'lightnessRange'?: readonly [number, number]; }
+      | { 'chromaRange'?: RangeOrRangesType; 'histogramBits'?: number; 'lightnessRange'?: RangeOrRangesType; }
       | undefined;
     const rawBits = galleryConfig?.histogramBits ?? DEFAULT_BITS_PER_CHANNEL;
     const bits = Math.max(3, Math.min(7, Math.floor(rawBits)));
-    const lRange = galleryConfig?.lightnessRange ?? [0, 1] as const;
-    const cRange = galleryConfig?.chromaRange    ?? [0, 0.5] as const;
+    const lRanges = toRangeList(galleryConfig?.lightnessRange ?? [0, 1] as const);
+    const cRanges = toRangeList(galleryConfig?.chromaRange    ?? [0, 0.5] as const);
 
     const bins = new Map<number, BinAccumulatorInterface>();
     let totalPixels = 0;
@@ -95,11 +107,13 @@ class GalleryHistogram implements TaskInterface {
     for (const c of state.colors) {
       if (c.alpha === 0) {continue;}
       // Range filters skip pixels outside the requested OKLCH lightness
-      // or chroma envelope. Useful for ignoring black bars (low L) or
+      // or chroma envelope(s). Useful for ignoring black bars (low L) or
       // a near-neutral background (low C) so the cluster budget goes
-      // toward the colors the user actually cares about.
-      if (c.oklch.l < lRange[0] || c.oklch.l > lRange[1]) { droppedFiltered++; continue; }
-      if (c.oklch.c < cRange[0] || c.oklch.c > cRange[1]) { droppedFiltered++; continue; }
+      // toward the colors the user actually cares about. Each envelope is a
+      // UNION of ranges — e.g. two disjoint lightness bands can both be kept
+      // at once without also keeping the midtones between them.
+      if (!inAnyRange(c.oklch.l, lRanges)) { droppedFiltered++; continue; }
+      if (!inAnyRange(c.oklch.c, cRanges)) { droppedFiltered++; continue; }
       const w = (typeof c.hints?.weight === 'number' && c.hints.weight > 0) ? c.hints.weight : 1;
       const key = packBin(c.rgb.r, c.rgb.g, c.rgb.b, bits);
       const existing = bins.get(key);

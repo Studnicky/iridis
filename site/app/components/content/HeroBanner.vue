@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { useIridis } from '~/composables/useIridis.ts';
-
 /**
  * Hero. The iridis logo, an engine-lit title, and floating palette orbs — all
  * colored from the live --ui-* tokens so the hero itself is engine output.
  */
-useIridis();
 const base = useRuntimeConfig().app.baseURL;
 const orbs = ['primary', 'info', 'success', 'error', 'warning'];
 const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
@@ -18,7 +15,7 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
          is never crossed at visible alpha — no hard seam. -->
     <div class="hero-orb-field pointer-events-none absolute inset-0 -z-10">
       <div
-        v-for="(o, i) in orbs"
+        v-for="o in orbs"
         :key="o"
         class="float absolute rounded-full blur-2xl hero-orb"
         :style="{
@@ -39,7 +36,7 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
             aria-hidden="true"
           >
             <span
-              v-for="(c, i) in halo"
+              v-for="c in halo"
               :key="c"
               class="halo-ring"
               :style="{
@@ -70,5 +67,3 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
     </div>
   </section>
 </template>
-
-

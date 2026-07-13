@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue';
 
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 
@@ -17,11 +17,18 @@ const active = computed(() => state.value.activeIndex);
 const dragging = computed(() => state.value.variant === 'dragging');
 const dragPx = computed(() => (state.value.variant === 'dragging' ? state.value.dragPx : 0));
 const n = computed(() => props.items.length);
-// Mirrors the CSS `min()` sizing below (.cyl-face) so the drag-step/spread math
-// stays correct even before the post-mount measure() reconciles it — the
-// rendered box size itself is CSS-only and never changes after hydration.
 const cardW = ref(760);
-const cardH = ref(720);
+// cardH is the MAX natural content height across every face, not just the
+// active one — every card renders at this SAME explicit height (see
+// cardStyle below), so switching faces never resizes the deck and no face is
+// ever taller than the box it's given. Tracked per-index in cardHeights (see
+// observeAllCards) since .cyl-face is absolutely positioned and wouldn't
+// otherwise contribute to .cyl-scene's height at all.
+const cardHeights = ref<Record<number, number>>({});
+const cardH = computed(() => {
+  const heights = Object.values(cardHeights.value);
+  return heights.length > 0 ? Math.max(...heights) : 720;
+});
 
 let startX = 0;
 
@@ -89,18 +96,82 @@ function faceStyle(i: number): Record<string, string> {
     'transition': dragging.value ? 'none' : 'transform .7s cubic-bezier(.16,.84,.28,1), opacity .5s ease, filter .5s ease',
   };
 }
+/** Every card renders at the SAME explicit height (the max across all faces) so the deck never resizes when switching. */
+function cardStyle(): Record<string, string> {
+  return { 'height': `${cardH.value}px` };
+}
 
-function measure(): void {
+function measureWidth(): void {
   if (typeof window === 'undefined') return;
   cardW.value = Math.min(760, Math.round(window.innerWidth * 0.92));
-  cardH.value = Math.min(720, Math.round(window.innerHeight * 0.8));
 }
 function onKey(e: KeyboardEvent): void {
   if (e.key === 'ArrowRight') go(1);
   if (e.key === 'ArrowLeft') go(-1);
 }
-onMounted(() => { measure(); window.addEventListener('resize', measure); window.addEventListener('keydown', onKey); });
-onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.removeEventListener('keydown', onKey); });
+
+// Every .cyl-card is observed continuously (not just the active one), so a
+// face that isn't currently front-and-center still contributes its natural
+// height to the shared max — switching to it never causes a late resize
+// jump, and a card whose own content grows post-mount (e.g. an expanding
+// accordion) updates the shared max even while it's in the background.
+// data-cyl-index on each card lets the observer attribute entries back to
+// their face index. Debounced like BalancedWrap's ResizeObserver convention.
+const sceneRef = ref<HTMLElement | null>(null);
+let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let cardObserver: ResizeObserver | null = null;
+/**
+ * A card's own getBoundingClientRect()/ResizeObserver size is NOT its true
+ * natural content height once cardStyle() has applied an explicit height to
+ * it — that would just report back whatever height we already imposed,
+ * circularly. .cyl-card-body's scrollHeight always reflects its full content
+ * height regardless of any height clamp/overflow applied to it or its
+ * ancestors, so tag-bar height + body scrollHeight is the true unclamped
+ * natural height of the card.
+ */
+function naturalCardHeight(cardEl: HTMLElement): number {
+  const tag = cardEl.querySelector<HTMLElement>('.cyl-card-tag');
+  const body = cardEl.querySelector<HTMLElement>('.cyl-card-body');
+  return Math.round((tag?.offsetHeight ?? 0) + (body?.scrollHeight ?? 0));
+}
+function observeAllCards(): void {
+  if (typeof ResizeObserver === 'undefined' || !sceneRef.value) return;
+  if (cardObserver) cardObserver.disconnect();
+  const cards = sceneRef.value.querySelectorAll<HTMLElement>('.cyl-card');
+  const heights: Record<number, number> = {};
+  cards.forEach((el) => {
+    const idx = Number(el.dataset.cylIndex);
+    heights[idx] = naturalCardHeight(el);
+  });
+  cardHeights.value = heights;
+  cardObserver = new ResizeObserver((entries) => {
+    if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
+    resizeDebounceTimer = setTimeout(() => {
+      const next = { ...cardHeights.value };
+      for (const entry of entries) {
+        const bodyEl = entry.target as HTMLElement;
+        const cardEl = bodyEl.closest<HTMLElement>('.cyl-card');
+        if (!cardEl) continue;
+        const idx = Number(cardEl.dataset.cylIndex);
+        next[idx] = naturalCardHeight(cardEl);
+      }
+      cardHeights.value = next;
+    }, 100);
+  });
+  cards.forEach((el) => cardObserver!.observe(el));
+}
+onMounted(() => {
+  measureWidth();
+  nextTick(() => observeAllCards());
+  window.addEventListener('resize', measureWidth);
+  window.addEventListener('keydown', onKey);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', measureWidth);
+  window.removeEventListener('keydown', onKey);
+  if (cardObserver) cardObserver.disconnect();
+  if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
+});
 </script>
 
 <template>
@@ -116,7 +187,9 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
         @click="go(-1)"
       />
       <div
+        ref="sceneRef"
         class="cyl-scene"
+        :style="{ height: (cardH + 40) + 'px' }"
         @pointerdown="onDown"
       >
         <div
@@ -130,7 +203,8 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
           <div
             class="glass scanlines cyl-card"
             :class="{ float: !isActive(i) }"
-            :style="{ '--glow': 'var(--ui-primary)' }"
+            :style="{ '--glow': 'var(--ui-primary)', ...cardStyle() }"
+            :data-cyl-index="i"
           >
             <div class="cyl-card-tag font-display">
               <span class="cyl-dotlight" />
@@ -176,22 +250,60 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
 </template>
 
 <style scoped>
-.cyl { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%; overflow-x: hidden; }
-.cyl-scene-wrap { position: relative; width: 100%; }
+.cyl { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%; }
+/* Full-bleed: breaks the scene out of the parent <UContainer>'s max-width so
+   there's genuine room for 2 real neighbours on each side before anything
+   needs to clip, rather than the coverflow's side cards hitting a narrower
+   container edge and getting cut off. .cyl-scene's own overflow-x:hidden
+   (below) is what actually stops off-screen cards from expanding page
+   scroll — it now clips at the true viewport edge instead of a narrower one. */
+/* `left: 50%` on a position:relative element resolves against its OWN
+   PARENT's width, not the viewport (that containing-block rule only differs
+   for position:absolute) — so it can never correctly full-bleed a relatively
+   positioned element out of a centered container. margin-left with a mixed
+   %/vw calc() is the robust trick: the parent-relative and viewport-relative
+   terms cancel out algebraically as long as the parent itself is centered
+   (mx-auto), landing the box's left edge at the true viewport edge (x=0)
+   regardless of the parent's own width. */
+/* align-self:flex-start exempts this item from .cyl's align-items:center
+   cross-axis centering — that centering is computed against .cyl's own
+   (narrow, container-width) cross-axis size, which fights the margin-based
+   full-bleed math below (it would re-center the already-100vw box against
+   the wrong, narrower width). With centering off, the margin trick lands
+   the box's left edge at the true viewport edge as intended. */
+/* isolation:isolate gives the scene its own permanent stacking context,
+   independent of any ancestor. Without it, toggling CvdPreviewOverlay's
+   `filter` on `.cvd-preview-wrap` (an ancestor of this whole page) creates
+   or destroys a compositing layer on that ancestor — which can force the
+   cards' per-element 3D transforms (perspective()/rotateY()/translateZ() in
+   faceStyle()) to re-establish paint order, visibly "popping" the deck even
+   though no box position actually changes. Isolating this subtree's
+   stacking context up front means an ancestor filter switching on or off
+   never touches it. */
+.cyl-scene-wrap { position: relative; isolation: isolate; align-self: flex-start; width: 100vw; margin-left: calc(50% - 50vw); }
 .cyl-scene {
   position: relative;
   width: 100%;
-  /* Matches the .cyl-face min() sizing below so the scene never resizes after
-     hydration — measure() only keeps the JS spread/drag-step math in sync.
-     Off-active .cyl-face cards translateX() out to roughly ±(n/2 * spread)
+  /* Off-active .cyl-face cards translateX() out to roughly ±(n/2 * spread)
      from center — several thousand px for a 10-card deck — so without
      overflow-x clipping here, those decorative off-screen cards silently
      widen the whole PAGE's scrollable area, not just this widget's. Any
      native horizontal scroll trigger (scrollIntoView, browser autofill
      focus, etc.) then shifts window.scrollX to "satisfy" them, visibly
-     shoving the entire page sideways. */
+     shoving the entire page sideways. Since .cyl-scene-wrap is now full-bleed
+     (100vw), this clips at the true viewport edge — genuine neighbours within
+     that width are never cut off, only decorative cards further out are.
+     Height is content-driven (see observeAllCards) — every face shares the
+     same explicit height (the max across all of them). overflow-y is pinned
+     to clip (not left at the visible default): per spec, when one axis is
+     non-visible and the other is visible, the visible axis computes to auto
+     — so overflow-x:hidden alone silently turns overflow-y into auto and
+     gives this scene its own independent scrollbar the instant any face's
+     content transiently exceeds the shared height (e.g. mid-ResizeObserver
+     settle). Clipping instead of scrolling keeps this a single page-scroll
+     surface, matching cardStyle()'s own overflow:hidden. */
   overflow-x: hidden;
-  height: calc(min(720px, 80vh) + 40px);
+  overflow-y: clip;
   touch-action: pan-y;
 }
 /* Prev/Next sit pinned to the scene's left/right edges, vertically centered
@@ -221,7 +333,6 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
 .cyl-face {
   position: absolute; top: 20px; left: 50%;
   width: min(760px, 92vw);
-  height: min(720px, 80vh);
   transform-origin: center center;
   will-change: transform, opacity;
   cursor: pointer;
@@ -234,7 +345,10 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
 .cyl-face:not(.active) :deep(*) {
   pointer-events: none !important;
 }
-.cyl-card { height: 100%; width: 100%; display: flex; flex-direction: column; overflow: hidden; }
+/* Height is set inline (cardStyle()) to the shared max across every face, so
+   every card is uniformly tall — no face's content is ever clipped, and
+   switching between a short and a tall face never resizes the deck. */
+.cyl-card { width: 100%; display: flex; flex-direction: column; overflow: hidden; }
 .cyl-card-tag {
   position: relative;
   flex: none; display: flex; align-items: center; justify-content: center;
@@ -249,7 +363,12 @@ onBeforeUnmount(() => { window.removeEventListener('resize', measure); window.re
   position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
   width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: var(--ui-primary); box-shadow: 0 0 10px var(--ui-primary);
 }
-.cyl-card-body { flex: 1 1 auto; overflow-y: auto; padding: 1rem 1.1rem; }
+/* min-height:0 overrides the flex-item default (min-height:auto), which
+   otherwise refuses to shrink below the content's own natural size even
+   inside a shorter, uniformly-sized .cyl-card — without it, a face taller
+   than the shared max height silently overflows its box instead of being
+   clipped by .cyl-card's overflow:hidden. */
+.cyl-card-body { flex: 1 1 auto; min-height: 0; overflow: hidden; padding: 1rem 1.1rem; }
 .cyl-card-body :deep(.iridis-card) {
   background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important;
 }

@@ -11,6 +11,10 @@
  * never a clipped or duplicated one.
  */
 
+import { useLivingBackground } from '~/composables/useLivingBackground.ts';
+
+useLivingBackground();
+
 /** One box-shadow entry per star: a viewport-relative dot so the field scales with the window instead of clipping on a fixed px canvas. */
 function starField(count: number, colorVar: string, blur: string = '0'): string {
   const dots: string[] = [];
@@ -28,7 +32,12 @@ const starsFar3 = starField(200, 'color-mix(in oklch, var(--ui-success) 70%, tra
 const starsNear1 = starField(100, 'color-mix(in oklch, var(--ui-warning) 85%, transparent)', '1px');
 const starsNear2 = starField(100, 'color-mix(in oklch, var(--ui-error) 85%, transparent)', '1px');
 
-/** Engine roles the lava blobs cycle through — each blob blends two adjacent roles. */
+/** Engine roles the lava blobs cycle through — each blob blends two adjacent
+ * roles (roleA at index i, roleB at index i+2, see lavaBlobs() below). This
+ * order is NOT the same list as Tokens.ALIAS_COLOR_NAMES on purpose — it's a
+ * deliberately chosen pairing sequence for which two roles blend into each
+ * blob, so it can't be derived from the canonical display order without
+ * changing which colors blend together. */
 const LAVA_ROLES = ['primary', 'info', 'secondary', 'success', 'warning', 'error'];
 
 interface LavaBlobType { id: string; style: Record<string, string>; }

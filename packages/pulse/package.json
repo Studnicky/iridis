@@ -1,0 +1,23 @@
+{
+  "name": "@studnicky/iridis-pulse",
+  "description": "Time and value binding primitives — drives palette curve evaluation from real clocks, virtual clocks, or arbitrary scalar sources (scroll, gesture, sensor).",
+  "version": "0.8.1",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test 'tests/**/*.test.ts'",
+    "clean": "rm -rf dist",
+    "prebuild": "rm -rf dist"
+  },
+  "dependencies": {
+    "@studnicky/iridis-algebra": "^0.8.1",
+    "@studnicky/iridis-anima": "^0.8.1"
+  }
+}
