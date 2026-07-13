@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-chakra",
   "description": "Emits a Chakra UI extendTheme() color-token scale from resolved roles and their dark/light variants.",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
