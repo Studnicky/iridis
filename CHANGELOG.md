@@ -6,6 +6,14 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.9.0] - 2026-07-13
+
+### Added
+
 - Living Color, the v0.2 palette-animation layer: five new packages — `@studnicky/iridis-algebra` (palette vector math: `lerp`/`subtract`/`nearest`/`drift`/`perpendicular`), `@studnicky/iridis-anima` (curve/easing evaluation — `evaluate`/`evaluateStops`/`evaluateEnforced`, `linear`/`cubicBezier`/`spring`/`chromaticDetourHue` easings — with per-frame contrast re-validation), `@studnicky/iridis-fsm` (`PaletteStateMachine`, tick-driven transitions), `@studnicky/iridis-pulse` (`ClockBinding`/`ValueBinding` reactive signal-to-`t` bindings), and `@studnicky/iridis-trajectory` (`TrajectoryRegistry` plus built-in named trajectories)
 - Two new image-extraction clustering algorithms — weighted k-means++ and Wu quantization — alongside median-cut and delta-e merge
 - Multi-range lightness/chroma envelopes for image extraction: each envelope is now a union of ranges instead of one continuous span, so e.g. shadows and highlights can be kept while excluding the midtones between them
@@ -443,6 +451,7 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 
 [Unreleased]: https://github.com/Studnicky/iridis/compare/v0.0.0...HEAD
 
+[0.9.0]: https://github.com/Studnicky/iridis/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/Studnicky/iridis/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Studnicky/iridis/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/Studnicky/iridis/compare/v0.1.1...v0.7.1
