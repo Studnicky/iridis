@@ -20,7 +20,7 @@
     "node": ">=24"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.8.0"
+    "@studnicky/iridis": "*"
   },
   "devDependencies": {
     "typescript": "^6.0.0"

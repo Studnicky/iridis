@@ -17,10 +17,10 @@
     "prebuild": "rm -rf dist"
   },
   "dependencies": {
-    "@studnicky/iridis-algebra": "^0.8.1",
-    "@studnicky/iridis-contrast": "^0.8.1"
+    "@studnicky/iridis-algebra": "*",
+    "@studnicky/iridis-contrast": "*"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "^0.8.0"
+    "@studnicky/iridis": "*"
   }
 }
