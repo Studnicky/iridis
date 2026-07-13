@@ -6,6 +6,9 @@
   "include": [],
   "references": [
     { "path": "./packages/core" },
+    { "path": "./packages/algebra" },
+    { "path": "./packages/anima" },
+    { "path": "./packages/fsm" },
     { "path": "./packages/stylesheet" },
     { "path": "./packages/tailwind" },
     { "path": "./packages/vscode" },
@@ -13,6 +16,8 @@
     { "path": "./packages/capacitor" },
     { "path": "./packages/image" },
     { "path": "./packages/rdf" },
-    { "path": "./packages/cli" }
+    { "path": "./packages/cli" },
+    { "path": "./packages/trajectory" },
+    { "path": "./packages/pulse" }
   ]
 }

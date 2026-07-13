@@ -10,6 +10,37 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ### Fixed
 
+## [0.9.0] - 2026-07-13
+
+### Added
+
+- Living Color, the v0.2 palette-animation layer: five new packages — `@studnicky/iridis-algebra` (palette vector math: `lerp`/`subtract`/`nearest`/`drift`/`perpendicular`), `@studnicky/iridis-anima` (curve/easing evaluation — `evaluate`/`evaluateStops`/`evaluateEnforced`, `linear`/`cubicBezier`/`spring`/`chromaticDetourHue` easings — with per-frame contrast re-validation), `@studnicky/iridis-fsm` (`PaletteStateMachine`, tick-driven transitions), `@studnicky/iridis-pulse` (`ClockBinding`/`ValueBinding` reactive signal-to-`t` bindings), and `@studnicky/iridis-trajectory` (`TrajectoryRegistry` plus built-in named trajectories)
+- Two new image-extraction clustering algorithms — weighted k-means++ and Wu quantization — alongside median-cut and delta-e merge
+- Multi-range lightness/chroma envelopes for image extraction: each envelope is now a union of ranges instead of one continuous span, so e.g. shadows and highlights can be kept while excluding the midtones between them
+- "Hue derivation" carousel card: a live reference for all 8 hue-selection algorithms (monochromatic/complementary/analogous/triadic/tetradic/split-complementary/compound/freeform), replacing the "Color spaces" card
+- "Interactables" carousel card, split out of "Components" so toggleable controls (switches/radios/checkboxes/tabs/accordion/pagination) aren't crowded in beside one-shot action components
+- A single FSM-driven multi-key sort (`roleSortKeys`/`SET_ROLE_SORT`) shared across every role listing on the page — Roles table, Resolved roles, Clamps, Schema tree, and Spectrum all sort identically and stay in sync
+- `Tokens.ALIAS_COLOR_NAMES`, the canonical alias-name list, replacing five independently hardcoded (and quietly drifted) copies across components
+
+### Changed
+
+- Roles table and Resolved roles now split by concern instead of duplicating the same columns: Roles table shows contrast ratio/compliance, Resolved roles shows the raw OKLCH breakdown
+- The "Living Color" doc is rewritten in present tense as a shipped-feature reference (was framed as a future roadmap), renamed from "Roadmap: Living Color" and linked from the Motion and Color stream cards
+- The image-extraction gallery's color count now mirrors the active role schema's role count directly, instead of being a second, independently-tunable number that could disagree with it
+- Weighted, chroma-tiered trim ranking for delta-e image extraction, so a large neutral background no longer out-votes genuinely saturated regions
+- Consolidated duplicated role-contrast/compliance computation across components into shared `sortedRoleContrastRows` (`useIridis.ts`) and `utils/roleSort.ts` exports
+- Regenerated the static SSR `theme-default.css` fallback from the current default-extraction pipeline
+
+### Fixed
+
+- The carousel (and every nested face) no longer scrolls independently of the page — a CSS overflow-axis interaction (`overflow-x: hidden` silently promoting `overflow-y` to `auto`) was giving the coverflow its own scrollbar
+- Toggling a CVD-vision preview no longer visibly "pops" the coverflow's 3D-transformed cards — the carousel now isolates its own stacking context, immune to the ancestor filter's compositing-layer changes
+- The palette seed picker's "Add hue" trigger can no longer be laid out in the middle of the seed grid by the masonry algorithm — it's now a fixed control above the list, not a mixed-in list item
+- A sort-key `USelect` occasionally rendering the raw field id (e.g. `"h"`) instead of its label, from a one-frame mismatch between the selected value and its filtered options list
+- Avatar/badge pairs in the Interactables card no longer interleave when wrapping (each pair is now one flex item, not two independent ones)
+- Selecting a different image-extraction algorithm (or any extraction parameter) now explicitly re-runs the engine through the FSM handler that owns the mutation, rather than relying solely on a decoupled watcher
+- Removed the `float` bobbing animation from nested carousel content (e.g. Spectrum's alias cards), which compounded with the coverflow's own 3D transforms into dizzying motion
+
 ## [0.8.1] - 2026-07-11
 
 ### Added
@@ -420,6 +451,7 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 
 [Unreleased]: https://github.com/Studnicky/iridis/compare/v0.0.0...HEAD
 
+[0.9.0]: https://github.com/Studnicky/iridis/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/Studnicky/iridis/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Studnicky/iridis/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/Studnicky/iridis/compare/v0.1.1...v0.7.1

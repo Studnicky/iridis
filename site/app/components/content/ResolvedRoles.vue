@@ -1,40 +1,37 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
-import { contrastRatio } from '~/theme/ContrastRatio.ts';
 
 /**
- * The resolved role palette (the engine's role output, not the semantic UI
- * colors). Every role the engine produced from the active seeds, with its WCAG
- * 2.1 contrast against the resolved background and an AA/AAA badge.
+ * Raw-value-focused role listing — name, hex, and the OKLCH breakdown
+ * (L/C/H) the engine actually resolved. Contrast/compliance detail lives in
+ * Roles table instead, so the two cards split the same underlying role set
+ * by concern rather than both showing everything. Sort state is shared
+ * (RoleSortControls / roleSortKeys) with every other role listing on the
+ * page — sorting here by, say, Compliance reorders Roles table identically.
  */
-const { roleViews, roles } = useIridis();
-
-const bg = computed<string>(() => roles.value['background'] ?? '#000000');
-const rows = computed(() => roleViews.value.map((r) => {
-  const cr = contrastRatio(r.hex, bg.value);
-  return { 'name': r.name, 'hex': r.hex, 'ratio': cr, 'aa': cr >= 4.5, 'aaa': cr >= 7 };
-}));
+const { sortedRoleContrastRows } = useIridis();
 </script>
 
 <template>
   <UCard>
-    <template #header>
-      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <span />
-        <span class="text-center font-semibold text-highlighted">Resolved roles</span>
-        <UBadge
-          color="neutral"
-          variant="soft"
-          class="justify-self-end"
-        >
-          {{ rows.length }} roles
-        </UBadge>
-      </div>
-    </template>
+    <div class="mb-3 flex items-start justify-between gap-2">
+      <p class="text-sm text-muted">
+        Same roles as Roles table, laid out with their raw OKLCH values — sort by any field below.
+      </p>
+      <UBadge
+        color="neutral"
+        variant="soft"
+        class="flex-none"
+      >
+        {{ sortedRoleContrastRows.length }} roles
+      </UBadge>
+    </div>
+
+    <RoleSortControls class="mb-3" />
+
     <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
       <div
-        v-for="r in rows"
+        v-for="r in sortedRoleContrastRows"
         :key="r.name"
         class="flex items-center gap-2 rounded-lg border border-default p-2"
       >
@@ -42,19 +39,15 @@ const rows = computed(() => roleViews.value.map((r) => {
           class="h-9 w-9 shrink-0 rounded-md border border-default"
           :style="{ backgroundColor: r.hex }"
         />
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
           <div class="truncate text-xs font-medium text-highlighted">
             {{ r.name }}
           </div>
-          <div class="flex flex-wrap items-center gap-1">
-            <span class="truncate font-mono text-[10px] text-muted">{{ r.hex }}</span>
-            <UBadge
-              :color="r.aaa ? 'success' : r.aa ? 'primary' : 'neutral'"
-              variant="soft"
-              size="xs"
-            >
-              {{ r.aaa ? 'AAA' : r.aa ? 'AA' : r.ratio.toFixed(1) }}
-            </UBadge>
+          <span class="truncate font-mono text-[10px] text-muted">{{ r.hex }}</span>
+          <div class="grid grid-cols-3 gap-x-2 text-[10px] text-muted">
+            <span>L {{ r.l.toFixed(2) }}</span>
+            <span>C {{ r.c.toFixed(2) }}</span>
+            <span>H {{ r.h.toFixed(0) }}°</span>
           </div>
         </div>
       </div>

@@ -12,6 +12,7 @@ export enum IridisUiEffectVariant {
 import type { FramingType } from './framing.ts';
 import type { GalleryAlgorithmType } from './galleryAlgorithm.ts';
 import type { DerivationConfig } from './colorDerivation.ts';
+import type { RoleSortKeyType } from '../../utils/roleSort.ts';
 
 /**
  * Side effects emitted by IridisUiMachine.reduce() for events whose consequence
@@ -35,9 +36,10 @@ export type IridisUiEffectType =
   | { 'op': 'imgHistogramBits'; 'value': number; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'imgDeltaECap'; 'value': number; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'imgHarmonize'; 'value': number; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
-  | { 'op': 'imgLightnessRange'; 'value': [number, number]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
-  | { 'op': 'imgChromaRange'; 'value': [number, number]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'imgLightnessRange'; 'value': [number, number][]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'imgChromaRange'; 'value': [number, number][]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'derivation'; 'value': DerivationConfig; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'roleSort'; 'value': RoleSortKeyType[]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'source': 'sample'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
   | { 'file': File; 'source': 'file'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
   | { 'hues': string[]; 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }

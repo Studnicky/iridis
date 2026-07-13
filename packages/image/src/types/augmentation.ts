@@ -8,7 +8,7 @@ import type { ColorRecordInterfaceType } from '@studnicky/iridis';
 /**
  * Algorithm selector for `gallery:extract`.
  */
-export type GalleryAlgorithmType = 'median-cut' | 'delta-e';
+export type GalleryAlgorithmType = 'median-cut' | 'delta-e' | 'k-means' | 'wu-quantize';
 
 /**
  * Output written to state.metadata['gallery:histogram'] by gallery:histogram.

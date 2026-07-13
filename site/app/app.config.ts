@@ -11,7 +11,9 @@ export default defineAppConfig({
     },
     'button': {
       'variants': {
-        'solid': 'text-[var(--ui-primary-contrast,white)] dark:text-[var(--ui-primary-contrast,gray-900)]'
+        'variant': {
+          'solid': 'text-[var(--ui-primary-contrast,white)] dark:text-[var(--ui-primary-contrast,gray-900)]'
+        }
       }
     }
   }

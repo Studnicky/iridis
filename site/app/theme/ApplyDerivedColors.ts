@@ -47,6 +47,7 @@ class ApplyDerivedColors implements TaskInterface {
 
       // Use the first derived hue for this role
       const firstDerived = derived[0];
+      if (!firstDerived) {continue;}
       const derivedHue = firstDerived.hue;
 
       // Parse existing color and update hue
