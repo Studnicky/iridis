@@ -30,10 +30,8 @@
   },
   "dependencies": {
     "@studnicky/errors": "^4.0.0",
-    "@studnicky/json": "^4.0.0",
+    "@studnicky/json-tology": "^0.27.0",
     "@studnicky/logger": "^4.0.0",
-    "@studnicky/types": "^4.0.0",
-    "ajv": "^8.20.0",
-    "json-schema-to-ts": "^3.1.1"
+    "@studnicky/types": "^4.0.0"
   }
 }

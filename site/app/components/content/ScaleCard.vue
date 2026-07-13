@@ -7,8 +7,7 @@ import { Tokens } from '~/theme/Tokens.ts';
 
 /**
  * One semantic alias's full 50→950 ramp plus sample components in that color.
- * Pure content — reused by PaletteCarousel's Swiper slide and its no-JS static
- * fallback, so both render identical markup.
+ * Pure content — rendered by PaletteCarousel's grid, one card per alias.
  */
 const props = defineProps<{ alias: { key: string; label: string } }>();
 

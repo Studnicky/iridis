@@ -13,17 +13,7 @@ import type {
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
-
-function rangeCenter(range: readonly [number, number]): number {
-  return (range[0] + range[1]) / 2;
-}
-
-/** Rotate `src` toward `target` along the shortest arc, by at most `maxDeg`. */
-function hueTowards(src: number, target: number, maxDeg: number): number {
-  const delta = ((target - src + 540) % 360) - 180;
-  const clamped = Math.max(-maxDeg, Math.min(maxDeg, delta));
-  return (((src + clamped) % 360) + 360) % 360;
-}
+import { RoleGeometry } from '../RoleGeometry.ts';
 
 function deriveColor(
   source: ColorRecordInterfaceType,
@@ -31,13 +21,13 @@ function deriveColor(
 ): ColorRecordInterfaceType {
   const { c, h, l } = source.oklch;
 
-  const targetL = role.lightnessRange !== undefined ? rangeCenter(role.lightnessRange) : l;
-  const targetC = role.chromaRange    !== undefined ? rangeCenter(role.chromaRange)    : c;
+  const targetL = role.lightnessRange !== undefined ? RoleGeometry.rangeCenter(role.lightnessRange) : l;
+  const targetC = role.chromaRange    !== undefined ? RoleGeometry.rangeCenter(role.chromaRange)    : c;
 
   let targetH: number;
   if (role.hue !== undefined) {
     targetH = role.hueClamp !== undefined
-      ? hueTowards(h, role.hue, role.hueClamp)
+      ? RoleGeometry.hueTowards(h, role.hue, role.hueClamp)
       : (((role.hue % 360) + 360) % 360);
   } else if (role.hueOffset !== undefined) {
     targetH = ((h + role.hueOffset) % 360 + 360) % 360;

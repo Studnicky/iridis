@@ -1,4 +1,4 @@
-import { lerp } from '@studnicky/iridis-algebra';
+import { lerpHue } from '@studnicky/iridis-algebra';
 import type { HueDirectionType } from '@studnicky/iridis-algebra';
 
 /**
@@ -20,10 +20,8 @@ const isCoolHue = (h: number): boolean => h >= 180 && h <= 300;
 
 const inDeadZone = (h: number): boolean => h >= DEAD_ZONE_MIN && h < DEAD_ZONE_MAX;
 
-const directHue = (from: number, to: number, t: number, direction: HueDirectionType): number => {
-  const sample = lerp({ 'hue': { 'c': 0, 'h': from, 'l': 0 } }, { 'hue': { 'c': 0, 'h': to, 'l': 0 } }, t, { 'hueDirection': direction });
-  return sample['hue']!.h;
-};
+const directHue = (from: number, to: number, t: number, direction: HueDirectionType): number =>
+  lerpHue(from, to, t, direction);
 
 const DEAD_ZONE_SAMPLE_COUNT = 9;
 

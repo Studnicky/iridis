@@ -10,10 +10,12 @@ import type { ColorRecordInterfaceType } from '@studnicky/iridis';
  * Returns an empty string when `p3` is `undefined` so call sites can
  * fall back to the sRGB hex without an extra branch.
  */
-export function serializeP3(p3: ColorRecordInterfaceType['displayP3']): string {
-  if (p3 === undefined) {return '';}
-  const r = p3.r.toFixed(4);
-  const g = p3.g.toFixed(4);
-  const b = p3.b.toFixed(4);
-  return `color(display-p3 ${r} ${g} ${b})`;
+export class P3Serializer {
+  static serialize(p3: ColorRecordInterfaceType['displayP3']): string {
+    if (p3 === undefined) {return '';}
+    const r = p3.r.toFixed(4);
+    const g = p3.g.toFixed(4);
+    const b = p3.b.toFixed(4);
+    return `color(display-p3 ${r} ${g} ${b})`;
+  }
 }

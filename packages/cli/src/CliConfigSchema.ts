@@ -1,4 +1,5 @@
 export const CliConfigSchema = {
+  '$id': 'https://studnicky.dev/iridis-cli/CliConfig',
   'properties': {
     'enableCapacitor':  { 'type': 'boolean' },
     'enableContrast':   { 'type': 'boolean' },

@@ -451,6 +451,8 @@ function removeChromaRange(index: number): void {
                     class="h-7 w-7 rounded-md border border-default"
                     :style="{ backgroundColor: hex }"
                     :title="hex"
+                    role="img"
+                    :aria-label="`Extracted hue ${hex}`"
                   />
                 </div>
               </div>
@@ -683,11 +685,12 @@ function removeChromaRange(index: number): void {
                     >
                       <template #default="{ item: t }">
                         <UButton
-                          :label="t.label"
+                          :label="cvdPreviewTypes.has(t.value as any) ? `${t.label} ✓` : t.label"
                           size="xs"
                           :color="cvdPreviewTypes.has(t.value as any) ? 'primary' : 'neutral'"
                           :variant="cvdPreviewTypes.has(t.value as any) ? 'solid' : 'soft'"
                           class="flex-1 justify-center"
+                          :aria-pressed="cvdPreviewTypes.has(t.value as any)"
                           @click="send({ cvdType: t.value, type: IridisUiActionType.CVD_TOGGLE_PREVIEW })"
                         />
                       </template>

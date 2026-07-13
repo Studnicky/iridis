@@ -26,9 +26,11 @@ class HexRole {
   }
 }
 
-function xmlItem(name: string, value: string): string {
-  const result = `        <item name="${name}">${value}</item>`;
-  return result;
+class XmlItem {
+  static build(name: string, value: string): string {
+    const result = `        <item name="${name}">${value}</item>`;
+    return result;
+  }
 }
 
 class EmitAndroidThemeXml implements TaskInterface {
@@ -59,14 +61,14 @@ class EmitAndroidThemeXml implements TaskInterface {
     const textColorPrimary  = HexRole.resolve(roles, 'text', 'onSurface');
 
     const items = [
-      xmlItem('android:statusBarColor',            statusBarColor),
-      xmlItem('android:navigationBarColor',         navigationBarColor),
-      xmlItem('android:windowBackground',           splashColor),
-      xmlItem('android:colorPrimary',               primaryColor),
-      xmlItem('android:colorPrimaryDark',           statusBarColor),
-      xmlItem('android:colorBackground',            windowBackground),
-      xmlItem('android:textColorPrimary',           textColorPrimary),
-      xmlItem('postSplashScreenTheme',              '@style/AppTheme')
+      XmlItem.build('android:statusBarColor',            statusBarColor),
+      XmlItem.build('android:navigationBarColor',         navigationBarColor),
+      XmlItem.build('android:windowBackground',           splashColor),
+      XmlItem.build('android:colorPrimary',               primaryColor),
+      XmlItem.build('android:colorPrimaryDark',           statusBarColor),
+      XmlItem.build('android:colorBackground',            windowBackground),
+      XmlItem.build('android:textColorPrimary',           textColorPrimary),
+      XmlItem.build('postSplashScreenTheme',              '@style/AppTheme')
     ].join('\n');
 
     const xml = [

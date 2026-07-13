@@ -53,6 +53,7 @@ function toggleKeyDesc(index: number): void {
         type="button"
         class="flex items-center"
         :aria-label="`Toggle ${roleSortFieldLabel(key.field)} sort direction`"
+        :aria-pressed="key.desc"
         @click="toggleKeyDesc(index)"
       >
         <UIcon :name="key.desc ? 'i-material-symbols-arrow-downward-rounded' : 'i-material-symbols-arrow-upward-rounded'" />

@@ -16,19 +16,21 @@ const xsdDecimal = 'http://www.w3.org/2001/XMLSchema#decimal';
 const xsdString  = 'http://www.w3.org/2001/XMLSchema#string';
 const rdfType    = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
-function colorIri(hex: string): string {
-  const result = `https://studnicky.dev/colorology/color/${hex.replace('#', '')}`;
-  return result;
-}
+class Iri {
+  static color(hex: string): string {
+    const result = `https://studnicky.dev/colorology/color/${hex.replace('#', '')}`;
+    return result;
+  }
 
-function roleIri(name: string): string {
-  const result = `https://studnicky.dev/colorology/role/${name}`;
-  return result;
-}
+  static role(name: string): string {
+    const result = `https://studnicky.dev/colorology/role/${name}`;
+    return result;
+  }
 
-function paletteIri(startedAt: number): string {
-  const result = `https://studnicky.dev/colorology/palette/run-${startedAt}`;
-  return result;
+  static palette(startedAt: number): string {
+    const result = `https://studnicky.dev/colorology/palette/run-${startedAt}`;
+    return result;
+  }
 }
 
 
@@ -44,7 +46,7 @@ class ReasonAnnotate implements TaskInterface {
 
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const store       = new Store();
-    const paletteNode = DataFactory.namedNode(paletteIri(ctx.startedAt));
+    const paletteNode = DataFactory.namedNode(Iri.palette(ctx.startedAt));
     const roleType    = DataFactory.namedNode(colorologyVocab.Role);
     const rdfTypeNode = DataFactory.namedNode(rdfType);
     const hasRoleNode = DataFactory.namedNode(colorologyVocab.hasRole);
@@ -59,8 +61,8 @@ class ReasonAnnotate implements TaskInterface {
     const xsdDecimalNode = DataFactory.namedNode(xsdDecimal);
 
     for (const [roleName, color] of Object.entries(state.roles)) {
-      const role  = DataFactory.namedNode(roleIri(roleName));
-      const colorN = DataFactory.namedNode(colorIri(color.hex));
+      const role  = DataFactory.namedNode(Iri.role(roleName));
+      const colorN = DataFactory.namedNode(Iri.color(color.hex));
 
       store.addQuad(DataFactory.quad(role,    rdfTypeNode,  roleType));
       store.addQuad(DataFactory.quad(role,    hasColorNode, colorN));
