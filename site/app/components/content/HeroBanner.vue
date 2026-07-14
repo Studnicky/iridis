@@ -45,7 +45,7 @@ const orbs = ['primary', 'info', 'success', 'error', 'warning'];
         A chromatic engine that resolves any seeds — or any image — into a full,
         contrast-enforced, <span
           class="font-semibold"
-          style="color: var(--ui-color-primary-400)"
+          style="color: var(--ui-text-highlighted)"
         >OKLCH-native</span> palette.
         Every pixel here is <code class="font-mono">engine.run()</code>.
       </p>
