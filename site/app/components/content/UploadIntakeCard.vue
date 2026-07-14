@@ -58,12 +58,12 @@ function sample(): void {
 /**
  * Image carousel's own local active index — deliberately independent of the
  * Intake stage carousel's own index (see CylinderCarousel's optional
- * modelValue mode). One slot per uploaded image; the dropzone renders as
- * plain content ABOVE this carousel rather than as a slide inside it — this
- * card is already inside the Intake stage's own "Upload" cyl-card, so a
+ * modelValue mode). One slot per uploaded image, always — every upload
+ * creates its own card here, even the very first one; the dropzone renders
+ * as plain content ABOVE this carousel rather than as a slide inside it —
+ * this card is already inside the Intake stage's own "Upload" cyl-card, so a
  * nested carousel slide also titled "Upload" produced a redundant
- * card-in-a-card. The carousel itself only earns its keep once there's more
- * than one uploaded image to flip between.
+ * card-in-a-card.
  */
 const imageCarouselActiveIndex = ref(0);
 const imageCarouselItems = computed(() => uploadedImages.value.map((img) => {return { key: img.id, label: img.name };}));
@@ -146,11 +146,10 @@ watch(() => uploadedImages.value.length, (next, prev) => {
         </p>
       </div>
 
-      <!-- Per-image detail/edit carousel — only earns its own coverflow deck
-           once there's more than one image to flip between; a single image
-           renders its detail card flat, no redundant carousel chrome. -->
+      <!-- Every uploaded image gets its own card, always — this is the ONLY
+           place any image's controls render, never inlined flat into the
+           Upload stage's own card, even when there's just one upload. -->
       <CylinderCarousel
-        v-if="imageCarouselItems.length > 1"
         :items="imageCarouselItems"
         :model-value="imageCarouselActiveIndex"
         @update:model-value="imageCarouselActiveIndex = $event"
@@ -165,13 +164,6 @@ watch(() => uploadedImages.value.length, (next, prev) => {
           />
         </template>
       </CylinderCarousel>
-      <UploadedImageCard
-        v-else-if="findUploadedImage(imageCarouselItems[0]?.key ?? '')"
-        :image="findUploadedImage(imageCarouselItems[0]!.key)!"
-        @remove="removeUploadedImage(imageCarouselItems[0]!.key)"
-        @update="updateUploadedImageSetting(imageCarouselItems[0]!.key, $event)"
-        @select-candidate="selectEntryCandidate(imageCarouselItems[0]!.key, $event)"
-      />
     </div>
   </div>
 </template>
