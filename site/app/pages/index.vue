@@ -11,8 +11,9 @@ import { STAGE_GROUPS, SEQUENTIAL_STAGE_NAMES } from '~/composables/CarouselSect
  * iridis × Nuxt UI. A compact hero, then the stage carousels reflecting the
  * actual engine pipeline — Upload, Combine (only once an image is uploaded),
  * Refine (manual seed entry, role assignment, CVD preview, schema/compliance
- * settings), Result (the resolved palette plus every emit-plugin output
- * format), Explore, and Reference — then the docs list. The SAME
+ * settings), Explore (the resolved roles/pairings/spectrum, plus the
+ * component/interactable/motion showcases), Stylesheets (every emit-plugin
+ * output format), and Reference — then the docs list. The SAME
  * left-arrow/centered-title/right-arrow header and Next/Previous navigation
  * spans the whole page: after Reference, Next continues into the first doc;
  * a doc's Previous eventually leads back to Reference. Every color is

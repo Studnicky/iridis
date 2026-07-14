@@ -4,8 +4,8 @@
  * navigation target table (useNavigationTargets.ts resolves a card id to its
  * owning stage + index within that stage's own local carousel state).
  *
- * Every stage is part of ONE continuous Upload→Combine→Refine→Result→
- * Explore→Reference tour — the same left-arrow/centered-title/right-arrow
+ * Every stage is part of ONE continuous Upload→Combine→Refine→Explore→
+ * Stylesheets→Reference tour — the same left-arrow/centered-title/right-arrow
  * header, and the same Next/Previous step navigation, applies uniformly
  * across the whole site (index.vue extends the sequence past Reference into
  * the docs list at the bottom). Combine only ever renders once an image has
@@ -21,7 +21,7 @@ export interface StageGroupType {
 
 /**
  * Stable keys for every output format the engine has a real emit plugin for —
- * one Result-stage carousel card per format (see OutputFormatCard.vue /
+ * one Stylesheets-stage carousel card per format (see OutputFormatCard.vue /
  * useMultiOutput.ts), in the same fixed order the pipeline always emits them.
  */
 export const OUTPUT_FORMAT_CARDS: ReadonlyArray<CarouselCardType> = [
@@ -68,18 +68,18 @@ export const STAGE_GROUPS: ReadonlyArray<StageGroupType> = [
       { 'key': 'roles', 'label': 'Roles' },
       { 'key': 'pairingPreview', 'label': 'Pairings' },
       { 'key': 'spectrum', 'label': 'Spectrum' },
-      ...OUTPUT_FORMAT_CARDS,
-    ],
-    'label': 'Result', 'name': 'result',
-  },
-  {
-    'items': [
       { 'key': 'components', 'label': 'Components' },
       { 'key': 'interactables', 'label': 'Interactables' },
       { 'key': 'motion', 'label': 'Motion' },
       { 'key': 'colorStream', 'label': 'Color stream' },
     ],
     'label': 'Explore', 'name': 'explore',
+  },
+  {
+    'items': [
+      ...OUTPUT_FORMAT_CARDS,
+    ],
+    'label': 'Stylesheets', 'name': 'result',
   },
   {
     'items': [

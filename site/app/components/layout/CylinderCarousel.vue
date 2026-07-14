@@ -425,9 +425,11 @@ onBeforeUnmount(() => {
 /* min-height:0 overrides the flex-item default (min-height:auto), which
    otherwise refuses to shrink below the content's own natural size even
    inside a shorter, uniformly-sized .cyl-card — without it, a face taller
-   than the shared max height silently overflows its box instead of being
-   clipped by .cyl-card's overflow:hidden. */
-.cyl-card-body { flex: 1 1 auto; min-height: 0; overflow: hidden; padding: 1rem 1.1rem; }
+   than the shared max height would overflow its box instead of scrolling
+   within it. Vertical overflow scrolls (never clips) so a face whose content
+   genuinely exceeds the deck's shared height stays fully reachable; horizontal
+   stays clipped since no card content is meant to scroll sideways. */
+.cyl-card-body { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; padding: 1rem 1.1rem; }
 .cyl-card-body :deep(.iridis-card) {
   background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important;
 }

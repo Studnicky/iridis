@@ -8,7 +8,7 @@
  * don't exist in this site's schema and throws if they're absent, so it gets
  * its own dedicated pass rather than being bolted onto the main pipeline.
  *
- * Module-singleton (mirrors useThemePreset.ts's pattern) so every Result-stage
+ * Module-singleton (mirrors useThemePreset.ts's pattern) so every Stylesheets-stage
  * OutputFormatCard reads the SAME computed outputs without each re-running
  * engine.run() itself — one shared `outputsByKey`, keyed by the same stable
  * strings CarouselSections.ts's OUTPUT_FORMAT_CARDS uses.
@@ -150,9 +150,9 @@ let observeStarted = false;
 
 /**
  * Two full `engine.run()` passes (buildMainOutputs + buildVscodeOutput) are
- * genuinely expensive — deferring them until the Result stage has actually
- * scrolled into view (or is about to) means a visit that never reaches
- * Result never pays for them at all, and the reactive `watch` below (which
+ * genuinely expensive — deferring them until the Stylesheets stage has
+ * actually scrolled into view (or is about to) means a visit that never
+ * reaches Stylesheets never pays for them at all, and the reactive `watch` below (which
  * would otherwise re-run both passes on every seed/framing/schema change
  * site-wide) doesn't even start ticking until then either.
  */
@@ -182,7 +182,7 @@ function activate(): void {
   watch([activeSeeds, framing, schemaName], schedule, { 'deep': true });
 }
 
-/** Starts observing the Result stage's own section (`#result`) — a generous `rootMargin` pre-warms generation just before the user actually scrolls it into view, rather than the instant it's technically on-screen. Falls back to immediate activation if IntersectionObserver/the target element aren't available (SSR, or an unexpected DOM shape). */
+/** Starts observing the Stylesheets stage's own section (`#result`) — a generous `rootMargin` pre-warms generation just before the user actually scrolls it into view, rather than the instant it's technically on-screen. Falls back to immediate activation if IntersectionObserver/the target element aren't available (SSR, or an unexpected DOM shape). */
 function observeResultVisibility(): void {
   if (observeStarted) return;
   observeStarted = true;
@@ -207,7 +207,7 @@ function observeResultVisibility(): void {
   });
 }
 
-/** Reactive, deterministically-keyed output rows plus the shared VS Code theme used to highlight every CodeBlock — the single entry point every OutputFormatCard reads from. Generation itself doesn't start until the Result stage is about to be visible (see observeResultVisibility). */
+/** Reactive, deterministically-keyed output rows plus the shared VS Code theme used to highlight every CodeBlock — the single entry point every OutputFormatCard reads from. Generation itself doesn't start until the Stylesheets stage is about to be visible (see observeResultVisibility). */
 export function useMultiOutput(): { 'outputsByKey': typeof outputsByKey } {
   observeResultVisibility();
   return { 'outputsByKey': outputsByKey };
