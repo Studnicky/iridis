@@ -47,7 +47,7 @@ Each ships as a separate plugin package; install only what you need.
 - [`@studnicky/iridis-chakra`](packages/chakra) — Emits a Chakra UI extendTheme() color-token scale from resolved roles and their dark/light variants.
 - [`@studnicky/iridis-panda`](packages/panda) — Emits Panda CSS and UnoCSS theme configs from resolved roles.
 - [`@studnicky/iridis-capacitor`](packages/capacitor) — Emits Capacitor status bar, splash screen, native theme config, and Android theme.xml from a resolved palette.
-- [`@studnicky/iridis-rdf`](packages/rdf) — Emits the resolved palette as an RDF/OWL graph with SHACL-shaped reasoning annotations.
+- [`@studnicky/iridis-rdf`](packages/rdf) — Emits the resolved palette as an RDF graph (roles, colors, derivation/pin/clamp relations, contrast pairs) under the `iridis` vocabulary, serializable to Turtle/TriG/N-Quads/JSON-LD.
 
 ## Requirements
 

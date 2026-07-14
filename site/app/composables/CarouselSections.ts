@@ -68,6 +68,7 @@ export const STAGE_GROUPS: ReadonlyArray<StageGroupType> = [
       { 'key': 'roles', 'label': 'Roles' },
       { 'key': 'pairingPreview', 'label': 'Pairings' },
       { 'key': 'spectrum', 'label': 'Spectrum' },
+      { 'key': 'colorGraph', 'label': 'Color graph' },
       { 'key': 'components', 'label': 'Components' },
       { 'key': 'interactables', 'label': 'Interactables' },
       { 'key': 'motion', 'label': 'Motion' },
