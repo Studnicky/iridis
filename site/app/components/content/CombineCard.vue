@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { IridisUiActionType } from '~/composables/types/index.ts';
 import type { GalleryAlgorithmType } from '~/composables/types/galleryAlgorithm.ts';
-import { ALGORITHM_HELP, ALGORITHM_ITEMS } from '~/composables/GalleryAlgorithms.ts';
+import { ALGORITHM_HELP, ALGORITHM_ITEMS, ALGORITHM_LABELS } from '~/composables/GalleryAlgorithms.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
@@ -13,10 +14,15 @@ import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/type
 /**
  * The Combine stage — final merge tuning across every uploaded image. Its own
  * top-level stage carousel card (only rendered once at least one image is
- * uploaded, see index.vue), between Upload and Refine.
+ * uploaded, see index.vue), between Upload and Refine. Every control here
+ * (algorithm, histogram bits, ΔE cap, harmonize, lightness/chroma range) is a
+ * SEPARATE set of settings from any single image's own extraction controls
+ * (those live on that image's own card in Upload) — this stage's controls
+ * feed a second, independent re-cluster pass over the merged/weighted
+ * histogram across every image, not any one photo's own reduction.
  */
 const {
-  schemaName, mode, imageSeeds, running,
+  schemaName, mode, imageSeeds, running, uploadedImages, effectiveHexesFor,
   imgAlgorithm, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
   candidates, selectedCandidateLabel,
   combineLocked, reRunCombine
@@ -33,6 +39,18 @@ function selectCandidate(candidate: GalleryCandidateInterfaceType): void {
     type: IridisUiActionType.SELECT_IMAGE_CANDIDATE
   });
 }
+
+/** Read-only reference — each uploaded image's own already-extracted palette, so it's clear what's feeding the merge below without duplicating that image's own (editable) controls, which live on its own card in Upload. */
+type SelectedPaletteType = { key: string; label: string; algorithmLabel: string; hexes: readonly string[] };
+const selectedPalettes = computed<SelectedPaletteType[]>(() => uploadedImages.value.map((entry) => {
+  const algorithmKey = entry.selectedCandidateLabel ?? entry.algorithm;
+  return {
+    algorithmLabel: ALGORITHM_LABELS[algorithmKey] ?? algorithmKey,
+    hexes: effectiveHexesFor(entry),
+    key: entry.id,
+    label: entry.name || 'Sample'
+  };
+}));
 </script>
 
 <template>
@@ -48,6 +66,63 @@ function selectCandidate(candidate: GalleryCandidateInterfaceType): void {
         These settings control the FINAL merge across every uploaded image — not any single photo's own extraction. The result feeds the Refine stage's Palette card as the hue list you refine and assign roles from.
       </p>
     </div>
+
+    <div class="space-y-1">
+      <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
+        Per-image palettes
+      </p>
+      <p class="text-sm text-muted">
+        Each image's own already-extracted palette — a reference for what's feeding the merge below. Adjust an image's own extraction on its card back in Upload.
+      </p>
+      <BalancedWrap
+        :items="selectedPalettes"
+        :min-width="200"
+        :gap="12"
+      >
+        <template #default="{ item: card }">
+          <div class="glass scanlines flex flex-1 max-w-xs flex-col gap-3 p-4">
+            <div class="flex items-center justify-between gap-2">
+              <span
+                class="truncate font-display text-sm font-bold uppercase tracking-widest glow-text"
+                :title="card.label"
+              >{{ card.label }}</span>
+              <span class="h-3 w-3 shrink-0 rounded-full pulse bg-primary" />
+            </div>
+            <div
+              v-if="card.hexes.length === 0"
+              class="text-xs text-muted italic"
+            >
+              None
+            </div>
+            <BalancedWrap
+              v-else
+              :items="[...card.hexes]"
+              :min-width="28"
+              :gap="4"
+            >
+              <template #default="{ item: hex }">
+                <span
+                  class="h-7 w-7 rounded border border-default/50"
+                  :style="{ backgroundColor: hex }"
+                  :title="hex"
+                  role="img"
+                  :aria-label="`${card.label} color ${hex}`"
+                />
+              </template>
+            </BalancedWrap>
+            <UBadge
+              color="neutral"
+              variant="soft"
+              size="sm"
+              class="self-start"
+            >
+              {{ card.algorithmLabel }}
+            </UBadge>
+          </div>
+        </template>
+      </BalancedWrap>
+    </div>
+
     <div class="flex flex-wrap items-center gap-3 rounded-lg border border-default p-3">
       <USwitch
         v-model="combineLocked"
