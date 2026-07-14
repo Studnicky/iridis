@@ -25,7 +25,11 @@ import { STAGE_GROUPS, SEQUENTIAL_STAGE_NAMES } from '~/composables/CarouselSect
  */
 const { data: allDocs } = await useAsyncData('alldocs', () => queryCollection('docs').all())
 
-const { 'send': send, 'framing': framing, 'uploadedImages': uploadedImages } = useIridis();
+const {
+  'send': send, 'framing': framing, 'uploadedImages': uploadedImages,
+  'removeUploadedImage': removeUploadedImage, 'updateUploadedImageSetting': updateUploadedImageSetting,
+  'selectEntryCandidate': selectEntryCandidate
+} = useIridis();
 const { 'registerDocTargets': registerDocTargets, 'registerStageIndexSetter': registerStageIndexSetter } = useNavigationTargets();
 watch(allDocs, (docs) => { if (docs) {registerDocTargets(docs);} }, { 'immediate': true });
 
@@ -43,6 +47,33 @@ for (const group of STAGE_GROUPS) {
 
 /** Combine only earns its place in the flow once there's an uploaded image to combine — hidden otherwise, and skipped over by Next/Previous navigation while hidden. */
 const visibleStageGroups = computed(() => STAGE_GROUPS.filter((group) => group.name !== 'combine' || uploadedImages.value.length > 0));
+
+/** Every uploaded-image card's key shares this prefix, distinguishing it from every other stage's static item keys. */
+const UPLOADED_IMAGE_KEY_PREFIX = 'uploadedImage-';
+function uploadedImageItemKey(id: string): string { return `${UPLOADED_IMAGE_KEY_PREFIX}${id}`; }
+function findUploadedImage(itemKey: string) {
+  if (!itemKey.startsWith(UPLOADED_IMAGE_KEY_PREFIX)) return undefined;
+  const id = itemKey.slice(UPLOADED_IMAGE_KEY_PREFIX.length);
+  return uploadedImages.value.find((img) => img.id === id);
+}
+
+/**
+ * The Upload stage's own top-level carousel gets one slide per uploaded
+ * image, dynamically appended after the static dropzone slide — every
+ * upload is a SEPARATE top-level carousel card in this SAME stage carousel,
+ * never a second carousel nested inside the dropzone card's own content.
+ * Every other stage's items are the static list CarouselSections.ts defines.
+ */
+function stageItemsFor(group: (typeof STAGE_GROUPS)[number]) {
+  if (group.name !== 'upload') return group.items;
+  return [...group.items, ...uploadedImages.value.map((img) => ({ 'key': uploadedImageItemKey(img.id), 'label': img.name }))];
+}
+
+/** A newly uploaded image's card should come front-and-center immediately; removing one falls back to the dropzone slide. */
+watch(() => uploadedImages.value.length, (next, prev) => {
+  if (next > prev) stageIndex['upload'] = next;
+  else if (next < prev) stageIndex['upload'] = 0;
+});
 
 /** Every doc's scroll-anchor id, in the same order they render — the tail of the site-wide Next/Previous sequence, after every stage. */
 const docAnchorIds = computed(() => (allDocs.value ?? []).map((doc) => sanitizeDocAnchorId(doc.path)));
@@ -162,12 +193,19 @@ function onDocsClick(e: MouseEvent): void {
         </div>
 
         <CylinderCarousel
-          :items="group.items"
+          :items="stageItemsFor(group)"
           :model-value="stageIndex[group.name]"
           @update:model-value="stageIndex[group.name] = $event"
         >
           <template #default="{ item }">
             <UploadIntakeCard v-if="item.key === 'upload'" />
+            <UploadedImageCard
+              v-else-if="findUploadedImage(item.key)"
+              :image="findUploadedImage(item.key)!"
+              @remove="removeUploadedImage(findUploadedImage(item.key)!.id)"
+              @update="updateUploadedImageSetting(findUploadedImage(item.key)!.id, $event)"
+              @select-candidate="selectEntryCandidate(findUploadedImage(item.key)!.id, $event)"
+            />
             <CombineCard v-else-if="item.key === 'combine'" />
             <PickerIntakeCard v-else-if="item.key === 'picker'" />
             <RefinePaletteCard v-else-if="item.key === 'palette'" />

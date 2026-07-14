@@ -1,30 +1,21 @@
 <script setup lang="ts">
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { ref, watch, computed } from 'vue';
+import { ref, watch } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
 import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
-import UploadedImageCard from './UploadedImageCard.vue';
-import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
 
 /**
- * The Upload stage's card — extract a palette from one or more images. This
- * card itself owns no extraction controls; every control (algorithm, k,
- * histogram bits, ΔE cap, harmonize, lightness/chroma range) is per-image,
- * living on that image's own `UploadedImageCard` below. The Combine stage
- * (right after this one, only shown once an image is uploaded) shows each
- * image's selected palette for reference plus the settings for the FINAL
- * merge across every image. "Skip" bypasses image upload entirely, jumping
- * straight to Manual seed entry — now the Refine stage's first card. Owns
- * its own nested image carousel — a SECOND local-state `<CylinderCarousel>`
- * inside this card, independent of both the top-level Upload carousel's
- * index and any other stage's.
+ * The Upload stage's dropzone card — extract a palette from one or more
+ * images. This card owns no per-image extraction controls and no per-image
+ * display at all: every uploaded image gets its OWN separate top-level card
+ * in this same Upload stage carousel (see index.vue's `stageItemsFor()` /
+ * `UploadedImageCard` dispatch), never a second carousel nested inside this
+ * one's content. "Skip" bypasses image upload entirely, jumping straight to
+ * Manual seed entry — now the Refine stage's first card.
  */
-const {
-  mode, uploadedImages, removeUploadedImage,
-  updateUploadedImageSetting, selectEntryCandidate
-} = useIridis();
+const { mode } = useIridis();
 const { send } = useIridisUiMachine();
 const { activateTarget } = useNavigationTargets();
 
@@ -54,33 +45,10 @@ function sample(): void {
   uploadedFiles.value = null;
   sendImageAction({ 'source': 'sample', 'type': IridisUiActionType.EXTRACT_IMAGE });
 }
-
-/**
- * Image carousel's own local active index — deliberately independent of the
- * Intake stage carousel's own index (see CylinderCarousel's optional
- * modelValue mode). One slot per uploaded image, always — every upload
- * creates its own card here, even the very first one; the dropzone renders
- * as plain content ABOVE this carousel rather than as a slide inside it —
- * this card is already inside the Intake stage's own "Upload" cyl-card, so a
- * nested carousel slide also titled "Upload" produced a redundant
- * card-in-a-card.
- */
-const imageCarouselActiveIndex = ref(0);
-const imageCarouselItems = computed(() => uploadedImages.value.map((img) => {return { key: img.id, label: img.name };}));
-function findUploadedImage(id: string): UploadedImageInterfaceType | undefined {
-  return uploadedImages.value.find((img) => {return img.id === id;});
-}
-watch(() => uploadedImages.value.length, (next, prev) => {
-  if (next > prev) imageCarouselActiveIndex.value = next - 1;
-  else if (next < prev) imageCarouselActiveIndex.value = 0;
-});
 </script>
 
 <template>
-  <div
-    v-auto-animate
-    class="w-full space-y-5"
-  >
+  <div class="w-full space-y-5">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <p class="text-sm text-muted">
         Extract a palette from one or more images — upload them or try a sample. Each image is decoded and reduced to its own dominant colors independently, with its own extraction settings; the Combine stage right after this one merges every image's result into one final palette.
@@ -97,10 +65,6 @@ watch(() => uploadedImages.value.length, (next, prev) => {
       </UButton>
     </div>
 
-    <!-- Always rendered — a user can always drop another image on top of
-         what's already uploaded, never has to clear everything and start
-         over in the OS file picker. Plain content, not a carousel slide: it
-         already lives inside the Upload stage's own cyl-card. -->
     <UFileUpload
       v-model="uploadedFiles"
       multiple
@@ -132,38 +96,5 @@ watch(() => uploadedImages.value.length, (next, prev) => {
         </UButton>
       </template>
     </UFileUpload>
-
-    <div
-      v-if="uploadedImages.length > 0"
-      class="space-y-3"
-    >
-      <div class="space-y-1">
-        <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
-          Extracted palettes
-        </p>
-        <p class="text-sm text-muted">
-          Each image's own extraction — controls live on its own card below. The merged result across every image, and combine-stage settings (algorithm, lock/re-run), live in the Combine stage right after this one.
-        </p>
-      </div>
-
-      <!-- Every uploaded image gets its own card, always — this is the ONLY
-           place any image's controls render, never inlined flat into the
-           Upload stage's own card, even when there's just one upload. -->
-      <CylinderCarousel
-        :items="imageCarouselItems"
-        :model-value="imageCarouselActiveIndex"
-        @update:model-value="imageCarouselActiveIndex = $event"
-      >
-        <template #default="{ item }">
-          <UploadedImageCard
-            v-if="findUploadedImage(item.key)"
-            :image="findUploadedImage(item.key)!"
-            @remove="removeUploadedImage(item.key)"
-            @update="updateUploadedImageSetting(item.key, $event)"
-            @select-candidate="selectEntryCandidate(item.key, $event)"
-          />
-        </template>
-      </CylinderCarousel>
-    </div>
   </div>
 </template>
