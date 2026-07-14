@@ -1,27 +1,29 @@
 <script setup lang="ts">
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { computed, ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
-import { ALGORITHM_LABELS } from '~/composables/GalleryAlgorithms.ts';
 import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
 import UploadedImageCard from './UploadedImageCard.vue';
 import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
 
 /**
- * The Upload stage's card — extract a palette from one or more images. Each
- * image is decoded and reduced to its own dominant colors independently; the
- * Combine stage (right after this one, only shown once an image is uploaded)
- * merges every image's result into one final palette. "Skip" bypasses image
- * upload entirely, jumping straight to Manual seed entry — now the Refine
- * stage's first card. Owns its own nested image carousel — a SECOND
- * local-state `<CylinderCarousel>` inside this card, independent of both the
- * top-level Upload carousel's index and any other stage's.
+ * The Upload stage's card — extract a palette from one or more images. This
+ * card itself owns no extraction controls; every control (algorithm, k,
+ * histogram bits, ΔE cap, harmonize, lightness/chroma range) is per-image,
+ * living on that image's own `UploadedImageCard` below. The Combine stage
+ * (right after this one, only shown once an image is uploaded) shows each
+ * image's selected palette for reference plus the settings for the FINAL
+ * merge across every image. "Skip" bypasses image upload entirely, jumping
+ * straight to Manual seed entry — now the Refine stage's first card. Owns
+ * its own nested image carousel — a SECOND local-state `<CylinderCarousel>`
+ * inside this card, independent of both the top-level Upload carousel's
+ * index and any other stage's.
  */
 const {
   mode, uploadedImages, removeUploadedImage,
-  updateUploadedImageSetting, selectEntryCandidate, effectiveHexesFor
+  updateUploadedImageSetting, selectEntryCandidate
 } = useIridis();
 const { send } = useIridisUiMachine();
 const { activateTarget } = useNavigationTargets();
@@ -30,25 +32,6 @@ const { activateTarget } = useNavigationTargets();
 function skipToManual(): void {
   activateTarget('picker');
 }
-
-/**
- * One summary card per uploaded image — its own extraction, own algorithm.
- * The cumulative/combined result across every image is the Combine stage's
- * job (right after this one — its "Extracted hues" section IS that summary),
- * so it isn't duplicated here.
- */
-type SummaryCardType = { key: string; label: string; algorithmLabel: string; hexes: readonly string[] };
-const uploadSummaryCards = computed<SummaryCardType[]>(() => {
-  return uploadedImages.value.map((entry) => {
-    const algorithmKey = entry.selectedCandidateLabel ?? entry.algorithm;
-    return {
-      algorithmLabel: ALGORITHM_LABELS[algorithmKey] ?? algorithmKey,
-      hexes: effectiveHexesFor(entry),
-      key: entry.id,
-      label: entry.name || 'Sample'
-    };
-  });
-});
 
 /** Image extraction/upload/sampling implies the engine should theme from the extracted image. */
 const sendImageAction = useModeGuardedSend(mode, send, 'image');
@@ -75,10 +58,10 @@ function sample(): void {
 /**
  * Image carousel's own local active index — deliberately independent of the
  * Intake stage carousel's own index (see CylinderCarousel's optional
- * modelValue mode). One slot per uploaded image; the dropzone/summary cards
- * render as plain content ABOVE this carousel rather than as a slide inside
- * it — this card is already inside the Intake stage's own "Upload" cyl-card,
- * so a nested carousel slide also titled "Upload" produced a redundant
+ * modelValue mode). One slot per uploaded image; the dropzone renders as
+ * plain content ABOVE this carousel rather than as a slide inside it — this
+ * card is already inside the Intake stage's own "Upload" cyl-card, so a
+ * nested carousel slide also titled "Upload" produced a redundant
  * card-in-a-card. The carousel itself only earns its keep once there's more
  * than one uploaded image to flip between.
  */
@@ -159,56 +142,9 @@ watch(() => uploadedImages.value.length, (next, prev) => {
           Extracted palettes
         </p>
         <p class="text-sm text-muted">
-          Each image's own extraction. Adjust it on its card below — the merged result across every image, and combine-stage settings (algorithm, lock/re-run), live in the Combine stage right after this one.
+          Each image's own extraction — controls live on its own card below. The merged result across every image, and combine-stage settings (algorithm, lock/re-run), live in the Combine stage right after this one.
         </p>
       </div>
-      <BalancedWrap
-        :items="uploadSummaryCards"
-        :min-width="200"
-        :gap="12"
-      >
-        <template #default="{ item: card }">
-          <div class="glass scanlines flex flex-1 max-w-xs flex-col gap-3 p-4">
-            <div class="flex items-center justify-between gap-2">
-              <span
-                class="truncate font-display text-sm font-bold uppercase tracking-widest glow-text"
-                :title="card.label"
-              >{{ card.label }}</span>
-              <span class="h-3 w-3 shrink-0 rounded-full pulse bg-primary" />
-            </div>
-            <div
-              v-if="card.hexes.length === 0"
-              class="text-xs text-muted italic"
-            >
-              None
-            </div>
-            <BalancedWrap
-              v-else
-              :items="[...card.hexes]"
-              :min-width="28"
-              :gap="4"
-            >
-              <template #default="{ item: hex }">
-                <span
-                  class="h-7 w-7 rounded border border-default/50"
-                  :style="{ backgroundColor: hex }"
-                  :title="hex"
-                  role="img"
-                  :aria-label="`${card.label} color ${hex}`"
-                />
-              </template>
-            </BalancedWrap>
-            <UBadge
-              color="neutral"
-              variant="soft"
-              size="sm"
-              class="self-start"
-            >
-              {{ card.algorithmLabel }}
-            </UBadge>
-          </div>
-        </template>
-      </BalancedWrap>
 
       <!-- Per-image detail/edit carousel — only earns its own coverflow deck
            once there's more than one image to flip between; a single image
@@ -223,7 +159,6 @@ watch(() => uploadedImages.value.length, (next, prev) => {
           <UploadedImageCard
             v-if="findUploadedImage(item.key)"
             :image="findUploadedImage(item.key)!"
-            :show-header="false"
             @remove="removeUploadedImage(item.key)"
             @update="updateUploadedImageSetting(item.key, $event)"
             @select-candidate="selectEntryCandidate(item.key, $event)"
