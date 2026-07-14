@@ -4,7 +4,7 @@ import { useMultiOutput } from '~/composables/useMultiOutput.ts';
 import { globalVscodeTheme } from '~/composables/useVscodeTheme.ts';
 
 /**
- * One Result-stage carousel card per output format — `formatKey` is one of
+ * One Stylesheets-stage carousel card per output format — `formatKey` is one of
  * CarouselSections.ts's OUTPUT_FORMAT_CARDS keys (minus its 'output-'
  * prefix), matching useMultiOutput()'s `outputsByKey` keys 1:1.
  */
