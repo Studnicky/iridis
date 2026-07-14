@@ -1,0 +1,42 @@
+[data-iridis-theme='romance'] {
+  --font-display: "Cormorant Garamond", "EB Garamond", serif;
+  --font-sans: "EB Garamond", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --ui-radius: 2px;
+  --iridis-radius-sm: 1px;
+  --iridis-radius-md: 2px;
+  --iridis-radius-lg: 4px;
+  --iridis-border-style: solid;
+  /* Tone: soft and muted pastel — romantic restraint, not a vivid pop. */
+  --iridis-ambient-saturate: 0.5;
+  --iridis-ambient-contrast: 0.95;
+  /* Soft candlelight, not a spotlight. */
+  --iridis-glow-strength: 0.4;
+}
+
+/* Ambient motion: petals falling top-to-bottom with a slow zigzag drift and a
+   gentle flutter rotation — the opposite direction and an unhurried pace
+   compared to girlypop's rising bounce, despite sharing the heart glyph.
+   Peak opacity kept gentle, well below girlypop's full-strength bubbles. */
+[data-iridis-theme='romance'] .particle-glyph {
+  animation:
+    romance-fall calc(16s / var(--iridis-ambient-speed, 1)) linear infinite,
+    romance-flutter calc(4.5s / var(--iridis-ambient-speed, 1)) ease-in-out infinite
+    !important;
+}
+@keyframes romance-fall {
+  0%   { translate: 0 -50vh; opacity: 0; }
+  10%  { opacity: 0.55; }
+  90%  { opacity: 0.55; }
+  100% { translate: 6vw 55vh; opacity: 0; }
+}
+@keyframes romance-flutter {
+  0%, 100% { rotate: -15deg; }
+  50%      { rotate: 15deg; }
+}
+
+/* Hero: smaller, softer, dimmer — elegant restraint rather than bold color
+   blobs. `scale` here is the independent CSS property (not `transform`), so
+   it composes with .float's own translateY animation instead of being
+   discarded by it every frame. */
+[data-iridis-theme='romance'] .hero-orb { filter: blur(38px) !important; scale: 0.75 !important; }

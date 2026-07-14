@@ -1,0 +1,38 @@
+[data-iridis-theme='hackerman'] {
+  --font-display: "Share Tech Mono", ui-monospace, monospace;
+  --font-sans: "Space Mono", ui-monospace, monospace;
+  --font-mono: "Share Tech Mono", ui-monospace, monospace;
+  --ui-radius: 0px;
+  --iridis-radius-sm: 0px;
+  --iridis-radius-md: 0px;
+  --iridis-radius-lg: 1px;
+  --iridis-border-style: solid;
+  /* Tone: pulled toward monochrome with a hard contrast punch — still the
+     live engine palette (never a hardcoded terminal-green), but flattened
+     toward a stark, high-contrast digital read rather than a rainbow. */
+  --iridis-ambient-saturate: 0.7;
+  --iridis-ambient-contrast: 1.25;
+  /* CRT phosphor glow. */
+  --iridis-glow-strength: 1.2;
+}
+
+/* Ambient motion: matrix digital rain — straight-down linear fall (no sway,
+   no rotation) with a fast digital flicker layered on top. Opposite direction
+   and pacing from restaurant's rising, wavering steam despite sharing the
+   same vertical-bar shape. */
+[data-iridis-theme='hackerman'] .particle-shape {
+  animation:
+    hackerman-rain calc(2.6s / var(--iridis-ambient-speed, 1)) linear infinite,
+    hackerman-flicker calc(0.5s / var(--iridis-ambient-speed, 1)) steps(2) infinite
+    !important;
+}
+@keyframes hackerman-rain {
+  0%   { translate: 0 -60vh; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { translate: 0 70vh; opacity: 0; }
+}
+@keyframes hackerman-flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* Hero: tighter, sharper blur — a stark digital glow, not a soft dreamy wash. */
+[data-iridis-theme='hackerman'] .hero-orb { filter: blur(14px) !important; }

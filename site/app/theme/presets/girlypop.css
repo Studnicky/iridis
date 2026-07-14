@@ -1,0 +1,40 @@
+[data-iridis-theme='girlypop'] {
+  --font-display: "Fredoka", "Quicksand", sans-serif;
+  --font-sans: "Quicksand", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+  --ui-radius: 1.5rem;
+  --iridis-radius-sm: 1rem;
+  --iridis-radius-md: 1.5rem;
+  --iridis-radius-lg: 2.5rem;
+  --iridis-border-style: dotted;
+  /* Tone: bright and playful, brought up a notch — bubbly energy without
+     tipping into arcade/streamer-level intensity. */
+  --iridis-ambient-saturate: 1.2;
+  --iridis-ambient-contrast: 1;
+  /* Soft bubbly glow — bright but not neon-harsh. */
+  --iridis-glow-strength: 1.05;
+}
+
+/* Ambient motion: hearts floating UP like bubbles, growing slightly as they
+   rise, with a bouncy side-to-side wobble — the opposite direction and a
+   springier pace than romance's falling petal-flutter, despite sharing the
+   heart glyph. */
+[data-iridis-theme='girlypop'] .particle-glyph {
+  animation:
+    girlypop-rise calc(11s / var(--iridis-ambient-speed, 1)) ease-in-out infinite,
+    girlypop-wobble calc(3.2s / var(--iridis-ambient-speed, 1)) ease-in-out infinite
+    !important;
+}
+@keyframes girlypop-rise {
+  0%   { translate: 0 40vh; opacity: 0; scale: 0.7; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { translate: 0 -60vh; opacity: 0; scale: 1.15; }
+}
+@keyframes girlypop-wobble {
+  0%, 100% { rotate: -8deg; }
+  50%      { rotate: 8deg; }
+}
+
+/* Hero: bigger, dreamier blur — soft bubbly orbs. */
+[data-iridis-theme='girlypop'] .hero-orb { filter: blur(60px) !important; }

@@ -36,6 +36,32 @@ export default defineNuxtConfig({
       Orbitron: [500, 700, 900],       // futuristic display
       'Space Grotesk': [400, 500, 700], // headings / body
       'JetBrains Mono': [400, 600],     // code / mono
+      // ─── Wave 2 theme fonts — one theme's font stack draws from these; no
+      // further nuxt.config.ts edits should be needed as themes are added. ───
+      Inter: [400, 700],
+      'Roboto Mono': [400, 700],
+      Poppins: [400, 700],
+      'Fira Code': [400, 700],
+      'Playfair Display': [400, 700],
+      'Source Sans Pro': [400, 700],
+      'IBM Plex Mono': [400, 700],
+      'Special Elite': [400],
+      Merriweather: [400, 700],
+      'Courier Prime': [400, 700],
+      'Press Start 2P': [400],
+      VT323: [400],
+      'Share Tech Mono': [400],
+      'Space Mono': [400, 700],
+      Fredoka: [400, 700],
+      Quicksand: [400, 700],
+      'Cormorant Garamond': [400, 700],
+      'EB Garamond': [400, 700],
+      Bungee: [400],
+      Rubik: [400, 700],
+      Cormorant: [400, 700],
+      Karla: [400, 700],
+      'Yeseva One': [400],
+      Lora: [400, 700],
     },
   },
   // GitHub Pages serves under /iridis/. Set NUXT_APP_BASE_URL=/iridis/ at build

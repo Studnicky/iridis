@@ -98,7 +98,7 @@ function getAbsoluteIndex(rIdx: number, iIdx: number) {
     <div
       v-for="(row, rIdx) in rows"
       :key="rIdx"
-      class="flex w-full"
+      class="flex w-full justify-center"
       :style="{ gap: `${gap}px` }"
     >
       <slot

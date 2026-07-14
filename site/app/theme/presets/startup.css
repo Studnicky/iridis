@@ -1,0 +1,39 @@
+[data-iridis-theme='startup'] {
+  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Fira Code", ui-monospace, monospace;
+  --ui-radius: 1.25rem;
+  --iridis-radius-sm: 0.75rem;
+  --iridis-radius-md: 1.25rem;
+  --iridis-radius-lg: 2rem;
+  --iridis-border-style: solid;
+  /* Tone: boosted saturation and a touch of contrast — energetic tech/SaaS
+     wants punchy, confident color, not a wash. */
+  --iridis-ambient-saturate: 1.25;
+  --iridis-ambient-contrast: 1.05;
+  /* Confident, slightly boosted glow. */
+  --iridis-glow-strength: 1.1;
+}
+
+/* Ambient motion: bubbles rising bottom-to-top with a gentle horizontal sway
+   and a slight scale-up as they climb — energetic SaaS "success" bubbles,
+   each one rising independently (real elements, not a rigid box-shadow group). */
+[data-iridis-theme='startup'] .particle-shape {
+  animation:
+    startup-rise calc(11s / var(--iridis-ambient-speed, 1)) ease-in infinite,
+    startup-sway calc(3.6s / var(--iridis-ambient-speed, 1)) ease-in-out infinite
+    !important;
+}
+@keyframes startup-rise {
+  0%   { translate: 0 45vh; opacity: 0; scale: 0.6; }
+  12%  { opacity: 0.85; }
+  88%  { opacity: 0.85; }
+  100% { translate: 0 -55vh; opacity: 0; scale: 1.2; }
+}
+@keyframes startup-sway {
+  0%, 100% { rotate: 0deg; }
+  50%      { rotate: 10deg; }
+}
+
+/* Hero: tighter blur — crisper, more confident modern-SaaS orbs. */
+[data-iridis-theme='startup'] .hero-orb { filter: blur(24px) !important; }

@@ -34,3 +34,18 @@ export type GalleryHarmonizeDetailsInterfaceType = {
  * Output written to state.metadata['gallery:dominantColors'] by gallery:extract.
  */
 export type GalleryDominantColorsSlotType = ColorRecordInterfaceType[];
+
+/**
+ * One labeled candidate palette produced by `gallery:extractCandidates`.
+ */
+export type GalleryCandidateInterfaceType = {
+  'algorithm': GalleryAlgorithmType;
+  'colors':    ColorRecordInterfaceType[];
+  'k':         number;
+  'label':     string;
+};
+
+/**
+ * Output written to state.metadata['gallery:candidates'] by gallery:extractCandidates.
+ */
+export type GalleryCandidatesSlotType = GalleryCandidateInterfaceType[];

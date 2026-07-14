@@ -2,20 +2,22 @@
 import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed } from 'vue';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
+import { STAGE_GROUPS } from '~/composables/CarouselSections.ts';
 
 /**
- * Sticky table-of-contents bar — replaces the old "Jump to" carousel card.
- * A ToC belongs at the top of the page you're navigating, always visible,
- * not buried as one more face you have to rotate the carousel around to
- * reach. Routes through the same SELECT_CARD event the carousel's dots and
- * arrow keys use, so picking an item here is provably the same action as
- * clicking a dot.
+ * Sticky table-of-contents bar. Every card across all 5 stage carousels,
+ * flattened, each one a NAVIGATE_TO_TARGET dispatch (the same FSM event a
+ * "Learn more" prose cross-reference or a stage's Next/Previous button
+ * sends) — clicking an entry brings that card to the front of its OWN stage
+ * carousel and scrolls that stage into view. There is no longer a single
+ * shared "active card" to highlight: each of the 5 stage carousels tracks
+ * its own independent local index.
  */
-const props = defineProps<{ items: ReadonlyArray<{ key: string; label: string }> }>();
-const { send, state } = useIridisUiMachine();
+const { send } = useIridisUiMachine();
 
-const active = computed(() => state.value.activeIndex);
-function select(i: number): void { send({ 'index': i, 'type': IridisUiActionType.SELECT_CARD }); }
+const items = computed(() => STAGE_GROUPS.flatMap((group) => group.items));
+
+function select(key: string): void { send({ 'targetId': key, 'type': IridisUiActionType.NAVIGATE_TO_TARGET }); }
 </script>
 
 <template>
@@ -24,17 +26,15 @@ function select(i: number): void { send({ 'index': i, 'type': IridisUiActionType
     aria-label="Jump to section"
   >
     <div class="toc-scroll w-full max-w-6xl mx-auto">
-      <BalancedWrap :items="[...props.items]" :min-width="100" :gap="8">
-        <template #default="{ item, index: i }">
+      <BalancedWrap :items="items" :min-width="100" :gap="8">
+        <template #default="{ item }">
           <UButton
             :label="item.label"
-            :color="i === active ? 'primary' : 'neutral'"
-            :variant="i === active ? 'solid' : 'soft'"
+            color="neutral"
+            variant="soft"
             size="xs"
             class="toc-pill font-display flex-1 justify-center rounded-full"
-            :class="{ 'toc-pill-active': i === active }"
-            :aria-current="i === active ? 'location' : undefined"
-            @click="select(i)"
+            @click="select(item.key)"
           />
         </template>
       </BalancedWrap>

@@ -4,6 +4,7 @@ export enum IridisUiEffectVariant {
   SET_PALETTE_PARAM = 'SET_PALETTE_PARAM',
   EXTRACT_IMAGE = 'EXTRACT_IMAGE',
   POPULATE_PICKER_FROM_IMAGE = 'POPULATE_PICKER_FROM_IMAGE',
+  SELECT_IMAGE_CANDIDATE = 'SELECT_IMAGE_CANDIDATE',
   UPDATE_DIAGRAM_VIEW = 'UPDATE_DIAGRAM_VIEW',
   UPDATE_CVD_PREVIEW = 'UPDATE_CVD_PREVIEW',
   NAVIGATE_TO_TARGET = 'NAVIGATE_TO_TARGET'
@@ -41,8 +42,9 @@ export type IridisUiEffectType =
   | { 'op': 'derivation'; 'value': DerivationConfig; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'roleSort'; 'value': RoleSortKeyType[]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'source': 'sample'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
-  | { 'file': File; 'source': 'file'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
+  | { 'file': File | readonly File[]; 'source': 'file'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
   | { 'hues': string[]; 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }
+  | { 'hexes': string[]; 'label': string; 'variant': IridisUiEffectVariant.SELECT_IMAGE_CANDIDATE }
   | { 'op': 'zoom'; 'factor': number; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
   | { 'dx': number; 'dy': number; 'op': 'pan'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
   | { 'op': 'reset'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
