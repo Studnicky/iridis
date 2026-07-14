@@ -223,6 +223,15 @@ function onDocsClick(e: MouseEvent): void {
               </p>
               <PaletteCarousel />
             </div>
+            <div
+              v-else-if="item.key === 'colorGraph'"
+              class="space-y-3"
+            >
+              <p class="text-sm text-muted">
+                The resolved role graph — every node is that role's own <code class="font-mono">engine.run()</code> color, edges are derivation lineage. Pinned/synthesized/direct-match roles toggle via the legend.
+              </p>
+              <ColorGraph />
+            </div>
             <OutputFormatCard
               v-else-if="item.key.startsWith('output-')"
               :format-key="outputFormatKey(item.key)"
