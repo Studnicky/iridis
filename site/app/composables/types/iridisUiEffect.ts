@@ -43,7 +43,7 @@ export type IridisUiEffectType =
   | { 'op': 'roleSort'; 'value': RoleSortKeyType[]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'source': 'sample'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
   | { 'file': File | readonly File[]; 'source': 'file'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
-  | { 'hues': string[]; 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }
+  | { 'hexes': string[]; 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }
   | { 'hexes': string[]; 'label': string; 'variant': IridisUiEffectVariant.SELECT_IMAGE_CANDIDATE }
   | { 'op': 'zoom'; 'factor': number; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }
   | { 'dx': number; 'dy': number; 'op': 'pan'; 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }

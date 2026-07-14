@@ -10,6 +10,7 @@ export const futuristic: ThemeDefinitionInterfaceType = {
     'particleShape':   'dot',
     'speedMultiplier': 1
   },
+  'dataLayout': 'grid',
   'key':   'futuristic',
   'label': 'Futuristic'
 };

@@ -6,10 +6,11 @@ export const hackerman: ThemeDefinitionInterfaceType = {
     'blobCount':       4,
     'gooEnabled':      false,
     'gridEnabled':     true,
-    'particleCounts':  [300, 300, 300, 150, 150],
+    'particleCounts':  [120, 120, 100, 60, 60],
     'particleShape':   'streak',
     'speedMultiplier': 0.45
   },
+  'dataLayout': 'table',
   'key':   'hackerman',
   'label': 'Hackerman'
 };

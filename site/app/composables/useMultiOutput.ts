@@ -13,7 +13,7 @@
  * engine.run() itself — one shared `outputsByKey`, keyed by the same stable
  * strings CarouselSections.ts's OUTPUT_FORMAT_CARDS uses.
  */
-import { ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
 import { chakraPlugin } from '@studnicky/iridis-chakra';
@@ -35,6 +35,7 @@ import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 import { globalVscodeTheme } from './useVscodeTheme.ts';
 import type { SupportedLangType } from '~/theme/Highlighter.ts';
+import { debounce } from '~/utils/debounce.ts';
 
 export type OutputRowType = { 'label': string; 'lang': SupportedLangType; 'text': string };
 
@@ -73,7 +74,7 @@ function stringifyLoose(v: unknown, depth = 0): string {
 
 const outputsByKey = ref<Record<string, OutputRowType | undefined>>({});
 
-function buildMainOutputs(schemaName: string, framing: 'dark' | 'light', activeSeeds: readonly (string | PickerSeedType)[]): Record<string, OutputRowType | undefined> {
+function buildMainOutputs(schemaName: string, framing: 'dark' | 'light', activeSeeds: readonly PickerSeedType[]): Record<string, OutputRowType | undefined> {
   const engine = new Engine();
   for (const t of coreTasks) {engine.tasks.register(t);}
   engine.tasks.register(intakeHexHint);
@@ -122,7 +123,7 @@ function buildMainOutputs(schemaName: string, framing: 'dark' | 'light', activeS
 }
 
 /** vscodeRoleSchema16 only documents dark-mode clamps (see its own header comment), so this pass always themes dark regardless of the site's framing toggle. */
-function buildVscodeOutput(activeSeeds: readonly (string | PickerSeedType)[]): OutputRowType | undefined {
+function buildVscodeOutput(activeSeeds: readonly PickerSeedType[]): OutputRowType | undefined {
   const engine = new Engine();
   for (const t of coreTasks) {engine.tasks.register(t);}
   engine.tasks.register(intakeHexHint);
@@ -144,37 +145,70 @@ function buildVscodeOutput(activeSeeds: readonly (string | PickerSeedType)[]): O
   return { 'label': 'VS Code theme', 'lang': 'javascript', 'text': stringifyLoose(themeJson) };
 }
 
-let booted = false;
-let timer: ReturnType<typeof setTimeout> | undefined;
+let activated = false;
+let observeStarted = false;
 
-/** Reactive, deterministically-keyed output rows plus the shared VS Code theme used to highlight every CodeBlock — the single entry point every OutputFormatCard reads from. */
-export function useMultiOutput(): { 'outputsByKey': typeof outputsByKey } {
-  if (!booted) {
-    booted = true;
-    const { activeSeeds, framing, schemaName } = useIridis();
-    function generate(): void {
-      try {
-        const rows = buildMainOutputs(schemaName.value, framing.value, activeSeeds.value);
-        rows['vscode'] = buildVscodeOutput(activeSeeds.value);
-        outputsByKey.value = rows;
-      } catch (e) {
-        logger.error(
-          LogBody.create()
-            .component('useMultiOutput')
-            .operation('generate')
-            .status(LOG_STATUS.FAILED)
-            .message('Output pipeline failed; keeping the previous outputs')
-            .context({ 'error': e instanceof Error ? e.message : String(e) })
-            .build()
-        );
-      }
+/**
+ * Two full `engine.run()` passes (buildMainOutputs + buildVscodeOutput) are
+ * genuinely expensive — deferring them until the Result stage has actually
+ * scrolled into view (or is about to) means a visit that never reaches
+ * Result never pays for them at all, and the reactive `watch` below (which
+ * would otherwise re-run both passes on every seed/framing/schema change
+ * site-wide) doesn't even start ticking until then either.
+ */
+function activate(): void {
+  if (activated) return;
+  activated = true;
+  const { activeSeeds, framing, schemaName } = useIridis();
+  function generate(): void {
+    try {
+      const rows = buildMainOutputs(schemaName.value, framing.value, activeSeeds.value);
+      rows['vscode'] = buildVscodeOutput(activeSeeds.value);
+      outputsByKey.value = rows;
+    } catch (e) {
+      logger.error(
+        LogBody.create()
+          .component('useMultiOutput')
+          .operation('generate')
+          .status(LOG_STATUS.FAILED)
+          .message('Output pipeline failed; keeping the previous outputs')
+          .context({ 'error': e instanceof Error ? e.message : String(e) })
+          .build()
+      );
     }
-    function schedule(): void {
-      if (timer !== undefined) {clearTimeout(timer);}
-      timer = setTimeout(generate, 120);
-    }
-    generate();
-    watch([activeSeeds, framing, schemaName], schedule, { 'deep': true });
   }
+  const schedule = debounce(generate, 120);
+  generate();
+  watch([activeSeeds, framing, schemaName], schedule, { 'deep': true });
+}
+
+/** Starts observing the Result stage's own section (`#result`) — a generous `rootMargin` pre-warms generation just before the user actually scrolls it into view, rather than the instant it's technically on-screen. Falls back to immediate activation if IntersectionObserver/the target element aren't available (SSR, or an unexpected DOM shape). */
+function observeResultVisibility(): void {
+  if (observeStarted) return;
+  observeStarted = true;
+  onMounted(() => {
+    if (activated) return;
+    if (typeof document === 'undefined' || typeof IntersectionObserver === 'undefined') {
+      activate();
+      return;
+    }
+    const target = document.getElementById('result');
+    if (!target) {
+      activate();
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        observer.disconnect();
+        activate();
+      }
+    }, { 'rootMargin': '400px' });
+    observer.observe(target);
+  });
+}
+
+/** Reactive, deterministically-keyed output rows plus the shared VS Code theme used to highlight every CodeBlock — the single entry point every OutputFormatCard reads from. Generation itself doesn't start until the Result stage is about to be visible (see observeResultVisibility). */
+export function useMultiOutput(): { 'outputsByKey': typeof outputsByKey } {
+  observeResultVisibility();
   return { 'outputsByKey': outputsByKey };
 }

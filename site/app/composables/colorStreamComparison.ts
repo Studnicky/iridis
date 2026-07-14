@@ -4,18 +4,16 @@
  * interpolation reads as visually smoother than a plain RGB channel lerp.
  */
 
-import { hexToRgb, oklchToRgb, rgbToHex } from '@studnicky/iridis/math';
+import { hexToRgb, rgbToHex } from '@studnicky/iridis/math';
+
+import { oklchToHex } from '../utils/oklchToHex.ts';
+import { sampleT } from '../utils/sampleT.ts';
 
 /** One role's naive-RGB-lerp and OKLCH-lerp color bands, sampled at `count` evenly-spaced points across the same 0..1 progress axis. */
 type ComparisonBandsType = {
   'engine': string[];
   'naive':  string[];
 };
-
-function oklchToHex(l: number, c: number, h: number): string {
-  const rgb = oklchToRgb.apply(l, c, h).rgb;
-  return rgbToHex.apply(rgb.r, rgb.g, rgb.b);
-}
 
 class ColorStreamComparison {
   /** Linearly interpolates each RGB channel independently between two hex colors — the "naive" CSS-style approach. */
@@ -47,7 +45,7 @@ class ColorStreamComparison {
     const naive: string[] = [];
     const engine: string[] = [];
     for (let i = 0; i < count; i++) {
-      const t = count <= 1 ? 0 : i / (count - 1);
+      const t = sampleT(i, count);
       naive.push(this.naiveRgbLerpHex(fromHex, toHex, t));
       engine.push(this.oklchLerpHex(fromL, fromC, fromH, toL, toC, toH, t));
     }

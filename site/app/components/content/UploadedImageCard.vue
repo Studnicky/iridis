@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
 import type { GalleryAlgorithmType } from '~/composables/types/galleryAlgorithm.ts';
+import { ALGORITHM_ITEMS } from '~/composables/GalleryAlgorithms.ts';
 import Histogram from './Histogram.vue';
 import PaletteCandidatePicker from './PaletteCandidatePicker.vue';
 
@@ -20,38 +21,7 @@ const emit = defineEmits<{
   'update': [patch: Partial<Pick<UploadedImageInterfaceType, 'algorithm' | 'chromaRange' | 'deltaECap' | 'harmonizeThreshold' | 'histogramBits' | 'k' | 'lightnessRange'>>];
 }>();
 
-const algorithmItems = [
-  { 'label': 'ΔE (delta-e)', 'value': 'delta-e' },
-  { 'label': 'Median cut', 'value': 'median-cut' },
-  { 'label': 'Wu quantize', 'value': 'wu-quantize' },
-  { 'label': 'K-means', 'value': 'k-means' }
-];
 const kTierItems = [4, 8, 12, 16, 32];
-
-function updateLightnessRange(index: number, range: [number, number]): void {
-  const next = [...props.image.lightnessRange];
-  next[index] = range;
-  emit('update', { 'lightnessRange': next });
-}
-function addLightnessRange(): void {
-  emit('update', { 'lightnessRange': [...props.image.lightnessRange, [0, 1]] });
-}
-function removeLightnessRange(index: number): void {
-  const next = props.image.lightnessRange.filter((_, i) => i !== index);
-  emit('update', { 'lightnessRange': next.length > 0 ? next : [[0, 1]] });
-}
-function updateChromaRange(index: number, range: [number, number]): void {
-  const next = [...props.image.chromaRange];
-  next[index] = range;
-  emit('update', { 'chromaRange': next });
-}
-function addChromaRange(): void {
-  emit('update', { 'chromaRange': [...props.image.chromaRange, [0, 0.5]] });
-}
-function removeChromaRange(index: number): void {
-  const next = props.image.chromaRange.filter((_, i) => i !== index);
-  emit('update', { 'chromaRange': next.length > 0 ? next : [[0, 0.5]] });
-}
 </script>
 
 <template>
@@ -70,7 +40,7 @@ function removeChromaRange(index: number): void {
           {{ image.name }}
         </p>
         <p class="text-xs text-muted">
-          {{ image.dominantColors.length }} dominant color{{ image.dominantColors.length === 1 ? '' : 's' }}
+          {{ image.dominantColorRecords.length }} dominant color{{ image.dominantColorRecords.length === 1 ? '' : 's' }}
         </p>
       </div>
       <UButton
@@ -99,7 +69,7 @@ function removeChromaRange(index: number): void {
       <UFormField label="Clustering algorithm">
         <USelect
           :model-value="image.algorithm"
-          :items="algorithmItems"
+          :items="ALGORITHM_ITEMS"
           value-key="value"
           class="w-full"
           @update:model-value="emit('update', { algorithm: $event as GalleryAlgorithmType })"
@@ -167,108 +137,50 @@ function removeChromaRange(index: number): void {
         />
       </UFormField>
 
-      <UFormField
+      <RangeListEditor
+        :model-value="image.lightnessRange"
+        :min="0"
+        :max="1"
+        :step="0.01"
+        :default-range="[0, 1]"
         label="Lightness ranges"
+        help="Union of ranges — add a second band to keep shadows AND highlights while still excluding the midtones between them."
         class="sm:col-span-2"
-      >
-        <div class="space-y-2">
-          <div
-            v-for="(range, i) in image.lightnessRange"
-            :key="i"
-            class="flex items-center gap-2"
-          >
-            <USlider
-              :model-value="range"
-              :min="0"
-              :max="1"
-              :step="0.01"
-              class="flex-1"
-              @update:model-value="updateLightnessRange(i, $event as [number, number])"
-            />
-            <span class="w-20 shrink-0 font-mono text-xs text-muted">{{ range[0].toFixed(2) }}–{{ range[1].toFixed(2) }}</span>
-            <UButton
-              v-if="image.lightnessRange.length > 1"
-              icon="i-material-symbols-close-rounded"
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              :aria-label="`Remove lightness range ${i + 1}`"
-              @click="removeLightnessRange(i)"
-            />
-          </div>
-          <UButton
-            icon="i-material-symbols-add-rounded"
-            color="neutral"
-            variant="soft"
-            size="xs"
-            @click="addLightnessRange"
-          >
-            Add range
-          </UButton>
-        </div>
-      </UFormField>
+        @update:model-value="emit('update', { 'lightnessRange': $event })"
+      />
 
-      <UFormField
+      <RangeListEditor
+        :model-value="image.chromaRange"
+        :min="0"
+        :max="0.5"
+        :step="0.01"
+        :default-range="[0, 0.5]"
         label="Chroma ranges"
+        help="Restricts which chroma band the image's own budget goes toward colors the image actually cares about. Also a union of ranges."
         class="sm:col-span-2"
-      >
-        <div class="space-y-2">
-          <div
-            v-for="(range, i) in image.chromaRange"
-            :key="i"
-            class="flex items-center gap-2"
-          >
-            <USlider
-              :model-value="range"
-              :min="0"
-              :max="0.5"
-              :step="0.01"
-              class="flex-1"
-              @update:model-value="updateChromaRange(i, $event as [number, number])"
-            />
-            <span class="w-20 shrink-0 font-mono text-xs text-muted">{{ range[0].toFixed(2) }}–{{ range[1].toFixed(2) }}</span>
-            <UButton
-              v-if="image.chromaRange.length > 1"
-              icon="i-material-symbols-close-rounded"
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              :aria-label="`Remove chroma range ${i + 1}`"
-              @click="removeChromaRange(i)"
-            />
-          </div>
-          <UButton
-            icon="i-material-symbols-add-rounded"
-            color="neutral"
-            variant="soft"
-            size="xs"
-            @click="addChromaRange"
-          >
-            Add range
-          </UButton>
-        </div>
-      </UFormField>
+        @update:model-value="emit('update', { 'chromaRange': $event })"
+      />
     </div>
 
     <div
-      v-if="image.dominantColors.length > 0"
+      v-if="image.dominantColorRecords.length > 0"
       class="space-y-1 mt-4"
     >
       <div class="text-xs font-medium uppercase tracking-wide text-dimmed">
         Extracted hues
       </div>
       <BalancedWrap
-        :items="image.dominantColors"
+        :items="image.dominantColorRecords"
         :min-width="28"
         :gap="4"
       >
-        <template #default="{ item: hex }">
+        <template #default="{ item: record }">
           <div
             class="h-7 w-7 rounded-md border border-default"
-            :style="{ backgroundColor: hex }"
-            :title="hex"
+            :style="{ backgroundColor: record.hex }"
+            :title="record.hex"
             role="img"
-            :aria-label="`${image.name} dominant hue ${hex}`"
+            :aria-label="`${image.name} dominant hue ${record.hex}`"
           />
         </template>
       </BalancedWrap>

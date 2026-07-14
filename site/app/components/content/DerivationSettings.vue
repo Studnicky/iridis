@@ -4,6 +4,7 @@ import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { IridisUiActionType } from '~/composables/types/index.ts';
 import type { DerivationConfig, HueAlgorithm, RoleType } from '~/composables/types/colorDerivation.ts';
 import { PRESET_DEFAULTS } from '~/composables/types/colorDerivation.ts';
+import { capitalize } from '~/utils/capitalize.ts';
 
 const { derivationConfig } = useIridis();
 const { send } = useIridisUiMachine();
@@ -45,7 +46,7 @@ function updateAlgorithm(role: RoleType, algorithm: HueAlgorithm): void {
 }
 
 function formatLabel(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1).replace('-', ' ');
+  return capitalize(text).replace('-', ' ');
 }
 </script>
 

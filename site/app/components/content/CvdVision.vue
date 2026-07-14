@@ -5,14 +5,15 @@ import { useIridis } from '~/composables/useIridis.ts';
 import { IridisUiActionType } from '~/composables/types/index.ts';
 
 /**
- * The CVD home: preview what the current palette looks like under each color
- * vision deficiency (a real SVG filter, see CvdPreviewOverlay.vue — display-only,
- * never touches the palette), plus what each condition actually is. Always
- * usable, no enable step — enforce:cvdSimulate itself runs unconditionally
- * (see useIridis.ts's REQUIRED_COLOR_STAGES), so there is nothing to switch on
- * here, only something to look at.
+ * The CVD home — everything color-vision-deficiency-related lives here, not
+ * split across cards: auto-correcting the palette itself, previewing what it
+ * looks like under each condition (a real SVG filter, see
+ * CvdPreviewOverlay.vue — display-only, never touches the palette), what each
+ * condition actually is, and the resulting warnings report. Always usable, no
+ * enable step — enforce:cvdSimulate itself runs unconditionally (see
+ * useIridis.ts's REQUIRED_COLOR_STAGES).
  */
-const { cvdPreviewTypes, contrastReport, send } = useIridis();
+const { cvdCorrect, cvdPreviewTypes, contrastReport, send } = useIridis();
 
 const CVD_TYPES: { value: CvdType; label: string; prevalence: string; description: string }[] = [
   {
@@ -55,12 +56,21 @@ const cvdReport = computed(() => {
     <div class="space-y-4">
       <p class="text-sm text-muted">
         Color vision deficiency (CVD) checking runs on every palette, always — see
-        <code class="font-mono text-xs">enforce:cvdSimulate</code> in the Pipeline card. This card
-        is where you actually look: pick any combination of conditions below to preview the
-        <strong class="text-highlighted">current palette</strong> the way that vision would see
-        it. This never modifies the palette — for that, see "Auto-correct CVD failures" in the
-        Contrast target card above the carousel.
+        <code class="font-mono text-xs">enforce:cvdSimulate</code> in the Pipeline card. Auto-correct
+        below adjusts the palette itself; the preview toggles further down only change how this
+        page looks to you — they never touch the palette.
       </p>
+
+      <div class="flex items-center justify-between gap-3 rounded-md border border-default p-2.5 pl-3">
+        <div class="flex flex-col">
+          <span class="text-sm font-medium">Auto-correct CVD failures</span>
+          <span class="text-xs text-muted">Always-on — adjusts the palette itself, not just a preview.</span>
+        </div>
+        <USwitch
+          :model-value="cvdCorrect"
+          @update:model-value="($event) => send({ 'cvdCorrect': $event as boolean, 'type': IridisUiActionType.SET_CVD_CORRECT })"
+        />
+      </div>
 
       <div class="flex items-center justify-between gap-3">
         <span class="text-sm font-medium text-highlighted">Simulate CVD vision</span>

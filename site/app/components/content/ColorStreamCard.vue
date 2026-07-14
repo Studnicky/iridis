@@ -5,17 +5,15 @@ import { scaleChromaToY, sampleIndexToX } from '../../composables/colorStreamAxi
 import { colorStreamComparison } from '../../composables/colorStreamComparison.ts';
 import type { RoleViewType } from '../../composables/types/index.ts';
 import { useIridis } from '../../composables/useIridis.ts';
-import { useColorStreamHistory, useLivingBackground, type ColorSampleType } from '../../composables/useLivingBackground.ts';
+import { DECORATIVE_ALIASES, useColorStreamHistory, useLivingBackground, type ColorSampleType } from '../../composables/useLivingBackground.ts';
+import { capitalize } from '../../utils/capitalize.ts';
 
-/** Role display order + labels for the seismograph stack, plus each alias's source role name (mirrors useLivingBackground.ts's DECORATIVE_ALIASES). */
-const ROLES: { alias: string; label: string; roleName: string }[] = [
-  { 'alias': 'primary', 'label': 'Primary', 'roleName': 'brand' },
-  { 'alias': 'secondary', 'label': 'Secondary', 'roleName': 'accent-alt' },
-  { 'alias': 'success', 'label': 'Success', 'roleName': 'success' },
-  { 'alias': 'warning', 'label': 'Warning', 'roleName': 'warning' },
-  { 'alias': 'error', 'label': 'Error', 'roleName': 'error' },
-  { 'alias': 'info', 'label': 'Info', 'roleName': 'info' }
-];
+/** Role display order for the seismograph stack, derived from useLivingBackground.ts's own DECORATIVE_ALIASES — the alias/roleName pairing has exactly one source, this just adds the display label. */
+const ROLES: { alias: string; label: string; roleName: string }[] = Object.entries(DECORATIVE_ALIASES).map(([alias, roleName]) => ({
+  'alias':    alias,
+  'label':    capitalize(alias),
+  'roleName': roleName
+}));
 
 /** Number of samples in each static comparison band — shares the same 0..1 progress axis for both interpolation methods. */
 const COMPARISON_SAMPLE_COUNT = 48;

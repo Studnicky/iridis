@@ -109,7 +109,7 @@ function activateTarget(id: string): void {
 
 export function useNavigationTargets() {
   return {
-    'activateTarget': activateTarget, 'cardIndex': cardIndex, 'registerDocTargets': registerDocTargets,
-    'registerStageIndexSetter': registerStageIndexSetter, 'resolve': resolve, 'targets': targets,
+    'activateTarget': activateTarget, 'registerDocTargets': registerDocTargets,
+    'registerStageIndexSetter': registerStageIndexSetter,
   };
 }

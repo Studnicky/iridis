@@ -7,11 +7,14 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
 /**
  * The Refine stage's "Palette" card — reviews the current seed/hue list
  * (populated either from the Intake stage's Picker or its Upload/Combine
- * result — same `pickerSeeds` data either way) and assigns each one a role.
- * This is deliberately mode-agnostic: role assignment must work whether the
- * seeds came from manual picking or image extraction, so it dispatches
- * PIN_SEED_ROLE directly rather than through a mode-switching wrapper —
- * pinning a role here must never silently flip the page out of image mode.
+ * result, via `activeSeeds` — pickerSeeds in picker mode, the selected
+ * candidate/extraction's hues in image mode; both are the same
+ * `PickerSeedType[]` shape, so this card never needs to know which mode it's
+ * in to read the data) and assigns each one a role. This is deliberately
+ * mode-agnostic: role assignment must work whether the seeds came from
+ * manual picking or image extraction, so it dispatches PIN_SEED_ROLE directly
+ * rather than through a mode-switching wrapper — pinning a role here must
+ * never silently flip the page out of image mode.
  *
  * "Pin to role" lets a seed claim any role this page actually renders
  * somewhere — a Nuxt UI alias (success/warning/info/etc.), a --ui-* CSS var,
@@ -20,7 +23,7 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
  * overrides that; see PinDerivedRoles.ts). pinnableRoles is restricted to
  * USED_ROLE_NAMES so a pin can never silently do nothing.
  */
-const { pickerSeeds, pinnableRoles, mode } = useIridis();
+const { activeSeeds, pinnableRoles, mode } = useIridis();
 const { send } = useIridisUiMachine();
 
 /** Group order for the role picker: surfaces, text, borders, brand/semantic, then syntax tokens. */
@@ -44,11 +47,6 @@ const sortedPinnableRoles = computed(() => {
   });
 });
 
-type SeedCardItemType = { hex: string; role?: string };
-const seedCardItems = computed<SeedCardItemType[]>(() => {
-  return pickerSeeds.value.map((s) => {return { hex: s.hex, role: s.role };});
-});
-
 function pinRole(index: number, role: string | undefined): void {
   send({ index: index, role: role, type: IridisUiActionType.PIN_SEED_ROLE });
 }
@@ -62,7 +60,7 @@ function pinRole(index: number, role: string | undefined): void {
 
     <BalancedWrap
       v-auto-animate
-      :items="seedCardItems"
+      :items="activeSeeds"
       :min-width="210"
       :gap="12"
     >
@@ -107,7 +105,7 @@ function pinRole(index: number, role: string | undefined): void {
                   :key="r"
                   :label="r"
                   size="xs"
-                  :color="card.role === r ? 'primary' : (pickerSeeds.some((s, sIdx) => sIdx !== i && s.role === r) ? 'warning' : 'neutral')"
+                  :color="card.role === r ? 'primary' : (activeSeeds.some((s, sIdx) => sIdx !== i && s.role === r) ? 'warning' : 'neutral')"
                   :variant="card.role === r ? 'solid' : 'soft'"
                   class="rounded-full"
                   @click="pinRole(i, card.role === r ? undefined : r)"

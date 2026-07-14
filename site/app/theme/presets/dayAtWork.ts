@@ -15,6 +15,7 @@ export const dayAtWork: ThemeDefinitionInterfaceType = {
     'particleShape':   'dot',
     'speedMultiplier': 1.8
   },
+  'dataLayout': 'table',
   'key':   'day-at-work',
   'label': 'Day-at-Work'
 };

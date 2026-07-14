@@ -98,8 +98,16 @@ const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAm
     aria-hidden="true"
     :style="ambientStyle"
   >
+    <!--
+      The grid is base/shared markup — every theme gets the same node;
+      `gridEnabled` (a per-theme knob) only toggles its visibility. `v-show`
+      keeps DOM shape identical between server and client (it only ever
+      flips `display`), so a persisted theme that disagrees with the
+      prerendered default never produces a hydration node mismatch — the
+      visibility just updates reactively once the real theme is known.
+    -->
     <div
-      v-if="gridEnabled"
+      v-show="gridEnabled"
       class="ambient-grid"
     />
 

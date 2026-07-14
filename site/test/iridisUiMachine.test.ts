@@ -54,25 +54,14 @@ test('DRAG_START -> DRAG_MOVE -> DRAG_END full cycle', () => {
   assert.equal(ended.state.activeIndex, 3);
 });
 
-test('POPOVER_OPEN -> POPOVER_CLOSE cycle', () => {
-  const m = new IridisUiMachine();
-  const idle = { 'activeIndex': 2, 'mode': 'picker' as const, 'variant': 'idle' as const };
-  const opened = m.transition(idle, { 'type': 'POPOVER_OPEN' });
-  assert.equal(opened.state.variant, 'popoverOpen');
-
-  const closed = m.transition(opened.state, { 'type': 'POPOVER_CLOSE' });
-  assert.equal(closed.state.variant, 'idle');
-  assert.equal(closed.state.activeIndex, 2);
-});
-
 test('reduce() throws on an invalid transition (DRAG_MOVE while idle)', () => {
   const m = new IridisUiMachine();
   assert.throws(() => { m.reduce(m.getInitialState(), { 'dragPx': 0, 'type': 'DRAG_MOVE' }); }, /Cannot handle event "DRAG_MOVE" in state "idle"/);
 });
 
-test('reduce() throws on an invalid transition (POPOVER_CLOSE while idle)', () => {
+test('reduce() throws on an invalid transition (DRAG_END while idle)', () => {
   const m = new IridisUiMachine();
-  assert.throws(() => { m.reduce(m.getInitialState(), { 'type': 'POPOVER_CLOSE' }); }, /Cannot handle event "POPOVER_CLOSE" in state "idle"/);
+  assert.throws(() => { m.reduce(m.getInitialState(), { 'count': 5, 'shiftedBy': 1, 'type': 'DRAG_END' }); }, /Cannot handle event "DRAG_END" in state "idle"/);
 });
 
 test('transition() rethrows (does not swallow) on an invalid transition', () => {

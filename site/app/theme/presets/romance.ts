@@ -10,6 +10,7 @@ export const romance: ThemeDefinitionInterfaceType = {
     'particleShape':   'heart',
     'speedMultiplier': 2.75
   },
+  'dataLayout': 'list',
   'key':   'romance',
   'label': 'Romance'
 };

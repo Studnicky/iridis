@@ -6,10 +6,11 @@ export const startup: ThemeDefinitionInterfaceType = {
     'blobCount':       0,
     'gooEnabled':      false,
     'gridEnabled':     false,
-    'particleCounts':  [180, 180, 180, 110, 110],
+    'particleCounts':  [80, 80, 70, 40, 40],
     'particleShape':   'bubble',
     'speedMultiplier': 0.7
   },
+  'dataLayout': 'grid',
   'key':   'startup',
   'label': 'Startup'
 };

@@ -6,10 +6,11 @@ export const girlypop: ThemeDefinitionInterfaceType = {
     'blobCount':       0,
     'gooEnabled':      false,
     'gridEnabled':     false,
-    'particleCounts':  [140, 140, 140, 90, 90],
+    'particleCounts':  [70, 70, 60, 35, 35],
     'particleShape':   'heart',
     'speedMultiplier': 0.8
   },
+  'dataLayout': 'pixel',
   'key':   'girlypop',
   'label': 'Girlypop'
 };

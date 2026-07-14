@@ -10,6 +10,7 @@ export const arcade: ThemeDefinitionInterfaceType = {
     'particleShape':   'square',
     'speedMultiplier': 0.6
   },
+  'dataLayout': 'pixel',
   'key':   'arcade',
   'label': 'Arcade'
 };

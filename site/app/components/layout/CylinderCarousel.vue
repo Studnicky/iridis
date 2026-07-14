@@ -3,6 +3,8 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
 import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue';
 
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
+import { useDebouncedResizeObserver } from '~/composables/useDebouncedResizeObserver.ts';
+import { wrap } from '~/composables/fsm/wrap.ts';
 
 /**
  * Orbit/coverflow carousel. Cards curl along a cylinder arc: the active card
@@ -39,8 +41,6 @@ const cardH = computed(() => {
 let startX = 0;
 
 const isLocal = computed(() => props.modelValue !== undefined);
-/** Wraps to [0, n) — mirrors the FSM's own NAVIGATE wrap-around for the local (v-model) path. */
-function wrap(i: number): number { return ((i % n.value) + n.value) % n.value; }
 
 const localDragPx = ref(0);
 const isLocalDragging = ref(false);
@@ -81,7 +81,7 @@ function onUp(): void {
     const shiftedBy = Math.round(-localDragPx.value / step);
     isLocalDragging.value = false;
     localDragPx.value = 0;
-    if (shiftedBy !== 0) emit('update:modelValue', wrap(active.value + shiftedBy));
+    if (shiftedBy !== 0) emit('update:modelValue', wrap(active.value + shiftedBy, n.value));
     return;
   }
   if (state.value.variant !== 'dragging') return;
@@ -90,7 +90,7 @@ function onUp(): void {
   send({ 'count': n.value, 'shiftedBy': shiftedBy, 'type': IridisUiActionType.DRAG_END });
 }
 function go(d: number): void {
-  if (isLocal.value) { emit('update:modelValue', wrap(active.value + d)); return; }
+  if (isLocal.value) { emit('update:modelValue', wrap(active.value + d, n.value)); return; }
   send({ 'count': n.value, 'delta': d, 'type': IridisUiActionType.NAVIGATE });
 }
 function select(i: number): void {
@@ -159,8 +159,17 @@ function onKey(e: KeyboardEvent): void {
 // data-cyl-index on each card lets the observer attribute entries back to
 // their face index. Debounced like BalancedWrap's ResizeObserver convention.
 const sceneRef = ref<HTMLElement | null>(null);
-let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-let cardObserver: ResizeObserver | null = null;
+const cardResizeObserver = useDebouncedResizeObserver((entries) => {
+  const next = { ...cardHeights.value };
+  for (const entry of entries) {
+    const bodyEl = entry.target as HTMLElement;
+    const cardEl = bodyEl.closest<HTMLElement>('.cyl-card');
+    if (!cardEl) continue;
+    const idx = Number(cardEl.dataset.cylIndex);
+    next[idx] = naturalCardHeight(cardEl);
+  }
+  cardHeights.value = next;
+}, 100);
 /**
  * A card's own getBoundingClientRect()/ResizeObserver size is NOT its true
  * natural content height once cardStyle() has applied an explicit height to
@@ -176,8 +185,7 @@ function naturalCardHeight(cardEl: HTMLElement): number {
   return Math.round((tag?.offsetHeight ?? 0) + (body?.scrollHeight ?? 0));
 }
 function observeAllCards(): void {
-  if (typeof ResizeObserver === 'undefined' || !sceneRef.value) return;
-  if (cardObserver) cardObserver.disconnect();
+  if (!sceneRef.value) return;
   const cards = sceneRef.value.querySelectorAll<HTMLElement>('.cyl-card');
   const heights: Record<number, number> = {};
   cards.forEach((el) => {
@@ -185,33 +193,42 @@ function observeAllCards(): void {
     heights[idx] = naturalCardHeight(el);
   });
   cardHeights.value = heights;
-  cardObserver = new ResizeObserver((entries) => {
-    if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
-    resizeDebounceTimer = setTimeout(() => {
-      const next = { ...cardHeights.value };
-      for (const entry of entries) {
-        const bodyEl = entry.target as HTMLElement;
-        const cardEl = bodyEl.closest<HTMLElement>('.cyl-card');
-        if (!cardEl) continue;
-        const idx = Number(cardEl.dataset.cylIndex);
-        next[idx] = naturalCardHeight(cardEl);
-      }
-      cardHeights.value = next;
-    }, 100);
-  });
-  cards.forEach((el) => cardObserver!.observe(el));
+  cards.forEach((el) => cardResizeObserver.observe(el));
 }
-onMounted(() => {
+
+// The carousel is often below the fold (e.g. a second instance further down
+// the page) — deferring measureWidth/observeAllCards/listener registration
+// until it's actually near the viewport avoids doing 3D-transform layout work
+// for a deck the user may never scroll to.
+let activated = false;
+function activate(): void {
+  if (activated) return;
+  activated = true;
   measureWidth();
   nextTick(() => observeAllCards());
   window.addEventListener('resize', measureWidth);
   window.addEventListener('keydown', onKey);
+}
+let visibilityObserver: IntersectionObserver | null = null;
+onMounted(() => {
+  if (typeof IntersectionObserver === 'undefined' || !sceneRef.value) {
+    activate();
+    return;
+  }
+  visibilityObserver = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) {
+      activate();
+      visibilityObserver?.disconnect();
+      visibilityObserver = null;
+    }
+  }, { rootMargin: '400px' });
+  visibilityObserver.observe(sceneRef.value);
 });
 onBeforeUnmount(() => {
   window.removeEventListener('resize', measureWidth);
   window.removeEventListener('keydown', onKey);
-  if (cardObserver) cardObserver.disconnect();
-  if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
+  visibilityObserver?.disconnect();
+  cardResizeObserver.disconnect();
 });
 </script>
 

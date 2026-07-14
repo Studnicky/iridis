@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
+import { ALGORITHM_LABELS } from '~/composables/GalleryAlgorithms.ts';
 
 /**
  * Presents the (typically 3) non-destructive candidate palettes from
@@ -18,14 +19,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [candidate: GalleryCandidateInterfaceType];
 }>();
-
-/** Humanizes a raw gallery algorithm id into the label shown on its candidate card. */
-const ALGORITHM_LABELS: Record<string, string> = {
-  'delta-e':     'Delta-E merge',
-  'k-means':     'K-means',
-  'median-cut':  'Median cut',
-  'wu-quantize': 'Wu quantize'
-};
 
 function humanize(candidate: GalleryCandidateInterfaceType): string {
   return ALGORITHM_LABELS[candidate.algorithm] ?? candidate.label;

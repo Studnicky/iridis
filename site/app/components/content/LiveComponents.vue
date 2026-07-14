@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { ALIAS_COLOR_NAMES, type AliasColorType } from '~/theme/Tokens.ts';
+import { capitalize } from '~/utils/capitalize.ts';
+import { complianceBadgeColor } from '~/utils/complianceBadgeColor.ts';
 
 /**
  * Live Nuxt UI component surface, themed by the engine's --ui-* tokens — and
@@ -24,7 +26,7 @@ function fireToast(color: ColorType): void {
     'color':       color,
     'description': `A live UToast in the ${color} color — engine-themed, not a mockup.`,
     'icon':        'i-material-symbols-notifications-rounded',
-    'title':       `${color[0]!.toUpperCase()}${color.slice(1)} toast`
+    'title':       `${capitalize(color)} toast`
   });
 }
 
@@ -199,7 +201,7 @@ const breadcrumbItems = [
           <UBadge
             size="xs"
             variant="soft"
-            :color="row.original.compliance === 'AAA' ? 'success' : row.original.compliance === 'AA' ? 'primary' : 'neutral'"
+            :color="complianceBadgeColor(row.original.compliance)"
           >
             {{ row.original.compliance }}
           </UBadge>

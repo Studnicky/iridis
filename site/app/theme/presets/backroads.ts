@@ -10,6 +10,7 @@ export const backroads: ThemeDefinitionInterfaceType = {
     'particleShape':   'square',
     'speedMultiplier': 2.2
   },
+  'dataLayout': 'list',
   'key':   'backroads',
   'label': 'Backroads'
 };

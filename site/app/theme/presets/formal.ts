@@ -14,6 +14,7 @@ export const formal: ThemeDefinitionInterfaceType = {
     'particleShape':   'dot',
     'speedMultiplier': 2.75
   },
+  'dataLayout': 'table',
   'key':   'formal',
   'label': 'Formal'
 };
