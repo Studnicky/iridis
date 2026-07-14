@@ -17,9 +17,14 @@ const { roles, scales, roleSortKeys } = useIridis();
 const { dataLayout } = useDataLayout();
 
 const sortedAliases = computed(() => {
-  const bg = roles.value['background'] ?? '#000000';
+  // 'background' is required in every schema tier — resolved before any
+  // component reads this, never a hardcoded placeholder.
+  const bg = roles.value['background']!;
   const rows = ALIASES.map((a) => {
-    const hex = Tokens.resolveAliasShadeHex(roles.value, scales.value, a.key, 500) ?? '#888888';
+    // resolveAliasShadeHex can still miss during an early SSR pass (e.g. the
+    // requested shade tier isn't populated yet) — fall back to the same
+    // always-present, required 'background' role rather than a hardcoded hex.
+    const hex = Tokens.resolveAliasShadeHex(roles.value, scales.value, a.key, 500) ?? bg;
     const oklch = colorRecordFactory.fromHex(hex).oklch;
     const ratio = contrastRatio(hex, bg);
     return { ...a, 'c': oklch.c, 'compliance': complianceFor(ratio), 'h': oklch.h, 'l': oklch.l, 'name': a.key, ratio };

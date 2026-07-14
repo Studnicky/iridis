@@ -51,7 +51,9 @@ export function useRoleMathList() {
     const schema = roleSchemaByName[schemaName.value]?.[framing.value];
     const roleDefs = schema?.roles || [];
 
-    const bg = roles.value['background'] ?? '#000000';
+    // 'background' is required in every schema tier and resolved synchronously
+    // before any component reads this — never a hardcoded placeholder.
+    const bg = roles.value['background']!;
 
     const entries = Object.keys(roles.value).map(roleName => {
       const clamp = roleClamps.value[roleName];
@@ -86,7 +88,9 @@ export function useRoleMathList() {
         };
       }
 
-      const hex = roles.value[roleName] ?? '#000000';
+      // roleName comes from Object.keys(roles.value) itself, so this lookup
+      // can never miss — never a hardcoded placeholder.
+      const hex = roles.value[roleName]!;
       const oklch = colorRecordFactory.fromHex(hex).oklch;
       const ratio = contrastRatio(hex, bg);
 

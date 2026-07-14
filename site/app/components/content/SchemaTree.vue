@@ -34,7 +34,12 @@ const tree = computed<TierType[]>(() => {
     });
     const leafRows = added.map((r) => {
       const row = byName.get(r.name);
-      const hex = roles.value[r.name] ?? '#888888';
+      // This tree shows every tier up to iridis-32 regardless of which schema
+      // is currently active, so a role belonging to a deeper tier than
+      // schemaName.value genuinely isn't resolved yet — fall back to the
+      // always-present, required 'background' role (a derived neutral) to
+      // signal "not currently active" rather than a hardcoded placeholder.
+      const hex = roles.value[r.name] ?? roles.value['background']!;
       return {
         'c': row?.c ?? 0, 'compliance': row?.compliance ?? 'fail', 'derivedFrom': r.derivedFrom, 'h': row?.h ?? 0, hex,
         'l': row?.l ?? 0, 'label': r.name, 'name': r.name, 'ratio': row?.ratio ?? 1, 'value': `${tierName}:${r.name}`

@@ -197,7 +197,7 @@ const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAm
     linear-gradient(color-mix(in oklch, var(--ui-primary) 22%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in oklch, var(--ui-primary) 22%, transparent) 1px, transparent 1px);
   background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 10%, transparent 70%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, var(--glow) 10%, transparent 70%);
   opacity: 0.1;
   animation: ambient-grid-pan calc(18s / var(--iridis-ambient-speed, 1)) linear infinite;
 }
@@ -212,8 +212,8 @@ const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAm
   /* belt-and-suspenders: even if any residual filter edge survives at the
      very fringe of the viewport, this guarantees it fades to zero alpha
      before it ever reaches a boundary. */
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, #000 0%, transparent 92%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, #000 0%, transparent 92%);
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, var(--glow) 0%, transparent 92%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, var(--glow) 0%, transparent 92%);
 }
 /* Small discrete globs that rise/scale/fall through the viewport (primary
    motion) with an optional slow horizontal sway layered on top — the

@@ -50,8 +50,9 @@ class ApplyDerivedColors implements TaskInterface {
       if (!firstDerived) {continue;}
       const derivedHue = firstDerived.hue;
 
-      // Parse existing color and update hue
-      const record = colorRecordFactory.fromHex(existingColor.hex || '#000000');
+      // existingColor is already truthy-checked above, so .hex is a real
+      // engine-resolved hex here — never a hardcoded placeholder.
+      const record = colorRecordFactory.fromHex(existingColor.hex);
       const { c, l } = record.oklch;
       const updated = colorRecordFactory.fromOklch(l, c, derivedHue, { 'alpha': record.alpha });
       state.roles[roleType] = { ...existingColor, 'hex': updated.hex };
