@@ -20,7 +20,7 @@ import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
  * top-level Upload carousel's index and any other stage's.
  */
 const {
-  mode, imageSeeds, uploadedImages, imgAlgorithm, removeUploadedImage,
+  mode, uploadedImages, removeUploadedImage,
   updateUploadedImageSetting, selectEntryCandidate, effectiveHexesFor
 } = useIridis();
 const { send } = useIridisUiMachine();
@@ -32,11 +32,10 @@ function skipToManual(): void {
 }
 
 /**
- * One summary card per uploaded image (its actual contributing colors and
- * algorithm) — a separate `combinedSummaryCard` below covers the cumulative
- * result; the two are rendered in visually distinct groups (Combined is its
- * own concept, not one more peer in the per-image row), never mixed into the
- * same balanced-row group.
+ * One summary card per uploaded image — its own extraction, own algorithm.
+ * The cumulative/combined result across every image is the Combine stage's
+ * job (right after this one — its "Extracted hues" section IS that summary),
+ * so it isn't duplicated here.
  */
 type SummaryCardType = { key: string; label: string; algorithmLabel: string; hexes: readonly string[] };
 const uploadSummaryCards = computed<SummaryCardType[]>(() => {
@@ -49,16 +48,6 @@ const uploadSummaryCards = computed<SummaryCardType[]>(() => {
       label: entry.name || 'Sample'
     };
   });
-});
-/** The cumulative/combined result — same extraction algorithms as every per-image card, run against the cumulative (pixel-weighted) histogram merged across every upload; see weightedHexesFor/expandWeighted in useIridis.ts. */
-const combinedSummaryCard = computed<SummaryCardType | null>(() => {
-  if (uploadedImages.value.length === 0) return null;
-  return {
-    algorithmLabel: ALGORITHM_LABELS[imgAlgorithm.value] ?? imgAlgorithm.value,
-    hexes: imageSeeds.value.map((s) => s.hex),
-    key: 'combined',
-    label: 'Combined'
-  };
 });
 
 /** Image extraction/upload/sampling implies the engine should theme from the extracted image. */
@@ -170,7 +159,7 @@ watch(() => uploadedImages.value.length, (next, prev) => {
           Extracted palettes
         </p>
         <p class="text-sm text-muted">
-          Each image's own extraction, and the combined result used to theme the page. Adjust an image's own extraction on its card below — combine-stage settings (algorithm, lock/re-run) live in the Combine stage right after this one.
+          Each image's own extraction. Adjust it on its card below — the merged result across every image, and combine-stage settings (algorithm, lock/re-run), live in the Combine stage right after this one.
         </p>
       </div>
       <BalancedWrap
@@ -220,54 +209,6 @@ watch(() => uploadedImages.value.length, (next, prev) => {
           </div>
         </template>
       </BalancedWrap>
-
-      <!-- Combined is a separate concept from the per-image cards above
-           (the cumulative merge, not one more peer extraction) — its own
-           row, visually set apart, always last. -->
-      <div
-        v-if="combinedSummaryCard"
-        class="flex justify-center border-t border-default pt-3"
-      >
-        <div class="glass scanlines flex w-full max-w-xs flex-col gap-3 p-4">
-          <div class="flex items-center justify-between gap-2">
-            <span
-              class="truncate font-display text-sm font-bold uppercase tracking-widest glow-text"
-              :title="combinedSummaryCard.label"
-            >{{ combinedSummaryCard.label }}</span>
-            <span class="h-3 w-3 shrink-0 rounded-full pulse bg-primary" />
-          </div>
-          <div
-            v-if="combinedSummaryCard.hexes.length === 0"
-            class="text-xs text-muted italic"
-          >
-            None
-          </div>
-          <BalancedWrap
-            v-else
-            :items="[...combinedSummaryCard.hexes]"
-            :min-width="28"
-            :gap="4"
-          >
-            <template #default="{ item: hex }">
-              <span
-                class="h-7 w-7 rounded border border-default/50"
-                :style="{ backgroundColor: hex }"
-                :title="hex"
-                role="img"
-                :aria-label="`Combined color ${hex}`"
-              />
-            </template>
-          </BalancedWrap>
-          <UBadge
-            color="primary"
-            variant="soft"
-            size="sm"
-            class="self-start"
-          >
-            {{ combinedSummaryCard.algorithmLabel }}
-          </UBadge>
-        </div>
-      </div>
 
       <!-- Per-image detail/edit carousel — only earns its own coverflow deck
            once there's more than one image to flip between; a single image
