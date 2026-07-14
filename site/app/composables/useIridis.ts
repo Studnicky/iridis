@@ -164,16 +164,7 @@ const mode = computed<ModeType>({
   'get': () => { const result = uiState.value.mode; return result; },
   'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': IridisUiActionType.SELECT_MODE }); return result; }
 });
-/**
- * A non-empty starting seed, identical on server and client, so run() (which
- * early-returns while activeSeeds is empty) actually resolves a real role set
- * from the very first render — including during SSR/prerender, where the
- * default sample image (logo.png, extracted asynchronously below, client-only
- * since decoding needs a canvas) hasn't loaded yet. Superseded the moment
- * that extraction resolves; every color everywhere still traces back to a
- * real engine.run() output, never a per-component hardcoded placeholder.
- */
-const pickerSeeds = ref<PickerSeedType[]>([{ 'hex': '#7c3aed' }]);
+const pickerSeeds = ref<PickerSeedType[]>([]);
 /** Same shape as pickerSeeds — a role pinned here (image mode) and a role
  * pinned there (picker mode) are the exact same concept, so both modes share
  * one representation instead of a parallel hex-only list plus a separate
@@ -370,6 +361,9 @@ function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<st
   }
 }
 
+/** run()'s engine input whenever neither seed list has anything yet (see run() below) — never surfaced as pickerSeeds/imageSeeds, so it never appears as a phantom entry in Manual or the per-image cards. */
+const BOOTSTRAP_SEEDS: PickerSeedType[] = [{ 'hex': '#7c3aed' }];
+
 /**
  * `framingOverride`, when given, is the target framing of an in-flight
  * dark/light swap: the engine resolves the FULL new token set against it
@@ -383,13 +377,20 @@ function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<st
 function run(framingOverride?: FramingType): void {
   const targetFraming = framingOverride ?? framing.value;
   const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
-  if (pair === undefined || activeSeeds.value.length === 0) {return;}
+  if (pair === undefined) {return;}
+  // Neither pickerSeeds nor imageSeeds has a seed yet on the very first pass
+  // (in-browser sample-image extraction hasn't resolved, and can't even run
+  // during SSR — no canvas there) — feed the engine one bootstrap seed so it
+  // resolves a real role set from tick one instead of leaving roles.value
+  // empty, WITHOUT writing that seed into either user-visible seed list (the
+  // Manual card must only ever show what the user actually entered).
+  const seeds = activeSeeds.value.length > 0 ? activeSeeds.value : BOOTSTRAP_SEEDS;
   running.value = true;
   error.value = null;
   try {
     engine.pipeline(buildPipeline(REQUIRED_COLOR_STAGES));
     const state = engine.run({
-      'colors':   activeSeeds.value,
+      'colors':   seeds,
       'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
       'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig.value },
       'roles':    withSemanticHues(pair[targetFraming]),
