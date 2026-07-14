@@ -10,6 +10,7 @@ export const gallery: ThemeDefinitionInterfaceType = {
     'particleShape':   'dot',
     'speedMultiplier': 3
   },
+  'dataLayout': 'list',
   'key':   'gallery',
   'label': 'Gallery'
 };

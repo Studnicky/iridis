@@ -4,6 +4,8 @@ import { computed, ref, watch } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
+import { ALGORITHM_LABELS } from '~/composables/GalleryAlgorithms.ts';
+import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
 import UploadedImageCard from './UploadedImageCard.vue';
 import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
 
@@ -29,14 +31,6 @@ function skipToManual(): void {
   activateTarget('picker');
 }
 
-/** Mirrors PaletteCandidatePicker.vue's ALGORITHM_LABELS. */
-const ALGORITHM_LABELS: Record<string, string> = {
-  'delta-e':     'Delta-E merge',
-  'k-means':     'K-means',
-  'median-cut':  'Median cut',
-  'wu-quantize': 'Wu quantize'
-};
-
 /**
  * One summary card per uploaded image (its actual contributing colors and
  * algorithm) — a separate `combinedSummaryCard` below covers the cumulative
@@ -61,17 +55,14 @@ const combinedSummaryCard = computed<SummaryCardType | null>(() => {
   if (uploadedImages.value.length === 0) return null;
   return {
     algorithmLabel: ALGORITHM_LABELS[imgAlgorithm.value] ?? imgAlgorithm.value,
-    hexes: imageSeeds.value,
+    hexes: imageSeeds.value.map((s) => s.hex),
     key: 'combined',
     label: 'Combined'
   };
 });
 
 /** Image extraction/upload/sampling implies the engine should theme from the extracted image. */
-function sendImageAction(action: Parameters<typeof send>[0]): void {
-  if (mode.value !== 'image') mode.value = 'image';
-  send(action);
-}
+const sendImageAction = useModeGuardedSend(mode, send, 'image');
 
 /** UFileUpload owns this ref (multiple selection); picking file(s) here is the only trigger for the EXTRACT_IMAGE(file) effect. */
 const uploadedFiles = ref<File[] | null>(null);
@@ -205,12 +196,12 @@ watch(() => uploadedImages.value.length, (next, prev) => {
             <BalancedWrap
               v-else
               :items="[...card.hexes]"
-              :min-width="24"
+              :min-width="28"
               :gap="4"
             >
               <template #default="{ item: hex }">
                 <span
-                  class="h-6 w-6 rounded border border-default/50"
+                  class="h-7 w-7 rounded border border-default/50"
                   :style="{ backgroundColor: hex }"
                   :title="hex"
                   role="img"
@@ -254,12 +245,12 @@ watch(() => uploadedImages.value.length, (next, prev) => {
           <BalancedWrap
             v-else
             :items="[...combinedSummaryCard.hexes]"
-            :min-width="24"
+            :min-width="28"
             :gap="4"
           >
             <template #default="{ item: hex }">
               <span
-                class="h-6 w-6 rounded border border-default/50"
+                class="h-7 w-7 rounded border border-default/50"
                 :style="{ backgroundColor: hex }"
                 :title="hex"
                 role="img"

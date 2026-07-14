@@ -21,6 +21,9 @@ import type {
 } from './types/index.ts';
 import { IridisUiActionType, IridisUiEffectVariant, PRESET_DEFAULTS } from './types/index.ts';
 import { contrastRatio } from '../theme/ContrastRatio.ts';
+import { cloneRanges } from '../utils/cloneRanges.ts';
+import { debounce, keyedDebounce } from '../utils/debounce.ts';
+import { isValidHex } from '../utils/isValidHex.ts';
 import type { RoleSortKeyType, RoleSortableRowType } from '../utils/roleSort.ts';
 import { complianceFor, sortRoleRows } from '../utils/roleSort.ts';
 
@@ -162,7 +165,26 @@ const mode = computed<ModeType>({
   'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': IridisUiActionType.SELECT_MODE }); return result; }
 });
 const pickerSeeds = ref<PickerSeedType[]>([]);
-const imageSeeds = ref<string[]>([]);
+/** Same shape as pickerSeeds — a role pinned here (image mode) and a role
+ * pinned there (picker mode) are the exact same concept, so both modes share
+ * one representation instead of a parallel hex-only list plus a separate
+ * index->role map. */
+const imageSeeds = ref<PickerSeedType[]>([]);
+
+/**
+ * Rebuilds imageSeeds from a fresh hex list (a recombine, or a newly-selected
+ * candidate palette) while carrying forward any role a user had pinned on a
+ * hex that's still present — matched by hex value, not index, since a
+ * recombine can reorder/add/drop hues. Without this, any Combine-stage tweak
+ * (or picking a different candidate) would silently wipe every pin made on
+ * RefinePaletteCard.vue, the same clobber pickerSeeds is already guarded
+ * against (see the mode !== 'picker' check below).
+ */
+function withPreservedRoles(hexes: readonly string[], previous: readonly PickerSeedType[]): PickerSeedType[] {
+  const roleByHex = new Map(previous.map((s) => [s.hex, s.role] as const));
+  return hexes.map((hex) => ({ 'hex': hex, 'role': roleByHex.get(hex) }));
+}
+
 const framing = ref<FramingType>('dark');
 const schemaName = ref<string>('iridis-32');
 const contrastStrictness = ref<number>(2);
@@ -261,10 +283,6 @@ const imgChromaRange = ref<[number, number][]>([[0, 0.5]]);
  * entry's `dominantColors` into the final palette that themes the page.
  */
 const uploadedImages = ref<UploadedImageInterfaceType[]>([]);
-/** First uploaded image's source, derived from `uploadedImages` — kept for any consumer that only cares about "is there an image at all". */
-const lastImageSrc = computed<string | null>(() => uploadedImages.value[0]?.src ?? null);
-/** Every uploaded image's source, in upload order, derived from `uploadedImages`. */
-const lastImageSrcs = computed<string[]>(() => uploadedImages.value.map((e) => {return e.src;}));
 /** The (typically 3) non-destructive candidate palettes from gallery:extractCandidates for the last image-driven run — one algorithm's clustering result each. */
 const candidates = ref<GalleryCandidateInterfaceType[]>([]);
 /** Label of the candidate currently populating imageSeeds, if the user picked one via PaletteCandidatePicker.vue — null means imageSeeds still holds the default gallery:dominantColors extraction. */
@@ -286,7 +304,8 @@ const combineLocked = ref<boolean>(false);
  */
 watch(schemaName, (v) => { imgK.value = parseInt(v.replace('iridis-', ''), 10) || 32; }, { 'immediate': true });
 
-const activeSeeds = computed<(string | PickerSeedType)[]>(() => {return (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value);});
+/** Whichever seed list is live for the current mode — imageSeeds and pickerSeeds share one shape now, so this is a plain switch, not a reshape. */
+const activeSeeds = computed<PickerSeedType[]>(() => {return (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value);});
 
 /**
  * Role names a seed can actually be pinned to for the active schema+framing —
@@ -435,12 +454,28 @@ function makeImageId(): string {
 function defaultEntrySettings(): Pick<UploadedImageInterfaceType, 'algorithm' | 'chromaRange' | 'deltaECap' | 'harmonizeThreshold' | 'histogramBits' | 'k' | 'lightnessRange'> {
   return {
     'algorithm':          imgAlgorithm.value,
-    'chromaRange':        imgChromaRange.value.map((r) => { return [...r] as [number, number]; }),
+    'chromaRange':        cloneRanges(imgChromaRange.value),
     'deltaECap':          imgDeltaECap.value,
     'harmonizeThreshold': imgHarmonize.value,
     'histogramBits':      imgHistogramBits.value,
     'k':                  imgK.value,
-    'lightnessRange':     imgLightnessRange.value.map((r) => { return [...r] as [number, number]; })
+    'lightnessRange':     cloneRanges(imgLightnessRange.value)
+  };
+}
+
+type GallerySourceType = { 'algorithm': GalleryAlgorithmType; 'chromaRange': readonly [number, number][]; 'deltaECap': number; 'harmonizeThreshold'?: number; 'histogramBits': number; 'k': number; 'lightnessRange': readonly [number, number][] };
+
+/** Builds the `metadata.gallery` object handed to engine.run() — shared by extractEntryStage1 (per-image, no harmonizeThreshold — that knob only applies at the combine stage) and runCombineNow (the combine stage itself), rather than two independent object literals repeating the same field list and range-cloning. */
+function buildGalleryMetadata(source: GallerySourceType): GallerySourceType & { 'candidates': typeof ALL_CANDIDATE_ALGORITHMS } {
+  return {
+    'algorithm':          source.algorithm,
+    'candidates':         ALL_CANDIDATE_ALGORITHMS,
+    'chromaRange':        cloneRanges(source.chromaRange),
+    'deltaECap':          source.deltaECap,
+    ...(source.harmonizeThreshold !== undefined ? { 'harmonizeThreshold': source.harmonizeThreshold } : {}),
+    'histogramBits':      source.histogramBits,
+    'k':                  source.k,
+    'lightnessRange':     cloneRanges(source.lightnessRange)
   };
 }
 
@@ -457,23 +492,21 @@ function extractEntryStage1(entry: UploadedImageInterfaceType): void {
   const state = engine.run({
     'colors':   [pixels],
     'metadata': {
-      'gallery': {
+      'gallery': buildGalleryMetadata({
         'algorithm':      entry.algorithm,
-        'candidates':     ALL_CANDIDATE_ALGORITHMS,
-        'chromaRange':    entry.chromaRange.map((r) => { return [...r] as [number, number]; }),
+        'chromaRange':    entry.chromaRange,
         'deltaECap':      entry.deltaECap,
         'histogramBits':  entry.histogramBits,
         'k':              entry.k,
-        'lightnessRange': entry.lightnessRange.map((r) => { return [...r] as [number, number]; })
-      }
+        'lightnessRange': entry.lightnessRange
+      })
     }
   });
   const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
   entry.histogram = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
   const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string; 'hints'?: { 'weight'?: number } }[] | undefined) ?? [];
-  const validDominant = dominant.filter((c) => { const result = /^#[0-9a-fA-F]{6}$/.test(c.hex); return result; });
-  entry.dominantColors = validDominant.map((c) => { return c.hex; });
-  entry.dominantColorWeights = validDominant.map((c) => { return c.hints?.weight ?? 1; });
+  const validDominant = dominant.filter((c) => { return isValidHex(c.hex); });
+  entry.dominantColorRecords = validDominant.map((c) => { return { 'hex': c.hex, 'weight': c.hints?.weight ?? 1 }; });
   entry.candidates = (state.metadata['gallery:candidates'] as GalleryCandidateInterfaceType[] | undefined) ?? [];
 }
 
@@ -481,7 +514,7 @@ function extractEntryStage1(entry: UploadedImageInterfaceType): void {
  * Resolves the weighted color list an uploaded image contributes to the
  * combine stage: its selected candidate's colors when one is chosen
  * (falling back to the default extraction if that label no longer exists in
- * the current candidate set), otherwise the default `dominantColors`
+ * the current candidate set), otherwise the default `dominantColorRecords`
  * extraction. Each color carries the real cluster weight (pixel-count share)
  * gallery:extract/gallery:extractCandidates already compute — this is what
  * lets the combine stage build a genuinely cumulative, pixel-weighted
@@ -495,7 +528,7 @@ function weightedHexesFor(entry: UploadedImageInterfaceType): readonly { 'hex': 
       return match.colors.map((c) => {return { 'hex': c.hex, 'weight': c.hints?.weight ?? 1 };});
     }
   }
-  return entry.dominantColors.map((hex, i) => {return { 'hex': hex, 'weight': entry.dominantColorWeights[i] ?? 1 };});
+  return entry.dominantColorRecords;
 }
 
 /** Plain hex list (no weight) — used wherever only the color values matter, e.g. the Upload card's per-image summary swatches. */
@@ -571,16 +604,15 @@ function runCombineNow(): void {
       'metadata': {
         'core:variantConfig': VARIANT_CONFIG,
         'derivation:config': derivationConfig.value,
-        'gallery': {
+        'gallery': buildGalleryMetadata({
           'algorithm':          imgAlgorithm.value,
-          'candidates':         ALL_CANDIDATE_ALGORITHMS,
-          'chromaRange':        imgChromaRange.value.map((r) => { return [...r] as [number, number]; }),
+          'chromaRange':        imgChromaRange.value,
           'deltaECap':          imgDeltaECap.value,
           'harmonizeThreshold': imgHarmonize.value,
           'histogramBits':      imgHistogramBits.value,
           'k':                  imgK.value,
-          'lightnessRange':     imgLightnessRange.value.map((r) => { return [...r] as [number, number]; })
-        }
+          'lightnessRange':     imgLightnessRange.value
+        })
       },
       'roles':    withSemanticHues(pair![framing.value]),
       'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
@@ -589,11 +621,18 @@ function runCombineNow(): void {
     histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
     const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string }[] | undefined) ?? [];
     const schemaCount = parseInt(schemaName.value.replace('iridis-', ''), 10) || 32;
-    const extracted = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { const result = /^#[0-9a-fA-F]{6}$/.test(hex); return result; }).slice(0, schemaCount);
-    imageSeeds.value = extracted;
+    const extracted = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { return isValidHex(hex); }).slice(0, schemaCount);
+    imageSeeds.value = withPreservedRoles(extracted, imageSeeds.value);
     candidates.value = (state.metadata['gallery:candidates'] as GalleryCandidateInterfaceType[] | undefined) ?? [];
     selectedCandidateLabel.value = null;
-    sendUiEvent({ 'hues': extracted, 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE });
+    // Pre-populates the picker with the image extraction so switching TO manual
+    // mode starts from something — but only while the user hasn't already
+    // switched there. Once mode is 'picker', pickerSeeds is user-owned data;
+    // a background recombine (e.g. a schema/algorithm tweak, or the
+    // always-loaded boot sample) must never silently clobber manual edits.
+    if (mode.value !== 'picker') {
+      sendUiEvent({ 'hexes': extracted, 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE });
+    }
     ingest(state);
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
@@ -637,8 +676,7 @@ async function addUploadedImagesUnqueued(sources: readonly (File | string)[], sa
       const entry: UploadedImageInterfaceType = {
         ...defaultEntrySettings(),
         'candidates':              [],
-        'dominantColorWeights':    [],
-        'dominantColors':          [],
+        'dominantColorRecords':    [],
         'histogram':               [],
         'id':                      id,
         'name':                    name,
@@ -664,8 +702,7 @@ function removeUploadedImage(id: string): void {
     URL.revokeObjectURL(entry.src);
   }
   pixelCache.delete(id);
-  const timer = entryTimers.get(id);
-  if (timer !== undefined) {clearTimeout(timer); entryTimers.delete(id);}
+  entryReextract.cancel(id);
   uploadedImages.value = uploadedImages.value.filter((e) => {return e.id !== id;});
   scheduleCombine();
 }
@@ -677,30 +714,18 @@ function updateUploadedImageSetting(id: string, patch: UploadedImageSettingsPatc
   const entry = uploadedImages.value.find((e) => {return e.id === id;});
   if (entry === undefined) {return;}
   Object.assign(entry, patch);
-  scheduleEntryReextract(id);
+  entryReextract.schedule(id);
 }
 
 /** Per-entry debounce so rapid slider drags on one image's settings don't re-run its extraction on every step. */
-const entryTimers = new Map<string, ReturnType<typeof setTimeout>>();
-function scheduleEntryReextract(id: string): void {
-  if (typeof window === 'undefined') {return;}
-  const existing = entryTimers.get(id);
-  if (existing !== undefined) {clearTimeout(existing);}
-  entryTimers.set(id, setTimeout(() => {
-    entryTimers.delete(id);
-    const entry = uploadedImages.value.find((e) => {return e.id === id;});
-    if (entry !== undefined) {extractEntryStage1(entry);}
-    combine();
-  }, 180));
-}
+const entryReextract = keyedDebounce((id: string) => {
+  const entry = uploadedImages.value.find((e) => {return e.id === id;});
+  if (entry !== undefined) {extractEntryStage1(entry);}
+  combine();
+}, 180);
 
 /** Debounced combine-stage re-run — triggered by adding/removing an image, a per-image setting change, or a combine-stage setting change. */
-let combineTimer: ReturnType<typeof setTimeout> | undefined;
-function scheduleCombine(): void {
-  if (typeof window === 'undefined') {return;}
-  if (combineTimer !== undefined) {clearTimeout(combineTimer);}
-  combineTimer = setTimeout(() => { combine(); }, 180);
-}
+const scheduleCombine = debounce(() => { combine(); }, 180);
 
 /**
  * Sets which of ONE image's own candidate palettes contributes to the
@@ -742,12 +767,17 @@ registerMutateSeedsHandler(mutateSeeds);
  * Ensures that a role can only be pinned to one seed at a time.
  */
 function pinSeedRole(effect: PinSeedRoleEffectType): void {
-  pickerSeeds.value = pickerSeeds.value.map((s, idx) => {
+  const applyPin = (seeds: PickerSeedType[]): PickerSeedType[] => seeds.map((s, idx) => {
     if (effect.role && s.role === effect.role && idx !== effect.index) {
-      return { ...s, role: undefined };
+      return { ...s, 'role': undefined };
     }
     return (idx === effect.index ? { ...s, 'role': effect.role } : s);
   });
+  if (mode.value === 'image') {
+    imageSeeds.value = applyPin(imageSeeds.value);
+  } else {
+    pickerSeeds.value = applyPin(pickerSeeds.value);
+  }
   schedule();
 }
 registerPinSeedRoleHandler(pinSeedRole);
@@ -840,7 +870,7 @@ registerUpdateCvdPreviewHandler(updateCvdPreview);
  * the N extracted hues (where N = schema count).
  */
 function populatePickerFromImage(effect: PopulatePickerFromImageEffectType): void {
-  pickerSeeds.value = effect.hues.map((hex) => ({ 'hex': hex }));
+  pickerSeeds.value = effect.hexes.map((hex) => ({ 'hex': hex }));
 }
 registerPopulatePickerFromImageHandler(populatePickerFromImage);
 
@@ -887,19 +917,14 @@ registerExtractImageHandler(extractImageEffect);
  * the image itself is not re-decoded, only which palette themes the page.
  */
 function selectImageCandidate(effect: SelectImageCandidateEffectType): void {
-  imageSeeds.value = [...effect.hexes];
+  imageSeeds.value = withPreservedRoles(effect.hexes, imageSeeds.value);
   selectedCandidateLabel.value = effect.label;
   schedule();
 }
 registerSelectImageCandidateHandler(selectImageCandidate);
 
 let booted = false;
-let timer: ReturnType<typeof setTimeout> | undefined;
-function schedule(): void {
-  if (typeof window === 'undefined') {return;}
-  if (timer !== undefined) {clearTimeout(timer);}
-  timer = setTimeout(() => { run(); }, 120);
-}
+const schedule = debounce(() => { run(); }, 120);
 
 export function useIridis() {
   if (!booted) {
@@ -924,7 +949,7 @@ export function useIridis() {
     'effectiveHexesFor': effectiveHexesFor,
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
     'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
-    'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'lastImageSrc': lastImageSrc, 'lastImageSrcs': lastImageSrcs, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
+    'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
     'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine,
     'roles': roles, 'roleViews': roleViews, 'roleClamps': roleClamps,
     'roleDistances': roleDistances,

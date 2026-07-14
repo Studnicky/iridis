@@ -3,6 +3,7 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
+import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
 
 /**
  * The Refine stage's "Manual" card — manual seed-color entry, the first card
@@ -17,10 +18,7 @@ const { pickerSeeds, mode } = useIridis();
 const { send } = useIridisUiMachine();
 
 /** Manual hue edits imply the engine should theme from picker seeds, not an extracted image. */
-function sendPickerAction(action: Parameters<typeof send>[0]): void {
-  if (mode.value !== 'picker') mode.value = 'picker';
-  send(action);
-}
+const sendPickerAction = useModeGuardedSend(mode, send, 'picker');
 
 type SeedCardItemType = { hex: string };
 const seedCardItems = computed<SeedCardItemType[]>(() => {

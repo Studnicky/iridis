@@ -15,6 +15,7 @@ export const restaurant: ThemeDefinitionInterfaceType = {
     'particleShape':   'dot',
     'speedMultiplier': 1.75
   },
+  'dataLayout': 'list',
   'key':   'restaurant',
   'label': 'Restaurant'
 };

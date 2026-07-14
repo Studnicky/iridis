@@ -5,7 +5,6 @@
  */
 const base = useRuntimeConfig().app.baseURL;
 const orbs = ['primary', 'info', 'success', 'error', 'warning'];
-const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
 </script>
 
 <template>
@@ -27,23 +26,10 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
     <div class="relative mx-auto max-w-3xl text-center">
       <div class="mb-4 flex justify-center">
         <div class="relative flex h-40 w-40 items-center justify-center sm:h-48 sm:w-48">
-          <!-- Pulsing multichromatic rings emanating from the eye. Each is a
-               radial gradient in a different engine hue; their opacity pulses
-               out of phase and screen-blends where they overlap, so the halo
-               flows and shifts color as it fades outward. -->
-          <div
-            class="halo"
-            aria-hidden="true"
-          >
-            <span
-              v-for="c in halo"
-              :key="c"
-              class="halo-ring"
-              :style="{
-                '--c': `var(--ui-color-${c}-500)`
-              }"
-            />
-          </div>
+          <!-- Per-theme logo background — dispatches to the active theme's
+               own bespoke effect (see components/content/logoBackgrounds/),
+               never a one-size-fits-all glow. -->
+          <LogoBackground />
           <img
             :src="`${base}logo.png`"
             alt="iridis"

@@ -6,10 +6,11 @@ export const streamer: ThemeDefinitionInterfaceType = {
     'blobCount':       0,
     'gooEnabled':      false,
     'gridEnabled':     false,
-    'particleCounts':  [220, 220, 220, 120, 120],
+    'particleCounts':  [90, 90, 80, 45, 45],
     'particleShape':   'star',
     'speedMultiplier': 0.35
   },
+  'dataLayout': 'pixel',
   'key':   'streamer',
   'label': 'Streamer'
 };

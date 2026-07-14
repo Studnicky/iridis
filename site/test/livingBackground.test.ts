@@ -9,7 +9,8 @@ import assert from 'node:assert/strict';
 import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 
 import type { RoleViewType } from '../app/composables/types/roleView.ts';
-import { buildDecorativePalette, createRingBuffer, driftTarget, oklchToHex, resolveFromPalette, tokensForFrame, useColorStreamHistory } from '../app/composables/useLivingBackground.ts';
+import { buildDecorativePalette, createRingBuffer, driftTarget, resolveFromPalette, tokensForFrame, useColorStreamHistory } from '../app/composables/useLivingBackground.ts';
+import { oklchToHex } from '../app/utils/oklchToHex.ts';
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 

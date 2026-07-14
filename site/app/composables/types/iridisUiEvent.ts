@@ -5,8 +5,6 @@ export enum IridisUiActionType {
   DRAG_START = 'DRAG_START',
   DRAG_MOVE = 'DRAG_MOVE',
   DRAG_END = 'DRAG_END',
-  POPOVER_OPEN = 'POPOVER_OPEN',
-  POPOVER_CLOSE = 'POPOVER_CLOSE',
   ADD_SEED = 'ADD_SEED',
   REMOVE_SEED = 'REMOVE_SEED',
   SET_SEED = 'SET_SEED',
@@ -44,7 +42,7 @@ import type { ModeType } from './mode.ts';
 import type { DerivationConfig } from './colorDerivation.ts';
 import type { RoleSortKeyType } from '../../utils/roleSort.ts';
 
-/** Events accepted by the shared UI FSM (mode switching, carousel nav/drag, popover gating, seed edits, palette params). */
+/** Events accepted by the shared UI FSM (mode switching, carousel nav/drag, seed edits, palette params). */
 export type IridisUiEventType =
   | { 'mode': ModeType; 'type': IridisUiActionType.SELECT_MODE }
   | { 'index': number; 'type': IridisUiActionType.SELECT_CARD }
@@ -52,8 +50,6 @@ export type IridisUiEventType =
   | { 'type': IridisUiActionType.DRAG_START }
   | { 'dragPx': number; 'type': IridisUiActionType.DRAG_MOVE }
   | { 'count': number; 'shiftedBy': number; 'type': IridisUiActionType.DRAG_END }
-  | { 'type': IridisUiActionType.POPOVER_OPEN }
-  | { 'type': IridisUiActionType.POPOVER_CLOSE }
   | { 'hex'?: string; 'type': IridisUiActionType.ADD_SEED }
   | { 'index': number; 'type': IridisUiActionType.REMOVE_SEED }
   | { 'hex': string; 'index': number; 'type': IridisUiActionType.SET_SEED }
@@ -73,7 +69,7 @@ export type IridisUiEventType =
   | { 'config': DerivationConfig; 'type': IridisUiActionType.SET_DERIVATION_CONFIG }
   | { 'source': 'sample'; 'type': IridisUiActionType.EXTRACT_IMAGE }
   | { 'file': File | readonly File[]; 'source': 'file'; 'type': IridisUiActionType.EXTRACT_IMAGE }
-  | { 'hues': string[]; 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE }
+  | { 'hexes': string[]; 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE }
   | { 'hexes': string[]; 'label': string; 'type': IridisUiActionType.SELECT_IMAGE_CANDIDATE }
   | { 'factor': number; 'type': IridisUiActionType.DIAGRAM_ZOOM }
   | { 'dx': number; 'dy': number; 'type': IridisUiActionType.DIAGRAM_PAN }

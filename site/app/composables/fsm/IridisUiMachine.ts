@@ -4,17 +4,13 @@ import type { FsmStepType } from '@studnicky/fsm';
 import { StateMachine } from '@studnicky/fsm';
 
 import type { IridisUiEffectType, IridisUiEventType, IridisUiStateType } from '../types/index.ts';
-
-/** Wraps a wrap-around index into `[0, count)`. */
-function wrap(index: number, count: number): number {
-  return ((index % count) + count) % count;
-}
+import { wrap } from './wrap.ts';
 
 /**
  * Owns the carousel/mode UI state: which mode is active, which card the
- * carousel shows, and whether it is mid-drag or a popover is open. Pure
- * reducer — `reduce()` throws for any (state, event) pair it does not model,
- * which `StateMachine.transition()` reports via `onTransitionRejected` before
+ * carousel shows, and whether it is mid-drag. Pure reducer — `reduce()`
+ * throws for any (state, event) pair it does not model, which
+ * `StateMachine.transition()` reports via `onTransitionRejected` before
  * rethrowing.
  */
 export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEventType, IridisUiEffectType> {
@@ -27,7 +23,7 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
   reduce(state: IridisUiStateType, event: IridisUiEventType): FsmStepType<IridisUiStateType, IridisUiEffectType> {
     // Palette-param and image-extraction events are effect-only — they never
     // touch activeIndex/mode/dragPx, so they're valid regardless of which
-    // carousel sub-state (idle/dragging/popoverOpen) is currently active.
+    // carousel sub-state (idle/dragging) is currently active.
     switch (event.type) {
       case IridisUiActionType.SET_FRAMING:
         return { 'effects': [{ 'op': 'framing', 'value': event.framing, 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }], 'state': state };
@@ -65,7 +61,7 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
           'state':   state
         };
       case IridisUiActionType.POPULATE_PICKER_FROM_IMAGE:
-        return { 'effects': [{ 'hues': event.hues, 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }], 'state': state };
+        return { 'effects': [{ 'hexes': event.hexes, 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }], 'state': state };
       case IridisUiActionType.SELECT_IMAGE_CANDIDATE:
         return { 'effects': [{ 'hexes': event.hexes, 'label': event.label, 'variant': IridisUiEffectVariant.SELECT_IMAGE_CANDIDATE }], 'state': state };
       case IridisUiActionType.DIAGRAM_ZOOM:
@@ -95,8 +91,6 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
           return { 'effects': [], 'state': { 'activeIndex': state.activeIndex, 'dragPx': 0, 'mode': state.mode, 'variant': 'dragging' } };
         case IridisUiActionType.NAVIGATE:
           return { 'effects': [], 'state': { ...state, 'activeIndex': wrap(state.activeIndex + event.delta, event.count) } };
-        case IridisUiActionType.POPOVER_OPEN:
-          return { 'effects': [], 'state': { 'activeIndex': state.activeIndex, 'mode': state.mode, 'variant': 'popoverOpen' } };
         case IridisUiActionType.REMOVE_SEED:
           return { 'effects': [{ 'index': event.index, 'op': 'remove', 'variant': IridisUiEffectVariant.MUTATE_SEEDS }], 'state': state };
         case IridisUiActionType.SELECT_CARD:
@@ -114,13 +108,6 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
           return { 'effects': [], 'state': { 'activeIndex': wrap(state.activeIndex + event.shiftedBy, event.count), 'mode': state.mode, 'variant': 'idle' } };
         case IridisUiActionType.DRAG_MOVE:
           return { 'effects': [], 'state': { ...state, 'dragPx': event.dragPx } };
-        default:
-          break;
-      }
-    } else if (state.variant === 'popoverOpen') {
-      switch (event.type) {
-        case IridisUiActionType.POPOVER_CLOSE:
-          return { 'effects': [], 'state': { 'activeIndex': state.activeIndex, 'mode': state.mode, 'variant': 'idle' } };
         default:
           break;
       }

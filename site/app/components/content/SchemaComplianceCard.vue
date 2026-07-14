@@ -4,20 +4,20 @@ import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import DerivationSettings from './DerivationSettings.vue';
+import SchemaSelector from './SchemaSelector.vue';
 
 /**
  * Schema & Compliance — role-count schema, color space, contrast strictness,
- * CVD auto-correct/preview, and derivation settings. A Refine-stage carousel
- * card: it configures how the engine resolves and validates roles, the same
- * stage that assigns them (Palette) and previews CVD vision.
+ * and derivation settings. A Refine-stage carousel card: it configures how
+ * the engine resolves and validates roles, the same stage that assigns them
+ * (Palette). All CVD auto-correct/preview controls live in the CVD vision
+ * card instead — not duplicated here.
  */
 const {
   schemaName, contrastStrictness, colorSpace,
-  cvdCorrect, contrastReport, cvdPreviewTypes, enabledOptionalStages
+  contrastReport, enabledOptionalStages
 } = useIridis();
 const { send } = useIridisUiMachine();
-
-const schemaItems = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-32'];
 
 /** Compact pass/fail summary badges for whichever optional stages are currently enabled. */
 const stageSummaries = computed(() => {
@@ -38,15 +38,6 @@ const stageSummaries = computed(() => {
     const passing = pairs.filter((p) => {return p.pass;}).length;
     summaries.push({ color: passing === pairs.length ? 'success' : 'warning', key: 'apca', label: 'APCA', text: `${passing}/${pairs.length} pairs passing` });
   }
-  if (report.cvd !== undefined) {
-    const cvd = report.cvd as { warnings: unknown[]; corrections?: unknown[] };
-    const corrected = cvd.corrections?.length ?? 0;
-    const color = cvd.warnings.length === 0 ? 'success' : (corrected > 0 ? 'warning' : 'neutral');
-    const text = cvd.warnings.length === 0
-      ? 'no warnings'
-      : `${cvd.warnings.length} warning${cvd.warnings.length === 1 ? '' : 's'}${corrected > 0 ? ` (${corrected} auto-corrected)` : ''}`;
-    summaries.push({ color, key: 'cvd', label: 'CVD check', text });
-  }
   return summaries;
 });
 </script>
@@ -63,32 +54,10 @@ const stageSummaries = computed(() => {
           <p class="text-sm text-muted">
             How many roles to resolve — <strong class="text-highlighted">iridis-4</strong> is the minimal set, <strong class="text-highlighted">iridis-32</strong> resolves the full token surface this site renders.
           </p>
-          <div class="w-full space-y-2">
-            <BalancedWrap
-              :items="schemaItems"
-              :min-width="48"
-              :gap="8"
-            >
-              <template #default="{ item: s }">
-                <button
-                  type="button"
-                  class="schema-pill flex-1 justify-center text-[11px] font-medium"
-                  :class="schemaName === s ? 'text-primary font-bold' : 'text-dimmed cursor-pointer hover:text-muted'"
-                  :aria-pressed="schemaName === s"
-                  @click="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: s })"
-                >
-                  {{ s.replace('iridis-', '') }}
-                </button>
-              </template>
-            </BalancedWrap>
-            <USlider
-              :model-value="Math.max(0, schemaItems.indexOf(schemaName))"
-              :min="0"
-              :max="schemaItems.length - 1"
-              :step="1"
-              @update:model-value="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: schemaItems[Number($event)] || 'iridis-32' })"
-            />
-          </div>
+          <SchemaSelector
+            :model-value="schemaName"
+            @update:model-value="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: $event })"
+          />
         </div>
 
         <div class="space-y-2">
@@ -149,57 +118,6 @@ const stageSummaries = computed(() => {
             />
           </div>
         </div>
-
-        <div class="space-y-2">
-          <div class="flex items-center justify-between gap-3 rounded-md border border-default p-2.5 pl-3">
-            <div class="flex flex-col">
-              <span class="text-sm font-medium">Auto-correct CVD failures</span>
-              <span class="text-xs text-muted">Also always-on — adjusts the palette itself, same as the level above.</span>
-            </div>
-            <USwitch
-              :model-value="cvdCorrect"
-              @update:model-value="($event) => { send({ cvdCorrect: $event as boolean, type: IridisUiActionType.SET_CVD_CORRECT }); send({ targetId: 'motion', type: IridisUiActionType.NAVIGATE_TO_TARGET }); }"
-            />
-          </div>
-          <div class="space-y-1.5 rounded-md border border-dashed border-primary/50 bg-primary/5 p-2.5 pl-3">
-            <div class="flex items-center justify-between gap-3">
-              <span class="text-sm font-medium">Simulate CVD vision</span>
-              <UButton
-                label="Off"
-                color="neutral"
-                :disabled="cvdPreviewTypes.size === 0"
-                variant="ghost"
-                size="xs"
-                @click="send({ type: IridisUiActionType.CVD_CLEAR_PREVIEWS })"
-              />
-            </div>
-            <BalancedWrap
-              :items="[
-                { label: 'Protanopia', value: 'protanopia' },
-                { label: 'Deuteranopia', value: 'deuteranopia' },
-                { label: 'Tritanopia', value: 'tritanopia' },
-                { label: 'Achromatopsia', value: 'achromatopsia' }
-              ]"
-              :min-width="80"
-              :gap="4"
-            >
-              <template #default="{ item: t }">
-                <UButton
-                  :label="cvdPreviewTypes.has(t.value as any) ? `${t.label} ✓` : t.label"
-                  size="xs"
-                  :color="cvdPreviewTypes.has(t.value as any) ? 'primary' : 'neutral'"
-                  :variant="cvdPreviewTypes.has(t.value as any) ? 'solid' : 'soft'"
-                  class="flex-1 justify-center"
-                  :aria-pressed="cvdPreviewTypes.has(t.value as any)"
-                  @click="send({ cvdType: t.value, type: IridisUiActionType.CVD_TOGGLE_PREVIEW })"
-                />
-              </template>
-            </BalancedWrap>
-            <p class="text-xs text-muted">
-              Changes how this page looks to you — it does not touch the palette.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -236,13 +154,3 @@ const stageSummaries = computed(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.schema-pill {
-  display: flex;
-  align-items: center;
-  padding: 0.15rem 0;
-  background: transparent;
-  border: none;
-}
-</style>

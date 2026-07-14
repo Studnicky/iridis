@@ -1,21 +1,27 @@
 <script setup lang="ts">
 import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed } from 'vue';
+import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { STAGE_GROUPS } from '~/composables/CarouselSections.ts';
 
 /**
- * Sticky table-of-contents bar. Every card across all 5 stage carousels,
- * flattened, each one a NAVIGATE_TO_TARGET dispatch (the same FSM event a
- * "Learn more" prose cross-reference or a stage's Next/Previous button
- * sends) — clicking an entry brings that card to the front of its OWN stage
- * carousel and scrolls that stage into view. There is no longer a single
- * shared "active card" to highlight: each of the 5 stage carousels tracks
- * its own independent local index.
+ * Sticky table-of-contents bar. Every card across all visible stage
+ * carousels, flattened, each one a NAVIGATE_TO_TARGET dispatch (the same FSM
+ * event a "Learn more" prose cross-reference or a stage's Next/Previous
+ * button sends) — clicking an entry brings that card to the front of its OWN
+ * stage carousel and scrolls that stage into view. There is no single shared
+ * "active card" to highlight: each stage carousel tracks its own independent
+ * local index. Mirrors index.vue's `visibleStageGroups` filter — Combine
+ * isn't rendered until an image is uploaded, so its pill must not appear
+ * here either (a click would silently no-op against a section not in the DOM).
  */
 const { send } = useIridisUiMachine();
+const { 'uploadedImages': uploadedImages } = useIridis();
 
-const items = computed(() => STAGE_GROUPS.flatMap((group) => group.items));
+const items = computed(() => STAGE_GROUPS
+  .filter((group) => group.name !== 'combine' || uploadedImages.value.length > 0)
+  .flatMap((group) => group.items));
 
 function select(key: string): void { send({ 'targetId': key, 'type': IridisUiActionType.NAVIGATE_TO_TARGET }); }
 </script>

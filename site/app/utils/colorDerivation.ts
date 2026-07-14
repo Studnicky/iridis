@@ -2,6 +2,8 @@ import type { HueAlgorithm, RoleDerivation, RoleType, VariationAlgorithm } from 
 
 import { colorRecordFactory } from '@studnicky/iridis';
 
+import { lerpSteps } from './lerpSteps.ts';
+
 // --- Hue selection algorithms ---
 
 export function getMonochromaticHues(baseHue: number): number[] {
@@ -77,7 +79,7 @@ export function applyTintsShadesVariation(hues: number[], count = 5): HueLightne
   if (count <= 0) {return result;}
   const lightnessValues = count === 5
     ? [20, 35, 50, 65, 80]
-    : Array.from({ 'length': count }, (_, i) => (count === 1 ? 50 : 20 + (i / (count - 1)) * 60));
+    : lerpSteps(20, 80, count);
   for (const hue of hues) {
     for (const lightness of lightnessValues) {
       result.push({ hue, lightness });
@@ -89,7 +91,7 @@ export function applyTintsShadesVariation(hues: number[], count = 5): HueLightne
 export function applySaturationGradient(hues: number[], count = 5): HueSaturation[] {
   const result: HueSaturation[] = [];
   if (count <= 0) {return result;}
-  const saturationValues = Array.from({ 'length': count }, (_, i) => (count === 1 ? 100 : (i / (count - 1)) * 100));
+  const saturationValues = lerpSteps(0, 100, count, 100);
   for (const hue of hues) {
     for (const saturation of saturationValues) {
       result.push({ hue, saturation });
@@ -101,7 +103,7 @@ export function applySaturationGradient(hues: number[], count = 5): HueSaturatio
 export function applyValueGradient(hues: number[], count = 5): HueLightness[] {
   const result: HueLightness[] = [];
   if (count <= 0) {return result;}
-  const lightnessValues = Array.from({ 'length': count }, (_, i) => (count === 1 ? 60 : 30 + (i / (count - 1)) * 60));
+  const lightnessValues = lerpSteps(30, 90, count);
   for (const hue of hues) {
     for (const lightness of lightnessValues) {
       result.push({ hue, lightness });
