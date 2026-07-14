@@ -290,20 +290,25 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="cyl-controls">
-      <div class="cyl-dots">
-        <UButton
-          v-for="(item, i) in items"
-          :key="item.key"
-          :label="item.label"
-          :color="isActive(i) ? 'primary' : 'neutral'"
-          :variant="isActive(i) ? 'solid' : 'soft'"
-          size="xs"
-          class="cyl-dot font-display rounded-full"
-          :class="{ 'cyl-dot-active': isActive(i) }"
-          :aria-current="isActive(i) ? 'true' : undefined"
-          @click="select(i)"
-        />
-      </div>
+      <BalancedWrap
+        class="cyl-dots"
+        :items="[...items]"
+        :min-width="90"
+        :gap="6"
+      >
+        <template #default="{ item, index: i }">
+          <UButton
+            :label="item.label"
+            :color="isActive(i) ? 'primary' : 'neutral'"
+            :variant="isActive(i) ? 'solid' : 'soft'"
+            size="xs"
+            class="cyl-dot font-display flex-1 justify-center rounded-full"
+            :class="{ 'cyl-dot-active': isActive(i) }"
+            :aria-current="isActive(i) ? 'true' : undefined"
+            @click="select(i)"
+          />
+        </template>
+      </BalancedWrap>
     </div>
   </div>
 </template>
@@ -442,8 +447,11 @@ onBeforeUnmount(() => {
 .cyl-card-body :deep(.iridis-card) {
   background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important;
 }
-.cyl-controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
-.cyl-dots { display: flex; gap: 0.35rem; flex-wrap: wrap; justify-content: center; }
+.cyl-controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: center; width: 100%; }
+/* Row layout/gap/wrapping is BalancedWrap's own job (same component the top
+   ToC bar uses) — evenly-balanced rows instead of a naive wrap that stranded
+   a lone item on its own last row. */
+.cyl-dots { width: 100%; }
 .cyl-dot {
   font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase;
 }
