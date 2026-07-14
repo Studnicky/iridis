@@ -13,3 +13,4 @@ export type * from './roleView.ts';
 export type * from './scaleMap.ts';
 export type * from './schemaName.ts';
 export type * from './schemaPair.ts';
+export type * from './uploadedImage.ts';

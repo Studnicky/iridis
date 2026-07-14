@@ -28,13 +28,15 @@ type UpdateDiagramViewHandlerType = (effect: Extract<IridisUiEffectType, { 'vari
 type UpdateCvdPreviewHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>) => void;
 type PopulatePickerFromImageHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }>) => void;
 type NavigateToTargetHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.NAVIGATE_TO_TARGET }>) => void;
+type SelectImageCandidateHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SELECT_IMAGE_CANDIDATE }>) => void;
 
 /** Mutable — `EffectInterpreter` reads handler keys dynamically on each drain, so filling this in after construction (once useIridis.ts registers it) still wires correctly. */
 const handlers: {
   'EXTRACT_IMAGE'?: ExtractImageHandlerType; 'MUTATE_SEEDS'?: MutateSeedsHandlerType;
   'PIN_SEED_ROLE'?: PinSeedRoleHandlerType; 'SET_PALETTE_PARAM'?: SetPaletteParamHandlerType;
   'UPDATE_DIAGRAM_VIEW'?: UpdateDiagramViewHandlerType; 'UPDATE_CVD_PREVIEW'?: UpdateCvdPreviewHandlerType;
-  'POPULATE_PICKER_FROM_IMAGE'?: PopulatePickerFromImageHandlerType; 'NAVIGATE_TO_TARGET'?: NavigateToTargetHandlerType
+  'POPULATE_PICKER_FROM_IMAGE'?: PopulatePickerFromImageHandlerType; 'NAVIGATE_TO_TARGET'?: NavigateToTargetHandlerType;
+  'SELECT_IMAGE_CANDIDATE'?: SelectImageCandidateHandlerType
 } = {};
 
 const interpreter = EffectInterpreter.create({ 'handlers': handlers, 'machine': new IridisUiMachine() });
@@ -95,6 +97,11 @@ function registerNavigateToTargetHandler(handler: NavigateToTargetHandlerType): 
   handlers.NAVIGATE_TO_TARGET = handler;
 }
 
+/** Registers the SELECT_IMAGE_CANDIDATE effect handler (swap imageSeeds to a chosen gallery:extractCandidates palette). */
+function registerSelectImageCandidateHandler(handler: SelectImageCandidateHandlerType): void {
+  handlers.SELECT_IMAGE_CANDIDATE = handler;
+}
+
 export function useIridisUiMachine() {
   return {
     'registerExtractImageHandler': registerExtractImageHandler, 'registerMutateSeedsHandler': registerMutateSeedsHandler,
@@ -102,6 +109,7 @@ export function useIridisUiMachine() {
     'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
     'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler,
     'registerNavigateToTargetHandler': registerNavigateToTargetHandler,
+    'registerSelectImageCandidateHandler': registerSelectImageCandidateHandler,
     'send': send, 'state': state
   };
 }

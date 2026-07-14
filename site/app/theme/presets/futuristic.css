@@ -1,0 +1,10 @@
+[data-iridis-theme='futuristic'] {
+  --font-display: "Orbitron", "Space Grotesk", sans-serif;
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --ui-radius: 0.5rem;
+  --iridis-radius-sm: 0.25rem;
+  --iridis-radius-md: 0.5rem;
+  --iridis-radius-lg: 1rem;
+  --iridis-border-style: solid;
+}

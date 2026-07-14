@@ -6,17 +6,11 @@ import type {
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
 
-import {
-  clusterDeltaEMerge,
-  clusterKMeans,
-  clusterMedianCut,
-  clusterMedianCutWeighted,
-  clusterWuQuantize
-} from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { GalleryAlgorithmType } from '../types/augmentation.ts';
+import { ClusterDispatcher } from './ClusterDispatcher.ts';
 
 /**
  * `gallery:extract`
@@ -54,64 +48,6 @@ import type { GalleryAlgorithmType } from '../types/augmentation.ts';
  *   state.metadata['gallery:dominantColors']: the K representative colors
  *   state.colors:                             replaced with the K-color set
  */
-/* True when ANY input carries a declared `hints.weight`. The presence of
-   the hint key is the signal (not its magnitude), so a histogram where
-   every bin happens to hold exactly one pixel still dispatches to the
-   weighted reducer, preserving the upstream histogram's weight bookkeeping
-   instead of silently falling back to the unweighted `clusterMedianCut`. */
-function hasAnyWeight(colors: readonly ColorRecordInterfaceType[]): boolean {
-  for (const c of colors) {
-    if (typeof c.hints?.weight === 'number' && c.hints.weight > 0) {return true;}
-  }
-  return false;
-}
-
-/**
- * Maximum number of records fed into the deltaE-merge reducer. The
- * agglomerative merger is O(N² log N), so feeding it a raw photo
- * histogram (thousands of non-empty bins) hangs the main thread. We
- * pre-trim by descending weight: the merger still sees every visually
- * important cluster (heaviest first), and the long tail of one-off
- * pixels falls off, which is the same trade-off median-cut already
- * makes implicitly when its bucket-selection heuristic refuses to
- * split low-weight buckets.
- *
- * The trim ranking is NOT raw pixel count. A single enormous flat
- * region (e.g. a solid-black background covering most of the frame)
- * would otherwise linearly out-vote many smaller, genuinely saturated
- * regions whose own weight is split across many slightly-different
- * quantised bins. Two adjustments make the ranking reflect visual
- * prominence instead of pixel-count dominance:
- *
- *   - weight is dampened via sqrt() before ranking, so a bin 100x
- *     heavier than another only ranks ~10x higher, not 100x.
- *   - near-achromatic bins (chroma below CHROMA_EPSILON — grays,
- *     near-black, near-white) are ranked in a separate, lower tier,
- *     since in a hue-extraction context they are far more often
- *     background/neutral than a deliberately chosen palette color.
- *     Monochrome/grayscale images still extract correctly: neutral
- *     bins fill remaining cap slots once no chromatic bins are left.
- */
-const DELTA_E_INPUT_CAP_DEFAULT = 128;
-const CHROMA_EPSILON = 0.05;
-
-function trimRank(color: ColorRecordInterfaceType): number {
-  const weight = color.hints?.weight ?? 1;
-  return Math.sqrt(weight);
-}
-
-function trimByWeightDescending(colors: readonly ColorRecordInterfaceType[], cap: number): readonly ColorRecordInterfaceType[] {
-  if (colors.length <= cap) {return colors;}
-  const chromatic: ColorRecordInterfaceType[] = [];
-  const neutral: ColorRecordInterfaceType[] = [];
-  for (const c of colors) {
-    if (c.oklch.c >= CHROMA_EPSILON) {chromatic.push(c);} else {neutral.push(c);}
-  }
-  chromatic.sort((a, b) => {return trimRank(b) - trimRank(a);});
-  neutral.sort((a, b) => {return trimRank(b) - trimRank(a);});
-  return [...chromatic, ...neutral].slice(0, cap);
-}
-
 class GalleryExtract implements TaskInterface {
   readonly 'name' = 'gallery:extract';
 
@@ -156,13 +92,12 @@ class GalleryExtract implements TaskInterface {
       return;
     }
 
-    const clamp = Math.min(k, state.colors.length);
-
-    let dominant: ColorRecordInterfaceType[];
-    if (algorithm === 'delta-e') {
-      const cap = Math.max(8, Math.min(512, Math.floor(galleryConfig?.deltaECap ?? DELTA_E_INPUT_CAP_DEFAULT)));
-      const trimmed = trimByWeightDescending(state.colors, cap);
-      if (trimmed.length < state.colors.length) {
+    const dominant: ColorRecordInterfaceType[] = ClusterDispatcher.run(
+      state.colors,
+      algorithm,
+      k,
+      galleryConfig?.deltaECap,
+      (before, after, cap) => {
         ctx.logger.debug(
           LogBody.create()
             .component('GalleryExtract')
@@ -170,23 +105,14 @@ class GalleryExtract implements TaskInterface {
             .status(LOG_STATUS.PARTIAL)
             .message('trimmed delta-E input by weight')
             .context({
-              'after':  trimmed.length,
-              'before': state.colors.length,
+              'after':  after,
+              'before': before,
               'cap':    cap
             })
             .build()
         );
       }
-      dominant = clusterDeltaEMerge.apply(trimmed, clamp);
-    } else if (algorithm === 'k-means') {
-      dominant = clusterKMeans.apply(state.colors, clamp);
-    } else if (algorithm === 'wu-quantize') {
-      dominant = clusterWuQuantize.apply(state.colors, clamp);
-    } else if (hasAnyWeight(state.colors)) {
-      dominant = clusterMedianCutWeighted.apply(state.colors, clamp);
-    } else {
-      dominant = clusterMedianCut.apply(state.colors, clamp);
-    }
+    );
 
     state.metadata['gallery:dominantColors'] = dominant;
 

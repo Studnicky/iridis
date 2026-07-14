@@ -1,0 +1,38 @@
+[data-iridis-theme='backroads'] {
+  --font-display: "Special Elite", ui-monospace, monospace;
+  --font-sans: "Merriweather", ui-serif, Georgia, serif;
+  --font-mono: "Courier Prime", ui-monospace, monospace;
+  --ui-radius: 8px;
+  --iridis-radius-sm: 3px;
+  --iridis-radius-md: 8px;
+  --iridis-radius-lg: 14px;
+  --iridis-border-style: dashed;
+  /* Tone: faded, warm, film-like — muted rather than vivid, like sunlit dust
+     rather than a bright accent color. */
+  --iridis-ambient-saturate: 0.55;
+  --iridis-ambient-contrast: 0.92;
+  /* Faded sunlight, no neon. */
+  --iridis-glow-strength: 0.45;
+}
+
+/* Ambient motion: dust motes drifting diagonally through a shaft of sunlight,
+   each one slowly tumbling — a lazy Brownian-like wander, not an orbit. */
+[data-iridis-theme='backroads'] .particle-shape {
+  animation:
+    backroads-drift calc(26s / var(--iridis-ambient-speed, 1)) linear infinite,
+    backroads-tumble calc(9s / var(--iridis-ambient-speed, 1)) ease-in-out infinite
+    !important;
+}
+@keyframes backroads-drift {
+  0%   { translate: 0 0; opacity: 0; }
+  10%  { opacity: 0.5; }
+  90%  { opacity: 0.5; }
+  100% { translate: 14vw 20vh; opacity: 0; }
+}
+@keyframes backroads-tumble {
+  0%, 100% { rotate: 0deg; }
+  50%      { rotate: 25deg; }
+}
+
+/* Hero: hazier, warmer blur — sunlit haze rather than crisp modern blobs. */
+[data-iridis-theme='backroads'] .hero-orb { filter: blur(50px) !important; }

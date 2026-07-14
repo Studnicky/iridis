@@ -10,12 +10,18 @@ import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
  * sides, scale down, dim, and recede in parallax — free-floating decks suspended
  * in space. Drag, arrow keys, dots, or click a side card to rotate.
  */
-const props = defineProps<{ items: ReadonlyArray<{ key: string; label: string }> }>();
+const props = defineProps<{ items: ReadonlyArray<{ key: string; label: string }>; modelValue?: number }>();
+const emit = defineEmits<{ 'update:modelValue': [index: number] }>();
 
+/**
+ * When `modelValue` is passed (even as an uncontrolled second carousel
+ * instance), navigation is fully local — this deck must never read or
+ * dispatch to the page's global FSM, or it would fight the top-level
+ * carousel over the SAME shared activeIndex. Omitting `modelValue` entirely
+ * preserves the original global-FSM-driven behavior byte-for-byte.
+ */
 const { send, state } = useIridisUiMachine();
-const active = computed(() => state.value.activeIndex);
-const dragging = computed(() => state.value.variant === 'dragging');
-const dragPx = computed(() => (state.value.variant === 'dragging' ? state.value.dragPx : 0));
+const active = computed(() => props.modelValue ?? state.value.activeIndex);
 const n = computed(() => props.items.length);
 const cardW = ref(760);
 // cardH is the MAX natural content height across every face, not just the
@@ -32,30 +38,65 @@ const cardH = computed(() => {
 
 let startX = 0;
 
+const isLocal = computed(() => props.modelValue !== undefined);
+/** Wraps to [0, n) — mirrors the FSM's own NAVIGATE wrap-around for the local (v-model) path. */
+function wrap(i: number): number { return ((i % n.value) + n.value) % n.value; }
+
+const localDragPx = ref(0);
+const isLocalDragging = ref(false);
+const dragging = computed(() => (isLocal.value ? isLocalDragging.value : state.value.variant === 'dragging'));
+const dragPx = computed(() => (isLocal.value ? localDragPx.value : (state.value.variant === 'dragging' ? state.value.dragPx : 0)));
+
 function onDown(e: PointerEvent): void {
   // Never hijack the pointer when it lands on the live front card's content —
   // that is what let the drag layer steal clicks from the forms. Dragging only
   // starts on the card frame, side cards, or empty scene.
   const t = e.target as HTMLElement;
   if (t.closest('.cyl-card-body')) return;
-  send({ 'type': IridisUiActionType.DRAG_START }); startX = e.clientX;
+  if (isLocal.value) {
+    isLocalDragging.value = true;
+    localDragPx.value = 0;
+  } else {
+    send({ 'type': IridisUiActionType.DRAG_START });
+  }
+  startX = e.clientX;
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
 }
 function onMove(e: PointerEvent): void {
+  if (isLocal.value) {
+    if (!isLocalDragging.value) return;
+    localDragPx.value = e.clientX - startX;
+    return;
+  }
   if (state.value.variant !== 'dragging') return;
   send({ 'dragPx': e.clientX - startX, 'type': IridisUiActionType.DRAG_MOVE });
 }
 function onUp(): void {
   window.removeEventListener('pointermove', onMove);
   window.removeEventListener('pointerup', onUp);
+  if (isLocal.value) {
+    if (!isLocalDragging.value) return;
+    const step = cardW.value * 0.55;
+    const shiftedBy = Math.round(-localDragPx.value / step);
+    isLocalDragging.value = false;
+    localDragPx.value = 0;
+    if (shiftedBy !== 0) emit('update:modelValue', wrap(active.value + shiftedBy));
+    return;
+  }
   if (state.value.variant !== 'dragging') return;
   const step = cardW.value * 0.55;
   const shiftedBy = Math.round(-dragPx.value / step);
   send({ 'count': n.value, 'shiftedBy': shiftedBy, 'type': IridisUiActionType.DRAG_END });
 }
-function go(d: number): void { send({ 'count': n.value, 'delta': d, 'type': IridisUiActionType.NAVIGATE }); }
-function select(i: number): void { send({ 'index': i, 'type': IridisUiActionType.SELECT_CARD }); }
+function go(d: number): void {
+  if (isLocal.value) { emit('update:modelValue', wrap(active.value + d)); return; }
+  send({ 'count': n.value, 'delta': d, 'type': IridisUiActionType.NAVIGATE });
+}
+function select(i: number): void {
+  if (isLocal.value) { emit('update:modelValue', i); return; }
+  send({ 'index': i, 'type': IridisUiActionType.SELECT_CARD });
+}
 function isActive(i: number): boolean { return i === active.value; }
 
 /**

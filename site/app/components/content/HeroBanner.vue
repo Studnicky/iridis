@@ -48,12 +48,11 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
             :src="`${base}logo.png`"
             alt="iridis"
             class="float relative z-10 h-24 w-24 sm:h-28 sm:w-28"
-            style="filter: drop-shadow(0 0 22px color-mix(in oklch, var(--ui-primary) 65%, transparent));"
           >
         </div>
       </div>
 
-      <h1 class="iridis-logo glow-text">
+      <h1 class="iridis-logo">
         iridis
       </h1>
       <p class="mx-auto mt-3 max-w-xl text-sm text-muted sm:text-base">

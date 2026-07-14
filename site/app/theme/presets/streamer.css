@@ -1,0 +1,54 @@
+[data-iridis-theme='streamer'] {
+  --font-display: "Bungee", "Space Grotesk", sans-serif;
+  --font-sans: "Rubik", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Fira Code", ui-monospace, monospace;
+  --ui-radius: 4px;
+  --iridis-radius-sm: 2px;
+  --iridis-radius-md: 4px;
+  --iridis-radius-lg: 6px;
+  --iridis-border-style: solid;
+  /* Tone: the most saturated/high-contrast theme of the twelve — stream-alert
+     energy is meant to grab attention. */
+  --iridis-ambient-saturate: 1.5;
+  --iridis-ambient-contrast: 1.1;
+  /* The most intense glow of the twelve — stream-alert energy. */
+  --iridis-glow-strength: 1.4;
+}
+
+/* Ambient motion: firework/stream-alert bursts — each star stays in place and
+   rhythmically scales up while fading out, a rapid radiating pop rather than
+   any drift or rotation. */
+[data-iridis-theme='streamer'] .particle-glyph {
+  animation: streamer-burst calc(1.8s / var(--iridis-ambient-speed, 1)) ease-out infinite !important;
+}
+@keyframes streamer-burst {
+  0%   { scale: 0.2; opacity: 0; }
+  15%  { opacity: 1; }
+  50%  { scale: 1.3; opacity: 0.9; }
+  100% { scale: 1.9; opacity: 0; }
+}
+
+/* Replaces the lava-lamp wash (now Futuristic-only) with a bottom-edge
+   alert-glow pulse — reminiscent of a Twitch/YouTube stream-alert flash,
+   researched from real stream-overlay "heartbeat pulse" effects. A plain
+   radial-gradient pseudo-element on the ambient container, not a metaball. */
+[data-iridis-theme='streamer'] .ambient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 55% at 50% 100%, color-mix(in oklch, var(--glow) 22%, transparent), transparent 70%);
+  animation: streamer-alert-pulse calc(2.4s / var(--iridis-ambient-speed, 1)) ease-in-out infinite;
+}
+@keyframes streamer-alert-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.9; } }
+
+/* Hero: orbs pulse-scale in place (added on top of the base float, per-orb
+   delay from .hero-orb:nth-child(N) untouched) — energetic stream-alert
+   feel instead of a calm drift. */
+[data-iridis-theme='streamer'] .hero-orb {
+  animation-name: float, streamer-orb-pulse !important;
+  animation-duration: 7s, 1.8s !important;
+  animation-timing-function: ease-in-out, ease-in-out !important;
+  animation-iteration-count: infinite, infinite !important;
+}
+@keyframes streamer-orb-pulse { 0%, 100% { scale: 1; } 50% { scale: 1.25; } }

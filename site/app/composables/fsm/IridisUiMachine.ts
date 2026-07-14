@@ -66,6 +66,8 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
         };
       case IridisUiActionType.POPULATE_PICKER_FROM_IMAGE:
         return { 'effects': [{ 'hues': event.hues, 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }], 'state': state };
+      case IridisUiActionType.SELECT_IMAGE_CANDIDATE:
+        return { 'effects': [{ 'hexes': event.hexes, 'label': event.label, 'variant': IridisUiEffectVariant.SELECT_IMAGE_CANDIDATE }], 'state': state };
       case IridisUiActionType.DIAGRAM_ZOOM:
         return { 'effects': [{ 'factor': event.factor, 'op': 'zoom', 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }], 'state': state };
       case IridisUiActionType.DIAGRAM_PAN:

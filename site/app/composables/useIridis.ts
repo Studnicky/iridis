@@ -9,6 +9,7 @@
 import type { CvdType, RoleClampMapInterfaceType, RoleDistanceMapInterfaceType } from '@studnicky/iridis';
 import type { RoleDefinitionInterfaceType, RoleSchemaInterfaceType } from '@studnicky/iridis/model';
 import type { ApcaPairResultSetInterfaceType, CvdResultSetInterfaceType, WcagPairResultSetInterfaceType } from '@studnicky/iridis-contrast';
+import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
 
 import { coreTasks, Engine, getEngineMetadata } from '@studnicky/iridis';
 import { contrastPlugin, getContrastMetadata } from '@studnicky/iridis-contrast';
@@ -16,7 +17,7 @@ import { imagePlugin } from '@studnicky/iridis-image';
 import { computed, ref, watch } from 'vue';
 
 import type {
-  DerivationConfig, FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType
+  DerivationConfig, FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType, UploadedImageInterfaceType
 } from './types/index.ts';
 import { IridisUiActionType, IridisUiEffectVariant, PRESET_DEFAULTS } from './types/index.ts';
 import { contrastRatio } from '../theme/ContrastRatio.ts';
@@ -31,6 +32,7 @@ type UpdateDiagramViewEffectType = Extract<IridisUiEffectType, { 'variant': Irid
 type UpdateCvdPreviewEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>;
 type PopulatePickerFromImageEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }>;
 type NavigateToTargetEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.NAVIGATE_TO_TARGET }>;
+type SelectImageCandidateEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SELECT_IMAGE_CANDIDATE }>;
 
 import { applyDerivedColors } from '../theme/ApplyDerivedColors.ts';
 import { intakeHexHint } from '../theme/IntakeHexHint.ts';
@@ -85,9 +87,24 @@ const REQUIRED_COLOR_STAGES = [
   'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'derive:colors', 'expand:family',
   'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
 ];
+/**
+ * The COMBINE stage's pipeline — runs over the already-per-image-reduced hex
+ * list (Stage 1 output concatenated across every uploaded image), not raw
+ * pixels, hence `intake:any` rather than `intake:imagePixels`.
+ */
 const REQUIRED_IMAGE_STAGES = [
-  'intake:imagePixels', 'gallery:histogram', 'gallery:extract', 'gallery:harmonize',
+  'intake:any', 'gallery:histogram', 'gallery:extractCandidates', 'gallery:extract', 'gallery:harmonize',
   'resolve:roles', 'derive:colors', 'expand:family', 'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
+];
+/** Stage 1 — reduces ONE image's own pixels to its own dominant colors AND its own per-algorithm candidates, independent of every other uploaded image. */
+const IMAGE_ENTRY_STAGES = ['intake:any', 'gallery:histogram', 'gallery:extractCandidates', 'gallery:extract'];
+
+/** All four clustering algorithms, explicit — gallery:extractCandidates' own built-in default only covers three (median-cut/k-means/delta-e), omitting wu-quantize. */
+const ALL_CANDIDATE_ALGORITHMS: readonly { 'algorithm': GalleryAlgorithmType }[] = [
+  { 'algorithm': 'median-cut' },
+  { 'algorithm': 'wu-quantize' },
+  { 'algorithm': 'k-means' },
+  { 'algorithm': 'delta-e' }
 ];
 
 /** Toggleable contrast checks, in the order they slot in after enforce:contrast. */
@@ -136,6 +153,7 @@ const {
   'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
   'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler,
   'registerNavigateToTargetHandler': registerNavigateToTargetHandler,
+  'registerSelectImageCandidateHandler': registerSelectImageCandidateHandler,
   'send': sendUiEvent, 'state': uiState
 } = useIridisUiMachine();
 /** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
@@ -236,7 +254,28 @@ const imgHarmonize = ref<number>(10);
  * also keeping the midtones between them. */
 const imgLightnessRange = ref<[number, number][]>([[0, 1]]);
 const imgChromaRange = ref<[number, number][]>([[0, 0.5]]);
-const lastImageSrc = ref<string | null>(null);
+/**
+ * Every uploaded image, each independently decoded and reduced to its own
+ * dominant colors (Stage 1) with its own algorithm/k/histogram/range
+ * settings. The combine stage (see `combine()` below) concatenates every
+ * entry's `dominantColors` into the final palette that themes the page.
+ */
+const uploadedImages = ref<UploadedImageInterfaceType[]>([]);
+/** First uploaded image's source, derived from `uploadedImages` — kept for any consumer that only cares about "is there an image at all". */
+const lastImageSrc = computed<string | null>(() => uploadedImages.value[0]?.src ?? null);
+/** Every uploaded image's source, in upload order, derived from `uploadedImages`. */
+const lastImageSrcs = computed<string[]>(() => uploadedImages.value.map((e) => {return e.src;}));
+/** The (typically 3) non-destructive candidate palettes from gallery:extractCandidates for the last image-driven run — one algorithm's clustering result each. */
+const candidates = ref<GalleryCandidateInterfaceType[]>([]);
+/** Label of the candidate currently populating imageSeeds, if the user picked one via PaletteCandidatePicker.vue — null means imageSeeds still holds the default gallery:dominantColors extraction. */
+const selectedCandidateLabel = ref<string | null>(null);
+/**
+ * When true, every auto-trigger of the combine stage (new upload, per-image
+ * setting edit, combine-stage setting edit) is suppressed — only the
+ * "Re-run" button (`reRunCombine`) recombines. Default false reproduces
+ * today's fully-reactive behavior exactly.
+ */
+const combineLocked = ref<boolean>(false);
 
 /**
  * Image extraction's color COUNT is the same concept as the role schema's
@@ -374,52 +413,306 @@ class ToPixels {
   }
 }
 
-/** Extracts dominant hues from image to populate picker palette. */
-class FromImage {
-  /** Decode image and extract N hues matching schema count; populate picker seeds. */
-  static async extract(fileOrUrl: File | string): Promise<void> {
-    if (typeof document === 'undefined') {return;}
-    running.value = true;
-    error.value = null;
-    try {
-      const src = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
-      lastImageSrc.value = src;
-      const pixels = await ToPixels.decode(src);
-      const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
-      engine.pipeline(buildPipeline(REQUIRED_IMAGE_STAGES));
-      const state = engine.run({
-        'colors':   [pixels],
-        'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
-        'metadata': {
-          'core:variantConfig': VARIANT_CONFIG,
-          'derivation:config': derivationConfig.value,
-          'gallery': {
-            'algorithm':          imgAlgorithm.value,
-            'chromaRange':        imgChromaRange.value.map((r) => { return [...r] as [number, number]; }),
-            'deltaECap':          imgDeltaECap.value,
-            'harmonizeThreshold': imgHarmonize.value,
-            'histogramBits':      imgHistogramBits.value,
-            'k':                  imgK.value,
-            'lightnessRange':     imgLightnessRange.value.map((r) => { return [...r] as [number, number]; })
-          }
-        },
-        'roles':    withSemanticHues(pair![framing.value]),
-        'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
-      });
-      const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
-      histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
-      const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string }[] | undefined) ?? [];
-      const schemaCount = parseInt(schemaName.value.replace('iridis-', ''), 10) || 32;
-      const extracted = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { const result = /^#[0-9a-fA-F]{6}$/.test(hex); return result; }).slice(0, schemaCount);
-      imageSeeds.value = extracted;
-      sendUiEvent({ 'hues': extracted, 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE });
-      ingest(state);
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e);
-    } finally {
-      running.value = false;
+/** Raw decoded pixel buffers, keyed by `UploadedImageInterfaceType.id` — kept out of the reactive `uploadedImages` entries so Vue never deep-wraps a pixel array. */
+const pixelCache = new Map<string, { 'data': Uint8ClampedArray; 'height': number; 'width': number }>();
+let nextImageId = 0;
+/**
+ * Serializes `addUploadedImages` calls. Without this, two overlapping calls
+ * (e.g. a user drops a second image before the first's decode settles) each
+ * read `uploadedImages.value` before either had written its own addition —
+ * a classic lost-update race where whichever call writes second clobbers the
+ * first's entry entirely. Chaining every call onto this promise means each
+ * call's full read-modify-write only starts once the previous one has fully
+ * committed, so uploads queue instead of racing.
+ */
+let uploadedImagesQueue: Promise<void> = Promise.resolve();
+function makeImageId(): string {
+  nextImageId += 1;
+  return `img-${nextImageId}-${Date.now().toString(36)}`;
+}
+
+/** Seeds a freshly-uploaded entry's own settings from the CURRENT combine-stage refs — sensible per-image defaults that become independently mutable afterward. */
+function defaultEntrySettings(): Pick<UploadedImageInterfaceType, 'algorithm' | 'chromaRange' | 'deltaECap' | 'harmonizeThreshold' | 'histogramBits' | 'k' | 'lightnessRange'> {
+  return {
+    'algorithm':          imgAlgorithm.value,
+    'chromaRange':        imgChromaRange.value.map((r) => { return [...r] as [number, number]; }),
+    'deltaECap':          imgDeltaECap.value,
+    'harmonizeThreshold': imgHarmonize.value,
+    'histogramBits':      imgHistogramBits.value,
+    'k':                  imgK.value,
+    'lightnessRange':     imgLightnessRange.value.map((r) => { return [...r] as [number, number]; })
+  };
+}
+
+/**
+ * Stage 1 — reduces ONE image's own cached pixels to its own dominant
+ * colors, using ONLY that entry's own settings. Independent of every other
+ * uploaded image: re-running this for entry A never touches entry B's
+ * histogram/dominantColors.
+ */
+function extractEntryStage1(entry: UploadedImageInterfaceType): void {
+  const pixels = pixelCache.get(entry.id);
+  if (pixels === undefined) {return;}
+  engine.pipeline(IMAGE_ENTRY_STAGES);
+  const state = engine.run({
+    'colors':   [pixels],
+    'metadata': {
+      'gallery': {
+        'algorithm':      entry.algorithm,
+        'candidates':     ALL_CANDIDATE_ALGORITHMS,
+        'chromaRange':    entry.chromaRange.map((r) => { return [...r] as [number, number]; }),
+        'deltaECap':      entry.deltaECap,
+        'histogramBits':  entry.histogramBits,
+        'k':              entry.k,
+        'lightnessRange': entry.lightnessRange.map((r) => { return [...r] as [number, number]; })
+      }
+    }
+  });
+  const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
+  entry.histogram = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
+  const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string; 'hints'?: { 'weight'?: number } }[] | undefined) ?? [];
+  const validDominant = dominant.filter((c) => { const result = /^#[0-9a-fA-F]{6}$/.test(c.hex); return result; });
+  entry.dominantColors = validDominant.map((c) => { return c.hex; });
+  entry.dominantColorWeights = validDominant.map((c) => { return c.hints?.weight ?? 1; });
+  entry.candidates = (state.metadata['gallery:candidates'] as GalleryCandidateInterfaceType[] | undefined) ?? [];
+}
+
+/**
+ * Resolves the weighted color list an uploaded image contributes to the
+ * combine stage: its selected candidate's colors when one is chosen
+ * (falling back to the default extraction if that label no longer exists in
+ * the current candidate set), otherwise the default `dominantColors`
+ * extraction. Each color carries the real cluster weight (pixel-count share)
+ * gallery:extract/gallery:extractCandidates already compute — this is what
+ * lets the combine stage build a genuinely cumulative, pixel-weighted
+ * histogram instead of treating every representative color as equally
+ * significant regardless of how much of the source image it actually covers.
+ */
+function weightedHexesFor(entry: UploadedImageInterfaceType): readonly { 'hex': string; 'weight': number }[] {
+  if (entry.selectedCandidateLabel !== null) {
+    const match = entry.candidates.find((c) => {return c.label === entry.selectedCandidateLabel;});
+    if (match !== undefined) {
+      return match.colors.map((c) => {return { 'hex': c.hex, 'weight': c.hints?.weight ?? 1 };});
     }
   }
+  return entry.dominantColors.map((hex, i) => {return { 'hex': hex, 'weight': entry.dominantColorWeights[i] ?? 1 };});
+}
+
+/** Plain hex list (no weight) — used wherever only the color values matter, e.g. the Upload card's per-image summary swatches. */
+function effectiveHexesFor(entry: UploadedImageInterfaceType): readonly string[] {
+  return weightedHexesFor(entry).map((w) => {return w.hex;});
+}
+
+/**
+ * Expands a weighted {hex, weight} multiset into a flat hex array sized
+ * proportionally to each entry's share of the total weight, capped at
+ * `budget` total entries — feeding this through intake:any → gallery:histogram
+ * reconstructs an approximately cumulative, pixel-weighted histogram (repeated
+ * identical hex strings accumulate bin weight via plain frequency counting),
+ * since the engine has no input path for pre-weighted color records.
+ */
+function expandWeighted(weighted: readonly { 'hex': string; 'weight': number }[], budget: number): string[] {
+  const totalWeight = weighted.reduce((sum, w) => {return sum + w.weight;}, 0);
+  if (totalWeight <= 0) {return weighted.map((w) => {return w.hex;});}
+  const expanded: string[] = [];
+  for (const w of weighted) {
+    const count = Math.max(1, Math.round((w.weight / totalWeight) * budget));
+    for (let i = 0; i < count; i++) {expanded.push(w.hex);}
+  }
+  return expanded;
+}
+
+/**
+ * Stage 2 — gathers every uploaded image's own weighted contribution
+ * (`weightedHexesFor`, respecting per-image candidate selection) and expands
+ * it into a cumulative, pixel-weighted hex multiset (`expandWeighted`), then
+ * runs that through the combine pipeline (REQUIRED_IMAGE_STAGES). The
+ * resulting histogram genuinely reflects the merged pixel density across
+ * every uploaded image, not an equal-weight-per-representative-color
+ * approximation. The combine-stage settings are the existing shared
+ * imgAlgorithm/imgK/imgHistogramBits/imgDeltaECap/imgHarmonize/imgLightnessRange/
+ * imgChromaRange refs — they now control the FINAL merge across all images,
+ * not any single photo's extraction.
+ */
+/** Gated auto-trigger — every reactive call site goes through this, so `combineLocked` suppresses them uniformly. */
+function combine(): void {
+  if (combineLocked.value) {return;}
+  runCombineNow();
+}
+
+/** Always recombines immediately, ignoring the lock — what the "Re-run" button calls. */
+function reRunCombine(): void {
+  runCombineNow();
+}
+
+/** Total hex entries the cumulative weighted expansion is scaled to — large enough for gallery:histogram to re-derive a meaningful weighted distribution, small enough to stay cheap. */
+const CUMULATIVE_HISTOGRAM_BUDGET = 1000;
+
+function runCombineNow(): void {
+  if (typeof document === 'undefined') {return;}
+  const entries = uploadedImages.value;
+  const weightedContributions = entries.flatMap((e) => {return weightedHexesFor(e);});
+  const combinedHexes = expandWeighted(weightedContributions, CUMULATIVE_HISTOGRAM_BUDGET);
+  if (combinedHexes.length === 0) {
+    histogram.value = [];
+    imageSeeds.value = [];
+    candidates.value = [];
+    selectedCandidateLabel.value = null;
+    return;
+  }
+  running.value = true;
+  error.value = null;
+  try {
+    const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
+    engine.pipeline(buildPipeline(REQUIRED_IMAGE_STAGES));
+    const state = engine.run({
+      'colors':   combinedHexes,
+      'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
+      'metadata': {
+        'core:variantConfig': VARIANT_CONFIG,
+        'derivation:config': derivationConfig.value,
+        'gallery': {
+          'algorithm':          imgAlgorithm.value,
+          'candidates':         ALL_CANDIDATE_ALGORITHMS,
+          'chromaRange':        imgChromaRange.value.map((r) => { return [...r] as [number, number]; }),
+          'deltaECap':          imgDeltaECap.value,
+          'harmonizeThreshold': imgHarmonize.value,
+          'histogramBits':      imgHistogramBits.value,
+          'k':                  imgK.value,
+          'lightnessRange':     imgLightnessRange.value.map((r) => { return [...r] as [number, number]; })
+        }
+      },
+      'roles':    withSemanticHues(pair![framing.value]),
+      'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
+    });
+    const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
+    histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
+    const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string }[] | undefined) ?? [];
+    const schemaCount = parseInt(schemaName.value.replace('iridis-', ''), 10) || 32;
+    const extracted = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { const result = /^#[0-9a-fA-F]{6}$/.test(hex); return result; }).slice(0, schemaCount);
+    imageSeeds.value = extracted;
+    candidates.value = (state.metadata['gallery:candidates'] as GalleryCandidateInterfaceType[] | undefined) ?? [];
+    selectedCandidateLabel.value = null;
+    sendUiEvent({ 'hues': extracted, 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE });
+    ingest(state);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    running.value = false;
+  }
+}
+
+/**
+ * Decodes and adds one or more images as new `uploadedImages` entries, each
+ * running its own Stage 1 extraction independently, then recombines. Used
+ * for both file uploads and the "Try a sample" button — the sample image is
+ * just another entry, added rather than replacing what's already uploaded.
+ *
+ * Queued onto {@link uploadedImagesQueue} rather than run directly — see
+ * that variable's comment for why concurrent calls must be serialized.
+ */
+async function addUploadedImages(sources: readonly (File | string)[], sampleNames?: readonly string[]): Promise<void> {
+  const next = uploadedImagesQueue.then(() => {return addUploadedImagesUnqueued(sources, sampleNames);});
+  // Swallow here so one call's failure doesn't wedge the queue for every
+  // subsequent call — addUploadedImagesUnqueued already records the error
+  // in the shared `error` ref via its own try/catch.
+  uploadedImagesQueue = next.catch(() => {});
+  return next;
+}
+
+async function addUploadedImagesUnqueued(sources: readonly (File | string)[], sampleNames?: readonly string[]): Promise<void> {
+  if (typeof document === 'undefined' || sources.length === 0) {return;}
+  running.value = true;
+  error.value = null;
+  try {
+    const added: UploadedImageInterfaceType[] = [];
+    for (let i = 0; i < sources.length; i++) {
+      const source = sources[i]!;
+      const src = typeof source === 'string' ? source : URL.createObjectURL(source);
+      const name = typeof source === 'string' ? (sampleNames?.[i] ?? 'Sample') : source.name;
+      // eslint-disable-next-line no-await-in-loop -- each image must decode before the next is added, so entries land in upload order
+      const pixels = await ToPixels.decode(src);
+      const id = makeImageId();
+      pixelCache.set(id, pixels);
+      const entry: UploadedImageInterfaceType = {
+        ...defaultEntrySettings(),
+        'candidates':              [],
+        'dominantColorWeights':    [],
+        'dominantColors':          [],
+        'histogram':               [],
+        'id':                      id,
+        'name':                    name,
+        'selectedCandidateLabel':  null,
+        'src':                     src
+      };
+      extractEntryStage1(entry);
+      added.push(entry);
+    }
+    uploadedImages.value = [...uploadedImages.value, ...added];
+    combine();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    running.value = false;
+  }
+}
+
+/** Drops one uploaded image and recombines — every other entry is untouched. */
+function removeUploadedImage(id: string): void {
+  const entry = uploadedImages.value.find((e) => {return e.id === id;});
+  if (entry !== undefined && entry.src.startsWith('blob:')) {
+    URL.revokeObjectURL(entry.src);
+  }
+  pixelCache.delete(id);
+  const timer = entryTimers.get(id);
+  if (timer !== undefined) {clearTimeout(timer); entryTimers.delete(id);}
+  uploadedImages.value = uploadedImages.value.filter((e) => {return e.id !== id;});
+  scheduleCombine();
+}
+
+type UploadedImageSettingsPatchType = Partial<Pick<UploadedImageInterfaceType, 'algorithm' | 'chromaRange' | 'deltaECap' | 'harmonizeThreshold' | 'histogramBits' | 'k' | 'lightnessRange'>>;
+
+/** Mutates ONE uploaded image's own settings and schedules ONLY that image's re-extraction (debounced), not every uploaded image. */
+function updateUploadedImageSetting(id: string, patch: UploadedImageSettingsPatchType): void {
+  const entry = uploadedImages.value.find((e) => {return e.id === id;});
+  if (entry === undefined) {return;}
+  Object.assign(entry, patch);
+  scheduleEntryReextract(id);
+}
+
+/** Per-entry debounce so rapid slider drags on one image's settings don't re-run its extraction on every step. */
+const entryTimers = new Map<string, ReturnType<typeof setTimeout>>();
+function scheduleEntryReextract(id: string): void {
+  if (typeof window === 'undefined') {return;}
+  const existing = entryTimers.get(id);
+  if (existing !== undefined) {clearTimeout(existing);}
+  entryTimers.set(id, setTimeout(() => {
+    entryTimers.delete(id);
+    const entry = uploadedImages.value.find((e) => {return e.id === id;});
+    if (entry !== undefined) {extractEntryStage1(entry);}
+    combine();
+  }, 180));
+}
+
+/** Debounced combine-stage re-run — triggered by adding/removing an image, a per-image setting change, or a combine-stage setting change. */
+let combineTimer: ReturnType<typeof setTimeout> | undefined;
+function scheduleCombine(): void {
+  if (typeof window === 'undefined') {return;}
+  if (combineTimer !== undefined) {clearTimeout(combineTimer);}
+  combineTimer = setTimeout(() => { combine(); }, 180);
+}
+
+/**
+ * Sets which of ONE image's own candidate palettes contributes to the
+ * combine stage (or clears back to its default extraction when `label` is
+ * null), then recombines — only recombines, never re-runs that image's own
+ * Stage-1 extraction.
+ */
+function selectEntryCandidate(id: string, label: string): void {
+  const entry = uploadedImages.value.find((e) => {return e.id === id;});
+  if (entry === undefined) {return;}
+  entry.selectedCandidateLabel = label;
+  combine();
 }
 
 /**
@@ -470,28 +763,31 @@ registerPinSeedRoleHandler(pinSeedRole);
  * other decoupled watcher to notice. Framing skips the debounce entirely
  * (see run()'s framingOverride doc); every other picker/schema/contrast
  * param goes through schedule() (the general debounced run()); every
- * image-extraction param goes through scheduleReextract() (re-runs
- * FromImage.extract against the currently-loaded image, a no-op if none is
- * loaded). The deep watches below still exist as a safety net for state
- * changed outside this handler, but each of THIS handler's own mutations
- * is responsible for its own re-run, not just relying on being watched.
+ * combine-stage image param goes through scheduleCombine() (re-runs the
+ * COMBINE stage — see `combine()` — over whatever every uploaded image's
+ * Stage 1 already produced; a no-op if no image is uploaded). These params
+ * no longer redecode or re-run any per-image extraction: that only happens
+ * via `updateUploadedImageSetting()` for one image's own settings. The deep
+ * watches below still exist as a safety net for state changed outside this
+ * handler, but each of THIS handler's own mutations is responsible for its
+ * own re-run, not just relying on being watched.
  */
 function setPaletteParam(effect: SetPaletteParamEffectType): void {
   if (effect.op === 'framing') {run(effect.value); return;}
-  if (effect.op === 'schemaName') {schemaName.value = effect.value; schedule(); scheduleReextract(); return;}
+  if (effect.op === 'schemaName') {schemaName.value = effect.value; schedule(); scheduleCombine(); return;}
   if (effect.op === 'strictness') {contrastStrictness.value = effect.value; schedule(); return;}
   if (effect.op === 'colorSpace') {colorSpace.value = effect.value; schedule(); return;}
   if (effect.op === 'cvdCorrect') {cvdCorrect.value = effect.value; schedule(); return;}
-  if (effect.op === 'imgAlgorithm') {imgAlgorithm.value = effect.value; scheduleReextract(); return;}
-  if (effect.op === 'imgK') {imgK.value = effect.value; scheduleReextract(); return;}
-  if (effect.op === 'imgHistogramBits') {imgHistogramBits.value = effect.value; scheduleReextract(); return;}
-  if (effect.op === 'imgDeltaECap') {imgDeltaECap.value = effect.value; scheduleReextract(); return;}
-  if (effect.op === 'imgHarmonize') {imgHarmonize.value = effect.value; scheduleReextract(); return;}
-  if (effect.op === 'imgLightnessRange') {imgLightnessRange.value = effect.value; scheduleReextract(); return;}
-  if (effect.op === 'imgChromaRange') {imgChromaRange.value = effect.value; scheduleReextract(); return;}
+  if (effect.op === 'imgAlgorithm') {imgAlgorithm.value = effect.value; scheduleCombine(); return;}
+  if (effect.op === 'imgK') {imgK.value = effect.value; scheduleCombine(); return;}
+  if (effect.op === 'imgHistogramBits') {imgHistogramBits.value = effect.value; scheduleCombine(); return;}
+  if (effect.op === 'imgDeltaECap') {imgDeltaECap.value = effect.value; scheduleCombine(); return;}
+  if (effect.op === 'imgHarmonize') {imgHarmonize.value = effect.value; scheduleCombine(); return;}
+  if (effect.op === 'imgLightnessRange') {imgLightnessRange.value = effect.value; scheduleCombine(); return;}
+  if (effect.op === 'imgChromaRange') {imgChromaRange.value = effect.value; scheduleCombine(); return;}
   if (effect.op === 'derivation') {derivationConfig.value = effect.value; schedule(); return;}
   // Sort order is a pure display concern — it never changes what the engine
-  // derives, so unlike every branch above there's no schedule()/scheduleReextract()
+  // derives, so unlike every branch above there's no schedule()/scheduleCombine()
   // call here on purpose.
   if (effect.op === 'roleSort') {roleSortKeys.value = effect.value; return;}
 }
@@ -548,23 +844,16 @@ function populatePickerFromImage(effect: PopulatePickerFromImageEffectType): voi
 }
 registerPopulatePickerFromImageHandler(populatePickerFromImage);
 
-const { 'cardIndex': navigationTargetCardIndex, 'resolve': resolveNavigationTarget } = useNavigationTargets();
+const { 'activateTarget': activateNavigationTarget } = useNavigationTargets();
 
 /**
  * Resolves a NAVIGATE_TO_TARGET effect's targetId against the navigation
- * target table and moves there: a card target re-enters the FSM as
- * SELECT_CARD (the same transition the ToC bar and carousel dots use); a doc
- * target scrolls its card into view (docs sit outside carousel state
- * entirely, so there's no card index to select for them).
+ * target table and moves there. useNavigationTargets.ts owns the resolution
+ * logic (which stage a card belongs to, how to scroll to it) since it also
+ * owns the target table itself.
  */
 function navigateToTarget(effect: NavigateToTargetEffectType): void {
-  const target = resolveNavigationTarget(effect.targetId);
-  if (!target) {return;}
-  if (target.kind === 'card') {
-    sendUiEvent({ 'index': navigationTargetCardIndex(target.id), 'type': IridisUiActionType.SELECT_CARD });
-  } else if (typeof document !== 'undefined') {
-    document.getElementById(target.id)?.scrollIntoView({ 'behavior': 'smooth', 'block': 'start', 'inline': 'nearest' });
-  }
+  activateNavigationTarget(effect.targetId);
 }
 registerNavigateToTargetHandler(navigateToTarget);
 
@@ -575,16 +864,34 @@ function logoUrl(): string {
 }
 
 /**
- * Performs image extraction for the FSM's EXTRACT_IMAGE effect (an uploaded
- * file, or the built-in sample — the iridis logo). Registered below via
- * registerExtractImageHandler — ImageMode.vue sends EXTRACT_IMAGE events
- * rather than calling FromImage.extract directly.
+ * Performs image extraction for the FSM's EXTRACT_IMAGE effect (one or more
+ * uploaded files, or the built-in sample — the iridis logo). Registered
+ * below via registerExtractImageHandler. The sample is added as ONE MORE
+ * `uploadedImages` entry, same as any uploaded file — it never replaces
+ * what's already uploaded.
  */
 async function extractImageEffect(effect: ExtractImageEffectType): Promise<void> {
-  const src = effect.source === 'file' ? effect.file : logoUrl();
-  await FromImage.extract(src);
+  if (effect.source === 'sample') {
+    await addUploadedImages([logoUrl()], ['Sample']);
+    return;
+  }
+  const files = Array.isArray(effect.file) ? effect.file : [effect.file as File];
+  await addUploadedImages(files);
 }
 registerExtractImageHandler(extractImageEffect);
+
+/**
+ * Swaps imageSeeds to a candidate palette from gallery:extractCandidates
+ * (PaletteCandidatePicker.vue) instead of the default gallery:dominantColors
+ * extraction. schedule() re-runs the color pipeline against the new seeds —
+ * the image itself is not re-decoded, only which palette themes the page.
+ */
+function selectImageCandidate(effect: SelectImageCandidateEffectType): void {
+  imageSeeds.value = [...effect.hexes];
+  selectedCandidateLabel.value = effect.label;
+  schedule();
+}
+registerSelectImageCandidateHandler(selectImageCandidate);
 
 let booted = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -592,13 +899,6 @@ function schedule(): void {
   if (typeof window === 'undefined') {return;}
   if (timer !== undefined) {clearTimeout(timer);}
   timer = setTimeout(() => { run(); }, 120);
-}
-
-let extractTimer: ReturnType<typeof setTimeout> | undefined;
-function scheduleReextract(): void {
-  if (typeof window === 'undefined' || lastImageSrc.value === null) {return;}
-  if (extractTimer !== undefined) {clearTimeout(extractTimer);}
-  extractTimer = setTimeout(() => { void FromImage.extract(lastImageSrc.value!); }, 180);
 }
 
 export function useIridis() {
@@ -610,26 +910,29 @@ export function useIridis() {
     run();
     if (typeof window !== 'undefined') {
       // Load default sample palette on page init
-      void FromImage.extract(logoUrl());
+      void addUploadedImages([logoUrl()], ['Sample']);
       // framing is intentionally absent here — its swap is dispatched synchronously
       // by setPaletteParam() via run(effect.value), not through this debounce.
       watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig], schedule, { 'deep': true });
-      watch([schemaName, imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleReextract, { 'deep': true });
+      watch([schemaName, imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true });
     }
   }
   return {
-    'activeSeeds': activeSeeds, 'contrastStrictness': contrastStrictness, 'colorSpace': colorSpace, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
+    'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'combineLocked': combineLocked, 'contrastStrictness': contrastStrictness, 'colorSpace': colorSpace, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
     'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig,
     'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale, 'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
+    'effectiveHexesFor': effectiveHexesFor,
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
     'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
-    'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'lastImageSrc': lastImageSrc, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
+    'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'lastImageSrc': lastImageSrc, 'lastImageSrcs': lastImageSrcs, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
+    'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine,
     'roles': roles, 'roleViews': roleViews, 'roleClamps': roleClamps,
     'roleDistances': roleDistances,
     'roleSortKeys': roleSortKeys, 'sortedRoleContrastRows': sortedRoleContrastRows,
     'rolesSynthesized': rolesSynthesized,
     'rolesPinned': rolesPinned,
     'rolesDerived': rolesDerived,
-    'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName, 'send': sendUiEvent
+    'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName, 'selectEntryCandidate': selectEntryCandidate, 'selectedCandidateLabel': selectedCandidateLabel, 'send': sendUiEvent,
+    'updateUploadedImageSetting': updateUploadedImageSetting, 'uploadedImages': uploadedImages
   };
 }

@@ -26,6 +26,7 @@ export enum IridisUiActionType {
   SET_DERIVATION_CONFIG = 'SET_DERIVATION_CONFIG',
   EXTRACT_IMAGE = 'EXTRACT_IMAGE',
   POPULATE_PICKER_FROM_IMAGE = 'POPULATE_PICKER_FROM_IMAGE',
+  SELECT_IMAGE_CANDIDATE = 'SELECT_IMAGE_CANDIDATE',
   DIAGRAM_ZOOM = 'DIAGRAM_ZOOM',
   DIAGRAM_PAN = 'DIAGRAM_PAN',
   DIAGRAM_RESET = 'DIAGRAM_RESET',
@@ -71,8 +72,9 @@ export type IridisUiEventType =
   | { 'range': [number, number][]; 'type': IridisUiActionType.SET_IMAGE_CHROMA_RANGE }
   | { 'config': DerivationConfig; 'type': IridisUiActionType.SET_DERIVATION_CONFIG }
   | { 'source': 'sample'; 'type': IridisUiActionType.EXTRACT_IMAGE }
-  | { 'file': File; 'source': 'file'; 'type': IridisUiActionType.EXTRACT_IMAGE }
+  | { 'file': File | readonly File[]; 'source': 'file'; 'type': IridisUiActionType.EXTRACT_IMAGE }
   | { 'hues': string[]; 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE }
+  | { 'hexes': string[]; 'label': string; 'type': IridisUiActionType.SELECT_IMAGE_CANDIDATE }
   | { 'factor': number; 'type': IridisUiActionType.DIAGRAM_ZOOM }
   | { 'dx': number; 'dy': number; 'type': IridisUiActionType.DIAGRAM_PAN }
   | { 'type': IridisUiActionType.DIAGRAM_RESET }
