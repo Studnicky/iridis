@@ -137,9 +137,9 @@ const naturalSize = (svg: SVGSVGElement): { w: number, h: number } => {
   return { w: 1024, h: 768 };
 };
 
+/** Every var name this is called with (--ui-bg-elevated/--ui-text-highlighted/--ui-primary/--ui-bg) is written by Tokens.apply() synchronously before any component mounts — never a hardcoded placeholder. */
 const getComputedColor = (varName: string): string => {
-  const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-  return value || '#ffffff';
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
 };
 
 const renderMermaid = async () => {

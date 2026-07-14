@@ -22,7 +22,6 @@ export default defineNuxtConfig({
   ],
   css: [
     '~/assets/css/main.css',
-    '~/assets/css/theme-default.css'
   ],
   components: [
     { path: '~/components/content', pathPrefix: false },

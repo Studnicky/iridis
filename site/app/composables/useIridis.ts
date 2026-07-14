@@ -164,7 +164,16 @@ const mode = computed<ModeType>({
   'get': () => { const result = uiState.value.mode; return result; },
   'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': IridisUiActionType.SELECT_MODE }); return result; }
 });
-const pickerSeeds = ref<PickerSeedType[]>([]);
+/**
+ * A non-empty starting seed, identical on server and client, so run() (which
+ * early-returns while activeSeeds is empty) actually resolves a real role set
+ * from the very first render — including during SSR/prerender, where the
+ * default sample image (logo.png, extracted asynchronously below, client-only
+ * since decoding needs a canvas) hasn't loaded yet. Superseded the moment
+ * that extraction resolves; every color everywhere still traces back to a
+ * real engine.run() output, never a per-component hardcoded placeholder.
+ */
+const pickerSeeds = ref<PickerSeedType[]>([{ 'hex': '#7c3aed' }]);
 /** Same shape as pickerSeeds — a role pinned here (image mode) and a role
  * pinned there (picker mode) are the exact same concept, so both modes share
  * one representation instead of a parallel hex-only list plus a separate
@@ -247,7 +256,10 @@ const running = ref<boolean>(false);
 const roleSortKeys = ref<RoleSortKeyType[]>([{ 'desc': true, 'field': 'compliance' }, { 'desc': true, 'field': 'ratio' }]);
 
 const roleContrastRows = computed<(RoleSortableRowType & { hex: string })[]>(() => {
-  const bg = roles.value['background'] ?? '#000000';
+  // 'background' is a required role in every schema tier (RoleSchemaByName.ts),
+  // and run() resolves it synchronously before any component can read this —
+  // never a hardcoded placeholder.
+  const bg = roles.value['background']!;
   return roleViews.value.map((r) => {
     const ratio = contrastRatio(r.hex, bg);
     return { 'c': r.c, 'compliance': complianceFor(ratio), 'h': r.h, 'hex': r.hex, 'l': r.l, 'name': r.name, 'ratio': ratio };
@@ -748,7 +760,10 @@ function selectEntryCandidate(id: string, label: string): void {
  */
 function mutateSeeds(effect: MutateSeedsEffectType): void {
   if (effect.op === 'add') {
-    if (pickerSeeds.value.length < 32) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? '#888888' }];}
+    // A freshly added seed with no explicit hex starts as the current
+    // engine-resolved brand color (a required role in every schema tier),
+    // never a hardcoded placeholder — the user edits it from there.
+    if (pickerSeeds.value.length < 32) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? roles.value['brand']! }];}
   } else if (effect.op === 'remove') {
     if (pickerSeeds.value.length > 1) {pickerSeeds.value = pickerSeeds.value.filter((_, idx) => {return idx !== effect.index;});}
   } else if (effect.op === 'set') {

@@ -24,7 +24,9 @@ const densityOptions = ['compact', 'cozy', 'spacious'];
 /** A real filter applied to the avatar/badge row below, not decoration. */
 const checkedColors = ref<ColorType[]>(['primary', 'success', 'error']);
 
-const bg = computed<string>(() => roles.value['background'] ?? '#000000');
+// 'background' is required in every schema tier and resolved synchronously
+// before any component reads this — never a hardcoded placeholder.
+const bg = computed<string>(() => roles.value['background']!);
 const complianceLabel = computed(() => ['AA', 'AAA', 'APCA'][contrastStrictness.value] ?? 'AA');
 /** Reads the same sortedRoleContrastRows every other compliance display on
  * the page reads — never a second independent contrastRatio() sweep, so
