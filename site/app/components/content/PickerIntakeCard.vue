@@ -4,6 +4,7 @@ import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
+import { isValidHex } from '~/utils/isValidHex.ts';
 
 /**
  * The Refine stage's "Manual" card — manual seed-color entry, the first card
@@ -24,6 +25,24 @@ type SeedCardItemType = { hex: string };
 const seedCardItems = computed<SeedCardItemType[]>(() => {
   return pickerSeeds.value.map((s) => {return { hex: s.hex };});
 });
+
+/**
+ * The hex text next to the swatch used to be a plain read-only label — the
+ * only way to actually change a seed was the native `<input type="color">`
+ * swatch's own OS picker, with no way to type or paste an exact hex value.
+ * Committing an edit re-validates against the same 6-digit `#rrggbb` check
+ * every engine-output filter uses; an invalid value is dropped (the input
+ * snaps back to the last valid hex on its own next render) rather than ever
+ * reaching SET_SEED with a malformed hex.
+ */
+function commitHexText(index: number, event: Event): void {
+  const value = (event.target as HTMLInputElement).value.trim();
+  if (isValidHex(value)) {
+    sendPickerAction({ hex: value, index: index, type: IridisUiActionType.SET_SEED });
+  } else {
+    (event.target as HTMLInputElement).value = pickerSeeds.value[index]?.hex ?? '';
+  }
+}
 </script>
 
 <template>
@@ -66,9 +85,20 @@ const seedCardItems = computed<SeedCardItemType[]>(() => {
               :value="card.hex"
               type="color"
               class="h-10 w-10 cursor-pointer rounded-md border-0 bg-transparent flex-none"
+              :aria-label="`Seed ${i} color picker`"
               @change="sendPickerAction({ type: IridisUiActionType.SET_SEED, index: i, hex: ($event.target as HTMLInputElement).value })"
             >
-            <span class="font-mono text-xs text-muted truncate">{{ card.hex }}</span>
+            <input
+              :value="card.hex"
+              type="text"
+              inputmode="text"
+              spellcheck="false"
+              maxlength="7"
+              class="min-w-0 flex-1 truncate rounded border border-transparent bg-transparent font-mono text-xs text-muted focus:border-default focus:text-highlighted focus:outline-none"
+              :aria-label="`Seed ${i} hex value`"
+              @change="commitHexText(i, $event)"
+              @keydown.enter="($event.target as HTMLInputElement).blur()"
+            >
           </div>
         </template>
       </BalancedWrap>
