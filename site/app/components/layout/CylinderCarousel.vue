@@ -413,7 +413,16 @@ onBeforeUnmount(() => {
   flex: none; display: flex; align-items: center; justify-content: center;
   padding: 0.6rem 1rem;
   font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--ui-color-primary-400);
+  /* A raw palette shade (e.g. primary-400) is a decorative pick, never
+     contrast-checked against any background — it happens to read fine on the
+     dark glass card in dark framing but fails AA/AAA in light framing, where
+     the same shade sits on a near-white tinted surface. --ui-text-highlighted
+     is one of the engine's actual contrast-ENFORCED roles (text-strong vs
+     background, verified by enforce:contrast) — same as this card's own
+     93%-background glass surface — so it stays compliant in both framings.
+     The glow stays purely in the text-shadow, which doesn't touch fill
+     contrast. */
+  color: var(--ui-text-highlighted);
   border-bottom: 1px solid color-mix(in oklch, var(--glow) 22%, transparent);
   text-shadow: 0 0 12px color-mix(in oklch, var(--glow) 60%, transparent);
 }
