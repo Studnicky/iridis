@@ -1048,7 +1048,16 @@ const unhappyScenarios: readonly ScenarioInterface<UnhappyInput, UnhappyOutput>[
         engine.adopt(vscodePlugin);
         engine.pipeline(['vscode:expandTokens']);
         // No roles in input — roles map will be empty after running
-        return engine.run({ 'colors': [], 'roles': vscodeRoleSchema16 } as InputInterface);
+        return engine.run({
+          'bypass':    undefined,
+          'colors':    [],
+          'contrast':  undefined,
+          'emit':      undefined,
+          'maxColors': undefined,
+          'metadata':  undefined,
+          'roles':     vscodeRoleSchema16,
+          'runtime':   undefined,
+        } as InputInterface);
       },
     },
     assert(_output, error) {

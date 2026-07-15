@@ -10,9 +10,10 @@ export enum IridisUiEffectVariant {
   'UPDATE_DIAGRAM_VIEW' = 'UPDATE_DIAGRAM_VIEW'
 }
 
+import type { GalleryAlgorithmType } from '@studnicky/iridis-image/types';
+
 import type { DerivationConfigType } from './colorDerivation.ts';
 import type { FramingType } from './framing.ts';
-import type { GalleryAlgorithmType } from './galleryAlgorithm.ts';
 import type { RoleSortKeyType } from './roleSortKey.ts';
 
 /**
@@ -23,7 +24,7 @@ import type { RoleSortKeyType } from './roleSortKey.ts';
  * actual mutation.
  */
 export type IridisUiEffectType =
-  | { 'hex'?: string; 'op': 'add'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
+  | { 'hex': string | undefined; 'op': 'add'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
   | { 'index': number; 'op': 'remove'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
   | { 'hex': string; 'index': number; 'op': 'set'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
   | { 'index': number; 'role': string | undefined; 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }

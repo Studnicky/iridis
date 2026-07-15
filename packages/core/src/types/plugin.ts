@@ -4,8 +4,8 @@ import type { TaskInterface } from './pipeline.ts';
 export type JSONSchemaType = Record<string, unknown>;
 
 export interface PluginSchemaContributionInterface {
-  readonly 'metadata'?: Readonly<Record<string, JSONSchemaType>>;
-  readonly 'outputs'?:  Readonly<Record<string, JSONSchemaType>>;
+  readonly 'metadata': Readonly<Record<string, JSONSchemaType>> | undefined;
+  readonly 'outputs':  Readonly<Record<string, JSONSchemaType>> | undefined;
 }
 
 export interface PluginInterface {

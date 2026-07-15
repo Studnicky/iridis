@@ -12,13 +12,6 @@
 
 import type { FramingType, RoleHexMapType, ScaleMapType } from '../composables/types/index.ts';
 
-/** The 7 Nuxt UI semantic aliases, in the display order every demo card on
- * the site uses — the single canonical list. Components previously each
- * hardcoded their own copy of this array (and had quietly drifted into 3
- * different orderings/subsets); import this instead of retyping it. */
-export const ALIAS_COLOR_NAMES = ['primary', 'secondary', 'success', 'warning', 'error', 'info', 'neutral'] as const;
-export type AliasColorType = (typeof ALIAS_COLOR_NAMES)[number];
-
 /** Nuxt UI alias → ordered candidate source roles (first present wins). */
 const ALIAS_SOURCE: Record<string, readonly string[]> = {
   'error':     ['error', 'brand'],
@@ -38,16 +31,16 @@ const SHORTCUT_SOURCE: Record<string, readonly string[]> = {
   '--ui-border':          ['border', 'divider', 'muted'],
   '--ui-border-accented': ['border-strong', 'border', 'muted'],
   '--ui-border-muted':    ['divider', 'border', 'muted'],
+  '--ui-error-contrast':  ['on-error', 'error-contrast', 'background'],
+  '--ui-info-contrast':   ['on-info', 'info-contrast', 'background'],
   '--ui-primary':         ['brand'],
   '--ui-primary-contrast':['on-brand', 'brand-contrast', 'background'],
-  '--ui-error-contrast':  ['on-error', 'error-contrast', 'background'],
   '--ui-success-contrast':['on-success', 'success-contrast', 'background'],
-  '--ui-warning-contrast':['on-warning', 'warning-contrast', 'background'],
-  '--ui-info-contrast':   ['on-info', 'info-contrast', 'background'],
   '--ui-text':            ['text'],
   '--ui-text-dimmed':     ['muted', 'text-subtle', 'text'],
   '--ui-text-highlighted': ['text-strong', 'text'],
-  '--ui-text-muted':      ['text-subtle', 'muted', 'text']
+  '--ui-text-muted':      ['text-subtle', 'muted', 'text'],
+  '--ui-warning-contrast':['on-warning', 'warning-contrast', 'background']
 };
 
 function pick(roles: RoleHexMapType, candidates: readonly string[]): string | undefined {
@@ -69,8 +62,8 @@ export class Tokens {
     for (const [alias, candidates] of Object.entries(ALIAS_SOURCE)) {
       for (const shade of Tokens.SHADE_KEYS) {
         const perShade = scales[shade];
-        let hex = perShade ? pick(perShade, candidates) : undefined;
-        if (hex === undefined) { hex = pick(roles, candidates); }
+        let hex = perShade !== undefined ? pick(perShade, candidates) : undefined;
+        hex ??= pick(roles, candidates);
         if (hex !== undefined) {tokens[`--ui-color-${alias}-${shade}`] = hex;}
       }
     }
@@ -94,7 +87,8 @@ export class Tokens {
 
   /** Serializes engine tokens as a highly specific rule for SSR head injection to override UI framework defaults. */
   static toCssText(tokens: RoleHexMapType): string {
-    const decls = Object.entries(tokens).map(([k, v]) => {return `${k}:${v}`;}).join(';');
+    const decls = Object.entries(tokens).map(([k, v]) => {const result = `${k}:${v}`;
+      return result;}).join(';');
     return `html:root, html:root.dark, html:root:not(.dark) {${decls}}`;
   }
 
@@ -109,8 +103,8 @@ export class Tokens {
   /** Resolve the same engine hex mapFromEngine would write to `--ui-color-${alias}-${shade}`, for callers that need the hex value itself rather than the CSS variable. */
   static resolveAliasShadeHex(roles: RoleHexMapType, scales: ScaleMapType, alias: string, shade: number): string | undefined {
     const candidates = ALIAS_SOURCE[alias];
-    if (!candidates) {return undefined;}
+    if (candidates === undefined) {return undefined;}
     const perShade = scales[shade];
-    return (perShade ? pick(perShade, candidates) : undefined) ?? pick(roles, candidates);
+    return (perShade !== undefined ? pick(perShade, candidates) : undefined) ?? pick(roles, candidates);
   }
 }

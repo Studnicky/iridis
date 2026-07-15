@@ -104,11 +104,11 @@ new ScenarioRunner<LightnessRangeInput, LightnessRangeOutput>(
   async (input) => {
     const schema: RoleSchemaInterfaceType = {
       'name': 'lr-schema',
-      'roles': [{ 'name': input.roleName, 'required': true, 'lightnessRange': input.range }],
+      'roles': [{ 'name': input.roleName, 'required': true, 'lightnessRange': input.range, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined }], 'contrastPairs': undefined, 'description': undefined,
     };
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles']);
-    const state = await engine.run({ 'colors': input.colors, 'roles': schema });
+    const state = await engine.run({ 'colors': input.colors, 'roles': schema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const role  = state.roles[input.roleName] as RoleEntry | undefined;
     return { roleAssigned: role !== undefined, l: role?.oklch.l ?? -1 };
   },
@@ -164,11 +164,11 @@ new ScenarioRunner<ChromaRangeInput, ChromaRangeOutput>(
   async (input) => {
     const schema: RoleSchemaInterfaceType = {
       'name': 'cr-schema',
-      'roles': [{ 'name': 'neutral', 'required': true, 'chromaRange': input.range }],
+      'roles': [{ 'name': 'neutral', 'required': true, 'chromaRange': input.range, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }], 'contrastPairs': undefined, 'description': undefined,
     };
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles']);
-    const state = await engine.run({ 'colors': input.colors, 'roles': schema });
+    const state = await engine.run({ 'colors': input.colors, 'roles': schema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const role  = state.roles['neutral'] as RoleEntry | undefined;
     return { roleAssigned: role !== undefined, c: role?.oklch.c ?? -1 };
   },
@@ -218,11 +218,11 @@ new ScenarioRunner<HueOffsetInput, HueOffsetOutput>(
   async (input) => {
     const schema: RoleSchemaInterfaceType = {
       'name': 'ho-schema',
-      'roles': [{ 'name': 'anchor', 'required': true, 'hueOffset': input.hueOffset }],
+      'roles': [{ 'name': 'anchor', 'required': true, 'hueOffset': input.hueOffset, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined, 'lightnessRange': undefined }], 'contrastPairs': undefined, 'description': undefined,
     };
     const engine = freshEngine();
     engine.pipeline(['intake:any', 'resolve:roles']);
-    const state = await engine.run({ 'colors': input.colors, 'roles': schema });
+    const state = await engine.run({ 'colors': input.colors, 'roles': schema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const role  = state.roles['anchor'] as RoleEntry | undefined;
     return { roleAssigned: role !== undefined, h: role?.oklch.h ?? -1 };
   },
@@ -280,11 +280,17 @@ new ScenarioRunner<CombinedInput, CombinedOutput>(
         'required':       true,
         'lightnessRange': input.lRange,
         'chromaRange':    input.cRange,
-      }],
+        'derivedFrom': undefined,
+        'description': undefined,
+        'hue': undefined,
+        'hueClamp': undefined,
+        'hueOffset': undefined,
+        'intent': undefined
+      }], 'contrastPairs': undefined, 'description': undefined,
     };
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles']);
-    const state = await engine.run({ 'colors': input.colors, 'roles': schema });
+    const state = await engine.run({ 'colors': input.colors, 'roles': schema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const role  = state.roles['tight'] as RoleEntry | undefined;
     return { roleAssigned: role !== undefined, l: role?.oklch.l ?? -1, c: role?.oklch.c ?? -1 };
   },
@@ -355,11 +361,16 @@ new ScenarioRunner<SynthesisInput, SynthesisOutput>(
         'lightnessRange': input.lRange,
         'chromaRange':    input.cRange,
         'hueOffset':      input.hueOffset,
-      }],
+        'derivedFrom': undefined,
+        'description': undefined,
+        'hue': undefined,
+        'hueClamp': undefined,
+        'intent': undefined
+      }], 'contrastPairs': undefined, 'description': undefined,
     };
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles']);
-    const state = await engine.run({ 'colors': [], 'roles': schema });
+    const state = await engine.run({ 'colors': [], 'roles': schema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const role       = state.roles['synth'] as RoleEntry | undefined;
     const synthList  = state.metadata['core:rolesSynthesized'];
     return {
@@ -434,11 +445,11 @@ new ScenarioRunner<OptionalRoleInput, OptionalRoleOutput>(
   async (input) => {
     const schema: RoleSchemaInterfaceType = {
       'name': 'opt-schema',
-      'roles': [{ 'name': 'maybe', 'required': false, 'lightnessRange': input.range }],
+      'roles': [{ 'name': 'maybe', 'required': false, 'lightnessRange': input.range, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined }], 'contrastPairs': undefined, 'description': undefined,
     };
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles']);
-    const state = await engine.run({ 'colors': input.colors, 'roles': schema });
+    const state = await engine.run({ 'colors': input.colors, 'roles': schema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const role  = state.roles['maybe'] as RoleEntry | undefined;
     return { roleAssigned: role !== undefined, l: role?.oklch.l ?? -1 };
   },

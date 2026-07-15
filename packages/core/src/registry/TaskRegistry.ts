@@ -82,7 +82,7 @@ export class TaskRegistry implements TaskRegistryInterface {
     const out: TaskManifestInterfaceType[] = [];
 
     for (const task of this.entries.values()) {
-      out.push(task.manifest ?? { 'name': task.name });
+      out.push(task.manifest ?? { 'description': undefined, 'name': task.name, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined });
     }
 
     return out;

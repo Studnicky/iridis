@@ -6,7 +6,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { sampleIndexToX, scaleChromaToY } from '../app/composables/colorStreamAxis.ts';
+import { sampleIndexToX } from '../app/composables/sampleIndexToX.ts';
+import { scaleChromaToY } from '../app/composables/scaleChromaToY.ts';
 
 test('scaleChromaToY maps the min to the bottom and the max to the top, with padding', () => {
   const bottom = scaleChromaToY(0, 0, 1, 100);

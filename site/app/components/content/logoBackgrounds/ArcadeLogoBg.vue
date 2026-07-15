@@ -5,7 +5,7 @@
  * 8-bit sprite blink, each on its own offset so the ring flashes in a retro
  * chase pattern rather than all at once.
  */
-import { buildStaggeredItems } from '~/utils/staggeredItems';
+import { buildStaggeredItems } from '~/utils/buildStaggeredItems';
 
 const PIXEL_ROLES = ['primary', 'success', 'warning', 'error', 'info', 'secondary', 'primary', 'success'];
 const PIXEL_COUNT = 8;

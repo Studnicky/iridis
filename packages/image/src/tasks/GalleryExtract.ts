@@ -10,6 +10,7 @@ import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { GalleryAlgorithmType } from '../types/augmentation.ts';
+
 import { ClusterDispatcher } from './ClusterDispatcher.ts';
 
 /**
@@ -54,7 +55,9 @@ class GalleryExtract implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Reduce input records to K dominant colors via median-cut (weighted) or deltaE-merge clustering',
     'name':        'gallery:extract',
+    'phase':       undefined,
     'reads':       ['colors', 'metadata.gallery'],
+    'requires':    undefined,
     'writes':      ['colors', 'metadata.gallery:dominantColors']
   };
 
@@ -96,21 +99,23 @@ class GalleryExtract implements TaskInterface {
       state.colors,
       algorithm,
       k,
-      galleryConfig?.deltaECap,
-      (before, after, cap) => {
-        ctx.logger.debug(
-          LogBody.create()
-            .component('GalleryExtract')
-            .operation('run')
-            .status(LOG_STATUS.PARTIAL)
-            .message('trimmed delta-E input by weight')
-            .context({
-              'after':  after,
-              'before': before,
-              'cap':    cap
-            })
-            .build()
-        );
+      {
+        'deltaECap': galleryConfig?.deltaECap,
+        'onTrim':    (before, after, cap) => {
+          ctx.logger.debug(
+            LogBody.create()
+              .component('GalleryExtract')
+              .operation('run')
+              .status(LOG_STATUS.PARTIAL)
+              .message('trimmed delta-E input by weight')
+              .context({
+                'after':  after,
+                'before': before,
+                'cap':    cap
+              })
+              .build()
+          );
+        }
       }
     );
 

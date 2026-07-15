@@ -13,7 +13,9 @@ class EnforceWcagAaa implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Enforce WCAG 2.1 AAA contrast (7:1 normal text, 4.5:1 large/UI) on all role pairs.',
     'name':        'enforce:wcagAAA',
+    'phase':       undefined,
     'reads':       ['input.roles.contrastPairs', 'roles'],
+    'requires':    undefined,
     'writes':      ['roles', 'metadata[\'contrast:aaa\']']
   };
 

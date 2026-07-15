@@ -39,13 +39,14 @@ test('evaluate: t=0.5 with linear easing lands at the per-role midpoint', () => 
 
 test('evaluate: an easing function reshapes progress before lerp', () => {
   const linearMid = evaluate(FROM, TO, 0.5).background!.l;
-  const steppedEarly = evaluate(FROM, TO, 0.5, { 'easing': () => 0.1 }).background!.l;
+  const steppedEarly = evaluate(FROM, TO, 0.5, { 'chromaticDetourRoles': undefined, 'easing': () => 0.1, 'hueDirection': undefined }).background!.l;
   assert.notStrictEqual(linearMid, steppedEarly);
 });
 
 test('evaluate: chromaticDetourRoles routes the accent hue through green at t=0.5', () => {
   const mid = evaluate(FROM, TO, 0.5, {
     'chromaticDetourRoles': ['accent'],
+    'easing':               undefined,
     'hueDirection':         'clockwise'
   });
   assert.ok(mid['accent']!.h >= 90 && mid['accent']!.h <= 150, `accent hue ${mid['accent']!.h} in green band`);

@@ -48,13 +48,16 @@ const DEFAULT_BITS_PER_CHANNEL = 5;
 /** Accepts either a single range or a list of ranges (union) so callers who only need one envelope don't have to wrap it. */
 type RangeOrRangesType = readonly [number, number] | readonly (readonly [number, number])[];
 
-function toRangeList(range: RangeOrRangesType): readonly (readonly [number, number])[] {
-  return typeof range[0] === 'number' ? [range as readonly [number, number]] : range as readonly (readonly [number, number])[];
+class RangeList {
+  static to(range: RangeOrRangesType): readonly (readonly [number, number])[] {
+    return typeof range[0] === 'number' ? [range as readonly [number, number]] : range as readonly (readonly [number, number])[];
+  }
 }
 
 /** True if `v` falls inside any range in the list — multiple ranges are a union, not required to be contiguous. */
 function inAnyRange(v: number, ranges: readonly (readonly [number, number])[]): boolean {
-  return ranges.some(([lo, hi]) => {return v >= lo && v <= hi;});
+  const result = ranges.some(([lo, hi]) => {return v >= lo && v <= hi;});
+  return result;
 }
 
 function packBin(r: number, g: number, b: number, bits: number): number {
@@ -74,7 +77,9 @@ class GalleryHistogram implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Quantise pixels into a 5-bit-per-channel histogram; emits weighted records keyed by bin centroid.',
     'name':        'gallery:histogram',
+    'phase':       undefined,
     'reads':       ['colors'],
+    'requires':    undefined,
     'writes':      ['colors', 'metadata.gallery:histogram']
   };
 
@@ -97,8 +102,8 @@ class GalleryHistogram implements TaskInterface {
       | undefined;
     const rawBits = galleryConfig?.histogramBits ?? DEFAULT_BITS_PER_CHANNEL;
     const bits = Math.max(3, Math.min(7, Math.floor(rawBits)));
-    const lRanges = toRangeList(galleryConfig?.lightnessRange ?? [0, 1] as const);
-    const cRanges = toRangeList(galleryConfig?.chromaRange    ?? [0, 0.5] as const);
+    const lRanges = RangeList.to(galleryConfig?.lightnessRange ?? [0, 1] as const);
+    const cRanges = RangeList.to(galleryConfig?.chromaRange    ?? [0, 0.5] as const);
 
     const bins = new Map<number, BinAccumulatorInterface>();
     let totalPixels = 0;
@@ -142,7 +147,7 @@ class GalleryHistogram implements TaskInterface {
       const g = acc.gSum / acc.weight;
       const b = acc.bSum / acc.weight;
       const a = acc.aSum / acc.weight;
-      const record = colorRecordFactory.fromRgb(r, g, b, { 'alpha': a, 'hints': { 'weight': acc.weight }, 'sourceFormat': 'imagePixel' });
+      const record = colorRecordFactory.fromRgb(r, g, b, { 'alpha': a, 'hints': { 'intent': undefined, 'role': undefined, 'weight': acc.weight }, 'sourceFormat': 'imagePixel' });
       records.push(record);
       binSummary.push({ 'hex': record.hex, 'weight': acc.weight });
     }

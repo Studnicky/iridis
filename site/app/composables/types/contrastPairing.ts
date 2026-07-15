@@ -1,9 +1,9 @@
 import type { RoleViewType } from './roleView.ts';
 
 export type ContrastPairingType = {
-  'background': Pick<RoleViewType, 'hex' | 'name'>;
+  'background': RoleViewType;
   'complianceLabel': string;
-  'foreground': Pick<RoleViewType, 'hex' | 'name'>;
+  'foreground': RoleViewType;
   'key': 'darkOnLight' | 'lightOnDark' | 'lowContrast';
   'label': string;
   'ratio': number;

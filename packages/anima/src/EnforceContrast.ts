@@ -1,4 +1,3 @@
-import { Engine, colorRecordFactory, consoleLogger } from '@studnicky/iridis';
 import type {
   ColorRecordInterfaceType,
   InputInterface,
@@ -6,6 +5,8 @@ import type {
   PipelineContextInterface
 } from '@studnicky/iridis';
 import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+
+import { colorRecordFactory, consoleLogger, Engine } from '@studnicky/iridis';
 import { enforceWcagAa, enforceWcagAaa } from '@studnicky/iridis-contrast';
 
 import type { ContrastPairInputInterfaceType, EnforceLevelType } from './types/index.ts';
@@ -16,49 +17,70 @@ const enforceTaskByLevel = { 'aa': enforceWcagAa, 'aaa': enforceWcagAaa } as con
  * Shared placeholder engine for `ctx.engine`/`ctx.tasks`. The enforce tasks
  * invoked below only read `ctx.logger`, never engine state, so one instance
  * is safe to reuse across every call instead of allocating a fresh
- * `TaskRegistry` + ajv `Validator` on every animation frame.
+ * `TaskRegistry` + json-tology-backed `Validator` on every animation frame.
  */
 const engine = new Engine();
 
-const buildState = (
-  palette: PaletteInterfaceType,
-  pairs: readonly ContrastPairInputInterfaceType[]
-): PaletteStateInterface => {
-  const roles: Record<string, ColorRecordInterfaceType> = {};
-  for (const [role, oklch] of Object.entries(palette)) {
-    roles[role] = colorRecordFactory.fromOklch(oklch.l, oklch.c, oklch.h);
-  }
-
-  const roleNames = new Set<string>();
-  for (const pair of pairs) {
-    roleNames.add(pair.foreground);
-    roleNames.add(pair.background);
-  }
-
-  const input: InputInterface = {
-    'colors': [],
-    'roles': {
-      'contrastPairs': pairs.map((pair) => ({
-        'algorithm':  pair.algorithm ?? 'wcag21',
-        'background': pair.background,
-        'foreground': pair.foreground,
-        'minRatio':   pair.minRatio ?? 4.5
-      })),
-      'name':  'anima:frame',
-      'roles': [...roleNames].map((name) => ({ 'name': name, 'required': true }))
+/** Builds a {@link PaletteStateInterface} pipeline frame for the enforce tasks below. */
+class State {
+  static build(
+    palette: PaletteInterfaceType,
+    pairs: readonly ContrastPairInputInterfaceType[]
+  ): PaletteStateInterface {
+    const roles: Record<string, ColorRecordInterfaceType> = {};
+    for (const [role, oklch] of Object.entries(palette)) {
+      roles[role] = colorRecordFactory.fromOklch(oklch.l, oklch.c, oklch.h);
     }
-  };
 
-  return {
-    'colors':   [],
-    'input':    input,
-    'metadata': {},
-    'outputs':  {},
-    'roles':    roles,
-    'runtime':  {},
-    'variants': {}
-  };
-};
+    const roleNames = new Set<string>();
+    for (const pair of pairs) {
+      roleNames.add(pair.foreground);
+      roleNames.add(pair.background);
+    }
+
+    const input: InputInterface = {
+      'bypass':    undefined,
+      'colors':    [],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles': {
+        'contrastPairs': pairs.map((pair) => {return {
+          'algorithm':  pair.algorithm ?? 'wcag21',
+          'background': pair.background,
+          'foreground': pair.foreground,
+          'minRatio':   pair.minRatio ?? 4.5
+        };}),
+        'description': undefined,
+        'name':  'anima:frame',
+        'roles': [...roleNames].map((name) => {return {
+          'chromaRange':    undefined,
+          'derivedFrom':    undefined,
+          'description':    undefined,
+          'hue':            undefined,
+          'hueClamp':       undefined,
+          'hueOffset':      undefined,
+          'intent':         undefined,
+          'lightnessRange': undefined,
+          'name':           name,
+          'required':       true
+        };})
+      },
+      'runtime':   undefined
+    };
+
+    return {
+      'colors':   [],
+      'input':    input,
+      'metadata': {},
+      'outputs':  {},
+      'roles':    roles,
+      'runtime':  { 'colorSpace': undefined, 'extra': undefined, 'framing': undefined },
+      'variants': {}
+    };
+  }
+}
 
 /**
  * Re-validates one evaluated palette frame against WCAG contrast pairs by
@@ -71,9 +93,9 @@ export const enforceContrast = (
   pairs: readonly ContrastPairInputInterfaceType[],
   level: EnforceLevelType = 'aa'
 ): PaletteInterfaceType => {
-  if (pairs.length === 0) return palette;
+  if (pairs.length === 0) {return palette;}
 
-  const state = buildState(palette, pairs);
+  const state = State.build(palette, pairs);
   const ctx: PipelineContextInterface = {
     'engine':    engine,
     'logger':    consoleLogger,
@@ -86,7 +108,7 @@ export const enforceContrast = (
   const result: PaletteInterfaceType = { ...palette };
   for (const role of Object.keys(palette)) {
     const record = state.roles[role];
-    if (record === undefined) continue;
+    if (record === undefined) {continue;}
     result[role] = { 'c': record.oklch.c, 'h': record.oklch.h, 'l': record.oklch.l };
   }
   return result;

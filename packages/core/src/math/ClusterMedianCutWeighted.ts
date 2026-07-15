@@ -41,7 +41,7 @@ function bucketCentroid(bucket: BucketInterface): ColorRecordInterfaceType {
   const C = Math.sqrt(aMean * aMean + bMean * bMean);
   let H = (Math.atan2(bMean, aMean) * 180) / Math.PI;
   if (H < 0) {H += 360;}
-  return colorRecordFactory.fromOklch(L, C, H, { 'alpha': sumAlpha / sumW, 'hints': { 'weight': sumW }, 'sourceFormat': 'oklch' });
+  return colorRecordFactory.fromOklch(L, C, H, { 'alpha': sumAlpha / sumW, 'hints': { 'intent': undefined, 'role': undefined, 'weight': sumW }, 'sourceFormat': 'oklch' });
 }
 
 function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c'): number {

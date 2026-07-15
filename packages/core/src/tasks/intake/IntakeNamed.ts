@@ -175,7 +175,9 @@ class IntakeNamed implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses CSS named color strings (e.g. "rebeccapurple") into ColorRecord entries. Throws on unrecognised input.',
     'name':        'intake:named',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

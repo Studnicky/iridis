@@ -15,7 +15,7 @@ import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 const TIER_ORDER = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-32'];
 const { roles, framing, schemaName, roleSortKeys, sortedRoleContrastRows } = useIridis();
 
-type LeafType = { 'derivedFrom'?: string; 'hex'?: string; 'label': string; 'value': string };
+type LeafType = { 'derivedFrom': string | undefined; 'hex': string | undefined; 'label': string; 'value': string };
 type TierType = { 'children': LeafType[]; 'defaultExpanded': boolean; 'label': string; 'value': string };
 
 /** Looks up each leaf's l/c/h/ratio/compliance from the SAME sortedRoleContrastRows every other role listing reads, instead of recomputing OKLCH from hex a second time for a value the engine already resolved. */
@@ -65,9 +65,9 @@ const tree = computed<TierType[]>(() => {
     <UTree :items="tree">
       <template #item-leading="{ item }">
         <span
-          v-if="(item as LeafType).hex"
+          v-if="(item as unknown as LeafType).hex"
           class="h-3 w-3 shrink-0 rounded-full border border-default"
-          :style="{ backgroundColor: (item as LeafType).hex }"
+          :style="{ backgroundColor: (item as unknown as LeafType).hex }"
         />
       </template>
       <template #item-label="{ item }">
@@ -75,11 +75,11 @@ const tree = computed<TierType[]>(() => {
           <span class="font-mono text-xs">{{ item.label }}</span>
           <UBadge
             v-if="'derivedFrom' in item"
-            :color="(item as LeafType).derivedFrom === undefined ? 'success' : 'neutral'"
+            :color="(item as unknown as LeafType).derivedFrom === undefined ? 'success' : 'neutral'"
             variant="soft"
             size="xs"
           >
-            {{ (item as LeafType).derivedFrom === undefined ? 'resolved' : `← ${(item as LeafType).derivedFrom}` }}
+            {{ (item as unknown as LeafType).derivedFrom === undefined ? 'resolved' : `← ${(item as unknown as LeafType).derivedFrom}` }}
           </UBadge>
         </span>
       </template>

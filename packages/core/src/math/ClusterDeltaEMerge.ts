@@ -1,6 +1,6 @@
 import { ValidationError } from '@studnicky/errors';
 
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import type { ColorHintsInterfaceType, ColorRecordInterfaceType } from '../types/index.ts';
 
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { deltaE2000 } from './DeltaE2000.ts';
@@ -44,7 +44,7 @@ class Centroids {
     if (H < 0) {H += 360;}
     const alpha = (a.centroid.alpha * wa + b.centroid.alpha * wb) / tot;
     return {
-      'centroid': colorRecordFactory.fromOklch(L, C, H, { 'alpha': alpha, 'hints': { 'weight': tot }, 'sourceFormat': 'oklch' }),
+      'centroid': colorRecordFactory.fromOklch(L, C, H, { 'alpha': alpha, 'hints': { 'intent': undefined, 'role': undefined, 'weight': tot }, 'sourceFormat': 'oklch' }),
       'weight':   tot
     };
   }
@@ -88,11 +88,15 @@ class ClusterDeltaEMerge {
          the upstream task attached); otherwise reallocate via the factory
          (the only sanctioned allocation point; spread-append would
          break the monomorphic hidden class per ColorRecordInterfaceType
-         docs) while merging existing hint keys (`role`, `intent`, etc.)
-         with the stamped `weight: 1`. */
+         docs) while preserving the existing `role`/`intent` hints
+         alongside the stamped `weight: 1`. */
       return colors.map((c) => {
         if (typeof c.hints?.weight === 'number' && c.hints.weight > 0) {return c;}
-        const hints = { ...(c.hints ?? {}), 'weight': 1 };
+        const hints: ColorHintsInterfaceType = {
+          'intent': c.hints?.intent,
+          'role':   c.hints?.role,
+          'weight': 1
+        };
         return colorRecordFactory.fromOklch(c.oklch.l, c.oklch.c, c.oklch.h, { 'alpha': c.alpha, 'hints': hints, 'sourceFormat': c.sourceFormat });
       });
     }

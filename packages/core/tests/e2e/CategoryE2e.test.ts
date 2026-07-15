@@ -143,8 +143,8 @@ new ScenarioRunner<FullPipelineInput, FullPipelineOutput>(
     const state = await engine.run({
       'colors':   input.colors,
       'roles':    categoryW3cRoleSchema,
-      'contrast': { 'level': 'AA', 'algorithm': 'wcag21' },
-      'metadata': input.metadata,
+      'contrast': { 'level': 'AA', 'algorithm': 'wcag21', 'cvdCorrect': undefined, 'extra': undefined },
+      'metadata': input.metadata, 'bypass': undefined, 'emit': undefined, 'maxColors': undefined, 'runtime': undefined,
     });
     return {
       colorsLength: state.colors.length,
@@ -202,8 +202,8 @@ new ScenarioRunner<OutputShapeInput, OutputShapeOutput>(
     const state = await engine.run({
       'colors':   input.colors,
       'roles':    categoryW3cRoleSchema,
-      'contrast': { 'level': 'AA', 'algorithm': 'wcag21' },
-      'metadata': { ...BASE_METADATA },
+      'contrast': { 'level': 'AA', 'algorithm': 'wcag21', 'cvdCorrect': undefined, 'extra': undefined },
+      'metadata': { ...BASE_METADATA }, 'bypass': undefined, 'emit': undefined, 'maxColors': undefined, 'runtime': undefined,
     });
     const cssVars   = state.outputs['stylesheet:cssVars'] as CssVarsOutput;
     const statusBar = state.outputs['capacitor:statusBar'] as CapacitorOutput['statusBar'];

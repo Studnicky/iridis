@@ -15,8 +15,8 @@ import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 const DEFAULT_VARIANTS: readonly VariantConfigInterfaceType[] = [
-  { 'invertLightness': true,  'name': 'dark'  },
-  { 'invertLightness': false, 'name': 'light' }
+  { 'invertLightness': true,  'lightnessOffset': undefined, 'lightnessTarget': undefined, 'name': 'dark'  },
+  { 'invertLightness': false, 'lightnessOffset': undefined, 'lightnessTarget': undefined, 'name': 'light' }
 ];
 
 function invertLightness(color: ColorRecordInterfaceType): ColorRecordInterfaceType {
@@ -67,7 +67,9 @@ class DeriveVariant implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Produces light/dark variants by transforming all roles. Reads variantConfig from metadata or uses light/dark defaults.',
     'name':        'derive:variant',
+    'phase':       undefined,
     'reads':       ['roles', 'metadata[\'core:variantConfig\']'],
+    'requires':    undefined,
     'writes':      ['variants']
   };
 

@@ -42,6 +42,7 @@ class StylesheetPlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
+      'metadata': undefined,
       'outputs': {
         'stylesheet:cssVars':       cssVarsOutputSchema,
         'stylesheet:cssVarsScoped': cssVarsScopedOutputSchema

@@ -11,50 +11,47 @@
  */
 import { computed, shallowRef } from 'vue';
 
-import { STAGE_GROUPS } from './CarouselSections.ts';
-import { usePanelAccordion } from './usePanelAccordion.ts';
-
 import type { NavigationTargetInterfaceType } from './types/navigationTarget.ts';
 
-/** Shared with index.vue's docs `:id`/`AccordionPanel`'s `panel-id` construction — a doc's scroll anchor and its accordion panel id are both derived from the same raw path, so this is the one place that mapping lives. */
-export function sanitizeDocAnchorId(path: string): string {
-  return path.replace(/[^a-zA-Z0-9-]/g, '-').replace(/^-+|-+$/g, '');
-}
-export function docPanelId(path: string): string {
-  return `doc-${path}`;
-}
+import { docPanelId } from './docPanelId.ts';
+import { sanitizeDocAnchorId } from './sanitizeDocAnchorId.ts';
+import { STAGE_GROUPS } from './stageGroups.ts';
+import { usePanelAccordion } from './usePanelAccordion.ts';
 
 const docTargets = shallowRef<readonly NavigationTargetInterfaceType[]>([]);
 
 const cardTargets: readonly NavigationTargetInterfaceType[] = STAGE_GROUPS.flatMap((group) => {
-  return group.items.map((item) => {return { 'id': item.key, 'kind': 'card', 'label': item.label, 'stage': group.name } satisfies NavigationTargetInterfaceType;});
+  const result = group.items.map((item) => {return { 'id': item.key, 'kind': 'card', 'label': item.label, 'panelId': undefined, 'stage': group.name } satisfies NavigationTargetInterfaceType;});
+  return result;
 });
 
 const stageTargets: readonly NavigationTargetInterfaceType[] = STAGE_GROUPS.map((group) => {
-  return { 'id': group.name, 'kind': 'stage', 'label': group.label } satisfies NavigationTargetInterfaceType;
+  return { 'id': group.name, 'kind': 'stage', 'label': group.label, 'panelId': undefined, 'stage': undefined } satisfies NavigationTargetInterfaceType;
 });
 
-const targets = computed<readonly NavigationTargetInterfaceType[]>(() => [...cardTargets, ...stageTargets, ...docTargets.value]);
+const targets = computed<readonly NavigationTargetInterfaceType[]>(() => {return [...cardTargets, ...stageTargets, ...docTargets.value];});
 
 /** Called once by index.vue when the async docs query resolves. */
-function registerDocTargets(docs: ReadonlyArray<{ readonly path: string; readonly title?: string }>): void {
-  docTargets.value = docs.map((doc) => ({
+function registerDocTargets(docs: readonly { readonly 'path': string; readonly 'title'?: string }[]): void {
+  docTargets.value = docs.map((doc) => {return {
     'id': sanitizeDocAnchorId(doc.path),
     'kind': 'doc',
     'label': doc.title ?? doc.path,
-    'panelId': docPanelId(doc.path)
-  }));
+    'panelId': docPanelId(doc.path),
+    'stage': undefined
+  };});
 }
 
 function resolve(id: string): NavigationTargetInterfaceType | undefined {
-  return targets.value.find((target) => target.id === id);
+  const result = targets.value.find((target) => {return target.id === id;});
+  return result;
 }
 
 /** Index of a card target within its OWN stage's items array — what a stage carousel's local v-model expects. */
 function cardIndex(id: string): number {
   for (const group of STAGE_GROUPS) {
-    const index = group.items.findIndex((item) => item.key === id);
-    if (index !== -1) return index;
+    const index = group.items.findIndex((item) => {return item.key === id;});
+    if (index !== -1) {return index;}
   }
   return -1;
 }
@@ -72,7 +69,7 @@ function registerStageIndexSetter(stage: string, setter: (index: number) => void
 }
 
 function scrollToId(id: string): void {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
   document.getElementById(id)?.scrollIntoView({ 'behavior': 'smooth', 'block': 'start', 'inline': 'nearest' });
 }
 
@@ -91,7 +88,7 @@ let lastActivatedDocPanelId: string | undefined;
  */
 function activateTarget(id: string): void {
   const target = resolve(id);
-  if (!target) return;
+  if (target === undefined) {return;}
   if (target.kind === 'card' && target.stage !== undefined) {
     stageIndexSetters.get(target.stage)?.(cardIndex(target.id));
     scrollToId(target.stage);
@@ -110,6 +107,6 @@ function activateTarget(id: string): void {
 export function useNavigationTargets() {
   return {
     'activateTarget': activateTarget, 'registerDocTargets': registerDocTargets,
-    'registerStageIndexSetter': registerStageIndexSetter,
+    'registerStageIndexSetter': registerStageIndexSetter
   };
 }

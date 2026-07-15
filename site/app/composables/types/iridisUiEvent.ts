@@ -37,9 +37,10 @@ export enum IridisUiActionType {
   'SET_SEMANTIC_HUES_ENABLED' = 'SET_SEMANTIC_HUES_ENABLED'
 }
 
+import type { GalleryAlgorithmType } from '@studnicky/iridis-image/types';
+
 import type { DerivationConfigType } from './colorDerivation.ts';
 import type { FramingType } from './framing.ts';
-import type { GalleryAlgorithmType } from './galleryAlgorithm.ts';
 import type { ModeType } from './mode.ts';
 import type { RoleSortKeyType } from './roleSortKey.ts';
 
@@ -51,7 +52,7 @@ export type IridisUiEventType =
   | { 'type': IridisUiActionType.DRAG_START }
   | { 'dragPx': number; 'type': IridisUiActionType.DRAG_MOVE }
   | { 'count': number; 'shiftedBy': number; 'type': IridisUiActionType.DRAG_END }
-  | { 'hex'?: string; 'type': IridisUiActionType.ADD_SEED }
+  | { 'hex': string | undefined; 'type': IridisUiActionType.ADD_SEED }
   | { 'index': number; 'type': IridisUiActionType.REMOVE_SEED }
   | { 'hex': string; 'index': number; 'type': IridisUiActionType.SET_SEED }
   | { 'index': number; 'role': string | undefined; 'type': IridisUiActionType.PIN_SEED_ROLE }

@@ -176,8 +176,14 @@ new ScenarioRunner<HistogramBinInput, HistogramBinOutput>(
     const engine = freshEngine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
     const state = await engine.run({
-      'colors': [makeImageData(input.pixels)],
-      ...(input.meta !== undefined ? { 'metadata': input.meta } : {}),
+      'bypass':    undefined,
+      'colors':    [makeImageData(input.pixels)],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.meta,
+      'roles':     undefined,
+      'runtime':   undefined,
     });
     const totalWeight = state.colors.reduce((s, c) => s + (c.hints?.weight ?? 0), 0);
     const galMeta = state.metadata['gallery:histogram'] as GalleryHistogramMeta;
@@ -239,7 +245,16 @@ new ScenarioRunner<TransparentInput, TransparentOutput>(
   async (input) => {
     const engine = freshEngine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
-    const state = await engine.run({ 'colors': [makeImageData(input.pixels)] });
+    const state = await engine.run({
+      'bypass':    undefined,
+      'colors':    [makeImageData(input.pixels)],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     undefined,
+      'runtime':   undefined,
+    });
     const totalWeight = state.colors.reduce((s, c) => s + (c.hints?.weight ?? 0), 0);
     return { colorCount: state.colors.length, totalWeight };
   },
@@ -321,8 +336,14 @@ new ScenarioRunner<HistogramBitsInput, HistogramBitsOutput>(
     const engine = freshEngine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
     const state = await engine.run({
-      'colors':   [makeImageData(input.pixels)],
-      'metadata': { 'gallery': { 'histogramBits': input.histogramBits } },
+      'bypass':    undefined,
+      'colors':    [makeImageData(input.pixels)],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  { 'gallery': { 'histogramBits': input.histogramBits } },
+      'roles':     undefined,
+      'runtime':   undefined,
     });
     return { colorCount: state.colors.length };
   },
@@ -424,8 +445,14 @@ new ScenarioRunner<RangeFilterInput, RangeFilterOutput>(
     if (input.lightnessRange !== undefined) galleryMeta['lightnessRange'] = input.lightnessRange;
     if (input.chromaRange    !== undefined) galleryMeta['chromaRange']    = input.chromaRange;
     const state = await engine.run({
-      'colors':   [makeImageData(input.pixels)],
-      'metadata': { 'gallery': galleryMeta },
+      'bypass':    undefined,
+      'colors':    [makeImageData(input.pixels)],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  { 'gallery': galleryMeta },
+      'roles':     undefined,
+      'runtime':   undefined,
     });
     return { colorCount: state.colors.length };
   },
@@ -473,7 +500,16 @@ new ScenarioRunner<EmptyInputInput, EmptyInputOutput>(
   async (input) => {
     const engine = freshEngine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
-    const state = await engine.run({ 'colors': input.colors });
+    const state = await engine.run({
+      'bypass':    undefined,
+      'colors':    input.colors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     undefined,
+      'runtime':   undefined,
+    });
     return { colorCount: state.colors.length };
   },
 ).run(emptyInputScenarios);
@@ -564,7 +600,16 @@ new ScenarioRunner<GeometryInput, GeometryOutput>(
     const engine = freshEngine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
     const imgData = makeImageData(input.pixels, input.imageWidth);
-    const state = await engine.run({ 'colors': [imgData] });
+    const state = await engine.run({
+      'bypass':    undefined,
+      'colors':    [imgData],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     undefined,
+      'runtime':   undefined,
+    });
     const totalWeight = state.colors.reduce((s, c) => s + (c.hints?.weight ?? 0), 0);
     return { colorCount: state.colors.length, totalWeight };
   },
@@ -664,8 +709,14 @@ new ScenarioRunner<ExtractIntegrationInput, ExtractIntegrationOutput>(
     const engine = freshEngine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram', 'gallery:extract']);
     const state = await engine.run({
-      'colors':   [makeImageData(input.pixels)],
-      'metadata': { 'gallery': { 'k': input.k, 'algorithm': input.algorithm } },
+      'bypass':    undefined,
+      'colors':    [makeImageData(input.pixels)],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  { 'gallery': { 'k': input.k, 'algorithm': input.algorithm } },
+      'roles':     undefined,
+      'runtime':   undefined,
     });
     const totalWeight = state.colors.reduce((s, c) => s + (c.hints?.weight ?? 0), 0);
     return { resultCount: state.colors.length, totalWeight };
@@ -689,8 +740,14 @@ test('GalleryHistogram :: golden :: algorithm string round-trips through state.m
     [0, 255, 0, 255], [0, 255, 0, 255],
   ];
   const state = await engine.run({
-    'colors':   [makeImageData(pixels)],
-    'metadata': { 'gallery': { 'k': 2, 'algorithm': 'median-cut' } },
+    'bypass':    undefined,
+    'colors':    [makeImageData(pixels)],
+    'contrast':  undefined,
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  { 'gallery': { 'k': 2, 'algorithm': 'median-cut' } },
+    'roles':     undefined,
+    'runtime':   undefined,
   });
 
   const meta = state.metadata['gallery'] as { 'algorithm'?: string } | undefined;
@@ -767,14 +824,20 @@ test('GalleryHistogram :: regression :: saturated hues survive extraction despit
   const pixels = [...background, ...saturatedPatches];
 
   const state = await engine.run({
-    'colors':   [makeImageData(pixels)],
-    'metadata': {
+    'bypass':    undefined,
+    'colors':    [makeImageData(pixels)],
+    'contrast':  undefined,
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  {
       'gallery': {
         'k':         8,
         'algorithm': 'delta-e',
         'deltaECap': 128,
       },
     },
+    'roles':     undefined,
+    'runtime':   undefined,
   });
 
   const chromaticOutputs = state.colors.filter((c) => c.oklch.c >= 0.15);

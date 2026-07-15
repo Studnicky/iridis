@@ -5,7 +5,7 @@
  * delays keep at most one or two visible at once (an unhurried trickle, not
  * a shower), in soft muted engine tones with no glow/blur halo.
  */
-import { buildStaggeredItems } from '~/utils/staggeredItems';
+import { buildStaggeredItems } from '~/utils/buildStaggeredItems';
 
 const PETAL_ROLES = ['secondary', 'primary', 'secondary', 'primary'];
 

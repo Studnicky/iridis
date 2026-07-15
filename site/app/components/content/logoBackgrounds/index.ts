@@ -1,3 +1,5 @@
+import type { Component } from 'vue';
+
 /**
  * Composition root for per-theme logo-background effects — a lookup map, not
  * a branch, mirroring site/app/theme/particles/index.ts's PARTICLE_RENDERERS
@@ -16,8 +18,6 @@ import RestaurantLogoBg from './RestaurantLogoBg.vue';
 import RomanceLogoBg from './RomanceLogoBg.vue';
 import StartupLogoBg from './StartupLogoBg.vue';
 import StreamerLogoBg from './StreamerLogoBg.vue';
-
-import type { Component } from 'vue';
 
 export const LOGO_BACKGROUNDS: Record<string, Component> = {
   'arcade':      ArcadeLogoBg,

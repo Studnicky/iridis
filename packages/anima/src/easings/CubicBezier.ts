@@ -10,8 +10,11 @@ function calcBezier(t: number, a1: number, a2: number): number {
   return ((bezierA(a1, a2) * t + bezierB(a1, a2)) * t + bezierC(a1)) * t;
 }
 
-function getSlope(t: number, a1: number, a2: number): number {
-  return 3.0 * bezierA(a1, a2) * t * t + 2.0 * bezierB(a1, a2) * t + bezierC(a1);
+/** Derivative of the cubic-bezier curve at `t`, for Newton-Raphson iteration. */
+class Slope {
+  static get(t: number, a1: number, a2: number): number {
+    return 3.0 * bezierA(a1, a2) * t * t + 2.0 * bezierB(a1, a2) * t + bezierC(a1);
+  }
 }
 
 /**
@@ -24,8 +27,8 @@ export const cubicBezier = (p1x: number, p1y: number, p2x: number, p2y: number):
   const solveTForX = (x: number): number => {
     let guess = x;
     for (let i = 0; i < NEWTON_ITERATIONS; i += 1) {
-      const slope = getSlope(guess, p1x, p2x);
-      if (slope === 0) return guess;
+      const slope = Slope.get(guess, p1x, p2x);
+      if (slope === 0) {return guess;}
       const currentX = calcBezier(guess, p1x, p2x) - x;
       guess -= currentX / slope;
     }
@@ -33,8 +36,8 @@ export const cubicBezier = (p1x: number, p1y: number, p2x: number, p2y: number):
   };
 
   return (t: number): number => {
-    if (t <= 0) return 0;
-    if (t >= 1) return 1;
+    if (t <= 0) {return 0;}
+    if (t >= 1) {return 1;}
     return calcBezier(solveTForX(t), p1y, p2y);
   };
 };

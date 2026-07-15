@@ -30,6 +30,7 @@ class ApplyModifiers implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Produces base + per-modifier semantic token rules from MODIFIER_TRANSFORMS, ensuring each rule meets contrast against the background role.',
     'name':        'vscode:applyModifiers',
+    'phase':       undefined,
     'reads':       ['metadata.vscode:baseTokens', 'roles'],
     'requires':    ['vscode:expandTokens'],
     'writes':      ['metadata.vscode:semanticTokenRules']
@@ -49,7 +50,7 @@ class ApplyModifiers implements TaskInterface {
       if (tokenType === undefined) {continue;}
       const baseRecord = baseTokens[tokenType];
       if (baseRecord === undefined) {continue;}
-      rules[tokenType] = { 'foreground': recordToVscodeColor(baseRecord) };
+      rules[tokenType] = { 'fontStyle': undefined, 'foreground': recordToVscodeColor(baseRecord) };
     }
 
     // 23 token types × N modifiers from TOKEN_MODIFIERS (the VS Code spec set).
@@ -96,11 +97,7 @@ class ApplyModifiers implements TaskInterface {
         color = ensureContrast.apply(color, bgRecord, 4.5);
 
         const selector = `${tokenType}.${modifier}`;
-        const entry: SemanticRuleEntryInterfaceType = { 'foreground': recordToVscodeColor(color) };
-        if (transform.fontStyle !== undefined) {
-          entry.fontStyle = transform.fontStyle;
-        }
-        rules[selector] = entry;
+        rules[selector] = { 'fontStyle': transform.fontStyle, 'foreground': recordToVscodeColor(color) };
       }
     }
 

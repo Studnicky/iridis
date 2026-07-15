@@ -69,10 +69,8 @@ export class ImagePlugin implements PluginInterface {
         'gallery:dominantColors': galleryDominantColorsSchema,
         'gallery:harmonized':    galleryHarmonizedSchema,
         'gallery:histogram':     galleryHistogramSchema
-      }
+      },
+      'outputs': undefined
     };
   }
 }
-
-/** Singleton instance registered as the `image` plugin. */
-export const imagePlugin = new ImagePlugin();

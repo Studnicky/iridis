@@ -6,7 +6,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { __resetPanelAccordionForTests, usePanelAccordion } from '../app/composables/usePanelAccordion.ts';
+import { __resetPanelAccordionForTests } from '../app/composables/__resetPanelAccordionForTests.ts';
+import { usePanelAccordion } from '../app/composables/usePanelAccordion.ts';
 
 test('opening panels one at a time up to 3 keeps all 3 open', () => {
   __resetPanelAccordionForTests();

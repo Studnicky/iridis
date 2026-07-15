@@ -90,13 +90,13 @@ function variantOptions(algorithm: HueAlgorithmType): { label: string; value: nu
 function onAlgorithmChange(role: RoleMathEntryType, algorithm: HueAlgorithmType): void {
   const relation: RoleRelationDerivationType = algorithm === 'freeform'
     ? { 'hueAlgorithm': algorithm, 'hueVariantIndex': 0, 'freeformOffset': role.algorithmInfo?.offsetDeg ?? 0 }
-    : { 'hueAlgorithm': algorithm, 'hueVariantIndex': 0 };
+    : { 'freeformOffset': undefined, 'hueAlgorithm': algorithm, 'hueVariantIndex': 0 };
   updateRelation(role.name, relation);
 }
 
 function onVariantChange(role: RoleMathEntryType, hueVariantIndex: number): void {
   const algorithm = role.algorithmInfo?.hueAlgorithm ?? 'monochromatic';
-  updateRelation(role.name, { 'hueAlgorithm': algorithm, 'hueVariantIndex': hueVariantIndex });
+  updateRelation(role.name, { 'freeformOffset': undefined, 'hueAlgorithm': algorithm, 'hueVariantIndex': hueVariantIndex });
 }
 
 function onFreeformOffsetChange(role: RoleMathEntryType, offsetDeg: number): void {
@@ -139,7 +139,7 @@ function applyToGroup(group: RelationGroup, algorithm: HueAlgorithmType): void {
       const dist = hueCircularDistance(child.h, candidateHue);
       if (dist < bestDist) { bestDist = dist; bestIndex = index; }
     });
-    batch[child.name] = { 'hueAlgorithm': algorithm, 'hueVariantIndex': bestIndex };
+    batch[child.name] = { 'freeformOffset': undefined, 'hueAlgorithm': algorithm, 'hueVariantIndex': bestIndex };
   }
   updateRelations(batch);
 }

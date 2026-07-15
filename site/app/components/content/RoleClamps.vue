@@ -14,11 +14,17 @@ const openRoleName = ref<string | null>(null);
 
     <RoleSortControls />
 
-    <div v-if="mathList.length === 0" class="text-muted text-sm italic py-4">
+    <div
+      v-if="mathList.length === 0"
+      class="text-muted text-sm italic py-4"
+    >
       No roles resolved yet.
     </div>
 
-    <div v-else class="role-grid columns-1 md:columns-2 xl:columns-3">
+    <div
+      v-else
+      class="role-grid columns-1 md:columns-2 xl:columns-3"
+    >
       <RoleMathCard
         v-for="role in mathList"
         :key="role.name"

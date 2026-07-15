@@ -21,7 +21,7 @@ export type CapacitorThemeOutputInterfaceType = {
 };
 
 export type SplashScreenOutputInterfaceType = {
-  'androidSplashResourceName'?: string;
+  'androidSplashResourceName': string | undefined;
   'backgroundColor':            string;
 };
 

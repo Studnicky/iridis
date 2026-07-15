@@ -3,9 +3,9 @@ import type { ColorIntentType } from './color.ts';
 export type ContrastAlgorithmType = 'wcag21' | 'apca';
 
 export type RoleDefinitionInterfaceType = {
-  'chromaRange'?:    [number, number];
-  'derivedFrom'?:   string;
-  'description'?:   string;
+  'chromaRange':    [number, number] | undefined;
+  'derivedFrom':    string | undefined;
+  'description':    string | undefined;
   /**
    * Target hue in OKLCH degrees [0, 360). Takes precedence over `hueOffset` in
    * every resolution path. Always applied as a BOUNDED nudge, never an absolute
@@ -16,7 +16,7 @@ export type RoleDefinitionInterfaceType = {
    * snapping to a hue that appears nowhere in it. Resolved by the engine, not
    * the consumer.
    */
-  'hue'?:            number;
+  'hue':            number | undefined;
   /**
    * Maximum degrees the resolved hue may rotate toward `hue`. Bounds the nudge
    * so a red-dominant palette yields a warm-leaning `success` rather than a pure
@@ -24,13 +24,13 @@ export type RoleDefinitionInterfaceType = {
    * defaults to `RoleGeometry.DEFAULT_HUE_CLAMP` degrees when `hue` is set
    * without it.
    */
-  'hueClamp'?:       number;
+  'hueClamp':       number | undefined;
   /**
    * Relative hue rotation applied when the role is DERIVED from another
    * (`expand:family` adds it to the source role's hue). For a role resolved
    * directly by `resolve:roles`, it is treated as an absolute target hue.
    */
-  'hueOffset'?:      number;
+  'hueOffset':      number | undefined;
   /**
    * Canonical ontology hook for downstream semantic mapping. When set,
    * `ResolveRoles` propagates this value onto the resolved record's
@@ -50,22 +50,22 @@ export type RoleDefinitionInterfaceType = {
    * overlay with their own role schema; that overlay's `intent` value
    * flows through identically.
    */
-  'intent'?:        ColorIntentType;
-  'lightnessRange'?: [number, number];
+  'intent':         ColorIntentType | undefined;
+  'lightnessRange': [number, number] | undefined;
   'name':           string;
-  'required'?:      boolean;
+  'required':       boolean | undefined;
 };
 
 export type ContrastPairInterfaceType = {
-  'algorithm'?: ContrastAlgorithmType;
+  'algorithm':  ContrastAlgorithmType | undefined;
   'background': string;
   'foreground': string;
   'minRatio':   number;
 };
 
 export type RoleSchemaInterfaceType = {
-  'contrastPairs'?: ContrastPairInterfaceType[];
-  'description'?:   string;
-  'name':           string;
-  'roles':          RoleDefinitionInterfaceType[];
+  'contrastPairs': ContrastPairInterfaceType[] | undefined;
+  'description':   string | undefined;
+  'name':          string;
+  'roles':         RoleDefinitionInterfaceType[];
 };

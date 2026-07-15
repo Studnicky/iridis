@@ -10,10 +10,10 @@ import type { RoleMathClampType } from './roleMathClamp.ts';
  * from the canonical role type, so they read as `undefined` for stock schemas).
  */
 type RoleMathDefType = RoleDefinitionInterfaceType & {
-  'chromaClamp'?:     number;
-  'chromaTarget'?:    number;
-  'lightnessClamp'?:  number;
-  'lightnessTarget'?: number;
+  'chromaClamp':     number | undefined;
+  'chromaTarget':    number | undefined;
+  'lightnessClamp':  number | undefined;
+  'lightnessTarget': number | undefined;
 };
 
 export type RoleMathEntryType = {

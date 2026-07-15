@@ -26,14 +26,14 @@ import type { ColorRecordInterfaceType }   from '@studnicky/iridis';
 
 function rgb(r: number, g: number, b: number, weight?: number): ColorRecordInterfaceType {
   return colorRecordFactory.fromRgb(r, g, b, {
-    'hints': weight !== undefined ? { 'weight': weight } : undefined,
+    'hints': weight !== undefined ? { 'weight': weight, 'intent': undefined, 'role': undefined } : undefined,
     'sourceFormat': 'rgb',
   });
 }
 
 function hex(code: string, weight?: number): ColorRecordInterfaceType {
   return colorRecordFactory.fromHex(code, {
-    'hints': weight !== undefined ? { 'weight': weight } : undefined,
+    'hints': weight !== undefined ? { 'weight': weight, 'intent': undefined, 'role': undefined } : undefined,
     'sourceFormat': 'hex',
   });
 }
@@ -363,7 +363,7 @@ const cell4Scenarios: readonly ScenarioInterface<Cell4Input, Cell4Output>[] = [
     input: {
       colors: [
         colorRecordFactory.fromRgb(0.1, 0.1, 0.1), // weight=1 (absent)
-        colorRecordFactory.fromRgb(0.9, 0.1, 0.1, { 'hints': { 'weight': 9 }, 'sourceFormat': 'rgb' }),
+        colorRecordFactory.fromRgb(0.9, 0.1, 0.1, { 'hints': { 'weight': 9, 'intent': undefined, 'role': undefined }, 'sourceFormat': 'rgb' }),
       ],
       k: 2,
     },

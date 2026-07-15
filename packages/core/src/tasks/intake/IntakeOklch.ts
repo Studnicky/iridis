@@ -14,7 +14,7 @@ import type {
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 type OklchInput = OklchInterfaceType & {
-  'a'?: number;
+  'a': number | undefined;
 };
 
 function isOklchInput(v: unknown): v is OklchInput {
@@ -41,7 +41,9 @@ class IntakeOklch implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses {l,c,h,a?} OKLCH (l: 0..1, c: 0..0.5, h: 0..360) into ColorRecord entries. Throws on non-OKLCH input.',
     'name':        'intake:oklch',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

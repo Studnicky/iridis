@@ -58,7 +58,9 @@ class ReasonSerialize implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Serialize rdf:reasoningGraph to Turtle / TriG / N-Quads / JSON-LD',
     'name':        'reason:serialize',
+    'phase':       undefined,
     'reads':       ['rdf:reasoningGraph', 'rdf:format'],
+    'requires':    undefined,
     'writes':      ['rdf:serialized']
   };
 

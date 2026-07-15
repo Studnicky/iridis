@@ -14,7 +14,7 @@ import type {
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 type RgbInput = RgbInterfaceType & {
-  'a'?: number;
+  'a': number | undefined;
 };
 
 /**
@@ -47,7 +47,9 @@ class IntakeRgb implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses {r,g,b,a?} in 0..1 or 0..255 (auto-detected by max value) into ColorRecord entries. Throws on non-RGB input.',
     'name':        'intake:rgb',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 
