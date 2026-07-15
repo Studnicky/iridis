@@ -7,7 +7,6 @@
  */
 
 import type { CvdType, RoleClampMapInterfaceType, RoleDistanceMapInterfaceType } from '@studnicky/iridis';
-import type { RoleDefinitionInterfaceType, RoleSchemaInterfaceType } from '@studnicky/iridis/model';
 import type { ApcaPairResultSetInterfaceType, CvdResultSetInterfaceType, WcagPairResultSetInterfaceType } from '@studnicky/iridis-contrast';
 import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
 
@@ -17,16 +16,20 @@ import { imagePlugin } from '@studnicky/iridis-image';
 import { computed, ref, watch } from 'vue';
 
 import type {
-  DerivationConfig, FramingType, GalleryAlgorithmType, HistogramBinType, HueAlgorithm, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleRelationDerivation, RoleViewType, ScaleMapType, UploadedImageInterfaceType
-} from './types/index.ts';
-import { DEFAULT_DERIVATION_CONFIG, IridisUiActionType, IridisUiEffectVariant } from './types/index.ts';
+  DerivationConfigType, FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, IridisUiEffectVariant, ModeType, PickerSeedType, RoleHexMapType, RoleRelationDerivationType, RoleViewType, ScaleMapType
+  , UploadedImageInterfaceType } from './types/index.ts';
+import type { RoleSortableRowType } from './types/roleSortableRow.ts';
+import type { RoleSortKeyType } from './types/roleSortKey.ts';
+
 import { contrastRatio } from '../theme/ContrastRatio.ts';
 import { cloneRanges } from '../utils/cloneRanges.ts';
+import { complianceFor } from '../utils/complianceFor.ts';
 import { debounce, keyedDebounce } from '../utils/debounce.ts';
-import { effectiveRelation, resolveHueOffset, selectHueAlgorithm } from '../utils/colorDerivation.ts';
 import { isValidHex } from '../utils/isValidHex.ts';
-import type { RoleSortKeyType, RoleSortableRowType } from '../utils/roleSort.ts';
-import { complianceFor, sortRoleRows } from '../utils/roleSort.ts';
+import { minRatioForRole } from '../utils/minRatioForRole.ts';
+import { sortRoleRows } from '../utils/sortRoleRows.ts';
+import { OPTIONAL_STAGE_NAMES } from './optionalStageNames.ts';
+import { DEFAULT_DERIVATION_CONFIG, IridisUiActionType } from './types/index.ts';
 
 type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.MUTATE_SEEDS }>;
 type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>;
@@ -62,20 +65,6 @@ const SHADE_L: Record<number, number> = {
 };
 const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => {return { 'invertLightness': false, 'lightnessTarget': SHADE_L[s]!, 'name': `s${s}` };});
 
-/**
- * Exported so PipelineExplainer.vue can walk the same stage order and pull each
- * task's own manifest. pin:derivedRoles runs between resolve:roles and
- * expand:family — see PinDerivedRoles.ts for why that ordering is load-bearing.
- * This is the full superset of stages (required + every optional check) for
- * documentation purposes; the actual per-run pipeline is built by
- * buildPipeline() below from REQUIRED_*_STAGES plus whichever OPTIONAL_STAGE_NAMES
- * are currently enabled.
- */
-export const COLOR_PIPELINE = [
-  'intake:hexHint', 'derive:semanticHues', 'resolve:roles', 'pin:derivedRoles', 'derive:roleRelations', 'expand:family',
-  'enforce:contrast', 'enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate',
-  'derive:variant'
-];
 /** enforce:cvdSimulate is always on, not user-toggleable — CVD accessibility
  * reporting/correction isn't opt-in the way the other standards are. */
 const REQUIRED_COLOR_STAGES = [
@@ -102,9 +91,6 @@ const ALL_CANDIDATE_ALGORITHMS: readonly { 'algorithm': GalleryAlgorithmType }[]
   { 'algorithm': 'delta-e' }
 ];
 
-/** Toggleable contrast checks, in the order they slot in after enforce:contrast. */
-export const OPTIONAL_STAGE_NAMES: readonly string[] = ['enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca'];
-
 /** Which optional stages currently run based on strictness. */
 const enabledOptionalStages = computed<Set<string>>(() => {
   if (contrastStrictness.value === 0) {return new Set(['enforce:wcagAA']);}
@@ -114,9 +100,10 @@ const enabledOptionalStages = computed<Set<string>>(() => {
 });
 
 /** Slots the currently-enabled optional stages into `required` right after enforce:contrast. */
-function buildPipeline(required: readonly string[]): string[] {
+function pipelineBuild(required: readonly string[]): string[] {
   const idx = required.indexOf('enforce:contrast');
-  const optional = OPTIONAL_STAGE_NAMES.filter((n) => {return enabledOptionalStages.value.has(n);});
+  const optional = OPTIONAL_STAGE_NAMES.filter((n) => {const result = enabledOptionalStages.value.has(n);
+    return result;});
   const result = [...required];
   result.splice(idx + 1, 0, ...optional);
   return result;
@@ -134,11 +121,11 @@ engine.adopt(imagePlugin);
 /* ─── shared reactive state ─── */
 const {
   'registerExtractImageHandler': registerExtractImageHandler, 'registerMutateSeedsHandler': registerMutateSeedsHandler,
-  'registerPinSeedRoleHandler': registerPinSeedRoleHandler, 'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
-  'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
-  'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler,
-  'registerNavigateToTargetHandler': registerNavigateToTargetHandler,
-  'registerSelectImageCandidateHandler': registerSelectImageCandidateHandler,
+  'registerNavigateToTargetHandler': registerNavigateToTargetHandler, 'registerPinSeedRoleHandler': registerPinSeedRoleHandler,
+  'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler, 'registerSelectImageCandidateHandler': registerSelectImageCandidateHandler,
+  'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
+  'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
+  'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler,
   'send': sendUiEvent, 'state': uiState
 } = useIridisUiMachine();
 /** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
@@ -163,13 +150,15 @@ const imageSeeds = ref<PickerSeedType[]>([]);
  * against (see the mode !== 'picker' check below).
  */
 function withPreservedRoles(hexes: readonly string[], previous: readonly PickerSeedType[]): PickerSeedType[] {
-  const roleByHex = new Map(previous.map((s) => [s.hex, s.role] as const));
-  return hexes.map((hex) => ({ 'hex': hex, 'role': roleByHex.get(hex) }));
+  const roleByHex = new Map(previous.map((s) => {return [s.hex, s.role] as const;}));
+  return hexes.map((hex) => {return { 'hex': hex, 'role': roleByHex.get(hex) };});
 }
 
 const framing = ref<FramingType>('dark');
 const schemaName = ref<string>('iridis-32');
 const contrastStrictness = ref<number>(2);
+/** Contrast level per strictness tier — index matches contrastStrictness's three UI values (0=AA, 1=AAA, 2=APCA/Lc). */
+const CONTRAST_LEVELS: readonly string[] = ['AA', 'AAA', 'Lc'];
 const colorSpace = ref<'srgb' | 'displayP3'>('srgb');
 /**
  * CVD "correct" mode flag, threaded through as `input.contrast.cvdCorrect` —
@@ -186,11 +175,13 @@ const cvdCorrect = ref<boolean>(false);
  * whole pipeline via the FSM's schedule(), the same as any other palette
  * parameter — never recomputed and reapplied client-side.
  */
-const derivationConfig = ref<DerivationConfig>(DEFAULT_DERIVATION_CONFIG);
+const derivationConfig = ref<DerivationConfigType>(DEFAULT_DERIVATION_CONFIG);
 
 /** Merges a single relation's config into `derivationConfig` and re-runs the pipeline — the ONLY way a relation changes; the resolved hue is always recomputed by derive:roleRelations, never written directly here. */
-function updateRelation(roleName: string, relation: RoleRelationDerivation): void {
-  updateRelations({ [roleName]: relation });
+function relationUpdate(roleName: string, relation: RoleRelationDerivationType): void {
+  const patch: Record<string, RoleRelationDerivationType> = {};
+  patch[roleName] = relation;
+  relationsUpdate(patch);
 }
 
 /**
@@ -202,8 +193,8 @@ function updateRelation(roleName: string, relation: RoleRelationDerivation): voi
  * interpreter is busy processing it, and the rest are silently dropped.
  * One dispatch carrying every changed relation sidesteps the race entirely.
  */
-function updateRelations(newRelations: Record<string, RoleRelationDerivation>): void {
-  const updated: DerivationConfig = { 'relations': { ...derivationConfig.value.relations, ...newRelations } };
+function relationsUpdate(newRelations: Record<string, RoleRelationDerivationType>): void {
+  const updated: DerivationConfigType = { 'relations': { ...derivationConfig.value.relations, ...newRelations } };
   sendUiEvent({ 'config': updated, 'type': IridisUiActionType.SET_DERIVATION_CONFIG });
 }
 
@@ -215,7 +206,7 @@ function updateRelations(newRelations: Record<string, RoleRelationDerivation>): 
  * full no-op when disabled, same as any other palette parameter.
  */
 const semanticHuesEnabled = ref(true);
-function setSemanticHuesEnabled(enabled: boolean): void {
+function semanticHuesEnabledSet(enabled: boolean): void {
   sendUiEvent({ 'enabled': enabled, 'type': IridisUiActionType.SET_SEMANTIC_HUES_ENABLED });
 }
 
@@ -250,7 +241,21 @@ const rolesPinned = ref<string[]>([]);
 const rolesDerived = ref<string[]>([]);
 const scales = ref<ScaleMapType>({});
 const histogram = ref<HistogramBinType[]>([]);
-const running = ref<boolean>(false);
+/**
+ * Reference-counted rather than a single boolean: run(), combineNowRun(), and
+ * addUploadedImagesUnqueued() can all be in flight at once (e.g. a debounced
+ * run() firing synchronously while an uploaded image is still awaiting
+ * ToPixels.decode()). A plain shared boolean would let whichever call
+ * finishes first clear it out from under the others still running; counting
+ * active operations means `running` only goes false once every one of them
+ * has completed.
+ */
+const activeOperations = ref<number>(0);
+const running = computed<boolean>(() => {return activeOperations.value > 0;});
+/** Marks one operation as started — pair with `endOperation()` in a `finally`. */
+function beginOperation(): void { activeOperations.value += 1; }
+/** Marks one operation as finished. */
+function endOperation(): void { activeOperations.value -= 1; }
 
 /**
  * Single source of truth for "sort the role list by ___" — every place the
@@ -262,18 +267,19 @@ const running = ref<boolean>(false);
  */
 const roleSortKeys = ref<RoleSortKeyType[]>([{ 'desc': true, 'field': 'compliance' }, { 'desc': true, 'field': 'ratio' }]);
 
-const roleContrastRows = computed<(RoleSortableRowType & { hex: string })[]>(() => {
+const roleContrastRows = computed<(RoleSortableRowType & { 'hex': string })[]>(() => {
   // 'background' is a required role in every schema tier (RoleSchemaByName.ts),
   // and run() resolves it synchronously before any component can read this —
   // never a hardcoded placeholder.
-  const bg = roles.value['background']!;
+  const bg = roles.value.background!;
+  const schema = roleSchemaByName[schemaName.value]?.[framing.value];
   return roleViews.value.map((r) => {
     const ratio = contrastRatio(r.hex, bg);
-    return { 'c': r.c, 'compliance': complianceFor(ratio), 'h': r.h, 'hex': r.hex, 'l': r.l, 'name': r.name, 'ratio': ratio };
+    return { 'c': r.c, 'compliance': complianceFor(ratio, minRatioForRole(schema, r.name)), 'h': r.h, 'hex': r.hex, 'l': r.l, 'name': r.name, 'ratio': ratio };
   });
 });
 
-const sortedRoleContrastRows = computed(() => sortRoleRows(roleContrastRows.value, roleSortKeys.value));
+const sortedRoleContrastRows = computed(() => { const result = sortRoleRows(roleContrastRows.value, roleSortKeys.value); return result; });
 const error = ref<string | null>(null);
 
 /** Raw contrast-check metadata from the last run, keyed by algorithm rather than the `contrast:*` metadata prefix. */
@@ -321,7 +327,7 @@ const combineLocked = ref<boolean>(false);
  * whenever it changes (from either the Schema & Compliance control or the
  * mirrored control in the Image card).
  */
-watch(schemaName, (v) => { imgK.value = parseInt(v.replace('iridis-', ''), 10) || 32; }, { 'immediate': true });
+watch(schemaName, (v) => { const parsed = parseInt(v.replace('iridis-', ''), 10); imgK.value = Number.isNaN(parsed) ? 32 : parsed; }, { 'immediate': true });
 
 /** Whichever seed list is live for the current mode — imageSeeds and pickerSeeds share one shape now, so this is a plain switch, not a reshape. */
 const activeSeeds = computed<PickerSeedType[]>(() => {return (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value);});
@@ -340,7 +346,9 @@ const pinnableRoles = computed<string[]>(() => {
   const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
   const schema = pair?.[framing.value];
   if (schema === undefined) {return [];}
-  return schema.roles.filter((r) => {return USED_ROLE_NAMES.has(r.name);}).map((r) => {return r.name;});
+  return schema.roles.filter((r) => {const result = USED_ROLE_NAMES.has(r.name);
+    return result;}).map((r) => {const result = r.name;
+    return result;});
 });
 
 function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<string, { 'displayP3'?: { 'b': number; 'g': number; 'r': number; }; 'hex': string; 'oklch': { 'c': number; 'h': number; 'l': number; } }>; 'variants': Record<string, Record<string, { 'hex': string }>> }): void {
@@ -401,13 +409,13 @@ function run(framingOverride?: FramingType): void {
   // empty, WITHOUT writing that seed into either user-visible seed list (the
   // Manual card must only ever show what the user actually entered).
   const seeds = activeSeeds.value.length > 0 ? activeSeeds.value : BOOTSTRAP_SEEDS;
-  running.value = true;
+  beginOperation();
   error.value = null;
   try {
-    engine.pipeline(buildPipeline(REQUIRED_COLOR_STAGES));
+    engine.pipeline(pipelineBuild(REQUIRED_COLOR_STAGES));
     const state = engine.run({
       'colors':   seeds,
-      'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
+      'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': CONTRAST_LEVELS[contrastStrictness.value] ?? 'Lc' },
       'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig.value, 'derivation:semanticHuesEnabled': semanticHuesEnabled.value },
       'roles':    pair[targetFraming],
       'runtime':  { 'colorSpace': colorSpace.value, 'framing': targetFraming }
@@ -433,7 +441,7 @@ function run(framingOverride?: FramingType): void {
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
   } finally {
-    running.value = false;
+    endOperation();
   }
 }
 
@@ -474,9 +482,12 @@ let nextImageId = 0;
  * committed, so uploads queue instead of racing.
  */
 let uploadedImagesQueue: Promise<void> = Promise.resolve();
-function makeImageId(): string {
-  nextImageId += 1;
-  return `img-${nextImageId}-${Date.now().toString(36)}`;
+/** Generates a unique id for a freshly-decoded uploaded image entry. */
+class ImageId {
+  static make(): string {
+    nextImageId += 1;
+    return `img-${nextImageId}-${Date.now().toString(36)}`;
+  }
 }
 
 /** Seeds a freshly-uploaded entry's own settings from the CURRENT combine-stage refs — sensible per-image defaults that become independently mutable afterward. */
@@ -494,18 +505,20 @@ function defaultEntrySettings(): Pick<UploadedImageInterfaceType, 'algorithm' | 
 
 type GallerySourceType = { 'algorithm': GalleryAlgorithmType; 'chromaRange': readonly [number, number][]; 'deltaECap': number; 'harmonizeThreshold'?: number; 'histogramBits': number; 'k': number; 'lightnessRange': readonly [number, number][] };
 
-/** Builds the `metadata.gallery` object handed to engine.run() — shared by extractEntryStage1 (per-image, no harmonizeThreshold — that knob only applies at the combine stage) and runCombineNow (the combine stage itself), rather than two independent object literals repeating the same field list and range-cloning. */
-function buildGalleryMetadata(source: GallerySourceType): GallerySourceType & { 'candidates': typeof ALL_CANDIDATE_ALGORITHMS } {
-  return {
-    'algorithm':          source.algorithm,
-    'candidates':         ALL_CANDIDATE_ALGORITHMS,
-    'chromaRange':        cloneRanges(source.chromaRange),
-    'deltaECap':          source.deltaECap,
-    ...(source.harmonizeThreshold !== undefined ? { 'harmonizeThreshold': source.harmonizeThreshold } : {}),
-    'histogramBits':      source.histogramBits,
-    'k':                  source.k,
-    'lightnessRange':     cloneRanges(source.lightnessRange)
-  };
+/** Builds the `metadata.gallery` object handed to engine.run() — shared by EntryStage1.extract (per-image, no harmonizeThreshold — that knob only applies at the combine stage) and combineNowRun (the combine stage itself), rather than two independent object literals repeating the same field list and range-cloning. */
+class GalleryMetadata {
+  static build(source: GallerySourceType): GallerySourceType & { 'candidates': typeof ALL_CANDIDATE_ALGORITHMS } {
+    return {
+      'algorithm':          source.algorithm,
+      'candidates':         ALL_CANDIDATE_ALGORITHMS,
+      'chromaRange':        cloneRanges(source.chromaRange),
+      'deltaECap':          source.deltaECap,
+      ...(source.harmonizeThreshold !== undefined ? { 'harmonizeThreshold': source.harmonizeThreshold } : {}),
+      'histogramBits':      source.histogramBits,
+      'k':                  source.k,
+      'lightnessRange':     cloneRanges(source.lightnessRange)
+    };
+  }
 }
 
 /**
@@ -514,29 +527,32 @@ function buildGalleryMetadata(source: GallerySourceType): GallerySourceType & { 
  * uploaded image: re-running this for entry A never touches entry B's
  * histogram/dominantColors.
  */
-function extractEntryStage1(entry: UploadedImageInterfaceType): void {
-  const pixels = pixelCache.get(entry.id);
-  if (pixels === undefined) {return;}
-  engine.pipeline(IMAGE_ENTRY_STAGES);
-  const state = engine.run({
-    'colors':   [pixels],
-    'metadata': {
-      'gallery': buildGalleryMetadata({
-        'algorithm':      entry.algorithm,
-        'chromaRange':    entry.chromaRange,
-        'deltaECap':      entry.deltaECap,
-        'histogramBits':  entry.histogramBits,
-        'k':              entry.k,
-        'lightnessRange': entry.lightnessRange
-      })
-    }
-  });
-  const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
-  entry.histogram = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
-  const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string; 'hints'?: { 'weight'?: number } }[] | undefined) ?? [];
-  const validDominant = dominant.filter((c) => { return isValidHex(c.hex); });
-  entry.dominantColorRecords = validDominant.map((c) => { return { 'hex': c.hex, 'weight': c.hints?.weight ?? 1 }; });
-  entry.candidates = (state.metadata['gallery:candidates'] as GalleryCandidateInterfaceType[] | undefined) ?? [];
+class EntryStage1 {
+  static extract(entry: UploadedImageInterfaceType): void {
+    const pixels = pixelCache.get(entry.id);
+    if (pixels === undefined) {return;}
+    engine.pipeline(IMAGE_ENTRY_STAGES);
+    const state = engine.run({
+      'colors':   [pixels],
+      'metadata': {
+        'gallery': GalleryMetadata.build({
+          'algorithm':      entry.algorithm,
+          'chromaRange':    entry.chromaRange,
+          'deltaECap':      entry.deltaECap,
+          'histogramBits':  entry.histogramBits,
+          'k':              entry.k,
+          'lightnessRange': entry.lightnessRange
+        })
+      }
+    });
+    const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
+    entry.histogram = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
+    const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string; 'hints'?: { 'weight'?: number } }[] | undefined) ?? [];
+    const validDominant = dominant.filter((c) => { const result = isValidHex(c.hex);
+      return result; });
+    entry.dominantColorRecords = validDominant.map((c) => { return { 'hex': c.hex, 'weight': c.hints?.weight ?? 1 }; });
+    entry.candidates = (state.metadata['gallery:candidates'] as GalleryCandidateInterfaceType[] | undefined) ?? [];
+  }
 }
 
 /**
@@ -562,7 +578,9 @@ function weightedHexesFor(entry: UploadedImageInterfaceType): readonly { 'hex': 
 
 /** Plain hex list (no weight) — used wherever only the color values matter, e.g. the Upload card's per-image summary swatches. */
 function effectiveHexesFor(entry: UploadedImageInterfaceType): readonly string[] {
-  return weightedHexesFor(entry).map((w) => {return w.hex;});
+  const result = weightedHexesFor(entry).map((w) => {const result = w.hex;
+    return result;});
+  return result;
 }
 
 /**
@@ -575,7 +593,8 @@ function effectiveHexesFor(entry: UploadedImageInterfaceType): readonly string[]
  */
 function expandWeighted(weighted: readonly { 'hex': string; 'weight': number }[], budget: number): string[] {
   const totalWeight = weighted.reduce((sum, w) => {return sum + w.weight;}, 0);
-  if (totalWeight <= 0) {return weighted.map((w) => {return w.hex;});}
+  if (totalWeight <= 0) {return weighted.map((w) => {const result = w.hex;
+    return result;});}
   const expanded: string[] = [];
   for (const w of weighted) {
     const count = Math.max(1, Math.round((w.weight / totalWeight) * budget));
@@ -599,21 +618,22 @@ function expandWeighted(weighted: readonly { 'hex': string; 'weight': number }[]
 /** Gated auto-trigger — every reactive call site goes through this, so `combineLocked` suppresses them uniformly. */
 function combine(): void {
   if (combineLocked.value) {return;}
-  runCombineNow();
+  combineNowRun();
 }
 
 /** Always recombines immediately, ignoring the lock — what the "Re-run" button calls. */
 function reRunCombine(): void {
-  runCombineNow();
+  combineNowRun();
 }
 
 /** Total hex entries the cumulative weighted expansion is scaled to — large enough for gallery:histogram to re-derive a meaningful weighted distribution, small enough to stay cheap. */
 const CUMULATIVE_HISTOGRAM_BUDGET = 1000;
 
-function runCombineNow(): void {
+function combineNowRun(): void {
   if (typeof document === 'undefined') {return;}
   const entries = uploadedImages.value;
-  const weightedContributions = entries.flatMap((e) => {return weightedHexesFor(e);});
+  const weightedContributions = entries.flatMap((e) => {const result = weightedHexesFor(e);
+    return result;});
   const combinedHexes = expandWeighted(weightedContributions, CUMULATIVE_HISTOGRAM_BUDGET);
   if (combinedHexes.length === 0) {
     histogram.value = [];
@@ -622,19 +642,19 @@ function runCombineNow(): void {
     selectedCandidateLabel.value = null;
     return;
   }
-  running.value = true;
+  beginOperation();
   error.value = null;
   try {
     const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
-    engine.pipeline(buildPipeline(REQUIRED_IMAGE_STAGES));
+    engine.pipeline(pipelineBuild(REQUIRED_IMAGE_STAGES));
     const state = engine.run({
       'colors':   combinedHexes,
-      'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
+      'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': CONTRAST_LEVELS[contrastStrictness.value] ?? 'Lc' },
       'metadata': {
         'core:variantConfig': VARIANT_CONFIG,
         'derivation:config': derivationConfig.value,
         'derivation:semanticHuesEnabled': semanticHuesEnabled.value,
-        'gallery': buildGalleryMetadata({
+        'gallery': GalleryMetadata.build({
           'algorithm':          imgAlgorithm.value,
           'chromaRange':        imgChromaRange.value,
           'deltaECap':          imgDeltaECap.value,
@@ -650,8 +670,10 @@ function runCombineNow(): void {
     const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
     histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
     const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string }[] | undefined) ?? [];
-    const schemaCount = parseInt(schemaName.value.replace('iridis-', ''), 10) || 32;
-    const extracted = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { return isValidHex(hex); }).slice(0, schemaCount);
+    const parsedSchemaCount = parseInt(schemaName.value.replace('iridis-', ''), 10);
+    const schemaCount = Number.isNaN(parsedSchemaCount) ? 32 : parsedSchemaCount;
+    const extracted = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { const result = isValidHex(hex);
+      return result; }).slice(0, schemaCount);
     imageSeeds.value = withPreservedRoles(extracted, imageSeeds.value);
     candidates.value = (state.metadata['gallery:candidates'] as GalleryCandidateInterfaceType[] | undefined) ?? [];
     selectedCandidateLabel.value = null;
@@ -667,7 +689,7 @@ function runCombineNow(): void {
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
   } finally {
-    running.value = false;
+    endOperation();
   }
 }
 
@@ -681,17 +703,18 @@ function runCombineNow(): void {
  * that variable's comment for why concurrent calls must be serialized.
  */
 async function addUploadedImages(sources: readonly (File | string)[], sampleNames?: readonly string[]): Promise<void> {
-  const next = uploadedImagesQueue.then(() => {return addUploadedImagesUnqueued(sources, sampleNames);});
+  const next = uploadedImagesQueue.then(() => {const result = addUploadedImagesUnqueued(sources, sampleNames);
+    return result;});
   // Swallow here so one call's failure doesn't wedge the queue for every
   // subsequent call — addUploadedImagesUnqueued already records the error
   // in the shared `error` ref via its own try/catch.
   uploadedImagesQueue = next.catch(() => {});
-  return next;
+  return await next;
 }
 
 async function addUploadedImagesUnqueued(sources: readonly (File | string)[], sampleNames?: readonly string[]): Promise<void> {
   if (typeof document === 'undefined' || sources.length === 0) {return;}
-  running.value = true;
+  beginOperation();
   error.value = null;
   try {
     const added: UploadedImageInterfaceType[] = [];
@@ -699,9 +722,8 @@ async function addUploadedImagesUnqueued(sources: readonly (File | string)[], sa
       const source = sources[i]!;
       const src = typeof source === 'string' ? source : URL.createObjectURL(source);
       const name = typeof source === 'string' ? (sampleNames?.[i] ?? 'Sample') : source.name;
-      // eslint-disable-next-line no-await-in-loop -- each image must decode before the next is added, so entries land in upload order
       const pixels = await ToPixels.decode(src);
-      const id = makeImageId();
+      const id = ImageId.make();
       pixelCache.set(id, pixels);
       const entry: UploadedImageInterfaceType = {
         ...defaultEntrySettings(),
@@ -713,7 +735,7 @@ async function addUploadedImagesUnqueued(sources: readonly (File | string)[], sa
         'selectedCandidateLabel':  null,
         'src':                     src
       };
-      extractEntryStage1(entry);
+      EntryStage1.extract(entry);
       added.push(entry);
     }
     uploadedImages.value = [...uploadedImages.value, ...added];
@@ -721,14 +743,14 @@ async function addUploadedImagesUnqueued(sources: readonly (File | string)[], sa
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
   } finally {
-    running.value = false;
+    endOperation();
   }
 }
 
 /** Drops one uploaded image and recombines — every other entry is untouched. */
 function removeUploadedImage(id: string): void {
   const entry = uploadedImages.value.find((e) => {return e.id === id;});
-  if (entry !== undefined && entry.src.startsWith('blob:')) {
+  if (entry?.src.startsWith('blob:') === true) {
     URL.revokeObjectURL(entry.src);
   }
   pixelCache.delete(id);
@@ -740,7 +762,7 @@ function removeUploadedImage(id: string): void {
 type UploadedImageSettingsPatchType = Partial<Pick<UploadedImageInterfaceType, 'algorithm' | 'chromaRange' | 'deltaECap' | 'harmonizeThreshold' | 'histogramBits' | 'k' | 'lightnessRange'>>;
 
 /** Mutates ONE uploaded image's own settings and schedules ONLY that image's re-extraction (debounced), not every uploaded image. */
-function updateUploadedImageSetting(id: string, patch: UploadedImageSettingsPatchType): void {
+function uploadedImageSettingUpdate(id: string, patch: UploadedImageSettingsPatchType): void {
   const entry = uploadedImages.value.find((e) => {return e.id === id;});
   if (entry === undefined) {return;}
   Object.assign(entry, patch);
@@ -750,7 +772,7 @@ function updateUploadedImageSetting(id: string, patch: UploadedImageSettingsPatc
 /** Per-entry debounce so rapid slider drags on one image's settings don't re-run its extraction on every step. */
 const entryReextract = keyedDebounce((id: string) => {
   const entry = uploadedImages.value.find((e) => {return e.id === id;});
-  if (entry !== undefined) {extractEntryStage1(entry);}
+  if (entry !== undefined) {EntryStage1.extract(entry);}
   combine();
 }, 180);
 
@@ -781,7 +803,7 @@ function mutateSeeds(effect: MutateSeedsEffectType): void {
     // A freshly added seed with no explicit hex starts as the current
     // engine-resolved brand color (a required role in every schema tier),
     // never a hardcoded placeholder — the user edits it from there.
-    if (pickerSeeds.value.length < 32) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? roles.value['brand']! }];}
+    if (pickerSeeds.value.length < 32) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? roles.value.brand! }];}
   } else if (effect.op === 'remove') {
     if (pickerSeeds.value.length > 1) {pickerSeeds.value = pickerSeeds.value.filter((_, idx) => {return idx !== effect.index;});}
   } else if (effect.op === 'set') {
@@ -800,12 +822,12 @@ registerMutateSeedsHandler(mutateSeeds);
  * Ensures that a role can only be pinned to one seed at a time.
  */
 function pinSeedRole(effect: PinSeedRoleEffectType): void {
-  const applyPin = (seeds: PickerSeedType[]): PickerSeedType[] => seeds.map((s, idx) => {
-    if (effect.role && s.role === effect.role && idx !== effect.index) {
+  const applyPin = (seeds: PickerSeedType[]): PickerSeedType[] => { const result = seeds.map((s, idx) => {
+    if (effect.role !== undefined && s.role === effect.role && idx !== effect.index) {
       return { ...s, 'role': undefined };
     }
     return (idx === effect.index ? { ...s, 'role': effect.role } : s);
-  });
+  }); return result; };
   if (mode.value === 'image') {
     imageSeeds.value = applyPin(imageSeeds.value);
   } else {
@@ -830,12 +852,12 @@ registerPinSeedRoleHandler(pinSeedRole);
  * COMBINE stage — see `combine()` — over whatever every uploaded image's
  * Stage 1 already produced; a no-op if no image is uploaded). These params
  * no longer redecode or re-run any per-image extraction: that only happens
- * via `updateUploadedImageSetting()` for one image's own settings. The deep
+ * via `uploadedImageSettingUpdate()` for one image's own settings. The deep
  * watches below still exist as a safety net for state changed outside this
  * handler, but each of THIS handler's own mutations is responsible for its
  * own re-run, not just relying on being watched.
  */
-function setPaletteParam(effect: SetPaletteParamEffectType): void {
+function paletteParamSet(effect: SetPaletteParamEffectType): void {
   if (effect.op === 'framing') {run(effect.value); return;}
   if (effect.op === 'schemaName') {schemaName.value = effect.value; schedule(); scheduleCombine(); return;}
   if (effect.op === 'strictness') {contrastStrictness.value = effect.value; schedule(); return;}
@@ -855,14 +877,14 @@ function setPaletteParam(effect: SetPaletteParamEffectType): void {
   // call here on purpose.
   if (effect.op === 'roleSort') {roleSortKeys.value = effect.value; return;}
 }
-registerSetPaletteParamHandler(setPaletteParam);
+registerSetPaletteParamHandler(paletteParamSet);
 
 /**
  * Performs diagram view state mutations (zoom, pan, expand/collapse) for the
  * FSM's UPDATE_DIAGRAM_VIEW effect. MermaidDiagram.vue sends DIAGRAM_* events
  * rather than mutating scale/translate/isExpanded directly.
  */
-function updateDiagramView(effect: UpdateDiagramViewEffectType): void {
+function diagramViewUpdate(effect: UpdateDiagramViewEffectType): void {
   if (effect.op === 'zoom') {
     diagramScale.value = Math.min(8, Math.max(0.05, diagramScale.value * effect.factor));
   } else if (effect.op === 'pan') {
@@ -876,14 +898,14 @@ function updateDiagramView(effect: UpdateDiagramViewEffectType): void {
     diagramIsExpanded.value = !diagramIsExpanded.value;
   }
 }
-registerUpdateDiagramViewHandler(updateDiagramView);
+registerUpdateDiagramViewHandler(diagramViewUpdate);
 
 /**
  * Performs CVD preview type mutations (toggle/clear) for the FSM's
  * UPDATE_CVD_PREVIEW effect. CvdVision.vue sends CVD_* events rather than
  * mutating cvdPreviewTypes directly.
  */
-function updateCvdPreview(effect: UpdateCvdPreviewEffectType): void {
+function cvdPreviewUpdate(effect: UpdateCvdPreviewEffectType): void {
   if (effect.op === 'toggle') {
     const next = new Set(cvdPreviewTypes.value);
     if (next.has(effect.cvdType as CvdType)) {
@@ -896,7 +918,7 @@ function updateCvdPreview(effect: UpdateCvdPreviewEffectType): void {
     cvdPreviewTypes.value = new Set();
   }
 }
-registerUpdateCvdPreviewHandler(updateCvdPreview);
+registerUpdateCvdPreviewHandler(cvdPreviewUpdate);
 
 /**
  * Populates picker palette from extracted hues. Called when image extraction
@@ -904,7 +926,7 @@ registerUpdateCvdPreviewHandler(updateCvdPreview);
  * the N extracted hues (where N = schema count).
  */
 function populatePickerFromImage(effect: PopulatePickerFromImageEffectType): void {
-  pickerSeeds.value = effect.hexes.map((hex) => ({ 'hex': hex }));
+  pickerSeeds.value = effect.hexes.map((hex) => {return { 'hex': hex };});
 }
 registerPopulatePickerFromImageHandler(populatePickerFromImage);
 
@@ -934,15 +956,19 @@ function logoUrl(): string {
  * `uploadedImages` entry, same as any uploaded file — it never replaces
  * what's already uploaded.
  */
-async function extractImageEffect(effect: ExtractImageEffectType): Promise<void> {
+async function imageEffectExtract(effect: ExtractImageEffectType): Promise<void> {
   if (effect.source === 'sample') {
     await addUploadedImages([logoUrl()], ['Sample']);
     return;
   }
-  const files = Array.isArray(effect.file) ? effect.file : [effect.file as File];
+  const files = Array.isArray(effect.file) ? effect.file : [effect.file];
   await addUploadedImages(files);
 }
-registerExtractImageHandler(extractImageEffect);
+// registerExtractImageHandler expects a void-returning handler — imageEffectExtract is
+// async, so it's wrapped here and its promise explicitly discarded (the FSM effect
+// itself is fire-and-forget; addUploadedImagesUnqueued already reports its own errors
+// via the shared `error` ref).
+registerExtractImageHandler((effect) => { void imageEffectExtract(effect); });
 
 /**
  * Swaps imageSeeds to a candidate palette from gallery:extractCandidates
@@ -971,28 +997,28 @@ export function useIridis() {
       // Load default sample palette on page init
       void addUploadedImages([logoUrl()], ['Sample']);
       // framing is intentionally absent here — its swap is dispatched synchronously
-      // by setPaletteParam() via run(effect.value), not through this debounce.
+      // by paletteParamSet() via run(effect.value), not through this debounce.
       watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true });
       watch([schemaName, imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true });
     }
   }
   return {
-    'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'combineLocked': combineLocked, 'contrastStrictness': contrastStrictness, 'colorSpace': colorSpace, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
-    'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'updateRelation': updateRelation, 'updateRelations': updateRelations,
-    'semanticHuesEnabled': semanticHuesEnabled, 'setSemanticHuesEnabled': setSemanticHuesEnabled,
-    'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale, 'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
-    'effectiveHexesFor': effectiveHexesFor,
-    'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
-    'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap, 'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits,
-    'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'mode': mode, 'pickerSeeds': pickerSeeds, 'pinnableRoles': pinnableRoles,
-    'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine,
-    'roles': roles, 'roleViews': roleViews, 'roleClamps': roleClamps,
-    'roleDistances': roleDistances,
-    'roleSortKeys': roleSortKeys, 'sortedRoleContrastRows': sortedRoleContrastRows,
-    'rolesSynthesized': rolesSynthesized,
-    'rolesPinned': rolesPinned,
-    'rolesDerived': rolesDerived,
-    'run': run, 'running': running, 'scales': scales, 'schemaName': schemaName, 'selectEntryCandidate': selectEntryCandidate, 'selectedCandidateLabel': selectedCandidateLabel, 'send': sendUiEvent,
-    'updateUploadedImageSetting': updateUploadedImageSetting, 'uploadedImages': uploadedImages
+    'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdCorrect': cvdCorrect,
+    'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
+    'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
+    'effectiveHexesFor': effectiveHexesFor, 'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing,
+    'histogram': histogram,
+    'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
+    'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'mode': mode, 'pickerSeeds': pickerSeeds,
+    'pinnableRoles': pinnableRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
+    'roles': roles, 'rolesDerived': rolesDerived,
+    'roleSortKeys': roleSortKeys, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,
+    'roleViews': roleViews,
+    'run': run, 'running': running,
+    'scales': scales,
+    'schemaName': schemaName,
+    'selectedCandidateLabel': selectedCandidateLabel,
+    'selectEntryCandidate': selectEntryCandidate, 'semanticHuesEnabled': semanticHuesEnabled, 'send': sendUiEvent, 'setSemanticHuesEnabled': semanticHuesEnabledSet, 'sortedRoleContrastRows': sortedRoleContrastRows, 'updateRelation': relationUpdate, 'updateRelations': relationsUpdate,
+    'updateUploadedImageSetting': uploadedImageSettingUpdate, 'uploadedImages': uploadedImages
   };
 }

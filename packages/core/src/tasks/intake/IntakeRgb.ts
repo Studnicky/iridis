@@ -17,12 +17,20 @@ type RgbInput = RgbInterfaceType & {
   'a'?: number;
 };
 
+/**
+ * A channel above this value cannot plausibly be a 0..1 float (even
+ * accounting for out-of-gamut overshoot); below it, marginal overshoot
+ * past 1.0 is treated as float data and left for downstream clamping
+ * rather than misclassified as 0..255 byte data.
+ */
+const RGB_BYTE_SCALE_THRESHOLD = 2;
+
 function isRgbInput(v: unknown): v is RgbInput {
   if (typeof v !== 'object' || v === null) {return false;}
   const o = v as Record<string, unknown>;
-  return typeof o.r === 'number'
-    && typeof o.g === 'number'
-    && typeof o.b === 'number';
+  return typeof o.r === 'number' && Number.isFinite(o.r)
+    && typeof o.g === 'number' && Number.isFinite(o.g)
+    && typeof o.b === 'number' && Number.isFinite(o.b);
 }
 
 /**
@@ -76,7 +84,11 @@ class IntakeRgb implements TaskInterface {
     let { b, g, r } = raw;
     const a = typeof raw.a === 'number' ? raw.a : 1;
 
-    if (r > 1 || g > 1 || b > 1) {
+    // Byte-scale (0..255) detection requires a channel meaningfully out of
+    // the 0..1 float range — a marginal overshoot (out-of-gamut math, HDR
+    // reduction, float rounding) stays a float and is clamped downstream by
+    // colorRecordFactory instead of being divided by 255 into near-black.
+    if (r > RGB_BYTE_SCALE_THRESHOLD || g > RGB_BYTE_SCALE_THRESHOLD || b > RGB_BYTE_SCALE_THRESHOLD) {
       r = r / 255;
       g = g / 255;
       b = b / 255;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { highlightCode } from '~/theme/Highlighter.ts';
-import type { SupportedLangType } from '~/theme/Highlighter.ts';
+import { highlightCode } from '~/theme/highlightCode.ts';
+import type { SupportedLangType } from '~/composables/types/supportedLang.ts';
 
 /**
  * Real multi-language syntax highlighting (Shiki: CSS, JSON, JS/TS, XML) using

@@ -3,9 +3,12 @@ import { computed } from 'vue';
 import { colorRecordFactory } from '@studnicky/iridis';
 import { useDataLayout } from '~/composables/useDataLayout.ts';
 import { useIridis } from '~/composables/useIridis.ts';
+import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { ALIAS_COLOR_NAMES, Tokens } from '~/theme/Tokens.ts';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
-import { complianceFor, sortRoleRows } from '~/utils/roleSort.ts';
+import { complianceFor } from '~/utils/complianceFor.ts';
+import { minRatioForRole } from '~/utils/minRatioForRole.ts';
+import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 import { capitalize } from '~/utils/capitalize.ts';
 
 const TABLE_SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
@@ -13,13 +16,14 @@ const TABLE_SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 const ALIASES = ALIAS_COLOR_NAMES.map((key) => ({ key, 'label': capitalize(key) }));
 
 /** Same sort as every other role listing on the page — an alias's sort row is its base (500-shade) resolved color, the same hex ScaleCard shows as this alias's representative swatch. */
-const { roles, scales, roleSortKeys } = useIridis();
+const { roles, scales, roleSortKeys, schemaName, framing } = useIridis();
 const { dataLayout } = useDataLayout();
 
 const sortedAliases = computed(() => {
   // 'background' is required in every schema tier — resolved before any
   // component reads this, never a hardcoded placeholder.
   const bg = roles.value['background']!;
+  const schema = roleSchemaByName[schemaName.value]?.[framing.value];
   const rows = ALIASES.map((a) => {
     // resolveAliasShadeHex can still miss during an early SSR pass (e.g. the
     // requested shade tier isn't populated yet) — fall back to the same
@@ -27,7 +31,11 @@ const sortedAliases = computed(() => {
     const hex = Tokens.resolveAliasShadeHex(roles.value, scales.value, a.key, 500) ?? bg;
     const oklch = colorRecordFactory.fromHex(hex).oklch;
     const ratio = contrastRatio(hex, bg);
-    return { ...a, 'c': oklch.c, 'compliance': complianceFor(ratio), 'h': oklch.h, 'l': oklch.l, 'name': a.key, ratio };
+    // a.key is a Nuxt UI alias (primary/secondary/…), not a schema role name,
+    // so it never matches a declared contrast pair — minRatioForRole falls
+    // back to the WCAG-AA default, which is what every alias's underlying
+    // role (brand/accent-alt/success/…) already declares.
+    return { ...a, 'c': oklch.c, 'compliance': complianceFor(ratio, minRatioForRole(schema, a.key)), 'h': oklch.h, 'l': oklch.l, 'name': a.key, ratio };
   });
   return sortRoleRows(rows, roleSortKeys.value);
 });

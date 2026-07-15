@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
-import { sortRoleRows } from '~/utils/roleSort.ts';
+import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 /**
  * The iridis-4 ⊂ 8 ⊂ 12 ⊂ 16 ⊂ 32 schema hierarchy as a tree: each tier node
@@ -88,7 +88,10 @@ const tree = computed<TierType[]>(() => {
     <p class="mt-3 text-xs text-muted">
       Each leaf above is one <code class="font-mono text-xs">RoleDefinitionInterface</code> entry — a named,
       intent-classified contract, not a raw color. See
-      <a href="#04-engine-api" class="text-primary hover:underline">Long-form Engine API</a> for what every field does.
+      <a
+        href="#04-engine-api"
+        class="text-primary hover:underline"
+      >Long-form Engine API</a> for what every field does.
     </p>
   </UCard>
 </template>

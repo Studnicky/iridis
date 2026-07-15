@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
 
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useDebouncedResizeObserver } from '~/composables/useDebouncedResizeObserver.ts';
@@ -38,7 +38,14 @@ const cardW = ref(760);
 // face in the same deck to stretch to match it, leaving a huge dead blank
 // area under any short face — .cyl-card-body's own overflow-y:auto already
 // lets a face taller than the cap scroll internally, so nothing is lost.
-const cardHeights = ref<Record<number, number>>({});
+//
+// Keyed by item.key (not array index): props.items can grow/shrink (e.g.
+// uploaded-image faces), which shifts every subsequent item's index. Vue's
+// own `:key="item.key"` on the v-for below already keeps a DOM node bound to
+// the same item across such shifts, so reading data-cyl-key off the observed
+// element at callback time — instead of a positional index — stays correct
+// even if a resize entry lands after a reorder.
+const cardHeights = ref<Record<string, number>>({});
 const cardHCap = ref(900);
 const cardH = computed(() => {
   const heights = Object.values(cardHeights.value);
@@ -155,7 +162,21 @@ function measureViewport(): void {
   cardW.value = Math.min(760, Math.round(window.innerWidth * 0.92));
   cardHCap.value = Math.max(480, Math.round(window.innerHeight * 0.82));
 }
+// index.vue mounts one CylinderCarousel per stage, and every one that
+// scrolls near the viewport activates and registers its own keydown
+// listener — a bare, unscoped listener would make a single arrow-key press
+// advance every activated deck on the page at once. Scoping to "this
+// widget's own DOM subtree is hovered, or holds focus" keeps the listener on
+// window (so hovering without first clicking still works) while ensuring
+// only the ONE deck the user is actually attending to reacts.
+const rootRef = ref<HTMLElement | null>(null);
+let isHovered = false;
+function onPointerEnter(): void { isHovered = true; }
+function onPointerLeave(): void { isHovered = false; }
 function onKey(e: KeyboardEvent): void {
+  const root = rootRef.value;
+  if (!root) return;
+  if (!isHovered && !root.contains(document.activeElement)) return;
   if (e.key === 'ArrowRight') go(1);
   if (e.key === 'ArrowLeft') go(-1);
 }
@@ -165,44 +186,62 @@ function onKey(e: KeyboardEvent): void {
 // height to the shared max — switching to it never causes a late resize
 // jump, and a card whose own content grows post-mount (e.g. an expanding
 // accordion) updates the shared max even while it's in the background.
-// data-cyl-index on each card lets the observer attribute entries back to
-// their face index. Debounced like BalancedWrap's ResizeObserver convention.
+// data-cyl-key on each card lets the observer attribute entries back to
+// their face's item.key. Debounced like BalancedWrap's ResizeObserver
+// convention (see useDebouncedResizeObserver — entries are accumulated
+// across the debounce window, so a card that settles while another is still
+// resizing is never dropped).
 const sceneRef = ref<HTMLElement | null>(null);
 const cardResizeObserver = useDebouncedResizeObserver((entries) => {
   const next = { ...cardHeights.value };
   for (const entry of entries) {
-    const bodyEl = entry.target as HTMLElement;
-    const cardEl = bodyEl.closest<HTMLElement>('.cyl-card');
-    if (!cardEl) continue;
-    const idx = Number(cardEl.dataset.cylIndex);
-    next[idx] = naturalCardHeight(cardEl);
+    const contentEl = entry.target as HTMLElement;
+    const cardEl = contentEl.closest<HTMLElement>('.cyl-card');
+    const key = cardEl?.dataset.cylKey;
+    if (!cardEl || key === undefined) continue;
+    next[key] = naturalCardHeight(cardEl);
   }
   cardHeights.value = next;
 }, 100);
 /**
- * A card's own getBoundingClientRect()/ResizeObserver size is NOT its true
- * natural content height once cardStyle() has applied an explicit height to
- * it — that would just report back whatever height we already imposed,
- * circularly. .cyl-card-body's scrollHeight always reflects its full content
- * height regardless of any height clamp/overflow applied to it or its
- * ancestors, so tag-bar height + body scrollHeight is the true unclamped
- * natural height of the card.
+ * cardStyle() pins every .cyl-card to an explicit height with overflow:
+ * hidden, so THAT element's own box never reflects true content growth — a
+ * ResizeObserver on it would only ever report back the height we already
+ * imposed. .cyl-card-body is likewise height-constrained (flex:1,
+ * min-height:0) to stay a scroll container. .cyl-card-content, the innermost
+ * wrapper around the slot, carries no imposed height or overflow clamp of
+ * its own, so its border-box (offsetHeight) always equals the slot content's
+ * true unclamped natural height — including post-mount growth (an expanding
+ * accordion, async image candidates, a resizing canvas) — regardless of how
+ * constrained its ancestors are.
  */
 function naturalCardHeight(cardEl: HTMLElement): number {
   const tag = cardEl.querySelector<HTMLElement>('.cyl-card-tag');
-  const body = cardEl.querySelector<HTMLElement>('.cyl-card-body');
-  return Math.round((tag?.offsetHeight ?? 0) + (body?.scrollHeight ?? 0));
+  const content = cardEl.querySelector<HTMLElement>('.cyl-card-content');
+  return Math.round((tag?.offsetHeight ?? 0) + (content?.offsetHeight ?? 0));
 }
+/**
+ * Rebuilds cardHeights from scratch (full replace, not merge) and
+ * re-observes exactly the current face set. Called on activation AND
+ * whenever props.items changes shape (see the watch below), so dynamically
+ * added faces (e.g. an uploaded image) get measured and observed, and
+ * removed faces' stale heights don't linger in the shared max. Disconnecting
+ * first drops the observer's references to any now-detached card content
+ * elements instead of holding them indefinitely.
+ */
 function observeAllCards(): void {
   if (!sceneRef.value) return;
+  cardResizeObserver.disconnect();
   const cards = sceneRef.value.querySelectorAll<HTMLElement>('.cyl-card');
-  const heights: Record<number, number> = {};
+  const heights: Record<string, number> = {};
   cards.forEach((el) => {
-    const idx = Number(el.dataset.cylIndex);
-    heights[idx] = naturalCardHeight(el);
+    const key = el.dataset.cylKey;
+    if (key === undefined) return;
+    heights[key] = naturalCardHeight(el);
+    const content = el.querySelector<HTMLElement>('.cyl-card-content');
+    if (content) cardResizeObserver.observe(content);
   });
   cardHeights.value = heights;
-  cards.forEach((el) => cardResizeObserver.observe(el));
 }
 
 // The carousel is often below the fold (e.g. a second instance further down
@@ -218,6 +257,16 @@ function activate(): void {
   window.addEventListener('resize', measureViewport);
   window.addEventListener('keydown', onKey);
 }
+// props.items grows/shrinks as faces are added or removed (e.g. uploaded
+// images) — re-run observeAllCards whenever the face set's keys change so
+// new faces get measured/observed and removed faces' heights are pruned.
+// Only wired up once the deck has activated; a pre-activation change is
+// picked up by activate()'s own initial observeAllCards() call.
+watch(
+  () => props.items.map((item) => item.key).join('|'),
+  () => { if (activated) nextTick(() => observeAllCards()); },
+  { flush: 'post' }
+);
 let visibilityObserver: IntersectionObserver | null = null;
 onMounted(() => {
   if (typeof IntersectionObserver === 'undefined' || !sceneRef.value) {
@@ -242,7 +291,15 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="cyl">
+  <div
+    ref="rootRef"
+    class="cyl"
+    tabindex="0"
+    role="group"
+    aria-roledescription="carousel"
+    @pointerenter="onPointerEnter"
+    @pointerleave="onPointerLeave"
+  >
     <div class="cyl-scene-wrap">
       <UButton
         icon="i-material-symbols-chevron-left-rounded"
@@ -271,18 +328,20 @@ onBeforeUnmount(() => {
             class="glass scanlines cyl-card"
             :class="{ float: !isActive(i) }"
             :style="{ '--glow': 'var(--ui-primary)', ...cardStyle() }"
-            :data-cyl-index="i"
+            :data-cyl-key="item.key"
           >
             <div class="cyl-card-tag font-display">
               <span class="cyl-dotlight" />
               <span class="cyl-card-tag-label">{{ item.label }}</span>
             </div>
             <div class="cyl-card-body">
-              <slot
-                :item="item"
-                :active="isActive(i)"
-                :index="i"
-              />
+              <div class="cyl-card-content">
+                <slot
+                  :item="item"
+                  :active="isActive(i)"
+                  :index="i"
+                />
+              </div>
             </div>
           </div>
         </div>

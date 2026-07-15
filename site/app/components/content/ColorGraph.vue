@@ -21,7 +21,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { colorRecordFactory } from '@studnicky/iridis';
 import { useIridis } from '~/composables/useIridis.ts';
-import { useRoleMathList, type RoleMathEntry } from '~/composables/useRoleMathList.ts';
+import { useRoleMathList } from '~/composables/useRoleMathList.ts';
+import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 import GraphDpad from './graph/GraphDpad.vue';
 import GraphLegend from './graph/GraphLegend.vue';
@@ -48,7 +49,7 @@ type CosmosCtor = new (div: HTMLDivElement, config: Record<string, unknown>) => 
 /** A role's resolution category — mutually exclusive, in priority order (a pinned role is shown as pinned even if it would otherwise also count as derived). */
 type ResolutionCategory = 'pinned' | 'synthesized' | 'derived' | 'direct';
 
-function categoryOf(role: RoleMathEntry): ResolutionCategory {
+function categoryOf(role: RoleMathEntryType): ResolutionCategory {
   if (role.isPinned) return 'pinned';
   if (role.synthesized) return 'synthesized';
   if (role.isDerived) return 'derived';
@@ -96,6 +97,16 @@ let resizeObserver: ResizeObserver | null = null;
 let visibilityPoll: ReturnType<typeof setInterval> | null = null;
 let GraphCtor: CosmosCtor | null = null;
 const fitTimers: ReturnType<typeof setTimeout>[] = [];
+// Caps how many times initCosmos() is allowed to retry a failing
+// construction (WebGL2 unavailable, GPU blocklisted, context lost, shader
+// compile failure): each failed `new GraphCtor()` call can allocate a WebGL2
+// context before throwing, and browsers cap concurrent contexts tab-wide —
+// an unbounded 400ms poll would keep re-allocating and thrashing that budget
+// for as long as the component stays mounted. 10 attempts at the poll's
+// 400ms cadence gives the failure a few seconds to be transient (e.g. a
+// momentary context loss) before giving up for good.
+const MAX_INIT_ATTEMPTS = 10;
+let initAttempts = 0;
 
 onMounted(async () => {
   try {
@@ -123,13 +134,18 @@ onMounted(async () => {
   // regardless of any 3D-transform/IntersectionObserver interaction quirk.
   const tryInit = (): void => {
     if (graph.value !== null) return;
+    if (initAttempts >= MAX_INIT_ATTEMPTS) return;
     const rect = container.getBoundingClientRect();
     const inViewport = rect.width > 0 && rect.height > 0
       && rect.bottom > 0 && rect.right > 0
       && rect.top < window.innerHeight && rect.left < window.innerWidth;
     if (!inViewport) return;
     initCosmos(container);
-    if (graph.value !== null && visibilityPoll !== null) {
+    // Stop polling once construction succeeds, or once it has failed enough
+    // times to give up — either way, further calls to tryInit would be
+    // wasted work (or, for the failure case, a fresh doomed WebGL2 context
+    // allocation) with no path to success.
+    if (visibilityPoll !== null && (graph.value !== null || initAttempts >= MAX_INIT_ATTEMPTS)) {
       clearInterval(visibilityPoll);
       visibilityPoll = null;
     }
@@ -147,6 +163,7 @@ onMounted(async () => {
 
 function initCosmos(container: HTMLDivElement): void {
   if (GraphCtor === null || graph.value !== null) return;
+  initAttempts += 1;
   try {
     graph.value = new GraphCtor(container, {
       'spaceSize': SPACE_SIZE,
@@ -182,6 +199,14 @@ function initCosmos(container: HTMLDivElement): void {
     pollZoom();
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err);
+    // A failed construction can still have partially allocated a WebGL2
+    // context/canvas (cosmos.gl may set up its own canvas before throwing on
+    // a later step, e.g. a shader compile failure) — dispose whatever handle
+    // exists and clear any DOM it left behind so a retry never piles a fresh
+    // context on top of an orphaned one.
+    try { graph.value?.destroy(); } catch { /* ignore */ }
+    graph.value = null;
+    container.replaceChildren();
   }
 }
 
@@ -449,7 +474,7 @@ interface Buffers {
  * instead of N isolated clusters. cosmos.gl's physics (link spring,
  * repulsion, gravity, collision — see initCosmos()) takes it from there.
  */
-function buildBuffers(roles: readonly RoleMathEntry[], visible: Readonly<Record<ResolutionCategory, boolean>>): Buffers {
+function buildBuffers(roles: readonly RoleMathEntryType[], visible: Readonly<Record<ResolutionCategory, boolean>>): Buffers {
   const indexByName = new Map<string, number>();
   const meta: PointMeta[] = [];
   const positions: number[] = [];
@@ -459,7 +484,7 @@ function buildBuffers(roles: readonly RoleMathEntry[], visible: Readonly<Record<
   const linkColors: number[] = [];
 
   const hubs = roles.filter((r) => r.parentRole === undefined);
-  const leavesByParent = new Map<string, RoleMathEntry[]>();
+  const leavesByParent = new Map<string, RoleMathEntryType[]>();
   for (const role of roles) {
     if (role.parentRole === undefined) continue;
     const list = leavesByParent.get(role.parentRole) ?? [];

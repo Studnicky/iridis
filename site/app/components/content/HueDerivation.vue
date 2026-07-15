@@ -2,8 +2,12 @@
 import { computed, ref } from 'vue';
 import { colorRecordFactory } from '@studnicky/iridis';
 import { useIridis } from '~/composables/useIridis.ts';
-import { getAnalogousHues, getCompoundHues, getSplitComplementaryHues, selectHueAlgorithm } from '~/utils/colorDerivation.ts';
-import type { HueAlgorithm } from '~/composables/types/colorDerivation.ts';
+import { getAnalogousHues } from '~/utils/getAnalogousHues.ts';
+import { getCompoundHues } from '~/utils/getCompoundHues.ts';
+import { getSplitComplementaryHues } from '~/utils/getSplitComplementaryHues.ts';
+import { normalizeHue } from '~/utils/normalizeHue.ts';
+import { selectHueAlgorithm } from '~/utils/selectHueAlgorithm.ts';
+import type { HueAlgorithmType } from '~/composables/types/colorDerivation.ts';
 
 /**
  * Live reference for the 8 hue-derivation algorithms Derivation Settings lets
@@ -28,7 +32,7 @@ function hexAt(hue: number): string {
   return colorRecordFactory.fromOklch(0.68, 0.15, hue).hex;
 }
 
-const ALGORITHMS: { key: HueAlgorithm; label: string; description: string }[] = [
+const ALGORITHMS: { key: HueAlgorithmType; label: string; description: string }[] = [
   { 'key': 'monochromatic', 'label': 'Monochromatic', 'description': 'No hue shift — every derived role reads as the same hue as the seed.' },
   { 'key': 'complementary', 'label': 'Complementary', 'description': 'One hue sitting exactly 180° from the seed, on the opposite side of the wheel.' },
   { 'key': 'analogous', 'label': 'Analogous', 'description': 'The seed plus two neighbours, spaced evenly on either side.' },
@@ -48,7 +52,7 @@ const derived = computed(() => {
     if (a.key === 'analogous') hues = getAnalogousHues(baseHue.value, spacing.value);
     else if (a.key === 'split-complementary') hues = getSplitComplementaryHues(baseHue.value, spacing.value);
     else if (a.key === 'compound') hues = getCompoundHues(baseHue.value, spacing.value);
-    else if (a.key === 'freeform') hues = selectHueAlgorithm('freeform', baseHue.value, FREEFORM_ILLUSTRATIVE_OFFSETS);
+    else if (a.key === 'freeform') hues = selectHueAlgorithm('freeform', baseHue.value, FREEFORM_ILLUSTRATIVE_OFFSETS.map((o) => normalizeHue(baseHue.value + o)));
     else hues = selectHueAlgorithm(a.key, baseHue.value);
     return { ...a, hues };
   });
@@ -118,7 +122,7 @@ const derived = computed(() => {
           pure OKLCH hue math, no lightness or chroma involved. <code>Derivation Settings</code> (below the
           carousel) assigns one of these 8 algorithms to each of the 7 derivable roles
           (primary/success/warning/error/info/neutral/accent); <code>selectHueAlgorithm()</code> in
-          <code>utils/colorDerivation.ts</code> is the single dispatch point every role's derivation goes
+          <code>utils/selectHueAlgorithm.ts</code> is the single dispatch point every role's derivation goes
           through.
         </p>
         <p class="mt-2">

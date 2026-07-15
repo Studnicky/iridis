@@ -44,7 +44,7 @@ function bucketCentroid(bucket: BucketInterface): ColorRecordInterfaceType {
   return colorRecordFactory.fromOklch(L, C, H, { 'alpha': sumAlpha / sumW, 'hints': { 'weight': sumW }, 'sourceFormat': 'oklch' });
 }
 
-function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c' | 'h'): number {
+function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c'): number {
   if (colors.length === 0) {return 0;}
   let max = -Infinity; let min = Infinity;
   for (let i = 0; i < colors.length; i++) {
@@ -55,18 +55,54 @@ function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c' | 'h'): 
   return max - min;
 }
 
+/**
+ * Circular hue stats for a bucket: the start of the widest contiguous arc
+ * of hues (`gapStart`) and the angular width of that arc (`range`, degrees).
+ * Computed via the largest-gap method so a bucket straddling 0/360 (e.g.
+ * reds at 358/359/1/2) reports a small range instead of a spurious ~360.
+ */
+function circularHueStats(colors: ColorRecordInterfaceType[]): { 'gapStart': number; 'range': number } {
+  const hues: number[] = [];
+  for (let i = 0; i < colors.length; i++) {
+    const col = colors[i];
+    if (col === undefined) {continue;}
+    hues.push(((col.oklch.h % 360) + 360) % 360);
+  }
+  const n = hues.length;
+  if (n <= 1) {return { 'gapStart': hues[0] ?? 0, 'range': 0 };}
+  hues.sort((a, b) => {return a - b;});
+  let maxGap = (hues[0]! + 360) - hues[n - 1]!;
+  let gapStart = hues[0]!;
+  for (let i = 1; i < n; i++) {
+    const gap = hues[i]! - hues[i - 1]!;
+    if (gap > maxGap) {
+      maxGap = gap;
+      gapStart = hues[i]!;
+    }
+  }
+  return { 'gapStart': gapStart, 'range': 360 - maxGap };
+}
+
+/** Hue expressed as a non-negative offset (degrees) from `gapStart`, unwrapping the 0/360 seam. */
+function unwrappedHue(h: number, gapStart: number): number {
+  return (((h - gapStart) % 360) + 360) % 360;
+}
+
 class Bucket {
   static split(bucket: BucketInterface): [BucketInterface, BucketInterface] {
     const colors = bucket.colors;
     const lRange = rangeOf(colors, 'l');
     const cRange = rangeOf(colors, 'c');
-    const hRange = rangeOf(colors, 'h') / 360;
+    const hueStats = circularHueStats(colors);
+    const hRange = hueStats.range / 360;
 
     let channel: 'l' | 'c' | 'h' = 'l';
     if (cRange > lRange && cRange > hRange) {channel = 'c';}
     else if (hRange > lRange) {channel = 'h';}
 
-    const sorted = [...colors].sort((a, b) => {return a.oklch[channel] - b.oklch[channel];});
+    const sorted = channel === 'h'
+      ? [...colors].sort((a, b) => {return unwrappedHue(a.oklch.h, hueStats.gapStart) - unwrappedHue(b.oklch.h, hueStats.gapStart);})
+      : [...colors].sort((a, b) => {return a.oklch[channel] - b.oklch[channel];});
 
     const half = bucket.totalWeight / 2;
     let acc = 0;
@@ -156,7 +192,7 @@ class ClusterMedianCutWeighted {
         // fairly.
         const lRange = rangeOf(bucket.colors, 'l');
         const cRange = rangeOf(bucket.colors, 'c');
-        const hRange = rangeOf(bucket.colors, 'h') / 360;
+        const hRange = circularHueStats(bucket.colors).range / 360;
         const widestRange = Math.max(lRange, cRange, hRange);
         const score = bucket.totalWeight * widestRange;
         if (score > bestScore) {

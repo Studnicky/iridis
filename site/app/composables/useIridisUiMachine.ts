@@ -1,4 +1,4 @@
-import { IridisUiEffectVariant } from './types/index.ts';
+import { EffectInterpreter } from '@studnicky/fsm';
 /**
  * Vue adapter over the shared IridisUiMachine, run through an EffectInterpreter
  * — one module-level singleton, matching useIridis.ts's module-level-ref
@@ -12,13 +12,14 @@ import { IridisUiEffectVariant } from './types/index.ts';
  * as effects and performed by the handler registered via
  * `registerMutateSeedsHandler` — not inline in the reducer or in components.
  */
-
-import { EffectInterpreter } from '@studnicky/fsm';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
 import { shallowRef } from 'vue';
 
-import type { IridisUiEffectType, IridisUiEventType } from './types/index.ts';
+import type { IridisUiEffectType, IridisUiEffectVariant, IridisUiEventType } from './types/index.ts';
 
 import { IridisUiMachine } from './fsm/IridisUiMachine.ts';
+import { logger } from './logger.ts';
 
 type MutateSeedsHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.MUTATE_SEEDS }>) => void;
 type SetPaletteParamHandlerType = (effect: Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>) => void;
@@ -33,10 +34,10 @@ type SelectImageCandidateHandlerType = (effect: Extract<IridisUiEffectType, { 'v
 /** Mutable — `EffectInterpreter` reads handler keys dynamically on each drain, so filling this in after construction (once useIridis.ts registers it) still wires correctly. */
 const handlers: {
   'EXTRACT_IMAGE'?: ExtractImageHandlerType; 'MUTATE_SEEDS'?: MutateSeedsHandlerType;
-  'PIN_SEED_ROLE'?: PinSeedRoleHandlerType; 'SET_PALETTE_PARAM'?: SetPaletteParamHandlerType;
-  'UPDATE_DIAGRAM_VIEW'?: UpdateDiagramViewHandlerType; 'UPDATE_CVD_PREVIEW'?: UpdateCvdPreviewHandlerType;
-  'POPULATE_PICKER_FROM_IMAGE'?: PopulatePickerFromImageHandlerType; 'NAVIGATE_TO_TARGET'?: NavigateToTargetHandlerType;
-  'SELECT_IMAGE_CANDIDATE'?: SelectImageCandidateHandlerType
+  'NAVIGATE_TO_TARGET'?: NavigateToTargetHandlerType; 'PIN_SEED_ROLE'?: PinSeedRoleHandlerType;
+  'POPULATE_PICKER_FROM_IMAGE'?: PopulatePickerFromImageHandlerType; 'SELECT_IMAGE_CANDIDATE'?: SelectImageCandidateHandlerType
+  'SET_PALETTE_PARAM'?: SetPaletteParamHandlerType; 'UPDATE_CVD_PREVIEW'?: UpdateCvdPreviewHandlerType;
+  'UPDATE_DIAGRAM_VIEW'?: UpdateDiagramViewHandlerType;
 } = {};
 
 const interpreter = EffectInterpreter.create({ 'handlers': handlers, 'machine': new IridisUiMachine() });
@@ -52,9 +53,23 @@ interpreter.subscribe((next) => { state.value = next; });
  * interpreter's drain loop. So fire-and-forget here still updates `state`
  * synchronously for callers (the mode computed setter, carousel handlers);
  * nothing here needs to await effect completion.
+ *
+ * The returned promise is still observed, not discarded: a reducer or effect
+ * handler throw rejects it, and `.catch` logs that failure through the app
+ * logger instead of letting it surface only as an unhandled rejection.
  */
 function send(event: IridisUiEventType): void {
-  void interpreter.send(event);
+  interpreter.send(event).catch((err: unknown) => {
+    logger.error(
+      LogBody.create()
+        .component('useIridisUiMachine')
+        .operation('send')
+        .status(LOG_STATUS.FAILED)
+        .message(`FSM rejected event "${event.type}"`)
+        .context({ 'error': err instanceof Error ? err.message : String(err) })
+        .build()
+    );
+  });
 }
 
 /** Registers the MUTATE_SEEDS effect handler. Called once by useIridis.ts, which owns the picker-seed refs the effect ultimately writes to. */
@@ -105,11 +120,11 @@ function registerSelectImageCandidateHandler(handler: SelectImageCandidateHandle
 export function useIridisUiMachine() {
   return {
     'registerExtractImageHandler': registerExtractImageHandler, 'registerMutateSeedsHandler': registerMutateSeedsHandler,
-    'registerPinSeedRoleHandler': registerPinSeedRoleHandler, 'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
-    'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler, 'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
-    'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler,
-    'registerNavigateToTargetHandler': registerNavigateToTargetHandler,
-    'registerSelectImageCandidateHandler': registerSelectImageCandidateHandler,
+    'registerNavigateToTargetHandler': registerNavigateToTargetHandler, 'registerPinSeedRoleHandler': registerPinSeedRoleHandler,
+    'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler, 'registerSelectImageCandidateHandler': registerSelectImageCandidateHandler,
+    'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
+    'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
+    'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler,
     'send': send, 'state': state
   };
 }
