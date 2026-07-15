@@ -14,14 +14,17 @@ A fleet of 12 partitioned finder agents (6 over the pipeline, 6 over the demo UI
 
 Severity reflects the verifier's adjusted rating (true blast radius), which in several cases is *lower* than the finder's initial call — e.g. latent defects on APIs that no shipping code exercises yet are marked accordingly rather than inflated.
 
-## ✅ Remediation status — COMPLETE
+## ✅ Remediation status — COMPLETE (re-verified)
 
-All 38 confirmed findings have been **fixed at root cause and verified green**. Each finding below is resolved in the working tree.
+Every one of the 40 findings has been fully addressed and **verified green**. All 40 were re-checked by an independent adversarial verifier reading the committed code; the four it flagged as incomplete were then completed.
 
-- **Verification:** `tsc --build` (packages) 0 errors · `nuxi typecheck` (site) 0 errors · core tests **348/348** · site tests **43/43**.
+- **Outcome:** 39 findings **fixed at root cause** (the 38 confirmed bugs + F40); F17 **confirmed working-as-designed** (hue-blind candidate selection is the intended nudge-anchor model).
+- **Verification:** `tsc --build` (packages) 0 errors · `nuxi typecheck` (site) 0 errors · core tests **348/348** · site tests **43/43** · change set **lint-clean**.
 - **Waves:** pipeline substrate first (contrast/APCA, color-mix, clustering, engine/registry, model, intake/expand), then the demo UI (FSM, carousel/observers, export pipeline, compliance labels, hue labels), each reviewed and typechecked at the boundary.
-- **F17 / F40 were NOT changed** — reclassified as working-as-designed (role `hue` is a nudge anchor within `hueClamp`, not an absolute target/pin).
-- The touched files were additionally brought fully **lint-clean** against the repo's strict config (including the one-export-per-file structural convention).
+- **Re-verification caught & closed 3 partial fixes:** F08 (NaN guard extended to the IntakeHsl/Oklch/Lab siblings), F19 (export pipeline now also threads `cvdCorrect` + `colorSpace`), F06 (effect handlers wrapped so a throw can't wedge the FSM interpreter).
+- **F40 resolved (Option A):** role `hue` is now *always* a bounded nudge — never an absolute pin. A missing `hueClamp` defaults to `RoleGeometry.DEFAULT_HUE_CLAMP` (90°). This removes the absolute-pin capability from the published `@studnicky/iridis` library (its two pin tests were rewritten to assert the nudge). The shipping site palette is byte-identical.
+- **F17 by-design:** `hue` is a nudge anchor — selection is on lightness/chroma proximity, hue only nudges the winner within the clamp; biasing selection by hue would replace that model.
+- Touched files were additionally brought fully **lint-clean** against the repo's strict config (including the one-export-per-file structural convention).
 
 ## Executive summary — the themes that matter
 
