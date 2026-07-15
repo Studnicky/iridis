@@ -17,6 +17,7 @@ withDefaults(defineProps<{
   /** Tooltip for the expand button. Consumers wire `@expand` to whatever the label implies (a zoom step, a fullscreen toggle, etc.). */
   expandTitle?: string;
 }>(), {
+  zoomLevel: undefined,
   panEnabled: true,
   expandTitle: 'Expand zoom',
 });
