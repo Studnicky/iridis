@@ -27,6 +27,7 @@ class ClampCount implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Reduces state.colors to maxColors (default 64) via median-cut clustering when the limit is exceeded and bypass is not set.',
     'name':        'clamp:count',
+    'phase':       undefined,
     'reads':       ['colors', 'input.maxColors', 'input.bypass'],
     'requires':    ['clusterMedianCut'],
     'writes':      ['colors']

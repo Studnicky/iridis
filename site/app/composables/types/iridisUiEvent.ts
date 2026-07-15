@@ -52,7 +52,7 @@ export type IridisUiEventType =
   | { 'type': IridisUiActionType.DRAG_START }
   | { 'dragPx': number; 'type': IridisUiActionType.DRAG_MOVE }
   | { 'count': number; 'shiftedBy': number; 'type': IridisUiActionType.DRAG_END }
-  | { 'hex'?: string; 'type': IridisUiActionType.ADD_SEED }
+  | { 'hex': string | undefined; 'type': IridisUiActionType.ADD_SEED }
   | { 'index': number; 'type': IridisUiActionType.REMOVE_SEED }
   | { 'hex': string; 'index': number; 'type': IridisUiActionType.SET_SEED }
   | { 'index': number; 'role': string | undefined; 'type': IridisUiActionType.PIN_SEED_ROLE }

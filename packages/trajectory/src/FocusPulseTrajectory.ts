@@ -10,5 +10,6 @@ const focusPulseStops: PaletteInterfaceType[] = [
 
 /** A short back-and-forth pulse on the accent role that returns near its starting point. */
 export const focusPulseTrajectory: TrajectoryDefinitionInterfaceType = {
+  'opts':  undefined,
   'stops': focusPulseStops
 };

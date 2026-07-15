@@ -49,23 +49,23 @@ export type CvdCorrectionInterfaceType = {
 };
 
 export type CvdResultSetInterfaceType = {
-  'corrections'?: CvdCorrectionInterfaceType[];
+  'corrections': CvdCorrectionInterfaceType[] | undefined;
   'warnings':     CvdPairWarningInterfaceType[];
 };
 
 export type WcagMetaSlotInterfaceType = {
-  'aa'?:   WcagPairResultSetInterfaceType;
-  'aaa'?:  WcagPairResultSetInterfaceType;
-  'apca'?: ApcaPairResultSetInterfaceType;
-  'cvd'?:  CvdResultSetInterfaceType;
+  'aa':   WcagPairResultSetInterfaceType | undefined;
+  'aaa':  WcagPairResultSetInterfaceType | undefined;
+  'apca': ApcaPairResultSetInterfaceType | undefined;
+  'cvd':  CvdResultSetInterfaceType | undefined;
 };
 
 /** Known `state.metadata` keys written by the contrast enforcement tasks. */
 export type ContrastMetadataInterfaceType = {
-  'contrast:aa'?:   WcagPairResultSetInterfaceType;
-  'contrast:aaa'?:  WcagPairResultSetInterfaceType;
-  'contrast:apca'?: ApcaPairResultSetInterfaceType;
-  'contrast:cvd'?:  CvdResultSetInterfaceType;
+  'contrast:aa':   WcagPairResultSetInterfaceType | undefined;
+  'contrast:aaa':  WcagPairResultSetInterfaceType | undefined;
+  'contrast:apca': ApcaPairResultSetInterfaceType | undefined;
+  'contrast:cvd':  CvdResultSetInterfaceType | undefined;
 };
 
 /** Type-safe accessor for a known contrast `state.metadata` key, returning `undefined` when unset. */

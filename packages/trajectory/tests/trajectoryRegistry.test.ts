@@ -59,7 +59,7 @@ test('registerTrajectory: custom trajectory can be registered and resolved by na
     { 'accent': { 'c': 0.1, 'h': 0,   'l': 0.5 } },
     { 'accent': { 'c': 0.1, 'h': 100, 'l': 0.5 } }
   ];
-  registry.registerTrajectory('custom', { stops });
+  registry.registerTrajectory('custom', { 'opts': undefined, stops });
   const result = registry.resolve('custom', 0);
   assertPaletteClose(result, stops[0] as PaletteInterfaceType);
   const midResult = registry.resolve('custom', 1);
@@ -71,7 +71,7 @@ test('registerTrajectory: registering under a built-in name overwrites it', () =
   const overrideStops: PaletteInterfaceType[] = [
     { 'accent': { 'c': 0.3, 'h': 0, 'l': 0.9 } }
   ];
-  registry.registerTrajectory('sunrise', { 'stops': overrideStops });
+  registry.registerTrajectory('sunrise', { 'opts': undefined, 'stops': overrideStops });
   const result = registry.resolve('sunrise', 0);
   assertPaletteClose(result, overrideStops[0] as PaletteInterfaceType);
 });

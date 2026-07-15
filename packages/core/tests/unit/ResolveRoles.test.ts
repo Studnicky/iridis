@@ -78,7 +78,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
           'hueClamp': undefined,
           'hueOffset': undefined,
           'intent': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
       role: 'background',
     },
@@ -109,7 +109,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
           'hueClamp': undefined,
           'hueOffset': undefined,
           'intent': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
       role: 'accent',
     },
@@ -139,7 +139,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
           'hueClamp': undefined,
           'hueOffset': undefined,
           'intent': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
       role: 'background',
     },
@@ -170,7 +170,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
           'hueClamp': undefined,
           'hueOffset': undefined,
           'intent': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
       role: 'soft',
     },
@@ -202,7 +202,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
           'hueClamp': undefined,
           'hueOffset': undefined,
           'intent': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
       role: 'light',
     },
@@ -220,7 +220,7 @@ new ScenarioRunner<Cell1Input, Cell1Output>(
   'ResolveRoles :: cell-1 :: chroma-range',
   async (input) => {
     const engine = freshEngine();
-    const state  = await engine.run({ 'colors': input.colors, 'roles': input.roles });
+    const state  = await engine.run({ 'colors': input.colors, 'roles': input.roles, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const assigned = state.roles[input.role];
     return {
       assigned:   assigned ?? colorRecordFactory.fromOklch(0, 0, 0),
@@ -270,7 +270,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
           'hueClamp': undefined,
           'hueOffset': undefined,
           'intent': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
       role: 'background',
       lMin: 0.94, lMax: 0.99,
@@ -301,7 +301,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
           'hueClamp': undefined,
           'hueOffset': undefined,
           'intent': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
       role: 'dark',
       lMin: 0.05, lMax: 0.15,
@@ -332,7 +332,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
           'hueClamp': undefined,
           'hueOffset': undefined,
           'intent': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
       role: 'mid',
       lMin: 0.40, lMax: 0.60,
@@ -351,7 +351,7 @@ new ScenarioRunner<Cell2Input, Cell2Output>(
   'ResolveRoles :: cell-2 :: lightness-range',
   async (input) => {
     const engine = freshEngine();
-    const state  = await engine.run({ 'colors': input.colors, 'roles': input.roles });
+    const state  = await engine.run({ 'colors': input.colors, 'roles': input.roles, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const assigned = state.roles[input.role];
     return {
       l:    assigned?.oklch.l ?? -1,
@@ -400,7 +400,7 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
           'hueClamp': undefined,
           'hueOffset': undefined,
           'intent': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
     },
     assert(output, error) {
@@ -440,7 +440,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
 
     // Build the hinted record directly via factory
     const hintedRecord = colorRecordFactory.fromHex(input.hintedHex, {
-      'hints': { 'role': input.hintRole },
+      'hints': { 'role': input.hintRole, 'intent': undefined, 'weight': undefined },
       'sourceFormat': 'hex',
     });
 
@@ -449,7 +449,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
 
     const seedTask: TaskInterface = {
       'name':     'seed:hint',
-      'manifest': { 'name': 'seed:hint', 'phase': 'onRunStart' },
+      'manifest': { 'name': 'seed:hint', 'phase': 'onRunStart', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
         state.colors.push(hintedRecord);
       },
@@ -457,7 +457,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
     engine.tasks.hook('onRunStart', seedTask);
     engine.pipeline(['intake:hex', 'resolve:roles']);
 
-    const state = await engine.run({ 'colors': otherColors, 'roles': input.roles });
+    const state = await engine.run({ 'colors': otherColors, 'roles': input.roles, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const assigned = state.roles[input.hintRole];
     return {
       assignedHex: assigned?.hex ?? '',
@@ -506,7 +506,7 @@ const cell4Scenarios: readonly ScenarioInterface<Cell4Input, Cell4Output>[] = [
           'hueClamp': undefined,
           'hueOffset': undefined,
           'intent': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
       role: 'accent',
       lMid: 0.60,
@@ -546,7 +546,7 @@ const cell4Scenarios: readonly ScenarioInterface<Cell4Input, Cell4Output>[] = [
           'hueOffset': undefined,
           'intent': undefined,
           'required': undefined
-        }],
+        }], 'contrastPairs': undefined, 'description': undefined,
       },
       role: 'optional',
       lMid: 0.60,
@@ -563,7 +563,7 @@ new ScenarioRunner<Cell4Input, Cell4Output>(
   'ResolveRoles :: cell-4 :: synthesis',
   async (input) => {
     const engine = freshEngine(['resolve:roles']);
-    const state  = await engine.run({ 'colors': [], 'roles': input.roles });
+    const state  = await engine.run({ 'colors': [], 'roles': input.roles, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const assigned = state.roles[input.role];
     const synthesized = (state.metadata['core:rolesSynthesized'] as string[] | undefined) ?? [];
     return {
@@ -613,7 +613,7 @@ new ScenarioRunner<Cell5Input, Cell5Output>(
   'ResolveRoles :: cell-5 :: no-schema',
   async (input) => {
     const engine = freshEngine();
-    const state  = await engine.run({ 'colors': input.colors });
+    const state  = await engine.run({ 'colors': input.colors, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
     return { rolesKeys: Object.keys(state.roles) };
   },
 ).run(cell5Scenarios);

@@ -25,7 +25,9 @@ class DeriveSemanticHues implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Writes absolute hue/hueClamp targets for success/warning/error/info onto metadata[\'core:hueTargetOverrides\'], skipped for any role with an explicit derivation relation, or entirely when metadata[\'derivation:semanticHuesEnabled\'] is false.',
     'name':        'derive:semanticHues',
+    'phase':       undefined,
     'reads':       ['input.roles', 'metadata'],
+    'requires':    undefined,
     'writes':      ['metadata']
   };
 

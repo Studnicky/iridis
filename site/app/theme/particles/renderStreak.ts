@@ -14,6 +14,7 @@ export const renderStreak: ParticleRendererType = ({ colorVar, count, sizePx }) 
   const elements = Array.from({ 'length': count }, (_, i) => {
     const { x, y } = randomPlacement();
     return {
+      'glyph': undefined,
       'id': `streak-${i}`,
       'style': {
         'animationDelay': `${randomDelay(6)}, ${randomDelay(4)}`,

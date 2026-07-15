@@ -55,12 +55,16 @@ function cssVarsScopedPipeline(extra: readonly string[] = []): readonly string[]
 
 // Single-role schema — minimal baseline
 const SINGLE_ROLE: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description': undefined,
   'name': 'single',
   'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
 };
 
 // Two-role schema — covers a real-world "foreground + background" pair
 const TWO_ROLES: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description': undefined,
   'name': 'two',
   'roles': [
     { 'name': 'primary',   'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
@@ -70,6 +74,8 @@ const TWO_ROLES: RoleSchemaInterfaceType = {
 
 // All-intent schema — exercises every forcedColorsToken branch
 const ALL_INTENT_ROLES: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description': undefined,
   'name': 'all-intent',
   'roles': [
     { 'name': 'bg',        'required': true,  'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
@@ -87,6 +93,8 @@ const ALL_INTENT_ROLES: RoleSchemaInterfaceType = {
 
 // Wide-gamut role — permissive chroma so resolve:roles doesn't shrink the OKLCH
 const WIDE_GAMUT_ROLE: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description': undefined,
   'name': 'wide-gamut',
   'roles': [
     {
@@ -106,6 +114,8 @@ const WIDE_GAMUT_ROLE: RoleSchemaInterfaceType = {
 
 // CamelCase role name — exercises toCssVarName kebab conversion
 const CAMEL_ROLE: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description': undefined,
   'name': 'camel',
   'roles': [
     { 'name': 'primaryText', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
@@ -288,9 +298,14 @@ new ScenarioRunner<CssVarsBasicInput, CssVarsBasicOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const state = await engine.run({
-      'colors':   input.colors,
-      'roles':    input.roles,
-      ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.metadata,
+      'roles':     input.roles,
+      'runtime':   undefined,
     });
     const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
     if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
@@ -375,6 +390,8 @@ const cssVarsCascadeScenarios: readonly ScenarioInterface<CssVarsCascadeInput, C
     input: {
       colors:   ['#1a1a2e', '#e0e0e0'],
       roles:    {
+        'contrastPairs': undefined,
+        'description': undefined,
         'name': 'text-bg',
         'roles': [
           { 'name': 'bg',   'required': true, 'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
@@ -469,9 +486,14 @@ new ScenarioRunner<CssVarsCascadeInput, CssVarsCascadeOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const state = await engine.run({
-      'colors':   input.colors,
-      'roles':    input.roles,
-      ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.metadata,
+      'roles':     input.roles,
+      'runtime':   undefined,
     });
     const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
     if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
@@ -592,9 +614,14 @@ new ScenarioRunner<CssVarsNamingInput, CssVarsNamingOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const runInput: InputInterface = {
-      'colors': input.colors,
-      'roles':  input.roles,
-      ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.metadata,
+      'roles':     input.roles,
+      'runtime':   undefined,
     };
     const state = await engine.run(runInput);
     const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
@@ -717,9 +744,14 @@ new ScenarioRunner<CssVarsWideGamutInput, CssVarsWideGamutOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const state = await engine.run({
-      'colors': input.colors,
-      'roles':  input.roles,
-      ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.metadata,
+      'roles':     input.roles,
+      'runtime':   undefined,
     });
     const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
     if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
@@ -831,9 +863,14 @@ new ScenarioRunner<CssVarsScopedBasicInput, CssVarsScopedBasicOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const state = await engine.run({
-      'colors': input.colors,
-      'roles':  input.roles,
-      ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.metadata,
+      'roles':     input.roles,
+      'runtime':   undefined,
     });
     const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
     if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
@@ -923,9 +960,14 @@ new ScenarioRunner<CssVarsScopedVariantsInput, CssVarsScopedVariantsOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const state = await engine.run({
-      'colors': input.colors,
-      'roles':  input.roles,
-      ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.metadata,
+      'roles':     input.roles,
+      'runtime':   undefined,
     });
     const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
     if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
@@ -1020,9 +1062,14 @@ new ScenarioRunner<CssVarsScopedWideGamutInput, CssVarsScopedWideGamutOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const state = await engine.run({
-      'colors': input.colors,
-      'roles':  input.roles,
-      ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.metadata,
+      'roles':     input.roles,
+      'runtime':   undefined,
     });
     const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
     if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
@@ -1121,9 +1168,14 @@ new ScenarioRunner<CssVarsScopedPrefixInput, CssVarsScopedPrefixOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const runInput: InputInterface = {
-      'colors': input.colors,
-      'roles':  input.roles,
-      ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.metadata,
+      'roles':     input.roles,
+      'runtime':   undefined,
     };
     const state = await engine.run(runInput);
     const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
@@ -1146,6 +1198,7 @@ const CSS_VARS_GOLDEN = new URL(
 );
 
 const GOLDEN_ROLES: RoleSchemaInterfaceType = {
+  'description': undefined,
   'name':  'golden-cssvars',
   'roles': [
     { 'name': 'background', 'required': true, 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'chromaRange': [0.00, 0.03], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
@@ -1168,8 +1221,14 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
   ]);
 
   const state = await engine.run({
-    'colors': ['#5b21b6', '#0f172a', '#f8fafc'],
-    'roles':  GOLDEN_ROLES,
+    'bypass':    undefined,
+    'colors':    ['#5b21b6', '#0f172a', '#f8fafc'],
+    'contrast':  undefined,
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  undefined,
+    'roles':     GOLDEN_ROLES,
+    'runtime':   undefined,
   });
 
   const out = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;

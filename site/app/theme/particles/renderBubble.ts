@@ -13,6 +13,7 @@ export const renderBubble: ParticleRendererType = ({ colorVar, count, sizePx }) 
   const elements = Array.from({ 'length': count }, (_, i) => {
     const { x, y } = randomPlacement();
     return {
+      'glyph': undefined,
       'id': `bubble-${i}`,
       'style': {
         'animationDelay': `${randomDelay(14)}, ${randomDelay(5)}`,

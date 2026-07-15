@@ -69,7 +69,8 @@ export class ImagePlugin implements PluginInterface {
         'gallery:dominantColors': galleryDominantColorsSchema,
         'gallery:harmonized':    galleryHarmonizedSchema,
         'gallery:histogram':     galleryHistogramSchema
-      }
+      },
+      'outputs': undefined
     };
   }
 }

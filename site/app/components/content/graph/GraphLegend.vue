@@ -10,7 +10,7 @@ export interface LegendEntry {
   readonly swatch: 'solid' | 'dashed' | 'circle';
   readonly color: string;
   readonly label: string;
-  readonly active?: boolean;
+  readonly active: boolean | undefined;
 }
 
 export interface LegendTab {

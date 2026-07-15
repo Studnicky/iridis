@@ -117,7 +117,9 @@ export class EmitPandaTheme implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit Panda CSS token config and a UnoCSS-compatible theme object from the same resolved-role color map',
     'name':        'emit:pandaTheme',
+    'phase':       undefined,
     'reads':       ['roles'],
+    'requires':    undefined,
     'writes':      ['outputs.panda:theme']
   };
 

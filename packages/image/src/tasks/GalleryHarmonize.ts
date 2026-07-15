@@ -27,7 +27,9 @@ class GalleryHarmonize implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Shift accent hue by 30° when deltaE2000 vs frame is < 10',
     'name':        'gallery:harmonize',
+    'phase':       undefined,
     'reads':       ['roles', 'metadata.gallery'],
+    'requires':    undefined,
     'writes':      ['roles.accent', 'metadata.gallery:harmonized']
   };
 

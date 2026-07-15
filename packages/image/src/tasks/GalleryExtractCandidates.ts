@@ -51,7 +51,9 @@ class GalleryExtractCandidates implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Non-destructively run clustering across several configs, collecting each as a labeled candidate palette',
     'name':        'gallery:extractCandidates',
+    'phase':       undefined,
     'reads':       ['colors', 'metadata.gallery'],
+    'requires':    undefined,
     'writes':      ['metadata.gallery:candidates']
   };
 

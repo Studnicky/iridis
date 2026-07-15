@@ -71,7 +71,9 @@ class ExpandFamily implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Derives missing roles that have derivedFrom set. Applies OKLCH deltas from the source role (hueOffset/hue/hueClamp, optionally overridden per role via metadata[\'core:hueOffsetOverrides\']/[\'core:hueTargetOverrides\']). Never overwrites an already-assigned role.',
     'name':        'expand:family',
+    'phase':       undefined,
     'reads':       ['roles', 'input.roles', 'metadata'],
+    'requires':    undefined,
     'writes':      ['roles']
   };
 
@@ -90,7 +92,7 @@ class ExpandFamily implements TaskInterface {
     }
 
     const hueOffsetOverrides = state.metadata['core:hueOffsetOverrides'] as Record<string, number> | undefined;
-    const hueTargetOverrides = state.metadata['core:hueTargetOverrides'] as Record<string, { 'hue': number; 'hueClamp'?: number }> | undefined;
+    const hueTargetOverrides = state.metadata['core:hueTargetOverrides'] as Record<string, { 'hue': number; 'hueClamp': number | undefined }> | undefined;
 
     const pending: PendingDerivedRoleType[] = [];
     for (const inputRole of state.input.roles.roles) {

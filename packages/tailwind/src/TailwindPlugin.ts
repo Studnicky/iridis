@@ -27,7 +27,8 @@ export class TailwindPlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs': { 'tailwind:theme': tailwindOutputSchema }
+      'metadata': undefined,
+      'outputs':  { 'tailwind:theme': tailwindOutputSchema }
     };
   }
 }

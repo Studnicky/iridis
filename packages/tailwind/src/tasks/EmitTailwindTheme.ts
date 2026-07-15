@@ -167,7 +167,9 @@ export class EmitTailwindTheme implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit Tailwind theme.colors object and config module from resolved roles',
     'name':        'emit:tailwindTheme',
+    'phase':       undefined,
     'reads':       ['roles', 'metadata'],
+    'requires':    undefined,
     'writes':      ['outputs.tailwind:theme']
   };
 

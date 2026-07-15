@@ -57,15 +57,15 @@ export type RoleDefinitionInterfaceType = {
 };
 
 export type ContrastPairInterfaceType = {
-  'algorithm'?: ContrastAlgorithmType;
+  'algorithm':  ContrastAlgorithmType | undefined;
   'background': string;
   'foreground': string;
   'minRatio':   number;
 };
 
 export type RoleSchemaInterfaceType = {
-  'contrastPairs'?: ContrastPairInterfaceType[];
-  'description'?:   string;
-  'name':           string;
-  'roles':          RoleDefinitionInterfaceType[];
+  'contrastPairs': ContrastPairInterfaceType[] | undefined;
+  'description':   string | undefined;
+  'name':          string;
+  'roles':         RoleDefinitionInterfaceType[];
 };

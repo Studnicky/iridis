@@ -10,5 +10,6 @@ const duskFadeStops: PaletteInterfaceType[] = [
 
 /** Cool sweep from a lit dusk sky down through violet into near-black night. */
 export const duskFadeTrajectory: TrajectoryDefinitionInterfaceType = {
+  'opts':  undefined,
   'stops': duskFadeStops
 };

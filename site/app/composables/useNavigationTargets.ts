@@ -21,12 +21,12 @@ import { usePanelAccordion } from './usePanelAccordion.ts';
 const docTargets = shallowRef<readonly NavigationTargetInterfaceType[]>([]);
 
 const cardTargets: readonly NavigationTargetInterfaceType[] = STAGE_GROUPS.flatMap((group) => {
-  const result = group.items.map((item) => {return { 'id': item.key, 'kind': 'card', 'label': item.label, 'stage': group.name } satisfies NavigationTargetInterfaceType;});
+  const result = group.items.map((item) => {return { 'id': item.key, 'kind': 'card', 'label': item.label, 'panelId': undefined, 'stage': group.name } satisfies NavigationTargetInterfaceType;});
   return result;
 });
 
 const stageTargets: readonly NavigationTargetInterfaceType[] = STAGE_GROUPS.map((group) => {
-  return { 'id': group.name, 'kind': 'stage', 'label': group.label } satisfies NavigationTargetInterfaceType;
+  return { 'id': group.name, 'kind': 'stage', 'label': group.label, 'panelId': undefined, 'stage': undefined } satisfies NavigationTargetInterfaceType;
 });
 
 const targets = computed<readonly NavigationTargetInterfaceType[]>(() => {return [...cardTargets, ...stageTargets, ...docTargets.value];});
@@ -37,7 +37,8 @@ function registerDocTargets(docs: readonly { readonly 'path': string; readonly '
     'id': sanitizeDocAnchorId(doc.path),
     'kind': 'doc',
     'label': doc.title ?? doc.path,
-    'panelId': docPanelId(doc.path)
+    'panelId': docPanelId(doc.path),
+    'stage': undefined
   };});
 }
 

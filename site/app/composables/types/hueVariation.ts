@@ -1,5 +1,5 @@
 export type HueVariationType = {
   'hue': number;
-  'lightness'?: number;
-  'saturation'?: number;
+  'lightness': number | undefined;
+  'saturation': number | undefined;
 };

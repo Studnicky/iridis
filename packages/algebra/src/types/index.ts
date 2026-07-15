@@ -10,7 +10,7 @@ export type PaletteInterfaceType = Record<string, OklchInterfaceType>;
 export type HueDirectionType = 'clockwise' | 'counterClockwise' | 'shortestArc';
 
 export type LerpOptionsInterfaceType = {
-  'hueDirection'?: HueDirectionType;
+  'hueDirection': HueDirectionType | undefined;
 };
 
 export type PaletteDistanceMetricType = (

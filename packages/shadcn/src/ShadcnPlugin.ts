@@ -26,7 +26,8 @@ export class ShadcnPlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs': { 'shadcn:theme': shadcnOutputSchema }
+      'metadata': undefined,
+      'outputs':  { 'shadcn:theme': shadcnOutputSchema }
     };
   }
 }

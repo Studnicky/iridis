@@ -263,7 +263,9 @@ class EnforceCvdSimulate implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'CVD simulation against published thresholds: protanopia, deuteranopia, tritanopia, achromatopsia. Advisory by default; when input.contrast.cvdCorrect is true, also auto-corrects failing pairs and writes roles.',
     'name':        'enforce:cvdSimulate',
+    'phase':       undefined,
     'reads':       ['input.roles.contrastPairs', 'input.contrast.cvdCorrect', 'roles'],
+    'requires':    undefined,
     'writes':      ['roles', 'metadata[\'contrast:cvd\']']
   };
 

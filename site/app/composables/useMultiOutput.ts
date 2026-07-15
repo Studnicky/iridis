@@ -113,11 +113,14 @@ class MainOutputs {
     ]);
     const pair = roleSchemaByName[schemaName] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
     const st = engine.run({
+      'bypass':   undefined,
       'colors':   activeSeeds,
       'contrast': contrastConfigFor(contrastStrictness, cvdCorrect),
+      'emit':     undefined,
+      'maxColors': undefined,
       'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig, 'derivation:semanticHuesEnabled': semanticHuesEnabled },
       'roles':    pair![framing],
-      'runtime':  { 'colorSpace': colorSpace, 'framing': framing }
+      'runtime':  { 'colorSpace': colorSpace, 'extra': undefined, 'framing': framing }
     });
     const out = st.outputs as Record<string, unknown>;
     const rows: Record<string, OutputRowType | undefined> = {};
@@ -153,10 +156,14 @@ class VscodeOutput {
       'vscode:expandTokens', 'vscode:applyModifiers', 'emit:vscodeSemanticRules', 'emit:vscodeUiPalette', 'emit:vscodeThemeJson'
     ]);
     const st = engine.run({
+      'bypass':   undefined,
       'colors':   activeSeeds,
-      'contrast': { 'algorithm': 'wcag21', 'level': 'AA' },
+      'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': undefined, 'extra': undefined, 'level': 'AA' },
+      'emit':     undefined,
+      'maxColors': undefined,
+      'metadata': undefined,
       'roles':    vscodeRoleSchema16,
-      'runtime':  { 'colorSpace': 'srgb', 'framing': 'dark' }
+      'runtime':  { 'colorSpace': 'srgb', 'extra': undefined, 'framing': 'dark' }
     });
     const themeJson = (st.outputs as Record<string, unknown>)['vscode:themeJson'];
     if (themeJson === undefined) {return undefined;}

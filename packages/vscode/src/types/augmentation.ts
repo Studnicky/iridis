@@ -15,8 +15,8 @@ export type TokenColorRuleInterfaceType = {
   'name':     string;
   'scope':    string | string[];
   'settings': {
-    'fontStyle'?:  string;
-    'foreground'?: string;
+    'fontStyle':  string | undefined;
+    'foreground': string | undefined;
   };
 };
 
@@ -25,7 +25,7 @@ export type ThemeJsonInterfaceType = {
   'colors':               Record<string, string>;
   'name':                 string;
   'semanticHighlighting': true;
-  'semanticTokenColors':  Record<string, string | { 'fontStyle'?: string; 'foreground'?: string; }>;
+  'semanticTokenColors':  Record<string, string | { 'fontStyle': string | undefined; 'foreground': string | undefined; }>;
   'tokenColors':          TokenColorRuleInterfaceType[];
   'type':                 'dark' | 'light' | 'hc-dark' | 'hc-light';
 };
@@ -35,15 +35,15 @@ export type ThemeJsonInterfaceType = {
  * All fields optional: any single task may be the first or only one in the pipeline.
  */
 export type VscodeOutputSlotInterfaceType = {
-  'semanticTokenRules'?: Record<string, SemanticRuleEntryInterfaceType>;
-  'themeJson'?:          ThemeJsonInterfaceType;
-  'workbenchColors'?:    Record<string, string>;
+  'semanticTokenRules': Record<string, SemanticRuleEntryInterfaceType> | undefined;
+  'themeJson':          ThemeJsonInterfaceType | undefined;
+  'workbenchColors':    Record<string, string> | undefined;
 };
 
 /**
  * Fields written by vscode tasks to state.metadata['vscode'].
  */
 export type VscodeMetaSlotInterfaceType = {
-  'baseTokens'?:         Record<string, ColorRecordInterfaceType>;
-  'semanticTokenRules'?: Record<string, SemanticRuleEntryInterfaceType>;
+  'baseTokens':         Record<string, ColorRecordInterfaceType> | undefined;
+  'semanticTokenRules': Record<string, SemanticRuleEntryInterfaceType> | undefined;
 };

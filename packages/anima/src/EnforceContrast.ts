@@ -39,7 +39,12 @@ class State {
     }
 
     const input: InputInterface = {
-      'colors': [],
+      'bypass':    undefined,
+      'colors':    [],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
       'roles': {
         'contrastPairs': pairs.map((pair) => {return {
           'algorithm':  pair.algorithm ?? 'wcag21',
@@ -47,6 +52,7 @@ class State {
           'foreground': pair.foreground,
           'minRatio':   pair.minRatio ?? 4.5
         };}),
+        'description': undefined,
         'name':  'anima:frame',
         'roles': [...roleNames].map((name) => {return {
           'chromaRange':    undefined,
@@ -60,7 +66,8 @@ class State {
           'name':           name,
           'required':       true
         };})
-      }
+      },
+      'runtime':   undefined
     };
 
     return {
@@ -69,7 +76,7 @@ class State {
       'metadata': {},
       'outputs':  {},
       'roles':    roles,
-      'runtime':  {},
+      'runtime':  { 'colorSpace': undefined, 'extra': undefined, 'framing': undefined },
       'variants': {}
     };
   }

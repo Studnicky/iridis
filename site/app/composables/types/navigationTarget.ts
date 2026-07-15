@@ -18,7 +18,7 @@ export type NavigationTargetInterfaceType = {
   'kind': NavigationTargetKindType;
   'label': string;
   /** AccordionPanel's own `panel-id` (distinct from `id`, the sanitized scroll anchor) — set for `doc` targets only, so activateTarget() can open/close the matching accordion panel. */
-  'panelId'?: string;
+  'panelId': string | undefined;
   /** Owning stage name — set for `card` targets only (see STAGE_GROUPS in stageGroups.ts). */
-  'stage'?: string;
+  'stage': string | undefined;
 };

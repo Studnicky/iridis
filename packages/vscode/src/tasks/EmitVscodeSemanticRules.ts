@@ -26,6 +26,7 @@ class EmitVscodeSemanticRules implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Shapes the semantic token rule map for VS Code editor.semanticTokenColorCustomizations.rules using SCOPE_MAPPINGS and FONT_STYLES.',
     'name':        'emit:vscodeSemanticRules',
+    'phase':       undefined,
     'reads':       ['metadata.vscode:semanticTokenRules', 'metadata.vscode:baseTokens'],
     'requires':    ['vscode:applyModifiers'],
     'writes':      ['outputs.vscode:semanticTokenRules']

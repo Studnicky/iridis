@@ -80,7 +80,9 @@ class EmitCapacitorTheme implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit flat Capacitor theme map from resolved roles for native preference storage.',
     'name':        'emit:capacitorTheme',
+    'phase':       undefined,
     'reads':       ['roles', 'variants'],
+    'requires':    undefined,
     'writes':      ['outputs.capacitor:theme']
   };
 

@@ -24,7 +24,7 @@ import type { RoleSortKeyType } from './roleSortKey.ts';
  * actual mutation.
  */
 export type IridisUiEffectType =
-  | { 'hex'?: string; 'op': 'add'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
+  | { 'hex': string | undefined; 'op': 'add'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
   | { 'index': number; 'op': 'remove'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
   | { 'hex': string; 'index': number; 'op': 'set'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
   | { 'index': number; 'role': string | undefined; 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }

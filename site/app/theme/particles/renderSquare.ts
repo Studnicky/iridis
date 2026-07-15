@@ -13,6 +13,7 @@ export const renderSquare: ParticleRendererType = ({ colorVar, count, sizePx }) 
   const elements = Array.from({ 'length': count }, (_, i) => {
     const { x, y } = randomPlacement();
     return {
+      'glyph': undefined,
       'id': `square-${i}`,
       'style': {
         'animationDelay': `${randomDelay(16)}, ${randomDelay(20)}`,

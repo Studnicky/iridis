@@ -84,9 +84,9 @@ export type RgbInterfaceType = {
 };
 
 export type ColorHintsInterfaceType = {
-  'intent'?: ColorIntentType;
-  'role'?:   string;
-  'weight'?: number;
+  'intent': ColorIntentType | undefined;
+  'role':   string | undefined;
+  'weight': number | undefined;
 };
 
 /**

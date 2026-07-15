@@ -55,7 +55,9 @@ class GalleryExtract implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Reduce input records to K dominant colors via median-cut (weighted) or deltaE-merge clustering',
     'name':        'gallery:extract',
+    'phase':       undefined,
     'reads':       ['colors', 'metadata.gallery'],
+    'requires':    undefined,
     'writes':      ['colors', 'metadata.gallery:dominantColors']
   };
 

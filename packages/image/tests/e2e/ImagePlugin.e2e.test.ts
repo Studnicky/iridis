@@ -168,12 +168,18 @@ const extractScenarios: readonly ScenarioInterface<ExtractInput, ExtractOutput>[
     kind: 'happy',
     input: {
       input: {
+        'bypass':    undefined,
         'colors': [
           '#1a1a1a', '#2b2b2b', '#3c3c3c', '#4d4d4d', '#5e5e5e',
           '#8b5cf6', '#a78bfa', '#c4b5fd', '#d8b4fe', '#e9d5ff',
           '#ec4899', '#f472b6', '#f9a8d4',
         ],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
         'metadata': { 'gallery': { 'k': 5 } },
+        'roles':     undefined,
+        'runtime':   undefined,
       },
     },
     assert(output, error) {
@@ -187,8 +193,14 @@ const extractScenarios: readonly ScenarioInterface<ExtractInput, ExtractOutput>[
     kind: 'happy',
     input: {
       input: {
-        'colors': ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
-        'metadata': { 'gallery': { 'k': 3, 'algorithm': 'median-cut' } },
+        'bypass':    undefined,
+        'colors':    ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  { 'gallery': { 'k': 3, 'algorithm': 'median-cut' } },
+        'roles':     undefined,
+        'runtime':   undefined,
       },
     },
     assert(output, error) {
@@ -201,6 +213,7 @@ const extractScenarios: readonly ScenarioInterface<ExtractInput, ExtractOutput>[
     kind: 'happy',
     input: {
       input: {
+        'bypass':    undefined,
         'colors': [
           buildImageData([
             ...(Array<null>(80).fill(null).map<[number, number, number]>(() => [200, 10, 10])),
@@ -209,7 +222,12 @@ const extractScenarios: readonly ScenarioInterface<ExtractInput, ExtractOutput>[
             ...(Array<null>(80).fill(null).map<[number, number, number]>(() => [200, 200, 10])),
           ]),
         ],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
         'metadata': { 'gallery': { 'k': 3, 'algorithm': 'delta-e' } },
+        'roles':     undefined,
+        'runtime':   undefined,
       },
     },
     assert(output, error) {
@@ -222,8 +240,14 @@ const extractScenarios: readonly ScenarioInterface<ExtractInput, ExtractOutput>[
     kind: 'edge',
     input: {
       input: {
-        'colors': ['#ff0000', '#00ff00', '#0000ff'],
-        'metadata': { 'gallery': { 'k': 1 } },
+        'bypass':    undefined,
+        'colors':    ['#ff0000', '#00ff00', '#0000ff'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  { 'gallery': { 'k': 1 } },
+        'roles':     undefined,
+        'runtime':   undefined,
       },
     },
     assert(output, error) {
@@ -236,8 +260,14 @@ const extractScenarios: readonly ScenarioInterface<ExtractInput, ExtractOutput>[
     kind: 'edge',
     input: {
       input: {
-        'colors': ['#ff0000', '#00ff00'],
-        'metadata': { 'gallery': { 'k': 50 } },
+        'bypass':    undefined,
+        'colors':    ['#ff0000', '#00ff00'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  { 'gallery': { 'k': 50 } },
+        'roles':     undefined,
+        'runtime':   undefined,
       },
     },
     assert(output, error) {
@@ -248,7 +278,18 @@ const extractScenarios: readonly ScenarioInterface<ExtractInput, ExtractOutput>[
   {
     name: 'empty colors array is a no-op — extract does not crash, empty result',
     kind: 'edge',
-    input: { input: { 'colors': [], 'metadata': { 'gallery': { 'k': 5 } } } },
+    input: {
+      input: {
+        'bypass':    undefined,
+        'colors':    [],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  { 'gallery': { 'k': 5 } },
+        'roles':     undefined,
+        'runtime':   undefined,
+      },
+    },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=empty-colors-noop] must not throw on empty input');
       assert.strictEqual(output!.colorCount, 0, '[cell=2, scenario=empty-colors-noop] empty result from empty input');
@@ -307,12 +348,18 @@ const extractCandidatesScenarios: readonly ScenarioInterface<ExtractCandidatesIn
     kind: 'happy',
     input: {
       input: {
+        'bypass':    undefined,
         'colors': [
           '#1a1a1a', '#2b2b2b', '#3c3c3c', '#4d4d4d', '#5e5e5e',
           '#8b5cf6', '#a78bfa', '#c4b5fd', '#d8b4fe', '#e9d5ff',
           '#ec4899', '#f472b6', '#f9a8d4',
         ],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
         'metadata': { 'gallery': { 'k': 4 } },
+        'roles':     undefined,
+        'runtime':   undefined,
       },
     },
     assert(output, error) {
@@ -335,7 +382,11 @@ const extractCandidatesScenarios: readonly ScenarioInterface<ExtractCandidatesIn
     kind: 'happy',
     input: {
       input: {
-        'colors': ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
+        'bypass':    undefined,
+        'colors':    ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
         'metadata': {
           'gallery': {
             'candidates': [
@@ -344,6 +395,8 @@ const extractCandidatesScenarios: readonly ScenarioInterface<ExtractCandidatesIn
             ],
           },
         },
+        'roles':     undefined,
+        'runtime':   undefined,
       },
     },
     assert(output, error) {
@@ -362,8 +415,14 @@ const extractCandidatesScenarios: readonly ScenarioInterface<ExtractCandidatesIn
     kind: 'happy',
     input: {
       input: {
-        'colors': ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
-        'metadata': { 'gallery': { 'k': 3 } },
+        'bypass':    undefined,
+        'colors':    ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  { 'gallery': { 'k': 3 } },
+        'roles':     undefined,
+        'runtime':   undefined,
       },
       withExtract: true,
     },
@@ -378,7 +437,18 @@ const extractCandidatesScenarios: readonly ScenarioInterface<ExtractCandidatesIn
   {
     name: 'empty colors array matches gallery:extract\'s warn/no-op behavior',
     kind: 'edge',
-    input: { input: { 'colors': [], 'metadata': { 'gallery': { 'k': 5 } } } },
+    input: {
+      input: {
+        'bypass':    undefined,
+        'colors':    [],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  { 'gallery': { 'k': 5 } },
+        'roles':     undefined,
+        'runtime':   undefined,
+      },
+    },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=2b, scenario=empty-colors-noop] must not throw on empty input');
       assert.strictEqual(output!.candidates, undefined, '[cell=2b, scenario=empty-colors-noop] no candidates written on empty input');
@@ -551,8 +621,14 @@ new ScenarioRunner<AssignRolesInput, AssignRolesOutput>(
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'gallery:extract', 'gallery:assignRoles']);
     const state = await engine.run({
-      'colors':   input.hexColors,
-      'metadata': { 'gallery': { 'k': input.k } },
+      'bypass':    undefined,
+      'colors':    input.hexColors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  { 'gallery': { 'k': input.k } },
+      'roles':     undefined,
+      'runtime':   undefined,
     });
     return {
       state,
@@ -723,8 +799,14 @@ new ScenarioRunner<HarmonizeInput, HarmonizeOutput>(
       meta['harmonizeThreshold'] = input.harmonizeThreshold;
     }
     const state = await engine.run({
-      'colors':   input.hexColors,
-      'metadata': { 'gallery': meta },
+      'bypass':    undefined,
+      'colors':    input.hexColors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  { 'gallery': meta },
+      'roles':     undefined,
+      'runtime':   undefined,
     });
     const harmonized = state.metadata['gallery:harmonized'] as boolean | undefined;
     const details    = state.metadata['gallery:harmonizeDetails'] as HarmonizeDetailsType | undefined;
@@ -820,12 +902,18 @@ test('ImagePlugin :: golden :: assignRoles full pipeline round-trip', async () =
   const engine = freshEngine();
   engine.pipeline(['intake:hex', 'gallery:extract', 'gallery:assignRoles']);
   const state = await engine.run({
+    'bypass': undefined,
     'colors': [
       '#0d0d0d', '#202020', '#3c3c3c',
       '#8b5cf6', '#a78bfa',
       '#5b6470', '#7d8390',
     ],
-    'metadata': { 'gallery': { 'k': 5 } },
+    'contrast':  undefined,
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  { 'gallery': { 'k': 5 } },
+    'roles':     undefined,
+    'runtime':   undefined,
   });
 
   assert.ok('canvas' in state.roles, '[golden, scenario=full-pipeline] canvas role present');

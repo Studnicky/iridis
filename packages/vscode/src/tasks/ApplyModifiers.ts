@@ -30,6 +30,7 @@ class ApplyModifiers implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Produces base + per-modifier semantic token rules from MODIFIER_TRANSFORMS, ensuring each rule meets contrast against the background role.',
     'name':        'vscode:applyModifiers',
+    'phase':       undefined,
     'reads':       ['metadata.vscode:baseTokens', 'roles'],
     'requires':    ['vscode:expandTokens'],
     'writes':      ['metadata.vscode:semanticTokenRules']

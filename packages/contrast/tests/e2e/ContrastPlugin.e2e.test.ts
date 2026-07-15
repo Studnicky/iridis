@@ -61,6 +61,7 @@ function wcagAaRoles(
   minRatio = 4.5,
 ): RoleSchemaInterfaceType {
   return {
+    'description': undefined,
     'name':  'wcag-aa',
     'roles': [
       { 'name': fgName, 'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
@@ -83,6 +84,7 @@ function wcagAaaRoles(
   bgName: string,
 ): RoleSchemaInterfaceType {
   return {
+    'description': undefined,
     'name':  'wcag-aaa',
     'roles': [
       { 'name': fgName, 'required': true, 'lightnessRange': [0.10, 0.55], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
@@ -97,6 +99,7 @@ function wcagAaaRoles(
 /** RoleSchema with intent hints for APCA target selection. */
 function apcaRoles(fgIntent: ColorIntentType, bgIntent: ColorIntentType): RoleSchemaInterfaceType {
   return {
+    'description': undefined,
     'name':  'apca',
     'roles': [
       {
@@ -130,6 +133,7 @@ function apcaRoles(fgIntent: ColorIntentType, bgIntent: ColorIntentType): RoleSc
 
 /** Red foreground / green background (protanopia / deuteranopia family). */
 const CVD_RED_GREEN_ROLES: RoleSchemaInterfaceType = {
+  'description': undefined,
   'name':  'cvd-red-green',
   'roles': [
     { 'name': 'text',       'required': true, 'lightnessRange': [0.40, 0.70], 'chromaRange': [0.10, 0.40], 'hueOffset': 29, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined  },
@@ -142,6 +146,7 @@ const CVD_RED_GREEN_ROLES: RoleSchemaInterfaceType = {
 
 /** Blue foreground / yellow background (tritanopia family). */
 const CVD_BLUE_YELLOW_ROLES: RoleSchemaInterfaceType = {
+  'description': undefined,
   'name':  'cvd-blue-yellow',
   'roles': [
     { 'name': 'text',       'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.40], 'hueOffset': 264, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined },
@@ -154,6 +159,7 @@ const CVD_BLUE_YELLOW_ROLES: RoleSchemaInterfaceType = {
 
 /** Near-iso-luminant red/green (achromatopsia floor signal). */
 const CVD_ISOLUM_ROLES: RoleSchemaInterfaceType = {
+  'description': undefined,
   'name':  'cvd-isolum',
   'roles': [
     { 'name': 'text',       'required': true, 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.20, 0.30], 'hueOffset': 29, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined  },
@@ -166,6 +172,7 @@ const CVD_ISOLUM_ROLES: RoleSchemaInterfaceType = {
 
 /** Black-on-white: canonical maximum-contrast pair (CVD negative case). */
 const CVD_BLACK_WHITE_ROLES: RoleSchemaInterfaceType = {
+  'description': undefined,
   'name':  'cvd-black-white',
   'roles': [
     { 'name': 'text',       'required': true, 'lightnessRange': [0.00, 0.20], 'chromaRange': [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
@@ -184,6 +191,7 @@ const CVD_BLACK_WHITE_ROLES: RoleSchemaInterfaceType = {
  *   - #494949 (L≈0.41, in range) → before≈9:1, adjusted=false
  */
 const ENFORCE_CONTRAST_ROLES: RoleSchemaInterfaceType = {
+  'description': undefined,
   'name':  'enforce-contrast-adj',
   'roles': [
     { 'name': 'text',       'required': true, 'lightnessRange': [0.40, 0.90], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
@@ -346,10 +354,16 @@ const wcagAaScenarios: readonly ScenarioInterface<WcagAaInput, WcagAaOutput>[] =
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:wcagAA'],
       input: {
+        'bypass': undefined,
         // #494949 (L≈0.41) maps to text range [0.30, 0.60]; white maps to background.
         // #494949 on white ≈ 9:1 — already passes AA without adjustment.
         'colors': ['#494949', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  wcagAaRoles('text', 'background'),
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -374,8 +388,14 @@ const wcagAaScenarios: readonly ScenarioInterface<WcagAaInput, WcagAaOutput>[] =
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:wcagAA'],
       input: {
+        'bypass': undefined,
         'colors': ['#aaaaaa', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  wcagAaRoles('text', 'background'),
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -401,8 +421,14 @@ const wcagAaScenarios: readonly ScenarioInterface<WcagAaInput, WcagAaOutput>[] =
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:wcagAA'],
       input: {
+        'bypass': undefined,
         'colors': ['#767676', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  wcagAaRoles('text', 'background', 4.5),
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -420,11 +446,19 @@ const wcagAaScenarios: readonly ScenarioInterface<WcagAaInput, WcagAaOutput>[] =
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:wcagAA'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles': {
+          'contrastPairs': undefined,
+          'description': undefined,
           'name':  'no-pairs',
           'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
         },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -439,8 +473,14 @@ const wcagAaScenarios: readonly ScenarioInterface<WcagAaInput, WcagAaOutput>[] =
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:wcagAA'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles': {
+          'description': undefined,
           'name':  'apca-only',
           'roles': [
             { 'name': 'text',       'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
@@ -450,6 +490,7 @@ const wcagAaScenarios: readonly ScenarioInterface<WcagAaInput, WcagAaOutput>[] =
             { 'foreground': 'text', 'background': 'background', 'minRatio': 1, 'algorithm': 'apca' },
           ],
         },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -502,10 +543,16 @@ const wcagAaaScenarios: readonly ScenarioInterface<WcagAaaInput, WcagAaaOutput>[
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:wcagAAA'],
       input: {
+        'bypass': undefined,
         // #000000 is clamped to L=0.10 minimum (lightnessRange [0.10, 0.55]);
         // the resulting dark gray on white is ≈21:1 — clears AAA with margin.
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  wcagAaaRoles('text', 'background'),
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -525,8 +572,14 @@ const wcagAaaScenarios: readonly ScenarioInterface<WcagAaaInput, WcagAaaOutput>[
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:wcagAAA'],
       input: {
+        'bypass': undefined,
         'colors': ['#777777', '#aaaaaa'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  wcagAaaRoles('text', 'background'),
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -549,11 +602,17 @@ const wcagAaaScenarios: readonly ScenarioInterface<WcagAaaInput, WcagAaaOutput>[
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:wcagAA', 'enforce:wcagAAA'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         // Use explicit minRatio on each schema so both tasks process the pair.
         // enforce:wcagAA picks up the 4.5 value; enforce:wcagAAA picks up the
         // 7.0 value from its own schema (contrastPairs are read independently).
         'roles': {
+          'description': undefined,
           'name':  'combined',
           'roles': [
             { 'name': 'text',       'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
@@ -563,6 +622,7 @@ const wcagAaaScenarios: readonly ScenarioInterface<WcagAaaInput, WcagAaaOutput>[
             { 'foreground': 'text', 'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
           ],
         },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -588,11 +648,19 @@ const wcagAaaScenarios: readonly ScenarioInterface<WcagAaaInput, WcagAaaOutput>[
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:wcagAAA'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles': {
+          'contrastPairs': undefined,
+          'description': undefined,
           'name':  'no-pairs',
           'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
         },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -607,10 +675,16 @@ const wcagAaaScenarios: readonly ScenarioInterface<WcagAaaInput, WcagAaaOutput>[
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:wcagAAA'],
       input: {
+        'bypass': undefined,
         // #1a1a1a on white is ≈17:1 — clears AAA boundary with margin.
         // Lightness bands pin assignment: dark to text, light to background.
         'colors': ['#1a1a1a', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles': {
+          'description': undefined,
           'name':  'wcag-aaa-edge',
           'roles': [
             { 'name': 'text',       'required': true, 'lightnessRange': [0.00, 0.30], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
@@ -620,6 +694,7 @@ const wcagAaaScenarios: readonly ScenarioInterface<WcagAaaInput, WcagAaaOutput>[
             { 'foreground': 'text', 'background': 'background', 'minRatio': 7.0, 'algorithm': 'wcag21' },
           ],
         },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -671,8 +746,14 @@ const apcaScenarios: readonly ScenarioInterface<ApcaInput, ApcaOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:apca'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  apcaRoles('text', 'background'),
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -700,8 +781,14 @@ const apcaScenarios: readonly ScenarioInterface<ApcaInput, ApcaOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:apca'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#888888'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles': {
+          'description': undefined,
           'name':  'apca-fluent',
           'roles': [
             // text intent on fg, accent on bg — triggers the isText-only branch (Lc 60).
@@ -712,6 +799,7 @@ const apcaScenarios: readonly ScenarioInterface<ApcaInput, ApcaOutput>[] = [
             { 'foreground': 'heading', 'background': 'card', 'minRatio': 1, 'algorithm': 'apca' },
           ],
         },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -729,8 +817,14 @@ const apcaScenarios: readonly ScenarioInterface<ApcaInput, ApcaOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:apca'],
       input: {
+        'bypass': undefined,
         'colors': ['#888888', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles': {
+          'description': undefined,
           'name':  'apca-ui',
           'roles': [
             { 'name': 'icon',   'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
@@ -740,6 +834,7 @@ const apcaScenarios: readonly ScenarioInterface<ApcaInput, ApcaOutput>[] = [
             { 'foreground': 'icon', 'background': 'canvas', 'minRatio': 1, 'algorithm': 'apca' },
           ],
         },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -757,11 +852,19 @@ const apcaScenarios: readonly ScenarioInterface<ApcaInput, ApcaOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:apca'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles': {
+          'contrastPairs': undefined,
+          'description': undefined,
           'name':  'no-pairs',
           'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
         },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -776,8 +879,14 @@ const apcaScenarios: readonly ScenarioInterface<ApcaInput, ApcaOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:apca'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  wcagAaRoles('text', 'background'),  // wcag21 algorithm
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -830,8 +939,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#d00000', '#008000'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_RED_GREEN_ROLES,
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -859,8 +974,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#ff0000', '#00cc00'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_RED_GREEN_ROLES,
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -885,8 +1006,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#0000ff', '#ffff00'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_BLUE_YELLOW_ROLES,
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -910,8 +1037,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#ff0000', '#00d800'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_ISOLUM_ROLES,
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -938,8 +1071,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_BLACK_WHITE_ROLES,
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -959,11 +1098,19 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles': {
+          'contrastPairs': undefined,
+          'description': undefined,
           'name':  'no-pairs',
           'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
         },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -978,8 +1125,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#d00000', '#008000'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_RED_GREEN_ROLES,
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -1002,9 +1155,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#d00000', '#008000'],
+        'contrast': { 'algorithm': undefined, 'cvdCorrect': true, 'extra': undefined, 'level': undefined },
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_RED_GREEN_ROLES,
-        'contrast': { 'cvdCorrect': true },
+        'runtime': undefined,
       },
     },
     async assert(output, error) {
@@ -1017,8 +1175,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
       const baselineEngine = makeEngine();
       baselineEngine.pipeline(['intake:hex', 'resolve:roles']);
       const baselineState = await baselineEngine.run({
+        'bypass': undefined,
         'colors': ['#d00000', '#008000'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_RED_GREEN_ROLES,
+        'runtime': undefined,
       });
       assert.ok(
         textHex!.toLowerCase() !== baselineState.roles['text']?.hex.toLowerCase(),
@@ -1042,9 +1206,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': { 'algorithm': undefined, 'cvdCorrect': true, 'extra': undefined, 'level': undefined },
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_BLACK_WHITE_ROLES,
-        'contrast': { 'cvdCorrect': true },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -1072,9 +1241,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#ff0000', '#00d800'],
+        'contrast': { 'algorithm': undefined, 'cvdCorrect': true, 'extra': undefined, 'level': undefined },
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_ISOLUM_ROLES,
-        'contrast': { 'cvdCorrect': true },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -1104,8 +1278,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:cvdSimulate'],
       input: {
+        'bypass': undefined,
         'colors': ['#d00000', '#008000'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_RED_GREEN_ROLES,
+        'runtime': undefined,
       },
     },
     async assert(output, error) {
@@ -1117,8 +1297,14 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
       const baselineEngine = makeEngine();
       baselineEngine.pipeline(['intake:hex', 'resolve:roles']);
       const baselineState = await baselineEngine.run({
+        'bypass': undefined,
         'colors': ['#d00000', '#008000'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  CVD_RED_GREEN_ROLES,
+        'runtime': undefined,
       });
       assert.strictEqual(
         textHex, baselineState.roles['text']?.hex,
@@ -1177,10 +1363,16 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:contrast'],
       input: {
+        'bypass': undefined,
         // #aaaaaa (L≈0.70) falls in text range [0.40, 0.90] and yields ≈2.3:1 on
         // white — well below 4.5:1, triggering the adjusted=true enforcement branch.
         'colors': ['#aaaaaa', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  ENFORCE_CONTRAST_ROLES,
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -1213,10 +1405,16 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:contrast'],
       input: {
+        'bypass': undefined,
         // #494949 (L≈0.41) maps to text range [0.40, 0.90] and yields ≈9:1 on
         // white — already above 4.5:1, so no adjustment is applied.
         'colors': ['#494949', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  ENFORCE_CONTRAST_ROLES,
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -1236,11 +1434,19 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:contrast'],
       input: {
+        'bypass': undefined,
         'colors': ['#000000', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles': {
+          'contrastPairs': undefined,
+          'description': undefined,
           'name':  'no-pairs',
           'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
         },
+        'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -1258,10 +1464,16 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'enforce:contrast'],
       input: {
+        'bypass': undefined,
         // #767676 on white ≈ 4.54:1 — just above the 4.5 boundary.
         // Lightness bands: gray (L≈0.48) maps to text [0.00, 0.50]; white to background.
         'colors': ['#767676', '#ffffff'],
+        'contrast': undefined,
+        'emit': undefined,
+        'maxColors': undefined,
+        'metadata': undefined,
         'roles':  ENFORCE_CONTRAST_ROLES,
+        'runtime': undefined,
       },
     },
     assert(output, error) {

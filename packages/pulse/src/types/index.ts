@@ -26,7 +26,7 @@ export type ValueBindingOptionsInterfaceType = {
    * `false`, `mapToT` extrapolates linearly and the result can fall outside
    * [0, 1].
    */
-  'clamp'?: boolean;
+  'clamp': boolean | undefined;
   /** Input value mapping to `t === 1`. */
   'max': number;
   /** Input value mapping to `t === 0`. */

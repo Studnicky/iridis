@@ -312,7 +312,11 @@ export class Engine implements EngineInterface {
       'metadata': { ...input.metadata },
       'outputs':  {},
       'roles':    {},
-      'runtime':  { ...input.runtime },
+      'runtime':  {
+        'colorSpace': input.runtime?.colorSpace,
+        'extra':      input.runtime?.extra,
+        'framing':    input.runtime?.framing
+      },
       'variants': {}
     };
     const ctx: PipelineContextInterface = {

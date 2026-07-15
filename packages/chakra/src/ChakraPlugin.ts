@@ -26,7 +26,8 @@ export class ChakraPlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs': { 'chakra:theme': chakraOutputSchema }
+      'metadata': undefined,
+      'outputs':  { 'chakra:theme': chakraOutputSchema }
     };
   }
 }

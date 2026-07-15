@@ -28,7 +28,7 @@ function pointToRecord(p: PointInterface, alpha: number, weight: number): ColorR
   const c = Math.sqrt(p.a * p.a + p.b * p.b);
   let h = (Math.atan2(p.b, p.a) * 180) / Math.PI;
   if (h < 0) {h += 360;}
-  return colorRecordFactory.fromOklch(p.l, c, h, { 'alpha': alpha, 'hints': { 'weight': weight }, 'sourceFormat': 'oklch' });
+  return colorRecordFactory.fromOklch(p.l, c, h, { 'alpha': alpha, 'hints': { 'intent': undefined, 'role': undefined, 'weight': weight }, 'sourceFormat': 'oklch' });
 }
 
 /** Weighted k-means++ seeding: each successive centroid is picked with probability proportional to weight × squared distance from the nearest already-chosen centroid, so the initial spread already covers the color space instead of clumping around whichever pixel happens to be first. */

@@ -166,7 +166,9 @@ class EmitCssVars implements TaskInterface {
   readonly manifest: TaskManifestInterfaceType = {
     'description': 'Emit CSS custom property blocks from resolved roles and variants',
     'name':        'emit:cssVars',
+    'phase':       undefined,
     'reads':       ['roles', 'variants', 'metadata'],
+    'requires':    undefined,
     'writes':      ['outputs.stylesheet:cssVars']
   };
 

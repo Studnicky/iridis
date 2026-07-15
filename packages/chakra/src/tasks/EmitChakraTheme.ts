@@ -115,7 +115,9 @@ export class EmitChakraTheme implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit a Chakra UI extendTheme() color-token scale (100/500/900 per family) from resolved roles and dark/light variants',
     'name':        'emit:chakraTheme',
+    'phase':       undefined,
     'reads':       ['roles', 'variants'],
+    'requires':    undefined,
     'writes':      ['outputs.chakra:theme']
   };
 

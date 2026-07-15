@@ -11,6 +11,6 @@ const sunriseStops: PaletteInterfaceType[] = [
 
 /** Warm-to-cool sweep from deep dawn orange through green to a pale sky-blue morning. */
 export const sunriseTrajectory: TrajectoryDefinitionInterfaceType = {
-  'opts':  { 'hueDirection': 'clockwise' },
+  'opts':  { 'chromaticDetourRoles': undefined, 'easing': undefined, 'hueDirection': 'clockwise' },
   'stops': sunriseStops
 };

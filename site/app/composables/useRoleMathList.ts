@@ -84,7 +84,13 @@ export function useRoleMathList() {
           'seedOklch': `L ${clamp.seedOklch.l.toFixed(2)} · C ${clamp.seedOklch.c.toFixed(2)} · H ${Math.round(clamp.seedOklch.h)}`
         } : null,
         'compliance': complianceFor(ratio, minRatioForRole(schema, roleName)),
-        'def': def,
+        // RoleMathDefType layers derivation-geometry fields (chromaClamp/
+        // chromaTarget/lightnessClamp/lightnessTarget) onto the canonical
+        // RoleDefinitionInterfaceType that a custom JSON-tology overlay may
+        // supply at runtime but the canonical type never declares — absent on
+        // a stock schema's role, where reading them yields `undefined`
+        // exactly as their `| undefined` type promises.
+        'def': def as RoleMathEntryType['def'],
         'h': oklch.h,
         'hex': hex,
         'isDerived': isDerived,

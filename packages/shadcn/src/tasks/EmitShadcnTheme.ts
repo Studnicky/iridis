@@ -108,7 +108,9 @@ export class EmitShadcnTheme implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit a shadcn/ui-compatible CSS custom-property theme (OKLCH, Tailwind v4 convention) from resolved roles',
     'name':        'emit:shadcnTheme',
+    'phase':       undefined,
     'reads':       ['roles'],
+    'requires':    undefined,
     'writes':      ['outputs.shadcn:theme']
   };
 

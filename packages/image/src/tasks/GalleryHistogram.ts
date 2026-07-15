@@ -77,7 +77,9 @@ class GalleryHistogram implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Quantise pixels into a 5-bit-per-channel histogram; emits weighted records keyed by bin centroid.',
     'name':        'gallery:histogram',
+    'phase':       undefined,
     'reads':       ['colors'],
+    'requires':    undefined,
     'writes':      ['colors', 'metadata.gallery:histogram']
   };
 
@@ -145,7 +147,7 @@ class GalleryHistogram implements TaskInterface {
       const g = acc.gSum / acc.weight;
       const b = acc.bSum / acc.weight;
       const a = acc.aSum / acc.weight;
-      const record = colorRecordFactory.fromRgb(r, g, b, { 'alpha': a, 'hints': { 'weight': acc.weight }, 'sourceFormat': 'imagePixel' });
+      const record = colorRecordFactory.fromRgb(r, g, b, { 'alpha': a, 'hints': { 'intent': undefined, 'role': undefined, 'weight': acc.weight }, 'sourceFormat': 'imagePixel' });
       records.push(record);
       binSummary.push({ 'hex': record.hex, 'weight': acc.weight });
     }

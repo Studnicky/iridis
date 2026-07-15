@@ -20,15 +20,15 @@ import { oklchToHex } from '../app/utils/oklchToHex.ts';
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 const views: RoleViewType[] = [
-  { 'name': 'background', 'l': 0.1, 'c': 0.01, 'h': 260, 'hex': '#0a0618' },
-  { 'name': 'text', 'l': 0.95, 'c': 0.01, 'h': 260, 'hex': '#e8e6f0' },
-  { 'name': 'muted', 'l': 0.6, 'c': 0.02, 'h': 260, 'hex': '#8a86a0' },
-  { 'name': 'brand', 'l': 0.55, 'c': 0.2, 'h': 290, 'hex': '#7c3aed' },
-  { 'name': 'accent-alt', 'l': 0.6, 'c': 0.15, 'h': 200, 'hex': '#06b6d4' },
-  { 'name': 'success', 'l': 0.6, 'c': 0.18, 'h': 150, 'hex': '#00c35a' },
-  { 'name': 'warning', 'l': 0.7, 'c': 0.15, 'h': 80, 'hex': '#dda818' },
-  { 'name': 'error', 'l': 0.6, 'c': 0.2, 'h': 25, 'hex': '#fb7367' },
-  { 'name': 'info', 'l': 0.55, 'c': 0.15, 'h': 230, 'hex': '#048df1' }
+  { 'c': 0.01, 'displayP3': undefined, 'h': 260, 'hex': '#0a0618', 'l': 0.1, 'name': 'background' },
+  { 'c': 0.01, 'displayP3': undefined, 'h': 260, 'hex': '#e8e6f0', 'l': 0.95, 'name': 'text' },
+  { 'c': 0.02, 'displayP3': undefined, 'h': 260, 'hex': '#8a86a0', 'l': 0.6, 'name': 'muted' },
+  { 'c': 0.2, 'displayP3': undefined, 'h': 290, 'hex': '#7c3aed', 'l': 0.55, 'name': 'brand' },
+  { 'c': 0.15, 'displayP3': undefined, 'h': 200, 'hex': '#06b6d4', 'l': 0.6, 'name': 'accent-alt' },
+  { 'c': 0.18, 'displayP3': undefined, 'h': 150, 'hex': '#00c35a', 'l': 0.6, 'name': 'success' },
+  { 'c': 0.15, 'displayP3': undefined, 'h': 80, 'hex': '#dda818', 'l': 0.7, 'name': 'warning' },
+  { 'c': 0.2, 'displayP3': undefined, 'h': 25, 'hex': '#fb7367', 'l': 0.6, 'name': 'error' },
+  { 'c': 0.15, 'displayP3': undefined, 'h': 230, 'hex': '#048df1', 'l': 0.55, 'name': 'info' }
 ];
 
 test('buildDecorativePalette restricts to the six decorative roles, skipping background/text/muted', () => {

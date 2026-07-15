@@ -41,7 +41,9 @@ class ReasonAnnotate implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Annotate palette with RDF triples via n3 Store',
     'name':        'reason:annotate',
+    'phase':       undefined,
     'reads':       ['roles', 'colors'],
+    'requires':    undefined,
     'writes':      ['rdf:reasoningGraph']
   };
 

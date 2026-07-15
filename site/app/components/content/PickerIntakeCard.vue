@@ -58,7 +58,7 @@ function commitHexText(index: number, event: Event): void {
         variant="soft"
         size="sm"
         :disabled="pickerSeeds.length >= 32"
-        @click="sendPickerAction({ type: IridisUiActionType.ADD_SEED })"
+        @click="sendPickerAction({ 'hex': undefined, 'type': IridisUiActionType.ADD_SEED })"
       >
         Add hue
       </UButton>

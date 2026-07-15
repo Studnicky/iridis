@@ -10,6 +10,7 @@ import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type {
+  SemanticRuleEntryInterfaceType,
   ThemeJsonInterfaceType,
   TokenColorRuleInterfaceType
 } from '../types/augmentation.ts';
@@ -24,6 +25,7 @@ class EmitVscodeThemeJson implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Assembles the complete VS Code theme JSON: { name, type, colors, semanticTokenColors, tokenColors }.',
     'name':        'emit:vscodeThemeJson',
+    'phase':       undefined,
     'reads':       [
       'outputs.vscode:workbenchColors',
       'outputs.vscode:semanticTokenRules',
@@ -37,7 +39,7 @@ class EmitVscodeThemeJson implements TaskInterface {
     const themeName   = (state.input.metadata?.themeName as string | undefined) ?? 'Color Engine Theme';
     const baseTokens  = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterfaceType>;
     const workbenchColors = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
-    const semanticTokenRules = (state.outputs['vscode:semanticTokenRules'] ?? {}) as Record<string, { 'fontStyle'?: string; 'foreground'?: string; }>;
+    const semanticTokenRules = (state.outputs['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterfaceType>;
 
     // Determine dark/light from background luminance
     const bgRecord = state.roles.background;
@@ -45,7 +47,7 @@ class EmitVscodeThemeJson implements TaskInterface {
     const themeType: 'dark' | 'light' = bgLum > 0.5 ? 'light' : 'dark';
 
     // semanticTokenColors: copy from outputs['vscode:semanticTokenRules']
-    const semanticTokenColors: Record<string, string | { 'fontStyle'?: string; 'foreground'?: string; }> = {};
+    const semanticTokenColors: Record<string, string | SemanticRuleEntryInterfaceType> = {};
     for (const [selector, rule] of Object.entries(semanticTokenRules)) {
       if (rule.fontStyle !== undefined && rule.fontStyle.length > 0) {
         semanticTokenColors[selector] = { ...rule };
@@ -65,6 +67,7 @@ class EmitVscodeThemeJson implements TaskInterface {
 
       const fontStyle = FONT_STYLES[paletteKey];
       const settings: TokenColorRuleInterfaceType['settings'] = {
+        'fontStyle':  undefined,
         'foreground': recordToVscodeColor(foregroundRecord)
       };
       if (fontStyle !== undefined && fontStyle.length > 0) {

@@ -46,8 +46,8 @@ import {
 
 function makeState(colors: readonly unknown[]): PaletteStateInterface {
   return {
-    'input':    { 'colors': colors },
-    'runtime':  {},
+    'input':    { 'colors': colors, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
+    'runtime':  { 'colorSpace': undefined, 'extra': undefined, 'framing': undefined },
     'colors':   [],
     'roles':    {},
     'variants': {},

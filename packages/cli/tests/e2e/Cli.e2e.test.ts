@@ -42,10 +42,16 @@ async function writeConfig(dir: string, cfg: CliConfigInterface): Promise<string
 
 function minimalCssConfig(dir: string): CliConfigInterface {
   return {
-    'input':            { 'colors': ['#8b5cf6'] },
+    'enableCapacitor':  undefined,
+    'enableContrast':   undefined,
+    'enableImage':      undefined,
+    'enableRdf':        undefined,
     'enableStylesheet': true,
-    'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
+    'enableTailwind':   undefined,
+    'enableVscode':     undefined,
+    'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
     'output':           { 'directory': dir, 'files': { 'stylesheet:cssVars': 'theme.json' } },
+    'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
   };
 }
 
@@ -171,10 +177,16 @@ const resolverScenarios: readonly ScenarioInterface<ResolverInput, ResolverOutpu
     kind: 'happy',
     input: {
       config: {
-        'input':            { 'colors': ['#8b5cf6'] },
+        'enableCapacitor':  undefined,
+        'enableContrast':   undefined,
+        'enableImage':      undefined,
+        'enableRdf':        undefined,
         'enableStylesheet': true,
-        'pipeline':         ['intake:hex'],
+        'enableTailwind':   undefined,
+        'enableVscode':     undefined,
+        'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
         'output':           { 'directory': '.', 'files': {} },
+        'pipeline':         ['intake:hex'],
       },
     },
     async assert(output, error) {
@@ -189,9 +201,16 @@ const resolverScenarios: readonly ScenarioInterface<ResolverInput, ResolverOutpu
     kind: 'happy',
     input: {
       config: {
-        'input':    { 'colors': ['#8b5cf6'] },
-        'pipeline': ['intake:hex'],
-        'output':   { 'directory': '.', 'files': {} },
+        'enableCapacitor':  undefined,
+        'enableContrast':   undefined,
+        'enableImage':      undefined,
+        'enableRdf':        undefined,
+        'enableStylesheet': undefined,
+        'enableTailwind':   undefined,
+        'enableVscode':     undefined,
+        'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
+        'output':           { 'directory': '.', 'files': {} },
+        'pipeline':         ['intake:hex'],
       },
     },
     async assert(output, error) {
@@ -204,10 +223,16 @@ const resolverScenarios: readonly ScenarioInterface<ResolverInput, ResolverOutpu
     kind: 'edge',
     input: {
       config: {
-        'input':            { 'colors': ['#8b5cf6'] },
+        'enableCapacitor':  undefined,
+        'enableContrast':   undefined,
+        'enableImage':      undefined,
+        'enableRdf':        undefined,
         'enableStylesheet': false,
-        'pipeline':         ['intake:hex'],
+        'enableTailwind':   undefined,
+        'enableVscode':     undefined,
+        'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
         'output':           { 'directory': '.', 'files': {} },
+        'pipeline':         ['intake:hex'],
       },
     },
     async assert(output, error) {
@@ -220,10 +245,16 @@ const resolverScenarios: readonly ScenarioInterface<ResolverInput, ResolverOutpu
     kind: 'edge',
     input: {
       config: {
-        'input':            { 'colors': ['#8b5cf6'] },
+        'enableCapacitor':  undefined,
+        'enableContrast':   undefined,
+        'enableImage':      undefined,
+        'enableRdf':        undefined,
         'enableStylesheet': true,
-        'pipeline':         ['intake:hex'],
+        'enableTailwind':   undefined,
+        'enableVscode':     undefined,
+        'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
         'output':           { 'directory': '.', 'files': {} },
+        'pipeline':         ['intake:hex'],
       },
     },
     async assert(output, error) {
@@ -304,9 +335,14 @@ const writerScenarios: readonly ScenarioInterface<WriterInput, WriterOutput>[] =
     kind: 'unhappy',
     input: {
       buildConfig: (outDir) => ({
-        'input':            { 'colors': ['#8b5cf6'] },
+        'enableCapacitor':  undefined,
+        'enableContrast':   undefined,
+        'enableImage':      undefined,
+        'enableRdf':        undefined,
         'enableStylesheet': true,
-        'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
+        'enableTailwind':   undefined,
+        'enableVscode':     undefined,
+        'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
         'output': {
           'directory': outDir,
           'files': {
@@ -314,6 +350,7 @@ const writerScenarios: readonly ScenarioInterface<WriterInput, WriterOutput>[] =
             'ghost':              'missing-slot.json',
           },
         },
+        'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
       }),
     },
     async assert(_output, error) {
@@ -330,9 +367,14 @@ const writerScenarios: readonly ScenarioInterface<WriterInput, WriterOutput>[] =
     kind: 'unhappy',
     input: {
       buildConfig: (outDir) => ({
-        'input':            { 'colors': ['#8b5cf6'] },
+        'enableCapacitor':  undefined,
+        'enableContrast':   undefined,
+        'enableImage':      undefined,
+        'enableRdf':        undefined,
         'enableStylesheet': true,
-        'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
+        'enableTailwind':   undefined,
+        'enableVscode':     undefined,
+        'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
         'output': {
           'directory': outDir,
           'files': {
@@ -340,6 +382,7 @@ const writerScenarios: readonly ScenarioInterface<WriterInput, WriterOutput>[] =
             'ghost2': 'b.json',
           },
         },
+        'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
       }),
     },
     async assert(_output, error) {
@@ -358,10 +401,16 @@ const writerScenarios: readonly ScenarioInterface<WriterInput, WriterOutput>[] =
     kind: 'happy',
     input: {
       buildConfig: (outDir) => ({
-        'input':            { 'colors': ['#8b5cf6'] },
+        'enableCapacitor':  undefined,
+        'enableContrast':   undefined,
+        'enableImage':      undefined,
+        'enableRdf':        undefined,
         'enableStylesheet': true,
-        'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
+        'enableTailwind':   undefined,
+        'enableVscode':     undefined,
+        'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
         'output':           { 'directory': outDir, 'files': { 'stylesheet:cssVars': 'theme.json' } },
+        'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
       }),
     },
     async assert(output, error) {
@@ -376,9 +425,16 @@ const writerScenarios: readonly ScenarioInterface<WriterInput, WriterOutput>[] =
     kind: 'edge',
     input: {
       buildConfig: (outDir) => ({
-        'input':    { 'colors': ['#8b5cf6'] },
-        'pipeline': ['intake:hex'],
-        'output':   { 'directory': outDir, 'files': {} },
+        'enableCapacitor':  undefined,
+        'enableContrast':   undefined,
+        'enableImage':      undefined,
+        'enableRdf':        undefined,
+        'enableStylesheet': undefined,
+        'enableTailwind':   undefined,
+        'enableVscode':     undefined,
+        'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
+        'output':           { 'directory': outDir, 'files': {} },
+        'pipeline':         ['intake:hex'],
       }),
     },
     async assert(output, error) {
@@ -480,10 +536,16 @@ const pipelineExecScenarios: readonly ScenarioInterface<PipelineExecInput, Pipel
       setup: async (dir) => {
         const outDir = join(dir, 'out');
         const cfg: CliConfigInterface = {
-          'input':            { 'colors': ['#8b5cf6', '#ec4899'] },
+          'enableCapacitor':  undefined,
+          'enableContrast':   undefined,
+          'enableImage':      undefined,
+          'enableRdf':        undefined,
           'enableStylesheet': true,
-          'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
+          'enableTailwind':   undefined,
+          'enableVscode':     undefined,
+          'input':            { 'bypass': undefined, 'colors': ['#8b5cf6', '#ec4899'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
           'output':           { 'directory': outDir, 'files': { 'stylesheet:cssVars': 'theme.json' } },
+          'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
         };
         return writeConfig(dir, cfg);
       },
@@ -503,9 +565,16 @@ const pipelineExecScenarios: readonly ScenarioInterface<PipelineExecInput, Pipel
       setup: async (dir) => {
         const outDir = join(dir, 'minimal');
         const cfg: CliConfigInterface = {
-          'input':    { 'colors': ['#8b5cf6'] },
-          'pipeline': ['intake:hex'],
-          'output':   { 'directory': outDir, 'files': {} },
+          'enableCapacitor':  undefined,
+          'enableContrast':   undefined,
+          'enableImage':      undefined,
+          'enableRdf':        undefined,
+          'enableStylesheet': undefined,
+          'enableTailwind':   undefined,
+          'enableVscode':     undefined,
+          'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
+          'output':           { 'directory': outDir, 'files': {} },
+          'pipeline':         ['intake:hex'],
         };
         return writeConfig(dir, cfg);
       },
@@ -523,10 +592,16 @@ const pipelineExecScenarios: readonly ScenarioInterface<PipelineExecInput, Pipel
       setup: async (dir) => {
         const outDir = join(dir, 'oklch-out');
         const cfg: CliConfigInterface = {
-          'input':            { 'colors': ['oklch(50% 0.2 270)'] },
+          'enableCapacitor':  undefined,
+          'enableContrast':   undefined,
+          'enableImage':      undefined,
+          'enableRdf':        undefined,
           'enableStylesheet': true,
-          'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
+          'enableTailwind':   undefined,
+          'enableVscode':     undefined,
+          'input':            { 'bypass': undefined, 'colors': ['oklch(50% 0.2 270)'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
           'output':           { 'directory': outDir, 'files': { 'stylesheet:cssVars': 'theme.json' } },
+          'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
         };
         return writeConfig(dir, cfg);
       },
@@ -547,9 +622,16 @@ const pipelineExecScenarios: readonly ScenarioInterface<PipelineExecInput, Pipel
       setup: async (dir) => {
         const outDir = join(dir, 'bad-pipeline');
         const cfg: CliConfigInterface = {
-          'input':    { 'colors': ['#8b5cf6'] },
-          'pipeline': ['intake:hex', 'does-not-exist:ghost'],
-          'output':   { 'directory': outDir, 'files': {} },
+          'enableCapacitor':  undefined,
+          'enableContrast':   undefined,
+          'enableImage':      undefined,
+          'enableRdf':        undefined,
+          'enableStylesheet': undefined,
+          'enableTailwind':   undefined,
+          'enableVscode':     undefined,
+          'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
+          'output':           { 'directory': outDir, 'files': {} },
+          'pipeline':         ['intake:hex', 'does-not-exist:ghost'],
         };
         return writeConfig(dir, cfg);
       },
@@ -606,7 +688,7 @@ const flagEdgeScenarios: readonly ScenarioInterface<FlagEdgeInput, FlagEdgeOutpu
       setup: async (dir) => {
         const outDir = join(dir, 'no-plugins');
         const cfg: CliConfigInterface = {
-          'input':            { 'colors': ['#8b5cf6'] },
+          'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
           'enableVscode':     false,
           'enableStylesheet': false,
           'enableTailwind':   false,
@@ -633,10 +715,16 @@ const flagEdgeScenarios: readonly ScenarioInterface<FlagEdgeInput, FlagEdgeOutpu
       setup: async (dir) => {
         const outDir = join(dir, 'données-出力');
         const cfg: CliConfigInterface = {
-          'input':            { 'colors': ['#8b5cf6'] },
+          'enableCapacitor':  undefined,
+          'enableContrast':   undefined,
+          'enableImage':      undefined,
+          'enableRdf':        undefined,
           'enableStylesheet': true,
-          'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
+          'enableTailwind':   undefined,
+          'enableVscode':     undefined,
+          'input':            { 'bypass': undefined, 'colors': ['#8b5cf6'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
           'output':           { 'directory': outDir, 'files': { 'stylesheet:cssVars': 'theme.json' } },
+          'pipeline':         ['intake:hex', 'resolve:roles', 'emit:cssVars'],
         };
         return writeConfig(dir, cfg);
       },
@@ -654,9 +742,16 @@ const flagEdgeScenarios: readonly ScenarioInterface<FlagEdgeInput, FlagEdgeOutpu
       setup: async (dir) => {
         const outDir = join(dir, 'bare-min');
         const cfg: CliConfigInterface = {
-          'input':    { 'colors': ['#ff0000'] },
-          'pipeline': ['intake:hex'],
-          'output':   { 'directory': outDir, 'files': {} },
+          'enableCapacitor':  undefined,
+          'enableContrast':   undefined,
+          'enableImage':      undefined,
+          'enableRdf':        undefined,
+          'enableStylesheet': undefined,
+          'enableTailwind':   undefined,
+          'enableVscode':     undefined,
+          'input':            { 'bypass': undefined, 'colors': ['#ff0000'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
+          'output':           { 'directory': outDir, 'files': {} },
+          'pipeline':         ['intake:hex'],
         };
         return writeConfig(dir, cfg);
       },

@@ -366,7 +366,7 @@ function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<st
 }
 
 /** run()'s engine input whenever neither seed list has anything yet (see run() below) — never surfaced as pickerSeeds/imageSeeds, so it never appears as a phantom entry in Manual or the per-image cards. */
-const BOOTSTRAP_SEEDS: PickerSeedType[] = [{ 'hex': '#7c3aed' }];
+const BOOTSTRAP_SEEDS: PickerSeedType[] = [{ 'hex': '#7c3aed', 'role': undefined }];
 
 /**
  * `framingOverride`, when given, is the target framing of an in-flight
@@ -394,11 +394,14 @@ function run(framingOverride?: FramingType): void {
   try {
     engine.pipeline(pipelineBuild(REQUIRED_COLOR_STAGES));
     const state = engine.run({
+      'bypass':   undefined,
       'colors':   seeds,
       'contrast': contrastConfigFor(contrastStrictness.value, cvdCorrect.value),
+      'emit':     undefined,
+      'maxColors': undefined,
       'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig.value, 'derivation:semanticHuesEnabled': semanticHuesEnabled.value },
       'roles':    pair[targetFraming],
-      'runtime':  { 'colorSpace': colorSpace.value, 'framing': targetFraming }
+      'runtime':  { 'colorSpace': colorSpace.value, 'extra': undefined, 'framing': targetFraming }
     });
     if (framingOverride !== undefined) {
       framing.value = framingOverride;
@@ -536,10 +539,16 @@ class EntryStage1 {
     if (pixels === undefined) {return;}
     engine.pipeline(IMAGE_ENTRY_STAGES);
     const state = engine.run({
+      'bypass':   undefined,
       'colors':   [pixels],
+      'contrast': undefined,
+      'emit':     undefined,
+      'maxColors': undefined,
       'metadata': {
         'gallery': GalleryMetadata.build(entry)
-      }
+      },
+      'roles':    undefined,
+      'runtime':  undefined
     });
     const hist = (state.metadata['gallery:histogram'] as GalleryHistogramSlotInterfaceType | undefined)?.bins ?? [];
     entry.histogram = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
@@ -644,8 +653,11 @@ function combineNowRun(): void {
     const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
     engine.pipeline(pipelineBuild(REQUIRED_IMAGE_STAGES));
     const state = engine.run({
+      'bypass':   undefined,
       'colors':   combinedHexes,
       'contrast': contrastConfigFor(contrastStrictness.value, cvdCorrect.value),
+      'emit':     undefined,
+      'maxColors': undefined,
       'metadata': {
         'core:variantConfig': VARIANT_CONFIG,
         'derivation:config': derivationConfig.value,
@@ -653,7 +665,7 @@ function combineNowRun(): void {
         'gallery': GalleryMetadata.build(defaultEntrySettings())
       },
       'roles':    pair![framing.value],
-      'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
+      'runtime':  { 'colorSpace': colorSpace.value, 'extra': undefined, 'framing': framing.value }
     });
     const hist = (state.metadata['gallery:histogram'] as GalleryHistogramSlotInterfaceType | undefined)?.bins ?? [];
     histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
@@ -795,7 +807,7 @@ function mutateSeeds(effect: MutateSeedsEffectType): void {
     // A freshly added seed with no explicit hex starts as the current
     // engine-resolved brand color (a required role in every schema tier),
     // never a hardcoded placeholder — the user edits it from there.
-    if (pickerSeeds.value.length < 32) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? roles.value.brand! }];}
+    if (pickerSeeds.value.length < 32) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': effect.hex ?? roles.value.brand!, 'role': undefined }];}
   } else if (effect.op === 'remove') {
     if (pickerSeeds.value.length > 1) {pickerSeeds.value = pickerSeeds.value.filter((_, idx) => {return idx !== effect.index;});}
   } else if (effect.op === 'set') {
@@ -918,7 +930,7 @@ registerUpdateCvdPreviewHandler(cvdPreviewUpdate);
  * the N extracted hues (where N = schema count).
  */
 function populatePickerFromImage(effect: PopulatePickerFromImageEffectType): void {
-  pickerSeeds.value = effect.hexes.map((hex) => {return { 'hex': hex };});
+  pickerSeeds.value = effect.hexes.map((hex) => {return { 'hex': hex, 'role': undefined };});
 }
 registerPopulatePickerFromImageHandler(populatePickerFromImage);
 

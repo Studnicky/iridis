@@ -79,7 +79,9 @@ export class EmitMuiTheme implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit an MUI createTheme() palette object from resolved roles and shade variants',
     'name':        'emit:muiTheme',
+    'phase':       undefined,
     'reads':       ['roles', 'variants', 'runtime'],
+    'requires':    undefined,
     'writes':      ['outputs.mui:theme']
   };
 

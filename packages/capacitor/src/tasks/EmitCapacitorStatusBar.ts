@@ -42,7 +42,9 @@ class EmitCapacitorStatusBar implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit Capacitor StatusBar configuration from surface/topBar role.',
     'name':        'emit:capacitorStatusBar',
+    'phase':       undefined,
     'reads':       ['roles'],
+    'requires':    undefined,
     'writes':      ['outputs.capacitor:statusBar']
   };
 

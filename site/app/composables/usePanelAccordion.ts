@@ -16,7 +16,7 @@ class Panel {
 }
 
 type PanelAccordionOptionsInterfaceType = {
-  'defaultOpen'?: boolean;
+  'defaultOpen': boolean | undefined;
 };
 
 /** One panel's open/close state within the shared accordion coordination — see panelAccordionState.ts. */

@@ -82,6 +82,8 @@ function normaliseTurtle(ttl: string): string {
 }
 
 const SIMPLE_ROLES: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description':   undefined,
   'name': 'simple',
   'roles': [
     { 'name': 'primary',    'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
@@ -90,6 +92,8 @@ const SIMPLE_ROLES: RoleSchemaInterfaceType = {
 };
 
 const WIDE_GAMUT_ROLES: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description':   undefined,
   'name':  'wide-gamut',
   'roles': [
     {
@@ -114,6 +118,8 @@ const WIDE_GAMUT_ROLES: RoleSchemaInterfaceType = {
 };
 
 const GOLDEN_ROLES: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description':   undefined,
   'name':  'golden-rdf',
   'roles': [
     { 'name': 'primary',    'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.25], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
@@ -353,6 +359,8 @@ const annotateScenarios: readonly ScenarioInterface<AnnotateInput, AnnotateOutpu
     input: {
       colors: ['#5b21b6', '#ffffff', '#000000'],
       roles: {
+        'contrastPairs': undefined,
+        'description':   undefined,
         'name': 'three-role',
         'roles': [
           { 'name': 'primary',    'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
@@ -375,7 +383,7 @@ const annotateScenarios: readonly ScenarioInterface<AnnotateInput, AnnotateOutpu
     kind: 'edge',
     input: {
       colors: ['#5b21b6'],
-      roles:  { 'name': 'single', 'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }] },
+      roles:  { 'contrastPairs': undefined, 'description': undefined, 'name': 'single', 'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }] },
       pipeline: ['intake:hex', 'resolve:roles', 'reason:annotate', 'reason:serialize'],
     },
     assert(output, error) {
@@ -425,8 +433,14 @@ new ScenarioRunner<AnnotateInput, AnnotateOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const state = await engine.run({
-      'colors': input.colors as InputInterface['colors'],
-      'roles':  input.roles,
+      'bypass':    undefined,
+      'colors':    input.colors as InputInterface['colors'],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     input.roles,
+      'runtime':   undefined,
     });
     const graph = state.outputs['rdf:reasoningGraph'] as Iterable<unknown> | undefined;
     let quadCount = 0;
@@ -596,9 +610,14 @@ new ScenarioRunner<SerializeFormatInput, SerializeFormatOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const runInput: InputInterface = {
-      'colors': input.colors as InputInterface['colors'],
-      'roles':  input.roles,
-      ...(input.format !== undefined ? { 'metadata': { 'rdf:format': input.format } } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors as InputInterface['colors'],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.format !== undefined ? { 'rdf:format': input.format } : undefined,
+      'roles':     input.roles,
+      'runtime':   undefined,
     };
     const state = await engine.run(runInput);
     return {
@@ -706,6 +725,8 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
         { l: 0.10, c: 0.01, h: 270 },  // near-black → background
       ],
       roles: {
+        'contrastPairs': undefined,
+        'description':   undefined,
         name: 'two-distinct',
         roles: [
           { name: 'primary',    required: true, lightnessRange: [0.35, 0.60], chromaRange: [0.10, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
@@ -735,6 +756,8 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
         { l: 0.10, c: 0.01, h: 270 },
       ],
       roles: {
+        'contrastPairs': undefined,
+        'description':   undefined,
         name: 'two-distinct',
         roles: [
           { name: 'primary',    required: true, lightnessRange: [0.35, 0.60], chromaRange: [0.10, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
@@ -877,8 +900,14 @@ new ScenarioRunner<RdfContentInput, RdfContentOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const state = await engine.run({
-      'colors': input.colors as InputInterface['colors'],
-      'roles':  input.roles,
+      'bypass':    undefined,
+      'colors':    input.colors as InputInterface['colors'],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     input.roles,
+      'runtime':   undefined,
     });
     return {
       ttl:   (state.outputs['rdf:serialized'] as string | undefined) ?? '',
@@ -922,8 +951,14 @@ new ScenarioRunner<MissingGraphInput, MissingGraphOutput>(
     // Intentionally omit reason:annotate — serialize with no graph
     engine.pipeline(['intake:hex', 'resolve:roles', 'reason:serialize']);
     const state = await engine.run({
-      'colors': ['#5b21b6', '#ffffff'],
-      'roles':  SIMPLE_ROLES,
+      'bypass':    undefined,
+      'colors':    ['#5b21b6', '#ffffff'],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     SIMPLE_ROLES,
+      'runtime':   undefined,
     });
     return {
       serializedPresent: state.outputs['rdf:serialized'] !== undefined,
@@ -954,8 +989,14 @@ test('reason:serialize :: golden :: stable seed matches locked Turtle fixture (p
   ]);
 
   const state = await engine.run({
-    'colors': ['#5b21b6', '#0f172a'],
-    'roles':  GOLDEN_ROLES,
+    'bypass':    undefined,
+    'colors':    ['#5b21b6', '#0f172a'],
+    'contrast':  undefined,
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  undefined,
+    'roles':     GOLDEN_ROLES,
+    'runtime':   undefined,
   });
 
   const ttl = state.outputs['rdf:serialized'] as string | undefined;

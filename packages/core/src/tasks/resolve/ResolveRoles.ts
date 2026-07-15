@@ -85,7 +85,7 @@ function nudgeIntoRole(
   }
 
   const nextHints: ColorHintsInterfaceType | undefined = role.intent !== undefined
-    ? { ...candidate.hints, 'intent': role.intent }
+    ? { 'intent': role.intent, 'role': candidate.hints?.role, 'weight': candidate.hints?.weight }
     : candidate.hints;
 
   return colorRecordFactory.fromOklch(
@@ -108,7 +108,7 @@ function synthesizeForRole(role: RoleDefinitionInterfaceType): ColorRecordInterf
   const c = role.chromaRange    !== undefined ? RoleGeometry.rangeCenter(role.chromaRange)    : 0;
   const h = synthesizedHue(role);
   const hints: ColorHintsInterfaceType | undefined = role.intent !== undefined
-    ? { 'intent': role.intent }
+    ? { 'intent': role.intent, 'role': undefined, 'weight': undefined }
     : undefined;
   return colorRecordFactory.fromOklch(l, c, h, { 'alpha': 1, 'hints': hints, 'sourceFormat': 'oklch' });
 }
@@ -165,7 +165,9 @@ class ResolveRoles implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Assigns colors to schema roles by hint match then OKLCH distance to range center, then nudges the assigned color into the role\'s declared ranges (hue/hueClamp optionally overridden per role via metadata[\'core:hueTargetOverrides\']). Required roles are guaranteed populated and constraint-satisfying.',
     'name':        'resolve:roles',
+    'phase':       undefined,
     'reads':       ['colors', 'input.roles', 'metadata'],
+    'requires':    undefined,
     'writes':      ['roles', 'metadata']
   };
 
@@ -185,7 +187,7 @@ class ResolveRoles implements TaskInterface {
 
     const schema = state.input.roles;
     const synthesized: string[] = [];
-    const hueTargetOverrides = state.metadata['core:hueTargetOverrides'] as Record<string, { 'hue': number; 'hueClamp'?: number }> | undefined;
+    const hueTargetOverrides = state.metadata['core:hueTargetOverrides'] as Record<string, { 'hue': number; 'hueClamp': number | undefined }> | undefined;
 
     for (const inputRole of schema.roles) {
       if (inputRole.derivedFrom !== undefined && inputRole.derivedFrom.length > 0) {

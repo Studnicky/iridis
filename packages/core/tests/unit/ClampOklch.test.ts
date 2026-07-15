@@ -36,7 +36,7 @@ function makeEngine(seed: ColorRecordInterfaceType): Engine {
   for (const t of coreTasks) engine.tasks.register(t);
   const seedTask: TaskInterface = {
     'name':     'seed:onRunStart',
-    'manifest': { 'name': 'seed:onRunStart', 'phase': 'onRunStart' },
+    'manifest': { 'name': 'seed:onRunStart', 'phase': 'onRunStart', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
     run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
       state.colors.push(seed);
     },
@@ -74,7 +74,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
     kind: 'happy',
     input: {
       seed:  colorRecordFactory.fromOklch(0.5, 0.1, 200),
-      input: { 'colors': [] },
+      input: { 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=default-in-range] must not throw');
@@ -87,15 +87,15 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
     name: 'role hint + schema defines range: in-range under tight bounds → identity',
     kind: 'happy',
     input: {
-      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'accent' } }),
+      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'accent', 'intent': undefined, 'weight': undefined } }),
       input: {
         'colors': [],
         'roles': {
           'name':  'tight-accent',
           'roles': [
             { 'name': 'accent', 'lightnessRange': [0.40, 0.60], 'chromaRange': [0.05, 0.15], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'required': undefined },
-          ],
-        },
+          ], 'contrastPairs': undefined, 'description': undefined,
+        }, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -108,13 +108,13 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
     name: 'role hint + role in schema but no ranges → falls back to defaults → identity',
     kind: 'edge',
     input: {
-      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'mystery' } }),
+      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'mystery', 'intent': undefined, 'weight': undefined } }),
       input: {
         'colors': [],
         'roles': {
           'name':  'mystery-only',
-          'roles': [{ 'name': 'mystery', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined }],
-        },
+          'roles': [{ 'name': 'mystery', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined }], 'contrastPairs': undefined, 'description': undefined,
+        }, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -127,13 +127,13 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
     name: 'role hint pointing to an absent role → defaults apply → identity',
     kind: 'edge',
     input: {
-      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'unknown-role' } }),
+      seed: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'unknown-role', 'intent': undefined, 'weight': undefined } }),
       input: {
         'colors': [],
         'roles': {
           'name':  'no-match',
-          'roles': [{ 'name': 'accent', 'lightnessRange': [0.40, 0.60], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'required': undefined }],
-        },
+          'roles': [{ 'name': 'accent', 'lightnessRange': [0.40, 0.60], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'required': undefined }], 'contrastPairs': undefined, 'description': undefined,
+        }, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
       },
     },
     assert(output, error) {
@@ -187,7 +187,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'happy',
     input: {
       seed:  colorRecordFactory.fromOklch(0.999, 0.1, 200),
-      input: { 'colors': [] },
+      input: { 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
     },
     assert(output, error) {
@@ -206,7 +206,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'happy',
     input: {
       seed:  colorRecordFactory.fromOklch(0.001, 0.1, 200),
-      input: { 'colors': [] },
+      input: { 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
     },
     assert(output, error) {
@@ -220,13 +220,13 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     name: 'role-defined chromaRange: C exceeding role ceiling is clamped',
     kind: 'happy',
     input: {
-      seed: colorRecordFactory.fromOklch(0.5, 0.30, 200, { 'hints': { 'role': 'accent' } }),
+      seed: colorRecordFactory.fromOklch(0.5, 0.30, 200, { 'hints': { 'role': 'accent', 'intent': undefined, 'weight': undefined } }),
       input: {
         'colors': [],
         'roles': {
           'name':  'tight-accent',
-          'roles': [{ 'name': 'accent', 'chromaRange': [0.00, 0.10], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined }],
-        },
+          'roles': [{ 'name': 'accent', 'chromaRange': [0.00, 0.10], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined }], 'contrastPairs': undefined, 'description': undefined,
+        }, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
       },
       lMin: 0.05, lMax: 0.95, cMin: 0.00, cMax: 0.10,
     },
@@ -244,7 +244,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'happy',
     input: {
       seed: colorRecordFactory.fromOklch(0.999, 0.1, 200, { 'sourceFormat': 'hex' }),
-      input: { 'colors': [] },
+      input: { 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
     },
     assert(output, error) {
@@ -256,8 +256,8 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     name: 'hints preserved through rebuild (role + other keys)',
     kind: 'happy',
     input: {
-      seed: colorRecordFactory.fromOklch(0.999, 0.1, 200, { 'hints': { 'role': 'bg', 'weight': 5 } }),
-      input: { 'colors': [] },
+      seed: colorRecordFactory.fromOklch(0.999, 0.1, 200, { 'hints': { 'role': 'bg', 'weight': 5, 'intent': undefined } }),
+      input: { 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
     },
     assert(output, error) {
@@ -271,7 +271,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'edge',
     input: {
       seed:  colorRecordFactory.fromOklch(0.5, 0.50, 200),
-      input: { 'colors': [] },
+      input: { 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       lMin: 0.05, lMax: 0.95, cMin: 0.0, cMax: 0.40,
     },
     assert(output, error) {
@@ -330,7 +330,7 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
     kind: 'edge',
     input: {
       seed:  colorRecordFactory.fromOklch(0.05, 0.1, 200),
-      input: { 'colors': [] },
+      input: { 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=L-at-lower] must not throw');
@@ -342,7 +342,7 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
     kind: 'edge',
     input: {
       seed:  colorRecordFactory.fromOklch(0.95, 0.1, 200),
-      input: { 'colors': [] },
+      input: { 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=L-at-upper] must not throw');
@@ -354,7 +354,7 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
     kind: 'edge',
     input: {
       seed:  colorRecordFactory.fromOklch(0.5, 0.0, 200),
-      input: { 'colors': [] },
+      input: { 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=C-zero] must not throw');
@@ -366,7 +366,7 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
     kind: 'edge',
     input: {
       seed:  colorRecordFactory.fromOklch(0.5, 0.40, 200),
-      input: { 'colors': [] },
+      input: { 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=C-at-upper] must not throw');

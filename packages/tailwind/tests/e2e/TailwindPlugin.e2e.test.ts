@@ -47,8 +47,10 @@ function makeRoles(
   opts: { lightnessRange?: [number, number]; chromaRange?: [number, number] } = {},
 ): RoleSchemaInterfaceType {
   return {
-    name:  'test-schema',
-    roles: roleNames.map((name) => ({
+    contrastPairs: undefined,
+    description:   undefined,
+    name:          'test-schema',
+    roles:         roleNames.map((name) => ({
       name,
       required:       true,
       chromaRange:    opts.chromaRange,
@@ -142,8 +144,14 @@ const configShapeScenarios: readonly ScenarioInterface<ConfigShapeInput, ConfigS
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: ['#8b5cf6'],
-        roles:  makeRoles(['accent']),
+        bypass:    undefined,
+        colors:    ['#8b5cf6'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['accent']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -163,8 +171,14 @@ const configShapeScenarios: readonly ScenarioInterface<ConfigShapeInput, ConfigS
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: ['#ef4444', '#3b82f6', '#22c55e'],
-        roles:  makeRoles(['critical', 'link', 'positive']),
+        bypass:    undefined,
+        colors:    ['#ef4444', '#3b82f6', '#22c55e'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['critical', 'link', 'positive']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -182,8 +196,14 @@ const configShapeScenarios: readonly ScenarioInterface<ConfigShapeInput, ConfigS
     input: {
       pipeline: ['intake:oklch', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: [{ l: 0.55, c: 0.15, h: 250 }],
-        roles:  makeRoles(['brand']),
+        bypass:    undefined,
+        colors:    [{ l: 0.55, c: 0.15, h: 250 }],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['brand']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -234,8 +254,14 @@ const tokenNamingScenarios: readonly ScenarioInterface<TokenNamingInput, TokenNa
       pipeline:  ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       roleNames: ['accent'],
       input: {
-        colors: ['#8b5cf6'],
-        roles:  makeRoles(['accent']),
+        bypass:    undefined,
+        colors:    ['#8b5cf6'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['accent']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -253,8 +279,14 @@ const tokenNamingScenarios: readonly ScenarioInterface<TokenNamingInput, TokenNa
       pipeline:  ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       roleNames: ['gray-500', 'gray-900'],
       input: {
-        colors: ['#6b7280', '#111827'],
-        roles:  makeRoles(['gray-500', 'gray-900']),
+        bypass:    undefined,
+        colors:    ['#6b7280', '#111827'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['gray-500', 'gray-900']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -277,8 +309,14 @@ const tokenNamingScenarios: readonly ScenarioInterface<TokenNamingInput, TokenNa
       pipeline:  ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       roleNames: ['brand-500'],
       input: {
-        colors: ['#3b82f6'],
-        roles:  makeRoles(['brand-500']),
+        bypass:    undefined,
+        colors:    ['#3b82f6'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['brand-500']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -295,8 +333,14 @@ const tokenNamingScenarios: readonly ScenarioInterface<TokenNamingInput, TokenNa
       pipeline:  ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       roleNames: ['primary', 'secondary', 'muted'],
       input: {
-        colors: ['#ff0000', '#00ff00', '#0000ff'],
-        roles:  makeRoles(['primary', 'secondary', 'muted']),
+        bypass:    undefined,
+        colors:    ['#ff0000', '#00ff00', '#0000ff'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['primary', 'secondary', 'muted']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -357,8 +401,14 @@ const supportsGatingScenarios: readonly ScenarioInterface<SupportsGatingInput, S
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: ['#8b5cf6'],
-        roles:  makeRoles(['accent']),
+        bypass:    undefined,
+        colors:    ['#8b5cf6'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['accent']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -373,8 +423,14 @@ const supportsGatingScenarios: readonly ScenarioInterface<SupportsGatingInput, S
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: ['#3b82f6'],
-        roles:  makeRoles(['link']),
+        bypass:    undefined,
+        colors:    ['#3b82f6'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['link']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -390,8 +446,14 @@ const supportsGatingScenarios: readonly ScenarioInterface<SupportsGatingInput, S
     input: {
       pipeline: ['intake:oklch', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: [{ l: 0.7, c: 0.4, h: 30 }],
-        roles:  makeRoles(['accent'], { lightnessRange: [0.05, 0.95], chromaRange: [0.00, 0.50] }),
+        bypass:    undefined,
+        colors:    [{ l: 0.7, c: 0.4, h: 30 }],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['accent'], { lightnessRange: [0.05, 0.95], chromaRange: [0.00, 0.50] }),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -414,8 +476,14 @@ const supportsGatingScenarios: readonly ScenarioInterface<SupportsGatingInput, S
     input: {
       pipeline: ['intake:oklch', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: [{ l: 0.5, c: 0.05, h: 270 }],
-        roles:  makeRoles(['muted']),
+        bypass:    undefined,
+        colors:    [{ l: 0.5, c: 0.05, h: 270 }],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['muted']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -429,8 +497,14 @@ const supportsGatingScenarios: readonly ScenarioInterface<SupportsGatingInput, S
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: ['#ef4444', '#22c55e', '#3b82f6'],
-        roles:  makeRoles(['critical', 'positive', 'link']),
+        bypass:    undefined,
+        colors:    ['#ef4444', '#22c55e', '#3b82f6'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['critical', 'positive', 'link']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -476,8 +550,14 @@ const cssVarEmissionScenarios: readonly ScenarioInterface<CssVarEmissionInput, C
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: ['#8b5cf6'],
-        roles:  makeRoles(['accent']),
+        bypass:    undefined,
+        colors:    ['#8b5cf6'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['accent']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -493,9 +573,14 @@ const cssVarEmissionScenarios: readonly ScenarioInterface<CssVarEmissionInput, C
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
+        bypass:    undefined,
         colors:    ['#8b5cf6'],
-        roles:     makeRoles(['brand']),
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
         metadata:  { cssVarPrefix: '--theme-' },
+        roles:     makeRoles(['brand']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -511,8 +596,14 @@ const cssVarEmissionScenarios: readonly ScenarioInterface<CssVarEmissionInput, C
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: ['#ef4444', '#22c55e'],
-        roles:  makeRoles(['critical', 'positive']),
+        bypass:    undefined,
+        colors:    ['#ef4444', '#22c55e'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['critical', 'positive']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -533,8 +624,14 @@ const cssVarEmissionScenarios: readonly ScenarioInterface<CssVarEmissionInput, C
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: ['#3b82f6'],
-        roles:  makeRoles(['link']),
+        bypass:    undefined,
+        colors:    ['#3b82f6'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['link']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -583,7 +680,14 @@ const paletteBoundaryScenarios: readonly ScenarioInterface<PaletteBoundaryInput,
     input: {
       pipeline: ['intake:hex', 'emit:tailwindTheme'],
       input: {
-        colors: [],
+        bypass:    undefined,
+        colors:    [],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     undefined,
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -599,8 +703,14 @@ const paletteBoundaryScenarios: readonly ScenarioInterface<PaletteBoundaryInput,
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: ['#8b5cf6'],
-        roles:  makeRoles(['accent']),
+        bypass:    undefined,
+        colors:    ['#8b5cf6'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['accent']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -615,8 +725,14 @@ const paletteBoundaryScenarios: readonly ScenarioInterface<PaletteBoundaryInput,
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#8b5cf6'],
-        roles:  makeRoles(['critical', 'warning', 'positive', 'link', 'accent']),
+        bypass:    undefined,
+        colors:    ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#8b5cf6'],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['critical', 'warning', 'positive', 'link', 'accent']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -634,8 +750,14 @@ const paletteBoundaryScenarios: readonly ScenarioInterface<PaletteBoundaryInput,
     input: {
       pipeline: ['intake:hex', 'resolve:roles', 'emit:tailwindTheme'],
       input: {
-        colors: [],
-        roles:  makeRoles(['accent']),
+        bypass:    undefined,
+        colors:    [],
+        contrast:  undefined,
+        emit:      undefined,
+        maxColors: undefined,
+        metadata:  undefined,
+        roles:     makeRoles(['accent']),
+        runtime:   undefined,
       },
     },
     assert(output, error) {
@@ -676,8 +798,14 @@ test('TailwindPlugin :: cell-1 :: golden :: canonical two-role sRGB output is st
   const engine = freshEngine();
   engine.pipeline(['intake:hex', 'resolve:roles', 'emit:tailwindTheme']);
   const state = await engine.run({
-    colors: ['#8b5cf6', '#ef4444'],
-    roles:  makeRoles(['accent', 'critical']),
+    bypass:    undefined,
+    colors:    ['#8b5cf6', '#ef4444'],
+    contrast:  undefined,
+    emit:      undefined,
+    maxColors: undefined,
+    metadata:  undefined,
+    roles:     makeRoles(['accent', 'critical']),
+    runtime:   undefined,
   });
   const out = tailwindOut(state);
   assert.ok(out !== undefined, '[cell=golden] outputs.tailwind:theme present');

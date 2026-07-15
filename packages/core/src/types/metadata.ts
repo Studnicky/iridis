@@ -27,8 +27,8 @@ export type HueOffsetOverrideMapInterfaceType = Record<string, number>;
 
 /** One role's absolute-hue-target override — see `core:hueTargetOverrides`. */
 export type HueTargetOverrideInterfaceType = {
-  'hue': number;
-  'hueClamp'?: number;
+  'hue':       number;
+  'hueClamp': number | undefined;
 };
 
 /**
@@ -43,13 +43,13 @@ export type HueTargetOverrideMapInterfaceType = Record<string, HueTargetOverride
 
 /** Known `state.metadata` keys written by core tasks, and their runtime shapes. */
 export type EngineMetadataInterfaceType = {
-  'core:hueOffsetOverrides'?: HueOffsetOverrideMapInterfaceType;
-  'core:hueTargetOverrides'?: HueTargetOverrideMapInterfaceType;
-  'core:roleClamps'?:        RoleClampMapInterfaceType;
-  'core:roleDistances'?:     RoleDistanceMapInterfaceType;
-  'core:rolesDerived'?:      string[];
-  'core:rolesPinned'?:       string[];
-  'core:rolesSynthesized'?:  string[];
+  'core:hueOffsetOverrides': HueOffsetOverrideMapInterfaceType | undefined;
+  'core:hueTargetOverrides': HueTargetOverrideMapInterfaceType | undefined;
+  'core:roleClamps':         RoleClampMapInterfaceType | undefined;
+  'core:roleDistances':      RoleDistanceMapInterfaceType | undefined;
+  'core:rolesDerived':       string[] | undefined;
+  'core:rolesPinned':        string[] | undefined;
+  'core:rolesSynthesized':   string[] | undefined;
 };
 
 /** Type-safe accessor for a known `state.metadata` key, returning `undefined` when unset. */
