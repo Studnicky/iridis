@@ -10,7 +10,7 @@ import { toCssVarName } from '@studnicky/iridis';
 
 import type { CssVarsOutputInterfaceType } from '../types/index.ts';
 
-import { P3Serializer } from '../util/serializeP3.ts';
+import { P3Serializer } from '../util/P3Serializer.ts';
 
 /**
  * Picks a Windows High Contrast (Forced Colors) system color keyword for
@@ -166,7 +166,9 @@ class EmitCssVars implements TaskInterface {
   readonly manifest: TaskManifestInterfaceType = {
     'description': 'Emit CSS custom property blocks from resolved roles and variants',
     'name':        'emit:cssVars',
+    'phase':       undefined,
     'reads':       ['roles', 'variants', 'metadata'],
+    'requires':    undefined,
     'writes':      ['outputs.stylesheet:cssVars']
   };
 

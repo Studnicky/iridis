@@ -81,8 +81,21 @@ function makeState(
   metadata: Record<string, unknown> = {},
 ): PaletteStateInterface {
   return {
-    input:    { colors: [] },
-    runtime:  {},
+    input:    {
+      'bypass':    undefined,
+      'colors':    [],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     undefined,
+      'runtime':   undefined,
+    },
+    runtime:  {
+      'colorSpace': undefined,
+      'extra':      undefined,
+      'framing':    undefined,
+    },
     colors:   [],
     roles,
     variants,
@@ -94,7 +107,11 @@ function makeState(
 /** Build a color record from a hex string (sRGB only, no displayP3). */
 function hex(h: string, intent?: string): ColorRecordInterfaceType {
   return colorRecordFactory.fromHex(h, {
-    'hints':        intent !== undefined ? { intent: intent as import('@studnicky/iridis').ColorIntentType } : undefined,
+    'hints':        intent !== undefined ? {
+      'intent': intent as import('@studnicky/iridis').ColorIntentType,
+      'role':   undefined,
+      'weight': undefined,
+    } : undefined,
     'sourceFormat': 'hex',
   });
 }
@@ -108,11 +125,13 @@ function freshEngine(): Engine {
 }
 
 const FULL_ROLES: RoleSchemaInterfaceType = {
-  'name': 'full',
+  'contrastPairs': undefined,
+  'description':   undefined,
+  'name':          'full',
   'roles': [
-    { 'name': 'primary',    'required': true,  'intent': 'background' },
-    { 'name': 'background', 'required': true,  'intent': 'background' },
-    { 'name': 'accent',     'required': false, 'intent': 'accent' },
+    { 'name': 'primary',    'required': true,  'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
+    { 'name': 'background', 'required': true,  'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
+    { 'name': 'accent',     'required': false, 'intent': 'accent', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
   ],
 };
 
@@ -847,8 +866,14 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     kind: 'happy',
     input: {
       engineInput: {
-        colors: ['#8b5cf6', '#ffffff', '#ec4899'],
-        roles:  FULL_ROLES,
+        'bypass':    undefined,
+        'colors':    ['#8b5cf6', '#ffffff', '#ec4899'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  undefined,
+        'roles':     FULL_ROLES,
+        'runtime':   undefined,
       },
       pipeline: STANDARD_PIPELINE,
     },
@@ -887,8 +912,14 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     kind: 'edge',
     input: {
       engineInput: {
-        colors: ['#000000'],
-        roles:  FULL_ROLES,
+        'bypass':    undefined,
+        'colors':    ['#000000'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  undefined,
+        'roles':     FULL_ROLES,
+        'runtime':   undefined,
       },
       pipeline: STANDARD_PIPELINE,
     },
@@ -904,8 +935,14 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     kind: 'edge',
     input: {
       engineInput: {
-        colors: ['#ffffff', '#ffffff', '#ffffff'],
-        roles:  FULL_ROLES,
+        'bypass':    undefined,
+        'colors':    ['#ffffff', '#ffffff', '#ffffff'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  undefined,
+        'roles':     FULL_ROLES,
+        'runtime':   undefined,
       },
       pipeline: STANDARD_PIPELINE,
     },
@@ -920,8 +957,14 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     kind: 'edge',
     input: {
       engineInput: {
-        colors: ['#000000', '#000000', '#000000'],
-        roles:  FULL_ROLES,
+        'bypass':    undefined,
+        'colors':    ['#000000', '#000000', '#000000'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  undefined,
+        'roles':     FULL_ROLES,
+        'runtime':   undefined,
       },
       pipeline: STANDARD_PIPELINE,
     },
@@ -936,9 +979,14 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     kind: 'edge',
     input: {
       engineInput: {
-        colors:   ['#8b5cf6', '#ffffff', '#ec4899'],
-        roles:    FULL_ROLES,
-        metadata: { 'capacitor': { 'statusBarOverlay': true } },
+        'bypass':    undefined,
+        'colors':    ['#8b5cf6', '#ffffff', '#ec4899'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  { 'capacitor': { 'statusBarOverlay': true } },
+        'roles':     FULL_ROLES,
+        'runtime':   undefined,
       },
       pipeline: STANDARD_PIPELINE,
     },
@@ -953,9 +1001,14 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     kind: 'edge',
     input: {
       engineInput: {
-        colors:   ['#8b5cf6', '#ffffff', '#ec4899'],
-        roles:    FULL_ROLES,
-        metadata: { 'capacitor': { 'androidSplashResourceName': 'custom_splash' } },
+        'bypass':    undefined,
+        'colors':    ['#8b5cf6', '#ffffff', '#ec4899'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  { 'capacitor': { 'androidSplashResourceName': 'custom_splash' } },
+        'roles':     FULL_ROLES,
+        'runtime':   undefined,
       },
       pipeline: STANDARD_PIPELINE,
     },
@@ -981,7 +1034,16 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
     name: 'unknown task name in pipeline throws before run',
     kind: 'unhappy',
     input: {
-      engineInput: { colors: ['#ff0000'] },
+      engineInput: {
+        'bypass':    undefined,
+        'colors':    ['#ff0000'],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  undefined,
+        'roles':     undefined,
+        'runtime':   undefined,
+      },
       pipeline:    ['intake:hex', 'emit:nonexistent'],
     },
     assert(_output, error) {

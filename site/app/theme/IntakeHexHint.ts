@@ -4,8 +4,7 @@ import type {
 
 import { colorRecordFactory } from '@studnicky/iridis';
 
-/** A raw seed entry: a plain hex string, or an hex+role pin (drives ResolveRoles' hint match). */
-export type SeedInputType = string | { 'hex': string; 'role'?: string };
+import type { SeedInputType } from './types/seedInput.ts';
 
 /**
  * Superset of the engine's built-in `intake:hex`: accepts plain hex strings
@@ -20,7 +19,9 @@ class IntakeHexHint implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses hex strings or {hex, role} pin objects into ColorRecords, attaching hints.role when a role is pinned.',
     'name':        'intake:hexHint',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 
@@ -29,7 +30,7 @@ class IntakeHexHint implements TaskInterface {
       const isPin = typeof raw === 'object' && raw !== null;
       const hex = isPin ? raw.hex : raw;
       const role = isPin ? raw.role : undefined;
-      state.colors.push(colorRecordFactory.fromHex(hex, role !== undefined ? { 'hints': { 'role': role } } : undefined));
+      state.colors.push(colorRecordFactory.fromHex(hex, role !== undefined ? { 'hints': { 'intent': undefined, 'role': role, 'weight': undefined } } : undefined));
     }
   }
 }

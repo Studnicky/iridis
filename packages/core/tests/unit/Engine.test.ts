@@ -47,9 +47,12 @@ function makeTask(
   return {
     'name':     name,
     'manifest': {
-      'name':     name,
-      ...(options?.phase    !== undefined ? { 'phase':    options.phase    } : {}),
-      ...(options?.requires !== undefined ? { 'requires': options.requires } : {}),
+      'description': undefined,
+      'name':        name,
+      'phase':       options?.phase,
+      'reads':       undefined,
+      'requires':    options?.requires,
+      'writes':      undefined
     },
     run(state, ctx) { options?.onRun?.(state, ctx); },
   };
@@ -64,7 +67,17 @@ function makePlugin(name: string, tasks: readonly TaskInterface[]): PluginInterf
 }
 
 function makeInput(extra: Partial<InputInterface> = {}): InputInterface {
-  return { 'colors': ['#ff0000'], ...extra };
+  return {
+    'bypass':    undefined,
+    'colors':    ['#ff0000'],
+    'contrast':  undefined,
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  undefined,
+    'roles':     undefined,
+    'runtime':   undefined,
+    ...extra
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -578,10 +591,10 @@ const stateShapeScenarios: readonly ScenarioInterface<StateShapeInput, StateShap
   {
     name: 'state.runtime is a fresh object (not the same reference as input.runtime)',
     kind: 'edge',
-    input: { input: makeInput({ runtime: { framing: 'dark' } }) },
+    input: { input: makeInput({ runtime: { framing: 'dark', 'colorSpace': undefined, 'extra': undefined } }) },
     assert(output, error) {
       assert.strictEqual(error, undefined,                                  '[cell=5, scenario=runtime-clone] no throw');
-      assert.deepStrictEqual(output!.state.runtime, { framing: 'dark' },    '[cell=5, scenario=runtime-clone] values copied');
+      assert.deepStrictEqual(output!.state.runtime, { colorSpace: undefined, extra: undefined, framing: 'dark' }, '[cell=5, scenario=runtime-clone] values copied');
       assert.strictEqual(output!.runtimeIsSameRef, false,                   '[cell=5, scenario=runtime-clone] fresh object, not aliased');
     },
   },
@@ -655,7 +668,7 @@ test('Engine :: cell-7 :: schema.adopt :: unhappy :: task with empty-string name
     tasks(): readonly TaskInterface[] {
       return [{
         'name': 'task:bad',
-        'manifest': { 'name': '' },   // minLength: 1 — should reject
+        'manifest': { 'name': '', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },   // minLength: 1 — should reject
         run() { /* no-op */ },
       }];
     },
@@ -682,7 +695,7 @@ test('Engine :: cell-7 :: schema.adopt :: unhappy :: plugin with malformed contr
         'outputs': {
           // schema with circular ref — not ajv-compilable as standalone
           'bad': { 'type': 'INVALID_TYPE_VALUE_THAT_IS_NOT_VALID' } as Record<string, unknown>,
-        },
+        }, 'metadata': undefined,
       };
     },
   };
@@ -739,7 +752,7 @@ test('Engine :: cell-8 :: schema.run :: unhappy :: output failing plugin schema 
     tasks(): readonly TaskInterface[] {
       return [{
         'name': 'task:write-bad-output',
-        'manifest': { 'name': 'task:write-bad-output' },
+        'manifest': { 'name': 'task:write-bad-output', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
         run(state: PaletteStateInterface): void {
           state.outputs['mySlot'] = { 'required_string': 42 };  // number, not string
         },
@@ -753,7 +766,7 @@ test('Engine :: cell-8 :: schema.run :: unhappy :: output failing plugin schema 
             'properties': { 'required_string': { 'type': 'string' } },
             'required': ['required_string'],
           },
-        },
+        }, 'metadata': undefined,
       };
     },
   };
@@ -784,7 +797,7 @@ test('Engine :: cell-8 :: schema.run :: unhappy :: metadata failing plugin schem
     tasks(): readonly TaskInterface[] {
       return [{
         'name': 'task:write-bad-meta',
-        'manifest': { 'name': 'task:write-bad-meta' },
+        'manifest': { 'name': 'task:write-bad-meta', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
         run(state: PaletteStateInterface): void {
           state.metadata['myMeta'] = { 'score': 'not-a-number' };  // string, not number
         },
@@ -798,7 +811,7 @@ test('Engine :: cell-8 :: schema.run :: unhappy :: metadata failing plugin schem
             'properties': { 'score': { 'type': 'number' } },
             'required': ['score'],
           },
-        },
+        }, 'outputs': undefined,
       };
     },
   };
@@ -829,7 +842,7 @@ test('Engine :: cell-8 :: schema.run :: happy :: conforming output and metadata 
     tasks(): readonly TaskInterface[] {
       return [{
         'name': 'task:write-good',
-        'manifest': { 'name': 'task:write-good' },
+        'manifest': { 'name': 'task:write-good', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
         run(state: PaletteStateInterface): void {
           state.outputs['goodSlot']  = { 'label': 'hello' };
           state.metadata['goodMeta'] = { 'count': 42 };

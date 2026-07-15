@@ -42,7 +42,7 @@ function makeIntakeTask(): TaskInterface {
     'manifest': {
       'name':   'stub:intake',
       'reads':  ['input.colors'],
-      'writes': ['colors'],
+      'writes': ['colors'], 'description': undefined, 'phase': undefined, 'requires': undefined,
     },
     run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
       for (const raw of state.input.colors) {
@@ -67,7 +67,7 @@ function makeTransformTask(): TaskInterface {
     'manifest': {
       'name':   'stub:transform',
       'reads':  ['colors'],
-      'writes': ['roles'],
+      'writes': ['roles'], 'description': undefined, 'phase': undefined, 'requires': undefined,
     },
     run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
       const first = state.colors[0];
@@ -82,7 +82,7 @@ function makeEmitTask(): TaskInterface {
     'manifest': {
       'name':   'stub:emit',
       'reads':  ['roles'],
-      'writes': ['outputs.stub'],
+      'writes': ['outputs.stub'], 'description': undefined, 'phase': undefined, 'requires': undefined,
     },
     run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
       const varMap: Record<string, string> = {};
@@ -161,8 +161,14 @@ new ScenarioRunner<StateFlowInput, StateFlowOutput>(
     engine.adopt(makeStubPlugin());
     engine.pipeline(['stub:intake', 'stub:transform', 'stub:emit']);
     const runInput: InputInterface = {
-      'colors': input.colors,
-      ...(input.metadata !== undefined ? { 'metadata': input.metadata } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.metadata,
+      'roles':     undefined,
+      'runtime':   undefined
     };
     const state = await engine.run(runInput);
     const stub = state.outputs['stub'] as Record<string, string> | undefined;
@@ -208,7 +214,7 @@ new ScenarioRunner<ContextInput, ContextOutput>(
 
     const inspector: TaskInterface = {
       'name': 'inspect:ctx',
-      'manifest': { 'name': 'inspect:ctx' },
+      'manifest': { 'name': 'inspect:ctx', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(_state: PaletteStateInterface, ctx: PipelineContextInterface): void {
         capturedEngine = ctx.engine;
       },
@@ -220,7 +226,7 @@ new ScenarioRunner<ContextInput, ContextOutput>(
       tasks(): readonly TaskInterface[] { return [inspector]; },
     });
     engine.pipeline(['inspect:ctx']);
-    await engine.run({ 'colors': [] });
+    await engine.run({ 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
 
     return { engineIsExact: capturedEngine === engine };
   },
@@ -274,7 +280,7 @@ new ScenarioRunner<EdgeInputsInput, EdgeInputsOutput>(
       const engine = new Engine();
       engine.adopt(makeStubPlugin());
       engine.pipeline(['stub:intake', 'stub:transform', 'stub:emit']);
-      const state = await engine.run({ 'colors': [] });
+      const state = await engine.run({ 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
       const stub  = state.outputs['stub'] as Record<string, string> | undefined;
       return {
         colorsLength: state.colors.length,
@@ -286,7 +292,7 @@ new ScenarioRunner<EdgeInputsInput, EdgeInputsOutput>(
     // multi-index: custom transform maps each color to a named role
     const multiTransform: TaskInterface = {
       'name': 'stub:transform',
-      'manifest': { 'name': 'stub:transform' },
+      'manifest': { 'name': 'stub:transform', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(state: PaletteStateInterface): void {
         state.colors.forEach((record, i) => { state.roles[`color-${i}`] = record; });
       },
@@ -299,7 +305,7 @@ new ScenarioRunner<EdgeInputsInput, EdgeInputsOutput>(
     const engine = new Engine();
     engine.adopt(plugin);
     engine.pipeline(['stub:intake', 'stub:transform', 'stub:emit']);
-    const state = await engine.run({ 'colors': ['#ff0000', '#00ff00', '#0000ff'] });
+    const state = await engine.run({ 'colors': ['#ff0000', '#00ff00', '#0000ff'], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
     const stub  = state.outputs['stub'] as Record<string, string> | undefined;
     return {
       colorsLength: state.colors.length,
@@ -352,7 +358,7 @@ new ScenarioRunner<ErrorPathInput, ErrorPathOutput>(
     const engine = new Engine();
     const errorTask: TaskInterface = {
       'name': 'task:throws',
-      'manifest': { 'name': 'task:throws' },
+      'manifest': { 'name': 'task:throws', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(): void { throw new Error(input.message); },
     };
     engine.adopt({
@@ -361,7 +367,7 @@ new ScenarioRunner<ErrorPathInput, ErrorPathOutput>(
       tasks(): readonly TaskInterface[] { return [errorTask]; },
     });
     engine.pipeline(['task:throws']);
-    await engine.run({ 'colors': ['#000'] });
+    await engine.run({ 'colors': ['#000'], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
     return { dummy: undefined };
   },
 ).run(errorPathScenarios);

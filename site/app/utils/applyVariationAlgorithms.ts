@@ -10,16 +10,16 @@ export function applyVariationAlgorithms(
   algorithms: VariationAlgorithmType[],
   count = 5
 ): HueVariationType[] {
-  let working: HueVariationType[] = hues.map((hue) => {return { 'hue': hue, 'lightness': 50 };});
+  let working: HueVariationType[] = hues.map((hue) => {return { 'hue': hue, 'lightness': 50, 'saturation': undefined };});
 
   for (const algo of algorithms) {
     const currentHues = working.map((w) => { const result = w.hue; return result; });
     if (algo === 'tints-shades') {
-      working = applyTintsShadesVariation(currentHues, count);
+      working = applyTintsShadesVariation(currentHues, count).map((w) => {return { 'hue': w.hue, 'lightness': w.lightness, 'saturation': undefined };});
     } else if (algo === 'saturation-gradient') {
-      working = applySaturationGradient(currentHues, count);
+      working = applySaturationGradient(currentHues, count).map((w) => {return { 'hue': w.hue, 'lightness': undefined, 'saturation': w.saturation };});
     } else if (algo === 'value-gradient') {
-      working = applyValueGradient(currentHues, count);
+      working = applyValueGradient(currentHues, count).map((w) => {return { 'hue': w.hue, 'lightness': w.lightness, 'saturation': undefined };});
     }
   }
   return working;

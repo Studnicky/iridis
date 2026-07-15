@@ -85,7 +85,9 @@ class IntakeLab implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses {l,a,b} CIE Lab D65 into ColorRecord entries. Throws on non-Lab input.',
     'name':        'intake:lab',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

@@ -83,22 +83,21 @@ class ClusterDispatcher {
   /**
    * Reduce `colors` to `k` representative colors via the named `algorithm`.
    * Never mutates `colors`. Returns the same trim-log details the caller
-   * needs for observability via the optional `onTrim` callback.
+   * needs for observability via the optional `opts.onTrim` callback.
    */
   static run(
     colors: readonly ColorRecordInterfaceType[],
     algorithm: GalleryAlgorithmType,
     k: number,
-    deltaECap?: number,
-    onTrim?: (before: number, after: number, cap: number) => void
+    opts?: { 'deltaECap': number | undefined; 'onTrim': ((before: number, after: number, cap: number) => void) | undefined }
   ): ColorRecordInterfaceType[] {
     const clamp = Math.min(k, colors.length);
 
     if (algorithm === 'delta-e') {
-      const cap = Math.max(8, Math.min(512, Math.floor(deltaECap ?? DELTA_E_INPUT_CAP_DEFAULT)));
+      const cap = Math.max(8, Math.min(512, Math.floor(opts?.deltaECap ?? DELTA_E_INPUT_CAP_DEFAULT)));
       const trimmed = ClusterDispatcher.trimByWeightDescending(colors, cap);
-      if (trimmed.length < colors.length && onTrim !== undefined) {
-        onTrim(colors.length, trimmed.length, cap);
+      if (trimmed.length < colors.length && opts?.onTrim !== undefined) {
+        opts.onTrim(colors.length, trimmed.length, cap);
       }
       return clusterDeltaEMerge.apply(trimmed, clamp);
     }

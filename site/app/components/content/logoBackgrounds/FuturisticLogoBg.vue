@@ -6,7 +6,7 @@
  * of rising across the viewport. Literal blob shapes only — never a
  * glow/blur halo.
  */
-import { buildStaggeredItems } from '~/utils/staggeredItems';
+import { buildStaggeredItems } from '~/utils/buildStaggeredItems';
 
 const LAVA_ROLES = ['primary', 'info', 'secondary', 'success', 'warning', 'error'];
 const BLOB_COUNT = 5;

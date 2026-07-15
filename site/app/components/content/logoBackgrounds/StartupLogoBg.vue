@@ -6,7 +6,7 @@
  * wrapper (rem-based travel, not viewport units) and staggered per bubble so
  * they never move in lockstep.
  */
-import { buildStaggeredItems } from '~/utils/staggeredItems';
+import { buildStaggeredItems } from '~/utils/buildStaggeredItems';
 
 const BUBBLE_ROLES = ['primary', 'info', 'primary', 'success', 'info', 'primary'];
 const BUBBLE_COUNT = 6;

@@ -96,7 +96,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
     kind: 'happy',
     input: {
       label:  'fromOklch+hints',
-      record: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'accent' } }),
+      record: colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'accent', 'intent': undefined, 'weight': undefined } }),
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=fromOklch-hints] must not throw');
@@ -215,7 +215,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
   {
     name: 'intake:hex emits canonical key order',
     kind: 'happy',
-    input: { pipeline: ['intake:hex'], input: { 'colors': ['#3b82f6'] }, label: 'intake:hex' },
+    input: { pipeline: ['intake:hex'], input: { 'colors': ['#3b82f6'], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined }, label: 'intake:hex' },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=intake-hex] must not throw');
       assert.strictEqual(output!.records.length, 1, '[cell=2, scenario=intake-hex] one record');
@@ -225,7 +225,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
   {
     name: 'intake:hex with 8-digit alpha emits canonical key order',
     kind: 'happy',
-    input: { pipeline: ['intake:hex'], input: { 'colors': ['#3b82f680'] }, label: 'intake:hex-alpha' },
+    input: { pipeline: ['intake:hex'], input: { 'colors': ['#3b82f680'], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined }, label: 'intake:hex-alpha' },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=intake-hex-alpha] must not throw');
       assert.deepStrictEqual(keysOf(output!.records[0]!), CANONICAL_KEYS, `[cell=2, scenario=intake-hex-alpha] key order`);
@@ -236,7 +236,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'happy',
     input: {
       pipeline: ['intake:rgb'],
-      input:    { 'colors': [{ 'r': 100, 'g': 150, 'b': 200 }] },
+      input:    { 'colors': [{ 'r': 100, 'g': 150, 'b': 200 }], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       label:    'intake:rgb',
     },
     assert(output, error) {
@@ -249,7 +249,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'happy',
     input: {
       pipeline: ['intake:hsl'],
-      input:    { 'colors': [{ 'h': 200, 's': 0.5, 'l': 0.5 }] },
+      input:    { 'colors': [{ 'h': 200, 's': 0.5, 'l': 0.5 }], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       label:    'intake:hsl',
     },
     assert(output, error) {
@@ -262,7 +262,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'happy',
     input: {
       pipeline: ['intake:oklch'],
-      input:    { 'colors': [{ 'l': 0.6, 'c': 0.15, 'h': 250 }] },
+      input:    { 'colors': [{ 'l': 0.6, 'c': 0.15, 'h': 250 }], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       label:    'intake:oklch',
     },
     assert(output, error) {
@@ -275,7 +275,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'happy',
     input: {
       pipeline: ['intake:lab'],
-      input:    { 'colors': [{ 'l': 50, 'a': 20, 'b': -30 }] },
+      input:    { 'colors': [{ 'l': 50, 'a': 20, 'b': -30 }], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       label:    'intake:lab',
     },
     assert(output, error) {
@@ -286,7 +286,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
   {
     name: 'intake:named emits canonical key order',
     kind: 'happy',
-    input: { pipeline: ['intake:named'], input: { 'colors': ['rebeccapurple'] }, label: 'intake:named' },
+    input: { pipeline: ['intake:named'], input: { 'colors': ['rebeccapurple'], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined }, label: 'intake:named' },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=intake-named] must not throw');
       assert.deepStrictEqual(keysOf(output!.records[0]!), CANONICAL_KEYS, `[cell=2, scenario=intake-named] key order`);
@@ -297,7 +297,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'happy',
     input: {
       pipeline: ['intake:any'],
-      input:    { 'colors': ['#3b82f6', { 'l': 0.6, 'c': 0.15, 'h': 250 }, 'rebeccapurple'] },
+      input:    { 'colors': ['#3b82f6', { 'l': 0.6, 'c': 0.15, 'h': 250 }, 'rebeccapurple'], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       label:    'intake:any',
     },
     assert(output, error) {
@@ -313,7 +313,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'edge',
     input: {
       pipeline: ['intake:imagePixels'],
-      input:    { 'colors': [{ 'data': new Uint8ClampedArray([255, 0, 0, 255, 0, 128, 255, 255]), 'width': 2, 'height': 1 }] },
+      input:    { 'colors': [{ 'data': new Uint8ClampedArray([255, 0, 0, 255, 0, 128, 255, 255]), 'width': 2, 'height': 1 }], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined },
       label:    'intake:imagePixels',
     },
     assert(output, error) {
@@ -365,8 +365,8 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
         'colors': ['#3b82f6'],
         'roles': {
           'name': 'tight-blue',
-          'roles': [{ 'name': 'background', 'lightnessRange': [0.50, 0.60], 'chromaRange': [0.00, 0.02] }],
-        },
+          'roles': [{ 'name': 'background', 'lightnessRange': [0.50, 0.60], 'chromaRange': [0.00, 0.02], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'required': undefined }], 'contrastPairs': undefined, 'description': undefined,
+        }, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
       },
       seedHook:  false,
       hinted:    null,
@@ -386,11 +386,11 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
         'colors': [],
         'roles': {
           'name': 'tight-blue',
-          'roles': [{ 'name': 'background', 'required': true, 'lightnessRange': [0.50, 0.60], 'chromaRange': [0.00, 0.02] }],
-        },
+          'roles': [{ 'name': 'background', 'required': true, 'lightnessRange': [0.50, 0.60], 'chromaRange': [0.00, 0.02], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined }], 'contrastPairs': undefined, 'description': undefined,
+        }, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
       },
       seedHook: true,
-      hinted:   colorRecordFactory.fromHex('#3b82f6', { 'hints': { 'role': 'background' }, 'sourceFormat': 'hex' }),
+      hinted:   colorRecordFactory.fromHex('#3b82f6', { 'hints': { 'role': 'background', 'intent': undefined, 'weight': undefined }, 'sourceFormat': 'hex' }),
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=clamp-hinted] must not throw');
@@ -411,7 +411,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
       const hinted = input.hinted;
       const seed: TaskInterface = {
         'name': 'seed:hinted',
-        'manifest': { 'name': 'seed:hinted', 'phase': 'onRunStart' },
+        'manifest': { 'name': 'seed:hinted', 'phase': 'onRunStart', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
         run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
           state.colors.push(hinted);
         },
@@ -436,7 +436,7 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
 test('ColorRecordShape :: cell-4 :: stability :: every factory path returns identical key sets', () => {
   const records: readonly ColorRecordInterfaceType[] = [
     colorRecordFactory.fromOklch(0.5, 0.1, 200),
-    colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'r' } }),
+    colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': { 'role': 'r', 'intent': undefined, 'weight': undefined } }),
     colorRecordFactory.fromRgb(0.3, 0.6, 0.9),
     colorRecordFactory.fromRgb(0.3, 0.6, 0.9, { 'sourceFormat': 'lab' }),
     colorRecordFactory.fromHex('#abcdef'),

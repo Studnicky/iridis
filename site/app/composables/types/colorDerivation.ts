@@ -10,7 +10,7 @@ export type VariationAlgorithmType = 'tints-shades' | 'saturation-gradient' | 'v
  */
 export type RoleRelationDerivationType = {
   /** Only read when hueAlgorithm === 'freeform' — a direct degree offset from the parent's hue. */
-  'freeformOffset'?: number;
+  'freeformOffset': number | undefined;
   'hueAlgorithm': HueAlgorithmType;
   /**
    * Most algorithms produce more than one candidate hue offset from a

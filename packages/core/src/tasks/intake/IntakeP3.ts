@@ -56,7 +56,9 @@ class IntakeP3 implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses CSS color(display-p3 r g b [/ alpha]) strings into ColorRecord entries with displayP3 populated.',
     'name':        'intake:p3',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

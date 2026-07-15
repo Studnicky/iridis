@@ -1,13 +1,13 @@
-import type { ClockProviderType } from './ClockProviderType.ts';
+import type { ClockProviderInterface } from './ClockProviderInterface.ts';
 
-const clampUnit = (value: number): number => Math.min(1, Math.max(0, value));
+const clampUnit = (value: number): number => { const result = Math.min(1, Math.max(0, value)); return result; };
 
 /**
  * Deterministic clock provider: no real timers. Elapsed time only moves
  * forward when `advance(deltaMs)` is called, making tests fast and
  * reproducible.
  */
-export class VirtualClockProvider implements ClockProviderType {
+export class VirtualClockProvider implements ClockProviderInterface {
   private readonly durationMs: number;
   private elapsedMs = 0;
 
@@ -20,7 +20,7 @@ export class VirtualClockProvider implements ClockProviderType {
   }
 
   get t(): number {
-    if (this.durationMs <= 0) return 1;
+    if (this.durationMs <= 0) {return 1;}
     return clampUnit(this.elapsedMs / this.durationMs);
   }
 

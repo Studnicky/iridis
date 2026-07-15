@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 
-import { scaleChromaToY, sampleIndexToX } from '../../composables/colorStreamAxis.ts';
 import { colorStreamComparison } from '../../composables/colorStreamComparison.ts';
+import { DECORATIVE_ALIASES } from '../../composables/decorativeAliases.ts';
+import { sampleIndexToX } from '../../composables/sampleIndexToX.ts';
+import { scaleChromaToY } from '../../composables/scaleChromaToY.ts';
+import type { ColorSampleType } from '../../composables/types/colorSample.ts';
 import type { RoleViewType } from '../../composables/types/index.ts';
+import { useColorStreamHistory } from '../../composables/useColorStreamHistory.ts';
 import { useIridis } from '../../composables/useIridis.ts';
-import { DECORATIVE_ALIASES, useColorStreamHistory, useLivingBackground, type ColorSampleType } from '../../composables/useLivingBackground.ts';
+import { useLivingBackground } from '../../composables/useLivingBackground.ts';
 import { capitalize } from '../../utils/capitalize.ts';
 
-/** Role display order for the seismograph stack, derived from useLivingBackground.ts's own DECORATIVE_ALIASES — the alias/roleName pairing has exactly one source, this just adds the display label. */
+/** Role display order for the seismograph stack, derived from decorativeAliases.ts's own DECORATIVE_ALIASES — the alias/roleName pairing has exactly one source, this just adds the display label. */
 const ROLES: { alias: string; label: string; roleName: string }[] = Object.entries(DECORATIVE_ALIASES).map(([alias, roleName]) => ({
   'alias':    alias,
   'label':    capitalize(alias),
@@ -167,7 +171,10 @@ onUnmounted(() => {
 
       <p class="text-xs text-muted">
         This is <strong class="text-highlighted">Living Color</strong> in motion — see
-        <a href="#living-color" class="text-primary hover:underline">Living Color</a> for the palette-vector
+        <a
+          href="#living-color"
+          class="text-primary hover:underline"
+        >Living Color</a> for the palette-vector
         math and curve-evaluation packages behind the drift you're watching.
       </p>
 

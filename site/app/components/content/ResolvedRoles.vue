@@ -114,12 +114,24 @@ const { dataLayout } = useDataLayout();
     >
       <thead>
         <tr class="border-b border-default text-left text-muted">
-          <th class="p-2 font-medium">Swatch</th>
-          <th class="p-2 font-medium">Name</th>
-          <th class="p-2 font-medium">Hex</th>
-          <th class="p-2 font-medium">L</th>
-          <th class="p-2 font-medium">C</th>
-          <th class="p-2 font-medium">H</th>
+          <th class="p-2 font-medium">
+            Swatch
+          </th>
+          <th class="p-2 font-medium">
+            Name
+          </th>
+          <th class="p-2 font-medium">
+            Hex
+          </th>
+          <th class="p-2 font-medium">
+            L
+          </th>
+          <th class="p-2 font-medium">
+            C
+          </th>
+          <th class="p-2 font-medium">
+            H
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -134,11 +146,21 @@ const { dataLayout } = useDataLayout();
               :style="{ backgroundColor: r.hex }"
             />
           </td>
-          <td class="p-2 font-medium text-highlighted">{{ r.name }}</td>
-          <td class="p-2 font-mono text-muted">{{ r.hex }}</td>
-          <td class="p-2 text-muted">{{ r.l.toFixed(2) }}</td>
-          <td class="p-2 text-muted">{{ r.c.toFixed(2) }}</td>
-          <td class="p-2 text-muted">{{ r.h.toFixed(0) }}°</td>
+          <td class="p-2 font-medium text-highlighted">
+            {{ r.name }}
+          </td>
+          <td class="p-2 font-mono text-muted">
+            {{ r.hex }}
+          </td>
+          <td class="p-2 text-muted">
+            {{ r.l.toFixed(2) }}
+          </td>
+          <td class="p-2 text-muted">
+            {{ r.c.toFixed(2) }}
+          </td>
+          <td class="p-2 text-muted">
+            {{ r.h.toFixed(0) }}°
+          </td>
         </tr>
       </tbody>
     </table>

@@ -35,7 +35,9 @@ class EmitJson implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Writes state.outputs[\'core:json\'] with {colors, roles, variants} flattened to hex strings.',
     'name':        'emit:json',
+    'phase':       undefined,
     'reads':       ['colors', 'roles', 'variants'],
+    'requires':    undefined,
     'writes':      ['outputs[\'core:json\']']
   };
 

@@ -30,7 +30,9 @@ class GalleryAssignRoles implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Assign dominant colors to gallery roles: canvas, frame, accent, muted, text',
     'name':        'gallery:assignRoles',
+    'phase':       undefined,
     'reads':       ['colors'],
+    'requires':    undefined,
     'writes':      ['roles']
   };
 

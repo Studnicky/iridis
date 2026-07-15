@@ -47,13 +47,13 @@ function freshEngine(): Engine {
 const SIMPLE_ROLES: RoleSchemaInterfaceType = {
   'name': 'simple',
   'roles': [
-    { 'name': 'primary',   'required': true,  'lightnessRange': [0.3, 0.7] },
-    { 'name': 'secondary', 'required': false, 'lightnessRange': [0.4, 0.8] },
-    { 'name': 'primary-muted', 'derivedFrom': 'primary', 'chromaRange': [0.01, 0.08] },
+    { 'name': 'primary',   'required': true,  'lightnessRange': [0.3, 0.7], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+    { 'name': 'secondary', 'required': false, 'lightnessRange': [0.4, 0.8], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+    { 'name': 'primary-muted', 'derivedFrom': 'primary', 'chromaRange': [0.01, 0.08], 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined },
   ],
   'contrastPairs': [
-    { 'foreground': 'primary', 'background': 'secondary', 'minRatio': 1.0 },
-  ],
+    { 'foreground': 'primary', 'background': 'secondary', 'minRatio': 1.0, 'algorithm': undefined },
+  ], 'description': undefined,
 };
 
 function makeColors(count: number): string[] {
@@ -118,7 +118,7 @@ new ScenarioRunner<IntakeHexInput, IntakeHexOutput>(
   async (input) => {
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'enforce:contrast', 'derive:variant', 'emit:json']);
-    const state = await engine.run({ 'colors': input.colors, 'roles': input.roles });
+    const state = await engine.run({ 'colors': input.colors, 'roles': input.roles, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const json = state.outputs['core:json'] as Record<string, unknown> | undefined;
     return {
       colorsLength:     state.colors.length,
@@ -212,7 +212,7 @@ new ScenarioRunner<IntakeAnyInput, IntakeAnyOutput>(
   async (input) => {
     const engine = freshEngine();
     engine.pipeline(['intake:any']);
-    const state = await engine.run({ 'colors': input.colors as InputInterface['colors'] });
+    const state = await engine.run({ 'colors': input.colors as InputInterface['colors'], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
     return {
       count:         state.colors.length,
       sourceFormats: state.colors.map((c) => (c as ColorRecordInterfaceType).sourceFormat),
@@ -262,13 +262,13 @@ new ScenarioRunner<NoPipelineInput, NoPipelineOutput>(
       const taskName = name;
       const task: TaskInterface = {
         'name': taskName,
-        'manifest': { 'name': taskName },
+        'manifest': { 'name': taskName, 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
         run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void { ran.push(taskName); },
       };
       engine.tasks.register(task);
     }
     // No engine.pipeline() call
-    await engine.run({ 'colors': [] });
+    await engine.run({ 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
     return { executionOrder: ran };
   },
 ).run(noPipelineScenarios);
@@ -325,9 +325,14 @@ new ScenarioRunner<ClampInput, ClampOutput>(
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'clamp:count']);
     const runInput: InputInterface = {
+      'bypass':    input.bypass,
       'colors':    makeColors(input.count),
-      ...(input.bypass    !== undefined ? { 'bypass':    input.bypass    } : {}),
-      ...(input.maxColors !== undefined ? { 'maxColors': input.maxColors } : {}),
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': input.maxColors,
+      'metadata':  undefined,
+      'roles':     undefined,
+      'runtime':   undefined
     };
     const state = await engine.run(runInput);
     return { resultLength: state.colors.length };
@@ -374,12 +379,12 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
 const highContrastRoles: RoleSchemaInterfaceType = {
   'name': 'hi-contrast',
   'roles': [
-    { 'name': 'text',       'required': true },
-    { 'name': 'background', 'required': true },
+    { 'name': 'text',       'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'background', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
   'contrastPairs': [
-    { 'foreground': 'text', 'background': 'background', 'minRatio': 3.0 },
-  ],
+    { 'foreground': 'text', 'background': 'background', 'minRatio': 3.0, 'algorithm': undefined },
+  ], 'description': undefined,
 };
 
 new ScenarioRunner<EnforceContrastInput, EnforceContrastOutput>(
@@ -389,7 +394,7 @@ new ScenarioRunner<EnforceContrastInput, EnforceContrastOutput>(
     engine.pipeline(['intake:hex', 'resolve:roles', 'enforce:contrast']);
     const state = await engine.run({
       'colors': [input.fgHex, input.bgHex],
-      'roles':  highContrastRoles,
+      'roles':  highContrastRoles, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
     });
     return { statePresent: state !== undefined };
   },
@@ -399,7 +404,7 @@ new ScenarioRunner<EnforceContrastInput, EnforceContrastOutput>(
 // Cell 6 — input.runtime flows to state.runtime
 //
 // state.runtime must be a copy of input.runtime (not the same reference).
-// When input.runtime is omitted, state.runtime defaults to {}.
+// When input.runtime is omitted, every state.runtime field is present but undefined.
 // Tasks can read framing from state.runtime.
 // ---------------------------------------------------------------------------
 
@@ -426,12 +431,12 @@ const runtimeScenarios: readonly ScenarioInterface<RuntimeInput, RuntimeOutput>[
     },
   },
   {
-    name: 'omitted input.runtime defaults state.runtime to empty object',
+    name: 'omitted input.runtime leaves every state.runtime field undefined',
     kind: 'edge',
     input: {},
     assert(output, error) {
       assert.strictEqual(error,                 undefined, '[cell=6, scenario=default] no throw');
-      assert.strictEqual(output!.isDefaultEmpty, true,     '[cell=6, scenario=default] state.runtime defaults to {}');
+      assert.strictEqual(output!.isDefaultEmpty, true,     '[cell=6, scenario=default] state.runtime fields are all undefined');
     },
   },
 ];
@@ -442,14 +447,22 @@ new ScenarioRunner<RuntimeInput, RuntimeOutput>(
     const engine = freshEngine();
     engine.pipeline(['intake:hex']);
     const runInput: InputInterface = {
-      'colors':  ['#ff0000'],
-      ...(input.runtime !== undefined ? { 'runtime': input.runtime } : {}),
+      'bypass':    undefined,
+      'colors':    ['#ff0000'],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     undefined,
+      'runtime':   input.runtime !== undefined
+        ? { 'colorSpace': input.runtime.colorSpace, 'extra': undefined, 'framing': input.runtime.framing }
+        : undefined
     };
     const state = await engine.run(runInput);
     return {
       framing:        state.runtime.framing,
       colorSpace:     state.runtime.colorSpace,
-      isDefaultEmpty: Object.keys(state.runtime).length === 0,
+      isDefaultEmpty: Object.values(state.runtime).every((v) => v === undefined),
       isSameRef:      state.runtime === (runInput.runtime as unknown),
     };
   },
@@ -522,12 +535,12 @@ new ScenarioRunner<ErrorInput, ErrorOutput>(
       const engine = new Engine();
       const bomb: TaskInterface = {
         'name': 'bomb:task',
-        'manifest': { 'name': 'bomb:task' },
+        'manifest': { 'name': 'bomb:task', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
         run(): void { throw new Error('intentional bomb detonation'); },
       };
       engine.tasks.register(bomb);
       engine.pipeline(['bomb:task']);
-      await engine.run({ 'colors': ['#ff0000'] });
+      await engine.run({ 'colors': ['#ff0000'], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
       return { colorsLength: 0, hasJsonOutput: false };
     }
 
@@ -535,7 +548,7 @@ new ScenarioRunner<ErrorInput, ErrorOutput>(
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'clamp:count', 'emit:json']);
     const state = await engine.run({
-      'colors': [{} as unknown, null as unknown, 42 as unknown],
+      'colors': [{} as unknown, null as unknown, 42 as unknown], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined,
     });
     const json = state.outputs['core:json'] as { colors: string[] } | undefined;
     return {
@@ -560,12 +573,12 @@ test('Engine.e2e :: cell-8 :: runtime-task-observation :: tasks read framing fro
     'name': 'observe:framing',
     run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
       observedFraming = state.runtime.framing;
-    },
+    }, 'manifest': undefined,
   };
   engine.tasks.register(observer);
   engine.pipeline(['observe:framing']);
 
-  await engine.run({ 'colors': [], 'runtime': { 'framing': 'light' } });
+  await engine.run({ 'colors': [], 'runtime': { 'framing': 'light', 'colorSpace': undefined, 'extra': undefined }, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined });
 
   assert.strictEqual(
     observedFraming,

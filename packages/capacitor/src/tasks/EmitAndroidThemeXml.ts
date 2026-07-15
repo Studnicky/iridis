@@ -39,7 +39,9 @@ class EmitAndroidThemeXml implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit Android themes.xml fragment for Capacitor splash screen and status bar.',
     'name':        'emit:androidThemeXml',
+    'phase':       undefined,
     'reads':       ['roles', 'outputs.capacitor:statusBar', 'outputs.capacitor:splashScreen'],
+    'requires':    undefined,
     'writes':      ['outputs.capacitor:androidThemeXml']
   };
 

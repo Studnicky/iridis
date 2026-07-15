@@ -6,7 +6,7 @@
  * alert-glow ring pulsing at the logo's edge (its own selector/keyframes,
  * distinct from the ambient pseudo-element pulse, but matching its voice).
  */
-import { buildStaggeredItems } from '~/utils/staggeredItems';
+import { buildStaggeredItems } from '~/utils/buildStaggeredItems';
 
 const SPARK_ROLES = ['error', 'primary', 'error', 'primary', 'error', 'primary'];
 

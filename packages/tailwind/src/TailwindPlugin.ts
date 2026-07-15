@@ -4,7 +4,7 @@ import type {
   TaskInterface
 } from '@studnicky/iridis';
 
-import { emitTailwindTheme } from './tasks/EmitTailwindTheme.ts';
+import { emitTailwindTheme } from './tasks/singleton/EmitTailwindTheme.ts';
 
 const tailwindOutputSchema = {
   'additionalProperties': false,
@@ -27,7 +27,8 @@ export class TailwindPlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs': { 'tailwind:theme': tailwindOutputSchema }
+      'metadata': undefined,
+      'outputs':  { 'tailwind:theme': tailwindOutputSchema }
     };
   }
 }

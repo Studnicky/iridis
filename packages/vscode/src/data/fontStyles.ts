@@ -8,7 +8,7 @@
  *
  * Keys that do not appear here render with no special style.
  */
-export const FONT_STYLES: Readonly<Partial<Record<string, string>>> = {
+export const FONT_STYLES: Readonly<Record<string, string | undefined>> = {
   'attribute':       'italic',
   'builtin':         'bold',
 

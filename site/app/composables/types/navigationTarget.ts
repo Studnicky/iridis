@@ -13,12 +13,12 @@
  */
 export type NavigationTargetKindType = 'card' | 'doc' | 'stage';
 
-export interface NavigationTargetInterfaceType {
-  readonly id: string;
-  readonly kind: NavigationTargetKindType;
-  readonly label: string;
-  /** Owning stage name — set for `card` targets only (see STAGE_GROUPS in CarouselSections.ts). */
-  readonly stage?: string;
+export type NavigationTargetInterfaceType = {
+  'id': string;
+  'kind': NavigationTargetKindType;
+  'label': string;
   /** AccordionPanel's own `panel-id` (distinct from `id`, the sanitized scroll anchor) — set for `doc` targets only, so activateTarget() can open/close the matching accordion panel. */
-  readonly panelId?: string;
-}
+  'panelId': string | undefined;
+  /** Owning stage name — set for `card` targets only (see STAGE_GROUPS in stageGroups.ts). */
+  'stage': string | undefined;
+};

@@ -56,6 +56,7 @@ class EnforceContrast implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Checks and nudges foreground role colors to meet minRatio for each contrast pair.',
     'name':        'enforce:contrast',
+    'phase':       undefined,
     'reads':       ['roles', 'input.roles', 'input.contrast'],
     'requires':    ['contrastWcag21', 'contrastApca', 'ensureContrast'],
     'writes':      ['roles', 'metadata[\'core:contrastReport\']']

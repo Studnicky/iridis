@@ -10,7 +10,7 @@ export interface LegendEntry {
   readonly swatch: 'solid' | 'dashed' | 'circle';
   readonly color: string;
   readonly label: string;
-  readonly active?: boolean;
+  readonly active: boolean | undefined;
 }
 
 export interface LegendTab {
@@ -33,7 +33,10 @@ function isClickable(entry: LegendEntry): boolean {
 </script>
 
 <template>
-  <aside class="graph-legend" aria-label="Graph legend">
+  <aside
+    class="graph-legend"
+    aria-label="Graph legend"
+  >
     <template
       v-for="tab in tabs"
       :key="tab.key"

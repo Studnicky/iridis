@@ -24,26 +24,27 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
  * Module-singleton (mirrors useThemePreset.ts's pattern) so every Stylesheets-stage
  * OutputFormatCard reads the SAME computed outputs without each re-running
  * engine.run() itself — one shared `outputsByKey`, keyed by the same stable
- * strings CarouselSections.ts's OUTPUT_FORMAT_CARDS uses.
+ * strings outputFormatCards.ts's OUTPUT_FORMAT_CARDS uses.
  */
 import { onMounted, ref, watch } from 'vue';
 
-import { deriveRoleRelations } from '~/theme/DeriveRoleRelations.ts';
-import { deriveSemanticHues } from '~/theme/DeriveSemanticHues.ts';
 import { intakeHexHint } from '~/theme/IntakeHexHint.ts';
-import { pinDerivedRoles } from '~/theme/PinDerivedRoles.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
-import { Tokens } from '~/theme/Tokens.ts';
 import { debounce } from '~/utils/debounce.ts';
 
 import type { DerivationConfigType, PickerSeedType } from './types/index.ts';
 import type { OutputRowType } from './types/outputRow.ts';
 
-import { COLOR_PIPELINE } from './colorPipeline.ts';
+import { contrastConfigFor } from './contrastConfigFor.ts';
+import { createColorEngine } from './createColorEngine.ts';
+import { globalVscodeTheme } from './globalVscodeTheme.ts';
 import { logger } from './logger.ts';
-import { OPTIONAL_STAGE_NAMES } from './optionalStageNames.ts';
+import { optionalContrastStages } from './optionalContrastStages.ts';
+import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
+import { spliceOptionalStages } from './spliceOptionalStages.ts';
+import { DEFAULT_SCHEMA_NAME } from './types/index.ts';
 import { useIridis } from './useIridis.ts';
-import { globalVscodeTheme } from './useVscodeTheme.ts';
+import { VARIANT_CONFIG } from './variantConfig.ts';
 
 /** Bare, unquoted-key object-literal keys the Shiki JS grammar already
  * differentiates cleanly (property-name vs. string-value scope) — plain
@@ -80,55 +81,11 @@ function stringifyLoose(v: unknown, depth = 0): string {
 
 const outputsByKey = ref<Record<string, OutputRowType | undefined>>({});
 
-/**
- * Absolute OKLCH lightness per shade — mirrors useIridis.ts's own SHADE_L/
- * VARIANT_CONFIG exactly. That module doesn't export either (both are
- * module-private), so derive:variant would otherwise fall back to its
- * built-in dark/light-only default here instead of producing the SAME s50-950
- * tonal ramp the live palette's `scales` are built from. Tokens.SHADE_KEYS is
- * the shared, exported source for which shades exist; only the per-shade
- * lightness targets are duplicated, since useIridis.ts has no export path for
- * them under this file's edit-only-useMultiOutput.ts constraint.
- */
-const SHADE_L: Record<number, number> = {
-  '100': 0.955, '200': 0.915, '300': 0.855, '400': 0.775, '50': 0.985, '500': 0.685,
-  '600': 0.595, '700': 0.505, '800': 0.415, '900': 0.335, '950': 0.235
-};
-const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => {return { 'invertLightness': false, 'lightnessTarget': SHADE_L[s]!, 'name': `s${s}` };});
-
-/** The required (non-toggleable) color stages, derived from useIridis.ts's exported COLOR_PIPELINE/OPTIONAL_STAGE_NAMES rather than duplicating REQUIRED_COLOR_STAGES (module-private there) as a literal. */
-const REQUIRED_COLOR_STAGES = COLOR_PIPELINE.filter((stage) => {return !OPTIONAL_STAGE_NAMES.includes(stage);});
-
-/** Mirrors useIridis.ts's contrastStrictness → level mapping (0=AA, 1=AAA, 2=APCA/Lc); anything outside 0/1 falls back to Lc, matching the original nested-ternary's else branch. */
-const CONTRAST_LEVEL_BY_STRICTNESS: Record<number, 'AA' | 'AAA' | 'Lc'> = { '0': 'AA', '1': 'AAA' };
-
-/** Mirrors useIridis.ts's contrastStrictness → algorithm/level mapping (0=AA, 1=AAA, 2=APCA/Lc) and its cvdCorrect passthrough, used by both run() and runCombineNow() there, so exported code enforces the same contrast standard — and the same CVD auto-correction of failing role pairs — the live palette does. */
-function contrastConfigFor(strictness: number, cvdCorrect: boolean): { 'algorithm': 'apca' | 'wcag21'; 'cvdCorrect': boolean; 'level': 'AA' | 'AAA' | 'Lc' } {
-  return {
-    'algorithm':  strictness === 2 ? 'apca' : 'wcag21',
-    'cvdCorrect': cvdCorrect,
-    'level':      CONTRAST_LEVEL_BY_STRICTNESS[strictness] ?? 'Lc'
-  };
-}
-
-/** Mirrors useIridis.ts's enabledOptionalStages — which single toggleable contrast-standard stage (enforce:wcagAA/AAA/apca) the current strictness selects, if any. */
-function optionalContrastStageFor(strictness: number): string | undefined {
-  if (strictness === 0) {return 'enforce:wcagAA';}
-  if (strictness === 1) {return 'enforce:wcagAAA';}
-  if (strictness === 2) {return 'enforce:apca';}
-  return undefined;
-}
-
-/** Mirrors useIridis.ts's buildPipeline() — slots the strictness-selected optional stage into REQUIRED_COLOR_STAGES right after enforce:contrast. */
+/** Slots the strictness-selected optional contrast stage into REQUIRED_COLOR_STAGES right after enforce:contrast — same shared builder useIridis.ts's live pipeline uses. */
 class ColorStages {
   static build(strictness: number): string[] {
-    const stages = [...REQUIRED_COLOR_STAGES];
-    const optional = optionalContrastStageFor(strictness);
-    if (optional !== undefined) {
-      const idx = stages.indexOf('enforce:contrast');
-      stages.splice(idx + 1, 0, optional);
-    }
-    return stages;
+    const result = spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(strictness));
+    return result;
   }
 }
 
@@ -138,13 +95,7 @@ class MainOutputs {
     contrastStrictness: number, derivationConfig: DerivationConfigType, semanticHuesEnabled: boolean,
     cvdCorrect: boolean, colorSpace: 'srgb' | 'displayP3'
   ): Record<string, OutputRowType | undefined> {
-    const engine = new Engine();
-    for (const t of coreTasks) {engine.tasks.register(t);}
-    engine.tasks.register(intakeHexHint);
-    engine.tasks.register(deriveSemanticHues);
-    engine.tasks.register(pinDerivedRoles);
-    engine.tasks.register(deriveRoleRelations);
-    engine.adopt(contrastPlugin);
+    const engine = createColorEngine();
     engine.adopt(stylesheetPlugin);
     engine.adopt(tailwindPlugin);
     engine.adopt(shadcnPlugin);
@@ -160,13 +111,16 @@ class MainOutputs {
       'emit:capacitorStatusBar', 'emit:capacitorSplashScreen', 'emit:capacitorTheme', 'emit:androidThemeXml',
       'reason:annotate', 'reason:serialize'
     ]);
-    const pair = roleSchemaByName[schemaName] ?? roleSchemaByName['iridis-32'];
+    const pair = roleSchemaByName[schemaName] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
     const st = engine.run({
+      'bypass':   undefined,
       'colors':   activeSeeds,
       'contrast': contrastConfigFor(contrastStrictness, cvdCorrect),
+      'emit':     undefined,
+      'maxColors': undefined,
       'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig, 'derivation:semanticHuesEnabled': semanticHuesEnabled },
       'roles':    pair![framing],
-      'runtime':  { 'colorSpace': colorSpace, 'framing': framing }
+      'runtime':  { 'colorSpace': colorSpace, 'extra': undefined, 'framing': framing }
     });
     const out = st.outputs as Record<string, unknown>;
     const rows: Record<string, OutputRowType | undefined> = {};
@@ -202,10 +156,14 @@ class VscodeOutput {
       'vscode:expandTokens', 'vscode:applyModifiers', 'emit:vscodeSemanticRules', 'emit:vscodeUiPalette', 'emit:vscodeThemeJson'
     ]);
     const st = engine.run({
+      'bypass':   undefined,
       'colors':   activeSeeds,
-      'contrast': { 'algorithm': 'wcag21', 'level': 'AA' },
+      'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': undefined, 'extra': undefined, 'level': 'AA' },
+      'emit':     undefined,
+      'maxColors': undefined,
+      'metadata': undefined,
       'roles':    vscodeRoleSchema16,
-      'runtime':  { 'colorSpace': 'srgb', 'framing': 'dark' }
+      'runtime':  { 'colorSpace': 'srgb', 'extra': undefined, 'framing': 'dark' }
     });
     const themeJson = (st.outputs as Record<string, unknown>)['vscode:themeJson'];
     if (themeJson === undefined) {return undefined;}

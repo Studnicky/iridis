@@ -1,7 +1,9 @@
 import './types/augmentation.ts';
+import { ImagePlugin } from './ImagePlugin.ts';
 
 export { galleryRoleSchema5 }        from './data/galleryRoleSchema5.ts';
-export { ImagePlugin, imagePlugin }  from './ImagePlugin.ts';
+export { ImagePlugin };
+export const imagePlugin = new ImagePlugin();
 export { galleryAssignRoles }         from './tasks/GalleryAssignRoles.ts';
 export { galleryExtract }             from './tasks/GalleryExtract.ts';
 export { galleryExtractCandidates }   from './tasks/GalleryExtractCandidates.ts';

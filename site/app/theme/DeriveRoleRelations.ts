@@ -29,7 +29,9 @@ class DeriveRoleRelations implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Computes each derivedFrom role\'s effective hueOffset from the user-selected per-relation hue algorithm, writing overrides for expand:family to apply.',
     'name':        'derive:roleRelations',
+    'phase':       undefined,
     'reads':       ['input.roles', 'metadata'],
+    'requires':    undefined,
     'writes':      ['metadata']
   };
 

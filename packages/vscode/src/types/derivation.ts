@@ -20,9 +20,9 @@ export const DerivationParamsSchema = {
 } as const;
 
 export type DerivationParamsInterfaceType = {
-  'hue'?: number;
-  'light'?: number;
-  'sat'?: number;
+  'hue': number | undefined;
+  'light': number | undefined;
+  'sat': number | undefined;
 };
 
 /** Schema-derived type for derivation parameters (validation shape). */

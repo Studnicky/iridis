@@ -114,7 +114,8 @@ export class ContrastPlugin implements PluginInterface {
         'contrast:aaa':  wcagMetadataSchema.properties.aaa,
         'contrast:apca': wcagMetadataSchema.properties.apca,
         'contrast:cvd':  wcagMetadataSchema.properties.cvd
-      }
+      },
+      'outputs': undefined
     };
   }
 }

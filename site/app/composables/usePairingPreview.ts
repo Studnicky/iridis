@@ -72,17 +72,17 @@ export function usePairingPreview() {
 
     const result: ContrastPairingType[] = [
       {
-        'background': { 'hex': darkest.hex, 'name': darkest.name },
+        'background': darkest,
         'complianceLabel': labelFor(lightOnDark.ratio, schema, lightOnDark.view.name),
-        'foreground': { 'hex': lightOnDark.view.hex, 'name': lightOnDark.view.name },
+        'foreground': lightOnDark.view,
         'key': 'lightOnDark',
         'label': 'Light on dark',
         'ratio': lightOnDark.ratio
       },
       {
-        'background': { 'hex': lightest.hex, 'name': lightest.name },
+        'background': lightest,
         'complianceLabel': labelFor(darkOnLight.ratio, schema, darkOnLight.view.name),
-        'foreground': { 'hex': darkOnLight.view.hex, 'name': darkOnLight.view.name },
+        'foreground': darkOnLight.view,
         'key': 'darkOnLight',
         'label': 'Dark on light',
         'ratio': darkOnLight.ratio
@@ -90,9 +90,9 @@ export function usePairingPreview() {
     ];
     if (low !== undefined) {
       result.push({
-        'background': { 'hex': low.bg.hex, 'name': low.bg.name },
+        'background': low.bg,
         'complianceLabel': labelFor(low.ratio, schema, low.fg.name),
-        'foreground': { 'hex': low.fg.hex, 'name': low.fg.name },
+        'foreground': low.fg,
         'key': 'lowContrast',
         'label': 'Lower contrast',
         'ratio': low.ratio

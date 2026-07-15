@@ -12,7 +12,7 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { CssVarsScopedOutputInterfaceType } from '../types/index.ts';
 
-import { P3Serializer } from '../util/serializeP3.ts';
+import { P3Serializer } from '../util/P3Serializer.ts';
 
 class ScopedCategoryBlock {
   static build(
@@ -84,7 +84,9 @@ class EmitCssVarsScoped implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit per-category scoped CSS custom property blocks for Vue/Capacitor use cases',
     'name':        'emit:cssVarsScoped',
+    'phase':       undefined,
     'reads':       ['roles', 'variants', 'metadata'],
+    'requires':    undefined,
     'writes':      ['outputs.stylesheet:cssVarsScoped']
   };
 

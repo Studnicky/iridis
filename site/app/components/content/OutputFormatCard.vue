@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useMultiOutput } from '~/composables/useMultiOutput.ts';
-import { globalVscodeTheme } from '~/composables/useVscodeTheme.ts';
+import { globalVscodeTheme } from '~/composables/globalVscodeTheme.ts';
 
 /**
  * One Stylesheets-stage carousel card per output format — `formatKey` is one of
- * CarouselSections.ts's OUTPUT_FORMAT_CARDS keys (minus its 'output-'
+ * outputFormatCards.ts's OUTPUT_FORMAT_CARDS keys (minus its 'output-'
  * prefix), matching useMultiOutput()'s `outputsByKey` keys 1:1.
  */
 const props = defineProps<{ formatKey: string }>();

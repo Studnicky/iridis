@@ -26,7 +26,7 @@ const { send } = useIridisUiMachine();
 type ContrastPairsType = { pairs: { foreground: string; background: string; before: number; after: number; required: number; pass: boolean; algorithm: string }[] };
 type CvdReportType = {
   warnings: unknown[];
-  corrections?: { foreground: string; background: string; cvdTypesFixed: string[]; cvdTypesRemaining: string[] }[];
+  corrections: { foreground: string; background: string; cvdTypesFixed: string[]; cvdTypesRemaining: string[] }[] | undefined;
 };
 
 const stages = computed(() => COLOR_PIPELINE.map((name, i) => {

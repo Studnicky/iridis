@@ -14,16 +14,16 @@ export interface PipelineContextInterface {
 }
 
 export type TaskManifestInterfaceType = {
-  'description'?:   string;
-  'name':           string;
-  'phase'?:         LifecyclePhaseType;
-  'reads'?:         string[];
-  'requires'?:      string[];
-  'writes'?:        string[];
+  'description': string | undefined;
+  'name':        string;
+  'phase':       LifecyclePhaseType | undefined;
+  'reads':       string[] | undefined;
+  'requires':    string[] | undefined;
+  'writes':      string[] | undefined;
 };
 
 export interface TaskInterface {
-  readonly 'manifest'?: TaskManifestInterfaceType;
-  readonly 'name':      string;
+  readonly 'manifest': TaskManifestInterfaceType | undefined;
+  readonly 'name':     string;
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void;
 }

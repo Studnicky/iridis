@@ -61,7 +61,9 @@ class IntakeHex implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses #RRGGBB, #RGB, #RGBA, and #RRGGBBAA hex strings into ColorRecord entries. Throws on non-hex input.',
     'name':        'intake:hex',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

@@ -26,6 +26,7 @@ class EmitVscodeSemanticRules implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Shapes the semantic token rule map for VS Code editor.semanticTokenColorCustomizations.rules using SCOPE_MAPPINGS and FONT_STYLES.',
     'name':        'emit:vscodeSemanticRules',
+    'phase':       undefined,
     'reads':       ['metadata.vscode:semanticTokenRules', 'metadata.vscode:baseTokens'],
     'requires':    ['vscode:applyModifiers'],
     'writes':      ['outputs.vscode:semanticTokenRules']
@@ -36,16 +37,12 @@ class EmitVscodeSemanticRules implements TaskInterface {
     const result: Record<string, SemanticRuleEntryInterfaceType> = {};
 
     for (const [selector, rule] of Object.entries(semanticRules)) {
-      const entry: SemanticRuleEntryInterfaceType = {};
-      if (rule.foreground !== undefined && rule.foreground.length > 0) {
-        entry.foreground = rule.foreground;
-      }
+      const foreground = rule.foreground !== undefined && rule.foreground.length > 0 ? rule.foreground : undefined;
       // Apply font style: modifier transform style takes precedence,
       // then fall back to FONT_STYLES for the base token type part of the selector.
-      const fontStyle = rule.fontStyle ?? defaultFontStyle(selector);
-      if (fontStyle !== undefined && fontStyle.length > 0) {
-        entry.fontStyle = fontStyle;
-      }
+      const rawFontStyle = rule.fontStyle ?? defaultFontStyle(selector);
+      const fontStyle = rawFontStyle !== undefined && rawFontStyle.length > 0 ? rawFontStyle : undefined;
+      const entry: SemanticRuleEntryInterfaceType = { 'fontStyle': fontStyle, 'foreground': foreground };
       result[selector] = entry;
     }
 

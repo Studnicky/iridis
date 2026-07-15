@@ -4,13 +4,13 @@ import type { InferType }     from '@studnicky/json-tology/types';
 import type { CliConfigSchema }    from '../CliConfigSchema.ts';
 
 export interface CliConfigInterface {
-  readonly 'enableCapacitor'?:  boolean;
-  readonly 'enableContrast'?:   boolean;
-  readonly 'enableImage'?:      boolean;
-  readonly 'enableRdf'?:        boolean;
-  readonly 'enableStylesheet'?: boolean;
-  readonly 'enableTailwind'?:   boolean;
-  readonly 'enableVscode'?:     boolean;
+  readonly 'enableCapacitor':  boolean | undefined;
+  readonly 'enableContrast':   boolean | undefined;
+  readonly 'enableImage':      boolean | undefined;
+  readonly 'enableRdf':        boolean | undefined;
+  readonly 'enableStylesheet': boolean | undefined;
+  readonly 'enableTailwind':   boolean | undefined;
+  readonly 'enableVscode':     boolean | undefined;
   readonly 'input':             InputInterface;
   readonly 'output': {
     readonly 'directory': string;

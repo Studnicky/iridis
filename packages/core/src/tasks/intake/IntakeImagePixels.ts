@@ -32,7 +32,9 @@ class IntakeImagePixels implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses ImageData or {data: Uint8ClampedArray, width, height} and pushes non-transparent pixels. Throws on non-image input.',
     'name':        'intake:imagePixels',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

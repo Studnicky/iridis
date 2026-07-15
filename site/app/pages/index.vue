@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { useAsyncData } from '#imports'
 import { computed, reactive, ref, watch } from 'vue';
+import { docPanelId } from '~/composables/docPanelId.ts';
+import { sanitizeDocAnchorId } from '~/composables/sanitizeDocAnchorId.ts';
+import { SEQUENTIAL_STAGE_NAMES } from '~/composables/sequentialStageNames.ts';
+import { STAGE_GROUPS } from '~/composables/stageGroups.ts';
 import { useIridis } from '~/composables/useIridis.ts';
-import { docPanelId, sanitizeDocAnchorId, useNavigationTargets } from '~/composables/useNavigationTargets.ts';
+import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
 import { useThemePreset } from '~/composables/useThemePreset.ts';
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { STAGE_GROUPS, SEQUENTIAL_STAGE_NAMES } from '~/composables/CarouselSections.ts';
 
 /**
  * iridis × Nuxt UI. A compact hero, then the stage carousels reflecting the
@@ -62,7 +65,7 @@ function findUploadedImage(itemKey: string) {
  * image, dynamically appended after the static dropzone slide — every
  * upload is a SEPARATE top-level carousel card in this SAME stage carousel,
  * never a second carousel nested inside the dropzone card's own content.
- * Every other stage's items are the static list CarouselSections.ts defines.
+ * Every other stage's items are the static list stageGroups.ts defines.
  */
 function stageItemsFor(group: (typeof STAGE_GROUPS)[number]) {
   if (group.name !== 'upload') return group.items;
@@ -162,8 +165,8 @@ function onDocsClick(e: MouseEvent): void {
     <UContainer class="space-y-12">
       <section
         v-for="group in visibleStageGroups"
-        :key="group.name"
         :id="group.name"
+        :key="group.name"
         class="space-y-4 scroll-mt-24"
       >
         <div class="flex items-center justify-center gap-4">
@@ -279,11 +282,14 @@ function onDocsClick(e: MouseEvent): void {
           />
         </div>
 
-        <div class="space-y-12" @click="onDocsClick">
+        <div
+          class="space-y-12"
+          @click="onDocsClick"
+        >
           <AccordionPanel
             v-for="doc in (allDocs ?? [])"
-            :key="doc.path"
             :id="sanitizeDocAnchorId(doc.path)"
+            :key="doc.path"
             :panel-id="docPanelId(doc.path)"
             :title="doc.title || doc.path"
             icon="i-material-symbols-article-outline-rounded"

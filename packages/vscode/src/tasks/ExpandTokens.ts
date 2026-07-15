@@ -27,7 +27,9 @@ class ExpandTokens implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Derives 23 VS Code base token colours from the 16 palette roles using DERIVATION_PARAMS.',
     'name':        'vscode:expandTokens',
+    'phase':       undefined,
     'reads':       ['roles'],
+    'requires':    undefined,
     'writes':      ['metadata.vscode:baseTokens']
   };
 
@@ -71,7 +73,11 @@ class ExpandTokens implements TaskInterface {
         continue;
       }
 
-      const params = VscodeTokenData.DERIVATION_PARAMS[tokenType] ?? {};
+      const params = VscodeTokenData.DERIVATION_PARAMS[tokenType] ?? {
+        'hue': undefined,
+        'light': undefined,
+        'sat': undefined
+      };
 
       // operator is special: mix muted + foreground
       if (tokenType === 'operator') {

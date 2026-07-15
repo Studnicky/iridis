@@ -38,10 +38,10 @@ class PaletteFamily {
     if (base === undefined) {return undefined;}
 
     const main  = base.hex;
-    const light = variants['s300']?.[role]?.hex ?? main;
-    const dark  = variants['s700']?.[role]?.hex ?? main;
+    const light = variants.s300?.[role]?.hex ?? main;
+    const dark  = variants.s700?.[role]?.hex ?? main;
 
-    const contrastText = roles[`on-${role}`]?.hex ?? roles['text']?.hex ?? '#ffffff';
+    const contrastText = roles[`on-${role}`]?.hex ?? roles.text?.hex ?? '#ffffff';
 
     return { 'contrastText': contrastText, 'dark': dark, 'light': light, 'main': main };
   }
@@ -79,7 +79,9 @@ export class EmitMuiTheme implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit an MUI createTheme() palette object from resolved roles and shade variants',
     'name':        'emit:muiTheme',
+    'phase':       undefined,
     'reads':       ['roles', 'variants', 'runtime'],
+    'requires':    undefined,
     'writes':      ['outputs.mui:theme']
   };
 
@@ -89,40 +91,40 @@ export class EmitMuiTheme implements TaskInterface {
     const palette: Record<string, unknown> = {};
 
     const primary = PaletteFamily.build(roles, variants, 'brand');
-    if (primary !== undefined) {palette['primary'] = primary;}
+    if (primary !== undefined) {palette.primary = primary;}
 
     const secondary = PaletteFamily.build(roles, variants, 'accent-alt')
       ?? PaletteFamily.build(roles, variants, 'brand');
-    if (secondary !== undefined) {palette['secondary'] = secondary;}
+    if (secondary !== undefined) {palette.secondary = secondary;}
 
     const error = PaletteFamily.build(roles, variants, 'error');
-    if (error !== undefined) {palette['error'] = error;}
+    if (error !== undefined) {palette.error = error;}
 
     const warning = PaletteFamily.build(roles, variants, 'warning')
       ?? PaletteFamily.build(roles, variants, 'brand');
-    if (warning !== undefined) {palette['warning'] = warning;}
+    if (warning !== undefined) {palette.warning = warning;}
 
     const info = PaletteFamily.build(roles, variants, 'info')
       ?? PaletteFamily.build(roles, variants, 'brand');
-    if (info !== undefined) {palette['info'] = info;}
+    if (info !== undefined) {palette.info = info;}
 
     const success = PaletteFamily.build(roles, variants, 'success')
       ?? PaletteFamily.build(roles, variants, 'brand');
-    if (success !== undefined) {palette['success'] = success;}
+    if (success !== undefined) {palette.success = success;}
 
     const background: Record<string, string> = {};
-    if (roles['background']?.hex !== undefined) {background['default'] = roles['background'].hex;}
-    const paper = roles['surface']?.hex ?? roles['bg-soft']?.hex ?? roles['background']?.hex;
-    if (paper !== undefined) {background['paper'] = paper;}
-    if (Object.keys(background).length > 0) {palette['background'] = background;}
+    if (roles.background?.hex !== undefined) {background.default = roles.background.hex;}
+    const paper = roles.surface?.hex ?? roles['bg-soft']?.hex ?? roles.background?.hex;
+    if (paper !== undefined) {background.paper = paper;}
+    if (Object.keys(background).length > 0) {palette.background = background;}
 
     const text: Record<string, string> = {};
-    if (roles['text']?.hex !== undefined) {text['primary'] = roles['text'].hex;}
-    const secondaryText = roles['text-subtle']?.hex ?? roles['muted']?.hex ?? roles['text']?.hex;
-    if (secondaryText !== undefined) {text['secondary'] = secondaryText;}
-    if (Object.keys(text).length > 0) {palette['text'] = text;}
+    if (roles.text?.hex !== undefined) {text.primary = roles.text.hex;}
+    const secondaryText = roles['text-subtle']?.hex ?? roles.muted?.hex ?? roles.text?.hex;
+    if (secondaryText !== undefined) {text.secondary = secondaryText;}
+    if (Object.keys(text).length > 0) {palette.text = text;}
 
-    palette['mode'] = state.runtime.framing ?? 'light';
+    palette.mode = state.runtime.framing ?? 'light';
 
     const config = [
       'export default {',

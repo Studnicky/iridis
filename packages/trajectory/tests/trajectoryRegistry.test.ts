@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 
 import { TrajectoryRegistry } from '../src/index.ts';
-import { sunriseTrajectory } from '../src/BuiltInTrajectories.ts';
+import { sunriseTrajectory } from '../src/SunriseTrajectory.ts';
 
 const assertPaletteClose = (actual: PaletteInterfaceType, expected: PaletteInterfaceType): void => {
   for (const role of Object.keys(expected)) {
@@ -55,11 +55,11 @@ test('resolve: unknown trajectory name throws a clear error', () => {
 
 test('registerTrajectory: custom trajectory can be registered and resolved by name', () => {
   const registry = new TrajectoryRegistry();
-  const stops: readonly PaletteInterfaceType[] = [
+  const stops: PaletteInterfaceType[] = [
     { 'accent': { 'c': 0.1, 'h': 0,   'l': 0.5 } },
     { 'accent': { 'c': 0.1, 'h': 100, 'l': 0.5 } }
   ];
-  registry.registerTrajectory('custom', { stops });
+  registry.registerTrajectory('custom', { 'opts': undefined, stops });
   const result = registry.resolve('custom', 0);
   assertPaletteClose(result, stops[0] as PaletteInterfaceType);
   const midResult = registry.resolve('custom', 1);
@@ -68,10 +68,10 @@ test('registerTrajectory: custom trajectory can be registered and resolved by na
 
 test('registerTrajectory: registering under a built-in name overwrites it', () => {
   const registry = new TrajectoryRegistry();
-  const overrideStops: readonly PaletteInterfaceType[] = [
+  const overrideStops: PaletteInterfaceType[] = [
     { 'accent': { 'c': 0.3, 'h': 0, 'l': 0.9 } }
   ];
-  registry.registerTrajectory('sunrise', { 'stops': overrideStops });
+  registry.registerTrajectory('sunrise', { 'opts': undefined, 'stops': overrideStops });
   const result = registry.resolve('sunrise', 0);
   assertPaletteClose(result, overrideStops[0] as PaletteInterfaceType);
 });

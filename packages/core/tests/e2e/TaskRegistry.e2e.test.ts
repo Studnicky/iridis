@@ -35,8 +35,12 @@ function makeTask(
   phase?: LifecyclePhaseType,
 ): TaskInterface {
   const manifest: TaskManifestInterfaceType = {
-    'name': name,
-    ...(phase !== undefined ? { 'phase': phase } : {}),
+    'description': undefined,
+    'name':        name,
+    'phase':       phase,
+    'reads':       undefined,
+    'requires':    undefined,
+    'writes':      undefined
   };
   return {
     'name': name,
@@ -152,7 +156,7 @@ new ScenarioRunner<HooksInput, HooksOutput>(
 
     engine.tasks.hook('onRunStart', {
       'name': 'hook:start',
-      'manifest': { 'name': 'hook:start', 'phase': 'onRunStart' },
+      'manifest': { 'name': 'hook:start', 'phase': 'onRunStart', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(state: PaletteStateInterface): void {
         log.push('start');
         (state.metadata as Record<string, unknown>)['startSaw'] = state.colors.length;
@@ -161,7 +165,7 @@ new ScenarioRunner<HooksInput, HooksOutput>(
 
     engine.tasks.register({
       'name': 'task:main',
-      'manifest': { 'name': 'task:main' },
+      'manifest': { 'name': 'task:main', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(state: PaletteStateInterface): void {
         log.push('main');
         state.colors.push({
@@ -178,7 +182,7 @@ new ScenarioRunner<HooksInput, HooksOutput>(
 
     engine.tasks.hook('onRunEnd', {
       'name': 'hook:end',
-      'manifest': { 'name': 'hook:end', 'phase': 'onRunEnd' },
+      'manifest': { 'name': 'hook:end', 'phase': 'onRunEnd', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(state: PaletteStateInterface): void {
         log.push('end');
         (state.metadata as Record<string, unknown>)['endSaw'] = state.colors.length;
@@ -186,7 +190,7 @@ new ScenarioRunner<HooksInput, HooksOutput>(
     });
 
     engine.pipeline(['task:main']);
-    const state = await engine.run({ 'colors': [] });
+    const state = await engine.run({ 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
     return {
       executionOrder: log,
       startSaw:       state.metadata['startSaw'] as number,
@@ -229,18 +233,18 @@ new ScenarioRunner<ReplaceInput, ReplaceOutput>(
 
     const v2: TaskInterface = {
       'name': 'task:replaceable',
-      'manifest': { 'name': 'task:replaceable' },
+      'manifest': { 'name': 'task:replaceable', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(): void { log.push('v2'); },
     };
 
     engine.tasks.register({
       'name': 'task:replaceable',
-      'manifest': { 'name': 'task:replaceable' },
+      'manifest': { 'name': 'task:replaceable', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(): void { log.push('v1'); },
     });
     engine.tasks.register(v2);
     engine.pipeline(['task:replaceable']);
-    await engine.run({ 'colors': [] });
+    await engine.run({ 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
 
     return { log, resolvedIsV2: engine.tasks.resolve('task:replaceable') === v2 };
   },
@@ -276,11 +280,11 @@ new ScenarioRunner<PhaseSkipInput, PhaseSkipOutput>(
     const ran: string[] = [];
     engine.tasks.register({
       'name': 'task:lifecycle',
-      'manifest': { 'name': 'task:lifecycle', 'phase': 'onRunStart' },
+      'manifest': { 'name': 'task:lifecycle', 'phase': 'onRunStart', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(): void { ran.push('lifecycle'); },
     });
     engine.pipeline(['task:lifecycle']);
-    await engine.run({ 'colors': [] });
+    await engine.run({ 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
     return { ran };
   },
 ).run(phaseSkipScenarios);
@@ -344,12 +348,12 @@ new ScenarioRunner<ErrorPathInput, ErrorPathOutput>(
     if (_input.scenario === 'register-empty') {
       registry.register({
         'name': '',
-        run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void {},
+        run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void {}, 'manifest': undefined,
       });
     } else if (_input.scenario === 'hook-empty') {
       registry.hook('onRunStart', {
         'name': '',
-        run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void {},
+        run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void {}, 'manifest': undefined,
       });
     } else {
       registry.resolve('does:not:exist');

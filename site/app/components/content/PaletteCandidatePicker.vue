@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
-import { ALGORITHM_LABELS } from '~/composables/GalleryAlgorithms.ts';
+import { ALGORITHM_LABELS } from '~/composables/algorithmLabels.ts';
 
 /**
  * Presents the (typically 3) non-destructive candidate palettes from

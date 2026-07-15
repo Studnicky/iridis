@@ -14,7 +14,7 @@ import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 type HslInput = {
-  'a'?: number;
+  'a': number | undefined;
   'h': number;
   'l': number;
   's': number;
@@ -44,7 +44,9 @@ class IntakeHsl implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses {h,s,l,a?} (h: deg, s/l: 0..1 or 0..100) into ColorRecord entries. Throws on non-HSL input.',
     'name':        'intake:hsl',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

@@ -163,12 +163,27 @@ const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAm
         />
       </div>
 
-      <AmbientParticleLayer layer-class="star-layer star-far-1" :layer="layerFar1" />
-      <AmbientParticleLayer layer-class="star-layer star-far-2" :layer="layerFar2" />
-      <AmbientParticleLayer layer-class="star-layer star-far-3" :layer="layerFar3" />
+      <AmbientParticleLayer
+        layer-class="star-layer star-far-1"
+        :layer="layerFar1"
+      />
+      <AmbientParticleLayer
+        layer-class="star-layer star-far-2"
+        :layer="layerFar2"
+      />
+      <AmbientParticleLayer
+        layer-class="star-layer star-far-3"
+        :layer="layerFar3"
+      />
 
-      <AmbientParticleLayer layer-class="star-layer star-near-1" :layer="layerNear1" />
-      <AmbientParticleLayer layer-class="star-layer star-near-2" :layer="layerNear2" />
+      <AmbientParticleLayer
+        layer-class="star-layer star-near-1"
+        :layer="layerNear1"
+      />
+      <AmbientParticleLayer
+        layer-class="star-layer star-near-2"
+        :layer="layerNear2"
+      />
     </ClientOnly>
   </div>
 </template>

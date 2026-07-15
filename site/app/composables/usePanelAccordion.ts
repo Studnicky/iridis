@@ -1,51 +1,39 @@
-/**
- * Shared accordion coordination for independent panels: at most 3 panels may
- * be open at once, oldest-opened is evicted when a 4th opens. Closing removes
- * a panel from the order entirely, so reopening always re-adds it at the
- * most-recent end — no separate "move to end" case is needed.
- */
+import { computed } from 'vue';
 
-import { computed, reactive } from 'vue';
+import { PanelAccordionState } from './panelAccordionState.ts';
 
-const MAX_OPEN_PANELS = 3;
-
-/** Open panel IDs, oldest-opened first. Module-level singleton shared by every call site. */
-const openPanelIds = reactive<string[]>([]);
-const seededPanelIds = new Set<string>();
-
-function openPanel(id: string): void {
-  if (openPanelIds.includes(id)) { return; }
-  openPanelIds.push(id);
-  if (openPanelIds.length > MAX_OPEN_PANELS) { openPanelIds.shift(); }
-}
-
-function closePanel(id: string): void {
-  const index = openPanelIds.indexOf(id);
-  if (index !== -1) { openPanelIds.splice(index, 1); }
-}
-
-export interface PanelAccordionOptionsInterfaceType {
-  defaultOpen?: boolean;
-}
-
-export function usePanelAccordion(panelId: string, opts?: PanelAccordionOptionsInterfaceType) {
-  if (opts?.defaultOpen && !seededPanelIds.has(panelId)) {
-    seededPanelIds.add(panelId);
-    openPanel(panelId);
+class Panel {
+  static open(id: string): void {
+    if (PanelAccordionState.openPanelIds.includes(id)) { return; }
+    PanelAccordionState.openPanelIds.push(id);
+    if (PanelAccordionState.openPanelIds.length > PanelAccordionState.MAX_OPEN_PANELS) { PanelAccordionState.openPanelIds.shift(); }
   }
 
-  const isOpen = computed(() => openPanelIds.includes(panelId));
-
-  return {
-    isOpen,
-    'open': () => openPanel(panelId),
-    'close': () => closePanel(panelId),
-    'toggle': () => { isOpen.value ? closePanel(panelId) : openPanel(panelId); }
-  };
+  static close(id: string): void {
+    const index = PanelAccordionState.openPanelIds.indexOf(id);
+    if (index !== -1) { PanelAccordionState.openPanelIds.splice(index, 1); }
+  }
 }
 
-/** Test-only: clears shared module state between test cases. Not part of the public API surface. */
-export function __resetPanelAccordionForTests(): void {
-  openPanelIds.splice(0, openPanelIds.length);
-  seededPanelIds.clear();
+type PanelAccordionOptionsInterfaceType = {
+  'defaultOpen': boolean | undefined;
+};
+
+/** One panel's open/close state within the shared accordion coordination — see panelAccordionState.ts. */
+export function usePanelAccordion(panelId: string, opts?: PanelAccordionOptionsInterfaceType) {
+  if (opts?.defaultOpen === true && !PanelAccordionState.seededPanelIds.has(panelId)) {
+    PanelAccordionState.seededPanelIds.add(panelId);
+    Panel.open(panelId);
+  }
+
+  const isOpen = computed(() => { const result = PanelAccordionState.openPanelIds.includes(panelId); return result; });
+
+  return {
+    'close': () => { const result = Panel.close(panelId); return result; },
+    'isOpen': isOpen,
+    'open': () => { const result = Panel.open(panelId); return result; },
+    'toggle': () => {
+      if (isOpen.value) { Panel.close(panelId); } else { Panel.open(panelId); }
+    }
+  };
 }

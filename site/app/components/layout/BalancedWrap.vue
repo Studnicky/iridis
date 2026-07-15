@@ -80,7 +80,11 @@ function getAbsoluteIndex(rIdx: number, iIdx: number) {
 </script>
 
 <template>
-  <div ref="containerRef" class="flex flex-col w-full" :style="{ gap: `${gap}px` }">
+  <div
+    ref="containerRef"
+    class="flex flex-col w-full"
+    :style="{ gap: `${gap}px` }"
+  >
     <div
       v-for="(row, rIdx) in rows"
       :key="rIdx"
