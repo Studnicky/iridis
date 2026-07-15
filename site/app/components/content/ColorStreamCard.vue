@@ -167,7 +167,10 @@ onUnmounted(() => {
 
       <p class="text-xs text-muted">
         This is <strong class="text-highlighted">Living Color</strong> in motion — see
-        <a href="#living-color" class="text-primary hover:underline">Living Color</a> for the palette-vector
+        <a
+          href="#living-color"
+          class="text-primary hover:underline"
+        >Living Color</a> for the palette-vector
         math and curve-evaluation packages behind the drift you're watching.
       </p>
 

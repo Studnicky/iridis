@@ -1,8 +1,8 @@
-export interface StaggeredItem {
+export type StaggeredItem = {
   'id': string;
   'index': number;
   'role': string;
-}
+};
 
 /**
  * Builds `count` items with a stable id and a role cycled from `roles`.
@@ -10,9 +10,10 @@ export interface StaggeredItem {
  * covers the id/role/index bookkeeping shared across logo-background themes.
  */
 export function buildStaggeredItems(idPrefix: string, count: number, roles: readonly string[]): StaggeredItem[] {
-  return Array.from({ 'length': count }, (_, i) => ({
+  const result = Array.from({ 'length': count }, (_, i) => {return {
     'id':    `${idPrefix}-${i}`,
     'index': i,
     'role':  roles[i % roles.length]!
-  }));
+  };});
+  return result;
 }

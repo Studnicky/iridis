@@ -126,7 +126,10 @@ const NAMED_ANIMATIONS: { kind: 'dot' | 'orbit' | 'sonar' | 'radar' | 'chroma'; 
       <p class="text-xs text-muted">
         This card is a live demo of <strong class="text-highlighted">Living Color</strong> — the engine's
         palette-as-animated-vector layer, not just a static derivation. See
-        <a href="#living-color" class="text-primary hover:underline">Living Color</a> for the underlying
+        <a
+          href="#living-color"
+          class="text-primary hover:underline"
+        >Living Color</a> for the underlying
         package (<code>iridis-anima</code>, <code>iridis-pulse</code>, <code>iridis-fsm</code>) that drives every
         transition here.
       </p>

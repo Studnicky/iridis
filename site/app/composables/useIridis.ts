@@ -8,15 +8,15 @@
 
 import type { CvdType, RoleClampMapInterfaceType, RoleDistanceMapInterfaceType } from '@studnicky/iridis';
 import type { ApcaPairResultSetInterfaceType, CvdResultSetInterfaceType, WcagPairResultSetInterfaceType } from '@studnicky/iridis-contrast';
-import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
+import type { GalleryAlgorithmType, GalleryCandidateInterfaceType, GalleryHistogramSlotInterfaceType } from '@studnicky/iridis-image/types';
 
-import { coreTasks, Engine, getEngineMetadata } from '@studnicky/iridis';
-import { contrastPlugin, getContrastMetadata } from '@studnicky/iridis-contrast';
+import { getEngineMetadata } from '@studnicky/iridis';
+import { getContrastMetadata } from '@studnicky/iridis-contrast';
 import { imagePlugin } from '@studnicky/iridis-image';
 import { computed, ref, watch } from 'vue';
 
 import type {
-  DerivationConfigType, FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, IridisUiEffectVariant, ModeType, PickerSeedType, RoleHexMapType, RoleRelationDerivationType, RoleViewType, ScaleMapType
+  DerivationConfigType, FramingType, IridisUiEffectType, IridisUiEffectVariant, ModeType, PickerSeedType, RoleHexMapType, RoleRelationDerivationType, RoleViewType, ScaleMapType
   , UploadedImageInterfaceType } from './types/index.ts';
 import type { RoleSortableRowType } from './types/roleSortableRow.ts';
 import type { RoleSortKeyType } from './types/roleSortKey.ts';
@@ -28,8 +28,14 @@ import { debounce, keyedDebounce } from '../utils/debounce.ts';
 import { isValidHex } from '../utils/isValidHex.ts';
 import { minRatioForRole } from '../utils/minRatioForRole.ts';
 import { sortRoleRows } from '../utils/sortRoleRows.ts';
-import { OPTIONAL_STAGE_NAMES } from './optionalStageNames.ts';
-import { DEFAULT_DERIVATION_CONFIG, IridisUiActionType } from './types/index.ts';
+import { contrastConfigFor } from './contrastConfigFor.ts';
+import { createColorEngine } from './createColorEngine.ts';
+import { optionalContrastStages } from './optionalContrastStages.ts';
+import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
+import { schemaRoleCount } from './schemaRoleCount.ts';
+import { spliceOptionalStages } from './spliceOptionalStages.ts';
+import { DEFAULT_DERIVATION_CONFIG, DEFAULT_SCHEMA_NAME, IridisUiActionType } from './types/index.ts';
+import { VARIANT_CONFIG } from './variantConfig.ts';
 
 type MutateSeedsEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.MUTATE_SEEDS }>;
 type SetPaletteParamEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>;
@@ -41,10 +47,6 @@ type PopulatePickerFromImageEffectType = Extract<IridisUiEffectType, { 'variant'
 type NavigateToTargetEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.NAVIGATE_TO_TARGET }>;
 type SelectImageCandidateEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SELECT_IMAGE_CANDIDATE }>;
 
-import { deriveRoleRelations } from '../theme/DeriveRoleRelations.ts';
-import { deriveSemanticHues } from '../theme/DeriveSemanticHues.ts';
-import { intakeHexHint } from '../theme/IntakeHexHint.ts';
-import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
 import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
 import { Tokens } from '../theme/Tokens.ts';
 import { useIridisUiMachine } from './useIridisUiMachine.ts';
@@ -58,19 +60,6 @@ const CODE_BLOCK_ROLES = [
 /** Every role name actually consumed somewhere on the page (Tokens.ts + CodeBlock.vue) — the ground truth for pinnable roles. */
 const USED_ROLE_NAMES = new Set([...Tokens.candidateRoleNames(), ...CODE_BLOCK_ROLES]);
 
-/** Absolute OKLCH lightness per shade — resolved through the engine, not here. */
-const SHADE_L: Record<number, number> = {
-  '100': 0.955, '200': 0.915, '300': 0.855, '400': 0.775, '50': 0.985, '500': 0.685,
-  '600': 0.595, '700': 0.505, '800': 0.415, '900': 0.335, '950': 0.235
-};
-const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => {return { 'invertLightness': false, 'lightnessTarget': SHADE_L[s]!, 'name': `s${s}` };});
-
-/** enforce:cvdSimulate is always on, not user-toggleable — CVD accessibility
- * reporting/correction isn't opt-in the way the other standards are. */
-const REQUIRED_COLOR_STAGES = [
-  'intake:hexHint', 'derive:semanticHues', 'resolve:roles', 'pin:derivedRoles', 'derive:roleRelations', 'expand:family',
-  'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
-];
 /**
  * The COMBINE stage's pipeline — runs over the already-per-image-reduced hex
  * list (Stage 1 output concatenated across every uploaded image), not raw
@@ -92,30 +81,16 @@ const ALL_CANDIDATE_ALGORITHMS: readonly { 'algorithm': GalleryAlgorithmType }[]
 ];
 
 /** Which optional stages currently run based on strictness. */
-const enabledOptionalStages = computed<Set<string>>(() => {
-  if (contrastStrictness.value === 0) {return new Set(['enforce:wcagAA']);}
-  if (contrastStrictness.value === 1) {return new Set(['enforce:wcagAAA']);}
-  if (contrastStrictness.value === 2) {return new Set(['enforce:apca']);}
-  return new Set();
-});
+const enabledOptionalStages = computed<Set<string>>(() => {const result = optionalContrastStages(contrastStrictness.value);
+  return result;});
 
 /** Slots the currently-enabled optional stages into `required` right after enforce:contrast. */
 function pipelineBuild(required: readonly string[]): string[] {
-  const idx = required.indexOf('enforce:contrast');
-  const optional = OPTIONAL_STAGE_NAMES.filter((n) => {const result = enabledOptionalStages.value.has(n);
-    return result;});
-  const result = [...required];
-  result.splice(idx + 1, 0, ...optional);
+  const result = spliceOptionalStages(required, enabledOptionalStages.value);
   return result;
 }
 
-const engine = new Engine();
-for (const t of coreTasks) {engine.tasks.register(t);}
-engine.tasks.register(intakeHexHint);
-engine.tasks.register(deriveSemanticHues);
-engine.tasks.register(pinDerivedRoles);
-engine.tasks.register(deriveRoleRelations);
-engine.adopt(contrastPlugin);
+const engine = createColorEngine();
 engine.adopt(imagePlugin);
 
 /* ─── shared reactive state ─── */
@@ -155,10 +130,8 @@ function withPreservedRoles(hexes: readonly string[], previous: readonly PickerS
 }
 
 const framing = ref<FramingType>('dark');
-const schemaName = ref<string>('iridis-32');
+const schemaName = ref<string>(DEFAULT_SCHEMA_NAME);
 const contrastStrictness = ref<number>(2);
-/** Contrast level per strictness tier — index matches contrastStrictness's three UI values (0=AA, 1=AAA, 2=APCA/Lc). */
-const CONTRAST_LEVELS: readonly string[] = ['AA', 'AAA', 'Lc'];
 const colorSpace = ref<'srgb' | 'displayP3'>('srgb');
 /**
  * CVD "correct" mode flag, threaded through as `input.contrast.cvdCorrect` —
@@ -240,7 +213,7 @@ const rolesSynthesized = ref<string[]>([]);
 const rolesPinned = ref<string[]>([]);
 const rolesDerived = ref<string[]>([]);
 const scales = ref<ScaleMapType>({});
-const histogram = ref<HistogramBinType[]>([]);
+const histogram = ref<GalleryHistogramSlotInterfaceType['bins']>([]);
 /**
  * Reference-counted rather than a single boolean: run(), combineNowRun(), and
  * addUploadedImagesUnqueued() can all be in flight at once (e.g. a debounced
@@ -327,7 +300,7 @@ const combineLocked = ref<boolean>(false);
  * whenever it changes (from either the Schema & Compliance control or the
  * mirrored control in the Image card).
  */
-watch(schemaName, (v) => { const parsed = parseInt(v.replace('iridis-', ''), 10); imgK.value = Number.isNaN(parsed) ? 32 : parsed; }, { 'immediate': true });
+watch(schemaName, (v) => { imgK.value = schemaRoleCount(v); }, { 'immediate': true });
 
 /** Whichever seed list is live for the current mode — imageSeeds and pickerSeeds share one shape now, so this is a plain switch, not a reshape. */
 const activeSeeds = computed<PickerSeedType[]>(() => {return (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value);});
@@ -343,7 +316,7 @@ const activeSeeds = computed<PickerSeedType[]>(() => {return (mode.value === 'im
  * overrides ExpandFamily's hue-rotation for whichever role a seed is pinned to.
  */
 const pinnableRoles = computed<string[]>(() => {
-  const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
+  const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
   const schema = pair?.[framing.value];
   if (schema === undefined) {return [];}
   return schema.roles.filter((r) => {const result = USED_ROLE_NAMES.has(r.name);
@@ -400,7 +373,7 @@ const BOOTSTRAP_SEEDS: PickerSeedType[] = [{ 'hex': '#7c3aed' }];
  */
 function run(framingOverride?: FramingType): void {
   const targetFraming = framingOverride ?? framing.value;
-  const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
+  const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
   if (pair === undefined) {return;}
   // Neither pickerSeeds nor imageSeeds has a seed yet on the very first pass
   // (in-browser sample-image extraction hasn't resolved, and can't even run
@@ -415,7 +388,7 @@ function run(framingOverride?: FramingType): void {
     engine.pipeline(pipelineBuild(REQUIRED_COLOR_STAGES));
     const state = engine.run({
       'colors':   seeds,
-      'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': CONTRAST_LEVELS[contrastStrictness.value] ?? 'Lc' },
+      'contrast': contrastConfigFor(contrastStrictness.value, cvdCorrect.value),
       'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig.value, 'derivation:semanticHuesEnabled': semanticHuesEnabled.value },
       'roles':    pair[targetFraming],
       'runtime':  { 'colorSpace': colorSpace.value, 'framing': targetFraming }
@@ -545,7 +518,7 @@ class EntryStage1 {
         })
       }
     });
-    const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
+    const hist = (state.metadata['gallery:histogram'] as GalleryHistogramSlotInterfaceType | undefined)?.bins ?? [];
     entry.histogram = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
     const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string; 'hints'?: { 'weight'?: number } }[] | undefined) ?? [];
     const validDominant = dominant.filter((c) => { const result = isValidHex(c.hex);
@@ -645,11 +618,11 @@ function combineNowRun(): void {
   beginOperation();
   error.value = null;
   try {
-    const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName['iridis-32'];
+    const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
     engine.pipeline(pipelineBuild(REQUIRED_IMAGE_STAGES));
     const state = engine.run({
       'colors':   combinedHexes,
-      'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': CONTRAST_LEVELS[contrastStrictness.value] ?? 'Lc' },
+      'contrast': contrastConfigFor(contrastStrictness.value, cvdCorrect.value),
       'metadata': {
         'core:variantConfig': VARIANT_CONFIG,
         'derivation:config': derivationConfig.value,
@@ -667,11 +640,10 @@ function combineNowRun(): void {
       'roles':    pair![framing.value],
       'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
     });
-    const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
+    const hist = (state.metadata['gallery:histogram'] as GalleryHistogramSlotInterfaceType | undefined)?.bins ?? [];
     histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
     const dominant = (state.metadata['gallery:dominantColors'] as { 'hex': string }[] | undefined) ?? [];
-    const parsedSchemaCount = parseInt(schemaName.value.replace('iridis-', ''), 10);
-    const schemaCount = Number.isNaN(parsedSchemaCount) ? 32 : parsedSchemaCount;
+    const schemaCount = schemaRoleCount(schemaName.value);
     const extracted = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { const result = isValidHex(hex);
       return result; }).slice(0, schemaCount);
     imageSeeds.value = withPreservedRoles(extracted, imageSeeds.value);

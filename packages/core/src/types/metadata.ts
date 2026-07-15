@@ -42,7 +42,7 @@ export type HueTargetOverrideInterfaceType = {
 export type HueTargetOverrideMapInterfaceType = Record<string, HueTargetOverrideInterfaceType>;
 
 /** Known `state.metadata` keys written by core tasks, and their runtime shapes. */
-export interface EngineMetadataInterfaceType {
+export type EngineMetadataInterfaceType = {
   'core:hueOffsetOverrides'?: HueOffsetOverrideMapInterfaceType;
   'core:hueTargetOverrides'?: HueTargetOverrideMapInterfaceType;
   'core:roleClamps'?:        RoleClampMapInterfaceType;
@@ -50,12 +50,13 @@ export interface EngineMetadataInterfaceType {
   'core:rolesDerived'?:      string[];
   'core:rolesPinned'?:       string[];
   'core:rolesSynthesized'?:  string[];
-}
+};
 
 /** Type-safe accessor for a known `state.metadata` key, returning `undefined` when unset. */
 export function getEngineMetadata<K extends keyof EngineMetadataInterfaceType>(
   metadata: Record<string, unknown>,
   key: K
 ): EngineMetadataInterfaceType[K] {
-  return metadata[key] as EngineMetadataInterfaceType[K];
+  const result = metadata[key] as EngineMetadataInterfaceType[K];
+  return result;
 }

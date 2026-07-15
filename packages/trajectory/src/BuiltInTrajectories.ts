@@ -2,20 +2,20 @@ import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 
 import type { TrajectoryDefinitionInterfaceType } from './types/index.ts';
 
-const sunriseStops: readonly PaletteInterfaceType[] = [
+const sunriseStops: PaletteInterfaceType[] = [
   { 'accent': { 'c': 0.18, 'h': 30,  'l': 0.55 }, 'background': { 'c': 0.03, 'h': 30,  'l': 0.12 } },
   { 'accent': { 'c': 0.20, 'h': 70,  'l': 0.65 }, 'background': { 'c': 0.04, 'h': 70,  'l': 0.35 } },
   { 'accent': { 'c': 0.16, 'h': 140, 'l': 0.72 }, 'background': { 'c': 0.03, 'h': 140, 'l': 0.65 } },
   { 'accent': { 'c': 0.14, 'h': 200, 'l': 0.78 }, 'background': { 'c': 0.02, 'h': 200, 'l': 0.90 } }
 ];
 
-const focusPulseStops: readonly PaletteInterfaceType[] = [
+const focusPulseStops: PaletteInterfaceType[] = [
   { 'accent': { 'c': 0.15, 'h': 250, 'l': 0.55 } },
   { 'accent': { 'c': 0.28, 'h': 250, 'l': 0.65 } },
   { 'accent': { 'c': 0.16, 'h': 250, 'l': 0.56 } }
 ];
 
-const duskFadeStops: readonly PaletteInterfaceType[] = [
+const duskFadeStops: PaletteInterfaceType[] = [
   { 'accent': { 'c': 0.17, 'h': 260, 'l': 0.60 }, 'background': { 'c': 0.03, 'h': 260, 'l': 0.85 } },
   { 'accent': { 'c': 0.12, 'h': 290, 'l': 0.45 }, 'background': { 'c': 0.02, 'h': 290, 'l': 0.30 } },
   { 'accent': { 'c': 0.08, 'h': 300, 'l': 0.30 }, 'background': { 'c': 0.01, 'h': 300, 'l': 0.08 } }
@@ -38,7 +38,7 @@ export const duskFadeTrajectory: TrajectoryDefinitionInterfaceType = {
 };
 
 export const builtInTrajectories: ReadonlyMap<string, TrajectoryDefinitionInterfaceType> = new Map([
-  ['sunrise',    sunriseTrajectory],
+  ['dusk-fade',  duskFadeTrajectory],
   ['focus-pulse', focusPulseTrajectory],
-  ['dusk-fade',  duskFadeTrajectory]
+  ['sunrise',    sunriseTrajectory]
 ]);

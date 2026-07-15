@@ -93,7 +93,7 @@ class ShadcnTheme {
 
     const cssVars = `:root {\n${decls.join('\n')}\n}`;
 
-    return { colors, cssVars };
+    return { 'colors': colors, 'cssVars': cssVars };
   }
 }
 

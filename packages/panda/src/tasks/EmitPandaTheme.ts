@@ -20,17 +20,17 @@ import type { PandaOutputInterfaceType } from '../types/index.ts';
  * fallback pattern as the site's `Tokens.ts` `ALIAS_SOURCE`.
  */
 const TOKEN_SOURCE: Record<string, readonly string[]> = {
+  'background': ['background'],
+  'border':     ['border', 'divider', 'muted'],
+  'error':      ['error'],
+  'info':       ['info', 'brand'],
   'primary':    ['brand'],
   'secondary':  ['accent-alt', 'brand'],
   'success':    ['success', 'brand'],
-  'warning':    ['warning', 'brand'],
-  'error':      ['error'],
-  'info':       ['info', 'brand'],
-  'background': ['background'],
   'surface':    ['surface', 'bg-soft', 'background'],
   'text':       ['text'],
   'textMuted':  ['text-subtle', 'muted', 'text'],
-  'border':     ['border', 'divider', 'muted']
+  'warning':    ['warning', 'brand']
 };
 
 /**

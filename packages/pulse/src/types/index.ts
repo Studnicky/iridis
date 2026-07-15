@@ -6,7 +6,7 @@
  * arbitrary external scalar to `t` on demand via `mapToT`, rather than
  * owning a live-updating `t` of its own.
  */
-export interface SignalBindingInterfaceType {
+export type SignalBindingInterfaceType = {
   /** Current progress, clamped to [0, 1]. */
-  readonly t: number;
-}
+  't': number;
+};

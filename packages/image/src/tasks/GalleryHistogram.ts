@@ -54,7 +54,8 @@ function toRangeList(range: RangeOrRangesType): readonly (readonly [number, numb
 
 /** True if `v` falls inside any range in the list — multiple ranges are a union, not required to be contiguous. */
 function inAnyRange(v: number, ranges: readonly (readonly [number, number])[]): boolean {
-  return ranges.some(([lo, hi]) => {return v >= lo && v <= hi;});
+  const result = ranges.some(([lo, hi]) => {return v >= lo && v <= hi;});
+  return result;
 }
 
 function packBin(r: number, g: number, b: number, bits: number): number {

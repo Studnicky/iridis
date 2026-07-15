@@ -10,9 +10,10 @@ export enum IridisUiEffectVariant {
   'UPDATE_DIAGRAM_VIEW' = 'UPDATE_DIAGRAM_VIEW'
 }
 
+import type { GalleryAlgorithmType } from '@studnicky/iridis-image/types';
+
 import type { DerivationConfigType } from './colorDerivation.ts';
 import type { FramingType } from './framing.ts';
-import type { GalleryAlgorithmType } from './galleryAlgorithm.ts';
 import type { RoleSortKeyType } from './roleSortKey.ts';
 
 /**

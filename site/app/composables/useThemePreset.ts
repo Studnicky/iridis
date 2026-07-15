@@ -10,11 +10,12 @@
  */
 
 import { ref, watch } from 'vue';
+
 import { onNuxtReady } from '#imports';
 
-import { THEMES } from '../theme/presets/index.ts';
-
 import type { ThemeDefinitionInterfaceType } from '../theme/ThemeDefinitionInterfaceType.ts';
+
+import { THEMES } from '../theme/presets/index.ts';
 
 const STORAGE_KEY = 'iridis-theme-preset';
 const DEFAULT_THEME_KEY = 'futuristic';

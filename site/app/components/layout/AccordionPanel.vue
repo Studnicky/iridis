@@ -51,7 +51,10 @@ const accordion = usePanelAccordion(props.panelId, { defaultOpen: props.defaultO
       @update:open="accordion.toggle()"
     >
       <template #content>
-        <div :id="`${panelId}-content`" class="mx-auto w-full max-w-4xl p-4 sm:p-6">
+        <div
+          :id="`${panelId}-content`"
+          class="mx-auto w-full max-w-4xl p-4 sm:p-6"
+        >
           <slot />
         </div>
       </template>

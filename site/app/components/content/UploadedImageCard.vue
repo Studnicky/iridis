@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
-import type { GalleryAlgorithmType } from '~/composables/types/galleryAlgorithm.ts';
 import { ALGORITHM_ITEMS } from '~/composables/GalleryAlgorithms.ts';
 import Histogram from './Histogram.vue';
 import PaletteCandidatePicker from './PaletteCandidatePicker.vue';
+import type { GalleryAlgorithmType } from '@studnicky/iridis-image/types';
 
 /**
  * One uploaded image's own extraction card — thumbnail, filename, a remove

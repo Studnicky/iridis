@@ -1,10 +1,11 @@
-import { evaluate } from '@studnicky/iridis-anima';
-import type { CurveOptionsInterfaceType } from '@studnicky/iridis-anima';
 import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { CurveOptionsInterfaceType } from '@studnicky/iridis-anima';
+
+import { evaluate } from '@studnicky/iridis-anima';
 
 import type { PaletteStateSchemaType, PaletteTransitionTableType } from './types/index.ts';
 
-const clampUnit = (t: number): number => Math.min(1, Math.max(0, t));
+const clampUnit = (t: number): number => { const result = Math.min(1, Math.max(0, t)); return result; };
 
 /**
  * Drives a named-state palette machine: each state resolves to a target
@@ -74,7 +75,7 @@ export abstract class PaletteStateMachine {
    * into `toState`.
    */
   tick(deltaT: number): void {
-    if (this.#fromState === undefined || this.#toState === undefined) return;
+    if (this.#fromState === undefined || this.#toState === undefined) {return;}
 
     this.#t = clampUnit(this.#t + deltaT);
 

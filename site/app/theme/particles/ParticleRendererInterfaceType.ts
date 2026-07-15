@@ -7,21 +7,21 @@
  * map (see ./index.ts) — never branched on inline.
  */
 export type ParticleRenderInputType = {
-  /** How many particles to place. */
-  'count': number;
-  /** CSS color value (already a color-mix()/var() expression). */
-  'colorVar': string;
-  /** Base particle size in px (glyph font-size or shape width/height). */
-  'sizePx': number;
   /** CSS blur radius the box-shadow variant uses (ignored by element-based shapes). */
   'blur': string;
+  /** CSS color value (already a color-mix()/var() expression). */
+  'colorVar': string;
+  /** How many particles to place. */
+  'count': number;
+  /** Base particle size in px (glyph font-size or shape width/height). */
+  'sizePx': number;
 };
 
-export type ParticleElementType = { 'id': string; 'style': Record<string, string>; 'glyph'?: string };
+export type ParticleElementType = { 'glyph'?: string; 'id': string; 'style': Record<string, string>; };
 
 export type ParticleRenderOutputType =
-  | { 'kind': 'boxShadow'; 'boxShadow': string }
-  | { 'kind': 'elements'; 'elements': ReadonlyArray<ParticleElementType> };
+  | { 'boxShadow': string; 'kind': 'boxShadow'; }
+  | { 'elements': ParticleElementType[]; 'kind': 'elements'; };
 
 export type ParticleRendererType = (input: ParticleRenderInputType) => ParticleRenderOutputType;
 
@@ -37,5 +37,6 @@ export function randomPlacement(): { 'x': string; 'y': string } {
  * theme's concern; per-particle jitter is the shape's).
  */
 export function randomDelay(maxSeconds: number): string {
-  return `-${(Math.random() * maxSeconds).toFixed(2)}s`;
+  const result = `-${(Math.random() * maxSeconds).toFixed(2)}s`;
+  return result;
 }

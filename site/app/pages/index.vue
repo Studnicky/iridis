@@ -162,8 +162,8 @@ function onDocsClick(e: MouseEvent): void {
     <UContainer class="space-y-12">
       <section
         v-for="group in visibleStageGroups"
-        :key="group.name"
         :id="group.name"
+        :key="group.name"
         class="space-y-4 scroll-mt-24"
       >
         <div class="flex items-center justify-center gap-4">
@@ -279,11 +279,14 @@ function onDocsClick(e: MouseEvent): void {
           />
         </div>
 
-        <div class="space-y-12" @click="onDocsClick">
+        <div
+          class="space-y-12"
+          @click="onDocsClick"
+        >
           <AccordionPanel
             v-for="doc in (allDocs ?? [])"
-            :key="doc.path"
             :id="sanitizeDocAnchorId(doc.path)"
+            :key="doc.path"
             :panel-id="docPanelId(doc.path)"
             :title="doc.title || doc.path"
             icon="i-material-symbols-article-outline-rounded"

@@ -1,17 +1,18 @@
 import type {
   PluginInterface,
   PluginSchemaContributionInterface,
-  TaskInterface,
+  TaskInterface
 } from '@studnicky/iridis';
+
 import { emitChakraTheme } from './tasks/EmitChakraTheme.ts';
 
 const chakraOutputSchema = {
-  'type': 'object',
   'additionalProperties': false,
   'properties': {
-    'colors': { 'type': 'object', 'additionalProperties': true },
-    'config': { 'type': 'string' },
+    'colors': { 'additionalProperties': true, 'type': 'object' },
+    'config': { 'type': 'string' }
   },
+  'type': 'object'
 } as const;
 
 export class ChakraPlugin implements PluginInterface {
@@ -25,7 +26,7 @@ export class ChakraPlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs': { 'chakra:theme': chakraOutputSchema },
+      'outputs': { 'chakra:theme': chakraOutputSchema }
     };
   }
 }

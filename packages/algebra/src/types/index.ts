@@ -1,7 +1,7 @@
 export type OklchInterfaceType = {
-  'l': number;
   'c': number;
   'h': number;
+  'l': number;
 };
 
 /** A palette is a point in OKLCH×N space: role name → OKLCH triple. */

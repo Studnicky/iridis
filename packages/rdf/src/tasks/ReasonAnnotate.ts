@@ -81,7 +81,7 @@ class ReasonAnnotate implements TaskInterface {
     // clamped) — both already flow through the engine, just never read by
     // this task before. Neither requires new plumbing.
     const roleDefByName = new Map<string, RoleDefinitionInterfaceType>(
-      (state.input.roles?.roles ?? []).map((def) => [def.name, def])
+      (state.input.roles?.roles ?? []).map((def) => {return [def.name, def];})
     );
     const rolesPinned      = getEngineMetadata(state.metadata, 'core:rolesPinned') ?? [];
     const rolesSynthesized = getEngineMetadata(state.metadata, 'core:rolesSynthesized') ?? [];

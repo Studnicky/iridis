@@ -33,7 +33,10 @@ function isClickable(entry: LegendEntry): boolean {
 </script>
 
 <template>
-  <aside class="graph-legend" aria-label="Graph legend">
+  <aside
+    class="graph-legend"
+    aria-label="Graph legend"
+  >
     <template
       v-for="tab in tabs"
       :key="tab.key"

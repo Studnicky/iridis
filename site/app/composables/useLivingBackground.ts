@@ -9,23 +9,24 @@
  * shortcut variables are in play.
  */
 
-import { reactive } from 'vue';
+import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 
 import { perpendicular } from '@studnicky/iridis-algebra';
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 import { evaluate } from '@studnicky/iridis-anima';
 import { ClockBinding } from '@studnicky/iridis-pulse';
+import { reactive } from 'vue';
 
 import type { RoleHexMapType, RoleViewType } from './types/index.ts';
+
 import { Tokens } from '../theme/Tokens.ts';
 import { oklchToHex } from '../utils/oklchToHex.ts';
 import { useIridis } from './useIridis.ts';
 
 /** One recorded color-drift sample for a decorative role at a given tick. */
-export interface ColorSampleType {
-  chroma: number;
-  hex: string;
-}
+export type ColorSampleType = {
+  'chroma': number;
+  'hex': string;
+};
 
 /** Plain array-based ring buffer — simple shift+push, fine at this scale (capacity ~240, not a hot path). */
 export class RingBuffer<T> {
@@ -50,12 +51,12 @@ export function createRingBuffer<T>(capacity: number): RingBuffer<T> {
 
 /** Nuxt UI alias -> first-candidate source role, per Tokens.ts's ALIAS_SOURCE — restricted to the decorative aliases AmbientBackground.vue's LAVA_ROLES actually reads. */
 export const DECORATIVE_ALIASES: Record<string, string> = {
+  'error':     'error',
+  'info':      'info',
   'primary':   'brand',
   'secondary': 'accent-alt',
   'success':   'success',
-  'warning':   'warning',
-  'error':     'error',
-  'info':      'info'
+  'warning':   'warning'
 };
 const DECORATIVE_ROLE_NAMES: readonly string[] = [...new Set(Object.values(DECORATIVE_ALIASES))];
 
@@ -66,7 +67,7 @@ const MAX_DRIFT_DELTA = 0.035;
 export function buildDecorativePalette(views: RoleViewType[]): PaletteInterfaceType {
   const palette: PaletteInterfaceType = {};
   for (const name of DECORATIVE_ROLE_NAMES) {
-    const view = views.find((v) => v.name === name);
+    const view = views.find((v) => {return v.name === name;});
     if (view === undefined) { continue; }
     palette[name] = { 'c': view.c, 'h': view.h, 'l': view.l };
   }
@@ -117,7 +118,7 @@ for (const alias of Object.keys(DECORATIVE_ALIASES)) {
 }
 
 const histories: Record<string, ColorSampleType[]> = reactive(
-  Object.fromEntries(Object.keys(DECORATIVE_ALIASES).map((alias) => [alias, []]))
+  Object.fromEntries(Object.keys(DECORATIVE_ALIASES).map((alias) => {return [alias, []];}))
 );
 
 /** Records one sample per decorative alias for this frame, then refreshes the reactive snapshot. */
@@ -137,14 +138,15 @@ function recordFrameSamples(frame: PaletteInterfaceType): void {
  * style consumer. Oldest-to-newest per role; empty arrays before any ticks
  * have run (SSR, reduced-motion, or not yet booted) rather than throwing.
  */
-export function useColorStreamHistory(): Record<string, ReadonlyArray<ColorSampleType>> {
-  return histories;
+export function useColorStreamHistory(): Record<string, readonly ColorSampleType[]> {
+  const result = histories;
+  return result;
 }
 
 let booted = false;
 
 function startLoop(): void {
-  const { 'roleViews': roleViews, 'framing': framing } = useIridis();
+  const { 'framing': framing, 'roleViews': roleViews } = useIridis();
 
   let from = buildDecorativePalette(roleViews.value);
   let to = driftTarget(from);

@@ -38,16 +38,16 @@ const SHORTCUT_SOURCE: Record<string, readonly string[]> = {
   '--ui-border':          ['border', 'divider', 'muted'],
   '--ui-border-accented': ['border-strong', 'border', 'muted'],
   '--ui-border-muted':    ['divider', 'border', 'muted'],
+  '--ui-error-contrast':  ['on-error', 'error-contrast', 'background'],
+  '--ui-info-contrast':   ['on-info', 'info-contrast', 'background'],
   '--ui-primary':         ['brand'],
   '--ui-primary-contrast':['on-brand', 'brand-contrast', 'background'],
-  '--ui-error-contrast':  ['on-error', 'error-contrast', 'background'],
   '--ui-success-contrast':['on-success', 'success-contrast', 'background'],
-  '--ui-warning-contrast':['on-warning', 'warning-contrast', 'background'],
-  '--ui-info-contrast':   ['on-info', 'info-contrast', 'background'],
   '--ui-text':            ['text'],
   '--ui-text-dimmed':     ['muted', 'text-subtle', 'text'],
   '--ui-text-highlighted': ['text-strong', 'text'],
-  '--ui-text-muted':      ['text-subtle', 'muted', 'text']
+  '--ui-text-muted':      ['text-subtle', 'muted', 'text'],
+  '--ui-warning-contrast':['on-warning', 'warning-contrast', 'background']
 };
 
 function pick(roles: RoleHexMapType, candidates: readonly string[]): string | undefined {
@@ -94,7 +94,8 @@ export class Tokens {
 
   /** Serializes engine tokens as a highly specific rule for SSR head injection to override UI framework defaults. */
   static toCssText(tokens: RoleHexMapType): string {
-    const decls = Object.entries(tokens).map(([k, v]) => {return `${k}:${v}`;}).join(';');
+    const decls = Object.entries(tokens).map(([k, v]) => {const result = `${k}:${v}`;
+      return result;}).join(';');
     return `html:root, html:root.dark, html:root:not(.dark) {${decls}}`;
   }
 

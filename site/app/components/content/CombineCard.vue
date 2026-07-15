@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import type { GalleryAlgorithmType } from '~/composables/types/galleryAlgorithm.ts';
 import { ALGORITHM_HELP, ALGORITHM_ITEMS, ALGORITHM_LABELS } from '~/composables/GalleryAlgorithms.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
@@ -9,7 +8,7 @@ import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
 import PaletteCandidatePicker from './PaletteCandidatePicker.vue';
 import RangeListEditor from './RangeListEditor.vue';
 import SchemaSelector from './SchemaSelector.vue';
-import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
+import type { GalleryAlgorithmType, GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
 
 /**
  * The Combine stage — final merge tuning across every uploaded image. Its own

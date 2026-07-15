@@ -1,10 +1,12 @@
-import { lerp } from '@studnicky/iridis-algebra';
 import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 
-import { chromaticDetourHue, linear } from './easings/index.ts';
+import { lerp } from '@studnicky/iridis-algebra';
+
 import type { CurveOptionsInterfaceType } from './types/index.ts';
 
-const clampUnit = (t: number): number => Math.min(1, Math.max(0, t));
+import { chromaticDetourHue, linear } from './easings/index.ts';
+
+const clampUnit = (t: number): number => { const result = Math.min(1, Math.max(0, t)); return result; };
 
 /**
  * Evaluates a two-stop palette curve at `t` (clamped to [0, 1]): the easing
@@ -31,7 +33,7 @@ export const evaluate = (
     const fromRole = from[role];
     const toRole   = to[role];
     const frameRole = frame[role];
-    if (fromRole === undefined || toRole === undefined || frameRole === undefined) continue;
+    if (fromRole === undefined || toRole === undefined || frameRole === undefined) {continue;}
     frame[role] = {
       'c': frameRole.c,
       'h': chromaticDetourHue(fromRole.h, toRole.h, easedT, hueDirection),

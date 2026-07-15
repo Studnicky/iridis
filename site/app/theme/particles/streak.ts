@@ -1,6 +1,6 @@
-import { randomDelay, randomPlacement } from './ParticleRendererInterfaceType.ts';
-
 import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
+
+import { randomDelay, randomPlacement } from './ParticleRendererInterfaceType.ts';
 
 /**
  * Vertical-bar particle — a thin elongated column, real element. Both its
@@ -9,7 +9,7 @@ import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
  * the base shape is tall-and-thin with no rotation; each theme's own CSS
  * override supplies the direction/style/sway.
  */
-export const renderStreak: ParticleRendererType = ({ count, colorVar, sizePx }) => {
+export const renderStreak: ParticleRendererType = ({ colorVar, count, sizePx }) => {
   const elements = Array.from({ 'length': count }, (_, i) => {
     const { x, y } = randomPlacement();
     return {

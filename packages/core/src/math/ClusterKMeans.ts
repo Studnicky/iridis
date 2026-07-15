@@ -47,7 +47,8 @@ function seedCentroids(points: PointInterface[], weights: number[], k: number): 
     const total = scores.reduce((s, v) => {return s + v;}, 0);
     if (total <= 0) {
       // Every remaining point coincides with an existing centroid — pick any leftover point.
-      const takenIdx = new Set(centroids.map((c) => {return points.findIndex((p) => {return p === c;});}));
+      const takenIdx = new Set(centroids.map((c) => {const result = points.findIndex((p) => {return p === c;});
+        return result;}));
       const nextIdx = points.findIndex((_, i) => {return !takenIdx.has(i);});
       centroids.push(points[nextIdx === -1 ? 0 : nextIdx]!);
       continue;
@@ -97,10 +98,11 @@ class ClusterKMeans {
     const targetK = Math.min(Math.floor(k), colors.length);
     const points = colors.map(toPoint);
     const weights = colors.map(recordWeight);
-    const alphas = colors.map((c) => {return c.alpha;});
+    const alphas = colors.map((c) => {const result = c.alpha;
+      return result;});
 
     let centroids = seedCentroids(points, weights, targetK);
-    let assignments = new Array<number>(points.length).fill(0);
+    const assignments = new Array<number>(points.length).fill(0);
 
     for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
       let changed = false;

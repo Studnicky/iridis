@@ -1,4 +1,3 @@
-import { Engine, colorRecordFactory, consoleLogger } from '@studnicky/iridis';
 import type {
   ColorRecordInterfaceType,
   InputInterface,
@@ -6,6 +5,8 @@ import type {
   PipelineContextInterface
 } from '@studnicky/iridis';
 import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+
+import { colorRecordFactory, consoleLogger, Engine } from '@studnicky/iridis';
 import { enforceWcagAa, enforceWcagAaa } from '@studnicky/iridis-contrast';
 
 import type { ContrastPairInputInterfaceType, EnforceLevelType } from './types/index.ts';
@@ -16,7 +17,7 @@ const enforceTaskByLevel = { 'aa': enforceWcagAa, 'aaa': enforceWcagAaa } as con
  * Shared placeholder engine for `ctx.engine`/`ctx.tasks`. The enforce tasks
  * invoked below only read `ctx.logger`, never engine state, so one instance
  * is safe to reuse across every call instead of allocating a fresh
- * `TaskRegistry` + ajv `Validator` on every animation frame.
+ * `TaskRegistry` + json-tology-backed `Validator` on every animation frame.
  */
 const engine = new Engine();
 
@@ -38,14 +39,14 @@ const buildState = (
   const input: InputInterface = {
     'colors': [],
     'roles': {
-      'contrastPairs': pairs.map((pair) => ({
+      'contrastPairs': pairs.map((pair) => {return {
         'algorithm':  pair.algorithm ?? 'wcag21',
         'background': pair.background,
         'foreground': pair.foreground,
         'minRatio':   pair.minRatio ?? 4.5
-      })),
+      };}),
       'name':  'anima:frame',
-      'roles': [...roleNames].map((name) => ({ 'name': name, 'required': true }))
+      'roles': [...roleNames].map((name) => {return { 'name': name, 'required': true };})
     }
   };
 
@@ -71,7 +72,7 @@ export const enforceContrast = (
   pairs: readonly ContrastPairInputInterfaceType[],
   level: EnforceLevelType = 'aa'
 ): PaletteInterfaceType => {
-  if (pairs.length === 0) return palette;
+  if (pairs.length === 0) {return palette;}
 
   const state = buildState(palette, pairs);
   const ctx: PipelineContextInterface = {
@@ -86,7 +87,7 @@ export const enforceContrast = (
   const result: PaletteInterfaceType = { ...palette };
   for (const role of Object.keys(palette)) {
     const record = state.roles[role];
-    if (record === undefined) continue;
+    if (record === undefined) {continue;}
     result[role] = { 'c': record.oklch.c, 'h': record.oklch.h, 'l': record.oklch.l };
   }
   return result;

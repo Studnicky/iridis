@@ -31,7 +31,7 @@ const TIER_SOURCES: readonly { 'source': 'roles' | 'dark' | 'light'; 'tier': str
  * mirrors Chakra's semantic palette conventions (brand first, neutral
  * last).
  */
-const FAMILY_ROLE_MAP: readonly { 'family': string; 'fallback'?: string; 'role': string }[] = [
+const FAMILY_ROLE_MAP: readonly { 'fallback'?: string; 'family': string; 'role': string }[] = [
   { 'family': 'brand', 'role': 'brand' },
   { 'fallback': 'brand', 'family': 'accent', 'role': 'accent-alt' },
   { 'fallback': 'brand', 'family': 'success', 'role': 'success' },

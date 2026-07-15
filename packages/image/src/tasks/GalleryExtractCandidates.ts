@@ -12,6 +12,7 @@ import type {
   GalleryAlgorithmType,
   GalleryCandidateInterfaceType
 } from '../types/augmentation.ts';
+
 import { ClusterDispatcher } from './ClusterDispatcher.ts';
 
 type GalleryCandidateConfigInterfaceType = {
@@ -57,10 +58,10 @@ class GalleryExtractCandidates implements TaskInterface {
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const galleryConfig = state.metadata.gallery as
       | {
-          'candidates'?:  readonly GalleryCandidateConfigInterfaceType[];
-          'deltaECap'?:   number;
-          'k'?:           number;
-        }
+        'candidates'?:  readonly GalleryCandidateConfigInterfaceType[];
+        'deltaECap'?:   number;
+        'k'?:           number;
+      }
       | undefined;
     const sharedK = galleryConfig?.k ?? DEFAULT_K;
     const sharedDeltaECap = galleryConfig?.deltaECap;
@@ -115,7 +116,8 @@ class GalleryExtractCandidates implements TaskInterface {
         .status(LOG_STATUS.SUCCESS)
         .message('candidate extraction complete')
         .context({
-          'algorithms': candidates.map((c) => {return c.algorithm;}),
+          'algorithms': candidates.map((c) => {const result = c.algorithm;
+            return result;}),
           'count':      candidates.length
         })
         .build()

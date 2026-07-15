@@ -25,7 +25,7 @@ export const cubicBezier = (p1x: number, p1y: number, p2x: number, p2y: number):
     let guess = x;
     for (let i = 0; i < NEWTON_ITERATIONS; i += 1) {
       const slope = getSlope(guess, p1x, p2x);
-      if (slope === 0) return guess;
+      if (slope === 0) {return guess;}
       const currentX = calcBezier(guess, p1x, p2x) - x;
       guess -= currentX / slope;
     }
@@ -33,8 +33,8 @@ export const cubicBezier = (p1x: number, p1y: number, p2x: number, p2y: number):
   };
 
   return (t: number): number => {
-    if (t <= 0) return 0;
-    if (t >= 1) return 1;
+    if (t <= 0) {return 0;}
+    if (t >= 1) {return 1;}
     return calcBezier(solveTForX(t), p1y, p2y);
   };
 };

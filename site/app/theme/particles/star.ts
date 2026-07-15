@@ -1,6 +1,6 @@
-import { randomDelay, randomPlacement } from './ParticleRendererInterfaceType.ts';
-
 import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
+
+import { randomDelay, randomPlacement } from './ParticleRendererInterfaceType.ts';
 
 /**
  * Streamer particle — a colored Unicode star glyph, real element (trivially
@@ -8,7 +8,7 @@ import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
  * scale/fade firework-burst pacing is the theme's own CSS override — this
  * renderer only places and desyncs the particles.
  */
-export const renderStar: ParticleRendererType = ({ count, colorVar, sizePx }) => {
+export const renderStar: ParticleRendererType = ({ colorVar, count, sizePx }) => {
   const elements = Array.from({ 'length': count }, (_, i) => {
     const { x, y } = randomPlacement();
     return {

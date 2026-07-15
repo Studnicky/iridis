@@ -1,8 +1,6 @@
 export type * from './colorDerivation.ts';
 export * from './colorDerivation.ts';
 export type * from './framing.ts';
-export type * from './galleryAlgorithm.ts';
-export type * from './histogramBin.ts';
 export * from './iridisUiEffect.ts';
 export * from './iridisUiEvent.ts';
 export type * from './iridisUiState.ts';
@@ -12,5 +10,6 @@ export type * from './roleHexMap.ts';
 export type * from './roleView.ts';
 export type * from './scaleMap.ts';
 export type * from './schemaName.ts';
+export * from './schemaName.ts';
 export type * from './schemaPair.ts';
 export type * from './uploadedImage.ts';

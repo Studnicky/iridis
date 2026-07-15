@@ -19,8 +19,8 @@ export const spring = (opts?: SpringOptionsInterfaceType): EasingFunctionType =>
   const zeta   = damping / (2 * Math.sqrt(stiffness * mass));
 
   return (t: number): number => {
-    if (t <= 0) return 0;
-    if (t >= 1) return 1;
+    if (t <= 0) {return 0;}
+    if (t >= 1) {return 1;}
 
     if (zeta < 1) {
       const omegaD    = omega0 * Math.sqrt(1 - zeta * zeta);

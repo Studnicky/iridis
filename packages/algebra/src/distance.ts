@@ -1,5 +1,6 @@
-import { wrapHueDelta } from './hueMath.ts';
 import type { PaletteInterfaceType } from './types/index.ts';
+
+import { wrapHueDelta } from './hueMath.ts';
 
 const HUE_NORMALIZATION_FACTOR = 180;
 
@@ -14,7 +15,7 @@ export const defaultPaletteDistance = (a: PaletteInterfaceType, b: PaletteInterf
   for (const role of Object.keys(a)) {
     const roleA = a[role];
     const roleB = b[role];
-    if (roleA === undefined || roleB === undefined) continue;
+    if (roleA === undefined || roleB === undefined) {continue;}
 
     const dl = roleA.l - roleB.l;
     const dc = roleA.c - roleB.c;

@@ -125,10 +125,18 @@ const { dataLayout } = useDataLayout();
     >
       <thead>
         <tr class="border-b border-default">
-          <th class="p-2 text-left text-xs font-semibold text-muted">Swatch</th>
-          <th class="p-2 text-left text-xs font-semibold text-muted">Name</th>
-          <th class="p-2 text-left text-xs font-semibold text-muted">Ratio</th>
-          <th class="p-2 text-left text-xs font-semibold text-muted">Compliance</th>
+          <th class="p-2 text-left text-xs font-semibold text-muted">
+            Swatch
+          </th>
+          <th class="p-2 text-left text-xs font-semibold text-muted">
+            Name
+          </th>
+          <th class="p-2 text-left text-xs font-semibold text-muted">
+            Ratio
+          </th>
+          <th class="p-2 text-left text-xs font-semibold text-muted">
+            Compliance
+          </th>
         </tr>
       </thead>
       <tbody>

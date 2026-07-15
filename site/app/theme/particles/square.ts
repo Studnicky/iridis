@@ -1,6 +1,6 @@
-import { randomDelay, randomPlacement } from './ParticleRendererInterfaceType.ts';
-
 import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
+
+import { randomDelay, randomPlacement } from './ParticleRendererInterfaceType.ts';
 
 /**
  * Pixel-art particle — a small axis-aligned square, real element (a
@@ -8,7 +8,7 @@ import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
  * chase-blink vs. backroads' slow diagonal drift) is each theme's own CSS
  * override — this renderer only places and desyncs the particles.
  */
-export const renderSquare: ParticleRendererType = ({ count, colorVar, sizePx }) => {
+export const renderSquare: ParticleRendererType = ({ colorVar, count, sizePx }) => {
   const elements = Array.from({ 'length': count }, (_, i) => {
     const { x, y } = randomPlacement();
     return {

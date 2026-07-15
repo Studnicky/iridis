@@ -16,20 +16,17 @@
 import type { DerivationParamsInterfaceType } from '../types/index.ts';
 
 const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfaceType>> = {
+  // From palette.constant: pass-through (true/false/null read as language constants)
+  'boolean': {},
   // Slightly brighter, concrete
   'class': {
     'light': 5,
     'sat': 5
   },
-  // From palette.constant: pass-through (true/false/null read as language constants)
-  'boolean': {},
-  // From palette.property derivation: JSON object keys read like property names
-  'jsonKey': {
-    'light': -5,
-    'sat': -5
-  },
   // From palette.comment: pass-through
   'comment': {},
+  // From palette.constant: pass-through
+  'constant':   {},
   // Meta, annotation feel
   'decorator': {
     'hue': -35,
@@ -40,8 +37,6 @@ const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfaceType>>
     'hue': -25,
     'sat': 5
   },
-  // From palette.constant: pass-through
-  'constant':   {},
   // From palette.constant: pass-through
   'enumMember': {},
   // Reactive, callback feel
@@ -55,6 +50,11 @@ const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfaceType>>
   'interface': {
     'hue': 20,
     'sat': -8
+  },
+  // From palette.property derivation: JSON object keys read like property names
+  'jsonKey': {
+    'light': -5,
+    'sat': -5
   },
   // Base color: pass-through
   'keyword': {},

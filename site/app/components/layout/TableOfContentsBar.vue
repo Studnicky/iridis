@@ -32,7 +32,11 @@ function select(key: string): void { send({ 'targetId': key, 'type': IridisUiAct
     aria-label="Jump to section"
   >
     <div class="toc-scroll w-full max-w-6xl mx-auto">
-      <BalancedWrap :items="items" :min-width="100" :gap="8">
+      <BalancedWrap
+        :items="items"
+        :min-width="100"
+        :gap="8"
+      >
         <template #default="{ item }">
           <UButton
             :label="item.label"

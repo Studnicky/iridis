@@ -24,9 +24,9 @@ function closePanel(id: string): void {
   if (index !== -1) { openPanelIds.splice(index, 1); }
 }
 
-export interface PanelAccordionOptionsInterfaceType {
-  defaultOpen?: boolean;
-}
+export type PanelAccordionOptionsInterfaceType = {
+  'defaultOpen'?: boolean;
+};
 
 export function usePanelAccordion(panelId: string, opts?: PanelAccordionOptionsInterfaceType) {
   if (opts?.defaultOpen && !seededPanelIds.has(panelId)) {
@@ -34,12 +34,12 @@ export function usePanelAccordion(panelId: string, opts?: PanelAccordionOptionsI
     openPanel(panelId);
   }
 
-  const isOpen = computed(() => openPanelIds.includes(panelId));
+  const isOpen = computed(() => { const result = openPanelIds.includes(panelId); return result; });
 
   return {
-    isOpen,
-    'open': () => openPanel(panelId),
-    'close': () => closePanel(panelId),
+    'close': () => { const result = closePanel(panelId); return result; },
+    'isOpen': isOpen,
+    'open': () => { const result = openPanel(panelId); return result; },
     'toggle': () => { isOpen.value ? closePanel(panelId) : openPanel(panelId); }
   };
 }

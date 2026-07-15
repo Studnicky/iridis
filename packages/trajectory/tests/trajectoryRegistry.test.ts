@@ -55,7 +55,7 @@ test('resolve: unknown trajectory name throws a clear error', () => {
 
 test('registerTrajectory: custom trajectory can be registered and resolved by name', () => {
   const registry = new TrajectoryRegistry();
-  const stops: readonly PaletteInterfaceType[] = [
+  const stops: PaletteInterfaceType[] = [
     { 'accent': { 'c': 0.1, 'h': 0,   'l': 0.5 } },
     { 'accent': { 'c': 0.1, 'h': 100, 'l': 0.5 } }
   ];
@@ -68,7 +68,7 @@ test('registerTrajectory: custom trajectory can be registered and resolved by na
 
 test('registerTrajectory: registering under a built-in name overwrites it', () => {
   const registry = new TrajectoryRegistry();
-  const overrideStops: readonly PaletteInterfaceType[] = [
+  const overrideStops: PaletteInterfaceType[] = [
     { 'accent': { 'c': 0.3, 'h': 0, 'l': 0.9 } }
   ];
   registry.registerTrajectory('sunrise', { 'stops': overrideStops });

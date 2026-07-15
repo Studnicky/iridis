@@ -1,8 +1,10 @@
-import { evaluateStops } from '@studnicky/iridis-anima';
 import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 
-import { builtInTrajectories } from './BuiltInTrajectories.ts';
+import { evaluateStops } from '@studnicky/iridis-anima';
+
 import type { TrajectoryDefinitionInterfaceType } from './types/index.ts';
+
+import { builtInTrajectories } from './BuiltInTrajectories.ts';
 
 /** Name→definition lookup for palette trajectories, seeded with the curated built-in set. */
 export class TrajectoryRegistry {
@@ -16,7 +18,7 @@ export class TrajectoryRegistry {
   /** Resolves the palette at `t` along the named trajectory. */
   public resolve(name: string, t: number): PaletteInterfaceType {
     const trajectory = this.trajectories.get(name);
-    if (!trajectory) throw new Error(`Unknown trajectory "${name}"`);
+    if (!trajectory) {throw new Error(`Unknown trajectory "${name}"`);}
     return evaluateStops(trajectory.stops, t, trajectory.opts);
   }
 }

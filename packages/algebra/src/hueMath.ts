@@ -2,7 +2,7 @@ import type { HueDirectionType } from './types/index.ts';
 
 const HUE_PERIOD = 360;
 
-const normalizeHue = (h: number): number => ((h % HUE_PERIOD) + HUE_PERIOD) % HUE_PERIOD;
+const normalizeHue = (h: number): number => {return ((h % HUE_PERIOD) + HUE_PERIOD) % HUE_PERIOD;};
 
 /** Wraps a hue delta into (-180, 180], the shortest signed angular distance. */
 export const wrapHueDelta = (delta: number): number => {

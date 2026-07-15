@@ -56,9 +56,12 @@ export class Engine implements EngineInterface {
   private readonly adoptedPlugins = new Set<string>();
 
   /**
-   * Per-engine ajv-backed validator (owns the ajv instance and compile cache).
-   * Each Engine gets its own Validator so plugin-contributed schemas registered
-   * into one Engine's validator don't leak to another.
+   * Per-engine json-tology-backed validator wrapper (see `Validator.ts`).
+   * Each Engine constructs its own `Validator` instance, but every instance
+   * wraps the same process-wide json-tology registry (`CoreRegistry`), so
+   * plugin-contributed schemas registered through one Engine's validator are
+   * visible to validations performed via any other Engine's validator —
+   * registration is not isolated per Engine.
    */
   private readonly validator: InstanceType<typeof Validator> = new Validator();
 
@@ -82,7 +85,7 @@ export class Engine implements EngineInterface {
    * consumers monkey-patch built-ins.
    *
    * Validates: plugin shape, each task manifest (if present), and each
-   * plugin-contributed output/metadata schema (must be ajv-compilable).
+   * plugin-contributed output/metadata schema (must be json-tology-compilable).
    * Rejects on first failure.
    */
   adopt(plugin: PluginInterface): void {

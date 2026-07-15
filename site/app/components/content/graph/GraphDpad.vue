@@ -35,7 +35,10 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="graph-dpad-wrap" aria-label="Graph navigation controls">
+  <div
+    class="graph-dpad-wrap"
+    aria-label="Graph navigation controls"
+  >
     <aside
       v-if="zoomLevel !== undefined"
       class="graph-zoom-hud"
@@ -45,16 +48,33 @@ const emit = defineEmits<{
       <span class="graph-zoom-hint">drag · wheel</span>
     </aside>
 
-    <div class="graph-dpad" aria-label="Navigation D-pad">
-      <button class="dpad-btn" title="Zoom in" @click="emit('zoom-in')">＋</button>
+    <div
+      class="graph-dpad"
+      aria-label="Navigation D-pad"
+    >
+      <button
+        class="dpad-btn"
+        title="Zoom in"
+        @click="emit('zoom-in')"
+      >
+        ＋
+      </button>
       <button
         class="dpad-btn"
         :class="{ 'dpad-btn--disabled': !panEnabled }"
         :disabled="!panEnabled"
         title="Pan up"
         @click="panEnabled && emit('pan-up')"
-      >▲</button>
-      <button class="dpad-btn" title="Zoom out" @click="emit('zoom-out')">－</button>
+      >
+        ▲
+      </button>
+      <button
+        class="dpad-btn"
+        title="Zoom out"
+        @click="emit('zoom-out')"
+      >
+        －
+      </button>
 
       <button
         class="dpad-btn"
@@ -62,25 +82,49 @@ const emit = defineEmits<{
         :disabled="!panEnabled"
         title="Pan left"
         @click="panEnabled && emit('pan-left')"
-      >◀</button>
-      <button class="dpad-btn" title="Centre view" @click="emit('centre')">⊙</button>
+      >
+        ◀
+      </button>
+      <button
+        class="dpad-btn"
+        title="Centre view"
+        @click="emit('centre')"
+      >
+        ⊙
+      </button>
       <button
         class="dpad-btn"
         :class="{ 'dpad-btn--disabled': !panEnabled }"
         :disabled="!panEnabled"
         title="Pan right"
         @click="panEnabled && emit('pan-right')"
-      >▶</button>
+      >
+        ▶
+      </button>
 
-      <button class="dpad-btn" :title="expandTitle" @click="emit('expand')">⛶</button>
+      <button
+        class="dpad-btn"
+        :title="expandTitle"
+        @click="emit('expand')"
+      >
+        ⛶
+      </button>
       <button
         class="dpad-btn"
         :class="{ 'dpad-btn--disabled': !panEnabled }"
         :disabled="!panEnabled"
         title="Pan down"
         @click="panEnabled && emit('pan-down')"
-      >▼</button>
-      <button class="dpad-btn" title="Fit to view" @click="emit('fit')">⤢</button>
+      >
+        ▼
+      </button>
+      <button
+        class="dpad-btn"
+        title="Fit to view"
+        @click="emit('fit')"
+      >
+        ⤢
+      </button>
     </div>
   </div>
 </template>

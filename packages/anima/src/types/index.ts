@@ -11,7 +11,7 @@ export type SpringOptionsInterfaceType = {
 
 export type CurveOptionsInterfaceType = {
   /** Roles whose hue interpolation should route through the green detour when it would otherwise cross the brown/gray dead zone. */
-  'chromaticDetourRoles'?: readonly string[];
+  'chromaticDetourRoles'?: string[];
   'easing'?:               EasingFunctionType;
   'hueDirection'?:         HueDirectionType;
 };
@@ -26,6 +26,6 @@ export type ContrastPairInputInterfaceType = {
 };
 
 export type EnforceOptionsInterfaceType = CurveOptionsInterfaceType & {
-  'contrastPairs': readonly ContrastPairInputInterfaceType[];
+  'contrastPairs': ContrastPairInputInterfaceType[];
   'level'?:        EnforceLevelType;
 };

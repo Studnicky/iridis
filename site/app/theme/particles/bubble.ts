@@ -1,6 +1,6 @@
-import { randomDelay, randomPlacement } from './ParticleRendererInterfaceType.ts';
-
 import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
+
+import { randomDelay, randomPlacement } from './ParticleRendererInterfaceType.ts';
 
 /**
  * Startup particle — a soft translucent circle (rising SaaS-bubble energy),
@@ -8,7 +8,7 @@ import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
  * rigid box-shadow group. The rise/sway itself is the theme's own CSS
  * override — this renderer only places, sizes, and desyncs the particles.
  */
-export const renderBubble: ParticleRendererType = ({ count, colorVar, sizePx }) => {
+export const renderBubble: ParticleRendererType = ({ colorVar, count, sizePx }) => {
   const elements = Array.from({ 'length': count }, (_, i) => {
     const { x, y } = randomPlacement();
     return {

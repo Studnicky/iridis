@@ -10,6 +10,7 @@ import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { GalleryAlgorithmType } from '../types/augmentation.ts';
+
 import { ClusterDispatcher } from './ClusterDispatcher.ts';
 
 /**

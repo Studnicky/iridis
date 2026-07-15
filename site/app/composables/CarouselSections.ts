@@ -11,20 +11,20 @@
  * the docs list at the bottom). Combine only ever renders once an image has
  * been uploaded (see index.vue).
  */
-export interface CarouselCardType { readonly key: string; readonly label: string }
+export type CarouselCardType = { 'key': string; 'label': string };
 
-export interface StageGroupType {
-  readonly name: string;
-  readonly label: string;
-  readonly items: ReadonlyArray<CarouselCardType>;
-}
+export type StageGroupType = {
+  'items': CarouselCardType[];
+  'label': string;
+  'name': string;
+};
 
 /**
  * Stable keys for every output format the engine has a real emit plugin for —
  * one Stylesheets-stage carousel card per format (see OutputFormatCard.vue /
  * useMultiOutput.ts), in the same fixed order the pipeline always emits them.
  */
-export const OUTPUT_FORMAT_CARDS: ReadonlyArray<CarouselCardType> = [
+export const OUTPUT_FORMAT_CARDS: readonly CarouselCardType[] = [
   { 'key': 'output-cssVars', 'label': 'CSS variables' },
   { 'key': 'output-cssVarsScoped', 'label': 'CSS variables (scoped)' },
   { 'key': 'output-tailwind', 'label': 'Tailwind' },
@@ -37,21 +37,21 @@ export const OUTPUT_FORMAT_CARDS: ReadonlyArray<CarouselCardType> = [
   { 'key': 'output-androidThemeXml', 'label': 'Android theme.xml' },
   { 'key': 'output-json', 'label': 'JSON' },
   { 'key': 'output-rdf', 'label': 'RDF (Turtle)' },
-  { 'key': 'output-vscode', 'label': 'VS Code theme' },
+  { 'key': 'output-vscode', 'label': 'VS Code theme' }
 ];
 
-export const STAGE_GROUPS: ReadonlyArray<StageGroupType> = [
+export const STAGE_GROUPS: readonly StageGroupType[] = [
   {
     'items': [
-      { 'key': 'upload', 'label': 'Upload' },
+      { 'key': 'upload', 'label': 'Upload' }
     ],
-    'label': 'Upload', 'name': 'upload',
+    'label': 'Upload', 'name': 'upload'
   },
   {
     'items': [
-      { 'key': 'combine', 'label': 'Combine' },
+      { 'key': 'combine', 'label': 'Combine' }
     ],
-    'label': 'Combine', 'name': 'combine',
+    'label': 'Combine', 'name': 'combine'
   },
   {
     'items': [
@@ -59,9 +59,9 @@ export const STAGE_GROUPS: ReadonlyArray<StageGroupType> = [
       { 'key': 'palette', 'label': 'Palette' },
       { 'key': 'cvd', 'label': 'CVD vision' },
       { 'key': 'schemaCompliance', 'label': 'Schema & Compliance' },
-      { 'key': 'derivationRelations', 'label': 'Derivation Relations' },
+      { 'key': 'derivationRelations', 'label': 'Derivation Relations' }
     ],
-    'label': 'Refine', 'name': 'refine',
+    'label': 'Refine', 'name': 'refine'
   },
   {
     'items': [
@@ -73,26 +73,26 @@ export const STAGE_GROUPS: ReadonlyArray<StageGroupType> = [
       { 'key': 'components', 'label': 'Components' },
       { 'key': 'interactables', 'label': 'Interactables' },
       { 'key': 'motion', 'label': 'Motion' },
-      { 'key': 'colorStream', 'label': 'Color stream' },
+      { 'key': 'colorStream', 'label': 'Color stream' }
     ],
-    'label': 'Explore', 'name': 'explore',
+    'label': 'Explore', 'name': 'explore'
   },
   {
     'items': [
-      ...OUTPUT_FORMAT_CARDS,
+      ...OUTPUT_FORMAT_CARDS
     ],
-    'label': 'Stylesheets', 'name': 'result',
+    'label': 'Stylesheets', 'name': 'result'
   },
   {
     'items': [
       { 'key': 'pipeline', 'label': 'Pipeline' },
       { 'key': 'schema', 'label': 'Schema tree' },
       { 'key': 'hueDerivation', 'label': 'Hue derivation' },
-      { 'key': 'clamps', 'label': 'Clamps' },
+      { 'key': 'clamps', 'label': 'Clamps' }
     ],
-    'label': 'Reference', 'name': 'reference',
-  },
+    'label': 'Reference', 'name': 'reference'
+  }
 ];
 
 /** Every stage name in forward order, for the site-wide Next/Previous step navigation. */
-export const SEQUENTIAL_STAGE_NAMES: ReadonlyArray<string> = STAGE_GROUPS.map((group) => group.name);
+export const SEQUENTIAL_STAGE_NAMES: readonly string[] = STAGE_GROUPS.map((group) => { const result = group.name; return result; });

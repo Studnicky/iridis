@@ -1,5 +1,6 @@
-import { lerpHue } from '@studnicky/iridis-algebra';
 import type { HueDirectionType } from '@studnicky/iridis-algebra';
+
+import { lerpHue } from '@studnicky/iridis-algebra';
 
 /**
  * The "dead zone": hues in this band read as dull brown/gray rather than a
@@ -13,15 +14,15 @@ const DEAD_ZONE_MAX = 90;
 const DETOUR_HUE = 120;
 
 /** Warm hues: reds through yellows, wrapping past 360 back to red. */
-const isWarmHue = (h: number): boolean => h <= 60 || h >= 300;
+const isWarmHue = (h: number): boolean => {return h <= 60 || h >= 300;};
 
 /** Cool hues: cyans through blues and violets. */
-const isCoolHue = (h: number): boolean => h >= 180 && h <= 300;
+const isCoolHue = (h: number): boolean => {return h >= 180 && h <= 300;};
 
-const inDeadZone = (h: number): boolean => h >= DEAD_ZONE_MIN && h < DEAD_ZONE_MAX;
+const inDeadZone = (h: number): boolean => {return h >= DEAD_ZONE_MIN && h < DEAD_ZONE_MAX;};
 
 const directHue = (from: number, to: number, t: number, direction: HueDirectionType): number =>
-  lerpHue(from, to, t, direction);
+{ const result = lerpHue(from, to, t, direction); return result; };
 
 const DEAD_ZONE_SAMPLE_COUNT = 9;
 
@@ -34,7 +35,7 @@ const DEAD_ZONE_SAMPLE_COUNT = 9;
 const crossesDeadZone = (from: number, to: number, direction: HueDirectionType): boolean => {
   for (let i = 1; i < DEAD_ZONE_SAMPLE_COUNT; i += 1) {
     const sampleT = i / DEAD_ZONE_SAMPLE_COUNT;
-    if (inDeadZone(directHue(from, to, sampleT, direction))) return true;
+    if (inDeadZone(directHue(from, to, sampleT, direction))) {return true;}
   }
   return false;
 };
