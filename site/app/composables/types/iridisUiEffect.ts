@@ -40,6 +40,7 @@ export type IridisUiEffectType =
   | { 'op': 'imgLightnessRange'; 'value': [number, number][]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'imgChromaRange'; 'value': [number, number][]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'derivation'; 'value': DerivationConfig; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'semanticHuesEnabled'; 'value': boolean; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'roleSort'; 'value': RoleSortKeyType[]; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'source': 'sample'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }
   | { 'file': File | readonly File[]; 'source': 'file'; 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }

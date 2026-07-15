@@ -77,7 +77,7 @@ const kTierItems = [4, 8, 12, 16, 32];
       </UFormField>
       <UFormField
         v-if="image.algorithm === 'delta-e'"
-        :label="`ΔE cap · ${image.deltaECap}`"
+        :label="`Merge input cap · ${image.deltaECap}`"
       >
         <USlider
           :model-value="image.deltaECap"
@@ -86,6 +86,9 @@ const kTierItems = [4, 8, 12, 16, 32];
           :step="8"
           @update:model-value="emit('update', { deltaECap: $event as number })"
         />
+        <p class="mt-1 text-xs text-muted">
+          Not a color-distance threshold (that's Harmonize threshold, below) — this caps how many histogram bins are even considered before the ΔE merger runs (it's O(n²), so this bounds the work). Lower keeps only the heaviest bins; raise it if a distinct minor color is getting dropped before it gets a chance to merge.
+        </p>
       </UFormField>
       <UFormField
         :label="`Colors · ${image.k}`"
@@ -135,6 +138,9 @@ const kTierItems = [4, 8, 12, 16, 32];
           :step="1"
           @update:model-value="emit('update', { harmonizeThreshold: $event as number })"
         />
+        <p class="mt-1 text-xs text-muted">
+          After clustering, hues within this ΔE distance of each other are nudged into agreement — cleans up near-duplicate colors the clustering step left slightly apart. Runs regardless of clustering algorithm (unlike Merge input cap, above, which only applies to Delta-E clustering). 0 disables it.
+        </p>
       </UFormField>
 
       <RangeListEditor

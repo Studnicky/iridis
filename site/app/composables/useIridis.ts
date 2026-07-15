@@ -190,8 +190,33 @@ const derivationConfig = ref<DerivationConfig>(DEFAULT_DERIVATION_CONFIG);
 
 /** Merges a single relation's config into `derivationConfig` and re-runs the pipeline — the ONLY way a relation changes; the resolved hue is always recomputed by derive:roleRelations, never written directly here. */
 function updateRelation(roleName: string, relation: RoleRelationDerivation): void {
-  const updated: DerivationConfig = { 'relations': { ...derivationConfig.value.relations, [roleName]: relation } };
+  updateRelations({ [roleName]: relation });
+}
+
+/**
+ * Merges a whole batch of relations into `derivationConfig` in a SINGLE
+ * dispatch — required (not just an optimization) for a multi-child bulk
+ * change like "apply this algorithm to every child in a hub": the FSM's
+ * `EffectInterpreter.send()` is async, so firing one `send()` per relation
+ * in a tight synchronous loop races — only the first lands before the
+ * interpreter is busy processing it, and the rest are silently dropped.
+ * One dispatch carrying every changed relation sidesteps the race entirely.
+ */
+function updateRelations(newRelations: Record<string, RoleRelationDerivation>): void {
+  const updated: DerivationConfig = { 'relations': { ...derivationConfig.value.relations, ...newRelations } };
   sendUiEvent({ 'config': updated, 'type': IridisUiActionType.SET_DERIVATION_CONFIG });
+}
+
+/**
+ * Whether `derive:semanticHues` runs at all — when off, success/warning/
+ * error/info keep whatever hue their own relation (or the schema default)
+ * gives them, with no built-in nudge toward their intent's conventional
+ * meaning. Passed through metadata; the task itself checks this and is a
+ * full no-op when disabled, same as any other palette parameter.
+ */
+const semanticHuesEnabled = ref(true);
+function setSemanticHuesEnabled(enabled: boolean): void {
+  sendUiEvent({ 'enabled': enabled, 'type': IridisUiActionType.SET_SEMANTIC_HUES_ENABLED });
 }
 
 /**
@@ -383,7 +408,7 @@ function run(framingOverride?: FramingType): void {
     const state = engine.run({
       'colors':   seeds,
       'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
-      'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig.value },
+      'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig.value, 'derivation:semanticHuesEnabled': semanticHuesEnabled.value },
       'roles':    pair[targetFraming],
       'runtime':  { 'colorSpace': colorSpace.value, 'framing': targetFraming }
     });
@@ -608,6 +633,7 @@ function runCombineNow(): void {
       'metadata': {
         'core:variantConfig': VARIANT_CONFIG,
         'derivation:config': derivationConfig.value,
+        'derivation:semanticHuesEnabled': semanticHuesEnabled.value,
         'gallery': buildGalleryMetadata({
           'algorithm':          imgAlgorithm.value,
           'chromaRange':        imgChromaRange.value,
@@ -823,6 +849,7 @@ function setPaletteParam(effect: SetPaletteParamEffectType): void {
   if (effect.op === 'imgLightnessRange') {imgLightnessRange.value = effect.value; scheduleCombine(); return;}
   if (effect.op === 'imgChromaRange') {imgChromaRange.value = effect.value; scheduleCombine(); return;}
   if (effect.op === 'derivation') {derivationConfig.value = effect.value; schedule(); return;}
+  if (effect.op === 'semanticHuesEnabled') {semanticHuesEnabled.value = effect.value; schedule(); return;}
   // Sort order is a pure display concern — it never changes what the engine
   // derives, so unlike every branch above there's no schedule()/scheduleCombine()
   // call here on purpose.
@@ -945,13 +972,14 @@ export function useIridis() {
       void addUploadedImages([logoUrl()], ['Sample']);
       // framing is intentionally absent here — its swap is dispatched synchronously
       // by setPaletteParam() via run(effect.value), not through this debounce.
-      watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig], schedule, { 'deep': true });
+      watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true });
       watch([schemaName, imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true });
     }
   }
   return {
     'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'combineLocked': combineLocked, 'contrastStrictness': contrastStrictness, 'colorSpace': colorSpace, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
-    'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'updateRelation': updateRelation,
+    'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'updateRelation': updateRelation, 'updateRelations': updateRelations,
+    'semanticHuesEnabled': semanticHuesEnabled, 'setSemanticHuesEnabled': setSemanticHuesEnabled,
     'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale, 'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
     'effectiveHexesFor': effectiveHexesFor,
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,

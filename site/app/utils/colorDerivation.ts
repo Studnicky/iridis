@@ -162,3 +162,14 @@ export function hueVariantLabel(offsetDeg: number): string {
   const rounded = Math.round(offsetDeg);
   return `${rounded > 0 ? '+' : ''}${rounded}°`;
 }
+
+/** Wraps a hue in degrees into [0, 360). */
+export function normalizeHue(hueDeg: number): number {
+  return ((hueDeg % 360) + 360) % 360;
+}
+
+/** Shortest angular distance between two hues in degrees, always in [0, 180]. */
+export function hueCircularDistance(a: number, b: number): number {
+  const diff = Math.abs(normalizeHue(a) - normalizeHue(b));
+  return Math.min(diff, 360 - diff);
+}

@@ -30,7 +30,7 @@ class DeriveSemanticHues implements TaskInterface {
   readonly 'name' = 'derive:semanticHues';
 
   readonly 'manifest': TaskManifestInterfaceType = {
-    'description': 'Writes absolute hue/hueClamp targets for success/warning/error/info onto metadata[\'core:hueTargetOverrides\'], skipped for any role with an explicit derivation relation.',
+    'description': 'Writes absolute hue/hueClamp targets for success/warning/error/info onto metadata[\'core:hueTargetOverrides\'], skipped for any role with an explicit derivation relation, or entirely when metadata[\'derivation:semanticHuesEnabled\'] is false.',
     'name':        'derive:semanticHues',
     'reads':       ['input.roles', 'metadata'],
     'writes':      ['metadata']
@@ -38,6 +38,7 @@ class DeriveSemanticHues implements TaskInterface {
 
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
     if (state.input.roles === undefined) {return;}
+    if (state.metadata['derivation:semanticHuesEnabled'] === false) {return;}
     const config = state.metadata['derivation:config'] as DerivationConfig | undefined;
 
     const overrides: Record<string, { 'hue': number; 'hueClamp': number }> = {};

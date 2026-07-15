@@ -3,7 +3,8 @@ import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useRoleMathList, type RoleMathEntry } from '~/composables/useRoleMathList.ts';
 import type { HueAlgorithm, RoleRelationDerivation } from '~/composables/types/colorDerivation.ts';
-import { hueVariantLabel, selectHueAlgorithm } from '~/utils/colorDerivation.ts';
+import { hueCircularDistance, hueVariantLabel, normalizeHue, selectHueAlgorithm } from '~/utils/colorDerivation.ts';
+import { SEMANTIC_HUE, SEMANTIC_HUE_CLAMP } from '~/theme/DeriveSemanticHues.ts';
 import { capitalize } from '~/utils/capitalize.ts';
 
 /**
@@ -15,8 +16,31 @@ import { capitalize } from '~/utils/capitalize.ts';
  * is never recomputed client-side, only ever what derive:roleRelations
  * (the registered pipeline task) resolves.
  */
-const { updateRelation } = useIridis();
+const { updateRelation, updateRelations, semanticHuesEnabled, setSemanticHuesEnabled } = useIridis();
 const { mathList } = useRoleMathList();
+
+/** Common-name anchors for OKLCH hue degrees — only used to make the semantic-hue guide legible; the engine itself never reasons about color names. */
+const HUE_FAMILY_NAMES: readonly { max: number; name: string }[] = [
+  { 'max': 20, 'name': 'red' },
+  { 'max': 50, 'name': 'orange' },
+  { 'max': 90, 'name': 'yellow' },
+  { 'max': 170, 'name': 'green' },
+  { 'max': 200, 'name': 'teal' },
+  { 'max': 260, 'name': 'blue' },
+  { 'max': 300, 'name': 'violet' },
+  { 'max': 340, 'name': 'magenta' },
+  { 'max': 361, 'name': 'red' },
+];
+function hueFamilyName(hueDeg: number): string {
+  return HUE_FAMILY_NAMES.find((f) => hueDeg <= f.max)?.name ?? 'red';
+}
+
+/** Same 4 roles/targets derive:semanticHues actually nudges toward — read directly from its own source of truth (never a second hardcoded copy that could drift out of sync). */
+const semanticHueGuide = Object.entries(SEMANTIC_HUE).map(([role, hue]) => ({
+  'role': role,
+  'hue': hue,
+  'familyName': hueFamilyName(hue),
+}));
 
 const HUE_ALGORITHM_OPTIONS: { label: string; value: HueAlgorithm }[] = [
   { label: 'Monochromatic', value: 'monochromatic' },
@@ -32,6 +56,7 @@ const HUE_ALGORITHM_OPTIONS: { label: string; value: HueAlgorithm }[] = [
 interface RelationGroup {
   readonly parentName: string;
   readonly parentHex: string;
+  readonly parentHue: number;
   readonly children: readonly RoleMathEntry[];
 }
 
@@ -44,10 +69,11 @@ const groups = computed<readonly RelationGroup[]>(() => {
     list.push(role);
     byParent.set(role.parentRole, list);
   }
-  const parentHexes = new Map(mathList.value.map((r) => [r.name, r.hex]));
+  const parents = new Map(mathList.value.map((r) => [r.name, r]));
   return Array.from(byParent.entries()).map(([parentName, children]) => ({
     'parentName': parentName,
-    'parentHex': parentHexes.get(parentName) ?? '#888888',
+    'parentHex': parents.get(parentName)?.hex ?? '#888888',
+    'parentHue': parents.get(parentName)?.h ?? 0,
     'children': children,
   }));
 });
@@ -78,14 +104,39 @@ function bulkAlgorithmFor(group: RelationGroup): HueAlgorithm {
   return bulkAlgorithm.value[group.parentName] ?? group.children[0]?.algorithmInfo?.hueAlgorithm ?? 'analogous';
 }
 
-/** Assigns hueVariantIndex = position % algorithm.length across a hub's children, in the same (schema-sort-order) sequence they're listed here — a one-click default; each child's slot stays individually editable afterward. */
+/**
+ * A triad/tetrad/etc. describes a RELATIONSHIP among several hues — there's
+ * no such thing as "this one child is triadic" in isolation. So applying an
+ * algorithm to a group means classifying every child into whichever of the
+ * algorithm's candidate hues (relative to the parent) it's already closest
+ * to — each child keeps its own identity/semantic meaning as closely as
+ * possible while the family as a whole becomes an actual triad/tetrad/etc.
+ * `child.h` is the child's own current engine-resolved hue, which already
+ * reflects any semantic hue nudge (success/warning/error/info) it's
+ * subject to — so a semantic role naturally lands on the slot nearest its
+ * semantic target, not an arbitrary one.
+ */
 function applyToGroup(group: RelationGroup, algorithm: HueAlgorithm): void {
   bulkAlgorithm.value = { ...bulkAlgorithm.value, [group.parentName]: algorithm };
   if (algorithm === 'freeform') {return;}
-  const slotCount = selectHueAlgorithm(algorithm, 0).length;
-  group.children.forEach((child, index) => {
-    updateRelation(child.name, { 'hueAlgorithm': algorithm, 'hueVariantIndex': index % slotCount });
-  });
+  const offsets = selectHueAlgorithm(algorithm, 0);
+  const candidateHues = offsets.map((offset) => normalizeHue(group.parentHue + offset));
+  // Batched into one updateRelations() call — dispatching one updateRelation()
+  // per child here would fire the FSM's async EffectInterpreter.send() once
+  // per child in a tight synchronous loop, which races (only the first lands
+  // before the interpreter is still busy processing it) and silently drops
+  // the rest.
+  const batch: Record<string, RoleRelationDerivation> = {};
+  for (const child of group.children) {
+    let bestIndex = 0;
+    let bestDist = Infinity;
+    candidateHues.forEach((candidateHue, index) => {
+      const dist = hueCircularDistance(child.h, candidateHue);
+      if (dist < bestDist) { bestDist = dist; bestIndex = index; }
+    });
+    batch[child.name] = { 'hueAlgorithm': algorithm, 'hueVariantIndex': bestIndex };
+  }
+  updateRelations(batch);
 }
 </script>
 
@@ -95,6 +146,29 @@ function applyToGroup(group: RelationGroup, algorithm: HueAlgorithm): void {
       Every derived role's hue relation to its parent, grouped by hub. Picking an algorithm here changes what
       <code class="font-mono">expand:family</code> actually derives — not a preview.
     </p>
+
+    <div class="space-y-2 rounded-lg border border-default/50 p-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span class="text-sm font-semibold text-highlighted">Semantic hue nudge</span>
+        <USwitch
+          :model-value="semanticHuesEnabled"
+          @update:model-value="setSemanticHuesEnabled"
+        />
+      </div>
+      <p class="text-xs text-muted">
+        Independent of the relations below — <code class="font-mono">derive:semanticHues</code> nudges
+        success/warning/error/info toward their conventional meaning, bounded to
+        ±{{ SEMANTIC_HUE_CLAMP }}° so a role never jumps to a hue absent from your actual palette (e.g. a
+        red-dominant image still yields a warm-leaning, not pure-green, success). Turn it off to let those
+        4 roles resolve purely from their own seed/relation, with no built-in lean.
+      </p>
+      <ul class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-dimmed sm:grid-cols-4">
+        <li v-for="entry in semanticHueGuide" :key="entry.role">
+          <span class="font-medium text-muted">{{ capitalize(entry.role) }}</span>
+          → {{ entry.hue }}° ({{ entry.familyName }})
+        </li>
+      </ul>
+    </div>
 
     <div v-if="groups.length === 0" class="text-sm text-dimmed">
       This schema tier has no derived roles yet — nothing to configure.
