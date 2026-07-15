@@ -36,13 +36,13 @@ const ROLE_SCHEMA = {
   'name':        'category-w3c',
   'description': 'WCAG 2.1 AA role schema for category colour palettes',
   'roles': [
-    { 'name': 'canvas',   'intent': 'background', 'required': true,  'lightnessRange': [0.92, 1.0] as [number, number] },
-    { 'name': 'surface',  'intent': 'background', 'required': true,  'lightnessRange': [0.86, 0.96] as [number, number] },
-    { 'name': 'accent',   'intent': 'accent',     'required': true },
-    { 'name': 'onAccent', 'intent': 'text',       'required': true,  'derivedFrom': 'accent', 'lightnessRange': [0.98, 1.0] as [number, number] },
-    { 'name': 'border',   'intent': 'muted',                         'lightnessRange': [0.60, 0.80] as [number, number] },
-    { 'name': 'muted',    'intent': 'muted',                         'lightnessRange': [0.45, 0.65] as [number, number] },
-    { 'name': 'text',     'intent': 'text',       'required': true,  'lightnessRange': [0.10, 0.25] as [number, number] },
+    { 'name': 'canvas',   'intent': 'background', 'required': true,  'lightnessRange': [0.92, 1.0] as [number, number], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
+    { 'name': 'surface',  'intent': 'background', 'required': true,  'lightnessRange': [0.86, 0.96] as [number, number], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
+    { 'name': 'accent',   'intent': 'accent',     'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
+    { 'name': 'onAccent', 'intent': 'text',       'required': true,  'derivedFrom': 'accent', 'lightnessRange': [0.98, 1.0] as [number, number], 'chromaRange': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
+    { 'name': 'border',   'intent': 'muted',                         'lightnessRange': [0.60, 0.80] as [number, number], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'required': undefined },
+    { 'name': 'muted',    'intent': 'muted',                         'lightnessRange': [0.45, 0.65] as [number, number], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'required': undefined },
+    { 'name': 'text',     'intent': 'text',       'required': true,  'lightnessRange': [0.10, 0.25] as [number, number], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'text',     'background': 'canvas',  'minRatio': 4.5, 'algorithm': 'wcag21' as const },
@@ -83,9 +83,11 @@ async function runPipeline(pipelineOrder: readonly string[]): Promise<PaletteSta
   const e = await buildEngine();
   e.pipeline([...pipelineOrder]);
   return e.run({
+    'bypass':   undefined,
     'colors':   [SEED],
-    'roles':    ROLE_SCHEMA,
-    'contrast': { 'level': 'AA', 'algorithm': 'wcag21' },
+    'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': undefined, 'extra': undefined, 'level': 'AA' },
+    'emit':     undefined,
+    'maxColors': undefined,
     'metadata': {
       'category':     'music',
       'cssVarPrefix': '--c-',
@@ -93,6 +95,8 @@ async function runPipeline(pipelineOrder: readonly string[]): Promise<PaletteSta
       'scopePrefix':  'category',
       'themeName':    'music',
     },
+    'roles':    ROLE_SCHEMA,
+    'runtime':  undefined,
   });
 }
 
@@ -464,10 +468,19 @@ new ScenarioRunner<SlotCheckInput, SlotCheckOutput>(
     const outDir = join(dir, 'out');
     try {
       const config: CliConfigInterface = {
+        'enableCapacitor':  true,
+        'enableContrast':   true,
+        'enableImage':      undefined,
+        'enableRdf':        undefined,
+        'enableStylesheet': true,
+        'enableTailwind':   undefined,
+        'enableVscode':     undefined,
         'input': {
-          'colors':   [SEED],
-          'roles':    ROLE_SCHEMA,
-          'contrast': { 'level': 'AA', 'algorithm': 'wcag21' },
+          'bypass':    undefined,
+          'colors':    [SEED],
+          'contrast':  { 'algorithm': 'wcag21', 'cvdCorrect': undefined, 'extra': undefined, 'level': 'AA' },
+          'emit':      undefined,
+          'maxColors': undefined,
           'metadata': {
             'category':     'music',
             'cssVarPrefix': '--c-',
@@ -475,10 +488,13 @@ new ScenarioRunner<SlotCheckInput, SlotCheckOutput>(
             'scopePrefix':  'category',
             'themeName':    'music',
           },
+          'roles':     ROLE_SCHEMA,
+          'runtime':   undefined,
         },
-        'enableContrast':   true,
-        'enableStylesheet': true,
-        'enableCapacitor':  true,
+        'output': {
+          'directory': outDir,
+          'files':     input.outputFiles,
+        },
         'pipeline': [
           'intake:any',
           'resolve:roles',
@@ -489,10 +505,6 @@ new ScenarioRunner<SlotCheckInput, SlotCheckOutput>(
           'emit:capacitorStatusBar',
           'emit:capacitorTheme',
         ],
-        'output': {
-          'directory': outDir,
-          'files':     input.outputFiles,
-        },
       };
       const cfgPath = join(dir, 'iridis.config.json');
       await writeFile(cfgPath, JSON.stringify(config, null, 2), 'utf-8');

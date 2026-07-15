@@ -47,7 +47,9 @@ class EmitVscodeUiPalette implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Derives 101 VS Code workbench colors from the 16-role palette. Lifts uiPaletteGenerator.ts derivation.',
     'name':        'emit:vscodeUiPalette',
+    'phase':       undefined,
     'reads':       ['roles'],
+    'requires':    undefined,
     'writes':      ['outputs.vscode:workbenchColors']
   };
 

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { useColorStreamHistory, useLivingBackground } from '../../composables/useLivingBackground.ts';
-import { ALIAS_COLOR_NAMES } from '../../theme/Tokens.ts';
+import { ALIAS_COLOR_NAMES } from '../../theme/aliasColorNames.ts';
+import { useColorStreamHistory } from '../../composables/useColorStreamHistory.ts';
+import { useLivingBackground } from '../../composables/useLivingBackground.ts';
 
 /**
  * A "look and feel" motion page — the kind every design system ships one of —
@@ -126,7 +127,10 @@ const NAMED_ANIMATIONS: { kind: 'dot' | 'orbit' | 'sonar' | 'radar' | 'chroma'; 
       <p class="text-xs text-muted">
         This card is a live demo of <strong class="text-highlighted">Living Color</strong> — the engine's
         palette-as-animated-vector layer, not just a static derivation. See
-        <a href="#living-color" class="text-primary hover:underline">Living Color</a> for the underlying
+        <a
+          href="#living-color"
+          class="text-primary hover:underline"
+        >Living Color</a> for the underlying
         package (<code>iridis-anima</code>, <code>iridis-pulse</code>, <code>iridis-fsm</code>) that drives every
         transition here.
       </p>

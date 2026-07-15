@@ -35,10 +35,10 @@ function bucketCentroid(bucket: BucketInterface): ColorRecordInterfaceType {
   const C = Math.sqrt(aMean * aMean + bMean * bMean);
   let H = (Math.atan2(bMean, aMean) * 180) / Math.PI;
   if (H < 0) {H += 360;}
-  return colorRecordFactory.fromOklch(L, C, H, { 'alpha': sumAlpha / sumW, 'hints': { 'weight': sumW }, 'sourceFormat': 'oklch' });
+  return colorRecordFactory.fromOklch(L, C, H, { 'alpha': sumAlpha / sumW, 'hints': { 'intent': undefined, 'role': undefined, 'weight': sumW }, 'sourceFormat': 'oklch' });
 }
 
-function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c' | 'h'): number {
+function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c'): number {
   if (colors.length === 0) {return 0;}
   let max = -Infinity; let min = Infinity;
   for (const c of colors) {
@@ -50,59 +50,97 @@ function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c' | 'h'): 
 }
 
 /**
- * Weighted sum-of-squared-error for a run of sorted, weighted 1-D values —
- * the quantity Wu's algorithm minimizes when choosing where to cut a box.
- * O(n) per candidate split via running sums rather than O(n²) recomputation.
+ * Circular hue stats for a bucket: the start of the widest contiguous arc
+ * of hues (`gapStart`) and the angular width of that arc (`range`, degrees).
+ * Computed via the largest-gap method so a bucket straddling 0/360 (e.g.
+ * reds at 358/359/1/2) reports a small range instead of a spurious ~360.
  */
-function splitAtMinVariance(sorted: ColorRecordInterfaceType[], channel: 'l' | 'c' | 'h'): number {
-  const n = sorted.length;
-  const values = sorted.map((c) => {return c.oklch[channel];});
-  const weights = sorted.map(recordWeight);
-
-  // Prefix sums so left/right weighted mean+variance are O(1) per candidate.
-  const prefixW: number[] = [0]; const prefixV: number[] = [0]; const prefixV2: number[] = [0];
-  for (let i = 0; i < n; i++) {
-    const w = weights[i]!; const v = values[i]!;
-    prefixW.push(prefixW[i]! + w);
-    prefixV.push(prefixV[i]! + v * w);
-    prefixV2.push(prefixV2[i]! + v * v * w);
+function circularHueStats(colors: ColorRecordInterfaceType[]): { 'gapStart': number; 'range': number } {
+  const hues: number[] = [];
+  for (const col of colors) {
+    hues.push(((col.oklch.h % 360) + 360) % 360);
   }
-  const totalW = prefixW[n]!;
-
-  function weightedVariance(fromInclusive: number, toExclusive: number): number {
-    const w = prefixW[toExclusive]! - prefixW[fromInclusive]!;
-    if (w <= 0) {return 0;}
-    const sumV = prefixV[toExclusive]! - prefixV[fromInclusive]!;
-    const sumV2 = prefixV2[toExclusive]! - prefixV2[fromInclusive]!;
-    const mean = sumV / w;
-    return sumV2 - 2 * mean * sumV + mean * mean * w;
+  const n = hues.length;
+  if (n <= 1) {return { 'gapStart': hues[0] ?? 0, 'range': 0 };}
+  hues.sort((a, b) => {return a - b;});
+  let maxGap = (hues[0]! + 360) - hues[n - 1]!;
+  let gapStart = hues[0]!;
+  for (let i = 1; i < n; i++) {
+    const gap = hues[i]! - hues[i - 1]!;
+    if (gap > maxGap) {
+      maxGap = gap;
+      gapStart = hues[i]!;
+    }
   }
+  return { 'gapStart': gapStart, 'range': 360 - maxGap };
+}
 
-  let bestSplit = Math.max(1, Math.floor(n / 2));
-  let bestError = Infinity;
-  for (let split = 1; split < n; split++) {
-    // Skip splits that would leave one side with zero weight — those aren't real cuts.
-    if (prefixW[split]! <= 0 || (totalW - prefixW[split]!) <= 0) {continue;}
-    const error = weightedVariance(0, split) + weightedVariance(split, n);
-    if (error < bestError) { bestError = error; bestSplit = split; }
-  }
-  return bestSplit;
+/** Hue expressed as a non-negative offset (degrees) from `gapStart`, unwrapping the 0/360 seam. */
+function unwrappedHue(h: number, gapStart: number): number {
+  return (((h - gapStart) % 360) + 360) % 360;
 }
 
 class Bucket {
+  /**
+   * Weighted sum-of-squared-error for a run of sorted, weighted 1-D values —
+   * the quantity Wu's algorithm minimizes when choosing where to cut a box.
+   * O(n) per candidate split via running sums rather than O(n²) recomputation.
+   * For the 'h' channel, `hueGapStart` unwraps hue around the widest gap so
+   * a bucket spanning 0/360 doesn't see a spurious jump mid-run.
+   */
+  static splitAtMinVariance(sorted: ColorRecordInterfaceType[], channel: 'l' | 'c' | 'h', hueGapStart?: number): number {
+    const n = sorted.length;
+    const values = channel === 'h' && hueGapStart !== undefined
+      ? sorted.map((c) => { const result = unwrappedHue(c.oklch.h, hueGapStart); return result; })
+      : sorted.map((c) => { const result = c.oklch[channel]; return result; });
+    const weights = sorted.map(recordWeight);
+
+    // Prefix sums so left/right weighted mean+variance are O(1) per candidate.
+    const prefixW: number[] = [0]; const prefixV: number[] = [0]; const prefixV2: number[] = [0];
+    for (let i = 0; i < n; i++) {
+      const w = weights[i]!; const v = values[i]!;
+      prefixW.push(prefixW[i]! + w);
+      prefixV.push(prefixV[i]! + v * w);
+      prefixV2.push(prefixV2[i]! + v * v * w);
+    }
+    const totalW = prefixW[n]!;
+
+    function weightedVariance(fromInclusive: number, toExclusive: number): number {
+      const w = prefixW[toExclusive]! - prefixW[fromInclusive]!;
+      if (w <= 0) {return 0;}
+      const sumV = prefixV[toExclusive]! - prefixV[fromInclusive]!;
+      const sumV2 = prefixV2[toExclusive]! - prefixV2[fromInclusive]!;
+      const mean = sumV / w;
+      return sumV2 - 2 * mean * sumV + mean * mean * w;
+    }
+
+    let bestSplit = Math.max(1, Math.floor(n / 2));
+    let bestError = Infinity;
+    for (let split = 1; split < n; split++) {
+      // Skip splits that would leave one side with zero weight — those aren't real cuts.
+      if (prefixW[split]! <= 0 || (totalW - prefixW[split]!) <= 0) {continue;}
+      const error = weightedVariance(0, split) + weightedVariance(split, n);
+      if (error < bestError) { bestError = error; bestSplit = split; }
+    }
+    return bestSplit;
+  }
+
   /** Splits along the channel with the widest range, at the point minimizing total within-side variance (Wu's criterion) rather than at the median (Heckbert's median-cut). */
   static split(bucket: BucketInterface): [BucketInterface, BucketInterface] {
     const colors = bucket.colors;
     const lRange = rangeOf(colors, 'l');
     const cRange = rangeOf(colors, 'c');
-    const hRange = rangeOf(colors, 'h') / 360;
+    const hueStats = circularHueStats(colors);
+    const hRange = hueStats.range / 360;
 
     let channel: 'l' | 'c' | 'h' = 'l';
     if (cRange > lRange && cRange > hRange) {channel = 'c';}
     else if (hRange > lRange) {channel = 'h';}
 
-    const sorted = [...colors].sort((a, b) => {return a.oklch[channel] - b.oklch[channel];});
-    const splitIdx = splitAtMinVariance(sorted, channel);
+    const sorted = channel === 'h'
+      ? [...colors].sort((a, b) => {return unwrappedHue(a.oklch.h, hueStats.gapStart) - unwrappedHue(b.oklch.h, hueStats.gapStart);})
+      : [...colors].sort((a, b) => {return a.oklch[channel] - b.oklch[channel];});
+    const splitIdx = Bucket.splitAtMinVariance(sorted, channel, channel === 'h' ? hueStats.gapStart : undefined);
 
     const left = sorted.slice(0, splitIdx);
     const right = sorted.slice(splitIdx);
@@ -155,7 +193,7 @@ class ClusterWuQuantize {
         if (bucket === undefined || bucket.colors.length <= 1) {continue;}
         const lRange = rangeOf(bucket.colors, 'l');
         const cRange = rangeOf(bucket.colors, 'c');
-        const hRange = rangeOf(bucket.colors, 'h') / 360;
+        const hRange = circularHueStats(bucket.colors).range / 360;
         const widestRange = Math.max(lRange, cRange, hRange);
         const score = bucket.totalWeight * widestRange;
         if (score > bestScore) { bestScore = score; bestIdx = i; }

@@ -43,7 +43,9 @@ class PinDerivedRoles implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Assigns hint-pinned colors onto derivedFrom roles that ResolveRoles skipped, so a pin overrides hue-rotation instead of being silently discarded by ExpandFamily.',
     'name':        'pin:derivedRoles',
+    'phase':       undefined,
     'reads':       ['colors', 'input.roles', 'roles'],
+    'requires':    undefined,
     'writes':      ['roles']
   };
 

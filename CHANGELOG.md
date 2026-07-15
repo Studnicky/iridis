@@ -10,6 +10,30 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ### Fixed
 
+## [0.10.0] - 2026-07-15
+
+### Added
+
+- Resolved-palette color graph: a live, physics-driven view of the derived palette with node spreading, drag, and per-edge contrast readouts
+- `iridis` semantic vocabulary (renamed from `colorology`), plus a JSON-LD/RDF export of the resolved palette that drives the color graph
+- Derivation-algorithm picker that actually applies, independently per relation, so each role's hue can be derived by a different algorithm
+- Twelve-theme visual-preset system and a theme data-presentation layer, with per-image candidate palettes selectable in the stage flow
+- Semantic-hue toggle with an inline guide explaining anchor-vs-hue behavior
+
+### Changed
+
+- **BREAKING:** Data types across all packages no longer declare optional (`?:`) members — every data-shape field is a required `T | undefined`, giving objects consistent V8 shapes. Code constructing these types must now pass every field explicitly (`undefined` where not applicable); reads are unchanged (absent still reads as `undefined`). Function parameters and optional interface methods are unaffected.
+- Role `hue` is always a bounded nudge toward its anchor (default clamp 90° via `RoleGeometry.DEFAULT_HUE_CLAMP`), never an absolute pin, in both `resolve:roles` and `expand:family`
+- Core color validation migrated from `ajv` to `json-tology`; cross-package architecture audit reconciled the shared type surface
+- Single-sourced the live and export color pipelines (shared stage lists, contrast config, and engine bootstrap); the demo's contrast readout now uses core's `contrastWcag21` (one WCAG implementation, previously drifted to a legacy threshold); shared `ApcaLc` across `ContrastApca`/`EnsureContrast`; removed all subset (`Pick`/`Omit`/`Partial`) types in favor of full types; whole repository is lint-clean
+- Stage-flow restructure: Roles/Pairings/Spectrum moved into Explore, Result renamed to Stylesheets, and each uploaded image is a sibling top-level card rather than nested
+
+### Fixed
+
+- Remediated a 40-finding audit of the derivation pipeline and demo UI: correct APCA contrast math (weighted luminance, exponents applied once) in `ContrastApca`/`EnsureContrast`; powerless-hue handling in `MixHsl`/`MixOklch` (achromatic endpoints no longer drag the interpolated hue); circular-hue averaging and split-axis selection in the clusterers; idempotent phase-hook registration and mutation-versioned sequence caching in the engine/registry; intake rejection of non-finite channels and acceptance of 4-digit `#RGBA` hex; a total FSM reducer with guarded mode-send and surfaced interpreter rejections; and an export pipeline that mirrors the live palette (contrast strictness, CVD, colorSpace)
+- `EnsureContrast` chooses its lightness direction from background luminance (not OKLCH lightness), fixing a low-headroom convergence and an `onAccent`-goes-dark regression
+- Demo UI: every rendered color is derived (no raw black/hardcoded fallbacks), including RoleMathCard metric surfaces and contrast-enforced carousel titles; the manual seed hex is editable text; the SSR bootstrap seed is hidden from user-visible seed lists; each stage carousel's dot navigation uses balanced rows; and ΔE-cap labeling, carousel height overflow, and nearest-hue bulk-assign are corrected
+
 ## [0.9.0] - 2026-07-13
 
 ### Added
@@ -451,6 +475,7 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 
 [Unreleased]: https://github.com/Studnicky/iridis/compare/v0.0.0...HEAD
 
+[0.10.0]: https://github.com/Studnicky/iridis/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/Studnicky/iridis/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/Studnicky/iridis/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Studnicky/iridis/compare/v0.7.1...v0.8.0

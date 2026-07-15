@@ -10,7 +10,7 @@ import { toCssVarName } from '@studnicky/iridis';
 
 import type { CssVarsOutputInterfaceType } from '../types/index.ts';
 
-import { serializeP3 } from '../util/serializeP3.ts';
+import { P3Serializer } from '../util/P3Serializer.ts';
 
 /**
  * Picks a Windows High Contrast (Forced Colors) system color keyword for
@@ -139,7 +139,7 @@ class WideGamutBlock {
     for (const [role, record] of Object.entries(roles)) {
       if (record.displayP3 !== undefined) {
         const varName = toCssVarName(role, prefix);
-        p3Decls.push(`  ${varName}: ${serializeP3(record.displayP3)};`);
+        p3Decls.push(`  ${varName}: ${P3Serializer.serialize(record.displayP3)};`);
       }
     }
     if (p3Decls.length === 0) {return '';}
@@ -166,7 +166,9 @@ class EmitCssVars implements TaskInterface {
   readonly manifest: TaskManifestInterfaceType = {
     'description': 'Emit CSS custom property blocks from resolved roles and variants',
     'name':        'emit:cssVars',
+    'phase':       undefined,
     'reads':       ['roles', 'variants', 'metadata'],
+    'requires':    undefined,
     'writes':      ['outputs.stylesheet:cssVars']
   };
 

@@ -9,14 +9,14 @@ import type {
 import type { RuntimeOptionsInterface } from './runtime.ts';
 
 export interface InputInterface {
-  readonly 'bypass'?:    boolean;
+  readonly 'bypass':    boolean | undefined;
   readonly 'colors':    readonly unknown[];
-  readonly 'contrast'?: {
-    readonly 'algorithm'?:   ContrastAlgorithmType;
-    readonly 'cvdCorrect'?:  boolean;
-    readonly 'extra'?:       readonly ContrastPairInterfaceType[];
-    readonly 'level'?:       string;
-  };
+  readonly 'contrast': {
+    readonly 'algorithm':   ContrastAlgorithmType | undefined;
+    readonly 'cvdCorrect':  boolean | undefined;
+    readonly 'extra':       readonly ContrastPairInterfaceType[] | undefined;
+    readonly 'level':       string | undefined;
+  } | undefined;
   /**
    * Selective emit filter: names of output slots to produce. Reserved for
    * the planned `@studnicky/iridis-anima` animation/interpolation engine,
@@ -24,11 +24,11 @@ export interface InputInterface {
    * interpolation frame (avoiding unnecessary emit work on hot paths).
    * No current task reads this field; it is public API for future consumers.
    */
-  readonly 'emit'?:      readonly string[];
-  readonly 'maxColors'?: number;
-  readonly 'metadata'?:  JsonObjectType;
-  readonly 'roles'?:    RoleSchemaInterfaceType;
-  readonly 'runtime'?:   RuntimeOptionsInterface;
+  readonly 'emit':      readonly string[] | undefined;
+  readonly 'maxColors': number | undefined;
+  readonly 'metadata':  JsonObjectType | undefined;
+  readonly 'roles':     RoleSchemaInterfaceType | undefined;
+  readonly 'runtime':   RuntimeOptionsInterface | undefined;
 }
 
 /** Shape of a single contrast report entry (written by enforce:contrast). */
@@ -40,6 +40,14 @@ export type ContrastReportEntryInterfaceType = {
   'minRatio':   number;
   'passed':     boolean;
   'ratio':      number;
+};
+
+/** A contrast pair queued during the nudge pass, held until reconciliation re-measures it against the terminal state.roles. */
+export type PendingContrastEntryInterfaceType = {
+  'adjusted': boolean;
+  'algo':     ContrastAlgorithmType;
+  'minRatio': number;
+  'pair':     ContrastPairInterfaceType;
 };
 
 export interface PaletteStateInterface {

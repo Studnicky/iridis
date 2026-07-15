@@ -22,21 +22,29 @@ export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInter
   'abstract': {
     'fontStyle':   'italic',
     'lightness':    3,
+    'mixWeight':   undefined,
+    'mixWith':     undefined,
     'saturation':  -8
   },
 
   'async': {
     'fontStyle':   'italic',
+    'lightness':   undefined,
     'mixWeight':    0.12,
-    'mixWith':     'info'
+    'mixWith':     'info',
+    'saturation':  undefined
   },
 
   'declaration': {
     'fontStyle':   'bold',
-    'lightness':    5
+    'lightness':    5,
+    'mixWeight':   undefined,
+    'mixWith':     undefined,
+    'saturation':  undefined
   },
 
   'defaultLibrary': {
+    'fontStyle':   undefined,
     'lightness':   -5,
     'mixWeight':    0.15,
     'mixWith':     'muted',
@@ -45,7 +53,10 @@ export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInter
 
   'definition': {
     'fontStyle':   'bold',
-    'lightness':    5
+    'lightness':    5,
+    'mixWeight':   undefined,
+    'mixWith':     undefined,
+    'saturation':  undefined
   },
 
   'deprecated': {
@@ -58,6 +69,7 @@ export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInter
 
   'documentation': {
     'fontStyle':   'italic',
+    'lightness':   undefined,
     'mixWeight':    0.25,
     'mixWith':     'comment',
     'saturation': -15
@@ -81,6 +93,9 @@ export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInter
 
   'static': {
     'fontStyle':   'underline',
+    'lightness':   undefined,
+    'mixWeight':   undefined,
+    'mixWith':     undefined,
     'saturation': -12
   }
 

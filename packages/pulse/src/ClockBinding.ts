@@ -1,14 +1,8 @@
-import type { ClockProviderType } from './clock/ClockProviderType.ts';
+import type { ClockProviderInterface } from './clock/ClockProviderInterface.ts';
+import type { ClockBindingOptionsInterfaceType, SignalBindingInterfaceType } from './types/index.ts';
+
 import { RealClockProvider } from './clock/RealClockProvider.ts';
 import { VirtualClockProvider } from './clock/VirtualClockProvider.ts';
-import type { SignalBindingInterfaceType } from './types/index.ts';
-
-export interface ClockBindingOptionsInterfaceType {
-  /** 'real' drives `t` from `Date.now()`; 'virtual' requires manual `advance()`. */
-  mode: 'real' | 'virtual';
-  /** Duration in milliseconds mapping to `t === 1`. */
-  durationMs: number;
-}
 
 /**
  * Binds a duration to a progress value `t` in [0, 1], backed by either a
@@ -16,9 +10,9 @@ export interface ClockBindingOptionsInterfaceType {
  * by `advance(deltaMs)`. Construct via `ClockBinding.create(opts)`.
  */
 export class ClockBinding implements SignalBindingInterfaceType {
-  private readonly provider: ClockProviderType;
+  private readonly provider: ClockProviderInterface;
 
-  protected constructor(provider: ClockProviderType) {
+  protected constructor(provider: ClockProviderInterface) {
     this.provider = provider;
   }
 

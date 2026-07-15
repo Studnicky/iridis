@@ -8,7 +8,7 @@
  *
  * Cells:
  *   1. plugin-shape      — singleton identity, name, version, task list
- *   2. vocab             — colorologyVocab IRI constants
+ *   2. vocab             — iridisVocab IRI constants
  *   3. reason:annotate   — graph construction (happy / edge / unhappy)
  *   4. reason:serialize  — format negotiation + output shape
  *   5. rdf-content       — Turtle IRI correctness, blank nodes, P3 channels
@@ -35,7 +35,7 @@ import {
 import {
   rdfPlugin,
   RdfPlugin,
-  colorologyVocab,
+  iridisVocab,
   reasonAnnotate,
   reasonSerialize,
 } from '@studnicky/iridis-rdf';
@@ -74,7 +74,7 @@ function normaliseTurtle(ttl: string): string {
   const lines  = ttl.split('\n');
   const stable: string[] = [];
   for (const raw of lines) {
-    if (raw.includes('colorology/palette/run-')) continue;
+    if (raw.includes('iridis/palette/run-')) continue;
     if (raw.includes('_:n3-'))                   continue;
     stable.push(raw);
   }
@@ -82,32 +82,48 @@ function normaliseTurtle(ttl: string): string {
 }
 
 const SIMPLE_ROLES: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description':   undefined,
   'name': 'simple',
   'roles': [
-    { 'name': 'primary',    'required': true },
-    { 'name': 'background', 'required': true },
+    { 'name': 'primary',    'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'background', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
 };
 
 const WIDE_GAMUT_ROLES: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description':   undefined,
   'name':  'wide-gamut',
   'roles': [
     {
       'name': 'accent', 'required': true, 'intent': 'accent',
       'lightnessRange': [0.05, 0.95], 'chromaRange': [0.00, 0.50],
+      'derivedFrom': undefined,
+      'description': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined
     },
     {
       'name': 'background', 'required': true, 'intent': 'background',
       'lightnessRange': [0.05, 0.15], 'chromaRange': [0.00, 0.03],
+      'derivedFrom': undefined,
+      'description': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined
     },
   ],
 };
 
 const GOLDEN_ROLES: RoleSchemaInterfaceType = {
+  'contrastPairs': undefined,
+  'description':   undefined,
   'name':  'golden-rdf',
   'roles': [
-    { 'name': 'primary',    'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.25] },
-    { 'name': 'background', 'required': true, 'lightnessRange': [0.05, 0.20], 'chromaRange': [0.00, 0.05] },
+    { 'name': 'primary',    'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.25], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.05, 0.20], 'chromaRange': [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
   ],
 };
 
@@ -198,8 +214,8 @@ new ScenarioRunner<PluginShapeInput, PluginShapeOutput>(
 // ---------------------------------------------------------------------------
 // Cell 2 — vocab IRI constants
 //
-// colorologyVocab exposes every predicate used by ReasonAnnotate. All IRIs
-// must be http(s) URIs anchored to the studnicky.dev/colorology namespace.
+// iridisVocab exposes every predicate used by ReasonAnnotate. All IRIs
+// must be http(s) URIs anchored to the studnicky.dev/iridis namespace.
 // Edge: IRI concatenation is stable (base + fragment yields a full URI).
 // unhappy kind is structurally impossible — readonly literal properties.
 // ---------------------------------------------------------------------------
@@ -209,8 +225,12 @@ interface VocabOutput {
   readonly role:        string;
   readonly hasColor:    string;
   readonly hasRole:     string;
-  readonly oklch:       string;
-  readonly rgb:         string;
+  readonly oklchL:      string;
+  readonly oklchC:      string;
+  readonly oklchH:      string;
+  readonly rgbR:        string;
+  readonly rgbG:        string;
+  readonly rgbB:        string;
   readonly hex:         string;
   readonly wcag21Ratio: string;
   readonly displayP3R:  string;
@@ -220,7 +240,7 @@ interface VocabOutput {
 
 const vocabScenarios: readonly ScenarioInterface<VocabInput, VocabOutput>[] = [
   {
-    name: 'all IRI constants are http(s) URLs under studnicky.dev/colorology',
+    name: 'all IRI constants are http(s) URLs under studnicky.dev/iridis',
     kind: 'happy',
     input: { dummy: true },
     assert(output, error) {
@@ -228,7 +248,7 @@ const vocabScenarios: readonly ScenarioInterface<VocabInput, VocabOutput>[] = [
       const iris = Object.values(output!) as string[];
       for (const iri of iris) {
         assert.ok(typeof iri === 'string', `[cell=2, scenario=all-iris] ${iri} is a string`);
-        assert.ok(iri.startsWith('https://studnicky.dev/colorology'), `[cell=2, scenario=all-iris] ${iri} under colorology namespace`);
+        assert.ok(iri.startsWith('https://studnicky.dev/iridis'), `[cell=2, scenario=all-iris] ${iri} under iridis namespace`);
       }
     },
   },
@@ -249,8 +269,10 @@ const vocabScenarios: readonly ScenarioInterface<VocabInput, VocabOutput>[] = [
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=role-distinct] no throw');
       const predicates = [
-        output!.hasColor, output!.hasRole, output!.oklch,
-        output!.rgb, output!.hex, output!.wcag21Ratio,
+        output!.hasColor, output!.hasRole,
+        output!.oklchL, output!.oklchC, output!.oklchH,
+        output!.rgbR, output!.rgbG, output!.rgbB,
+        output!.hex, output!.wcag21Ratio,
         output!.displayP3R, output!.displayP3G, output!.displayP3B,
       ];
       for (const p of predicates) {
@@ -263,16 +285,20 @@ const vocabScenarios: readonly ScenarioInterface<VocabInput, VocabOutput>[] = [
 new ScenarioRunner<VocabInput, VocabOutput>(
   'RdfPlugin :: cell-2 :: vocab',
   (_input) => ({
-    role:        colorologyVocab.Role,
-    hasColor:    colorologyVocab.hasColor,
-    hasRole:     colorologyVocab.hasRole,
-    oklch:       colorologyVocab.oklch,
-    rgb:         colorologyVocab.rgb,
-    hex:         colorologyVocab.hex,
-    wcag21Ratio: colorologyVocab.wcag21Ratio,
-    displayP3R:  colorologyVocab.displayP3R,
-    displayP3G:  colorologyVocab.displayP3G,
-    displayP3B:  colorologyVocab.displayP3B,
+    role:        iridisVocab.Role,
+    hasColor:    iridisVocab.hasColor,
+    hasRole:     iridisVocab.hasRole,
+    oklchL:      iridisVocab.oklchL,
+    oklchC:      iridisVocab.oklchC,
+    oklchH:      iridisVocab.oklchH,
+    rgbR:        iridisVocab.rgbR,
+    rgbG:        iridisVocab.rgbG,
+    rgbB:        iridisVocab.rgbB,
+    hex:         iridisVocab.hex,
+    wcag21Ratio: iridisVocab.wcag21Ratio,
+    displayP3R:  iridisVocab.displayP3R,
+    displayP3G:  iridisVocab.displayP3G,
+    displayP3B:  iridisVocab.displayP3B,
   }),
 ).run(vocabScenarios);
 
@@ -333,11 +359,13 @@ const annotateScenarios: readonly ScenarioInterface<AnnotateInput, AnnotateOutpu
     input: {
       colors: ['#5b21b6', '#ffffff', '#000000'],
       roles: {
+        'contrastPairs': undefined,
+        'description':   undefined,
         'name': 'three-role',
         'roles': [
-          { 'name': 'primary',    'required': true },
-          { 'name': 'secondary',  'required': true },
-          { 'name': 'background', 'required': true },
+          { 'name': 'primary',    'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+          { 'name': 'secondary',  'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+          { 'name': 'background', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
         ],
       },
       pipeline: ['intake:hex', 'resolve:roles', 'reason:annotate', 'reason:serialize'],
@@ -355,7 +383,7 @@ const annotateScenarios: readonly ScenarioInterface<AnnotateInput, AnnotateOutpu
     kind: 'edge',
     input: {
       colors: ['#5b21b6'],
-      roles:  { 'name': 'single', 'roles': [{ 'name': 'primary', 'required': true }] },
+      roles:  { 'contrastPairs': undefined, 'description': undefined, 'name': 'single', 'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }] },
       pipeline: ['intake:hex', 'resolve:roles', 'reason:annotate', 'reason:serialize'],
     },
     assert(output, error) {
@@ -405,8 +433,14 @@ new ScenarioRunner<AnnotateInput, AnnotateOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const state = await engine.run({
-      'colors': input.colors as InputInterface['colors'],
-      'roles':  input.roles,
+      'bypass':    undefined,
+      'colors':    input.colors as InputInterface['colors'],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     input.roles,
+      'runtime':   undefined,
     });
     const graph = state.outputs['rdf:reasoningGraph'] as Iterable<unknown> | undefined;
     let quadCount = 0;
@@ -576,9 +610,14 @@ new ScenarioRunner<SerializeFormatInput, SerializeFormatOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const runInput: InputInterface = {
-      'colors': input.colors as InputInterface['colors'],
-      'roles':  input.roles,
-      ...(input.format !== undefined ? { 'metadata': { 'rdf:format': input.format } } : {}),
+      'bypass':    undefined,
+      'colors':    input.colors as InputInterface['colors'],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  input.format !== undefined ? { 'rdf:format': input.format } : undefined,
+      'roles':     input.roles,
+      'runtime':   undefined,
     };
     const state = await engine.run(runInput);
     return {
@@ -592,8 +631,9 @@ new ScenarioRunner<SerializeFormatInput, SerializeFormatOutput>(
 // Cell 5 — RDF content correctness
 //
 // Verifies the semantic content of the emitted Turtle: role IRIs, color IRIs,
-// rdf:type declarations, blank nodes (oklch + rgb), hex literals, wide-gamut
-// P3 channel triples with correct cardinality, and sRGB-only guards.
+// rdf:type declarations, oklch/rgb decimal-literal channel triples (no blank
+// nodes), hex literals, wide-gamut P3 channel triples with correct
+// cardinality, and sRGB-only guards.
 // ---------------------------------------------------------------------------
 
 interface RdfContentInput {
@@ -608,7 +648,7 @@ interface RdfContentOutput {
 
 const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfContentOutput>[] = [
   {
-    name: 'role IRIs follow colorology/role/{name} pattern',
+    name: 'role IRIs follow iridis/role/{name} pattern',
     kind: 'happy',
     input: {
       colors:   ['#5b21b6', '#ffffff'],
@@ -619,18 +659,18 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
       assert.strictEqual(error, undefined, '[cell=5, scenario=role-iris] no throw');
       assert.match(
         output!.ttl,
-        /https:\/\/studnicky\.dev\/colorology\/role\/primary/,
+        /https:\/\/studnicky\.dev\/iridis\/role\/primary/,
         '[cell=5, scenario=role-iris] primary role IRI present',
       );
       assert.match(
         output!.ttl,
-        /https:\/\/studnicky\.dev\/colorology\/role\/background/,
+        /https:\/\/studnicky\.dev\/iridis\/role\/background/,
         '[cell=5, scenario=role-iris] background role IRI present',
       );
     },
   },
   {
-    name: 'color IRIs follow colorology/color/{hex-without-hash} pattern',
+    name: 'color IRIs follow iridis/color/{hex-without-hash} pattern',
     kind: 'happy',
     input: {
       colors:   ['#5b21b6', '#ffffff'],
@@ -642,11 +682,11 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
       // hex is canonicalized by intake:hex — match whatever the resolved hex is
       assert.match(
         output!.ttl,
-        /https:\/\/studnicky\.dev\/colorology\/color\//,
+        /https:\/\/studnicky\.dev\/iridis\/color\//,
         '[cell=5, scenario=color-iris] color IRI namespace present',
       );
       // Turtle must not contain the '#' fragment in the color IRI (hash stripped)
-      const colorIriSection = output!.ttl.match(/colorology\/color\/([^\s>]+)/g) ?? [];
+      const colorIriSection = output!.ttl.match(/iridis\/color\/([^\s>]+)/g) ?? [];
       for (const iriPart of colorIriSection) {
         assert.ok(!iriPart.includes('#'), `[cell=5, scenario=color-iris] IRI fragment has no # sign: ${iriPart}`);
       }
@@ -663,41 +703,46 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=rdf-type] no throw');
       // n3 Writer serializes rdf:type as `a` keyword in Turtle
-      const typeCount = (output!.ttl.match(/\ba\s+<https:\/\/studnicky\.dev\/colorology#Role>/g) ?? []).length;
+      const typeCount = (output!.ttl.match(/\ba\s+<https:\/\/studnicky\.dev\/iridis#Role>/g) ?? []).length;
       assert.strictEqual(typeCount, 2, '[cell=5, scenario=rdf-type] two rdf:type Role triples (one per role)');
     },
   },
   {
-    // ReasonAnnotate emits oklch + rgb blank nodes per *distinct color IRI*.
-    // When two roles resolve to the same hex (role resolver picks the best
-    // fitting color from the input list), n3 groups both blank-node refs on a
-    // single color-IRI subject line — so the number of blank-node lines equals
-    // the number of distinct resolved color IRIs × 2 (one oklch + one rgb
-    // predicate line each). With two distinct colors, that is 4 lines.
-    name: 'blank nodes emitted for each distinct resolved color (2 per color-IRI)',
+    // ReasonAnnotate emits oklchL/oklchC/oklchH and rgbR/rgbG/rgbB as real
+    // xsd:decimal literals directly on the color IRI subject — never a
+    // blank node. Each *distinct* resolved color IRI gets exactly one
+    // triple per channel predicate (6 channel predicates total), so with
+    // two distinct colors each channel predicate appears twice, and no
+    // `_:n3-` blank-node lines appear anywhere in the Turtle.
+    name: 'oklch + rgb channel triples emitted for each distinct resolved color (no blank nodes)',
     kind: 'happy',
     input: {
       // Provide two colours with distinct OKLCH targets so the resolver maps
-      // each role to a different color IRI, yielding 2 color nodes × 2 blank
-      // predicates (oklch, rgb) = 4 blank-node lines in the Turtle.
+      // each role to a different color IRI, yielding 2 color nodes × 6
+      // channel predicates (oklchL/C/H, rgbR/G/B) in the Turtle.
       colors: [
         { l: 0.45, c: 0.18, h: 270 },  // violet-ish → primary
         { l: 0.10, c: 0.01, h: 270 },  // near-black → background
       ],
       roles: {
+        'contrastPairs': undefined,
+        'description':   undefined,
         name: 'two-distinct',
         roles: [
-          { name: 'primary',    required: true, lightnessRange: [0.35, 0.60], chromaRange: [0.10, 0.30] },
-          { name: 'background', required: true, lightnessRange: [0.05, 0.20], chromaRange: [0.00, 0.05] },
+          { name: 'primary',    required: true, lightnessRange: [0.35, 0.60], chromaRange: [0.10, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+          { name: 'background', required: true, lightnessRange: [0.05, 0.20], chromaRange: [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
         ],
       },
       pipeline: ['intake:oklch', 'resolve:roles', 'reason:annotate', 'reason:serialize'],
     },
     assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=5, scenario=blank-nodes] no throw');
+      assert.strictEqual(error, undefined, '[cell=5, scenario=channel-literals] no throw');
       const blankCount = output!.ttl.split('\n').filter((l) => l.includes('_:n3-')).length;
-      // 2 distinct color IRIs × 2 blank predicates (oklch + rgb) = 4 lines
-      assert.strictEqual(blankCount, 4, '[cell=5, scenario=blank-nodes] 4 blank-node lines (2 color IRIs × oklch+rgb)');
+      assert.strictEqual(blankCount, 0, '[cell=5, scenario=channel-literals] no blank nodes anywhere in Turtle');
+      for (const predicate of ['oklchL', 'oklchC', 'oklchH', 'rgbR', 'rgbG', 'rgbB']) {
+        const count = (output!.ttl.match(new RegExp(predicate, 'g')) ?? []).length;
+        assert.strictEqual(count, 2, `[cell=5, scenario=channel-literals] two ${predicate} triples (2 distinct color IRIs)`);
+      }
     },
   },
   {
@@ -711,18 +756,20 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
         { l: 0.10, c: 0.01, h: 270 },
       ],
       roles: {
+        'contrastPairs': undefined,
+        'description':   undefined,
         name: 'two-distinct',
         roles: [
-          { name: 'primary',    required: true, lightnessRange: [0.35, 0.60], chromaRange: [0.10, 0.30] },
-          { name: 'background', required: true, lightnessRange: [0.05, 0.20], chromaRange: [0.00, 0.05] },
+          { name: 'primary',    required: true, lightnessRange: [0.35, 0.60], chromaRange: [0.10, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+          { name: 'background', required: true, lightnessRange: [0.05, 0.20], chromaRange: [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
         ],
       },
       pipeline: ['intake:oklch', 'resolve:roles', 'reason:annotate', 'reason:serialize'],
     },
     assert(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=hex-literal] no throw');
-      assert.match(output!.ttl, /colorology#hex/, '[cell=5, scenario=hex-literal] hex predicate in Turtle');
-      const hexLiteralCount = (output!.ttl.match(/colorology#hex/g) ?? []).length;
+      assert.match(output!.ttl, /iridis#hex/, '[cell=5, scenario=hex-literal] hex predicate in Turtle');
+      const hexLiteralCount = (output!.ttl.match(/iridis#hex/g) ?? []).length;
       // Two distinct colors → two hex literal triples
       assert.strictEqual(hexLiteralCount, 2, '[cell=5, scenario=hex-literal] one hex triple per distinct color IRI');
     },
@@ -800,13 +847,13 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
       assert.strictEqual(error, undefined, '[cell=5, scenario=palette-iri] no throw');
       assert.match(
         output!.ttl,
-        /colorology\/palette\/run-\d+/,
+        /iridis\/palette\/run-\d+/,
         '[cell=5, scenario=palette-iri] palette run IRI contains timestamp',
       );
     },
   },
   {
-    name: 'contrast pair IRI follows colorology/pair/{fg}-on-{bg} pattern',
+    name: 'contrast pair IRI follows iridis/pair/{fg}-on-{bg} pattern',
     kind: 'edge',
     input: {
       colors:   ['#5b21b6', '#ffffff'],
@@ -817,12 +864,12 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
       assert.strictEqual(error, undefined, '[cell=5, scenario=pair-iri] no throw');
       assert.match(
         output!.ttl,
-        /colorology\/pair\/primary-on-background/,
+        /iridis\/pair\/primary-on-background/,
         '[cell=5, scenario=pair-iri] primary-on-background pair IRI',
       );
       assert.match(
         output!.ttl,
-        /colorology\/pair\/background-on-primary/,
+        /iridis\/pair\/background-on-primary/,
         '[cell=5, scenario=pair-iri] background-on-primary pair IRI',
       );
     },
@@ -853,8 +900,14 @@ new ScenarioRunner<RdfContentInput, RdfContentOutput>(
     const engine = freshEngine();
     engine.pipeline(input.pipeline);
     const state = await engine.run({
-      'colors': input.colors as InputInterface['colors'],
-      'roles':  input.roles,
+      'bypass':    undefined,
+      'colors':    input.colors as InputInterface['colors'],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     input.roles,
+      'runtime':   undefined,
     });
     return {
       ttl:   (state.outputs['rdf:serialized'] as string | undefined) ?? '',
@@ -898,8 +951,14 @@ new ScenarioRunner<MissingGraphInput, MissingGraphOutput>(
     // Intentionally omit reason:annotate — serialize with no graph
     engine.pipeline(['intake:hex', 'resolve:roles', 'reason:serialize']);
     const state = await engine.run({
-      'colors': ['#5b21b6', '#ffffff'],
-      'roles':  SIMPLE_ROLES,
+      'bypass':    undefined,
+      'colors':    ['#5b21b6', '#ffffff'],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     SIMPLE_ROLES,
+      'runtime':   undefined,
     });
     return {
       serializedPresent: state.outputs['rdf:serialized'] !== undefined,
@@ -913,12 +972,14 @@ new ScenarioRunner<MissingGraphInput, MissingGraphOutput>(
 //
 // Locks the Turtle output of intake:hex → resolve:roles → reason:annotate →
 // reason:serialize for a stable seed + role schema. Palette IRI (Date.now
-// based) and n3 blank-node labels are filtered before comparison.
+// based) is filtered before comparison. ReasonAnnotate emits oklch/rgb as
+// real xsd:decimal literals directly on the color IRI subject — never a
+// blank node — so no blank-node filtering or count assertion is needed.
 // Regenerate with UPDATE_GOLDENS=1 after an intentional change to
 // ReasonAnnotate or ReasonSerialize.
 // ---------------------------------------------------------------------------
 
-test('reason:serialize :: golden :: stable seed matches locked Turtle fixture (palette IRI + blank nodes filtered)', async () => {
+test('reason:serialize :: golden :: stable seed matches locked Turtle fixture (palette IRI filtered)', async () => {
   const engine = freshEngine();
   engine.pipeline([
     'intake:hex',
@@ -928,19 +989,25 @@ test('reason:serialize :: golden :: stable seed matches locked Turtle fixture (p
   ]);
 
   const state = await engine.run({
-    'colors': ['#5b21b6', '#0f172a'],
-    'roles':  GOLDEN_ROLES,
+    'bypass':    undefined,
+    'colors':    ['#5b21b6', '#0f172a'],
+    'contrast':  undefined,
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  undefined,
+    'roles':     GOLDEN_ROLES,
+    'runtime':   undefined,
   });
 
   const ttl = state.outputs['rdf:serialized'] as string | undefined;
   assert.ok(ttl !== undefined, 'serialized Turtle present');
 
-  // Blank-node count: 2 blank nodes (oklch + rgb) per role × 2 roles = 4
+  // ReasonAnnotate no longer emits blank nodes anywhere in the graph.
   const blankRefCount = ttl.split('\n').filter((l) => l.includes('_:n3-')).length;
   assert.strictEqual(
     blankRefCount,
-    4,
-    `[golden] expected 4 blank-node lines (oklch+rgb per role × 2 roles), got ${blankRefCount}`,
+    0,
+    `[golden] expected no blank-node lines (oklch/rgb are real decimal literals), got ${blankRefCount}`,
   );
 
   const actual = `${normaliseTurtle(ttl)}\n`;

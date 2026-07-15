@@ -44,14 +44,16 @@ class Hex {
   }
 }
 
-function variantHex(
-  roles: Record<string, ColorRecordInterfaceType>,
-  variants: Record<string, Record<string, ColorRecordInterfaceType>>,
-  roleName: string,
-  variantName: string,
-  fallback: string
-): string {
-  return variants[roleName]?.[variantName]?.hex ?? roles[roleName]?.hex ?? fallback;
+class VariantHex {
+  static resolve(
+    roles: Record<string, ColorRecordInterfaceType>,
+    variants: Record<string, Record<string, ColorRecordInterfaceType>>,
+    roleName: string,
+    variantName: string,
+    fallback: string
+  ): string {
+    return variants[roleName]?.[variantName]?.hex ?? roles[roleName]?.hex ?? fallback;
+  }
 }
 
 /**
@@ -78,7 +80,9 @@ class EmitCapacitorTheme implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit flat Capacitor theme map from resolved roles for native preference storage.',
     'name':        'emit:capacitorTheme',
+    'phase':       undefined,
     'reads':       ['roles', 'variants'],
+    'requires':    undefined,
     'writes':      ['outputs.capacitor:theme']
   };
 
@@ -90,8 +94,8 @@ class EmitCapacitorTheme implements TaskInterface {
     const FALLBACK = '#000000';
 
     const primary     = Hex.resolve(roles, intentMap, 'primary', 'background', FALLBACK);
-    const primaryDark = variantHex(roles, variants, 'primary', 'dark',  primary);
-    const primaryLight = variantHex(roles, variants, 'primary', 'light', primary);
+    const primaryDark = VariantHex.resolve(roles, variants, 'primary', 'dark',  primary);
+    const primaryLight = VariantHex.resolve(roles, variants, 'primary', 'light', primary);
     const accent      = Hex.resolve(roles, intentMap, 'accent',  'accent',     primary);
     const background  = Hex.resolve(roles, intentMap, 'background', 'background', '#ffffff');
     const surface     = Hex.resolve(roles, intentMap, 'surface', 'background', background);

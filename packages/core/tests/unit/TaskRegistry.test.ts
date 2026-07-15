@@ -29,7 +29,7 @@ import {
 // ---------------------------------------------------------------------------
 
 function makeTask(name: string, phase?: 'onRunStart' | 'onRunEnd'): TaskInterface {
-  const manifest: TaskManifestInterfaceType = { 'name': name, ...(phase ? { 'phase': phase } : {}) };
+  const manifest: TaskManifestInterfaceType = { 'description': undefined, 'name': name, 'phase': phase, 'reads': undefined, 'requires': undefined, 'writes': undefined };
   return {
     'name':     name,
     'manifest': manifest,

@@ -1,5 +1,6 @@
 <script setup lang="ts" generic="T">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useDebouncedResizeObserver } from '~/composables/useDebouncedResizeObserver.ts';
 
 const props = withDefaults(defineProps<{
   items: T[];
@@ -12,34 +13,19 @@ const props = withDefaults(defineProps<{
 
 const containerRef = ref<HTMLElement | null>(null);
 const containerWidth = ref(0);
-let observer: ResizeObserver | null = null;
-let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const resizeObserver = useDebouncedResizeObserver((entries) => {
+  if (entries[0]) containerWidth.value = entries[0].contentRect.width;
+}, 100);
 
 onMounted(() => {
   if (containerRef.value) {
     containerWidth.value = containerRef.value.clientWidth;
-    observer = new ResizeObserver((entries) => {
-      if (entries[0]) {
-        const width = entries[0].contentRect.width;
-        if (resizeDebounceTimer) {
-          clearTimeout(resizeDebounceTimer);
-        }
-        resizeDebounceTimer = setTimeout(() => {
-          containerWidth.value = width;
-        }, 100);
-      }
-    });
-    observer.observe(containerRef.value);
+    resizeObserver.observe(containerRef.value);
   }
 });
 
 onUnmounted(() => {
-  if (observer) {
-    observer.disconnect();
-  }
-  if (resizeDebounceTimer) {
-    clearTimeout(resizeDebounceTimer);
-  }
+  resizeObserver.disconnect();
 });
 
 const rows = computed(() => {
@@ -94,11 +80,15 @@ function getAbsoluteIndex(rIdx: number, iIdx: number) {
 </script>
 
 <template>
-  <div ref="containerRef" class="flex flex-col w-full" :style="{ gap: `${gap}px` }">
+  <div
+    ref="containerRef"
+    class="flex flex-col w-full"
+    :style="{ gap: `${gap}px` }"
+  >
     <div
       v-for="(row, rIdx) in rows"
       :key="rIdx"
-      class="flex w-full"
+      class="flex w-full justify-center"
       :style="{ gap: `${gap}px` }"
     >
       <slot

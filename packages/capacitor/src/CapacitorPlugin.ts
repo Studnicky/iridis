@@ -75,6 +75,7 @@ export class CapacitorPlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
+      'metadata': undefined,
       'outputs': {
         'capacitor:androidThemeXml': androidThemeXmlOutputSchema,
         'capacitor:splashScreen':    splashScreenOutputSchema,

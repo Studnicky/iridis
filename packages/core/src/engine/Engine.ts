@@ -40,19 +40,28 @@ export class Engine implements EngineInterface {
   /**
    * Cached, resolved task sequence for the current `order`. Built by
    * {@link Engine.pipeline} (or by the first {@link Engine.run} when no
-   * pipeline was set) and reused across runs. Invalidated to `null` on
-   * the next {@link Engine.pipeline} or {@link Engine.adopt} call;
-   * either may change which task object resolves for a given name.
+   * pipeline was set) and reused across runs as long as `sequenceVersion`
+   * still matches `this.tasks`'s mutation counter. Any registry mutation —
+   * whether via {@link Engine.adopt} or a direct `engine.tasks.register()` /
+   * `engine.tasks.hook()` call — bumps that counter, so the next `run()`
+   * rebuilds against the current registry contents instead of reusing a
+   * sequence that may point at shadowed or newly-registered task objects.
    */
   private sequence: readonly TaskInterface[] | null = null;
+
+  /** `this.tasks.version()` at the time `sequence` was last built. */
+  private sequenceVersion = -1;
 
   /** Plugin names that have been adopted. Used to warn on duplicate names. */
   private readonly adoptedPlugins = new Set<string>();
 
   /**
-   * Per-engine ajv-backed validator (owns the ajv instance and compile cache).
-   * Each Engine gets its own Validator so plugin-contributed schemas registered
-   * into one Engine's validator don't leak to another.
+   * Per-engine json-tology-backed validator wrapper (see `Validator.ts`).
+   * Each Engine constructs its own `Validator` instance, but every instance
+   * wraps the same process-wide json-tology registry (`CoreRegistry`), so
+   * plugin-contributed schemas registered through one Engine's validator are
+   * visible to validations performed via any other Engine's validator —
+   * registration is not isolated per Engine.
    */
   private readonly validator: InstanceType<typeof Validator> = new Validator();
 
@@ -76,7 +85,7 @@ export class Engine implements EngineInterface {
    * consumers monkey-patch built-ins.
    *
    * Validates: plugin shape, each task manifest (if present), and each
-   * plugin-contributed output/metadata schema (must be ajv-compilable).
+   * plugin-contributed output/metadata schema (must be json-tology-compilable).
    * Rejects on first failure.
    */
   adopt(plugin: PluginInterface): void {
@@ -161,8 +170,19 @@ export class Engine implements EngineInterface {
 
     // Adopting tasks may shadow names already present in the resolved
     // sequence; invalidate so the next `run()` rebuilds against the
-    // current registry contents.
+    // current registry contents. (`this.tasks.version()` also changed, so
+    // `run()` would rebuild regardless — nulling here keeps the invariant
+    // obvious at the call site that mutated the registry.)
     this.sequence = null;
+
+    // An override may shadow a task in the already-declared `order` with a
+    // version whose `requires` the current order violates (e.g. the new
+    // task now depends on something that runs after it). Re-run the same
+    // ordering check `pipeline()` performs so a broken override fails fast
+    // here instead of silently executing out of order on the next `run()`.
+    if (this.order.length > 0) {
+      this.validateRequiresOrdering(this.order);
+    }
   }
 
   /**
@@ -183,6 +203,30 @@ export class Engine implements EngineInterface {
       }
     }
 
+    this.validateRequiresOrdering(order);
+
+    this.order           = order;
+    this.sequence        = order.map((name) => { const result = this.tasks.resolve(name); return result; });
+    this.sequenceVersion = this.tasks.version();
+  }
+
+  /**
+   * Validates that every `requires` predecessor named by a task in `order`
+   * appears earlier in `order` than the task that names it.
+   *
+   * A `requires` entry is skipped (treated as satisfied, no position check)
+   * when it names either: a task the registry doesn't know about (math
+   * primitives documented as a `requires` entry, not subject to pipeline
+   * ordering), or a phase/hook task — those run out-of-band through the
+   * `onRunStart`/`onRunEnd` channels rather than the ordered sequence, so
+   * they never appear in `order` yet are always satisfied by the time the
+   * main sequence runs.
+   *
+   * Shared by {@link Engine.pipeline} (declaration time) and
+   * {@link Engine.adopt} (re-validation when an override changes what a
+   * name in the existing `order` resolves to).
+   */
+  private validateRequiresOrdering(order: readonly string[]): void {
     for (let i = 0; i < order.length; i++) {
       const name     = order[i]!;
       const task     = this.tasks.resolve(name);
@@ -193,10 +237,11 @@ export class Engine implements EngineInterface {
       }
 
       for (const dep of requires) {
-        // Only enforce requires entries that refer to registered tasks.
-        // Math primitive names appear in requires as documentation and are
-        // not subject to pipeline ordering constraints.
         if (!this.tasks.has(dep)) {
+          continue;
+        }
+
+        if (this.tasks.resolve(dep).manifest?.phase !== undefined) {
           continue;
         }
 
@@ -223,9 +268,6 @@ export class Engine implements EngineInterface {
         }
       }
     }
-
-    this.order    = order;
-    this.sequence = order.map((name) => { const result = this.tasks.resolve(name); return result; });
   }
 
   /**
@@ -270,7 +312,11 @@ export class Engine implements EngineInterface {
       'metadata': { ...input.metadata },
       'outputs':  {},
       'roles':    {},
-      'runtime':  { ...input.runtime },
+      'runtime':  {
+        'colorSpace': input.runtime?.colorSpace,
+        'extra':      input.runtime?.extra,
+        'framing':    input.runtime?.framing
+      },
       'variants': {}
     };
     const ctx: PipelineContextInterface = {
@@ -284,9 +330,12 @@ export class Engine implements EngineInterface {
       hook.run(state, ctx);
     }
 
-    this.sequence ??= this.order.length > 0
-      ? this.order.map((name) => { const result = this.tasks.resolve(name); return result; })
-      : this.tasks.list().map((manifest) => { const result = this.tasks.resolve(manifest.name); return result; });
+    if (this.sequence === null || this.sequenceVersion !== this.tasks.version()) {
+      this.sequence = this.order.length > 0
+        ? this.order.map((name) => { const result = this.tasks.resolve(name); return result; })
+        : this.tasks.list().map((manifest) => { const result = this.tasks.resolve(manifest.name); return result; });
+      this.sequenceVersion = this.tasks.version();
+    }
 
     for (const task of this.sequence) {
       if (task.manifest?.phase !== undefined) {

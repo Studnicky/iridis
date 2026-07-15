@@ -9,10 +9,10 @@
 export type FontStyleType = 'bold' | 'bold italic' | 'italic' | 'strikethrough' | 'underline';
 
 export type ModifierTransformInterfaceType = {
-  'fontStyle'?: FontStyleType;
-  'lightness'?: number;
-  'mixWeight'?: number;
+  'fontStyle': FontStyleType | undefined;
+  'lightness': number | undefined;
+  'mixWeight': number | undefined;
   /** Role name to mix toward: 'muted' | 'constant' | 'warning' | 'comment' | 'info' */
-  'mixWith'?: string;
-  'saturation'?: number;
+  'mixWith': string | undefined;
+  'saturation': number | undefined;
 };

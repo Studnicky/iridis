@@ -1,12 +1,41 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-/* ─── Futuristic type system ─── */
+/* ─── Default (pre-hydration/SSR) type system — matches the "futuristic"
+   theme adapter below, so first paint is never a mismatch. Once client JS
+   sets `data-iridis-theme`, the matching adapter stylesheet in
+   ../theme/presets/presets.css takes over via the higher-specificity
+   attribute selector. ─── */
 @theme {
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --font-display: "Orbitron", "Space Grotesk", sans-serif;
+  /* Bumped up across the board — the default Tailwind type scale read as far
+     too small on this site's dense card/label-heavy layout. Overriding the
+     scale tokens (not a root html% bump) so ONLY typography grows — spacing,
+     radius, and every other rem-based utility stay exactly as sized. */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.3125rem;
+  --text-2xl: 1.625rem;
+  --text-3xl: 2rem;
 }
+
+/* Default glow intensity — MUST stay before the theme import below: this and
+   every theme's own `[data-iridis-theme]` override share equal selector
+   specificity (:root vs. an attribute selector, both 0,1,0), so whichever
+   rule is LATER in source order wins. Declaring the default here (before the
+   import) lets each theme's own later rule correctly override it; declaring
+   it after would silently clobber every theme's override back to 1. */
+:root {
+  --iridis-glow-strength: 1;
+}
+
+/* ─── Per-theme adapters — one [data-iridis-theme] stylesheet per theme,
+   composed via ../theme/presets/index.ts's registry counterpart. ─── */
+@import "../../theme/presets/presets.css";
 
 /* Prose-content anchor links (e.g. "see the Roadmap section") jump between
    docs cards that sit outside the carousel's FSM-driven state entirely —
@@ -18,9 +47,11 @@ html {
 }
 
 :root {
-  /* engine-driven glow color; falls back before the projector runs */
-  --glow: var(--ui-primary, #7c3aed);
-  --glow-2: var(--ui-color-info-500, #06b6d4);
+  /* engine-driven glow color — app.vue's SSR <style> head injection
+     (Tokens.toCssText) guarantees --ui-primary/--ui-color-info-500 are set
+     from the very first byte of HTML, so this never needs a fallback. */
+  --glow: var(--ui-primary);
+  --glow-2: var(--ui-color-info-500);
   /* one shared window every color animates over, in unison — kept under
      300ms so a framing/palette swap reads as instant-but-smooth, not a
      visible fade. */
@@ -64,7 +95,7 @@ html.is-switching-theme *::after {
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: -0.025em;
-  color: var(--ui-text-highlighted, #fff);
+  color: var(--ui-text-highlighted);
 }
 @media (min-width: 640px) {
   .iridis-logo {
@@ -97,7 +128,7 @@ html.is-switching-theme *::after {
 /* ─── Sci-fi backdrop: base color; layered grid/starfield/aurora lives in AmbientBackground.vue ─── */
 body {
   position: relative;
-  background: var(--ui-bg, #05040a);
+  background: var(--ui-bg);
   overflow-x: hidden;
 }
 #__nuxt { position: relative; z-index: 1; }
@@ -110,28 +141,28 @@ body {
 /* ─── Glass panels with an engine-colored holo edge ─── */
 .glass {
   position: relative;
-  background: color-mix(in oklch, var(--ui-bg-elevated, #12101f) 93%, transparent);
+  background: color-mix(in oklch, var(--ui-bg-elevated) 93%, transparent);
   backdrop-filter: blur(8px) saturate(1.15);
-  border: 1px solid color-mix(in oklch, var(--glow) 35%, transparent);
-  border-radius: 1rem;
+  border: 1px var(--iridis-border-style, solid) color-mix(in oklch, var(--glow) calc(35% * var(--iridis-glow-strength, 1)), transparent);
+  border-radius: var(--iridis-radius-lg, 1rem);
   box-shadow:
-    0 0 0 1px color-mix(in oklch, var(--glow) 12%, transparent),
-    0 8px 40px -12px color-mix(in oklch, var(--glow) 40%, transparent),
-    inset 0 1px 0 color-mix(in oklch, #fff 8%, transparent);
+    0 0 0 1px color-mix(in oklch, var(--glow) calc(12% * var(--iridis-glow-strength, 1)), transparent),
+    0 8px 40px -12px color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength, 1)), transparent),
+    inset 0 1px 0 color-mix(in oklch, var(--glow) 8%, transparent);
   transition: transform 0.35s cubic-bezier(.2,.8,.2,1), box-shadow 0.35s ease;
 }
 .glass:hover {
   transform: translateY(-4px);
   box-shadow:
-    0 0 0 1px color-mix(in oklch, var(--glow) 25%, transparent),
-    0 18px 60px -14px color-mix(in oklch, var(--glow) 55%, transparent);
+    0 0 0 1px color-mix(in oklch, var(--glow) calc(25% * var(--iridis-glow-strength, 1)), transparent),
+    0 18px 60px -14px color-mix(in oklch, var(--glow) calc(55% * var(--iridis-glow-strength, 1)), transparent);
 }
 .glass::before {
   /* animated top sheen line */
   content: "";
   position: absolute; inset: 0 0 auto 0; height: 1px;
   background: linear-gradient(90deg, transparent, var(--glow), transparent);
-  opacity: 0.7;
+  opacity: calc(0.7 * var(--iridis-glow-strength, 1));
   animation: sheen 4s ease-in-out infinite;
 }
 @keyframes sheen { 0%,100%{ opacity:.2 } 50%{ opacity:.9 } }
@@ -151,17 +182,18 @@ body {
 /* Engine-lit glass card (applied to every UCard via app.config). */
 .iridis-card {
   position: relative;
-  background: color-mix(in oklch, var(--ui-bg-elevated, #12101f) 94%, transparent);
+  background: color-mix(in oklch, var(--ui-bg-elevated) 94%, transparent);
   backdrop-filter: blur(8px) saturate(1.15);
-  border: 1px solid color-mix(in oklch, var(--glow) 22%, transparent);
+  border: 1px var(--iridis-border-style, solid) color-mix(in oklch, var(--glow) calc(22% * var(--iridis-glow-strength, 1)), transparent);
+  border-radius: var(--iridis-radius-lg, 1rem);
   box-shadow:
-    0 8px 40px -16px color-mix(in oklch, var(--glow) 40%, transparent),
-    inset 0 1px 0 color-mix(in oklch, #fff 6%, transparent);
+    0 8px 40px -16px color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength, 1)), transparent),
+    inset 0 1px 0 color-mix(in oklch, var(--glow) 6%, transparent);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .iridis-card:hover {
-  border-color: color-mix(in oklch, var(--glow) 40%, transparent);
-  box-shadow: 0 14px 54px -16px color-mix(in oklch, var(--glow) 55%, transparent);
+  border-color: color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength, 1)), transparent);
+  box-shadow: 0 14px 54px -16px color-mix(in oklch, var(--glow) calc(55% * var(--iridis-glow-strength, 1)), transparent);
 }
 
 /* Nearly-invisible drifting micro-grid on every card/panel — shared via
@@ -183,145 +215,32 @@ body {
 }
 @keyframes card-texture-pan { to { background-position: 22px 22px; } }
 
-/* ─── Glow / pulse / float utilities ─── */
+/* ─── Glow / pulse / float utilities — every blur radius AND opacity scales
+   by --iridis-glow-strength, so a restrained theme (Formal, Gallery) gets a
+   genuinely tight hairline glow, not just a dimmer version of the same huge
+   neon halo. ─── */
 .glow-text {
-  text-shadow: 0 0 12px color-mix(in oklch, var(--glow) 70%, transparent),
-               0 0 40px color-mix(in oklch, var(--glow) 40%, transparent);
+  text-shadow: 0 0 calc(12px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(70% * var(--iridis-glow-strength, 1)), transparent),
+               0 0 calc(40px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength, 1)), transparent);
 }
 .pulse { animation: pulse-glow 3s ease-in-out infinite; }
 @keyframes pulse-glow {
-  0%,100% { filter: drop-shadow(0 0 4px color-mix(in oklch, var(--glow) 45%, transparent)); }
-  50%     { filter: drop-shadow(0 0 16px color-mix(in oklch, var(--glow) 85%, transparent)); }
+  0%,100% { filter: drop-shadow(0 0 calc(4px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(45% * var(--iridis-glow-strength, 1)), transparent)); }
+  50%     { filter: drop-shadow(0 0 calc(16px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(85% * var(--iridis-glow-strength, 1)), transparent)); }
 }
 .float { animation: float 7s ease-in-out infinite; }
 @keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-10px) } }
 .spin-slow { animation: spin 26s linear infinite; }
 
 .hero-orb-field {
-  mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, #000 0%, transparent 85%);
-  -webkit-mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, #000 0%, transparent 85%);
+  mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, var(--glow) 0%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, var(--glow) 0%, transparent 85%);
 }
-.hero-orb:nth-child(1) { width: 7rem; height: 7rem; left: 8%; top: 50%; animation-delay: 0s; opacity: 0.45; }
-.hero-orb:nth-child(2) { width: 10rem; height: 10rem; left: 28%; top: 8%; animation-delay: 0.9s; opacity: 0.45; }
-.hero-orb:nth-child(3) { width: 13rem; height: 13rem; left: 48%; top: 50%; animation-delay: 1.8s; opacity: 0.45; }
-.hero-orb:nth-child(4) { width: 16rem; height: 16rem; left: 68%; top: 8%; animation-delay: 2.7s; opacity: 0.45; }
-.hero-orb:nth-child(5) { width: 19rem; height: 19rem; left: 88%; top: 50%; animation-delay: 3.6s; opacity: 0.45; }
-
-.halo {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-}
-.halo-ring {
-  position: absolute;
-  border-radius: 46%;
-  background: radial-gradient(circle, color-mix(in oklch, var(--c) 85%, transparent) 0%, color-mix(in oklch, var(--c) 35%, transparent) 50%, transparent 75%);
-  mix-blend-mode: screen;
-  filter: blur(7px);
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  will-change: transform;
-}
-.halo-ring:nth-child(1) {
-  width: 5.5rem; height: 5.5rem;
-  animation: orbit-1 7.2s ease-in-out infinite, halo-pulse 3.8s ease-in-out infinite;
-  animation-delay: -2.1s, -1.4s;
-}
-.halo-ring:nth-child(2) {
-  width: 8.2rem; height: 8.2rem;
-  animation: orbit-2 8.5s ease-in-out infinite, halo-pulse 4.2s ease-in-out infinite;
-  animation-delay: -1.8s, -0.9s;
-}
-.halo-ring:nth-child(3) {
-  width: 10.8rem; height: 10.8rem;
-  animation: orbit-3 9.3s ease-in-out infinite, halo-pulse 4.6s ease-in-out infinite;
-  animation-delay: -3.2s, -2.1s;
-}
-.halo-ring:nth-child(4) {
-  width: 13.2rem; height: 13.2rem;
-  animation: orbit-4 10.1s ease-in-out infinite, halo-pulse 5.0s ease-in-out infinite;
-  animation-delay: -2.8s, -1.2s;
-}
-.halo-ring:nth-child(5) {
-  width: 15.6rem; height: 15.6rem;
-  animation: orbit-5 11.4s ease-in-out infinite, halo-pulse 5.4s ease-in-out infinite;
-  animation-delay: -3.5s, -2.7s;
-}
-.halo-ring:nth-child(6) {
-  width: 18.0rem; height: 18.0rem;
-  animation: orbit-6 12.3s ease-in-out infinite, halo-pulse 5.8s ease-in-out infinite;
-  animation-delay: -4.1s, -0.6s;
-}
-
-/* Irregular orbital paths for each ring — chaotic, non-uniform motion */
-@keyframes orbit-1 {
-  0%   { transform: translate(0, 0) scale(0.9); opacity: 0.2; }
-  25%  { transform: translate(12px, -14px) scale(1.08); opacity: 0.5; }
-  50%  { transform: translate(-10px, 11px) scale(0.95); opacity: 0.35; }
-  75%  { transform: translate(-14px, -10px) scale(1.06); opacity: 0.48; }
-  100% { transform: translate(0, 0) scale(0.9); opacity: 0.2; }
-}
-
-@keyframes orbit-2 {
-  0%   { transform: translate(0, 0) scale(0.88); opacity: 0.18; }
-  20%  { transform: translate(-13px, 12px) scale(1.1); opacity: 0.52; }
-  40%  { transform: translate(11px, -13px) scale(0.96); opacity: 0.32; }
-  60%  { transform: translate(-12px, -11px) scale(1.12); opacity: 0.55; }
-  80%  { transform: translate(14px, 10px) scale(0.94); opacity: 0.3; }
-  100% { transform: translate(0, 0) scale(0.88); opacity: 0.18; }
-}
-
-@keyframes orbit-3 {
-  0%   { transform: translate(0, 0) scale(0.92); opacity: 0.22; }
-  22%  { transform: translate(10px, -15px) scale(1.07); opacity: 0.48; }
-  44%  { transform: translate(-14px, 9px) scale(0.98); opacity: 0.34; }
-  66%  { transform: translate(12px, 13px) scale(1.1); opacity: 0.54; }
-  88%  { transform: translate(-11px, -12px) scale(0.95); opacity: 0.28; }
-  100% { transform: translate(0, 0) scale(0.92); opacity: 0.22; }
-}
-
-@keyframes orbit-4 {
-  0%   { transform: translate(0, 0) scale(0.89); opacity: 0.2; }
-  18%  { transform: translate(-15px, -10px) scale(1.09); opacity: 0.5; }
-  36%  { transform: translate(11px, 14px) scale(0.97); opacity: 0.36; }
-  54%  { transform: translate(-10px, -13px) scale(1.11); opacity: 0.56; }
-  72%  { transform: translate(13px, 11px) scale(0.93); opacity: 0.26; }
-  90%  { transform: translate(-12px, 10px) scale(1.05); opacity: 0.44; }
-  100% { transform: translate(0, 0) scale(0.89); opacity: 0.2; }
-}
-
-@keyframes orbit-5 {
-  0%   { transform: translate(0, 0) scale(0.91); opacity: 0.21; }
-  16%  { transform: translate(13px, 12px) scale(1.08); opacity: 0.49; }
-  32%  { transform: translate(-12px, -14px) scale(0.96); opacity: 0.33; }
-  48%  { transform: translate(10px, -11px) scale(1.1); opacity: 0.53; }
-  64%  { transform: translate(-14px, 13px) scale(0.94); opacity: 0.29; }
-  80%  { transform: translate(11px, -12px) scale(1.07); opacity: 0.47; }
-  100% { transform: translate(0, 0) scale(0.91); opacity: 0.21; }
-}
-
-@keyframes orbit-6 {
-  0%   { transform: translate(0, 0) scale(0.87); opacity: 0.19; }
-  15%  { transform: translate(-11px, -15px) scale(1.09); opacity: 0.51; }
-  30%  { transform: translate(14px, 10px) scale(0.98); opacity: 0.35; }
-  45%  { transform: translate(-13px, 12px) scale(1.12); opacity: 0.57; }
-  60%  { transform: translate(12px, -13px) scale(0.95); opacity: 0.3; }
-  75%  { transform: translate(-10px, 11px) scale(1.06); opacity: 0.45; }
-  90%  { transform: translate(11px, 14px) scale(0.92); opacity: 0.25; }
-  100% { transform: translate(0, 0) scale(0.87); opacity: 0.19; }
-}
-
-/* Lava lamp opacity pulsing — layered on orbital motion */
-@keyframes halo-pulse {
-  0%, 100% { opacity: 0.18; }
-  50%      { opacity: 0.55; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .halo, .halo-ring { animation: none; }
-  .halo-ring { opacity: 0.3; }
-}
+.hero-orb:nth-child(1) { width: 7rem; height: 7rem; left: 8%; top: 50%; animation-delay: 0s; opacity: calc(0.45 * var(--iridis-glow-strength, 1)); }
+.hero-orb:nth-child(2) { width: 10rem; height: 10rem; left: 28%; top: 8%; animation-delay: 0.9s; opacity: calc(0.45 * var(--iridis-glow-strength, 1)); }
+.hero-orb:nth-child(3) { width: 13rem; height: 13rem; left: 48%; top: 50%; animation-delay: 1.8s; opacity: calc(0.45 * var(--iridis-glow-strength, 1)); }
+.hero-orb:nth-child(4) { width: 16rem; height: 16rem; left: 68%; top: 8%; animation-delay: 2.7s; opacity: calc(0.45 * var(--iridis-glow-strength, 1)); }
+.hero-orb:nth-child(5) { width: 19rem; height: 19rem; left: 88%; top: 50%; animation-delay: 3.6s; opacity: calc(0.45 * var(--iridis-glow-strength, 1)); }
 
 /* ── Orbit: three rings, each its own palette role, spinning at independent
    speeds/directions while the whole rig slowly precesses — genuinely three
@@ -381,7 +300,7 @@ body {
 .scanlines::after {
   content: "";
   position: absolute; inset: 0;
-  background: repeating-linear-gradient(0deg, transparent 0 2px, color-mix(in oklch, #000 22%, transparent) 2px 3px);
+  background: repeating-linear-gradient(0deg, transparent 0 2px, color-mix(in oklch, var(--glow) 22%, transparent) 2px 3px);
   pointer-events: none; opacity: 0.1; border-radius: inherit;
 }
 

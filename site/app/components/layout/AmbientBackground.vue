@@ -11,26 +11,34 @@
  * never a clipped or duplicated one.
  */
 
+import { computed } from 'vue';
+
 import { useLivingBackground } from '~/composables/useLivingBackground.ts';
+import { useThemePreset } from '~/composables/useThemePreset.ts';
+import { PARTICLE_RENDERERS } from '~/theme/particles/index.ts';
 
 useLivingBackground();
 
-/** One box-shadow entry per star: a viewport-relative dot so the field scales with the window instead of clipping on a fixed px canvas. */
-function starField(count: number, colorVar: string, blur: string = '0'): string {
-  const dots: string[] = [];
-  for (let i = 0; i < count; i += 1) {
-    const x = (Math.random() * 100).toFixed(2);
-    const y = (Math.random() * 100).toFixed(2);
-    dots.push(`${x}vw ${y}vh ${blur} ${colorVar}`);
-  }
-  return dots.join(',');
-}
-const starsFar1 = starField(200, 'color-mix(in oklch, var(--ui-primary) 70%, transparent)', '0');
-const starsFar2 = starField(200, 'color-mix(in oklch, var(--ui-info) 70%, transparent)', '0');
-const starsFar3 = starField(200, 'color-mix(in oklch, var(--ui-success) 70%, transparent)', '0');
+/**
+ * Ambient params come from the active theme's `ambient` config
+ * (useThemePreset()). The particle SHAPE is dispatched to its own renderer
+ * module via PARTICLE_RENDERERS — a lookup map, not a branch — so adding a
+ * new shape never touches this component.
+ */
+const { 'activeAmbient': activeAmbient } = useThemePreset();
+const particleCounts = computed(() => activeAmbient.value.particleCounts);
 
-const starsNear1 = starField(100, 'color-mix(in oklch, var(--ui-warning) 85%, transparent)', '1px');
-const starsNear2 = starField(100, 'color-mix(in oklch, var(--ui-error) 85%, transparent)', '1px');
+function renderLayer(count: number, colorVar: string, sizePx: number, blur: string) {
+  const renderer = PARTICLE_RENDERERS[activeAmbient.value.particleShape] ?? PARTICLE_RENDERERS['dot']!;
+  return renderer({ 'blur': blur, 'colorVar': colorVar, 'count': count, 'sizePx': sizePx });
+}
+
+const layerFar1 = computed(() => renderLayer(particleCounts.value[0] ?? 200, 'color-mix(in oklch, var(--ui-primary) 70%, transparent)', 6, '0'));
+const layerFar2 = computed(() => renderLayer(particleCounts.value[1] ?? 200, 'color-mix(in oklch, var(--ui-info) 70%, transparent)', 6, '0'));
+const layerFar3 = computed(() => renderLayer(particleCounts.value[2] ?? 200, 'color-mix(in oklch, var(--ui-success) 70%, transparent)', 6, '0'));
+
+const layerNear1 = computed(() => renderLayer(particleCounts.value[3] ?? 100, 'color-mix(in oklch, var(--ui-warning) 85%, transparent)', 9, '1px'));
+const layerNear2 = computed(() => renderLayer(particleCounts.value[4] ?? 100, 'color-mix(in oklch, var(--ui-error) 85%, transparent)', 9, '1px'));
 
 /** Engine roles the lava blobs cycle through — each blob blends two adjacent
  * roles (roleA at index i, roleB at index i+2, see lavaBlobs() below). This
@@ -50,13 +58,15 @@ interface LavaBlobType { id: string; style: Record<string, string>; }
  * add a slow horizontal sway (`lava-sway`) on top, and speed/delay/direction
  * are all per-blob so none of them move in lockstep.
  */
-function lavaBlobs(count: number): LavaBlobType[] {
+function lavaBlobs(count: number, speedMultiplier: number): LavaBlobType[] {
   const blobs: LavaBlobType[] = [];
   for (let i = 0; i < count; i += 1) {
     const roleA = LAVA_ROLES[i % LAVA_ROLES.length];
     const roleB = LAVA_ROLES[(i + 2) % LAVA_ROLES.length];
     const size = 4 + Math.random() * 5; // vw — small discrete globs, not a wash
     const sway = i % 2 === 0;
+    const riseDuration = (18 + Math.random() * 12) / speedMultiplier;
+    const swayDuration = 16 / speedMultiplier;
     blobs.push({
       'id': `lava-${i}`,
       'style': {
@@ -64,7 +74,7 @@ function lavaBlobs(count: number): LavaBlobType[] {
         'left': `${Math.random() * 92}%`,
         'width': `${size}vw`,
         'height': `${size}vw`,
-        'animationDuration': `${18 + Math.random() * 12}s, 16s`,
+        'animationDuration': `${riseDuration}s, ${swayDuration}s`,
         'animationDelay': `-${Math.random() * 20}s, -${Math.random() * 16}s`,
         'animationDirection': `${i % 2 === 0 ? 'alternate' : 'alternate-reverse'}, alternate`,
         '--lava-sway-amt': sway ? `${14 + Math.random() * 14}px` : '0px',
@@ -75,15 +85,31 @@ function lavaBlobs(count: number): LavaBlobType[] {
   return blobs;
 }
 
-const lavaBlobField = lavaBlobs(18);
+const lavaBlobField = computed(() => lavaBlobs(activeAmbient.value.blobCount, activeAmbient.value.speedMultiplier));
+const gooEnabled = computed(() => activeAmbient.value.gooEnabled);
+const gridEnabled = computed(() => activeAmbient.value.gridEnabled);
+/** Inherited by every ambient child via CSS custom property inheritance — grid/star/lava keyframe durations divide by this so 1 reproduces today's exact speeds. */
+const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAmbient.value.speedMultiplier) }));
 </script>
 
 <template>
   <div
     class="ambient"
     aria-hidden="true"
+    :style="ambientStyle"
   >
-    <div class="ambient-grid" />
+    <!--
+      The grid is base/shared markup — every theme gets the same node;
+      `gridEnabled` (a per-theme knob) only toggles its visibility. `v-show`
+      keeps DOM shape identical between server and client (it only ever
+      flips `display`), so a persisted theme that disagrees with the
+      prerendered default never produces a hydration node mismatch — the
+      visibility just updates reactively once the real theme is known.
+    -->
+    <div
+      v-show="gridEnabled"
+      class="ambient-grid"
+    />
 
     <!-- gooey lava-lamp wash: heavy blur + a contrast-boosted color matrix
          snaps soft blurred edges back to hard alpha, so overlapping blobs
@@ -125,7 +151,10 @@ const lavaBlobField = lavaBlobs(18);
       </defs>
     </svg>
     <ClientOnly>
-      <div class="ambient-lava">
+      <div
+        class="ambient-lava"
+        :style="{ filter: gooEnabled ? 'url(#iridis-goo)' : 'none' }"
+      >
         <div
           v-for="b in lavaBlobField"
           :key="b.id"
@@ -134,12 +163,27 @@ const lavaBlobField = lavaBlobs(18);
         />
       </div>
 
-      <div class="star-layer star-far-1" :style="{ boxShadow: starsFar1 }" />
-      <div class="star-layer star-far-2" :style="{ boxShadow: starsFar2 }" />
-      <div class="star-layer star-far-3" :style="{ boxShadow: starsFar3 }" />
+      <AmbientParticleLayer
+        layer-class="star-layer star-far-1"
+        :layer="layerFar1"
+      />
+      <AmbientParticleLayer
+        layer-class="star-layer star-far-2"
+        :layer="layerFar2"
+      />
+      <AmbientParticleLayer
+        layer-class="star-layer star-far-3"
+        :layer="layerFar3"
+      />
 
-      <div class="star-layer star-near-1" :style="{ boxShadow: starsNear1 }" />
-      <div class="star-layer star-near-2" :style="{ boxShadow: starsNear2 }" />
+      <AmbientParticleLayer
+        layer-class="star-layer star-near-1"
+        :layer="layerNear1"
+      />
+      <AmbientParticleLayer
+        layer-class="star-layer star-near-2"
+        :layer="layerNear2"
+      />
     </ClientOnly>
   </div>
 </template>
@@ -151,6 +195,13 @@ const lavaBlobField = lavaBlobs(18);
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
+  /* Per-theme color TONE — every particle/blob still reads the live engine
+     palette (--ui-primary etc.), never a hardcoded hue, but how VIVID that
+     palette looks in the background is a theme knob: an executive theme
+     wants muted/desaturated, an arcade/streamer theme wants punchy and
+     saturated. Set per-theme in site/app/theme/presets/<key>.css; 1/1 here
+     is the neutral (futuristic) default. */
+  filter: saturate(var(--iridis-ambient-saturate, 1)) contrast(var(--iridis-ambient-contrast, 1));
 }
 
 /* ─── perspective grid floor ─── */
@@ -161,24 +212,23 @@ const lavaBlobField = lavaBlobs(18);
     linear-gradient(color-mix(in oklch, var(--ui-primary) 22%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in oklch, var(--ui-primary) 22%, transparent) 1px, transparent 1px);
   background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 10%, transparent 70%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, var(--glow) 10%, transparent 70%);
   opacity: 0.1;
-  animation: ambient-grid-pan 18s linear infinite;
+  animation: ambient-grid-pan calc(18s / var(--iridis-ambient-speed, 1)) linear infinite;
 }
 
-/* ─── gooey lava-lamp metaball wash ─── */
+/* ─── gooey lava-lamp metaball wash (filter applied inline so gooEnabled can toggle it) ─── */
 .ambient-goo-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 .ambient-lava {
   position: absolute;
   inset: 0;
-  filter: url('#iridis-goo');
   opacity: 0.11;
   mix-blend-mode: screen;
   /* belt-and-suspenders: even if any residual filter edge survives at the
      very fringe of the viewport, this guarantees it fades to zero alpha
      before it ever reaches a boundary. */
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, #000 0%, transparent 92%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, #000 0%, transparent 92%);
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, var(--glow) 0%, transparent 92%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, var(--glow) 0%, transparent 92%);
 }
 /* Small discrete globs that rise/scale/fall through the viewport (primary
    motion) with an optional slow horizontal sway layered on top — the
@@ -192,25 +242,7 @@ const lavaBlobField = lavaBlobs(18);
   will-change: transform;
 }
 
-/* ─── twinkling starfield ─── */
-.star-layer {
-  position: absolute;
-  top: 0; left: 0;
-  width: 1.5px; height: 1.5px;
-  background: transparent;
-  border-radius: 50%;
-  transform-origin: 50vw 50vh;
-}
-.star-far-1 { animation: ambient-twinkle 4s ease-in-out infinite, star-rotate 200s linear infinite; }
-.star-far-2 { animation: ambient-twinkle 5s ease-in-out infinite 2s, star-rotate 300s linear infinite reverse; }
-.star-far-3 { animation: ambient-twinkle 6s ease-in-out infinite 1s, star-rotate 400s linear infinite; }
-
-.star-near-1 { width: 3px; height: 3px; animation: ambient-twinkle 3.5s ease-in-out infinite reverse, star-rotate 150s linear infinite reverse; }
-.star-near-2 { width: 3px; height: 3px; animation: ambient-twinkle 4.5s ease-in-out infinite reverse 1.5s, star-rotate 250s linear infinite; }
-
 @keyframes ambient-grid-pan { to { background-position: 0 44px, 44px 0; } }
-@keyframes ambient-twinkle { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.95; } }
-@keyframes star-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 /* Primary lava-lamp motion: rise from below the viewport, swell at the
    midpoint, keep rising off the top, then reverse (animation-direction is
    set per-blob to alternate/alternate-reverse so they don't all rise in
@@ -232,7 +264,7 @@ const lavaBlobField = lavaBlobs(18);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-grid, .lava-blob, .star-far-1, .star-far-2, .star-far-3, .star-near-1, .star-near-2 {
+  .ambient-grid, .lava-blob {
     animation: none !important;
   }
 }

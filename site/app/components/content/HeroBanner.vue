@@ -5,7 +5,6 @@
  */
 const base = useRuntimeConfig().app.baseURL;
 const orbs = ['primary', 'info', 'success', 'error', 'warning'];
-const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
 </script>
 
 <template>
@@ -27,40 +26,26 @@ const halo = ['primary', 'info', 'success', 'warning', 'error', 'secondary'];
     <div class="relative mx-auto max-w-3xl text-center">
       <div class="mb-4 flex justify-center">
         <div class="relative flex h-40 w-40 items-center justify-center sm:h-48 sm:w-48">
-          <!-- Pulsing multichromatic rings emanating from the eye. Each is a
-               radial gradient in a different engine hue; their opacity pulses
-               out of phase and screen-blends where they overlap, so the halo
-               flows and shifts color as it fades outward. -->
-          <div
-            class="halo"
-            aria-hidden="true"
-          >
-            <span
-              v-for="c in halo"
-              :key="c"
-              class="halo-ring"
-              :style="{
-                '--c': `var(--ui-color-${c}-500)`
-              }"
-            />
-          </div>
+          <!-- Per-theme logo background — dispatches to the active theme's
+               own bespoke effect (see components/content/logoBackgrounds/),
+               never a one-size-fits-all glow. -->
+          <LogoBackground />
           <img
             :src="`${base}logo.png`"
             alt="iridis"
             class="float relative z-10 h-24 w-24 sm:h-28 sm:w-28"
-            style="filter: drop-shadow(0 0 22px color-mix(in oklch, var(--ui-primary) 65%, transparent));"
           >
         </div>
       </div>
 
-      <h1 class="iridis-logo glow-text">
+      <h1 class="iridis-logo">
         iridis
       </h1>
       <p class="mx-auto mt-3 max-w-xl text-sm text-muted sm:text-base">
         A chromatic engine that resolves any seeds — or any image — into a full,
         contrast-enforced, <span
           class="font-semibold"
-          style="color: var(--ui-color-primary-400)"
+          style="color: var(--ui-text-highlighted)"
         >OKLCH-native</span> palette.
         Every pixel here is <code class="font-mono">engine.run()</code>.
       </p>

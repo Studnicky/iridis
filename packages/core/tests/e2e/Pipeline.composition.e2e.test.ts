@@ -57,7 +57,7 @@ function makeHintedRecord(
     'alpha':        1,
     'sourceFormat': 'hex',
     'displayP3':    undefined,
-    'hints':        { 'role': role },
+    'hints':        { 'role': role, 'intent': undefined, 'weight': undefined },
   };
 }
 
@@ -86,18 +86,18 @@ const hintedSurface = makeHintedRecord(0.95, 0.01, 0, 0.95, 0.95, 0.95, '#f2f2f2
 const hintSchema: RoleSchemaInterfaceType = {
   'name': 'hint-schema',
   'roles': [
-    { 'name': 'accent',  'required': true },
-    { 'name': 'surface', 'required': true },
-  ],
+    { 'name': 'accent',  'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'surface', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+  ], 'contrastPairs': undefined, 'description': undefined,
 };
 
 const distanceSchema: RoleSchemaInterfaceType = {
   'name': 'hint-test',
   'roles': [
-    { 'name': 'accent',  'required': true },
-    { 'name': 'surface', 'required': true },
-    { 'name': 'text',    'required': false },
-  ],
+    { 'name': 'accent',  'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'surface', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'text',    'required': false, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+  ], 'contrastPairs': undefined, 'description': undefined,
 };
 
 const roleAssignmentScenarios: readonly ScenarioInterface<RoleAssignmentInput, RoleAssignmentOutput>[] = [
@@ -135,7 +135,7 @@ new ScenarioRunner<RoleAssignmentInput, RoleAssignmentOutput>(
       // Three colors with distinct lightness so each role resolves via distance
       const state = await engine.run({
         'colors': ['#6d28d9', '#f5f3ff', '#1c1917'],
-        'roles':  distanceSchema,
+        'roles':  distanceSchema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
       });
       return {
         hasAccent:   'accent'  in state.roles,
@@ -150,14 +150,14 @@ new ScenarioRunner<RoleAssignmentInput, RoleAssignmentOutput>(
     const engine = freshEngine();
     engine.tasks.hook('onRunStart', {
       'name': 'seed:hinted',
-      'manifest': { 'name': 'seed:hinted', 'phase': 'onRunStart' },
+      'manifest': { 'name': 'seed:hinted', 'phase': 'onRunStart', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       run(state: PaletteStateInterface): void {
         state.colors.push(hintedAccent, hintedSurface);
       },
     } as TaskInterface);
     engine.pipeline(['resolve:roles', 'expand:family', 'emit:json']);
 
-    const state = await engine.run({ 'colors': [], 'roles': hintSchema });
+    const state = await engine.run({ 'colors': [], 'roles': hintSchema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     return {
       hasAccent:    'accent'  in state.roles,
       hasSurface:   'surface' in state.roles,
@@ -179,9 +179,9 @@ new ScenarioRunner<RoleAssignmentInput, RoleAssignmentOutput>(
 const variantSchema: RoleSchemaInterfaceType = {
   'name':  'variant-test',
   'roles': [
-    { 'name': 'primary', 'required': true },
-    { 'name': 'muted',   'required': true },
-  ],
+    { 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'muted',   'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+  ], 'contrastPairs': undefined, 'description': undefined,
 };
 
 interface VariantInput  { readonly colors: string[] }
@@ -230,7 +230,7 @@ new ScenarioRunner<VariantInput, VariantOutput>(
   async (input) => {
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles', 'derive:variant', 'emit:json']);
-    const state = await engine.run({ 'colors': input.colors, 'roles': variantSchema });
+    const state = await engine.run({ 'colors': input.colors, 'roles': variantSchema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const dark  = state.variants['dark']  as Record<string, ColorRecordInterfaceType> | undefined;
     const light = state.variants['light'] as Record<string, ColorRecordInterfaceType> | undefined;
     const json  = state.outputs['core:json']   as JsonOutput | undefined;
@@ -258,12 +258,12 @@ new ScenarioRunner<VariantInput, VariantOutput>(
 const contrastReportSchema: RoleSchemaInterfaceType = {
   'name': 'contrast-report-test',
   'roles': [
-    { 'name': 'text',    'required': true },
-    { 'name': 'surface', 'required': true },
+    { 'name': 'text',    'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'surface', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
   'contrastPairs': [
-    { 'foreground': 'text', 'background': 'surface', 'minRatio': 3.0 },
-  ],
+    { 'foreground': 'text', 'background': 'surface', 'minRatio': 3.0, 'algorithm': undefined },
+  ], 'description': undefined,
 };
 
 type ContrastReportEntry = {
@@ -311,7 +311,7 @@ new ScenarioRunner<ContrastReportInput, ContrastReportOutput>(
     engine.pipeline(['intake:hex', 'resolve:roles', 'enforce:contrast']);
     const state = await engine.run({
       'colors': [input.fgHex, input.bgHex],
-      'roles':  contrastReportSchema,
+      'roles':  contrastReportSchema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
     });
     const report = state.metadata['core:contrastReport'] as ContrastReportEntry[] | undefined;
     const entry  = Array.isArray(report) ? report[0] : undefined;
@@ -338,13 +338,13 @@ new ScenarioRunner<ContrastReportInput, ContrastReportOutput>(
 const idempotentSchema: RoleSchemaInterfaceType = {
   'name': 'idempotent-test',
   'roles': [
-    { 'name': 'text',      'required': true },
-    { 'name': 'surface',   'required': true },
-    { 'name': 'text-muted', 'derivedFrom': 'text', 'chromaRange': [0.01, 0.05] },
+    { 'name': 'text',      'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'surface',   'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'text-muted', 'derivedFrom': 'text', 'chromaRange': [0.01, 0.05], 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined },
   ],
   'contrastPairs': [
-    { 'foreground': 'text', 'background': 'surface', 'minRatio': 4.5 },
-  ],
+    { 'foreground': 'text', 'background': 'surface', 'minRatio': 4.5, 'algorithm': undefined },
+  ], 'description': undefined,
 };
 
 interface IdempotentInput  { readonly fgHex: string; readonly bgHex: string }
@@ -371,7 +371,7 @@ new ScenarioRunner<IdempotentInput, IdempotentOutput>(
       'intake:hex', 'resolve:roles', 'enforce:contrast',
       'expand:family', 'enforce:contrast', 'emit:json',
     ]);
-    const state  = await engine.run({ 'colors': [input.fgHex, input.bgHex], 'roles': idempotentSchema });
+    const state  = await engine.run({ 'colors': [input.fgHex, input.bgHex], 'roles': idempotentSchema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
     const report = state.metadata['core:contrastReport'] as ContrastReportEntry[] | undefined;
     const last   = Array.isArray(report) && report.length > 0 ? report[report.length - 1] : undefined;
     return {
@@ -445,8 +445,8 @@ new ScenarioRunner<EmptySchemaInput, EmptySchemaOutput>(
     engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'enforce:contrast', 'emit:json']);
 
     const runInput: InputInterface = input.mode === 'empty-list'
-      ? { 'colors': input.colors, 'roles': { 'name': 'empty-schema', 'roles': [] } }
-      : { 'colors': input.colors };
+      ? { 'colors': input.colors, 'roles': { 'name': 'empty-schema', 'roles': [], 'contrastPairs': undefined, 'description': undefined }, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined }
+      : { 'colors': input.colors, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined };
 
     const state = await engine.run(runInput);
     const json  = state.outputs['core:json'] as JsonOutput | undefined;

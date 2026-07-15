@@ -1,0 +1,23 @@
+[data-iridis-theme='gallery'] {
+  --font-display: "Cormorant", "Cormorant Garamond", serif;
+  --font-sans: "Karla", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --ui-radius: 0px;
+  --iridis-radius-sm: 0px;
+  --iridis-radius-md: 0px;
+  --iridis-radius-lg: 0px;
+  --iridis-border-style: solid;
+  /* Tone: the least saturated theme of the twelve — white-cube gallery walls
+     don't compete with color at all. */
+  --iridis-ambient-saturate: 0.1;
+  --iridis-ambient-contrast: 0.9;
+  /* White-cube walls never glow. */
+  --iridis-glow-strength: 0.1;
+}
+
+/* No ambient motion at all — particleCounts are all zero (see gallery.ts);
+   a white-cube gallery wall has nothing drifting across it. */
+
+/* Hero: no floating color orbs either — gallery-white restraint applies to
+   the hero exactly like the rest of the page. */
+[data-iridis-theme='gallery'] .hero-orb { display: none !important; }

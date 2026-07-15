@@ -17,7 +17,7 @@ const LOW_CONTRAST_TO: PaletteInterfaceType = {
 };
 
 const CONTRAST_PAIRS = [
-  { 'background': 'background', 'foreground': 'text', 'minRatio': 4.5 }
+  { 'algorithm': undefined, 'background': 'background', 'foreground': 'text', 'minRatio': 4.5 }
 ];
 
 test('enforceContrast: corrects a deliberately low-contrast frame in place', () => {
@@ -42,8 +42,11 @@ test('enforceContrast: no-op when there are no contrast pairs', () => {
 
 test('evaluateEnforced: evaluated frame is re-validated and corrected', () => {
   const frame = evaluateEnforced(LOW_CONTRAST_FROM, LOW_CONTRAST_TO, 0.5, {
-    'contrastPairs': CONTRAST_PAIRS,
-    'level':         'aa'
+    'chromaticDetourRoles': undefined,
+    'contrastPairs':        CONTRAST_PAIRS,
+    'easing':               undefined,
+    'hueDirection':         undefined,
+    'level':                'aa'
   });
   assert.notStrictEqual(frame['text']!.l, LOW_CONTRAST_FROM['text']!.l, 'evaluated+enforced text differs from the raw low-contrast lerp');
 });

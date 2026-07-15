@@ -17,7 +17,7 @@ const TO: PaletteInterfaceType = {
 };
 
 test('scroll position drives a real anima palette evaluation via ValueBinding', () => {
-  const scroll = ValueBinding.create({ 'max': 500, 'min': 0 });
+  const scroll = ValueBinding.create({ 'clamp': undefined, 'max': 500, 'min': 0 });
 
   let scrollY = 0;
   const startPalette = evaluate(FROM, TO, scroll.mapToT(scrollY));

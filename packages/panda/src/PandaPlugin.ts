@@ -27,7 +27,8 @@ export class PandaPlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs': { 'panda:theme': pandaOutputSchema }
+      'metadata': undefined,
+      'outputs':  { 'panda:theme': pandaOutputSchema }
     };
   }
 }

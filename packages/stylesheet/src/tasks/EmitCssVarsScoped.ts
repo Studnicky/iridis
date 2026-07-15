@@ -12,7 +12,7 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { CssVarsScopedOutputInterfaceType } from '../types/index.ts';
 
-import { serializeP3 } from '../util/serializeP3.ts';
+import { P3Serializer } from '../util/P3Serializer.ts';
 
 class ScopedCategoryBlock {
   static build(
@@ -56,7 +56,7 @@ class ScopedWideGamutBlock {
     for (const [role, record] of Object.entries(roles)) {
       if (record.displayP3 !== undefined) {
         const varName = toCssVarName(role, prefix);
-        p3Decls.push(`  ${varName}: ${serializeP3(record.displayP3)};`);
+        p3Decls.push(`  ${varName}: ${P3Serializer.serialize(record.displayP3)};`);
       }
     }
     if (p3Decls.length === 0) {return '';}
@@ -84,7 +84,9 @@ class EmitCssVarsScoped implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit per-category scoped CSS custom property blocks for Vue/Capacitor use cases',
     'name':        'emit:cssVarsScoped',
+    'phase':       undefined,
     'reads':       ['roles', 'variants', 'metadata'],
+    'requires':    undefined,
     'writes':      ['outputs.stylesheet:cssVarsScoped']
   };
 

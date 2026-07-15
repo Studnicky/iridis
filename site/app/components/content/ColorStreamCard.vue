@@ -1,21 +1,23 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 
-import { scaleChromaToY, sampleIndexToX } from '../../composables/colorStreamAxis.ts';
 import { colorStreamComparison } from '../../composables/colorStreamComparison.ts';
+import { DECORATIVE_ALIASES } from '../../composables/decorativeAliases.ts';
+import { sampleIndexToX } from '../../composables/sampleIndexToX.ts';
+import { scaleChromaToY } from '../../composables/scaleChromaToY.ts';
+import type { ColorSampleType } from '../../composables/types/colorSample.ts';
 import type { RoleViewType } from '../../composables/types/index.ts';
+import { useColorStreamHistory } from '../../composables/useColorStreamHistory.ts';
 import { useIridis } from '../../composables/useIridis.ts';
-import { useColorStreamHistory, useLivingBackground, type ColorSampleType } from '../../composables/useLivingBackground.ts';
+import { useLivingBackground } from '../../composables/useLivingBackground.ts';
+import { capitalize } from '../../utils/capitalize.ts';
 
-/** Role display order + labels for the seismograph stack, plus each alias's source role name (mirrors useLivingBackground.ts's DECORATIVE_ALIASES). */
-const ROLES: { alias: string; label: string; roleName: string }[] = [
-  { 'alias': 'primary', 'label': 'Primary', 'roleName': 'brand' },
-  { 'alias': 'secondary', 'label': 'Secondary', 'roleName': 'accent-alt' },
-  { 'alias': 'success', 'label': 'Success', 'roleName': 'success' },
-  { 'alias': 'warning', 'label': 'Warning', 'roleName': 'warning' },
-  { 'alias': 'error', 'label': 'Error', 'roleName': 'error' },
-  { 'alias': 'info', 'label': 'Info', 'roleName': 'info' }
-];
+/** Role display order for the seismograph stack, derived from decorativeAliases.ts's own DECORATIVE_ALIASES — the alias/roleName pairing has exactly one source, this just adds the display label. */
+const ROLES: { alias: string; label: string; roleName: string }[] = Object.entries(DECORATIVE_ALIASES).map(([alias, roleName]) => ({
+  'alias':    alias,
+  'label':    capitalize(alias),
+  'roleName': roleName
+}));
 
 /** Number of samples in each static comparison band — shares the same 0..1 progress axis for both interpolation methods. */
 const COMPARISON_SAMPLE_COUNT = 48;
@@ -169,7 +171,10 @@ onUnmounted(() => {
 
       <p class="text-xs text-muted">
         This is <strong class="text-highlighted">Living Color</strong> in motion — see
-        <a href="#living-color" class="text-primary hover:underline">Living Color</a> for the palette-vector
+        <a
+          href="#living-color"
+          class="text-primary hover:underline"
+        >Living Color</a> for the palette-vector
         math and curve-evaluation packages behind the drift you're watching.
       </p>
 

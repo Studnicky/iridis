@@ -12,9 +12,11 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { StatusBarOutputInterfaceType } from '../types/index.ts';
 
-function pickBarStyle(barColor: ColorRecordInterfaceType): 'DARK' | 'LIGHT' {
-  // LIGHT style = light icons/text on dark bar. DARK style = dark icons/text on light bar.
-  return luminance.apply(barColor) < 0.18 ? 'LIGHT' : 'DARK';
+class BarStyle {
+  static pick(barColor: ColorRecordInterfaceType): 'DARK' | 'LIGHT' {
+    // LIGHT style = light icons/text on dark bar. DARK style = dark icons/text on light bar.
+    return luminance.apply(barColor) < 0.18 ? 'LIGHT' : 'DARK';
+  }
 }
 
 class BarColor {
@@ -40,7 +42,9 @@ class EmitCapacitorStatusBar implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit Capacitor StatusBar configuration from surface/topBar role.',
     'name':        'emit:capacitorStatusBar',
+    'phase':       undefined,
     'reads':       ['roles'],
+    'requires':    undefined,
     'writes':      ['outputs.capacitor:statusBar']
   };
 
@@ -70,7 +74,7 @@ class EmitCapacitorStatusBar implements TaskInterface {
     if (textColor !== undefined) {
       style = luminance.apply(textColor) > 0.18 ? 'DARK' : 'LIGHT';
     } else {
-      style = pickBarStyle(barColor);
+      style = BarStyle.pick(barColor);
     }
 
     const output: StatusBarOutputInterfaceType = {

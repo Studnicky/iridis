@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
 
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
+import { useDebouncedResizeObserver } from '~/composables/useDebouncedResizeObserver.ts';
+import { wrap } from '~/composables/fsm/wrap.ts';
 
 /**
  * Orbit/coverflow carousel. Cards curl along a cylinder arc: the active card
@@ -10,12 +12,18 @@ import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
  * sides, scale down, dim, and recede in parallax — free-floating decks suspended
  * in space. Drag, arrow keys, dots, or click a side card to rotate.
  */
-const props = defineProps<{ items: ReadonlyArray<{ key: string; label: string }> }>();
+const props = defineProps<{ items: ReadonlyArray<{ key: string; label: string }>; modelValue?: number }>();
+const emit = defineEmits<{ 'update:modelValue': [index: number] }>();
 
+/**
+ * When `modelValue` is passed (even as an uncontrolled second carousel
+ * instance), navigation is fully local — this deck must never read or
+ * dispatch to the page's global FSM, or it would fight the top-level
+ * carousel over the SAME shared activeIndex. Omitting `modelValue` entirely
+ * preserves the original global-FSM-driven behavior byte-for-byte.
+ */
 const { send, state } = useIridisUiMachine();
-const active = computed(() => state.value.activeIndex);
-const dragging = computed(() => state.value.variant === 'dragging');
-const dragPx = computed(() => (state.value.variant === 'dragging' ? state.value.dragPx : 0));
+const active = computed(() => props.modelValue ?? state.value.activeIndex);
 const n = computed(() => props.items.length);
 const cardW = ref(760);
 // cardH is the MAX natural content height across every face, not just the
@@ -24,13 +32,35 @@ const cardW = ref(760);
 // ever taller than the box it's given. Tracked per-index in cardHeights (see
 // observeAllCards) since .cyl-face is absolutely positioned and wouldn't
 // otherwise contribute to .cyl-scene's height at all.
-const cardHeights = ref<Record<number, number>>({});
+//
+// Capped at cardHCap (viewport-relative, like cardW): one disproportionately
+// tall face (e.g. a long settings list) would otherwise force every OTHER
+// face in the same deck to stretch to match it, leaving a huge dead blank
+// area under any short face — .cyl-card-body's own overflow-y:auto already
+// lets a face taller than the cap scroll internally, so nothing is lost.
+//
+// Keyed by item.key (not array index): props.items can grow/shrink (e.g.
+// uploaded-image faces), which shifts every subsequent item's index. Vue's
+// own `:key="item.key"` on the v-for below already keeps a DOM node bound to
+// the same item across such shifts, so reading data-cyl-key off the observed
+// element at callback time — instead of a positional index — stays correct
+// even if a resize entry lands after a reorder.
+const cardHeights = ref<Record<string, number>>({});
+const cardHCap = ref(900);
 const cardH = computed(() => {
   const heights = Object.values(cardHeights.value);
-  return heights.length > 0 ? Math.max(...heights) : 720;
+  const naturalMax = heights.length > 0 ? Math.max(...heights) : 720;
+  return Math.min(naturalMax, cardHCap.value);
 });
 
 let startX = 0;
+
+const isLocal = computed(() => props.modelValue !== undefined);
+
+const localDragPx = ref(0);
+const isLocalDragging = ref(false);
+const dragging = computed(() => (isLocal.value ? isLocalDragging.value : state.value.variant === 'dragging'));
+const dragPx = computed(() => (isLocal.value ? localDragPx.value : (state.value.variant === 'dragging' ? state.value.dragPx : 0)));
 
 function onDown(e: PointerEvent): void {
   // Never hijack the pointer when it lands on the live front card's content —
@@ -38,24 +68,50 @@ function onDown(e: PointerEvent): void {
   // starts on the card frame, side cards, or empty scene.
   const t = e.target as HTMLElement;
   if (t.closest('.cyl-card-body')) return;
-  send({ 'type': IridisUiActionType.DRAG_START }); startX = e.clientX;
+  if (isLocal.value) {
+    isLocalDragging.value = true;
+    localDragPx.value = 0;
+  } else {
+    send({ 'type': IridisUiActionType.DRAG_START });
+  }
+  startX = e.clientX;
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
 }
 function onMove(e: PointerEvent): void {
+  if (isLocal.value) {
+    if (!isLocalDragging.value) return;
+    localDragPx.value = e.clientX - startX;
+    return;
+  }
   if (state.value.variant !== 'dragging') return;
   send({ 'dragPx': e.clientX - startX, 'type': IridisUiActionType.DRAG_MOVE });
 }
 function onUp(): void {
   window.removeEventListener('pointermove', onMove);
   window.removeEventListener('pointerup', onUp);
+  if (isLocal.value) {
+    if (!isLocalDragging.value) return;
+    const step = cardW.value * 0.55;
+    const shiftedBy = Math.round(-localDragPx.value / step);
+    isLocalDragging.value = false;
+    localDragPx.value = 0;
+    if (shiftedBy !== 0) emit('update:modelValue', wrap(active.value + shiftedBy, n.value));
+    return;
+  }
   if (state.value.variant !== 'dragging') return;
   const step = cardW.value * 0.55;
   const shiftedBy = Math.round(-dragPx.value / step);
   send({ 'count': n.value, 'shiftedBy': shiftedBy, 'type': IridisUiActionType.DRAG_END });
 }
-function go(d: number): void { send({ 'count': n.value, 'delta': d, 'type': IridisUiActionType.NAVIGATE }); }
-function select(i: number): void { send({ 'index': i, 'type': IridisUiActionType.SELECT_CARD }); }
+function go(d: number): void {
+  if (isLocal.value) { emit('update:modelValue', wrap(active.value + d, n.value)); return; }
+  send({ 'count': n.value, 'delta': d, 'type': IridisUiActionType.NAVIGATE });
+}
+function select(i: number): void {
+  if (isLocal.value) { emit('update:modelValue', i); return; }
+  send({ 'index': i, 'type': IridisUiActionType.SELECT_CARD });
+}
 function isActive(i: number): boolean { return i === active.value; }
 
 /**
@@ -101,11 +157,26 @@ function cardStyle(): Record<string, string> {
   return { 'height': `${cardH.value}px` };
 }
 
-function measureWidth(): void {
+function measureViewport(): void {
   if (typeof window === 'undefined') return;
   cardW.value = Math.min(760, Math.round(window.innerWidth * 0.92));
+  cardHCap.value = Math.max(480, Math.round(window.innerHeight * 0.82));
 }
+// index.vue mounts one CylinderCarousel per stage, and every one that
+// scrolls near the viewport activates and registers its own keydown
+// listener — a bare, unscoped listener would make a single arrow-key press
+// advance every activated deck on the page at once. Scoping to "this
+// widget's own DOM subtree is hovered, or holds focus" keeps the listener on
+// window (so hovering without first clicking still works) while ensuring
+// only the ONE deck the user is actually attending to reacts.
+const rootRef = ref<HTMLElement | null>(null);
+let isHovered = false;
+function onPointerEnter(): void { isHovered = true; }
+function onPointerLeave(): void { isHovered = false; }
 function onKey(e: KeyboardEvent): void {
+  const root = rootRef.value;
+  if (!root) return;
+  if (!isHovered && !root.contains(document.activeElement)) return;
   if (e.key === 'ArrowRight') go(1);
   if (e.key === 'ArrowLeft') go(-1);
 }
@@ -115,67 +186,120 @@ function onKey(e: KeyboardEvent): void {
 // height to the shared max — switching to it never causes a late resize
 // jump, and a card whose own content grows post-mount (e.g. an expanding
 // accordion) updates the shared max even while it's in the background.
-// data-cyl-index on each card lets the observer attribute entries back to
-// their face index. Debounced like BalancedWrap's ResizeObserver convention.
+// data-cyl-key on each card lets the observer attribute entries back to
+// their face's item.key. Debounced like BalancedWrap's ResizeObserver
+// convention (see useDebouncedResizeObserver — entries are accumulated
+// across the debounce window, so a card that settles while another is still
+// resizing is never dropped).
 const sceneRef = ref<HTMLElement | null>(null);
-let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-let cardObserver: ResizeObserver | null = null;
+const cardResizeObserver = useDebouncedResizeObserver((entries) => {
+  const next = { ...cardHeights.value };
+  for (const entry of entries) {
+    const contentEl = entry.target as HTMLElement;
+    const cardEl = contentEl.closest<HTMLElement>('.cyl-card');
+    const key = cardEl?.dataset.cylKey;
+    if (!cardEl || key === undefined) continue;
+    next[key] = naturalCardHeight(cardEl);
+  }
+  cardHeights.value = next;
+}, 100);
 /**
- * A card's own getBoundingClientRect()/ResizeObserver size is NOT its true
- * natural content height once cardStyle() has applied an explicit height to
- * it — that would just report back whatever height we already imposed,
- * circularly. .cyl-card-body's scrollHeight always reflects its full content
- * height regardless of any height clamp/overflow applied to it or its
- * ancestors, so tag-bar height + body scrollHeight is the true unclamped
- * natural height of the card.
+ * cardStyle() pins every .cyl-card to an explicit height with overflow:
+ * hidden, so THAT element's own box never reflects true content growth — a
+ * ResizeObserver on it would only ever report back the height we already
+ * imposed. .cyl-card-body is likewise height-constrained (flex:1,
+ * min-height:0) to stay a scroll container. .cyl-card-content, the innermost
+ * wrapper around the slot, carries no imposed height or overflow clamp of
+ * its own, so its border-box (offsetHeight) always equals the slot content's
+ * true unclamped natural height — including post-mount growth (an expanding
+ * accordion, async image candidates, a resizing canvas) — regardless of how
+ * constrained its ancestors are.
  */
 function naturalCardHeight(cardEl: HTMLElement): number {
   const tag = cardEl.querySelector<HTMLElement>('.cyl-card-tag');
-  const body = cardEl.querySelector<HTMLElement>('.cyl-card-body');
-  return Math.round((tag?.offsetHeight ?? 0) + (body?.scrollHeight ?? 0));
+  const content = cardEl.querySelector<HTMLElement>('.cyl-card-content');
+  return Math.round((tag?.offsetHeight ?? 0) + (content?.offsetHeight ?? 0));
 }
+/**
+ * Rebuilds cardHeights from scratch (full replace, not merge) and
+ * re-observes exactly the current face set. Called on activation AND
+ * whenever props.items changes shape (see the watch below), so dynamically
+ * added faces (e.g. an uploaded image) get measured and observed, and
+ * removed faces' stale heights don't linger in the shared max. Disconnecting
+ * first drops the observer's references to any now-detached card content
+ * elements instead of holding them indefinitely.
+ */
 function observeAllCards(): void {
-  if (typeof ResizeObserver === 'undefined' || !sceneRef.value) return;
-  if (cardObserver) cardObserver.disconnect();
+  if (!sceneRef.value) return;
+  cardResizeObserver.disconnect();
   const cards = sceneRef.value.querySelectorAll<HTMLElement>('.cyl-card');
-  const heights: Record<number, number> = {};
+  const heights: Record<string, number> = {};
   cards.forEach((el) => {
-    const idx = Number(el.dataset.cylIndex);
-    heights[idx] = naturalCardHeight(el);
+    const key = el.dataset.cylKey;
+    if (key === undefined) return;
+    heights[key] = naturalCardHeight(el);
+    const content = el.querySelector<HTMLElement>('.cyl-card-content');
+    if (content) cardResizeObserver.observe(content);
   });
   cardHeights.value = heights;
-  cardObserver = new ResizeObserver((entries) => {
-    if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
-    resizeDebounceTimer = setTimeout(() => {
-      const next = { ...cardHeights.value };
-      for (const entry of entries) {
-        const bodyEl = entry.target as HTMLElement;
-        const cardEl = bodyEl.closest<HTMLElement>('.cyl-card');
-        if (!cardEl) continue;
-        const idx = Number(cardEl.dataset.cylIndex);
-        next[idx] = naturalCardHeight(cardEl);
-      }
-      cardHeights.value = next;
-    }, 100);
-  });
-  cards.forEach((el) => cardObserver!.observe(el));
 }
-onMounted(() => {
-  measureWidth();
+
+// The carousel is often below the fold (e.g. a second instance further down
+// the page) — deferring measureViewport/observeAllCards/listener registration
+// until it's actually near the viewport avoids doing 3D-transform layout work
+// for a deck the user may never scroll to.
+let activated = false;
+function activate(): void {
+  if (activated) return;
+  activated = true;
+  measureViewport();
   nextTick(() => observeAllCards());
-  window.addEventListener('resize', measureWidth);
+  window.addEventListener('resize', measureViewport);
   window.addEventListener('keydown', onKey);
+}
+// props.items grows/shrinks as faces are added or removed (e.g. uploaded
+// images) — re-run observeAllCards whenever the face set's keys change so
+// new faces get measured/observed and removed faces' heights are pruned.
+// Only wired up once the deck has activated; a pre-activation change is
+// picked up by activate()'s own initial observeAllCards() call.
+watch(
+  () => props.items.map((item) => item.key).join('|'),
+  () => { if (activated) nextTick(() => observeAllCards()); },
+  { flush: 'post' }
+);
+let visibilityObserver: IntersectionObserver | null = null;
+onMounted(() => {
+  if (typeof IntersectionObserver === 'undefined' || !sceneRef.value) {
+    activate();
+    return;
+  }
+  visibilityObserver = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) {
+      activate();
+      visibilityObserver?.disconnect();
+      visibilityObserver = null;
+    }
+  }, { rootMargin: '400px' });
+  visibilityObserver.observe(sceneRef.value);
 });
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', measureWidth);
+  window.removeEventListener('resize', measureViewport);
   window.removeEventListener('keydown', onKey);
-  if (cardObserver) cardObserver.disconnect();
-  if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer);
+  visibilityObserver?.disconnect();
+  cardResizeObserver.disconnect();
 });
 </script>
 
 <template>
-  <div class="cyl">
+  <div
+    ref="rootRef"
+    class="cyl"
+    tabindex="0"
+    role="group"
+    aria-roledescription="carousel"
+    @pointerenter="onPointerEnter"
+    @pointerleave="onPointerLeave"
+  >
     <div class="cyl-scene-wrap">
       <UButton
         icon="i-material-symbols-chevron-left-rounded"
@@ -204,18 +328,20 @@ onBeforeUnmount(() => {
             class="glass scanlines cyl-card"
             :class="{ float: !isActive(i) }"
             :style="{ '--glow': 'var(--ui-primary)', ...cardStyle() }"
-            :data-cyl-index="i"
+            :data-cyl-key="item.key"
           >
             <div class="cyl-card-tag font-display">
               <span class="cyl-dotlight" />
               <span class="cyl-card-tag-label">{{ item.label }}</span>
             </div>
             <div class="cyl-card-body">
-              <slot
-                :item="item"
-                :active="isActive(i)"
-                :index="i"
-              />
+              <div class="cyl-card-content">
+                <slot
+                  :item="item"
+                  :active="isActive(i)"
+                  :index="i"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -232,19 +358,25 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="cyl-controls">
-      <div class="cyl-dots">
-        <UButton
-          v-for="(item, i) in items"
-          :key="item.key"
-          :label="item.label"
-          :color="isActive(i) ? 'primary' : 'neutral'"
-          :variant="isActive(i) ? 'solid' : 'soft'"
-          size="xs"
-          class="cyl-dot font-display rounded-full"
-          :class="{ 'cyl-dot-active': isActive(i) }"
-          @click="select(i)"
-        />
-      </div>
+      <BalancedWrap
+        class="cyl-dots"
+        :items="[...items]"
+        :min-width="90"
+        :gap="6"
+      >
+        <template #default="{ item, index: i }">
+          <UButton
+            :label="item.label"
+            :color="isActive(i) ? 'primary' : 'neutral'"
+            :variant="isActive(i) ? 'solid' : 'soft'"
+            size="xs"
+            class="cyl-dot font-display flex-1 justify-center rounded-full"
+            :class="{ 'cyl-dot-active': isActive(i) }"
+            :aria-current="isActive(i) ? 'true' : undefined"
+            @click="select(i)"
+          />
+        </template>
+      </BalancedWrap>
     </div>
   </div>
 </template>
@@ -354,7 +486,16 @@ onBeforeUnmount(() => {
   flex: none; display: flex; align-items: center; justify-content: center;
   padding: 0.6rem 1rem;
   font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--ui-color-primary-400);
+  /* A raw palette shade (e.g. primary-400) is a decorative pick, never
+     contrast-checked against any background — it happens to read fine on the
+     dark glass card in dark framing but fails AA/AAA in light framing, where
+     the same shade sits on a near-white tinted surface. --ui-text-highlighted
+     is one of the engine's actual contrast-ENFORCED roles (text-strong vs
+     background, verified by enforce:contrast) — same as this card's own
+     93%-background glass surface — so it stays compliant in both framings.
+     The glow stays purely in the text-shadow, which doesn't touch fill
+     contrast. */
+  color: var(--ui-text-highlighted);
   border-bottom: 1px solid color-mix(in oklch, var(--glow) 22%, transparent);
   text-shadow: 0 0 12px color-mix(in oklch, var(--glow) 60%, transparent);
 }
@@ -366,14 +507,19 @@ onBeforeUnmount(() => {
 /* min-height:0 overrides the flex-item default (min-height:auto), which
    otherwise refuses to shrink below the content's own natural size even
    inside a shorter, uniformly-sized .cyl-card — without it, a face taller
-   than the shared max height silently overflows its box instead of being
-   clipped by .cyl-card's overflow:hidden. */
-.cyl-card-body { flex: 1 1 auto; min-height: 0; overflow: hidden; padding: 1rem 1.1rem; }
+   than the shared max height would overflow its box instead of scrolling
+   within it. Vertical overflow scrolls (never clips) so a face whose content
+   genuinely exceeds the deck's shared height stays fully reachable; horizontal
+   stays clipped since no card content is meant to scroll sideways. */
+.cyl-card-body { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; padding: 1rem 1.1rem; }
 .cyl-card-body :deep(.iridis-card) {
   background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important;
 }
-.cyl-controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
-.cyl-dots { display: flex; gap: 0.35rem; flex-wrap: wrap; justify-content: center; }
+.cyl-controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: center; width: 100%; }
+/* Row layout/gap/wrapping is BalancedWrap's own job (same component the top
+   ToC bar uses) — evenly-balanced rows instead of a naive wrap that stranded
+   a lone item on its own last row. */
+.cyl-dots { width: 100%; }
 .cyl-dot {
   font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase;
 }

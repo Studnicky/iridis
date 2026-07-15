@@ -21,6 +21,7 @@ const accordion = usePanelAccordion(props.panelId, { defaultOpen: props.defaultO
         role="button"
         tabindex="0"
         :aria-expanded="accordion.isOpen.value"
+        :aria-controls="`${panelId}-content`"
         :aria-label="`Toggle ${title} panel`"
         @click="accordion.toggle()"
         @keydown.enter="accordion.toggle()"
@@ -50,7 +51,10 @@ const accordion = usePanelAccordion(props.panelId, { defaultOpen: props.defaultO
       @update:open="accordion.toggle()"
     >
       <template #content>
-        <div class="mx-auto w-full max-w-4xl p-4 sm:p-6">
+        <div
+          :id="`${panelId}-content`"
+          class="mx-auto w-full max-w-4xl p-4 sm:p-6"
+        >
           <slot />
         </div>
       </template>

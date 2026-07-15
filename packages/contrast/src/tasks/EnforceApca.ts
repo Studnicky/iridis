@@ -50,7 +50,9 @@ class EnforceApca implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Enforce APCA (WCAG 3 draft) Lc targets: Lc 75 body text, Lc 60 fluent text, Lc 45 non-text UI.',
     'name':        'enforce:apca',
+    'phase':       undefined,
     'reads':       ['input.roles.contrastPairs', 'roles'],
+    'requires':    undefined,
     'writes':      ['roles', 'metadata[\'contrast:apca\']']
   };
 

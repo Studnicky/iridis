@@ -71,7 +71,9 @@ class IntakeAny implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Recommended default intake task. Dispatches each entry to the first matching format delegate. Throws if no delegate matches.',
     'name':        'intake:any',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

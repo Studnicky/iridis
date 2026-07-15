@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
-import { sortRoleRows } from '~/utils/roleSort.ts';
+import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 /**
  * The iridis-4 ⊂ 8 ⊂ 12 ⊂ 16 ⊂ 32 schema hierarchy as a tree: each tier node
@@ -15,7 +15,7 @@ import { sortRoleRows } from '~/utils/roleSort.ts';
 const TIER_ORDER = ['iridis-4', 'iridis-8', 'iridis-12', 'iridis-16', 'iridis-32'];
 const { roles, framing, schemaName, roleSortKeys, sortedRoleContrastRows } = useIridis();
 
-type LeafType = { 'derivedFrom'?: string; 'hex'?: string; 'label': string; 'value': string };
+type LeafType = { 'derivedFrom': string | undefined; 'hex': string | undefined; 'label': string; 'value': string };
 type TierType = { 'children': LeafType[]; 'defaultExpanded': boolean; 'label': string; 'value': string };
 
 /** Looks up each leaf's l/c/h/ratio/compliance from the SAME sortedRoleContrastRows every other role listing reads, instead of recomputing OKLCH from hex a second time for a value the engine already resolved. */
@@ -34,7 +34,12 @@ const tree = computed<TierType[]>(() => {
     });
     const leafRows = added.map((r) => {
       const row = byName.get(r.name);
-      const hex = roles.value[r.name] ?? '#888888';
+      // This tree shows every tier up to iridis-32 regardless of which schema
+      // is currently active, so a role belonging to a deeper tier than
+      // schemaName.value genuinely isn't resolved yet — fall back to the
+      // always-present, required 'background' role (a derived neutral) to
+      // signal "not currently active" rather than a hardcoded placeholder.
+      const hex = roles.value[r.name] ?? roles.value['background']!;
       return {
         'c': row?.c ?? 0, 'compliance': row?.compliance ?? 'fail', 'derivedFrom': r.derivedFrom, 'h': row?.h ?? 0, hex,
         'l': row?.l ?? 0, 'label': r.name, 'name': r.name, 'ratio': row?.ratio ?? 1, 'value': `${tierName}:${r.name}`
@@ -60,9 +65,9 @@ const tree = computed<TierType[]>(() => {
     <UTree :items="tree">
       <template #item-leading="{ item }">
         <span
-          v-if="(item as LeafType).hex"
+          v-if="(item as unknown as LeafType).hex"
           class="h-3 w-3 shrink-0 rounded-full border border-default"
-          :style="{ backgroundColor: (item as LeafType).hex }"
+          :style="{ backgroundColor: (item as unknown as LeafType).hex }"
         />
       </template>
       <template #item-label="{ item }">
@@ -70,11 +75,11 @@ const tree = computed<TierType[]>(() => {
           <span class="font-mono text-xs">{{ item.label }}</span>
           <UBadge
             v-if="'derivedFrom' in item"
-            :color="(item as LeafType).derivedFrom === undefined ? 'success' : 'neutral'"
+            :color="(item as unknown as LeafType).derivedFrom === undefined ? 'success' : 'neutral'"
             variant="soft"
             size="xs"
           >
-            {{ (item as LeafType).derivedFrom === undefined ? 'resolved' : `← ${(item as LeafType).derivedFrom}` }}
+            {{ (item as unknown as LeafType).derivedFrom === undefined ? 'resolved' : `← ${(item as unknown as LeafType).derivedFrom}` }}
           </UBadge>
         </span>
       </template>
@@ -83,7 +88,10 @@ const tree = computed<TierType[]>(() => {
     <p class="mt-3 text-xs text-muted">
       Each leaf above is one <code class="font-mono text-xs">RoleDefinitionInterface</code> entry — a named,
       intent-classified contract, not a raw color. See
-      <a href="#04-engine-api" class="text-primary hover:underline">Long-form Engine API</a> for what every field does.
+      <a
+        href="#04-engine-api"
+        class="text-primary hover:underline"
+      >Long-form Engine API</a> for what every field does.
     </p>
   </UCard>
 </template>

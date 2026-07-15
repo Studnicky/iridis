@@ -1,17 +1,10 @@
 import type { ColorRecordInterfaceType, ContrastAlgorithmType, RgbInterfaceType, SourceFormatType } from '../types/index.ts';
 
+import { apcaLc } from './ApcaLc.ts';
 import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
-
-const APCA_NORM_BG  = 0.56;
-const APCA_NORM_TXT = 0.57;
-const APCA_CLAMP    = 0.022;
-const APCA_CLAMP_P  = 1.414;
-const APCA_SCALE    = 1.14;
-const APCA_LOW_CLIP = 0.001;
-const APCA_OFFSET   = 0.027;
 
 /** sRGB-family source formats. When the original foreground was sourced from
  *  one of these, the adjusted record must remain sRGB (no displayP3 slot).   */
@@ -32,41 +25,6 @@ function wcagRatio(la: number, lb: number): number {
   const lighter = Math.max(la, lb);
   const darker  = Math.min(la, lb);
   return (lighter + 0.05) / (darker + 0.05);
-}
-
-/** APCA Lc foreground luminance (text exponent). */
-function apcaFg(r: number, g: number, b: number): number {
-  const lin = srgbToLinear.apply(r, g, b);
-  return 0.2126729 * Math.pow(lin.r, 0.56)
-       + 0.7151522 * Math.pow(lin.g, 0.56)
-       + 0.0721750 * Math.pow(lin.b, 0.56);
-}
-
-/** APCA Lc background luminance (background exponent). */
-function apcaBg(r: number, g: number, b: number): number {
-  const lin = srgbToLinear.apply(r, g, b);
-  return 0.2126729 * Math.pow(lin.r, 0.65)
-       + 0.7151522 * Math.pow(lin.g, 0.65)
-       + 0.0721750 * Math.pow(lin.b, 0.65);
-}
-
-/** APCA Lc absolute value between text and background, computed from
- *  the text's foreground-luminance and the precomputed background. */
-function apcaLcFromYtxt(Ytxt: number, Ybg: number): number {
-  const txtClamp = Ytxt < APCA_CLAMP ? Ytxt + Math.pow(APCA_CLAMP - Ytxt, APCA_CLAMP_P) : Ytxt;
-  const bgClamp  = Ybg  < APCA_CLAMP ? Ybg  + Math.pow(APCA_CLAMP - Ybg,  APCA_CLAMP_P) : Ybg;
-
-  let Lc = 0;
-  if (bgClamp > txtClamp) {
-    Lc = (Math.pow(bgClamp, APCA_NORM_BG) - Math.pow(txtClamp, APCA_NORM_TXT)) * APCA_SCALE;
-    if (Lc < APCA_LOW_CLIP) {return 0;}
-    Lc = Lc - APCA_OFFSET;
-  } else {
-    Lc = (Math.pow(bgClamp, 0.62) - Math.pow(txtClamp, 0.65)) * APCA_SCALE;
-    if (Lc > -APCA_LOW_CLIP) {return 0;}
-    Lc = Lc + APCA_OFFSET;
-  }
-  return Math.abs(Lc * 100);
 }
 
 class EnsureContrast {
@@ -97,13 +55,15 @@ class EnsureContrast {
     const bgRgb: RgbInterfaceType = background.rgb;
     const Ybg = algorithm === 'wcag21'
       ? rgbLuminance(bgRgb.r, bgRgb.g, bgRgb.b)
-      : apcaBg(bgRgb.r, bgRgb.g, bgRgb.b);
+      : apcaLc.luminance(bgRgb.r, bgRgb.g, bgRgb.b);
 
     // Compute initial foreground contrast from its existing rgb.
     const fgRgb: RgbInterfaceType = foreground.rgb;
+    // ensureContrast only needs Lc magnitude to compare against minRatio;
+    // apcaLc.apply()'s sign (polarity) is discarded via Math.abs().
     const initialContrast = algorithm === 'wcag21'
       ? wcagRatio(rgbLuminance(fgRgb.r, fgRgb.g, fgRgb.b), Ybg)
-      : apcaLcFromYtxt(apcaFg(fgRgb.r, fgRgb.g, fgRgb.b), Ybg);
+      : Math.abs(apcaLc.apply(apcaLc.luminance(fgRgb.r, fgRgb.g, fgRgb.b), Ybg));
 
     if (initialContrast >= minRatio) {
       return foreground;
@@ -116,7 +76,14 @@ class EnsureContrast {
     const fmt    = foreground.sourceFormat;
     const hints  = foreground.hints;
     const isSrgb = SRGB_FORMATS.has(fmt);
-    const step   = fgL < background.oklch.l ? -0.02 : 0.02;
+    // Contrast is monotonic only within a polarity branch: to gain contrast
+    // against a fixed background you move the foreground toward the LUMINANCE
+    // extreme farther from that background — darken toward black on a
+    // luminance-light bg, lighten toward white on a luminance-dark one. The
+    // decision keys off WCAG relative luminance, not OKLCH lightness: a
+    // saturated hue (e.g. violet) can read "light" in OKLCH L yet be
+    // luminance-dark, and contrast is a function of luminance, not L.
+    const step   = rgbLuminance(bgRgb.r, bgRgb.g, bgRgb.b) > 0.5 ? -0.02 : 0.02;
 
     let currentL = fgL;
     let lastL    = currentL;
@@ -128,7 +95,7 @@ class EnsureContrast {
 
       const ratio = algorithm === 'wcag21'
         ? wcagRatio(rgbLuminance(rgb.r, rgb.g, rgb.b), Ybg)
-        : apcaLcFromYtxt(apcaFg(rgb.r, rgb.g, rgb.b), Ybg);
+        : Math.abs(apcaLc.apply(apcaLc.luminance(rgb.r, rgb.g, rgb.b), Ybg));
 
       lastL   = newL;
       lastRgb = rgb;

@@ -5,8 +5,14 @@ const { title, value = 'learn-more' } = defineProps<{ title: string; value?: str
 </script>
 
 <template>
-  <AccordionRoot type="multiple" class="mt-4 w-full border-t border-default pt-1">
-    <AccordionItem :value="value" class="border-b border-default">
+  <AccordionRoot
+    type="multiple"
+    class="mt-4 w-full border-t border-default pt-1"
+  >
+    <AccordionItem
+      :value="value"
+      class="border-b border-default"
+    >
       <AccordionHeader>
         <AccordionTrigger class="flex w-full items-center gap-2 py-3 text-left hover:text-highlighted">
           <span class="font-medium text-sm">{{ title }}</span>

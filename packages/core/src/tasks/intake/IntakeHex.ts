@@ -25,6 +25,13 @@ class Hex {
       return `${r}${r}${g}${g}${b}${b}`;
     }
 
+    if (/^[0-9a-fA-F]{4}$/.test(cleaned)) {
+      const r = cleaned[0]!;
+      const g = cleaned[1]!;
+      const b = cleaned[2]!;
+      return `${r}${r}${g}${g}${b}${b}`;
+    }
+
     if (/^[0-9a-fA-F]{6}$/.test(cleaned)) {
       return cleaned;
     }
@@ -39,22 +46,24 @@ class Hex {
 
 /**
  * Intake task that walks `state.input.colors` and converts every entry
- * matching a hex pattern (`#rgb`, `#rrggbb`, `#rrggbbaa`, with or
- * without leading `#`) into a `ColorRecord`. Non-hex input throws so
+ * matching a hex pattern (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`, with
+ * or without leading `#`) into a `ColorRecord`. Non-hex input throws so
  * callers that explicitly select `intake:hex` get strict format
  * enforcement. Use `intake:any` for tolerant multi-format dispatch.
  *
- * 8-digit alpha is preserved on the resulting record's `alpha` field
- * while the canonical `hex` is always 6 digits, matching the iridis
- * convention that alpha lives in its own slot.
+ * 4- and 8-digit alpha is preserved on the resulting record's `alpha`
+ * field while the canonical `hex` is always 6 digits, matching the
+ * iridis convention that alpha lives in its own slot.
  */
 class IntakeHex implements TaskInterface {
   readonly 'name' = 'intake:hex';
 
   readonly 'manifest': TaskManifestInterfaceType = {
-    'description': 'Parses #RRGGBB, #RGB, and 8-digit hex strings into ColorRecord entries. Throws on non-hex input.',
+    'description': 'Parses #RRGGBB, #RGB, #RGBA, and #RRGGBBAA hex strings into ColorRecord entries. Throws on non-hex input.',
     'name':        'intake:hex',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 
@@ -80,7 +89,7 @@ class IntakeHex implements TaskInterface {
         'message': 'intake:hex — not a hex pattern',
         'path':    'raw',
         'violations': [{
-          'details': { 'expectedFormat': '#RGB, #RRGGBB, or #RRGGBBAA (with or without leading #)', 'received': trimmed },
+          'details': { 'expectedFormat': '#RGB, #RGBA, #RRGGBB, or #RRGGBBAA (with or without leading #)', 'received': trimmed },
           'message': 'value does not match hex pattern',
           'path':    'raw'
         }]
@@ -93,13 +102,19 @@ class IntakeHex implements TaskInterface {
         'path':    'raw',
         'violations': [{
           'details': { 'received': trimmed },
-          'message': 'value could not be normalised to a 3/6/8-digit hex string',
+          'message': 'value could not be normalised to a 3/4/6/8-digit hex string',
           'path':    'raw'
         }]
       });
     }
     const cleaned = trimmed.startsWith('#') ? trimmed.slice(1) : trimmed;
-    const alpha = cleaned.length === 8 ? parseInt(cleaned.slice(6, 8), 16) / 255 : 1;
+    let alpha = 1;
+    if (cleaned.length === 8) {
+      alpha = parseInt(cleaned.slice(6, 8), 16) / 255;
+    } else if (cleaned.length === 4) {
+      const a = cleaned[3]!;
+      alpha = parseInt(`${a}${a}`, 16) / 255;
+    }
     return colorRecordFactory.fromHex(`#${hex6}`, { 'alphaOverride': alpha });
   }
 
@@ -141,7 +156,7 @@ class IntakeHex implements TaskInterface {
           'path':    `input.colors[${i}]`,
           'violations': [{
             'details': {
-              'expectedFormat': '#RGB, #RRGGBB, or #RRGGBBAA (with or without leading #)',
+              'expectedFormat': '#RGB, #RGBA, #RRGGBB, or #RRGGBBAA (with or without leading #)',
               'index':          i,
               'received':       JSON.stringify(raw) ?? 'undefined'
             },

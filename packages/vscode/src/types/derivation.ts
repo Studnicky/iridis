@@ -6,9 +6,10 @@
  * `data/derivationParams.ts`.
  */
 
-import type { FromSchema } from 'json-schema-to-ts';
+import type { InferType } from '@studnicky/json-tology/types';
 
 export const DerivationParamsSchema = {
+  '$id': 'https://studnicky.dev/iridis-vscode/DerivationParams',
   'additionalProperties': false,
   'properties': {
     'hue':   { 'type': 'number' },
@@ -19,10 +20,10 @@ export const DerivationParamsSchema = {
 } as const;
 
 export type DerivationParamsInterfaceType = {
-  'hue'?: number;
-  'light'?: number;
-  'sat'?: number;
+  'hue': number | undefined;
+  'light': number | undefined;
+  'sat': number | undefined;
 };
 
 /** Schema-derived type for derivation parameters (validation shape). */
-export type DerivationParamsSchemaType = FromSchema<typeof DerivationParamsSchema>;
+export type DerivationParamsSchemaType = InferType<typeof DerivationParamsSchema>;

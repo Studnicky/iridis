@@ -22,9 +22,9 @@ type LabInput = {
 function isLabInput(v: unknown): v is LabInput {
   if (typeof v !== 'object' || v === null) {return false;}
   const o = v as Record<string, unknown>;
-  return typeof o.l === 'number'
-    && typeof o.a === 'number'
-    && typeof o.b === 'number'
+  return typeof o.l === 'number' && Number.isFinite(o.l)
+    && typeof o.a === 'number' && Number.isFinite(o.a)
+    && typeof o.b === 'number' && Number.isFinite(o.b)
     && typeof o.r !== 'number'
     && typeof o.s !== 'number'
     && typeof o.c !== 'number'
@@ -85,7 +85,9 @@ class IntakeLab implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses {l,a,b} CIE Lab D65 into ColorRecord entries. Throws on non-Lab input.',
     'name':        'intake:lab',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

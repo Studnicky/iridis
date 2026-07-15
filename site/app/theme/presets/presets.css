@@ -1,0 +1,17 @@
+/**
+ * Composition root's CSS half — every theme's own [data-iridis-theme]
+ * stylesheet, imported once. Add a theme by adding one @import line here
+ * alongside its entry in ./index.ts; nothing else changes.
+ */
+@import './futuristic.css';
+@import './dayAtWork.css';
+@import './startup.css';
+@import './formal.css';
+@import './backroads.css';
+@import './arcade.css';
+@import './hackerman.css';
+@import './girlypop.css';
+@import './romance.css';
+@import './streamer.css';
+@import './gallery.css';
+@import './restaurant.css';

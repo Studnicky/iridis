@@ -5,11 +5,19 @@ Turtle, TriG, N-Quads, or JSON-LD. The reasoning graph carries the truth: hex,
 sRGB channels, OKLCH coordinates, contrast ratios, and (when the source
 record is wide-gamut) Display-P3 channels alongside the sRGB ones.
 
-The vocabulary lives at `colorologyVocab` (`packages/rdf/src/data/colorologyVocab.ts`)
-under `https://studnicky.dev/colorology/`. Each `ColorRecord` becomes a
-`colorology:Color` resource with `colorology:hex`, `colorology:r/g/b`, and
-`colorology:oklch` predicates. When `record.displayP3` is populated the same
-subject also carries `colorology:displayP3R/G/B` triples (xsd:decimal, 4dp).
+The vocabulary lives at `iridisVocab` (`packages/rdf/src/data/iridisVocab.ts`)
+under `https://studnicky.dev/iridis#`. Each `ColorRecord` becomes an
+`iridis:Color` resource with `iridis:hex`, `iridis:rgbR/G/B`, and
+`iridis:oklchL/C/H` predicates. When `record.displayP3` is populated the same
+subject also carries `iridis:displayP3R/G/B` triples (xsd:decimal, 4dp).
+
+Roles carry their actual resolution, not just their final color: `iridis:derivedFrom`
+(this role's color is a hue-rotated offset of another role's, per ExpandFamily),
+`iridis:pinned` / `iridis:synthesized` (booleans reflecting this run's own
+resolution metadata), `iridis:intent` (the schema's canonical ontology hook),
+`iridis:lightnessRangeMin/Max`, `iridis:chromaRangeMin/Max`, `iridis:hueClamp`
+(the schema's declared bounds), and `iridis:clampedFrom` (the seed color this
+run actually nudged into range, when one was).
 
 ## Install
 
@@ -53,7 +61,7 @@ const serialized = state.outputs['rdf:serialized']!;
 
 | Name | Output slot | Notes |
 |---|---|---|
-| `reason:annotate` | `outputs['rdf:reasoningGraph']` | Builds the n3 `Store`: emits `Color`, `Role`, `Palette`, `ContrastPair` resources plus per-record `displayP3R/G/B` literals when populated. |
+| `reason:annotate` | `outputs['rdf:reasoningGraph']` | Builds the n3 `Store`: emits `Role`/`Color` resources plus per-role `derivedFrom`/`pinned`/`synthesized`/`intent`/range-clamp triples, per-pair `wcag21Ratio`, and per-record `displayP3R/G/B` literals when populated. |
 | `reason:serialize` | `outputs['rdf:serialized']` | Renders the graph to the requested format. Reads `metadata['rdf:format']`; accepts `Turtle` (default), `TriG`, `N-Quads`, or `application/ld+json`. |
 
 JSON-LD output is consumed directly by `@context`-aware tooling; Turtle / TriG /

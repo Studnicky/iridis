@@ -1,15 +1,4 @@
-export interface ValueBindingOptionsInterfaceType {
-  /** Input value mapping to `t === 0`. */
-  min: number;
-  /** Input value mapping to `t === 1`. */
-  max: number;
-  /**
-   * Whether out-of-range input clamps to [0, 1]. Defaults to `true`. When
-   * `false`, `mapToT` extrapolates linearly and the result can fall outside
-   * [0, 1].
-   */
-  clamp?: boolean;
-}
+import type { ValueBindingOptionsInterfaceType } from './types/index.ts';
 
 /**
  * Maps a raw scalar (scroll position, gesture delta, sensor reading) into

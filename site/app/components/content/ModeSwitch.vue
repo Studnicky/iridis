@@ -16,8 +16,12 @@ const tabItems = [
   { label: 'Extract from image', icon: 'i-material-symbols-image-outline-rounded', value: '1' }
 ];
 
+// Returns a STRING to match tabItems' string `value`s — Reka's TabsTrigger
+// selects on strict equality against TabsRoot's modelValue, so a numeric
+// getter here (`'0' === 0` is false) would leave every trigger permanently
+// unselected and the [data-state='active'] CSS would never apply.
 const activeTab = computed({
-  get: () => mode.value === 'picker' ? 0 : 1,
+  get: () => mode.value === 'picker' ? '0' : '1',
   set: (val: number | string) => {
     mode.value = Number(val) === 0 ? 'picker' : 'image';
   }

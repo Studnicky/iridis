@@ -14,15 +14,15 @@ import type {
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 type OklchInput = OklchInterfaceType & {
-  'a'?: number;
+  'a': number | undefined;
 };
 
 function isOklchInput(v: unknown): v is OklchInput {
   if (typeof v !== 'object' || v === null) {return false;}
   const o = v as Record<string, unknown>;
-  return typeof o.l === 'number'
-    && typeof o.c === 'number'
-    && typeof o.h === 'number'
+  return typeof o.l === 'number' && Number.isFinite(o.l)
+    && typeof o.c === 'number' && Number.isFinite(o.c)
+    && typeof o.h === 'number' && Number.isFinite(o.h)
     && typeof o.r !== 'number'
     && typeof o.s !== 'number';
 }
@@ -41,7 +41,9 @@ class IntakeOklch implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Parses {l,c,h,a?} OKLCH (l: 0..1, c: 0..0.5, h: 0..360) into ColorRecord entries. Throws on non-OKLCH input.',
     'name':        'intake:oklch',
+    'phase':       undefined,
     'reads':       ['input.colors'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

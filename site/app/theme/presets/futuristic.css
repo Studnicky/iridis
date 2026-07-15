@@ -1,0 +1,17 @@
+[data-iridis-theme='futuristic'] {
+  --font-display: "Orbitron", "Space Grotesk", sans-serif;
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --ui-radius: 0.5rem;
+  --iridis-radius-sm: 0.25rem;
+  --iridis-radius-md: 0.5rem;
+  --iridis-radius-lg: 1rem;
+  --iridis-border-style: solid;
+  /* Tone: the reference/default intensity every other theme's saturate/
+     contrast/glow-strength is calibrated relative to — explicit here (not
+     just relying on the shared 1/1/1 fallback) so this theme is a
+     structurally complete adapter like all 11 others, not a special case. */
+  --iridis-ambient-saturate: 1;
+  --iridis-ambient-contrast: 1;
+  --iridis-glow-strength: 1;
+}

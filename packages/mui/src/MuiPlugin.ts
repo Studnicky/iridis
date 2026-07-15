@@ -26,7 +26,8 @@ export class MuiPlugin implements PluginInterface {
 
   schemas(): PluginSchemaContributionInterface {
     return {
-      'outputs': { 'mui:theme': muiOutputSchema }
+      'metadata': undefined,
+      'outputs':  { 'mui:theme': muiOutputSchema }
     };
   }
 }

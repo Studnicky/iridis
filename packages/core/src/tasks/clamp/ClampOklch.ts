@@ -54,7 +54,9 @@ class ClampOklch implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Clamps each color OKLCH L and C into role-defined ranges (or sensible defaults). Preserves hue.',
     'name':        'clamp:oklch',
+    'phase':       undefined,
     'reads':       ['colors', 'input.roles'],
+    'requires':    undefined,
     'writes':      ['colors']
   };
 

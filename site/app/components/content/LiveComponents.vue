@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
-import { ALIAS_COLOR_NAMES, type AliasColorType } from '~/theme/Tokens.ts';
+import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
+import type { AliasColorType } from '~/theme/types/aliasColor.ts';
+import { capitalize } from '~/utils/capitalize.ts';
+import { complianceBadgeColor } from '~/utils/complianceBadgeColor.ts';
 
 /**
  * Live Nuxt UI component surface, themed by the engine's --ui-* tokens — and
@@ -24,7 +27,7 @@ function fireToast(color: ColorType): void {
     'color':       color,
     'description': `A live UToast in the ${color} color — engine-themed, not a mockup.`,
     'icon':        'i-material-symbols-notifications-rounded',
-    'title':       `${color[0]!.toUpperCase()}${color.slice(1)} toast`
+    'title':       `${capitalize(color)} toast`
   });
 }
 
@@ -81,7 +84,11 @@ const breadcrumbItems = [
       <div class="mb-2 text-xs font-medium uppercase tracking-wide text-dimmed">
         Click to fire a real UToast
       </div>
-      <BalancedWrap :items="[...COLORS]" :min-width="80" :gap="8">
+      <BalancedWrap
+        :items="[...COLORS]"
+        :min-width="80"
+        :gap="8"
+      >
         <template #default="{ item: c }">
           <UButton
             :color="c"
@@ -185,10 +192,16 @@ const breadcrumbItems = [
       <div class="mb-2 text-xs font-medium uppercase tracking-wide text-dimmed">
         UTable — top of the current sort ({{ tableRows.length }} of {{ sortedRoleContrastRows.length }} roles)
       </div>
-      <UTable :data="tableRows" :columns="tableColumns">
+      <UTable
+        :data="tableRows"
+        :columns="tableColumns"
+      >
         <template #hex-cell="{ row }">
           <span class="inline-flex items-center gap-1.5 font-mono text-xs">
-            <span class="h-3 w-3 rounded-full border border-default" :style="{ backgroundColor: row.original.hex }" />
+            <span
+              class="h-3 w-3 rounded-full border border-default"
+              :style="{ backgroundColor: row.original.hex }"
+            />
             {{ row.original.hex }}
           </span>
         </template>
@@ -199,7 +212,7 @@ const breadcrumbItems = [
           <UBadge
             size="xs"
             variant="soft"
-            :color="row.original.compliance === 'AAA' ? 'success' : row.original.compliance === 'AA' ? 'primary' : 'neutral'"
+            :color="complianceBadgeColor(row.original.compliance)"
           >
             {{ row.original.compliance }}
           </UBadge>
@@ -213,17 +226,33 @@ const breadcrumbItems = [
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <UDropdownMenu :items="[[{ 'label': 'Duplicate' }, { 'label': 'Rename' }], [{ 'label': 'Delete', 'color': 'error' }]]">
-          <UButton variant="soft" size="xs" trailing-icon="i-material-symbols-keyboard-arrow-down-rounded">
+          <UButton
+            variant="soft"
+            size="xs"
+            trailing-icon="i-material-symbols-keyboard-arrow-down-rounded"
+          >
             Actions
           </UButton>
         </UDropdownMenu>
         <UTooltip text="Real tooltip, engine-themed border/background">
-          <UButton variant="outline" size="xs">Hover me</UButton>
+          <UButton
+            variant="outline"
+            size="xs"
+          >
+            Hover me
+          </UButton>
         </UTooltip>
         <UPopover>
-          <UButton variant="ghost" size="xs">Popover</UButton>
+          <UButton
+            variant="ghost"
+            size="xs"
+          >
+            Popover
+          </UButton>
           <template #content>
-            <p class="p-2 text-xs text-muted">Live popover content.</p>
+            <p class="p-2 text-xs text-muted">
+              Live popover content.
+            </p>
           </template>
         </UPopover>
         <UKbd>⌘</UKbd>

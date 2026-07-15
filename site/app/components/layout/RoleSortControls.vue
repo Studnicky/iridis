@@ -3,8 +3,9 @@ import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { ROLE_SORT_FIELD_OPTIONS, roleSortFieldLabel } from '~/utils/roleSort.ts';
-import type { RoleSortField } from '~/utils/roleSort.ts';
+import { ROLE_SORT_FIELD_OPTIONS } from '~/utils/roleSortFieldOptions.ts';
+import { roleSortFieldLabel } from '~/utils/roleSortFieldLabel.ts';
+import type { RoleSortFieldType } from '~/composables/types/roleSortField.ts';
 
 /**
  * Shared multi-key sort control — every role listing (Roles table, Resolved
@@ -17,7 +18,7 @@ const { roleSortKeys } = useIridis();
 const { send } = useIridisUiMachine();
 
 const addableOptions = computed(() => ROLE_SORT_FIELD_OPTIONS.filter((o) => !roleSortKeys.value.some((k) => k.field === o.value)));
-const newField = ref<RoleSortField | undefined>(undefined);
+const newField = ref<RoleSortFieldType | undefined>(undefined);
 
 function addKey(): void {
   if (newField.value === undefined) return;
@@ -53,6 +54,7 @@ function toggleKeyDesc(index: number): void {
         type="button"
         class="flex items-center"
         :aria-label="`Toggle ${roleSortFieldLabel(key.field)} sort direction`"
+        :aria-pressed="key.desc"
         @click="toggleKeyDesc(index)"
       >
         <UIcon :name="key.desc ? 'i-material-symbols-arrow-downward-rounded' : 'i-material-symbols-arrow-upward-rounded'" />

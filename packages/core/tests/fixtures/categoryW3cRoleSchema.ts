@@ -10,6 +10,11 @@ export const categoryW3cRoleSchema: RoleSchemaInterfaceType = {
       'intent':         'background',
       'required':       true,
       'lightnessRange': [0.92, 1.0],
+      'chromaRange': undefined,
+      'derivedFrom': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined
     },
     {
       'name':           'surface',
@@ -17,12 +22,23 @@ export const categoryW3cRoleSchema: RoleSchemaInterfaceType = {
       'intent':         'background',
       'required':       true,
       'lightnessRange': [0.86, 0.96],
+      'chromaRange': undefined,
+      'derivedFrom': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined
     },
     {
       'name':           'accent',
       'description':    'Primary interactive / brand colour',
       'intent':         'accent',
       'required':       true,
+      'chromaRange': undefined,
+      'derivedFrom': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined,
+      'lightnessRange': undefined
     },
     {
       'name':           'onAccent',
@@ -31,18 +47,34 @@ export const categoryW3cRoleSchema: RoleSchemaInterfaceType = {
       'required':       true,
       'derivedFrom':    'accent',
       'lightnessRange': [0.98, 1.0],
+      'chromaRange': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined
     },
     {
       'name':           'border',
       'description':    'Dividers and focus rings',
       'intent':         'muted',
       'lightnessRange': [0.60, 0.80],
+      'chromaRange': undefined,
+      'derivedFrom': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined,
+      'required': undefined
     },
     {
       'name':           'muted',
       'description':    'Secondary / de-emphasised text',
       'intent':         'muted',
       'lightnessRange': [0.45, 0.65],
+      'chromaRange': undefined,
+      'derivedFrom': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined,
+      'required': undefined
     },
     {
       'name':           'text',
@@ -50,6 +82,11 @@ export const categoryW3cRoleSchema: RoleSchemaInterfaceType = {
       'intent':         'text',
       'required':       true,
       'lightnessRange': [0.10, 0.25],
+      'chromaRange': undefined,
+      'derivedFrom': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined
     },
   ],
   'contrastPairs': [

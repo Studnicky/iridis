@@ -25,7 +25,7 @@ import type { ColorRecordInterfaceType } from '@studnicky/iridis';
 
 function hex(code: string, weight?: number): ColorRecordInterfaceType {
   return colorRecordFactory.fromHex(code, {
-    'hints': weight !== undefined ? { 'weight': weight } : undefined,
+    'hints': weight !== undefined ? { 'weight': weight, 'intent': undefined, 'role': undefined } : undefined,
     'sourceFormat': 'hex',
   });
 }
@@ -240,8 +240,8 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
     kind: 'edge',
     input: {
       colors: [
-        colorRecordFactory.fromRgb(0.2, 0.2, 0.2, { 'hints': { 'weight': 5 }, 'sourceFormat': 'rgb' }),
-        colorRecordFactory.fromRgb(0.3, 0.3, 0.3, { 'hints': { 'weight': 5 }, 'sourceFormat': 'rgb' }),
+        colorRecordFactory.fromRgb(0.2, 0.2, 0.2, { 'hints': { 'weight': 5, 'intent': undefined, 'role': undefined }, 'sourceFormat': 'rgb' }),
+        colorRecordFactory.fromRgb(0.3, 0.3, 0.3, { 'hints': { 'weight': 5, 'intent': undefined, 'role': undefined }, 'sourceFormat': 'rgb' }),
       ],
       k: 1,
     },

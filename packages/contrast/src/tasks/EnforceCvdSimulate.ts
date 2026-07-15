@@ -165,7 +165,7 @@ function scoreCandidate(
     }
   }
 
-  return { allClear, c, l, rgb, trichromatContrast, 'worstSim': worstSim };
+  return { 'allClear': allClear, 'c': c, 'l': l, 'rgb': rgb, 'trichromatContrast': trichromatContrast, 'worstSim': worstSim };
 }
 
 /**
@@ -263,7 +263,9 @@ class EnforceCvdSimulate implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'CVD simulation against published thresholds: protanopia, deuteranopia, tritanopia, achromatopsia. Advisory by default; when input.contrast.cvdCorrect is true, also auto-corrects failing pairs and writes roles.',
     'name':        'enforce:cvdSimulate',
+    'phase':       undefined,
     'reads':       ['input.roles.contrastPairs', 'input.contrast.cvdCorrect', 'roles'],
+    'requires':    undefined,
     'writes':      ['roles', 'metadata[\'contrast:cvd\']']
   };
 
@@ -287,7 +289,8 @@ class EnforceCvdSimulate implements TaskInterface {
 
       const originalContrast = contrastWcag21.apply(fgRecord, bgRecord);
       const evals = evaluateCvd(fgRecord.rgb, bgRecord.rgb, originalContrast);
-      const failing = evals.filter((e) => {return e.fail;});
+      const failing = evals.filter((e) => {const result = e.fail;
+        return result;});
 
       if (!cvdCorrect || failing.length === 0) {
         // Default path (or nothing to fix): identical to advisory-only behavior.
@@ -299,12 +302,14 @@ class EnforceCvdSimulate implements TaskInterface {
 
       // Correction is active for this pair. `originalContrast` doubles as
       // the trichromat baseline correction must never regress below.
-      const failingMatrices = cvdMatrices.filter((cvd) => {return failing.some((e) => {return e.cvdType === cvd.name;});});
+      const failingMatrices = cvdMatrices.filter((cvd) => {const result = failing.some((e) => {return e.cvdType === cvd.name;});
+        return result;});
       const correctedFg = correctForeground(fgRecord, bgRecord, failingMatrices, originalContrast);
 
       const finalOriginalContrast = contrastWcag21.apply(correctedFg, bgRecord);
       const finalEvals = evaluateCvd(correctedFg.rgb, bgRecord.rgb, finalOriginalContrast);
-      const finalFailing = finalEvals.filter((e) => {return e.fail;});
+      const finalFailing = finalEvals.filter((e) => {const result = e.fail;
+        return result;});
 
       for (const e of finalFailing) {
         warnings.push(pushWarning(pair.foreground, pair.background, e, ctx));
@@ -320,7 +325,8 @@ class EnforceCvdSimulate implements TaskInterface {
             .context({
               'background':          pair.background,
               'foreground':          pair.foreground,
-              'remainingCvdTypes':   finalFailing.map((e) => {return e.cvdType;})
+              'remainingCvdTypes':   finalFailing.map((e) => {const result = e.cvdType;
+                return result;})
             })
             .build()
         );
@@ -329,8 +335,10 @@ class EnforceCvdSimulate implements TaskInterface {
       state.roles[pair.foreground] = correctedFg;
 
       if (correctedFg.hex !== fgRecord.hex) {
-        const failingNames = failing.map((e) => {return e.cvdType;});
-        const remainingNames = finalFailing.map((e) => {return e.cvdType;});
+        const failingNames = failing.map((e) => {const result = e.cvdType;
+          return result;});
+        const remainingNames = finalFailing.map((e) => {const result = e.cvdType;
+          return result;});
         corrections.push({
           'background':        pair.background,
           'cvdTypesFixed':     failingNames.filter((name) => {return !remainingNames.includes(name);}),

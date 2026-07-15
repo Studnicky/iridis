@@ -30,7 +30,9 @@ class EmitCapacitorSplashScreen implements TaskInterface {
   readonly 'manifest': TaskManifestInterfaceType = {
     'description': 'Emit Capacitor splash screen configuration from surface or input-specified splashRole.',
     'name':        'emit:capacitorSplashScreen',
+    'phase':       undefined,
     'reads':       ['roles', 'metadata.capacitor.splashRole', 'metadata.capacitor.androidSplashResourceName'],
+    'requires':    undefined,
     'writes':      ['outputs.capacitor:splashScreen']
   };
 
@@ -63,7 +65,8 @@ class EmitCapacitorSplashScreen implements TaskInterface {
         'backgroundColor':           splashColor.hex
       }
       : {
-        'backgroundColor': splashColor.hex
+        'androidSplashResourceName': undefined,
+        'backgroundColor':           splashColor.hex
       };
 
     state.outputs['capacitor:splashScreen'] = output;

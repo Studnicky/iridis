@@ -16,105 +16,168 @@
 import type { DerivationParamsInterfaceType } from '../types/index.ts';
 
 const DERIVATION_PARAMS: Readonly<Record<string, DerivationParamsInterfaceType>> = {
+  // From palette.constant: pass-through (true/false/null read as language constants)
+  'boolean': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
   // Slightly brighter, concrete
   'class': {
+    'hue': undefined,
     'light': 5,
     'sat': 5
   },
-  // From palette.constant: pass-through (true/false/null read as language constants)
-  'boolean': {},
-  // From palette.property derivation: JSON object keys read like property names
-  'jsonKey': {
-    'light': -5,
-    'sat': -5
-  },
   // From palette.comment: pass-through
-  'comment': {},
+  'comment': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
+  // From palette.constant: pass-through
+  'constant': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
   // Meta, annotation feel
   'decorator': {
     'hue': -35,
+    'light': undefined,
     'sat': 10
   },
   // Distinct from class
   'enum': {
     'hue': -25,
+    'light': undefined,
     'sat': 5
   },
   // From palette.constant: pass-through
-  'constant':   {},
-  // From palette.constant: pass-through
-  'enumMember': {},
+  'enumMember': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
   // Reactive, callback feel
   'event': {
     'hue': 25,
+    'light': undefined,
     'sat': 8
   },
   // Base color: pass-through
-  'function': {},
+  'function': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
   // Shifted, abstract feel
   'interface': {
     'hue': 20,
+    'light': undefined,
     'sat': -8
   },
+  // From palette.property derivation: JSON object keys read like property names
+  'jsonKey': {
+    'hue': undefined,
+    'light': -5,
+    'sat': -5
+  },
   // Base color: pass-through
-  'keyword': {},
+  'keyword': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
   // Warmer, stands out in goto/break
   'label': {
     'hue': 15,
-    'light': 5
+    'light': 5,
+    'sat': undefined
   },
   // Slightly cooler, preprocessor feel
   'macro': {
     'hue': -20,
+    'light': undefined,
     'sat': 5
   },
   // Slightly brighter, OOP context
   'method': {
+    'hue': undefined,
     'light': 8,
     'sat': 5
   },
   // Muted, organizational
   'namespace': {
+    'hue': undefined,
     'light': -5,
     'sat': -20
   },
   // From palette.number: pass-through
-  'number': {},
+  'number': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
   // Derived from muted/foreground mix; handled in task
-  'operator': {},
+  'operator': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
   // Input, argument feel
   'parameter': {
     'hue': 12,
-    'light': 3
+    'light': 3,
+    'sat': undefined
   },
   // Member access, slightly muted
   'property': {
+    'hue': undefined,
     'light': -5,
     'sat': -5
   },
   // From palette.muted: pass-through (braces, colons, commas read as chrome, not content)
-  'punctuation': {},
+  'punctuation': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
   // Distinct pattern feel
   'regexp': {
     'hue': -45,
+    'light': undefined,
     'sat': 15
   },
   // Base color: pass-through
-  'string': {},
+  'string': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
   // Cooler, low-level feel
   'struct': {
     'hue': -10,
-    'light': -3
+    'light': -3,
+    'sat': undefined
   },
   // Base color: pass-through
-  'type': {},
+  'type': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  },
   // Generic, abstract
   'typeParameter': {
     'hue': 35,
+    'light': undefined,
     'sat': -5
   },
   // Base color: pass-through
-  'variable': {}
+  'variable': {
+    'hue': undefined,
+    'light': undefined,
+    'sat': undefined
+  }
 } as const;
 
 /**
