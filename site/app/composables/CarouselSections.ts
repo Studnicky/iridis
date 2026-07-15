@@ -59,6 +59,7 @@ export const STAGE_GROUPS: ReadonlyArray<StageGroupType> = [
       { 'key': 'palette', 'label': 'Palette' },
       { 'key': 'cvd', 'label': 'CVD vision' },
       { 'key': 'schemaCompliance', 'label': 'Schema & Compliance' },
+      { 'key': 'derivationRelations', 'label': 'Derivation Relations' },
     ],
     'label': 'Refine', 'name': 'refine',
   },

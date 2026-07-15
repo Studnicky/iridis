@@ -3,12 +3,16 @@
  * The resolved palette as a graph: one node per role, in that role's own
  * engine-resolved color — never a decorative category color — with edges
  * for `derivedFrom` (ExpandFamily hue-rotation lineage) relations, plus a
- * hub-to-hub ring so every node is reachable (no isolated clusters). This is
- * `engine.run()`'s own role graph, live and force-simulated (link spring,
- * repulsion, gravity, collision), matching the iridis-N schema currently
- * active, the same D-pad/legend pattern Dagonizer's graph-visualizer uses
- * (leadography's own graph stage follows the same convention, ported from
- * the same lineage).
+ * hub-to-hub ring so every node is reachable (no isolated clusters). Each
+ * derived role's label names the hue algorithm (monochromatic/analogous/
+ * triadic/.../freeform) that relation is actually configured with — set per
+ * relation on the Derivation Relations card (Refine stage), not a decorative
+ * label; it's `derive:roleRelations`'s own resolved config for that edge.
+ * This is `engine.run()`'s own role graph, live and force-simulated (link
+ * spring, repulsion, gravity, collision), matching the iridis-N schema
+ * currently active, the same D-pad/legend pattern Dagonizer's graph-
+ * visualizer uses (leadography's own graph stage follows the same
+ * convention, ported from the same lineage).
  *
  * Lazy-loaded: `@cosmos.gl/graph` ships a WebGL2 shader pipeline; dynamic-
  * import on mount keeps it out of the main bundle for visitors who never
@@ -85,7 +89,7 @@ const fitZoomLevel = ref<number | null>(null);
 const fullscreen = ref(false);
 
 const graph = shallowRef<GraphHandle | null>(null);
-interface PointMeta { readonly name: string; readonly hex: string; readonly clamped: boolean; readonly category: ResolutionCategory }
+interface PointMeta { readonly name: string; readonly hex: string; readonly clamped: boolean; readonly category: ResolutionCategory; readonly algorithm: string | null }
 let labelMeta: PointMeta[] = [];
 let labelRaf: number | null = null;
 let resizeObserver: ResizeObserver | null = null;
@@ -388,7 +392,8 @@ function paintLabels(): void {
     } catch { continue; }
     if (sx < 0 || sy < 0 || sx > w || sy > h) continue;
 
-    const text = meta.clamped ? `${meta.name} ⏚` : meta.name;
+    const label = meta.algorithm !== null ? `${meta.name} · ${meta.algorithm}` : meta.name;
+    const text = meta.clamped ? `${label} ⏚` : label;
     const textW = ctx.measureText(text).width;
     const pillW = textW + PAD_X * 2;
     const pillH = 13 + PAD_Y * 2;
@@ -484,7 +489,7 @@ function buildBuffers(roles: readonly RoleMathEntry[], visible: Readonly<Record<
   roles.forEach((role, i) => {
     indexByName.set(role.name, i);
     const category = categoryOf(role);
-    meta.push({ 'name': role.name, 'hex': role.hex, 'clamped': role.clamp !== null, 'category': category });
+    meta.push({ 'name': role.name, 'hex': role.hex, 'clamped': role.clamp !== null, 'category': category, 'algorithm': role.algorithmInfo?.hueAlgorithm ?? null });
     const [x, y] = positionByName.get(role.name)!;
     positions.push(x, y);
     const [r, g, b] = rgbOf(role.hex);

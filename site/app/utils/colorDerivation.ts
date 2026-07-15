@@ -1,6 +1,4 @@
-import type { HueAlgorithm, RoleDerivation, RoleType, VariationAlgorithm } from '../composables/types/colorDerivation.ts';
-
-import { colorRecordFactory } from '@studnicky/iridis';
+import type { HueAlgorithm, RoleRelationDerivation, VariationAlgorithm } from '../composables/types/colorDerivation.ts';
 
 import { lerpSteps } from './lerpSteps.ts';
 
@@ -132,34 +130,35 @@ export function applyVariationAlgorithms(
   return working;
 }
 
-// --- Hex to hue conversion ---
+// --- Per-relation resolution (parent→child derivedFrom edges) ---
 
-function hexToHue(hex: string): number {
-  const record = colorRecordFactory.fromHex(hex);
-  return record.oklch.h ?? 0;
+/**
+ * Every relation this codebase resolves goes through this function, whether
+ * or not the user has customized it — so there is exactly one path from
+ * picker to pipeline, never a second, silent fallback that can drift out of
+ * sync with what the UI shows. An unset relation defaults to 'freeform'
+ * seeded with the schema's own hueOffset, reproducing today's fixed output
+ * exactly until the user changes it.
+ */
+export function effectiveRelation(
+  schemaHueOffset: number | undefined,
+  relation: RoleRelationDerivation | undefined
+): RoleRelationDerivation {
+  if (relation !== undefined) {return relation;}
+  return { 'freeformOffset': schemaHueOffset ?? 0, 'hueAlgorithm': 'freeform', 'hueVariantIndex': 0 };
 }
 
-// --- Main composition ---
+/** The relative hue offset (in degrees, from the parent role's own hue) a resolved relation produces. */
+export function resolveHueOffset(relation: RoleRelationDerivation): number {
+  if (relation.hueAlgorithm === 'freeform') {return relation.freeformOffset ?? 0;}
+  const offsets = selectHueAlgorithm(relation.hueAlgorithm, 0);
+  const index = ((relation.hueVariantIndex % offsets.length) + offsets.length) % offsets.length;
+  return offsets[index] ?? 0;
+}
 
-export function deriveColors(
-  baseHues: string[],
-  roleDerivations: Record<RoleType, RoleDerivation>,
-  count: number
-): Record<RoleType, HueVariation[]> {
-  const result = {} as Record<RoleType, HueVariation[]>;
-  const roles: RoleType[] = ['primary', 'success', 'warning', 'error', 'info', 'neutral', 'accent'];
-
-  for (let i = 0; i < roles.length && i < baseHues.length; i += 1) {
-    const role = roles[i]!;
-    const baseHex = baseHues[i]!;
-    const hue = hexToHue(baseHex);
-
-    const roleConfig = roleDerivations[role];
-    if (!roleConfig) {continue;}
-
-    const derivedHues = selectHueAlgorithm(roleConfig.hueAlgorithm, hue, roleConfig.freeformOffsets);
-    result[role] = applyVariationAlgorithms(derivedHues, roleConfig.variationAlgorithms, count);
-  }
-
-  return result;
+/** Human-readable label for one of an algorithm's candidate hue slots, e.g. "Base (0°)" / "+30°" / "-30°". */
+export function hueVariantLabel(offsetDeg: number): string {
+  if (offsetDeg === 0) {return 'Base (0°)';}
+  const rounded = Math.round(offsetDeg);
+  return `${rounded > 0 ? '+' : ''}${rounded}°`;
 }

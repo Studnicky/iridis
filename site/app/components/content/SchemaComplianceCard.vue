@@ -3,15 +3,15 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
-import DerivationSettings from './DerivationSettings.vue';
 import SchemaSelector from './SchemaSelector.vue';
 
 /**
- * Schema & Compliance — role-count schema, color space, contrast strictness,
- * and derivation settings. A Refine-stage carousel card: it configures how
- * the engine resolves and validates roles, the same stage that assigns them
- * (Palette). All CVD auto-correct/preview controls live in the CVD vision
- * card instead — not duplicated here.
+ * Schema & Compliance — role-count schema, color space, and contrast
+ * strictness. A Refine-stage carousel card: it configures how the engine
+ * resolves and validates roles, the same stage that assigns them (Palette).
+ * All CVD auto-correct/preview controls live in the CVD vision card instead
+ * — not duplicated here. Per-relation hue-derivation algorithms live in
+ * their own Derivation Relations card (see DerivationRelations.vue).
  */
 const {
   schemaName, contrastStrictness, colorSpace,
@@ -119,10 +119,6 @@ const stageSummaries = computed(() => {
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="mt-6 pt-4 border-t border-default/50">
-      <DerivationSettings />
     </div>
 
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mt-6 pt-4 border-t border-default/50">

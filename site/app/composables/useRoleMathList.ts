@@ -1,7 +1,7 @@
 import { useIridis } from '~/composables/useIridis.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
-import type { RoleType } from '~/composables/types/colorDerivation.ts';
-import { selectHueAlgorithm } from '~/utils/colorDerivation.ts';
+import type { HueAlgorithm } from '~/composables/types/colorDerivation.ts';
+import { effectiveRelation, resolveHueOffset, selectHueAlgorithm } from '~/utils/colorDerivation.ts';
 import { colorRecordFactory } from '@studnicky/iridis';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 import { complianceFor, sortRoleRows } from '~/utils/roleSort.ts';
@@ -20,7 +20,11 @@ export interface RoleMathCandidate {
 }
 
 export interface RoleMathAlgorithmInfo {
-  hueAlgorithm: string;
+  hueAlgorithm: HueAlgorithm;
+  hueVariantIndex: number;
+  freeformOffset: number | undefined;
+  /** The actual degrees this relation rotates from its parent's hue — what the engine applies via metadata['core:hueOffsetOverrides']. */
+  offsetDeg: number;
   baseHue: number;
   computedHues: number[];
 }
@@ -75,14 +79,17 @@ export function useRoleMathList() {
 
       const def = roleDefs.find(r => r.name === roleName);
 
-      const roleDerivation = derivationConfig.value.roles[roleName as RoleType];
       const parentHex = def?.derivedFrom ? roles.value[def.derivedFrom] : undefined;
       let algorithmInfo: RoleMathAlgorithmInfo | null = null;
-      if (isDerived && roleDerivation && parentHex) {
+      if (isDerived && def?.derivedFrom && parentHex) {
+        const relation = effectiveRelation(def.hueOffset, derivationConfig.value.relations[roleName]);
         const baseHue = colorRecordFactory.fromHex(parentHex).oklch.h ?? 0;
-        const computedHues = selectHueAlgorithm(roleDerivation.hueAlgorithm, baseHue, roleDerivation.freeformOffsets);
+        const computedHues = selectHueAlgorithm(relation.hueAlgorithm, baseHue, relation.freeformOffset !== undefined ? [relation.freeformOffset] : undefined);
         algorithmInfo = {
-          hueAlgorithm: roleDerivation.hueAlgorithm,
+          hueAlgorithm: relation.hueAlgorithm,
+          hueVariantIndex: relation.hueVariantIndex,
+          freeformOffset: relation.freeformOffset,
+          offsetDeg: resolveHueOffset(relation),
           baseHue,
           computedHues,
         };

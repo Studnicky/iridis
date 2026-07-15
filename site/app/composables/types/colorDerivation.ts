@@ -1,59 +1,35 @@
 export type HueAlgorithm = 'monochromatic' | 'complementary' | 'analogous' | 'triadic' | 'tetradic' | 'split-complementary' | 'compound' | 'freeform';
 export type VariationAlgorithm = 'tints-shades' | 'saturation-gradient' | 'value-gradient';
-export type DerivationStrategyPreset = 'automatic' | 'brand-focused' | 'accessible' | 'custom';
-export type RoleType = 'primary' | 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'accent';
 
-export interface RoleDerivation {
-  hueAlgorithm: HueAlgorithm;
-  variationAlgorithms: VariationAlgorithm[];
-  freeformOffsets?: number[]; // Only used when hueAlgorithm === 'freeform'
+/**
+ * One parent→child derivation edge's hue algorithm. Keyed by the CHILD
+ * role's own name in `DerivationConfig.relations` — every `derivedFrom`
+ * role has exactly one parent, so its own name uniquely identifies the
+ * edge (matching the schema's own derivedFrom graph 1:1, the same graph
+ * ColorGraph.vue renders).
+ */
+export interface RoleRelationDerivation {
+  readonly hueAlgorithm: HueAlgorithm;
+  /**
+   * Most algorithms produce more than one candidate hue offset from a
+   * shared base (e.g. analogous: 0°/-30°/+30°) — this picks which slot
+   * this specific relation uses. Ignored when hueAlgorithm is 'freeform'.
+   */
+  readonly hueVariantIndex: number;
+  /** Only read when hueAlgorithm === 'freeform' — a direct degree offset from the parent's hue. */
+  readonly freeformOffset?: number;
 }
 
+/**
+ * Sparse — only relations the user has explicitly customized. A relation
+ * absent here still runs through the exact same resolution path (see
+ * `effectiveRelation`/`resolveHueOffset` in utils/colorDerivation.ts),
+ * defaulting to 'freeform' seeded with the schema's own hueOffset — so
+ * there is exactly one code path from picker to pipeline, never a second,
+ * silent fallback that can drift out of sync with what's shown.
+ */
 export interface DerivationConfig {
-  strategy: DerivationStrategyPreset;
-  roles: Record<RoleType, RoleDerivation>;
+  readonly relations: Record<string, RoleRelationDerivation>;
 }
 
-// Preset defaults
-export const PRESET_DEFAULTS: Record<DerivationStrategyPreset, DerivationConfig> = {
-  'automatic': {
-    strategy: 'automatic',
-    roles: {
-      'primary': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades'] },
-      'success': { hueAlgorithm: 'analogous', variationAlgorithms: ['value-gradient', 'tints-shades'] },
-      'warning': { hueAlgorithm: 'split-complementary', variationAlgorithms: ['saturation-gradient', 'tints-shades'] },
-      'error': { hueAlgorithm: 'complementary', variationAlgorithms: ['tints-shades'] },
-      'info': { hueAlgorithm: 'analogous', variationAlgorithms: ['value-gradient', 'tints-shades'] },
-      'neutral': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['saturation-gradient'] },
-      'accent': { hueAlgorithm: 'split-complementary', variationAlgorithms: ['saturation-gradient', 'tints-shades'] }
-    }
-  },
-  'brand-focused': {
-    strategy: 'brand-focused',
-    roles: {
-      'primary': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades'] },
-      'success': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades'] },
-      'warning': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades'] },
-      'error': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades'] },
-      'info': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades'] },
-      'neutral': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['saturation-gradient'] },
-      'accent': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades'] }
-    }
-  },
-  'accessible': {
-    strategy: 'accessible',
-    roles: {
-      'primary': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades', 'value-gradient'] },
-      'success': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades', 'value-gradient'] },
-      'warning': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades', 'value-gradient'] },
-      'error': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades', 'value-gradient'] },
-      'info': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades', 'value-gradient'] },
-      'neutral': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['saturation-gradient', 'value-gradient'] },
-      'accent': { hueAlgorithm: 'monochromatic', variationAlgorithms: ['tints-shades', 'value-gradient'] }
-    }
-  },
-  'custom': {
-    strategy: 'custom',
-    roles: {} as Record<RoleType, RoleDerivation> // User will configure per-role
-  }
-};
+export const DEFAULT_DERIVATION_CONFIG: DerivationConfig = { 'relations': {} };

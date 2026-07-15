@@ -17,12 +17,13 @@ import { imagePlugin } from '@studnicky/iridis-image';
 import { computed, ref, watch } from 'vue';
 
 import type {
-  DerivationConfig, FramingType, GalleryAlgorithmType, HistogramBinType, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType, UploadedImageInterfaceType
+  DerivationConfig, FramingType, GalleryAlgorithmType, HistogramBinType, HueAlgorithm, IridisUiEffectType, ModeType, PickerSeedType, RoleHexMapType, RoleRelationDerivation, RoleViewType, ScaleMapType, UploadedImageInterfaceType
 } from './types/index.ts';
-import { IridisUiActionType, IridisUiEffectVariant, PRESET_DEFAULTS } from './types/index.ts';
+import { DEFAULT_DERIVATION_CONFIG, IridisUiActionType, IridisUiEffectVariant } from './types/index.ts';
 import { contrastRatio } from '../theme/ContrastRatio.ts';
 import { cloneRanges } from '../utils/cloneRanges.ts';
 import { debounce, keyedDebounce } from '../utils/debounce.ts';
+import { effectiveRelation, resolveHueOffset, selectHueAlgorithm } from '../utils/colorDerivation.ts';
 import { isValidHex } from '../utils/isValidHex.ts';
 import type { RoleSortKeyType, RoleSortableRowType } from '../utils/roleSort.ts';
 import { complianceFor, sortRoleRows } from '../utils/roleSort.ts';
@@ -37,7 +38,8 @@ type PopulatePickerFromImageEffectType = Extract<IridisUiEffectType, { 'variant'
 type NavigateToTargetEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.NAVIGATE_TO_TARGET }>;
 type SelectImageCandidateEffectType = Extract<IridisUiEffectType, { 'variant': IridisUiEffectVariant.SELECT_IMAGE_CANDIDATE }>;
 
-import { applyDerivedColors } from '../theme/ApplyDerivedColors.ts';
+import { deriveRoleRelations } from '../theme/DeriveRoleRelations.ts';
+import { deriveSemanticHues } from '../theme/DeriveSemanticHues.ts';
 import { intakeHexHint } from '../theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
 import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
@@ -61,16 +63,6 @@ const SHADE_L: Record<number, number> = {
 const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => {return { 'invertLightness': false, 'lightnessTarget': SHADE_L[s]!, 'name': `s${s}` };});
 
 /**
- * Semantic hue targets, applied as a BOUNDED nudge (the engine rotates each role
- * toward the target by at most SEMANTIC_HUE_CLAMP degrees). This keeps success/
- * warning/error/info rooted in the actual palette — a red-dominant image yields
- * warm-leaning semantics rather than pure green/blue that appear nowhere in it.
- * Schema authoring; the engine still resolves the real color.
- */
-const SEMANTIC_HUE: Record<string, number> = { 'error': 25, 'info': 230, 'success': 160, 'warning': 60 };
-const SEMANTIC_HUE_CLAMP = 90;
-
-/**
  * Exported so PipelineExplainer.vue can walk the same stage order and pull each
  * task's own manifest. pin:derivedRoles runs between resolve:roles and
  * expand:family — see PinDerivedRoles.ts for why that ordering is load-bearing.
@@ -80,14 +72,14 @@ const SEMANTIC_HUE_CLAMP = 90;
  * are currently enabled.
  */
 export const COLOR_PIPELINE = [
-  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'expand:family',
+  'intake:hexHint', 'derive:semanticHues', 'resolve:roles', 'pin:derivedRoles', 'derive:roleRelations', 'expand:family',
   'enforce:contrast', 'enforce:wcagAA', 'enforce:wcagAAA', 'enforce:apca', 'enforce:cvdSimulate',
   'derive:variant'
 ];
 /** enforce:cvdSimulate is always on, not user-toggleable — CVD accessibility
  * reporting/correction isn't opt-in the way the other standards are. */
 const REQUIRED_COLOR_STAGES = [
-  'intake:hexHint', 'resolve:roles', 'pin:derivedRoles', 'derive:colors', 'expand:family',
+  'intake:hexHint', 'derive:semanticHues', 'resolve:roles', 'pin:derivedRoles', 'derive:roleRelations', 'expand:family',
   'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
 ];
 /**
@@ -97,7 +89,7 @@ const REQUIRED_COLOR_STAGES = [
  */
 const REQUIRED_IMAGE_STAGES = [
   'intake:any', 'gallery:histogram', 'gallery:extractCandidates', 'gallery:extract', 'gallery:harmonize',
-  'resolve:roles', 'derive:colors', 'expand:family', 'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
+  'derive:semanticHues', 'resolve:roles', 'derive:roleRelations', 'expand:family', 'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
 ];
 /** Stage 1 — reduces ONE image's own pixels to its own dominant colors AND its own per-algorithm candidates, independent of every other uploaded image. */
 const IMAGE_ENTRY_STAGES = ['intake:any', 'gallery:histogram', 'gallery:extractCandidates', 'gallery:extract'];
@@ -133,21 +125,11 @@ function buildPipeline(required: readonly string[]): string[] {
 const engine = new Engine();
 for (const t of coreTasks) {engine.tasks.register(t);}
 engine.tasks.register(intakeHexHint);
+engine.tasks.register(deriveSemanticHues);
 engine.tasks.register(pinDerivedRoles);
-engine.tasks.register(applyDerivedColors);
+engine.tasks.register(deriveRoleRelations);
 engine.adopt(contrastPlugin);
 engine.adopt(imagePlugin);
-
-/** Author hue targets onto the schema's semantic roles (engine resolves them). */
-function withSemanticHues(schema: RoleSchemaInterfaceType): RoleSchemaInterfaceType {
-  return {
-    ...schema,
-    'roles': schema.roles.map((r: RoleDefinitionInterfaceType) =>
-    {return (SEMANTIC_HUE[r.name] !== undefined)
-      ? { ...r, 'hue': SEMANTIC_HUE[r.name], 'hueClamp': SEMANTIC_HUE_CLAMP }
-      : r;})
-  };
-}
 
 /* ─── shared reactive state ─── */
 const {
@@ -197,11 +179,20 @@ const colorSpace = ref<'srgb' | 'displayP3'>('srgb');
 const cvdCorrect = ref<boolean>(false);
 
 /**
- * Color derivation configuration — allows users to select hue algorithms
- * (monochromatic, complementary, analogous, etc.) for each role. Passed
- * through metadata to ApplyDerivedColors task in the pipeline.
+ * Color derivation configuration — one hue-algorithm choice per derivedFrom
+ * relation (keyed by the child role's own name). Passed through metadata to
+ * the derive:roleRelations/derive:semanticHues pipeline tasks, which write
+ * the resolved overrides those relations consult; changing it re-runs the
+ * whole pipeline via the FSM's schedule(), the same as any other palette
+ * parameter — never recomputed and reapplied client-side.
  */
-const derivationConfig = ref<DerivationConfig>(PRESET_DEFAULTS['automatic']);
+const derivationConfig = ref<DerivationConfig>(DEFAULT_DERIVATION_CONFIG);
+
+/** Merges a single relation's config into `derivationConfig` and re-runs the pipeline — the ONLY way a relation changes; the resolved hue is always recomputed by derive:roleRelations, never written directly here. */
+function updateRelation(roleName: string, relation: RoleRelationDerivation): void {
+  const updated: DerivationConfig = { 'relations': { ...derivationConfig.value.relations, [roleName]: relation } };
+  sendUiEvent({ 'config': updated, 'type': IridisUiActionType.SET_DERIVATION_CONFIG });
+}
 
 /**
  * Visual CVD preview — purely a display-time filter over whatever the engine
@@ -393,7 +384,7 @@ function run(framingOverride?: FramingType): void {
       'colors':   seeds,
       'contrast': { 'algorithm': contrastStrictness.value === 2 ? 'apca' : 'wcag21', 'cvdCorrect': cvdCorrect.value, 'level': contrastStrictness.value === 0 ? 'AA' : (contrastStrictness.value === 1 ? 'AAA' : 'Lc') },
       'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig.value },
-      'roles':    withSemanticHues(pair[targetFraming]),
+      'roles':    pair[targetFraming],
       'runtime':  { 'colorSpace': colorSpace.value, 'framing': targetFraming }
     });
     if (framingOverride !== undefined) {
@@ -627,7 +618,7 @@ function runCombineNow(): void {
           'lightnessRange':     imgLightnessRange.value
         })
       },
-      'roles':    withSemanticHues(pair![framing.value]),
+      'roles':    pair![framing.value],
       'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
     });
     const hist = (state.metadata['gallery:histogram'] as { 'bins'?: HistogramBinType[] } | undefined)?.bins ?? [];
@@ -960,7 +951,7 @@ export function useIridis() {
   }
   return {
     'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'combineLocked': combineLocked, 'contrastStrictness': contrastStrictness, 'colorSpace': colorSpace, 'contrastReport': contrastReport, 'cvdCorrect': cvdCorrect,
-    'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig,
+    'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'updateRelation': updateRelation,
     'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale, 'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
     'effectiveHexesFor': effectiveHexesFor,
     'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing, 'histogram': histogram,
