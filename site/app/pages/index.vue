@@ -228,7 +228,7 @@ function onDocsClick(e: MouseEvent): void {
               class="space-y-3"
             >
               <p class="text-sm text-muted">
-                The resolved role graph — every node is that role's own <code class="font-mono">engine.run()</code> color, edges are derivation lineage. Pinned/synthesized/direct-match roles toggle via the legend.
+                The resolved role graph, live — every node is that role's own <code class="font-mono">engine.run()</code> color, edges are derivation lineage settling under a force simulation. Pinned/synthesized/direct-match roles toggle via the legend.
               </p>
               <ColorGraph />
             </div>

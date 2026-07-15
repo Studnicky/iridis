@@ -2,11 +2,13 @@
 /**
  * The resolved palette as a graph: one node per role, in that role's own
  * engine-resolved color — never a decorative category color — with edges
- * for `derivedFrom` (ExpandFamily hue-rotation lineage) relations. This is
- * `engine.run()`'s own role graph rendered directly, matching the iridis-N
- * schema currently active, the same D-pad/legend pattern Dagonizer's
- * graph-visualizer uses (leadography's own graph stage follows the same
- * convention, ported from the same lineage).
+ * for `derivedFrom` (ExpandFamily hue-rotation lineage) relations, plus a
+ * hub-to-hub ring so every node is reachable (no isolated clusters). This is
+ * `engine.run()`'s own role graph, live and force-simulated (link spring,
+ * repulsion, gravity, collision), matching the iridis-N schema currently
+ * active, the same D-pad/legend pattern Dagonizer's graph-visualizer uses
+ * (leadography's own graph stage follows the same convention, ported from
+ * the same lineage).
  *
  * Lazy-loaded: `@cosmos.gl/graph` ships a WebGL2 shader pipeline; dynamic-
  * import on mount keeps it out of the main bundle for visitors who never
@@ -16,6 +18,7 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import { colorRecordFactory } from '@studnicky/iridis';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useRoleMathList, type RoleMathEntry } from '~/composables/useRoleMathList.ts';
+import { contrastRatio } from '~/theme/ContrastRatio.ts';
 import GraphDpad from './graph/GraphDpad.vue';
 import GraphLegend from './graph/GraphLegend.vue';
 import type { LegendEntry, LegendTab } from './graph/GraphLegend.vue';
@@ -82,7 +85,7 @@ const fitZoomLevel = ref<number | null>(null);
 const fullscreen = ref(false);
 
 const graph = shallowRef<GraphHandle | null>(null);
-interface PointMeta { readonly name: string; readonly clamped: boolean; readonly category: ResolutionCategory }
+interface PointMeta { readonly name: string; readonly hex: string; readonly clamped: boolean; readonly category: ResolutionCategory }
 let labelMeta: PointMeta[] = [];
 let labelRaf: number | null = null;
 let resizeObserver: ResizeObserver | null = null;
@@ -143,6 +146,23 @@ function initCosmos(container: HTMLDivElement): void {
   try {
     graph.value = new GraphCtor(container, {
       'spaceSize': SPACE_SIZE,
+      // Tuned to the scale buildBuffers seeds (hub ring radius 900, leaf
+      // satellite radius 260) so the live simulation relaxes into an airy
+      // layout rather than collapsing into a tight clump: repulsion
+      // dominates the (deliberately weak) link spring so nodes push apart
+      // and only the ring/derivation edges hold the structure together.
+      'simulationLinkDistance': 260,
+      'simulationLinkSpring': 0.15,
+      'simulationRepulsion': 8,
+      'simulationRepulsionTheta': 1.4,
+      'simulationGravity': 0.02,
+      'simulationCollision': 1,
+      'simulationCollisionPadding': 10,
+      'simulationDecay': 12000,
+      'enableDrag': true,
+      'enableRightClickRepulsion': true,
+      'simulationRepulsionFromMouse': 3,
+      'onSimulationTick': () => { scheduleLabelPaint(); },
       'onZoom': () => {
         scheduleLabelPaint();
         pollZoom();
@@ -205,7 +225,10 @@ function panBy(dx: number, dy: number): void {
     next[i] = (flat[i] ?? 0) + worldDx;
     next[i + 1] = (flat[i + 1] ?? 0) + worldDy;
   }
-  try { g.setPointPositions(next, true); g.render(0, 0); scheduleLabelPaint(); } catch { /* ignore */ }
+  // setPointPositions() auto-pauses the simulation for the caller to settle
+  // a deliberate layout; start() forces it running again immediately so a
+  // manual pan doesn't permanently freeze the live simulation.
+  try { g.setPointPositions(next, true); g.start(0.3); scheduleLabelPaint(); } catch { /* ignore */ }
 }
 function panUp(): void { panBy(0, -PAN_STEP); }
 function panDown(): void { panBy(0, +PAN_STEP); }
@@ -239,7 +262,7 @@ function centre(): void {
     next[i] = (flat[i] ?? 0) + worldDx;
     next[i + 1] = (flat[i + 1] ?? 0) + worldDy;
   }
-  try { g.setPointPositions(next, true); g.render(0, 0); scheduleLabelPaint(); } catch { /* ignore */ }
+  try { g.setPointPositions(next, true); g.start(0.3); scheduleLabelPaint(); } catch { /* ignore */ }
 }
 
 function armFitSequence(): void {
@@ -288,12 +311,13 @@ function paint(): void {
   handle.setPointSizes(sizes);
   handle.setLinks(links);
   handle.setLinkColors(linkColors);
-  // Positions are laid out deterministically (buildBuffers' hub-and-spoke
-  // radial placement) — no force-directed simulation to settle, so a single
-  // static render is enough. Deliberately never calls handle.start(): a
-  // continuously-running physics sim is unnecessary for this fixed structure
-  // and is a genuine performance cliff on software-rendered WebGL (no GPU).
-  handle.render(0);
+  // buildBuffers' hub-and-spoke layout only seeds the starting positions.
+  // render() (not start() — start() only flips the simulation-running flag,
+  // it doesn't kick off cosmos.gl's own rAF render loop) hands them to the
+  // live force simulation (link spring, repulsion, gravity, collision,
+  // configured in initCosmos()), which keeps running and settling in real
+  // time rather than freezing on one static frame.
+  handle.render(1);
   if (positions.length === 0) { scheduleLabelPaint(); return; }
   armFitSequence();
   scheduleLabelPaint();
@@ -310,8 +334,19 @@ function resizeLabelCanvas(): void {
   if (canvas === null || container === null) return;
   const dpr = window.devicePixelRatio || 1;
   const rect = container.getBoundingClientRect();
-  canvas.width = Math.round(rect.width * dpr);
-  canvas.height = Math.round(rect.height * dpr);
+  if (rect.width === 0 || rect.height === 0) return;
+  const targetW = Math.round(rect.width * dpr);
+  const targetH = Math.round(rect.height * dpr);
+  // Re-measured on every paintLabels() call (cheap: getBoundingClientRect +
+  // a couple of numeric writes), not just reactively via ResizeObserver —
+  // this card lives inside a CylinderCarousel face that changes size via a
+  // 3D transform when it becomes active, which doesn't fire ResizeObserver
+  // at all (same ancestor-transform quirk documented for IntersectionObserver
+  // above). Without this, a resize captured while the face was still mid-
+  // transition sticks around forever since nothing else ever corrects it.
+  if (canvas.width === targetW && canvas.height === targetH) return;
+  canvas.width = targetW;
+  canvas.height = targetH;
   canvas.style.width = `${String(rect.width)}px`;
   canvas.style.height = `${String(rect.height)}px`;
 }
@@ -320,7 +355,7 @@ function paintLabels(): void {
   const handle = graph.value;
   const canvas = labelsRef.value;
   if (handle === null || canvas === null) return;
-  if (canvas.width === 0 || canvas.height === 0) resizeLabelCanvas();
+  resizeLabelCanvas();
   const dpr = window.devicePixelRatio || 1;
   const ctx = canvas.getContext('2d');
   if (ctx === null) return;
@@ -360,12 +395,21 @@ function paintLabels(): void {
     const x = sx + 8;
     const y = sy - pillH / 2;
 
-    ctx.fillStyle = 'color-mix(in oklch, var(--ui-bg) 85%, transparent)';
+    // The pill is the node's own resolved color — so its text color is
+    // chosen (via the same contrastRatio() the rest of the site uses) to
+    // actually be readable against THAT color, not a fixed value that only
+    // happens to work for some roles.
+    ctx.fillStyle = meta.hex;
     roundRect(ctx, x, y, pillW, pillH, 4);
     ctx.fill();
-    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--ui-text-highlighted').trim() || '#eaf6ff';
+    ctx.fillStyle = readableTextColor(meta.hex);
     ctx.fillText(text, x + PAD_X, y + pillH / 2);
   }
+}
+
+/** Picks whichever of black/white contrasts better against `hex`, via the same contrastRatio() every other role-vs-background check on this site uses — never a fixed color that only reads well against some node hues. */
+function readableTextColor(hex: string): string {
+  return contrastRatio(hex, '#ffffff') >= contrastRatio(hex, '#000000') ? '#ffffff' : '#000000';
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
@@ -393,13 +437,12 @@ interface Buffers {
 }
 
 /**
- * Deterministic hub-and-spoke layout, not a force simulation: hub roles
- * (not derived from anything) sit evenly spaced around a large ring; each
- * derived role sits in a small satellite ring around its own parent's
- * position. This directly represents the schema's own derivation structure
- * rather than letting physics arrange it — and, since nothing needs to
- * settle, cosmos.gl only ever renders once per data/filter change (see
- * paint()), never running a continuous simulation.
+ * Seed layout for the force simulation: hub roles (not derived from
+ * anything) sit evenly spaced around a large ring; each derived role sits
+ * in a small satellite ring around its own parent's position, and hubs are
+ * ringed to each other so the whole graph starts as one connected structure
+ * instead of N isolated clusters. cosmos.gl's physics (link spring,
+ * repulsion, gravity, collision — see initCosmos()) takes it from there.
  */
 function buildBuffers(roles: readonly RoleMathEntry[], visible: Readonly<Record<ResolutionCategory, boolean>>): Buffers {
   const indexByName = new Map<string, number>();
@@ -441,7 +484,7 @@ function buildBuffers(roles: readonly RoleMathEntry[], visible: Readonly<Record<
   roles.forEach((role, i) => {
     indexByName.set(role.name, i);
     const category = categoryOf(role);
-    meta.push({ 'name': role.name, 'clamped': role.clamp !== null, 'category': category });
+    meta.push({ 'name': role.name, 'hex': role.hex, 'clamped': role.clamp !== null, 'category': category });
     const [x, y] = positionByName.get(role.name)!;
     positions.push(x, y);
     const [r, g, b] = rgbOf(role.hex);
@@ -459,6 +502,24 @@ function buildBuffers(roles: readonly RoleMathEntry[], visible: Readonly<Record<
     const [r, g, b] = rgbOf(role.hex);
     const bothVisible = visible[categoryOf(role)];
     linkColors.push(r, g, b, bothVisible ? 0.5 : 0.03);
+  }
+
+  // Hubs otherwise have no edges to each other, leaving each hub-and-spoke
+  // cluster as its own isolated component — ring them together so the whole
+  // graph is a single connected structure (and so simulationLinkSpring has
+  // something to hold the hubs together with once the simulation is live).
+  if (hubs.length > 1) {
+    hubs.forEach((hub, i) => {
+      const next = hubs[(i + 1) % hubs.length];
+      if (next === undefined) return;
+      const hubIdx = indexByName.get(hub.name);
+      const nextIdx = indexByName.get(next.name);
+      if (hubIdx === undefined || nextIdx === undefined) return;
+      links.push(hubIdx, nextIdx);
+      const [r, g, b] = rgbOf(hub.hex);
+      const bothVisible = visible[categoryOf(hub)] && visible[categoryOf(next)];
+      linkColors.push(r, g, b, bothVisible ? 0.35 : 0.03);
+    });
   }
 
   return {
