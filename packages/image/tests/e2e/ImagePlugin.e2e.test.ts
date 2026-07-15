@@ -103,7 +103,7 @@ const pluginShapeScenarios: readonly ScenarioInterface<PluginShapeInput, PluginS
     },
   },
   {
-    name: 'tasks() returns exactly four gallery task names',
+    name: 'tasks() returns exactly five gallery task names',
     kind: 'happy',
     input: { label: 'task-names' },
     assert(_output, error) {
@@ -111,8 +111,8 @@ const pluginShapeScenarios: readonly ScenarioInterface<PluginShapeInput, PluginS
       const names = imagePlugin.tasks().map((t) => t.name).sort();
       assert.deepStrictEqual(
         names,
-        ['gallery:assignRoles', 'gallery:extract', 'gallery:harmonize', 'gallery:histogram'],
-        '[cell=1, scenario=task-names] four gallery tasks registered',
+        ['gallery:assignRoles', 'gallery:extract', 'gallery:extractCandidates', 'gallery:harmonize', 'gallery:histogram'],
+        '[cell=1, scenario=task-names] five gallery tasks registered',
       );
     },
   },
@@ -272,6 +272,141 @@ new ScenarioRunner<ExtractInput, ExtractOutput>(
     };
   },
 ).run(extractScenarios);
+
+// ---------------------------------------------------------------------------
+// Cell 2b — gallery:extractCandidates non-destructive multi-palette output
+//
+// gallery:extractCandidates runs clustering across several configs against
+// the SAME state.colors input and writes each as a labeled candidate to
+// metadata.gallery:candidates, WITHOUT mutating state.colors (unlike
+// gallery:extract, which is destructive).
+//
+// Invariants:
+//   - unconfigured → default 3-candidate set (median-cut, k-means, delta-e)
+//   - custom `candidates` config produces exactly the labeled candidates requested
+//   - state.colors is untouched by this task
+//   - running gallery:extract alongside gallery:extractCandidates in the same
+//     pipeline still produces gallery:extract's original single result
+//   - empty-input case matches gallery:extract's warn/no-op behavior
+// ---------------------------------------------------------------------------
+
+interface ExtractCandidatesInput {
+  readonly input: InputInterface;
+  readonly withExtract?: boolean;
+}
+interface ExtractCandidatesOutput {
+  readonly state:          PaletteStateInterface;
+  readonly candidates:     { 'algorithm': string; 'k': number; 'label': string; 'colors': unknown[] }[] | undefined;
+  readonly colorCountAfter: number;
+  readonly dominantMeta:   unknown[] | undefined;
+}
+
+const extractCandidatesScenarios: readonly ScenarioInterface<ExtractCandidatesInput, ExtractCandidatesOutput>[] = [
+  {
+    name: 'unconfigured input produces default 3-candidate set',
+    kind: 'happy',
+    input: {
+      input: {
+        'colors': [
+          '#1a1a1a', '#2b2b2b', '#3c3c3c', '#4d4d4d', '#5e5e5e',
+          '#8b5cf6', '#a78bfa', '#c4b5fd', '#d8b4fe', '#e9d5ff',
+          '#ec4899', '#f472b6', '#f9a8d4',
+        ],
+        'metadata': { 'gallery': { 'k': 4 } },
+      },
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2b, scenario=default-candidates] must not throw');
+      assert.ok(output!.candidates !== undefined, '[cell=2b, scenario=default-candidates] candidates written');
+      assert.strictEqual(output!.candidates!.length, 3, '[cell=2b, scenario=default-candidates] three default candidates');
+      const algorithms = output!.candidates!.map((c) => c.algorithm).sort();
+      assert.deepStrictEqual(
+        algorithms,
+        ['delta-e', 'k-means', 'median-cut'],
+        '[cell=2b, scenario=default-candidates] default set covers median-cut, k-means, delta-e',
+      );
+      for (const c of output!.candidates!) {
+        assert.ok(c.colors.length <= 4, `[cell=2b, scenario=default-candidates] candidate "${c.label}" respects shared k=4`);
+      }
+    },
+  },
+  {
+    name: 'custom candidates config produces exactly the labeled candidates requested',
+    kind: 'happy',
+    input: {
+      input: {
+        'colors': ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
+        'metadata': {
+          'gallery': {
+            'candidates': [
+              { 'algorithm': 'median-cut', 'k': 2, 'label': 'compact' },
+              { 'algorithm': 'wu-quantize', 'k': 4, 'label': 'wide' },
+            ],
+          },
+        },
+      },
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2b, scenario=custom-candidates] must not throw');
+      assert.strictEqual(output!.candidates!.length, 2, '[cell=2b, scenario=custom-candidates] exactly 2 candidates requested');
+      const labels = output!.candidates!.map((c) => c.label).sort();
+      assert.deepStrictEqual(labels, ['compact', 'wide'], '[cell=2b, scenario=custom-candidates] labels match request');
+      const compact = output!.candidates!.find((c) => c.label === 'compact');
+      const wide    = output!.candidates!.find((c) => c.label === 'wide');
+      assert.ok(compact!.colors.length <= 2, '[cell=2b, scenario=custom-candidates] compact candidate respects k=2');
+      assert.ok(wide!.colors.length <= 4, '[cell=2b, scenario=custom-candidates] wide candidate respects k=4');
+    },
+  },
+  {
+    name: 'gallery:extract run alongside gallery:extractCandidates leaves extract\'s result unaffected',
+    kind: 'happy',
+    input: {
+      input: {
+        'colors': ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
+        'metadata': { 'gallery': { 'k': 3 } },
+      },
+      withExtract: true,
+    },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2b, scenario=order-independence] must not throw');
+      assert.ok(output!.dominantMeta !== undefined, '[cell=2b, scenario=order-independence] gallery:extract dominantColors still written');
+      assert.ok(output!.colorCountAfter <= 3, '[cell=2b, scenario=order-independence] gallery:extract still reduced state.colors to ≤ k=3');
+      assert.ok(output!.candidates !== undefined, '[cell=2b, scenario=order-independence] candidates also written');
+      assert.strictEqual(output!.candidates!.length, 3, '[cell=2b, scenario=order-independence] default 3 candidates still produced');
+    },
+  },
+  {
+    name: 'empty colors array matches gallery:extract\'s warn/no-op behavior',
+    kind: 'edge',
+    input: { input: { 'colors': [], 'metadata': { 'gallery': { 'k': 5 } } } },
+    assert(output, error) {
+      assert.strictEqual(error, undefined, '[cell=2b, scenario=empty-colors-noop] must not throw on empty input');
+      assert.strictEqual(output!.candidates, undefined, '[cell=2b, scenario=empty-colors-noop] no candidates written on empty input');
+    },
+  },
+];
+
+new ScenarioRunner<ExtractCandidatesInput, ExtractCandidatesOutput>(
+  'ImagePlugin :: cell-2b :: gallery:extractCandidates',
+  async (input) => {
+    const engine = freshEngine();
+    const order = input.withExtract === true
+      ? ['intake:imagePixels', 'intake:hex', 'gallery:extract', 'gallery:extractCandidates']
+      : ['intake:imagePixels', 'intake:hex', 'gallery:extractCandidates'];
+    engine.pipeline(order);
+    const state = await engine.run(input.input);
+    const candidates = state.metadata['gallery:candidates'] as
+      | { 'algorithm': string; 'k': number; 'label': string; 'colors': unknown[] }[]
+      | undefined;
+    const dominantMeta = state.metadata['gallery:dominantColors'] as unknown[] | undefined;
+    return {
+      state,
+      candidates,
+      colorCountAfter: state.colors.length,
+      dominantMeta,
+    };
+  },
+).run(extractCandidatesScenarios);
 
 // ---------------------------------------------------------------------------
 // Cell 3 — gallery:assignRoles role assignment invariants

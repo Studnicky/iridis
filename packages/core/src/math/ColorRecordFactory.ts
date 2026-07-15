@@ -185,14 +185,17 @@ class ColorRecordFactory {
     opts?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
   ): ColorRecordInterfaceType {
     const { alpha = 1, hints, sourceFormat = 'rgb' } = opts ?? {};
-    const oklch = rgbToOklchRaw(r, g, b);
+    const rc    = clamp01.apply(r);
+    const gc    = clamp01.apply(g);
+    const bc    = clamp01.apply(b);
+    const oklch = rgbToOklchRaw(rc, gc, bc);
     return {
       'alpha':        clamp01.apply(alpha),
       'displayP3':    undefined,
-      'hex':          rgbToHex.apply(r, g, b),
+      'hex':          rgbToHex.apply(rc, gc, bc),
       'hints':        hints,
       'oklch':        oklch,
-      'rgb':          { 'b': clamp01.apply(b), 'g': clamp01.apply(g), 'r': clamp01.apply(r) },
+      'rgb':          { 'b': bc, 'g': gc, 'r': rc },
       'sourceFormat': sourceFormat
     };
   }

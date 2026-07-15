@@ -1,0 +1,40 @@
+[data-iridis-theme='restaurant'] {
+  --font-display: "Yeseva One", "Cormorant Garamond", serif;
+  --font-sans: "Lora", ui-serif, Georgia, serif;
+  --font-mono: "Courier Prime", ui-monospace, monospace;
+  --ui-radius: 10px;
+  --iridis-radius-sm: 4px;
+  --iridis-radius-md: 10px;
+  --iridis-radius-lg: 16px;
+  --iridis-border-style: solid;
+  /* Tone: warm and muted — cozy candlelit dining, not a bright accent wash. */
+  --iridis-ambient-saturate: 0.65;
+  --iridis-ambient-contrast: 0.95;
+  /* Candlelit warmth, moderate — not a neon sign. */
+  --iridis-glow-strength: 0.55;
+}
+
+/* No starfield/lava — a dining room's ambient warmth is a candlelight-flicker
+   vignette instead, researched from real CSS candle-flame techniques (an
+   irregular multi-keyframe flicker, not a smooth sine pulse — real flame
+   brightness jitters unevenly). A plain radial-gradient pseudo-element on the
+   ambient container. */
+[data-iridis-theme='restaurant'] .ambient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 50% at 50% 40%, color-mix(in oklch, var(--glow) 16%, transparent), transparent 70%);
+  animation: restaurant-candle-flicker calc(2.8s / var(--iridis-ambient-speed, 1)) ease-in-out infinite;
+}
+@keyframes restaurant-candle-flicker {
+  0%, 100% { opacity: 0.35; }
+  20%      { opacity: 0.55; }
+  35%      { opacity: 0.3; }
+  50%      { opacity: 0.6; }
+  70%      { opacity: 0.4; }
+  85%      { opacity: 0.5; }
+}
+
+/* Hero: bigger, hazier blur — warm candlelit haze rather than crisp modern blobs. */
+[data-iridis-theme='restaurant'] .hero-orb { filter: blur(56px) !important; }

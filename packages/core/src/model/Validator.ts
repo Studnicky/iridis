@@ -23,7 +23,7 @@ const CORE_SCHEMAS = [
 ] as const;
 
 const CORE_ID_INDEX = new Map<string, SchemaInterfaceType>(
-  CORE_SCHEMAS.map((schema) => [schema.$id, schema])
+  CORE_SCHEMAS.map((schema) => {return [schema.$id, schema];})
 );
 
 /**
@@ -49,7 +49,8 @@ class CoreRegistry {
   }
 
   static isCore(schema: object): boolean {
-    return (CORE_SCHEMAS as readonly object[]).includes(schema);
+    const result = (CORE_SCHEMAS as readonly object[]).includes(schema);
+    return result;
   }
 }
 
@@ -99,7 +100,7 @@ class SchemaWalker {
     let current = SchemaWalker.#deref(rootSchema);
     if (path === '') { return current; }
 
-    const segments = path.replace(/^\//, '').split('/').map((seg) => seg.replace(/~1/g, '/').replace(/~0/g, '~'));
+    const segments = path.replace(/^\//, '').split('/').map((seg) => { const result = seg.replace(/~1/g, '/').replace(/~0/g, '~'); return result; });
 
     for (const seg of segments) {
       if (current === undefined) { return undefined; }
@@ -127,43 +128,56 @@ class SchemaWalker {
 }
 
 /**
+ * Joins JSON-Pointer segments ("a/b/0") into the legacy dot/bracket path
+ * ("a.b[0]"): the leading slash is dropped, digit-only segments become
+ * "[N]", and every other segment is joined with ".".
+ */
+class Segments {
+  static format(path: string): string {
+    if (path === '') { return ''; }
+
+    const segments = path.replace(/^\//, '').split('/');
+    let result = '';
+    for (const seg of segments) {
+      if (/^\d+$/.test(seg)) {
+        result += `[${seg}]`;
+      } else {
+        result += result === '' ? seg : `.${seg}`;
+      }
+    }
+    return result;
+  }
+}
+
+/**
  * Normalise a JSON Pointer path ("/a/b/0") to the legacy format ("a.b[0]").
- * - Leading slash is dropped
- * - Interior slashes before digit-only segments become "[N]"
- * - Other interior slashes become "."
  *
  * The legacy hand-rolled validator used dot-separated paths with bracket
  * notation for array indices (e.g. "color.hex", "items[1]"). Tests assert
- * against this format, so we preserve it here.
+ * against this format, so we preserve it here. The "required" keyword's
+ * path points at the parent (the object missing the property), so its
+ * segments go through the same {@link Segments.format} bracket-index
+ * transform as every other keyword before the missing property name is
+ * appended — an array parent therefore reads "colors[0].oklch", consistent
+ * with a sibling type error's "colors[0].hex".
  */
 function normalisePath(path: string, keyword: string, params: Record<string, unknown>): string {
   if (keyword === 'required') {
     const missing = params.missingProperty as string | undefined;
     if (missing !== undefined) {
-      const base = path.replace(/^\//, '').replace(/\//g, '.');
+      const base = Segments.format(path);
       return base.length > 0 ? `${base}.${missing}` : missing;
     }
   }
 
-  if (path === '') { return ''; }
-
-  const segments = path.replace(/^\//, '').split('/');
-  let result = '';
-  for (const seg of segments) {
-    if (/^\d+$/.test(seg)) {
-      result += `[${seg}]`;
-    } else {
-      result += result === '' ? seg : `.${seg}`;
-    }
-  }
-  return result;
+  return Segments.format(path);
 }
 
 interface FormatterContextInterface {
-  readonly params:     Record<string, unknown>;
-  readonly path:        string;
-  readonly rootSchema: SchemaInterfaceType;
-  readonly value:       unknown;
+  readonly 'params':     Record<string, unknown>;
+  readonly 'path':        string;
+  readonly 'rootSchema': SchemaInterfaceType;
+  readonly 'value':       unknown;
 }
 
 /**
@@ -249,7 +263,7 @@ function normaliseMessage(
 ): string {
   const formatter = MESSAGE_FORMATTERS[keyword];
   if (formatter !== undefined) {
-    return formatter({ params, path, rootSchema, value });
+    return formatter({ 'params': params, 'path': path, 'rootSchema': rootSchema, 'value': value });
   }
   return message;
 }
@@ -292,7 +306,7 @@ class Value {
 class UndefinedPruner {
   static prune(value: unknown): unknown {
     if (Array.isArray(value)) {
-      return value.map((item) => UndefinedPruner.prune(item));
+      return value.map((item) => { const result = UndefinedPruner.prune(item); return result; });
     }
 
     if (value !== null && typeof value === 'object') {
@@ -327,7 +341,7 @@ const JSON_SCHEMA_TYPE_NAMES = new Set([
 class TypeKeywordChecker {
   static isValid(node: unknown): boolean {
     if (Array.isArray(node)) {
-      return node.every((entry) => TypeKeywordChecker.isValid(entry));
+      return node.every((entry) => { const result = TypeKeywordChecker.isValid(entry); return result; });
     }
 
     if (typeof node !== 'object' || node === null) { return true; }
@@ -335,7 +349,7 @@ class TypeKeywordChecker {
     const record = node as Record<string, unknown>;
     const type = record.type;
     if (typeof type === 'string' && !JSON_SCHEMA_TYPE_NAMES.has(type)) { return false; }
-    if (Array.isArray(type) && !type.every((t) => typeof t === 'string' && JSON_SCHEMA_TYPE_NAMES.has(t))) {
+    if (Array.isArray(type) && !type.every((t) => {return typeof t === 'string' && JSON_SCHEMA_TYPE_NAMES.has(t);})) {
       return false;
     }
 

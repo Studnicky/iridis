@@ -7,6 +7,7 @@ import type {
   ContrastPairInterfaceType,
   ContrastReportEntryInterfaceType,
   PaletteStateInterface,
+  PendingContrastEntryInterfaceType,
   PipelineContextInterface,
   TaskInterface,
   TaskManifestInterfaceType
@@ -16,13 +17,19 @@ import { contrastApca }   from '../../math/ContrastApca.ts';
 import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
 
+/**
+ * Measures contrast for `algorithm`. APCA's Lc is signed — positive for
+ * dark-text-on-light-bg, negative for light-text-on-dark-bg — but callers
+ * compare against an always-positive `minRatio`, so the magnitude is what
+ * is returned here (consistent with `ensureContrast`'s own APCA measure).
+ */
 function measureContrast(
   algorithm: ContrastAlgorithmType,
   fg: ColorRecordInterfaceType,
   bg: ColorRecordInterfaceType
 ): number {
   if (algorithm === 'apca') {
-    return contrastApca.apply(fg, bg);
+    return Math.abs(contrastApca.apply(fg, bg));
   }
   return contrastWcag21.apply(fg, bg);
 }
@@ -66,7 +73,7 @@ class EnforceContrast implements TaskInterface {
       return;
     }
 
-    const report: ContrastReportEntryInterfaceType[] = [];
+    const pending: PendingContrastEntryInterfaceType[] = [];
 
     for (const pair of allPairs) {
       const fgColor = state.roles[pair.foreground];
@@ -96,7 +103,6 @@ class EnforceContrast implements TaskInterface {
       const passed = ratio >= minRatio;
 
       let adjusted = false;
-      let finalFg = fgColor;
 
       if (!passed) {
         ctx.logger.info(
@@ -114,23 +120,39 @@ class EnforceContrast implements TaskInterface {
             .build()
         );
 
-        finalFg = ensureContrast.apply(fgColor, bgColor, minRatio, algo);
-
-        state.roles[pair.foreground] = finalFg;
+        state.roles[pair.foreground] = ensureContrast.apply(fgColor, bgColor, minRatio, algo);
         adjusted = true;
       }
 
-      const finalRatio = adjusted
-        ? measureContrast(algo, finalFg, bgColor)
-        : ratio;
+      pending.push({ 'adjusted': adjusted, 'algo': algo, 'minRatio': minRatio, 'pair': pair });
+    }
+
+    // Reconciliation: a foreground role shared across multiple pairs can be
+    // re-nudged by a later pair, which invalidates an earlier pair's already
+    // chosen color. Re-measure every pending pair against the terminal
+    // state.roles so each report entry reflects the color actually left in
+    // place, not the intermediate one observed when the pair was processed.
+    const report: ContrastReportEntryInterfaceType[] = [];
+
+    for (const entry of pending) {
+      const finalFg = state.roles[entry.pair.foreground];
+      const finalBg = state.roles[entry.pair.background];
+
+      // Both roles were confirmed present when this pair was queued, and
+      // roles are only ever overwritten (never deleted), so this holds.
+      if (finalFg === undefined || finalBg === undefined) {
+        continue;
+      }
+
+      const finalRatio = measureContrast(entry.algo, finalFg, finalBg);
 
       report.push({
-        'adjusted':   adjusted,
-        'algorithm':  algo,
-        'background': pair.background,
-        'foreground': pair.foreground,
-        'minRatio':   minRatio,
-        'passed':     finalRatio >= minRatio,
+        'adjusted':   entry.adjusted,
+        'algorithm':  entry.algo,
+        'background': entry.pair.background,
+        'foreground': entry.pair.foreground,
+        'minRatio':   entry.minRatio,
+        'passed':     finalRatio >= entry.minRatio,
         'ratio':      finalRatio
       });
     }

@@ -34,20 +34,14 @@ function wcagRatio(la: number, lb: number): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-/** APCA Lc foreground luminance (text exponent). */
-function apcaFg(r: number, g: number, b: number): number {
+/** APCA relative luminance: linear-light sRGB weighted by the APCA
+ *  luminance coefficients, no per-channel exponent. The norm/rev
+ *  perceptual exponents live in apcaLcFromYtxt, applied once to the
+ *  clamped Y values — not per-channel here. Shared by text and
+ *  background luminance calls below. */
+function apcaLuminance(r: number, g: number, b: number): number {
   const lin = srgbToLinear.apply(r, g, b);
-  return 0.2126729 * Math.pow(lin.r, 0.56)
-       + 0.7151522 * Math.pow(lin.g, 0.56)
-       + 0.0721750 * Math.pow(lin.b, 0.56);
-}
-
-/** APCA Lc background luminance (background exponent). */
-function apcaBg(r: number, g: number, b: number): number {
-  const lin = srgbToLinear.apply(r, g, b);
-  return 0.2126729 * Math.pow(lin.r, 0.65)
-       + 0.7151522 * Math.pow(lin.g, 0.65)
-       + 0.0721750 * Math.pow(lin.b, 0.65);
+  return 0.2126729 * lin.r + 0.7151522 * lin.g + 0.0721750 * lin.b;
 }
 
 /** APCA Lc absolute value between text and background, computed from
@@ -97,13 +91,13 @@ class EnsureContrast {
     const bgRgb: RgbInterfaceType = background.rgb;
     const Ybg = algorithm === 'wcag21'
       ? rgbLuminance(bgRgb.r, bgRgb.g, bgRgb.b)
-      : apcaBg(bgRgb.r, bgRgb.g, bgRgb.b);
+      : apcaLuminance(bgRgb.r, bgRgb.g, bgRgb.b);
 
     // Compute initial foreground contrast from its existing rgb.
     const fgRgb: RgbInterfaceType = foreground.rgb;
     const initialContrast = algorithm === 'wcag21'
       ? wcagRatio(rgbLuminance(fgRgb.r, fgRgb.g, fgRgb.b), Ybg)
-      : apcaLcFromYtxt(apcaFg(fgRgb.r, fgRgb.g, fgRgb.b), Ybg);
+      : apcaLcFromYtxt(apcaLuminance(fgRgb.r, fgRgb.g, fgRgb.b), Ybg);
 
     if (initialContrast >= minRatio) {
       return foreground;
@@ -116,7 +110,12 @@ class EnsureContrast {
     const fmt    = foreground.sourceFormat;
     const hints  = foreground.hints;
     const isSrgb = SRGB_FORMATS.has(fmt);
-    const step   = fgL < background.oklch.l ? -0.02 : 0.02;
+    // Contrast is monotonic only within a polarity branch: to gain contrast
+    // against a fixed background you move the foreground toward the
+    // luminance extreme farther from that background. The direction
+    // therefore depends on the background alone, not on where the
+    // foreground started — darken on a light bg, lighten on a dark bg.
+    const step   = background.oklch.l > 0.5 ? -0.02 : 0.02;
 
     let currentL = fgL;
     let lastL    = currentL;
@@ -128,7 +127,7 @@ class EnsureContrast {
 
       const ratio = algorithm === 'wcag21'
         ? wcagRatio(rgbLuminance(rgb.r, rgb.g, rgb.b), Ybg)
-        : apcaLcFromYtxt(apcaFg(rgb.r, rgb.g, rgb.b), Ybg);
+        : apcaLcFromYtxt(apcaLuminance(rgb.r, rgb.g, rgb.b), Ybg);
 
       lastL   = newL;
       lastRgb = rgb;

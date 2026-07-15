@@ -23,9 +23,7 @@ import { RoleGeometry } from '../RoleGeometry.ts';
 class TargetHue {
   static resolve(h: number, role: RoleDefinitionInterfaceType): number {
     if (role.hue !== undefined) {
-      return role.hueClamp !== undefined
-        ? RoleGeometry.hueTowards(h, role.hue, role.hueClamp)
-        : (((role.hue % 360) + 360) % 360);
+      return RoleGeometry.hueTowards(h, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
     }
     return role.hueOffset ?? h;
   }
@@ -165,9 +163,9 @@ class ResolveRoles implements TaskInterface {
   readonly 'name' = 'resolve:roles';
 
   readonly 'manifest': TaskManifestInterfaceType = {
-    'description': 'Assigns colors to schema roles by hint match then OKLCH distance to range center, then nudges the assigned color into the role\'s declared ranges. Required roles are guaranteed populated and constraint-satisfying.',
+    'description': 'Assigns colors to schema roles by hint match then OKLCH distance to range center, then nudges the assigned color into the role\'s declared ranges (hue/hueClamp optionally overridden per role via metadata[\'core:hueTargetOverrides\']). Required roles are guaranteed populated and constraint-satisfying.',
     'name':        'resolve:roles',
-    'reads':       ['colors', 'input.roles'],
+    'reads':       ['colors', 'input.roles', 'metadata'],
     'writes':      ['roles', 'metadata']
   };
 
@@ -187,11 +185,17 @@ class ResolveRoles implements TaskInterface {
 
     const schema = state.input.roles;
     const synthesized: string[] = [];
+    const hueTargetOverrides = state.metadata['core:hueTargetOverrides'] as Record<string, { 'hue': number; 'hueClamp'?: number }> | undefined;
 
-    for (const role of schema.roles) {
-      if (role.derivedFrom !== undefined && role.derivedFrom.length > 0) {
+    for (const inputRole of schema.roles) {
+      if (inputRole.derivedFrom !== undefined && inputRole.derivedFrom.length > 0) {
         continue;
       }
+
+      const targetOverride = hueTargetOverrides?.[inputRole.name];
+      const role = targetOverride === undefined
+        ? inputRole
+        : { ...inputRole, 'hue': targetOverride.hue, ...(targetOverride.hueClamp === undefined ? {} : { 'hueClamp': targetOverride.hueClamp }) };
 
       // Hint match takes priority: explicit user intent.
       const hintMatch = state.colors.find((c) => {return c.hints?.role === role.name;});

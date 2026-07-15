@@ -3,7 +3,9 @@
  * exercised directly for the invalid-transition case since `transition()`
  * rethrows (as ReducerThrewError) rather than swallowing. Also covers the
  * MUTATE_SEEDS effect payloads (reduce() only describes the effect; it never
- * performs the mutation) and an EffectInterpreter round-trip smoke test.
+ * performs the mutation), the 'dragging'-variant handling that keeps
+ * `reduce()` total for every reachable event, and an EffectInterpreter
+ * round-trip smoke test.
  */
 
 import { test } from 'node:test';
@@ -54,15 +56,39 @@ test('DRAG_START -> DRAG_MOVE -> DRAG_END full cycle', () => {
   assert.equal(ended.state.activeIndex, 3);
 });
 
-test('POPOVER_OPEN -> POPOVER_CLOSE cycle', () => {
+test('SELECT_MODE while dragging settles the drag and applies the mode (does not throw)', () => {
   const m = new IridisUiMachine();
-  const idle = { 'activeIndex': 2, 'mode': 'picker' as const, 'variant': 'idle' as const };
-  const opened = m.transition(idle, { 'type': 'POPOVER_OPEN' });
-  assert.equal(opened.state.variant, 'popoverOpen');
+  const dragging = { 'activeIndex': 2, 'dragPx': -45, 'mode': 'picker' as const, 'variant': 'dragging' as const };
+  const { effects, state } = m.transition(dragging, { 'mode': 'image', 'type': 'SELECT_MODE' });
+  assert.deepEqual(effects, []);
+  assert.equal(state.variant, 'idle');
+  assert.equal(state.mode, 'image');
+  assert.equal(state.activeIndex, 0);
+  assert.equal('dragPx' in state, false);
+});
 
-  const closed = m.transition(opened.state, { 'type': 'POPOVER_CLOSE' });
-  assert.equal(closed.state.variant, 'idle');
-  assert.equal(closed.state.activeIndex, 2);
+test('a second DRAG_START while already dragging is idempotent', () => {
+  const m = new IridisUiMachine();
+  const dragging = { 'activeIndex': 1, 'dragPx': 30, 'mode': 'picker' as const, 'variant': 'dragging' as const };
+  const { effects, state } = m.transition(dragging, { 'type': 'DRAG_START' });
+  assert.deepEqual(effects, []);
+  assert.deepEqual(state, dragging);
+});
+
+test('NAVIGATE while dragging is a safe no-op (does not throw, drag state untouched)', () => {
+  const m = new IridisUiMachine();
+  const dragging = { 'activeIndex': 1, 'dragPx': 10, 'mode': 'picker' as const, 'variant': 'dragging' as const };
+  const { effects, state } = m.transition(dragging, { 'count': 5, 'delta': 1, 'type': 'NAVIGATE' });
+  assert.deepEqual(effects, []);
+  assert.deepEqual(state, dragging);
+});
+
+test('SET_SEED while dragging still emits its MUTATE_SEEDS effect and leaves state unchanged', () => {
+  const m = new IridisUiMachine();
+  const dragging = { 'activeIndex': 0, 'dragPx': 5, 'mode': 'picker' as const, 'variant': 'dragging' as const };
+  const { effects, state } = m.transition(dragging, { 'hex': '#010203', 'index': 0, 'type': 'SET_SEED' });
+  assert.deepEqual(effects, [{ 'hex': '#010203', 'index': 0, 'op': 'set', 'variant': 'MUTATE_SEEDS' }]);
+  assert.deepEqual(state, dragging);
 });
 
 test('reduce() throws on an invalid transition (DRAG_MOVE while idle)', () => {
@@ -70,9 +96,9 @@ test('reduce() throws on an invalid transition (DRAG_MOVE while idle)', () => {
   assert.throws(() => { m.reduce(m.getInitialState(), { 'dragPx': 0, 'type': 'DRAG_MOVE' }); }, /Cannot handle event "DRAG_MOVE" in state "idle"/);
 });
 
-test('reduce() throws on an invalid transition (POPOVER_CLOSE while idle)', () => {
+test('reduce() throws on an invalid transition (DRAG_END while idle)', () => {
   const m = new IridisUiMachine();
-  assert.throws(() => { m.reduce(m.getInitialState(), { 'type': 'POPOVER_CLOSE' }); }, /Cannot handle event "POPOVER_CLOSE" in state "idle"/);
+  assert.throws(() => { m.reduce(m.getInitialState(), { 'count': 5, 'shiftedBy': 1, 'type': 'DRAG_END' }); }, /Cannot handle event "DRAG_END" in state "idle"/);
 });
 
 test('transition() rethrows (does not swallow) on an invalid transition', () => {

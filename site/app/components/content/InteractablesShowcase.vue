@@ -12,7 +12,7 @@ import { ALIAS_COLOR_NAMES, type AliasColorType } from '~/theme/Tokens.ts';
  * iteration inside one `flex flex-wrap` parent wrap at the child level, not
  * the pair level, which is what previously interleaved them.
  */
-const { roleViews, roles, contrastStrictness, sortedRoleContrastRows } = useIridis();
+const { roleViews, roles, contrastStrictness, sortedRoleContrastRows, contrastReport } = useIridis();
 
 const COLORS = ALIAS_COLOR_NAMES;
 type ColorType = AliasColorType;
@@ -24,13 +24,26 @@ const densityOptions = ['compact', 'cozy', 'spacious'];
 /** A real filter applied to the avatar/badge row below, not decoration. */
 const checkedColors = ref<ColorType[]>(['primary', 'success', 'error']);
 
-const bg = computed<string>(() => roles.value['background'] ?? '#000000');
+// 'background' is required in every schema tier and resolved synchronously
+// before any component reads this — never a hardcoded placeholder.
+const bg = computed<string>(() => roles.value['background']!);
 const complianceLabel = computed(() => ['AA', 'AAA', 'APCA'][contrastStrictness.value] ?? 'AA');
-/** Reads the same sortedRoleContrastRows every other compliance display on
- * the page reads — never a second independent contrastRatio() sweep, so
- * this stat can't silently diverge from Roles table / Resolved roles /
- * Clamps if complianceFor()'s thresholds ever change. */
+/** Under AA/AAA (strictness 0/1) reads the same sortedRoleContrastRows every
+ * other compliance display on the page reads — never a second independent
+ * contrastRatio() sweep, so this stat can't silently diverge from Roles
+ * table / Resolved roles / Clamps if complianceFor()'s thresholds ever
+ * change. Under APCA (strictness 2) the WCAG-derived `compliance` field
+ * on those rows doesn't reflect the enforced APCA Lc target at all, so this
+ * reads contrastReport.apca.pairs instead — the same APCA result set
+ * SchemaComplianceCard and PipelineExplainer render as "X/Y pairs passing" —
+ * so the label 'APCA' next to this number always matches the metric behind it. */
 const compliancePct = computed<number>(() => {
+  if (contrastStrictness.value === 2) {
+    const pairs = contrastReport.value.apca?.pairs ?? [];
+    if (pairs.length === 0) {return 0;}
+    const passing = pairs.filter((p) => {return p.pass;}).length;
+    return Math.round((passing / pairs.length) * 100);
+  }
   const rows = sortedRoleContrastRows.value;
   if (rows.length === 0) {return 0;}
   const passing = rows.filter((r) => {return contrastStrictness.value === 1 ? r.compliance === 'AAA' : r.compliance !== 'fail';}).length;
@@ -98,14 +111,25 @@ const pageRoles = computed(() => sortedRoleContrastRows.value.slice((page.value 
           :key="c"
           class="flex items-center gap-1.5"
         >
-          <UAvatar :alt="c" size="sm" :ui="{ root: `bg-[var(--ui-color-${c}-500)] text-[var(--ui-color-${c}-50)]` }">
+          <UAvatar
+            :alt="c"
+            size="sm"
+            :ui="{ root: `bg-[var(--ui-color-${c}-500)] text-[var(--ui-color-${c}-50)]` }"
+          >
             {{ c[0]?.toUpperCase() }}
           </UAvatar>
-          <UBadge :color="c" variant="subtle" size="sm">
+          <UBadge
+            :color="c"
+            variant="subtle"
+            size="sm"
+          >
             {{ c }}
           </UBadge>
         </div>
-        <span v-if="checkedColors.length === 0" class="text-xs text-dimmed italic">Check a color above to show it here.</span>
+        <span
+          v-if="checkedColors.length === 0"
+          class="text-xs text-dimmed italic"
+        >Check a color above to show it here.</span>
       </div>
     </div>
 
@@ -113,7 +137,10 @@ const pageRoles = computed(() => sortedRoleContrastRows.value.slice((page.value 
       <div class="mb-2 text-xs font-medium uppercase tracking-wide text-dimmed">
         UTabs
       </div>
-      <UTabs :items="tabItems" size="sm">
+      <UTabs
+        :items="tabItems"
+        size="sm"
+      >
         <template #overview>
           <p class="p-2 text-sm text-muted">
             {{ roleViews.length }} roles resolved · background <code class="font-mono text-xs">{{ bg }}</code> · compliance target {{ complianceLabel }}.
@@ -133,7 +160,9 @@ const pageRoles = computed(() => sortedRoleContrastRows.value.slice((page.value 
         <template #contrastTab>
           <div class="p-2">
             <UProgress :model-value="compliancePct" />
-            <p class="mt-1 text-xs text-muted">{{ compliancePct }}% of roles meet {{ complianceLabel }}.</p>
+            <p class="mt-1 text-xs text-muted">
+              {{ compliancePct }}% of roles meet {{ complianceLabel }}.
+            </p>
           </div>
         </template>
       </UTabs>
@@ -145,7 +174,9 @@ const pageRoles = computed(() => sortedRoleContrastRows.value.slice((page.value 
       </div>
       <UAccordion :items="accordionItems">
         <template #body="{ item }">
-          <p class="text-xs text-muted">{{ item.content }}</p>
+          <p class="text-xs text-muted">
+            {{ item.content }}
+          </p>
         </template>
       </UAccordion>
     </div>
@@ -163,7 +194,12 @@ const pageRoles = computed(() => sortedRoleContrastRows.value.slice((page.value 
           :title="r.name"
         />
       </div>
-      <UPagination v-model:page="page" :total="sortedRoleContrastRows.length" :items-per-page="pageSize" size="xs" />
+      <UPagination
+        v-model:page="page"
+        :total="sortedRoleContrastRows.length"
+        :items-per-page="pageSize"
+        size="xs"
+      />
     </div>
 
     <div class="rounded-lg border border-default p-3 lg:col-span-2">

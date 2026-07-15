@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
-import { sortRoleRows } from '~/utils/roleSort.ts';
+import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 /**
  * The iridis-4 ⊂ 8 ⊂ 12 ⊂ 16 ⊂ 32 schema hierarchy as a tree: each tier node
@@ -34,7 +34,12 @@ const tree = computed<TierType[]>(() => {
     });
     const leafRows = added.map((r) => {
       const row = byName.get(r.name);
-      const hex = roles.value[r.name] ?? '#888888';
+      // This tree shows every tier up to iridis-32 regardless of which schema
+      // is currently active, so a role belonging to a deeper tier than
+      // schemaName.value genuinely isn't resolved yet — fall back to the
+      // always-present, required 'background' role (a derived neutral) to
+      // signal "not currently active" rather than a hardcoded placeholder.
+      const hex = roles.value[r.name] ?? roles.value['background']!;
       return {
         'c': row?.c ?? 0, 'compliance': row?.compliance ?? 'fail', 'derivedFrom': r.derivedFrom, 'h': row?.h ?? 0, hex,
         'l': row?.l ?? 0, 'label': r.name, 'name': r.name, 'ratio': row?.ratio ?? 1, 'value': `${tierName}:${r.name}`
@@ -83,7 +88,10 @@ const tree = computed<TierType[]>(() => {
     <p class="mt-3 text-xs text-muted">
       Each leaf above is one <code class="font-mono text-xs">RoleDefinitionInterface</code> entry — a named,
       intent-classified contract, not a raw color. See
-      <a href="#04-engine-api" class="text-primary hover:underline">Long-form Engine API</a> for what every field does.
+      <a
+        href="#04-engine-api"
+        class="text-primary hover:underline"
+      >Long-form Engine API</a> for what every field does.
     </p>
   </UCard>
 </template>

@@ -1,0 +1,24 @@
+[data-iridis-theme='formal'] {
+  --font-display: "Playfair Display", "Georgia", serif;
+  --font-sans: "Source Sans Pro", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --ui-radius: 2px;
+  --iridis-radius-sm: 1px;
+  --iridis-radius-md: 2px;
+  --iridis-radius-lg: 3px;
+  --iridis-border-style: solid;
+  /* Tone: nearly grayscale — an executive setting doesn't wash the page in
+     saturated color, whatever the resolved palette happens to be. */
+  --iridis-ambient-saturate: 0.2;
+  --iridis-ambient-contrast: 0.95;
+  /* An executive setting gets a hairline glow, not a neon halo. */
+  --iridis-glow-strength: 0.15;
+}
+
+/* No ambient motion at all — particleCounts are all zero (see formal.ts), so
+   there is nothing to animate; a boardroom doesn't have a twinkling
+   starfield behind it. */
+
+/* Hero: no floating color orbs behind the wordmark either — an executive
+   setting doesn't have soft blurred blobs drifting behind the letterhead. */
+[data-iridis-theme='formal'] .hero-orb { display: none !important; }

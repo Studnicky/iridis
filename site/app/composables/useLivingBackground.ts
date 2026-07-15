@@ -14,11 +14,11 @@ import { reactive } from 'vue';
 import { perpendicular } from '@studnicky/iridis-algebra';
 import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 import { evaluate } from '@studnicky/iridis-anima';
-import { oklchToRgb, rgbToHex } from '@studnicky/iridis/math';
 import { ClockBinding } from '@studnicky/iridis-pulse';
 
 import type { RoleHexMapType, RoleViewType } from './types/index.ts';
 import { Tokens } from '../theme/Tokens.ts';
+import { oklchToHex } from '../utils/oklchToHex.ts';
 import { useIridis } from './useIridis.ts';
 
 /** One recorded color-drift sample for a decorative role at a given tick. */
@@ -49,7 +49,7 @@ export function createRingBuffer<T>(capacity: number): RingBuffer<T> {
 }
 
 /** Nuxt UI alias -> first-candidate source role, per Tokens.ts's ALIAS_SOURCE — restricted to the decorative aliases AmbientBackground.vue's LAVA_ROLES actually reads. */
-const DECORATIVE_ALIASES: Record<string, string> = {
+export const DECORATIVE_ALIASES: Record<string, string> = {
   'primary':   'brand',
   'secondary': 'accent-alt',
   'success':   'success',
@@ -81,12 +81,6 @@ export function driftTarget(from: PaletteInterfaceType, rand: () => number = Mat
     to = perpendicular(to, role, delta);
   }
   return to;
-}
-
-/** OKLCH -> hex, composed from the two core math primitives (no intermediate rounding beyond rgbToHex's own byte clamp). */
-export function oklchToHex(l: number, c: number, h: number): string {
-  const rgb = oklchToRgb.apply(l, c, h).rgb;
-  return rgbToHex.apply(rgb.r, rgb.g, rgb.b);
 }
 
 /** Builds the partial `--ui-color-{alias}-500` token set for one animation frame's palette. */
