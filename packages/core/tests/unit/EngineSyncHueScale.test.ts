@@ -80,6 +80,48 @@ test('hueClamp bounds the nudge so semantics stay rooted in the palette', () => 
   assert.ok(successHue < 120, `success hue ${successHue} stays warm/palette-rooted, not pure green`);
 });
 
+test('core:hueOffsetOverrides overrides a derived role\'s schema hueOffset', () => {
+  const schema: RoleSchemaInterfaceType = {
+    'name': 'overridden',
+    'roles': [
+      { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },
+      { 'name': 'brand',      'intent': 'accent',     'required': true, 'lightnessRange': [0.55, 0.78], 'chromaRange': [0.12, 0.30] },
+      // schema says +30, override says +120 (triadic) — the override must win
+      { 'name': 'accent-two', 'derivedFrom': 'brand', 'hueOffset': 30, 'lightnessRange': [0.55, 0.78], 'chromaRange': [0.12, 0.30] },
+    ],
+  };
+  const engine = engineFor(['intake:hex', 'resolve:roles', 'expand:family']);
+  const state = engine.run({
+    'colors': ['#7c3aed'],
+    'metadata': { 'core:hueOffsetOverrides': { 'accent-two': 120 } },
+    'roles': schema,
+  });
+  const brandHue = hueOf(state.roles['brand']!.hex);
+  const derivedHue = hueOf(state.roles['accent-two']!.hex);
+  const delta = ((derivedHue - brandHue + 360) % 360);
+  assert.ok(Math.abs(delta - 120) < 2, `accent-two is ${delta.toFixed(1)}° from brand, expected ~120° (override), not the schema's 30°`);
+});
+
+test('core:hueTargetOverrides overrides a directly-resolved role\'s schema hue', () => {
+  const schema: RoleSchemaInterfaceType = {
+    'name': 'target-overridden',
+    'roles': [
+      { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },
+      // no hue in schema; override pins it to 300 (magenta), bounded to 20°
+      { 'name': 'error', 'intent': 'critical', 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.16, 0.28] },
+    ],
+  };
+  const engine = engineFor(['intake:hex', 'resolve:roles']);
+  const state = engine.run({
+    'colors': ['#06b6d4'], // cyan, ~hue 220
+    'metadata': { 'core:hueTargetOverrides': { 'error': { 'hue': 300, 'hueClamp': 20 } } },
+    'roles': schema,
+  });
+  const h = hueOf(state.roles['error']!.hex);
+  const rotatedFromCandidate = Math.abs(((h - 220 + 540) % 360) - 180);
+  assert.ok(rotatedFromCandidate <= 25, `error rotated only ${rotatedFromCandidate.toFixed(0)}° from its cyan candidate (bounded by the override's 20° clamp), not jumped straight to 300°`);
+});
+
 test('lightnessTarget produces an engine-resolved tonal step', () => {
   const engine = engineFor(['intake:hex', 'resolve:roles', 'derive:variant']);
   const state = engine.run({

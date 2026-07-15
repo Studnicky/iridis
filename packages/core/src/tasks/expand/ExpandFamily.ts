@@ -58,9 +58,9 @@ class ExpandFamily implements TaskInterface {
   readonly 'name' = 'expand:family';
 
   readonly 'manifest': TaskManifestInterfaceType = {
-    'description': 'Derives missing roles that have derivedFrom set. Applies OKLCH deltas from the source role. Never overwrites an already-assigned role.',
+    'description': 'Derives missing roles that have derivedFrom set. Applies OKLCH deltas from the source role (hueOffset/hue/hueClamp, optionally overridden per role via metadata[\'core:hueOffsetOverrides\']/[\'core:hueTargetOverrides\']). Never overwrites an already-assigned role.',
     'name':        'expand:family',
-    'reads':       ['roles', 'input.roles'],
+    'reads':       ['roles', 'input.roles', 'metadata'],
     'writes':      ['roles']
   };
 
@@ -78,10 +78,23 @@ class ExpandFamily implements TaskInterface {
       return;
     }
 
-    for (const role of state.input.roles.roles) {
-      if (role.derivedFrom === undefined || role.derivedFrom === '') {
+    const hueOffsetOverrides = state.metadata['core:hueOffsetOverrides'] as Record<string, number> | undefined;
+    const hueTargetOverrides = state.metadata['core:hueTargetOverrides'] as Record<string, { 'hue': number; 'hueClamp'?: number }> | undefined;
+
+    for (const inputRole of state.input.roles.roles) {
+      if (inputRole.derivedFrom === undefined || inputRole.derivedFrom === '') {
         continue;
       }
+
+      const derivedFrom = inputRole.derivedFrom;
+      const offsetOverride = hueOffsetOverrides?.[inputRole.name];
+      const targetOverride = hueTargetOverrides?.[inputRole.name];
+      const role = {
+        ...inputRole,
+        ...(offsetOverride === undefined ? {} : { 'hueOffset': offsetOverride }),
+        ...(targetOverride === undefined ? {} : { 'hue': targetOverride.hue }),
+        ...(targetOverride?.hueClamp === undefined ? {} : { 'hueClamp': targetOverride.hueClamp })
+      };
 
       if (state.roles[role.name] !== undefined) {
         ctx.logger.debug(
@@ -96,7 +109,7 @@ class ExpandFamily implements TaskInterface {
         continue;
       }
 
-      const sourceColor = state.roles[role.derivedFrom];
+      const sourceColor = state.roles[derivedFrom];
 
       if (sourceColor === undefined) {
         ctx.logger.warn(
@@ -106,7 +119,7 @@ class ExpandFamily implements TaskInterface {
             .status(LOG_STATUS.INVALID)
             .message('Role derivedFrom source is not assigned')
             .context({
-              'derivedFrom': role.derivedFrom,
+              'derivedFrom': derivedFrom,
               'role':        role.name
             })
             .build()
@@ -126,7 +139,7 @@ class ExpandFamily implements TaskInterface {
           .status(LOG_STATUS.SUCCESS)
           .message('Derived role from source')
           .context({
-            'derivedFrom': role.derivedFrom,
+            'derivedFrom': derivedFrom,
             'role':        role.name
           })
           .build()
