@@ -102,11 +102,12 @@ const REQUIRED_COLOR_STAGES = COLOR_PIPELINE.filter((stage) => {return !OPTIONAL
 /** Mirrors useIridis.ts's contrastStrictness → level mapping (0=AA, 1=AAA, 2=APCA/Lc); anything outside 0/1 falls back to Lc, matching the original nested-ternary's else branch. */
 const CONTRAST_LEVEL_BY_STRICTNESS: Record<number, 'AA' | 'AAA' | 'Lc'> = { '0': 'AA', '1': 'AAA' };
 
-/** Mirrors useIridis.ts's contrastStrictness → algorithm/level mapping (0=AA, 1=AAA, 2=APCA/Lc) used by both run() and runCombineNow() there, so exported code enforces the same contrast standard the live palette does. */
-function contrastConfigFor(strictness: number): { 'algorithm': 'apca' | 'wcag21'; 'level': 'AA' | 'AAA' | 'Lc' } {
+/** Mirrors useIridis.ts's contrastStrictness → algorithm/level mapping (0=AA, 1=AAA, 2=APCA/Lc) and its cvdCorrect passthrough, used by both run() and runCombineNow() there, so exported code enforces the same contrast standard — and the same CVD auto-correction of failing role pairs — the live palette does. */
+function contrastConfigFor(strictness: number, cvdCorrect: boolean): { 'algorithm': 'apca' | 'wcag21'; 'cvdCorrect': boolean; 'level': 'AA' | 'AAA' | 'Lc' } {
   return {
-    'algorithm': strictness === 2 ? 'apca' : 'wcag21',
-    'level':     CONTRAST_LEVEL_BY_STRICTNESS[strictness] ?? 'Lc'
+    'algorithm':  strictness === 2 ? 'apca' : 'wcag21',
+    'cvdCorrect': cvdCorrect,
+    'level':      CONTRAST_LEVEL_BY_STRICTNESS[strictness] ?? 'Lc'
   };
 }
 
@@ -134,7 +135,8 @@ class ColorStages {
 class MainOutputs {
   static build(
     schemaName: string, framing: 'dark' | 'light', activeSeeds: readonly PickerSeedType[],
-    contrastStrictness: number, derivationConfig: DerivationConfigType, semanticHuesEnabled: boolean
+    contrastStrictness: number, derivationConfig: DerivationConfigType, semanticHuesEnabled: boolean,
+    cvdCorrect: boolean, colorSpace: 'srgb' | 'displayP3'
   ): Record<string, OutputRowType | undefined> {
     const engine = new Engine();
     for (const t of coreTasks) {engine.tasks.register(t);}
@@ -161,10 +163,10 @@ class MainOutputs {
     const pair = roleSchemaByName[schemaName] ?? roleSchemaByName['iridis-32'];
     const st = engine.run({
       'colors':   activeSeeds,
-      'contrast': contrastConfigFor(contrastStrictness),
+      'contrast': contrastConfigFor(contrastStrictness, cvdCorrect),
       'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig, 'derivation:semanticHuesEnabled': semanticHuesEnabled },
       'roles':    pair![framing],
-      'runtime':  { 'colorSpace': 'srgb', 'framing': framing }
+      'runtime':  { 'colorSpace': colorSpace, 'framing': framing }
     });
     const out = st.outputs as Record<string, unknown>;
     const rows: Record<string, OutputRowType | undefined> = {};
@@ -226,12 +228,13 @@ let observeStarted = false;
 function activate(): void {
   if (activated) {return;}
   activated = true;
-  const { activeSeeds, contrastStrictness, derivationConfig, framing, schemaName, semanticHuesEnabled } = useIridis();
+  const { activeSeeds, colorSpace, contrastStrictness, cvdCorrect, derivationConfig, framing, schemaName, semanticHuesEnabled } = useIridis();
   function generate(): void {
     try {
       const rows = MainOutputs.build(
         schemaName.value, framing.value, activeSeeds.value,
-        contrastStrictness.value, derivationConfig.value, semanticHuesEnabled.value
+        contrastStrictness.value, derivationConfig.value, semanticHuesEnabled.value,
+        cvdCorrect.value, colorSpace.value
       );
       rows.vscode = VscodeOutput.build(activeSeeds.value);
       outputsByKey.value = rows;
@@ -249,7 +252,7 @@ function activate(): void {
   }
   const schedule = debounce(generate, 120);
   generate();
-  watch([activeSeeds, framing, schemaName, contrastStrictness, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true });
+  watch([activeSeeds, framing, schemaName, contrastStrictness, derivationConfig, semanticHuesEnabled, cvdCorrect, colorSpace], schedule, { 'deep': true });
 }
 
 /** Starts observing the Stylesheets stage's own section (`#result`) — a generous `rootMargin` pre-warms generation just before the user actually scrolls it into view, rather than the instant it's technically on-screen. Falls back to immediate activation if IntersectionObserver/the target element aren't available (SSR, or an unexpected DOM shape). */

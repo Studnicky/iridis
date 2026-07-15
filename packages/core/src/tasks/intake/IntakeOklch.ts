@@ -20,9 +20,9 @@ type OklchInput = OklchInterfaceType & {
 function isOklchInput(v: unknown): v is OklchInput {
   if (typeof v !== 'object' || v === null) {return false;}
   const o = v as Record<string, unknown>;
-  return typeof o.l === 'number'
-    && typeof o.c === 'number'
-    && typeof o.h === 'number'
+  return typeof o.l === 'number' && Number.isFinite(o.l)
+    && typeof o.c === 'number' && Number.isFinite(o.c)
+    && typeof o.h === 'number' && Number.isFinite(o.h)
     && typeof o.r !== 'number'
     && typeof o.s !== 'number';
 }
