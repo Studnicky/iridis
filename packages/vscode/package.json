@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-vscode",
   "description": "Derives a full VS Code theme (tokenColors, semanticTokenColors, 101 workbench colors) from a resolved palette.",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-trajectory",
   "description": "Curated library of named palette trajectories — multi-stop curves through OKLCH×N space.",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
