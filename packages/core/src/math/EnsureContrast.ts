@@ -111,11 +111,13 @@ class EnsureContrast {
     const hints  = foreground.hints;
     const isSrgb = SRGB_FORMATS.has(fmt);
     // Contrast is monotonic only within a polarity branch: to gain contrast
-    // against a fixed background you move the foreground toward the
-    // luminance extreme farther from that background. The direction
-    // therefore depends on the background alone, not on where the
-    // foreground started — darken on a light bg, lighten on a dark bg.
-    const step   = background.oklch.l > 0.5 ? -0.02 : 0.02;
+    // against a fixed background you move the foreground toward the LUMINANCE
+    // extreme farther from that background — darken toward black on a
+    // luminance-light bg, lighten toward white on a luminance-dark one. The
+    // decision keys off WCAG relative luminance, not OKLCH lightness: a
+    // saturated hue (e.g. violet) can read "light" in OKLCH L yet be
+    // luminance-dark, and contrast is a function of luminance, not L.
+    const step   = rgbLuminance(bgRgb.r, bgRgb.g, bgRgb.b) > 0.5 ? -0.02 : 0.02;
 
     let currentL = fgL;
     let lastL    = currentL;
