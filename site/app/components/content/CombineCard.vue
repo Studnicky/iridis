@@ -15,7 +15,7 @@ import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/type
  * The Combine stage — final merge tuning across every uploaded image. Its own
  * top-level stage carousel card (only rendered once at least one image is
  * uploaded, see index.vue), between Upload and Refine. Every control here
- * (algorithm, histogram bits, ΔE cap, harmonize, lightness/chroma range) is a
+ * (algorithm, histogram bits, merge input cap, harmonize, lightness/chroma range) is a
  * SEPARATE set of settings from any single image's own extraction controls
  * (those live on that image's own card in Upload) — this stage's controls
  * feed a second, independent re-cluster pass over the merged/weighted
@@ -172,7 +172,7 @@ const selectedPalettes = computed<SelectedPaletteType[]>(() => uploadedImages.va
       </UFormField>
       <UFormField
         v-if="imgAlgorithm === 'delta-e'"
-        :label="`ΔE cap · ${imgDeltaECap}`"
+        :label="`Merge input cap · ${imgDeltaECap}`"
       >
         <USlider
           :model-value="imgDeltaECap"
@@ -182,7 +182,7 @@ const selectedPalettes = computed<SelectedPaletteType[]>(() => uploadedImages.va
           @update:model-value="sendImageAction({ cap: $event as number, type: IridisUiActionType.SET_IMAGE_DELTA_E_CAP })"
         />
         <p class="mt-1 text-xs text-muted">
-          Caps how many histogram bins feed the ΔE merger (it's O(n²), so this bounds the work). Lower keeps only the heaviest bins; raise it if a distinct minor color is getting dropped before it can merge.
+          Not a color-distance threshold (that's Harmonize threshold, below) — this caps how many histogram bins are even considered before the ΔE merger runs (it's O(n²), so this bounds the work). Lower keeps only the heaviest bins; raise it if a distinct minor color is getting dropped before it gets a chance to merge.
         </p>
       </UFormField>
 
@@ -223,7 +223,7 @@ const selectedPalettes = computed<SelectedPaletteType[]>(() => uploadedImages.va
           @update:model-value="sendImageAction({ threshold: $event as number, type: IridisUiActionType.SET_IMAGE_HARMONIZE })"
         />
         <p class="mt-1 text-xs text-muted">
-          After clustering, hues within this ΔE distance of each other are nudged into agreement — cleans up near-duplicate colors the clustering step left slightly apart. 0 disables it.
+          After clustering, hues within this ΔE distance of each other are nudged into agreement — cleans up near-duplicate colors the clustering step left slightly apart. Runs regardless of clustering algorithm (unlike Merge input cap, above, which only applies to Delta-E clustering). 0 disables it.
         </p>
       </UFormField>
 

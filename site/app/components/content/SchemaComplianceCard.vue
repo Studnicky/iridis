@@ -3,6 +3,7 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
+import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
 import SchemaSelector from './SchemaSelector.vue';
 
 /**
@@ -18,6 +19,16 @@ const {
   contrastReport, enabledOptionalStages
 } = useIridis();
 const { send } = useIridisUiMachine();
+/**
+ * `send()` is fire-and-forget over an async EffectInterpreter — firing TWO
+ * send() calls back-to-back in the same synchronous handler (the state
+ * change, then a NAVIGATE_TO_TARGET) races: only the first lands before the
+ * interpreter is still busy processing it, silently dropping the second.
+ * activateTarget() is the actual underlying navigation implementation
+ * (see useNavigationTargets.ts), called directly instead of routing a
+ * second event through the FSM — same pattern UploadIntakeCard.vue uses.
+ */
+const { activateTarget } = useNavigationTargets();
 
 /** Compact pass/fail summary badges for whichever optional stages are currently enabled. */
 const stageSummaries = computed(() => {
@@ -69,7 +80,7 @@ const stageSummaries = computed(() => {
             :items="[{ label: 'sRGB', value: 'srgb' }, { label: 'Display P3', value: 'displayP3' }]"
             value-key="value"
             class="w-full"
-            @update:model-value="($event) => { send({ colorSpace: $event as 'srgb' | 'displayP3', type: IridisUiActionType.SET_COLOR_SPACE }); send({ targetId: 'pairingPreview', type: IridisUiActionType.NAVIGATE_TO_TARGET }); }"
+            @update:model-value="($event) => { send({ colorSpace: $event as 'srgb' | 'displayP3', type: IridisUiActionType.SET_COLOR_SPACE }); activateTarget('pairingPreview'); }"
           />
           <p class="text-sm text-muted">
             The color space used when exporting CSS variables. <strong class="text-highlighted">Display P3</strong> allows for much wider gamut colors on compatible displays.
@@ -98,15 +109,15 @@ const stageSummaries = computed(() => {
             <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
               <span
                 :class="contrastStrictness === 0 ? 'text-primary' : 'cursor-pointer hover:text-muted'"
-                @click="() => { send({ strictness: 0, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ targetId: 'cvd', type: IridisUiActionType.NAVIGATE_TO_TARGET }); }"
+                @click="() => { send({ strictness: 0, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); activateTarget('cvd'); }"
               >AA</span>
               <span
                 :class="contrastStrictness === 1 ? 'text-primary' : 'cursor-pointer hover:text-muted'"
-                @click="() => { send({ strictness: 1, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ targetId: 'cvd', type: IridisUiActionType.NAVIGATE_TO_TARGET }); }"
+                @click="() => { send({ strictness: 1, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); activateTarget('cvd'); }"
               >AAA</span>
               <span
                 :class="contrastStrictness === 2 ? 'text-primary' : 'cursor-pointer hover:text-muted'"
-                @click="() => { send({ strictness: 2, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ targetId: 'cvd', type: IridisUiActionType.NAVIGATE_TO_TARGET }); }"
+                @click="() => { send({ strictness: 2, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); activateTarget('cvd'); }"
               >APCA</span>
             </div>
             <USlider
@@ -114,7 +125,7 @@ const stageSummaries = computed(() => {
               :min="0"
               :max="2"
               :step="1"
-              @update:model-value="($event) => { send({ strictness: $event as number, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); send({ targetId: 'cvd', type: IridisUiActionType.NAVIGATE_TO_TARGET }); }"
+              @update:model-value="($event) => { send({ strictness: $event as number, type: IridisUiActionType.SET_CONTRAST_STRICTNESS }); activateTarget('cvd'); }"
             />
           </div>
         </div>

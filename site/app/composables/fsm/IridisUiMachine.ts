@@ -51,6 +51,8 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
         return { 'effects': [{ 'op': 'imgChromaRange', 'value': event.range, 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }], 'state': state };
       case IridisUiActionType.SET_DERIVATION_CONFIG:
         return { 'effects': [{ 'op': 'derivation', 'value': event.config, 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }], 'state': state };
+      case IridisUiActionType.SET_SEMANTIC_HUES_ENABLED:
+        return { 'effects': [{ 'op': 'semanticHuesEnabled', 'value': event.enabled, 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }], 'state': state };
       case IridisUiActionType.SET_ROLE_SORT:
         return { 'effects': [{ 'op': 'roleSort', 'value': event.keys, 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }], 'state': state };
       case IridisUiActionType.PIN_SEED_ROLE:

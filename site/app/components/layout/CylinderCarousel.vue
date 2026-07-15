@@ -32,10 +32,18 @@ const cardW = ref(760);
 // ever taller than the box it's given. Tracked per-index in cardHeights (see
 // observeAllCards) since .cyl-face is absolutely positioned and wouldn't
 // otherwise contribute to .cyl-scene's height at all.
+//
+// Capped at cardHCap (viewport-relative, like cardW): one disproportionately
+// tall face (e.g. a long settings list) would otherwise force every OTHER
+// face in the same deck to stretch to match it, leaving a huge dead blank
+// area under any short face — .cyl-card-body's own overflow-y:auto already
+// lets a face taller than the cap scroll internally, so nothing is lost.
 const cardHeights = ref<Record<number, number>>({});
+const cardHCap = ref(900);
 const cardH = computed(() => {
   const heights = Object.values(cardHeights.value);
-  return heights.length > 0 ? Math.max(...heights) : 720;
+  const naturalMax = heights.length > 0 ? Math.max(...heights) : 720;
+  return Math.min(naturalMax, cardHCap.value);
 });
 
 let startX = 0;
@@ -142,9 +150,10 @@ function cardStyle(): Record<string, string> {
   return { 'height': `${cardH.value}px` };
 }
 
-function measureWidth(): void {
+function measureViewport(): void {
   if (typeof window === 'undefined') return;
   cardW.value = Math.min(760, Math.round(window.innerWidth * 0.92));
+  cardHCap.value = Math.max(480, Math.round(window.innerHeight * 0.82));
 }
 function onKey(e: KeyboardEvent): void {
   if (e.key === 'ArrowRight') go(1);
@@ -197,16 +206,16 @@ function observeAllCards(): void {
 }
 
 // The carousel is often below the fold (e.g. a second instance further down
-// the page) — deferring measureWidth/observeAllCards/listener registration
+// the page) — deferring measureViewport/observeAllCards/listener registration
 // until it's actually near the viewport avoids doing 3D-transform layout work
 // for a deck the user may never scroll to.
 let activated = false;
 function activate(): void {
   if (activated) return;
   activated = true;
-  measureWidth();
+  measureViewport();
   nextTick(() => observeAllCards());
-  window.addEventListener('resize', measureWidth);
+  window.addEventListener('resize', measureViewport);
   window.addEventListener('keydown', onKey);
 }
 let visibilityObserver: IntersectionObserver | null = null;
@@ -225,7 +234,7 @@ onMounted(() => {
   visibilityObserver.observe(sceneRef.value);
 });
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', measureWidth);
+  window.removeEventListener('resize', measureViewport);
   window.removeEventListener('keydown', onKey);
   visibilityObserver?.disconnect();
   cardResizeObserver.disconnect();

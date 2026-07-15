@@ -22,6 +22,7 @@ export enum IridisUiActionType {
   SET_IMAGE_LIGHTNESS_RANGE = 'SET_IMAGE_LIGHTNESS_RANGE',
   SET_IMAGE_CHROMA_RANGE = 'SET_IMAGE_CHROMA_RANGE',
   SET_DERIVATION_CONFIG = 'SET_DERIVATION_CONFIG',
+  SET_SEMANTIC_HUES_ENABLED = 'SET_SEMANTIC_HUES_ENABLED',
   EXTRACT_IMAGE = 'EXTRACT_IMAGE',
   POPULATE_PICKER_FROM_IMAGE = 'POPULATE_PICKER_FROM_IMAGE',
   SELECT_IMAGE_CANDIDATE = 'SELECT_IMAGE_CANDIDATE',
@@ -67,6 +68,7 @@ export type IridisUiEventType =
   | { 'range': [number, number][]; 'type': IridisUiActionType.SET_IMAGE_LIGHTNESS_RANGE }
   | { 'range': [number, number][]; 'type': IridisUiActionType.SET_IMAGE_CHROMA_RANGE }
   | { 'config': DerivationConfig; 'type': IridisUiActionType.SET_DERIVATION_CONFIG }
+  | { 'enabled': boolean; 'type': IridisUiActionType.SET_SEMANTIC_HUES_ENABLED }
   | { 'source': 'sample'; 'type': IridisUiActionType.EXTRACT_IMAGE }
   | { 'file': File | readonly File[]; 'source': 'file'; 'type': IridisUiActionType.EXTRACT_IMAGE }
   | { 'hexes': string[]; 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE }
