@@ -6,6 +6,14 @@ All notable changes to iridis are documented here. Format follows [Keep a Change
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.10.0] - 2026-07-15
+
+### Added
+
 - Resolved-palette color graph: a live, physics-driven view of the derived palette with node spreading, drag, and per-edge contrast readouts
 - `iridis` semantic vocabulary (renamed from `colorology`), plus a JSON-LD/RDF export of the resolved palette that drives the color graph
 - Derivation-algorithm picker that actually applies, independently per relation, so each role's hue can be derived by a different algorithm
@@ -467,6 +475,7 @@ Pre-alpha. First wide-gamut + ontology-driven release.
 
 [Unreleased]: https://github.com/Studnicky/iridis/compare/v0.0.0...HEAD
 
+[0.10.0]: https://github.com/Studnicky/iridis/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/Studnicky/iridis/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/Studnicky/iridis/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Studnicky/iridis/compare/v0.7.1...v0.8.0
