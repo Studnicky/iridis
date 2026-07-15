@@ -219,9 +219,11 @@ export default [
         '@typescript-eslint/return-await': 'off'
       }
     },
-    // Config-file overrides — allow default exports in config files
+    // Config-file overrides — allow default exports in JS/TS config files.
+    // Restricted to executable config extensions so JSON/YAML data files named
+    // `*.config.json` are not pulled in and parsed as JavaScript.
     {
-      'files': ['eslint.config.*', '**/*.config.*', '**/*.config.mjs', '**/*.config.ts'],
+      'files': ['**/*.config.{js,cjs,mjs,ts,cts,mts}'],
       'rules': {
         '@studnicky/single-export': 'off',
         'import-x/no-default-export': 'off'
