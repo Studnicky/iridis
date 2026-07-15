@@ -2,17 +2,10 @@ import type {
   PaletteStateInterface, PipelineContextInterface, TaskInterface, TaskManifestInterfaceType
 } from '@studnicky/iridis/types';
 
-import type { DerivationConfig } from '../composables/types/colorDerivation.ts';
+import type { DerivationConfigType } from '../composables/types/colorDerivation.ts';
 
-/**
- * Semantic hue targets, applied as a BOUNDED nudge (the engine rotates each
- * role toward the target by at most SEMANTIC_HUE_CLAMP degrees). This keeps
- * success/warning/error/info rooted in the actual palette — a red-dominant
- * image yields warm-leaning semantics rather than pure green/blue that
- * appear nowhere in it.
- */
-export const SEMANTIC_HUE: Record<string, number> = { 'error': 25, 'info': 230, 'success': 160, 'warning': 60 };
-export const SEMANTIC_HUE_CLAMP = 90;
+import { SEMANTIC_HUE } from './semanticHue.ts';
+import { SEMANTIC_HUE_CLAMP } from './semanticHueClamp.ts';
 
 /**
  * Writes `hue`/`hueClamp` overrides for success/warning/error/info onto
@@ -39,7 +32,7 @@ class DeriveSemanticHues implements TaskInterface {
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
     if (state.input.roles === undefined) {return;}
     if (state.metadata['derivation:semanticHuesEnabled'] === false) {return;}
-    const config = state.metadata['derivation:config'] as DerivationConfig | undefined;
+    const config = state.metadata['derivation:config'] as DerivationConfigType | undefined;
 
     const overrides: Record<string, { 'hue': number; 'hueClamp': number }> = {};
     for (const role of state.input.roles.roles) {

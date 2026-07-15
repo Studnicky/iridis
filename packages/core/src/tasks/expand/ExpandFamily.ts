@@ -26,9 +26,7 @@ function deriveColor(
 
   let targetH: number;
   if (role.hue !== undefined) {
-    targetH = role.hueClamp !== undefined
-      ? RoleGeometry.hueTowards(h, role.hue, role.hueClamp)
-      : (((role.hue % 360) + 360) % 360);
+    targetH = RoleGeometry.hueTowards(h, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
   } else if (role.hueOffset !== undefined) {
     targetH = ((h + role.hueOffset) % 360 + 360) % 360;
   } else {
@@ -43,6 +41,12 @@ function deriveColor(
   );
 }
 
+/** A derived role whose source has not resolved yet, queued for a later pass. */
+type PendingDerivedRoleType = {
+  'derivedFrom': string;
+  'inputRole':   RoleDefinitionInterfaceType;
+};
+
 /**
  * Pipeline task that fills in roles declared with `derivedFrom` from
  * the assigned source role's color, applying the role's own
@@ -50,9 +54,16 @@ function deriveColor(
  * coordinates. Already-assigned derived roles are left alone; explicit
  * input wins over family derivation.
  *
- * Runs after `resolve:roles` so source roles exist; missing sources
- * are warned about and skipped rather than throwing, on the principle
- * that a partially-rendered palette is more useful than a hard failure.
+ * Resolves to a fixed point: a derived role whose source is itself a
+ * derived role appearing later in `roles` is retried on subsequent
+ * passes, so derivation order in the schema never produces a hole.
+ * Iteration stops once a pass makes no progress; anything still
+ * unresolved at that point (missing source, or a `derivedFrom` cycle)
+ * is warned about and left unassigned rather than looping forever, on
+ * the principle that a partially-rendered palette is more useful than
+ * a hard failure.
+ *
+ * Runs after `resolve:roles` so non-derived source roles exist.
  */
 class ExpandFamily implements TaskInterface {
   readonly 'name' = 'expand:family';
@@ -81,66 +92,85 @@ class ExpandFamily implements TaskInterface {
     const hueOffsetOverrides = state.metadata['core:hueOffsetOverrides'] as Record<string, number> | undefined;
     const hueTargetOverrides = state.metadata['core:hueTargetOverrides'] as Record<string, { 'hue': number; 'hueClamp'?: number }> | undefined;
 
+    const pending: PendingDerivedRoleType[] = [];
     for (const inputRole of state.input.roles.roles) {
       if (inputRole.derivedFrom === undefined || inputRole.derivedFrom === '') {
         continue;
       }
-
-      const derivedFrom = inputRole.derivedFrom;
-      const offsetOverride = hueOffsetOverrides?.[inputRole.name];
-      const targetOverride = hueTargetOverrides?.[inputRole.name];
-      const role = {
-        ...inputRole,
-        ...(offsetOverride === undefined ? {} : { 'hueOffset': offsetOverride }),
-        ...(targetOverride === undefined ? {} : { 'hue': targetOverride.hue }),
-        ...(targetOverride?.hueClamp === undefined ? {} : { 'hueClamp': targetOverride.hueClamp })
-      };
-
-      if (state.roles[role.name] !== undefined) {
+      if (state.roles[inputRole.name] !== undefined) {
         ctx.logger.debug(
           LogBody.create()
             .component('ExpandFamily')
             .operation('run')
             .status(LOG_STATUS.SKIPPED)
             .message('Role already assigned; skipping')
-            .context({ 'role': role.name })
+            .context({ 'role': inputRole.name })
             .build()
         );
         continue;
       }
+      pending.push({ 'derivedFrom': inputRole.derivedFrom, 'inputRole': inputRole });
+    }
 
-      const sourceColor = state.roles[derivedFrom];
+    // Fixed-point resolution: a derived role whose source is itself a
+    // derived role appearing later in `roles` is unresolvable on its first
+    // pass and stays queued; each further pass retries whatever is left.
+    // The loop terminates once a full pass derives nothing new — this is
+    // the cycle guard, so a genuine derivedFrom cycle can never spin forever.
+    let progressed = true;
+    while (progressed && pending.length > 0) {
+      progressed = false;
+      for (let i = pending.length - 1; i >= 0; i--) {
+        const { derivedFrom, inputRole } = pending[i]!;
+        const sourceColor = state.roles[derivedFrom];
+        if (sourceColor === undefined) {
+          continue;
+        }
 
-      if (sourceColor === undefined) {
-        ctx.logger.warn(
+        const offsetOverride = hueOffsetOverrides?.[inputRole.name];
+        const targetOverride = hueTargetOverrides?.[inputRole.name];
+        const role = {
+          ...inputRole,
+          ...(offsetOverride === undefined ? {} : { 'hueOffset': offsetOverride }),
+          ...(targetOverride === undefined ? {} : { 'hue': targetOverride.hue }),
+          ...(targetOverride?.hueClamp === undefined ? {} : { 'hueClamp': targetOverride.hueClamp })
+        };
+
+        state.roles[role.name] = deriveColor(sourceColor, role);
+        const existingDerived = state.metadata['core:rolesDerived'];
+        const priorDerived: string[] = Array.isArray(existingDerived) ? (existingDerived as string[]) : [];
+        state.metadata['core:rolesDerived'] = [...priorDerived, role.name];
+
+        ctx.logger.debug(
           LogBody.create()
             .component('ExpandFamily')
             .operation('run')
-            .status(LOG_STATUS.INVALID)
-            .message('Role derivedFrom source is not assigned')
+            .status(LOG_STATUS.SUCCESS)
+            .message('Derived role from source')
             .context({
               'derivedFrom': derivedFrom,
               'role':        role.name
             })
             .build()
         );
-        continue;
+
+        pending.splice(i, 1);
+        progressed = true;
       }
+    }
 
-      state.roles[role.name] = deriveColor(sourceColor, role);
-      const existingDerived = state.metadata['core:rolesDerived'];
-      const priorDerived: string[] = Array.isArray(existingDerived) ? (existingDerived as string[]) : [];
-      state.metadata['core:rolesDerived'] = [...priorDerived, role.name];
-
-      ctx.logger.debug(
+    // Whatever remains after the fixed point has an unassigned source —
+    // either it was never in the schema, or it sits in a derivedFrom cycle.
+    for (const { derivedFrom, inputRole } of pending) {
+      ctx.logger.warn(
         LogBody.create()
           .component('ExpandFamily')
           .operation('run')
-          .status(LOG_STATUS.SUCCESS)
-          .message('Derived role from source')
+          .status(LOG_STATUS.INVALID)
+          .message('Role derivedFrom source is not assigned')
           .context({
             'derivedFrom': derivedFrom,
-            'role':        role.name
+            'role':        inputRole.name
           })
           .build()
       );

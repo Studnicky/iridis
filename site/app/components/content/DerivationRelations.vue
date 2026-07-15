@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
-import { useRoleMathList, type RoleMathEntry } from '~/composables/useRoleMathList.ts';
-import type { HueAlgorithm, RoleRelationDerivation } from '~/composables/types/colorDerivation.ts';
-import { hueCircularDistance, hueVariantLabel, normalizeHue, selectHueAlgorithm } from '~/utils/colorDerivation.ts';
-import { SEMANTIC_HUE, SEMANTIC_HUE_CLAMP } from '~/theme/DeriveSemanticHues.ts';
+import { useRoleMathList } from '~/composables/useRoleMathList.ts';
+import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { HueAlgorithmType, RoleRelationDerivationType } from '~/composables/types/colorDerivation.ts';
+import { hueCircularDistance } from '~/utils/hueCircularDistance.ts';
+import { hueVariantLabel } from '~/utils/hueVariantLabel.ts';
+import { normalizeHue } from '~/utils/normalizeHue.ts';
+import { selectHueAlgorithm } from '~/utils/selectHueAlgorithm.ts';
+import { SEMANTIC_HUE } from '~/theme/semanticHue.ts';
+import { SEMANTIC_HUE_CLAMP } from '~/theme/semanticHueClamp.ts';
 import { capitalize } from '~/utils/capitalize.ts';
 
 /**
@@ -42,7 +47,7 @@ const semanticHueGuide = Object.entries(SEMANTIC_HUE).map(([role, hue]) => ({
   'familyName': hueFamilyName(hue),
 }));
 
-const HUE_ALGORITHM_OPTIONS: { label: string; value: HueAlgorithm }[] = [
+const HUE_ALGORITHM_OPTIONS: { label: string; value: HueAlgorithmType }[] = [
   { label: 'Monochromatic', value: 'monochromatic' },
   { label: 'Complementary', value: 'complementary' },
   { label: 'Analogous', value: 'analogous' },
@@ -57,12 +62,12 @@ interface RelationGroup {
   readonly parentName: string;
   readonly parentHex: string;
   readonly parentHue: number;
-  readonly children: readonly RoleMathEntry[];
+  readonly children: readonly RoleMathEntryType[];
 }
 
 /** Grouped by parent so a hub's whole family (e.g. every syntax-* role derived from brand) is edited together, matching the graph's own hub-and-spoke structure. */
 const groups = computed<readonly RelationGroup[]>(() => {
-  const byParent = new Map<string, RoleMathEntry[]>();
+  const byParent = new Map<string, RoleMathEntryType[]>();
   for (const role of mathList.value) {
     if (!role.isDerived || role.parentRole === undefined) {continue;}
     const list = byParent.get(role.parentRole) ?? [];
@@ -78,29 +83,29 @@ const groups = computed<readonly RelationGroup[]>(() => {
   }));
 });
 
-function variantOptions(algorithm: HueAlgorithm): { label: string; value: number }[] {
+function variantOptions(algorithm: HueAlgorithmType): { label: string; value: number }[] {
   return selectHueAlgorithm(algorithm, 0).map((offset, index) => ({ 'label': hueVariantLabel(offset), 'value': index }));
 }
 
-function onAlgorithmChange(role: RoleMathEntry, algorithm: HueAlgorithm): void {
-  const relation: RoleRelationDerivation = algorithm === 'freeform'
+function onAlgorithmChange(role: RoleMathEntryType, algorithm: HueAlgorithmType): void {
+  const relation: RoleRelationDerivationType = algorithm === 'freeform'
     ? { 'hueAlgorithm': algorithm, 'hueVariantIndex': 0, 'freeformOffset': role.algorithmInfo?.offsetDeg ?? 0 }
     : { 'hueAlgorithm': algorithm, 'hueVariantIndex': 0 };
   updateRelation(role.name, relation);
 }
 
-function onVariantChange(role: RoleMathEntry, hueVariantIndex: number): void {
+function onVariantChange(role: RoleMathEntryType, hueVariantIndex: number): void {
   const algorithm = role.algorithmInfo?.hueAlgorithm ?? 'monochromatic';
   updateRelation(role.name, { 'hueAlgorithm': algorithm, 'hueVariantIndex': hueVariantIndex });
 }
 
-function onFreeformOffsetChange(role: RoleMathEntry, offsetDeg: number): void {
+function onFreeformOffsetChange(role: RoleMathEntryType, offsetDeg: number): void {
   updateRelation(role.name, { 'hueAlgorithm': 'freeform', 'hueVariantIndex': 0, 'freeformOffset': offsetDeg });
 }
 
 /** One algorithm per group, defaulting to the first child's current algorithm so re-opening a group doesn't reset your last bulk pick. */
-const bulkAlgorithm = ref<Record<string, HueAlgorithm>>({});
-function bulkAlgorithmFor(group: RelationGroup): HueAlgorithm {
+const bulkAlgorithm = ref<Record<string, HueAlgorithmType>>({});
+function bulkAlgorithmFor(group: RelationGroup): HueAlgorithmType {
   return bulkAlgorithm.value[group.parentName] ?? group.children[0]?.algorithmInfo?.hueAlgorithm ?? 'analogous';
 }
 
@@ -116,7 +121,7 @@ function bulkAlgorithmFor(group: RelationGroup): HueAlgorithm {
  * subject to — so a semantic role naturally lands on the slot nearest its
  * semantic target, not an arbitrary one.
  */
-function applyToGroup(group: RelationGroup, algorithm: HueAlgorithm): void {
+function applyToGroup(group: RelationGroup, algorithm: HueAlgorithmType): void {
   bulkAlgorithm.value = { ...bulkAlgorithm.value, [group.parentName]: algorithm };
   if (algorithm === 'freeform') {return;}
   const offsets = selectHueAlgorithm(algorithm, 0);
@@ -126,7 +131,7 @@ function applyToGroup(group: RelationGroup, algorithm: HueAlgorithm): void {
   // per child in a tight synchronous loop, which races (only the first lands
   // before the interpreter is still busy processing it) and silently drops
   // the rest.
-  const batch: Record<string, RoleRelationDerivation> = {};
+  const batch: Record<string, RoleRelationDerivationType> = {};
   for (const child of group.children) {
     let bestIndex = 0;
     let bestDist = Infinity;
@@ -163,14 +168,20 @@ function applyToGroup(group: RelationGroup, algorithm: HueAlgorithm): void {
         4 roles resolve purely from their own seed/relation, with no built-in lean.
       </p>
       <ul class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-dimmed sm:grid-cols-4">
-        <li v-for="entry in semanticHueGuide" :key="entry.role">
+        <li
+          v-for="entry in semanticHueGuide"
+          :key="entry.role"
+        >
           <span class="font-medium text-muted">{{ capitalize(entry.role) }}</span>
           → {{ entry.hue }}° ({{ entry.familyName }})
         </li>
       </ul>
     </div>
 
-    <div v-if="groups.length === 0" class="text-sm text-dimmed">
+    <div
+      v-if="groups.length === 0"
+      class="text-sm text-dimmed"
+    >
       This schema tier has no derived roles yet — nothing to configure.
     </div>
 

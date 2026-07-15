@@ -24,11 +24,20 @@ export class TaskRegistry implements TaskRegistryInterface {
 
   private readonly onRunEnd:   TaskInterface[] = [];
 
+  /**
+   * Monotonic counter bumped by every `register()`/`hook()` call. Lets a
+   * caller (the `Engine`) detect that the registry changed since it last
+   * built a derivative (e.g. a resolved task sequence) by comparing two
+   * reads, without diffing `entries`.
+   */
+  private mutations = 0;
+
   register(task: TaskInterface): void {
     if (task.name === '') {
       throw ValidationError.create({ 'message': 'task.name is required', 'path': 'TaskRegistry.register' });
     }
     this.entries.set(task.name, task);
+    this.mutations++;
   }
 
   hook(phase: LifecyclePhaseType, task: TaskInterface): void {
@@ -36,6 +45,13 @@ export class TaskRegistry implements TaskRegistryInterface {
       throw ValidationError.create({ 'message': 'task.name is required', 'path': 'TaskRegistry.hook' });
     }
     this.entries.set(task.name, task);
+    // A task hooked under a name already present in either phase queue is a
+    // deliberate re-adopt/override (see class docstring); drop the prior
+    // instance from both queues first so it doesn't keep firing alongside
+    // (or instead of, if the phase changed) the new one.
+    this.removeFromPhase(this.onRunStart, task.name);
+    this.removeFromPhase(this.onRunEnd, task.name);
+    this.mutations++;
     if (phase === 'onRunStart') {
       this.onRunStart.push(task);
 
@@ -74,5 +90,23 @@ export class TaskRegistry implements TaskRegistryInterface {
 
   hooks(phase: LifecyclePhaseType): readonly TaskInterface[] {
     return phase === 'onRunStart' ? this.onRunStart : this.onRunEnd;
+  }
+
+  /**
+   * Current mutation count, bumped by `register()` and `hook()`. Callers
+   * that memoize a derivative of the registry's contents can compare two
+   * reads of this value to know whether that derivative is stale.
+   */
+  version(): number {
+    return this.mutations;
+  }
+
+  /** Removes the first task named `name` from `queue`, if present. */
+  private removeFromPhase(queue: TaskInterface[], name: string): void {
+    const index = queue.findIndex((task) => { const result = task.name === name; return result; });
+
+    if (index !== -1) {
+      queue.splice(index, 1);
+    }
   }
 }

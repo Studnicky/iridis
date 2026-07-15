@@ -4,7 +4,9 @@ import { computed } from 'vue';
 import { coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { AccordionContent, AccordionHeader, AccordionItem, AccordionRoot, AccordionTrigger } from 'reka-ui';
-import { COLOR_PIPELINE, OPTIONAL_STAGE_NAMES, useIridis } from '~/composables/useIridis.ts';
+import { COLOR_PIPELINE } from '~/composables/colorPipeline.ts';
+import { OPTIONAL_STAGE_NAMES } from '~/composables/optionalStageNames.ts';
+import { useIridis } from '~/composables/useIridis.ts';
 import { intakeHexHint } from '~/theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '~/theme/PinDerivedRoles.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
@@ -200,7 +202,10 @@ const enforceStageNames = computed(() => stageNamesByPrefix.value.get('enforce')
       Every useful iridis pipeline passes through four conceptual stages &mdash;
       <span class="font-mono text-xs">intake &rarr; resolve &rarr; enforce &rarr; emit</span> &mdash; even though the
       task names and order above are yours to define. See
-      <a href="#02-the-four-stages" class="text-primary hover:underline">The Four Stages</a> below for the data flow,
+      <a
+        href="#02-the-four-stages"
+        class="text-primary hover:underline"
+      >The Four Stages</a> below for the data flow,
       the registry, and how plugins contribute optional stages.
     </p>
   </UCard>

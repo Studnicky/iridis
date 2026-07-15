@@ -23,9 +23,7 @@ import { RoleGeometry } from '../RoleGeometry.ts';
 class TargetHue {
   static resolve(h: number, role: RoleDefinitionInterfaceType): number {
     if (role.hue !== undefined) {
-      return role.hueClamp !== undefined
-        ? RoleGeometry.hueTowards(h, role.hue, role.hueClamp)
-        : (((role.hue % 360) + 360) % 360);
+      return RoleGeometry.hueTowards(h, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
     }
     return role.hueOffset ?? h;
   }

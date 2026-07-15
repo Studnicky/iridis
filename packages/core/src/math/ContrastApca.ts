@@ -3,18 +3,15 @@ import type { ColorRecordInterfaceType } from '../types/index.ts';
 
 import { srgbToLinear } from './SrgbToLinear.ts';
 
-function fgLuminance(r: number, g: number, b: number): number {
+/** APCA relative luminance: linear-light sRGB weighted by the APCA
+ *  luminance coefficients, no per-channel exponent. The norm/rev
+ *  perceptual exponents (SA98G_NORM_*) are applied once, below, to the
+ *  clamped Y values in the Lc step — not per-channel here. Shared by
+ *  both text and background; APCA polarity is decided by which clamped
+ *  Y is larger, not by which coefficient set produced it. */
+function relativeLuminance(r: number, g: number, b: number): number {
   const lin = srgbToLinear.apply(r, g, b);
-  return 0.2126729 * Math.pow(lin.r, 0.56)
-       + 0.7151522 * Math.pow(lin.g, 0.56)
-       + 0.0721750 * Math.pow(lin.b, 0.56);
-}
-
-function bgLuminance(r: number, g: number, b: number): number {
-  const lin = srgbToLinear.apply(r, g, b);
-  return 0.2126729 * Math.pow(lin.r, 0.65)
-       + 0.7151522 * Math.pow(lin.g, 0.65)
-       + 0.0721750 * Math.pow(lin.b, 0.65);
+  return 0.2126729 * lin.r + 0.7151522 * lin.g + 0.0721750 * lin.b;
 }
 
 const SA98G_NORM_BG  = 0.56;
@@ -29,8 +26,8 @@ class ContrastApca {
   readonly 'name' = 'contrastApca';
 
   apply(text: ColorRecordInterfaceType, background: ColorRecordInterfaceType): number {
-    const Ytxt = fgLuminance(text.rgb.r,       text.rgb.g,       text.rgb.b);
-    const Ybg  = bgLuminance(background.rgb.r, background.rgb.g, background.rgb.b);
+    const Ytxt = relativeLuminance(text.rgb.r,       text.rgb.g,       text.rgb.b);
+    const Ybg  = relativeLuminance(background.rgb.r, background.rgb.g, background.rgb.b);
 
     const txtClamp = Ytxt < SA98G_CLAMP
       ? Ytxt + Math.pow(SA98G_CLAMP - Ytxt, SA98G_CLAMP_P)

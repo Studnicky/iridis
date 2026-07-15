@@ -42,6 +42,14 @@ export type ContrastReportEntryInterfaceType = {
   'ratio':      number;
 };
 
+/** A contrast pair queued during the nudge pass, held until reconciliation re-measures it against the terminal state.roles. */
+export type PendingContrastEntryInterfaceType = {
+  'adjusted': boolean;
+  'algo':     ContrastAlgorithmType;
+  'minRatio': number;
+  'pair':     ContrastPairInterfaceType;
+};
+
 export interface PaletteStateInterface {
   'colors':            ColorRecordInterfaceType[];
   readonly 'input':    InputInterface;

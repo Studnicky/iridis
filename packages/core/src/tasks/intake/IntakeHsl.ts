@@ -23,9 +23,9 @@ type HslInput = {
 function isHslInput(v: unknown): v is HslInput {
   if (typeof v !== 'object' || v === null) {return false;}
   const o = v as Record<string, unknown>;
-  return typeof o.h === 'number'
-    && typeof o.s === 'number'
-    && typeof o.l === 'number'
+  return typeof o.h === 'number' && Number.isFinite(o.h)
+    && typeof o.s === 'number' && Number.isFinite(o.s)
+    && typeof o.l === 'number' && Number.isFinite(o.l)
     && typeof o.r !== 'number'
     && typeof o.c !== 'number';
 }

@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { globalVscodeTheme } from '~/composables/useVscodeTheme';
 import CodeBlock from './CodeBlock.vue';
-import type { SupportedLangType } from '~/theme/Highlighter';
+import type { SupportedLangType } from '~/composables/types/supportedLang.ts';
 
 const props = defineProps<{
   code?: string;
@@ -30,5 +30,9 @@ const lang = computed(() => langMap[props.language || ''] || 'bash');
 </script>
 
 <template>
-  <CodeBlock :code="props.code || ''" :lang="lang" :vscode-theme="globalVscodeTheme" />
+  <CodeBlock
+    :code="props.code || ''"
+    :lang="lang"
+    :vscode-theme="globalVscodeTheme"
+  />
 </template>

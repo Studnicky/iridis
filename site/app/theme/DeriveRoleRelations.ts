@@ -2,8 +2,10 @@ import type {
   PaletteStateInterface, PipelineContextInterface, TaskInterface, TaskManifestInterfaceType
 } from '@studnicky/iridis/types';
 
-import type { DerivationConfig } from '../composables/types/colorDerivation.ts';
-import { effectiveRelation, resolveHueOffset } from '../utils/colorDerivation.ts';
+import type { DerivationConfigType } from '../composables/types/colorDerivation.ts';
+
+import { effectiveRelation } from '../utils/effectiveRelation.ts';
+import { resolveHueOffset } from '../utils/resolveHueOffset.ts';
 
 /**
  * Computes each `derivedFrom` role's effective hueOffset from the user's
@@ -32,7 +34,7 @@ class DeriveRoleRelations implements TaskInterface {
   };
 
   run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
-    const config = state.metadata['derivation:config'] as DerivationConfig | undefined;
+    const config = state.metadata['derivation:config'] as DerivationConfigType | undefined;
     if (config === undefined || state.input.roles === undefined) {return;}
 
     const overrides: Record<string, number> = {};
