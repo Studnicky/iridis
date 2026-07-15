@@ -4,6 +4,15 @@
  * color toward a role's declared constraints.
  */
 class RoleGeometry {
+  /**
+   * Default bound (degrees) for a hue nudge when a role declares a `hue`
+   * target but no `hueClamp`. A hue target is always a BOUNDED nudge, never
+   * an absolute pin, so an unclamped target rotates the resolved color toward
+   * it by at most this many degrees — keeping semantic roles rooted in the
+   * actual palette rather than snapping to a hue that appears nowhere in it.
+   */
+  static readonly DEFAULT_HUE_CLAMP = 90;
+
   /** Midpoint of a declared `[min, max]` range. */
   static rangeCenter(range: readonly [number, number]): number {
     return (range[0] + range[1]) / 2;

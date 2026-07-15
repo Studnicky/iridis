@@ -8,17 +8,21 @@ export type RoleDefinitionInterfaceType = {
   'description'?:   string;
   /**
    * Target hue in OKLCH degrees [0, 360). Takes precedence over `hueOffset` in
-   * every resolution path. On its own it pins the hue absolutely; paired with
-   * `hueClamp` it becomes a BOUNDED nudge — the resolved color is rotated toward
-   * the target by at most `hueClamp` degrees along the shortest arc, so semantic
-   * roles lean toward their meaning (success → green) while staying rooted in the
-   * actual palette. Resolved by the engine, not the consumer.
+   * every resolution path. Always applied as a BOUNDED nudge, never an absolute
+   * pin — the resolved color is rotated toward the target by at most `hueClamp`
+   * degrees (defaulting to `RoleGeometry.DEFAULT_HUE_CLAMP` when `hueClamp` is
+   * omitted) along the shortest arc, so semantic roles lean toward their meaning
+   * (success → green) while staying rooted in the actual palette rather than
+   * snapping to a hue that appears nowhere in it. Resolved by the engine, not
+   * the consumer.
    */
   'hue'?:            number;
   /**
    * Maximum degrees the resolved hue may rotate toward `hue`. Bounds the nudge
    * so a red-dominant palette yields a warm-leaning `success` rather than a pure
-   * green that appears nowhere in the theme. Ignored unless `hue` is set.
+   * green that appears nowhere in the theme. Ignored unless `hue` is set;
+   * defaults to `RoleGeometry.DEFAULT_HUE_CLAMP` degrees when `hue` is set
+   * without it.
    */
   'hueClamp'?:       number;
   /**

@@ -26,9 +26,7 @@ function deriveColor(
 
   let targetH: number;
   if (role.hue !== undefined) {
-    targetH = role.hueClamp !== undefined
-      ? RoleGeometry.hueTowards(h, role.hue, role.hueClamp)
-      : (((role.hue % 360) + 360) % 360);
+    targetH = RoleGeometry.hueTowards(h, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
   } else if (role.hueOffset !== undefined) {
     targetH = ((h + role.hueOffset) % 360 + 360) % 360;
   } else {
