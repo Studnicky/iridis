@@ -1,3 +1,7 @@
+import type { StageGroupType } from './types/stageGroup.ts';
+
+import { OUTPUT_FORMAT_CARDS } from './outputFormatCards.ts';
+
 /**
  * The stage-carousel definitions — single source of truth for the top-level
  * `<CylinderCarousel>` instances on the page (index.vue), the ToC bar, and the
@@ -11,35 +15,6 @@
  * the docs list at the bottom). Combine only ever renders once an image has
  * been uploaded (see index.vue).
  */
-export type CarouselCardType = { 'key': string; 'label': string };
-
-export type StageGroupType = {
-  'items': CarouselCardType[];
-  'label': string;
-  'name': string;
-};
-
-/**
- * Stable keys for every output format the engine has a real emit plugin for —
- * one Stylesheets-stage carousel card per format (see OutputFormatCard.vue /
- * useMultiOutput.ts), in the same fixed order the pipeline always emits them.
- */
-export const OUTPUT_FORMAT_CARDS: readonly CarouselCardType[] = [
-  { 'key': 'output-cssVars', 'label': 'CSS variables' },
-  { 'key': 'output-cssVarsScoped', 'label': 'CSS variables (scoped)' },
-  { 'key': 'output-tailwind', 'label': 'Tailwind' },
-  { 'key': 'output-shadcn', 'label': 'shadcn/ui' },
-  { 'key': 'output-mui', 'label': 'MUI' },
-  { 'key': 'output-chakra', 'label': 'Chakra UI' },
-  { 'key': 'output-panda', 'label': 'Panda CSS' },
-  { 'key': 'output-unocss', 'label': 'UnoCSS' },
-  { 'key': 'output-capacitor', 'label': 'Capacitor' },
-  { 'key': 'output-androidThemeXml', 'label': 'Android theme.xml' },
-  { 'key': 'output-json', 'label': 'JSON' },
-  { 'key': 'output-rdf', 'label': 'RDF (Turtle)' },
-  { 'key': 'output-vscode', 'label': 'VS Code theme' }
-];
-
 export const STAGE_GROUPS: readonly StageGroupType[] = [
   {
     'items': [
@@ -93,6 +68,3 @@ export const STAGE_GROUPS: readonly StageGroupType[] = [
     'label': 'Reference', 'name': 'reference'
   }
 ];
-
-/** Every stage name in forward order, for the site-wide Next/Previous step navigation. */
-export const SEQUENTIAL_STAGE_NAMES: readonly string[] = STAGE_GROUPS.map((group) => { const result = group.name; return result; });

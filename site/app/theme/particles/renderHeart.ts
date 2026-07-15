@@ -1,6 +1,7 @@
-import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
+import type { ParticleRendererType } from './types/particleRenderer.ts';
 
-import { randomDelay, randomPlacement } from './ParticleRendererInterfaceType.ts';
+import { randomDelay } from './randomDelay.ts';
+import { randomPlacement } from './randomPlacement.ts';
 
 /**
  * Girlypop/romance particle — a colored Unicode heart glyph, real element

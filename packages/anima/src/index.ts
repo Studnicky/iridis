@@ -1,9 +1,10 @@
 export { chromaticDetourHue, cubicBezier, linear, spring } from './easings/index.ts';
 export { enforceContrast }                      from './EnforceContrast.ts';
 export { evaluate }                             from './Evaluate.ts';
-export { evaluateEnforced, evaluateStopsEnforced } from './EvaluateEnforced.ts';
-
+export { evaluateEnforced }                     from './EvaluateEnforced.ts';
 export { evaluateStops }                        from './EvaluateStops.ts';
+
+export { evaluateStopsEnforced }                from './EvaluateStopsEnforced.ts';
 
 export type {
   ContrastPairInputInterfaceType,

@@ -19,17 +19,16 @@ import { romance } from './romance.ts';
 import { startup } from './startup.ts';
 import { streamer } from './streamer.ts';
 
-export const THEMES: Record<string, ThemeDefinitionInterfaceType> = {
-  [arcade.key]:     arcade,
-  [backroads.key]:  backroads,
-  [dayAtWork.key]:  dayAtWork,
-  [formal.key]:     formal,
-  [futuristic.key]: futuristic,
-  [gallery.key]:    gallery,
-  [girlypop.key]:   girlypop,
-  [hackerman.key]:  hackerman,
-  [restaurant.key]: restaurant,
-  [romance.key]:    romance,
-  [startup.key]:    startup,
-  [streamer.key]:   streamer
-};
+export const THEMES: Record<string, ThemeDefinitionInterfaceType> = {};
+THEMES[arcade.key] = arcade;
+THEMES[backroads.key] = backroads;
+THEMES[dayAtWork.key] = dayAtWork;
+THEMES[formal.key] = formal;
+THEMES[futuristic.key] = futuristic;
+THEMES[gallery.key] = gallery;
+THEMES[girlypop.key] = girlypop;
+THEMES[hackerman.key] = hackerman;
+THEMES[restaurant.key] = restaurant;
+THEMES[romance.key] = romance;
+THEMES[startup.key] = startup;
+THEMES[streamer.key] = streamer;

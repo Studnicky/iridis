@@ -1,6 +1,6 @@
-import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
+import type { ParticleRendererType } from './types/particleRenderer.ts';
 
-import { randomPlacement } from './ParticleRendererInterfaceType.ts';
+import { randomPlacement } from './randomPlacement.ts';
 
 /** The default starfield particle — one `box-shadow` entry per dot, all painted in a single CSS property. */
 export const renderDot: ParticleRendererType = ({ blur, colorVar, count }) => {

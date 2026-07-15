@@ -26,12 +26,12 @@ function engineFor(pipeline: readonly string[]): Engine {
 const SCHEMA: RoleSchemaInterfaceType = {
   'name': 'test',
   'roles': [
-    { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },
-    { 'name': 'brand',      'intent': 'accent',     'required': true, 'lightnessRange': [0.55, 0.78], 'chromaRange': [0.12, 0.30] },
+    { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
+    { 'name': 'brand',      'intent': 'accent',     'required': true, 'lightnessRange': [0.55, 0.78], 'chromaRange': [0.12, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
     // direct role with an absolute hue
-    { 'name': 'error',      'intent': 'critical',                     'lightnessRange': [0.55, 0.70], 'chromaRange': [0.16, 0.28], 'hue': 27 },
+    { 'name': 'error',      'intent': 'critical',                     'lightnessRange': [0.55, 0.70], 'chromaRange': [0.16, 0.28], 'hue': 27, 'derivedFrom': undefined, 'description': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'required': undefined },
     // derived role with an absolute hue (must override the brand-relative path)
-    { 'name': 'success',    'intent': 'positive', 'derivedFrom': 'brand', 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.16, 0.28], 'hue': 150 },
+    { 'name': 'success',    'intent': 'positive', 'derivedFrom': 'brand', 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.16, 0.28], 'hue': 150, 'description': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'required': undefined },
   ],
 };
 
@@ -59,7 +59,7 @@ test('an unclamped hue nudges a directly-resolved role toward its target, bounde
     'roles': SCHEMA.roles.map((r) => {
       if (r.name !== 'error') { return r; }
       const rest = { ...r };
-      delete rest.hue;
+      rest.hue = undefined;
       return rest;
     })
   };
@@ -93,10 +93,10 @@ test('hueClamp bounds the nudge so semantics stay rooted in the palette', () => 
   const clamped: RoleSchemaInterfaceType = {
     'name': 'clamped',
     'roles': [
-      { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },
-      { 'name': 'brand',      'intent': 'accent',     'required': true, 'lightnessRange': [0.45, 0.65], 'chromaRange': [0.12, 0.30] },
+      { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
+      { 'name': 'brand',      'intent': 'accent',     'required': true, 'lightnessRange': [0.45, 0.65], 'chromaRange': [0.12, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
       // target green (150) but clamp the rotation to 40°
-      { 'name': 'success',    'intent': 'positive', 'derivedFrom': 'brand', 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.14, 0.26], 'hue': 150, 'hueClamp': 40 },
+      { 'name': 'success',    'intent': 'positive', 'derivedFrom': 'brand', 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.14, 0.26], 'hue': 150, 'hueClamp': 40, 'description': undefined, 'hueOffset': undefined, 'required': undefined },
     ],
   };
   const engine = engineFor(['intake:hex', 'resolve:roles', 'expand:family']);
@@ -112,10 +112,10 @@ test('core:hueOffsetOverrides overrides a derived role\'s schema hueOffset', () 
   const schema: RoleSchemaInterfaceType = {
     'name': 'overridden',
     'roles': [
-      { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },
-      { 'name': 'brand',      'intent': 'accent',     'required': true, 'lightnessRange': [0.55, 0.78], 'chromaRange': [0.12, 0.30] },
+      { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
+      { 'name': 'brand',      'intent': 'accent',     'required': true, 'lightnessRange': [0.55, 0.78], 'chromaRange': [0.12, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
       // schema says +30, override says +120 (triadic) — the override must win
-      { 'name': 'accent-two', 'derivedFrom': 'brand', 'hueOffset': 30, 'lightnessRange': [0.55, 0.78], 'chromaRange': [0.12, 0.30] },
+      { 'name': 'accent-two', 'derivedFrom': 'brand', 'hueOffset': 30, 'lightnessRange': [0.55, 0.78], 'chromaRange': [0.12, 0.30], 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined, 'required': undefined },
     ],
   };
   const engine = engineFor(['intake:hex', 'resolve:roles', 'expand:family']);
@@ -134,9 +134,9 @@ test('core:hueTargetOverrides overrides a directly-resolved role\'s schema hue',
   const schema: RoleSchemaInterfaceType = {
     'name': 'target-overridden',
     'roles': [
-      { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04] },
+      { 'name': 'background', 'intent': 'background', 'required': true, 'lightnessRange': [0.04, 0.14], 'chromaRange': [0.00, 0.04], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
       // no hue in schema; override pins it to 300 (magenta), bounded to 20°
-      { 'name': 'error', 'intent': 'critical', 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.16, 0.28] },
+      { 'name': 'error', 'intent': 'critical', 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.16, 0.28], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'required': undefined },
     ],
   };
   const engine = engineFor(['intake:hex', 'resolve:roles']);

@@ -104,7 +104,7 @@ new ScenarioRunner<LightnessRangeInput, LightnessRangeOutput>(
   async (input) => {
     const schema: RoleSchemaInterfaceType = {
       'name': 'lr-schema',
-      'roles': [{ 'name': input.roleName, 'required': true, 'lightnessRange': input.range }],
+      'roles': [{ 'name': input.roleName, 'required': true, 'lightnessRange': input.range, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined }],
     };
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles']);
@@ -164,7 +164,7 @@ new ScenarioRunner<ChromaRangeInput, ChromaRangeOutput>(
   async (input) => {
     const schema: RoleSchemaInterfaceType = {
       'name': 'cr-schema',
-      'roles': [{ 'name': 'neutral', 'required': true, 'chromaRange': input.range }],
+      'roles': [{ 'name': 'neutral', 'required': true, 'chromaRange': input.range, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
     };
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles']);
@@ -218,7 +218,7 @@ new ScenarioRunner<HueOffsetInput, HueOffsetOutput>(
   async (input) => {
     const schema: RoleSchemaInterfaceType = {
       'name': 'ho-schema',
-      'roles': [{ 'name': 'anchor', 'required': true, 'hueOffset': input.hueOffset }],
+      'roles': [{ 'name': 'anchor', 'required': true, 'hueOffset': input.hueOffset, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined, 'lightnessRange': undefined }],
     };
     const engine = freshEngine();
     engine.pipeline(['intake:any', 'resolve:roles']);
@@ -280,6 +280,12 @@ new ScenarioRunner<CombinedInput, CombinedOutput>(
         'required':       true,
         'lightnessRange': input.lRange,
         'chromaRange':    input.cRange,
+        'derivedFrom': undefined,
+        'description': undefined,
+        'hue': undefined,
+        'hueClamp': undefined,
+        'hueOffset': undefined,
+        'intent': undefined
       }],
     };
     const engine = freshEngine();
@@ -355,6 +361,11 @@ new ScenarioRunner<SynthesisInput, SynthesisOutput>(
         'lightnessRange': input.lRange,
         'chromaRange':    input.cRange,
         'hueOffset':      input.hueOffset,
+        'derivedFrom': undefined,
+        'description': undefined,
+        'hue': undefined,
+        'hueClamp': undefined,
+        'intent': undefined
       }],
     };
     const engine = freshEngine();
@@ -434,7 +445,7 @@ new ScenarioRunner<OptionalRoleInput, OptionalRoleOutput>(
   async (input) => {
     const schema: RoleSchemaInterfaceType = {
       'name': 'opt-schema',
-      'roles': [{ 'name': 'maybe', 'required': false, 'lightnessRange': input.range }],
+      'roles': [{ 'name': 'maybe', 'required': false, 'lightnessRange': input.range, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined }],
     };
     const engine = freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles']);

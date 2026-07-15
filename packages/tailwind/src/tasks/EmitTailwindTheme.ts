@@ -208,5 +208,3 @@ export class EmitTailwindTheme implements TaskInterface {
     );
   }
 }
-
-export const emitTailwindTheme = new EmitTailwindTheme();

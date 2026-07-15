@@ -1,21 +1,3 @@
-import type { GalleryAlgorithmType } from '@studnicky/iridis-image/types';
-
-/** USelect options for the "Clustering algorithm" field — shared by every card that lets a user pick an image-extraction algorithm. Not `readonly` — Nuxt UI's `USelect` `:items` prop expects a mutable array type. */
-export const ALGORITHM_ITEMS: { 'label': string; 'value': GalleryAlgorithmType }[] = [
-  { 'label': 'ΔE (delta-e)', 'value': 'delta-e' },
-  { 'label': 'Median cut', 'value': 'median-cut' },
-  { 'label': 'Wu quantize', 'value': 'wu-quantize' },
-  { 'label': 'K-means', 'value': 'k-means' }
-];
-
-/** Humanizes a raw gallery algorithm id into the label shown on a candidate/summary card. */
-export const ALGORITHM_LABELS: Record<string, string> = {
-  'delta-e':     'Delta-E merge',
-  'k-means':     'K-means',
-  'median-cut':  'Median cut',
-  'wu-quantize': 'Wu quantize'
-};
-
 /** One-line "what is this and when would I pick it" for each clustering algorithm — shown under the select so the choice isn't just four unexplained names. */
 export const ALGORITHM_HELP: Record<string, string> = {
   'delta-e':     'Agglomerative merging by perceptual color difference (ΔE2000). Tends to keep small but visually distinct colors that box-splitting algorithms merge away.',

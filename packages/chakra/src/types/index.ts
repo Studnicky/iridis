@@ -1,4 +1,4 @@
-export type ChakraOutputInterface = {
+export type ChakraOutputInterfaceType = {
   'colors': Record<string, Record<string, string>>;
   'config': string;
 };

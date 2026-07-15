@@ -21,45 +21,59 @@ const enforceTaskByLevel = { 'aa': enforceWcagAa, 'aaa': enforceWcagAaa } as con
  */
 const engine = new Engine();
 
-const buildState = (
-  palette: PaletteInterfaceType,
-  pairs: readonly ContrastPairInputInterfaceType[]
-): PaletteStateInterface => {
-  const roles: Record<string, ColorRecordInterfaceType> = {};
-  for (const [role, oklch] of Object.entries(palette)) {
-    roles[role] = colorRecordFactory.fromOklch(oklch.l, oklch.c, oklch.h);
-  }
-
-  const roleNames = new Set<string>();
-  for (const pair of pairs) {
-    roleNames.add(pair.foreground);
-    roleNames.add(pair.background);
-  }
-
-  const input: InputInterface = {
-    'colors': [],
-    'roles': {
-      'contrastPairs': pairs.map((pair) => {return {
-        'algorithm':  pair.algorithm ?? 'wcag21',
-        'background': pair.background,
-        'foreground': pair.foreground,
-        'minRatio':   pair.minRatio ?? 4.5
-      };}),
-      'name':  'anima:frame',
-      'roles': [...roleNames].map((name) => {return { 'name': name, 'required': true };})
+/** Builds a {@link PaletteStateInterface} pipeline frame for the enforce tasks below. */
+class State {
+  static build(
+    palette: PaletteInterfaceType,
+    pairs: readonly ContrastPairInputInterfaceType[]
+  ): PaletteStateInterface {
+    const roles: Record<string, ColorRecordInterfaceType> = {};
+    for (const [role, oklch] of Object.entries(palette)) {
+      roles[role] = colorRecordFactory.fromOklch(oklch.l, oklch.c, oklch.h);
     }
-  };
 
-  return {
-    'colors':   [],
-    'input':    input,
-    'metadata': {},
-    'outputs':  {},
-    'roles':    roles,
-    'runtime':  {},
-    'variants': {}
-  };
-};
+    const roleNames = new Set<string>();
+    for (const pair of pairs) {
+      roleNames.add(pair.foreground);
+      roleNames.add(pair.background);
+    }
+
+    const input: InputInterface = {
+      'colors': [],
+      'roles': {
+        'contrastPairs': pairs.map((pair) => {return {
+          'algorithm':  pair.algorithm ?? 'wcag21',
+          'background': pair.background,
+          'foreground': pair.foreground,
+          'minRatio':   pair.minRatio ?? 4.5
+        };}),
+        'name':  'anima:frame',
+        'roles': [...roleNames].map((name) => {return {
+          'chromaRange':    undefined,
+          'derivedFrom':    undefined,
+          'description':    undefined,
+          'hue':            undefined,
+          'hueClamp':       undefined,
+          'hueOffset':      undefined,
+          'intent':         undefined,
+          'lightnessRange': undefined,
+          'name':           name,
+          'required':       true
+        };})
+      }
+    };
+
+    return {
+      'colors':   [],
+      'input':    input,
+      'metadata': {},
+      'outputs':  {},
+      'roles':    roles,
+      'runtime':  {},
+      'variants': {}
+    };
+  }
+}
 
 /**
  * Re-validates one evaluated palette frame against WCAG contrast pairs by
@@ -74,7 +88,7 @@ export const enforceContrast = (
 ): PaletteInterfaceType => {
   if (pairs.length === 0) {return palette;}
 
-  const state = buildState(palette, pairs);
+  const state = State.build(palette, pairs);
   const ctx: PipelineContextInterface = {
     'engine':    engine,
     'logger':    consoleLogger,

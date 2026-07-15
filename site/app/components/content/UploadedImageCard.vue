@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
-import { ALGORITHM_ITEMS } from '~/composables/GalleryAlgorithms.ts';
+import { ALGORITHM_ITEMS } from '~/composables/algorithmItems.ts';
 import Histogram from './Histogram.vue';
 import PaletteCandidatePicker from './PaletteCandidatePicker.vue';
 import type { GalleryAlgorithmType } from '@studnicky/iridis-image/types';
@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<{ image: UploadedImageInterfaceType; show
 const emit = defineEmits<{
   'remove': [];
   'select-candidate': [label: string];
-  'update': [patch: Partial<Pick<UploadedImageInterfaceType, 'algorithm' | 'chromaRange' | 'deltaECap' | 'harmonizeThreshold' | 'histogramBits' | 'k' | 'lightnessRange'>>];
+  'update': [patch: UploadedImageInterfaceType];
 }>();
 
 const kTierItems = [4, 8, 12, 16, 32];
@@ -72,7 +72,7 @@ const kTierItems = [4, 8, 12, 16, 32];
           :items="ALGORITHM_ITEMS"
           value-key="value"
           class="w-full"
-          @update:model-value="emit('update', { algorithm: $event as GalleryAlgorithmType })"
+          @update:model-value="emit('update', { ...image, algorithm: $event as GalleryAlgorithmType })"
         />
       </UFormField>
       <UFormField
@@ -84,7 +84,7 @@ const kTierItems = [4, 8, 12, 16, 32];
           :min="16"
           :max="256"
           :step="8"
-          @update:model-value="emit('update', { deltaECap: $event as number })"
+          @update:model-value="emit('update', { ...image, deltaECap: $event as number })"
         />
         <p class="mt-1 text-xs text-muted">
           Not a color-distance threshold (that's Harmonize threshold, below) — this caps how many histogram bins are even considered before the ΔE merger runs (it's O(n²), so this bounds the work). Lower keeps only the heaviest bins; raise it if a distinct minor color is getting dropped before it gets a chance to merge.
@@ -106,7 +106,7 @@ const kTierItems = [4, 8, 12, 16, 32];
                 class="k-tier-pill flex-1 justify-center text-[11px] font-medium"
                 :class="image.k === n ? 'text-primary font-bold' : 'text-dimmed cursor-pointer hover:text-muted'"
                 :aria-pressed="image.k === n"
-                @click="emit('update', { k: n })"
+                @click="emit('update', { ...image, k: n })"
               >
                 {{ n }}
               </button>
@@ -117,7 +117,7 @@ const kTierItems = [4, 8, 12, 16, 32];
             :min="2"
             :max="32"
             :step="1"
-            @update:model-value="emit('update', { k: $event as number })"
+            @update:model-value="emit('update', { ...image, k: $event as number })"
           />
         </div>
       </UFormField>
@@ -127,7 +127,7 @@ const kTierItems = [4, 8, 12, 16, 32];
           :min="3"
           :max="7"
           :step="1"
-          @update:model-value="emit('update', { histogramBits: $event as number })"
+          @update:model-value="emit('update', { ...image, histogramBits: $event as number })"
         />
       </UFormField>
       <UFormField :label="`Harmonize threshold · ${image.harmonizeThreshold}`">
@@ -136,7 +136,7 @@ const kTierItems = [4, 8, 12, 16, 32];
           :min="0"
           :max="30"
           :step="1"
-          @update:model-value="emit('update', { harmonizeThreshold: $event as number })"
+          @update:model-value="emit('update', { ...image, harmonizeThreshold: $event as number })"
         />
         <p class="mt-1 text-xs text-muted">
           After clustering, hues within this ΔE distance of each other are nudged into agreement — cleans up near-duplicate colors the clustering step left slightly apart. Runs regardless of clustering algorithm (unlike Merge input cap, above, which only applies to Delta-E clustering). 0 disables it.
@@ -152,7 +152,7 @@ const kTierItems = [4, 8, 12, 16, 32];
         label="Lightness ranges"
         help="Union of ranges — add a second band to keep shadows AND highlights while still excluding the midtones between them."
         class="sm:col-span-2"
-        @update:model-value="emit('update', { 'lightnessRange': $event })"
+        @update:model-value="emit('update', { ...image, 'lightnessRange': $event })"
       />
 
       <RangeListEditor
@@ -164,7 +164,7 @@ const kTierItems = [4, 8, 12, 16, 32];
         label="Chroma ranges"
         help="Restricts which chroma band the image's own budget goes toward colors the image actually cares about. Also a union of ranges."
         class="sm:col-span-2"
-        @update:model-value="emit('update', { 'chromaRange': $event })"
+        @update:model-value="emit('update', { ...image, 'chromaRange': $event })"
       />
     </div>
 

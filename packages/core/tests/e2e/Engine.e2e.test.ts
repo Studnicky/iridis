@@ -47,9 +47,9 @@ function freshEngine(): Engine {
 const SIMPLE_ROLES: RoleSchemaInterfaceType = {
   'name': 'simple',
   'roles': [
-    { 'name': 'primary',   'required': true,  'lightnessRange': [0.3, 0.7] },
-    { 'name': 'secondary', 'required': false, 'lightnessRange': [0.4, 0.8] },
-    { 'name': 'primary-muted', 'derivedFrom': 'primary', 'chromaRange': [0.01, 0.08] },
+    { 'name': 'primary',   'required': true,  'lightnessRange': [0.3, 0.7], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+    { 'name': 'secondary', 'required': false, 'lightnessRange': [0.4, 0.8], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+    { 'name': 'primary-muted', 'derivedFrom': 'primary', 'chromaRange': [0.01, 0.08], 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'primary', 'background': 'secondary', 'minRatio': 1.0 },
@@ -374,8 +374,8 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
 const highContrastRoles: RoleSchemaInterfaceType = {
   'name': 'hi-contrast',
   'roles': [
-    { 'name': 'text',       'required': true },
-    { 'name': 'background', 'required': true },
+    { 'name': 'text',       'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'background', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'text', 'background': 'background', 'minRatio': 3.0 },

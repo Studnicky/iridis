@@ -6,7 +6,7 @@
  * ambient particles but as a tight local cluster hugging the eye rather
  * than the full-viewport rise.
  */
-import { buildStaggeredItems } from '~/utils/staggeredItems';
+import { buildStaggeredItems } from '~/utils/buildStaggeredItems';
 
 const HEART_ROLES = ['secondary', 'primary', 'warning', 'success', 'info'];
 

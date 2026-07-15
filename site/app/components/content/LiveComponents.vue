@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
-import { ALIAS_COLOR_NAMES, type AliasColorType } from '~/theme/Tokens.ts';
+import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
+import type { AliasColorType } from '~/theme/types/aliasColor.ts';
 import { capitalize } from '~/utils/capitalize.ts';
 import { complianceBadgeColor } from '~/utils/complianceBadgeColor.ts';
 

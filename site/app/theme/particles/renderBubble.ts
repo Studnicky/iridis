@@ -1,6 +1,7 @@
-import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
+import type { ParticleRendererType } from './types/particleRenderer.ts';
 
-import { randomDelay, randomPlacement } from './ParticleRendererInterfaceType.ts';
+import { randomDelay } from './randomDelay.ts';
+import { randomPlacement } from './randomPlacement.ts';
 
 /**
  * Startup particle — a soft translucent circle (rising SaaS-bubble energy),

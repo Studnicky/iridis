@@ -73,6 +73,3 @@ export class ImagePlugin implements PluginInterface {
     };
   }
 }
-
-/** Singleton instance registered as the `image` plugin. */
-export const imagePlugin = new ImagePlugin();

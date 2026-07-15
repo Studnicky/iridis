@@ -63,8 +63,8 @@ function wcagAaRoles(
   return {
     'name':  'wcag-aa',
     'roles': [
-      { 'name': fgName, 'required': true, 'lightnessRange': [0.30, 0.60] },
-      { 'name': bgName, 'required': true, 'lightnessRange': [0.90, 1.00] },
+      { 'name': fgName, 'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+      { 'name': bgName, 'required': true, 'lightnessRange': [0.90, 1.00], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
     ],
     'contrastPairs': [
       { 'foreground': fgName, 'background': bgName, 'minRatio': minRatio, 'algorithm': 'wcag21' },
@@ -85,8 +85,8 @@ function wcagAaaRoles(
   return {
     'name':  'wcag-aaa',
     'roles': [
-      { 'name': fgName, 'required': true, 'lightnessRange': [0.10, 0.55] },
-      { 'name': bgName, 'required': true, 'lightnessRange': [0.90, 1.00] },
+      { 'name': fgName, 'required': true, 'lightnessRange': [0.10, 0.55], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+      { 'name': bgName, 'required': true, 'lightnessRange': [0.90, 1.00], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
     ],
     'contrastPairs': [
       { 'foreground': fgName, 'background': bgName, 'minRatio': 7.0, 'algorithm': 'wcag21' },
@@ -103,11 +103,21 @@ function apcaRoles(fgIntent: ColorIntentType, bgIntent: ColorIntentType): RoleSc
         'name': 'text', 'required': true,
         'intent': fgIntent,
         'lightnessRange': [0.00, 0.30], 'chromaRange': [0.00, 0.05],
+        'derivedFrom': undefined,
+        'description': undefined,
+        'hue': undefined,
+        'hueClamp': undefined,
+        'hueOffset': undefined
       },
       {
         'name': 'background', 'required': true,
         'intent': bgIntent,
         'lightnessRange': [0.85, 1.00], 'chromaRange': [0.00, 0.05],
+        'derivedFrom': undefined,
+        'description': undefined,
+        'hue': undefined,
+        'hueClamp': undefined,
+        'hueOffset': undefined
       },
     ],
     'contrastPairs': [
@@ -122,8 +132,8 @@ function apcaRoles(fgIntent: ColorIntentType, bgIntent: ColorIntentType): RoleSc
 const CVD_RED_GREEN_ROLES: RoleSchemaInterfaceType = {
   'name':  'cvd-red-green',
   'roles': [
-    { 'name': 'text',       'required': true, 'lightnessRange': [0.40, 0.70], 'chromaRange': [0.10, 0.40], 'hueOffset': 29  },
-    { 'name': 'background', 'required': true, 'lightnessRange': [0.40, 0.70], 'chromaRange': [0.10, 0.40], 'hueOffset': 142 },
+    { 'name': 'text',       'required': true, 'lightnessRange': [0.40, 0.70], 'chromaRange': [0.10, 0.40], 'hueOffset': 29, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined  },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.40, 0.70], 'chromaRange': [0.10, 0.40], 'hueOffset': 142, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'text', 'background': 'background', 'minRatio': 1.0, 'algorithm': 'wcag21' },
@@ -134,8 +144,8 @@ const CVD_RED_GREEN_ROLES: RoleSchemaInterfaceType = {
 const CVD_BLUE_YELLOW_ROLES: RoleSchemaInterfaceType = {
   'name':  'cvd-blue-yellow',
   'roles': [
-    { 'name': 'text',       'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.40], 'hueOffset': 264 },
-    { 'name': 'background', 'required': true, 'lightnessRange': [0.85, 1.00], 'chromaRange': [0.10, 0.40], 'hueOffset': 110 },
+    { 'name': 'text',       'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.40], 'hueOffset': 264, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.85, 1.00], 'chromaRange': [0.10, 0.40], 'hueOffset': 110, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'text', 'background': 'background', 'minRatio': 1.0, 'algorithm': 'wcag21' },
@@ -146,8 +156,8 @@ const CVD_BLUE_YELLOW_ROLES: RoleSchemaInterfaceType = {
 const CVD_ISOLUM_ROLES: RoleSchemaInterfaceType = {
   'name':  'cvd-isolum',
   'roles': [
-    { 'name': 'text',       'required': true, 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.20, 0.30], 'hueOffset': 29  },
-    { 'name': 'background', 'required': true, 'lightnessRange': [0.70, 0.85], 'chromaRange': [0.20, 0.30], 'hueOffset': 142 },
+    { 'name': 'text',       'required': true, 'lightnessRange': [0.55, 0.70], 'chromaRange': [0.20, 0.30], 'hueOffset': 29, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined  },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.70, 0.85], 'chromaRange': [0.20, 0.30], 'hueOffset': 142, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'intent': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'text', 'background': 'background', 'minRatio': 1.0, 'algorithm': 'wcag21' },
@@ -158,8 +168,8 @@ const CVD_ISOLUM_ROLES: RoleSchemaInterfaceType = {
 const CVD_BLACK_WHITE_ROLES: RoleSchemaInterfaceType = {
   'name':  'cvd-black-white',
   'roles': [
-    { 'name': 'text',       'required': true, 'lightnessRange': [0.00, 0.20], 'chromaRange': [0.00, 0.05] },
-    { 'name': 'background', 'required': true, 'lightnessRange': [0.90, 1.00], 'chromaRange': [0.00, 0.05] },
+    { 'name': 'text',       'required': true, 'lightnessRange': [0.00, 0.20], 'chromaRange': [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.90, 1.00], 'chromaRange': [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'text', 'background': 'background', 'minRatio': 1.0, 'algorithm': 'wcag21' },
@@ -176,8 +186,8 @@ const CVD_BLACK_WHITE_ROLES: RoleSchemaInterfaceType = {
 const ENFORCE_CONTRAST_ROLES: RoleSchemaInterfaceType = {
   'name':  'enforce-contrast-adj',
   'roles': [
-    { 'name': 'text',       'required': true, 'lightnessRange': [0.40, 0.90] },
-    { 'name': 'background', 'required': true, 'lightnessRange': [0.90, 1.00] },
+    { 'name': 'text',       'required': true, 'lightnessRange': [0.40, 0.90], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.90, 1.00], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'text', 'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
@@ -413,7 +423,7 @@ const wcagAaScenarios: readonly ScenarioInterface<WcagAaInput, WcagAaOutput>[] =
         'colors': ['#000000', '#ffffff'],
         'roles': {
           'name':  'no-pairs',
-          'roles': [{ 'name': 'primary', 'required': true }],
+          'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
         },
       },
     },
@@ -433,8 +443,8 @@ const wcagAaScenarios: readonly ScenarioInterface<WcagAaInput, WcagAaOutput>[] =
         'roles': {
           'name':  'apca-only',
           'roles': [
-            { 'name': 'text',       'required': true },
-            { 'name': 'background', 'required': true },
+            { 'name': 'text',       'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+            { 'name': 'background', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
           ],
           'contrastPairs': [
             { 'foreground': 'text', 'background': 'background', 'minRatio': 1, 'algorithm': 'apca' },
@@ -546,8 +556,8 @@ const wcagAaaScenarios: readonly ScenarioInterface<WcagAaaInput, WcagAaaOutput>[
         'roles': {
           'name':  'combined',
           'roles': [
-            { 'name': 'text',       'required': true },
-            { 'name': 'background', 'required': true },
+            { 'name': 'text',       'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+            { 'name': 'background', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
           ],
           'contrastPairs': [
             { 'foreground': 'text', 'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
@@ -581,7 +591,7 @@ const wcagAaaScenarios: readonly ScenarioInterface<WcagAaaInput, WcagAaaOutput>[
         'colors': ['#000000', '#ffffff'],
         'roles': {
           'name':  'no-pairs',
-          'roles': [{ 'name': 'primary', 'required': true }],
+          'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
         },
       },
     },
@@ -603,8 +613,8 @@ const wcagAaaScenarios: readonly ScenarioInterface<WcagAaaInput, WcagAaaOutput>[
         'roles': {
           'name':  'wcag-aaa-edge',
           'roles': [
-            { 'name': 'text',       'required': true, 'lightnessRange': [0.00, 0.30] },
-            { 'name': 'background', 'required': true, 'lightnessRange': [0.90, 1.00] },
+            { 'name': 'text',       'required': true, 'lightnessRange': [0.00, 0.30], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+            { 'name': 'background', 'required': true, 'lightnessRange': [0.90, 1.00], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
           ],
           'contrastPairs': [
             { 'foreground': 'text', 'background': 'background', 'minRatio': 7.0, 'algorithm': 'wcag21' },
@@ -695,8 +705,8 @@ const apcaScenarios: readonly ScenarioInterface<ApcaInput, ApcaOutput>[] = [
           'name':  'apca-fluent',
           'roles': [
             // text intent on fg, accent on bg — triggers the isText-only branch (Lc 60).
-            { 'name': 'heading', 'required': true, 'intent': 'text',   'lightnessRange': [0.00, 0.30], 'chromaRange': [0.00, 0.05] },
-            { 'name': 'card',    'required': true, 'intent': 'accent', 'lightnessRange': [0.40, 0.65], 'chromaRange': [0.00, 0.05] },
+            { 'name': 'heading', 'required': true, 'intent': 'text',   'lightnessRange': [0.00, 0.30], 'chromaRange': [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
+            { 'name': 'card',    'required': true, 'intent': 'accent', 'lightnessRange': [0.40, 0.65], 'chromaRange': [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
           ],
           'contrastPairs': [
             { 'foreground': 'heading', 'background': 'card', 'minRatio': 1, 'algorithm': 'apca' },
@@ -723,8 +733,8 @@ const apcaScenarios: readonly ScenarioInterface<ApcaInput, ApcaOutput>[] = [
         'roles': {
           'name':  'apca-ui',
           'roles': [
-            { 'name': 'icon',   'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.00, 0.05] },
-            { 'name': 'canvas', 'required': true, 'lightnessRange': [0.85, 1.00], 'chromaRange': [0.00, 0.05] },
+            { 'name': 'icon',   'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+            { 'name': 'canvas', 'required': true, 'lightnessRange': [0.85, 1.00], 'chromaRange': [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
           ],
           'contrastPairs': [
             { 'foreground': 'icon', 'background': 'canvas', 'minRatio': 1, 'algorithm': 'apca' },
@@ -750,7 +760,7 @@ const apcaScenarios: readonly ScenarioInterface<ApcaInput, ApcaOutput>[] = [
         'colors': ['#000000', '#ffffff'],
         'roles': {
           'name':  'no-pairs',
-          'roles': [{ 'name': 'primary', 'required': true }],
+          'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
         },
       },
     },
@@ -952,7 +962,7 @@ const cvdScenarios: readonly ScenarioInterface<CvdInput, CvdOutput>[] = [
         'colors': ['#000000', '#ffffff'],
         'roles': {
           'name':  'no-pairs',
-          'roles': [{ 'name': 'primary', 'required': true }],
+          'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
         },
       },
     },
@@ -1229,7 +1239,7 @@ const enforceContrastScenarios: readonly ScenarioInterface<EnforceContrastInput,
         'colors': ['#000000', '#ffffff'],
         'roles': {
           'name':  'no-pairs',
-          'roles': [{ 'name': 'primary', 'required': true }],
+          'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
         },
       },
     },

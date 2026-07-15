@@ -12,9 +12,11 @@ function recordWeight(record: ColorRecordInterfaceType): number {
 }
 
 /** Cartesian (L, a, b) so hue wraparound never distorts distance/mean the way averaging raw hue degrees would. */
-function toPoint(record: ColorRecordInterfaceType): PointInterface {
-  const hRad = (record.oklch.h * Math.PI) / 180;
-  return { 'a': record.oklch.c * Math.cos(hRad), 'b': record.oklch.c * Math.sin(hRad), 'l': record.oklch.l };
+class Point {
+  static to(record: ColorRecordInterfaceType): PointInterface {
+    const hRad = (record.oklch.h * Math.PI) / 180;
+    return { 'a': record.oklch.c * Math.cos(hRad), 'b': record.oklch.c * Math.sin(hRad), 'l': record.oklch.l };
+  }
 }
 
 function sqDist(p: PointInterface, q: PointInterface): number {
@@ -96,7 +98,7 @@ class ClusterKMeans {
     }
 
     const targetK = Math.min(Math.floor(k), colors.length);
-    const points = colors.map(toPoint);
+    const points = colors.map(Point.to);
     const weights = colors.map(recordWeight);
     const alphas = colors.map((c) => {const result = c.alpha;
       return result;});

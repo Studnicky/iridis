@@ -4,16 +4,14 @@ import { CliExitError } from '@studnicky/errors';
 
 import type { CliConfigInterface } from './types/index.ts';
 
-type FlagKey = keyof Pick<
-  CliConfigInterface,
-  | 'enableVscode'
+type FlagKey =
+  | 'enableCapacitor'
+  | 'enableContrast'
+  | 'enableImage'
+  | 'enableRdf'
   | 'enableStylesheet'
   | 'enableTailwind'
-  | 'enableImage'
-  | 'enableContrast'
-  | 'enableCapacitor'
-  | 'enableRdf'
->;
+  | 'enableVscode';
 
 type PluginPackageMap = Readonly<Record<FlagKey, string>>;
 

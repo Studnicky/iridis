@@ -48,8 +48,10 @@ const DEFAULT_BITS_PER_CHANNEL = 5;
 /** Accepts either a single range or a list of ranges (union) so callers who only need one envelope don't have to wrap it. */
 type RangeOrRangesType = readonly [number, number] | readonly (readonly [number, number])[];
 
-function toRangeList(range: RangeOrRangesType): readonly (readonly [number, number])[] {
-  return typeof range[0] === 'number' ? [range as readonly [number, number]] : range as readonly (readonly [number, number])[];
+class RangeList {
+  static to(range: RangeOrRangesType): readonly (readonly [number, number])[] {
+    return typeof range[0] === 'number' ? [range as readonly [number, number]] : range as readonly (readonly [number, number])[];
+  }
 }
 
 /** True if `v` falls inside any range in the list — multiple ranges are a union, not required to be contiguous. */
@@ -98,8 +100,8 @@ class GalleryHistogram implements TaskInterface {
       | undefined;
     const rawBits = galleryConfig?.histogramBits ?? DEFAULT_BITS_PER_CHANNEL;
     const bits = Math.max(3, Math.min(7, Math.floor(rawBits)));
-    const lRanges = toRangeList(galleryConfig?.lightnessRange ?? [0, 1] as const);
-    const cRanges = toRangeList(galleryConfig?.chromaRange    ?? [0, 0.5] as const);
+    const lRanges = RangeList.to(galleryConfig?.lightnessRange ?? [0, 1] as const);
+    const cRanges = RangeList.to(galleryConfig?.chromaRange    ?? [0, 0.5] as const);
 
     const bins = new Map<number, BinAccumulatorInterface>();
     let totalPixels = 0;

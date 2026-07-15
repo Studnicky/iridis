@@ -1,4 +1,4 @@
-export type StaggeredItem = {
+type StaggeredItemType = {
   'id': string;
   'index': number;
   'role': string;
@@ -9,7 +9,7 @@ export type StaggeredItem = {
  * Callers map the result into their own per-theme style objects — this only
  * covers the id/role/index bookkeeping shared across logo-background themes.
  */
-export function buildStaggeredItems(idPrefix: string, count: number, roles: readonly string[]): StaggeredItem[] {
+export function buildStaggeredItems(idPrefix: string, count: number, roles: readonly string[]): StaggeredItemType[] {
   const result = Array.from({ 'length': count }, (_, i) => {return {
     'id':    `${idPrefix}-${i}`,
     'index': i,

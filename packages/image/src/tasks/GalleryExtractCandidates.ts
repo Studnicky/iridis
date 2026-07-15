@@ -1,4 +1,5 @@
 import type {
+  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
@@ -15,11 +16,8 @@ import type {
 
 import { ClusterDispatcher } from './ClusterDispatcher.ts';
 
-type GalleryCandidateConfigInterfaceType = {
-  'algorithm'?: GalleryAlgorithmType;
-  'k'?:         number;
-  'label'?:     string;
-};
+/** Placeholder for a not-yet-computed candidate's `colors` — the default-config fallback below never has clustering results at config-build time; `run()` always overwrites it with the real `ClusterDispatcher.run` output before the config object is read again. */
+const EMPTY_CANDIDATE_COLORS: ColorRecordInterfaceType[] = [];
 
 /**
  * `gallery:extractCandidates`
@@ -31,7 +29,9 @@ type GalleryCandidateConfigInterfaceType = {
  * palettes" to choose from instead of one deterministic reduction.
  *
  * Configuration (via `state.metadata['gallery']`):
- *   candidates: optional array of `{ algorithm?, k?, label? }`. When
+ *   candidates: optional array of full `GalleryCandidateInterfaceType`
+ *     configs (`colors` is ignored on the way in — `run()` always
+ *     overwrites it with the freshly-computed clustering result). When
  *     absent, defaults to three candidates over the SAME input, one per
  *     algorithm (`median-cut`, `k-means`, `delta-e`), sharing
  *     `metadata.gallery.k` / `metadata.gallery.deltaECap` as defaults so a
@@ -58,7 +58,7 @@ class GalleryExtractCandidates implements TaskInterface {
   run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
     const galleryConfig = state.metadata.gallery as
       | {
-        'candidates'?:  readonly GalleryCandidateConfigInterfaceType[];
+        'candidates'?:  readonly GalleryCandidateInterfaceType[];
         'deltaECap'?:   number;
         'k'?:           number;
       }
@@ -66,8 +66,10 @@ class GalleryExtractCandidates implements TaskInterface {
     const sharedK = galleryConfig?.k ?? DEFAULT_K;
     const sharedDeltaECap = galleryConfig?.deltaECap;
 
-    const configs: readonly GalleryCandidateConfigInterfaceType[] = galleryConfig?.candidates
-      ?? DEFAULT_CANDIDATE_ALGORITHMS.map((algorithm) => {return { 'algorithm': algorithm };});
+    const configs: readonly GalleryCandidateInterfaceType[] = galleryConfig?.candidates
+      ?? DEFAULT_CANDIDATE_ALGORITHMS.map((algorithm) => {
+        return { 'algorithm': algorithm, 'colors': EMPTY_CANDIDATE_COLORS, 'k': sharedK, 'label': algorithm };
+      });
 
     ctx.logger.debug(
       LogBody.create()
@@ -96,14 +98,12 @@ class GalleryExtractCandidates implements TaskInterface {
     }
 
     const candidates: GalleryCandidateInterfaceType[] = configs.map((config) => {
-      const algorithm: GalleryAlgorithmType = config.algorithm ?? 'median-cut';
-      const k = config.k ?? sharedK;
-      const colors = ClusterDispatcher.run(state.colors, algorithm, k, sharedDeltaECap);
+      const colors = ClusterDispatcher.run(state.colors, config.algorithm, config.k, { 'deltaECap': sharedDeltaECap, 'onTrim': undefined });
       return {
-        'algorithm': algorithm,
+        'algorithm': config.algorithm,
         'colors':    colors,
-        'k':         k,
-        'label':     config.label ?? algorithm
+        'k':         config.k,
+        'label':     config.label
       };
     });
 

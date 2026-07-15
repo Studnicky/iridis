@@ -50,9 +50,15 @@ function makeRoles(
     name:  'test-schema',
     roles: roleNames.map((name) => ({
       name,
-      required: true,
-      ...(opts.lightnessRange !== undefined ? { lightnessRange: opts.lightnessRange } : {}),
-      ...(opts.chromaRange    !== undefined ? { chromaRange:    opts.chromaRange    } : {}),
+      required:       true,
+      chromaRange:    opts.chromaRange,
+      derivedFrom:    undefined,
+      description:    undefined,
+      hue:            undefined,
+      hueClamp:       undefined,
+      hueOffset:      undefined,
+      intent:         undefined,
+      lightnessRange: opts.lightnessRange,
     })),
   };
 }

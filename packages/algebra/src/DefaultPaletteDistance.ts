@@ -1,6 +1,6 @@
 import type { PaletteInterfaceType } from './types/index.ts';
 
-import { wrapHueDelta } from './hueMath.ts';
+import { wrapHueDelta } from './WrapHueDelta.ts';
 
 const HUE_NORMALIZATION_FACTOR = 180;
 

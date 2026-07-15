@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 
 import { TrajectoryRegistry } from '../src/index.ts';
-import { sunriseTrajectory } from '../src/BuiltInTrajectories.ts';
+import { sunriseTrajectory } from '../src/SunriseTrajectory.ts';
 
 const assertPaletteClose = (actual: PaletteInterfaceType, expected: PaletteInterfaceType): void => {
   for (const role of Object.keys(expected)) {

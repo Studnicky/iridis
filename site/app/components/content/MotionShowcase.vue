@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { useColorStreamHistory, useLivingBackground } from '../../composables/useLivingBackground.ts';
-import { ALIAS_COLOR_NAMES } from '../../theme/Tokens.ts';
+import { ALIAS_COLOR_NAMES } from '../../theme/aliasColorNames.ts';
+import { useColorStreamHistory } from '../../composables/useColorStreamHistory.ts';
+import { useLivingBackground } from '../../composables/useLivingBackground.ts';
 
 /**
  * A "look and feel" motion page — the kind every design system ships one of —

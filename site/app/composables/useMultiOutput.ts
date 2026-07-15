@@ -24,7 +24,7 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
  * Module-singleton (mirrors useThemePreset.ts's pattern) so every Stylesheets-stage
  * OutputFormatCard reads the SAME computed outputs without each re-running
  * engine.run() itself — one shared `outputsByKey`, keyed by the same stable
- * strings CarouselSections.ts's OUTPUT_FORMAT_CARDS uses.
+ * strings outputFormatCards.ts's OUTPUT_FORMAT_CARDS uses.
  */
 import { onMounted, ref, watch } from 'vue';
 
@@ -37,13 +37,13 @@ import type { OutputRowType } from './types/outputRow.ts';
 
 import { contrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
+import { globalVscodeTheme } from './globalVscodeTheme.ts';
 import { logger } from './logger.ts';
 import { optionalContrastStages } from './optionalContrastStages.ts';
 import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
 import { spliceOptionalStages } from './spliceOptionalStages.ts';
 import { DEFAULT_SCHEMA_NAME } from './types/index.ts';
 import { useIridis } from './useIridis.ts';
-import { globalVscodeTheme } from './useVscodeTheme.ts';
 import { VARIANT_CONFIG } from './variantConfig.ts';
 
 /** Bare, unquoted-key object-literal keys the Shiki JS grammar already

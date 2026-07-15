@@ -86,17 +86,17 @@ const hintedSurface = makeHintedRecord(0.95, 0.01, 0, 0.95, 0.95, 0.95, '#f2f2f2
 const hintSchema: RoleSchemaInterfaceType = {
   'name': 'hint-schema',
   'roles': [
-    { 'name': 'accent',  'required': true },
-    { 'name': 'surface', 'required': true },
+    { 'name': 'accent',  'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'surface', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
 };
 
 const distanceSchema: RoleSchemaInterfaceType = {
   'name': 'hint-test',
   'roles': [
-    { 'name': 'accent',  'required': true },
-    { 'name': 'surface', 'required': true },
-    { 'name': 'text',    'required': false },
+    { 'name': 'accent',  'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'surface', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'text',    'required': false, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
 };
 
@@ -179,8 +179,8 @@ new ScenarioRunner<RoleAssignmentInput, RoleAssignmentOutput>(
 const variantSchema: RoleSchemaInterfaceType = {
   'name':  'variant-test',
   'roles': [
-    { 'name': 'primary', 'required': true },
-    { 'name': 'muted',   'required': true },
+    { 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'muted',   'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
 };
 
@@ -258,8 +258,8 @@ new ScenarioRunner<VariantInput, VariantOutput>(
 const contrastReportSchema: RoleSchemaInterfaceType = {
   'name': 'contrast-report-test',
   'roles': [
-    { 'name': 'text',    'required': true },
-    { 'name': 'surface', 'required': true },
+    { 'name': 'text',    'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'surface', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'text', 'background': 'surface', 'minRatio': 3.0 },
@@ -338,9 +338,9 @@ new ScenarioRunner<ContrastReportInput, ContrastReportOutput>(
 const idempotentSchema: RoleSchemaInterfaceType = {
   'name': 'idempotent-test',
   'roles': [
-    { 'name': 'text',      'required': true },
-    { 'name': 'surface',   'required': true },
-    { 'name': 'text-muted', 'derivedFrom': 'text', 'chromaRange': [0.01, 0.05] },
+    { 'name': 'text',      'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'surface',   'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'text-muted', 'derivedFrom': 'text', 'chromaRange': [0.01, 0.05], 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'text', 'background': 'surface', 'minRatio': 4.5 },

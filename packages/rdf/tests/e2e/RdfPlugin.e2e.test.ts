@@ -84,8 +84,8 @@ function normaliseTurtle(ttl: string): string {
 const SIMPLE_ROLES: RoleSchemaInterfaceType = {
   'name': 'simple',
   'roles': [
-    { 'name': 'primary',    'required': true },
-    { 'name': 'background', 'required': true },
+    { 'name': 'primary',    'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'background', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
 };
 
@@ -95,10 +95,20 @@ const WIDE_GAMUT_ROLES: RoleSchemaInterfaceType = {
     {
       'name': 'accent', 'required': true, 'intent': 'accent',
       'lightnessRange': [0.05, 0.95], 'chromaRange': [0.00, 0.50],
+      'derivedFrom': undefined,
+      'description': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined
     },
     {
       'name': 'background', 'required': true, 'intent': 'background',
       'lightnessRange': [0.05, 0.15], 'chromaRange': [0.00, 0.03],
+      'derivedFrom': undefined,
+      'description': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined
     },
   ],
 };
@@ -106,8 +116,8 @@ const WIDE_GAMUT_ROLES: RoleSchemaInterfaceType = {
 const GOLDEN_ROLES: RoleSchemaInterfaceType = {
   'name':  'golden-rdf',
   'roles': [
-    { 'name': 'primary',    'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.25] },
-    { 'name': 'background', 'required': true, 'lightnessRange': [0.05, 0.20], 'chromaRange': [0.00, 0.05] },
+    { 'name': 'primary',    'required': true, 'lightnessRange': [0.30, 0.60], 'chromaRange': [0.10, 0.25], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+    { 'name': 'background', 'required': true, 'lightnessRange': [0.05, 0.20], 'chromaRange': [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
   ],
 };
 
@@ -345,9 +355,9 @@ const annotateScenarios: readonly ScenarioInterface<AnnotateInput, AnnotateOutpu
       roles: {
         'name': 'three-role',
         'roles': [
-          { 'name': 'primary',    'required': true },
-          { 'name': 'secondary',  'required': true },
-          { 'name': 'background', 'required': true },
+          { 'name': 'primary',    'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+          { 'name': 'secondary',  'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+          { 'name': 'background', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
         ],
       },
       pipeline: ['intake:hex', 'resolve:roles', 'reason:annotate', 'reason:serialize'],
@@ -365,7 +375,7 @@ const annotateScenarios: readonly ScenarioInterface<AnnotateInput, AnnotateOutpu
     kind: 'edge',
     input: {
       colors: ['#5b21b6'],
-      roles:  { 'name': 'single', 'roles': [{ 'name': 'primary', 'required': true }] },
+      roles:  { 'name': 'single', 'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }] },
       pipeline: ['intake:hex', 'resolve:roles', 'reason:annotate', 'reason:serialize'],
     },
     assert(output, error) {
@@ -698,8 +708,8 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
       roles: {
         name: 'two-distinct',
         roles: [
-          { name: 'primary',    required: true, lightnessRange: [0.35, 0.60], chromaRange: [0.10, 0.30] },
-          { name: 'background', required: true, lightnessRange: [0.05, 0.20], chromaRange: [0.00, 0.05] },
+          { name: 'primary',    required: true, lightnessRange: [0.35, 0.60], chromaRange: [0.10, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+          { name: 'background', required: true, lightnessRange: [0.05, 0.20], chromaRange: [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
         ],
       },
       pipeline: ['intake:oklch', 'resolve:roles', 'reason:annotate', 'reason:serialize'],
@@ -727,8 +737,8 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
       roles: {
         name: 'two-distinct',
         roles: [
-          { name: 'primary',    required: true, lightnessRange: [0.35, 0.60], chromaRange: [0.10, 0.30] },
-          { name: 'background', required: true, lightnessRange: [0.05, 0.20], chromaRange: [0.00, 0.05] },
+          { name: 'primary',    required: true, lightnessRange: [0.35, 0.60], chromaRange: [0.10, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
+          { name: 'background', required: true, lightnessRange: [0.05, 0.20], chromaRange: [0.00, 0.05], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined },
         ],
       },
       pipeline: ['intake:oklch', 'resolve:roles', 'reason:annotate', 'reason:serialize'],

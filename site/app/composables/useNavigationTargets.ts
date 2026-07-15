@@ -13,18 +13,10 @@ import { computed, shallowRef } from 'vue';
 
 import type { NavigationTargetInterfaceType } from './types/navigationTarget.ts';
 
-import { STAGE_GROUPS } from './CarouselSections.ts';
+import { docPanelId } from './docPanelId.ts';
+import { sanitizeDocAnchorId } from './sanitizeDocAnchorId.ts';
+import { STAGE_GROUPS } from './stageGroups.ts';
 import { usePanelAccordion } from './usePanelAccordion.ts';
-
-/** Shared with index.vue's docs `:id`/`AccordionPanel`'s `panel-id` construction — a doc's scroll anchor and its accordion panel id are both derived from the same raw path, so this is the one place that mapping lives. */
-export function sanitizeDocAnchorId(path: string): string {
-  const result = path.replace(/[^a-zA-Z0-9-]/g, '-').replace(/^-+|-+$/g, '');
-  return result;
-}
-export function docPanelId(path: string): string {
-  const result = `doc-${path}`;
-  return result;
-}
 
 const docTargets = shallowRef<readonly NavigationTargetInterfaceType[]>([]);
 
@@ -95,7 +87,7 @@ let lastActivatedDocPanelId: string | undefined;
  */
 function activateTarget(id: string): void {
   const target = resolve(id);
-  if (!target) {return;}
+  if (target === undefined) {return;}
   if (target.kind === 'card' && target.stage !== undefined) {
     stageIndexSetters.get(target.stage)?.(cardIndex(target.id));
     scrollToId(target.stage);

@@ -97,21 +97,23 @@ class GalleryExtract implements TaskInterface {
       state.colors,
       algorithm,
       k,
-      galleryConfig?.deltaECap,
-      (before, after, cap) => {
-        ctx.logger.debug(
-          LogBody.create()
-            .component('GalleryExtract')
-            .operation('run')
-            .status(LOG_STATUS.PARTIAL)
-            .message('trimmed delta-E input by weight')
-            .context({
-              'after':  after,
-              'before': before,
-              'cap':    cap
-            })
-            .build()
-        );
+      {
+        'deltaECap': galleryConfig?.deltaECap,
+        'onTrim':    (before, after, cap) => {
+          ctx.logger.debug(
+            LogBody.create()
+              .component('GalleryExtract')
+              .operation('run')
+              .status(LOG_STATUS.PARTIAL)
+              .message('trimmed delta-E input by weight')
+              .context({
+                'after':  after,
+                'before': before,
+                'cap':    cap
+              })
+              .build()
+          );
+        }
       }
     );
 

@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { ALGORITHM_HELP, ALGORITHM_ITEMS, ALGORITHM_LABELS } from '~/composables/GalleryAlgorithms.ts';
+import { ALGORITHM_HELP } from '~/composables/algorithmHelp.ts';
+import { ALGORITHM_ITEMS } from '~/composables/algorithmItems.ts';
+import { ALGORITHM_LABELS } from '~/composables/algorithmLabels.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';

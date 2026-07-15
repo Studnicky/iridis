@@ -6,7 +6,7 @@ import type { SignalBindingInterfaceType } from '../types/index.ts';
  * (not re-exported from `src/index.ts`) — `ClockBinding` is the only public
  * entry point, matching the one-public-symbol-per-file convention.
  */
-export interface ClockProviderType extends SignalBindingInterfaceType {
+export interface ClockProviderInterface extends SignalBindingInterfaceType {
   /** Manually advances elapsed time by `deltaMs`. Real providers ignore this. */
   advance(deltaMs: number): void;
 }

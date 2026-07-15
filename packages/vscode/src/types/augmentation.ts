@@ -5,7 +5,10 @@
 import type { ColorRecordInterfaceType } from '@studnicky/iridis';
 
 /** Semantic token rule entry as written to outputs.vscode.semanticTokenRules */
-export type SemanticRuleEntryInterfaceType = Partial<Record<'fontStyle' | 'foreground', string>>;
+export type SemanticRuleEntryInterfaceType = {
+  'fontStyle': string | undefined;
+  'foreground': string | undefined;
+};
 
 /** VS Code tokenColors rule */
 export type TokenColorRuleInterfaceType = {

@@ -1,5 +1,7 @@
+export type * from './carouselCard.ts';
 export type * from './colorDerivation.ts';
 export * from './colorDerivation.ts';
+export type * from './colorSample.ts';
 export type * from './framing.ts';
 export * from './iridisUiEffect.ts';
 export * from './iridisUiEvent.ts';
@@ -12,4 +14,5 @@ export type * from './scaleMap.ts';
 export type * from './schemaName.ts';
 export * from './schemaName.ts';
 export type * from './schemaPair.ts';
+export type * from './stageGroup.ts';
 export type * from './uploadedImage.ts';

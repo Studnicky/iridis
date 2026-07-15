@@ -12,7 +12,7 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { CssVarsScopedOutputInterfaceType } from '../types/index.ts';
 
-import { P3Serializer } from '../util/serializeP3.ts';
+import { P3Serializer } from '../util/P3Serializer.ts';
 
 class ScopedCategoryBlock {
   static build(

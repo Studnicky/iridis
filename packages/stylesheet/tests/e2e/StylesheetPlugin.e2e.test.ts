@@ -56,15 +56,15 @@ function cssVarsScopedPipeline(extra: readonly string[] = []): readonly string[]
 // Single-role schema — minimal baseline
 const SINGLE_ROLE: RoleSchemaInterfaceType = {
   'name': 'single',
-  'roles': [{ 'name': 'primary', 'required': true }],
+  'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
 };
 
 // Two-role schema — covers a real-world "foreground + background" pair
 const TWO_ROLES: RoleSchemaInterfaceType = {
   'name': 'two',
   'roles': [
-    { 'name': 'primary',   'required': true },
-    { 'name': 'secondary', 'required': false },
+    { 'name': 'primary',   'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'secondary', 'required': false, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
 };
 
@@ -72,16 +72,16 @@ const TWO_ROLES: RoleSchemaInterfaceType = {
 const ALL_INTENT_ROLES: RoleSchemaInterfaceType = {
   'name': 'all-intent',
   'roles': [
-    { 'name': 'bg',        'required': true,  'intent': 'background' },
-    { 'name': 'fg',        'required': true,  'intent': 'text'       },
-    { 'name': 'acc',       'required': true,  'intent': 'accent'     },
-    { 'name': 'muted',     'required': false, 'intent': 'muted'      },
-    { 'name': 'critical',  'required': false, 'intent': 'critical'   },
-    { 'name': 'positive',  'required': false, 'intent': 'positive'   },
-    { 'name': 'lnk',       'required': false, 'intent': 'link'       },
-    { 'name': 'btn',       'required': false, 'intent': 'button'     },
-    { 'name': 'onAcc',     'required': false, 'intent': 'onAccent'   },
-    { 'name': 'onBtn',     'required': false, 'intent': 'onButton'   },
+    { 'name': 'bg',        'required': true,  'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
+    { 'name': 'fg',        'required': true,  'intent': 'text', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined       },
+    { 'name': 'acc',       'required': true,  'intent': 'accent', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined     },
+    { 'name': 'muted',     'required': false, 'intent': 'muted', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined      },
+    { 'name': 'critical',  'required': false, 'intent': 'critical', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined   },
+    { 'name': 'positive',  'required': false, 'intent': 'positive', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined   },
+    { 'name': 'lnk',       'required': false, 'intent': 'link', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined       },
+    { 'name': 'btn',       'required': false, 'intent': 'button', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined     },
+    { 'name': 'onAcc',     'required': false, 'intent': 'onAccent', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined   },
+    { 'name': 'onBtn',     'required': false, 'intent': 'onButton', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined   },
   ],
 };
 
@@ -95,6 +95,11 @@ const WIDE_GAMUT_ROLE: RoleSchemaInterfaceType = {
       'intent':          'accent',
       'lightnessRange':  [0.05, 0.95],
       'chromaRange':     [0.00, 0.50],
+      'derivedFrom': undefined,
+      'description': undefined,
+      'hue': undefined,
+      'hueClamp': undefined,
+      'hueOffset': undefined
     },
   ],
 };
@@ -103,8 +108,8 @@ const WIDE_GAMUT_ROLE: RoleSchemaInterfaceType = {
 const CAMEL_ROLE: RoleSchemaInterfaceType = {
   'name': 'camel',
   'roles': [
-    { 'name': 'primaryText', 'required': true },
-    { 'name': 'onBackground', 'required': true },
+    { 'name': 'primaryText', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
+    { 'name': 'onBackground', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
   ],
 };
 
@@ -372,8 +377,8 @@ const cssVarsCascadeScenarios: readonly ScenarioInterface<CssVarsCascadeInput, C
       roles:    {
         'name': 'text-bg',
         'roles': [
-          { 'name': 'bg',   'required': true, 'intent': 'background' },
-          { 'name': 'text', 'required': true, 'intent': 'text' },
+          { 'name': 'bg',   'required': true, 'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
+          { 'name': 'text', 'required': true, 'intent': 'text', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
         ],
       },
       pipeline: cssVarsPipeline(),
@@ -1143,9 +1148,9 @@ const CSS_VARS_GOLDEN = new URL(
 const GOLDEN_ROLES: RoleSchemaInterfaceType = {
   'name':  'golden-cssvars',
   'roles': [
-    { 'name': 'background', 'required': true, 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'chromaRange': [0.00, 0.03] },
-    { 'name': 'foreground', 'required': true, 'intent': 'text',       'lightnessRange': [0.90, 0.99], 'chromaRange': [0.00, 0.03] },
-    { 'name': 'accent',     'required': true, 'intent': 'accent',     'lightnessRange': [0.55, 0.70], 'chromaRange': [0.15, 0.25] },
+    { 'name': 'background', 'required': true, 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'chromaRange': [0.00, 0.03], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
+    { 'name': 'foreground', 'required': true, 'intent': 'text',       'lightnessRange': [0.90, 0.99], 'chromaRange': [0.00, 0.03], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
+    { 'name': 'accent',     'required': true, 'intent': 'accent',     'lightnessRange': [0.55, 0.70], 'chromaRange': [0.15, 0.25], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
   ],
   'contrastPairs': [
     { 'foreground': 'foreground', 'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },

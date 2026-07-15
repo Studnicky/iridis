@@ -195,7 +195,7 @@ class ResolveRoles implements TaskInterface {
       const targetOverride = hueTargetOverrides?.[inputRole.name];
       const role = targetOverride === undefined
         ? inputRole
-        : { ...inputRole, 'hue': targetOverride.hue, ...(targetOverride.hueClamp === undefined ? {} : { 'hueClamp': targetOverride.hueClamp }) };
+        : { ...inputRole, 'hue': targetOverride.hue, 'hueClamp': targetOverride.hueClamp ?? inputRole.hueClamp };
 
       // Hint match takes priority: explicit user intent.
       const hintMatch = state.colors.find((c) => {return c.hints?.role === role.name;});

@@ -1,4 +1,4 @@
-import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
+import type { ParticleRendererType } from './types/particleRenderer.ts';
 
 /**
  * Composition root — every particle-shape adapter registers here, dispatched
@@ -6,12 +6,12 @@ import type { ParticleRendererType } from './ParticleRendererInterfaceType.ts';
  * and listing it here; AmbientBackground.vue looks it up via this map, never
  * an if/else chain.
  */
-import { renderBubble } from './bubble.ts';
-import { renderDot } from './dot.ts';
-import { renderHeart } from './heart.ts';
-import { renderSquare } from './square.ts';
-import { renderStar } from './star.ts';
-import { renderStreak } from './streak.ts';
+import { renderBubble } from './renderBubble.ts';
+import { renderDot } from './renderDot.ts';
+import { renderHeart } from './renderHeart.ts';
+import { renderSquare } from './renderSquare.ts';
+import { renderStar } from './renderStar.ts';
+import { renderStreak } from './renderStreak.ts';
 
 export const PARTICLE_RENDERERS: Record<string, ParticleRendererType> = {
   'bubble': renderBubble,
@@ -22,4 +22,4 @@ export const PARTICLE_RENDERERS: Record<string, ParticleRendererType> = {
   'streak': renderStreak
 };
 
-export type { ParticleRenderOutputType } from './ParticleRendererInterfaceType.ts';
+export type { ParticleRenderOutputType } from './types/particleRenderOutput.ts';

@@ -1,4 +1,4 @@
-import type { ClockProviderType } from './ClockProviderType.ts';
+import type { ClockProviderInterface } from './ClockProviderInterface.ts';
 
 const clampUnit = (value: number): number => { const result = Math.min(1, Math.max(0, value)); return result; };
 
@@ -7,7 +7,7 @@ const clampUnit = (value: number): number => { const result = Math.min(1, Math.m
  * forward when `advance(deltaMs)` is called, making tests fast and
  * reproducible.
  */
-export class VirtualClockProvider implements ClockProviderType {
+export class VirtualClockProvider implements ClockProviderInterface {
   private readonly durationMs: number;
   private elapsedMs = 0;
 

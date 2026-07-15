@@ -110,9 +110,9 @@ function freshEngine(): Engine {
 const FULL_ROLES: RoleSchemaInterfaceType = {
   'name': 'full',
   'roles': [
-    { 'name': 'primary',    'required': true,  'intent': 'background' },
-    { 'name': 'background', 'required': true,  'intent': 'background' },
-    { 'name': 'accent',     'required': false, 'intent': 'accent' },
+    { 'name': 'primary',    'required': true,  'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
+    { 'name': 'background', 'required': true,  'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
+    { 'name': 'accent',     'required': false, 'intent': 'accent', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
   ],
 };
 

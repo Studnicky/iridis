@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { IridisUiActionType } from '~/composables/types/index.ts';
 import { computed } from 'vue';
+import { STAGE_GROUPS } from '~/composables/stageGroups.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
-import { STAGE_GROUPS } from '~/composables/CarouselSections.ts';
 
 /**
  * Sticky table-of-contents bar. Every card across all visible stage

@@ -93,7 +93,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
         'roles': {
           'name':  'tight-accent',
           'roles': [
-            { 'name': 'accent', 'lightnessRange': [0.40, 0.60], 'chromaRange': [0.05, 0.15] },
+            { 'name': 'accent', 'lightnessRange': [0.40, 0.60], 'chromaRange': [0.05, 0.15], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'required': undefined },
           ],
         },
       },
@@ -113,7 +113,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
         'colors': [],
         'roles': {
           'name':  'mystery-only',
-          'roles': [{ 'name': 'mystery' }],
+          'roles': [{ 'name': 'mystery', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined }],
         },
       },
     },
@@ -132,7 +132,7 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
         'colors': [],
         'roles': {
           'name':  'no-match',
-          'roles': [{ 'name': 'accent', 'lightnessRange': [0.40, 0.60] }],
+          'roles': [{ 'name': 'accent', 'lightnessRange': [0.40, 0.60], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'required': undefined }],
         },
       },
     },
@@ -225,7 +225,7 @@ const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
         'colors': [],
         'roles': {
           'name':  'tight-accent',
-          'roles': [{ 'name': 'accent', 'chromaRange': [0.00, 0.10] }],
+          'roles': [{ 'name': 'accent', 'chromaRange': [0.00, 0.10], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined }],
         },
       },
       lMin: 0.05, lMax: 0.95, cMin: 0.00, cMax: 0.10,

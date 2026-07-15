@@ -4,8 +4,9 @@ import type {
   PaletteInterfaceType
 } from './types/index.ts';
 
-import { defaultPaletteDistance } from './distance.ts';
-import { lerpHue, wrapHueDelta } from './hueMath.ts';
+import { defaultPaletteDistance } from './DefaultPaletteDistance.ts';
+import { lerpHue } from './LerpHue.ts';
+import { wrapHueDelta } from './WrapHueDelta.ts';
 
 export { lerpHue };
 

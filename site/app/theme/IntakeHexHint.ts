@@ -4,8 +4,7 @@ import type {
 
 import { colorRecordFactory } from '@studnicky/iridis';
 
-/** A raw seed entry: a plain hex string, or an hex+role pin (drives ResolveRoles' hint match). */
-export type SeedInputType = string | { 'hex': string; 'role'?: string };
+import type { SeedInputType } from './types/seedInput.ts';
 
 /**
  * Superset of the engine's built-in `intake:hex`: accepts plain hex strings

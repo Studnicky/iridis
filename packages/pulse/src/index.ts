@@ -1,7 +1,8 @@
 export { ClockBinding } from './ClockBinding.ts';
-export type { ClockBindingOptionsInterfaceType } from './ClockBinding.ts';
 
-export type { SignalBindingInterfaceType } from './types/index.ts';
+export type {
+  ClockBindingOptionsInterfaceType,
+  SignalBindingInterfaceType,
+  ValueBindingOptionsInterfaceType
+} from './types/index.ts';
 export { ValueBinding } from './ValueBinding.ts';
-
-export type { ValueBindingOptionsInterfaceType } from './ValueBinding.ts';

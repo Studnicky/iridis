@@ -6,7 +6,7 @@
  * from hueOffset on the schema roles. The projector only reads those hexes.
  */
 
-import type { CvdType, RoleClampMapInterfaceType, RoleDistanceMapInterfaceType } from '@studnicky/iridis';
+import type { ColorRecordInterfaceType, CvdType, RoleClampMapInterfaceType, RoleDistanceMapInterfaceType } from '@studnicky/iridis';
 import type { ApcaPairResultSetInterfaceType, CvdResultSetInterfaceType, WcagPairResultSetInterfaceType } from '@studnicky/iridis-contrast';
 import type { GalleryAlgorithmType, GalleryCandidateInterfaceType, GalleryHistogramSlotInterfaceType } from '@studnicky/iridis-image/types';
 
@@ -24,8 +24,9 @@ import type { RoleSortKeyType } from './types/roleSortKey.ts';
 import { contrastRatio } from '../theme/ContrastRatio.ts';
 import { cloneRanges } from '../utils/cloneRanges.ts';
 import { complianceFor } from '../utils/complianceFor.ts';
-import { debounce, keyedDebounce } from '../utils/debounce.ts';
+import { debounce } from '../utils/debounce.ts';
 import { isValidHex } from '../utils/isValidHex.ts';
+import { keyedDebounce } from '../utils/keyedDebounce.ts';
 import { minRatioForRole } from '../utils/minRatioForRole.ts';
 import { sortRoleRows } from '../utils/sortRoleRows.ts';
 import { contrastConfigFor } from './contrastConfigFor.ts';
@@ -72,13 +73,19 @@ const REQUIRED_IMAGE_STAGES = [
 /** Stage 1 — reduces ONE image's own pixels to its own dominant colors AND its own per-algorithm candidates, independent of every other uploaded image. */
 const IMAGE_ENTRY_STAGES = ['intake:any', 'gallery:histogram', 'gallery:extractCandidates', 'gallery:extract'];
 
+/** Empty placeholder for a candidate config's not-yet-computed `colors` — gallery:extractCandidates computes the real clustering result itself; this value is never read. */
+const EMPTY_CANDIDATE_COLORS: ColorRecordInterfaceType[] = [];
+
 /** All four clustering algorithms, explicit — gallery:extractCandidates' own built-in default only covers three (median-cut/k-means/delta-e), omitting wu-quantize. */
-const ALL_CANDIDATE_ALGORITHMS: readonly { 'algorithm': GalleryAlgorithmType }[] = [
-  { 'algorithm': 'median-cut' },
-  { 'algorithm': 'wu-quantize' },
-  { 'algorithm': 'k-means' },
-  { 'algorithm': 'delta-e' }
-];
+const ALL_CANDIDATE_ALGORITHM_NAMES: readonly GalleryAlgorithmType[] = ['median-cut', 'wu-quantize', 'k-means', 'delta-e'];
+
+/** Builds the four candidate-algorithm configs for gallery:extractCandidates, every one sharing `k` (the same color count the primary extraction uses). Full `GalleryCandidateInterfaceType` shape: `colors` is the not-yet-computed placeholder above, `label` defaults to the algorithm name — gallery:extractCandidates' own fallback for an unlabeled config. */
+function allCandidateAlgorithms(k: number): GalleryCandidateInterfaceType[] {
+  const result = ALL_CANDIDATE_ALGORITHM_NAMES.map((algorithm) => {
+    return { 'algorithm': algorithm, 'colors': EMPTY_CANDIDATE_COLORS, 'k': k, 'label': algorithm };
+  });
+  return result;
+}
 
 /** Which optional stages currently run based on strictness. */
 const enabledOptionalStages = computed<Set<string>>(() => {const result = optionalContrastStages(contrastStrictness.value);
@@ -463,30 +470,53 @@ class ImageId {
   }
 }
 
-/** Seeds a freshly-uploaded entry's own settings from the CURRENT combine-stage refs — sensible per-image defaults that become independently mutable afterward. */
-function defaultEntrySettings(): Pick<UploadedImageInterfaceType, 'algorithm' | 'chromaRange' | 'deltaECap' | 'harmonizeThreshold' | 'histogramBits' | 'k' | 'lightnessRange'> {
+/**
+ * Seeds a freshly-uploaded entry's own settings from the CURRENT combine-stage
+ * refs — sensible per-image defaults that become independently mutable
+ * afterward. Returns a full `UploadedImageInterfaceType`: the not-yet-computed
+ * fields (`candidates`, `dominantColorRecords`, `histogram`, `id`, `name`,
+ * `selectedCandidateLabel`, `src`) get placeholder defaults that the caller
+ * overwrites with the real per-call values (a freshly-uploaded entry) — also
+ * reused as-is by `combineNowRun` to build the combine stage's own gallery
+ * metadata, where those placeholders are never read.
+ */
+function defaultEntrySettings(): UploadedImageInterfaceType {
   return {
-    'algorithm':          imgAlgorithm.value,
-    'chromaRange':        cloneRanges(imgChromaRange.value),
-    'deltaECap':          imgDeltaECap.value,
-    'harmonizeThreshold': imgHarmonize.value,
-    'histogramBits':      imgHistogramBits.value,
-    'k':                  imgK.value,
-    'lightnessRange':     cloneRanges(imgLightnessRange.value)
+    'algorithm':               imgAlgorithm.value,
+    'candidates':               [],
+    'chromaRange':              cloneRanges(imgChromaRange.value),
+    'deltaECap':                imgDeltaECap.value,
+    'dominantColorRecords':     [],
+    'harmonizeThreshold':       imgHarmonize.value,
+    'histogram':                [],
+    'histogramBits':            imgHistogramBits.value,
+    'id':                       '',
+    'k':                        imgK.value,
+    'lightnessRange':           cloneRanges(imgLightnessRange.value),
+    'name':                     '',
+    'selectedCandidateLabel':   null,
+    'src':                      ''
   };
 }
 
-type GallerySourceType = { 'algorithm': GalleryAlgorithmType; 'chromaRange': readonly [number, number][]; 'deltaECap': number; 'harmonizeThreshold'?: number; 'histogramBits': number; 'k': number; 'lightnessRange': readonly [number, number][] };
-
-/** Builds the `metadata.gallery` object handed to engine.run() — shared by EntryStage1.extract (per-image, no harmonizeThreshold — that knob only applies at the combine stage) and combineNowRun (the combine stage itself), rather than two independent object literals repeating the same field list and range-cloning. */
+/** Builds the `metadata.gallery` object handed to engine.run() — shared by EntryStage1.extract (per-image, passing that entry directly) and combineNowRun (the combine stage itself, passing `defaultEntrySettings()`), rather than two independent object literals repeating the same field list and range-cloning. */
 class GalleryMetadata {
-  static build(source: GallerySourceType): GallerySourceType & { 'candidates': typeof ALL_CANDIDATE_ALGORITHMS } {
+  static build(source: UploadedImageInterfaceType): {
+    'algorithm':          GalleryAlgorithmType;
+    'candidates':         GalleryCandidateInterfaceType[];
+    'chromaRange':        [number, number][];
+    'deltaECap':          number;
+    'harmonizeThreshold': number;
+    'histogramBits':      number;
+    'k':                  number;
+    'lightnessRange':     [number, number][];
+  } {
     return {
       'algorithm':          source.algorithm,
-      'candidates':         ALL_CANDIDATE_ALGORITHMS,
+      'candidates':         allCandidateAlgorithms(source.k),
       'chromaRange':        cloneRanges(source.chromaRange),
       'deltaECap':          source.deltaECap,
-      ...(source.harmonizeThreshold !== undefined ? { 'harmonizeThreshold': source.harmonizeThreshold } : {}),
+      'harmonizeThreshold': source.harmonizeThreshold,
       'histogramBits':      source.histogramBits,
       'k':                  source.k,
       'lightnessRange':     cloneRanges(source.lightnessRange)
@@ -508,14 +538,7 @@ class EntryStage1 {
     const state = engine.run({
       'colors':   [pixels],
       'metadata': {
-        'gallery': GalleryMetadata.build({
-          'algorithm':      entry.algorithm,
-          'chromaRange':    entry.chromaRange,
-          'deltaECap':      entry.deltaECap,
-          'histogramBits':  entry.histogramBits,
-          'k':              entry.k,
-          'lightnessRange': entry.lightnessRange
-        })
+        'gallery': GalleryMetadata.build(entry)
       }
     });
     const hist = (state.metadata['gallery:histogram'] as GalleryHistogramSlotInterfaceType | undefined)?.bins ?? [];
@@ -627,15 +650,7 @@ function combineNowRun(): void {
         'core:variantConfig': VARIANT_CONFIG,
         'derivation:config': derivationConfig.value,
         'derivation:semanticHuesEnabled': semanticHuesEnabled.value,
-        'gallery': GalleryMetadata.build({
-          'algorithm':          imgAlgorithm.value,
-          'chromaRange':        imgChromaRange.value,
-          'deltaECap':          imgDeltaECap.value,
-          'harmonizeThreshold': imgHarmonize.value,
-          'histogramBits':      imgHistogramBits.value,
-          'k':                  imgK.value,
-          'lightnessRange':     imgLightnessRange.value
-        })
+        'gallery': GalleryMetadata.build(defaultEntrySettings())
       },
       'roles':    pair![framing.value],
       'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
@@ -731,10 +746,15 @@ function removeUploadedImage(id: string): void {
   scheduleCombine();
 }
 
-type UploadedImageSettingsPatchType = Partial<Pick<UploadedImageInterfaceType, 'algorithm' | 'chromaRange' | 'deltaECap' | 'harmonizeThreshold' | 'histogramBits' | 'k' | 'lightnessRange'>>;
-
-/** Mutates ONE uploaded image's own settings and schedules ONLY that image's re-extraction (debounced), not every uploaded image. */
-function uploadedImageSettingUpdate(id: string, patch: UploadedImageSettingsPatchType): void {
+/**
+ * Mutates ONE uploaded image's own settings and schedules ONLY that image's
+ * re-extraction (debounced), not every uploaded image. `patch` is a full
+ * `UploadedImageInterfaceType` — the caller (UploadedImageCard.vue) builds it
+ * by spreading the entry's own current props with the one changed field
+ * overridden, so every key is already present; `Object.assign` below just
+ * reassigns each field to its (mostly unchanged) value.
+ */
+function uploadedImageSettingUpdate(id: string, patch: UploadedImageInterfaceType): void {
   const entry = uploadedImages.value.find((e) => {return e.id === id;});
   if (entry === undefined) {return;}
   Object.assign(entry, patch);

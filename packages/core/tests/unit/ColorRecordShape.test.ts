@@ -365,7 +365,7 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
         'colors': ['#3b82f6'],
         'roles': {
           'name': 'tight-blue',
-          'roles': [{ 'name': 'background', 'lightnessRange': [0.50, 0.60], 'chromaRange': [0.00, 0.02] }],
+          'roles': [{ 'name': 'background', 'lightnessRange': [0.50, 0.60], 'chromaRange': [0.00, 0.02], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'required': undefined }],
         },
       },
       seedHook:  false,
@@ -386,7 +386,7 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
         'colors': [],
         'roles': {
           'name': 'tight-blue',
-          'roles': [{ 'name': 'background', 'required': true, 'lightnessRange': [0.50, 0.60], 'chromaRange': [0.00, 0.02] }],
+          'roles': [{ 'name': 'background', 'required': true, 'lightnessRange': [0.50, 0.60], 'chromaRange': [0.00, 0.02], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined }],
         },
       },
       seedHook: true,

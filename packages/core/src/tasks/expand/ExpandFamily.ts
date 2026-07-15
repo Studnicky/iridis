@@ -131,9 +131,9 @@ class ExpandFamily implements TaskInterface {
         const targetOverride = hueTargetOverrides?.[inputRole.name];
         const role = {
           ...inputRole,
-          ...(offsetOverride === undefined ? {} : { 'hueOffset': offsetOverride }),
-          ...(targetOverride === undefined ? {} : { 'hue': targetOverride.hue }),
-          ...(targetOverride?.hueClamp === undefined ? {} : { 'hueClamp': targetOverride.hueClamp })
+          'hue':       targetOverride?.hue ?? inputRole.hue,
+          'hueClamp':  targetOverride?.hueClamp ?? inputRole.hueClamp,
+          'hueOffset': offsetOverride ?? inputRole.hueOffset
         };
 
         state.roles[role.name] = deriveColor(sourceColor, role);

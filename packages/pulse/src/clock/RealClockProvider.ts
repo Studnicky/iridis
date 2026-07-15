@@ -1,4 +1,4 @@
-import type { ClockProviderType } from './ClockProviderType.ts';
+import type { ClockProviderInterface } from './ClockProviderInterface.ts';
 
 const clampUnit = (value: number): number => { const result = Math.min(1, Math.max(0, value)); return result; };
 
@@ -7,7 +7,7 @@ const clampUnit = (value: number): number => { const result = Math.min(1, Math.m
  * from the moment of construction. `advance` is a no-op target for manual
  * stepping and throws, since real time cannot be driven by hand.
  */
-export class RealClockProvider implements ClockProviderType {
+export class RealClockProvider implements ClockProviderInterface {
   private readonly durationMs: number;
   private readonly startedAtMs: number;
 
