@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { CvdType } from '@studnicky/iridis';
 import { useIridis } from '~/composables/useIridis.ts';
 import { IridisUiActionType } from '~/composables/types/index.ts';
+import { buildCvdReport, CVD_TYPES, cvdTypeLabel } from './cvd/buildCvdVisionModel.ts';
 
 /**
  * The CVD home — everything color-vision-deficiency-related lives here, not
@@ -15,146 +15,83 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
  */
 const { cvdCorrect, cvdPreviewTypes, contrastReport, send } = useIridis();
 
-const CVD_TYPES: { value: CvdType; label: string; prevalence: string; description: string }[] = [
-  {
-    'value':      'protanopia',
-    'label':      'Protanopia',
-    'prevalence': '~1% of men',
-    'description': 'The L-cone (long-wavelength, red-sensitive) is absent. Reds appear darker and can be confused with black, greens, or browns.'
-  },
-  {
-    'value':      'deuteranopia',
-    'label':      'Deuteranopia',
-    'prevalence': '~1% of men',
-    'description': 'The M-cone (medium-wavelength, green-sensitive) is absent — the most common dichromacy. Reds and greens both shift toward a shared yellowish-brown.'
-  },
-  {
-    'value':      'tritanopia',
-    'label':      'Tritanopia',
-    'prevalence': '<0.01% of people',
-    'description': 'The S-cone (short-wavelength, blue-sensitive) is absent. Rare, and unlike the other two, affects men and women about equally. Blues and greens, or yellows and violets, become hard to tell apart.'
-  },
-  {
-    'value':      'achromatopsia',
-    'label':      'Achromatopsia',
-    'prevalence': 'very rare',
-    'description': 'Complete absence of color vision (rod monochromacy) — everything resolves to luminance only, the way a black-and-white photo does.'
-  }
-];
-
 const cvdReport = computed(() => {
-  const cvd = contrastReport.value.cvd as { 'warnings': unknown[]; 'corrections'?: { 'cvdTypesRemaining': string[] }[] } | undefined;
-  if (cvd === undefined) {return undefined;}
-  const corrected = cvd.corrections?.filter((c) => {return c.cvdTypesRemaining.length === 0;}).length ?? 0;
-  const stillFailing = cvd.corrections?.filter((c) => {return c.cvdTypesRemaining.length > 0;}).length ?? Math.max(cvd.warnings.length, 0);
-  return { 'corrected': corrected, 'stillFailing': stillFailing, 'warnings': cvd.warnings.length };
+  return buildCvdReport(contrastReport.value.cvd);
 });
 </script>
 
 <template>
   <UCard>
     <div class="space-y-4">
-      <p class="text-sm text-muted">
-        Color vision deficiency (CVD) checking runs on every palette, always — see
-        <code class="font-mono text-xs">enforce:cvdSimulate</code> in the Pipeline card. Auto-correct
-        below adjusts the palette itself; the preview toggles further down only change how this
-        page looks to you — they never touch the palette.
-      </p>
+      <SectionIntro>
+        <template #body>
+          Color vision deficiency (CVD) checking runs on every palette, always — see
+          <code class="font-mono text-xs">enforce:cvdSimulate</code> in the Pipeline card. Auto-correct
+          below adjusts the palette itself; the preview toggles further down only change how this
+          page looks to you — they never touch the palette.
+        </template>
+      </SectionIntro>
 
-      <div class="flex items-center justify-between gap-3 rounded-md border border-default p-2.5 pl-3">
-        <div class="flex flex-col">
-          <span class="text-sm font-medium">Auto-correct CVD failures</span>
-          <span class="text-xs text-muted">Always-on — adjusts the palette itself, not just a preview.</span>
-        </div>
+      <ControlStrip
+        title="Auto-correct CVD failures"
+        description="Always-on — adjusts the palette itself, not just a preview."
+      >
         <USwitch
           :model-value="cvdCorrect"
           @update:model-value="($event) => send({ 'cvdCorrect': $event as boolean, 'type': IridisUiActionType.SET_CVD_CORRECT })"
         />
-      </div>
+      </ControlStrip>
 
-      <div class="flex items-center justify-between gap-3">
-        <span class="text-sm font-medium text-highlighted">Simulate CVD vision</span>
-        <UButton
-          v-if="cvdPreviewTypes.size > 0"
-          label="Clear"
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          @click="send({ 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS })"
+      <SplitHeader>
+        <PanelHeading
+          title="Simulate CVD vision"
+          as="span"
+        />
+        <template #meta>
+          <UButton
+            v-if="cvdPreviewTypes.size > 0"
+            label="Clear"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            @click="send({ 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS })"
+          />
+        </template>
+      </SplitHeader>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        <CvdTypeCard
+          v-for="t in CVD_TYPES"
+          :key="t.value"
+          :type="t"
+          :previewing="cvdPreviewTypes.has(t.value)"
+          @toggle="($event) => send({ 'cvdType': $event, 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW })"
         />
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div
-          v-for="t in CVD_TYPES"
-          :key="t.value"
-          class="space-y-2 rounded-lg border p-3 transition-colors"
-          :class="cvdPreviewTypes.has(t.value) ? 'border-primary bg-primary/10' : 'border-default'"
-        >
-          <div class="flex items-center justify-between gap-2">
-            <span class="font-medium text-highlighted">{{ t.label }}</span>
-            <UButton
-              :label="cvdPreviewTypes.has(t.value) ? 'Previewing' : 'Preview'"
-              size="xs"
-              :color="cvdPreviewTypes.has(t.value) ? 'primary' : 'neutral'"
-              :variant="cvdPreviewTypes.has(t.value) ? 'solid' : 'soft'"
-              class="min-w-[80px]"
-              :aria-pressed="cvdPreviewTypes.has(t.value)"
-              @click="send({ 'cvdType': t.value, 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW })"
-            />
-          </div>
-          <p class="text-xs text-muted">
-            {{ t.description }}
-          </p>
-          <p class="text-[10px] text-dimmed">
-            {{ t.prevalence }}
-          </p>
-        </div>
-      </div>
-
-      <div
-        v-if="cvdReport"
-        class="flex flex-wrap items-center gap-1.5"
-      >
-        <UBadge
-          :color="cvdReport.warnings === 0 ? 'success' : 'warning'"
-          variant="soft"
-          size="sm"
-        >
-          {{ cvdReport.warnings === 0 ? 'No contrast warnings under CVD' : `${cvdReport.warnings} warning${cvdReport.warnings === 1 ? '' : 's'}` }}
-        </UBadge>
-        <UBadge
-          v-if="cvdReport.corrected > 0"
-          color="primary"
-          variant="soft"
-          size="sm"
-        >
-          {{ cvdReport.corrected }} pair{{ cvdReport.corrected === 1 ? '' : 's' }} auto-corrected
-        </UBadge>
-      </div>
+      <CvdWarningsPanel
+        :report="cvdReport"
+        :cvd-type-label="cvdTypeLabel"
+      />
 
       <div class="space-y-1 border-t border-default pt-3 text-xs text-muted">
         <p>
           Pick any combination above — real CVD isn't always one condition, and previewing
-          multiple at once chains their filters (see CvdPreviewOverlay.vue).
+          multiple at once layers their filters together.
         </p>
         <div class="flex flex-wrap gap-x-4 gap-y-1">
-          <a
+          <ExternalResourceLink
             href="https://www.nei.nih.gov/learn-about-eye-health/eye-conditions-and-diseases/color-blindness"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-primary underline underline-offset-2 hover:text-primary/80"
+            compact
           >
             National Eye Institute: Color Blindness ↗
-          </a>
-          <a
+          </ExternalResourceLink>
+          <ExternalResourceLink
             href="https://www.colourblindawareness.org/colour-blindness/types-of-colour-blindness/"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-primary underline underline-offset-2 hover:text-primary/80"
+            compact
           >
             Colour Blind Awareness: Types of Colour Blindness ↗
-          </a>
+          </ExternalResourceLink>
         </div>
       </div>
     </div>

@@ -33,11 +33,12 @@ const cardW = ref(760);
 // observeAllCards) since .cyl-face is absolutely positioned and wouldn't
 // otherwise contribute to .cyl-scene's height at all.
 //
-// Capped at cardHCap (viewport-relative, like cardW): one disproportionately
-// tall face (e.g. a long settings list) would otherwise force every OTHER
-// face in the same deck to stretch to match it, leaving a huge dead blank
-// area under any short face — .cyl-card-body's own overflow-y:auto already
-// lets a face taller than the cap scroll internally, so nothing is lost.
+// Uncapped: cards must fit their content with no internal scroll, so the deck
+// takes on the height of its single tallest face — a disproportionately tall
+// face (e.g. a long settings list) does leave dead blank area under any
+// shorter face in the same deck, but that's the trade for every face
+// rendering in full. Each stage mounts its OWN CylinderCarousel instance, so
+// this only sizes to the tallest face within that one deck, not globally.
 //
 // Keyed by item.key (not array index): props.items can grow/shrink (e.g.
 // uploaded-image faces), which shifts every subsequent item's index. Vue's
@@ -46,14 +47,19 @@ const cardW = ref(760);
 // element at callback time — instead of a positional index — stays correct
 // even if a resize entry lands after a reorder.
 const cardHeights = ref<Record<string, number>>({});
-const cardHCap = ref(900);
 const cardH = computed(() => {
   const heights = Object.values(cardHeights.value);
-  const naturalMax = heights.length > 0 ? Math.max(...heights) : 720;
-  return Math.min(naturalMax, cardHCap.value);
+  return heights.length > 0 ? Math.max(...heights) : 720;
 });
 
 let startX = 0;
+
+/**
+ * Read once on mount (matches MotionShowcase.vue / ColorStreamCard.vue) —
+ * faceStyle() sets its transition inline, which the reduced-motion media
+ * query in main.css can never reach, so the short-circuit has to live here.
+ */
+const reducedMotion = ref(false);
 
 const isLocal = computed(() => props.modelValue !== undefined);
 
@@ -146,10 +152,10 @@ function faceStyle(i: number): Record<string, string> {
     : `translateX(calc(-50% + ${d * spread + live}px)) perspective(1300px) rotateY(${d * -32}deg) translateZ(${-ad * 150}px) scale(${Math.max(0.6, 1 - ad * 0.07)})`;
   return {
     'transform': transform,
-    'opacity': ad > 2.4 ? '0' : String(Math.max(0.12, 1 - ad * 0.34)),
-    'filter': isActive(i) ? 'none' : `blur(${Math.min(5, ad * 1.5)}px)`,
+    'opacity': String(Math.max(0, 1 - ad * 0.6)),
+    'filter': isActive(i) ? 'none' : `blur(${Math.min(10, ad * 3)}px)`,
     'zIndex': String(Math.max(1, 40 - Math.round(ad * 8))),
-    'transition': dragging.value ? 'none' : 'transform .7s cubic-bezier(.16,.84,.28,1), opacity .5s ease, filter .5s ease',
+    'transition': (dragging.value || reducedMotion.value) ? 'none' : 'transform .7s cubic-bezier(.16,.84,.28,1), opacity .5s ease, filter .5s ease',
   };
 }
 /** Every card renders at the SAME explicit height (the max across all faces) so the deck never resizes when switching. */
@@ -160,7 +166,6 @@ function cardStyle(): Record<string, string> {
 function measureViewport(): void {
   if (typeof window === 'undefined') return;
   cardW.value = Math.min(760, Math.round(window.innerWidth * 0.92));
-  cardHCap.value = Math.max(480, Math.round(window.innerHeight * 0.82));
 }
 // index.vue mounts one CylinderCarousel per stage, and every one that
 // scrolls near the viewport activates and registers its own keydown
@@ -207,18 +212,29 @@ const cardResizeObserver = useDebouncedResizeObserver((entries) => {
  * cardStyle() pins every .cyl-card to an explicit height with overflow:
  * hidden, so THAT element's own box never reflects true content growth — a
  * ResizeObserver on it would only ever report back the height we already
- * imposed. .cyl-card-body is likewise height-constrained (flex:1,
- * min-height:0) to stay a scroll container. .cyl-card-content, the innermost
- * wrapper around the slot, carries no imposed height or overflow clamp of
- * its own, so its border-box (offsetHeight) always equals the slot content's
- * true unclamped natural height — including post-mount growth (an expanding
- * accordion, async image candidates, a resizing canvas) — regardless of how
- * constrained its ancestors are.
+ * imposed. .cyl-card-content, the innermost wrapper around the slot, carries
+ * no imposed height or overflow clamp of its own, so its border-box
+ * (offsetHeight) always equals the slot content's true unclamped natural
+ * height — including post-mount growth (an expanding accordion, async image
+ * candidates, a resizing canvas) — regardless of how constrained its
+ * ancestors are.
+ *
+ * .cyl-card-body sits between .cyl-card-tag and .cyl-card-content in the flow
+ * and contributes its own vertical padding on top of the content's height —
+ * tag.offsetHeight + content.offsetHeight alone would undercount by exactly
+ * that padding, leaving the tallest card's content clipped by .cyl-card's
+ * own overflow:hidden (cards must fit their content with zero clip, same as
+ * zero scroll). Reading it via getComputedStyle keeps this correct if the
+ * padding value ever changes, instead of duplicating it as a magic number.
  */
 function naturalCardHeight(cardEl: HTMLElement): number {
   const tag = cardEl.querySelector<HTMLElement>('.cyl-card-tag');
+  const body = cardEl.querySelector<HTMLElement>('.cyl-card-body');
   const content = cardEl.querySelector<HTMLElement>('.cyl-card-content');
-  return Math.round((tag?.offsetHeight ?? 0) + (content?.offsetHeight ?? 0));
+  const bodyPadding = body
+    ? parseFloat(getComputedStyle(body).paddingTop) + parseFloat(getComputedStyle(body).paddingBottom)
+    : 0;
+  return Math.round((tag?.offsetHeight ?? 0) + bodyPadding + (content?.offsetHeight ?? 0));
 }
 /**
  * Rebuilds cardHeights from scratch (full replace, not merge) and
@@ -269,6 +285,7 @@ watch(
 );
 let visibilityObserver: IntersectionObserver | null = null;
 onMounted(() => {
+  reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (typeof IntersectionObserver === 'undefined' || !sceneRef.value) {
     activate();
     return;
@@ -324,9 +341,14 @@ onBeforeUnmount(() => {
           :style="faceStyle(i)"
           @click="onFaceClick($event, i)"
         >
+          <!-- No `.float` bob on non-active cards: they are `.glass`
+               (backdrop-filter: blur), and animating a transform on a
+               backdrop-filtered element re-rasterizes the blur every frame
+               for every off-active card in every stage deck — the dominant
+               idle-CPU cost. The parallax scale/dim/recede in faceStyle()
+               already conveys depth without a per-frame blur re-raster. -->
           <div
             class="glass scanlines cyl-card"
-            :class="{ float: !isActive(i) }"
             :style="{ '--glow': 'var(--ui-primary)', ...cardStyle() }"
             :data-cyl-key="item.key"
           >
@@ -438,6 +460,26 @@ onBeforeUnmount(() => {
   overflow-y: clip;
   touch-action: pan-y;
 }
+/* Edge scrim: fades distant off-active cards into the page background at the
+   scene's own left/right edges instead of letting their (still-legible-ish)
+   text bleed all the way to the viewport boundary. z-index 28 sits between
+   faceStyle()'s two zIndex bands — below the active/near-neighbour cards
+   (ad<=1, zIndex>=32) and above the far/receding ones (ad>=2, zIndex<=24) —
+   so it reads as scene depth, not a layer covering everything. Pointer
+   events pass through so it never blocks a click on a far card (which
+   brings it to front) or a scene-level drag. */
+.cyl-scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 28;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    var(--ui-bg) 0%,
+    transparent 18%,
+    transparent 82%,
+    var(--ui-bg) 100%);
+}
 /* Prev/Next sit pinned to the scene's left/right edges, vertically centered
    against the whole card (not the title bar) — never inline with the
    dot-pill list, so the pill list is free to wrap onto its own rows without
@@ -447,11 +489,30 @@ onBeforeUnmount(() => {
    `lg` breakpoint. On narrow screens they stay, offset just inside the card
    edge where there's room, naturally overlapping the card's own edge when
    there isn't (no extra logic needed — it's just absolute positioning). */
+/* Below `lg` (the only range these render in — hidden entirely above it), the
+   arrows sit dimmed at rest so they read as secondary chrome next to the
+   card content rather than a second, equally-loud navigation system, and
+   snap to full visibility on hover/focus/press so they're never invisible
+   right when a pointer or keyboard user is actually reaching for one.
+   min-width/min-height guarantee a 44x44px hit target regardless of the
+   underlying UButton size's own (smaller) icon-only padding. */
 .cyl-nav {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  opacity: 0.45;
+  transition: opacity 0.2s ease;
+}
+.cyl-nav:hover,
+.cyl-nav:focus-visible,
+.cyl-nav:active {
+  opacity: 1;
 }
 .cyl-nav-prev { left: 0.5rem; }
 .cyl-nav-next { right: 0.5rem; }
@@ -504,14 +565,21 @@ onBeforeUnmount(() => {
   position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
   width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: var(--ui-primary); box-shadow: 0 0 10px var(--ui-primary);
 }
-/* min-height:0 overrides the flex-item default (min-height:auto), which
-   otherwise refuses to shrink below the content's own natural size even
-   inside a shorter, uniformly-sized .cyl-card — without it, a face taller
-   than the shared max height would overflow its box instead of scrolling
-   within it. Vertical overflow scrolls (never clips) so a face whose content
-   genuinely exceeds the deck's shared height stays fully reachable; horizontal
-   stays clipped since no card content is meant to scroll sideways. */
-.cyl-card-body { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; padding: 1rem 1.1rem; }
+/* Cards must fit their content — no internal vertical scroll, ever. cardH
+   (see cardStyle() in the script) is already the natural height of the
+   deck's tallest face, so this box is never asked to hold more than it
+   naturally needs; the default flex-item min-height:auto (left un-overridden
+   here) backs that up by refusing to shrink this box below its content's own
+   natural size, so a transient mid-ResizeObserver-settle mismatch overflows
+   visibly instead of forcing a scrollbar.
+   overflow-x:clip (not hidden) + overflow-y:visible is deliberate, not
+   equivalent to swapping the two: per the CSS overflow spec, pairing
+   'visible' on one axis with 'hidden' (or 'auto'/'scroll') on the other
+   forces the visible axis to compute as 'auto' — silently reintroducing a
+   scroll container. 'clip' is exempt from that compatibility rule, so
+   horizontal stays truly clipped (no card content is meant to scroll
+   sideways) while vertical stays truly visible. */
+.cyl-card-body { flex: 1 1 auto; overflow-x: clip; overflow-y: visible; padding: 1rem 1.1rem; }
 .cyl-card-body :deep(.iridis-card) {
   background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important;
 }
@@ -521,6 +589,16 @@ onBeforeUnmount(() => {
    a lone item on its own last row. */
 .cyl-dots { width: 100%; }
 .cyl-dot {
+  /* Caps a lone item's own flex-1 utility class (see the template) — a
+     single-item stage group would otherwise stretch its one dot to fill the
+     full row width as a wall-to-wall glowing lozenge. This rule's scoped
+     `[data-v-*]` attribute gives it higher specificity than the plain
+     `.flex-1` utility, so a capped, centered pill wins without touching the
+     template; multi-item rows are unaffected since BalancedWrap already
+     balances those across their natural widths. */
+  flex: 0 1 auto;
+  min-width: 90px;
+  max-width: 220px;
   font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase;
 }
 .cyl-dot-active {

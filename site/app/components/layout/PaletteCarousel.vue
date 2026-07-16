@@ -115,7 +115,7 @@ const sortedAliases = computed(() => {
               <div
                 v-for="s in TABLE_SHADES"
                 :key="s"
-                class="h-4 w-4 rounded-[2px]"
+                class="h-4 w-4 rounded-[2px] ring-1 ring-inset ring-(--ui-border)/70"
                 :style="{ backgroundColor: `var(--ui-color-${a.key}-${s})` }"
                 :title="`${a.key}-${s}`"
               />

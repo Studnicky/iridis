@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useMultiOutput } from '~/composables/useMultiOutput.ts';
 import { globalVscodeTheme } from '~/composables/globalVscodeTheme.ts';
+import { buildOutputFormatCardModel } from './buildOutputFormatCardModel.ts';
 
 /**
  * One Stylesheets-stage carousel card per output format — `formatKey` is one of
@@ -10,18 +11,21 @@ import { globalVscodeTheme } from '~/composables/globalVscodeTheme.ts';
  */
 const props = defineProps<{ formatKey: string }>();
 const { outputsByKey } = useMultiOutput();
-const row = computed(() => outputsByKey.value[props.formatKey]);
+const cardModel = computed(() => buildOutputFormatCardModel(
+  props.formatKey,
+  outputsByKey.value[props.formatKey]
+));
 </script>
 
 <template>
   <div class="space-y-3">
-    <p class="text-sm text-muted">
-      One <span class="font-mono text-[10px]">engine.run()</span>, every plugin format reads the same resolved roles — just written differently.
-    </p>
+    <SectionIntro :body="cardModel.instruction" />
     <CodeBlock
-      :code="row?.text || ''"
-      :lang="row?.lang || 'json'"
+      :code="cardModel.code"
+      :lang="cardModel.lang"
       :vscode-theme="globalVscodeTheme"
+      :caption="cardModel.filename"
+      :preview-lines="cardModel.previewLines"
     />
   </div>
 </template>

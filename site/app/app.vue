@@ -3,6 +3,14 @@ import { computed, onMounted } from 'vue';
 
 import { useIridis } from '~/composables/useIridis.ts';
 import { Tokens } from '~/theme/Tokens.ts';
+import { CodeSampleChrome } from '~/components/content/CodeSampleChrome.ts';
+
+import '~/components/content/viz/CodeSample.css';
+import '~/components/content/viz/Dpad.css';
+import '~/components/content/viz/ViewerActions.css';
+import '~/components/content/viz/ViewerOverlay.css';
+import '~/components/content/viz/ModalShell.css';
+import '~/components/content/mermaid/explorer.css';
 
 /**
  * Booting the engine here, at the app root, means the theme is computed and
@@ -37,6 +45,8 @@ onMounted(() => {
   setTimeout(() => {
     document.body.classList.remove('preload');
   }, 50);
+
+  CodeSampleChrome.install();
 });
 </script>
 

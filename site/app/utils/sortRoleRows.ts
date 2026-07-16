@@ -2,7 +2,11 @@ import type { RoleSortableRowType } from '../composables/types/roleSortableRow.t
 import type { RoleSortFieldType } from '../composables/types/roleSortField.ts';
 import type { RoleSortKeyType } from '../composables/types/roleSortKey.ts';
 
-const COMPLIANCE_RANK: Record<string, number> = { 'AA': 1, 'AAA': 2, 'fail': 0 };
+/** 'n/a' (structural roles the table can't meaningfully grade) ranks below
+ * 'fail' so it never intermixes with genuine compliance grades in either
+ * sort direction — real problems stay the most visible extreme, structural
+ * rows consistently sink to the other end. */
+const COMPLIANCE_RANK: Record<string, number> = { 'AA': 1, 'AAA': 2, 'fail': 0, 'n/a': -1 };
 
 function compareRoleField(a: RoleSortableRowType, b: RoleSortableRowType, field: RoleSortFieldType): number {
   if (field === 'compliance') {return (COMPLIANCE_RANK[a.compliance] ?? 0) - (COMPLIANCE_RANK[b.compliance] ?? 0);}

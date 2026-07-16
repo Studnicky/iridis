@@ -47,7 +47,9 @@ const cvdWarningSchema = {
     'foreground':                 { 'type': 'string' },
     'minSimulatedContrast':       { 'type': 'number' },
     'originalLuminanceContrast':  { 'type': 'number' },
-    'simulatedLuminanceContrast': { 'type': 'number' }
+    'simulatedLuminanceContrast': { 'type': 'number' },
+    'simulatedContrastRatio':     { 'type': 'number' },
+    'simulatedContrastDropRatio': { 'type': 'number' }
   },
   'type': 'object'
 } as const;

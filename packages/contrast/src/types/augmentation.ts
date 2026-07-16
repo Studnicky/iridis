@@ -39,6 +39,8 @@ export type CvdPairWarningInterfaceType = {
   'minSimulatedContrast':       number;
   'originalLuminanceContrast':  number;
   'simulatedLuminanceContrast': number;
+  'simulatedContrastRatio':      number;
+  'simulatedContrastDropRatio':  number;
 };
 
 export type CvdCorrectionInterfaceType = {

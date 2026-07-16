@@ -58,6 +58,8 @@ class ThemePreset {
 }
 
 let booted = false;
+/** Stop-handle for the `activeThemeKey` watcher, captured so HMR teardown can release it — null until `useThemePreset()` has booted once. */
+let stopWatch: (() => void) | null = null;
 
 /** Active theme key/ambient state, the THEMES registry, and the DOM-writing applicator — the single entry point every consumer (theme-switcher UI, AmbientBackground.vue) uses. */
 export function useThemePreset(): {
@@ -68,7 +70,7 @@ export function useThemePreset(): {
 } {
   if (!booted) {
     booted = true;
-    watch(activeThemeKey, (key) => {
+    stopWatch = watch(activeThemeKey, (key) => {
       ThemePreset.apply(key);
       if (typeof window !== 'undefined') { window.localStorage.setItem(STORAGE_KEY, key); }
     });
@@ -99,3 +101,12 @@ export function useThemePreset(): {
     'THEMES':           THEMES
   };
 }
+
+// Releases the activeThemeKey watcher before Vite re-evaluates this module on
+// HMR — without this, every reload registers a second watcher stacked on top
+// of the old one, each independently re-applying the theme on every change.
+import.meta.hot?.dispose(() => {
+  stopWatch?.();
+  stopWatch = null;
+  booted = false;
+});

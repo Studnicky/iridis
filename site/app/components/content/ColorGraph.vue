@@ -18,15 +18,29 @@
  * import on mount keeps it out of the main bundle for visitors who never
  * scroll this far.
  */
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
-import { colorRecordFactory } from '@studnicky/iridis';
+import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useRoleMathList } from '~/composables/useRoleMathList.ts';
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
-import { contrastRatio } from '~/theme/ContrastRatio.ts';
-import GraphDpad from './graph/GraphDpad.vue';
-import GraphLegend from './graph/GraphLegend.vue';
-import type { LegendEntry, LegendTab } from './graph/GraphLegend.vue';
+import { buildColorGraphBuffers } from './graph/buildColorGraphBuffers.ts';
+import {
+  buildColorGraphLegendTabs,
+  COLOR_GRAPH_CAPTURE_FIT_ZOOM_DELAY_MS,
+  COLOR_GRAPH_FIT_DELAYS_MS,
+  COLOR_GRAPH_FIT_PADDING,
+  COLOR_GRAPH_MAX_INIT_ATTEMPTS,
+  COLOR_GRAPH_PAN_STEP,
+  COLOR_GRAPH_SPACE_SIZE,
+  COLOR_GRAPH_ZOOM_STEP,
+  DEFAULT_CATEGORY_VISIBILITY
+} from './graph/buildColorGraphViewModel.ts';
+import { createCameraDpadMachine } from './viz/CameraControls.ts';
+import { getColorGraphPointCentroid, translateColorGraphPoints } from './graph/buildColorGraphViewportModel.ts';
+import { backgroundColorFromTheme, paintColorGraphLabels, resizeColorGraphLabelCanvas } from './graph/colorGraphLabelPainter.ts';
+import { createViewportStatus } from './viz/ViewportStatus.ts';
+import { LegendMachine } from './viz/LegendMachine.ts';
+import type { ResolutionCategory } from './graph/buildColorGraphViewModel.ts';
+
+const props = defineProps<{ enabled?: boolean }>();
 
 type GraphHandle = {
   setPointPositions(arr: Float32Array, dontRescale?: boolean): void;
@@ -34,6 +48,7 @@ type GraphHandle = {
   setPointSizes(arr: Float32Array): void;
   setLinks(arr: Float32Array): void;
   setLinkColors(arr: Float32Array): void;
+  setConfigPartial(config: Record<string, unknown>): void;
   render(alpha?: number, transitionDuration?: number): void;
   start(alpha?: number): void;
   pause(): void;
@@ -46,22 +61,10 @@ type GraphHandle = {
 };
 type CosmosCtor = new (div: HTMLDivElement, config: Record<string, unknown>) => GraphHandle;
 
-/** A role's resolution category — mutually exclusive, in priority order (a pinned role is shown as pinned even if it would otherwise also count as derived). */
-type ResolutionCategory = 'pinned' | 'synthesized' | 'derived' | 'direct';
-
-function categoryOf(role: RoleMathEntryType): ResolutionCategory {
-  if (role.isPinned) return 'pinned';
-  if (role.synthesized) return 'synthesized';
-  if (role.isDerived) return 'derived';
-  return 'direct';
-}
-
-const { schemaName } = useIridis();
+const { framing } = useIridis();
 const { mathList } = useRoleMathList();
 
-const categoryVisible = ref<Record<ResolutionCategory, boolean>>({
-  'direct': true, 'derived': true, 'synthesized': true, 'pinned': true
-});
+const categoryVisible = ref<Record<ResolutionCategory, boolean>>({ ...DEFAULT_CATEGORY_VISIBILITY });
 
 function onCategoryToggle(key: string): void {
   const category = key as ResolutionCategory;
@@ -70,16 +73,29 @@ function onCategoryToggle(key: string): void {
   }
 }
 
-/** Legend swatch colors are the engine's OWN semantic role tokens, never an arbitrary decorative pick — same principle as every node color in the graph itself. */
-const legendTabs = computed<readonly LegendTab[]>(() => {
-  const entries: LegendEntry[] = [
-    { 'key': 'direct', 'swatch': 'solid', 'color': 'var(--ui-color-success-500)', 'label': 'Direct match', 'active': categoryVisible.value['direct'] },
-    { 'key': 'derived', 'swatch': 'solid', 'color': 'var(--ui-color-info-500)', 'label': 'Derived', 'active': categoryVisible.value['derived'] },
-    { 'key': 'synthesized', 'swatch': 'dashed', 'color': 'var(--ui-color-warning-500)', 'label': 'Synthesized', 'active': categoryVisible.value['synthesized'] },
-    { 'key': 'pinned', 'swatch': 'circle', 'color': 'var(--ui-primary)', 'label': 'Pinned', 'active': categoryVisible.value['pinned'] }
-  ];
-  return [{ 'key': 'resolution', 'label': `iridis-${mathList.value.length}`, 'entries': entries }];
+const legendMachine = new LegendMachine({
+  'getSections': () => buildColorGraphLegendTabs(mathList.value.length, categoryVisible.value),
+  'toggle': onCategoryToggle,
 });
+
+const dpadMachine = createCameraDpadMachine({
+  'can': () => graph.value !== null,
+  'getZoomLevel': () => zoomLevel.value,
+  'getHint': () => createViewportStatus(zoomLevel.value, 'inline', 'drag · wheel').hint,
+  'zoomIn': () => { zoomIn(); },
+  'zoomOut': () => { zoomOut(); },
+  'pan': (direction) => {
+    switch (direction) {
+      case 'up':    panUp(); break;
+      case 'down':  panDown(); break;
+      case 'left':  panLeft(); break;
+      case 'right': panRight(); break;
+    }
+  },
+  'centre': () => { centre(); },
+  'fit': () => { fit(); },
+  'expand': () => { expand(); },
+}, 'inline');
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const labelsRef = ref<HTMLCanvasElement | null>(null);
@@ -90,13 +106,24 @@ const fitZoomLevel = ref<number | null>(null);
 const fullscreen = ref(false);
 
 const graph = shallowRef<GraphHandle | null>(null);
-interface PointMeta { readonly name: string; readonly hex: string; readonly clamped: boolean; readonly category: ResolutionCategory; readonly algorithm: string | null }
+type PointMeta = {
+  readonly name: string;
+  readonly hex: string;
+  readonly clamped: boolean;
+  readonly category: ResolutionCategory;
+  readonly algorithm: string | null;
+};
 let labelMeta: PointMeta[] = [];
 let labelRaf: number | null = null;
+let paintRaf: number | null = null;
 let resizeObserver: ResizeObserver | null = null;
-let visibilityPoll: ReturnType<typeof setInterval> | null = null;
+let visibilityPoll: number | null = null;
 let GraphCtor: CosmosCtor | null = null;
+let graphRuntimeArmed = false;
+let graphBooting = false;
 const fitTimers: ReturnType<typeof setTimeout>[] = [];
+const LABEL_PAINT_BUDGET_MS = 1000 / 30;
+const GRAPH_VISIBILITY_POLL_MS = 750;
 // Caps how many times initCosmos() is allowed to retry a failing
 // construction (WebGL2 unavailable, GPU blocklisted, context lost, shader
 // compile failure): each failed `new GraphCtor()` call can allocate a WebGL2
@@ -105,68 +132,176 @@ const fitTimers: ReturnType<typeof setTimeout>[] = [];
 // for as long as the component stays mounted. 10 attempts at the poll's
 // 400ms cadence gives the failure a few seconds to be transient (e.g. a
 // momentary context loss) before giving up for good.
-const MAX_INIT_ATTEMPTS = 10;
 let initAttempts = 0;
+let initFailed = false;
+let lastLabelPaintAt = 0;
+let pendingPaint = false;
+let pendingLabelPaint = false;
+let graphVisibilityPoll: number | null = null;
+let isGraphVisible = true;
+let onVisibilityChange: (() => void) | null = null;
+let paintNeedsReframe = true;
 
-onMounted(async () => {
+function syncGraphVisibility(): void {
+  const target = containerRef.value;
+  if (target === null || graph.value === null) return;
+  const rect = target.getBoundingClientRect();
+  const nextVisible = rect.width > 0 && rect.height > 0
+    && rect.bottom > 0 && rect.right > 0
+    && rect.top < window.innerHeight && rect.left < window.innerWidth
+    && !document.hidden;
+  if (nextVisible === isGraphVisible) return;
+  isGraphVisible = nextVisible;
+  if (isGraphVisible) {
+    try { graph.value.start(); } catch { /* ignore */ }
+    if (pendingPaint) { schedulePaint(); }
+    if (pendingLabelPaint) { scheduleLabelPaint(); }
+  } else {
+    try { graph.value.pause(); } catch { /* ignore */ }
+  }
+}
+
+function stopVisibilityPoll(): void {
+  if (visibilityPoll !== null) {
+    clearInterval(visibilityPoll);
+    visibilityPoll = null;
+  }
+}
+
+async function bootGraphRuntime(): Promise<void> {
+  if (graphRuntimeArmed || graphBooting || !(props.enabled ?? true) || typeof window === 'undefined') return;
+  graphBooting = true;
+  loading.value = true;
+  loadError.value = null;
   try {
-    const mod = await import('@cosmos.gl/graph');
-    GraphCtor = (mod as unknown as { Graph: CosmosCtor }).Graph;
+    if (GraphCtor === null) {
+      const mod = await import('@cosmos.gl/graph');
+      GraphCtor = (mod as unknown as { Graph: CosmosCtor }).Graph;
+    }
+
+    const container = containerRef.value;
+    if (container === null || !(props.enabled ?? true)) {
+      loading.value = false;
+      return;
+    }
+
+    graphRuntimeArmed = true;
+    window.addEventListener('keydown', onKeydown);
+    loading.value = false;
+
+    // This card sits inside a CylinderCarousel deck, which mounts EVERY face
+    // simultaneously (siblings are 3D-transformed off-screen, never
+    // display:none) — a bare nonzero-size check alone would fire immediately
+    // on page load regardless of whether this card is the one actually
+    // showing. IntersectionObserver would be the natural fix, but it never
+    // fires at all for elements inside this carousel's 3D-transformed
+    // (perspective/rotateY/translateZ) ancestor chain — confirmed empirically,
+    // not just theorized — so visibility is instead polled directly via
+    // getBoundingClientRect against the viewport, which reflects reality
+    // regardless of any 3D-transform/IntersectionObserver interaction quirk.
+    const tryInit = (): void => {
+      if (initFailed) {
+        stopVisibilityPoll();
+        return;
+      }
+      if (graph.value !== null) return;
+      if (initAttempts >= COLOR_GRAPH_MAX_INIT_ATTEMPTS) {
+        initFailed = true;
+        stopVisibilityPoll();
+        return;
+      }
+      const rect = container.getBoundingClientRect();
+      const inViewport = rect.width > 0 && rect.height > 0
+        && rect.bottom > 0 && rect.right > 0
+        && rect.top < window.innerHeight && rect.left < window.innerWidth;
+      if (!inViewport) return;
+      initCosmos(container);
+      // Stop polling once construction succeeds, or once it has failed enough
+      // times to give up — either way, further calls to tryInit would be
+      // wasted work (or, for the failure case, a fresh doomed WebGL2 context
+      // allocation) with no path to success.
+      if (visibilityPoll !== null && (graph.value !== null || initAttempts >= COLOR_GRAPH_MAX_INIT_ATTEMPTS)) {
+        stopVisibilityPoll();
+      }
+    };
+    visibilityPoll = window.setInterval(tryInit, 400);
+    tryInit();
+
+    const scheduleGraphVisibility = (): void => {
+      if (graphVisibilityPoll === null) {
+        graphVisibilityPoll = window.setInterval(syncGraphVisibility, GRAPH_VISIBILITY_POLL_MS);
+      }
+    };
+    onVisibilityChange = (): void => { syncGraphVisibility(); };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    scheduleGraphVisibility();
+    onVisibilityChange();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver?.disconnect();
+      resizeObserver = new ResizeObserver(() => {
+        if (graph.value !== null) { resizeLabelCanvas(); scheduleLabelPaint(); }
+      });
+      resizeObserver.observe(container);
+    }
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : String(err);
     loading.value = false;
+  } finally {
+    graphBooting = false;
+  }
+}
+
+function teardownGraphRuntime(): void {
+  if (!graphRuntimeArmed) {
     return;
   }
-  loading.value = false;
-
-  const container = containerRef.value;
-  if (container === null) return;
-
-  // This card sits inside a CylinderCarousel deck, which mounts EVERY face
-  // simultaneously (siblings are 3D-transformed off-screen, never
-  // display:none) — a bare nonzero-size check alone would fire immediately
-  // on page load regardless of whether this card is the one actually
-  // showing. IntersectionObserver would be the natural fix, but it never
-  // fires at all for elements inside this carousel's 3D-transformed
-  // (perspective/rotateY/translateZ) ancestor chain — confirmed empirically,
-  // not just theorized — so visibility is instead polled directly via
-  // getBoundingClientRect against the viewport, which reflects reality
-  // regardless of any 3D-transform/IntersectionObserver interaction quirk.
-  const tryInit = (): void => {
-    if (graph.value !== null) return;
-    if (initAttempts >= MAX_INIT_ATTEMPTS) return;
-    const rect = container.getBoundingClientRect();
-    const inViewport = rect.width > 0 && rect.height > 0
-      && rect.bottom > 0 && rect.right > 0
-      && rect.top < window.innerHeight && rect.left < window.innerWidth;
-    if (!inViewport) return;
-    initCosmos(container);
-    // Stop polling once construction succeeds, or once it has failed enough
-    // times to give up — either way, further calls to tryInit would be
-    // wasted work (or, for the failure case, a fresh doomed WebGL2 context
-    // allocation) with no path to success.
-    if (visibilityPoll !== null && (graph.value !== null || initAttempts >= MAX_INIT_ATTEMPTS)) {
-      clearInterval(visibilityPoll);
-      visibilityPoll = null;
-    }
-  };
-  visibilityPoll = setInterval(tryInit, 400);
-  tryInit();
-
-  if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver(() => {
-      if (graph.value !== null) { resizeLabelCanvas(); scheduleLabelPaint(); }
-    });
-    resizeObserver.observe(container);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
+  stopVisibilityPoll();
+  if (graphVisibilityPoll !== null) {
+    window.clearInterval(graphVisibilityPoll);
+    graphVisibilityPoll = null;
   }
-});
+  if (onVisibilityChange !== null) {
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    onVisibilityChange = null;
+  }
+  window.removeEventListener('keydown', onKeydown);
+  for (const t of fitTimers.splice(0)) clearTimeout(t);
+  if (labelRaf !== null) {
+    cancelAnimationFrame(labelRaf);
+    labelRaf = null;
+  }
+  if (paintRaf !== null) {
+    cancelAnimationFrame(paintRaf);
+    paintRaf = null;
+  }
+  graph.value?.destroy();
+  graph.value = null;
+  isGraphVisible = true;
+  initAttempts = 0;
+  initFailed = false;
+  pendingPaint = false;
+  pendingLabelPaint = false;
+  paintNeedsReframe = true;
+  fitZoomLevel.value = null;
+  lastLabelPaintAt = 0;
+  graphRuntimeArmed = false;
+}
 
 function initCosmos(container: HTMLDivElement): void {
-  if (GraphCtor === null || graph.value !== null) return;
+  if (GraphCtor === null || graph.value !== null || initFailed) return;
   initAttempts += 1;
   try {
     graph.value = new GraphCtor(container, {
-      'spaceSize': SPACE_SIZE,
+      // cosmos's own default ('#222222') ignores the site's light/dark
+      // framing outright, so the WebGL canvas never matches the page around
+      // it and (worse, on some builds) renders fully opaque black — set it
+      // from the resolved --ui-bg token instead, re-applied below whenever
+      // framing changes.
+      'backgroundColor': backgroundColorFromTheme(),
+      'spaceSize': COLOR_GRAPH_SPACE_SIZE,
       // Tuned to the scale buildBuffers seeds (hub ring radius 900, leaf
       // satellite radius 260) so the live simulation relaxes into an airy
       // layout rather than collapsing into a tight clump: repulsion
@@ -195,9 +330,17 @@ function initCosmos(container: HTMLDivElement): void {
       }
     });
     resizeLabelCanvas();
-    paint();
+    schedulePaint();
     pollZoom();
+    paintNeedsReframe = true;
+    void nextTick(() => {
+      isGraphVisible = true;
+      syncGraphVisibility();
+    });
   } catch (err) {
+    if (initAttempts >= COLOR_GRAPH_MAX_INIT_ATTEMPTS) {
+      initFailed = true;
+    }
     loadError.value = err instanceof Error ? err.message : String(err);
     // A failed construction can still have partially allocated a WebGL2
     // context/canvas (cosmos.gl may set up its own canvas before throwing on
@@ -207,6 +350,9 @@ function initCosmos(container: HTMLDivElement): void {
     try { graph.value?.destroy(); } catch { /* ignore */ }
     graph.value = null;
     container.replaceChildren();
+    if (initFailed) {
+      stopVisibilityPoll();
+    }
   }
 }
 
@@ -214,27 +360,14 @@ function pollZoom(): void {
   try { zoomLevel.value = graph.value?.getZoomLevel() ?? 1; } catch { /* ignore */ }
 }
 
-const ZOOM_STEP = 1.25;
-const PAN_STEP = 80;
-const HUB_SIZE = 20;
-const LEAF_SIZE = 13;
-// cosmos.gl's point-space defaults to a [0, SPACE_SIZE] square (config.spaceSize
-// below) — points outside it get clamped to the boundary, which collapses the
-// whole layout into a single point if CENTER sits at the space's edge instead
-// of its middle.
-const SPACE_SIZE = 4096;
-const CENTER = SPACE_SIZE / 2;
-const HUB_RADIUS = 900;
-const LEAF_RADIUS = 260;
-
 function zoomIn(): void {
   const g = graph.value; if (g === null) return;
-  try { g.setZoomLevel(g.getZoomLevel() * ZOOM_STEP); pollZoom(); } catch { /* ignore */ }
+  try { g.setZoomLevel(g.getZoomLevel() * COLOR_GRAPH_ZOOM_STEP); pollZoom(); } catch { /* ignore */ }
 }
 function zoomOut(): void {
   const g = graph.value; if (g === null) return;
   try {
-    const next = g.getZoomLevel() / ZOOM_STEP;
+    const next = g.getZoomLevel() / COLOR_GRAPH_ZOOM_STEP;
     g.setZoomLevel(Math.max(next, fitZoomLevel.value ?? 0));
     pollZoom();
   } catch { /* ignore */ }
@@ -249,20 +382,16 @@ function panBy(dx: number, dy: number): void {
   if (zoom === 0) return;
   const worldDx = dx / zoom;
   const worldDy = dy / zoom;
-  const next = new Float32Array(flat.length);
-  for (let i = 0; i < flat.length; i += 2) {
-    next[i] = (flat[i] ?? 0) + worldDx;
-    next[i + 1] = (flat[i + 1] ?? 0) + worldDy;
-  }
+  const next = translateColorGraphPoints(flat, worldDx, worldDy);
   // setPointPositions() auto-pauses the simulation for the caller to settle
   // a deliberate layout; start() forces it running again immediately so a
   // manual pan doesn't permanently freeze the live simulation.
   try { g.setPointPositions(next, true); g.start(0.3); scheduleLabelPaint(); } catch { /* ignore */ }
 }
-function panUp(): void { panBy(0, -PAN_STEP); }
-function panDown(): void { panBy(0, +PAN_STEP); }
-function panLeft(): void { panBy(+PAN_STEP, 0); }
-function panRight(): void { panBy(-PAN_STEP, 0); }
+function panUp(): void { panBy(0, -COLOR_GRAPH_PAN_STEP); }
+function panDown(): void { panBy(0, +COLOR_GRAPH_PAN_STEP); }
+function panLeft(): void { panBy(+COLOR_GRAPH_PAN_STEP, 0); }
+function panRight(): void { panBy(-COLOR_GRAPH_PAN_STEP, 0); }
 
 function centre(): void {
   const g = graph.value;
@@ -271,14 +400,11 @@ function centre(): void {
   let flat: readonly number[] = [];
   try { flat = g.getPointPositions(); } catch { return; }
   if (flat.length === 0) return;
-  let sumX = 0, sumY = 0;
-  const count = flat.length / 2;
-  for (let i = 0; i < flat.length; i += 2) { sumX += flat[i] ?? 0; sumY += flat[i + 1] ?? 0; }
-  const centroidX = sumX / count;
-  const centroidY = sumY / count;
+  const centroid = getColorGraphPointCentroid(flat);
+  if (centroid === null) return;
   let screenX = 0, screenY = 0;
   try {
-    const screen = g.spaceToScreenPosition([centroidX, centroidY]);
+    const screen = g.spaceToScreenPosition(centroid);
     screenX = screen[0]; screenY = screen[1];
   } catch { return; }
   const rect = container.getBoundingClientRect();
@@ -286,11 +412,7 @@ function centre(): void {
   if (zoom === 0) return;
   const worldDx = (rect.width / 2 - screenX) / zoom;
   const worldDy = (rect.height / 2 - screenY) / zoom;
-  const next = new Float32Array(flat.length);
-  for (let i = 0; i < flat.length; i += 2) {
-    next[i] = (flat[i] ?? 0) + worldDx;
-    next[i + 1] = (flat[i + 1] ?? 0) + worldDy;
-  }
+  const next = translateColorGraphPoints(flat, worldDx, worldDy);
   try { g.setPointPositions(next, true); g.start(0.3); scheduleLabelPaint(); } catch { /* ignore */ }
 }
 
@@ -298,42 +420,96 @@ function armFitSequence(): void {
   const handle = graph.value;
   if (handle === null) return;
   for (const t of fitTimers.splice(0)) clearTimeout(t);
-  for (const delayMs of [0, 250, 500, 750]) {
-    fitTimers.push(setTimeout(() => { handle.fitView(200); }, delayMs));
+  // The seeded hub/leaf layout keeps relaxing under the live simulation
+  // (link spring, repulsion, gravity) for a bit after paint() hands it off —
+  // an extra, later fit (1200ms) beyond the original 0/250/500/750ms sweep
+  // catches that continued spread instead of framing an early, tighter
+  // snapshot as if it were final.
+  for (const delayMs of COLOR_GRAPH_FIT_DELAYS_MS) {
+    fitTimers.push(setTimeout(() => { handle.fitView(200, COLOR_GRAPH_FIT_PADDING); }, delayMs));
   }
   fitTimers.push(setTimeout(() => {
     try {
       const level = graph.value?.getZoomLevel() ?? null;
       if (level !== null) fitZoomLevel.value = level;
     } catch { /* ignore */ }
-  }, 800));
+  }, COLOR_GRAPH_CAPTURE_FIT_ZOOM_DELAY_MS));
 }
 function fit(): void { armFitSequence(); }
 function expand(): void { fullscreen.value = !fullscreen.value; }
 
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-  if (visibilityPoll !== null) { clearInterval(visibilityPoll); visibilityPoll = null; }
-  for (const t of fitTimers.splice(0)) clearTimeout(t);
-  if (labelRaf !== null) cancelAnimationFrame(labelRaf);
-  graph.value?.destroy();
-  graph.value = null;
+/** Escape always exits fullscreen — the D-pad's expand button toggling it back off is the primary affordance, this is the keyboard equivalent every other fullscreen surface on the web supports. */
+function onKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Escape' && fullscreen.value) fullscreen.value = false;
+}
+
+// The Teleport (see template) moves .cg-wrap to <body> on entering
+// fullscreen so `position: fixed` escapes CylinderCarousel's 3D-transformed
+// ancestor and actually covers the viewport — that resize invalidates both
+// the label canvas's backing-store size and the last fitView framing, so
+// both are recomputed once the DOM move (and the fixed/inset-0 layout it
+// enables) has actually landed.
+watch(fullscreen, () => {
+  void nextTick(() => {
+    for (const t of fitTimers.splice(0)) clearTimeout(t);
+    resizeLabelCanvas();
+    const schedule = (delayMs: number): void => {
+      fitTimers.push(setTimeout(() => {
+        try { graph.value?.fitView(300, COLOR_GRAPH_FIT_PADDING); } catch { /* ignore */ }
+      }, delayMs));
+    };
+    schedule(0);
+    schedule(180);
+    schedule(420);
+  });
 });
 
-watch(mathList, () => paint());
-watch(categoryVisible, () => paint(), { 'deep': true });
+watch(
+  () => props.enabled ?? true,
+  (isEnabled) => {
+    if (isEnabled) {
+      void bootGraphRuntime();
+    } else {
+      teardownGraphRuntime();
+    }
+  },
+  { flush: 'post' }
+);
 
-/** Deterministic hex -> [r,g,b] in 0..1, via the engine's own color record — never a re-derived/approximated value. */
-function rgbOf(hex: string): [number, number, number] {
-  const { r, g, b } = colorRecordFactory.fromHex(hex).rgb;
-  return [r, g, b];
-}
+onMounted(() => {
+  if (props.enabled ?? true) {
+    void bootGraphRuntime();
+  }
+});
+
+onBeforeUnmount(() => {
+  teardownGraphRuntime();
+});
+
+watch(mathList, (next, previous) => {
+  paintNeedsReframe = previous === undefined || previous.length !== next.length;
+  schedulePaint();
+});
+watch(categoryVisible, () => {
+  schedulePaint();
+}, { 'deep': true });
+// mathList already recomputes (and repaints node colors) when framing
+// flips, but that repaint never touches the canvas's own backgroundColor —
+// keep it in sync with --ui-bg separately so light/dark toggles (and any
+// theme swap that changes the resolved background role) always land.
+watch(framing, () => {
+  const g = graph.value;
+  if (g === null) return;
+  try {
+    g.setConfigPartial({ 'backgroundColor': backgroundColorFromTheme() });
+    g.render(1);
+  } catch { /* ignore */ }
+});
 
 function paint(): void {
   const handle = graph.value;
   if (handle === null) return;
-  const { positions, colors, sizes, links, linkColors, meta } = buildBuffers(mathList.value, categoryVisible.value);
+  const { positions, colors, sizes, links, linkColors, meta } = buildColorGraphBuffers(mathList.value, categoryVisible.value);
   labelMeta = meta;
   handle.setPointPositions(positions);
   handle.setPointColors(colors);
@@ -348,24 +524,66 @@ function paint(): void {
   // time rather than freezing on one static frame.
   handle.render(1);
   if (positions.length === 0) { scheduleLabelPaint(); return; }
-  armFitSequence();
+  if (paintNeedsReframe) {
+    armFitSequence();
+    paintNeedsReframe = false;
+  }
   scheduleLabelPaint();
 }
 
+function schedulePaint(): void {
+  if (paintRaf !== null) {
+    pendingPaint = false;
+    return;
+  }
+  if (!isGraphVisible || graph.value === null) {
+    pendingPaint = true;
+    return;
+  }
+  pendingPaint = false;
+  paintRaf = requestAnimationFrame(() => {
+    paintRaf = null;
+    if (!isGraphVisible || graph.value === null) {
+      pendingPaint = true;
+      return;
+    }
+    paint();
+  });
+}
+
 function scheduleLabelPaint(): void {
-  if (labelRaf !== null) return;
-  labelRaf = requestAnimationFrame(() => { labelRaf = null; paintLabels(); });
+  if (labelRaf !== null) {
+    pendingLabelPaint = false;
+    return;
+  }
+  if (!isGraphVisible || graph.value === null) {
+    pendingLabelPaint = true;
+    return;
+  }
+  pendingLabelPaint = false;
+  labelRaf = requestAnimationFrame(() => {
+    if (!isGraphVisible || graph.value === null) {
+      labelRaf = null;
+      pendingLabelPaint = true;
+      return;
+    }
+    const now = performance.now();
+    if (now - lastLabelPaintAt < LABEL_PAINT_BUDGET_MS) {
+      labelRaf = null;
+      pendingLabelPaint = true;
+      return;
+    }
+    lastLabelPaintAt = now;
+    pendingLabelPaint = false;
+    labelRaf = null;
+    paintLabels();
+  });
 }
 
 function resizeLabelCanvas(): void {
   const canvas = labelsRef.value;
   const container = containerRef.value;
   if (canvas === null || container === null) return;
-  const dpr = window.devicePixelRatio || 1;
-  const rect = container.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) return;
-  const targetW = Math.round(rect.width * dpr);
-  const targetH = Math.round(rect.height * dpr);
   // Re-measured on every paintLabels() call (cheap: getBoundingClientRect +
   // a couple of numeric writes), not just reactively via ResizeObserver —
   // this card lives inside a CylinderCarousel face that changes size via a
@@ -373,314 +591,28 @@ function resizeLabelCanvas(): void {
   // at all (same ancestor-transform quirk documented for IntersectionObserver
   // above). Without this, a resize captured while the face was still mid-
   // transition sticks around forever since nothing else ever corrects it.
-  if (canvas.width === targetW && canvas.height === targetH) return;
-  canvas.width = targetW;
-  canvas.height = targetH;
-  canvas.style.width = `${String(rect.width)}px`;
-  canvas.style.height = `${String(rect.height)}px`;
+  resizeColorGraphLabelCanvas(canvas, container);
 }
 
 function paintLabels(): void {
   const handle = graph.value;
   const canvas = labelsRef.value;
   if (handle === null || canvas === null) return;
-  resizeLabelCanvas();
-  const dpr = window.devicePixelRatio || 1;
-  const ctx = canvas.getContext('2d');
-  if (ctx === null) return;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const w = canvas.width / dpr;
-  const h = canvas.height / dpr;
-  ctx.clearRect(0, 0, w, h);
-  if (labelMeta.length === 0) return;
-
-  let positions: readonly number[] = [];
-  try { positions = handle.getPointPositions(); } catch { return; }
-  if (positions.length === 0) return;
-
-  const mono = getComputedStyle(document.body).getPropertyValue('--font-mono').trim() || 'ui-monospace, monospace';
-  ctx.font = `600 12px ${mono}`;
-  ctx.textBaseline = 'middle';
-  const PAD_X = 5;
-  const PAD_Y = 2;
-
-  for (let i = 0; i < labelMeta.length; i++) {
-    const meta = labelMeta[i];
-    if (meta === undefined || !categoryVisible.value[meta.category]) continue;
-    const wx = positions[i * 2];
-    const wy = positions[i * 2 + 1];
-    if (wx === undefined || wy === undefined) continue;
-    let sx = 0, sy = 0;
-    try {
-      const p = handle.spaceToScreenPosition([wx, wy]);
-      sx = p[0]; sy = p[1];
-    } catch { continue; }
-    if (sx < 0 || sy < 0 || sx > w || sy > h) continue;
-
-    const label = meta.algorithm !== null ? `${meta.name} · ${meta.algorithm}` : meta.name;
-    const text = meta.clamped ? `${label} ⏚` : label;
-    const textW = ctx.measureText(text).width;
-    const pillW = textW + PAD_X * 2;
-    const pillH = 13 + PAD_Y * 2;
-    const x = sx + 8;
-    const y = sy - pillH / 2;
-
-    // The pill is the node's own resolved color — so its text color is
-    // chosen (via the same contrastRatio() the rest of the site uses) to
-    // actually be readable against THAT color, not a fixed value that only
-    // happens to work for some roles.
-    ctx.fillStyle = meta.hex;
-    roundRect(ctx, x, y, pillW, pillH, 4);
-    ctx.fill();
-    ctx.fillStyle = readableTextColor(meta.hex);
-    ctx.fillText(text, x + PAD_X, y + pillH / 2);
-  }
-}
-
-/** Picks whichever of black/white contrasts better against `hex`, via the same contrastRatio() every other role-vs-background check on this site uses — never a fixed color that only reads well against some node hues. */
-function readableTextColor(hex: string): string {
-  return contrastRatio(hex, '#ffffff') >= contrastRatio(hex, '#000000') ? '#ffffff' : '#000000';
-}
-
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
-  const radius = Math.min(r, h / 2, w / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + w - radius, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-  ctx.lineTo(x + w, y + h - radius);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-  ctx.lineTo(x + radius, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-}
-
-interface Buffers {
-  readonly positions: Float32Array;
-  readonly colors: Float32Array;
-  readonly sizes: Float32Array;
-  readonly links: Float32Array;
-  readonly linkColors: Float32Array;
-  readonly meta: PointMeta[];
-}
-
-/**
- * Seed layout for the force simulation: hub roles (not derived from
- * anything) sit evenly spaced around a large ring; each derived role sits
- * in a small satellite ring around its own parent's position, and hubs are
- * ringed to each other so the whole graph starts as one connected structure
- * instead of N isolated clusters. cosmos.gl's physics (link spring,
- * repulsion, gravity, collision — see initCosmos()) takes it from there.
- */
-function buildBuffers(roles: readonly RoleMathEntryType[], visible: Readonly<Record<ResolutionCategory, boolean>>): Buffers {
-  const indexByName = new Map<string, number>();
-  const meta: PointMeta[] = [];
-  const positions: number[] = [];
-  const colors: number[] = [];
-  const sizes: number[] = [];
-  const links: number[] = [];
-  const linkColors: number[] = [];
-
-  const hubs = roles.filter((r) => r.parentRole === undefined);
-  const leavesByParent = new Map<string, RoleMathEntryType[]>();
-  for (const role of roles) {
-    if (role.parentRole === undefined) continue;
-    const list = leavesByParent.get(role.parentRole) ?? [];
-    list.push(role);
-    leavesByParent.set(role.parentRole, list);
-  }
-
-  const positionByName = new Map<string, [number, number]>();
-  hubs.forEach((hub, i) => {
-    const angle = (i / Math.max(hubs.length, 1)) * Math.PI * 2;
-    const x = CENTER + Math.cos(angle) * HUB_RADIUS;
-    const y = CENTER + Math.sin(angle) * HUB_RADIUS;
-    positionByName.set(hub.name, [x, y]);
-    const leaves = leavesByParent.get(hub.name) ?? [];
-    leaves.forEach((leaf, j) => {
-      const leafAngle = (j / Math.max(leaves.length, 1)) * Math.PI * 2;
-      positionByName.set(leaf.name, [x + Math.cos(leafAngle) * LEAF_RADIUS, y + Math.sin(leafAngle) * LEAF_RADIUS]);
-    });
-  });
-  // Any role whose parent isn't itself a hub (shouldn't happen given the
-  // schema, but defensive) falls back to the center rather than being
-  // silently dropped from the layout.
-  for (const role of roles) {
-    if (!positionByName.has(role.name)) positionByName.set(role.name, [CENTER, CENTER]);
-  }
-
-  roles.forEach((role, i) => {
-    indexByName.set(role.name, i);
-    const category = categoryOf(role);
-    meta.push({ 'name': role.name, 'hex': role.hex, 'clamped': role.clamp !== null, 'category': category, 'algorithm': role.algorithmInfo?.hueAlgorithm ?? null });
-    const [x, y] = positionByName.get(role.name)!;
-    positions.push(x, y);
-    const [r, g, b] = rgbOf(role.hex);
-    const alpha = visible[category] ? 1.0 : 0.06;
-    colors.push(r, g, b, alpha);
-    sizes.push(role.isDerived ? LEAF_SIZE : HUB_SIZE);
-  });
-
-  for (const role of roles) {
-    if (role.parentRole === undefined) continue;
-    const childIdx = indexByName.get(role.name);
-    const parentIdx = indexByName.get(role.parentRole);
-    if (childIdx === undefined || parentIdx === undefined) continue;
-    links.push(childIdx, parentIdx);
-    const [r, g, b] = rgbOf(role.hex);
-    const bothVisible = visible[categoryOf(role)];
-    linkColors.push(r, g, b, bothVisible ? 0.5 : 0.03);
-  }
-
-  // Hubs otherwise have no edges to each other, leaving each hub-and-spoke
-  // cluster as its own isolated component — ring them together so the whole
-  // graph is a single connected structure (and so simulationLinkSpring has
-  // something to hold the hubs together with once the simulation is live).
-  if (hubs.length > 1) {
-    hubs.forEach((hub, i) => {
-      const next = hubs[(i + 1) % hubs.length];
-      if (next === undefined) return;
-      const hubIdx = indexByName.get(hub.name);
-      const nextIdx = indexByName.get(next.name);
-      if (hubIdx === undefined || nextIdx === undefined) return;
-      links.push(hubIdx, nextIdx);
-      const [r, g, b] = rgbOf(hub.hex);
-      const bothVisible = visible[categoryOf(hub)] && visible[categoryOf(next)];
-      linkColors.push(r, g, b, bothVisible ? 0.35 : 0.03);
-    });
-  }
-
-  return {
-    positions: new Float32Array(positions),
-    colors: new Float32Array(colors),
-    sizes: new Float32Array(sizes),
-    links: new Float32Array(links),
-    linkColors: new Float32Array(linkColors),
-    meta
-  };
+  paintColorGraphLabels(handle, canvas, labelMeta, categoryVisible.value);
 }
 </script>
 
 <template>
-  <div
-    class="cg-wrap"
-    :class="{ 'cg-wrap--fullscreen': fullscreen }"
-  >
-    <div class="cg-canvas">
-      <div
-        v-if="loading"
-        class="cg-overlay"
-      >
-        Loading graph engine…
-      </div>
-      <div
-        v-else-if="loadError"
-        class="cg-overlay cg-error"
-      >
-        Graph failed: {{ loadError }}
-      </div>
-
-      <div
-        ref="containerRef"
-        class="cg-cosmos"
-        :aria-label="`Resolved role graph, iridis-${mathList.length}`"
-      />
-      <canvas
-        ref="labelsRef"
-        class="cg-labels"
-        aria-hidden="true"
-      />
-
-      <GraphLegend
-        v-if="!loading && !loadError"
-        :tabs="legendTabs"
-        class="cg-legend-pos"
-        @toggle="onCategoryToggle"
-      />
-
-      <div
-        v-if="!loading && !loadError"
-        class="cg-dpad-pos"
-      >
-        <GraphDpad
-          :zoom-level="zoomLevel"
-          :pan-enabled="true"
-          expand-title="Fullscreen"
-          @zoom-in="zoomIn"
-          @zoom-out="zoomOut"
-          @centre="centre"
-          @fit="fit"
-          @expand="expand"
-          @pan-up="panUp"
-          @pan-down="panDown"
-          @pan-left="panLeft"
-          @pan-right="panRight"
-        />
-      </div>
-    </div>
-  </div>
+  <ColorGraphViewport
+    v-model:container-ref="containerRef"
+    v-model:labels-ref="labelsRef"
+    :fullscreen="fullscreen"
+    :loading="loading"
+    :load-error="loadError"
+    :legend-machine="legendMachine"
+    :dpad-machine="dpadMachine"
+    :dpad-ready="graph !== null"
+    :zoom-level="zoomLevel"
+    :role-count="mathList.length"
+    />
 </template>
-
-<style scoped>
-.cg-wrap {
-  width: 100%;
-  height: 32rem;
-}
-.cg-wrap--fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  height: 100vh;
-  background: var(--ui-bg);
-}
-.cg-canvas {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border-radius: var(--iridis-radius-lg, 1rem);
-  overflow: hidden;
-  background: radial-gradient(circle at center, color-mix(in oklch, var(--glow) 8%, transparent), var(--ui-bg) 70%);
-  border: 1px solid color-mix(in oklch, var(--glow) 22%, transparent);
-}
-.cg-cosmos {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-.cg-labels {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-.cg-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.82rem;
-  color: var(--ui-text-dimmed);
-  font-style: italic;
-  pointer-events: none;
-  padding: 0 1rem;
-  text-align: center;
-}
-.cg-error { color: var(--ui-color-error-500); }
-.cg-legend-pos {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  z-index: 4;
-}
-.cg-dpad-pos {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  z-index: 5;
-}
-</style>

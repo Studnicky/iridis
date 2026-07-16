@@ -8,6 +8,11 @@
  * FSM event that ultimately calls it. Doc targets are registered once
  * site/app/pages/index.vue's async content query resolves, since the doc
  * list isn't known statically.
+ *
+ * `stageTargets` and `cardTargets` are exposed separately (not just the
+ * merged `targets`) so the two-tier ToC bar can render stage-level pills as
+ * its primary row and the active stage's own cards as a secondary row,
+ * instead of flattening every card across every stage into one list.
  */
 import { computed, shallowRef } from 'vue';
 
@@ -106,7 +111,7 @@ function activateTarget(id: string): void {
 
 export function useNavigationTargets() {
   return {
-    'activateTarget': activateTarget, 'registerDocTargets': registerDocTargets,
-    'registerStageIndexSetter': registerStageIndexSetter
+    'activateTarget': activateTarget, 'cardTargets': cardTargets, 'registerDocTargets': registerDocTargets,
+    'registerStageIndexSetter': registerStageIndexSetter, 'stageTargets': stageTargets
   };
 }

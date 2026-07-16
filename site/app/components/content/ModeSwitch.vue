@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
+import { modeFromTabValue, MODE_SWITCH_TAB_ITEMS, tabValueFromMode } from './buildModeSwitchModel.ts';
 
 /**
  * Mode selector. The demo is EITHER a color picker OR an image extractor, never
@@ -11,19 +12,14 @@ import { useIridis } from '~/composables/useIridis.ts';
  */
 const { mode } = useIridis();
 
-const tabItems = [
-  { label: 'Build a palette', icon: 'i-material-symbols-palette-outline', value: '0' },
-  { label: 'Extract from image', icon: 'i-material-symbols-image-outline-rounded', value: '1' }
-];
-
 // Returns a STRING to match tabItems' string `value`s — Reka's TabsTrigger
 // selects on strict equality against TabsRoot's modelValue, so a numeric
 // getter here (`'0' === 0` is false) would leave every trigger permanently
 // unselected and the [data-state='active'] CSS would never apply.
 const activeTab = computed({
-  get: () => mode.value === 'picker' ? '0' : '1',
+  get: () => tabValueFromMode(mode.value),
   set: (val: number | string) => {
-    mode.value = Number(val) === 0 ? 'picker' : 'image';
+    mode.value = modeFromTabValue(val);
   }
 });
 
@@ -33,7 +29,7 @@ const activeTab = computed({
   <div class="flex justify-center w-full mb-6">
     <UTabs
       v-model="activeTab"
-      :items="tabItems"
+      :items="[...MODE_SWITCH_TAB_ITEMS]"
       :content="false"
       class="w-full max-w-sm output-tabs"
       :ui="{ indicator: 'hidden' }"

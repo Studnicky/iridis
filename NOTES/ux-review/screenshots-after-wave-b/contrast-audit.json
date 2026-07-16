@@ -1,0 +1,654 @@
+{
+  "auditTop": {
+    "total": 7175,
+    "fails": [
+      {
+        "tag": "p",
+        "cls": "text-sm text-muted",
+        "text": "Extract a palette from one or mo",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "button",
+        "cls": "rounded-md font-medium inline-flex items",
+        "text": "Skip",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "text-xs text-muted",
+        "text": "32 dominant colors",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "span",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Histogram · 96 bins",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Clustering algorithm",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Merge input cap · 128",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "p",
+        "cls": "mt-1 text-xs text-muted",
+        "text": "Not a color-distance threshold (",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Colors · 32",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "button",
+        "cls": "k-tier-pill flex-1 justify-center text-[",
+        "text": "4",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "k-tier-pill flex-1 justify-center text-[",
+        "text": "8",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "k-tier-pill flex-1 justify-center text-[",
+        "text": "12",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "k-tier-pill flex-1 justify-center text-[",
+        "text": "16",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "k-tier-pill flex-1 justify-center text-[",
+        "text": "32",
+        "ratio": 1.62,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Histogram bits · 5",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Harmonize threshold · 10",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "p",
+        "cls": "mt-1 text-xs text-muted",
+        "text": "After clustering, hues within th",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Lightness ranges",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "p",
+        "cls": "mb-2 text-xs text-muted",
+        "text": "Union of ranges — add a second b",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "span",
+        "cls": "w-20 shrink-0 font-mono text-xs text-mut",
+        "text": "0.00–1.00",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Chroma ranges",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "p",
+        "cls": "mb-2 text-xs text-muted",
+        "text": "Restricts which chroma band the ",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "span",
+        "cls": "w-20 shrink-0 font-mono text-xs text-mut",
+        "text": "0.00–0.50",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "div",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Extracted hues",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "div",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Candidate palettes",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "text-xs text-muted",
+        "text": "A few alternate clusterings of t",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Combine",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "text-sm text-muted",
+        "text": "These settings control the FINAL",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "p",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Per-image palettes",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "text-sm text-muted",
+        "text": "Each image's own already-extract",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "span",
+        "cls": "truncate font-display text-sm font-bold ",
+        "text": "Sample",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Lock",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "button",
+        "cls": "rounded-md font-medium inline-flex items",
+        "text": "Re-run",
+        "ratio": 1.62,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "w-full text-xs text-muted",
+        "text": "Lock to keep this palette while ",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "span",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Histogram · 32 bins",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Colors — role schema · iridis-32",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "button",
+        "cls": "schema-pill flex-1 justify-center text-[",
+        "text": "4",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "schema-pill flex-1 justify-center text-[",
+        "text": "8",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "schema-pill flex-1 justify-center text-[",
+        "text": "12",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "schema-pill flex-1 justify-center text-[",
+        "text": "16",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "schema-pill flex-1 justify-center text-[",
+        "text": "32",
+        "ratio": 1.62,
+        "min": 4.5,
+        "size": 11
+      }
+    ],
+    "failCount": 462
+  },
+  "auditMid": {
+    "total": 26664,
+    "fails": [
+      {
+        "tag": "p",
+        "cls": "text-sm text-muted",
+        "text": "Extract a palette from one or mo",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "button",
+        "cls": "rounded-md font-medium inline-flex items",
+        "text": "Skip",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "text-xs text-muted",
+        "text": "32 dominant colors",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "span",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Histogram · 96 bins",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Clustering algorithm",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Merge input cap · 128",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "p",
+        "cls": "mt-1 text-xs text-muted",
+        "text": "Not a color-distance threshold (",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Colors · 32",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "button",
+        "cls": "k-tier-pill flex-1 justify-center text-[",
+        "text": "4",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "k-tier-pill flex-1 justify-center text-[",
+        "text": "8",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "k-tier-pill flex-1 justify-center text-[",
+        "text": "12",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "k-tier-pill flex-1 justify-center text-[",
+        "text": "16",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "k-tier-pill flex-1 justify-center text-[",
+        "text": "32",
+        "ratio": 1.62,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Histogram bits · 5",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Harmonize threshold · 10",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "p",
+        "cls": "mt-1 text-xs text-muted",
+        "text": "After clustering, hues within th",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Lightness ranges",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "p",
+        "cls": "mb-2 text-xs text-muted",
+        "text": "Union of ranges — add a second b",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "span",
+        "cls": "w-20 shrink-0 font-mono text-xs text-mut",
+        "text": "0.00–1.00",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Chroma ranges",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "p",
+        "cls": "mb-2 text-xs text-muted",
+        "text": "Restricts which chroma band the ",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "span",
+        "cls": "w-20 shrink-0 font-mono text-xs text-mut",
+        "text": "0.00–0.50",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "div",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Extracted hues",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "div",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Candidate palettes",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "text-xs text-muted",
+        "text": "A few alternate clusterings of t",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Combine",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "text-sm text-muted",
+        "text": "These settings control the FINAL",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "p",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Per-image palettes",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "text-sm text-muted",
+        "text": "Each image's own already-extract",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "span",
+        "cls": "truncate font-display text-sm font-bold ",
+        "text": "Sample",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Lock",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "button",
+        "cls": "rounded-md font-medium inline-flex items",
+        "text": "Re-run",
+        "ratio": 1.62,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "p",
+        "cls": "w-full text-xs text-muted",
+        "text": "Lock to keep this palette while ",
+        "ratio": 2.41,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "span",
+        "cls": "text-xs font-medium uppercase tracking-w",
+        "text": "Histogram · 32 bins",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 13
+      },
+      {
+        "tag": "label",
+        "cls": "block font-medium text-default",
+        "text": "Colors — role schema · iridis-32",
+        "ratio": 4.36,
+        "min": 4.5,
+        "size": 15
+      },
+      {
+        "tag": "button",
+        "cls": "schema-pill flex-1 justify-center text-[",
+        "text": "4",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "schema-pill flex-1 justify-center text-[",
+        "text": "8",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "schema-pill flex-1 justify-center text-[",
+        "text": "12",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "schema-pill flex-1 justify-center text-[",
+        "text": "16",
+        "ratio": 1.61,
+        "min": 4.5,
+        "size": 11
+      },
+      {
+        "tag": "button",
+        "cls": "schema-pill flex-1 justify-center text-[",
+        "text": "32",
+        "ratio": 1.62,
+        "min": 4.5,
+        "size": 11
+      }
+    ],
+    "failCount": 784
+  }
+}

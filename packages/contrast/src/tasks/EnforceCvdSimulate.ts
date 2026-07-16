@@ -100,6 +100,7 @@ function evaluateCvd(
   bgRgb: RgbInterfaceType,
   originalContrast: number
 ): CvdEvalInterfaceType[] {
+  const EPS = 1e-12;
   const evals: CvdEvalInterfaceType[] = [];
   for (const cvd of cvdMatrices) {
     const threshold   = CVD_THRESHOLDS[cvd.name];
@@ -108,8 +109,8 @@ function evaluateCvd(
     const simContrast = simulatedContrast(simFg, simBg);
     const drop        = originalContrast - simContrast;
 
-    const exceedsDrop = Math.abs(drop) > threshold.dropMagnitude;
-    const belowFloor   = simContrast < threshold.minSimulatedContrast;
+    const exceedsDrop = Math.abs(drop) > threshold.dropMagnitude + EPS;
+    const belowFloor   = simContrast < threshold.minSimulatedContrast - EPS;
 
     evals.push({
       'belowFloor':       belowFloor,
@@ -142,6 +143,7 @@ function scoreCandidate(
   bgRgb: RgbInterfaceType,
   failingTypes: readonly CvdMatrixInterfaceType[]
 ): CorrectionCandidateInterfaceType {
+  const EPS = 1e-12;
   const rgb = oklchToRgbRaw.apply(l, c, h);
   const trichromatContrast = simulatedContrast(rgb, bgRgb);
 
@@ -154,8 +156,8 @@ function scoreCandidate(
     const simContrast = simulatedContrast(simFg, simBg);
     const drop        = trichromatContrast - simContrast;
 
-    const exceedsDrop = Math.abs(drop) > threshold.dropMagnitude;
-    const belowFloor   = simContrast < threshold.minSimulatedContrast;
+    const exceedsDrop = Math.abs(drop) > threshold.dropMagnitude + EPS;
+    const belowFloor   = simContrast < threshold.minSimulatedContrast - EPS;
 
     if (exceedsDrop || belowFloor) {
       allClear = false;
@@ -378,6 +380,8 @@ function pushWarning(
   ctx: PipelineContextInterface
 ): CvdPairWarningInterfaceType {
   const threshold = CVD_THRESHOLDS[e.cvdType];
+  const simulatedContrastRatio = e.originalContrast === 0 ? 0 : e.simContrast / e.originalContrast;
+  const simulatedContrastDropRatio = e.originalContrast === 0 ? 0 : e.drop / e.originalContrast;
   const warning: CvdPairWarningInterfaceType = {
     'background':                  background,
     'cvdType':                     e.cvdType,
@@ -386,7 +390,9 @@ function pushWarning(
     'foreground':                  foreground,
     'minSimulatedContrast':        threshold.minSimulatedContrast,
     'originalLuminanceContrast':   e.originalContrast,
-    'simulatedLuminanceContrast':  e.simContrast
+    'simulatedLuminanceContrast':  e.simContrast,
+    'simulatedContrastRatio':      simulatedContrastRatio,
+    'simulatedContrastDropRatio':  simulatedContrastDropRatio
   };
   ctx.logger.warn(
     LogBody.create()
@@ -402,6 +408,8 @@ function pushWarning(
         'foreground':            foreground,
         'minSimulatedContrast':  threshold.minSimulatedContrast,
         'originalContrast':      e.originalContrast,
+        'simulatedContrastRatio': simulatedContrastRatio,
+        'simulatedContrastDropRatio': simulatedContrastDropRatio,
         'reason':                e.exceedsDrop ? 'drop' : 'floor',
         'simulatedContrast':     e.simContrast
       })

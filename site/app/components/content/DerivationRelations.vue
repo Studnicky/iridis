@@ -4,13 +4,21 @@ import { useIridis } from '~/composables/useIridis.ts';
 import { useRoleMathList } from '~/composables/useRoleMathList.ts';
 import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
 import type { HueAlgorithmType, RoleRelationDerivationType } from '~/composables/types/colorDerivation.ts';
-import { hueCircularDistance } from '~/utils/hueCircularDistance.ts';
-import { hueVariantLabel } from '~/utils/hueVariantLabel.ts';
-import { normalizeHue } from '~/utils/normalizeHue.ts';
-import { selectHueAlgorithm } from '~/utils/selectHueAlgorithm.ts';
-import { SEMANTIC_HUE } from '~/theme/semanticHue.ts';
 import { SEMANTIC_HUE_CLAMP } from '~/theme/semanticHueClamp.ts';
-import { capitalize } from '~/utils/capitalize.ts';
+import {
+  buildAlgorithmRelationUpdate,
+  buildBulkAlgorithmState,
+  buildFreeformRelationUpdate,
+  buildGroupRelationBatch,
+  buildRelationGroups,
+  buildSemanticHueGuide,
+  buildSemanticHueGuideDisplayEntries,
+  buildVariantRelationUpdate,
+  defaultBulkAlgorithmFor,
+  buildVariantOptions,
+  HUE_ALGORITHM_OPTIONS
+} from './derivation/buildDerivationRelations.ts';
+import type { DerivationRelationGroup } from './derivation/buildDerivationRelations.ts';
 
 /**
  * Per-relation hue-derivation control: every `derivedFrom` edge in the
@@ -24,89 +32,41 @@ import { capitalize } from '~/utils/capitalize.ts';
 const { updateRelation, updateRelations, semanticHuesEnabled, setSemanticHuesEnabled } = useIridis();
 const { mathList } = useRoleMathList();
 
-/** Common-name anchors for OKLCH hue degrees — only used to make the semantic-hue guide legible; the engine itself never reasons about color names. */
-const HUE_FAMILY_NAMES: readonly { max: number; name: string }[] = [
-  { 'max': 20, 'name': 'red' },
-  { 'max': 50, 'name': 'orange' },
-  { 'max': 90, 'name': 'yellow' },
-  { 'max': 170, 'name': 'green' },
-  { 'max': 200, 'name': 'teal' },
-  { 'max': 260, 'name': 'blue' },
-  { 'max': 300, 'name': 'violet' },
-  { 'max': 340, 'name': 'magenta' },
-  { 'max': 361, 'name': 'red' },
-];
-function hueFamilyName(hueDeg: number): string {
-  return HUE_FAMILY_NAMES.find((f) => hueDeg <= f.max)?.name ?? 'red';
+/** Neutral pipeline-token fallback for a parent swatch missing its own hex
+ * (should not normally happen) — reads the resolved `--ui-text-muted` custom
+ * property Tokens.apply() already wrote to the document root, so even the
+ * fallback stays engine-derived. SSR has no `document` to read from, so the
+ * literal gray is only ever a last-ditch pre-hydration value. */
+function parentHexFallback(): string {
+  if (typeof document === 'undefined') {return '#888888';}
+  return getComputedStyle(document.documentElement).getPropertyValue('--ui-text-muted').trim() || '#888888';
 }
 
 /** Same 4 roles/targets derive:semanticHues actually nudges toward — read directly from its own source of truth (never a second hardcoded copy that could drift out of sync). */
-const semanticHueGuide = Object.entries(SEMANTIC_HUE).map(([role, hue]) => ({
-  'role': role,
-  'hue': hue,
-  'familyName': hueFamilyName(hue),
-}));
-
-const HUE_ALGORITHM_OPTIONS: { label: string; value: HueAlgorithmType }[] = [
-  { label: 'Monochromatic', value: 'monochromatic' },
-  { label: 'Complementary', value: 'complementary' },
-  { label: 'Analogous', value: 'analogous' },
-  { label: 'Triadic', value: 'triadic' },
-  { label: 'Tetradic', value: 'tetradic' },
-  { label: 'Split-complementary', value: 'split-complementary' },
-  { label: 'Compound', value: 'compound' },
-  { label: 'Freeform', value: 'freeform' },
-];
-
-interface RelationGroup {
-  readonly parentName: string;
-  readonly parentHex: string;
-  readonly parentHue: number;
-  readonly children: readonly RoleMathEntryType[];
-}
+const semanticHueGuide = buildSemanticHueGuide();
+const semanticHueGuideEntries = buildSemanticHueGuideDisplayEntries(semanticHueGuide);
 
 /** Grouped by parent so a hub's whole family (e.g. every syntax-* role derived from brand) is edited together, matching the graph's own hub-and-spoke structure. */
-const groups = computed<readonly RelationGroup[]>(() => {
-  const byParent = new Map<string, RoleMathEntryType[]>();
-  for (const role of mathList.value) {
-    if (!role.isDerived || role.parentRole === undefined) {continue;}
-    const list = byParent.get(role.parentRole) ?? [];
-    list.push(role);
-    byParent.set(role.parentRole, list);
-  }
-  const parents = new Map(mathList.value.map((r) => [r.name, r]));
-  return Array.from(byParent.entries()).map(([parentName, children]) => ({
-    'parentName': parentName,
-    'parentHex': parents.get(parentName)?.hex ?? '#888888',
-    'parentHue': parents.get(parentName)?.h ?? 0,
-    'children': children,
-  }));
+const groups = computed<readonly DerivationRelationGroup[]>(() => {
+  return buildRelationGroups(mathList.value, parentHexFallback());
 });
 
-function variantOptions(algorithm: HueAlgorithmType): { label: string; value: number }[] {
-  return selectHueAlgorithm(algorithm, 0).map((offset, index) => ({ 'label': hueVariantLabel(offset), 'value': index }));
-}
-
 function onAlgorithmChange(role: RoleMathEntryType, algorithm: HueAlgorithmType): void {
-  const relation: RoleRelationDerivationType = algorithm === 'freeform'
-    ? { 'hueAlgorithm': algorithm, 'hueVariantIndex': 0, 'freeformOffset': role.algorithmInfo?.offsetDeg ?? 0 }
-    : { 'freeformOffset': undefined, 'hueAlgorithm': algorithm, 'hueVariantIndex': 0 };
-  updateRelation(role.name, relation);
+  updateRelation(role.name, buildAlgorithmRelationUpdate(role, algorithm));
 }
 
 function onVariantChange(role: RoleMathEntryType, hueVariantIndex: number): void {
-  const algorithm = role.algorithmInfo?.hueAlgorithm ?? 'monochromatic';
-  updateRelation(role.name, { 'freeformOffset': undefined, 'hueAlgorithm': algorithm, 'hueVariantIndex': hueVariantIndex });
+  updateRelation(role.name, buildVariantRelationUpdate(role, hueVariantIndex));
 }
 
 function onFreeformOffsetChange(role: RoleMathEntryType, offsetDeg: number): void {
-  updateRelation(role.name, { 'hueAlgorithm': 'freeform', 'hueVariantIndex': 0, 'freeformOffset': offsetDeg });
+  updateRelation(role.name, buildFreeformRelationUpdate(offsetDeg));
 }
 
 /** One algorithm per group, defaulting to the first child's current algorithm so re-opening a group doesn't reset your last bulk pick. */
 const bulkAlgorithm = ref<Record<string, HueAlgorithmType>>({});
-function bulkAlgorithmFor(group: RelationGroup): HueAlgorithmType {
-  return bulkAlgorithm.value[group.parentName] ?? group.children[0]?.algorithmInfo?.hueAlgorithm ?? 'analogous';
+function bulkAlgorithmFor(group: DerivationRelationGroup): HueAlgorithmType {
+  return bulkAlgorithm.value[group.parentName] ?? defaultBulkAlgorithmFor(group);
 }
 
 /**
@@ -121,27 +81,15 @@ function bulkAlgorithmFor(group: RelationGroup): HueAlgorithmType {
  * subject to — so a semantic role naturally lands on the slot nearest its
  * semantic target, not an arbitrary one.
  */
-function applyToGroup(group: RelationGroup, algorithm: HueAlgorithmType): void {
-  bulkAlgorithm.value = { ...bulkAlgorithm.value, [group.parentName]: algorithm };
+function applyToGroup(group: DerivationRelationGroup, algorithm: HueAlgorithmType): void {
+  bulkAlgorithm.value = buildBulkAlgorithmState(bulkAlgorithm.value, group.parentName, algorithm);
   if (algorithm === 'freeform') {return;}
-  const offsets = selectHueAlgorithm(algorithm, 0);
-  const candidateHues = offsets.map((offset) => normalizeHue(group.parentHue + offset));
   // Batched into one updateRelations() call — dispatching one updateRelation()
   // per child here would fire the FSM's async EffectInterpreter.send() once
   // per child in a tight synchronous loop, which races (only the first lands
   // before the interpreter is still busy processing it) and silently drops
   // the rest.
-  const batch: Record<string, RoleRelationDerivationType> = {};
-  for (const child of group.children) {
-    let bestIndex = 0;
-    let bestDist = Infinity;
-    candidateHues.forEach((candidateHue, index) => {
-      const dist = hueCircularDistance(child.h, candidateHue);
-      if (dist < bestDist) { bestDist = dist; bestIndex = index; }
-    });
-    batch[child.name] = { 'freeformOffset': undefined, 'hueAlgorithm': algorithm, 'hueVariantIndex': bestIndex };
-  }
-  updateRelations(batch);
+  updateRelations(buildGroupRelationBatch(group, algorithm));
 }
 </script>
 
@@ -152,31 +100,12 @@ function applyToGroup(group: RelationGroup, algorithm: HueAlgorithmType): void {
       <code class="font-mono">expand:family</code> actually derives — not a preview.
     </p>
 
-    <div class="space-y-2 rounded-lg border border-default/50 p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <span class="text-sm font-semibold text-highlighted">Semantic hue nudge</span>
-        <USwitch
-          :model-value="semanticHuesEnabled"
-          @update:model-value="setSemanticHuesEnabled"
-        />
-      </div>
-      <p class="text-xs text-muted">
-        Independent of the relations below — <code class="font-mono">derive:semanticHues</code> nudges
-        success/warning/error/info toward their conventional meaning, bounded to
-        ±{{ SEMANTIC_HUE_CLAMP }}° so a role never jumps to a hue absent from your actual palette (e.g. a
-        red-dominant image still yields a warm-leaning, not pure-green, success). Turn it off to let those
-        4 roles resolve purely from their own seed/relation, with no built-in lean.
-      </p>
-      <ul class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-dimmed sm:grid-cols-4">
-        <li
-          v-for="entry in semanticHueGuide"
-          :key="entry.role"
-        >
-          <span class="font-medium text-muted">{{ capitalize(entry.role) }}</span>
-          → {{ entry.hue }}° ({{ entry.familyName }})
-        </li>
-      </ul>
-    </div>
+    <SemanticHueNudgePanel
+      :enabled="semanticHuesEnabled"
+      :clamp-degrees="SEMANTIC_HUE_CLAMP"
+      :entries="semanticHueGuideEntries"
+      @toggle="setSemanticHuesEnabled"
+    />
 
     <div
       v-if="groups.length === 0"
@@ -185,79 +114,18 @@ function applyToGroup(group: RelationGroup, algorithm: HueAlgorithmType): void {
       This schema tier has no derived roles yet — nothing to configure.
     </div>
 
-    <div
+    <DerivationGroupPanel
       v-for="group in groups"
       :key="group.parentName"
-      class="space-y-3 rounded-lg border border-default/50 p-4"
-    >
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <span
-            class="inline-block h-3 w-3 rounded-full ring-1 ring-default/50"
-            :style="{ background: group.parentHex }"
-          />
-          <span class="text-sm font-semibold text-highlighted">{{ capitalize(group.parentName) }}</span>
-          <span class="text-xs text-dimmed">{{ group.children.length }} derived role{{ group.children.length === 1 ? '' : 's' }}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <USelect
-            :model-value="bulkAlgorithmFor(group)"
-            :items="HUE_ALGORITHM_OPTIONS"
-            value-key="value"
-            size="xs"
-            class="w-40"
-            @update:model-value="($event) => bulkAlgorithm = { ...bulkAlgorithm, [group.parentName]: $event }"
-          />
-          <UButton
-            size="xs"
-            variant="soft"
-            :disabled="bulkAlgorithmFor(group) === 'freeform'"
-            @click="applyToGroup(group, bulkAlgorithmFor(group))"
-          >
-            Apply to all
-          </UButton>
-        </div>
-      </div>
-
-      <div class="space-y-2">
-        <div
-          v-for="role in group.children"
-          :key="role.name"
-          class="flex flex-wrap items-center gap-2 rounded border border-default/40 p-2"
-        >
-          <span
-            class="inline-block h-3 w-3 flex-none rounded-full ring-1 ring-default/50"
-            :style="{ background: role.hex }"
-          />
-          <span class="w-24 flex-none truncate text-xs font-medium text-highlighted">{{ role.name }}</span>
-          <USelect
-            :model-value="role.algorithmInfo?.hueAlgorithm ?? 'monochromatic'"
-            :items="HUE_ALGORITHM_OPTIONS"
-            value-key="value"
-            size="xs"
-            class="w-32 flex-none"
-            @update:model-value="($event) => onAlgorithmChange(role, $event)"
-          />
-          <USelect
-            v-if="role.algorithmInfo && role.algorithmInfo.hueAlgorithm !== 'freeform'"
-            :model-value="role.algorithmInfo.hueVariantIndex"
-            :items="variantOptions(role.algorithmInfo.hueAlgorithm)"
-            value-key="value"
-            size="xs"
-            class="w-24 flex-none"
-            @update:model-value="($event) => onVariantChange(role, $event)"
-          />
-          <UInput
-            v-else
-            type="number"
-            :model-value="role.algorithmInfo?.freeformOffset ?? 0"
-            size="xs"
-            class="w-16 flex-none"
-            @update:model-value="($event) => onFreeformOffsetChange(role, Number($event))"
-          />
-          <span class="flex-none text-xs text-dimmed">{{ role.algorithmInfo ? hueVariantLabel(role.algorithmInfo.offsetDeg) : '' }}</span>
-        </div>
-      </div>
-    </div>
+      :group="group"
+      :bulk-algorithm="bulkAlgorithmFor(group)"
+      :algorithm-options="HUE_ALGORITHM_OPTIONS"
+      :variant-options="buildVariantOptions"
+      @bulk-algorithm-change="(algorithm: HueAlgorithmType) => bulkAlgorithm = buildBulkAlgorithmState(bulkAlgorithm, group.parentName, algorithm)"
+      @apply-all="applyToGroup(group, bulkAlgorithmFor(group))"
+      @algorithm-change="onAlgorithmChange"
+      @variant-change="onVariantChange"
+      @freeform-offset-change="onFreeformOffsetChange"
+    />
   </div>
 </template>

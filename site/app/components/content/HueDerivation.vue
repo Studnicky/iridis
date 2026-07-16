@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { colorRecordFactory } from '@studnicky/iridis';
 import { useIridis } from '~/composables/useIridis.ts';
-import { getAnalogousHues } from '~/utils/getAnalogousHues.ts';
-import { getCompoundHues } from '~/utils/getCompoundHues.ts';
-import { getSplitComplementaryHues } from '~/utils/getSplitComplementaryHues.ts';
-import { normalizeHue } from '~/utils/normalizeHue.ts';
-import { selectHueAlgorithm } from '~/utils/selectHueAlgorithm.ts';
-import type { HueAlgorithmType } from '~/composables/types/colorDerivation.ts';
+import {
+  buildHueDerivationRoleNames,
+  deriveHueSpecimens,
+  hueHexAt,
+  resolveBaseHue
+} from './derivation/buildHueDerivationSpecimens.ts';
 
 /**
  * Live reference for the 8 hue-derivation algorithms Derivation Settings lets
@@ -19,64 +18,39 @@ import type { HueAlgorithmType } from '~/composables/types/colorDerivation.ts';
  * seed vs resolved hue.
  */
 const { roleViews } = useIridis();
-const roleNames = computed<string[]>(() => roleViews.value.map((r) => r.name));
+const roleNames = computed(() => buildHueDerivationRoleNames(roleViews.value));
 const selectedRole = ref<string>('brand');
 const spacing = ref<number>(30);
 
 const baseHue = computed<number>(() => {
-  const role = roleViews.value.find((r) => r.name === selectedRole.value) ?? roleViews.value.find((r) => r.name === 'brand') ?? roleViews.value[0];
-  return role?.h ?? 0;
+  return resolveBaseHue(roleViews.value, selectedRole.value);
 });
-
-function hexAt(hue: number): string {
-  return colorRecordFactory.fromOklch(0.68, 0.15, hue).hex;
-}
-
-const ALGORITHMS: { key: HueAlgorithmType; label: string; description: string }[] = [
-  { 'key': 'monochromatic', 'label': 'Monochromatic', 'description': 'No hue shift — every derived role reads as the same hue as the seed.' },
-  { 'key': 'complementary', 'label': 'Complementary', 'description': 'One hue sitting exactly 180° from the seed, on the opposite side of the wheel.' },
-  { 'key': 'analogous', 'label': 'Analogous', 'description': 'The seed plus two neighbours, spaced evenly on either side.' },
-  { 'key': 'triadic', 'label': 'Triadic', 'description': 'Three hues spaced 120° apart — an equilateral triangle around the wheel.' },
-  { 'key': 'tetradic', 'label': 'Tetradic', 'description': 'Four hues spaced 90° apart — a square around the wheel.' },
-  { 'key': 'split-complementary', 'label': 'Split-complementary', 'description': 'The seed plus the two hues neighbouring its complement, rather than the complement itself.' },
-  { 'key': 'compound', 'label': 'Compound', 'description': 'Analogous around the seed AND analogous around its complement — six hues total.' },
-  { 'key': 'freeform', 'label': 'Freeform', 'description': 'User-specified hue offsets, set per role in Derivation Settings below — shown here with an illustrative default.' }
-];
-
-const FREEFORM_ILLUSTRATIVE_OFFSETS = [0, 45, 200];
 
 /** analogous/split-complementary/compound take the spacing slider; the rest have a fixed geometric angle and ignore it. */
 const derived = computed(() => {
-  return ALGORITHMS.map((a) => {
-    let hues: number[];
-    if (a.key === 'analogous') hues = getAnalogousHues(baseHue.value, spacing.value);
-    else if (a.key === 'split-complementary') hues = getSplitComplementaryHues(baseHue.value, spacing.value);
-    else if (a.key === 'compound') hues = getCompoundHues(baseHue.value, spacing.value);
-    else if (a.key === 'freeform') hues = selectHueAlgorithm('freeform', baseHue.value, FREEFORM_ILLUSTRATIVE_OFFSETS.map((o) => normalizeHue(baseHue.value + o)));
-    else hues = selectHueAlgorithm(a.key, baseHue.value);
-    return { ...a, hues };
-  });
+  return deriveHueSpecimens(baseHue.value, spacing.value);
 });
 </script>
 
 <template>
   <UCard>
     <div class="space-y-4">
-      <p class="text-sm text-muted">
-        Every non-monochromatic role in Derivation Settings picks its hue via one of these 8 algorithms, applied to a seed hue. Pick a seed role and watch all 8 update together.
-      </p>
+      <SectionIntro body="Every non-monochromatic role in Derivation Settings picks its hue via one of these 8 algorithms, applied to a seed hue. Pick a seed role and watch all 8 update together." />
 
       <div class="flex items-center gap-3">
-        <div
-          class="h-10 w-10 flex-none rounded-md border border-default"
-          :style="{ backgroundColor: hexAt(baseHue) }"
-        />
-        <USelect
+        <SwatchSummaryRow
+          :hex="hueHexAt(baseHue)"
+          aria-label="Selected seed hue"
+          class="w-auto min-w-0"
+        >
+          <template #default />
+        </SwatchSummaryRow>
+        <AppSelect
           v-model="selectedRole"
           :items="roleNames"
           class="w-48"
         />
-        <span class="font-mono text-xs text-muted">{{ Math.round(baseHue) }}°</span>
+        <MutedMono>{{ Math.round(baseHue) }}°</MutedMono>
       </div>
 
       <UFormField :label="`Spacing (analogous / split-complementary / compound) · ${spacing}°`">
@@ -89,28 +63,15 @@ const derived = computed(() => {
       </UFormField>
 
       <div class="grid gap-3 sm:grid-cols-2">
-        <div
+        <HueAlgorithmSpecimen
           v-for="a in derived"
           :key="a.key"
-          class="space-y-1.5 rounded-lg border border-default p-2.5"
-        >
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-sm font-medium text-highlighted">{{ a.label }}</span>
-            <span class="text-[10px] text-dimmed">{{ a.hues.length }} hue{{ a.hues.length === 1 ? '' : 's' }}</span>
-          </div>
-          <div class="flex gap-1.5">
-            <div
-              v-for="(h, i) in a.hues"
-              :key="i"
-              class="h-8 w-8 rounded border border-default shadow-inner"
-              :style="{ backgroundColor: hexAt(h) }"
-              :title="`${Math.round(h)}°`"
-            />
-          </div>
-          <p class="text-[11px] text-dimmed">
-            {{ a.description }}
-          </p>
-        </div>
+          :label="a.label"
+          :description="a.description"
+          :count-label="a.countLabel"
+          :hues="a.hues"
+          :hex-at="hueHexAt"
+        />
       </div>
 
       <LearnMoreSection

@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { globalVscodeTheme } from '~/composables/globalVscodeTheme.ts';
 import CodeBlock from './CodeBlock.vue';
-import type { SupportedLangType } from '~/composables/types/supportedLang.ts';
+import { resolveSupportedCodeLang } from './code/resolveSupportedCodeLang.ts';
 
 const props = defineProps<{
   code?: string;
@@ -13,20 +13,7 @@ const props = defineProps<{
   class?: string;
 }>();
 
-// Map Nuxt Content languages to our SupportedLangType
-const langMap: Record<string, SupportedLangType> = {
-  'js': 'javascript',
-  'javascript': 'javascript',
-  'ts': 'typescript',
-  'typescript': 'typescript',
-  'css': 'css',
-  'json': 'json',
-  'xml': 'xml',
-  'html': 'html',
-  'sh': 'bash',
-  'bash': 'bash'
-};
-const lang = computed(() => langMap[props.language || ''] || 'bash');
+const lang = computed(() => resolveSupportedCodeLang(props.language));
 </script>
 
 <template>
@@ -34,5 +21,6 @@ const lang = computed(() => langMap[props.language || ''] || 'bash');
     :code="props.code || ''"
     :lang="lang"
     :vscode-theme="globalVscodeTheme"
+    :caption="props.filename"
   />
 </template>

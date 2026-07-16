@@ -1,0 +1,2222 @@
+[
+ {
+  "key": "futuristic",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "gallery",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "girlypop",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "hackerman",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "formal",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "arcade",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 760,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "backroads",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "dayAtWork",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "restaurant",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "romance",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "startup",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ },
+ {
+  "key": "streamer",
+  "bg": "#0a0618",
+  "clickedFraming": true,
+  "dark": {
+   "fails": 43,
+   "bg": "#0a0618",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Upload",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Browse",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Sample",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Re-run",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Add hue",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "42 warnings",
+     "ratio": 1.02,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Apply to all",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 13
+    },
+    {
+     "cls": "truncate",
+     "text": "Manual",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 10
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AAA",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "AA",
+     "ratio": 1.04,
+     "min": 4.5,
+     "size": 8
+    },
+    {
+     "cls": "font-medium inline-flex items-center tex",
+     "text": "18.1:1 — AAA pass",
+     "ratio": 1.03,
+     "min": 4.5,
+     "size": 8
+    }
+   ]
+  },
+  "light": {
+   "fails": 761,
+   "bg": "#ebe8fe",
+   "sample": [
+    {
+     "cls": "truncate",
+     "text": "Combine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Refine",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Explore",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Stylesheets",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "truncate",
+     "text": "Reference",
+     "ratio": 1.2,
+     "min": 4.5,
+     "size": 12
+    },
+    {
+     "cls": "iridis-logo",
+     "text": "iridis",
+     "ratio": 1.01,
+     "min": 3,
+     "size": 60
+    },
+    {
+     "cls": "mx-auto mt-4 max-w-xl text-lg font-semib",
+     "text": "Give it a few colors o",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 21
+    },
+    {
+     "cls": "mx-auto mt-5 max-w-xl text-sm text-toned",
+     "text": "A chromatic engine tha",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "font-semibold",
+     "text": "OKLCH-native",
+     "ratio": 1.01,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-base text-toned sm:text-lg",
+     "text": "iridis takes a handful",
+     "ratio": 3.66,
+     "min": 4.5,
+     "size": 19
+    },
+    {
+     "cls": "rounded-md font-medium inline-flex items",
+     "text": "Read more",
+     "ratio": 3.69,
+     "min": 4.5,
+     "size": 15
+    },
+    {
+     "cls": "text-xs font-semibold uppercase tracking",
+     "text": "Try a theme",
+     "ratio": 3.76,
+     "min": 4.5,
+     "size": 13
+    }
+   ]
+  }
+ }
+]

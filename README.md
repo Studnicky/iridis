@@ -73,7 +73,9 @@ cd iridis
 npm install
 npm run typecheck
 npm test
-cd site && npm run dev
+
+# Preferred one-shot debug launch
+npm run site:debug
 ```
 
 iridis ships source, not a build step — `typecheck` is the closest equivalent to `build` in this workspace.

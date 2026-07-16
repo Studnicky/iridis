@@ -115,12 +115,19 @@ const mode = computed<ModeType>({
   'get': () => { const result = uiState.value.mode; return result; },
   'set': (m) => { const result = sendUiEvent({ 'mode': m, 'type': IridisUiActionType.SELECT_MODE }); return result; }
 });
-const pickerSeeds = ref<PickerSeedType[]>([]);
+function defaultPaletteSeeds(): PickerSeedType[] {
+  return [
+    { 'hex': '#000000', 'role': undefined },
+    { 'hex': '#ffffff', 'role': undefined }
+  ];
+}
+
+const pickerSeeds = ref<PickerSeedType[]>(defaultPaletteSeeds());
 /** Same shape as pickerSeeds — a role pinned here (image mode) and a role
  * pinned there (picker mode) are the exact same concept, so both modes share
  * one representation instead of a parallel hex-only list plus a separate
  * index->role map. */
-const imageSeeds = ref<PickerSeedType[]>([]);
+const imageSeeds = ref<PickerSeedType[]>(defaultPaletteSeeds());
 
 /**
  * Rebuilds imageSeeds from a fresh hex list (a recombine, or a newly-selected
@@ -134,6 +141,10 @@ const imageSeeds = ref<PickerSeedType[]>([]);
 function withPreservedRoles(hexes: readonly string[], previous: readonly PickerSeedType[]): PickerSeedType[] {
   const roleByHex = new Map(previous.map((s) => {return [s.hex, s.role] as const;}));
   return hexes.map((hex) => {return { 'hex': hex, 'role': roleByHex.get(hex) };});
+}
+
+function hydratePaletteSeeds(hexes: readonly string[], previous: readonly PickerSeedType[]): PickerSeedType[] {
+  return hexes.length === 0 ? defaultPaletteSeeds() : withPreservedRoles(hexes, previous);
 }
 
 const framing = ref<FramingType>('dark');
@@ -366,7 +377,7 @@ function ingest(state: { 'metadata': Record<string, unknown>; 'roles': Record<st
 }
 
 /** run()'s engine input whenever neither seed list has anything yet (see run() below) — never surfaced as pickerSeeds/imageSeeds, so it never appears as a phantom entry in Manual or the per-image cards. */
-const BOOTSTRAP_SEEDS: PickerSeedType[] = [{ 'hex': '#7c3aed', 'role': undefined }];
+const BOOTSTRAP_SEEDS: PickerSeedType[] = defaultPaletteSeeds();
 
 /**
  * `framingOverride`, when given, is the target framing of an in-flight
@@ -642,7 +653,8 @@ function combineNowRun(): void {
   const combinedHexes = expandWeighted(weightedContributions, CUMULATIVE_HISTOGRAM_BUDGET);
   if (combinedHexes.length === 0) {
     histogram.value = [];
-    imageSeeds.value = [];
+    imageSeeds.value = defaultPaletteSeeds();
+    pickerSeeds.value = defaultPaletteSeeds();
     candidates.value = [];
     selectedCandidateLabel.value = null;
     return;
@@ -673,17 +685,11 @@ function combineNowRun(): void {
     const schemaCount = schemaRoleCount(schemaName.value);
     const extracted = dominant.map((c) => { const result = c.hex; return result; }).filter((hex) => { const result = isValidHex(hex);
       return result; }).slice(0, schemaCount);
-    imageSeeds.value = withPreservedRoles(extracted, imageSeeds.value);
+    imageSeeds.value = hydratePaletteSeeds(extracted, imageSeeds.value);
+    pickerSeeds.value = hydratePaletteSeeds(extracted, pickerSeeds.value);
     candidates.value = (state.metadata['gallery:candidates'] as GalleryCandidateInterfaceType[] | undefined) ?? [];
     selectedCandidateLabel.value = null;
-    // Pre-populates the picker with the image extraction so switching TO manual
-    // mode starts from something — but only while the user hasn't already
-    // switched there. Once mode is 'picker', pickerSeeds is user-owned data;
-    // a background recombine (e.g. a schema/algorithm tweak, or the
-    // always-loaded boot sample) must never silently clobber manual edits.
-    if (mode.value !== 'picker') {
-      sendUiEvent({ 'hexes': extracted, 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE });
-    }
+    sendUiEvent({ 'hexes': extracted, 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE });
     ingest(state);
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
@@ -930,7 +936,7 @@ registerUpdateCvdPreviewHandler(cvdPreviewUpdate);
  * the N extracted hues (where N = schema count).
  */
 function populatePickerFromImage(effect: PopulatePickerFromImageEffectType): void {
-  pickerSeeds.value = effect.hexes.map((hex) => {return { 'hex': hex, 'role': undefined };});
+  pickerSeeds.value = hydratePaletteSeeds(effect.hexes, pickerSeeds.value);
 }
 registerPopulatePickerFromImageHandler(populatePickerFromImage);
 
@@ -981,13 +987,16 @@ registerExtractImageHandler((effect) => { void imageEffectExtract(effect); });
  * the image itself is not re-decoded, only which palette themes the page.
  */
 function selectImageCandidate(effect: SelectImageCandidateEffectType): void {
-  imageSeeds.value = withPreservedRoles(effect.hexes, imageSeeds.value);
+  imageSeeds.value = hydratePaletteSeeds(effect.hexes, imageSeeds.value);
+  pickerSeeds.value = hydratePaletteSeeds(effect.hexes, pickerSeeds.value);
   selectedCandidateLabel.value = effect.label;
   schedule();
 }
 registerSelectImageCandidateHandler(selectImageCandidate);
 
 let booted = false;
+/** Stop-handles for the two deep watches below, captured so HMR teardown can release them — empty until `useIridis()` has booted once on the client. */
+let stopWatches: (() => void)[] = [];
 const schedule = debounce(() => { run(); }, 120);
 
 export function useIridis() {
@@ -1002,8 +1011,8 @@ export function useIridis() {
       void addUploadedImages([logoUrl()], ['Sample']);
       // framing is intentionally absent here — its swap is dispatched synchronously
       // by paletteParamSet() via run(effect.value), not through this debounce.
-      watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true });
-      watch([schemaName, imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true });
+      stopWatches.push(watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
+      stopWatches.push(watch([schemaName, imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
     }
   }
   return {
@@ -1026,3 +1035,13 @@ export function useIridis() {
     'updateUploadedImageSetting': uploadedImageSettingUpdate, 'uploadedImages': uploadedImages
   };
 }
+
+// Releases the two deep watches above before Vite re-evaluates this module on
+// HMR — without this, every reload registers a second pair of watches
+// stacked on top of the old ones, each independently re-scheduling run()/
+// combineNowRun() on every subsequent change.
+import.meta.hot?.dispose(() => {
+  for (const stopWatch of stopWatches) { stopWatch(); }
+  stopWatches = [];
+  booted = false;
+});

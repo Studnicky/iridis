@@ -13,5 +13,5 @@
      structurally complete adapter like all 11 others, not a special case. */
   --iridis-ambient-saturate: 1;
   --iridis-ambient-contrast: 1;
-  --iridis-glow-strength: 1;
+  --iridis-glow-strength: 0.8;
 }

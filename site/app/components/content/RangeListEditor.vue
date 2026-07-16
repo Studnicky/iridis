@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import {
+  appendRangeListEntry,
+  removeRangeListEntry,
+  updateRangeListEntry
+} from './buildRangeListModel.ts';
+
 /**
  * A union-of-ranges editor: N sliders, each an independent [min,max] band,
  * with add/remove controls — always at least one range. Used for both the
@@ -21,24 +27,21 @@ const props = defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [ranges: [number, number][]] }>();
 
 function updateRange(index: number, range: [number, number]): void {
-  const next = props.modelValue.map((r) => [...r] as [number, number]);
-  next[index] = range;
-  emit('update:modelValue', next);
+  emit('update:modelValue', updateRangeListEntry(props.modelValue, index, range));
 }
 function addRange(): void {
-  emit('update:modelValue', [...props.modelValue.map((r) => [...r] as [number, number]), props.defaultRange]);
+  emit('update:modelValue', appendRangeListEntry(props.modelValue, props.defaultRange));
 }
 function removeRange(index: number): void {
-  const next = props.modelValue.map((r) => [...r] as [number, number]).filter((_, i) => i !== index);
-  emit('update:modelValue', next.length > 0 ? next : [props.defaultRange]);
+  emit('update:modelValue', removeRangeListEntry(props.modelValue, index, props.defaultRange));
 }
 </script>
 
 <template>
   <UFormField :label="label">
-    <p class="mb-2 text-xs text-muted">
+    <FieldHelpText class="mb-2 mt-0">
       {{ help }}
-    </p>
+    </FieldHelpText>
     <div class="space-y-2">
       <div
         v-for="(range, i) in modelValue"
@@ -53,7 +56,9 @@ function removeRange(index: number): void {
           class="flex-1"
           @update:model-value="updateRange(i, $event as [number, number])"
         />
-        <span class="w-20 shrink-0 font-mono text-xs text-muted">{{ range[0].toFixed(2) }}–{{ range[1].toFixed(2) }}</span>
+        <MutedMono class="w-20 shrink-0">
+          {{ range[0].toFixed(2) }}–{{ range[1].toFixed(2) }}
+        </MutedMono>
         <UButton
           v-if="modelValue.length > 1"
           icon="i-material-symbols-close-rounded"

@@ -133,6 +133,20 @@ body {
 }
 #__nuxt { position: relative; z-index: 1; }
 
+/* TableOfContentsBar.vue keeps this live via a ResizeObserver on its own
+   root element, so it always reflects whatever the bar's real height is —
+   expanded, compact, or the mobile single-row strip. The default below is
+   only what's visible before that JS has run (SSR / pre-hydration paint). */
+:root {
+  --toc-height: 4.5rem;
+}
+/* Every jump target (stage/doc section, docs AccordionPanel) uses this
+   instead of a fixed `scroll-mt-*` utility, so a jump/anchor scroll never
+   lands with the target's own header hidden under the sticky bar (NAV-4). */
+.toc-scroll-target {
+  scroll-margin-top: var(--toc-height);
+}
+
 /* Reka UI teleports popover content (USelect, UDropdownMenu, etc.) to a wrapper
    under <body> with `z-index: auto` by default — it loses to CylinderCarousel's
    local stacking context (front card z-index up to 40). Pin it comfortably above. */
@@ -142,7 +156,9 @@ body {
 .glass {
   position: relative;
   background: color-mix(in oklch, var(--ui-bg-elevated) 93%, transparent);
-  backdrop-filter: blur(8px) saturate(1.15);
+  /* 4px (was 8px+saturate): a smaller backdrop-blur kernel is far cheaper to
+     re-rasterize over the animated ambient behind every glass surface. */
+  backdrop-filter: blur(4px);
   border: 1px var(--iridis-border-style, solid) color-mix(in oklch, var(--glow) calc(35% * var(--iridis-glow-strength, 1)), transparent);
   border-radius: var(--iridis-radius-lg, 1rem);
   box-shadow:
@@ -158,11 +174,15 @@ body {
     0 18px 60px -14px color-mix(in oklch, var(--glow) calc(55% * var(--iridis-glow-strength, 1)), transparent);
 }
 .glass::before {
-  /* animated top sheen line */
+  /* top sheen line — static by default; the pulsing animation only runs
+     while the card is actually being interacted with (hover/focus), so we
+     aren't repainting opacity on every glass card forever at idle */
   content: "";
   position: absolute; inset: 0 0 auto 0; height: 1px;
   background: linear-gradient(90deg, transparent, var(--glow), transparent);
-  opacity: calc(0.7 * var(--iridis-glow-strength, 1));
+  opacity: calc(0.35 * var(--iridis-glow-strength, 1));
+}
+.glass:hover::before, .glass:focus-within::before {
   animation: sheen 4s ease-in-out infinite;
 }
 @keyframes sheen { 0%,100%{ opacity:.2 } 50%{ opacity:.9 } }
@@ -183,7 +203,9 @@ body {
 .iridis-card {
   position: relative;
   background: color-mix(in oklch, var(--ui-bg-elevated) 94%, transparent);
-  backdrop-filter: blur(8px) saturate(1.15);
+  /* 4px (was 8px+saturate): a smaller backdrop-blur kernel is far cheaper to
+     re-rasterize over the animated ambient behind every glass surface. */
+  backdrop-filter: blur(4px);
   border: 1px var(--iridis-border-style, solid) color-mix(in oklch, var(--glow) calc(22% * var(--iridis-glow-strength, 1)), transparent);
   border-radius: var(--iridis-radius-lg, 1rem);
   box-shadow:
@@ -211,24 +233,29 @@ body {
     linear-gradient(90deg, color-mix(in oklch, var(--glow) 45%, transparent) 1px, transparent 1px);
   background-size: 22px 22px;
   opacity: 0.035;
-  animation: card-texture-pan 34s linear infinite;
+  /* static texture — no animation. A 34s background-position pan repainted
+     every card using this rule (::after on every .iridis-card/.glass, 70+
+     elements) on every frame, forever, for a barely-perceptible drift. Not
+     worth the sustained idle CPU cost. */
 }
-@keyframes card-texture-pan { to { background-position: 22px 22px; } }
 
 /* ─── Glow / pulse / float utilities — every blur radius AND opacity scales
    by --iridis-glow-strength, so a restrained theme (Formal, Gallery) gets a
    genuinely tight hairline glow, not just a dimmer version of the same huge
    neon halo. ─── */
 .glow-text {
-  text-shadow: 0 0 calc(12px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(70% * var(--iridis-glow-strength, 1)), transparent),
-               0 0 calc(40px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength, 1)), transparent);
+  text-shadow: 0 0 calc(6px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(55% * var(--iridis-glow-strength, 1)), transparent);
 }
 .pulse { animation: pulse-glow 3s ease-in-out infinite; }
 @keyframes pulse-glow {
   0%,100% { filter: drop-shadow(0 0 calc(4px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(45% * var(--iridis-glow-strength, 1)), transparent)); }
   50%     { filter: drop-shadow(0 0 calc(16px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(85% * var(--iridis-glow-strength, 1)), transparent)); }
 }
-.float { animation: float 7s ease-in-out infinite; }
+/* will-change promotes the remaining float elements (hero orbs/logo, which
+   carry their own `filter: blur`, not a backdrop-filter) to their own
+   compositor layer, so the translateY bob is a cheap GPU transform of a
+   pre-rasterized layer rather than a per-frame paint. */
+.float { animation: float 7s ease-in-out infinite; will-change: transform; }
 @keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-10px) } }
 .spin-slow { animation: spin 26s linear infinite; }
 
@@ -292,8 +319,34 @@ body {
 @keyframes chroma-hue { to { filter: hue-rotate(360deg) saturate(1.4); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .float, .pulse, .spin-slow, .glass::before, .iridis-card::after, .glass::after,
+  .float, .pulse, .spin-slow, .glass:hover::before, .glass:focus-within::before,
   .orbit-rig, .orbit-ring, .sonar-ring, .sonar-dot, .radar-sweep, .chroma-cycle { animation: none !important; }
+}
+
+/* ─── Tab-hidden pause — driven by pauseOffscreenAnimations.client.ts, which
+   toggles this class on <html> via the Page Visibility API. Freezes every
+   still-running animation (decorative loaders, hover sheen, etc.) the moment
+   the tab is backgrounded, a common source of fans spinning on a tab you
+   aren't even looking at. ─── */
+html.anims-paused *,
+html.anims-paused *::before,
+html.anims-paused *::after {
+  animation-play-state: paused !important;
+}
+
+/* ─── Off-screen pause — pauseOffscreenAnimations.client.ts adds `.anim-offscreen`
+   to any stage/doc section (or standalone loader) scrolled out of view via one
+   IntersectionObserver. Freezes that subtree's animations while it isn't on
+   screen, so a tall page's below-the-fold carousels/showcases cost nothing.
+   The fixed ambient (starfield + lava blobs) is always intersecting, so it is
+   never tagged and keeps animating. ─── */
+.anim-offscreen,
+.anim-offscreen *,
+.anim-offscreen::before,
+.anim-offscreen::after,
+.anim-offscreen *::before,
+.anim-offscreen *::after {
+  animation-play-state: paused !important;
 }
 
 /* ─── Scanline overlay for the hacker feel (very subtle) ─── */
