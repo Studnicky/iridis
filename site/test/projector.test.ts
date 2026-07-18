@@ -39,7 +39,10 @@ test('shortcuts read the matching resolved roles', () => {
   assert.equal(t['--ui-bg'], roles['background']);
   assert.equal(t['--ui-text'], roles['text']);
   assert.equal(t['--ui-border'], roles['border']);
-  assert.equal(t['--ui-primary'], roles['brand']);
+  // --ui-primary is gated by gateTextChrome (ACCENT_TEXT_VARS) since it renders
+  // as text (soft buttons, links); brand (#7c3aed, 3.50:1 vs bg) fails AA and
+  // is nudged along OKLCH L to the WCAG-clearing hex, not passed through raw.
+  assert.equal(t['--ui-primary'], '#8d51ff');
 });
 
 test('sparse tier falls back to another ENGINE role, never a computed color', () => {
