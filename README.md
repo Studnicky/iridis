@@ -98,7 +98,7 @@ pnpm run packages:verify
 pnpm run site:debug
 ```
 
-All 18 public packages build compiled ESM and declarations into `dist/`. `pnpm run build` emits 1,292 artifacts from 323 TypeScript sources. `pnpm run packages:verify` validates 18 staged archives, all 42 public subpaths, strict NodeNext consumer typechecking, runtime imports, metadata, dependency closure, and the compiled CLI executable. Local verification does not publish packages; remote versioning and publication require separate explicit authorization.
+All 18 public packages build compiled ESM and declarations into `dist/`. `pnpm run build` emits 1,296 artifacts from 324 TypeScript sources. `pnpm run packages:verify` validates 18 staged archives, all 42 public subpaths, strict NodeNext consumer typechecking, runtime imports, metadata, dependency closure, and the compiled CLI executable. Local verification does not publish packages; remote versioning and publication require separate explicit authorization.
 
 The docs/demo site lives in [`site/`](site) — a Nuxt app that runs the real engine live against its own theme. See [`site/README.md`](site/README.md).
 

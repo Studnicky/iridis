@@ -825,9 +825,27 @@ const rdfContentScenarios: readonly ScenarioInterface<RdfContentInput, RdfConten
       const r4 = accent.displayP3.r.toFixed(4);
       const g4 = accent.displayP3.g.toFixed(4);
       const b4 = accent.displayP3.b.toFixed(4);
-      assert.match(output!.ttl, new RegExp(`displayP3R[^.]*\\s${r4}\\b`), `[cell=5, scenario=p3-literals] P3R literal ${r4}`);
-      assert.match(output!.ttl, new RegExp(`displayP3G[^.]*\\s${g4}\\b`), `[cell=5, scenario=p3-literals] P3G literal ${g4}`);
-      assert.match(output!.ttl, new RegExp(`displayP3B[^.]*\\s${b4}\\b`), `[cell=5, scenario=p3-literals] P3B literal ${b4}`);
+      // toFixed(4) always yields exactly one '.'; a trailing '.' right after the
+      // matched literal is Turtle's end-of-statement punctuation, not another
+      // fraction digit, so only a further digit invalidates the boundary.
+      const isDigit = (char: string): boolean => {
+        return char >= '0' && char <= '9';
+      };
+      const assertChannelLiteral = (label: string, expected: string, description: string): void => {
+        const labelIndex = output!.ttl.indexOf(label);
+        assert.ok(labelIndex !== -1, description);
+        const closeAngleIndex = output!.ttl.indexOf('>', labelIndex);
+        assert.ok(closeAngleIndex !== -1, description);
+        const afterLabel = output!.ttl.slice(closeAngleIndex + 1).trimStart();
+        const boundaryChar = afterLabel.charAt(expected.length);
+        assert.ok(
+          afterLabel.startsWith(expected) && !isDigit(boundaryChar),
+          description
+        );
+      };
+      assertChannelLiteral('displayP3R', r4, `[cell=5, scenario=p3-literals] P3R literal ${r4}`);
+      assertChannelLiteral('displayP3G', g4, `[cell=5, scenario=p3-literals] P3G literal ${g4}`);
+      assertChannelLiteral('displayP3B', b4, `[cell=5, scenario=p3-literals] P3B literal ${b4}`);
     },
     'input': {
       'colors':   [{ 'c': 0.4, 'h': 30, 'l': 0.7 }, { 'c': 0.01, 'h': 280, 'l': 0.10 }],

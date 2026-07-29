@@ -127,12 +127,20 @@ const SCROLL_INTENT_THRESHOLD_PX = 48;
  */
 let lastScrollY = 0;
 let scrollTicking = false;
+/**
+ * True from the moment the machine changes mode until the resulting reflow
+ * has been laid out and the baseline re-taken. Scroll intent is not produced
+ * during that window, because the only movement in it is the bar resizing
+ * itself.
+ */
+let rebaselinePending = false;
 function onScroll(): void {
-  if (typeof window === 'undefined' || scrollTicking) { return; }
+  if (typeof window === 'undefined' || scrollTicking || rebaselinePending) { return; }
   scrollTicking = true;
   window.requestAnimationFrame(() => {
     const y = window.scrollY;
     scrollTicking = false;
+    if (rebaselinePending) { return; }
     const delta = y - lastScrollY;
     if (Math.abs(delta) >= SCROLL_INTENT_THRESHOLD_PX) {
       sendToc({ 'type': delta > 0 ? 'SCROLL_DOWN' : 'SCROLL_UP' });
@@ -141,10 +149,29 @@ function onScroll(): void {
   });
 }
 
-/** THE re-baseline rule that replaces the old time-lockout: on every mode transition, snap the scroll-direction baseline to the post-transition scrollY, so the transition's own reflow is measured against itself (see onScroll's doc comment) instead of against a stale pre-transition position. */
+/**
+ * THE re-baseline rule that replaces the old time-lockout: on every mode
+ * transition, snap the scroll-direction baseline to the post-transition
+ * scrollY, so the transition's own reflow is measured against itself instead
+ * of against a stale pre-transition position.
+ *
+ * `flush: 'post'` and the animation frame are both load-bearing. A default
+ * (pre-flush) watcher runs before Vue patches the DOM, so it samples
+ * `scrollY` from *before* Row 2 is added or removed -- exactly the stale
+ * baseline this rule exists to avoid. The reflow then moves scroll by the
+ * bar's height delta, which is larger than SCROLL_INTENT_THRESHOLD_PX, so it
+ * reads as a real gesture and bounces the mode straight back: the bar flips
+ * every frame and the page never settles. Sampling after the patch and after
+ * the next frame's layout means the delta starts at ~0, as intended.
+ */
 watch(() => tocState.value.variant, () => {
-  if (typeof window !== 'undefined') { lastScrollY = window.scrollY; }
-});
+  if (typeof window === 'undefined') { return; }
+  rebaselinePending = true;
+  window.requestAnimationFrame(() => {
+    lastScrollY = window.scrollY;
+    rebaselinePending = false;
+  });
+}, { 'flush': 'post' });
 
 /** Row 1's item set for the CURRENT display mode — every visible stage when expanded, only the active one when compact. */
 const stageRowTargets = computed(() => (compact.value

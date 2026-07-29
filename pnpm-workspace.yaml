@@ -1,3 +1,17 @@
 packages:
   - 'packages/*'
   - 'site'
+
+blockExoticSubdeps: true
+trustPolicy: no-downgrade
+
+# Wait a week before accepting a newly published version, so a compromised
+# release has time to be caught and unpublished before it reaches a build.
+minimumReleaseAge: 10080
+
+# Rollup ships one optional package per target platform and republishes the
+# whole set on every release, so their latest versions are almost always
+# inside the window above. They are transitive, platform-gated, and pinned by
+# the lockfile, so holding them back stalls resolution without reducing risk.
+minimumReleaseAgeExclude:
+  - '@rollup/*'

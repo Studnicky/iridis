@@ -670,6 +670,70 @@ void test('Validator :: cell-5 :: missing local reference fails compilation and 
   );
 });
 
+void test('Validator :: cell-5 :: a $ref fragment containing a "__proto__" segment fails to resolve, like any other unresolvable local reference', () => {
+  const baselineSchema: SchemaInterfaceType = {
+    '$id': 'urn:iridis:test:proto-pollution-baseline-reference',
+    'properties': { 'score': { '$ref': '#/$defs/missing' } },
+    'type': 'object'
+  };
+  const protoSchema: SchemaInterfaceType = {
+    '$id': 'urn:iridis:test:proto-pollution-ref-segment',
+    'properties': { 'score': { '$ref': '#/__proto__' } },
+    'type': 'object'
+  };
+
+  // Baseline: an ordinary unresolvable local $ref is neither compilable nor
+  // validatable — this is the reference "fails cleanly" behaviour a
+  // "__proto__" fragment must match.
+  assert.strictEqual(validator.tryCompile(baselineSchema), false, 'ordinary unresolvable $ref is not compilable');
+  assert.throws(
+    () => { const result = validator.validate(baselineSchema, { 'score': 5 }); return result; },
+    Error,
+    'ordinary unresolvable $ref cannot be validated'
+  );
+
+  // A "__proto__" fragment must fail exactly the same way — it must never
+  // resolve to Object.prototype and be treated as a usable schema node.
+  assert.strictEqual(validator.tryCompile(protoSchema), false, '"__proto__" $ref fragment is not compilable');
+  assert.throws(
+    () => { const result = validator.validate(protoSchema, { 'score': 5 }); return result; },
+    Error,
+    '"__proto__" $ref fragment cannot be validated'
+  );
+});
+
+void test('Validator :: cell-5 :: resolving the actual value at a "constructor"/"prototype" error path never reads Object.prototype members', () => {
+  const belowMinimumSchema: SchemaInterfaceType = { 'minimum': 100, 'type': 'number' };
+  const schema: SchemaInterfaceType = {
+    '$id': 'urn:iridis:test:unsafe-value-segment',
+    'properties': {
+      'constructor': belowMinimumSchema,
+      'prototype':   belowMinimumSchema
+    },
+    'type': 'object'
+  };
+  const result = validator.validate(schema, { 'constructor': 5, 'prototype': 5 });
+  const messages = new Map(result.errors.map((error) => {
+    return [error.path, error.message];
+  }));
+
+  assert.strictEqual(result.valid, false, 'below-minimum values on reserved-name properties are still rejected');
+  // The formatter's `context.value` comes from `Value.resolve(pruned, error.path)`
+  // walking the "constructor"/"prototype" segment. Guarded, it fails safely to
+  // `undefined` rather than reading the value off the object — own data or,
+  // absent that, the inherited `Object.prototype` member (a function).
+  assert.strictEqual(
+    messages.get('constructor'),
+    'undefined is less than minimum 100',
+    'a "constructor" segment resolves to undefined, not the inherited Object.prototype.constructor function'
+  );
+  assert.strictEqual(
+    messages.get('prototype'),
+    'undefined is less than minimum 100',
+    'a "prototype" segment resolves to undefined rather than reading through the object'
+  );
+});
+
 void test('Validator :: cell-5 :: data objects containing a type key remain valid schema values', () => {
   const schema: SchemaInterfaceType = {
     'default': { 'type': 'domain-value' },

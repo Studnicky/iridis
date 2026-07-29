@@ -1,5 +1,7 @@
 <script setup lang="ts" generic="T">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { packBalancedRows } from '~/composables/packBalancedRows.ts';
+import { useBalancedWidthLatch } from '~/composables/useBalancedWidthLatch.ts';
 import { useDebouncedResizeObserver } from '~/composables/useDebouncedResizeObserver.ts';
 
 const props = withDefaults(defineProps<{
@@ -12,9 +14,17 @@ const props = withDefaults(defineProps<{
 });
 
 const containerRef = ref<HTMLElement | null>(null);
+/**
+ * Packing width, latched through `useBalancedWidthLatch` rather than set
+ * directly from the raw `ResizeObserver` reading — see that module for why:
+ * a raw width sitting near a row-count boundary can jitter by a few
+ * sub-threshold pixels frame to frame and flip the packing forever. The
+ * latch absorbs that jitter and only lets a genuine width change through.
+ */
 const containerWidth = ref(0);
+const acceptContainerWidth = useBalancedWidthLatch();
 const resizeObserver = useDebouncedResizeObserver((entries) => {
-  if (entries[0]) containerWidth.value = entries[0].contentRect.width;
+  if (entries[0]) containerWidth.value = acceptContainerWidth(entries[0].contentRect.width);
 }, 100);
 
 /**
@@ -42,12 +52,27 @@ function measureItems(): void {
   if (!measureRef.value) return;
   const children = Array.from(measureRef.value.children)
     .filter((el): el is HTMLElement => el instanceof HTMLElement);
-  itemWidths.value = children.map((el) => el.offsetWidth);
+  const measured = children.map((el) => el.offsetWidth);
+
+  /*
+   * Only publish a genuinely new measurement. Assigning a fresh array to
+   * `itemWidths` on every pass changes the ref's identity even when every
+   * width is unchanged, which recomputes `rows` and re-renders. The parent
+   * then hands down a rebuilt `items` array, the watcher below fires on that
+   * new identity, and we measure again -- a render loop that never settles
+   * and that shows up as the page oscillating by one packed row's height.
+   */
+  const current = itemWidths.value;
+  const unchanged = measured.length === current.length
+    && measured.every((width, index) => width === current[index]);
+  if (unchanged) return;
+
+  itemWidths.value = measured;
 }
 
 onMounted(() => {
   if (containerRef.value) {
-    containerWidth.value = containerRef.value.clientWidth;
+    containerWidth.value = acceptContainerWidth(containerRef.value.clientWidth);
     resizeObserver.observe(containerRef.value);
   }
   nextTick(() => { measureItems(); });
@@ -70,50 +95,12 @@ const rows = computed(() => {
   // real widths would immediately invalidate.
   if (!w || widths.length !== props.items.length) return [props.items];
 
-  const gap = props.gap;
+  // Packing itself (greedy real-width wrap + trailing-row rebalance) lives
+  // in packBalancedRows.ts, pure and DOM-free, so it has its own direct
+  // test coverage independent of this component.
+  const indexRows = packBalancedRows(widths, w, props.gap);
 
-  // Greedy left-to-right wrap using REAL widths: a row only ever holds items
-  // whose measured widths actually fit, so no item is ever forced narrower
-  // than its own label (the old flex-1-across-a-fixed-column-count approach
-  // could squeeze a wide label below its natural width and clip it). A
-  // single item wider than the container still gets its own row rather than
-  // being dropped — it overflows that row instead of ever being shrunk.
-  const greedyRows: number[][] = [];
-  let current: number[] = [];
-  let currentWidth = 0;
-  widths.forEach((width, i) => {
-    const addGap = current.length > 0 ? gap : 0;
-    if (current.length > 0 && currentWidth + addGap + width > w) {
-      greedyRows.push(current);
-      current = [i];
-      currentWidth = width;
-    } else {
-      current.push(i);
-      currentWidth += addGap + width;
-    }
-  });
-  if (current.length > 0) greedyRows.push(current);
-
-  // Rebalance: pull items from a fuller row into a disproportionately short
-  // trailing row (e.g. the old "one lonely item on its own last row"
-  // complaint), but only while the receiving row still fits within the
-  // container at the donor item's real width — a rebalance can never
-  // reintroduce the clipping the real-width pass just eliminated.
-  for (let r = greedyRows.length - 1; r > 0; r--) {
-    const prev = greedyRows[r - 1]!;
-    const curr = greedyRows[r]!;
-    while (curr.length < prev.length - 1 && prev.length > 1) {
-      const movedIndex = prev[prev.length - 1]!;
-      const movedWidth = widths[movedIndex]!;
-      const currWidthNow = curr.reduce((sum, idx) => sum + widths[idx]! + gap, -gap);
-      const nextWidth = curr.length > 0 ? currWidthNow + gap + movedWidth : movedWidth;
-      if (nextWidth > w) break;
-      prev.pop();
-      curr.unshift(movedIndex);
-    }
-  }
-
-  return greedyRows.map((row) => row.map((i) => props.items[i]!));
+  return indexRows.map((row) => row.map((i) => props.items[i]!));
 });
 
 function getAbsoluteIndex(rIdx: number, iIdx: number) {

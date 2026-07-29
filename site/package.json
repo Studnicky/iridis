@@ -11,6 +11,7 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "typecheck": "nuxi typecheck",
+    "pretest": "NODE_ENV=production NUXT_APP_BASE_URL=/ nuxt build",
     "test": "node --import tsx --test 'test/**/*.test.ts'"
   },
   "dependencies": {

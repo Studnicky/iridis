@@ -5,6 +5,7 @@ import {
   JsonValue,
   type JsonValueType
 } from '@studnicky/types';
+import { RE2JS } from 're2js';
 
 import type {
   SchemaInterfaceType,
@@ -15,6 +16,7 @@ import type {
 import { CORE_ID_INDEX, CORE_SCHEMAS } from './constants/CoreSchemaRegistry.ts';
 import { JSON_POINTER_PATTERNS }       from './constants/JsonPointerPatterns.ts';
 import { JSON_SCHEMA_TYPE_NAMES }      from './constants/JsonSchemaTypeNames.ts';
+import { UNSAFE_PATH_SEGMENTS }        from './constants/UnsafePathSegments.ts';
 
 /**
  * Shared json-tology registry for the six core schemas, so `$ref`s such as
@@ -122,11 +124,18 @@ class SchemaReference {
 
     let current: JsonValueType | undefined = document;
     for (const segment of segments) {
+      // Guard against prototype-chain confusion: without this, a segment of
+      // "__proto__", "constructor", or "prototype" would resolve into
+      // Object.prototype (or a constructor function) instead of failing the
+      // walk, since a plain, non-null, non-array object satisfies `JsonObject.is`.
+      if (UNSAFE_PATH_SEGMENTS.has(segment)) { return undefined; }
       if (Array.isArray(current)) {
         if (!JSON_POINTER_PATTERNS.digitsOnly.test(segment)) { return undefined; }
-        current = current[Number(segment)];
+        const next: JsonValueType | undefined = current[Number(segment)];
+        current = next;
       } else if (JsonObject.is(current)) {
-        current = current[segment];
+        const next: JsonValueType | undefined = current[segment];
+        current = next;
       } else {
         return undefined;
       }
@@ -256,9 +265,25 @@ class SchemaWalker {
     return undefined;
   }
 
+  /**
+   * Reports whether `property` matches a `patternProperties` key, or
+   * `undefined` when the key is not a regular expression this engine accepts.
+   *
+   * `pattern` is a schema value, and `@studnicky/iridis` is a published
+   * library whose `model` subpath is part of its public surface, so a
+   * consumer or an adopted plugin can supply the schema. Evaluating that with
+   * the platform `RegExp` would put a caller-supplied pattern on a
+   * backtracking engine, where a crafted key stalls the thread. RE2 matches
+   * in time linear to the input and has no catastrophic-backtracking case, so
+   * the failure mode does not exist rather than being argued about.
+   *
+   * The tradeoff is that RE2 rejects backreferences and lookaround, which
+   * ECMA-262 allows. Such a key raises here and reads as "no opinion", the
+   * same as any other unparseable pattern.
+   */
   static #matchesPattern(pattern: string, property: string): boolean | undefined {
     try {
-      return new RegExp(pattern, 'u').test(property);
+      return RE2JS.compile(pattern).matcher(property).find();
     } catch {
       return undefined;
     }
@@ -438,10 +463,16 @@ class Value {
     let current: JsonValueType | undefined = root;
     for (const segment of segments) {
       if (current === null || current === undefined) { return undefined; }
+      // See the matching guard in `SchemaReference.resolve` above: rejects
+      // "__proto__"/"constructor"/"prototype" before they can read through
+      // to the prototype chain.
+      if (UNSAFE_PATH_SEGMENTS.has(segment)) { return undefined; }
       if (JsonObject.is(current)) {
-        current = current[segment];
+        const next: JsonValueType | undefined = current[segment];
+        current = next;
       } else if (Array.isArray(current)) {
-        current = current[Number(segment)];
+        const next: JsonValueType | undefined = current[Number(segment)];
+        current = next;
       } else {
         return undefined;
       }

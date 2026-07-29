@@ -76,6 +76,7 @@
     "@studnicky/errors": "^4.0.0",
     "@studnicky/json-tology": "^0.27.0",
     "@studnicky/logger": "^4.0.0",
-    "@studnicky/types": "^4.0.0"
+    "@studnicky/types": "^4.0.0",
+    "re2js": "^2.8.6"
   }
 }

@@ -72,6 +72,13 @@
    transitions they aren't. */
 html {
   scroll-behavior: smooth;
+
+  /* Reserve the scrollbar gutter permanently. BalancedWrap packs rows against
+     its measured container width, so a scrollbar that appears and disappears
+     changes that width, repacks the rows, and changes the page height by a
+     row -- which toggles the scrollbar again. Holding the gutter breaks that
+     loop at its source. */
+  scrollbar-gutter: stable;
 }
 
 /* Animated scrolling is a vestibular trigger, so honor the same preference

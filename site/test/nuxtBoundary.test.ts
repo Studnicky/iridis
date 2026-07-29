@@ -1,7 +1,7 @@
 import { chromium, type Page } from '@playwright/test';
 import assert from 'node:assert/strict';
-import { type ChildProcess, execFileSync, spawn } from 'node:child_process';
-import { existsSync, statSync } from 'node:fs';
+import { type ChildProcess, spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
@@ -11,7 +11,6 @@ import { THEMES } from '../app/theme/presets/index.ts';
 import { TestPatterns } from './fixtures/TestPatterns.ts';
 
 const SITE_ROOT = resolve(import.meta.dirname, '..');
-const NUXT_CLI = resolve(SITE_ROOT, 'node_modules/nuxt/bin/nuxt.mjs');
 const NITRO_SERVER = resolve(SITE_ROOT, '.output/server/index.mjs');
 
 class NuxtBoundaryHarness {
@@ -161,7 +160,11 @@ class NuxtBoundaryHarness {
         let previousScrollY = window.scrollY;
         let previousTop = target.getBoundingClientRect().top;
         let stableFrameCount = 0;
-        for (let frame = 0; frame < 120; frame += 1) {
+        // The page keeps decorative ambient motion running, so settling is
+        // measured as three consecutive frames without meaningful movement
+        // rather than a quiet page. A loaded machine delivers frames slowly
+        // enough that 120 of them can elapse before that run of three lands.
+        for (let frame = 0; frame < 600; frame += 1) {
           await new Promise<void>((resolveFrame) => {
             window.requestAnimationFrame(() => {resolveFrame();});
           });
@@ -218,19 +221,16 @@ class NuxtBoundaryHarness {
 }
 
 await test('built Nuxt app SSRs and hydrates the rendered navigation order', { 'timeout': 240_000 }, async (context) => {
-  const previousServerModifiedAt = existsSync(NITRO_SERVER) ? statSync(NITRO_SERVER).mtimeMs : undefined;
-  const buildStartedAt = Date.now();
-  execFileSync(process.execPath, [NUXT_CLI, 'build'], {
-    'cwd': SITE_ROOT,
-    'env': { ...process.env, 'NODE_ENV': 'production', 'NUXT_APP_BASE_URL': '/' },
-    'maxBuffer': 16 * 1024 * 1024,
-    'stdio': ['ignore', 'pipe', 'pipe']
-  });
-  const builtServerModifiedAt = statSync(NITRO_SERVER).mtimeMs;
-  assert.ok(builtServerModifiedAt >= buildStartedAt - 1_000, 'Nuxt build must write the Nitro entrypoint during this test');
-  if (previousServerModifiedAt !== undefined) {
-    assert.notEqual(builtServerModifiedAt, previousServerModifiedAt, 'Nuxt build must replace the prior Nitro entrypoint');
-  }
+  // The production build is produced once by site's `pretest` script, not
+  // here. Nuxt takes a lockfile for the duration of a build, and `node --test`
+  // runs test files in parallel processes, so building inside a test raced
+  // any sibling that touched the same output and failed with "Another Nuxt
+  // build is already running". Building once up front also keeps that ~40s
+  // out of this test's own budget.
+  assert.ok(
+    existsSync(NITRO_SERVER),
+    `Nitro entrypoint missing at ${NITRO_SERVER}. Run the suite through 'pnpm --filter site run test', whose pretest builds it.`
+  );
 
   const { 'child': nitro, 'origin': origin } = await NuxtBoundaryHarness.startNitro();
   context.after(async () => {await NuxtBoundaryHarness.stopNitro(nitro);});

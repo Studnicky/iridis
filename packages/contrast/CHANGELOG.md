@@ -15,7 +15,7 @@
 
 ### Changed
 
-- All 18 public package manifests expose compiled ESM and declarations through 42 conditional `types` and `import` subpath exports. The root build emits 1,292 artifacts from 323 TypeScript sources.
+- All 18 public package manifests expose compiled ESM and declarations through 42 conditional `types` and `import` subpath exports. The root build emits 1,296 artifacts from 324 TypeScript sources.
 - Package management moves to pnpm workspaces, and release notes are generated per package by changesets.
 - The Vue and Capacitor recipe independently verifies terminal emitted values against WCAG 2.1 AAA, APCA, and configured color-vision-deficiency simulations before applying generated CSS.
 - Site navigation follows rendered document order, visualization chrome consumes Iridis design-system tokens across server rendering and hydration, and motion effects honor reduced-motion preferences.
