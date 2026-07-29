@@ -32,7 +32,7 @@
     "pack:dry": "pnpm run build:package && npm pack --dry-run ./.publish",
     "publish:dry": "pnpm run build:package && npm publish --dry-run ./.publish",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test 'tests/**/*.test.ts'",
+    "test": "TSX_TSCONFIG_PATH=../../tsconfig.json node --import tsx --test 'tests/**/*.test.ts'",
     "clean": "rm -rf .publish dist"
   },
   "peerDependencies": {

@@ -74,7 +74,7 @@ jobs:
               append_entry '{"name":"audit","command":"bash scripts/ci-suite.sh audit"}'
               ;;
             site)
-              append_entry '{"name":"site-generate","command":"NUXT_APP_BASE_URL=/iridis/ NUXT_PUBLIC_BASE_URL=/iridis/ pnpm --filter site run generate"}'
+              append_entry '{"name":"site-generate","command":"bash scripts/ci-suite.sh site-generate"}'
               ;;
             '')
               if [ "$RUN_STAMP_VERSION_CHECK" = 'true' ]; then

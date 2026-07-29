@@ -57,7 +57,7 @@ prepare_dist() {
 for check in "$@"; do
   case "$check" in
     stamp-version-check) pnpm run stamp-version:check ;;
-    typecheck) pnpm run typecheck ;;
+    typecheck) prepare_dist && pnpm run typecheck ;;
     lint) prepare_dist && pnpm run lint ;;
     test) prepare_dist && pnpm run test ;;
     build) pnpm run build && verify_dist ;;
@@ -67,6 +67,14 @@ for check in "$@"; do
       ;;
     diagram-check | diagram-blast-radius)
       echo "ci-suite: dependency diagram not applicable to iridis; skipping" >&2
+      ;;
+    site-generate)
+      # The site consumes the packages through their published exports, the
+      # same way any downstream consumer does, so it resolves to dist and
+      # genuinely needs the build. Package typechecking and package tests do
+      # not: they read src via tsconfig paths.
+      prepare_dist \
+        && NUXT_APP_BASE_URL=/iridis/ NUXT_PUBLIC_BASE_URL=/iridis/ pnpm --filter site run generate
       ;;
     audit) run_audit_check ;;
     verify-dist) prepare_dist && verify_dist ;;
