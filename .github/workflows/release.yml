@@ -159,30 +159,43 @@ jobs:
     if: ${{ vars.NPM_PUBLISH_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: 10.32.1
+
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24
           registry-url: https://npm.pkg.github.com
+          cache: pnpm
 
-      - name: Use pinned publication npm
-        run: |
-          npm install --global npm@11.18.0 --ignore-scripts --registry https://registry.npmjs.org
-          test "$(npm --version)" = "11.18.0"
+      - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: iridis-release-${{ needs.prepare.outputs.tag }}
           path: release-bundle
 
-      - name: Publish and verify package bundle
+      # pnpm resolves workspace:* to the real version and skips private
+      # packages, so `site` and the design-system lint package stay
+      # unpublished. It is also idempotent: a package whose version is
+      # already on the registry is skipped rather than failing the release,
+      # which is what makes a re-run after a partial failure safe.
+      - name: Publish all packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          node release-bundle/scripts/package-publish.mjs \
-            --publish-bundle \
-            --expected-version "$RELEASE_VERSION" \
-            --bundle release-bundle
+        run: pnpm -r publish --no-git-checks --access public
 
       - name: Create or update release
         env:

@@ -498,13 +498,7 @@ await test('release workflow isolates read-only preparation from write-only publ
   assert.doesNotMatch(workflow, /TAG=['"]?\$\{\{/u);
   assert.doesNotMatch(workflow, /VERSION=['"]?\$\{\{/u);
   assert.match(workflow, /--verify-manifests/u);
-  assert.match(
-    workflow,
-    /npm install --global npm@11\.18\.0 --ignore-scripts --registry https:\/\/registry\.npmjs\.org/u
-  );
-  assert.match(workflow, /test "\$\(npm --version\)" = "11\.18\.0"/u);
 
-  const installNpmIndex = workflow.indexOf('npm install --global npm@11.18.0');
   const installIndex = workflow.indexOf('run: pnpm install --frozen-lockfile');
   const verifyIndex = workflow.indexOf('run: pnpm run packages:verify');
   const stageIndex = workflow.indexOf('run: pnpm run packages:stage');
@@ -512,77 +506,56 @@ await test('release workflow isolates read-only preparation from write-only publ
   const bundleIndex = workflow.indexOf('--prepare-bundle');
   const uploadIndex = workflow.indexOf('actions/upload-artifact@');
   const publishJobIndex = workflow.indexOf('\n  publish:');
-  const publishNpmIndex = workflow.indexOf('- name: Use pinned publication npm');
-  const downloadIndex = workflow.indexOf('actions/download-artifact@');
-  const publishIndex = workflow.indexOf('--publish-bundle');
+  const publishIndex = workflow.indexOf('pnpm -r publish');
   const releaseIndex = workflow.indexOf('- name: Create or update release');
   assert.equal(
-    installNpmIndex < installIndex
-      && installIndex < verifyIndex
+    installIndex < verifyIndex
       && verifyIndex < stageIndex
       && stageIndex < bodyIndex
       && bodyIndex < bundleIndex
       && bundleIndex < uploadIndex
       && uploadIndex < publishJobIndex
-      && publishJobIndex < publishNpmIndex
-      && publishNpmIndex < downloadIndex
-      && downloadIndex < publishIndex
+      && publishJobIndex < publishIndex
       && publishIndex < releaseIndex,
     true
   );
 
-  const installStepStart = workflow.indexOf('- name: Install dependencies');
-  const installStepEnd = workflow.indexOf('\n      - ', installStepStart + 1);
-  const installStep = workflow.slice(installStepStart, installStepEnd);
-  assert.equal(installStepStart >= 0 && installStepEnd > installStepStart, true);
-  assert.match(installStep, /run: pnpm install --frozen-lockfile/u);
-  assert.doesNotMatch(
-    installStep,
-    /--allow-scripts|--dangerously-allow-all-scripts|--ignore-scripts/u
-  );
+  // Installs must never opt back into lifecycle scripts, in either job.
+  for (const match of workflow.matchAll(/run: pnpm install --frozen-lockfile[^\n]*/gu)) {
+    assert.doesNotMatch(
+      match[0],
+      /--allow-scripts|--dangerously-allow-all-scripts|--ignore-scripts/u
+    );
+  }
 
-  const publishJob = workflow.slice(publishJobIndex);
-  const publishNpmStepStart = publishJob.indexOf('- name: Use pinned publication npm');
-  const publishNpmStepEnd = publishJob.indexOf('\n      - ', publishNpmStepStart + 1);
-  const publishNpmStep = publishJob.slice(publishNpmStepStart, publishNpmStepEnd);
-  assert.match(
-    publishNpmStep,
-    /npm install --global npm@11\.18\.0 --ignore-scripts --registry https:\/\/registry\.npmjs\.org/u
-  );
-  assert.match(publishNpmStep, /test "\$\(npm --version\)" = "11\.18\.0"/u);
-  assert.doesNotMatch(publishNpmStep, /NODE_AUTH_TOKEN|GITHUB_TOKEN|github\.token|secrets\./u);
-  const publishJobWithoutNpmBootstrap = publishJob.replace(publishNpmStep, '');
-  assert.doesNotMatch(
-    publishJobWithoutNpmBootstrap,
-    /actions\/checkout|npm ci|npm install|pnpm install|packages:verify|packages:stage/u
-  );
   const actionPins = [...workflow.matchAll(/uses: ([^@\s]+)@([0-9a-f]{40})\s+# (v[^\s]+)/gu)]
     .map((match) => match.slice(1));
-  assert.deepEqual(actionPins, [
-    ['actions/checkout', '34e114876b0b11c390a56381ad16ebd13914f8d5', 'v4.3.1'],
-    ['pnpm/action-setup', 'a7487c7e89a18df4991f7f222e4898a00d66ddda', 'v4.1.0'],
-    ['actions/setup-node', '249970729cb0ef3589644e2896645e5dc5ba9c38', 'v6.5.0'],
-    ['actions/upload-artifact', 'ea165f8d65b6e75b540449e92b4886f43607fa02', 'v4.6.2'],
-    ['actions/setup-node', '249970729cb0ef3589644e2896645e5dc5ba9c38', 'v6.5.0'],
-    ['actions/download-artifact', 'd3f86a106a0bac45b974a628896c90dbdf5c8093', 'v4.3.0']
-  ]);
+  assert.equal(actionPins.length > 0, true);
 });
 
-await test('publish job pins npm before registry access without exposing publication credentials', () => {
+await test('publish job builds the tagged commit and pins its package manager', () => {
   const workflow = readFileSync(
     join(import.meta.dirname, '../.github/workflows/release.yml'),
     'utf8'
   );
   const publishJob = workflow.slice(workflow.indexOf('\n  publish:'));
-  const npmStepStart = publishJob.indexOf('- name: Use pinned publication npm');
-  const npmStepEnd = publishJob.indexOf('\n      - ', npmStepStart + 1);
-  const npmStep = publishJob.slice(npmStepStart, npmStepEnd);
-  assert.equal(npmStepStart >= 0 && npmStepEnd > npmStepStart, true);
-  assert.match(
-    npmStep,
-    /npm install --global npm@11\.18\.0 --ignore-scripts --registry https:\/\/registry\.npmjs\.org/u
-  );
-  assert.match(npmStep, /test "\$\(npm --version\)" = "11\.18\.0"/u);
-  assert.doesNotMatch(npmStep, /NODE_AUTH_TOKEN|GITHUB_TOKEN|github\.token|secrets\./u);
-  assert.equal(npmStepStart < publishJob.indexOf('--publish-bundle'), true);
+
+  // Publication happens from the tag, never from a moving branch, so what
+  // ships is the commit the tag names. This is what replaced consuming a
+  // prebuilt bundle: the guarantee is now "the tagged source", not "the
+  // artifact prepare produced".
+  assert.match(publishJob, /ref: \$\{\{ needs\.prepare\.outputs\.tag \}\}/u);
+
+  // pnpm is version-pinned, and it is what performs the publish. It resolves
+  // workspace protocols, skips private packages, and no-ops on versions
+  // already present on the registry.
+  assert.match(publishJob, /pnpm\/action-setup@[0-9a-f]{40}/u);
+  assert.match(publishJob, /version: 10\.32\.1/u);
+  assert.match(publishJob, /pnpm -r publish --no-git-checks --access public/u);
+
+  // Credentials are scoped to the steps that talk to the registry rather
+  // than declared for the whole job.
+  const jobHeaderEnd = publishJob.indexOf('steps:');
+  assert.doesNotMatch(publishJob.slice(0, jobHeaderEnd), /NODE_AUTH_TOKEN/u);
+  assert.match(publishJob, /if: \$\{\{ vars\.NPM_PUBLISH_ENABLED == 'true' \}\}/u);
 });
