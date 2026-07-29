@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.build.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./tsconfig.build.tsbuildinfo"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules", "tests"],
+  "references": [
+    { "path": "../core/tsconfig.build.json" },
+    { "path": "../algebra/tsconfig.build.json" },
+    { "path": "../contrast/tsconfig.build.json" }
+  ]
+}

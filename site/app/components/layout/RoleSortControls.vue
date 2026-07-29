@@ -18,16 +18,16 @@ const { roleSortKeys } = useIridis();
 const { send } = useIridisUiMachine();
 
 const addableOptions = computed(() => ROLE_SORT_FIELD_OPTIONS.filter((o) => !roleSortKeys.value.some((k) => k.field === o.value)));
-const newField = ref<RoleSortFieldType | undefined>(undefined);
+const newField = ref<RoleSortFieldType.Type | undefined>(undefined);
 
 function addKey(): void {
   if (newField.value === undefined) return;
   const field = newField.value;
   // Clear BEFORE dispatching: addableOptions is derived from roleSortKeys, so
   // the instant the FSM adds this field, it drops out of :items — if newField
-  // still pointed at it when that happens, USelect has no matching item to
-  // resolve a label from and falls back to rendering the raw value ("h")
-  // instead of the placeholder.
+  // still pointed at it when that happens, AppSelect has no matching item to
+  // resolve an index from and falls back to rendering the placeholder
+  // instead of a stale selection.
   newField.value = undefined;
   send({ 'keys': [...roleSortKeys.value, { 'desc': false, field }], 'type': IridisUiActionType.SET_ROLE_SORT });
 }
@@ -70,11 +70,10 @@ function toggleKeyDesc(index: number): void {
       </button>
     </UBadge>
 
-    <USelect
+    <AppSelect
       v-if="addableOptions.length > 0"
       v-model="newField"
       :items="addableOptions"
-      value-key="value"
       placeholder="+ Add sort key"
       class="w-40"
       size="xs"

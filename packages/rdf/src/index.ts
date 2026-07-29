@@ -1,4 +1,3 @@
-import './types/augmentation.ts';
 import { RdfPlugin } from './RdfPlugin.ts';
 
 export { iridisVocab }        from './data/iridisVocab.ts';

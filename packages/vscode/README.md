@@ -12,6 +12,17 @@ slot.
 
 ## Install
 
+GitHub Packages requires a personal access token (classic) with
+`read:packages`; the token's account must also have read access to this
+package's repository. Expose the token as `NODE_AUTH_TOKEN`, then configure
+the `@studnicky` scope before installing:
+
+```ini
+# ~/.npmrc
+@studnicky:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
 ```bash
 npm install @studnicky/iridis @studnicky/iridis-vscode
 ```
@@ -42,10 +53,15 @@ engine.pipeline([
   'emit:vscodeThemeJson',
 ]);
 
-const state = await engine.run({
-  'colors':   ['#8B5CF6', '#EC4899', '#0d1117', '#e6edf3' /* ...16 seeds */ ],
-  'roles':    vscodeRoleSchema16,
-  'metadata': { 'themeName': 'Iridis Dark' },
+const state = engine.run({
+  'bypass':    undefined,
+  'colors':    ['#8B5CF6', '#EC4899', '#0d1117', '#e6edf3' /* ...16 seeds */ ],
+  'contrast':  undefined,
+  'emit':      undefined,
+  'maxColors': undefined,
+  'metadata':  { 'themeName': 'Iridis Dark' },
+  'roles':     vscodeRoleSchema16,
+  'runtime':   undefined,
 });
 
 const themeJson       = state.outputs['vscode:themeJson']!;

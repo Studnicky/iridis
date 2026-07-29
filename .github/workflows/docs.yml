@@ -19,19 +19,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with: { fetch-depth: 0 }
-      - uses: actions/setup-node@v6
-        with: { node-version: 24, cache: npm }
-      - run: npm ci
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+        with: { version: 10.32.1 }
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: cd site && npm run generate
+      - run: pnpm --filter site run generate
         env:
           NUXT_APP_BASE_URL: /iridis/
           NUXT_PUBLIC_BASE_URL: /iridis/
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
         with: { path: site/.output/public }
 
   deploy:
@@ -41,5 +43,5 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/deploy-pages@v5
+      - uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128
         id: deployment

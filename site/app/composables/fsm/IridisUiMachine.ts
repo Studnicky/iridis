@@ -7,30 +7,53 @@ import type { IridisUiEffectType, IridisUiEventType, IridisUiStateType } from '.
 import { IridisUiActionType, IridisUiEffectVariant } from '../types/index.ts';
 import { wrap } from './wrap.ts';
 
-/**
- * Owns the carousel/mode UI state: which mode is active, which card the
- * carousel shows, and whether it is mid-drag. Pure reducer — `reduce()` is
- * total for every (state, event) pair reachable through the site's UI: the
- * 'dragging' variant accepts every event the 'idle' variant does (a
- * redundant DRAG_START is idempotent, SELECT_MODE settles the drag before
- * applying the mode, anything else is a safe no-op that defers to the
- * in-flight drag). `reduce()` still throws for the small set of pairs no UI
- * path can ever send (DRAG_MOVE/DRAG_END while 'idle' — CylinderCarousel
- * guards both), which `StateMachine.transition()` reports via
- * `onTransitionRejected` before rethrowing.
- */
-export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEventType, IridisUiEffectType> {
-  constructor() { super(); }
+declare namespace IridisUiMachineTypes {
+  type State = IridisUiStateType.Type;
+  type Event = IridisUiEventType.Type;
+  type Step = FsmStepType<State, IridisUiEffectType.Type>;
+  type EffectHandler = (state: State, event: Event) => Step | undefined;
+}
 
-  getInitialState(): IridisUiStateType {
-    return { 'activeIndex': 0, 'mode': 'picker', 'variant': 'idle' };
+class EffectEventDispatch {
+  private static readonly handlers = new Map<IridisUiActionType, IridisUiMachineTypes.EffectHandler>([
+    [IridisUiActionType.ADD_SEED, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.CVD_CLEAR_PREVIEWS, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.CVD_TOGGLE_PREVIEW, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.DIAGRAM_FIT, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.DIAGRAM_PAN, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.DIAGRAM_RESET, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.DIAGRAM_TOGGLE_EXPAND, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.DIAGRAM_ZOOM, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.EXTRACT_IMAGE, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.NAVIGATE_TO_TARGET, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.PIN_SEED_ROLE, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.POPULATE_PICKER_FROM_IMAGE, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.REMOVE_SEED, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.SELECT_IMAGE_CANDIDATE, EffectEventDispatch.handleGeneralEffect],
+    [IridisUiActionType.SET_COLOR_SPACE, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_CONTRAST_STRICTNESS, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_CVD_CORRECT, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_DERIVATION_CONFIG, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_FRAMING, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_IMAGE_ALGORITHM, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_IMAGE_CHROMA_RANGE, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_IMAGE_DELTA_E_CAP, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_IMAGE_HARMONIZE, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_IMAGE_HISTOGRAM_BITS, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_IMAGE_K, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_IMAGE_LIGHTNESS_RANGE, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_ROLE_SORT, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_SCHEMA, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_SEED, EffectEventDispatch.handlePaletteParameterEffect],
+    [IridisUiActionType.SET_SEMANTIC_HUES_ENABLED, EffectEventDispatch.handlePaletteParameterEffect]
+  ]);
+
+  static dispatch(state: IridisUiMachineTypes.State, event: IridisUiMachineTypes.Event): IridisUiMachineTypes.Step | undefined {
+    const result = EffectEventDispatch.handlers.get(event.type)?.(state, event);
+    return result;
   }
 
-  reduce(state: IridisUiStateType, event: IridisUiEventType): FsmStepType<IridisUiStateType, IridisUiEffectType> {
-    // Palette-param, seed-mutation, and image-extraction events are
-    // effect-only — they never touch activeIndex/mode/dragPx, so they're
-    // valid regardless of which carousel sub-state (idle/dragging) is
-    // currently active.
+  private static handleGeneralEffect(state: IridisUiMachineTypes.State, event: IridisUiMachineTypes.Event): IridisUiMachineTypes.Step | undefined {
     switch (event.type) {
       case IridisUiActionType.ADD_SEED:
         return { 'effects': [{ 'hex': event.hex, 'op': 'add', 'variant': IridisUiEffectVariant.MUTATE_SEEDS }], 'state': state };
@@ -63,6 +86,13 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
         return { 'effects': [{ 'index': event.index, 'op': 'remove', 'variant': IridisUiEffectVariant.MUTATE_SEEDS }], 'state': state };
       case IridisUiActionType.SELECT_IMAGE_CANDIDATE:
         return { 'effects': [{ 'hexes': event.hexes, 'label': event.label, 'variant': IridisUiEffectVariant.SELECT_IMAGE_CANDIDATE }], 'state': state };
+      default:
+        return undefined;
+    }
+  }
+
+  private static handlePaletteParameterEffect(state: IridisUiMachineTypes.State, event: IridisUiMachineTypes.Event): IridisUiMachineTypes.Step | undefined {
+    switch (event.type) {
       case IridisUiActionType.SET_COLOR_SPACE:
         return { 'effects': [{ 'op': 'colorSpace', 'value': event.colorSpace, 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }], 'state': state };
       case IridisUiActionType.SET_CONTRAST_STRICTNESS:
@@ -96,8 +126,37 @@ export class IridisUiMachine extends StateMachine<IridisUiStateType, IridisUiEve
       case IridisUiActionType.SET_SEMANTIC_HUES_ENABLED:
         return { 'effects': [{ 'op': 'semanticHuesEnabled', 'value': event.enabled, 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }], 'state': state };
       default:
-        break;
+        return undefined;
     }
+  }
+}
+
+/**
+ * Owns the carousel/mode UI state: which mode is active, which card the
+ * carousel shows, and whether it is mid-drag. Pure reducer — `reduce()` is
+ * total for every (state, event) pair reachable through the site's UI: the
+ * 'dragging' variant accepts every event the 'idle' variant does (a
+ * redundant DRAG_START is idempotent, SELECT_MODE settles the drag before
+ * applying the mode, anything else is a safe no-op that defers to the
+ * in-flight drag). `reduce()` still throws for the small set of pairs no UI
+ * path can ever send (DRAG_MOVE/DRAG_END while 'idle' — CylinderCarousel
+ * guards both), which `StateMachine.transition()` reports via
+ * `onTransitionRejected` before rethrowing.
+ */
+export class IridisUiMachine extends StateMachine<IridisUiStateType.Type, IridisUiEventType.Type, IridisUiEffectType.Type> {
+  constructor() { super(); }
+
+  getInitialState(): IridisUiStateType.Type {
+    return { 'activeIndex': 0, 'mode': 'picker', 'variant': 'idle' };
+  }
+
+  reduce(state: IridisUiStateType.Type, event: IridisUiEventType.Type): FsmStepType<IridisUiStateType.Type, IridisUiEffectType.Type> {
+    // Palette-param, seed-mutation, and image-extraction events are
+    // effect-only — they never touch activeIndex/mode/dragPx, so they're
+    // valid regardless of which carousel sub-state (idle/dragging) is
+    // currently active.
+    const effectStep = EffectEventDispatch.dispatch(state, event);
+    if (effectStep !== undefined) { return effectStep; }
     if (state.variant === 'idle') {
       switch (event.type) {
         case IridisUiActionType.DRAG_START:

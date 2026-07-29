@@ -1,3 +1,5 @@
+import { InputSchema } from '@studnicky/iridis/model';
+
 export const CliConfigSchema = {
   '$id': 'https://studnicky.dev/iridis-cli/CliConfig',
   'properties': {
@@ -16,11 +18,24 @@ export const CliConfigSchema = {
           'type': 'array'
         },
         'contrast': {
+          ...InputSchema.properties.contrast,
           'properties': {
-            'algorithm': { 'type': 'string' },
-            'level': { 'type': 'string' }
-          },
-          'type': 'object'
+            ...InputSchema.properties.contrast.properties,
+            'extra': {
+              'items': {
+                'additionalProperties': false,
+                'properties': {
+                  'algorithm':  { 'enum': ['wcag21', 'apca'], 'type': 'string' },
+                  'background': { 'type': 'string' },
+                  'foreground': { 'type': 'string' },
+                  'minRatio':   { 'type': 'number' }
+                },
+                'required': ['background', 'foreground', 'minRatio'],
+                'type': 'object'
+              },
+              'type': 'array'
+            }
+          }
         },
         'metadata': {
           'type': 'object'

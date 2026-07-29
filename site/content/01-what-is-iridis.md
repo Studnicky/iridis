@@ -22,14 +22,14 @@ npm install @studnicky/iridis \
   @studnicky/iridis-shadcn
 ```
 
-## The simplest call (`quickPalette`)
+## The simplest call (`QuickPalette.resolve`)
 
-For basic use cases, you don't even need to configure an engine. Use the `quickPalette` helper:
+For basic use cases, you don't even need to configure an engine. Use the `QuickPalette.resolve` static method:
 
 ```ts
-import { quickPalette } from '@studnicky/iridis';
+import { QuickPalette } from '@studnicky/iridis';
 
-const palette = await quickPalette(['#7c3aed', '#06b6d4'], 'dark');
+const palette = QuickPalette.resolve(['#7c3aed', '#06b6d4'], 'dark');
 // → { background: '#07061a', foreground: '#f0f0ff', accent: '#7c3aed', muted: '#7e7e9a' }
 ```
 

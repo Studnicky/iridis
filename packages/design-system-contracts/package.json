@@ -1,0 +1,46 @@
+{
+  "name": "@studnicky/iridis-design-system-contracts",
+  "version": "0.11.0",
+  "private": true,
+  "description": "Design-system class and CSS-token contract validators and ESLint rules for the iridis site (Vue).",
+  "author": "Andrew Studnicky <a.j.studnicky@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "README.md",
+    "src"
+  ],
+  "main": "./src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./contracts": "./src/contracts.mjs",
+    "./design-tokens": "./src/profiles/design-tokens.mjs",
+    "./html": "./src/profiles/html.mjs",
+    "./runtime": "./src/profiles/runtime.mjs",
+    "./vue": "./src/profiles/vue.mjs"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "test": "node --test src/index.test.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "peerDependencies": {
+    "eslint": ">=9"
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.63.0",
+    "eslint": "^10.6.0",
+    "vue-eslint-parser": "^10.4.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Studnicky/iridis.git",
+    "directory": "packages/design-system-contracts"
+  },
+  "bugs": {
+    "url": "https://github.com/Studnicky/iridis/issues"
+  },
+  "homepage": "https://studnicky.github.io/iridis/"
+}

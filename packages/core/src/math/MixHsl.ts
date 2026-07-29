@@ -6,23 +6,23 @@ import { rgbToHsl } from './RgbToHsl.ts';
 
 const ACHROMATIC_SATURATION_EPSILON = 1e-4;
 
-function lerpAngle(a: number, b: number, t: number): number {
-  let diff = b - a;
-  if (diff > 180) {diff -= 360;}
-  if (diff < -180) {diff += 360;}
-  return ((a + diff * t) % 360 + 360) % 360;
-}
-
-/** True when an HSL saturation is low enough that its paired hue is powerless (CSS Color 4 §12.2). */
-function isAchromaticHsl(s: number): boolean {
-  return s < ACHROMATIC_SATURATION_EPSILON;
-}
-
 /** Resolves the mixed hue, carrying the chromatic endpoint's hue past a powerless (achromatic) one. */
 class Hue {
+  static lerp(a: number, b: number, t: number): number {
+    let diff = b - a;
+    if (diff > 180) {diff -= 360;}
+    if (diff < -180) {diff += 360;}
+    return ((a + diff * t) % 360 + 360) % 360;
+  }
+
+  /** True when an HSL saturation is low enough that its paired hue is powerless (CSS Color 4 §12.2). */
+  static isAchromatic(s: number): boolean {
+    return s < ACHROMATIC_SATURATION_EPSILON;
+  }
+
   static resolve(hslA: { 'h': number; 's': number }, hslB: { 'h': number; 's': number }, t: number): number {
-    const aAchromatic = isAchromaticHsl(hslA.s);
-    const bAchromatic = isAchromaticHsl(hslB.s);
+    const aAchromatic = Hue.isAchromatic(hslA.s);
+    const bAchromatic = Hue.isAchromatic(hslB.s);
 
     if (aAchromatic && bAchromatic) {
       return hslA.h;
@@ -33,7 +33,7 @@ class Hue {
     if (bAchromatic) {
       return hslA.h;
     }
-    return lerpAngle(hslA.h, hslB.h, t);
+    return Hue.lerp(hslA.h, hslB.h, t);
   }
 }
 

@@ -2,77 +2,51 @@
 // Module augmentation on PluginMetadataRegistry has been replaced with
 // explicit schema contribution via ContrastPlugin.schemas().
 
-export type WcagPairResultInterfaceType = {
-  'after':      number;
-  'algorithm':  'wcag21' | 'apca';
-  'background': string;
-  'before':     number;
-  'foreground': string;
-  'pass':       boolean;
-  'required':   number;
-};
+import type { ApcaPairResultInterfaceTypeEntity } from '../entities/ApcaPairResultInterfaceTypeEntity.ts';
+import type { CvdCorrectionInterfaceTypeEntity } from '../entities/CvdCorrectionInterfaceTypeEntity.ts';
+import type { CvdPairWarningInterfaceTypeEntity } from '../entities/CvdPairWarningInterfaceTypeEntity.ts';
+import type { WcagPairResultInterfaceTypeEntity } from '../entities/WcagPairResultInterfaceTypeEntity.ts';
+
+type WcagPairResultSchemaShapeType = WcagPairResultInterfaceTypeEntity.Type;
+
+export type WcagPairResultInterfaceType = { [K in keyof WcagPairResultSchemaShapeType]-?: WcagPairResultSchemaShapeType[K] };
 
 export type WcagPairResultSetInterfaceType = {
   'pairs': WcagPairResultInterfaceType[];
 };
 
-export type ApcaPairResultInterfaceType = {
-  'afterLc':    number;
-  'algorithm':  'apca';
-  'background': string;
-  'beforeLc':   number;
-  'foreground': string;
-  'pass':       boolean;
-  'requiredLc': number;
-};
+type ApcaPairResultSchemaShapeType = ApcaPairResultInterfaceTypeEntity.Type;
+
+export type ApcaPairResultInterfaceType = { [K in keyof ApcaPairResultSchemaShapeType]-?: ApcaPairResultSchemaShapeType[K] };
 
 export type ApcaPairResultSetInterfaceType = {
   'pairs': ApcaPairResultInterfaceType[];
 };
 
-export type CvdPairWarningInterfaceType = {
-  'background':                 string;
-  'cvdType':                    string;
-  'drop':                       number;
-  'dropThreshold':              number;
-  'foreground':                 string;
-  'minSimulatedContrast':       number;
-  'originalLuminanceContrast':  number;
-  'simulatedLuminanceContrast': number;
-};
+type CvdPairWarningSchemaShapeType = CvdPairWarningInterfaceTypeEntity.Type;
 
-export type CvdCorrectionInterfaceType = {
-  'background':         string;
-  'cvdTypesFixed':      string[];
-  'cvdTypesRemaining':  string[];
-  'foreground':         string;
-};
+export type CvdPairWarningInterfaceType = { [K in keyof CvdPairWarningSchemaShapeType]-?: CvdPairWarningSchemaShapeType[K] };
+
+type CvdCorrectionSchemaShapeType = CvdCorrectionInterfaceTypeEntity.Type;
+
+export type CvdCorrectionInterfaceType = { [K in keyof CvdCorrectionSchemaShapeType]-?: CvdCorrectionSchemaShapeType[K] };
 
 export type CvdResultSetInterfaceType = {
   'corrections': CvdCorrectionInterfaceType[] | undefined;
   'warnings':     CvdPairWarningInterfaceType[];
 };
 
-export type WcagMetaSlotInterfaceType = {
-  'aa':   WcagPairResultSetInterfaceType | undefined;
-  'aaa':  WcagPairResultSetInterfaceType | undefined;
-  'apca': ApcaPairResultSetInterfaceType | undefined;
-  'cvd':  CvdResultSetInterfaceType | undefined;
-};
+export abstract class WcagMetaSlotInterfaceType {
+  abstract 'aa': WcagPairResultSetInterfaceType | undefined;
+  abstract 'aaa': WcagPairResultSetInterfaceType | undefined;
+  abstract 'apca': ApcaPairResultSetInterfaceType | undefined;
+  abstract 'cvd': CvdResultSetInterfaceType | undefined;
+}
 
 /** Known `state.metadata` keys written by the contrast enforcement tasks. */
-export type ContrastMetadataInterfaceType = {
-  'contrast:aa':   WcagPairResultSetInterfaceType | undefined;
-  'contrast:aaa':  WcagPairResultSetInterfaceType | undefined;
-  'contrast:apca': ApcaPairResultSetInterfaceType | undefined;
-  'contrast:cvd':  CvdResultSetInterfaceType | undefined;
-};
-
-/** Type-safe accessor for a known contrast `state.metadata` key, returning `undefined` when unset. */
-export function getContrastMetadata<K extends keyof ContrastMetadataInterfaceType>(
-  metadata: Record<string, unknown>,
-  key: K
-): ContrastMetadataInterfaceType[K] {
-  const result = metadata[key] as ContrastMetadataInterfaceType[K];
-  return result;
+export abstract class ContrastMetadataInterfaceType {
+  abstract 'contrast:aa': WcagPairResultSetInterfaceType | undefined;
+  abstract 'contrast:aaa': WcagPairResultSetInterfaceType | undefined;
+  abstract 'contrast:apca': ApcaPairResultSetInterfaceType | undefined;
+  abstract 'contrast:cvd': CvdResultSetInterfaceType | undefined;
 }

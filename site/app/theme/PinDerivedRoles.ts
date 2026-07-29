@@ -4,11 +4,15 @@ import type {
 
 import { colorRecordFactory } from '@studnicky/iridis';
 
-function clampToRange(value: number, range: readonly [number, number]): number {
-  if (value < range[0]) {return range[0];}
-  if (value > range[1]) {return range[1];}
-  return value;
+class ClampToRangeOperation {
+  static run(value: number, range: readonly [number, number]): number {
+    if (value < range[0]) {return range[0];}
+    if (value > range[1]) {return range[1];}
+    return value;
+  }
 }
+
+const clampToRange = ClampToRangeOperation.run;
 
 /**
  * Nudges a pinned candidate's lightness/chroma into the role's declared range
@@ -16,13 +20,17 @@ function clampToRange(value: number, range: readonly [number, number]): number {
  * OWN hue — unlike ExpandFamily's derivation, pinning is the user overriding
  * the schema's hue-rotation on purpose, so the hue is exactly what they picked.
  */
-function nudgeKeepingHue(hex: string, role: RoleDefinitionInterfaceType) {
-  const candidate = colorRecordFactory.fromHex(hex);
-  const { c, h, l } = candidate.oklch;
-  const targetL = role.lightnessRange !== undefined ? clampToRange(l, role.lightnessRange) : l;
-  const targetC = role.chromaRange !== undefined ? clampToRange(c, role.chromaRange) : c;
-  return colorRecordFactory.fromOklch(targetL, targetC, h, { 'alpha': candidate.alpha });
+class NudgeKeepingHueOperation {
+  static run(hex: string, role: RoleDefinitionInterfaceType) {
+    const candidate = colorRecordFactory.fromHex(hex);
+    const { c, h, l } = candidate.oklch;
+    const targetL = role.lightnessRange !== undefined ? clampToRange(l, role.lightnessRange) : l;
+    const targetC = role.chromaRange !== undefined ? clampToRange(c, role.chromaRange) : c;
+    return colorRecordFactory.fromOklch(targetL, targetC, h, { 'alpha': candidate.alpha });
+  }
 }
+
+const nudgeKeepingHue = NudgeKeepingHueOperation.run;
 
 /**
  * ResolveRoles skips every role with `derivedFrom` set (the FIRST check in its
@@ -49,12 +57,20 @@ class PinDerivedRoles implements TaskInterface {
     'writes':      ['roles']
   };
 
-  run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
     if (state.input.roles === undefined) {return;}
+    const colorsByRole = new Map<string, (typeof state.colors)[number]>();
+    const colors = state.colors;
+    const colorCount = colors.length;
+    for (let colorIndex = 0; colorIndex < colorCount; colorIndex += 1) {
+      const color = colors[colorIndex];
+      const roleName = color?.hints?.role;
+      if (color !== undefined && roleName !== undefined) {colorsByRole.set(roleName, color);}
+    }
     for (const role of state.input.roles.roles) {
       if (role.derivedFrom === undefined || role.derivedFrom === '') {continue;}
       if (state.roles[role.name] !== undefined) {continue;}
-      const hintMatch = state.colors.find((c) => {return c.hints?.role === role.name;});
+      const hintMatch = colorsByRole.get(role.name);
       if (hintMatch === undefined) {continue;}
       state.roles[role.name] = nudgeKeepingHue(hintMatch.hex, role);
     }

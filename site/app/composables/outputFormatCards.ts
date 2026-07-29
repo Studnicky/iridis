@@ -7,7 +7,7 @@ import type { CarouselCardType } from './types/carouselCard.ts';
  */
 export const OUTPUT_FORMAT_CARDS: readonly CarouselCardType[] = [
   { 'key': 'output-cssVars', 'label': 'CSS variables' },
-  { 'key': 'output-cssVarsScoped', 'label': 'CSS variables (scoped)' },
+  { 'key': 'output-cssVarsScoped', 'label': 'CSS vars (scoped)' },
   { 'key': 'output-tailwind', 'label': 'Tailwind' },
   { 'key': 'output-shadcn', 'label': 'shadcn/ui' },
   { 'key': 'output-mui', 'label': 'MUI' },

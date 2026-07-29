@@ -5,8 +5,6 @@ import { evaluate } from '@studnicky/iridis-anima';
 
 import type { PaletteStateSchemaType, PaletteTransitionTableType } from './types/index.ts';
 
-const clampUnit = (t: number): number => { const result = Math.min(1, Math.max(0, t)); return result; };
-
 /**
  * Drives a named-state palette machine: each state resolves to a target
  * `Palette`, and transitions between states are stepped through via `tick()`,
@@ -21,7 +19,7 @@ export abstract class PaletteStateMachine {
   #fromState:  string | undefined;
   #toState:    string | undefined;
   #t = 0;
-  #curveOpts:  CurveOptionsInterfaceType | undefined;
+  #curveOptions:  CurveOptionsInterfaceType | undefined;
 
   protected constructor(
     states: PaletteStateSchemaType,
@@ -48,7 +46,7 @@ export abstract class PaletteStateMachine {
    * `onTransitionRejected`) if `toState` is not reachable from the current
    * state per the transition table, or if the machine is terminated.
    */
-  transition(toState: string, opts?: CurveOptionsInterfaceType): boolean {
+  transition(toState: string, options?: CurveOptionsInterfaceType): boolean {
     if (this.isTerminated()) {
       this.onTransitionRejected(this.#currentState, toState, 'terminated');
       return false;
@@ -63,7 +61,7 @@ export abstract class PaletteStateMachine {
     this.#fromState = this.#currentState;
     this.#toState   = toState;
     this.#t         = 0;
-    this.#curveOpts = opts;
+    this.#curveOptions = options;
     this.onTransition(this.#fromState, toState);
     return true;
   }
@@ -77,11 +75,11 @@ export abstract class PaletteStateMachine {
   tick(deltaT: number): void {
     if (this.#fromState === undefined || this.#toState === undefined) {return;}
 
-    this.#t = clampUnit(this.#t + deltaT);
+    this.#t = Math.min(1, Math.max(0, this.#t + deltaT));
 
     const fromPalette = this.#states[this.#fromState]!.palette;
     const toPalette    = this.#states[this.#toState]!.palette;
-    const palette: PaletteInterfaceType = evaluate(fromPalette, toPalette, this.#t, this.#curveOpts);
+    const palette: PaletteInterfaceType = evaluate(fromPalette, toPalette, this.#t, this.#curveOptions);
 
     this.onTick(palette, this.#t);
 
@@ -92,7 +90,7 @@ export abstract class PaletteStateMachine {
       this.#fromState = undefined;
       this.#toState   = undefined;
       this.#t         = 0;
-      this.#curveOpts = undefined;
+      this.#curveOptions = undefined;
 
       this.onExitState(fromState);
       this.onEnterState(toState);

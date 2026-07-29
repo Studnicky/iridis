@@ -8,7 +8,7 @@ import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 import { Tokens } from '~/theme/Tokens.ts';
 import { complianceFor } from '~/utils/complianceFor.ts';
-import { minRatioForRole } from '~/utils/minRatioForRole.ts';
+import { minimumRatioForRole } from '~/utils/minimumRatioForRole.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 import { capitalize } from '~/utils/capitalize.ts';
 
@@ -23,7 +23,10 @@ const { dataLayout } = useDataLayout();
 const sortedAliases = computed(() => {
   // 'background' is required in every schema tier — resolved before any
   // component reads this, never a hardcoded placeholder.
-  const bg = roles.value['background']!;
+  const bg = roles.value['background'];
+  if (bg === undefined) {
+    throw new TypeError('Resolved roles must include the background role');
+  }
   const schema = roleSchemaByName[schemaName.value]?.[framing.value];
   const rows = ALIASES.map((a) => {
     // resolveAliasShadeHex can still miss during an early SSR pass (e.g. the
@@ -33,10 +36,10 @@ const sortedAliases = computed(() => {
     const oklch = colorRecordFactory.fromHex(hex).oklch;
     const ratio = contrastRatio(hex, bg);
     // a.key is a Nuxt UI alias (primary/secondary/…), not a schema role name,
-    // so it never matches a declared contrast pair — minRatioForRole falls
+    // so it never matches a declared contrast pair — minimumRatioForRole falls
     // back to the WCAG-AA default, which is what every alias's underlying
     // role (brand/accent-alt/success/…) already declares.
-    return { ...a, 'c': oklch.c, 'compliance': complianceFor(ratio, minRatioForRole(schema, a.key)), 'h': oklch.h, 'l': oklch.l, 'name': a.key, ratio };
+    return { ...a, 'c': oklch.c, 'compliance': complianceFor(ratio, minimumRatioForRole(schema, a.key)), 'h': oklch.h, 'l': oklch.l, 'name': a.key, ratio };
   });
   return sortRoleRows(rows, roleSortKeys.value);
 });
@@ -115,7 +118,7 @@ const sortedAliases = computed(() => {
               <div
                 v-for="s in TABLE_SHADES"
                 :key="s"
-                class="h-4 w-4 rounded-[2px]"
+                class="h-4 w-4 rounded-[2px] ring-1 ring-inset ring-(--ui-border)/70"
                 :style="{ backgroundColor: `var(--ui-color-${a.key}-${s})` }"
                 :title="`${a.key}-${s}`"
               />
@@ -157,5 +160,11 @@ const sortedAliases = computed(() => {
 }
 .grid-item {
   width: 100%;
+}
+/* Table view mode's own marker — unlike its grid/list/pixel siblings above,
+   its full layout comes from the Tailwind utilities alongside it in the
+   template (w-full border-collapse text-left text-sm), not a dedicated
+   rule of its own. */
+.palette-table {
 }
 </style>

@@ -10,68 +10,73 @@ import type {
 
 import { clamp } from './Clamp.ts';
 import { clamp01 } from './Clamp01.ts';
+import { HEX_PATTERNS } from './constants/HexPatterns.ts';
 import { gamutMapSrgb } from './GamutMapSrgb.ts';
 import { oklchToDisplayP3 } from './OklchToDisplayP3.ts';
 import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
 import { rgbToHex } from './RgbToHex.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
-function rgbToOklchRaw(r: number, g: number, b: number): OklchInterfaceType {
-  const { 'b': bl, 'g': gl, 'r': rl } = srgbToLinear.apply(r, g, b);
+class RawOklchConversion {
+  static fromRgb(r: number, g: number, b: number): OklchInterfaceType {
+    const { 'b': bl, 'g': gl, 'r': rl } = srgbToLinear.apply(r, g, b);
 
-  let x = 0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl;
-  let y = 0.2119034982 * rl + 0.6806995451 * gl + 0.1073969566 * bl;
-  let z = 0.0883024619 * rl + 0.2817188376 * gl + 0.6299787005 * bl;
+    let x = 0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl;
+    let y = 0.2119034982 * rl + 0.6806995451 * gl + 0.1073969566 * bl;
+    let z = 0.0883024619 * rl + 0.2817188376 * gl + 0.6299787005 * bl;
 
-  x = Math.cbrt(x);
-  y = Math.cbrt(y);
-  z = Math.cbrt(z);
+    x = Math.cbrt(x);
+    y = Math.cbrt(y);
+    z = Math.cbrt(z);
 
-  const labL = 0.2104542553 * x + 0.7936177850 * y - 0.0040720468 * z;
-  const labA = 1.9779984951 * x - 2.4285922050 * y + 0.4505937099 * z;
-  const labB = 0.0259040371 * x + 0.7827717662 * y - 0.8086757660 * z;
+    const labL = 0.2104542553 * x + 0.7936177850 * y - 0.0040720468 * z;
+    const labA = 1.9779984951 * x - 2.4285922050 * y + 0.4505937099 * z;
+    const labB = 0.0259040371 * x + 0.7827717662 * y - 0.8086757660 * z;
 
-  const c = Math.sqrt(labA * labA + labB * labB);
-  let h = (Math.atan2(labB, labA) * 180) / Math.PI;
-  if (h < 0) {
-    h += 360;
+    const c = Math.sqrt(labA * labA + labB * labB);
+    let h = (Math.atan2(labB, labA) * 180) / Math.PI;
+    if (h < 0) {
+      h += 360;
+    }
+
+    return {
+      'c': clamp.apply(0, 0.5, c),
+      'h': h % 360,
+      'l': clamp01.apply(labL)
+    };
   }
-
-  return {
-    'c': clamp.apply(0, 0.5, c),
-    'h': h % 360,
-    'l': clamp01.apply(labL)
-  };
 }
 
-function hslToRgbRaw(h: number, s: number, l: number): RgbInterfaceType {
-  const hh = ((h % 360) + 360) % 360;
-  const ss = clamp01.apply(s);
-  const ll = clamp01.apply(l);
+class RawRgbConversion {
+  static fromHsl(h: number, s: number, l: number): RgbInterfaceType {
+    const hh = ((h % 360) + 360) % 360;
+    const ss = clamp01.apply(s);
+    const ll = clamp01.apply(l);
 
-  const c = (1 - Math.abs(2 * ll - 1)) * ss;
-  const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
-  const m = ll - c / 2;
+    const c = (1 - Math.abs(2 * ll - 1)) * ss;
+    const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
+    const m = ll - c / 2;
 
-  let r = 0;
-  let g = 0;
-  let b = 0;
+    let r = 0;
+    let g = 0;
+    let b = 0;
 
-  if (hh < 60) {
-    r = c; g = x; b = 0;
-  } else if (hh < 120) {
-    r = x; g = c; b = 0;
-  } else if (hh < 180) {
-    r = 0; g = c; b = x;
-  } else if (hh < 240) {
-    r = 0; g = x; b = c;
-  } else if (hh < 300) {
-    r = x; g = 0; b = c;
-  } else {
-    r = c; g = 0; b = x;
+    if (hh < 60) {
+      r = c; g = x; b = 0;
+    } else if (hh < 120) {
+      r = x; g = c; b = 0;
+    } else if (hh < 180) {
+      r = 0; g = c; b = x;
+    } else if (hh < 240) {
+      r = 0; g = x; b = c;
+    } else if (hh < 300) {
+      r = x; g = 0; b = c;
+    } else {
+      r = c; g = 0; b = x;
+    }
+
+    return { 'b': clamp01.apply(b + m), 'g': clamp01.apply(g + m), 'r': clamp01.apply(r + m) };
   }
-
-  return { 'b': clamp01.apply(b + m), 'g': clamp01.apply(g + m), 'r': clamp01.apply(r + m) };
 }
 
 /**
@@ -138,9 +143,9 @@ class ColorRecordFactory {
     l: number,
     c: number,
     h: number,
-    opts?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
+    options?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
   ): ColorRecordInterfaceType {
-    const { alpha = 1, hints, sourceFormat = 'oklch' } = opts ?? {};
+    const { alpha = 1, hints, sourceFormat = 'oklch' } = options ?? {};
     const mapped = gamutMapSrgb.apply(l, c, h);
     const rgb    = oklchToRgbRaw.apply(mapped.l, mapped.c, mapped.h);
 
@@ -182,13 +187,13 @@ class ColorRecordFactory {
     r: number,
     g: number,
     b: number,
-    opts?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
+    options?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
   ): ColorRecordInterfaceType {
-    const { alpha = 1, hints, sourceFormat = 'rgb' } = opts ?? {};
+    const { alpha = 1, hints, sourceFormat = 'rgb' } = options ?? {};
     const rc    = clamp01.apply(r);
     const gc    = clamp01.apply(g);
     const bc    = clamp01.apply(b);
-    const oklch = rgbToOklchRaw(rc, gc, bc);
+    const oklch = RawOklchConversion.fromRgb(rc, gc, bc);
     return {
       'alpha':        clamp01.apply(alpha),
       'displayP3':    undefined,
@@ -215,11 +220,11 @@ class ColorRecordFactory {
    */
   fromHex(
     hex: string,
-    opts?: { 'alphaOverride'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
+    options?: { 'alphaOverride'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
   ): ColorRecordInterfaceType {
-    const { alphaOverride, hints, sourceFormat = 'hex' } = opts ?? {};
-    const cleaned = hex.replace(/^#/, '');
-    if (!/^[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/.test(cleaned)) {
+    const { alphaOverride, hints, sourceFormat = 'hex' } = options ?? {};
+    const cleaned = hex.replace(HEX_PATTERNS.LEADING_HASH, '');
+    if (!HEX_PATTERNS.VALID_HEX.test(cleaned)) {
       throw ValidationError.create({
         'message': 'ColorRecordFactory.fromHex: invalid hex string',
         'path':    'hex',
@@ -237,7 +242,7 @@ class ColorRecordFactory {
       ? parseInt(cleaned.slice(6, 8), 16) / 255
       : 1;
     const alpha = alphaOverride ?? parsedAlpha;
-    const oklch = rgbToOklchRaw(r, g, b);
+    const oklch = RawOklchConversion.fromRgb(r, g, b);
     return {
       'alpha':        clamp01.apply(alpha),
       'displayP3':    undefined,
@@ -259,10 +264,10 @@ class ColorRecordFactory {
     h: number,
     s: number,
     l: number,
-    opts?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
+    options?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
   ): ColorRecordInterfaceType {
-    const { alpha = 1, hints, sourceFormat = 'hsl' } = opts ?? {};
-    const rgb = hslToRgbRaw(h, s, l);
+    const { alpha = 1, hints, sourceFormat = 'hsl' } = options ?? {};
+    const rgb = RawRgbConversion.fromHsl(h, s, l);
     return this.fromRgb(rgb.r, rgb.g, rgb.b, { 'alpha': alpha, 'hints': hints, 'sourceFormat': sourceFormat });
   }
 }

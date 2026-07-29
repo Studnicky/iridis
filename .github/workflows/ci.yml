@@ -1,0 +1,65 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    uses: ./.github/workflows/detect-changes.yml
+
+  validate:
+    name: node checks
+    needs: [ detect-changes ]
+    if: needs.detect-changes.outputs.ci == 'true' || github.event_name ==
+      'workflow_dispatch'
+    uses: ./.github/workflows/node-suite.yml
+    with:
+      preset: full
+
+  site:
+    name: site
+    needs: [ detect-changes ]
+    if: needs.detect-changes.outputs.docs == 'true' || github.event_name ==
+      'workflow_dispatch'
+    uses: ./.github/workflows/node-suite.yml
+    with:
+      preset: site
+
+  audit:
+    name: audit
+    needs: [ detect-changes ]
+    if: needs.detect-changes.outputs.audit == 'true' || github.event_name ==
+      'workflow_dispatch'
+    uses: ./.github/workflows/node-suite.yml
+    with:
+      preset: audit
+
+  ci-required:
+    name: ci required
+    needs: [ detect-changes, validate, site, audit ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate CI result
+        shell: bash
+        env:
+          DETECT_CHANGES_RESULT: ${{ needs.detect-changes.result }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+          SITE_RESULT: ${{ needs.site.result }}
+          AUDIT_RESULT: ${{ needs.audit.result }}
+        run: |
+          set -euo pipefail
+          for result in "$DETECT_CHANGES_RESULT" "$VALIDATE_RESULT" "$SITE_RESULT" "$AUDIT_RESULT"; do
+            case "$result" in
+              success|skipped) ;;
+              *) echo "ci required: dependency result was $result" >&2; exit 1 ;;
+            esac
+          done

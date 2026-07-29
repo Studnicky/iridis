@@ -88,28 +88,32 @@ class State {
  * checks and corrects in place), rather than reimplementing contrast
  * correction math. Roles not named in any pair pass through unchanged.
  */
-export const enforceContrast = (
-  palette: PaletteInterfaceType,
-  pairs: readonly ContrastPairInputInterfaceType[],
-  level: EnforceLevelType = 'aa'
-): PaletteInterfaceType => {
-  if (pairs.length === 0) {return palette;}
+class EnforceContrast {
+  static apply(
+    palette: PaletteInterfaceType,
+    pairs: readonly ContrastPairInputInterfaceType[],
+    level: EnforceLevelType = 'aa'
+  ): PaletteInterfaceType {
+    if (pairs.length === 0) {return palette;}
 
-  const state = State.build(palette, pairs);
-  const ctx: PipelineContextInterface = {
-    'engine':    engine,
-    'logger':    consoleLogger,
-    'startedAt': Date.now(),
-    'tasks':     engine.tasks
-  };
+    const state = State.build(palette, pairs);
+    const context: PipelineContextInterface = {
+      'engine':    engine,
+      'logger':    consoleLogger,
+      'startedAt': Date.now(),
+      'tasks':     engine.tasks
+    };
 
-  enforceTaskByLevel[level].run(state, ctx);
+    enforceTaskByLevel[level].run(state, context);
 
-  const result: PaletteInterfaceType = { ...palette };
-  for (const role of Object.keys(palette)) {
-    const record = state.roles[role];
-    if (record === undefined) {continue;}
-    result[role] = { 'c': record.oklch.c, 'h': record.oklch.h, 'l': record.oklch.l };
+    const result: PaletteInterfaceType = { ...palette };
+    for (const role of Object.keys(palette)) {
+      const record = state.roles[role];
+      if (record === undefined) {continue;}
+      result[role] = { 'c': record.oklch.c, 'h': record.oklch.h, 'l': record.oklch.l };
+    }
+    return result;
   }
-  return result;
-};
+}
+
+export const enforceContrast = EnforceContrast.apply;

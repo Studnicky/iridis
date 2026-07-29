@@ -1,1 +1,3 @@
-export type ModeType = 'picker' | 'image';
+export declare namespace ModeType {
+  type Type = 'picker' | 'image';
+}

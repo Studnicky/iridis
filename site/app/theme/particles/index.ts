@@ -13,7 +13,7 @@ import { renderSquare } from './renderSquare.ts';
 import { renderStar } from './renderStar.ts';
 import { renderStreak } from './renderStreak.ts';
 
-export const PARTICLE_RENDERERS: Record<string, ParticleRendererType> = {
+export const PARTICLE_RENDERERS: Record<string, ParticleRendererType.Type> = {
   'bubble': renderBubble,
   'dot':    renderDot,
   'heart':  renderHeart,

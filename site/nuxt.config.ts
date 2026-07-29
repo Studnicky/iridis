@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { resolve } from 'node:path';
-import { snippetImporter } from './server/utils/SnippetImporter';
+import { snippetImporter } from './app/build/SnippetImporter';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..');
 
@@ -78,13 +78,23 @@ export default defineNuxtConfig({
       ],
     },
   },
-  // The @studnicky/iridis* workspace packages ship source .ts files with
-  // explicit .ts import extensions (bundler moduleResolution). Nuxt's
-  // generated tsconfig doesn't enable this by default.
+  // Site modules and local workspace sources use explicit `.ts` extensions
+  // during development. Nuxt's generated tsconfig does not enable them by default.
   typescript: {
     tsConfig: {
       compilerOptions: {
         allowImportingTsExtensions: true,
+      },
+    },
+  },
+  vite: {
+    resolve: {
+      // @cosmos.gl/graph imports gl-bench's default export. gl-bench's
+      // package.json resolves the bare specifier to its "browser" build
+      // (a UMD bundle with no ESM exports) under pnpm's isolated node_modules,
+      // so pin the alias to its real ESM module build instead.
+      alias: {
+        'gl-bench': 'gl-bench/dist/gl-bench.module.js',
       },
     },
   },

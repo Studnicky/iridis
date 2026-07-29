@@ -1,1 +1,3 @@
-export type RoleSortFieldType = 'name' | 'l' | 'c' | 'h' | 'ratio' | 'compliance';
+export declare namespace RoleSortFieldType {
+  type Type = 'name' | 'l' | 'c' | 'h' | 'ratio' | 'compliance';
+}

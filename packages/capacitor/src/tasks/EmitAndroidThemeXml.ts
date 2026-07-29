@@ -45,7 +45,7 @@ class EmitAndroidThemeXml implements TaskInterface {
     'writes':      ['outputs.capacitor:androidThemeXml']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const roles = state.roles;
 
     const priorStatusBar    = state.outputs['capacitor:statusBar']    as StatusBarOutputInterfaceType   | undefined;
@@ -83,7 +83,7 @@ class EmitAndroidThemeXml implements TaskInterface {
 
     state.outputs['capacitor:androidThemeXml'] = xml;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitAndroidThemeXml')
         .operation('run')

@@ -4,7 +4,11 @@
  * theme's own keyframe/duration ends up driving them (direction/style is the
  * theme's concern; per-particle jitter is the shape's).
  */
-export function randomDelay(maxSeconds: number): string {
-  const result = `-${(Math.random() * maxSeconds).toFixed(2)}s`;
-  return result;
+class RandomDelayOperation {
+  static run(maximumSeconds: number): string {
+    const result = `-${(Math.random() * maximumSeconds).toFixed(2)}s`;
+    return result;
+  }
 }
+
+export const randomDelay = RandomDelayOperation.run;

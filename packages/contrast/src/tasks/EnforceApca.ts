@@ -13,35 +13,27 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { ApcaPairResultInterfaceType } from '../types/augmentation.ts';
 
+import { TextForegroundIntent } from '../data/TextForegroundIntent.ts';
+
 // APCA Lc target selection per WCAG 3 Bronze level working draft (2023).
 // Reference: https://www.w3.org/WAI/GL/task-forces/silver/wiki/Visual_Contrast_of_Text_Subgroup
 // Lc 75: body / paragraph text (normal size, normal weight).
 // Lc 60: fluent / headline / large text (≥18pt or ≥14pt bold).
 // Lc 45: non-text UI components (icons, separators, input borders).
-function apcaLcTarget(
-  pair: ContrastPairInterfaceType,
-  roles: Record<string, ColorRecordInterfaceType>
-): number {
-  const fgRecord = roles[pair.foreground];
-  const bgRecord = roles[pair.background];
-  if (fgRecord === undefined || bgRecord === undefined) {
-    return 75;
+class ApcaTarget {
+  static forPair(
+    pair: ContrastPairInterfaceType,
+    roles: Record<string, ColorRecordInterfaceType>
+  ): number {
+    const foregroundRecord = roles[pair.foreground];
+    const backgroundRecord = roles[pair.background];
+    if (foregroundRecord === undefined || backgroundRecord === undefined) {return 75;}
+    const foregroundIntent = foregroundRecord.hints?.intent;
+    const backgroundIntent = backgroundRecord.hints?.intent;
+    if (foregroundIntent === 'text' && backgroundIntent === 'background') {return 75;}
+    if (TextForegroundIntent.matches(foregroundIntent)) {return 60;}
+    return 45;
   }
-  const fgIntent = fgRecord.hints?.intent;
-  const bgIntent = bgRecord.hints?.intent;
-  const isText   = fgIntent === 'text' || bgIntent === 'text';
-  const isBackground = fgIntent === 'background' || bgIntent === 'background';
-
-  if (isText && isBackground) {
-    // body text: Lc 75
-    return 75;
-  }
-  if (isText) {
-    // headline / fluent text on accent/muted: Lc 60
-    return 60;
-  }
-  // non-text UI component: Lc 45
-  return 45;
 }
 
 class EnforceApca implements TaskInterface {
@@ -56,12 +48,12 @@ class EnforceApca implements TaskInterface {
     'writes':      ['roles', 'metadata[\'contrast:apca\']']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const pairs = state.input.roles?.contrastPairs ?? [];
     const extraPairs = state.input.contrast?.extra ?? [];
     const allPairs: readonly ContrastPairInterfaceType[] = [...pairs, ...extraPairs];
 
-    const apcaPairs = allPairs.filter((p) => {return (p.algorithm ?? 'wcag21') === 'apca';});
+    const apcaPairs = allPairs.filter((pair) => {return (pair.algorithm ?? 'wcag21') === 'apca';});
     if (apcaPairs.length === 0) {
       return;
     }
@@ -69,11 +61,11 @@ class EnforceApca implements TaskInterface {
     const results: ApcaPairResultInterfaceType[] = [];
 
     for (const pair of apcaPairs) {
-      const fgRecord = state.roles[pair.foreground];
-      const bgRecord = state.roles[pair.background];
+      const foregroundRecord = state.roles[pair.foreground];
+      const backgroundRecord = state.roles[pair.background];
 
-      if (fgRecord === undefined || bgRecord === undefined) {
-        ctx.logger.warn(
+      if (foregroundRecord === undefined || backgroundRecord === undefined) {
+        context.logger.warn(
           LogBody.create()
             .component('EnforceApca')
             .operation('run')
@@ -85,25 +77,25 @@ class EnforceApca implements TaskInterface {
         continue;
       }
 
-      const requiredLc = apcaLcTarget(pair, state.roles);
-      const beforeLc = Math.abs(contrastApca.apply(fgRecord, bgRecord));
+      const requiredLc = ApcaTarget.forPair(pair, state.roles);
+      const beforeLc = Math.abs(contrastApca.apply(foregroundRecord, backgroundRecord));
 
-      let currentFg = fgRecord;
+      let currentForeground = foregroundRecord;
       let current   = beforeLc;
       let iterations = 0;
-      const maxIterations = 25;
+      const maximumIterations = 25;
 
-      while (current < requiredLc && iterations < maxIterations) {
+      while (current < requiredLc && iterations < maximumIterations) {
         iterations++;
         // APCA: adjust lightness of foreground toward the pole that increases contrast.
         // If foreground is lighter than background, lighten further; otherwise darken.
-        currentFg = ensureContrast.apply(currentFg, bgRecord, requiredLc, 'apca');
-        current = Math.abs(contrastApca.apply(currentFg, bgRecord));
+        currentForeground = ensureContrast.apply(currentForeground, backgroundRecord, requiredLc, 'apca');
+        current = Math.abs(contrastApca.apply(currentForeground, backgroundRecord));
         // ensureContrast should converge in one call if implemented; iterate as safety net.
       }
 
       if (current < requiredLc) {
-        ctx.logger.warn(
+        context.logger.warn(
           LogBody.create()
             .component('EnforceApca')
             .operation('run')
@@ -113,14 +105,14 @@ class EnforceApca implements TaskInterface {
               'achievedLc':    current,
               'background':    pair.background,
               'foreground':    pair.foreground,
-              'maxIterations': maxIterations,
+              'maxIterations': maximumIterations,
               'requiredLc':    requiredLc
             })
             .build()
         );
       }
 
-      state.roles[pair.foreground] = currentFg;
+      state.roles[pair.foreground] = currentForeground;
 
       results.push({
         'afterLc':    current,
@@ -133,15 +125,16 @@ class EnforceApca implements TaskInterface {
       });
     }
 
-    state.metadata['contrast:apca'] = { 'pairs': results };
+    const apcaMetadata = { 'pairs': results };
+    state.metadata['contrast:apca'] = apcaMetadata;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EnforceApca')
         .operation('run')
         .status(LOG_STATUS.SUCCESS)
         .message('Processed APCA pairs')
-        .context({ 'apcaMeta': state.metadata['contrast:apca'], 'pairCount': results.length })
+        .context({ 'apcaMeta': apcaMetadata, 'pairCount': results.length })
         .build()
     );
   }

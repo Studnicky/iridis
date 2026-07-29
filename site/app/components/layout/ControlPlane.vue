@@ -6,22 +6,12 @@ defineProps<{
 </script>
 
 <template>
-  <div
+  <InfoPanel
     role="group"
-    :aria-label="label"
-    class="rounded-lg border border-primary/20 bg-primary/[0.03] p-4"
+    variant="control"
+    :label="label"
+    :help="help"
   >
-    <p class="text-xs font-medium uppercase tracking-wide text-dimmed">
-      {{ label }}
-    </p>
-    <p
-      v-if="help"
-      class="mt-1 text-sm text-muted"
-    >
-      {{ help }}
-    </p>
-    <div class="mt-3">
-      <slot />
-    </div>
-  </div>
+    <slot />
+  </InfoPanel>
 </template>

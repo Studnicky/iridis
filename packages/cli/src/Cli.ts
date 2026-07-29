@@ -9,23 +9,25 @@ import { OutputWriter }  from './OutputWriter.ts';
 import { PluginResolver } from './PluginResolver.ts';
 
 /**
- * Collects the union of `state.outputs.*` slot names that the given pipeline
- * tasks declare they will write. Manifest `writes` entries use dot-notation
+ * Collects the union of `state.outputs.*` slot names that a pipeline's tasks
+ * declare they will write. Manifest `writes` entries use dot-notation
  * (`outputs.cssVars`); only entries prefixed with `outputs.` contribute a
  * slot name. Entries without that prefix (e.g. `colors`, `roles`) are top-
  * level state keys that do not map to `output.files` and are skipped.
  */
-function collectWrittenSlots(engine: Engine, pipeline: readonly string[]): Set<string> {
-  const slots = new Set<string>();
-  for (const name of pipeline) {
-    const task = engine.tasks.resolve(name);
-    for (const entry of task.manifest?.writes ?? []) {
-      if (entry.startsWith('outputs.')) {
-        slots.add(entry.slice('outputs.'.length));
+class WrittenSlotCollector {
+  static collect(engine: Engine, pipeline: readonly string[]): Set<string> {
+    const slots = new Set<string>();
+    for (const name of pipeline) {
+      const task = engine.tasks.resolve(name);
+      for (const entry of task.manifest?.writes ?? []) {
+        if (entry.startsWith('outputs.')) {
+          slots.add(entry.slice('outputs.'.length));
+        }
       }
     }
+    return slots;
   }
-  return slots;
 }
 
 export class Cli {
@@ -50,7 +52,7 @@ export class Cli {
 
     const declaredFileKeys = Object.keys(config.output.files);
     if (declaredFileKeys.length > 0) {
-      const writtenSlots  = collectWrittenSlots(engine, config.pipeline);
+      const writtenSlots  = WrittenSlotCollector.collect(engine, config.pipeline);
       const unwrittenKeys = declaredFileKeys.filter((k) => {return !writtenSlots.has(k);});
 
       if (unwrittenKeys.length > 0) {

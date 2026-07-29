@@ -2,6 +2,7 @@ import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type {
+  ColorHintsInterfaceType,
   ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
@@ -15,37 +16,47 @@ import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { RoleGeometry } from '../RoleGeometry.ts';
 
-function deriveColor(
-  source: ColorRecordInterfaceType,
-  role: RoleDefinitionInterfaceType
-): ColorRecordInterfaceType {
-  const { c, h, l } = source.oklch;
-
-  const targetL = role.lightnessRange !== undefined ? RoleGeometry.rangeCenter(role.lightnessRange) : l;
-  const targetC = role.chromaRange    !== undefined ? RoleGeometry.rangeCenter(role.chromaRange)    : c;
-
-  let targetH: number;
-  if (role.hue !== undefined) {
-    targetH = RoleGeometry.hueTowards(h, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
-  } else if (role.hueOffset !== undefined) {
-    targetH = ((h + role.hueOffset) % 360 + 360) % 360;
-  } else {
-    targetH = h;
-  }
-
-  return colorRecordFactory.fromOklch(
-    clamp01.apply(targetL),
-    clamp.apply(0, 0.5, targetC),
-    targetH,
-    { 'alpha': source.alpha }
-  );
-}
-
-/** A derived role whose source has not resolved yet, queued for a later pass. */
+// json-schema-uninexpressible: composes RoleDefinitionInterfaceType, itself widened from a
+// JSON Schema entity via the codebase's hidden-class convention (T | undefined on optional
+// keys) — re-deriving that shape from a nested Schema loses the widening and breaks
+// exactOptionalPropertyTypes assignability against RoleDefinitionInterfaceType call sites.
+/** A derived role whose source has not resolved yet, queued for a later pass by `expand:family`. */
 type PendingDerivedRoleType = {
   'derivedFrom': string;
   'inputRole':   RoleDefinitionInterfaceType;
 };
+
+class RoleDerivation {
+  static deriveColor(
+    source: ColorRecordInterfaceType,
+    role: RoleDefinitionInterfaceType
+  ): ColorRecordInterfaceType {
+    const { c, h, l } = source.oklch;
+
+    const targetL = role.lightnessRange !== undefined ? RoleGeometry.rangeCenter(role.lightnessRange) : l;
+    const targetC = role.chromaRange    !== undefined ? RoleGeometry.rangeCenter(role.chromaRange)    : c;
+
+    let targetH: number;
+    if (role.hue !== undefined) {
+      targetH = RoleGeometry.hueTowards(h, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
+    } else if (role.hueOffset !== undefined) {
+      targetH = ((h + role.hueOffset) % 360 + 360) % 360;
+    } else {
+      targetH = h;
+    }
+
+    const hints: ColorHintsInterfaceType | undefined = role.intent === undefined
+      ? undefined
+      : { 'intent': role.intent, 'role': undefined, 'weight': undefined };
+
+    return colorRecordFactory.fromOklch(
+      clamp01.apply(targetL),
+      clamp.apply(0, 0.5, targetC),
+      targetH,
+      { 'alpha': source.alpha, 'hints': hints }
+    );
+  }
+}
 
 /**
  * Pipeline task that fills in roles declared with `derivedFrom` from
@@ -77,9 +88,9 @@ class ExpandFamily implements TaskInterface {
     'writes':      ['roles']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     if (state.input.roles === undefined) {
-      ctx.logger.debug(
+      context.logger.debug(
         LogBody.create()
           .component('ExpandFamily')
           .operation('run')
@@ -94,13 +105,13 @@ class ExpandFamily implements TaskInterface {
     const hueOffsetOverrides = state.metadata['core:hueOffsetOverrides'] as Record<string, number> | undefined;
     const hueTargetOverrides = state.metadata['core:hueTargetOverrides'] as Record<string, { 'hue': number; 'hueClamp': number | undefined }> | undefined;
 
-    const pending: PendingDerivedRoleType[] = [];
+    let pending: PendingDerivedRoleType[] = [];
     for (const inputRole of state.input.roles.roles) {
       if (inputRole.derivedFrom === undefined || inputRole.derivedFrom === '') {
         continue;
       }
       if (state.roles[inputRole.name] !== undefined) {
-        ctx.logger.debug(
+        context.logger.debug(
           LogBody.create()
             .component('ExpandFamily')
             .operation('run')
@@ -119,13 +130,17 @@ class ExpandFamily implements TaskInterface {
     // pass and stays queued; each further pass retries whatever is left.
     // The loop terminates once a full pass derives nothing new — this is
     // the cycle guard, so a genuine derivedFrom cycle can never spin forever.
+    // Each pass rebuilds the pending list from scratch (rather than
+    // splicing mid-loop, which is O(n^2) over repeated passes).
     let progressed = true;
     while (progressed && pending.length > 0) {
       progressed = false;
-      for (let i = pending.length - 1; i >= 0; i--) {
-        const { derivedFrom, inputRole } = pending[i]!;
+      const stillPending: PendingDerivedRoleType[] = [];
+
+      for (const { derivedFrom, inputRole } of pending) {
         const sourceColor = state.roles[derivedFrom];
         if (sourceColor === undefined) {
+          stillPending.push({ 'derivedFrom': derivedFrom, 'inputRole': inputRole });
           continue;
         }
 
@@ -138,12 +153,12 @@ class ExpandFamily implements TaskInterface {
           'hueOffset': offsetOverride ?? inputRole.hueOffset
         };
 
-        state.roles[role.name] = deriveColor(sourceColor, role);
+        state.roles[role.name] = RoleDerivation.deriveColor(sourceColor, role);
         const existingDerived = state.metadata['core:rolesDerived'];
         const priorDerived: string[] = Array.isArray(existingDerived) ? (existingDerived as string[]) : [];
         state.metadata['core:rolesDerived'] = [...priorDerived, role.name];
 
-        ctx.logger.debug(
+        context.logger.debug(
           LogBody.create()
             .component('ExpandFamily')
             .operation('run')
@@ -156,15 +171,16 @@ class ExpandFamily implements TaskInterface {
             .build()
         );
 
-        pending.splice(i, 1);
         progressed = true;
       }
+
+      pending = stillPending;
     }
 
     // Whatever remains after the fixed point has an unassigned source —
     // either it was never in the schema, or it sits in a derivedFrom cycle.
     for (const { derivedFrom, inputRole } of pending) {
-      ctx.logger.warn(
+      context.logger.warn(
         LogBody.create()
           .component('ExpandFamily')
           .operation('run')

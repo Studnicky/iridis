@@ -9,38 +9,39 @@
  * ever dropped. The accumulator is flushed as a single array to `callback`
  * once the timer fires, then cleared.
  */
-export function useDebouncedResizeObserver(
-  callback: (entries: ResizeObserverEntry[]) => void,
-  delayMs = 100
-): { 'disconnect': () => void; 'observe': (el: Element) => void; } {
-  let observer: ResizeObserver | null = null;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const pending = new Map<Element, ResizeObserverEntry>();
+class UseDebouncedResizeObserverOperation {
+  static run(callback: (entries: ResizeObserverEntry[]) => void, delayMs = 100): { 'disconnect': () => void; 'observe': (el: Element) => void; } {
+    let observer: ResizeObserver | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const pending = new Map<Element, ResizeObserverEntry>();
 
-  function flush(): void {
-    timer = null;
-    const entries = Array.from(pending.values());
-    pending.clear();
-    callback(entries);
-  }
+    function flush(): void {
+      timer = null;
+      const entries = Array.from(pending.values());
+      pending.clear();
+      callback(entries);
+    }
 
-  function observe(el: Element): void {
-    if (typeof ResizeObserver === 'undefined') {return;}
-    observer ??= new ResizeObserver((entries) => {
-      for (const entry of entries) {pending.set(entry.target, entry);}
+    function observe(el: Element): void {
+      if (typeof ResizeObserver === 'undefined') {return;}
+      observer ??= new ResizeObserver((entries) => {
+        for (const entry of entries) {pending.set(entry.target, entry);}
+        if (timer !== null) {clearTimeout(timer);}
+        timer = setTimeout(flush, delayMs);
+      });
+      observer.observe(el);
+    }
+
+    function disconnect(): void {
+      observer?.disconnect();
+      observer = null;
       if (timer !== null) {clearTimeout(timer);}
-      timer = setTimeout(flush, delayMs);
-    });
-    observer.observe(el);
-  }
+      timer = null;
+      pending.clear();
+    }
 
-  function disconnect(): void {
-    observer?.disconnect();
-    observer = null;
-    if (timer !== null) {clearTimeout(timer);}
-    timer = null;
-    pending.clear();
+    return { 'disconnect': disconnect, 'observe': observe };
   }
-
-  return { 'disconnect': disconnect, 'observe': observe };
 }
+
+export const useDebouncedResizeObserver = UseDebouncedResizeObserverOperation.run;

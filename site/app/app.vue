@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 
+import { useHead } from '#imports';
+
 import { useIridis } from '~/composables/useIridis.ts';
+import { usePauseOffscreenAnimations } from '~/composables/usePauseOffscreenAnimations.ts';
 import { Tokens } from '~/theme/Tokens.ts';
+import { CodeSampleChrome } from '~/components/content/CodeSampleChrome.ts';
+
+usePauseOffscreenAnimations();
 
 /**
  * Booting the engine here, at the app root, means the theme is computed and
@@ -37,6 +43,8 @@ onMounted(() => {
   setTimeout(() => {
     document.body.classList.remove('preload');
   }, 50);
+
+  CodeSampleChrome.install();
 });
 </script>
 
@@ -49,3 +57,10 @@ onMounted(() => {
     </CvdPreviewOverlay>
   </UApp>
 </template>
+
+<style src="./components/content/viz/CodeSample.css"></style>
+<style src="./components/content/viz/Dpad.css"></style>
+<style src="./components/content/viz/ViewerActions.css"></style>
+<style src="./components/content/viz/ViewerOverlay.css"></style>
+<style src="./components/content/viz/ModalShell.css"></style>
+<style src="./components/content/mermaid/explorer.css"></style>

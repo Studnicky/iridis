@@ -39,7 +39,7 @@ code: |
 
 A `TaskRegistry` is a `Map<string, TaskInterface>`. Every task has a string `name`; the engine owns one registry instance, and calling `engine.pipeline([...])` with an ordered list of stage names validates that every name is registered before storing the order, then executes them in that order during `engine.run()`. Lifecycle hooks (`onRunStart`, `onRunEnd`) let plugins initialize or flush state without occupying a pipeline slot.
 
-The engine does not enforce dependency ordering at runtime — that's the pipeline array's job. If a task writes `state.roles` and a later task reads it, the pipeline order must reflect that dependency; nothing checks it for you.
+For every registered, non-lifecycle task named by `manifest.requires`, the engine validates that the required task is present earlier in the pipeline. A missing or out-of-order predecessor fails during `engine.pipeline()`. Callers and plugins remain responsible for registering tasks before declaring the sequence; `reads` and `writes` document state flow but do not create dependencies automatically.
 
 ## Plugins Bring the Optional Stages
 

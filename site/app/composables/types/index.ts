@@ -15,4 +15,6 @@ export type * from './schemaName.ts';
 export * from './schemaName.ts';
 export type * from './schemaPair.ts';
 export type * from './stageGroup.ts';
+export type * from './tocBarEvent.ts';
+export type * from './tocBarState.ts';
 export type * from './uploadedImage.ts';

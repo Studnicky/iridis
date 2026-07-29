@@ -1,6 +1,6 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterface,
+  PluginSchemaContributionInterfaceType,
   TaskInterface
 } from '@studnicky/iridis';
 
@@ -10,33 +10,30 @@ import { emitVscodeThemeJson }     from './tasks/EmitVscodeThemeJson.ts';
 import { emitVscodeUiPalette }     from './tasks/EmitVscodeUiPalette.ts';
 import { expandTokens }            from './tasks/ExpandTokens.ts';
 
-const semanticRuleEntrySchema = {
-  'additionalProperties': false,
-  'properties': {
-    'fontStyle':  { 'type': 'string' },
-    'foreground': { 'type': 'string' }
+const VSCODE_PLUGIN_SCHEMAS = {
+  'baseTokens': {
+    'additionalProperties': true,
+    'type':                 'object'
   },
-  'type': 'object'
-} as const;
-
-const vscodeWorkbenchColorsSchema = {
-  'additionalProperties': { 'type': 'string' },
-  'type':                 'object'
-} as const;
-
-const vscodeSemanticTokenRulesSchema = {
-  'additionalProperties': semanticRuleEntrySchema,
-  'type':                 'object'
-} as const;
-
-const vscodeThemeJsonSchema = {
-  'additionalProperties': true,
-  'type':                 'object'
-} as const;
-
-const vscodeBaseTokensSchema = {
-  'additionalProperties': true,
-  'type':                 'object'
+  'semanticTokenRules': {
+    'additionalProperties': {
+      'additionalProperties': false,
+      'properties': {
+        'fontStyle':  { 'type': 'string' },
+        'foreground': { 'type': 'string' }
+      },
+      'type': 'object'
+    },
+    'type': 'object'
+  },
+  'themeJson': {
+    'additionalProperties': true,
+    'type':                 'object'
+  },
+  'workbenchColors': {
+    'additionalProperties': { 'type': 'string' },
+    'type':                 'object'
+  }
 } as const;
 
 /**
@@ -67,16 +64,16 @@ class VscodePlugin implements PluginInterface {
     ];
   }
 
-  schemas(): PluginSchemaContributionInterface {
+  schemas(): PluginSchemaContributionInterfaceType {
     return {
       'metadata': {
-        'vscode:baseTokens':         vscodeBaseTokensSchema,
-        'vscode:semanticTokenRules': vscodeSemanticTokenRulesSchema
+        'vscode:baseTokens':         VSCODE_PLUGIN_SCHEMAS.baseTokens,
+        'vscode:semanticTokenRules': VSCODE_PLUGIN_SCHEMAS.semanticTokenRules
       },
       'outputs': {
-        'vscode:semanticTokenRules': vscodeSemanticTokenRulesSchema,
-        'vscode:themeJson':          vscodeThemeJsonSchema,
-        'vscode:workbenchColors':    vscodeWorkbenchColorsSchema
+        'vscode:semanticTokenRules': VSCODE_PLUGIN_SCHEMAS.semanticTokenRules,
+        'vscode:themeJson':          VSCODE_PLUGIN_SCHEMAS.themeJson,
+        'vscode:workbenchColors':    VSCODE_PLUGIN_SCHEMAS.workbenchColors
       }
     };
   }

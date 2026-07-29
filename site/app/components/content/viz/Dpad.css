@@ -1,0 +1,109 @@
+/** Shared D-pad chrome for all visualization surfaces. */
+
+.dagonizer-dpad-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.dagonizer-dpad-anchor {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 5;
+}
+
+.dagonizer-dpad-anchor--hover {
+  opacity: 0.55;
+  transition: opacity var(--iridis-tune) var(--iridis-ease);
+  cursor: default;
+}
+
+.dagonizer-dpad-anchor--hover:hover,
+.dagonizer-dpad-anchor--visible {
+  opacity: 1;
+}
+
+.dagonizer-dpad-anchor--modal {
+  z-index: 10;
+  bottom: calc(2.2rem + 10px);
+}
+
+.dagonizer-dpad-hud {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.3rem 0.6rem;
+  background: color-mix(in oklch, var(--ui-bg) 72%, transparent);
+  backdrop-filter: blur(4px);
+  border: 1px var(--iridis-border-style) var(--ui-border);
+  border-radius: var(--iridis-radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ui-text);
+  pointer-events: none;
+}
+
+.dagonizer-dpad-hud-level {
+  color: var(--ui-primary);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dagonizer-dpad-hud-hint {
+  color: var(--ui-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.62rem;
+}
+
+.dagonizer-dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 32px);
+  grid-template-rows: repeat(3, 32px);
+  gap: 4px;
+  background: color-mix(in oklch, var(--ui-bg) 60%, transparent);
+  padding: 6px;
+  border-radius: var(--iridis-radius-md);
+  backdrop-filter: blur(4px);
+}
+
+.dagonizer-dpad-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-bg-elevated);
+  border: 1px var(--iridis-border-style) var(--ui-border);
+  border-radius: var(--iridis-radius-sm);
+  color: var(--ui-text-highlighted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
+  line-height: 1;
+  transition:
+    background var(--iridis-tune) var(--iridis-ease),
+    color var(--iridis-tune) var(--iridis-ease),
+    border-color var(--iridis-tune) var(--iridis-ease);
+  touch-action: none;
+}
+
+.dagonizer-dpad-btn:hover:not(:disabled) {
+  background: var(--ui-bg-muted);
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+
+.dagonizer-dpad-btn:focus-visible {
+  outline: 2px var(--iridis-border-style) var(--ui-primary);
+  outline-offset: 1px;
+}
+
+.dagonizer-dpad-btn--disabled,
+.dagonizer-dpad-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

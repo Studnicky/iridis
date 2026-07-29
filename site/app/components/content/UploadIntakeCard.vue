@@ -13,14 +13,14 @@ import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
  * in this same Upload stage carousel (see index.vue's `stageItemsFor()` /
  * `UploadedImageCard` dispatch), never a second carousel nested inside this
  * one's content. "Skip" bypasses image upload entirely, jumping straight to
- * Manual seed entry — now the Refine stage's first card.
+ * Palette seed entry — now the Refine stage's first card.
  */
 const { mode } = useIridis();
 const { send } = useIridisUiMachine();
 const { activateTarget } = useNavigationTargets();
 
-/** Bypasses image upload entirely — jumps straight to Manual seed entry, the Refine stage's first card. */
-function skipToManual(): void {
+/** Bypasses image upload entirely — jumps straight to Palette seed entry, the Refine stage's first card. */
+function skipToPalette(): void {
   activateTarget('picker');
 }
 
@@ -49,52 +49,11 @@ function sample(): void {
 
 <template>
   <div class="w-full space-y-5">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <p class="text-sm text-muted">
-        Extract a palette from one or more images — upload them or try a sample. Each image is decoded and reduced to its own dominant colors independently, with its own extraction settings; the Combine stage right after this one merges every image's result into one final palette.
-      </p>
-      <UButton
-        icon="i-material-symbols-skip-next-rounded"
-        color="neutral"
-        variant="ghost"
-        size="sm"
-        class="shrink-0"
-        @click="skipToManual"
-      >
-        Skip
-      </UButton>
-    </div>
+    <UploadIntakeHeader @skip="skipToPalette" />
 
-    <UFileUpload
+    <ImageUploadDropzone
       v-model="uploadedFiles"
-      multiple
-      accept="image/*"
-      :preview="false"
-      icon="i-material-symbols-upload-rounded"
-      label="Drop image(s) or click to browse"
-      description="PNG, JPG, WEBP — each image is extracted independently, then combined in the next stage"
-      class="w-full"
-    >
-      <template #actions="{ open }">
-        <UButton
-          icon="i-material-symbols-upload-rounded"
-          color="primary"
-          variant="soft"
-          size="sm"
-          @click.stop="open()"
-        >
-          Browse
-        </UButton>
-        <UButton
-          icon="i-material-symbols-auto-awesome-rounded"
-          color="neutral"
-          variant="soft"
-          size="sm"
-          @click.stop="sample"
-        >
-          Try a sample
-        </UButton>
-      </template>
-    </UFileUpload>
+      @sample="sample"
+    />
   </div>
 </template>

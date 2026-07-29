@@ -15,16 +15,20 @@ const SRGB_FORMATS: ReadonlySet<SourceFormatType> = new Set([
 /** WCAG 2.1 relative luminance from a gamma-encoded sRGB triple in 0..1.
  *  Equivalent to `luminance.apply({rgb: {r, g, b}, ...})` without the
  *  record allocation.                                                    */
-function rgbLuminance(r: number, g: number, b: number): number {
-  const lin = srgbToLinear.apply(r, g, b);
-  return 0.2126 * lin.r + 0.7152 * lin.g + 0.0722 * lin.b;
+class RgbLuminance {
+  static calculate(r: number, g: number, b: number): number {
+    const lin = srgbToLinear.apply(r, g, b);
+    return 0.2126 * lin.r + 0.7152 * lin.g + 0.0722 * lin.b;
+  }
 }
 
 /** WCAG 2.1 contrast ratio between two precomputed luminances. */
-function wcagRatio(la: number, lb: number): number {
-  const lighter = Math.max(la, lb);
-  const darker  = Math.min(la, lb);
-  return (lighter + 0.05) / (darker + 0.05);
+class WcagContrastRatio {
+  static between(la: number, lb: number): number {
+    const lighter = Math.max(la, lb);
+    const darker  = Math.min(la, lb);
+    return (lighter + 0.05) / (darker + 0.05);
+  }
 }
 
 class EnsureContrast {
@@ -32,7 +36,7 @@ class EnsureContrast {
 
   /**
    * Adjusts `foreground` along the OKLCH L axis until its contrast against
-   * `background` meets `minRatio` for the given `algorithm`. The inner
+   * `background` meets `minimumRatio` for the given `algorithm`. The inner
    * loop operates on a scalar `L` value; no `ColorRecord` is allocated
    * per iteration. The background's luminance is computed once. A single
    * `ColorRecord` is materialised at return via `colorRecordFactory`.
@@ -48,24 +52,24 @@ class EnsureContrast {
   apply(
     foreground: ColorRecordInterfaceType,
     background: ColorRecordInterfaceType,
-    minRatio: number,
+    minimumRatio: number,
     algorithm: ContrastAlgorithmType = 'wcag21'
   ): ColorRecordInterfaceType {
     // Precompute background luminance once; it never changes during the loop.
     const bgRgb: RgbInterfaceType = background.rgb;
     const Ybg = algorithm === 'wcag21'
-      ? rgbLuminance(bgRgb.r, bgRgb.g, bgRgb.b)
+      ? RgbLuminance.calculate(bgRgb.r, bgRgb.g, bgRgb.b)
       : apcaLc.luminance(bgRgb.r, bgRgb.g, bgRgb.b);
 
     // Compute initial foreground contrast from its existing rgb.
     const fgRgb: RgbInterfaceType = foreground.rgb;
-    // ensureContrast only needs Lc magnitude to compare against minRatio;
+    // ensureContrast only needs Lc magnitude to compare against minimumRatio;
     // apcaLc.apply()'s sign (polarity) is discarded via Math.abs().
     const initialContrast = algorithm === 'wcag21'
-      ? wcagRatio(rgbLuminance(fgRgb.r, fgRgb.g, fgRgb.b), Ybg)
+      ? WcagContrastRatio.between(RgbLuminance.calculate(fgRgb.r, fgRgb.g, fgRgb.b), Ybg)
       : Math.abs(apcaLc.apply(apcaLc.luminance(fgRgb.r, fgRgb.g, fgRgb.b), Ybg));
 
-    if (initialContrast >= minRatio) {
+    if (initialContrast >= minimumRatio) {
       return foreground;
     }
 
@@ -83,7 +87,7 @@ class EnsureContrast {
     // decision keys off WCAG relative luminance, not OKLCH lightness: a
     // saturated hue (e.g. violet) can read "light" in OKLCH L yet be
     // luminance-dark, and contrast is a function of luminance, not L.
-    const step   = rgbLuminance(bgRgb.r, bgRgb.g, bgRgb.b) > 0.5 ? -0.02 : 0.02;
+    const step   = RgbLuminance.calculate(bgRgb.r, bgRgb.g, bgRgb.b) > 0.5 ? -0.02 : 0.02;
 
     let currentL = fgL;
     let lastL    = currentL;
@@ -94,13 +98,13 @@ class EnsureContrast {
       const rgb  = oklchToRgbRaw.apply(newL, c, h);
 
       const ratio = algorithm === 'wcag21'
-        ? wcagRatio(rgbLuminance(rgb.r, rgb.g, rgb.b), Ybg)
+        ? WcagContrastRatio.between(RgbLuminance.calculate(rgb.r, rgb.g, rgb.b), Ybg)
         : Math.abs(apcaLc.apply(apcaLc.luminance(rgb.r, rgb.g, rgb.b), Ybg));
 
       lastL   = newL;
       lastRgb = rgb;
 
-      if (ratio >= minRatio) {
+      if (ratio >= minimumRatio) {
         return isSrgb
           ? colorRecordFactory.fromRgb(rgb.r, rgb.g, rgb.b, { 'alpha': a, 'hints': hints, 'sourceFormat': fmt })
           : colorRecordFactory.fromOklch(newL, c, h, { 'alpha': a, 'hints': hints, 'sourceFormat': fmt });

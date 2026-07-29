@@ -1,28 +1,72 @@
 {
   "name": "@studnicky/iridis",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "type": "module",
   "description": "Pluggable color derivation pipeline. Variable-input-count seed colors expand into role-resolved, contrast-enforced palettes via a sequenced task pipeline. Browser- and Node-safe.",
+  "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts",
-    "./model": "./src/model/index.ts",
-    "./types": "./src/types/index.ts",
-    "./registry": "./src/registry/index.ts",
-    "./engine": "./src/engine/index.ts",
-    "./math": "./src/math/index.ts",
-    "./tasks": "./src/tasks/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./model": {
+      "types": "./dist/model/index.d.ts",
+      "import": "./dist/model/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    },
+    "./registry": {
+      "types": "./dist/registry/index.d.ts",
+      "import": "./dist/registry/index.js"
+    },
+    "./engine": {
+      "types": "./dist/engine/index.d.ts",
+      "import": "./dist/engine/index.js"
+    },
+    "./math": {
+      "types": "./dist/math/index.d.ts",
+      "import": "./dist/math/index.js"
+    },
+    "./tasks": {
+      "types": "./dist/tasks/index.d.ts",
+      "import": "./dist/tasks/index.js"
+    }
   },
   "files": [
-    "src"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "prebuild": "rm -rf dist",
-    "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test 'tests/**/*.test.ts'",
-    "clean": "rm -rf dist"
+    "build": "tsc --build --force tsconfig.build.json",
+    "prepare:publish": "node ../../scripts/package-pipeline.mjs core",
+    "build:package": "pnpm run build && pnpm run prepare:publish",
+    "pack:dry": "pnpm run build:package && npm pack --dry-run ./.publish",
+    "publish:dry": "pnpm run build:package && npm publish --dry-run ./.publish",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "test": "TSX_TSCONFIG_PATH=../../tsconfig.json node --import tsx --test 'tests/**/*.test.ts'",
+    "clean": "rm -rf .publish dist"
   },
+  "author": "Andrew Studnicky <a.j.studnicky@gmail.com>",
+  "license": "MIT",
   "engines": {
     "node": ">=24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Studnicky/iridis.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/Studnicky/iridis/issues"
+  },
+  "homepage": "https://studnicky.github.io/iridis/",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   },
   "devDependencies": {
     "tsx": "^4.23.0",
@@ -32,6 +76,7 @@
     "@studnicky/errors": "^4.0.0",
     "@studnicky/json-tology": "^0.27.0",
     "@studnicky/logger": "^4.0.0",
-    "@studnicky/types": "^4.0.0"
+    "@studnicky/types": "^4.0.0",
+    "re2js": "^2.8.6"
   }
 }

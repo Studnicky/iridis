@@ -1,0 +1,112 @@
+name: detect-changes
+
+on:
+  workflow_call:
+    inputs:
+      base-sha:
+        required: false
+        type: string
+      head-sha:
+        required: false
+        type: string
+    outputs:
+      docs:
+        value: ${{ jobs.detect.outputs.docs }}
+      packages:
+        value: ${{ jobs.detect.outputs.packages }}
+      scripts:
+        value: ${{ jobs.detect.outputs.scripts }}
+      tests:
+        value: ${{ jobs.detect.outputs.tests }}
+      source:
+        value: ${{ jobs.detect.outputs.source }}
+      config:
+        value: ${{ jobs.detect.outputs.config }}
+      workflows:
+        value: ${{ jobs.detect.outputs.workflows }}
+      hooks:
+        value: ${{ jobs.detect.outputs.hooks }}
+      security_config:
+        value: ${{ jobs.detect.outputs.security_config }}
+      lockfiles:
+        value: ${{ jobs.detect.outputs.lockfiles }}
+      release:
+        value: ${{ jobs.detect.outputs.release }}
+      ci:
+        value: ${{ jobs.detect.outputs.ci }}
+      audit:
+        value: ${{ jobs.detect.outputs.audit }}
+      analysis:
+        value: ${{ jobs.detect.outputs.analysis }}
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      docs: ${{ steps.filter.outputs.docs }}
+      packages: ${{ steps.filter.outputs.packages }}
+      scripts: ${{ steps.filter.outputs.scripts }}
+      tests: ${{ steps.filter.outputs.tests }}
+      source: ${{ steps.filter.outputs.source }}
+      config: ${{ steps.filter.outputs.config }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      hooks: ${{ steps.filter.outputs.hooks }}
+      security_config: ${{ steps.filter.outputs.security_config }}
+      lockfiles: ${{ steps.filter.outputs.lockfiles }}
+      release: ${{ steps.filter.outputs.release }}
+      ci: ${{ steps.filter.outputs.ci }}
+      audit: ${{ steps.filter.outputs.audit }}
+      analysis: ${{ steps.filter.outputs.analysis }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - id: filter
+        shell: bash
+        env:
+          BASE_SHA: ${{ inputs.base-sha }}
+          HEAD_SHA: ${{ inputs.head-sha }}
+          PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+
+          # shellcheck source=../../.githooks/lib/changes.sh
+          source .githooks/lib/changes.sh
+          # shellcheck source=../../.githooks/lib/range.sh
+          source .githooks/lib/range.sh
+
+          base="${BASE_SHA:-}"
+          head="${HEAD_SHA:-${GITHUB_SHA}}"
+
+          if [ -z "$base" ]; then
+            if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ]; then
+              base="$PULL_REQUEST_BASE_SHA"
+            else
+              base="$EVENT_BEFORE"
+            fi
+          fi
+
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ]; then
+            base="$(git rev-list --max-parents=0 "$head" | tail -1)"
+          fi
+
+          classify_changes "$(normalize_diff_range "$base" "$head")"
+
+          {
+            echo "docs=$CHANGED_DOCS"
+            echo "packages=$CHANGED_PACKAGES"
+            echo "scripts=$CHANGED_SCRIPTS"
+            echo "tests=$CHANGED_TESTS"
+            echo "source=$CHANGED_SOURCE"
+            echo "config=$CHANGED_CONFIG"
+            echo "workflows=$CHANGED_WORKFLOWS"
+            echo "hooks=$CHANGED_HOOKS"
+            echo "security_config=$CHANGED_SECURITY_CONFIG"
+            echo "lockfiles=$CHANGED_LOCKFILES"
+            echo "release=$CHANGED_RELEASE"
+            echo "ci=$CHANGED_CI"
+            echo "audit=$CHANGED_AUDIT"
+            echo "analysis=$CHANGED_ANALYSIS"
+          } >> "$GITHUB_OUTPUT"

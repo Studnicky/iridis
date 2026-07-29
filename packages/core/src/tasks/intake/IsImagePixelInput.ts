@@ -1,8 +1,6 @@
-interface ImagePixelInputInterface {
-  'data':   Uint8ClampedArray;
-  'height': number;
-  'width':  number;
-}
+import type { JsonValueType } from '@studnicky/types';
+
+import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 
 /**
  * Type guard for `ImageData`-shaped inputs (`{data: Uint8ClampedArray,
@@ -10,10 +8,12 @@ interface ImagePixelInputInterface {
  * `IntakeImagePixels`, `IntakeAny`, and `IntakeHex` so every intake path
  * agrees on the exact same detection rule.
  */
-export function isImagePixelInput(v: unknown): v is ImagePixelInputInterface {
-  if (typeof v !== 'object' || v === null) {return false;}
-  const o = v as Record<string, unknown>;
-  return o.data instanceof Uint8ClampedArray
-    && typeof o.width === 'number'
-    && typeof o.height === 'number';
+export class IsImagePixelInput {
+  static check(value: JsonValueType | RawImagePixelInputInterface): value is RawImagePixelInputInterface {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {return false;}
+    if (!('data' in value) || !('width' in value) || !('height' in value)) {return false;}
+    return value.data instanceof Uint8ClampedArray
+      && typeof value.width === 'number'
+      && typeof value.height === 'number';
+  }
 }

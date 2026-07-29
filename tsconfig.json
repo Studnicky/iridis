@@ -1,23 +1,140 @@
 {
+  "$comment": "Development typecheck only. Maps every public package subpath to its TypeScript source, so typechecking (and tsx at runtime) reads src and never a built dist. The build configs deliberately do not inherit these paths: each package must compile against its dependencies declaration output, not their sources.",
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true
+    "composite": false,
+    "noEmit": true,
+    "paths": {
+      "@studnicky/iridis": [
+        "./packages/core/src/index.ts"
+      ],
+      "@studnicky/iridis-algebra": [
+        "./packages/algebra/src/index.ts"
+      ],
+      "@studnicky/iridis-algebra/types": [
+        "./packages/algebra/src/types/index.ts"
+      ],
+      "@studnicky/iridis-anima": [
+        "./packages/anima/src/index.ts"
+      ],
+      "@studnicky/iridis-anima/types": [
+        "./packages/anima/src/types/index.ts"
+      ],
+      "@studnicky/iridis-capacitor": [
+        "./packages/capacitor/src/index.ts"
+      ],
+      "@studnicky/iridis-capacitor/types": [
+        "./packages/capacitor/src/types/index.ts"
+      ],
+      "@studnicky/iridis-chakra": [
+        "./packages/chakra/src/index.ts"
+      ],
+      "@studnicky/iridis-chakra/types": [
+        "./packages/chakra/src/types/index.ts"
+      ],
+      "@studnicky/iridis-cli": [
+        "./packages/cli/src/index.ts"
+      ],
+      "@studnicky/iridis-cli/Cli": [
+        "./packages/cli/src/Cli.ts"
+      ],
+      "@studnicky/iridis-cli/types": [
+        "./packages/cli/src/types/index.ts"
+      ],
+      "@studnicky/iridis-contrast": [
+        "./packages/contrast/src/index.ts"
+      ],
+      "@studnicky/iridis-contrast/types": [
+        "./packages/contrast/src/types/index.ts"
+      ],
+      "@studnicky/iridis-fsm": [
+        "./packages/fsm/src/index.ts"
+      ],
+      "@studnicky/iridis-fsm/types": [
+        "./packages/fsm/src/types/index.ts"
+      ],
+      "@studnicky/iridis-image": [
+        "./packages/image/src/index.ts"
+      ],
+      "@studnicky/iridis-image/types": [
+        "./packages/image/src/types/index.ts"
+      ],
+      "@studnicky/iridis-mui": [
+        "./packages/mui/src/index.ts"
+      ],
+      "@studnicky/iridis-mui/types": [
+        "./packages/mui/src/types/index.ts"
+      ],
+      "@studnicky/iridis-panda": [
+        "./packages/panda/src/index.ts"
+      ],
+      "@studnicky/iridis-panda/types": [
+        "./packages/panda/src/types/index.ts"
+      ],
+      "@studnicky/iridis-pulse": [
+        "./packages/pulse/src/index.ts"
+      ],
+      "@studnicky/iridis-pulse/types": [
+        "./packages/pulse/src/types/index.ts"
+      ],
+      "@studnicky/iridis-rdf": [
+        "./packages/rdf/src/index.ts"
+      ],
+      "@studnicky/iridis-rdf/types": [
+        "./packages/rdf/src/types/index.ts"
+      ],
+      "@studnicky/iridis-shadcn": [
+        "./packages/shadcn/src/index.ts"
+      ],
+      "@studnicky/iridis-shadcn/types": [
+        "./packages/shadcn/src/types/index.ts"
+      ],
+      "@studnicky/iridis-stylesheet": [
+        "./packages/stylesheet/src/index.ts"
+      ],
+      "@studnicky/iridis-stylesheet/types": [
+        "./packages/stylesheet/src/types/index.ts"
+      ],
+      "@studnicky/iridis-tailwind": [
+        "./packages/tailwind/src/index.ts"
+      ],
+      "@studnicky/iridis-tailwind/types": [
+        "./packages/tailwind/src/types/index.ts"
+      ],
+      "@studnicky/iridis-trajectory": [
+        "./packages/trajectory/src/index.ts"
+      ],
+      "@studnicky/iridis-trajectory/types": [
+        "./packages/trajectory/src/types/index.ts"
+      ],
+      "@studnicky/iridis-vscode": [
+        "./packages/vscode/src/index.ts"
+      ],
+      "@studnicky/iridis-vscode/types": [
+        "./packages/vscode/src/types/index.ts"
+      ],
+      "@studnicky/iridis/engine": [
+        "./packages/core/src/engine/index.ts"
+      ],
+      "@studnicky/iridis/math": [
+        "./packages/core/src/math/index.ts"
+      ],
+      "@studnicky/iridis/model": [
+        "./packages/core/src/model/index.ts"
+      ],
+      "@studnicky/iridis/registry": [
+        "./packages/core/src/registry/index.ts"
+      ],
+      "@studnicky/iridis/tasks": [
+        "./packages/core/src/tasks/index.ts"
+      ],
+      "@studnicky/iridis/types": [
+        "./packages/core/src/types/index.ts"
+      ]
+    }
   },
-  "include": [],
-  "references": [
-    { "path": "./packages/core" },
-    { "path": "./packages/algebra" },
-    { "path": "./packages/anima" },
-    { "path": "./packages/fsm" },
-    { "path": "./packages/stylesheet" },
-    { "path": "./packages/tailwind" },
-    { "path": "./packages/vscode" },
-    { "path": "./packages/contrast" },
-    { "path": "./packages/capacitor" },
-    { "path": "./packages/image" },
-    { "path": "./packages/rdf" },
-    { "path": "./packages/cli" },
-    { "path": "./packages/trajectory" },
-    { "path": "./packages/pulse" }
+  "include": [
+    "packages/*/src/**/*",
+    "packages/*/tests/**/*"
   ]
 }

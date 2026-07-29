@@ -10,21 +10,25 @@ import { evaluate } from './Evaluate.ts';
  * the segment it falls in before delegating to {@link evaluate} for that
  * segment's local progress.
  */
-export const evaluateStops = (
-  stops: readonly PaletteInterfaceType[],
-  t: number,
-  opts?: CurveOptionsInterfaceType
-): PaletteInterfaceType => {
-  if (stops.length === 0) {throw new Error('evaluateStops() requires at least one stop');}
-  if (stops.length === 1) {return stops[0]!;}
+class EvaluateStops {
+  static apply(
+    stops: readonly PaletteInterfaceType[],
+    t: number,
+    options?: CurveOptionsInterfaceType
+  ): PaletteInterfaceType {
+    if (stops.length === 0) {throw new Error('evaluateStops() requires at least one stop');}
+    if (stops.length === 1) {return stops[0]!;}
 
-  const segmentCount = stops.length - 1;
-  const clamped      = Math.min(1, Math.max(0, t));
-  const scaled       = clamped * segmentCount;
-  const segmentIndex = Math.min(segmentCount - 1, Math.floor(scaled));
-  const localT        = scaled - segmentIndex;
+    const segmentCount = stops.length - 1;
+    const clamped      = Math.min(1, Math.max(0, t));
+    const scaled       = clamped * segmentCount;
+    const segmentIndex = Math.min(segmentCount - 1, Math.floor(scaled));
+    const localT        = scaled - segmentIndex;
 
-  const from = stops[segmentIndex]!;
-  const to   = stops[segmentIndex + 1]!;
-  return evaluate(from, to, localT, opts);
-};
+    const from = stops[segmentIndex]!;
+    const to   = stops[segmentIndex + 1]!;
+    return evaluate(from, to, localT, options);
+  }
+}
+
+export const evaluateStops = EvaluateStops.apply;

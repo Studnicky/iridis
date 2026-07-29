@@ -1,0 +1,39 @@
+#!/bin/bash
+set -o pipefail
+
+# shellcheck source=lib/runtime.sh
+source "$(dirname "$0")/lib/runtime.sh"
+
+[ "${SKIP_HOOKS:-}" = "true" ] && exit 0
+
+# shellcheck source=lib/dependency-install.sh
+hook_source_lib dependency-install.sh
+
+tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/iridis-post-merge.XXXXXX")
+trap 'rm -rf "$tmpdir"' EXIT INT TERM
+
+run_dependency_install "post-merge" "ORIG_HEAD" "HEAD" >"$tmpdir/install.log" 2>&1 &
+install_pid=$!
+
+git fetch --prune --quiet origin >"$tmpdir/fetch.log" 2>&1 || true &
+fetch_pid=$!
+
+# shellcheck source=lib/worktree-cleanup.sh
+hook_source_lib worktree-cleanup.sh
+cleanup_stale_worktrees false >"$tmpdir/cleanup.log" 2>&1 &
+cleanup_pid=$!
+
+if ! wait "$install_pid"; then
+  cat "$tmpdir/install.log" >&2
+  exit 1
+fi
+
+if ! wait "$fetch_pid"; then
+  cat "$tmpdir/fetch.log" >&2
+  exit 1
+fi
+
+if ! wait "$cleanup_pid"; then
+  cat "$tmpdir/cleanup.log" >&2
+  exit 1
+fi

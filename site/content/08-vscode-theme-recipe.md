@@ -13,15 +13,27 @@ The plugin's tasks run *after* the core pipeline resolves roles and enforces con
 
 | Stage | Task | What it does |
 |---|---|---|
-| 1 | `vscode:expandTokens` | Derives 23 VS Code base token colors from the 16 resolved roles, using `DERIVATION_PARAMS`. Writes `metadata['vscode:baseTokens']`. |
-| 2 | `vscode:applyModifiers` | Applies 10 color modifiers (from `MODIFIER_TRANSFORMS`) to the base tokens, producing 253 semantic-token rules, and re-enforces contrast against the `background` role for each. Writes `metadata['vscode:semanticTokenRules']`. |
+| 1 | `vscode:expandTokens` | Derives 23 VS Code base token colors from the resolved framing surface (see below), using `DERIVATION_PARAMS`. Writes `metadata['vscode:baseTokens']`. |
+| 2 | `vscode:applyModifiers` | Applies 10 color modifiers (from `MODIFIER_TRANSFORMS`) to the base tokens, producing 253 semantic-token rules, and re-enforces contrast against the resolved `background` role for each. Writes `metadata['vscode:semanticTokenRules']`. |
 | 3a | `emit:vscodeSemanticRules` | Shapes the semantic-token rule map for `editor.semanticTokenColorCustomizations.rules`, using `SCOPE_MAPPINGS` and `FONT_STYLES`. Writes `outputs['vscode:semanticTokenRules']`. |
-| 3b | `emit:vscodeUiPalette` | Derives 100+ workbench UI colors (`editor.background`, `sideBar.foreground`, etc.) from the 16-role palette, selecting light/dark variants by the resolved `background` luminance. Writes `outputs['vscode:workbenchColors']`. |
+| 3b | `emit:vscodeUiPalette` | Derives 100+ workbench UI colors (`editor.background`, `sideBar.foreground`, etc.) from the resolved framing surface. Writes `outputs['vscode:workbenchColors']`. |
 | 4 | `emit:vscodeThemeJson` | Combines the semantic rules and workbench colors into one `theme.json` shape (`{ name, type, colors, semanticTokenColors, tokenColors }`). Requires both `emit:vscodeSemanticRules` and `emit:vscodeUiPalette` to have already run. Writes `outputs['vscode:themeJson']`. |
 
 Stages 3a and 3b are independent of each other and can run in either order (both depend only on stage 2's output), but stage 4 fails fast if either hasn't run yet.
 
 Wide-gamut roles (records with `displayP3` populated) serialize to the CSS Color 4 `color(display-p3 r g b)` form in every emitted theme slot; sRGB-only roles stay as `#rrggbb`. VS Code 1.85+ accepts either form in any color slot.
+
+## `runtime.framing` and the emitted theme type
+
+All four vscode tasks that touch role colors — `vscode:expandTokens`, `vscode:applyModifiers`, `emit:vscodeUiPalette`, and `emit:vscodeThemeJson` — resolve the same *framing surface* before reading any role, via the core `FramingSurface` helper (`@studnicky/iridis`). This is what makes `input.runtime.framing` (`'dark' | 'light'`) actually do something:
+
+- With `runtime.framing` unset, every task reads `state.roles` directly — omitting `framing` and omitting `runtime` entirely produce byte-identical output.
+- With `runtime.framing` set, `FramingSurface` measures the WCAG relative luminance of the `background` role in `state.roles`. If that measured appearance already matches the requested framing, `state.roles` is used unchanged. Otherwise it searches `state.variants` (populated by `derive:variant`, which must run earlier in the pipeline) for a variant whose `background` reads as the requested appearance, and uses that variant's roles for every workbench color, base token, and semantic rule.
+- If no variant matches (for example, `derive:variant` didn't run, or every configured variant shares one appearance), the tasks fall back to `state.roles` rather than throwing.
+
+`derive:variant`'s default variant configuration names variants after the *transform* it applies, not the appearance it produces: the `dark`-named variant inverts lightness, and the `light`-named variant leaves lightness untouched. Given dark seeds, the `dark`-named variant is the one that reads light, and the `light`-named variant is the one that stays dark. `FramingSurface` never selects a variant by matching its name against `runtime.framing` — it measures each candidate's actual background luminance and picks whichever one matches the requested appearance, so this naming quirk in `derive:variant` never leaks into which surface gets emitted.
+
+The emitted theme `type` field (`'dark' | 'light'` in `theme.json`) is a separate, downstream fact: `emit:vscodeThemeJson` measures the *same* resolved framing surface with the *same* WCAG relative-luminance threshold `emit:vscodeUiPalette` used to derive the workbench colors. Both tasks therefore always agree — the declared `type` can never contradict the background color actually shipped in `colors["editor.background"]`.
 
 ## Producing a theme file
 

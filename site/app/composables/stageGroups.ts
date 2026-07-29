@@ -30,10 +30,10 @@ export const STAGE_GROUPS: readonly StageGroupType[] = [
   },
   {
     'items': [
-      { 'key': 'picker', 'label': 'Manual' },
+      { 'key': 'picker', 'label': 'Palette' },
       { 'key': 'palette', 'label': 'Palette' },
       { 'key': 'cvd', 'label': 'CVD vision' },
-      { 'key': 'schemaCompliance', 'label': 'Schema & Compliance' },
+      { 'key': 'schemaCompliance', 'label': 'Schema' },
       { 'key': 'derivationRelations', 'label': 'Derivation Relations' }
     ],
     'label': 'Refine', 'name': 'refine'

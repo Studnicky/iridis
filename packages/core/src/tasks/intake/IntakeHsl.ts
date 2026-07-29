@@ -1,33 +1,30 @@
+import type { JsonValueType } from '@studnicky/types';
+
 import { ValidationError } from '@studnicky/errors';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
+import type { HslInputEntity } from '../../entities/HslInputEntity.ts';
+import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
+import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
+import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 import type { ColorRecordInterfaceType } from '../../types/color.ts';
-import type {
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '../../types/pipeline.ts';
-import type { PaletteStateInterface } from '../../types/state.ts';
+import type { TaskManifestInterfaceType } from '../../types/pipeline.ts';
 
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
-type HslInput = {
-  'a': number | undefined;
-  'h': number;
-  'l': number;
-  's': number;
-};
-
-function isHslInput(v: unknown): v is HslInput {
-  if (typeof v !== 'object' || v === null) {return false;}
-  const o = v as Record<string, unknown>;
-  return typeof o.h === 'number' && Number.isFinite(o.h)
-    && typeof o.s === 'number' && Number.isFinite(o.s)
-    && typeof o.l === 'number' && Number.isFinite(o.l)
-    && typeof o.r !== 'number'
-    && typeof o.c !== 'number';
+class HslInputGuard {
+  static check(value: JsonValueType | RawImagePixelInputInterface): value is HslInputEntity.Type {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {return false;}
+    if (!('h' in value) || !('s' in value) || !('l' in value)) {return false;}
+    return typeof value.h === 'number' && Number.isFinite(value.h)
+      && typeof value.s === 'number' && Number.isFinite(value.s)
+      && typeof value.l === 'number' && Number.isFinite(value.l)
+      && !('r' in value && typeof value.r === 'number')
+      && !('c' in value && typeof value.c === 'number');
+  }
 }
 
 /**
@@ -55,8 +52,8 @@ class IntakeHsl implements TaskInterface {
    * valid `{h,s,l}` object or carries keys from a different format (r/c).
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: unknown): ColorRecordInterfaceType {
-    if (!isHslInput(raw)) {
+  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
+    if (!HslInputGuard.check(raw)) {
       throw ValidationError.create({
         'message': 'intake:hsl — expected an {h,s,l} object',
         'path':    'raw',
@@ -82,7 +79,7 @@ class IntakeHsl implements TaskInterface {
    * {@link IntakeHsl.run} does not carry a try/catch in its body (V8
    * de-optimises try/catch inside hot loops).
    */
-  #tryParse(raw: unknown): ColorRecordInterfaceType | undefined {
+  #tryParse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType | undefined {
     try {
       return this.parse(raw);
     } catch {
@@ -90,9 +87,8 @@ class IntakeHsl implements TaskInterface {
     }
   }
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (let i = 0; i < state.input.colors.length; i++) {
-      const raw = state.input.colors[i];
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    for (const [i, raw] of state.input.colors.entries()) {
       const record = this.#tryParse(raw);
       if (record === undefined) {
         throw ValidationError.create({
@@ -109,15 +105,15 @@ class IntakeHsl implements TaskInterface {
           }]
         });
       }
-      const typed = raw as { 'h': number; 'l': number; 's': number; };
+      const typed = HslInputGuard.check(raw) ? raw : undefined;
       state.colors.push(record);
-      ctx.logger.debug(
+      context.logger.debug(
         LogBody.create()
           .component('IntakeHsl')
           .operation('run')
           .status(LOG_STATUS.SUCCESS)
           .message('Parsed hsl value')
-          .context({ 'h': typed.h, 'hex': record.hex, 'l': typed.l, 's': typed.s })
+          .context({ 'h': typed?.h, 'hex': record.hex, 'l': typed?.l, 's': typed?.s })
           .build()
       );
     }

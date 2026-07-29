@@ -6,17 +6,13 @@ import type {
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
 
-import { contrastWcag21, getEngineMetadata } from '@studnicky/iridis';
+import { contrastWcag21, EngineMetadata } from '@studnicky/iridis';
 import { LogBody }        from '@studnicky/logger/builders';
 import { LOG_STATUS }     from '@studnicky/logger/constants';
 import { DataFactory, Store } from 'n3';
 
 import { iridisVocab } from '../data/iridisVocab.ts';
-
-const xsdDecimal = 'http://www.w3.org/2001/XMLSchema#decimal';
-const xsdString  = 'http://www.w3.org/2001/XMLSchema#string';
-const xsdBoolean = 'http://www.w3.org/2001/XMLSchema#boolean';
-const rdfType    = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+import { XSD_IRI }     from './constants/XsdIri.ts';
 
 class Iri {
   static color(hex: string): string {
@@ -47,11 +43,11 @@ class ReasonAnnotate implements TaskInterface {
     'writes':      ['rdf:reasoningGraph']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const store       = new Store();
-    const paletteNode = DataFactory.namedNode(Iri.palette(ctx.startedAt));
+    const paletteNode = DataFactory.namedNode(Iri.palette(context.startedAt));
     const roleType    = DataFactory.namedNode(iridisVocab.Role);
-    const rdfTypeNode = DataFactory.namedNode(rdfType);
+    const rdfTypeNode = DataFactory.namedNode(XSD_IRI.RDF_TYPE);
     const hasRoleNode  = DataFactory.namedNode(iridisVocab.hasRole);
     const hasColorNode = DataFactory.namedNode(iridisVocab.hasColor);
     const oklchLNode  = DataFactory.namedNode(iridisVocab.oklchL);
@@ -69,14 +65,14 @@ class ReasonAnnotate implements TaskInterface {
     const pinnedNode      = DataFactory.namedNode(iridisVocab.pinned);
     const synthesizedNode = DataFactory.namedNode(iridisVocab.synthesized);
     const intentNode      = DataFactory.namedNode(iridisVocab.intent);
-    const lightnessMinNode = DataFactory.namedNode(iridisVocab.lightnessRangeMin);
-    const lightnessMaxNode = DataFactory.namedNode(iridisVocab.lightnessRangeMax);
-    const chromaMinNode    = DataFactory.namedNode(iridisVocab.chromaRangeMin);
-    const chromaMaxNode    = DataFactory.namedNode(iridisVocab.chromaRangeMax);
+    const lightnessRangeMinimumNode = DataFactory.namedNode(iridisVocab.lightnessRangeMin);
+    const lightnessRangeMaximumNode = DataFactory.namedNode(iridisVocab.lightnessRangeMax);
+    const chromaRangeMinimumNode    = DataFactory.namedNode(iridisVocab.chromaRangeMin);
+    const chromaRangeMaximumNode    = DataFactory.namedNode(iridisVocab.chromaRangeMax);
     const hueClampNode     = DataFactory.namedNode(iridisVocab.hueClamp);
     const clampedFromNode  = DataFactory.namedNode(iridisVocab.clampedFrom);
-    const xsdDecimalNode = DataFactory.namedNode(xsdDecimal);
-    const xsdBooleanNode = DataFactory.namedNode(xsdBoolean);
+    const xsdDecimalNode = DataFactory.namedNode(XSD_IRI.DECIMAL);
+    const xsdBooleanNode = DataFactory.namedNode(XSD_IRI.BOOLEAN);
 
     // Schema role definitions (derivedFrom/intent/ranges/hueClamp) and this
     // run's own resolution metadata (which roles were pinned/synthesized/
@@ -85,9 +81,9 @@ class ReasonAnnotate implements TaskInterface {
     const roleDefByName = new Map<string, RoleDefinitionInterfaceType>(
       (state.input.roles?.roles ?? []).map((def) => {return [def.name, def];})
     );
-    const rolesPinned      = getEngineMetadata(state.metadata, 'core:rolesPinned') ?? [];
-    const rolesSynthesized = getEngineMetadata(state.metadata, 'core:rolesSynthesized') ?? [];
-    const roleClamps       = getEngineMetadata(state.metadata, 'core:roleClamps') ?? {};
+    const rolesPinned      = new Set(EngineMetadata.get(state.metadata, 'core:rolesPinned') ?? []);
+    const rolesSynthesized = new Set(EngineMetadata.get(state.metadata, 'core:rolesSynthesized') ?? []);
+    const roleClamps       = EngineMetadata.get(state.metadata, 'core:roleClamps') ?? {};
 
     for (const [roleName, color] of Object.entries(state.roles)) {
       const role  = DataFactory.namedNode(Iri.role(roleName));
@@ -95,7 +91,7 @@ class ReasonAnnotate implements TaskInterface {
 
       store.addQuad(DataFactory.quad(role,    rdfTypeNode,  roleType));
       store.addQuad(DataFactory.quad(role,    hasColorNode, colorN));
-      store.addQuad(DataFactory.quad(colorN,  hexNode,      DataFactory.literal(color.hex, DataFactory.namedNode(xsdString))));
+      store.addQuad(DataFactory.quad(colorN,  hexNode,      DataFactory.literal(color.hex, DataFactory.namedNode(XSD_IRI.STRING))));
       store.addQuad(DataFactory.quad(colorN,  oklchLNode,   DataFactory.literal(color.oklch.l.toFixed(4), xsdDecimalNode)));
       store.addQuad(DataFactory.quad(colorN,  oklchCNode,   DataFactory.literal(color.oklch.c.toFixed(4), xsdDecimalNode)));
       store.addQuad(DataFactory.quad(colorN,  oklchHNode,   DataFactory.literal(color.oklch.h.toFixed(2), xsdDecimalNode)));
@@ -122,23 +118,23 @@ class ReasonAnnotate implements TaskInterface {
         store.addQuad(DataFactory.quad(role, derivedFromNode, DataFactory.namedNode(Iri.role(def.derivedFrom))));
       }
       if (def?.intent !== undefined) {
-        store.addQuad(DataFactory.quad(role, intentNode, DataFactory.literal(def.intent, DataFactory.namedNode(xsdString))));
+        store.addQuad(DataFactory.quad(role, intentNode, DataFactory.literal(def.intent, DataFactory.namedNode(XSD_IRI.STRING))));
       }
       if (def?.lightnessRange !== undefined) {
-        store.addQuad(DataFactory.quad(role, lightnessMinNode, DataFactory.literal(def.lightnessRange[0].toFixed(4), xsdDecimalNode)));
-        store.addQuad(DataFactory.quad(role, lightnessMaxNode, DataFactory.literal(def.lightnessRange[1].toFixed(4), xsdDecimalNode)));
+        store.addQuad(DataFactory.quad(role, lightnessRangeMinimumNode, DataFactory.literal(def.lightnessRange[0].toFixed(4), xsdDecimalNode)));
+        store.addQuad(DataFactory.quad(role, lightnessRangeMaximumNode, DataFactory.literal(def.lightnessRange[1].toFixed(4), xsdDecimalNode)));
       }
       if (def?.chromaRange !== undefined) {
-        store.addQuad(DataFactory.quad(role, chromaMinNode, DataFactory.literal(def.chromaRange[0].toFixed(4), xsdDecimalNode)));
-        store.addQuad(DataFactory.quad(role, chromaMaxNode, DataFactory.literal(def.chromaRange[1].toFixed(4), xsdDecimalNode)));
+        store.addQuad(DataFactory.quad(role, chromaRangeMinimumNode, DataFactory.literal(def.chromaRange[0].toFixed(4), xsdDecimalNode)));
+        store.addQuad(DataFactory.quad(role, chromaRangeMaximumNode, DataFactory.literal(def.chromaRange[1].toFixed(4), xsdDecimalNode)));
       }
       if (def?.hueClamp !== undefined) {
         store.addQuad(DataFactory.quad(role, hueClampNode, DataFactory.literal(def.hueClamp.toFixed(2), xsdDecimalNode)));
       }
-      if (rolesPinned.includes(roleName)) {
+      if (rolesPinned.has(roleName)) {
         store.addQuad(DataFactory.quad(role, pinnedNode, DataFactory.literal('true', xsdBooleanNode)));
       }
-      if (rolesSynthesized.includes(roleName)) {
+      if (rolesSynthesized.has(roleName)) {
         store.addQuad(DataFactory.quad(role, synthesizedNode, DataFactory.literal('true', xsdBooleanNode)));
       }
       const clamp = roleClamps[roleName];
@@ -150,9 +146,10 @@ class ReasonAnnotate implements TaskInterface {
     }
 
     const roleEntries = Object.entries(state.roles);
+    const roleCount   = roleEntries.length;
 
-    for (let i = 0; i < roleEntries.length; i += 1) {
-      for (let j = 0; j < roleEntries.length; j += 1) {
+    for (let i = 0; i < roleCount; i += 1) {
+      for (let j = 0; j < roleCount; j += 1) {
         if (i === j) {
           continue;
         }
@@ -164,14 +161,14 @@ class ReasonAnnotate implements TaskInterface {
         store.addQuad(DataFactory.quad(
           DataFactory.namedNode(pairIri),
           ratioNode,
-          DataFactory.literal(ratio.toFixed(2), DataFactory.namedNode(xsdDecimal))
+          DataFactory.literal(ratio.toFixed(2), xsdDecimalNode)
         ));
       }
     }
 
     state.outputs['rdf:reasoningGraph'] = store;
 
-    ctx.logger.info(
+    context.logger.info(
       LogBody.create()
         .component('ReasonAnnotate')
         .operation('run')

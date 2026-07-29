@@ -1,9 +1,11 @@
-import type { WritableComputedRef } from 'vue';
-
 import type { IridisUiEventType } from './types/iridisUiEvent.ts';
 import type { ModeType } from './types/mode.ts';
 
 import { useIridisUiMachine } from './useIridisUiMachine.ts';
+
+declare class WritableModeReference {
+  value: ModeType.Type;
+}
 
 /**
  * Forces `mode` to `targetMode` (if it differs) before forwarding the event
@@ -19,14 +21,14 @@ import { useIridisUiMachine } from './useIridisUiMachine.ts';
  * — the reducer itself accepts SELECT_MODE in every variant, settling any
  * in-flight drag when the user explicitly switches modes.
  */
-export function useModeGuardedSend(
-  mode: WritableComputedRef<ModeType>,
-  send: (event: IridisUiEventType) => void,
-  targetMode: ModeType
-): (event: IridisUiEventType) => void {
-  const { state } = useIridisUiMachine();
-  return (event) => {
-    if (mode.value !== targetMode && state.value.variant === 'idle') { mode.value = targetMode; }
-    send(event);
-  };
+class UseModeGuardedSendOperation {
+  static run(mode: WritableModeReference, send: (event: IridisUiEventType.Type) => void, targetMode: ModeType.Type): (event: IridisUiEventType.Type) => void {
+    const { state } = useIridisUiMachine();
+    return (event) => {
+      if (mode.value !== targetMode && state.value.variant === 'idle') { mode.value = targetMode; }
+      send(event);
+    };
+  }
 }
+
+export const useModeGuardedSend = UseModeGuardedSendOperation.run;

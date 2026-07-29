@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { buildRangeListModel } from './buildRangeListModel.ts';
+
 /**
  * A union-of-ranges editor: N sliders, each an independent [min,max] band,
  * with add/remove controls — always at least one range. Used for both the
@@ -20,25 +22,32 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ 'update:modelValue': [ranges: [number, number][]] }>();
 
-function updateRange(index: number, range: [number, number]): void {
-  const next = props.modelValue.map((r) => [...r] as [number, number]);
-  next[index] = range;
-  emit('update:modelValue', next);
+function updateRange(index: number, range: number | number[] | undefined): void {
+  if (!Array.isArray(range)) {
+    throw new TypeError('Range list updates require a minimum and maximum.');
+  }
+  const [minimum, maximum] = range;
+  if (minimum === undefined || maximum === undefined) {
+    throw new TypeError('Range list updates require a minimum and maximum.');
+  }
+  emit(
+    'update:modelValue',
+    buildRangeListModel.update(props.modelValue, index, [minimum, maximum])
+  );
 }
 function addRange(): void {
-  emit('update:modelValue', [...props.modelValue.map((r) => [...r] as [number, number]), props.defaultRange]);
+  emit('update:modelValue', buildRangeListModel.append(props.modelValue, props.defaultRange));
 }
 function removeRange(index: number): void {
-  const next = props.modelValue.map((r) => [...r] as [number, number]).filter((_, i) => i !== index);
-  emit('update:modelValue', next.length > 0 ? next : [props.defaultRange]);
+  emit('update:modelValue', buildRangeListModel.remove(props.modelValue, index, props.defaultRange));
 }
 </script>
 
 <template>
   <UFormField :label="label">
-    <p class="mb-2 text-xs text-muted">
+    <FieldHelpText class="mb-2 mt-0">
       {{ help }}
-    </p>
+    </FieldHelpText>
     <div class="space-y-2">
       <div
         v-for="(range, i) in modelValue"
@@ -51,9 +60,11 @@ function removeRange(index: number): void {
           :max="max"
           :step="step"
           class="flex-1"
-          @update:model-value="updateRange(i, $event as [number, number])"
+          @update:model-value="updateRange(i, $event)"
         />
-        <span class="w-20 shrink-0 font-mono text-xs text-muted">{{ range[0].toFixed(2) }}–{{ range[1].toFixed(2) }}</span>
+        <MutedMono class="w-20 shrink-0">
+          {{ range[0].toFixed(2) }}–{{ range[1].toFixed(2) }}
+        </MutedMono>
         <UButton
           v-if="modelValue.length > 1"
           icon="i-material-symbols-close-rounded"

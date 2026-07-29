@@ -1,21 +1,20 @@
+import type { JsonValueType } from '@studnicky/types';
+
 import { ValidationError } from '@studnicky/errors';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
+import type { RgbInputEntity } from '../../entities/RgbInputEntity.ts';
+import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 import type {
   ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
-  RgbInterfaceType,
   TaskInterface,
   TaskManifestInterfaceType
 } from '../../types/index.ts';
 
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
-
-type RgbInput = RgbInterfaceType & {
-  'a': number | undefined;
-};
 
 /**
  * A channel above this value cannot plausibly be a 0..1 float (even
@@ -25,12 +24,14 @@ type RgbInput = RgbInterfaceType & {
  */
 const RGB_BYTE_SCALE_THRESHOLD = 2;
 
-function isRgbInput(v: unknown): v is RgbInput {
-  if (typeof v !== 'object' || v === null) {return false;}
-  const o = v as Record<string, unknown>;
-  return typeof o.r === 'number' && Number.isFinite(o.r)
-    && typeof o.g === 'number' && Number.isFinite(o.g)
-    && typeof o.b === 'number' && Number.isFinite(o.b);
+class RgbInputGuard {
+  static check(value: JsonValueType | RawImagePixelInputInterface): value is RgbInputEntity.Type {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {return false;}
+    if (!('r' in value) || !('g' in value) || !('b' in value)) {return false;}
+    return typeof value.r === 'number' && Number.isFinite(value.r)
+      && typeof value.g === 'number' && Number.isFinite(value.g)
+      && typeof value.b === 'number' && Number.isFinite(value.b);
+  }
 }
 
 /**
@@ -58,8 +59,8 @@ class IntakeRgb implements TaskInterface {
    * valid `{r,g,b}` object or carries keys from a different format (h/l/c).
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: unknown): ColorRecordInterfaceType {
-    if (!isRgbInput(raw)) {
+  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
+    if (!RgbInputGuard.check(raw)) {
       throw ValidationError.create({
         'message': 'intake:rgb — expected an {r,g,b} object',
         'path':    'raw',
@@ -70,8 +71,11 @@ class IntakeRgb implements TaskInterface {
         }]
       });
     }
-    const o = raw as unknown as Record<string, unknown>;
-    if (typeof o.h === 'number' || typeof o.l === 'number' || typeof o.c === 'number') {
+    if (
+      ('h' in raw && typeof raw.h === 'number')
+      || ('l' in raw && typeof raw.l === 'number')
+      || ('c' in raw && typeof raw.c === 'number')
+    ) {
       throw ValidationError.create({
         'message': 'intake:rgb — object has conflicting format keys',
         'path':    'raw',
@@ -105,7 +109,7 @@ class IntakeRgb implements TaskInterface {
    * {@link IntakeRgb.run} does not carry a try/catch in its body (V8
    * de-optimises try/catch inside hot loops).
    */
-  #tryParse(raw: unknown): ColorRecordInterfaceType | undefined {
+  #tryParse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType | undefined {
     try {
       return this.parse(raw);
     } catch {
@@ -113,9 +117,8 @@ class IntakeRgb implements TaskInterface {
     }
   }
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (let i = 0; i < state.input.colors.length; i++) {
-      const raw = state.input.colors[i];
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    for (const [i, raw] of state.input.colors.entries()) {
       const record = this.#tryParse(raw);
       if (record === undefined) {
         throw ValidationError.create({
@@ -133,7 +136,7 @@ class IntakeRgb implements TaskInterface {
         });
       }
       state.colors.push(record);
-      ctx.logger.debug(
+      context.logger.debug(
         LogBody.create()
           .component('IntakeRgb')
           .operation('run')

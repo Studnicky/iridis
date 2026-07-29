@@ -1,52 +1,54 @@
 import { ValidationError } from '@studnicky/errors';
 
+import type { ClusterWeightedBucketEntity } from '../entities/ClusterWeightedBucketEntity.ts';
 import type { ColorRecordInterfaceType } from '../types/index.ts';
 
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
-type BucketInterface = {
-  'colors': ColorRecordInterfaceType[];
-  'totalWeight': number;
-};
-
-function recordWeight(record: ColorRecordInterfaceType): number {
-  const w = record.hints?.weight;
-  return typeof w === 'number' && w > 0 ? w : 1;
+class RecordWeight {
+  static of(record: ColorRecordInterfaceType): number {
+    const w = record.hints?.weight;
+    return typeof w === 'number' && w > 0 ? w : 1;
+  }
 }
 
-function bucketCentroid(bucket: BucketInterface): ColorRecordInterfaceType {
-  const colors = bucket.colors;
-  const n = colors.length;
-  if (n === 0) {return colorRecordFactory.fromOklch(0.5, 0, 0);}
-  let sumA = 0; let sumAlpha = 0; let sumB = 0; let sumL = 0; let sumW = 0;
-  for (const col of colors) {
-    const w = recordWeight(col);
-    const hRad = (col.oklch.h * Math.PI) / 180;
-    sumL     += col.oklch.l * w;
-    sumA     += col.oklch.c * Math.cos(hRad) * w;
-    sumB     += col.oklch.c * Math.sin(hRad) * w;
-    sumAlpha += col.alpha   * w;
-    sumW     += w;
+class BucketCentroid {
+  static of(bucket: ClusterWeightedBucketEntity.Type): ColorRecordInterfaceType {
+    const colors = bucket.colors;
+    const n = colors.length;
+    if (n === 0) {return colorRecordFactory.fromOklch(0.5, 0, 0);}
+    let sumA = 0; let sumAlpha = 0; let sumB = 0; let sumL = 0; let sumW = 0;
+    for (const col of colors) {
+      const w = RecordWeight.of(col);
+      const hRad = (col.oklch.h * Math.PI) / 180;
+      sumL     += col.oklch.l * w;
+      sumA     += col.oklch.c * Math.cos(hRad) * w;
+      sumB     += col.oklch.c * Math.sin(hRad) * w;
+      sumAlpha += col.alpha   * w;
+      sumW     += w;
+    }
+    if (sumW === 0) {return colorRecordFactory.fromOklch(0.5, 0, 0);}
+    const L = sumL / sumW;
+    const aMean = sumA / sumW;
+    const bMean = sumB / sumW;
+    const C = Math.sqrt(aMean * aMean + bMean * bMean);
+    let H = (Math.atan2(bMean, aMean) * 180) / Math.PI;
+    if (H < 0) {H += 360;}
+    return colorRecordFactory.fromOklch(L, C, H, { 'alpha': sumAlpha / sumW, 'hints': { 'intent': undefined, 'role': undefined, 'weight': sumW }, 'sourceFormat': 'oklch' });
   }
-  if (sumW === 0) {return colorRecordFactory.fromOklch(0.5, 0, 0);}
-  const L = sumL / sumW;
-  const aMean = sumA / sumW;
-  const bMean = sumB / sumW;
-  const C = Math.sqrt(aMean * aMean + bMean * bMean);
-  let H = (Math.atan2(bMean, aMean) * 180) / Math.PI;
-  if (H < 0) {H += 360;}
-  return colorRecordFactory.fromOklch(L, C, H, { 'alpha': sumAlpha / sumW, 'hints': { 'intent': undefined, 'role': undefined, 'weight': sumW }, 'sourceFormat': 'oklch' });
 }
 
-function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c'): number {
-  if (colors.length === 0) {return 0;}
-  let max = -Infinity; let min = Infinity;
-  for (const c of colors) {
-    const v = c.oklch[channel];
-    if (v < min) {min = v;}
-    if (v > max) {max = v;}
+class ChannelRange {
+  static of(colors: ColorRecordInterfaceType[], channel: 'l' | 'c'): number {
+    if (colors.length === 0) {return 0;}
+    let maximum = -Infinity; let minimum = Infinity;
+    for (const c of colors) {
+      const v = c.oklch[channel];
+      if (v < minimum) {minimum = v;}
+      if (v > maximum) {maximum = v;}
+    }
+    return maximum - minimum;
   }
-  return max - min;
 }
 
 /**
@@ -55,29 +57,36 @@ function rangeOf(colors: ColorRecordInterfaceType[], channel: 'l' | 'c'): number
  * Computed via the largest-gap method so a bucket straddling 0/360 (e.g.
  * reds at 358/359/1/2) reports a small range instead of a spurious ~360.
  */
-function circularHueStats(colors: ColorRecordInterfaceType[]): { 'gapStart': number; 'range': number } {
-  const hues: number[] = [];
-  for (const col of colors) {
-    hues.push(((col.oklch.h % 360) + 360) % 360);
-  }
-  const n = hues.length;
-  if (n <= 1) {return { 'gapStart': hues[0] ?? 0, 'range': 0 };}
-  hues.sort((a, b) => {return a - b;});
-  let maxGap = (hues[0]! + 360) - hues[n - 1]!;
-  let gapStart = hues[0]!;
-  for (let i = 1; i < n; i++) {
-    const gap = hues[i]! - hues[i - 1]!;
-    if (gap > maxGap) {
-      maxGap = gap;
-      gapStart = hues[i]!;
+class CircularHueStats {
+  static of(colors: ColorRecordInterfaceType[]): { 'gapStart': number; 'range': number } {
+    const hues: number[] = [];
+    for (const col of colors) {
+      hues.push(((col.oklch.h % 360) + 360) % 360);
     }
+    const n = hues.length;
+    if (n <= 1) {
+      const firstHue = hues[0] ?? 0;
+      return { 'gapStart': firstHue, 'range': 0 };
+    }
+    hues.sort((a, b) => {return a - b;});
+    let maximumGap = (hues[0]! + 360) - hues[n - 1]!;
+    let gapStart = hues[0]!;
+    for (let i = 1; i < n; i++) {
+      const gap = hues[i]! - hues[i - 1]!;
+      if (gap > maximumGap) {
+        maximumGap = gap;
+        gapStart = hues[i]!;
+      }
+    }
+    return { 'gapStart': gapStart, 'range': 360 - maximumGap };
   }
-  return { 'gapStart': gapStart, 'range': 360 - maxGap };
 }
 
 /** Hue expressed as a non-negative offset (degrees) from `gapStart`, unwrapping the 0/360 seam. */
-function unwrappedHue(h: number, gapStart: number): number {
-  return (((h - gapStart) % 360) + 360) % 360;
+class UnwrappedHue {
+  static of(h: number, gapStart: number): number {
+    return (((h - gapStart) % 360) + 360) % 360;
+  }
 }
 
 class Bucket {
@@ -88,12 +97,12 @@ class Bucket {
    * For the 'h' channel, `hueGapStart` unwraps hue around the widest gap so
    * a bucket spanning 0/360 doesn't see a spurious jump mid-run.
    */
-  static splitAtMinVariance(sorted: ColorRecordInterfaceType[], channel: 'l' | 'c' | 'h', hueGapStart?: number): number {
+  static splitAtMinimumVariance(sorted: ColorRecordInterfaceType[], channel: 'l' | 'c' | 'h', hueGapStart?: number): number {
     const n = sorted.length;
     const values = channel === 'h' && hueGapStart !== undefined
-      ? sorted.map((c) => { const result = unwrappedHue(c.oklch.h, hueGapStart); return result; })
+      ? sorted.map((c) => { const result = UnwrappedHue.of(c.oklch.h, hueGapStart); return result; })
       : sorted.map((c) => { const result = c.oklch[channel]; return result; });
-    const weights = sorted.map(recordWeight);
+    const weights = sorted.map((c) => {const result = RecordWeight.of(c); return result;});
 
     // Prefix sums so left/right weighted mean+variance are O(1) per candidate.
     const prefixW: number[] = [0]; const prefixV: number[] = [0]; const prefixV2: number[] = [0];
@@ -126,11 +135,11 @@ class Bucket {
   }
 
   /** Splits along the channel with the widest range, at the point minimizing total within-side variance (Wu's criterion) rather than at the median (Heckbert's median-cut). */
-  static split(bucket: BucketInterface): [BucketInterface, BucketInterface] {
+  static split(bucket: ClusterWeightedBucketEntity.Type): [ClusterWeightedBucketEntity.Type, ClusterWeightedBucketEntity.Type] {
     const colors = bucket.colors;
-    const lRange = rangeOf(colors, 'l');
-    const cRange = rangeOf(colors, 'c');
-    const hueStats = circularHueStats(colors);
+    const lRange = ChannelRange.of(colors, 'l');
+    const cRange = ChannelRange.of(colors, 'c');
+    const hueStats = CircularHueStats.of(colors);
     const hRange = hueStats.range / 360;
 
     let channel: 'l' | 'c' | 'h' = 'l';
@@ -138,14 +147,14 @@ class Bucket {
     else if (hRange > lRange) {channel = 'h';}
 
     const sorted = channel === 'h'
-      ? [...colors].sort((a, b) => {return unwrappedHue(a.oklch.h, hueStats.gapStart) - unwrappedHue(b.oklch.h, hueStats.gapStart);})
+      ? [...colors].sort((a, b) => {return UnwrappedHue.of(a.oklch.h, hueStats.gapStart) - UnwrappedHue.of(b.oklch.h, hueStats.gapStart);})
       : [...colors].sort((a, b) => {return a.oklch[channel] - b.oklch[channel];});
-    const splitIdx = Bucket.splitAtMinVariance(sorted, channel, channel === 'h' ? hueStats.gapStart : undefined);
+    const splitIndex = Bucket.splitAtMinimumVariance(sorted, channel, channel === 'h' ? hueStats.gapStart : undefined);
 
-    const left = sorted.slice(0, splitIdx);
-    const right = sorted.slice(splitIdx);
-    let lw = 0; for (const c of left) {lw += recordWeight(c);}
-    let rw = 0; for (const c of right) {rw += recordWeight(c);}
+    const left = sorted.slice(0, splitIndex);
+    const right = sorted.slice(splitIndex);
+    let lw = 0; for (const c of left) {lw += RecordWeight.of(c);}
+    let rw = 0; for (const c of right) {rw += RecordWeight.of(c);}
     return [
       { 'colors': left, 'totalWeight': lw },
       { 'colors': right, 'totalWeight': rw }
@@ -182,36 +191,37 @@ class ClusterWuQuantize {
 
     const targetK = Math.min(Math.floor(k), colors.length);
     let totalW = 0;
-    for (const c of colors) {totalW += recordWeight(c);}
-    let buckets: BucketInterface[] = [{ 'colors': [...colors], 'totalWeight': totalW }];
+    for (const c of colors) {totalW += RecordWeight.of(c);}
+    let buckets: ClusterWeightedBucketEntity.Type[] = [{ 'colors': [...colors], 'totalWeight': totalW }];
 
     while (buckets.length < targetK) {
       let bestScore = -1;
-      let bestIdx = 0;
-      for (let i = 0; i < buckets.length; i++) {
+      let bestIndex = 0;
+      const bucketsLength = buckets.length;
+      for (let i = 0; i < bucketsLength; i++) {
         const bucket = buckets[i];
         if (bucket === undefined || bucket.colors.length <= 1) {continue;}
-        const lRange = rangeOf(bucket.colors, 'l');
-        const cRange = rangeOf(bucket.colors, 'c');
-        const hRange = circularHueStats(bucket.colors).range / 360;
+        const lRange = ChannelRange.of(bucket.colors, 'l');
+        const cRange = ChannelRange.of(bucket.colors, 'c');
+        const hRange = CircularHueStats.of(bucket.colors).range / 360;
         const widestRange = Math.max(lRange, cRange, hRange);
         const score = bucket.totalWeight * widestRange;
-        if (score > bestScore) { bestScore = score; bestIdx = i; }
+        if (score > bestScore) { bestScore = score; bestIndex = i; }
       }
-      const target = buckets[bestIdx];
+      const target = buckets[bestIndex];
       if (target === undefined || target.colors.length <= 1) {break;}
 
       const [left, right] = Bucket.split(target);
       if (left.colors.length === 0 || right.colors.length === 0) {break;}
       buckets = [
-        ...buckets.slice(0, bestIdx),
+        ...buckets.slice(0, bestIndex),
         left,
         right,
-        ...buckets.slice(bestIdx + 1)
+        ...buckets.slice(bestIndex + 1)
       ];
     }
 
-    return buckets.map(bucketCentroid);
+    return buckets.map((bucket) => {const result = BucketCentroid.of(bucket); return result;});
   }
 }
 

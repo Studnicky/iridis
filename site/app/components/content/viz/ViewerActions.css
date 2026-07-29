@@ -1,0 +1,60 @@
+/** Shared Iridis chrome for viewer action buttons. */
+
+.dagonizer-viewer-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.dagonizer-viewer-actions--overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+}
+
+.dagonizer-viewer-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 0.55rem;
+  background: color-mix(in oklch, var(--ui-bg-elevated) 84%, transparent);
+  border: 1px var(--iridis-border-style) var(--ui-border);
+  border-radius: var(--iridis-radius-sm);
+  color: var(--ui-text-highlighted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  backdrop-filter: blur(4px);
+  transition:
+    background var(--iridis-tune) var(--iridis-ease),
+    color var(--iridis-tune) var(--iridis-ease),
+    border-color var(--iridis-tune) var(--iridis-ease);
+}
+
+.dagonizer-viewer-action:hover:not(:disabled) {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+
+.dagonizer-viewer-action:focus-visible {
+  outline: 2px var(--iridis-border-style) var(--ui-primary);
+  outline-offset: 1px;
+}
+
+.dagonizer-viewer-action--danger:hover:not(:disabled) {
+  border-color: var(--ui-error);
+  color: var(--ui-error);
+  background: color-mix(in oklch, var(--ui-error) 12%, var(--ui-bg-elevated));
+}
+
+.dagonizer-viewer-action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

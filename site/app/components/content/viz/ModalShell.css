@@ -1,0 +1,72 @@
+/** Shared modal/fullscreen shell chrome driven by the Iridis UI tokens. */
+
+.dagonizer-modal-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in oklch, var(--ui-bg) 82%, transparent);
+  backdrop-filter: blur(6px);
+  animation: dagonizer-modal-in var(--iridis-tune) var(--iridis-ease);
+}
+
+.dagonizer-modal-stage {
+  flex: 1 1 auto;
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.dagonizer-modal-stage:active {
+  cursor: grabbing;
+}
+
+.dagonizer-modal-hint {
+  flex: 0 0 auto;
+  padding: 0.45rem 1rem;
+  background: color-mix(in oklch, var(--ui-bg-elevated) 88%, transparent);
+  border-top: 1px var(--iridis-border-style) var(--ui-border);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--ui-text-muted);
+  text-align: center;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.dagonizer-modal-card {
+  position: fixed;
+  inset: 2rem;
+  z-index: 9999;
+  border-radius: var(--iridis-radius-md);
+  border: 1px var(--iridis-border-style) var(--ui-primary);
+  box-shadow:
+    0 10px 50px color-mix(in oklch, var(--ui-bg) 55%, transparent),
+    0 0 0 1px var(--ui-primary);
+  background: var(--ui-bg-elevated);
+  animation: dagonizer-modal-in var(--iridis-tune) var(--iridis-ease);
+}
+
+.dagonizer-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: color-mix(in oklch, var(--ui-bg) 78%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+@keyframes dagonizer-modal-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dagonizer-modal-shell,
+  .dagonizer-modal-card {
+    animation: none;
+  }
+}

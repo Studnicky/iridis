@@ -30,7 +30,35 @@
    import) lets each theme's own later rule correctly override it; declaring
    it after would silently clobber every theme's override back to 1. */
 :root {
+  /* Smallest step in the radius scale — decorative micro-elements (e.g. a
+     particle shape a few px across) that would visually break under
+     --iridis-radius-sm. */
+  --iridis-radius-xs: 0.125rem;
+  --iridis-radius-sm: 0.375rem;
+  --iridis-radius-md: 0.5rem;
+  --iridis-radius-lg: 1rem;
+  /* Pill/fully-round shapes (scrollbar thumbs, badges) need a radius at
+     least half their own size, which sm/md/lg can't guarantee at every
+     element height — this is that "always fully round" token. */
+  --iridis-radius-full: 9999px;
+  --iridis-border-style: solid;
   --iridis-glow-strength: 1;
+  /* Baseline defaults for component-local custom properties that are
+     normally set inline per-instance (AmbientBackground.vue's starfield
+     twinkle/rotate speed multiplier, MermaidViewportShell.vue's pan/zoom
+     transform) — declared once here so `var(--x)` never needs its own
+     `, fallback` at every call site, and so the value is never silently
+     unset if a consumer renders before its own inline `:style` binding
+     applies. */
+  --iridis-ambient-speed: 1;
+  /* Neutral (futuristic) default for the per-theme saturate/contrast knobs
+     applied to AmbientBackground.vue's particle layer — every preset in
+     ../theme/presets/*.css overrides both. */
+  --iridis-ambient-saturate: 1;
+  --iridis-ambient-contrast: 1;
+  --diagram-translate-x: 0px;
+  --diagram-translate-y: 0px;
+  --diagram-scale: 1;
 }
 
 /* ─── Per-theme adapters — one [data-iridis-theme] stylesheet per theme,
@@ -44,6 +72,21 @@
    transitions they aren't. */
 html {
   scroll-behavior: smooth;
+
+  /* Reserve the scrollbar gutter permanently. BalancedWrap packs rows against
+     its measured container width, so a scrollbar that appears and disappears
+     changes that width, repacks the rows, and changes the page height by a
+     row -- which toggles the scrollbar again. Holding the gutter breaks that
+     loop at its source. */
+  scrollbar-gutter: stable;
+}
+
+/* Animated scrolling is a vestibular trigger, so honor the same preference
+   the ambient and modal surfaces already respect. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 :root {
@@ -116,8 +159,8 @@ html.is-switching-theme *::after {
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
   background-color: color-mix(in oklch, var(--ui-primary) 45%, transparent);
-  border-radius: 9999px;
-  border: 2px solid transparent;
+  border-radius: var(--iridis-radius-full);
+  border: 2px var(--iridis-border-style) transparent;
   background-clip: padding-box;
 }
 *::-webkit-scrollbar-thumb:hover {
@@ -133,6 +176,20 @@ body {
 }
 #__nuxt { position: relative; z-index: 1; }
 
+/* TableOfContentsBar.vue keeps this live via a ResizeObserver on its own
+   root element, so it always reflects whatever the bar's real height is —
+   expanded, compact, or the mobile single-row strip. The default below is
+   only what's visible before that JS has run (SSR / pre-hydration paint). */
+:root {
+  --toc-height: 4.5rem;
+}
+/* Every jump target (stage/doc section, docs AccordionPanel) uses this
+   instead of a fixed `scroll-mt-*` utility, so a jump/anchor scroll never
+   lands with the target's own header hidden under the sticky bar (NAV-4). */
+.toc-scroll-target {
+  scroll-margin-top: var(--toc-height);
+}
+
 /* Reka UI teleports popover content (USelect, UDropdownMenu, etc.) to a wrapper
    under <body> with `z-index: auto` by default — it loses to CylinderCarousel's
    local stacking context (front card z-index up to 40). Pin it comfortably above. */
@@ -142,27 +199,33 @@ body {
 .glass {
   position: relative;
   background: color-mix(in oklch, var(--ui-bg-elevated) 93%, transparent);
-  backdrop-filter: blur(8px) saturate(1.15);
-  border: 1px var(--iridis-border-style, solid) color-mix(in oklch, var(--glow) calc(35% * var(--iridis-glow-strength, 1)), transparent);
-  border-radius: var(--iridis-radius-lg, 1rem);
+  /* 4px (was 8px+saturate): a smaller backdrop-blur kernel is far cheaper to
+     re-rasterize over the animated ambient behind every glass surface. */
+  backdrop-filter: blur(4px);
+  border: 1px var(--iridis-border-style) color-mix(in oklch, var(--glow) calc(35% * var(--iridis-glow-strength)), transparent);
+  border-radius: var(--iridis-radius-lg);
   box-shadow:
-    0 0 0 1px color-mix(in oklch, var(--glow) calc(12% * var(--iridis-glow-strength, 1)), transparent),
-    0 8px 40px -12px color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength, 1)), transparent),
+    0 0 0 1px color-mix(in oklch, var(--glow) calc(12% * var(--iridis-glow-strength)), transparent),
+    0 8px 40px -12px color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength)), transparent),
     inset 0 1px 0 color-mix(in oklch, var(--glow) 8%, transparent);
   transition: transform 0.35s cubic-bezier(.2,.8,.2,1), box-shadow 0.35s ease;
 }
 .glass:hover {
   transform: translateY(-4px);
   box-shadow:
-    0 0 0 1px color-mix(in oklch, var(--glow) calc(25% * var(--iridis-glow-strength, 1)), transparent),
-    0 18px 60px -14px color-mix(in oklch, var(--glow) calc(55% * var(--iridis-glow-strength, 1)), transparent);
+    0 0 0 1px color-mix(in oklch, var(--glow) calc(25% * var(--iridis-glow-strength)), transparent),
+    0 18px 60px -14px color-mix(in oklch, var(--glow) calc(55% * var(--iridis-glow-strength)), transparent);
 }
 .glass::before {
-  /* animated top sheen line */
+  /* top sheen line — static by default; the pulsing animation only runs
+     while the card is actually being interacted with (hover/focus), so we
+     aren't repainting opacity on every glass card forever at idle */
   content: "";
   position: absolute; inset: 0 0 auto 0; height: 1px;
   background: linear-gradient(90deg, transparent, var(--glow), transparent);
-  opacity: calc(0.7 * var(--iridis-glow-strength, 1));
+  opacity: calc(0.35 * var(--iridis-glow-strength));
+}
+.glass:hover::before, .glass:focus-within::before {
   animation: sheen 4s ease-in-out infinite;
 }
 @keyframes sheen { 0%,100%{ opacity:.2 } 50%{ opacity:.9 } }
@@ -183,17 +246,19 @@ body {
 .iridis-card {
   position: relative;
   background: color-mix(in oklch, var(--ui-bg-elevated) 94%, transparent);
-  backdrop-filter: blur(8px) saturate(1.15);
-  border: 1px var(--iridis-border-style, solid) color-mix(in oklch, var(--glow) calc(22% * var(--iridis-glow-strength, 1)), transparent);
-  border-radius: var(--iridis-radius-lg, 1rem);
+  /* 4px (was 8px+saturate): a smaller backdrop-blur kernel is far cheaper to
+     re-rasterize over the animated ambient behind every glass surface. */
+  backdrop-filter: blur(4px);
+  border: 1px var(--iridis-border-style) color-mix(in oklch, var(--glow) calc(22% * var(--iridis-glow-strength)), transparent);
+  border-radius: var(--iridis-radius-lg);
   box-shadow:
-    0 8px 40px -16px color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength, 1)), transparent),
+    0 8px 40px -16px color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength)), transparent),
     inset 0 1px 0 color-mix(in oklch, var(--glow) 6%, transparent);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 .iridis-card:hover {
-  border-color: color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength, 1)), transparent);
-  box-shadow: 0 14px 54px -16px color-mix(in oklch, var(--glow) calc(55% * var(--iridis-glow-strength, 1)), transparent);
+  border-color: color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength)), transparent);
+  box-shadow: 0 14px 54px -16px color-mix(in oklch, var(--glow) calc(55% * var(--iridis-glow-strength)), transparent);
 }
 
 /* Nearly-invisible drifting micro-grid on every card/panel — shared via
@@ -211,24 +276,29 @@ body {
     linear-gradient(90deg, color-mix(in oklch, var(--glow) 45%, transparent) 1px, transparent 1px);
   background-size: 22px 22px;
   opacity: 0.035;
-  animation: card-texture-pan 34s linear infinite;
+  /* static texture — no animation. A 34s background-position pan repainted
+     every card using this rule (::after on every .iridis-card/.glass, 70+
+     elements) on every frame, forever, for a barely-perceptible drift. Not
+     worth the sustained idle CPU cost. */
 }
-@keyframes card-texture-pan { to { background-position: 22px 22px; } }
 
 /* ─── Glow / pulse / float utilities — every blur radius AND opacity scales
    by --iridis-glow-strength, so a restrained theme (Formal, Gallery) gets a
    genuinely tight hairline glow, not just a dimmer version of the same huge
    neon halo. ─── */
 .glow-text {
-  text-shadow: 0 0 calc(12px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(70% * var(--iridis-glow-strength, 1)), transparent),
-               0 0 calc(40px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(40% * var(--iridis-glow-strength, 1)), transparent);
+  text-shadow: 0 0 calc(6px * var(--iridis-glow-strength)) color-mix(in oklch, var(--glow) calc(55% * var(--iridis-glow-strength)), transparent);
 }
 .pulse { animation: pulse-glow 3s ease-in-out infinite; }
 @keyframes pulse-glow {
-  0%,100% { filter: drop-shadow(0 0 calc(4px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(45% * var(--iridis-glow-strength, 1)), transparent)); }
-  50%     { filter: drop-shadow(0 0 calc(16px * var(--iridis-glow-strength, 1)) color-mix(in oklch, var(--glow) calc(85% * var(--iridis-glow-strength, 1)), transparent)); }
+  0%,100% { filter: drop-shadow(0 0 calc(4px * var(--iridis-glow-strength)) color-mix(in oklch, var(--glow) calc(45% * var(--iridis-glow-strength)), transparent)); }
+  50%     { filter: drop-shadow(0 0 calc(16px * var(--iridis-glow-strength)) color-mix(in oklch, var(--glow) calc(85% * var(--iridis-glow-strength)), transparent)); }
 }
-.float { animation: float 7s ease-in-out infinite; }
+/* will-change promotes the remaining float elements (hero orbs/logo, which
+   carry their own `filter: blur`, not a backdrop-filter) to their own
+   compositor layer, so the translateY bob is a cheap GPU transform of a
+   pre-rasterized layer rather than a per-frame paint. */
+.float { animation: float 7s ease-in-out infinite; will-change: transform; }
 @keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-10px) } }
 .spin-slow { animation: spin 26s linear infinite; }
 
@@ -236,11 +306,11 @@ body {
   mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, var(--glow) 0%, transparent 85%);
   -webkit-mask-image: radial-gradient(ellipse 65% 65% at 50% 45%, var(--glow) 0%, transparent 85%);
 }
-.hero-orb:nth-child(1) { width: 7rem; height: 7rem; left: 8%; top: 50%; animation-delay: 0s; opacity: calc(0.45 * var(--iridis-glow-strength, 1)); }
-.hero-orb:nth-child(2) { width: 10rem; height: 10rem; left: 28%; top: 8%; animation-delay: 0.9s; opacity: calc(0.45 * var(--iridis-glow-strength, 1)); }
-.hero-orb:nth-child(3) { width: 13rem; height: 13rem; left: 48%; top: 50%; animation-delay: 1.8s; opacity: calc(0.45 * var(--iridis-glow-strength, 1)); }
-.hero-orb:nth-child(4) { width: 16rem; height: 16rem; left: 68%; top: 8%; animation-delay: 2.7s; opacity: calc(0.45 * var(--iridis-glow-strength, 1)); }
-.hero-orb:nth-child(5) { width: 19rem; height: 19rem; left: 88%; top: 50%; animation-delay: 3.6s; opacity: calc(0.45 * var(--iridis-glow-strength, 1)); }
+.hero-orb:nth-child(1) { width: 7rem; height: 7rem; left: 8%; top: 50%; animation-delay: 0s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
+.hero-orb:nth-child(2) { width: 10rem; height: 10rem; left: 28%; top: 8%; animation-delay: 0.9s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
+.hero-orb:nth-child(3) { width: 13rem; height: 13rem; left: 48%; top: 50%; animation-delay: 1.8s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
+.hero-orb:nth-child(4) { width: 16rem; height: 16rem; left: 68%; top: 8%; animation-delay: 2.7s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
+.hero-orb:nth-child(5) { width: 19rem; height: 19rem; left: 88%; top: 50%; animation-delay: 3.6s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
 
 /* ── Orbit: three rings, each its own palette role, spinning at independent
    speeds/directions while the whole rig slowly precesses — genuinely three
@@ -264,7 +334,7 @@ body {
 /* ── Sonar: four cardinal dots, each a distinct semantic role, blipping in
    sequence around a fading radar ring — dynamic across FOUR palette colors
    at once. Adapted from a uiverse.io radar/sonar loader technique. ── */
-.sonar-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid color-mix(in oklch, var(--ui-primary) 30%, transparent); animation: sonar-sweep 2.4s linear infinite; }
+.sonar-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px var(--iridis-border-style) color-mix(in oklch, var(--ui-primary) 30%, transparent); animation: sonar-sweep 2.4s linear infinite; }
 .sonar-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; animation: sonar-blip 2.4s ease-in-out infinite; }
 .sonar-dot.n { top: 2px; left: 50%; margin-left: -3px; background: var(--ui-color-success-500); box-shadow: 0 0 7px var(--ui-color-success-500); animation-delay: 0s; }
 .sonar-dot.e { top: 50%; right: 2px; margin-top: -3px; background: var(--ui-color-warning-500); box-shadow: 0 0 7px var(--ui-color-warning-500); animation-delay: 0.5s; }
@@ -292,8 +362,34 @@ body {
 @keyframes chroma-hue { to { filter: hue-rotate(360deg) saturate(1.4); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .float, .pulse, .spin-slow, .glass::before, .iridis-card::after, .glass::after,
+  .float, .pulse, .spin-slow, .glass:hover::before, .glass:focus-within::before,
   .orbit-rig, .orbit-ring, .sonar-ring, .sonar-dot, .radar-sweep, .chroma-cycle { animation: none !important; }
+}
+
+/* ─── Tab-hidden pause — driven by usePauseOffscreenAnimations.ts, which
+   toggles this class on <html> via the Page Visibility API. Freezes every
+   still-running animation (decorative loaders, hover sheen, etc.) the moment
+   the tab is backgrounded, a common source of fans spinning on a tab you
+   aren't even looking at. ─── */
+html.anims-paused *,
+html.anims-paused *::before,
+html.anims-paused *::after {
+  animation-play-state: paused !important;
+}
+
+/* ─── Off-screen pause — usePauseOffscreenAnimations.ts adds `.anim-offscreen`
+   to any stage/doc section (or standalone loader) scrolled out of view via one
+   IntersectionObserver. Freezes that subtree's animations while it isn't on
+   screen, so a tall page's below-the-fold carousels/showcases cost nothing.
+   The fixed ambient (starfield + lava blobs) is always intersecting, so it is
+   never tagged and keeps animating. ─── */
+.anim-offscreen,
+.anim-offscreen *,
+.anim-offscreen::before,
+.anim-offscreen::after,
+.anim-offscreen *::before,
+.anim-offscreen *::after {
+  animation-play-state: paused !important;
 }
 
 /* ─── Scanline overlay for the hacker feel (very subtle) ─── */

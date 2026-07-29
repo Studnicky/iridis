@@ -1,0 +1,24 @@
+name: pr-title
+
+on:
+  pull_request:
+    types: [ opened, edited, synchronize, reopened ]
+
+concurrency:
+  group: pr-title-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Validate PR title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: bash scripts/policy-suite.sh pr-title "$BASE_REF" "$HEAD_REF" "$TITLE"
