@@ -66,19 +66,17 @@ jobs:
           registry-url: https://npm.pkg.github.com
           cache: pnpm
 
-      - name: Verify release identity
+      # Cheap and dependency-free, so it runs first and fails the release
+      # before anything is installed or built.
+      - name: Verify release stamp
         env:
           RELEASE_TAG: ${{ steps.tag.outputs.tag }}
-          RELEASE_VERSION: ${{ steps.tag.outputs.version }}
         run: |
           STAMPED=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' readme-header.svg | head -1 || true)
           if [ "$STAMPED" != "$RELEASE_TAG" ]; then
             echo "::error::readme-header.svg carries '$STAMPED' but the tag is '$RELEASE_TAG'."
             exit 1
           fi
-          node scripts/package-publish.mjs \
-            --verify-manifests \
-            --expected-version "$RELEASE_VERSION"
 
       - name: Use release npm
         run: |
@@ -89,6 +87,16 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm install --frozen-lockfile
+
+      # Must follow the install: package-publish.mjs reads the manifests
+      # through package-pipeline.mjs, which imports typescript.
+      - name: Verify release manifests
+        env:
+          RELEASE_VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          node scripts/package-publish.mjs \
+            --verify-manifests \
+            --expected-version "$RELEASE_VERSION"
 
       - name: Verify all package archives and isolated consumers
         run: pnpm run packages:verify
