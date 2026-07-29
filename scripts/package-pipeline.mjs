@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { builtinModules } from 'node:module';
+import { builtinModules, createRequire } from 'node:module';
 import {
   chmodSync,
   cpSync,
@@ -25,7 +25,16 @@ import {
 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import ts from 'typescript';
+// TypeScript is only needed to parse generated modules when verifying the
+// dependency closure, which happens while staging a release. The publish job
+// consumes an already-built bundle and never installs dependencies, so this
+// is resolved on first use rather than at module load, and importing this
+// module stays free of a devDependency the publish step does not have.
+let typescriptModule;
+const typescript = () => {
+  typescriptModule ??= createRequire(import.meta.url)('typescript');
+  return typescriptModule;
+};
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONDITIONS = ['types', 'import'];
@@ -275,53 +284,53 @@ const assertExactArtifacts = (directory, packageName, expected) => {
 };
 
 const moduleSpecifierText = (node, artifactPath, construct) => {
-  if (!ts.isStringLiteralLike(node)) {
+  if (!typescript().isStringLiteralLike(node)) {
     fail(`nonliteral ${construct} in ${artifactPath}`);
   }
   return node.text;
 };
 
 const importSpecifiersFor = (source, artifactPath, declaration) => {
-  const scriptKind = declaration ? ts.ScriptKind.TS : ts.ScriptKind.JS;
-  const sourceFile = ts.createSourceFile(
+  const scriptKind = declaration ? typescript().ScriptKind.TS : typescript().ScriptKind.JS;
+  const sourceFile = typescript().createSourceFile(
     artifactPath,
     source,
-    ts.ScriptTarget.Latest,
+    typescript().ScriptTarget.Latest,
     false,
     scriptKind
   );
   const [diagnostic] = sourceFile.parseDiagnostics;
   if (diagnostic !== undefined) {
     fail(
-      `invalid generated module ${artifactPath}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`
+      `invalid generated module ${artifactPath}: ${typescript().flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`
     );
   }
 
   const specifiers = new Set();
   const visit = (node) => {
-    if (ts.isImportDeclaration(node)) {
+    if (typescript().isImportDeclaration(node)) {
       specifiers.add(moduleSpecifierText(node.moduleSpecifier, artifactPath, 'import'));
-    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier !== undefined) {
+    } else if (typescript().isExportDeclaration(node) && node.moduleSpecifier !== undefined) {
       specifiers.add(moduleSpecifierText(node.moduleSpecifier, artifactPath, 'export'));
     } else if (
-      ts.isImportEqualsDeclaration(node)
-      && ts.isExternalModuleReference(node.moduleReference)
+      typescript().isImportEqualsDeclaration(node)
+      && typescript().isExternalModuleReference(node.moduleReference)
     ) {
       const expression = node.moduleReference.expression;
       if (expression === undefined) {
         fail(`missing external module reference in ${artifactPath}`);
       }
       specifiers.add(moduleSpecifierText(expression, artifactPath, 'external module import'));
-    } else if (ts.isImportTypeNode(node)) {
-      if (!ts.isLiteralTypeNode(node.argument)) {
+    } else if (typescript().isImportTypeNode(node)) {
+      if (!typescript().isLiteralTypeNode(node.argument)) {
         fail(`nonliteral declaration import type in ${artifactPath}`);
       }
       specifiers.add(
         moduleSpecifierText(node.argument.literal, artifactPath, 'declaration import type')
       );
     } else if (
-      ts.isCallExpression(node)
-      && node.expression.kind === ts.SyntaxKind.ImportKeyword
+      typescript().isCallExpression(node)
+      && node.expression.kind === typescript().SyntaxKind.ImportKeyword
     ) {
       const [argument] = node.arguments;
       if (argument === undefined) {
@@ -329,7 +338,7 @@ const importSpecifiersFor = (source, artifactPath, declaration) => {
       }
       specifiers.add(moduleSpecifierText(argument, artifactPath, 'dynamic import'));
     }
-    ts.forEachChild(node, visit);
+    typescript().forEachChild(node, visit);
   };
   visit(sourceFile);
   return [...specifiers];
