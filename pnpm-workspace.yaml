@@ -15,3 +15,4 @@ minimumReleaseAge: 10080
 # the lockfile, so holding them back stalls resolution without reducing risk.
 minimumReleaseAgeExclude:
   - '@rollup/*'
+
