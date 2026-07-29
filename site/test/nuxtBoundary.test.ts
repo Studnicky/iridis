@@ -140,12 +140,16 @@ class NuxtBoundaryHarness {
 
   static async waitForTargetNearTop(page: Page, identifier: string): Promise<void> {
     try {
+      // Smooth scrolling to the reading position competes with a full
+      // production build and a browser on the same machine. Playwright's
+      // 30s default is too tight under that load; 60s matches every other
+      // wait in this file and stays well inside the 240s test budget.
       await page.waitForFunction((targetIdentifier) => {
         const target = document.getElementById(targetIdentifier);
         if (target === null) {return false;}
         const bounds = target.getBoundingClientRect();
         return bounds.bottom > 0 && bounds.top < window.innerHeight * 0.4;
-      }, identifier);
+      }, identifier, { 'timeout': 60_000 });
       const settledGeometry = await page.evaluate(async (targetIdentifier) => {
         const target = document.getElementById(targetIdentifier);
         if (target === null) {

@@ -19,8 +19,11 @@
     ]
   },
   "scripts": {
+    "prepare": "bash scripts/install-hooks.sh",
+    "setup-hooks": "bash scripts/install-hooks.sh",
     "lint": "eslint .",
     "typecheck": "tsc --build",
+    "pretest": "pnpm run build",
     "test": "pnpm -r run test --if-present && pnpm run test:architecture",
     "test:architecture": "node --test scripts/architecture-boundary.test.mjs",
     "build": "tsc --build --force tsconfig.build.json",
