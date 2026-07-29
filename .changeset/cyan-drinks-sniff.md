@@ -1,5 +1,4 @@
 ---
 ---
 
-Publish tooling only: the release pipeline resolves the TypeScript API on
-first use instead of at module load. No package source changed.
+Release tooling diagnostics only. No package source changed.

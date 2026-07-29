@@ -351,14 +351,25 @@ class NpmPublisher {
       'stdio': ['ignore', 'pipe', 'pipe'],
       'windowsHide': true
     });
+    // Report what npm actually said. A bare "npm view failed" gives a release
+    // operator nothing to act on and hides whether npm could not be spawned
+    // at all, exited non-zero, or answered with an error code.
     if (result.error !== undefined) {
-      fail(`npm view failed for ${packageRecord.name}@${packageRecord.version}`);
+      fail(`npm view could not run for ${packageRecord.name}@${packageRecord.version}: ${result.error.message}`);
     }
     if (result.status !== 0) {
       if (npmErrorCode(result) === 'E404') {
         return undefined;
       }
-      fail(`npm view failed for ${packageRecord.name}@${packageRecord.version}`);
+      const detail = [result.stderr, result.stdout]
+        .filter((stream) => typeof stream === 'string' && stream.trim() !== '')
+        .join('\n')
+        .trim();
+      fail(
+        `npm view failed for ${packageRecord.name}@${packageRecord.version}`
+        + ` (exit ${String(result.status)}, code ${String(npmErrorCode(result) ?? 'unknown')})`
+        + (detail === '' ? '' : `:\n${detail}`)
+      );
     }
     let integrity;
     try {
