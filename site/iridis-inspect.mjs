@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 
 const version = await (await fetch('http://127.0.0.1:9222/json/version')).json();
 const browser = await chromium.connectOverCDP(version.webSocketDebuggerUrl);

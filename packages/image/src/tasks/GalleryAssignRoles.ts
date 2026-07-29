@@ -36,11 +36,11 @@ class GalleryAssignRoles implements TaskInterface {
     'writes':      ['roles']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const colors = state.colors;
 
     if (colors.length === 0) {
-      ctx.logger.warn(
+      context.logger.warn(
         LogBody.create()
           .component('GalleryAssignRoles')
           .operation('run')
@@ -52,7 +52,7 @@ class GalleryAssignRoles implements TaskInterface {
       return;
     }
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('GalleryAssignRoles')
         .operation('run')
@@ -95,7 +95,7 @@ class GalleryAssignRoles implements TaskInterface {
     state.roles.muted  = muted;
     state.roles.text   = text;
 
-    ctx.logger.info(
+    context.logger.info(
       LogBody.create()
         .component('GalleryAssignRoles')
         .operation('run')

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import { ClockBinding } from '../src/ClockBinding.ts';
 
-test('ClockBinding virtual: advance() deterministically steps t with no real timers', () => {
+void test('ClockBinding virtual: advance() deterministically steps t with no real timers', () => {
   const clock = ClockBinding.create({ 'durationMs': 1000, 'mode': 'virtual' });
   assert.strictEqual(clock.t, 0);
 
@@ -20,18 +20,18 @@ test('ClockBinding virtual: advance() deterministically steps t with no real tim
   assert.strictEqual(clock.t, 1);
 });
 
-test('ClockBinding virtual: overshoot clamps t at 1', () => {
+void test('ClockBinding virtual: overshoot clamps t at 1', () => {
   const clock = ClockBinding.create({ 'durationMs': 1000, 'mode': 'virtual' });
   clock.advance(5000);
   assert.strictEqual(clock.t, 1);
 });
 
-test('ClockBinding real: advance() throws since real time cannot be driven manually', () => {
+void test('ClockBinding real: advance() throws since real time cannot be driven manually', () => {
   const clock = ClockBinding.create({ 'durationMs': 1000, 'mode': 'real' });
-  assert.throws(() => clock.advance(100));
+  assert.throws(() => { const result = clock.advance(100); return result; });
 });
 
-test('ClockBinding real: t starts at (or very near) 0 and stays within [0, 1]', () => {
+void test('ClockBinding real: t starts at (or very near) 0 and stays within [0, 1]', () => {
   const clock = ClockBinding.create({ 'durationMs': 1000, 'mode': 'real' });
   assert.ok(clock.t >= 0 && clock.t <= 1);
 });

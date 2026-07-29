@@ -7,7 +7,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  fire: [color: AliasColorType];
+  fire: [color: AliasColorType.Type];
 }>();
 </script>
 

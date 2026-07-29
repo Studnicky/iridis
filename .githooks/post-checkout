@@ -1,0 +1,47 @@
+#!/bin/bash
+set -o pipefail
+# Post-checkout: warn on branch policy drift, seed env files for fresh
+# worktrees, and refresh dependencies when dependency manifests changed.
+
+# shellcheck source=lib/runtime.sh
+source "$(dirname "$0")/lib/runtime.sh"
+
+[ "${SKIP_HOOKS:-}" = "true" ] && exit 0
+[ "${3:-0}" = "1" ] || exit 0
+
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+if [ -n "$branch" ]; then
+  hook_source_lib branch-check.sh
+  if ! check_branch_name "$branch" >/dev/null 2>&1; then
+    echo "  ⚠ Branch \"$branch\" does not follow naming convention."
+  fi
+fi
+
+# shellcheck source=lib/dependency-install.sh
+hook_source_lib dependency-install.sh
+
+tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/iridis-post-checkout.XXXXXX")
+trap 'rm -rf "$tmpdir"' EXIT INT TERM
+
+seed_done=0
+install_done=0
+
+if [ "${1:-}" = "0000000000000000000000000000000000000000" ]; then
+  seed_worktree_env_files >"$tmpdir/seed.log" 2>&1 &
+  seed_pid=$!
+  seed_done=1
+fi
+
+run_dependency_install "post-checkout" "${1:-}" "${2:-}" >"$tmpdir/install.log" 2>&1 &
+install_pid=$!
+install_done=1
+
+if [ "$seed_done" -eq 1 ] && ! wait "$seed_pid"; then
+  cat "$tmpdir/seed.log" >&2
+  exit 1
+fi
+
+if [ "$install_done" -eq 1 ] && ! wait "$install_pid"; then
+  cat "$tmpdir/install.log" >&2
+  exit 1
+fi

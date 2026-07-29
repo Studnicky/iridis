@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { splitHeaderRowClass } from './buildContentPresentationModel.ts';
+import { buildContentPresentationModel } from './buildContentPresentationModel.ts';
 
 const props = withDefaults(defineProps<{
   align?: 'center' | 'start';
   class?: string;
 }>(), {
-  align: 'center'
+  align: 'center',
+  class: undefined
 });
 </script>
 
 <template>
   <div
-    :class="[splitHeaderRowClass(props.align), $props.class]"
+    :class="[buildContentPresentationModel.splitHeaderRowClass(props.align), $props.class]"
   >
     <div class="min-w-0 flex-1">
       <slot />

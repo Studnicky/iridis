@@ -4,8 +4,10 @@
  * scroll-direction intent (SCROLL_UP / SCROLL_DOWN, from the rAF-throttled
  * scroll listener).
  */
-export type TocBarEventType =
-  | { 'type': 'PAST_HERO' }
-  | { 'type': 'RETURN_TOP' }
-  | { 'type': 'SCROLL_DOWN' }
-  | { 'type': 'SCROLL_UP' };
+export declare namespace TocBarEventType {
+  type Type =
+    | { 'type': 'PAST_HERO' }
+    | { 'type': 'RETURN_TOP' }
+    | { 'type': 'SCROLL_DOWN' }
+    | { 'type': 'SCROLL_UP' };
+}

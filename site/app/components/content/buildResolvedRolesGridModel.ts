@@ -1,36 +1,38 @@
-type ResolvedRoleLayout = {
-  readonly showTitleSlot: boolean;
-  readonly valueClass: string;
-  readonly variant?: 'tile';
-};
+class ResolvedRolesGridValueModel {
+  public readonly containerClass: string;
+  public readonly hexLabel: string;
+  public readonly metrics: string[];
 
-type ResolvedRoleRow = {
-  readonly c: number;
-  readonly h: number;
-  readonly hex: string;
-  readonly l: number;
-};
-
-export type ResolvedRolesGridValueModel = {
-  readonly containerClass: string;
-  readonly hexLabel: string;
-  readonly metrics: readonly string[];
-};
-
-export function buildResolvedRolesGridValueModel(
-  row: ResolvedRoleRow,
-  layout: ResolvedRoleLayout
-): ResolvedRolesGridValueModel {
-  const isTile = layout.variant === 'tile';
-  return {
-    containerClass: layout.showTitleSlot
-      ? 'flex shrink-0 gap-x-2 text-[10px] text-muted'
-      : isTile
-        ? 'flex gap-x-1 text-[8px] text-muted'
-        : 'grid grid-cols-3 gap-x-2 text-[10px] text-muted',
-    hexLabel: row.hex,
-    metrics: isTile
-      ? [row.l.toFixed(2), row.c.toFixed(2), `${row.h.toFixed(0)}°`]
-      : [`L ${row.l.toFixed(2)}`, `C ${row.c.toFixed(2)}`, `H ${row.h.toFixed(0)}°`]
-  };
+  public constructor(containerClass: string, hexLabel: string, metrics: string[]) {
+    this.containerClass = containerClass;
+    this.hexLabel = hexLabel;
+    this.metrics = metrics;
+  }
 }
+
+export const buildResolvedRolesGridModel = class ResolvedRolesGridModelBuilder {
+  private static containerClass(showTitleSlot: boolean, isTile: boolean): string {
+    if (showTitleSlot) {
+      return 'flex shrink-0 gap-x-2 text-[10px] text-muted';
+    }
+    if (isTile) {
+      return 'flex gap-x-1 text-[8px] text-muted';
+    }
+    return 'grid grid-cols-3 gap-x-2 text-[10px] text-muted';
+  }
+
+  public static build(
+    row: { readonly 'c': number; readonly 'h': number; readonly 'hex': string; readonly 'l': number },
+    layout: { readonly 'showTitleSlot': boolean; readonly 'valueClass': string; readonly 'variant'?: 'tile' }
+  ): ResolvedRolesGridValueModel {
+    const isTile = layout.variant === 'tile';
+    const metrics = isTile
+      ? [row.l.toFixed(2), row.c.toFixed(2), `${row.h.toFixed(0)}°`]
+      : [`L ${row.l.toFixed(2)}`, `C ${row.c.toFixed(2)}`, `H ${row.h.toFixed(0)}°`];
+    return new ResolvedRolesGridValueModel(
+      ResolvedRolesGridModelBuilder.containerClass(layout.showTitleSlot, isTile),
+      row.hex,
+      metrics
+    );
+  }
+};

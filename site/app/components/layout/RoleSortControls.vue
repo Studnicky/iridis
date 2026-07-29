@@ -18,7 +18,7 @@ const { roleSortKeys } = useIridis();
 const { send } = useIridisUiMachine();
 
 const addableOptions = computed(() => ROLE_SORT_FIELD_OPTIONS.filter((o) => !roleSortKeys.value.some((k) => k.field === o.value)));
-const newField = ref<RoleSortFieldType | undefined>(undefined);
+const newField = ref<RoleSortFieldType.Type | undefined>(undefined);
 
 function addKey(): void {
   if (newField.value === undefined) return;

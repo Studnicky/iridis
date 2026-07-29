@@ -3,7 +3,7 @@ import type { PaletteStateInterface } from '@studnicky/iridis/model';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 
-import type { CliConfigInterface } from './types/index.ts';
+import type { CliConfigInterface } from './interfaces/CliConfigInterface.ts';
 
 export class OutputWriter {
   async write(state: PaletteStateInterface, config: CliConfigInterface): Promise<readonly string[]> {

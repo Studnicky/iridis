@@ -8,7 +8,7 @@ import type { GalleryAlgorithmType, GalleryCandidateInterfaceType, GalleryHistog
  * gallery:extract run against ONLY this image's pixels); the combine stage
  * concatenates every entry's `dominantColorRecords` into the final palette.
  */
-export type UploadedImageInterfaceType = {
+export declare class UploadedImageInterfaceType {
   'algorithm': GalleryAlgorithmType;
   'candidates': GalleryCandidateInterfaceType[];
   'chromaRange': [number, number][];
@@ -24,4 +24,4 @@ export type UploadedImageInterfaceType = {
   'name': string;
   'selectedCandidateLabel': string | null;
   'src': string;
-};
+}

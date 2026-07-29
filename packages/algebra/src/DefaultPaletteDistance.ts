@@ -1,6 +1,6 @@
 import type { PaletteInterfaceType } from './types/index.ts';
 
-import { wrapHueDelta } from './WrapHueDelta.ts';
+import { WrapHueDelta } from './WrapHueDelta.ts';
 
 const HUE_NORMALIZATION_FACTOR = 180;
 
@@ -10,18 +10,22 @@ const HUE_NORMALIZATION_FACTOR = 180;
  * a full half-circle hue swing (180°) contributes the same magnitude as a
  * full l or c swing (comparable to l ∈ [0,1] and c ∈ [0,0.5]).
  */
-export const defaultPaletteDistance = (a: PaletteInterfaceType, b: PaletteInterfaceType): number => {
-  let total = 0;
-  for (const role of Object.keys(a)) {
-    const roleA = a[role];
-    const roleB = b[role];
-    if (roleA === undefined || roleB === undefined) {continue;}
+class DefaultPaletteDistance {
+  static of(a: PaletteInterfaceType, b: PaletteInterfaceType): number {
+    let total = 0;
+    for (const role of Object.keys(a)) {
+      const roleA = a[role];
+      const roleB = b[role];
+      if (roleA === undefined || roleB === undefined) {continue;}
 
-    const dl = roleA.l - roleB.l;
-    const dc = roleA.c - roleB.c;
-    const dh = wrapHueDelta(roleA.h - roleB.h) / HUE_NORMALIZATION_FACTOR;
+      const dl = roleA.l - roleB.l;
+      const dc = roleA.c - roleB.c;
+      const dh = WrapHueDelta.of(roleA.h - roleB.h) / HUE_NORMALIZATION_FACTOR;
 
-    total += Math.sqrt(dl * dl + dc * dc + dh * dh);
+      total += Math.sqrt(dl * dl + dc * dc + dh * dh);
+    }
+    return total;
   }
-  return total;
-};
+}
+
+export { DefaultPaletteDistance };

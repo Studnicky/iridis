@@ -16,33 +16,36 @@
  *   8. unhappy-paths       — missing prerequisite tasks, truncated pipelines, missing roles
  */
 
-import { test }    from 'node:test';
-import {
-  ScenarioRunner,
-  assert,
-  type ScenarioInterface,
-} from '../_runner/ScenarioRunner.ts';
-import { Engine }         from '@studnicky/iridis/engine';
-import { coreTasks }      from '@studnicky/iridis/tasks';
 import type {
+  ColorRecordInterfaceType,
   InputInterface,
   PaletteStateInterface,
+  PipelineContextInterface,
   PluginInterface,
-  TaskInterface,
+  TaskInterface
 } from '@studnicky/iridis';
-import {
-  vscodePlugin,
-  vscodeRoleSchema16,
-  expandTokens,
-  applyModifiers,
-  emitVscodeSemanticRules,
-  emitVscodeUiPalette,
-  emitVscodeThemeJson,
-} from '@studnicky/iridis-vscode';
 import type {
   SemanticRuleEntryInterfaceType,
   ThemeJsonInterfaceType,
+  TokenColorRuleInterfaceType
 } from '@studnicky/iridis-vscode/types';
+
+import {
+  applyModifiers,
+  emitVscodeSemanticRules,
+  emitVscodeThemeJson,
+  emitVscodeUiPalette,
+  expandTokens,
+  vscodePlugin,
+  vscodeRoleSchema16
+} from '@studnicky/iridis-vscode';
+import { consoleLogger, Engine }       from '@studnicky/iridis/engine';
+import { colorRecordFactory, luminance } from '@studnicky/iridis/math';
+import { coreTasks }                   from '@studnicky/iridis/tasks';
+import assert from 'node:assert/strict';
+import { test }    from 'node:test';
+
+import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -53,7 +56,7 @@ const SEEDS_SRGB: readonly string[] = [
   '#0d1117', '#e6edf3', '#161b22', '#7d8590',
   '#8b5cf6', '#a78bfa', '#22d3ee', '#34d399',
   '#fb7185', '#fbbf24', '#f59e0b', '#737373',
-  '#ef4444', '#facc15', '#3b82f6', '#10b981',
+  '#ef4444', '#facc15', '#3b82f6', '#10b981'
 ];
 
 /**
@@ -65,7 +68,7 @@ const SEEDS_WITH_P3: readonly string[] = [
   'color(display-p3 1.0 0.30 0.20)',
   '#a78bfa', '#22d3ee', '#34d399',
   '#fb7185', '#fbbf24', '#f59e0b', '#737373',
-  '#ef4444', '#facc15', '#3b82f6', '#10b981',
+  '#ef4444', '#facc15', '#3b82f6', '#10b981'
 ];
 
 /** Full hex pipeline (intake:hex) */
@@ -79,7 +82,7 @@ const PIPELINE_HEX: readonly string[] = [
   'vscode:applyModifiers',
   'emit:vscodeSemanticRules',
   'emit:vscodeUiPalette',
-  'emit:vscodeThemeJson',
+  'emit:vscodeThemeJson'
 ];
 
 /** Wide-gamut pipeline (intake:any handles both hex and p3 strings) */
@@ -93,25 +96,52 @@ const PIPELINE_ANY: readonly string[] = [
   'vscode:applyModifiers',
   'emit:vscodeSemanticRules',
   'emit:vscodeUiPalette',
-  'emit:vscodeThemeJson',
+  'emit:vscodeThemeJson'
 ];
 
 /** Build a fresh Engine with all core tasks + vscodePlugin adopted. */
-function makeEngine(): Engine {
-  const engine = new Engine();
-  for (const t of coreTasks) engine.tasks.register(t);
-  engine.adopt(vscodePlugin);
-  return engine;
-}
+class VscodeTestData {
+  static engine(): Engine {
+    const engine = new Engine();
+    for (const task of coreTasks) {engine.tasks.register(task);}
+    engine.adopt(vscodePlugin);
+    return engine;
+  }
 
-/** Run the full pipeline and return state. */
-async function runFull(
-  seeds: readonly string[],
-  pipeline: readonly string[] = PIPELINE_HEX,
-): Promise<PaletteStateInterface> {
-  const engine = makeEngine();
-  engine.pipeline(pipeline);
-  return engine.run({ 'colors': seeds, 'roles': vscodeRoleSchema16 } as InputInterface);
+  static get<T>(record: Readonly<Record<string, T>>, key: string): T | undefined {
+    if (!Object.hasOwn(record, key)) {return undefined;}
+    return record[key];
+  }
+
+  static runFull(
+    seeds: readonly string[],
+    pipeline: readonly string[] = PIPELINE_HEX
+  ): PaletteStateInterface {
+    const engine = VscodeTestData.engine();
+    engine.pipeline(pipeline);
+    return engine.run({ 'colors': seeds, 'roles': vscodeRoleSchema16 } as InputInterface);
+  }
+
+  /** Same as {@link runFull} but sets `input.runtime.framing` explicitly. */
+  static runFullWithFraming(
+    seeds: readonly string[],
+    framing: 'dark' | 'light' | undefined,
+    pipeline: readonly string[] = PIPELINE_HEX
+  ): PaletteStateInterface {
+    const engine = VscodeTestData.engine();
+    engine.pipeline(pipeline);
+    const input: InputInterface = {
+      'bypass':    undefined,
+      'colors':    seeds,
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     vscodeRoleSchema16,
+      'runtime':   { 'colorSpace': undefined, 'extra': undefined, 'framing': framing }
+    };
+    return engine.run(input);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -122,21 +152,18 @@ async function runFull(
 // must be an instance of its class and carry the correct manifest.name.
 // ---------------------------------------------------------------------------
 
-interface PluginShapeInput {
-  readonly plugin: PluginInterface;
+interface PluginShapeInputInterface {
+  readonly 'plugin': PluginInterface;
 }
-interface PluginShapeOutput {
-  readonly name:      string;
-  readonly version:   string;
-  readonly taskNames: readonly string[];
-}
+type PluginShapeOutput = {
+  readonly 'name':      string;
+  readonly 'taskNames': readonly string[];
+  readonly 'version':   string;
+};
 
-const pluginShapeScenarios: readonly ScenarioInterface<PluginShapeInput, PluginShapeOutput>[] = [
+const pluginShapeScenarios: readonly ScenarioRunner.ScenarioInterface<PluginShapeInputInterface, PluginShapeOutput>[] = [
   {
-    name: 'singleton exposes name version and five tasks',
-    kind: 'happy',
-    input: { plugin: vscodePlugin },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,          '[cell=1, scenario=singleton] no throw');
       assert.strictEqual(output!.name,    'vscode', '[cell=1, scenario=singleton] name');
       assert.strictEqual(output!.version, '0.1.0',  '[cell=1, scenario=singleton] version');
@@ -147,27 +174,27 @@ const pluginShapeScenarios: readonly ScenarioInterface<PluginShapeInput, PluginS
           'emit:vscodeThemeJson',
           'emit:vscodeUiPalette',
           'vscode:applyModifiers',
-          'vscode:expandTokens',
+          'vscode:expandTokens'
         ],
-        '[cell=1, scenario=singleton] all five task names',
+        '[cell=1, scenario=singleton] all five task names'
       );
     },
+    'input': { 'plugin': vscodePlugin },
+    'kind': 'happy',
+    'name': 'singleton exposes name version and five tasks'
   },
   {
-    name: 'vscodePlugin is a singleton class instance',
-    kind: 'happy',
-    input: { plugin: vscodePlugin },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=class-instance] no throw');
       assert.strictEqual(vscodePlugin.constructor.name, 'VscodePlugin', '[cell=1, scenario=class-instance] is VscodePlugin');
       assert.ok(output!.name.length > 0,              '[cell=1, scenario=class-instance] name non-empty');
     },
+    'input': { 'plugin': vscodePlugin },
+    'kind': 'happy',
+    'name': 'vscodePlugin is a singleton class instance'
   },
   {
-    name: 'each task is the correct class instance with matching manifest.name',
-    kind: 'happy',
-    input: { plugin: vscodePlugin },
-    assert(_output, error) {
+    'assert': function(_output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=task-classes] no throw');
       assert.strictEqual(expandTokens.constructor.name,            'ExpandTokens',            '[cell=1, scenario=task-classes] expandTokens class');
       assert.strictEqual(applyModifiers.constructor.name,          'ApplyModifiers',          '[cell=1, scenario=task-classes] applyModifiers class');
@@ -181,28 +208,31 @@ const pluginShapeScenarios: readonly ScenarioInterface<PluginShapeInput, PluginS
       assert.strictEqual(emitVscodeUiPalette.manifest.name,     'emit:vscodeUiPalette',        '[cell=1, scenario=task-classes] emitVscodeUiPalette manifest.name');
       assert.strictEqual(emitVscodeThemeJson.manifest.name,     'emit:vscodeThemeJson',        '[cell=1, scenario=task-classes] emitVscodeThemeJson manifest.name');
     },
+    'input': { 'plugin': vscodePlugin },
+    'kind': 'happy',
+    'name': 'each task is the correct class instance with matching manifest.name'
   },
   {
-    name: 'tasks() returns a fresh array on every call (not a shared reference)',
-    kind: 'edge',
-    input: { plugin: vscodePlugin },
-    assert(_output, error) {
+    'assert': function(_output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=tasks-fresh] no throw');
       const t1 = vscodePlugin.tasks();
       const t2 = vscodePlugin.tasks();
       assert.strictEqual(t1.length, 5, '[cell=1, scenario=tasks-fresh] length stable');
       assert.strictEqual(t2.length, 5, '[cell=1, scenario=tasks-fresh] second call length stable');
     },
-  },
+    'input': { 'plugin': vscodePlugin },
+    'kind': 'edge',
+    'name': 'tasks() returns a fresh array on every call (not a shared reference)'
+  }
 ];
 
-new ScenarioRunner<PluginShapeInput, PluginShapeOutput>(
+await new ScenarioRunner<PluginShapeInputInterface, PluginShapeOutput>(
   'VscodePlugin :: cell-1 :: plugin-shape',
-  (input) => ({
-    name:      input.plugin.name,
-    version:   input.plugin.version,
-    taskNames: input.plugin.tasks().map((t: TaskInterface) => t.name),
-  }),
+  (input) => {return {
+    'name':      input.plugin.name,
+    'taskNames': input.plugin.tasks().map((t: TaskInterface) => { const result = t.name; return result; }),
+    'version':   input.plugin.version
+  };}
 ).run(pluginShapeScenarios);
 
 // ---------------------------------------------------------------------------
@@ -216,22 +246,19 @@ new ScenarioRunner<PluginShapeInput, PluginShapeOutput>(
 //   - theme type ('dark' | 'light') is determined by background luminance
 // ---------------------------------------------------------------------------
 
-interface WorkbenchColorsInput {
-  readonly seeds:    readonly string[];
-  readonly pipeline: readonly string[];
-}
-interface WorkbenchColorsOutput {
-  readonly colors:         Record<string, string>;
-  readonly themeType:      string;
-  readonly colorCount:     number;
-}
+type WorkbenchColorsInput = {
+  readonly 'pipeline': readonly string[];
+  readonly 'seeds':    readonly string[];
+};
+type WorkbenchColorsOutput = {
+  readonly 'colorCount':     number;
+  readonly 'colors':         Record<string, string>;
+  readonly 'themeType':      string;
+};
 
-const workbenchColorsScenarios: readonly ScenarioInterface<WorkbenchColorsInput, WorkbenchColorsOutput>[] = [
+const workbenchColorsScenarios: readonly ScenarioRunner.ScenarioInterface<WorkbenchColorsInput, WorkbenchColorsOutput>[] = [
   {
-    name: 'dark input palette produces dark themeType and populates key slots',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB, pipeline: PIPELINE_HEX },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,       '[cell=2, scenario=dark-palette] no throw');
       assert.strictEqual(output!.themeType, 'dark', '[cell=2, scenario=dark-palette] themeType dark');
       assert.ok(output!.colorCount >= 50,         '[cell=2, scenario=dark-palette] at least 50 colors');
@@ -248,24 +275,24 @@ const workbenchColorsScenarios: readonly ScenarioInterface<WorkbenchColorsInput,
       assert.ok('errorForeground'          in output!.colors, '[cell=2, scenario=dark-palette] errorForeground present');
       assert.ok('focusBorder'              in output!.colors, '[cell=2, scenario=dark-palette] focusBorder present');
     },
+    'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'dark input palette produces dark themeType and populates key slots'
   },
   {
-    name: 'all workbench color values are strings',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB, pipeline: PIPELINE_HEX },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=all-strings] no throw');
       for (const [slot, value] of Object.entries(output!.colors)) {
         assert.strictEqual(typeof value, 'string', `[cell=2, scenario=all-strings] slot ${slot} is a string`);
         assert.ok(value.length > 0, `[cell=2, scenario=all-strings] slot ${slot} is non-empty`);
       }
     },
+    'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'all workbench color values are strings'
   },
   {
-    name: 'sRGB-only seeds produce hex or P3 strings (never empty) for all workbench slots',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB, pipeline: PIPELINE_HEX },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=srgb-shape] no throw');
       // Role-resolution math may re-derive colors through OKLCH and surface displayP3
       // even when the raw input seed is a plain hex string (e.g. ensureContrast can
@@ -277,16 +304,16 @@ const workbenchColorsScenarios: readonly ScenarioInterface<WorkbenchColorsInput,
       for (const [slot, value] of Object.entries(output!.colors)) {
         assert.ok(
           hexPattern.test(value) || p3Pattern.test(value),
-          `[cell=2, scenario=srgb-shape] slot ${slot} must be hex or P3 notation, got: ${value}`,
+          `[cell=2, scenario=srgb-shape] slot ${slot} must be hex or P3 notation, got: ${value}`
         );
       }
     },
+    'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'sRGB-only seeds produce hex or P3 strings (never empty) for all workbench slots'
   },
   {
-    name: 'math-derived slots produce 6- or 8-digit sRGB hex even with wide-gamut input',
-    kind: 'edge',
-    input: { seeds: SEEDS_WITH_P3, pipeline: PIPELINE_ANY },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=math-derived-hex] no throw');
       const mathDerivedSlots = [
         'activityBar.background',
@@ -319,67 +346,70 @@ const workbenchColorsScenarios: readonly ScenarioInterface<WorkbenchColorsInput,
         'terminal.ansiBrightMagenta',
         'terminal.ansiBrightRed',
         'terminal.ansiBrightYellow',
-        'titleBar.activeForeground',
+        'titleBar.activeForeground'
       ];
       for (const slot of mathDerivedSlots) {
-        const value = output!.colors[slot];
+        const value = VscodeTestData.get(output!.colors, slot);
         assert.ok(typeof value === 'string',          `[cell=2, scenario=math-derived-hex] ${slot} is a string`);
         assert.ok(!value.includes('display-p3'),      `[cell=2, scenario=math-derived-hex] ${slot} must not contain display-p3, got ${value}`);
         assert.match(value, /^#[0-9a-f]{6,8}$/,      `[cell=2, scenario=math-derived-hex] ${slot} must be 6- or 8-digit hex, got ${value}`);
       }
     },
+    'input': { 'pipeline': PIPELINE_ANY, 'seeds': SEEDS_WITH_P3 },
+    'kind': 'edge',
+    'name': 'math-derived slots produce 6- or 8-digit sRGB hex even with wide-gamut input'
   },
   {
-    name: 'direct-passthrough accent slots emit color(display-p3 ...) for wide-gamut input',
-    kind: 'edge',
-    input: { seeds: SEEDS_WITH_P3, pipeline: PIPELINE_ANY },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=p3-passthrough] no throw');
       const p3Pattern = /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+\)$/;
       // editorCursor.foreground = direct keyword (accent) passthrough
       assert.match(
-        output!.colors['editorCursor.foreground'] ?? '',
+        VscodeTestData.get(output!.colors, 'editorCursor.foreground') ?? '',
         p3Pattern,
-        '[cell=2, scenario=p3-passthrough] editorCursor.foreground emits P3 for wide-gamut accent',
+        '[cell=2, scenario=p3-passthrough] editorCursor.foreground emits P3 for wide-gamut accent'
       );
       // tab.activeBorder = direct keyword passthrough
       assert.match(
-        output!.colors['tab.activeBorder'] ?? '',
+        VscodeTestData.get(output!.colors, 'tab.activeBorder') ?? '',
         p3Pattern,
-        '[cell=2, scenario=p3-passthrough] tab.activeBorder emits P3 for wide-gamut accent',
+        '[cell=2, scenario=p3-passthrough] tab.activeBorder emits P3 for wide-gamut accent'
       );
       // activityBarBadge.background = direct keyword passthrough
       assert.match(
-        output!.colors['activityBarBadge.background'] ?? '',
+        VscodeTestData.get(output!.colors, 'activityBarBadge.background') ?? '',
         p3Pattern,
-        '[cell=2, scenario=p3-passthrough] activityBarBadge.background emits P3 for wide-gamut accent',
+        '[cell=2, scenario=p3-passthrough] activityBarBadge.background emits P3 for wide-gamut accent'
       );
     },
+    'input': { 'pipeline': PIPELINE_ANY, 'seeds': SEEDS_WITH_P3 },
+    'kind': 'edge',
+    'name': 'direct-passthrough accent slots emit color(display-p3 ...) for wide-gamut input'
   },
   {
-    name: 'terminal.ansiBrightWhite is always #ffffff regardless of palette',
-    kind: 'edge',
-    input: { seeds: SEEDS_SRGB, pipeline: PIPELINE_HEX },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=bright-white] no throw');
       assert.strictEqual(
-        output!.colors['terminal.ansiBrightWhite'],
+        VscodeTestData.get(output!.colors, 'terminal.ansiBrightWhite'),
         '#ffffff',
-        '[cell=2, scenario=bright-white] terminal.ansiBrightWhite is #ffffff',
+        '[cell=2, scenario=bright-white] terminal.ansiBrightWhite is #ffffff'
       );
     },
-  },
+    'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
+    'kind': 'edge',
+    'name': 'terminal.ansiBrightWhite is always #ffffff regardless of palette'
+  }
 ];
 
-new ScenarioRunner<WorkbenchColorsInput, WorkbenchColorsOutput>(
+await new ScenarioRunner<WorkbenchColorsInput, WorkbenchColorsOutput>(
   'VscodePlugin :: cell-2 :: workbench-colors',
-  async (input) => {
-    const state     = await runFull(input.seeds, input.pipeline);
+  (input) => {
+    const state     = VscodeTestData.runFull(input.seeds, input.pipeline);
     const colors    = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
     const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
     const themeType = (themeJson?.type as string | undefined) ?? 'unknown';
-    return { colors, themeType, colorCount: Object.keys(colors).length };
-  },
+    return { 'colorCount': Object.keys(colors).length, 'colors': colors, 'themeType': themeType };
+  }
 ).run(workbenchColorsScenarios);
 
 // ---------------------------------------------------------------------------
@@ -396,117 +426,119 @@ new ScenarioRunner<WorkbenchColorsInput, WorkbenchColorsOutput>(
 // and additionally merges FONT_STYLES for base-token types.
 // ---------------------------------------------------------------------------
 
-interface SemanticRulesInput {
-  readonly seeds: readonly string[];
-}
-interface SemanticRulesOutput {
-  readonly metaRules:   Record<string, SemanticRuleEntryInterfaceType>;
-  readonly outputRules: Record<string, SemanticRuleEntryInterfaceType>;
-}
+type SemanticRulesInput = {
+  readonly 'seeds': readonly string[];
+};
+type SemanticRulesOutput = {
+  readonly 'metaRules':   Record<string, SemanticRuleEntryInterfaceType>;
+  readonly 'outputRules': Record<string, SemanticRuleEntryInterfaceType>;
+};
 
-const semanticRulesScenarios: readonly ScenarioInterface<SemanticRulesInput, SemanticRulesOutput>[] = [
+const semanticRulesScenarios: readonly ScenarioRunner.ScenarioInterface<SemanticRulesInput, SemanticRulesOutput>[] = [
   {
-    name: 'metadata contains 27 base rules and 270 modifier-selector rules',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=rule-count] no throw');
       const selectors    = Object.keys(output!.metaRules);
-      const baseRules    = selectors.filter((s) => !s.includes('.'));
-      const modRules     = selectors.filter((s) => s.includes('.'));
+      const baseRules    = selectors.filter((s) => {return !s.includes('.');});
+      const modRules     = selectors.filter((s) => { const result = s.includes('.'); return result; });
       assert.strictEqual(baseRules.length, 27,  '[cell=3, scenario=rule-count] 27 base rules');
       assert.strictEqual(modRules.length,  270, '[cell=3, scenario=rule-count] 270 modifier-selector rules');
     },
+    'input': { 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'metadata contains 27 base rules and 270 modifier-selector rules'
   },
   {
-    name: 'every base rule carries a foreground string',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=base-foreground] no throw');
-      const baseSelectors = Object.keys(output!.metaRules).filter((s) => !s.includes('.'));
+      const baseSelectors = Object.keys(output!.metaRules).filter((s) => {return !s.includes('.');});
       for (const sel of baseSelectors) {
-        const rule = output!.metaRules[sel];
+        const rule = VscodeTestData.get(output!.metaRules, sel);
         assert.ok(rule !== undefined,                   `[cell=3, scenario=base-foreground] rule exists for ${sel}`);
         assert.ok(typeof rule.foreground === 'string',  `[cell=3, scenario=base-foreground] ${sel} has foreground string`);
-        assert.ok((rule.foreground as string).length > 0, `[cell=3, scenario=base-foreground] ${sel} foreground non-empty`);
+        assert.ok((rule.foreground).length > 0, `[cell=3, scenario=base-foreground] ${sel} foreground non-empty`);
       }
     },
+    'input': { 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'every base rule carries a foreground string'
   },
   {
-    name: 'modifier selectors carry fontStyle where MODIFIER_TRANSFORMS specifies it',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=font-style] no throw');
       // 'declaration' transform has fontStyle: 'bold'
       const declBold = Object.entries(output!.metaRules)
-        .filter(([sel]) => sel.endsWith('.declaration'))
-        .some(([, rule]) => rule.fontStyle === 'bold');
+        .filter(([sel]) => { const result = sel.endsWith('.declaration'); return result; })
+        .some(([, rule]) => {return rule.fontStyle === 'bold';});
       assert.ok(declBold, '[cell=3, scenario=font-style] declaration modifier emits fontStyle bold');
       // 'deprecated' transform has fontStyle: 'strikethrough'
       const deprStrike = Object.entries(output!.metaRules)
-        .filter(([sel]) => sel.endsWith('.deprecated'))
-        .some(([, rule]) => rule.fontStyle === 'strikethrough');
+        .filter(([sel]) => { const result = sel.endsWith('.deprecated'); return result; })
+        .some(([, rule]) => {return rule.fontStyle === 'strikethrough';});
       assert.ok(deprStrike, '[cell=3, scenario=font-style] deprecated modifier emits fontStyle strikethrough');
     },
+    'input': { 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'modifier selectors carry fontStyle where MODIFIER_TRANSFORMS specifies it'
   },
   {
-    name: 'outputs.vscode.semanticTokenRules has at least 23 entries and comment rule exists',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                      '[cell=3, scenario=output-rules] no throw');
       assert.ok(Object.keys(output!.outputRules).length >= 23, '[cell=3, scenario=output-rules] at least 23 output rules');
-      const commentRule = output!.outputRules['comment'];
+      const commentRule = output!.outputRules.comment;
       assert.ok(commentRule !== undefined,                      '[cell=3, scenario=output-rules] comment rule present');
       assert.ok(typeof commentRule.foreground === 'string',     '[cell=3, scenario=output-rules] comment rule has foreground');
     },
+    'input': { 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'outputs.vscode.semanticTokenRules has at least 23 entries and comment rule exists'
   },
   {
-    name: 'FONT_STYLES merges italic into comment selector in output rules',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=font-style-merge] no throw');
       // FONT_STYLES has comment → italic
-      const commentRule = output!.outputRules['comment'];
+      const commentRule = output!.outputRules.comment;
       assert.ok(commentRule !== undefined,             '[cell=3, scenario=font-style-merge] comment rule present');
       assert.strictEqual(commentRule.fontStyle, 'italic', '[cell=3, scenario=font-style-merge] comment fontStyle italic from FONT_STYLES');
     },
+    'input': { 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'FONT_STYLES merges italic into comment selector in output rules'
   },
   {
-    name: 'wide-gamut input: base rules carry P3 foreground for keyword base token',
-    kind: 'edge',
-    input: { seeds: SEEDS_WITH_P3 },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=p3-semantic] no throw');
       // The keyword base token is derived from the keyword role which carries P3
-      const keywordRule = output!.metaRules['keyword'];
+      const keywordRule = output!.metaRules.keyword;
       assert.ok(keywordRule !== undefined, '[cell=3, scenario=p3-semantic] keyword rule present');
       assert.ok(typeof keywordRule.foreground === 'string', '[cell=3, scenario=p3-semantic] keyword rule has foreground');
       // foreground may be hex (after ensureContrast re-derives via oklch) or P3 depending on
       // whether the contrast adjustment round-trips through P3; either way it must be a valid color string
       assert.ok(
-        /^#[0-9a-f]{6,8}$/.test(keywordRule.foreground as string)
-          || /^color\(display-p3/.test(keywordRule.foreground as string),
-        `[cell=3, scenario=p3-semantic] keyword foreground is a valid color string, got ${keywordRule.foreground}`,
+        /^#[0-9a-f]{6,8}$/.test(keywordRule.foreground)
+          || /^color\(display-p3/.test(keywordRule.foreground),
+        `[cell=3, scenario=p3-semantic] keyword foreground is a valid color string, got ${keywordRule.foreground}`
       );
     },
-  },
+    'input': { 'seeds': SEEDS_WITH_P3 },
+    'kind': 'edge',
+    'name': 'wide-gamut input: base rules carry P3 foreground for keyword base token'
+  }
 ];
 
-new ScenarioRunner<SemanticRulesInput, SemanticRulesOutput>(
+await new ScenarioRunner<SemanticRulesInput, SemanticRulesOutput>(
   'VscodePlugin :: cell-3 :: semantic-rules',
-  async (input) => {
+  (input) => {
     // Use PIPELINE_ANY to accept both seed sets
     const pipeline = input.seeds === SEEDS_WITH_P3 ? PIPELINE_ANY : PIPELINE_HEX;
-    const state    = await runFull(input.seeds, pipeline);
+    const state    = VscodeTestData.runFull(input.seeds, pipeline);
+    const metaRules = (state.metadata['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterfaceType>;
+    const outputRules = (state.outputs['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterfaceType>;
     return {
-      metaRules:   (state.metadata['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterfaceType>,
-      outputRules: (state.outputs['vscode:semanticTokenRules'] ?? {})  as Record<string, SemanticRuleEntryInterfaceType>,
+      'metaRules':   metaRules,
+      'outputRules': outputRules
     };
-  },
+  }
 ).run(semanticRulesScenarios);
 
 // ---------------------------------------------------------------------------
@@ -523,22 +555,19 @@ new ScenarioRunner<SemanticRulesInput, SemanticRulesOutput>(
 //   - tokenColors: array of { name, scope, settings } from SCOPE_MAPPINGS
 // ---------------------------------------------------------------------------
 
-interface ThemeJsonInput {
-  readonly seeds:     readonly string[];
-  readonly pipeline:  readonly string[];
-  readonly themeName?: string;
-}
-interface ThemeJsonOutput {
-  readonly themeJson:   ThemeJsonInterfaceType;
-  readonly workbench:   Record<string, string>;
-}
+type ThemeJsonInput = {
+  readonly 'pipeline':  readonly string[];
+  readonly 'seeds':     readonly string[];
+  readonly 'themeName'?: string;
+};
+type ThemeJsonOutput = {
+  readonly 'themeJson':   ThemeJsonInterfaceType;
+  readonly 'workbench':   Record<string, string>;
+};
 
-const themeJsonScenarios: readonly ScenarioInterface<ThemeJsonInput, ThemeJsonOutput>[] = [
+const themeJsonScenarios: readonly ScenarioRunner.ScenarioInterface<ThemeJsonInput, ThemeJsonOutput>[] = [
   {
-    name: 'assembled themeJson satisfies all shape invariants',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB, pipeline: PIPELINE_HEX },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                   '[cell=4, scenario=shape] no throw');
       const tj = output!.themeJson;
       assert.ok(typeof tj.name === 'string' && tj.name.length > 0,  '[cell=4, scenario=shape] name non-empty string');
@@ -551,90 +580,93 @@ const themeJsonScenarios: readonly ScenarioInterface<ThemeJsonInput, ThemeJsonOu
       assert.ok(Array.isArray(tj.tokenColors),                       '[cell=4, scenario=shape] tokenColors is array');
       assert.ok(tj.tokenColors.length > 0,                           '[cell=4, scenario=shape] tokenColors non-empty');
     },
+    'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'assembled themeJson satisfies all shape invariants'
   },
   {
-    name: 'themeJson.colors is the same object as outputs.vscode.workbenchColors',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB, pipeline: PIPELINE_HEX },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=colors-identity] no throw');
       assert.strictEqual(output!.themeJson.colors, output!.workbench, '[cell=4, scenario=colors-identity] themeJson.colors is same reference as workbenchColors');
     },
+    'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'themeJson.colors is the same object as outputs.vscode.workbenchColors'
   },
   {
-    name: 'themeJson.name defaults to Color Engine Theme when no metadata.themeName',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB, pipeline: PIPELINE_HEX },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                              '[cell=4, scenario=default-name] no throw');
       assert.strictEqual(output!.themeJson.name, 'Color Engine Theme', '[cell=4, scenario=default-name] default theme name');
     },
+    'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'themeJson.name defaults to Color Engine Theme when no metadata.themeName'
   },
   {
-    name: 'dark background produces dark themeJson.type',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB, pipeline: PIPELINE_HEX },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                 '[cell=4, scenario=dark-type] no throw');
       assert.strictEqual(output!.themeJson.type, 'dark',  '[cell=4, scenario=dark-type] type is dark for dark background');
     },
+    'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'dark background produces dark themeJson.type'
   },
   {
-    name: 'semanticTokenColors: font-styled rules are objects, plain rules are strings',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB, pipeline: PIPELINE_HEX },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=stc-shape] no throw');
       const stc = output!.themeJson.semanticTokenColors;
       // Find any object-form entry (a rule with fontStyle)
-      const objectEntries = Object.entries(stc).filter(([, v]) => typeof v === 'object');
-      const stringEntries = Object.entries(stc).filter(([, v]) => typeof v === 'string');
+      const objectEntries = Object.entries(stc).filter(([, value]) => {return typeof value === 'object';});
+      const stringEntries = Object.entries(stc).filter(([, value]) => {return typeof value === 'string';});
       assert.ok(objectEntries.length > 0,  '[cell=4, scenario=stc-shape] at least one object-form rule (has fontStyle)');
       assert.ok(stringEntries.length > 0,  '[cell=4, scenario=stc-shape] at least one string-form rule (plain foreground)');
-      for (const [sel, val] of objectEntries) {
-        const obj = val as { foreground?: string; fontStyle?: string };
-        assert.ok(typeof obj.fontStyle === 'string', `[cell=4, scenario=stc-shape] object rule ${sel} has fontStyle`);
+      for (const [selector, value] of objectEntries) {
+        assert.ok(typeof value === 'object' && typeof value.fontStyle === 'string', `[cell=4, scenario=stc-shape] object rule ${selector} has fontStyle`);
       }
     },
+    'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'semanticTokenColors: font-styled rules are objects, plain rules are strings'
   },
   {
-    name: 'tokenColors entries have name scope and settings.foreground',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB, pipeline: PIPELINE_HEX },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=token-color-shape] no throw');
       for (const entry of output!.themeJson.tokenColors) {
-        const e = entry as { name: string; scope: unknown; settings: { foreground?: string } };
-        assert.ok(typeof e.name === 'string',              `[cell=4, scenario=token-color-shape] entry has name`);
-        assert.ok(e.scope !== undefined,                   `[cell=4, scenario=token-color-shape] entry ${e.name} has scope`);
-        assert.ok(typeof e.settings.foreground === 'string', `[cell=4, scenario=token-color-shape] entry ${e.name} settings.foreground is string`);
-        assert.ok((e.settings.foreground as string).length > 0, `[cell=4, scenario=token-color-shape] entry ${e.name} settings.foreground non-empty`);
+        assert.ok(typeof entry.name === 'string',              '[cell=4, scenario=token-color-shape] entry has name');
+        assert.ok(entry.scope !== undefined,                   `[cell=4, scenario=token-color-shape] entry ${entry.name} has scope`);
+        assert.ok(typeof entry.settings.foreground === 'string', `[cell=4, scenario=token-color-shape] entry ${entry.name} settings.foreground is string`);
+        assert.ok((entry.settings.foreground).length > 0, `[cell=4, scenario=token-color-shape] entry ${entry.name} settings.foreground non-empty`);
       }
     },
+    'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'tokenColors entries have name scope and settings.foreground'
   },
   {
-    name: 'wide-gamut input: themeJson still satisfies shape invariants',
-    kind: 'edge',
-    input: { seeds: SEEDS_WITH_P3, pipeline: PIPELINE_ANY },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                '[cell=4, scenario=p3-shape] no throw');
       const tj = output!.themeJson;
       assert.strictEqual(tj.semanticHighlighting, true,  '[cell=4, scenario=p3-shape] semanticHighlighting true');
       assert.ok(Object.keys(tj.colors).length >= 50,     '[cell=4, scenario=p3-shape] colors populated');
       assert.ok(tj.tokenColors.length > 0,               '[cell=4, scenario=p3-shape] tokenColors non-empty');
     },
-  },
+    'input': { 'pipeline': PIPELINE_ANY, 'seeds': SEEDS_WITH_P3 },
+    'kind': 'edge',
+    'name': 'wide-gamut input: themeJson still satisfies shape invariants'
+  }
 ];
 
-new ScenarioRunner<ThemeJsonInput, ThemeJsonOutput>(
+await new ScenarioRunner<ThemeJsonInput, ThemeJsonOutput>(
   'VscodePlugin :: cell-4 :: theme-json-assembly',
-  async (input) => {
-    const state = await runFull(input.seeds, input.pipeline);
+  (input) => {
+    const state = VscodeTestData.runFull(input.seeds, input.pipeline);
+    const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType;
+    const workbench = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
     return {
-      themeJson: state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType,
-      workbench: (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>,
+      'themeJson': themeJson,
+      'workbench': workbench
     };
-  },
+  }
 ).run(themeJsonScenarios);
 
 // ---------------------------------------------------------------------------
@@ -646,83 +678,79 @@ new ScenarioRunner<ThemeJsonInput, ThemeJsonOutput>(
 // skipped. The 'comment' entry must exist (comment role always resolves).
 // ---------------------------------------------------------------------------
 
-interface TokenColorsInput {
-  readonly seeds: readonly string[];
-}
-interface TokenColorsOutput {
-  readonly tokenColors:  readonly { name: string; scope: unknown; settings: { foreground?: string } }[];
-  readonly commentEntry: { name: string; scope: unknown; settings: { foreground?: string } } | undefined;
+type TokenColorsInput = {
+  readonly 'seeds': readonly string[];
+};
+abstract class TokenColorsOutput {
+  abstract readonly 'commentEntry': TokenColorRuleInterfaceType | undefined;
+  abstract readonly 'tokenColors': readonly TokenColorRuleInterfaceType[];
 }
 
-const tokenColorsScenarios: readonly ScenarioInterface<TokenColorsInput, TokenColorsOutput>[] = [
+const tokenColorsScenarios: readonly ScenarioRunner.ScenarioInterface<TokenColorsInput, TokenColorsOutput>[] = [
   {
-    name: 'tokenColors array has entries and comment entry exists',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                            '[cell=5, scenario=has-entries] no throw');
       assert.ok(output!.tokenColors.length > 0,                      '[cell=5, scenario=has-entries] tokenColors non-empty');
       assert.ok(output!.commentEntry !== undefined,                   '[cell=5, scenario=has-entries] comment entry present');
-      assert.ok(output!.commentEntry!.settings.foreground !== undefined, '[cell=5, scenario=has-entries] comment has foreground');
+      assert.ok(output!.commentEntry.settings.foreground !== undefined, '[cell=5, scenario=has-entries] comment has foreground');
     },
+    'input': { 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'tokenColors array has entries and comment entry exists'
   },
   {
-    name: 'every tokenColors entry has a string scope or array scope',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=scope-shape] no throw');
       for (const entry of output!.tokenColors) {
         assert.ok(
           typeof entry.scope === 'string' || Array.isArray(entry.scope),
-          `[cell=5, scenario=scope-shape] entry ${entry.name} scope is string or array`,
+          `[cell=5, scenario=scope-shape] entry ${entry.name} scope is string or array`
         );
       }
     },
+    'input': { 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'every tokenColors entry has a string scope or array scope'
   },
   {
-    name: 'tokenColors comment entry foreground is a hex string for sRGB input',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=comment-hex] no throw');
       const fg = output!.commentEntry?.settings.foreground;
       assert.ok(typeof fg === 'string', '[cell=5, scenario=comment-hex] comment foreground is string');
-      assert.match(fg as string, /^#[0-9a-f]{6,8}$/, '[cell=5, scenario=comment-hex] comment foreground is hex for sRGB input');
+      assert.match(fg, /^#[0-9a-f]{6,8}$/, '[cell=5, scenario=comment-hex] comment foreground is hex for sRGB input');
     },
+    'input': { 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'tokenColors comment entry foreground is a hex string for sRGB input'
   },
   {
-    name: 'wide-gamut keyword tokenColors entry emits P3 foreground',
-    kind: 'edge',
-    input: { seeds: SEEDS_WITH_P3 },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=keyword-p3] no throw');
-      const kwEntry = output!.tokenColors.find((e) => e.name === 'keyword');
+      const kwEntry = output!.tokenColors.find((e) => {return e.name === 'keyword';});
       assert.ok(kwEntry !== undefined,              '[cell=5, scenario=keyword-p3] keyword entry present');
       assert.ok(typeof kwEntry.settings.foreground === 'string', '[cell=5, scenario=keyword-p3] keyword foreground is string');
       assert.match(
-        kwEntry.settings.foreground as string,
+        kwEntry.settings.foreground,
         /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+\)$/,
-        '[cell=5, scenario=keyword-p3] keyword tokenColor emits P3 for wide-gamut keyword role',
+        '[cell=5, scenario=keyword-p3] keyword tokenColor emits P3 for wide-gamut keyword role'
       );
     },
-  },
+    'input': { 'seeds': SEEDS_WITH_P3 },
+    'kind': 'edge',
+    'name': 'wide-gamut keyword tokenColors entry emits P3 foreground'
+  }
 ];
 
-new ScenarioRunner<TokenColorsInput, TokenColorsOutput>(
+await new ScenarioRunner<TokenColorsInput, TokenColorsOutput>(
   'VscodePlugin :: cell-5 :: token-colors',
-  async (input) => {
+  (input) => {
     const pipeline  = input.seeds === SEEDS_WITH_P3 ? PIPELINE_ANY : PIPELINE_HEX;
-    const state     = await runFull(input.seeds, pipeline);
+    const state     = VscodeTestData.runFull(input.seeds, pipeline);
     const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
-    const tokenColors = (themeJson?.tokenColors ?? []) as readonly {
-      name: string;
-      scope: unknown;
-      settings: { foreground?: string };
-    }[];
-    const commentEntry = tokenColors.find((e) => e.name === 'comment');
-    return { tokenColors, commentEntry };
-  },
+    const tokenColors = themeJson?.tokenColors ?? [];
+    const commentEntry = tokenColors.find((e) => {return e.name === 'comment';});
+    return { 'commentEntry': commentEntry, 'tokenColors': tokenColors };
+  }
 ).run(tokenColorsScenarios);
 
 // ---------------------------------------------------------------------------
@@ -736,77 +764,80 @@ new ScenarioRunner<TokenColorsInput, TokenColorsOutput>(
 //   - math-derived slots derived from keyword hex must NOT emit P3 form
 // ---------------------------------------------------------------------------
 
-interface P3PropagationInput {
-  readonly seeds: readonly string[];
-}
-interface P3PropagationOutput {
-  readonly keywordDisplayP3: boolean;
-  readonly cursorForeground: string;
-  readonly tabActiveBorder:  string;
-  readonly findMatchBg:      string;
+type P3PropagationInput = {
+  readonly 'seeds': readonly string[];
+};
+abstract class P3PropagationOutput {
+  abstract readonly 'cursorForeground': string;
+  abstract readonly 'findMatchBg': string;
+  abstract readonly 'keywordDisplayP3': boolean;
+  abstract readonly 'tabActiveBorder': string;
 }
 
-const p3PropagationScenarios: readonly ScenarioInterface<P3PropagationInput, P3PropagationOutput>[] = [
+const p3PropagationScenarios: readonly ScenarioRunner.ScenarioInterface<P3PropagationInput, P3PropagationOutput>[] = [
   {
-    name: 'wide-gamut keyword role carries displayP3 after resolve:roles',
-    kind: 'happy',
-    input: { seeds: SEEDS_WITH_P3 },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,              '[cell=6, scenario=keyword-p3] no throw');
       assert.strictEqual(output!.keywordDisplayP3, true, '[cell=6, scenario=keyword-p3] keyword.displayP3 defined');
     },
+    'input': { 'seeds': SEEDS_WITH_P3 },
+    'kind': 'happy',
+    'name': 'wide-gamut keyword role carries displayP3 after resolve:roles'
   },
   {
-    name: 'direct keyword passthrough slots emit color(display-p3 ...) form',
-    kind: 'happy',
-    input: { seeds: SEEDS_WITH_P3 },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=p3-direct] no throw');
       const p3 = /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+\)$/;
       assert.match(output!.cursorForeground, p3,  '[cell=6, scenario=p3-direct] editorCursor.foreground is P3');
       assert.match(output!.tabActiveBorder,  p3,  '[cell=6, scenario=p3-direct] tab.activeBorder is P3');
     },
+    'input': { 'seeds': SEEDS_WITH_P3 },
+    'kind': 'happy',
+    'name': 'direct keyword passthrough slots emit color(display-p3 ...) form'
   },
   {
-    name: 'template-string alpha slot uses keyword hex not P3',
-    kind: 'happy',
-    input: { seeds: SEEDS_WITH_P3 },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=alpha-hex] no throw');
       assert.match(
         output!.findMatchBg,
         /^#[0-9a-f]{8}$/,
-        '[cell=6, scenario=alpha-hex] editor.findMatchBackground is 8-digit hex (alpha suffix on hex)',
+        '[cell=6, scenario=alpha-hex] editor.findMatchBackground is 8-digit hex (alpha suffix on hex)'
       );
     },
+    'input': { 'seeds': SEEDS_WITH_P3 },
+    'kind': 'happy',
+    'name': 'template-string alpha slot uses keyword hex not P3'
   },
   {
-    name: 'sRGB-only seeds produce hex syntax in direct-passthrough keyword slots',
-    kind: 'edge',
-    input: { seeds: SEEDS_SRGB },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                        '[cell=6, scenario=no-p3] no throw');
       assert.strictEqual(output!.keywordDisplayP3, false,         '[cell=6, scenario=no-p3] sRGB keyword has no displayP3');
       assert.match(output!.cursorForeground, /^#[0-9a-f]{6,8}$/, '[cell=6, scenario=no-p3] editorCursor.foreground is hex for sRGB keyword');
       assert.match(output!.tabActiveBorder,  /^#[0-9a-f]{6,8}$/, '[cell=6, scenario=no-p3] tab.activeBorder is hex for sRGB keyword');
     },
-  },
+    'input': { 'seeds': SEEDS_SRGB },
+    'kind': 'edge',
+    'name': 'sRGB-only seeds produce hex syntax in direct-passthrough keyword slots'
+  }
 ];
 
-new ScenarioRunner<P3PropagationInput, P3PropagationOutput>(
+await new ScenarioRunner<P3PropagationInput, P3PropagationOutput>(
   'VscodePlugin :: cell-6 :: p3-propagation',
-  async (input) => {
+  (input) => {
     const pipeline = input.seeds === SEEDS_WITH_P3 ? PIPELINE_ANY : PIPELINE_HEX;
-    const state    = await runFull(input.seeds, pipeline);
-    const keyword  = state.roles['keyword'];
+    const state    = VscodeTestData.runFull(input.seeds, pipeline);
+    const keyword  = state.roles.keyword;
     const colors   = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
+    const cursorForeground = VscodeTestData.get(colors, 'editorCursor.foreground') ?? '';
+    const findMatchBackground = VscodeTestData.get(colors, 'editor.findMatchBackground') ?? '';
+    const tabActiveBorder = VscodeTestData.get(colors, 'tab.activeBorder') ?? '';
     return {
-      keywordDisplayP3: keyword?.displayP3 !== undefined,
-      cursorForeground: colors['editorCursor.foreground'] ?? '',
-      tabActiveBorder:  colors['tab.activeBorder']        ?? '',
-      findMatchBg:      colors['editor.findMatchBackground'] ?? '',
+      'cursorForeground': cursorForeground,
+      'findMatchBg':      findMatchBackground,
+      'keywordDisplayP3': keyword?.displayP3 !== undefined,
+      'tabActiveBorder':  tabActiveBorder
     };
-  },
+  }
 ).run(p3PropagationScenarios);
 
 // ---------------------------------------------------------------------------
@@ -817,12 +848,12 @@ new ScenarioRunner<P3PropagationInput, P3PropagationOutput>(
 // Invariant must hold even when the keyword role is driven out of sRGB gamut.
 // ---------------------------------------------------------------------------
 
-interface MathDerivedInput {
-  readonly seeds: readonly string[];
-}
-interface MathDerivedOutput {
-  readonly slots: Record<string, string>;
-}
+type MathDerivedInput = {
+  readonly 'seeds': readonly string[];
+};
+type MathDerivedOutput = {
+  readonly 'slots': Record<string, string>;
+};
 
 const MATH_DERIVED_SLOTS = [
   'activityBar.background',
@@ -855,52 +886,52 @@ const MATH_DERIVED_SLOTS = [
   'terminal.ansiBrightMagenta',
   'terminal.ansiBrightRed',
   'terminal.ansiBrightYellow',
-  'titleBar.activeForeground',
+  'titleBar.activeForeground'
 ] as const;
 
-const mathDerivedScenarios: readonly ScenarioInterface<MathDerivedInput, MathDerivedOutput>[] = [
+const mathDerivedScenarios: readonly ScenarioRunner.ScenarioInterface<MathDerivedInput, MathDerivedOutput>[] = [
   {
-    name: 'sRGB input: math-derived slots are all 6- or 8-digit hex',
-    kind: 'happy',
-    input: { seeds: SEEDS_SRGB },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=7, scenario=srgb-hex] no throw');
       for (const slot of MATH_DERIVED_SLOTS) {
-        const value = output!.slots[slot];
+        const value = VscodeTestData.get(output!.slots, slot);
         assert.ok(typeof value === 'string',     `[cell=7, scenario=srgb-hex] ${slot} is string`);
         assert.ok(!value.includes('display-p3'), `[cell=7, scenario=srgb-hex] ${slot} no P3`);
         assert.match(value, /^#[0-9a-f]{6,8}$/, `[cell=7, scenario=srgb-hex] ${slot} is hex`);
       }
     },
+    'input': { 'seeds': SEEDS_SRGB },
+    'kind': 'happy',
+    'name': 'sRGB input: math-derived slots are all 6- or 8-digit hex'
   },
   {
-    name: 'wide-gamut input: math-derived slots remain 6- or 8-digit hex (P3 cannot survive alpha-suffix)',
-    kind: 'edge',
-    input: { seeds: SEEDS_WITH_P3 },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=7, scenario=p3-input-hex] no throw');
       for (const slot of MATH_DERIVED_SLOTS) {
-        const value = output!.slots[slot];
+        const value = VscodeTestData.get(output!.slots, slot);
         assert.ok(typeof value === 'string',     `[cell=7, scenario=p3-input-hex] ${slot} is string`);
         assert.ok(!value.includes('display-p3'), `[cell=7, scenario=p3-input-hex] ${slot} no P3, got ${value}`);
         assert.match(value, /^#[0-9a-f]{6,8}$/, `[cell=7, scenario=p3-input-hex] ${slot} is hex, got ${value}`);
       }
     },
-  },
+    'input': { 'seeds': SEEDS_WITH_P3 },
+    'kind': 'edge',
+    'name': 'wide-gamut input: math-derived slots remain 6- or 8-digit hex (P3 cannot survive alpha-suffix)'
+  }
 ];
 
-new ScenarioRunner<MathDerivedInput, MathDerivedOutput>(
+await new ScenarioRunner<MathDerivedInput, MathDerivedOutput>(
   'VscodePlugin :: cell-7 :: math-derived-slots',
-  async (input) => {
+  (input) => {
     const pipeline = input.seeds === SEEDS_WITH_P3 ? PIPELINE_ANY : PIPELINE_HEX;
-    const state    = await runFull(input.seeds, pipeline);
+    const state    = VscodeTestData.runFull(input.seeds, pipeline);
     const colors   = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
     const slots: Record<string, string> = {};
     for (const slot of MATH_DERIVED_SLOTS) {
       slots[slot] = colors[slot] ?? '';
     }
-    return { slots };
-  },
+    return { 'slots': slots };
+  }
 ).run(mathDerivedScenarios);
 
 // ---------------------------------------------------------------------------
@@ -910,23 +941,34 @@ new ScenarioRunner<MathDerivedInput, MathDerivedOutput>(
 // slot they read is absent. This cell exercises each throw path.
 // ---------------------------------------------------------------------------
 
-interface UnhappyInput {
-  readonly description: string;
-  readonly run:         () => Promise<unknown>;
-}
-interface UnhappyOutput {
-  /** never populated — always expect error */
-  readonly never: never;
+interface UnhappyInputInterface {
+  readonly 'description': string;
+  readonly 'run':         () => PaletteStateInterface;
 }
 
-const unhappyScenarios: readonly ScenarioInterface<UnhappyInput, UnhappyOutput>[] = [
+class UnhappyScenario {
+  static execute(input: UnhappyInputInterface): PaletteStateInterface {
+    if (typeof input.run !== 'function') {
+      throw new TypeError('Unhappy scenario requires an executable run function');
+    }
+    return input.run();
+  }
+}
+
+const unhappyScenarios: readonly ScenarioRunner.ScenarioInterface<UnhappyInputInterface, PaletteStateInterface>[] = [
   {
-    name: 'vscode:applyModifiers without expandTokens: pipeline rejects missing requires',
-    kind: 'unhappy',
-    input: {
-      description: 'applyModifiers manifest.requires vscode:expandTokens — engine.pipeline enforces this',
-      run: async () => {
-        const engine = makeEngine();
+    'assert': function(_output, error) {
+      assert.ok(error instanceof Error, '[cell=8, scenario=apply-no-expand] expected throw from pipeline requires check');
+      assert.match(
+        (error).message,
+        /vscode:applyModifiers.*vscode:expandTokens|requires.*vscode:expandTokens/,
+        '[cell=8, scenario=apply-no-expand] error names the dependent and the missing requirement'
+      );
+    },
+    'input': {
+      'description': 'applyModifiers manifest.requires vscode:expandTokens — engine.pipeline enforces this',
+      'run': () => {
+        const engine = VscodeTestData.engine();
         // Engine.pipeline() enforces manifest.requires at build-time:
         // 'vscode:applyModifiers' requires 'vscode:expandTokens' which is absent here.
         engine.pipeline([
@@ -935,55 +977,55 @@ const unhappyScenarios: readonly ScenarioInterface<UnhappyInput, UnhappyOutput>[
           'expand:family',
           'enforce:contrast',
           'derive:variant',
-          'vscode:applyModifiers',
+          'vscode:applyModifiers'
         ]);
         return engine.run({ 'colors': SEEDS_SRGB, 'roles': vscodeRoleSchema16 } as InputInterface);
-      },
+      }
     },
-    assert(_output, error) {
-      assert.ok(error instanceof Error, '[cell=8, scenario=apply-no-expand] expected throw from pipeline requires check');
-      assert.match(
-        (error as Error).message,
-        /vscode:applyModifiers.*vscode:expandTokens|requires.*vscode:expandTokens/,
-        '[cell=8, scenario=apply-no-expand] error names the dependent and the missing requirement',
-      );
-    },
+    'kind': 'unhappy',
+    'name': 'vscode:applyModifiers without expandTokens: pipeline rejects missing requires'
   },
   {
-    name: 'emit:vscodeSemanticRules without applyModifiers: pipeline rejects missing requires',
-    kind: 'unhappy',
-    input: {
-      description: 'emitVscodeSemanticRules manifest.requires vscode:applyModifiers — engine.pipeline enforces this',
-      run: async () => {
-        const engine = makeEngine();
-        engine.pipeline([
-          'intake:hex',
-          'resolve:roles',
-          'expand:family',
-          'enforce:contrast',
-          'derive:variant',
-          'vscode:expandTokens',
-          'emit:vscodeSemanticRules',
-        ]);
-        return engine.run({ 'colors': SEEDS_SRGB, 'roles': vscodeRoleSchema16 } as InputInterface);
-      },
-    },
-    assert(_output, error) {
+    'assert': function(_output, error) {
       assert.ok(error instanceof Error, '[cell=8, scenario=semantic-no-apply] expected throw from pipeline requires check');
       assert.match(
-        (error as Error).message,
+        (error).message,
         /emit:vscodeSemanticRules.*vscode:applyModifiers|requires.*vscode:applyModifiers/,
-        '[cell=8, scenario=semantic-no-apply] error names the dependent and the missing requirement',
+        '[cell=8, scenario=semantic-no-apply] error names the dependent and the missing requirement'
       );
     },
+    'input': {
+      'description': 'emitVscodeSemanticRules manifest.requires vscode:applyModifiers — engine.pipeline enforces this',
+      'run': () => {
+        const engine = VscodeTestData.engine();
+        engine.pipeline([
+          'intake:hex',
+          'resolve:roles',
+          'expand:family',
+          'enforce:contrast',
+          'derive:variant',
+          'vscode:expandTokens',
+          'emit:vscodeSemanticRules'
+        ]);
+        return engine.run({ 'colors': SEEDS_SRGB, 'roles': vscodeRoleSchema16 } as InputInterface);
+      }
+    },
+    'kind': 'unhappy',
+    'name': 'emit:vscodeSemanticRules without applyModifiers: pipeline rejects missing requires'
   },
   {
-    name: 'emit:vscodeThemeJson without uiPalette: pipeline rejects missing requires',
-    kind: 'unhappy',
-    input: {
-      description: 'emitVscodeThemeJson requires emit:vscodeUiPalette — engine.pipeline enforces this',
-      run: async () => {
-        const engine = makeEngine();
+    'assert': function(_output, error) {
+      assert.ok(error instanceof Error, '[cell=8, scenario=theme-no-palette] expected throw from pipeline requires check');
+      assert.match(
+        (error).message,
+        /emit:vscodeThemeJson.*emit:vscodeUiPalette|requires.*emit:vscodeUiPalette/,
+        '[cell=8, scenario=theme-no-palette] error names the dependent and the missing requirement'
+      );
+    },
+    'input': {
+      'description': 'emitVscodeThemeJson requires emit:vscodeUiPalette — engine.pipeline enforces this',
+      'run': () => {
+        const engine = VscodeTestData.engine();
         engine.pipeline([
           'intake:hex',
           'resolve:roles',
@@ -993,27 +1035,27 @@ const unhappyScenarios: readonly ScenarioInterface<UnhappyInput, UnhappyOutput>[
           'vscode:expandTokens',
           'vscode:applyModifiers',
           'emit:vscodeSemanticRules',
-          'emit:vscodeThemeJson',
+          'emit:vscodeThemeJson'
         ]);
         return engine.run({ 'colors': SEEDS_SRGB, 'roles': vscodeRoleSchema16 } as InputInterface);
-      },
+      }
     },
-    assert(_output, error) {
-      assert.ok(error instanceof Error, '[cell=8, scenario=theme-no-palette] expected throw from pipeline requires check');
-      assert.match(
-        (error as Error).message,
-        /emit:vscodeThemeJson.*emit:vscodeUiPalette|requires.*emit:vscodeUiPalette/,
-        '[cell=8, scenario=theme-no-palette] error names the dependent and the missing requirement',
-      );
-    },
+    'kind': 'unhappy',
+    'name': 'emit:vscodeThemeJson without uiPalette: pipeline rejects missing requires'
   },
   {
-    name: 'emit:vscodeThemeJson without semanticRules: pipeline rejects missing requires',
-    kind: 'unhappy',
-    input: {
-      description: 'emitVscodeThemeJson requires emit:vscodeSemanticRules — engine.pipeline enforces this',
-      run: async () => {
-        const engine = makeEngine();
+    'assert': function(_output, error) {
+      assert.ok(error instanceof Error, '[cell=8, scenario=theme-no-semantic] expected throw from pipeline requires check');
+      assert.match(
+        (error).message,
+        /emit:vscodeThemeJson.*emit:vscodeSemanticRules|requires.*emit:vscodeSemanticRules/,
+        '[cell=8, scenario=theme-no-semantic] error names the dependent and the missing requirement'
+      );
+    },
+    'input': {
+      'description': 'emitVscodeThemeJson requires emit:vscodeSemanticRules — engine.pipeline enforces this',
+      'run': () => {
+        const engine = VscodeTestData.engine();
         engine.pipeline([
           'intake:hex',
           'resolve:roles',
@@ -1023,26 +1065,26 @@ const unhappyScenarios: readonly ScenarioInterface<UnhappyInput, UnhappyOutput>[
           'vscode:expandTokens',
           'vscode:applyModifiers',
           'emit:vscodeUiPalette',
-          'emit:vscodeThemeJson',
+          'emit:vscodeThemeJson'
         ]);
         return engine.run({ 'colors': SEEDS_SRGB, 'roles': vscodeRoleSchema16 } as InputInterface);
-      },
+      }
     },
-    assert(_output, error) {
-      assert.ok(error instanceof Error, '[cell=8, scenario=theme-no-semantic] expected throw from pipeline requires check');
-      assert.match(
-        (error as Error).message,
-        /emit:vscodeThemeJson.*emit:vscodeSemanticRules|requires.*emit:vscodeSemanticRules/,
-        '[cell=8, scenario=theme-no-semantic] error names the dependent and the missing requirement',
-      );
-    },
+    'kind': 'unhappy',
+    'name': 'emit:vscodeThemeJson without semanticRules: pipeline rejects missing requires'
   },
   {
-    name: 'vscode:expandTokens without required roles (no intake or resolve) throws',
-    kind: 'unhappy',
-    input: {
-      description: 'expandTokens invoked with empty roles map',
-      run: async () => {
+    'assert': function(_output, error) {
+      assert.ok(error instanceof Error, '[cell=8, scenario=expand-no-roles] expected throw');
+      assert.match(
+        (error).message,
+        /ExpandTokens.*roles.*background|requires roles/,
+        '[cell=8, scenario=expand-no-roles] message names missing roles'
+      );
+    },
+    'input': {
+      'description': 'expandTokens invoked with empty roles map',
+      'run': () => {
         // Register only the vscode tasks, run expandTokens with no upstream
         const engine = new Engine();
         engine.adopt(vscodePlugin);
@@ -1056,25 +1098,223 @@ const unhappyScenarios: readonly ScenarioInterface<UnhappyInput, UnhappyOutput>[
           'maxColors': undefined,
           'metadata':  undefined,
           'roles':     vscodeRoleSchema16,
-          'runtime':   undefined,
-        } as InputInterface);
-      },
+          'runtime':   undefined
+        });
+      }
     },
-    assert(_output, error) {
-      assert.ok(error instanceof Error, '[cell=8, scenario=expand-no-roles] expected throw');
-      assert.match(
-        (error as Error).message,
-        /ExpandTokens.*roles.*background|requires roles/,
-        '[cell=8, scenario=expand-no-roles] message names missing roles',
-      );
-    },
-  },
+    'kind': 'unhappy',
+    'name': 'vscode:expandTokens without required roles (no intake or resolve) throws'
+  }
 ];
 
-new ScenarioRunner<UnhappyInput, UnhappyOutput>(
+await new ScenarioRunner<UnhappyInputInterface, PaletteStateInterface>(
   'VscodePlugin :: cell-8 :: unhappy-paths',
-  (input) => input.run() as Promise<UnhappyOutput>,
+  UnhappyScenario.execute
 ).run(unhappyScenarios);
+
+// ---------------------------------------------------------------------------
+// Cell 9 — runtime.framing selects the emitted surface
+//
+// `state.runtime.framing` must actually change what gets emitted:
+//   - unset: byte-identical to a run with no `runtime` field at all
+//     (framing is additive, not a breaking change for existing callers)
+//   - 'dark' vs 'light' over IDENTICAL seeds: different editor.background,
+//     different themeJson.type, AND different syntax-highlighting colors
+//     (comment tokenColor) — proving vscode:expandTokens / vscode:applyModifiers
+//     honor framing too, not just the two emit:* tasks
+//   - the 'light' request actually produces a light-appearing background
+//     (WCAG relative luminance > 0.5), not merely "some other" background
+// ---------------------------------------------------------------------------
+
+type FramingOutput = {
+  readonly 'colors':       Record<string, string>;
+  readonly 'commentForeground': string | undefined;
+  readonly 'themeType':         string;
+  readonly 'unsetColors':       Record<string, string>;
+};
+
+const framingScenarios: readonly ScenarioRunner.ScenarioInterface<'dark' | 'light' | undefined, FramingOutput>[] = [
+  {
+    'assert': function(output, error) {
+      assert.strictEqual(error, undefined, '[cell=9, scenario=unset] no throw');
+      assert.strictEqual(
+        VscodeTestData.get(output!.colors, 'editor.background'),
+        VscodeTestData.get(output!.unsetColors, 'editor.background'),
+        '[cell=9, scenario=unset] runtime.framing unset produces the same editor.background as omitting runtime entirely'
+      );
+    },
+    'input': undefined,
+    'kind': 'happy',
+    'name': 'framing unset is byte-identical to no runtime field at all'
+  },
+  {
+    'assert': function(output, error) {
+      assert.strictEqual(error, undefined, '[cell=9, scenario=dark] no throw');
+      assert.strictEqual(output!.themeType, 'dark', '[cell=9, scenario=dark] framing=dark on dark-appearing seeds keeps type dark');
+      assert.strictEqual(
+        VscodeTestData.get(output!.colors, 'editor.background'),
+        VscodeTestData.get(output!.unsetColors, 'editor.background'),
+        '[cell=9, scenario=dark] framing=dark matches the naturally-dark seeds: same background as no framing'
+      );
+    },
+    'input': 'dark',
+    'kind': 'happy',
+    'name': 'framing=dark on dark-appearing seeds leaves the surface unchanged'
+  },
+  {
+    'assert': function(output, error) {
+      assert.strictEqual(error, undefined, '[cell=9, scenario=light] no throw');
+      assert.strictEqual(output!.themeType, 'light', '[cell=9, scenario=light] framing=light produces type light');
+      assert.notStrictEqual(
+        VscodeTestData.get(output!.colors, 'editor.background'),
+        VscodeTestData.get(output!.unsetColors, 'editor.background'),
+        '[cell=9, scenario=light] framing=light produces a DIFFERENT editor.background than the unset/dark run'
+      );
+      const bgHex = VscodeTestData.get(output!.colors, 'editor.background') ?? '';
+      const bgRecord = colorRecordFactory.fromHex(bgHex.slice(0, 7));
+      const lum = luminance.apply(bgRecord);
+      assert.ok(lum > 0.5, `[cell=9, scenario=light] editor.background genuinely reads light: WCAG relative luminance ${lum.toFixed(3)} > 0.5`);
+    },
+    'input': 'light',
+    'kind': 'happy',
+    'name': 'framing=light on dark-appearing seeds selects a genuinely light-appearing variant surface'
+  }
+];
+
+await new ScenarioRunner<'dark' | 'light' | undefined, FramingOutput>(
+  'VscodePlugin :: cell-9 :: runtime-framing',
+  (framing) => {
+    const unsetState = VscodeTestData.runFull(SEEDS_SRGB, PIPELINE_HEX);
+    const unsetColors = (unsetState.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
+
+    const state = VscodeTestData.runFullWithFraming(SEEDS_SRGB, framing, PIPELINE_HEX);
+    const colors = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
+    const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
+    const commentEntry = themeJson?.tokenColors.find((e) => { return e.name === 'comment'; });
+
+    return {
+      'colors':            colors,
+      'commentForeground': commentEntry?.settings.foreground,
+      'themeType':         (themeJson?.type as string | undefined) ?? 'unknown',
+      'unsetColors':       unsetColors
+    };
+  }
+).run(framingScenarios);
+
+await test('VscodePlugin :: cell-9 :: runtime-framing :: framing=light changes syntax-highlighting colors too (not just workbench chrome)', () => {
+  const darkState  = VscodeTestData.runFullWithFraming(SEEDS_SRGB, 'dark',  PIPELINE_HEX);
+  const lightState = VscodeTestData.runFullWithFraming(SEEDS_SRGB, 'light', PIPELINE_HEX);
+
+  const darkThemeJson  = darkState.outputs['vscode:themeJson']  as ThemeJsonInterfaceType | undefined;
+  const lightThemeJson = lightState.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
+
+  const darkComment  = darkThemeJson?.tokenColors.find((e) => { return e.name === 'comment'; });
+  const lightComment = lightThemeJson?.tokenColors.find((e) => { return e.name === 'comment'; });
+
+  assert.ok(darkComment !== undefined && lightComment !== undefined, '[cell=9] comment tokenColors present in both runs');
+  assert.notStrictEqual(
+    darkComment.settings.foreground,
+    lightComment.settings.foreground,
+    '[cell=9] comment foreground (derived by vscode:expandTokens from the resolved framing surface) differs between framing=dark and framing=light'
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Cell 10 — theme-type reconciliation: emit:vscodeUiPalette and
+// emit:vscodeThemeJson must agree on light/dark for the same state.
+//
+// #767676 is a real, well-known crossover point: its WCAG relative
+// luminance is ~0.181 (reads dark under the 0.5 threshold) but its OKLCH
+// lightness is ~0.566 (reads light under the 0.5 threshold). Before this
+// fix, emit:vscodeUiPalette measured luminance (dark) while
+// emit:vscodeThemeJson measured OKLCH lightness (light) — a real
+// disagreement between the emitted workbench colors and the declared
+// theme `type`. Both now read the same FramingSurface.isLight measure,
+// so they agree.
+// ---------------------------------------------------------------------------
+
+class DirectTaskFixture {
+  /** Sixteen roles the vscode tasks require, independent of any role-schema clamp. */
+  static buildState(backgroundHex: string): PaletteStateInterface {
+    const hexes: Readonly<Record<string, string>> = {
+      'background': backgroundHex,
+      'comment':    '#6a737d',
+      'constant':   '#79c0ff',
+      'error':      '#f85149',
+      'foreground': '#e6edf3',
+      'function':   '#d2a8ff',
+      'info':       '#79c0ff',
+      'keyword':    '#8b5cf6',
+      'muted':      '#7d8590',
+      'number':     '#79c0ff',
+      'string':     '#a5d6ff',
+      'success':    '#3fb950',
+      'surface':    '#161b22',
+      'type':       '#22d3ee',
+      'variable':   '#ffa657',
+      'warning':    '#d29922'
+    };
+    const roles: Record<string, ColorRecordInterfaceType> = {};
+    for (const [name, hex] of Object.entries(hexes)) {
+      roles[name] = colorRecordFactory.fromHex(hex);
+    }
+
+    const input: InputInterface = {
+      'bypass':    undefined,
+      'colors':    [],
+      'contrast':  undefined,
+      'emit':      undefined,
+      'maxColors': undefined,
+      'metadata':  undefined,
+      'roles':     undefined,
+      'runtime':   undefined
+    };
+
+    return {
+      'colors':   [],
+      'input':    input,
+      'metadata': {},
+      'outputs':  {},
+      'roles':    roles,
+      'runtime':  { 'colorSpace': undefined, 'extra': undefined, 'framing': undefined },
+      'variants': {}
+    };
+  }
+
+  /** Runs the five vscode tasks directly (bypassing resolve:roles/enforce:contrast clamps) so an
+   *  intentionally-crafted crossover background survives unaltered into both emitters. */
+  static runDirect(backgroundHex: string): PaletteStateInterface {
+    const state = DirectTaskFixture.buildState(backgroundHex);
+    const engine = new Engine();
+    const context: PipelineContextInterface = {
+      'engine':    engine,
+      'logger':    consoleLogger,
+      'startedAt': Date.now(),
+      'tasks':     engine.tasks
+    };
+
+    expandTokens.run(state, context);
+    applyModifiers.run(state, context);
+    emitVscodeSemanticRules.run(state, context);
+    emitVscodeUiPalette.run(state, context);
+    emitVscodeThemeJson.run(state, context);
+
+    return state;
+  }
+}
+
+await test('VscodePlugin :: cell-10 :: theme-type-reconciliation :: #767676 (WCAG-dark, OKLCH-light) resolves to one consistent type', () => {
+  const state = DirectTaskFixture.runDirect('#767676');
+  const colors = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
+  const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
+
+  assert.strictEqual(colors['editor.background'], '#767676', '[cell=10] background passes through unaltered');
+  assert.strictEqual(
+    themeJson?.type,
+    'dark',
+    '[cell=10] emit:vscodeThemeJson agrees with WCAG relative luminance (0.181, below the 0.5 threshold), not OKLCH lightness (0.566, which alone would read light)'
+  );
+});
 
 // ---------------------------------------------------------------------------
 // --- Golden fixtures ---
@@ -1084,8 +1324,8 @@ new ScenarioRunner<UnhappyInput, UnhappyOutput>(
 // bare test since the assertion doesn't fit the single-subject table pattern.
 // ---------------------------------------------------------------------------
 
-test('VscodePlugin :: golden :: themeJson key set is stable across refactors', async () => {
-  const state = await runFull(SEEDS_SRGB, PIPELINE_HEX);
+await test('VscodePlugin :: golden :: themeJson key set is stable across refactors', () => {
+  const state = VscodeTestData.runFull(SEEDS_SRGB, PIPELINE_HEX);
   const tj    = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
 
   assert.ok(tj !== undefined, '[golden] themeJson present');
@@ -1107,7 +1347,7 @@ test('VscodePlugin :: golden :: themeJson key set is stable across refactors', a
     'focusBorder',
     'errorForeground',
     'warningForeground',
-    'gitDecoration.addedResourceForeground',
+    'gitDecoration.addedResourceForeground'
   ];
   for (const key of requiredColorKeys) {
     assert.ok(key in (tj?.colors ?? {}), `[golden] required color key present: ${key}`);
@@ -1118,12 +1358,12 @@ test('VscodePlugin :: golden :: themeJson key set is stable across refactors', a
   for (const type of requiredSemanticTypes) {
     assert.ok(
       type in (tj?.semanticTokenColors ?? {}),
-      `[golden] required semantic type present: ${type}`,
+      `[golden] required semantic type present: ${type}`
     );
   }
 
   // tokenColors must include keyword and comment entries
-  const tokenNames = (tj?.tokenColors ?? []).map((e) => (e as { name: string }).name);
+  const tokenNames = (tj?.tokenColors ?? []).map((e) => { const result = (e as { 'name': string }).name; return result; });
   assert.ok(tokenNames.includes('keyword'), '[golden] tokenColors includes keyword entry');
   assert.ok(tokenNames.includes('comment'), '[golden] tokenColors includes comment entry');
 });

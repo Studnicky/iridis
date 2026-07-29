@@ -17,37 +17,41 @@ import { contrastApca }   from '../../math/ContrastApca.ts';
 import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
 
-/**
- * Measures contrast for `algorithm`. APCA's Lc is signed — positive for
- * dark-text-on-light-bg, negative for light-text-on-dark-bg — but callers
- * compare against an always-positive `minRatio`, so the magnitude is what
- * is returned here (consistent with `ensureContrast`'s own APCA measure).
- */
-function measureContrast(
-  algorithm: ContrastAlgorithmType,
-  fg: ColorRecordInterfaceType,
-  bg: ColorRecordInterfaceType
-): number {
-  if (algorithm === 'apca') {
-    return Math.abs(contrastApca.apply(fg, bg));
+class ContrastMeasurement {
+  /**
+   * Measures contrast for `algorithm`. APCA's Lc is signed — positive for
+   * dark-text-on-light-bg, negative for light-text-on-dark-bg — but callers
+   * compare against an always-positive minimum ratio, so the magnitude is
+   * what is returned here (consistent with `ensureContrast`'s own APCA
+   * measure).
+   */
+  static measure(
+    algorithm: ContrastAlgorithmType,
+    fg: ColorRecordInterfaceType,
+    bg: ColorRecordInterfaceType
+  ): number {
+    if (algorithm === 'apca') {
+      return Math.abs(contrastApca.apply(fg, bg));
+    }
+    return contrastWcag21.apply(fg, bg);
   }
-  return contrastWcag21.apply(fg, bg);
-}
 
-/**
- * Converts `input.contrast.level` to a minimum WCAG 21 ratio floor.
- *
- * - `'AAA'` → 7.0 (WCAG 2.1 enhanced contrast for normal text)
- * - `'AA'`  → 4.5 (WCAG 2.1 minimum contrast for normal text)
- * - anything else → 1.0 (no floor; pair's own minRatio governs)
- *
- * When a pair's declared `minRatio` already exceeds this floor the pair's
- * value wins. The level is a global minimum; it never lowers a pair's ratio.
- */
-function levelFloor(level: string | undefined): number {
-  if (level === 'AAA') {return 7.0;}
-  if (level === 'AA')  {return 4.5;}
-  return 1.0;
+  /**
+   * Converts `input.contrast.level` to a minimum WCAG 21 ratio floor.
+   *
+   * - `'AAA'` → 7.0 (WCAG 2.1 enhanced contrast for normal text)
+   * - `'AA'`  → 4.5 (WCAG 2.1 minimum contrast for normal text)
+   * - anything else → 1.0 (no floor; pair's own minimum ratio governs)
+   *
+   * When a pair's declared minimum ratio already exceeds this floor the
+   * pair's value wins. The level is a global minimum; it never lowers a
+   * pair's ratio.
+   */
+  static levelFloor(level: string | undefined): number {
+    if (level === 'AAA') {return 7.0;}
+    if (level === 'AA')  {return 4.5;}
+    return 1.0;
+  }
 }
 
 class EnforceContrast implements TaskInterface {
@@ -62,11 +66,11 @@ class EnforceContrast implements TaskInterface {
     'writes':      ['roles', 'metadata[\'core:contrastReport\']']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const schemaPairs  = state.input.roles?.contrastPairs ?? [];
     const extraPairs   = state.input.contrast?.extra       ?? [];
     const defaultAlgo  = state.input.contrast?.algorithm   ?? 'wcag21';
-    const floor        = levelFloor(state.input.contrast?.level);
+    const floor        = ContrastMeasurement.levelFloor(state.input.contrast?.level);
 
     const allPairs: readonly ContrastPairInterfaceType[] = [...schemaPairs, ...extraPairs];
 
@@ -81,7 +85,7 @@ class EnforceContrast implements TaskInterface {
       const bgColor = state.roles[pair.background];
 
       if (fgColor === undefined || bgColor === undefined) {
-        ctx.logger.warn(
+        context.logger.warn(
           LogBody.create()
             .component('EnforceContrast')
             .operation('run')
@@ -96,17 +100,17 @@ class EnforceContrast implements TaskInterface {
         continue;
       }
 
-      const algo     = pair.algorithm ?? defaultAlgo;
+      const algo          = pair.algorithm ?? defaultAlgo;
       // input.contrast.level acts as a global floor; never lowers a pair's declared ratio.
-      const minRatio = Math.max(pair.minRatio, floor);
+      const minimumRatio  = Math.max(pair.minRatio, floor);
 
-      const ratio  = measureContrast(algo, fgColor, bgColor);
-      const passed = ratio >= minRatio;
+      const ratio  = ContrastMeasurement.measure(algo, fgColor, bgColor);
+      const passed = ratio >= minimumRatio;
 
       let adjusted = false;
 
       if (!passed) {
-        ctx.logger.info(
+        context.logger.info(
           LogBody.create()
             .component('EnforceContrast')
             .operation('run')
@@ -115,17 +119,17 @@ class EnforceContrast implements TaskInterface {
             .context({
               'background': pair.background,
               'foreground': pair.foreground,
-              'minRatio':   minRatio,
+              'minRatio':   minimumRatio,
               'ratio':      ratio
             })
             .build()
         );
 
-        state.roles[pair.foreground] = ensureContrast.apply(fgColor, bgColor, minRatio, algo);
+        state.roles[pair.foreground] = ensureContrast.apply(fgColor, bgColor, minimumRatio, algo);
         adjusted = true;
       }
 
-      pending.push({ 'adjusted': adjusted, 'algo': algo, 'minRatio': minRatio, 'pair': pair });
+      pending.push({ 'adjusted': adjusted, 'algo': algo, 'minRatio': minimumRatio, 'pair': pair });
     }
 
     // Reconciliation: a foreground role shared across multiple pairs can be
@@ -145,7 +149,7 @@ class EnforceContrast implements TaskInterface {
         continue;
       }
 
-      const finalRatio = measureContrast(entry.algo, finalFg, finalBg);
+      const finalRatio = ContrastMeasurement.measure(entry.algo, finalFg, finalBg);
 
       report.push({
         'adjusted':   entry.adjusted,

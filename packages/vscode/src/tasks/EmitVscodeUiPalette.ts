@@ -11,8 +11,8 @@ import {
   colorRecordFactory,
   contrastText,
   darken,
+  FramingSurface,
   lighten,
-  luminance,
   mixHsl
 } from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
@@ -29,8 +29,8 @@ import { recordToVscodeColor } from '../util/recordToVscodeColor.ts';
  */
 
 class Role {
-  static get(state: PaletteStateInterface, name: string): ColorRecordInterfaceType {
-    const record = state.roles[name];
+  static get(roles: Readonly<Record<string, ColorRecordInterfaceType>>, name: string): ColorRecordInterfaceType {
+    const record = roles[name];
     if (record === undefined) {
       throw ModuleError.create(`EmitVscodeUiPalette: role '${name}' not found in state.roles`, {
         'context':  { 'role': name, 'task': 'EmitVscodeUiPalette' },
@@ -48,23 +48,28 @@ class EmitVscodeUiPalette implements TaskInterface {
     'description': 'Derives 101 VS Code workbench colors from the 16-role palette. Lifts uiPaletteGenerator.ts derivation.',
     'name':        'emit:vscodeUiPalette',
     'phase':       undefined,
-    'reads':       ['roles'],
+    'reads':       ['roles', 'runtime.framing', 'variants'],
     'requires':    undefined,
     'writes':      ['outputs.vscode:workbenchColors']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const bgRole      = Role.get(state, 'background');
-    const fgRole      = Role.get(state, 'foreground');
-    const accentRole  = Role.get(state, 'keyword');
-    const mutedRole   = Role.get(state, 'muted');
-    const surfaceRole = Role.get(state, 'surface');
-    const errorRole   = Role.get(state, 'error');
-    const infoRole    = Role.get(state, 'info');
-    const successRole = Role.get(state, 'success');
-    const warningRole = Role.get(state, 'warning');
-    const fnRole      = Role.get(state, 'function');
-    const typeRole    = Role.get(state, 'type');
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    // `state.runtime.framing` selects state.roles or a state.variants
+    // entry (see FramingSurface); every slot below derives from that
+    // resolved surface, not state.roles directly.
+    const roles = FramingSurface.resolve(state);
+
+    const bgRole      = Role.get(roles, 'background');
+    const fgRole      = Role.get(roles, 'foreground');
+    const accentRole  = Role.get(roles, 'keyword');
+    const mutedRole   = Role.get(roles, 'muted');
+    const surfaceRole = Role.get(roles, 'surface');
+    const errorRole   = Role.get(roles, 'error');
+    const infoRole    = Role.get(roles, 'info');
+    const successRole = Role.get(roles, 'success');
+    const warningRole = Role.get(roles, 'warning');
+    const functionRole = Role.get(roles, 'function');
+    const typeRole    = Role.get(roles, 'type');
 
     // Two parallel strings per role:
     //  - `*_HEX` for math/composition paths (mixHsl/lighten/darken/contrastText)
@@ -81,7 +86,7 @@ class EmitVscodeUiPalette implements TaskInterface {
     const info_HEX    = infoRole.hex;
     const success_HEX = successRole.hex;
     const warning_HEX = warningRole.hex;
-    const fn_HEX      = fnRole.hex;
+    const functionHex = functionRole.hex;
     const type_HEX    = typeRole.hex;
 
     const bg      = recordToVscodeColor(bgRole);
@@ -93,12 +98,14 @@ class EmitVscodeUiPalette implements TaskInterface {
     const info    = recordToVscodeColor(infoRole);
     const success = recordToVscodeColor(successRole);
     const warning = recordToVscodeColor(warningRole);
-    const fn_     = recordToVscodeColor(fnRole);
+    const functionColor = recordToVscodeColor(functionRole);
     const type_   = recordToVscodeColor(typeRole);
 
-    // Theme type: luminance > 0.5 → light.
-    const bgLum   = luminance.apply(bgRole);
-    const isLight = bgLum > 0.5;
+    // Single shared light/dark measure (see FramingSurface): WCAG relative
+    // luminance of the background role, thresholded at 0.5. EmitVscodeThemeJson
+    // reads the same resolved roles through the same measure, so the emitted
+    // `type` field always agrees with the chrome-mixing weights derived here.
+    const isLight = FramingSurface.isLight(roles);
 
     const fromHex = (h: string): ColorRecordInterfaceType => { const result = colorRecordFactory.fromHex(h); return result; };
 
@@ -209,13 +216,13 @@ class EmitVscodeUiPalette implements TaskInterface {
       'terminal.ansiBlue':                             info,
       'terminal.ansiBrightBlack':                      muted,
       'terminal.ansiBrightBlue':                       lightenHex(info_HEX, 0.15),
-      'terminal.ansiBrightCyan':                       lightenHex(fn_HEX, 0.15),
+      'terminal.ansiBrightCyan':                       lightenHex(functionHex, 0.15),
       'terminal.ansiBrightGreen':                      lightenHex(success_HEX, 0.15),
       'terminal.ansiBrightMagenta':                    lightenHex(type_HEX, 0.15),
       'terminal.ansiBrightRed':                        lightenHex(error_HEX, 0.15),
       'terminal.ansiBrightWhite':                      '#ffffff',
       'terminal.ansiBrightYellow':                     lightenHex(warning_HEX, 0.15),
-      'terminal.ansiCyan':                             fn_,
+      'terminal.ansiCyan':                             functionColor,
       'terminal.ansiGreen':                            success,
       'terminal.ansiMagenta':                          type_,
       'terminal.ansiRed':                              error,
@@ -232,7 +239,7 @@ class EmitVscodeUiPalette implements TaskInterface {
     };
 
     state.outputs['vscode:workbenchColors'] = workbenchColors;
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitVscodeUiPalette')
         .operation('run')

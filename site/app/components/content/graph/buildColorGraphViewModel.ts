@@ -1,40 +1,124 @@
 import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
-import type { LegendItemType, LegendSectionType } from '~/components/content/viz/LegendMachine.ts';
 
-export type ResolutionCategory = 'pinned' | 'synthesized' | 'derived' | 'direct';
+class ColorGraphCategoryVisibility {
+  public derived: boolean;
+  public direct: boolean;
+  public pinned: boolean;
+  public synthesized: boolean;
 
-export const DEFAULT_CATEGORY_VISIBILITY: Record<ResolutionCategory, boolean> = {
-  direct: true,
-  derived: true,
-  synthesized: true,
-  pinned: true
+  public constructor(derived: boolean, direct: boolean, pinned: boolean, synthesized: boolean) {
+    this.derived = derived;
+    this.direct = direct;
+    this.pinned = pinned;
+    this.synthesized = synthesized;
+  }
+}
+
+class ColorGraphLegendItem {
+  public readonly active: boolean;
+  public readonly color: string;
+  public readonly key: string;
+  public readonly label: string;
+  public readonly swatch: 'solid' | 'dashed' | 'square' | 'circle';
+
+  public constructor(
+    active: boolean,
+    color: string,
+    key: string,
+    label: string,
+    swatch: 'solid' | 'dashed' | 'square' | 'circle'
+  ) {
+    this.active = active;
+    this.color = color;
+    this.key = key;
+    this.label = label;
+    this.swatch = swatch;
+  }
+}
+
+class ColorGraphLegendSection {
+  public readonly entries: readonly ColorGraphLegendItem[];
+  public readonly key: string;
+  public readonly label: string;
+
+  public constructor(entries: readonly ColorGraphLegendItem[], key: string, label: string) {
+    this.entries = entries;
+    this.key = key;
+    this.label = label;
+  }
+}
+
+export const buildColorGraphViewModel = class ColorGraphViewModelBuilder {
+  public static readonly captureFitZoomDelayMs = 1300;
+  public static readonly fitDelaysMs: readonly number[] = [0, 250, 500, 750, 1200];
+  public static readonly fitPadding = 0.15;
+  public static readonly maximumInitAttempts = 10;
+  public static readonly panStep = 80;
+  public static readonly spaceSize = 4096;
+  public static readonly zoomStep = 1.25;
+
+  public static buildLegendTabs(
+    roleCount: number,
+    categoryVisible: ColorGraphCategoryVisibility
+  ): readonly ColorGraphLegendSection[] {
+    const entries = [
+      new ColorGraphLegendItem(
+        categoryVisible.direct,
+        'var(--ui-color-success-500)',
+        'direct',
+        'Direct match',
+        'square'
+      ),
+      new ColorGraphLegendItem(
+        categoryVisible.derived,
+        'var(--ui-color-info-500)',
+        'derived',
+        'Derived',
+        'square'
+      ),
+      new ColorGraphLegendItem(
+        categoryVisible.synthesized,
+        'var(--ui-color-warning-500)',
+        'synthesized',
+        'Synthesized',
+        'dashed'
+      ),
+      new ColorGraphLegendItem(
+        categoryVisible.pinned,
+        'var(--ui-primary)',
+        'pinned',
+        'Pinned',
+        'circle'
+      )
+    ];
+    return [new ColorGraphLegendSection(entries, 'resolution', `iridis-${roleCount}`)];
+  }
+
+  public static categoryOfRole(
+    role: RoleMathEntryType
+  ): 'pinned' | 'synthesized' | 'derived' | 'direct' {
+    if (role.isPinned) {return 'pinned';}
+    if (role.synthesized) {return 'synthesized';}
+    if (role.isDerived) {return 'derived';}
+    return 'direct';
+  }
+
+  public static createCategoryVisibility(): ColorGraphCategoryVisibility {
+    return new ColorGraphCategoryVisibility(true, true, true, true);
+  }
+
+  public static toggleCategoryVisibility(
+    categoryVisible: ColorGraphCategoryVisibility,
+    key: string
+  ): void {
+    if (key === 'derived') {
+      categoryVisible.derived = !categoryVisible.derived;
+    } else if (key === 'direct') {
+      categoryVisible.direct = !categoryVisible.direct;
+    } else if (key === 'pinned') {
+      categoryVisible.pinned = !categoryVisible.pinned;
+    } else if (key === 'synthesized') {
+      categoryVisible.synthesized = !categoryVisible.synthesized;
+    }
+  }
 };
-
-export const COLOR_GRAPH_MAX_INIT_ATTEMPTS = 10;
-export const COLOR_GRAPH_ZOOM_STEP = 1.25;
-export const COLOR_GRAPH_PAN_STEP = 80;
-export const COLOR_GRAPH_SPACE_SIZE = 4096;
-export const COLOR_GRAPH_FIT_PADDING = 0.15;
-export const COLOR_GRAPH_FIT_DELAYS_MS = [0, 250, 500, 750, 1200] as const;
-export const COLOR_GRAPH_CAPTURE_FIT_ZOOM_DELAY_MS = 1300;
-
-export function categoryOfRole(role: RoleMathEntryType): ResolutionCategory {
-  if (role.isPinned) return 'pinned';
-  if (role.synthesized) return 'synthesized';
-  if (role.isDerived) return 'derived';
-  return 'direct';
-}
-
-/** Legend swatch colors are engine semantic role tokens, never decorative picks. */
-export function buildColorGraphLegendTabs(
-  roleCount: number,
-  categoryVisible: Readonly<Record<ResolutionCategory, boolean>>
-): readonly LegendSectionType[] {
-  const entries: LegendItemType[] = [
-    { key: 'direct', swatch: 'square', color: 'var(--ui-color-success-500)', label: 'Direct match', active: categoryVisible.direct },
-    { key: 'derived', swatch: 'square', color: 'var(--ui-color-info-500)', label: 'Derived', active: categoryVisible.derived },
-    { key: 'synthesized', swatch: 'dashed', color: 'var(--ui-color-warning-500)', label: 'Synthesized', active: categoryVisible.synthesized },
-    { key: 'pinned', swatch: 'circle', color: 'var(--ui-primary)', label: 'Pinned', active: categoryVisible.pinned }
-  ];
-  return [{ key: 'resolution', label: `iridis-${roleCount}`, entries }];
-}

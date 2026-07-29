@@ -28,8 +28,14 @@ const props = withDefaults(defineProps<{
     <summary class="ui-code-block__summary">
       <div class="ui-code-block__header">
         <div class="ui-code-block__title-group">
-          <span v-if="title" class="ui-code-block__title">{{ title }}</span>
-          <span v-if="meta ?? language" class="ui-code-block__meta">{{ meta ?? language }}</span>
+          <span
+            v-if="title"
+            class="ui-code-block__title"
+          >{{ title }}</span>
+          <span
+            v-if="meta ?? language"
+            class="ui-code-block__meta"
+          >{{ meta ?? language }}</span>
         </div>
       </div>
     </summary>
@@ -45,12 +51,24 @@ const props = withDefaults(defineProps<{
     class="ui-code-block"
     :class="[`ui-code-block--${tone}`]"
   >
-    <header v-if="title || meta || language || $slots.actions" class="ui-code-block__header">
+    <header
+      v-if="title || meta || language || $slots.actions"
+      class="ui-code-block__header"
+    >
       <div class="ui-code-block__title-group">
-        <span v-if="title" class="ui-code-block__title">{{ title }}</span>
-        <span v-if="meta ?? language" class="ui-code-block__meta">{{ meta ?? language }}</span>
+        <span
+          v-if="title"
+          class="ui-code-block__title"
+        >{{ title }}</span>
+        <span
+          v-if="meta ?? language"
+          class="ui-code-block__meta"
+        >{{ meta ?? language }}</span>
       </div>
-      <div v-if="$slots.actions" class="ui-code-block__actions">
+      <div
+        v-if="$slots.actions"
+        class="ui-code-block__actions"
+      >
         <slot name="actions" />
       </div>
     </header>
@@ -66,20 +84,26 @@ const props = withDefaults(defineProps<{
 .ui-code-block {
   margin: 0;
   min-width: 0;
-  border: var(--dagonizer-surface-border);
-  border-radius: var(--dagonizer-surface-radius);
-  background: var(--dagonizer-surface-bg-deep);
-  background-image: var(--dagonizer-surface-grain);
-  background-size: var(--dagonizer-surface-grain-size);
+  border: 1px var(--iridis-border-style) var(--ui-border);
+  border-radius: var(--iridis-radius-md);
+  background: var(--ui-bg-elevated);
   overflow: hidden;
 }
 
 .ui-code-block--source {
-  background: var(--vp-c-bg-soft);
+  background: var(--ui-bg-muted);
 }
 
 .ui-code-block--error {
-  border-left: 3px solid var(--dagonizer-violet);
+  border-left: 3px var(--iridis-border-style) var(--ui-error);
+}
+
+/* The collapsible variant renders as <details> instead of <figure> — the
+   base .ui-code-block rule already covers its border/radius/background, so
+   this variant currently carries no styling of its own. Kept as an explicit,
+   empty rule (rather than dropped from the template) so the class stays a
+   documented extension point instead of a silent no-op. */
+.ui-code-block--details {
 }
 
 .ui-code-block__header,
@@ -89,8 +113,14 @@ const props = withDefaults(defineProps<{
   justify-content: space-between;
   gap: 0.8rem;
   padding: 0.7rem 0.9rem;
-  border-bottom: 1px solid var(--vp-c-divider);
-  background: var(--vp-c-bg-alt);
+  border-bottom: 1px var(--iridis-border-style) var(--ui-border);
+  background: var(--ui-bg-muted);
+}
+
+.ui-code-block__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .ui-code-block__summary {
@@ -108,18 +138,18 @@ const props = withDefaults(defineProps<{
 }
 
 .ui-code-block__title {
-  font-family: var(--vp-font-family-display);
+  font-family: var(--font-display);
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--dagonizer-silver);
+  color: var(--ui-text-highlighted);
 }
 
 .ui-code-block__meta {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
-  color: var(--vp-c-text-3);
+  color: var(--ui-text-dimmed);
 }
 
 .ui-code-block__body {
@@ -133,7 +163,7 @@ const props = withDefaults(defineProps<{
 }
 
 .ui-code-block__body :deep(code) {
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--font-mono);
   font-size: 0.8rem;
 }
 </style>

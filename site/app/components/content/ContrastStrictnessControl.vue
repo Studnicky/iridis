@@ -14,7 +14,13 @@ function setStrictness(strictness: number): void {
   emit('update', strictness);
 }
 
-const strictnessModel = computed(() => buildContrastStrictnessModel(props.strictness));
+function updateStrictness(strictness: number | undefined): void {
+  if (strictness !== undefined) {
+    setStrictness(strictness);
+  }
+}
+
+const strictnessModel = computed(() => buildContrastStrictnessModel.build(props.strictness));
 </script>
 
 <template>
@@ -37,7 +43,7 @@ const strictnessModel = computed(() => buildContrastStrictnessModel(props.strict
         :min="0"
         :max="2"
         :step="1"
-        @update:model-value="($event) => setStrictness($event as number)"
+        @update:model-value="updateStrictness"
       />
     </div>
   </SectionIntro>

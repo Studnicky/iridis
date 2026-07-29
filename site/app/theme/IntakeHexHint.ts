@@ -25,8 +25,8 @@ class IntakeHexHint implements TaskInterface {
     'writes':      ['colors']
   };
 
-  run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
-    for (const raw of state.input.colors as readonly SeedInputType[]) {
+  run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
+    for (const raw of state.input.colors as readonly SeedInputType.Type[]) {
       const isPin = typeof raw === 'object' && raw !== null;
       const hex = isPin ? raw.hex : raw;
       const role = isPin ? raw.role : undefined;

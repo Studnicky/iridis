@@ -14,7 +14,7 @@ const props = defineProps<{
   rows: readonly ResolvedRoleRowType[];
 }>();
 
-const tableModel = computed(() => buildResolvedRolesTableModel(props.rows));
+const tableModel = computed(() => buildResolvedRolesTableModel.build(props.rows));
 </script>
 
 <template>

@@ -6,7 +6,7 @@ import type {
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
 
-import { getOrCreateMetadata } from '@studnicky/iridis';
+import { PaletteMetadataSlot } from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
@@ -36,14 +36,14 @@ class EmitCapacitorSplashScreen implements TaskInterface {
     'writes':      ['outputs.capacitor:splashScreen']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const capacitorMeta = getOrCreateMetadata(state, 'capacitor');
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    const capacitorMeta = PaletteMetadataSlot.getOrCreate(state, 'capacitor');
     const splashRole = typeof capacitorMeta.splashRole === 'string' ? capacitorMeta.splashRole : undefined;
 
     const splashColor = SplashColor.resolve(state.roles, splashRole);
 
     if (splashColor === undefined) {
-      ctx.logger.warn(
+      context.logger.warn(
         LogBody.create()
           .component('EmitCapacitorSplashScreen')
           .operation('run')
@@ -71,7 +71,7 @@ class EmitCapacitorSplashScreen implements TaskInterface {
 
     state.outputs['capacitor:splashScreen'] = output;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitCapacitorSplashScreen')
         .operation('run')

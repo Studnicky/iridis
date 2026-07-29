@@ -1,5 +1,9 @@
 import { RingBuffer } from './RingBuffer.ts';
 
-export function createRingBuffer<T>(capacity: number): RingBuffer<T> {
-  return new RingBuffer<T>(capacity);
+class CreateRingBufferOperation {
+  static run<T>(capacity: number): RingBuffer<T> {
+    return new RingBuffer<T>(capacity);
+  }
 }
+
+export const createRingBuffer = CreateRingBufferOperation.run;

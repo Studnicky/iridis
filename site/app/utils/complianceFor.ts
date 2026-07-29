@@ -3,8 +3,12 @@
  * declares at e.g. 3.0 (divider, syntax-comment/punctuation) is scored against
  * the target it was actually enforced to. minRatio defaults to 4.5 (WCAG AA
  * body text) so existing callers that don't pass one keep today's behavior. */
-export function complianceFor(ratio: number, minRatio = 4.5): string {
-  if (ratio >= Math.max(minRatio, 7)) {return 'AAA';}
-  if (ratio >= minRatio) {return 'AA';}
-  return 'fail';
+class ComplianceForOperation {
+  static run(ratio: number, minimumRatio = 4.5): string {
+    if (ratio >= Math.max(minimumRatio, 7)) {return 'AAA';}
+    if (ratio >= minimumRatio) {return 'AA';}
+    return 'fail';
+  }
 }
+
+export const complianceFor = ComplianceForOperation.run;

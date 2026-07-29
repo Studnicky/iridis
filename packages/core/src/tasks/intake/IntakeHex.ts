@@ -1,7 +1,10 @@
+import type { JsonValueType } from '@studnicky/types';
+
 import { ValidationError } from '@studnicky/errors';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
+import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 import type {
   ColorRecordInterfaceType,
   PaletteStateInterface,
@@ -11,32 +14,33 @@ import type {
 } from '../../types/index.ts';
 
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
-import { isImagePixelInput }  from './IsImagePixelInput.ts';
+import { HEX_PATTERNS }       from './constants/HexPatterns.ts';
+import { IsImagePixelInput }  from './IsImagePixelInput.ts';
 
 class Hex {
   static normalize(raw: string): string {
     const s = raw.trim();
     const cleaned = s.startsWith('#') ? s.slice(1) : s;
 
-    if (/^[0-9a-fA-F]{3}$/.test(cleaned)) {
+    if (HEX_PATTERNS.DIGITS_3.test(cleaned)) {
       const r = cleaned[0]!;
       const g = cleaned[1]!;
       const b = cleaned[2]!;
       return `${r}${r}${g}${g}${b}${b}`;
     }
 
-    if (/^[0-9a-fA-F]{4}$/.test(cleaned)) {
+    if (HEX_PATTERNS.DIGITS_4.test(cleaned)) {
       const r = cleaned[0]!;
       const g = cleaned[1]!;
       const b = cleaned[2]!;
       return `${r}${r}${g}${g}${b}${b}`;
     }
 
-    if (/^[0-9a-fA-F]{6}$/.test(cleaned)) {
+    if (HEX_PATTERNS.DIGITS_6.test(cleaned)) {
       return cleaned;
     }
 
-    if (/^[0-9a-fA-F]{8}$/.test(cleaned)) {
+    if (HEX_PATTERNS.DIGITS_8.test(cleaned)) {
       return cleaned.slice(0, 6);
     }
 
@@ -71,7 +75,7 @@ class IntakeHex implements TaskInterface {
    * Parses a single value as a hex color. Throws when the input is not a
    * valid hex string. Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: unknown): ColorRecordInterfaceType {
+  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
     if (typeof raw !== 'string') {
       throw ValidationError.create({
         'message': 'intake:hex — expected a string input',
@@ -84,7 +88,7 @@ class IntakeHex implements TaskInterface {
       });
     }
     const trimmed = raw.trim();
-    if (!trimmed.startsWith('#') && !/^[0-9a-fA-F]{3,8}$/.test(trimmed)) {
+    if (!trimmed.startsWith('#') && !HEX_PATTERNS.DIGITS_3_TO_8.test(trimmed)) {
       throw ValidationError.create({
         'message': 'intake:hex — not a hex pattern',
         'path':    'raw',
@@ -123,7 +127,7 @@ class IntakeHex implements TaskInterface {
    * {@link IntakeHex.run} does not carry a try/catch in its body (V8
    * de-optimises try/catch inside hot loops).
    */
-  #tryParse(raw: unknown): ColorRecordInterfaceType | undefined {
+  #tryParse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType | undefined {
     try {
       return this.parse(raw);
     } catch {
@@ -131,14 +135,13 @@ class IntakeHex implements TaskInterface {
     }
   }
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (let i = 0; i < state.input.colors.length; i++) {
-      const raw = state.input.colors[i];
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    for (const [i, raw] of state.input.colors.entries()) {
       // ImageData entries are silently skipped: they are handled by intake:imagePixels.
       // All other non-hex entries (including objects like {r,g,b}) throw with position
       // info so callers using intake:hex standalone get strict format enforcement.
-      if (isImagePixelInput(raw)) {
-        ctx.logger.trace(
+      if (IsImagePixelInput.check(raw)) {
+        context.logger.trace(
           LogBody.create()
             .component('IntakeHex')
             .operation('run')
@@ -166,7 +169,7 @@ class IntakeHex implements TaskInterface {
         });
       }
       state.colors.push(record);
-      ctx.logger.debug(
+      context.logger.debug(
         LogBody.create()
           .component('IntakeHex')
           .operation('run')

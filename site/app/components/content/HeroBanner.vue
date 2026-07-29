@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRuntimeConfig } from '#imports';
 import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
 
 /**
@@ -8,7 +9,16 @@ import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
  * first things a first-time visitor reads and can act on; the technical
  * tagline underneath is a demoted second read for anyone who wants it.
  */
-const base = useRuntimeConfig().app.baseURL;
+const runtimeApp = useRuntimeConfig().app;
+if (
+  typeof runtimeApp !== 'object'
+  || runtimeApp === null
+  || !('baseURL' in runtimeApp)
+  || typeof runtimeApp.baseURL !== 'string'
+) {
+  throw new TypeError('Nuxt runtime configuration must provide app.baseURL');
+}
+const base = runtimeApp.baseURL;
 const orbs = ['primary', 'info', 'success', 'error', 'warning'];
 const { activateTarget } = useNavigationTargets();
 </script>

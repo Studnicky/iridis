@@ -6,14 +6,11 @@ import type { RingBuffer } from './RingBuffer.ts';
 import type { ColorSampleType } from './types/colorSample.ts';
 
 import { oklchToHex } from '../utils/oklchToHex.ts';
+import { COLOR_STREAM_HISTORY } from './constants/ColorStreamHistoryConstants.ts';
 import { createRingBuffer } from './createRingBuffer.ts';
 import { DECORATIVE_ALIASES } from './decorativeAliases.ts';
 
-/** Number of recent samples retained per decorative alias for the history stream. */
-const HISTORY_CAPACITY = 240;
-const EMPTY_SAMPLE_ARRAY: readonly ColorSampleType[] = [];
-
-  /**
+/**
    * Shared per-alias sample-history state for the "seismograph" history
    * stream — `record()` is called each animation frame by useLivingBackground.ts's
    * drift loop. Module-level singleton so every component reads off the same
@@ -41,7 +38,7 @@ export class ColorStreamHistoryState {
   private static buildRingBuffers(): Record<string, RingBuffer<ColorSampleType>> {
     const buffers: Record<string, RingBuffer<ColorSampleType>> = {};
     for (const alias of Object.keys(DECORATIVE_ALIASES)) {
-      buffers[alias] = createRingBuffer<ColorSampleType>(HISTORY_CAPACITY);
+      buffers[alias] = createRingBuffer<ColorSampleType>(COLOR_STREAM_HISTORY.CAPACITY);
     }
     return buffers;
   }
@@ -68,7 +65,7 @@ export class ColorStreamHistoryState {
 
   /** Plain, non-reactive oldest-to-newest snapshot of ONE alias's ring buffer — for a frame-accurate reader driving its own draw loop rather than subscribing to `histories`. Empty array for an unknown alias. */
   static sampleArray(alias: string): readonly ColorSampleType[] {
-    return ColorStreamHistoryState.ringBuffers[alias]?.snapshot() ?? EMPTY_SAMPLE_ARRAY;
+    return ColorStreamHistoryState.ringBuffers[alias]?.snapshot() ?? COLOR_STREAM_HISTORY.EMPTY_SAMPLE_ARRAY;
   }
 
   /** Copies every alias's current ring-buffer contents into the reactive `histories` snapshot. Call on a throttled cadence (see useColorStreamHistory.ts) — never per animation frame. */
@@ -85,6 +82,7 @@ export class ColorStreamHistoryState {
   }
 
   static sampleVersionStamp(): number {
-    return ColorStreamHistoryState.sampleVersion;
+    const result = ColorStreamHistoryState.sampleVersion;
+    return result;
   }
 }

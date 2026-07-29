@@ -1,61 +1,63 @@
 import { DpadMachine } from './DpadMachine.ts';
-import type { DpadActionType, DpadModeType } from './DpadMachine.ts';
 
-export type CameraPanDirectionType = 'up' | 'down' | 'left' | 'right';
+interface CameraControlSurfaceInterface {
+  readonly 'can'?: (action: Parameters<InstanceType<typeof DpadMachine>['press']>[0]) => boolean;
+  readonly 'centre': () => void | Promise<void>;
+  readonly 'close'?: () => void | Promise<void>;
+  readonly 'expand'?: () => void | Promise<void>;
+  readonly 'fit': () => void | Promise<void>;
+  readonly 'getHint'?: () => string | null;
+  readonly 'getZoomLevel'?: () => number | null;
+  readonly 'getZoomText'?: () => string | null;
+  readonly 'pan': (direction: 'up' | 'down' | 'left' | 'right') => void | Promise<void>;
+  readonly 'zoomIn': () => void | Promise<void>;
+  readonly 'zoomOut': () => void | Promise<void>;
+}
 
-export type CameraControlSurfaceType = {
-  'can'?: (action: DpadActionType) => boolean;
-  'zoomIn': () => void | Promise<void>;
-  'zoomOut': () => void | Promise<void>;
-  'pan': (direction: CameraPanDirectionType) => void | Promise<void>;
-  'centre': () => void | Promise<void>;
-  'fit': () => void | Promise<void>;
-  'expand'?: () => void | Promise<void>;
-  'close'?: () => void | Promise<void>;
-  'getZoomLevel'?: () => number | null;
-  'getZoomText'?: () => string | null;
-  'getHint'?: () => string | null;
-};
+class CameraDpadHooks {
+  public readonly getHint: (() => string | null) | undefined;
+  public readonly getZoomLevel: (() => number | null) | undefined;
+  public readonly getZoomText: (() => string | null) | undefined;
+  readonly #controls: CameraControlSurfaceInterface;
 
-export function runCameraControlAction(
-  controls: CameraControlSurfaceType,
-  action: DpadActionType,
-): void | Promise<void> {
-  switch (action) {
-    case 'zoom-in':   return controls.zoomIn();
-    case 'zoom-out':  return controls.zoomOut();
-    case 'pan-up':    return controls.pan('up');
-    case 'pan-down':  return controls.pan('down');
-    case 'pan-left':  return controls.pan('left');
-    case 'pan-right': return controls.pan('right');
-    case 'centre':    return controls.centre();
-    case 'fit':       return controls.fit();
-    case 'expand':    return controls.expand?.();
-    case 'close':     return controls.close?.();
+  public constructor(controls: CameraControlSurfaceInterface) {
+    this.#controls = controls;
+    this.getHint = controls.getHint;
+    this.getZoomLevel = controls.getZoomLevel;
+    this.getZoomText = controls.getZoomText;
+  }
+
+  public can(action: Parameters<InstanceType<typeof DpadMachine>['press']>[0]): boolean {
+    if (this.#controls.can?.(action) === false) {return false;}
+    if (action === 'expand' && this.#controls.expand === undefined) {return false;}
+    if (action === 'close' && this.#controls.close === undefined) {return false;}
+    return true;
+  }
+
+  public run(
+    action: Parameters<InstanceType<typeof DpadMachine>['press']>[0]
+  ): void | Promise<void> {
+    switch (action) {
+      case 'centre':    return this.#controls.centre();
+      case 'close':     return this.#controls.close?.();
+      case 'expand':    return this.#controls.expand?.();
+      case 'fit':       return this.#controls.fit();
+      case 'pan-down':  return this.#controls.pan('down');
+      case 'pan-left':  return this.#controls.pan('left');
+      case 'pan-right': return this.#controls.pan('right');
+      case 'pan-up':    return this.#controls.pan('up');
+      case 'zoom-in':   return this.#controls.zoomIn();
+      case 'zoom-out':  return this.#controls.zoomOut();
+    }
+    return undefined;
   }
 }
 
-export function createCameraDpadMachine(
-  controls: CameraControlSurfaceType,
-  mode: DpadModeType = 'inline',
-): DpadMachine {
-  const hooks: {
-    'can': (action: DpadActionType) => boolean;
-    'run': (action: DpadActionType) => void | Promise<void>;
-    'getZoomLevel'?: () => number | null;
-    'getZoomText'?: () => string | null;
-    'getHint'?: () => string | null;
-  } = {
-    'can': (action: DpadActionType) => {
-      if (controls.can?.(action) === false) return false;
-      if (action === 'expand' && controls.expand === undefined) return false;
-      if (action === 'close' && controls.close === undefined) return false;
-      return true;
-    },
-    'run': (action: DpadActionType) => runCameraControlAction(controls, action),
-  };
-  if (controls.getZoomLevel !== undefined) hooks.getZoomLevel = controls.getZoomLevel;
-  if (controls.getZoomText !== undefined) hooks.getZoomText = controls.getZoomText;
-  if (controls.getHint !== undefined) hooks.getHint = controls.getHint;
-  return new DpadMachine(hooks, mode);
-}
+export const CameraControls = class CameraControls {
+  public static create(
+    controls: CameraControlSurfaceInterface,
+    mode: 'inline' | 'modal' = 'inline'
+  ): InstanceType<typeof DpadMachine> {
+    return new DpadMachine(new CameraDpadHooks(controls), mode);
+  }
+};

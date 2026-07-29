@@ -16,7 +16,7 @@ import { buildHistogramBars } from './histogram/buildHistogramBars.ts';
 const props = defineProps<{ bins?: GalleryHistogramSlotInterfaceType['bins'] }>();
 const { histogram } = useIridis();
 const source = computed<GalleryHistogramSlotInterfaceType['bins']>(() => props.bins ?? histogram.value);
-const bars = computed(() => buildHistogramBars(source.value));
+const bars = computed(() => buildHistogramBars.build(source.value));
 </script>
 
 <template>

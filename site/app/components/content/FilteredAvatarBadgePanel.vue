@@ -2,7 +2,7 @@
 import type { AliasColorType } from '~/theme/types/aliasColor.ts';
 
 defineProps<{
-  checkedColors: readonly AliasColorType[];
+  checkedColors: readonly AliasColorType.Type[];
 }>();
 </script>
 

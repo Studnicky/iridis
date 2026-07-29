@@ -1,1 +1,3 @@
-export type RoleHexMapType = Record<string, string>;
+export declare class RoleHexMapType {
+  [role: string]: string;
+}

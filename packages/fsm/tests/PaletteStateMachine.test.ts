@@ -1,10 +1,11 @@
+import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteStateSchemaType, PaletteTransitionTableType } from '../src/types/index.ts';
 
 import { PaletteStateMachine } from '../src/PaletteStateMachine.ts';
-import type { PaletteStateSchemaType, PaletteTransitionTableType } from '../src/types/index.ts';
 
 const idlePalette: PaletteInterfaceType = { 'accent': { 'c': 0.05, 'h': 200, 'l': 0.5 } };
 const alertPalette: PaletteInterfaceType = { 'accent': { 'c': 0.2, 'h': 20, 'l': 0.6 } };
@@ -23,10 +24,10 @@ const transitions: PaletteTransitionTableType = {
 };
 
 type EventType =
-  | { 'type': 'enter';    'state': string }
-  | { 'type': 'exit';     'state': string }
-  | { 'type': 'rejected'; 'fromState': string; 'toState': string }
-  | { 'type': 'tick';     't': number };
+  | { 'state': string;    'type': 'enter'; }
+  | { 'state': string;     'type': 'exit'; }
+  | { 'fromState': string; 'toState': string; 'type': 'rejected'; }
+  | { 't': number;     'type': 'tick'; };
 
 class TestMachine extends PaletteStateMachine {
   events: EventType[] = [];
@@ -52,7 +53,7 @@ class TestMachine extends PaletteStateMachine {
   }
 }
 
-test('tick() drives intermediate palette(t) values and completes the transition', () => {
+await test('tick() drives intermediate palette(t) values and completes the transition', () => {
   const machine = new TestMachine('idle');
   const started = machine.transition('alert');
   assert.strictEqual(started, true);
@@ -61,25 +62,25 @@ test('tick() drives intermediate palette(t) values and completes the transition'
   machine.tick(0.5);
 
   assert.strictEqual(machine.currentState, 'alert');
-  const tickEvents = machine.events.filter((e): e is Extract<EventType, { 'type': 'tick' }> => e.type === 'tick');
+  const tickEvents = machine.events.filter((e): e is Extract<EventType, { 'type': 'tick' }> => {return e.type === 'tick';});
   assert.strictEqual(tickEvents.length, 2);
   assert.strictEqual(tickEvents[0]!.t, 0.5);
   assert.strictEqual(tickEvents[1]!.t, 1);
 });
 
-test('onExitState fires before onEnterState on transition completion', () => {
+await test('onExitState fires before onEnterState on transition completion', () => {
   const machine = new TestMachine('idle');
   machine.transition('alert');
   machine.tick(1);
 
-  const lifecycleEvents = machine.events.filter((e) => e.type === 'exit' || e.type === 'enter');
+  const lifecycleEvents = machine.events.filter((e) => {return e.type === 'exit' || e.type === 'enter';});
   assert.deepStrictEqual(lifecycleEvents, [
     { 'state': 'idle', 'type': 'exit' },
     { 'state': 'alert', 'type': 'enter' }
   ]);
 });
 
-test('transition() to a state absent from the transition table returns false and fires onTransitionRejected without mutating state', () => {
+await test('transition() to a state absent from the transition table returns false and fires onTransitionRejected without mutating state', () => {
   const machine = new TestMachine('alert');
   const started = machine.transition('idle');
 
@@ -91,7 +92,7 @@ test('transition() to a state absent from the transition table returns false and
   ]);
 });
 
-test('isTerminated() identifies a state with no outgoing transitions', () => {
+await test('isTerminated() identifies a state with no outgoing transitions', () => {
   const machine = new TestMachine('alert');
   assert.strictEqual(machine.isTerminated(), true);
 
@@ -99,7 +100,7 @@ test('isTerminated() identifies a state with no outgoing transitions', () => {
   assert.strictEqual(idleMachine.isTerminated(), false);
 });
 
-test('multiple sequential transitions: state after transition 1 becomes the from-state for transition 2', () => {
+await test('multiple sequential transitions: state after transition 1 becomes the from-state for transition 2', () => {
   const machine = new TestMachine('idle');
 
   machine.transition('focus');
@@ -111,6 +112,6 @@ test('multiple sequential transitions: state after transition 1 becomes the from
   machine.tick(1);
   assert.strictEqual(machine.currentState, 'idle');
 
-  const enterEvents = machine.events.filter((e): e is Extract<EventType, { 'type': 'enter' }> => e.type === 'enter');
-  assert.deepStrictEqual(enterEvents.map((e) => e.state), ['focus', 'idle']);
+  const enterEvents = machine.events.filter((e): e is Extract<EventType, { 'type': 'enter' }> => {return e.type === 'enter';});
+  assert.deepStrictEqual(enterEvents.map((e) => { const result = e.state; return result; }), ['focus', 'idle']);
 });

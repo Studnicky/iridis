@@ -2,42 +2,51 @@ import type { EasingFunctionType } from '../types/index.ts';
 
 const NEWTON_ITERATIONS = 4;
 
-function bezierA(a1: number, a2: number): number { return 1.0 - 3.0 * a2 + 3.0 * a1; }
-function bezierB(a1: number, a2: number): number { return 3.0 * a2 - 6.0 * a1; }
-function bezierC(a1: number): number { return 3.0 * a1; }
+class CubicBezier {
+  private static coefficientA(first: number, second: number): number {
+    return 1.0 - 3.0 * second + 3.0 * first;
+  }
 
-function calcBezier(t: number, a1: number, a2: number): number {
-  return ((bezierA(a1, a2) * t + bezierB(a1, a2)) * t + bezierC(a1)) * t;
-}
+  private static coefficientB(first: number, second: number): number {
+    return 3.0 * second - 6.0 * first;
+  }
 
-/** Derivative of the cubic-bezier curve at `t`, for Newton-Raphson iteration. */
-class Slope {
-  static get(t: number, a1: number, a2: number): number {
-    return 3.0 * bezierA(a1, a2) * t * t + 2.0 * bezierB(a1, a2) * t + bezierC(a1);
+  private static coefficientC(first: number): number {
+    return 3.0 * first;
+  }
+
+  private static calculate(t: number, first: number, second: number): number {
+    return ((CubicBezier.coefficientA(first, second) * t + CubicBezier.coefficientB(first, second)) * t + CubicBezier.coefficientC(first)) * t;
+  }
+
+  private static slope(t: number, first: number, second: number): number {
+    return 3.0 * CubicBezier.coefficientA(first, second) * t * t + 2.0 * CubicBezier.coefficientB(first, second) * t + CubicBezier.coefficientC(first);
+  }
+
+  /**
+   * Standard CSS-style cubic-bezier easing over control points (p1x, p1y) and
+   * (p2x, p2y), with the curve's endpoints pinned to (0,0) and (1,1). Solves
+   * for t given x via Newton-Raphson (falling back to the last guess if the
+   * slope degenerates), then evaluates y at that t.
+   */
+  static create(firstX: number, firstY: number, secondX: number, secondY: number): EasingFunctionType {
+    const solveTForX = (x: number): number => {
+      let guess = x;
+      for (let iteration = 0; iteration < NEWTON_ITERATIONS; iteration += 1) {
+        const slope = CubicBezier.slope(guess, firstX, secondX);
+        if (slope === 0) {return guess;}
+        const currentX = CubicBezier.calculate(guess, firstX, secondX) - x;
+        guess -= currentX / slope;
+      }
+      return guess;
+    };
+
+    return (t: number): number => {
+      if (t <= 0) {return 0;}
+      if (t >= 1) {return 1;}
+      return CubicBezier.calculate(solveTForX(t), firstY, secondY);
+    };
   }
 }
 
-/**
- * Standard CSS-style cubic-bezier easing over control points (p1x, p1y) and
- * (p2x, p2y), with the curve's endpoints pinned to (0,0) and (1,1). Solves
- * for t given x via Newton-Raphson (falling back to the last guess if the
- * slope degenerates), then evaluates y at that t.
- */
-export const cubicBezier = (p1x: number, p1y: number, p2x: number, p2y: number): EasingFunctionType => {
-  const solveTForX = (x: number): number => {
-    let guess = x;
-    for (let i = 0; i < NEWTON_ITERATIONS; i += 1) {
-      const slope = Slope.get(guess, p1x, p2x);
-      if (slope === 0) {return guess;}
-      const currentX = calcBezier(guess, p1x, p2x) - x;
-      guess -= currentX / slope;
-    }
-    return guess;
-  };
-
-  return (t: number): number => {
-    if (t <= 0) {return 0;}
-    if (t >= 1) {return 1;}
-    return calcBezier(solveTForX(t), p1y, p2y);
-  };
-};
+export const cubicBezier = CubicBezier.create;

@@ -1,34 +1,51 @@
 import type { RoleSortableRowType } from '~/composables/types/roleSortableRow.ts';
 
-type ResolvedRoleTableRow = RoleSortableRowType & { readonly hex: string };
+class ResolvedRoleTableColumn {
+  public readonly accessorKey: 'name' | 'hex' | 'ratio' | 'compliance';
+  public readonly header: string;
 
-type ResolvedRoleTableColumn = {
-  readonly accessorKey: 'name' | 'hex' | 'ratio' | 'compliance';
-  readonly header: string;
-};
-
-export type ResolvedRoleTablePanelModel = {
-  readonly columns: readonly ResolvedRoleTableColumn[];
-  readonly label: string;
-  readonly rows: readonly ResolvedRoleTableRow[];
-};
-
-const TABLE_COLUMNS = [
-  { 'accessorKey': 'name', 'header': 'Role' },
-  { 'accessorKey': 'hex', 'header': 'Hex' },
-  { 'accessorKey': 'ratio', 'header': 'Ratio' },
-  { 'accessorKey': 'compliance', 'header': 'Compliance' }
-] as const satisfies readonly ResolvedRoleTableColumn[];
-
-export function buildResolvedRoleTablePanelModel(
-  rows: readonly ResolvedRoleTableRow[],
-  visibleCount: number
-): ResolvedRoleTablePanelModel {
-  const visibleRows = rows.slice(0, visibleCount);
-
-  return {
-    columns: TABLE_COLUMNS,
-    label: `UTable — top of the current sort (${visibleRows.length} of ${rows.length} roles)`,
-    rows: visibleRows
-  };
+  public constructor(
+    accessorKey: 'name' | 'hex' | 'ratio' | 'compliance',
+    header: string
+  ) {
+    this.accessorKey = accessorKey;
+    this.header = header;
+  }
 }
+
+class ResolvedRoleTablePanelModel {
+  public readonly columns: readonly ResolvedRoleTableColumn[];
+  public readonly label: string;
+  public readonly rows: readonly (RoleSortableRowType & { readonly 'hex': string })[];
+
+  public constructor(
+    columns: readonly ResolvedRoleTableColumn[],
+    label: string,
+    rows: readonly (RoleSortableRowType & { readonly 'hex': string })[]
+  ) {
+    this.columns = columns;
+    this.label = label;
+    this.rows = rows;
+  }
+}
+
+export const buildResolvedRoleTablePanelModel = class ResolvedRoleTablePanelModelBuilder {
+  private static readonly columns = [
+    new ResolvedRoleTableColumn('name', 'Role'),
+    new ResolvedRoleTableColumn('hex', 'Hex'),
+    new ResolvedRoleTableColumn('ratio', 'Ratio'),
+    new ResolvedRoleTableColumn('compliance', 'Compliance')
+  ];
+
+  public static build(
+    rows: readonly (RoleSortableRowType & { readonly 'hex': string })[],
+    visibleCount: number
+  ): ResolvedRoleTablePanelModel {
+    const visibleRows = rows.slice(0, visibleCount);
+    return new ResolvedRoleTablePanelModel(
+      ResolvedRoleTablePanelModelBuilder.columns,
+      `UTable — top of the current sort (${visibleRows.length} of ${rows.length} roles)`,
+      visibleRows
+    );
+  }
+};

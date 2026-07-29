@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { DpadMachine } from './viz/DpadMachine.ts';
-import type { LegendMachine } from './viz/LegendMachine.ts';
+import { DpadMachine } from './viz/DpadMachine.ts';
+import { LegendMachine } from './viz/LegendMachine.ts';
 
 const props = defineProps<{
   fullscreen: boolean;
@@ -8,8 +8,8 @@ const props = defineProps<{
   loadError: string | null;
   zoomLevel: number;
   roleCount: number;
-  legendMachine: LegendMachine;
-  dpadMachine: DpadMachine;
+  legendMachine: InstanceType<typeof LegendMachine>;
+  dpadMachine: InstanceType<typeof DpadMachine>;
   dpadReady: boolean;
 }>();
 
@@ -98,10 +98,10 @@ const labelsRef = defineModel<HTMLCanvasElement | null>('labelsRef', { default: 
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: var(--iridis-radius-lg, 1rem);
+  border-radius: var(--iridis-radius-lg);
   overflow: hidden;
   background: radial-gradient(circle at center, color-mix(in oklch, var(--glow) 8%, transparent), var(--ui-bg) 70%);
-  border: 1px solid color-mix(in oklch, var(--glow) 22%, transparent);
+  border: 1px var(--iridis-border-style) color-mix(in oklch, var(--glow) 22%, transparent);
 }
 .cg-cosmos {
   position: absolute;

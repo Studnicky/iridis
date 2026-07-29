@@ -1,17 +1,4 @@
-/**
- * Shared chrome tokens and layout for viewer action buttons.
- *
- * Consumers choose placement; this stylesheet keeps the actual action element
- * consistent between frame headers and in-canvas overlays.
- *
- * Parameterization:
- *   --dagonizer-viewer-action-surface
- *   --dagonizer-viewer-action-stroke
- *   --dagonizer-viewer-action-text
- *   --dagonizer-viewer-action-accent
- *   --dagonizer-viewer-action-danger
- *   --dagonizer-viewer-action-font
- */
+/** Shared Iridis chrome for viewer action buttons. */
 
 .dagonizer-viewer-actions {
   display: flex;
@@ -34,34 +21,37 @@
   min-width: 28px;
   height: 28px;
   padding: 0 0.55rem;
-  background: var(--dagonizer-viewer-action-surface, rgba(20, 22, 28, 0.72));
-  border: 1px solid var(--dagonizer-viewer-action-stroke, var(--vp-c-divider, #2e3748));
-  border-radius: 5px;
-  color: var(--dagonizer-viewer-action-text, var(--vp-c-text-1, #eef3f7));
+  background: color-mix(in oklch, var(--ui-bg-elevated) 84%, transparent);
+  border: 1px var(--iridis-border-style) var(--ui-border);
+  border-radius: var(--iridis-radius-sm);
+  color: var(--ui-text-highlighted);
   cursor: pointer;
-  font-family: var(--dagonizer-viewer-action-font, var(--vp-font-family-mono));
+  font-family: var(--font-mono);
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   line-height: 1;
   backdrop-filter: blur(4px);
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition:
+    background var(--iridis-tune) var(--iridis-ease),
+    color var(--iridis-tune) var(--iridis-ease),
+    border-color var(--iridis-tune) var(--iridis-ease);
 }
 
 .dagonizer-viewer-action:hover:not(:disabled) {
-  border-color: var(--dagonizer-viewer-action-accent, var(--dagonizer-brand, #22e8ff));
-  color: var(--dagonizer-viewer-action-accent, var(--dagonizer-brand, #22e8ff));
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
 }
 
 .dagonizer-viewer-action:focus-visible {
-  outline: 2px solid var(--dagonizer-viewer-action-accent, var(--dagonizer-brand, #22e8ff));
+  outline: 2px var(--iridis-border-style) var(--ui-primary);
   outline-offset: 1px;
 }
 
 .dagonizer-viewer-action--danger:hover:not(:disabled) {
-  border-color: var(--dagonizer-viewer-action-danger, #e74c3c);
-  color: var(--dagonizer-viewer-action-danger, #e74c3c);
-  background: color-mix(in srgb, var(--dagonizer-viewer-action-danger, #e74c3c) 12%, rgba(20, 22, 28, 0.72));
+  border-color: var(--ui-error);
+  color: var(--ui-error);
+  background: color-mix(in oklch, var(--ui-error) 12%, var(--ui-bg-elevated));
 }
 
 .dagonizer-viewer-action:disabled {

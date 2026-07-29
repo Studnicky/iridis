@@ -1,3 +1,3 @@
 import type { RoleSortFieldType } from './roleSortField.ts';
 
-export type RoleSortKeyType = { 'desc': boolean; 'field': RoleSortFieldType; };
+export declare class RoleSortKeyType { 'desc': boolean; 'field': RoleSortFieldType.Type; }

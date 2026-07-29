@@ -12,10 +12,8 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { CapacitorThemeOutputInterfaceType } from '../types/index.ts';
 
-type IntentMap = ReadonlyMap<ColorIntentType, string>;
-
 class IntentMapBuilder {
-  static build(roles: Record<string, ColorRecordInterfaceType>): IntentMap {
+  static build(roles: Record<string, ColorRecordInterfaceType>): ReadonlyMap<ColorIntentType, string> {
     const map = new Map<ColorIntentType, string>();
     // Keep the first match per intent; role name takes precedence in Hex.resolve below.
     for (const record of Object.values(roles)) {
@@ -31,7 +29,7 @@ class IntentMapBuilder {
 class Hex {
   static resolve(
     roles: Record<string, ColorRecordInterfaceType>,
-    intentMap: IntentMap,
+    intentMap: ReadonlyMap<ColorIntentType, string>,
     primaryName: string,
     fallbackIntent: ColorIntentType,
     ultimateFallback: string
@@ -86,7 +84,7 @@ class EmitCapacitorTheme implements TaskInterface {
     'writes':      ['outputs.capacitor:theme']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const roles    = state.roles;
     const variants = state.variants;
     const intentMap = IntentMapBuilder.build(roles);
@@ -125,7 +123,7 @@ class EmitCapacitorTheme implements TaskInterface {
 
     state.outputs['capacitor:theme'] = output;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitCapacitorTheme')
         .operation('run')

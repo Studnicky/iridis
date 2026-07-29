@@ -18,7 +18,7 @@ const props = defineProps<{
 
 const page = ref(1);
 const pageSize = 8;
-const paginationModel = computed(() => buildInteractablesPaginationModel(props.roles, page.value, pageSize));
+const paginationModel = computed(() => buildInteractablesPaginationModel.build(props.roles, page.value, pageSize));
 </script>
 
 <template>

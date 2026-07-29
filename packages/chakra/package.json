@@ -1,30 +1,56 @@
 {
   "name": "@studnicky/iridis-chakra",
   "description": "Emits a Chakra UI extendTheme() color-token scale from resolved roles and their dark/light variants.",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./types": "./src/types/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    }
   },
   "files": [
-    "src"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
-    "prebuild": "rm -rf dist",
+    "build": "tsc --build --force tsconfig.build.json",
+    "prepare:publish": "node ../../scripts/package-pipeline.mjs chakra",
+    "build:package": "pnpm run build && pnpm run prepare:publish",
+    "pack:dry": "pnpm run build:package && npm pack --dry-run ./.publish",
+    "publish:dry": "pnpm run build:package && npm publish --dry-run ./.publish",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "test": "node --import tsx --test 'tests/**/*.test.ts'",
+    "clean": "rm -rf .publish dist"
   },
   "engines": {
     "node": ">=24"
   },
   "peerDependencies": {
-    "@studnicky/iridis": "*"
+    "@studnicky/iridis": "workspace:*"
   },
   "dependencies": {
     "@studnicky/logger": "^4.0.0"
   },
   "devDependencies": {
     "typescript": "^6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Studnicky/iridis.git",
+    "directory": "packages/chakra"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   }
 }

@@ -261,7 +261,7 @@ onBeforeUnmount(() => {
   padding: 0.75rem 1rem;
   background: color-mix(in oklch, var(--ui-bg) 78%, transparent);
   backdrop-filter: blur(10px) saturate(1.15);
-  border-bottom: 1px solid color-mix(in oklch, var(--ui-primary) 18%, transparent);
+  border-bottom: 1px var(--iridis-border-style) color-mix(in oklch, var(--ui-primary) 18%, transparent);
   transition: padding 0.2s ease;
 }
 /* Only becomes sticky once scrolled past the hero (see `pastHero` /
@@ -281,6 +281,11 @@ onBeforeUnmount(() => {
 }
 .toc-bar-compact .toc-inner {
   gap: 0;
+}
+/* Shared marker on both the desktop and mobile row-1 wrapper — the
+   responsive display toggle lives entirely on the -desktop/-mobile
+   variants below, so this carries no styling of its own. */
+.toc-row-1 {
 }
 .toc-row-1-desktop { display: none; }
 .toc-row-1-mobile {

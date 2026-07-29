@@ -11,6 +11,7 @@ import {
   darken,
   desaturate,
   ensureContrast,
+  FramingSurface,
   hueShift,
   lighten,
   mixHsl,
@@ -28,24 +29,30 @@ class ExpandTokens implements TaskInterface {
     'description': 'Derives 23 VS Code base token colours from the 16 palette roles using DERIVATION_PARAMS.',
     'name':        'vscode:expandTokens',
     'phase':       undefined,
-    'reads':       ['roles'],
+    'reads':       ['roles', 'runtime.framing', 'variants'],
     'requires':    undefined,
     'writes':      ['metadata.vscode:baseTokens']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+
+    // `state.runtime.framing` selects state.roles or a state.variants
+    // entry (see FramingSurface); every role lookup below reads from
+    // that resolved surface, not state.roles directly, so base tokens
+    // follow the requested framing end-to-end.
+    const roles = FramingSurface.resolve(state);
 
     // Math primitives operate on ColorRecord; keep the records on the
     // role lookups so we don't reconvert at every invoke.
-    const bgRec    = state.roles.background;
-    const mutedRec = state.roles.muted;
-    const fgRec    = state.roles.foreground;
-    if (bgRec === undefined || mutedRec === undefined || fgRec === undefined) {
+    const backgroundRecord = roles.background;
+    const mutedRecord = roles.muted;
+    const foregroundRecord = roles.foreground;
+    if (backgroundRecord === undefined || mutedRecord === undefined || foregroundRecord === undefined) {
       const missingRoles = [
-        bgRec === undefined    ? 'background' : undefined,
-        mutedRec === undefined ? 'muted'      : undefined,
-        fgRec === undefined    ? 'foreground' : undefined
-      ].filter((r): r is string => { return r !== undefined; });
+        backgroundRecord === undefined ? 'background' : undefined,
+        mutedRecord === undefined      ? 'muted'      : undefined,
+        foregroundRecord === undefined ? 'foreground' : undefined
+      ].filter((role): role is string => { return role !== undefined; });
       throw ModuleError.create('ExpandTokens: requires roles background, muted, foreground', {
         'context':  { 'missingRoles': missingRoles, 'task': 'ExpandTokens' },
         'scenario': 'NOT_FOUND'
@@ -54,14 +61,14 @@ class ExpandTokens implements TaskInterface {
 
     const baseTokens: Record<string, ColorRecordInterfaceType> = {};
 
-    const len = VscodeTokenData.TOKEN_TYPES.length;
-    for (let i = 0; i < len; i++) {
+    const tokenTypeCount = VscodeTokenData.TOKEN_TYPES.length;
+    for (let i = 0; i < tokenTypeCount; i++) {
       const tokenType = VscodeTokenData.TOKEN_TYPES[i];
       if (tokenType === undefined) {continue;}
 
       const familyRole = VscodeTokenData.TOKEN_FAMILY[tokenType];
       if (familyRole === undefined) {
-        ctx.logger.warn(
+        context.logger.warn(
           LogBody.create()
             .component('ExpandTokens')
             .operation('run')
@@ -73,7 +80,7 @@ class ExpandTokens implements TaskInterface {
         continue;
       }
 
-      const params = VscodeTokenData.DERIVATION_PARAMS[tokenType] ?? {
+      const parameters = VscodeTokenData.DERIVATION_PARAMS[tokenType] ?? {
         'hue': undefined,
         'light': undefined,
         'sat': undefined
@@ -81,15 +88,15 @@ class ExpandTokens implements TaskInterface {
 
       // operator is special: mix muted + foreground
       if (tokenType === 'operator') {
-        const mixed = mixHsl.apply(mutedRec, fgRec, 0.4);
-        const contrasted = ensureContrast.apply(mixed, bgRec, 3.5);
+        const mixed = mixHsl.apply(mutedRecord, foregroundRecord, 0.4);
+        const contrasted = ensureContrast.apply(mixed, backgroundRecord, 3.5);
         baseTokens.operator = contrasted;
         continue;
       }
 
-      const familyRec = state.roles[familyRole];
+      const familyRec = roles[familyRole];
       if (familyRec === undefined) {
-        ctx.logger.warn(
+        context.logger.warn(
           LogBody.create()
             .component('ExpandTokens')
             .operation('run')
@@ -102,38 +109,38 @@ class ExpandTokens implements TaskInterface {
       }
       let color: ColorRecordInterfaceType = familyRec;
 
-      if (params.hue !== undefined && params.hue !== 0) {
-        color = hueShift.apply(color, params.hue);
+      if (parameters.hue !== undefined && parameters.hue !== 0) {
+        color = hueShift.apply(color, parameters.hue);
       }
-      if (params.sat !== undefined && params.sat !== 0) {
+      if (parameters.sat !== undefined && parameters.sat !== 0) {
         // DERIVATION_PARAMS.sat is a percentage point (e.g. -5 = 5%); the
         // saturate/desaturate primitives take a raw 0-0.5 chroma delta.
-        const deltaC = Math.abs(params.sat) / 100;
-        if (params.sat > 0) {
-          color = saturate.apply(color, deltaC);
+        const chromaDelta = Math.abs(parameters.sat) / 100;
+        if (parameters.sat > 0) {
+          color = saturate.apply(color, chromaDelta);
         } else {
-          color = desaturate.apply(color, deltaC);
+          color = desaturate.apply(color, chromaDelta);
         }
       }
-      if (params.light !== undefined && params.light !== 0) {
+      if (parameters.light !== undefined && parameters.light !== 0) {
         // DERIVATION_PARAMS.light is a percentage point; lighten/darken
         // take a raw 0-1 OKLCH lightness delta.
-        const deltaL = Math.abs(params.light) / 100;
-        if (params.light > 0) {
-          color = lighten.apply(color, deltaL);
+        const lightnessDelta = Math.abs(parameters.light) / 100;
+        if (parameters.light > 0) {
+          color = lighten.apply(color, lightnessDelta);
         } else {
-          color = darken.apply(color, deltaL);
+          color = darken.apply(color, lightnessDelta);
         }
       }
 
       // comment gets relaxed contrast (3.0), everything else 4.5
-      const minContrast = tokenType === 'comment' ? 3.0 : 4.5;
-      const contrasted = ensureContrast.apply(color, bgRec, minContrast);
+      const minimumContrast = tokenType === 'comment' ? 3.0 : 4.5;
+      const contrasted = ensureContrast.apply(color, backgroundRecord, minimumContrast);
       baseTokens[tokenType] = contrasted;
     }
 
     state.metadata['vscode:baseTokens'] = baseTokens;
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('ExpandTokens')
         .operation('run')

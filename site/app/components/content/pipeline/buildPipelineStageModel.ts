@@ -1,53 +1,70 @@
-import { cvdCorrectionSummary, pairSummary } from './pipelineStageSummaries.ts';
+import type {
+  ApcaPairResultSetInterfaceType,
+  CvdResultSetInterfaceType,
+  WcagPairResultSetInterfaceType
+} from '@studnicky/iridis-contrast';
 
-type PairReportType = {
-  pairs: { pass: boolean }[];
-};
+import { pipelineStageSummaries } from './pipelineStageSummaries.ts';
 
-type CvdReportType = {
-  warnings: unknown[];
-  corrections: { cvdTypesRemaining: string[] }[] | undefined;
-};
-
-export type PipelineStageModelType = {
-  contrastSummary: string | undefined;
-  cvdCorrectionText: string | undefined;
-  cvdWarningCount: number | undefined;
-  isCvdStage: boolean;
-  isEnabled: boolean;
-};
-
-type ContrastReportSliceType = {
-  aa?: PairReportType | undefined;
-  aaa?: PairReportType | undefined;
-  apca?: PairReportType | undefined;
-  cvd?: CvdReportType | undefined;
-};
-
-export function buildPipelineStageModel(
-  stageValue: string,
-  enabledOptionalStages: ReadonlySet<string>,
-  contrastReport: ContrastReportSliceType
-): PipelineStageModelType {
-  const isEnabled = enabledOptionalStages.has(stageValue);
-  const isCvdStage = stageValue === 'enforce:cvdSimulate' && isEnabled;
-  let contrastSummary: string | undefined;
-  if (isEnabled) {
-    if (stageValue === 'enforce:wcagAA' && contrastReport.aa !== undefined) {
-      contrastSummary = pairSummary(contrastReport.aa);
-    } else if (stageValue === 'enforce:wcagAAA' && contrastReport.aaa !== undefined) {
-      contrastSummary = pairSummary(contrastReport.aaa);
-    } else if (stageValue === 'enforce:apca' && contrastReport.apca !== undefined) {
-      contrastSummary = pairSummary(contrastReport.apca);
-    }
-  }
-  const cvdWarningCount = isCvdStage && contrastReport.cvd !== undefined ? contrastReport.cvd.warnings.length : undefined;
-  const cvdCorrectionText = contrastReport.cvd === undefined ? undefined : cvdCorrectionSummary(contrastReport.cvd);
-  return {
-    contrastSummary,
-    cvdCorrectionText,
-    cvdWarningCount,
-    isCvdStage,
-    isEnabled
-  };
+class PipelineContrastReport {
+  public readonly aa?: WcagPairResultSetInterfaceType;
+  public readonly aaa?: WcagPairResultSetInterfaceType;
+  public readonly apca?: ApcaPairResultSetInterfaceType;
+  public readonly cvd?: CvdResultSetInterfaceType;
 }
+
+class PipelineStageModel {
+  public readonly contrastSummary: string | undefined;
+  public readonly cvdCorrectionText: string | undefined;
+  public readonly cvdWarningCount: number | undefined;
+  public readonly isCvdStage: boolean;
+  public readonly isEnabled: boolean;
+
+  public constructor(
+    contrastSummary: string | undefined,
+    cvdCorrectionText: string | undefined,
+    cvdWarningCount: number | undefined,
+    isCvdStage: boolean,
+    isEnabled: boolean
+  ) {
+    this.contrastSummary = contrastSummary;
+    this.cvdCorrectionText = cvdCorrectionText;
+    this.cvdWarningCount = cvdWarningCount;
+    this.isCvdStage = isCvdStage;
+    this.isEnabled = isEnabled;
+  }
+}
+
+export const buildPipelineStageModel = class PipelineStageModelBuilder {
+  public static build(
+    stageValue: string,
+    enabledOptionalStages: ReadonlySet<string>,
+    contrastReport: PipelineContrastReport
+  ): PipelineStageModel {
+    const isEnabled = enabledOptionalStages.has(stageValue);
+    const isCvdStage = stageValue === 'enforce:cvdSimulate' && isEnabled;
+    let contrastSummary: string | undefined;
+    if (isEnabled) {
+      if (stageValue === 'enforce:wcagAA' && contrastReport.aa !== undefined) {
+        contrastSummary = pipelineStageSummaries.buildPairSummary(contrastReport.aa);
+      } else if (stageValue === 'enforce:wcagAAA' && contrastReport.aaa !== undefined) {
+        contrastSummary = pipelineStageSummaries.buildPairSummary(contrastReport.aaa);
+      } else if (stageValue === 'enforce:apca' && contrastReport.apca !== undefined) {
+        contrastSummary = pipelineStageSummaries.buildPairSummary(contrastReport.apca);
+      }
+    }
+    const cvdWarningCount = isCvdStage && contrastReport.cvd !== undefined
+      ? contrastReport.cvd.warnings.length
+      : undefined;
+    const cvdCorrectionText = contrastReport.cvd === undefined
+      ? undefined
+      : pipelineStageSummaries.buildCvdCorrectionSummary(contrastReport.cvd);
+    return new PipelineStageModel(
+      contrastSummary,
+      cvdCorrectionText,
+      cvdWarningCount,
+      isCvdStage,
+      isEnabled
+    );
+  }
+};

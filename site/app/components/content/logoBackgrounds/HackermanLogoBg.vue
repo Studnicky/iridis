@@ -42,7 +42,7 @@
   left: -10%;
   width: 1.6rem;
   height: 0.12rem;
-  border-radius: 999px;
+  border-radius: var(--iridis-radius-full);
   background: linear-gradient(
     to right,
     transparent 0%,

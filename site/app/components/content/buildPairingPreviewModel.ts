@@ -1,37 +1,45 @@
 import type { ThemeDefinitionInterfaceType } from '~/theme/ThemeDefinitionInterfaceType.ts';
+
 import { selectDataCardLayout } from './selectDataCardLayout.ts';
 
-type PairingCardLayout = {
-  readonly class: string;
-  readonly compact: boolean;
-};
+class PairingCardLayout {
+  public readonly class: string;
+  public readonly compact: boolean;
 
-export type PairingPreviewModel = {
-  readonly activeCardLayout: PairingCardLayout | undefined;
-  readonly countLabel: string;
-};
-
-const PAIRING_CARD_LAYOUTS = {
-  'grid': {
-    'class':   'grid grid-cols-1 gap-3 sm:grid-cols-3',
-    'compact': false
-  },
-  'list': {
-    'class':   'grid grid-cols-1 gap-3',
-    'compact': false
-  },
-  'pixel': {
-    'class':   'grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6',
-    'compact': true
+  public constructor(className: string, compact: boolean) {
+    this.class = className;
+    this.compact = compact;
   }
-} as const satisfies Record<Exclude<ThemeDefinitionInterfaceType['dataLayout'], 'table'>, PairingCardLayout>;
-
-export function buildPairingPreviewModel(
-  dataLayout: ThemeDefinitionInterfaceType['dataLayout'],
-  pairingCount: number
-): PairingPreviewModel {
-  return {
-    activeCardLayout: selectDataCardLayout(dataLayout, PAIRING_CARD_LAYOUTS),
-    countLabel: `${pairingCount} pairing${pairingCount === 1 ? '' : 's'}`
-  };
 }
+
+class PairingPreviewModel {
+  public readonly activeCardLayout: PairingCardLayout | undefined;
+  public readonly countLabel: string;
+
+  public constructor(activeCardLayout: PairingCardLayout | undefined, countLabel: string) {
+    this.activeCardLayout = activeCardLayout;
+    this.countLabel = countLabel;
+  }
+}
+
+export const buildPairingPreviewModel = class PairingPreviewModelBuilder {
+  private static readonly cardLayouts = {
+    'grid': new PairingCardLayout('grid grid-cols-1 gap-3 sm:grid-cols-3', false),
+    'list': new PairingCardLayout('grid grid-cols-1 gap-3', false),
+    'pixel': new PairingCardLayout('grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6', true)
+  } satisfies Record<Exclude<ThemeDefinitionInterfaceType['dataLayout'], 'table'>, PairingCardLayout>;
+
+  public static build(
+    dataLayout: ThemeDefinitionInterfaceType['dataLayout'],
+    pairingCount: number
+  ): PairingPreviewModel {
+    const activeCardLayout = selectDataCardLayout.select(
+      dataLayout,
+      PairingPreviewModelBuilder.cardLayouts
+    );
+    return new PairingPreviewModel(
+      activeCardLayout,
+      `${pairingCount} pairing${pairingCount === 1 ? '' : 's'}`
+    );
+  }
+};

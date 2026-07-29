@@ -5,20 +5,7 @@ import { useRoleMathList } from '~/composables/useRoleMathList.ts';
 import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
 import type { HueAlgorithmType, RoleRelationDerivationType } from '~/composables/types/colorDerivation.ts';
 import { SEMANTIC_HUE_CLAMP } from '~/theme/semanticHueClamp.ts';
-import {
-  buildAlgorithmRelationUpdate,
-  buildBulkAlgorithmState,
-  buildFreeformRelationUpdate,
-  buildGroupRelationBatch,
-  buildRelationGroups,
-  buildSemanticHueGuide,
-  buildSemanticHueGuideDisplayEntries,
-  buildVariantRelationUpdate,
-  defaultBulkAlgorithmFor,
-  buildVariantOptions,
-  HUE_ALGORITHM_OPTIONS
-} from './derivation/buildDerivationRelations.ts';
-import type { DerivationRelationGroup } from './derivation/buildDerivationRelations.ts';
+import { buildDerivationRelations } from './derivation/buildDerivationRelations.ts';
 
 /**
  * Per-relation hue-derivation control: every `derivedFrom` edge in the
@@ -32,41 +19,33 @@ import type { DerivationRelationGroup } from './derivation/buildDerivationRelati
 const { updateRelation, updateRelations, semanticHuesEnabled, setSemanticHuesEnabled } = useIridis();
 const { mathList } = useRoleMathList();
 
-/** Neutral pipeline-token fallback for a parent swatch missing its own hex
- * (should not normally happen) — reads the resolved `--ui-text-muted` custom
- * property Tokens.apply() already wrote to the document root, so even the
- * fallback stays engine-derived. SSR has no `document` to read from, so the
- * literal gray is only ever a last-ditch pre-hydration value. */
-function parentHexFallback(): string {
-  if (typeof document === 'undefined') {return '#888888';}
-  return getComputedStyle(document.documentElement).getPropertyValue('--ui-text-muted').trim() || '#888888';
-}
-
 /** Same 4 roles/targets derive:semanticHues actually nudges toward — read directly from its own source of truth (never a second hardcoded copy that could drift out of sync). */
-const semanticHueGuide = buildSemanticHueGuide();
-const semanticHueGuideEntries = buildSemanticHueGuideDisplayEntries(semanticHueGuide);
+const semanticHueGuide = buildDerivationRelations.buildSemanticHueGuide();
+const semanticHueGuideEntries = buildDerivationRelations.buildSemanticHueGuideDisplayEntries(semanticHueGuide);
 
 /** Grouped by parent so a hub's whole family (e.g. every syntax-* role derived from brand) is edited together, matching the graph's own hub-and-spoke structure. */
-const groups = computed<readonly DerivationRelationGroup[]>(() => {
-  return buildRelationGroups(mathList.value, parentHexFallback());
+const groups = computed(() => {
+  return buildDerivationRelations.buildRelationGroups(mathList.value);
 });
 
-function onAlgorithmChange(role: RoleMathEntryType, algorithm: HueAlgorithmType): void {
-  updateRelation(role.name, buildAlgorithmRelationUpdate(role, algorithm));
+function onAlgorithmChange(role: RoleMathEntryType, algorithm: HueAlgorithmType.Type): void {
+  updateRelation(role.name, buildDerivationRelations.buildAlgorithmRelationUpdate(role, algorithm));
 }
 
 function onVariantChange(role: RoleMathEntryType, hueVariantIndex: number): void {
-  updateRelation(role.name, buildVariantRelationUpdate(role, hueVariantIndex));
+  updateRelation(role.name, buildDerivationRelations.buildVariantRelationUpdate(role, hueVariantIndex));
 }
 
 function onFreeformOffsetChange(role: RoleMathEntryType, offsetDeg: number): void {
-  updateRelation(role.name, buildFreeformRelationUpdate(offsetDeg));
+  updateRelation(role.name, buildDerivationRelations.buildFreeformRelationUpdate(offsetDeg));
 }
 
 /** One algorithm per group, defaulting to the first child's current algorithm so re-opening a group doesn't reset your last bulk pick. */
-const bulkAlgorithm = ref<Record<string, HueAlgorithmType>>({});
-function bulkAlgorithmFor(group: DerivationRelationGroup): HueAlgorithmType {
-  return bulkAlgorithm.value[group.parentName] ?? defaultBulkAlgorithmFor(group);
+const bulkAlgorithm = ref<Record<string, HueAlgorithmType.Type>>({});
+function bulkAlgorithmFor(
+  group: ReturnType<typeof buildDerivationRelations.buildRelationGroups>[number]
+): HueAlgorithmType.Type {
+  return bulkAlgorithm.value[group.parentName] ?? buildDerivationRelations.resolveDefaultBulkAlgorithm(group);
 }
 
 /**
@@ -81,15 +60,22 @@ function bulkAlgorithmFor(group: DerivationRelationGroup): HueAlgorithmType {
  * subject to — so a semantic role naturally lands on the slot nearest its
  * semantic target, not an arbitrary one.
  */
-function applyToGroup(group: DerivationRelationGroup, algorithm: HueAlgorithmType): void {
-  bulkAlgorithm.value = buildBulkAlgorithmState(bulkAlgorithm.value, group.parentName, algorithm);
+function applyToGroup(
+  group: ReturnType<typeof buildDerivationRelations.buildRelationGroups>[number],
+  algorithm: HueAlgorithmType.Type
+): void {
+  bulkAlgorithm.value = buildDerivationRelations.buildBulkAlgorithmState(
+    bulkAlgorithm.value,
+    group.parentName,
+    algorithm
+  );
   if (algorithm === 'freeform') {return;}
   // Batched into one updateRelations() call — dispatching one updateRelation()
   // per child here would fire the FSM's async EffectInterpreter.send() once
   // per child in a tight synchronous loop, which races (only the first lands
   // before the interpreter is still busy processing it) and silently drops
   // the rest.
-  updateRelations(buildGroupRelationBatch(group, algorithm));
+  updateRelations(buildDerivationRelations.buildGroupRelationBatch(group, algorithm));
 }
 </script>
 
@@ -119,9 +105,9 @@ function applyToGroup(group: DerivationRelationGroup, algorithm: HueAlgorithmTyp
       :key="group.parentName"
       :group="group"
       :bulk-algorithm="bulkAlgorithmFor(group)"
-      :algorithm-options="HUE_ALGORITHM_OPTIONS"
-      :variant-options="buildVariantOptions"
-      @bulk-algorithm-change="(algorithm: HueAlgorithmType) => bulkAlgorithm = buildBulkAlgorithmState(bulkAlgorithm, group.parentName, algorithm)"
+      :algorithm-options="buildDerivationRelations.hueAlgorithmOptions"
+      :variant-options="buildDerivationRelations.buildVariantOptions"
+      @bulk-algorithm-change="(algorithm: HueAlgorithmType.Type) => bulkAlgorithm = buildDerivationRelations.buildBulkAlgorithmState(bulkAlgorithm, group.parentName, algorithm)"
       @apply-all="applyToGroup(group, bulkAlgorithmFor(group))"
       @algorithm-change="onAlgorithmChange"
       @variant-change="onVariantChange"

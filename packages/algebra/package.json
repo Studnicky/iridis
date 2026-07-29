@@ -1,22 +1,48 @@
 {
   "name": "@studnicky/iridis-algebra",
   "description": "Pure vector-math operations over palettes treated as points in OKLCH×N space — lerp, subtract, nearest, drift, perpendicular.",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./types": "./src/types/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    }
   },
   "files": [
-    "src"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
+    "build": "tsc --build --force tsconfig.build.json",
+    "prepare:publish": "node ../../scripts/package-pipeline.mjs algebra",
+    "build:package": "pnpm run build && pnpm run prepare:publish",
+    "pack:dry": "pnpm run build:package && npm pack --dry-run ./.publish",
+    "publish:dry": "pnpm run build:package && npm publish --dry-run ./.publish",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test 'tests/**/*.test.ts'",
-    "clean": "rm -rf dist",
-    "prebuild": "rm -rf dist"
+    "clean": "rm -rf .publish dist"
   },
-  "peerDependencies": {
-    "@studnicky/iridis": "*"
+  "dependencies": {
+    "@studnicky/json-tology": "^0.27.0",
+    "@studnicky/types": "^4.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Studnicky/iridis.git",
+    "directory": "packages/algebra"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   }
 }

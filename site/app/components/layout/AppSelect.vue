@@ -105,8 +105,8 @@ function onChange(event: Event): void {
   width: 100%;
   color: var(--ui-text);
   background: var(--ui-bg-elevated);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--iridis-radius-md, 0.5rem);
+  border: 1px var(--iridis-border-style) var(--ui-border);
+  border-radius: var(--iridis-radius-md);
   cursor: pointer;
 }
 .app-select:hover { border-color: var(--ui-border-accented); }
@@ -115,7 +115,7 @@ function onChange(event: Event): void {
   opacity: 0.5;
 }
 .app-select:focus-visible {
-  outline: 2px solid var(--ui-primary);
+  outline: 2px var(--iridis-border-style) var(--ui-primary);
   outline-offset: 1px;
 }
 .app-select-chevron {

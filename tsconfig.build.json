@@ -1,0 +1,23 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/algebra/tsconfig.build.json" },
+    { "path": "./packages/anima/tsconfig.build.json" },
+    { "path": "./packages/capacitor/tsconfig.build.json" },
+    { "path": "./packages/chakra/tsconfig.build.json" },
+    { "path": "./packages/cli/tsconfig.build.json" },
+    { "path": "./packages/contrast/tsconfig.build.json" },
+    { "path": "./packages/core/tsconfig.build.json" },
+    { "path": "./packages/fsm/tsconfig.build.json" },
+    { "path": "./packages/image/tsconfig.build.json" },
+    { "path": "./packages/mui/tsconfig.build.json" },
+    { "path": "./packages/panda/tsconfig.build.json" },
+    { "path": "./packages/pulse/tsconfig.build.json" },
+    { "path": "./packages/rdf/tsconfig.build.json" },
+    { "path": "./packages/shadcn/tsconfig.build.json" },
+    { "path": "./packages/stylesheet/tsconfig.build.json" },
+    { "path": "./packages/tailwind/tsconfig.build.json" },
+    { "path": "./packages/trajectory/tsconfig.build.json" },
+    { "path": "./packages/vscode/tsconfig.build.json" }
+  ]
+}

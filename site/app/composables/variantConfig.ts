@@ -11,4 +11,7 @@ const SHADE_L: Record<number, number> = {
  * shared by the live palette pipeline (useIridis) and the export pipeline
  * (useMultiOutput) so both derive:variant passes produce the identical ramp.
  */
-export const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((s) => {return { 'invertLightness': false, 'lightnessTarget': SHADE_L[s]!, 'name': `s${s}` };});
+export const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((shade) => {
+  const lightnessTarget = SHADE_L[shade]!;
+  return { 'invertLightness': false, 'lightnessTarget': lightnessTarget, 'name': `s${shade}` };
+});

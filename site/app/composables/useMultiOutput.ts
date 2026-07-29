@@ -1,3 +1,10 @@
+import type { ChakraOutputInterfaceType } from '@studnicky/iridis-chakra';
+import type { MuiOutputInterfaceType } from '@studnicky/iridis-mui';
+import type { PandaOutputInterfaceType } from '@studnicky/iridis-panda';
+import type { ShadcnOutputInterfaceType } from '@studnicky/iridis-shadcn';
+import type { TailwindOutputInterfaceType } from '@studnicky/iridis-tailwind';
+import type { ThemeJsonInterfaceType } from '@studnicky/iridis-vscode/types';
+
 import { coreTasks, Engine } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
 import { chakraPlugin } from '@studnicky/iridis-chakra';
@@ -26,7 +33,7 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
  * engine.run() itself — one shared `outputsByKey`, keyed by the same stable
  * strings outputFormatCards.ts's OUTPUT_FORMAT_CARDS uses.
  */
-import { onMounted, ref, watch } from 'vue';
+import * as VueModule from 'vue';
 
 import { intakeHexHint } from '~/theme/IntakeHexHint.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
@@ -35,11 +42,13 @@ import { debounce } from '~/utils/debounce.ts';
 import type { DerivationConfigType, PickerSeedType } from './types/index.ts';
 import type { OutputRowType } from './types/outputRow.ts';
 
+import { OUTPUT_FORMATTING_PATTERNS } from './constants/OutputFormattingPatterns.ts';
 import { contrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
 import { globalVscodeTheme } from './globalVscodeTheme.ts';
 import { logger } from './logger.ts';
 import { optionalContrastStages } from './optionalContrastStages.ts';
+import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
 import { spliceOptionalStages } from './spliceOptionalStages.ts';
 import { DEFAULT_SCHEMA_NAME } from './types/index.ts';
@@ -51,35 +60,152 @@ import { VARIANT_CONFIG } from './variantConfig.ts';
  * JSON's grammar collapses a quoted key onto the same "string" ancestor
  * scope as its value, so keys and strings render identically. Quoting is
  * kept only where a key isn't a valid bare JS identifier. */
-const IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
-
-function looseKey(key: string): string {
-  return IDENTIFIER_RE.test(key) ? key : JSON.stringify(key);
-}
-
-function stringify(v: unknown): string {
-  if (typeof v === 'string') {return v;}
-  if (v !== null && typeof v === 'object' && 'full' in (v as Record<string, unknown>)) {return String((v as Record<string, unknown>).full);}
-  return JSON.stringify(v, null, 2);
-}
-
-function stringifyLoose(v: unknown, depth = 0): string {
-  if (v !== null && typeof v === 'object' && 'full' in (v as Record<string, unknown>)) {return JSON.stringify(String((v as Record<string, unknown>).full));}
-  if (v === null || typeof v !== 'object') {return JSON.stringify(v);}
-  const pad = '  '.repeat(depth + 1);
-  const closePad = '  '.repeat(depth);
-  if (Array.isArray(v)) {
-    if (v.length === 0) {return '[]';}
-    const items = v.map((item) => { const result = `${pad}${stringifyLoose(item, depth + 1)}`; return result; }).join(',\n');
-    return `[\n${items}\n${closePad}]`;
+class LooseKeyOperation {
+  static run(key: string): string {
+    return OUTPUT_FORMATTING_PATTERNS.IDENTIFIER.test(key) ? key : JSON.stringify(key);
   }
-  const entries = Object.entries(v as Record<string, unknown>);
-  if (entries.length === 0) {return '{}';}
-  const lines = entries.map(([k, val]) => { const result = `${pad}${looseKey(k)}: ${stringifyLoose(val, depth + 1)}`; return result; }).join(',\n');
-  return `{\n${lines}\n${closePad}}`;
 }
 
-const outputsByKey = ref<Record<string, OutputRowType | undefined>>({});
+const looseKey = LooseKeyOperation.run;
+
+class StringifyOperation {
+  static run(v: unknown): string {
+    if (typeof v === 'string') {return v;}
+    if (v !== null && typeof v === 'object' && 'full' in v) {return String(v.full);}
+    return JSON.stringify(v, null, 2);
+  }
+}
+
+const stringify = StringifyOperation.run;
+
+class StringifyLooseOperation {
+  static run(v: unknown, depth = 0): string {
+    if (v !== null && typeof v === 'object' && 'full' in v) {return JSON.stringify(String(v.full));}
+    if (v === null || typeof v !== 'object') {return JSON.stringify(v);}
+    const pad = '  '.repeat(depth + 1);
+    const closePad = '  '.repeat(depth);
+    if (Array.isArray(v)) {
+      if (v.length === 0) {return '[]';}
+      const items = v.map((item) => { const result = `${pad}${stringifyLoose(item, depth + 1)}`; return result; }).join(',\n');
+      return `[\n${items}\n${closePad}]`;
+    }
+    const entries = Object.entries(v);
+    if (entries.length === 0) {return '{}';}
+    const lines = entries.map(([key, value]) => { const result = `${pad}${looseKey(key)}: ${stringifyLoose(value, depth + 1)}`; return result; }).join(',\n');
+    return `{\n${lines}\n${closePad}}`;
+  }
+}
+
+const stringifyLoose = StringifyLooseOperation.run;
+
+class OutputSlot {
+  private static isRecord(value: unknown): value is Record<string, unknown> {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  private static isStringRecord(value: unknown): value is Record<string, string> {
+    return OutputSlot.isRecord(value) && Object.values(value).every((member) => {return typeof member === 'string';});
+  }
+
+  private static isNestedStringRecord(value: unknown): value is Record<string, Record<string, string>> {
+    return OutputSlot.isRecord(value) && Object.values(value).every(OutputSlot.isStringRecord);
+  }
+
+  private static isTailwind(value: unknown): value is TailwindOutputInterfaceType {
+    return OutputSlot.isRecord(value)
+      && OutputSlot.isRecord(value.colors)
+      && Object.values(value.colors).every((member) => {return typeof member === 'string' || OutputSlot.isStringRecord(member);})
+      && typeof value.config === 'string'
+      && typeof value.cssVars === 'string';
+  }
+
+  private static isShadcn(value: unknown): value is ShadcnOutputInterfaceType {
+    return OutputSlot.isRecord(value)
+      && OutputSlot.isStringRecord(value.colors)
+      && typeof value.cssVars === 'string';
+  }
+
+  private static isMui(value: unknown): value is MuiOutputInterfaceType {
+    return OutputSlot.isRecord(value)
+      && OutputSlot.isRecord(value.palette)
+      && typeof value.config === 'string';
+  }
+
+  private static isChakra(value: unknown): value is ChakraOutputInterfaceType {
+    return OutputSlot.isRecord(value)
+      && OutputSlot.isNestedStringRecord(value.colors)
+      && typeof value.config === 'string';
+  }
+
+  private static isPanda(value: unknown): value is PandaOutputInterfaceType {
+    return OutputSlot.isRecord(value)
+      && OutputSlot.isStringRecord(value.colors)
+      && typeof value.pandaConfig === 'string'
+      && typeof value.unoConfig === 'string';
+  }
+
+  private static isSemanticRule(value: unknown): boolean {
+    return OutputSlot.isRecord(value)
+      && (value.fontStyle === undefined || typeof value.fontStyle === 'string')
+      && (value.foreground === undefined || typeof value.foreground === 'string');
+  }
+
+  private static isTokenColor(value: unknown): boolean {
+    return OutputSlot.isRecord(value)
+      && typeof value.name === 'string'
+      && (typeof value.scope === 'string' || (Array.isArray(value.scope) && value.scope.every((scope) => {return typeof scope === 'string';})))
+      && OutputSlot.isSemanticRule(value.settings);
+  }
+
+  private static isVscodeTheme(value: unknown): value is ThemeJsonInterfaceType {
+    return OutputSlot.isRecord(value)
+      && OutputSlot.isStringRecord(value.colors)
+      && typeof value.name === 'string'
+      && value.semanticHighlighting === true
+      && OutputSlot.isRecord(value.semanticTokenColors)
+      && Object.values(value.semanticTokenColors).every((rule) => {return typeof rule === 'string' || OutputSlot.isSemanticRule(rule);})
+      && Array.isArray(value.tokenColors)
+      && value.tokenColors.every(OutputSlot.isTokenColor)
+      && (value.type === 'dark' || value.type === 'light' || value.type === 'hc-dark' || value.type === 'hc-light');
+  }
+
+  static chakra(value: unknown): ChakraOutputInterfaceType {
+    if (OutputSlot.isChakra(value)) {return value;}
+    throw new TypeError('Output slot chakra:theme must provide a string config');
+  }
+
+  static mui(value: unknown): MuiOutputInterfaceType {
+    if (OutputSlot.isMui(value)) {return value;}
+    throw new TypeError('Output slot mui:theme must provide a string config');
+  }
+
+  static panda(value: unknown): PandaOutputInterfaceType {
+    if (OutputSlot.isPanda(value)) {return value;}
+    throw new TypeError('Output slot panda:theme must provide string pandaConfig and unoConfig fields');
+  }
+
+  static shadcn(value: unknown): ShadcnOutputInterfaceType {
+    if (OutputSlot.isShadcn(value)) {return value;}
+    throw new TypeError('Output slot shadcn:theme must provide string cssVars');
+  }
+
+  static string(value: unknown, slotName: string): string {
+    if (typeof value === 'string') {return value;}
+    throw new TypeError(`Output slot ${slotName} must be a string`);
+  }
+
+  static tailwind(value: unknown): TailwindOutputInterfaceType {
+    if (OutputSlot.isTailwind(value)) {return value;}
+    throw new TypeError('Output slot tailwind:theme must provide a string config');
+  }
+
+  static vscodeTheme(value: unknown): ThemeJsonInterfaceType {
+    if (OutputSlot.isVscodeTheme(value)) {return value;}
+    throw new TypeError('Output slot vscode:themeJson must match the VS Code theme schema');
+  }
+}
+
+const outputsByKey = VueModule.ref<Record<string, OutputRowType | undefined>>({});
 
 /** Slots the strictness-selected optional contrast stage into REQUIRED_COLOR_STAGES right after enforce:contrast — same shared builder useIridis.ts's live pipeline uses. */
 class ColorStages {
@@ -112,33 +238,46 @@ class MainOutputs {
       'reason:annotate', 'reason:serialize'
     ]);
     const pair = roleSchemaByName[schemaName] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
+    if (pair === undefined) {throw new RangeError(`No role schema is registered for ${schemaName} or ${DEFAULT_SCHEMA_NAME}`);}
+    const roles = pair[framing];
     const st = engine.run({
       'bypass':   undefined,
-      'colors':   activeSeeds,
+      'colors':   pickerSeedInputs(activeSeeds),
       'contrast': contrastConfigFor(contrastStrictness, cvdCorrect),
       'emit':     undefined,
       'maxColors': undefined,
       'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig, 'derivation:semanticHuesEnabled': semanticHuesEnabled },
-      'roles':    pair![framing],
+      'roles':    roles,
       'runtime':  { 'colorSpace': colorSpace, 'extra': undefined, 'framing': framing }
     });
-    const out = st.outputs as Record<string, unknown>;
+    const out = st.outputs;
     const rows: Record<string, OutputRowType | undefined> = {};
-    if (out['stylesheet:cssVars'] !== undefined) {rows.cssVars = { 'label': 'CSS variables', 'lang': 'css', 'text': stringify(out['stylesheet:cssVars']) };}
-    if (out['stylesheet:cssVarsScoped'] !== undefined) {rows.cssVarsScoped = { 'label': 'CSS variables (scoped)', 'lang': 'css', 'text': stringify(out['stylesheet:cssVarsScoped']) };}
-    if (out['tailwind:theme'] !== undefined) {rows.tailwind = { 'label': 'Tailwind', 'lang': 'javascript', 'text': (out['tailwind:theme'] as { 'config': string }).config };}
-    if (out['shadcn:theme'] !== undefined) {rows.shadcn = { 'label': 'shadcn/ui', 'lang': 'css', 'text': (out['shadcn:theme'] as { 'cssVars': string }).cssVars };}
-    if (out['mui:theme'] !== undefined) {rows.mui = { 'label': 'MUI', 'lang': 'javascript', 'text': (out['mui:theme'] as { 'config': string }).config };}
-    if (out['chakra:theme'] !== undefined) {rows.chakra = { 'label': 'Chakra UI', 'lang': 'javascript', 'text': (out['chakra:theme'] as { 'config': string }).config };}
-    if (out['panda:theme'] !== undefined) {
-      const panda = out['panda:theme'] as { 'pandaConfig': string; 'unoConfig': string };
+    const cssVariables = out['stylesheet:cssVars'];
+    if (cssVariables !== undefined) {rows.cssVars = { 'label': 'CSS variables', 'lang': 'css', 'text': stringify(cssVariables) };}
+    const scopedCssVariables = out['stylesheet:cssVarsScoped'];
+    if (scopedCssVariables !== undefined) {rows.cssVarsScoped = { 'label': 'CSS variables (scoped)', 'lang': 'css', 'text': stringify(scopedCssVariables) };}
+    const tailwindTheme = out['tailwind:theme'];
+    if (tailwindTheme !== undefined) {rows.tailwind = { 'label': 'Tailwind', 'lang': 'javascript', 'text': OutputSlot.tailwind(tailwindTheme).config };}
+    const shadcnTheme = out['shadcn:theme'];
+    if (shadcnTheme !== undefined) {rows.shadcn = { 'label': 'shadcn/ui', 'lang': 'css', 'text': OutputSlot.shadcn(shadcnTheme).cssVars };}
+    const muiTheme = out['mui:theme'];
+    if (muiTheme !== undefined) {rows.mui = { 'label': 'MUI', 'lang': 'javascript', 'text': OutputSlot.mui(muiTheme).config };}
+    const chakraTheme = out['chakra:theme'];
+    if (chakraTheme !== undefined) {rows.chakra = { 'label': 'Chakra UI', 'lang': 'javascript', 'text': OutputSlot.chakra(chakraTheme).config };}
+    const pandaTheme = out['panda:theme'];
+    if (pandaTheme !== undefined) {
+      const panda = OutputSlot.panda(pandaTheme);
       rows.panda = { 'label': 'Panda CSS', 'lang': 'javascript', 'text': panda.pandaConfig };
       rows.unocss = { 'label': 'UnoCSS', 'lang': 'javascript', 'text': panda.unoConfig };
     }
-    if (out['capacitor:theme'] !== undefined) {rows.capacitor = { 'label': 'Capacitor', 'lang': 'javascript', 'text': stringifyLoose(out['capacitor:theme']) };}
-    if (out['capacitor:androidThemeXml'] !== undefined) {rows.androidThemeXml = { 'label': 'Android theme.xml', 'lang': 'xml', 'text': out['capacitor:androidThemeXml'] as string };}
-    if (out['core:json'] !== undefined) {rows.json = { 'label': 'JSON', 'lang': 'javascript', 'text': stringifyLoose(out['core:json']) };}
-    if (out['rdf:serialized'] !== undefined) {rows.rdf = { 'label': 'RDF (Turtle)', 'lang': 'turtle', 'text': out['rdf:serialized'] as string };}
+    const capacitorTheme = out['capacitor:theme'];
+    if (capacitorTheme !== undefined) {rows.capacitor = { 'label': 'Capacitor', 'lang': 'javascript', 'text': stringifyLoose(capacitorTheme) };}
+    const androidThemeXml = out['capacitor:androidThemeXml'];
+    if (androidThemeXml !== undefined) {rows.androidThemeXml = { 'label': 'Android theme.xml', 'lang': 'xml', 'text': OutputSlot.string(androidThemeXml, 'capacitor:androidThemeXml') };}
+    const jsonOutput = out['core:json'];
+    if (jsonOutput !== undefined) {rows.json = { 'label': 'JSON', 'lang': 'javascript', 'text': stringifyLoose(jsonOutput) };}
+    const serializedRdf = out['rdf:serialized'];
+    if (serializedRdf !== undefined) {rows.rdf = { 'label': 'RDF (Turtle)', 'lang': 'turtle', 'text': OutputSlot.string(serializedRdf, 'rdf:serialized') };}
     return rows;
   }
 }
@@ -157,7 +296,7 @@ class VscodeOutput {
     ]);
     const st = engine.run({
       'bypass':   undefined,
-      'colors':   activeSeeds,
+      'colors':   pickerSeedInputs(activeSeeds),
       'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': undefined, 'extra': undefined, 'level': 'AA' },
       'emit':     undefined,
       'maxColors': undefined,
@@ -165,10 +304,11 @@ class VscodeOutput {
       'roles':    vscodeRoleSchema16,
       'runtime':  { 'colorSpace': 'srgb', 'extra': undefined, 'framing': 'dark' }
     });
-    const themeJson = (st.outputs as Record<string, unknown>)['vscode:themeJson'];
+    const themeJson = st.outputs['vscode:themeJson'];
     if (themeJson === undefined) {return undefined;}
-    globalVscodeTheme.value = themeJson as object;
-    return { 'label': 'VS Code theme', 'lang': 'javascript', 'text': stringifyLoose(themeJson) };
+    const validatedTheme = OutputSlot.vscodeTheme(themeJson);
+    globalVscodeTheme.value = validatedTheme;
+    return { 'label': 'VS Code theme', 'lang': 'javascript', 'text': stringifyLoose(validatedTheme) };
   }
 }
 
@@ -183,63 +323,75 @@ let observeStarted = false;
  * would otherwise re-run both passes on every seed/framing/schema change
  * site-wide) doesn't even start ticking until then either.
  */
-function activate(): void {
-  if (activated) {return;}
-  activated = true;
-  const { activeSeeds, colorSpace, contrastStrictness, cvdCorrect, derivationConfig, framing, schemaName, semanticHuesEnabled } = useIridis();
-  function generate(): void {
-    try {
-      const rows = MainOutputs.build(
-        schemaName.value, framing.value, activeSeeds.value,
-        contrastStrictness.value, derivationConfig.value, semanticHuesEnabled.value,
-        cvdCorrect.value, colorSpace.value
-      );
-      rows.vscode = VscodeOutput.build(activeSeeds.value);
-      outputsByKey.value = rows;
-    } catch (e) {
-      logger.error(
-        LogBody.create()
-          .component('useMultiOutput')
-          .operation('generate')
-          .status(LOG_STATUS.FAILED)
-          .message('Output pipeline failed; keeping the previous outputs')
-          .context({ 'error': e instanceof Error ? e.message : String(e) })
-          .build()
-      );
+class ActivateOperation {
+  static run(): void {
+    if (activated) {return;}
+    activated = true;
+    const { activeSeeds, colorSpace, contrastStrictness, cvdCorrect, derivationConfig, framing, schemaName, semanticHuesEnabled } = useIridis();
+    function generate(): void {
+      try {
+        const rows = MainOutputs.build(
+          schemaName.value, framing.value, activeSeeds.value,
+          contrastStrictness.value, derivationConfig.value, semanticHuesEnabled.value,
+          cvdCorrect.value, colorSpace.value
+        );
+        rows.vscode = VscodeOutput.build(activeSeeds.value);
+        outputsByKey.value = rows;
+      } catch (e) {
+        logger.error(
+          LogBody.create()
+            .component('useMultiOutput')
+            .operation('generate')
+            .status(LOG_STATUS.FAILED)
+            .message('Output pipeline failed; keeping the previous outputs')
+            .context({ 'error': e instanceof Error ? e.message : String(e) })
+            .build()
+        );
+      }
     }
+    const schedule = debounce(generate, 120);
+    generate();
+    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, derivationConfig, semanticHuesEnabled, cvdCorrect, colorSpace], schedule, { 'deep': true });
   }
-  const schedule = debounce(generate, 120);
-  generate();
-  watch([activeSeeds, framing, schemaName, contrastStrictness, derivationConfig, semanticHuesEnabled, cvdCorrect, colorSpace], schedule, { 'deep': true });
 }
+
+const activate = ActivateOperation.run;
 
 /** Starts observing the Stylesheets stage's own section (`#result`) — a generous `rootMargin` pre-warms generation just before the user actually scrolls it into view, rather than the instant it's technically on-screen. Falls back to immediate activation if IntersectionObserver/the target element aren't available (SSR, or an unexpected DOM shape). */
-function observeResultVisibility(): void {
-  if (observeStarted) {return;}
-  observeStarted = true;
-  onMounted(() => {
-    if (activated) {return;}
-    if (typeof document === 'undefined' || typeof IntersectionObserver === 'undefined') {
-      activate();
-      return;
-    }
-    const target = document.getElementById('result');
-    if (target === null) {
-      activate();
-      return;
-    }
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => { const result = entry.isIntersecting; return result; })) {
-        observer.disconnect();
+class ObserveResultVisibilityOperation {
+  static run(): void {
+    if (observeStarted) {return;}
+    observeStarted = true;
+    VueModule.onMounted(() => {
+      if (activated) {return;}
+      if (typeof document === 'undefined' || typeof IntersectionObserver === 'undefined') {
         activate();
+        return;
       }
-    }, { 'rootMargin': '400px' });
-    observer.observe(target);
-  });
+      const target = document.getElementById('result');
+      if (target === null) {
+        activate();
+        return;
+      }
+      const observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => { const result = entry.isIntersecting; return result; })) {
+          observer.disconnect();
+          activate();
+        }
+      }, { 'rootMargin': '400px' });
+      observer.observe(target);
+    });
+  }
 }
 
+const observeResultVisibility = ObserveResultVisibilityOperation.run;
+
 /** Reactive, deterministically-keyed output rows plus the shared VS Code theme used to highlight every CodeBlock — the single entry point every OutputFormatCard reads from. Generation itself doesn't start until the Stylesheets stage is about to be visible (see observeResultVisibility). */
-export function useMultiOutput(): { 'outputsByKey': typeof outputsByKey } {
-  observeResultVisibility();
-  return { 'outputsByKey': outputsByKey };
+class UseMultiOutputOperation {
+  static run(): { 'outputsByKey': typeof outputsByKey } {
+    observeResultVisibility();
+    return { 'outputsByKey': outputsByKey };
+  }
 }
+
+export const useMultiOutput = UseMultiOutputOperation.run;

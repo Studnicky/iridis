@@ -114,12 +114,12 @@ export class EmitShadcnTheme implements TaskInterface {
     'writes':      ['outputs.shadcn:theme']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const output = ShadcnTheme.build(state.roles);
 
     state.outputs['shadcn:theme'] = output;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitShadcnTheme')
         .operation('run')

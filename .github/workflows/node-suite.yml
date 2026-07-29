@@ -1,0 +1,123 @@
+name: node-suite
+
+on:
+  workflow_call:
+    inputs:
+      preset:
+        required: false
+        type: string
+        default: ''
+      run-stamp-version-check:
+        required: false
+        type: boolean
+        default: false
+      run-typecheck:
+        required: false
+        type: boolean
+        default: false
+      run-lint:
+        required: false
+        type: boolean
+        default: false
+      run-test:
+        required: false
+        type: boolean
+        default: false
+      run-build:
+        required: false
+        type: boolean
+        default: false
+      run-audit:
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.resolve.outputs.matrix }}
+    steps:
+      - id: resolve
+        shell: bash
+        env:
+          INPUT_PRESET: ${{ inputs.preset }}
+          RUN_AUDIT: ${{ inputs.run-audit }}
+          RUN_BUILD: ${{ inputs.run-build }}
+          RUN_LINT: ${{ inputs.run-lint }}
+          RUN_STAMP_VERSION_CHECK: ${{ inputs.run-stamp-version-check }}
+          RUN_TEST: ${{ inputs.run-test }}
+          RUN_TYPECHECK: ${{ inputs.run-typecheck }}
+        run: |
+          set -euo pipefail
+
+          preset="$INPUT_PRESET"
+          entries=
+          append_entry() {
+            entry="$1"
+            if [ -n "$entries" ]; then
+              entries="${entries},"
+            fi
+            entries="${entries}${entry}"
+          }
+
+          case "$preset" in
+            full)
+              append_entry '{"name":"generated-artifacts","command":"bash scripts/ci-suite.sh generated-artifacts"}'
+              append_entry '{"name":"typecheck","command":"bash scripts/ci-suite.sh typecheck"}'
+              append_entry '{"name":"lint","command":"bash scripts/ci-suite.sh lint"}'
+              append_entry '{"name":"test","command":"bash scripts/ci-suite.sh test"}'
+              append_entry '{"name":"build","command":"bash scripts/ci-suite.sh build"}'
+              ;;
+            audit)
+              append_entry '{"name":"audit","command":"bash scripts/ci-suite.sh audit"}'
+              ;;
+            site)
+              append_entry '{"name":"site-generate","command":"NUXT_APP_BASE_URL=/iridis/ NUXT_PUBLIC_BASE_URL=/iridis/ pnpm --filter site run generate"}'
+              ;;
+            '')
+              if [ "$RUN_STAMP_VERSION_CHECK" = 'true' ]; then
+                append_entry '{"name":"generated-artifacts","command":"bash scripts/ci-suite.sh generated-artifacts"}'
+              fi
+              if [ "$RUN_TYPECHECK" = 'true' ]; then
+                append_entry '{"name":"typecheck","command":"bash scripts/ci-suite.sh typecheck"}'
+              fi
+              if [ "$RUN_LINT" = 'true' ]; then
+                append_entry '{"name":"lint","command":"bash scripts/ci-suite.sh lint"}'
+              fi
+              if [ "$RUN_TEST" = 'true' ]; then
+                append_entry '{"name":"test","command":"bash scripts/ci-suite.sh test"}'
+              fi
+              if [ "$RUN_BUILD" = 'true' ]; then
+                append_entry '{"name":"build","command":"bash scripts/ci-suite.sh build"}'
+              fi
+              if [ "$RUN_AUDIT" = 'true' ]; then
+                append_entry '{"name":"audit","command":"bash scripts/ci-suite.sh audit"}'
+              fi
+              ;;
+            *)
+              echo "node-suite: unknown preset '$preset'" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "matrix={\"include\":[${entries:-}]}" >> "$GITHUB_OUTPUT"
+
+  suite:
+    needs: [ plan ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: ./.github/actions/pnpm-node-setup
+      - name: Run ${{ matrix.name }}
+        env:
+          MATRIX_COMMAND: ${{ matrix.command }}
+        run: bash -euo pipefail -c "$MATRIX_COMMAND"

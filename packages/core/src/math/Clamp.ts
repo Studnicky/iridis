@@ -5,9 +5,9 @@
 class Clamp {
   readonly 'name' = 'clamp';
 
-  apply(min: number, max: number, v: number): number {
-    if (v < min) {return min;}
-    if (v > max) {return max;}
+  apply(minimum: number, maximum: number, v: number): number {
+    if (v < minimum) {return minimum;}
+    if (v > maximum) {return maximum;}
     return v;
   }
 }

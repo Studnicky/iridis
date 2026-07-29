@@ -8,7 +8,7 @@ const props = defineProps<{
   role: RoleMathEntryType;
 }>();
 
-const detailsModel = computed(() => buildRoleMathDerivedDetailsModel(props.role));
+const detailsModel = computed(() => buildRoleMathDerivedDetailsModel.build(props.role));
 </script>
 
 <template>

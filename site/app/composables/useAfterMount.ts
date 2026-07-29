@@ -1,4 +1,4 @@
-import { onMounted, ref, type Ref } from 'vue';
+import * as VueModule from 'vue';
 
 /**
  * False during SSR/prerender and through the initial client hydration pass,
@@ -10,8 +10,12 @@ import { onMounted, ref, type Ref } from 'vue';
  * is never a server/client mismatch for Vue's hydration to silently mishandle
  * — the real content mounts a moment later via an ordinary reactive patch.
  */
-export function useAfterMount(): Ref<boolean> {
-  const afterMount = ref(false);
-  onMounted(() => { afterMount.value = true; });
-  return afterMount;
+class UseAfterMountOperation {
+  static run() {
+    const afterMount = VueModule.ref(false);
+    VueModule.onMounted(() => { afterMount.value = true; });
+    return afterMount;
+  }
 }
+
+export const useAfterMount = UseAfterMountOperation.run;

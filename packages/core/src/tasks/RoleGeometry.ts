@@ -18,11 +18,11 @@ class RoleGeometry {
     return (range[0] + range[1]) / 2;
   }
 
-  /** Rotate `src` toward `target` along the shortest arc, by at most `maxDeg` degrees. */
-  static hueTowards(src: number, target: number, maxDeg: number): number {
-    const delta = ((target - src + 540) % 360) - 180;
-    const clamped = Math.max(-maxDeg, Math.min(maxDeg, delta));
-    return (((src + clamped) % 360) + 360) % 360;
+  /** Rotate `source` toward `target` along the shortest arc, by at most `maximumDegrees` degrees. */
+  static hueTowards(source: number, target: number, maximumDegrees: number): number {
+    const delta = ((target - source + 540) % 360) - 180;
+    const clamped = Math.max(-maximumDegrees, Math.min(maximumDegrees, delta));
+    return (((source + clamped) % 360) + 360) % 360;
   }
 }
 

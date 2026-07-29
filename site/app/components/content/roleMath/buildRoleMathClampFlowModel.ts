@@ -1,35 +1,53 @@
 import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
 
-export type RoleMathClampFlowCard = {
-  readonly ariaLabel: string;
-  readonly bodyText: string;
-  readonly hex: string;
-  readonly label: 'Clamp seed' | 'Resolved color';
-};
+class RoleMathClampFlowCard {
+  public readonly ariaLabel: string;
+  public readonly bodyText: string;
+  public readonly hex: string;
+  public readonly label: 'Clamp seed' | 'Resolved color';
 
-export type RoleMathClampFlowModel = {
-  readonly seedCard: RoleMathClampFlowCard;
-  readonly resolvedCard: RoleMathClampFlowCard;
-};
-
-export function buildRoleMathClampFlowModel(
-  role: RoleMathEntryType
-): RoleMathClampFlowModel | null {
-  if (!role.clamp) {
-    return null;
+  public constructor(
+    ariaLabel: string,
+    bodyText: string,
+    hex: string,
+    label: 'Clamp seed' | 'Resolved color'
+  ) {
+    this.ariaLabel = ariaLabel;
+    this.bodyText = bodyText;
+    this.hex = hex;
+    this.label = label;
   }
-  return {
-    seedCard: {
-      ariaLabel: `${role.name} clamp seed ${role.clamp.seedHex}`,
-      bodyText: role.clamp.seedOklch,
-      hex: role.clamp.seedHex,
-      label: 'Clamp seed'
-    },
-    resolvedCard: {
-      ariaLabel: `${role.name} clamp resolved ${role.clamp.resolvedHex}`,
-      bodyText: role.clamp.roleOklch,
-      hex: role.clamp.resolvedHex,
-      label: 'Resolved color'
-    }
-  };
 }
+
+export const buildRoleMathClampFlowModel = class RoleMathClampFlowModel {
+  public readonly resolvedCard: RoleMathClampFlowCard;
+  public readonly seedCard: RoleMathClampFlowCard;
+
+  private constructor(
+    resolvedCard: RoleMathClampFlowCard,
+    seedCard: RoleMathClampFlowCard
+  ) {
+    this.resolvedCard = resolvedCard;
+    this.seedCard = seedCard;
+  }
+
+  public static build(role: RoleMathEntryType): RoleMathClampFlowModel | null {
+    const clamp = role.clamp;
+    if (clamp === null) {
+      return null;
+    }
+    const resolvedCard = new RoleMathClampFlowCard(
+      `${role.name} clamp resolved ${clamp.resolvedHex}`,
+      clamp.roleOklch,
+      clamp.resolvedHex,
+      'Resolved color'
+    );
+    const seedCard = new RoleMathClampFlowCard(
+      `${role.name} clamp seed ${clamp.seedHex}`,
+      clamp.seedOklch,
+      clamp.seedHex,
+      'Clamp seed'
+    );
+    return new RoleMathClampFlowModel(resolvedCard, seedCard);
+  }
+};

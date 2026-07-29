@@ -1,1 +1,3 @@
-export type FramingType = 'dark' | 'light';
+export declare namespace FramingType {
+  type Type = 'dark' | 'light';
+}

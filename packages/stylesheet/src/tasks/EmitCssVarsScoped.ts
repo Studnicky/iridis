@@ -6,12 +6,14 @@ import type {
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
 
-import { toCssVarName } from '@studnicky/iridis';
+import { CssVarName } from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { CssVarsScopedOutputInterfaceType } from '../types/index.ts';
 
+import { CssAttributeSelector } from '../util/CssAttributeSelector.ts';
+import { CssCustomPropertyPrefix } from '../util/CssCustomPropertyPrefix.ts';
 import { P3Serializer } from '../util/P3Serializer.ts';
 
 class ScopedCategoryBlock {
@@ -22,10 +24,10 @@ class ScopedCategoryBlock {
     scopePrefix: string
   ): string {
     const decls = Object.entries(roles).map(([role, record]) => {
-      const varName = toCssVarName(role, prefix);
+      const varName = CssVarName.from(role, prefix);
       return `  ${varName}: ${record.hex};`;
     });
-    const selector = `[data-${scopePrefix}='${category}']`;
+    const selector = CssAttributeSelector.from(`data-${scopePrefix}`, category);
     return `${selector} {\n${decls.join('\n')}\n}`;
   }
 }
@@ -55,12 +57,12 @@ class ScopedWideGamutBlock {
     const p3Decls: string[] = [];
     for (const [role, record] of Object.entries(roles)) {
       if (record.displayP3 !== undefined) {
-        const varName = toCssVarName(role, prefix);
+        const varName = CssVarName.from(role, prefix);
         p3Decls.push(`  ${varName}: ${P3Serializer.serialize(record.displayP3)};`);
       }
     }
     if (p3Decls.length === 0) {return '';}
-    const selector = `[data-${scopePrefix}='${category}']`;
+    const selector = CssAttributeSelector.from(`data-${scopePrefix}`, category);
     return `@supports (color: color(display-p3 0 0 0)) {\n  ${selector} {\n${p3Decls.map((d) => { const result = `  ${d}`; return result; }).join('\n')}\n  }\n}`;
   }
 }
@@ -90,8 +92,10 @@ class EmitCssVarsScoped implements TaskInterface {
     'writes':      ['outputs.stylesheet:cssVarsScoped']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    const prefix      = typeof state.metadata.cssVarPrefix === 'string' ? state.metadata.cssVarPrefix : '--c-';
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    const prefix = CssCustomPropertyPrefix.from(
+      typeof state.metadata.cssVarPrefix === 'string' ? state.metadata.cssVarPrefix : undefined
+    );
     const scopePrefix = typeof state.metadata.scopePrefix  === 'string' ? state.metadata.scopePrefix  : 'theme';
 
     const blocks:    Record<string, string> = {};
@@ -131,7 +135,7 @@ class EmitCssVarsScoped implements TaskInterface {
 
     state.outputs['stylesheet:cssVarsScoped'] = output;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitCssVarsScoped')
         .operation('run')

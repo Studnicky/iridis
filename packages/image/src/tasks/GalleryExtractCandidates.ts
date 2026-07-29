@@ -1,5 +1,4 @@
 import type {
-  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
@@ -9,15 +8,10 @@ import type {
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
-import type {
-  GalleryAlgorithmType,
-  GalleryCandidateInterfaceType
-} from '../types/augmentation.ts';
+import type { GalleryCandidateInterfaceType } from '../types/augmentation.ts';
 
 import { ClusterDispatcher } from './ClusterDispatcher.ts';
-
-/** Placeholder for a not-yet-computed candidate's `colors` — the default-config fallback below never has clustering results at config-build time; `run()` always overwrites it with the real `ClusterDispatcher.run` output before the config object is read again. */
-const EMPTY_CANDIDATE_COLORS: ColorRecordInterfaceType[] = [];
+import { GALLERY_EXTRACT_CANDIDATES_DEFAULTS } from './constants/GalleryExtractCandidatesDefaults.ts';
 
 /**
  * `gallery:extractCandidates`
@@ -42,9 +36,6 @@ const EMPTY_CANDIDATE_COLORS: ColorRecordInterfaceType[] = [];
  *   state.metadata['gallery:candidates']: array of
  *     `{ algorithm, k, label, colors }`
  */
-const DEFAULT_K = 5;
-const DEFAULT_CANDIDATE_ALGORITHMS: readonly GalleryAlgorithmType[] = ['median-cut', 'k-means', 'delta-e'];
-
 class GalleryExtractCandidates implements TaskInterface {
   readonly 'name' = 'gallery:extractCandidates';
 
@@ -57,7 +48,7 @@ class GalleryExtractCandidates implements TaskInterface {
     'writes':      ['metadata.gallery:candidates']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const galleryConfig = state.metadata.gallery as
       | {
         'candidates'?:  readonly GalleryCandidateInterfaceType[];
@@ -65,15 +56,15 @@ class GalleryExtractCandidates implements TaskInterface {
         'k'?:           number;
       }
       | undefined;
-    const sharedK = galleryConfig?.k ?? DEFAULT_K;
+    const sharedK = galleryConfig?.k ?? GALLERY_EXTRACT_CANDIDATES_DEFAULTS.DEFAULT_K;
     const sharedDeltaECap = galleryConfig?.deltaECap;
 
     const configs: readonly GalleryCandidateInterfaceType[] = galleryConfig?.candidates
-      ?? DEFAULT_CANDIDATE_ALGORITHMS.map((algorithm) => {
-        return { 'algorithm': algorithm, 'colors': EMPTY_CANDIDATE_COLORS, 'k': sharedK, 'label': algorithm };
+      ?? GALLERY_EXTRACT_CANDIDATES_DEFAULTS.DEFAULT_CANDIDATE_ALGORITHMS.map((algorithm) => {
+        return { 'algorithm': algorithm, 'colors': GALLERY_EXTRACT_CANDIDATES_DEFAULTS.EMPTY_CANDIDATE_COLORS, 'k': sharedK, 'label': algorithm };
       });
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('GalleryExtractCandidates')
         .operation('run')
@@ -87,7 +78,7 @@ class GalleryExtractCandidates implements TaskInterface {
     );
 
     if (state.colors.length === 0) {
-      ctx.logger.warn(
+      context.logger.warn(
         LogBody.create()
           .component('GalleryExtractCandidates')
           .operation('run')
@@ -111,7 +102,7 @@ class GalleryExtractCandidates implements TaskInterface {
 
     state.metadata['gallery:candidates'] = candidates;
 
-    ctx.logger.info(
+    context.logger.info(
       LogBody.create()
         .component('GalleryExtractCandidates')
         .operation('run')

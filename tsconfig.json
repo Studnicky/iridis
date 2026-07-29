@@ -18,6 +18,10 @@
     { "path": "./packages/rdf" },
     { "path": "./packages/cli" },
     { "path": "./packages/trajectory" },
-    { "path": "./packages/pulse" }
+    { "path": "./packages/pulse" },
+    { "path": "./packages/shadcn" },
+    { "path": "./packages/mui" },
+    { "path": "./packages/chakra" },
+    { "path": "./packages/panda" }
   ]
 }

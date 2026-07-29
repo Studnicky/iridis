@@ -1,14 +1,16 @@
 import type { ModeType } from '~/composables/types/index.ts';
 
-export const MODE_SWITCH_TAB_ITEMS = [
-  { label: 'Build a palette', icon: 'i-material-symbols-palette-outline', value: '0' },
-  { label: 'Extract from image', icon: 'i-material-symbols-image-outline-rounded', value: '1' }
-] as const;
+export const buildModeSwitchModel = class ModeSwitchModel {
+  public static readonly tabItems = [
+    { 'icon': 'i-material-symbols-palette-outline', 'label': 'Build a palette', 'value': '0' },
+    { 'icon': 'i-material-symbols-image-outline-rounded', 'label': 'Extract from image', 'value': '1' }
+  ] as const;
 
-export function tabValueFromMode(mode: ModeType): '0' | '1' {
-  return mode === 'picker' ? '0' : '1';
-}
+  public static mode(value: number | string): ModeType.Type {
+    return Number(value) === 0 ? 'picker' : 'image';
+  }
 
-export function modeFromTabValue(value: number | string): ModeType {
-  return Number(value) === 0 ? 'picker' : 'image';
-}
+  public static tabValue(mode: ModeType.Type): '0' | '1' {
+    return mode === 'picker' ? '0' : '1';
+  }
+};

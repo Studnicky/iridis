@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SCHEMA_SELECTOR_ITEMS } from './schema/schemaSelectorItems.ts';
+import { schemaSelectorItems } from './schema/schemaSelectorItems.ts';
 
 /**
  * Role-schema picker: a pill row + mirrored slider, both selecting from the
@@ -12,11 +12,12 @@ import { SCHEMA_SELECTOR_ITEMS } from './schema/schemaSelectorItems.ts';
  */
 defineProps<{ 'modelValue': string }>();
 const emit = defineEmits<{ 'update:modelValue': [schemaName: string] }>();
+const items = schemaSelectorItems.build();
 </script>
 
 <template>
   <SegmentedSlider
-    :items="SCHEMA_SELECTOR_ITEMS"
+    :items="items"
     :model-value="modelValue"
     :min-width="48"
     :gap="8"

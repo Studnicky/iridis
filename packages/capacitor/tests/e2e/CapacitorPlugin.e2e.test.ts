@@ -14,114 +14,148 @@
  *   6. pipeline         — full integration: intake → resolve → all four emitters
  */
 
-import { test }       from 'node:test';
-import { Engine }     from '@studnicky/iridis/engine';
-import { coreTasks }  from '@studnicky/iridis/tasks';
-import { colorRecordFactory } from '@studnicky/iridis/math';
 import type {
+  ColorIntentType,
   ColorRecordInterfaceType,
+  EngineInterface,
   InputInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   RoleSchemaInterfaceType,
-  TaskRegistryInterface,
-  EngineInterface,
+  TaskRegistryInterface
 } from '@studnicky/iridis';
+import type {
+  CapacitorThemeOutputInterfaceType,
+  SplashScreenOutputInterfaceType,
+  StatusBarOutputInterfaceType
+} from '@studnicky/iridis-capacitor/types';
 import type { LoggerInterface } from '@studnicky/logger/interfaces';
 import type { LogDataType } from '@studnicky/logger/types';
+
 import {
   capacitorPlugin,
   CapacitorPlugin,
-} from '@studnicky/iridis-capacitor';
-import {
-  emitCapacitorStatusBar,
-  emitCapacitorTheme,
-  emitCapacitorSplashScreen,
   emitAndroidThemeXml,
+  emitCapacitorSplashScreen,
+  emitCapacitorStatusBar,
+  emitCapacitorTheme
 } from '@studnicky/iridis-capacitor';
-import type {
-  StatusBarOutputInterfaceType,
-  CapacitorThemeOutputInterfaceType,
-  SplashScreenOutputInterfaceType,
-} from '@studnicky/iridis-capacitor/types';
-import {
-  ScenarioRunner,
-  assert,
-  type ScenarioInterface,
-} from '../_runner/ScenarioRunner.ts';
+import { Engine }     from '@studnicky/iridis/engine';
+import { colorRecordFactory } from '@studnicky/iridis/math';
+import { coreTasks }  from '@studnicky/iridis/tasks';
+import assert          from 'node:assert/strict';
+import { test }       from 'node:test';
+
+import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
+
+import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-/** Build a minimal PipelineContextInterface that captures warn calls. */
-function makeCtx(warnings: string[] = []): PipelineContextInterface {
-  const logger: LoggerInterface = {
-    trace() {},
-    debug() {},
-    info()  {},
-    warn(data: LogDataType) { warnings.push(data.message); },
-    error() {},
-    child() { return logger; },
-  };
-  // Engine and tasks are not exercised by unit-level task calls; cast to satisfy
-  // the interface without a full engine setup.
-  return {
-    engine:    {} as EngineInterface,
-    tasks:     {} as TaskRegistryInterface,
-    logger,
-    startedAt: 0,
-  };
+/** Captures `warn` calls; all other log levels are no-ops. */
+class RecordingLogger implements LoggerInterface {
+  private readonly warnings: string[];
+
+  constructor(warnings: string[]) {
+    this.warnings = warnings;
+  }
+
+  child(): LoggerInterface { return this; }
+  debug(): void {}
+  error(): void {}
+  info(): void {}
+  trace(): void {}
+  warn(data: LogDataType): void { this.warnings.push(data.message); }
 }
 
-/** Build a minimal PaletteStateInterface with the given roles pre-populated. */
-function makeState(
-  roles: Record<string, ColorRecordInterfaceType> = {},
-  variants: Record<string, Record<string, ColorRecordInterfaceType>> = {},
-  metadata: Record<string, unknown> = {},
-): PaletteStateInterface {
-  return {
-    input:    {
-      'bypass':    undefined,
-      'colors':    [],
-      'contrast':  undefined,
-      'emit':      undefined,
-      'maxColors': undefined,
-      'metadata':  undefined,
-      'roles':     undefined,
-      'runtime':   undefined,
-    },
-    runtime:  {
-      'colorSpace': undefined,
-      'extra':      undefined,
-      'framing':    undefined,
-    },
-    colors:   [],
-    roles,
-    variants,
-    outputs:  {},
-    metadata,
-  };
+/** Reads `state.outputs['capacitor:*']` slots without computed access inside object literals. */
+class CapacitorOutputs {
+  static statusBar(state: PaletteStateInterface): StatusBarOutputInterfaceType | undefined {
+    const result = state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType | undefined;
+    return result;
+  }
+
+  static theme(state: PaletteStateInterface): CapacitorThemeOutputInterfaceType | undefined {
+    const result = state.outputs['capacitor:theme'] as CapacitorThemeOutputInterfaceType | undefined;
+    return result;
+  }
+
+  static splashScreen(state: PaletteStateInterface): SplashScreenOutputInterfaceType | undefined {
+    const result = state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterfaceType | undefined;
+    return result;
+  }
+
+  static androidThemeXml(state: PaletteStateInterface): string | undefined {
+    const result = state.outputs['capacitor:androidThemeXml'] as string | undefined;
+    return result;
+  }
 }
 
-/** Build a color record from a hex string (sRGB only, no displayP3). */
-function hex(h: string, intent?: string): ColorRecordInterfaceType {
-  return colorRecordFactory.fromHex(h, {
-    'hints':        intent !== undefined ? {
-      'intent': intent as import('@studnicky/iridis').ColorIntentType,
-      'role':   undefined,
-      'weight': undefined,
-    } : undefined,
-    'sourceFormat': 'hex',
-  });
-}
+class TestFixture {
+  /** Build a minimal PipelineContextInterface that captures warn calls. */
+  static context(warnings: string[] = []): PipelineContextInterface {
+    // Engine and tasks are not exercised by unit-level task calls; cast to satisfy
+    // the interface without a full engine setup.
+    return {
+      'engine':    {} as EngineInterface,
+      'logger':    new RecordingLogger(warnings),
+      'startedAt': 0,
+      'tasks':     {} as TaskRegistryInterface
+    };
+  }
 
-/** Canonical full-pipeline engine. */
-function freshEngine(): Engine {
-  const engine = new Engine();
-  for (const t of coreTasks) engine.tasks.register(t);
-  engine.adopt(capacitorPlugin);
-  return engine;
+  /** Build a minimal PaletteStateInterface with the given roles pre-populated. */
+  static state(options?: {
+    readonly 'metadata'?: PaletteStateInterface['metadata'];
+    readonly 'roles'?:    Record<string, ColorRecordInterfaceType>;
+    readonly 'variants'?: Record<string, Record<string, ColorRecordInterfaceType>>;
+  }): PaletteStateInterface {
+    return {
+      'colors':   [],
+      'input':    {
+        'bypass':    undefined,
+        'colors':    [],
+        'contrast':  undefined,
+        'emit':      undefined,
+        'maxColors': undefined,
+        'metadata':  undefined,
+        'roles':     undefined,
+        'runtime':   undefined
+      },
+      'metadata': options?.metadata ?? {},
+      'outputs':  {},
+      'roles':    options?.roles ?? {},
+      'runtime':  {
+        'colorSpace': undefined,
+        'extra':      undefined,
+        'framing':    undefined
+      },
+      'variants': options?.variants ?? {}
+    };
+  }
+
+  /** Build a color record from a hex string (sRGB only, no displayP3). */
+  static colorFromHex(colorHex: string, intent?: ColorIntentType): ColorRecordInterfaceType {
+    const result = colorRecordFactory.fromHex(colorHex, {
+      'hints':        intent !== undefined ? {
+        'intent': intent,
+        'role':   undefined,
+        'weight': undefined
+      } : undefined,
+      'sourceFormat': 'hex'
+    });
+    return result;
+  }
+
+  /** Canonical full-pipeline engine. */
+  static engine(): Engine {
+    const engine = new Engine();
+    for (const task of coreTasks) {engine.tasks.register(task);}
+    engine.adopt(capacitorPlugin);
+    return engine;
+  }
 }
 
 const FULL_ROLES: RoleSchemaInterfaceType = {
@@ -129,10 +163,10 @@ const FULL_ROLES: RoleSchemaInterfaceType = {
   'description':   undefined,
   'name':          'full',
   'roles': [
-    { 'name': 'primary',    'required': true,  'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
-    { 'name': 'background', 'required': true,  'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
-    { 'name': 'accent',     'required': false, 'intent': 'accent', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
-  ],
+    { 'chromaRange': undefined,    'derivedFrom': undefined,  'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'background', 'lightnessRange': undefined, 'name': 'primary', 'required': true },
+    { 'chromaRange': undefined, 'derivedFrom': undefined,  'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'background', 'lightnessRange': undefined, 'name': 'background', 'required': true },
+    { 'chromaRange': undefined,     'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'accent', 'lightnessRange': undefined, 'name': 'accent', 'required': false }
+  ]
 };
 
 // ---------------------------------------------------------------------------
@@ -145,31 +179,30 @@ const FULL_ROLES: RoleSchemaInterfaceType = {
 // no invalid-input path; adopt() validation is covered in Engine tests.
 // ---------------------------------------------------------------------------
 
-interface Cell1Input  { readonly call: 'singleton' | 'tasks'; }
-interface Cell1Output {
-  readonly isInstance:  boolean;
-  readonly name:        string;
-  readonly version:     string;
-  readonly taskNames:   readonly string[];
+abstract class Cell1Input {
+  abstract readonly 'call': 'singleton' | 'tasks';
 }
+type Cell1Output = {
+  readonly 'isInstance':  boolean;
+  readonly 'name':        string;
+  readonly 'taskNames':   readonly string[];
+  readonly 'version':     string;
+};
 
 const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
   {
-    name: 'singleton is an instance of CapacitorPlugin',
-    kind: 'happy',
-    input: { call: 'singleton' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=singleton] no throw');
       assert.ok(output!.isInstance, '[cell=1, scenario=singleton] instanceof CapacitorPlugin');
       assert.strictEqual(output!.name,    'capacitor', '[cell=1, scenario=singleton] name is capacitor');
       assert.strictEqual(output!.version, '0.1.0',     '[cell=1, scenario=singleton] version is 0.1.0');
     },
+    'input': { 'call': 'singleton' },
+    'kind': 'happy',
+    'name': 'singleton is an instance of CapacitorPlugin'
   },
   {
-    name: 'tasks() returns exactly the four emit task names in canonical order',
-    kind: 'happy',
-    input: { call: 'tasks' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=task-names] no throw');
       assert.deepStrictEqual(
         [...output!.taskNames].sort(),
@@ -177,31 +210,34 @@ const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
           'emit:androidThemeXml',
           'emit:capacitorSplashScreen',
           'emit:capacitorStatusBar',
-          'emit:capacitorTheme',
+          'emit:capacitorTheme'
         ],
-        '[cell=1, scenario=task-names] four canonical emit task names',
+        '[cell=1, scenario=task-names] four canonical emit task names'
       );
     },
+    'input': { 'call': 'tasks' },
+    'kind': 'happy',
+    'name': 'tasks() returns exactly the four emit task names in canonical order'
   },
   {
-    name: 'tasks() returns a non-empty array (edge: not zero, not > 4)',
-    kind: 'edge',
-    input: { call: 'tasks' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=task-count-edge] no throw');
       assert.strictEqual(output!.taskNames.length, 4, '[cell=1, scenario=task-count-edge] exactly 4 tasks');
     },
-  },
+    'input': { 'call': 'tasks' },
+    'kind': 'edge',
+    'name': 'tasks() returns a non-empty array (edge: not zero, not > 4)'
+  }
 ];
 
-new ScenarioRunner<Cell1Input, Cell1Output>(
+await new ScenarioRunner<Cell1Input, Cell1Output>(
   'CapacitorPlugin :: cell-1 :: plugin-shape',
-  (_input) => ({
-    isInstance: capacitorPlugin instanceof CapacitorPlugin,
-    name:       capacitorPlugin.name,
-    version:    capacitorPlugin.version,
-    taskNames:  capacitorPlugin.tasks().map((t) => t.name),
-  }),
+  (_input) => {return {
+    'isInstance': capacitorPlugin instanceof CapacitorPlugin,
+    'name':       capacitorPlugin.name,
+    'taskNames':  capacitorPlugin.tasks().map((t) => { const result = t.name; return result; }),
+    'version':    capacitorPlugin.version
+  };}
 ).run(cell1Scenarios);
 
 // ---------------------------------------------------------------------------
@@ -218,167 +254,169 @@ new ScenarioRunner<Cell1Input, Cell1Output>(
 // the skip is intentional graceful degradation documented in the source.
 // ---------------------------------------------------------------------------
 
-interface Cell2Input {
-  readonly roles:    Record<string, ColorRecordInterfaceType>;
-  readonly metadata: Record<string, unknown>;
+interface Cell2InputInterface {
+  readonly 'metadata': PaletteStateInterface['metadata'];
+  readonly 'roles':    Record<string, ColorRecordInterfaceType>;
 }
-interface Cell2Output {
-  readonly statusBar: StatusBarOutputInterfaceType | undefined;
-  readonly warnings:  readonly string[];
-}
+type Cell2Output = {
+  readonly 'statusBar': StatusBarOutputInterfaceType | undefined;
+  readonly 'warnings':  readonly string[];
+};
 
-const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
+const cell2Scenarios: readonly ScenarioInterface<Cell2InputInterface, Cell2Output>[] = [
   {
-    name: 'dark bar color produces LIGHT style (light icons on dark bar)',
-    kind: 'happy',
-    input: {
-      roles:    { 'surface': hex('#1a1a2e') },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=dark-bar] no throw');
-      assert.ok(output!.statusBar, '[cell=2, scenario=dark-bar] statusBar written');
-      assert.strictEqual(output!.statusBar!.style, 'LIGHT', '[cell=2, scenario=dark-bar] LIGHT style for dark bar');
-      assert.match(output!.statusBar!.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=2, scenario=dark-bar] backgroundColor is hex');
-      assert.strictEqual(output!.statusBar!.overlay, false, '[cell=2, scenario=dark-bar] overlay defaults false');
+      assert.ok(output!.statusBar !== undefined, '[cell=2, scenario=dark-bar] statusBar written');
+      assert.strictEqual(output!.statusBar.style, 'LIGHT', '[cell=2, scenario=dark-bar] LIGHT style for dark bar');
+      assert.match(output!.statusBar.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=2, scenario=dark-bar] backgroundColor is hex');
+      assert.strictEqual(output!.statusBar.overlay, false, '[cell=2, scenario=dark-bar] overlay defaults false');
     },
+    'input': {
+      'metadata': {},
+      'roles':    { 'surface': TestFixture.colorFromHex('#1a1a2e') }
+    },
+    'kind': 'happy',
+    'name': 'dark bar color produces LIGHT style (light icons on dark bar)'
   },
   {
-    name: 'light bar color produces DARK style (dark icons on light bar)',
-    kind: 'happy',
-    input: {
-      roles:    { 'surface': hex('#ffffff') },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=light-bar] no throw');
       assert.strictEqual(output!.statusBar!.style, 'DARK', '[cell=2, scenario=light-bar] DARK style for light bar');
     },
+    'input': {
+      'metadata': {},
+      'roles':    { 'surface': TestFixture.colorFromHex('#ffffff') }
+    },
+    'kind': 'happy',
+    'name': 'light bar color produces DARK style (dark icons on light bar)'
   },
   {
-    name: 'topBar role takes precedence over surface',
-    kind: 'happy',
-    input: {
-      roles: {
-        'surface': hex('#ffffff'),
-        'topBar':  hex('#000000'),
-      },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=topbar-pref] no throw');
       assert.strictEqual(output!.statusBar!.backgroundColor, '#000000', '[cell=2, scenario=topbar-pref] topBar hex used');
     },
+    'input': {
+      'metadata': {},
+      'roles': {
+        'surface': TestFixture.colorFromHex('#ffffff'),
+        'topBar':  TestFixture.colorFromHex('#000000')
+      }
+    },
+    'kind': 'happy',
+    'name': 'topBar role takes precedence over surface'
   },
   {
-    name: 'text role drives style derivation when present',
-    kind: 'happy',
-    input: {
-      // light text on dark bar → DARK style (text luminance > 0.18 → DARK)
-      roles: {
-        'surface': hex('#1a1a2e'),
-        'text':    hex('#f0f0f0'),
-      },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=text-style] no throw');
       // f0f0f0 is a near-white; luminance > 0.18 → DARK
       assert.strictEqual(output!.statusBar!.style, 'DARK', '[cell=2, scenario=text-style] light text → DARK style');
     },
+    'input': {
+      'metadata': {},
+      // light text on dark bar → DARK style (text luminance > 0.18 → DARK)
+      'roles': {
+        'surface': TestFixture.colorFromHex('#1a1a2e'),
+        'text':    TestFixture.colorFromHex('#f0f0f0')
+      }
+    },
+    'kind': 'happy',
+    'name': 'text role drives style derivation when present'
   },
   {
-    name: 'dark text role on light bar produces LIGHT style',
-    kind: 'happy',
-    input: {
-      roles: {
-        'surface': hex('#f5f5f5'),
-        'text':    hex('#111111'),
-      },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=dark-text] no throw');
       // 111111 luminance < 0.18 → LIGHT
       assert.strictEqual(output!.statusBar!.style, 'LIGHT', '[cell=2, scenario=dark-text] dark text → LIGHT style');
     },
+    'input': {
+      'metadata': {},
+      'roles': {
+        'surface': TestFixture.colorFromHex('#f5f5f5'),
+        'text':    TestFixture.colorFromHex('#111111')
+      }
+    },
+    'kind': 'happy',
+    'name': 'dark text role on light bar produces LIGHT style'
   },
   {
-    name: 'overlay flag read from metadata.capacitor.statusBarOverlay',
-    kind: 'edge',
-    input: {
-      roles:    { 'surface': hex('#1a1a2e') },
-      metadata: { 'capacitor': { 'statusBarOverlay': true } },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=overlay-true] no throw');
       assert.strictEqual(output!.statusBar!.overlay, true, '[cell=2, scenario=overlay-true] overlay is true');
     },
+    'input': {
+      'metadata': { 'capacitor': { 'statusBarOverlay': true } },
+      'roles':    { 'surface': TestFixture.colorFromHex('#1a1a2e') }
+    },
+    'kind': 'edge',
+    'name': 'overlay flag read from metadata.capacitor.statusBarOverlay'
   },
   {
-    name: 'base role used when topBar and surface absent',
-    kind: 'edge',
-    input: {
-      roles:    { 'base': hex('#333344') },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=base-fallback] no throw');
-      assert.ok(output!.statusBar, '[cell=2, scenario=base-fallback] statusBar written');
-      assert.strictEqual(output!.statusBar!.backgroundColor, '#333344', '[cell=2, scenario=base-fallback] base hex used');
+      assert.ok(output!.statusBar !== undefined, '[cell=2, scenario=base-fallback] statusBar written');
+      assert.strictEqual(output!.statusBar.backgroundColor, '#333344', '[cell=2, scenario=base-fallback] base hex used');
     },
+    'input': {
+      'metadata': {},
+      'roles':    { 'base': TestFixture.colorFromHex('#333344') }
+    },
+    'kind': 'edge',
+    'name': 'base role used when topBar and surface absent'
   },
   {
-    name: 'first role used when topBar/surface/base all absent',
-    kind: 'edge',
-    input: {
-      roles:    { 'primary': hex('#8b5cf6') },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=first-role-fallback] no throw');
-      assert.ok(output!.statusBar, '[cell=2, scenario=first-role-fallback] statusBar written');
-      assert.strictEqual(output!.statusBar!.backgroundColor, '#8b5cf6', '[cell=2, scenario=first-role-fallback] first role hex used');
+      assert.ok(output!.statusBar !== undefined, '[cell=2, scenario=first-role-fallback] statusBar written');
+      assert.strictEqual(output!.statusBar.backgroundColor, '#8b5cf6', '[cell=2, scenario=first-role-fallback] first role hex used');
     },
+    'input': {
+      'metadata': {},
+      'roles':    { 'primary': TestFixture.colorFromHex('#8b5cf6') }
+    },
+    'kind': 'edge',
+    'name': 'first role used when topBar/surface/base all absent'
   },
   {
-    name: 'wide-gamut sRGB boundary color (#ff0000) is accepted and produces valid hex',
-    kind: 'edge',
-    input: {
-      roles:    { 'surface': hex('#ff0000') },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=boundary-red] no throw');
       assert.match(output!.statusBar!.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=2, scenario=boundary-red] canonical hex');
     },
+    'input': {
+      'metadata': {},
+      'roles':    { 'surface': TestFixture.colorFromHex('#ff0000') }
+    },
+    'kind': 'edge',
+    'name': 'wide-gamut sRGB boundary color (#ff0000) is accepted and produces valid hex'
   },
   {
-    name: 'empty roles — no suitable role — skips write and emits warning',
-    kind: 'unhappy',
-    input: { roles: {}, metadata: {} },
-    assert(output, error) {
+    'assert': function(output, error) {
       // Task does not throw; it warns and returns early. This is the documented
       // graceful-degradation path (source: EmitCapacitorStatusBar.ts line 43–45).
       assert.strictEqual(error, undefined, '[cell=2, scenario=no-roles] task must not throw');
       assert.strictEqual(output!.statusBar, undefined, '[cell=2, scenario=no-roles] statusBar not written');
       assert.strictEqual(output!.warnings.length, 1, '[cell=2, scenario=no-roles] one warning emitted');
-      assert.match(output!.warnings[0] ?? '', /No suitable role/, '[cell=2, scenario=no-roles] warning mentions role absence');
+      const firstWarning = output!.warnings.at(0) ?? '';
+      assert.match(firstWarning, /No suitable role/, '[cell=2, scenario=no-roles] warning mentions role absence');
     },
-  },
+    'input': { 'metadata': {}, 'roles': {} },
+    'kind': 'unhappy',
+    'name': 'empty roles — no suitable role — skips write and emits warning'
+  }
 ];
 
-new ScenarioRunner<Cell2Input, Cell2Output>(
+await new ScenarioRunner<Cell2InputInterface, Cell2Output>(
   'CapacitorPlugin :: cell-2 :: emit:capacitorStatusBar',
   (input) => {
     const warnings: string[] = [];
-    const state = makeState(input.roles, {}, input.metadata);
-    emitCapacitorStatusBar.run(state, makeCtx(warnings));
+    const state = TestFixture.state({ 'metadata': input.metadata, 'roles': input.roles });
+    emitCapacitorStatusBar.run(state, TestFixture.context(warnings));
+    const statusBar = CapacitorOutputs.statusBar(state);
     return {
-      statusBar: state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType | undefined,
-      warnings,
+      'statusBar': statusBar,
+      'warnings': warnings
     };
-  },
+  }
 ).run(cell2Scenarios);
 
 // ---------------------------------------------------------------------------
@@ -393,91 +431,88 @@ new ScenarioRunner<Cell2Input, Cell2Output>(
 // with total fallback coverage.
 // ---------------------------------------------------------------------------
 
-interface Cell3Input {
-  readonly roles:    Record<string, ColorRecordInterfaceType>;
-  readonly variants: Record<string, Record<string, ColorRecordInterfaceType>>;
-}
-interface Cell3Output {
-  readonly theme: CapacitorThemeOutputInterfaceType | undefined;
+type Cell3Input = {
+  readonly 'roles':    Record<string, ColorRecordInterfaceType>;
+  readonly 'variants': Record<string, Record<string, ColorRecordInterfaceType>>;
+};
+abstract class Cell3Output {
+  abstract readonly 'theme': CapacitorThemeOutputInterfaceType | undefined;
 }
 
 const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
   {
-    name: 'all 13 slots are populated and are canonical hex strings',
-    kind: 'happy',
-    input: {
-      roles: {
-        'primary':    hex('#8b5cf6', 'background'),
-        'background': hex('#ffffff', 'background'),
-        'accent':     hex('#ec4899', 'accent'),
-        'surface':    hex('#f9fafb', 'background'),
-        'error':      hex('#ef4444', 'critical'),
-        'warning':    hex('#f59e0b', 'muted'),
-        'success':    hex('#10b981', 'positive'),
-        'info':       hex('#3b82f6', 'accent'),
-        'text':       hex('#1f2937', 'text'),
-      },
-      variants: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=all-slots] no throw');
-      assert.ok(output!.theme, '[cell=3, scenario=all-slots] theme written');
-      const t = output!.theme!;
-      const hexRe = /^#[0-9a-f]{6}$/i;
-      for (const [key, val] of Object.entries(t)) {
-        assert.match(val, hexRe, `[cell=3, scenario=all-slots] ${key} is canonical hex`);
+      assert.ok(output!.theme !== undefined, '[cell=3, scenario=all-slots] theme written');
+      const theme = output!.theme;
+      const hexPattern = /^#[0-9a-f]{6}$/i;
+      for (const [key, value] of Object.entries(theme)) {
+        assert.match(value, hexPattern, `[cell=3, scenario=all-slots] ${key} is canonical hex`);
       }
-      assert.strictEqual(Object.keys(t).length, 13, '[cell=3, scenario=all-slots] exactly 13 slots');
+      assert.strictEqual(Object.keys(theme).length, 13, '[cell=3, scenario=all-slots] exactly 13 slots');
     },
+    'input': {
+      'roles': {
+        'accent':     TestFixture.colorFromHex('#ec4899', 'accent'),
+        'background': TestFixture.colorFromHex('#ffffff', 'background'),
+        'error':      TestFixture.colorFromHex('#ef4444', 'critical'),
+        'info':       TestFixture.colorFromHex('#3b82f6', 'accent'),
+        'primary':    TestFixture.colorFromHex('#8b5cf6', 'background'),
+        'success':    TestFixture.colorFromHex('#10b981', 'positive'),
+        'surface':    TestFixture.colorFromHex('#f9fafb', 'background'),
+        'text':       TestFixture.colorFromHex('#1f2937', 'text'),
+        'warning':    TestFixture.colorFromHex('#f59e0b', 'muted')
+      },
+      'variants': {}
+    },
+    'kind': 'happy',
+    'name': 'all 13 slots are populated and are canonical hex strings'
   },
   {
-    name: 'primary role hex propagates into primary slot',
-    kind: 'happy',
-    input: {
-      roles:    { 'primary': hex('#8b5cf6') },
-      variants: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=primary-prop] no throw');
       assert.strictEqual(output!.theme!.primary, '#8b5cf6', '[cell=3, scenario=primary-prop] primary matches role hex');
     },
+    'input': {
+      'roles':    { 'primary': TestFixture.colorFromHex('#8b5cf6') },
+      'variants': {}
+    },
+    'kind': 'happy',
+    'name': 'primary role hex propagates into primary slot'
   },
   {
-    name: 'variant dark/light slots resolved from variants map',
-    kind: 'happy',
-    input: {
-      roles: { 'primary': hex('#8b5cf6') },
-      variants: {
-        'primary': {
-          'dark':  hex('#6d28d9'),
-          'light': hex('#c4b5fd'),
-        },
-      },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=variants] no throw');
       assert.strictEqual(output!.theme!.primaryDark,  '#6d28d9', '[cell=3, scenario=variants] primaryDark from variants.primary.dark');
       assert.strictEqual(output!.theme!.primaryLight, '#c4b5fd', '[cell=3, scenario=variants] primaryLight from variants.primary.light');
     },
+    'input': {
+      'roles': { 'primary': TestFixture.colorFromHex('#8b5cf6') },
+      'variants': {
+        'primary': {
+          'dark':  TestFixture.colorFromHex('#6d28d9'),
+          'light': TestFixture.colorFromHex('#c4b5fd')
+        }
+      }
+    },
+    'kind': 'happy',
+    'name': 'variant dark/light slots resolved from variants map'
   },
   {
-    name: 'variant absent — primaryDark/Light fall back to primary role hex',
-    kind: 'edge',
-    input: {
-      roles:    { 'primary': hex('#8b5cf6') },
-      variants: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=variant-fallback] no throw');
       assert.strictEqual(output!.theme!.primaryDark,  '#8b5cf6', '[cell=3, scenario=variant-fallback] primaryDark falls back to primary');
       assert.strictEqual(output!.theme!.primaryLight, '#8b5cf6', '[cell=3, scenario=variant-fallback] primaryLight falls back to primary');
     },
+    'input': {
+      'roles':    { 'primary': TestFixture.colorFromHex('#8b5cf6') },
+      'variants': {}
+    },
+    'kind': 'edge',
+    'name': 'variant absent — primaryDark/Light fall back to primary role hex'
   },
   {
-    name: 'empty roles — all 13 slots hit ultimate fallback strings',
-    kind: 'edge',
-    input: { roles: {}, variants: {} },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=empty-roles] no throw');
       const t = output!.theme!;
       // Ultimate fallbacks defined in EmitCapacitorTheme.ts
@@ -494,43 +529,47 @@ const cell3Scenarios: readonly ScenarioInterface<Cell3Input, Cell3Output>[] = [
       assert.strictEqual(t.textOnPrimary, '#ffffff', '[cell=3, scenario=empty-roles] textOnPrimary fallback');
       assert.strictEqual(t.textOnAccent,  '#ffffff', '[cell=3, scenario=empty-roles] textOnAccent fallback');
     },
+    'input': { 'roles': {}, 'variants': {} },
+    'kind': 'edge',
+    'name': 'empty roles — all 13 slots hit ultimate fallback strings'
   },
   {
-    name: 'intent map — background intent used as fallback for primary when role absent',
-    kind: 'edge',
-    input: {
-      // no 'primary' role key but 'bg' carries intent='background'
-      roles:    { 'bg': hex('#3b3b5c', 'background') },
-      variants: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=intent-map] no throw');
       // primary → roles['primary'] undefined → intentMap['background'] = '#3b3b5c'
       assert.strictEqual(output!.theme!.primary, '#3b3b5c', '[cell=3, scenario=intent-map] primary resolved via intent map');
     },
+    'input': {
+      // no 'primary' role key but 'bg' carries intent='background'
+      'roles':    { 'bg': TestFixture.colorFromHex('#3b3b5c', 'background') },
+      'variants': {}
+    },
+    'kind': 'edge',
+    'name': 'intent map — background intent used as fallback for primary when role absent'
   },
   {
-    name: 'surface slot falls back to background when surface role absent',
-    kind: 'edge',
-    input: {
-      roles:    { 'background': hex('#f0f0f0') },
-      variants: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=surface-bg-fallback] no throw');
       // surface → roles['surface'] undefined → intentMap['background'] = '#f0f0f0'
       assert.strictEqual(output!.theme!.surface, '#f0f0f0', '[cell=3, scenario=surface-bg-fallback] surface matches background role');
     },
-  },
+    'input': {
+      'roles':    { 'background': TestFixture.colorFromHex('#f0f0f0') },
+      'variants': {}
+    },
+    'kind': 'edge',
+    'name': 'surface slot falls back to background when surface role absent'
+  }
 ];
 
-new ScenarioRunner<Cell3Input, Cell3Output>(
+await new ScenarioRunner<Cell3Input, Cell3Output>(
   'CapacitorPlugin :: cell-3 :: emit:capacitorTheme',
   (input) => {
-    const state = makeState(input.roles, input.variants);
-    emitCapacitorTheme.run(state, makeCtx());
-    return { theme: state.outputs['capacitor:theme'] as CapacitorThemeOutputInterfaceType | undefined };
-  },
+    const state = TestFixture.state({ 'roles': input.roles, 'variants': input.variants });
+    emitCapacitorTheme.run(state, TestFixture.context());
+    const theme = CapacitorOutputs.theme(state);
+    return { 'theme': theme };
+  }
 ).run(cell3Scenarios);
 
 // ---------------------------------------------------------------------------
@@ -545,132 +584,134 @@ new ScenarioRunner<Cell3Input, Cell3Output>(
 // graceful-degradation pattern as statusBar).
 // ---------------------------------------------------------------------------
 
-interface Cell4Input {
-  readonly roles:    Record<string, ColorRecordInterfaceType>;
-  readonly metadata: Record<string, unknown>;
+interface Cell4InputInterface {
+  readonly 'metadata': PaletteStateInterface['metadata'];
+  readonly 'roles':    Record<string, ColorRecordInterfaceType>;
 }
-interface Cell4Output {
-  readonly splashScreen: SplashScreenOutputInterfaceType | undefined;
-  readonly warnings:     readonly string[];
-}
+type Cell4Output = {
+  readonly 'splashScreen': SplashScreenOutputInterfaceType | undefined;
+  readonly 'warnings':     readonly string[];
+};
 
-const cell4Scenarios: readonly ScenarioInterface<Cell4Input, Cell4Output>[] = [
+const cell4Scenarios: readonly ScenarioInterface<Cell4InputInterface, Cell4Output>[] = [
   {
-    name: 'surface role used for splash background by default',
-    kind: 'happy',
-    input: {
-      roles:    { 'surface': hex('#f9fafb') },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=surface-default] no throw');
-      assert.ok(output!.splashScreen, '[cell=4, scenario=surface-default] splashScreen written');
-      assert.strictEqual(output!.splashScreen!.backgroundColor, '#f9fafb', '[cell=4, scenario=surface-default] surface hex used');
-      assert.strictEqual(output!.splashScreen!.androidSplashResourceName, undefined, '[cell=4, scenario=surface-default] no androidSplashResourceName');
+      assert.ok(output!.splashScreen !== undefined, '[cell=4, scenario=surface-default] splashScreen written');
+      assert.strictEqual(output!.splashScreen.backgroundColor, '#f9fafb', '[cell=4, scenario=surface-default] surface hex used');
+      assert.strictEqual(output!.splashScreen.androidSplashResourceName, undefined, '[cell=4, scenario=surface-default] no androidSplashResourceName');
     },
+    'input': {
+      'metadata': {},
+      'roles':    { 'surface': TestFixture.colorFromHex('#f9fafb') }
+    },
+    'kind': 'happy',
+    'name': 'surface role used for splash background by default'
   },
   {
-    name: 'background role fallback when surface absent',
-    kind: 'happy',
-    input: {
-      roles:    { 'background': hex('#ffffff') },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=bg-fallback] no throw');
       assert.strictEqual(output!.splashScreen!.backgroundColor, '#ffffff', '[cell=4, scenario=bg-fallback] background hex used');
     },
+    'input': {
+      'metadata': {},
+      'roles':    { 'background': TestFixture.colorFromHex('#ffffff') }
+    },
+    'kind': 'happy',
+    'name': 'background role fallback when surface absent'
   },
   {
-    name: 'explicit splashRole in metadata overrides default resolution',
-    kind: 'happy',
-    input: {
-      roles: {
-        'surface':   hex('#f9fafb'),
-        'brandSplash': hex('#8b5cf6'),
-      },
-      metadata: { 'capacitor': { 'splashRole': 'brandSplash' } },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=splash-role-override] no throw');
       assert.strictEqual(output!.splashScreen!.backgroundColor, '#8b5cf6', '[cell=4, scenario=splash-role-override] branded splash hex used');
     },
+    'input': {
+      'metadata': { 'capacitor': { 'splashRole': 'brandSplash' } },
+      'roles': {
+        'brandSplash': TestFixture.colorFromHex('#8b5cf6'),
+        'surface':   TestFixture.colorFromHex('#f9fafb')
+      }
+    },
+    'kind': 'happy',
+    'name': 'explicit splashRole in metadata overrides default resolution'
   },
   {
-    name: 'androidSplashResourceName included when set in metadata',
-    kind: 'happy',
-    input: {
-      roles:    { 'surface': hex('#f9fafb') },
-      metadata: { 'capacitor': { 'androidSplashResourceName': 'splash_screen' } },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=android-resource] no throw');
       assert.strictEqual(output!.splashScreen!.androidSplashResourceName, 'splash_screen', '[cell=4, scenario=android-resource] androidSplashResourceName present');
     },
+    'input': {
+      'metadata': { 'capacitor': { 'androidSplashResourceName': 'splash_screen' } },
+      'roles':    { 'surface': TestFixture.colorFromHex('#f9fafb') }
+    },
+    'kind': 'happy',
+    'name': 'androidSplashResourceName included when set in metadata'
   },
   {
-    name: 'base role fallback when surface and background absent',
-    kind: 'edge',
-    input: {
-      roles:    { 'base': hex('#2d2d3d') },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=base-fallback] no throw');
       assert.strictEqual(output!.splashScreen!.backgroundColor, '#2d2d3d', '[cell=4, scenario=base-fallback] base hex used');
     },
+    'input': {
+      'metadata': {},
+      'roles':    { 'base': TestFixture.colorFromHex('#2d2d3d') }
+    },
+    'kind': 'edge',
+    'name': 'base role fallback when surface and background absent'
   },
   {
-    name: 'first role used when surface/background/base all absent',
-    kind: 'edge',
-    input: {
-      roles:    { 'primary': hex('#6d28d9') },
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=first-role-splash] no throw');
       assert.strictEqual(output!.splashScreen!.backgroundColor, '#6d28d9', '[cell=4, scenario=first-role-splash] first role hex used');
     },
+    'input': {
+      'metadata': {},
+      'roles':    { 'primary': TestFixture.colorFromHex('#6d28d9') }
+    },
+    'kind': 'edge',
+    'name': 'first role used when surface/background/base all absent'
   },
   {
-    name: 'splashRole pointing to non-existent role skips (no role found)',
-    kind: 'edge',
-    input: {
-      roles:    { 'surface': hex('#f9fafb') },
-      metadata: { 'capacitor': { 'splashRole': 'nonexistent' } },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       // resolveSplashColor returns undefined when explicit splashRole is set but
       // the role key is missing; the task warns and skips writing.
       assert.strictEqual(error, undefined, '[cell=4, scenario=missing-splash-role] task must not throw');
       assert.strictEqual(output!.splashScreen, undefined, '[cell=4, scenario=missing-splash-role] splashScreen not written');
       assert.strictEqual(output!.warnings.length, 1, '[cell=4, scenario=missing-splash-role] warning emitted');
     },
+    'input': {
+      'metadata': { 'capacitor': { 'splashRole': 'nonexistent' } },
+      'roles':    { 'surface': TestFixture.colorFromHex('#f9fafb') }
+    },
+    'kind': 'edge',
+    'name': 'splashRole pointing to non-existent role skips (no role found)'
   },
   {
-    name: 'empty roles emits warning and skips writing',
-    kind: 'unhappy',
-    input: { roles: {}, metadata: {} },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=no-roles] task must not throw');
       assert.strictEqual(output!.splashScreen, undefined, '[cell=4, scenario=no-roles] splashScreen not written');
       assert.strictEqual(output!.warnings.length, 1, '[cell=4, scenario=no-roles] warning emitted');
-      assert.match(output!.warnings[0] ?? '', /No suitable role/, '[cell=4, scenario=no-roles] warning text');
+      const firstWarning = output!.warnings.at(0) ?? '';
+      assert.match(firstWarning, /No suitable role/, '[cell=4, scenario=no-roles] warning text');
     },
-  },
+    'input': { 'metadata': {}, 'roles': {} },
+    'kind': 'unhappy',
+    'name': 'empty roles emits warning and skips writing'
+  }
 ];
 
-new ScenarioRunner<Cell4Input, Cell4Output>(
+await new ScenarioRunner<Cell4InputInterface, Cell4Output>(
   'CapacitorPlugin :: cell-4 :: emit:capacitorSplashScreen',
   (input) => {
     const warnings: string[] = [];
-    const state = makeState(input.roles, {}, input.metadata);
-    emitCapacitorSplashScreen.run(state, makeCtx(warnings));
+    const state = TestFixture.state({ 'metadata': input.metadata, 'roles': input.roles });
+    emitCapacitorSplashScreen.run(state, TestFixture.context(warnings));
+    const splashScreen = CapacitorOutputs.splashScreen(state);
     return {
-      splashScreen: state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterfaceType | undefined,
-      warnings,
+      'splashScreen': splashScreen,
+      'warnings': warnings
     };
-  },
+  }
 ).run(cell4Scenarios);
 
 // ---------------------------------------------------------------------------
@@ -686,32 +727,22 @@ new ScenarioRunner<Cell4Input, Cell4Output>(
 // Unhappy: structurally impossible — no throw path; total fallback coverage.
 // ---------------------------------------------------------------------------
 
-interface Cell5Input {
-  readonly roles:         Record<string, ColorRecordInterfaceType>;
-  readonly priorStatusBar?:    string;   // pre-seeded into outputs.capacitor.statusBar
-  readonly priorSplashScreen?: string;  // pre-seeded into outputs.capacitor.splashScreen
-}
-interface Cell5Output {
-  readonly xml:            string | undefined;
-  readonly statusBarColor: string | undefined;
+type Cell5Input = {
+  readonly 'priorSplashScreen'?: string;  // pre-seeded into outputs.capacitor.splashScreen
+  readonly 'priorStatusBar'?:    string;   // pre-seeded into outputs.capacitor.statusBar
+  readonly 'roles':         Record<string, ColorRecordInterfaceType>;
+};
+abstract class Cell5Output {
+  abstract readonly 'statusBarColor': string | undefined;
+  abstract readonly 'xml':            string | undefined;
 }
 
 const cell5Scenarios: readonly ScenarioInterface<Cell5Input, Cell5Output>[] = [
   {
-    name: 'XML contains all required structural elements',
-    kind: 'happy',
-    input: {
-      roles: {
-        'primary':    hex('#8b5cf6'),
-        'surface':    hex('#f9fafb'),
-        'background': hex('#ffffff'),
-        'text':       hex('#1f2937'),
-      },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=structure] no throw');
-      assert.ok(output!.xml, '[cell=5, scenario=structure] xml written');
-      const xml = output!.xml!;
+      assert.ok(output!.xml !== undefined, '[cell=5, scenario=structure] xml written');
+      const xml = output!.xml;
       assert.ok(xml.includes('<resources>'),                '[cell=5, scenario=structure] <resources> root');
       assert.ok(xml.includes('</resources>'),               '[cell=5, scenario=structure] </resources> close');
       assert.ok(xml.includes('AppTheme.NoActionBarLaunch'), '[cell=5, scenario=structure] splash theme style name');
@@ -726,44 +757,51 @@ const cell5Scenarios: readonly ScenarioInterface<Cell5Input, Cell5Output>[] = [
       assert.ok(xml.includes('postSplashScreenTheme'),      '[cell=5, scenario=structure] postSplashScreenTheme item');
       assert.ok(xml.includes('@style/AppTheme'),            '[cell=5, scenario=structure] postSplashScreenTheme value');
     },
+    'input': {
+      'roles': {
+        'background': TestFixture.colorFromHex('#ffffff'),
+        'primary':    TestFixture.colorFromHex('#8b5cf6'),
+        'surface':    TestFixture.colorFromHex('#f9fafb'),
+        'text':       TestFixture.colorFromHex('#1f2937')
+      }
+    },
+    'kind': 'happy',
+    'name': 'XML contains all required structural elements'
   },
   {
-    name: 'statusBarColor in XML matches prior emit:capacitorStatusBar output',
-    kind: 'happy',
-    input: {
-      roles: { 'surface': hex('#1a1a2e') },
-      priorStatusBar: '#1a1a2e',
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=statusbar-match] no throw');
       const xml = output!.xml!;
       assert.ok(
-        xml.includes(`<item name="android:statusBarColor">#1a1a2e</item>`),
-        '[cell=5, scenario=statusbar-match] statusBarColor references prior statusBar output',
+        xml.includes('<item name="android:statusBarColor">#1a1a2e</item>'),
+        '[cell=5, scenario=statusbar-match] statusBarColor references prior statusBar output'
       );
     },
+    'input': {
+      'priorStatusBar': '#1a1a2e',
+      'roles': { 'surface': TestFixture.colorFromHex('#1a1a2e') }
+    },
+    'kind': 'happy',
+    'name': 'statusBarColor in XML matches prior emit:capacitorStatusBar output'
   },
   {
-    name: 'windowBackground matches prior emit:capacitorSplashScreen output',
-    kind: 'happy',
-    input: {
-      roles: { 'surface': hex('#f9fafb') },
-      priorSplashScreen: '#f9fafb',
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=splash-match] no throw');
       const xml = output!.xml!;
       assert.ok(
-        xml.includes(`<item name="android:windowBackground">#f9fafb</item>`),
-        '[cell=5, scenario=splash-match] windowBackground references prior splashScreen output',
+        xml.includes('<item name="android:windowBackground">#f9fafb</item>'),
+        '[cell=5, scenario=splash-match] windowBackground references prior splashScreen output'
       );
     },
+    'input': {
+      'priorSplashScreen': '#f9fafb',
+      'roles': { 'surface': TestFixture.colorFromHex('#f9fafb') }
+    },
+    'kind': 'happy',
+    'name': 'windowBackground matches prior emit:capacitorSplashScreen output'
   },
   {
-    name: 'empty roles — all items fall through to #000000 fallback',
-    kind: 'edge',
-    input: { roles: {} },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=empty-roles] no throw');
       const xml = output!.xml!;
       // All resolveHexRole calls return '#000000' when roles is empty
@@ -774,62 +812,65 @@ const cell5Scenarios: readonly ScenarioInterface<Cell5Input, Cell5Output>[] = [
       assert.ok(xml.includes('<item name="android:colorBackground">#000000</item>'),    '[cell=5, scenario=empty-roles] colorBackground fallback');
       assert.ok(xml.includes('<item name="android:textColorPrimary">#000000</item>'),   '[cell=5, scenario=empty-roles] textColorPrimary fallback');
     },
+    'input': { 'roles': {} },
+    'kind': 'edge',
+    'name': 'empty roles — all items fall through to #000000 fallback'
   },
   {
-    name: 'prior statusBar output takes precedence over role resolution for statusBarColor',
-    kind: 'edge',
-    input: {
-      // role has a different color — prior output must win
-      roles:          { 'topBar': hex('#aabbcc') },
-      priorStatusBar: '#ff0000',
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=prior-beats-role] no throw');
       const xml = output!.xml!;
       assert.ok(
-        xml.includes(`<item name="android:statusBarColor">#ff0000</item>`),
-        '[cell=5, scenario=prior-beats-role] prior statusBar output wins over role',
+        xml.includes('<item name="android:statusBarColor">#ff0000</item>'),
+        '[cell=5, scenario=prior-beats-role] prior statusBar output wins over role'
       );
       assert.ok(
-        !xml.includes(`<item name="android:statusBarColor">#aabbcc</item>`),
-        '[cell=5, scenario=prior-beats-role] topBar role NOT used for statusBarColor when prior output present',
+        !xml.includes('<item name="android:statusBarColor">#aabbcc</item>'),
+        '[cell=5, scenario=prior-beats-role] topBar role NOT used for statusBarColor when prior output present'
       );
     },
+    'input': {
+      'priorStatusBar': '#ff0000',
+      // role has a different color — prior output must win
+      'roles':          { 'topBar': TestFixture.colorFromHex('#aabbcc') }
+    },
+    'kind': 'edge',
+    'name': 'prior statusBar output takes precedence over role resolution for statusBarColor'
   },
   {
-    name: 'colorPrimaryDark uses statusBarColor value (same derivation)',
-    kind: 'edge',
-    input: {
-      roles: { 'topBar': hex('#6d28d9') },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=primary-dark-matches-status] no throw');
       const xml = output!.xml!;
       // colorPrimaryDark and statusBarColor use the same resolved statusBarColor
       assert.ok(
-        xml.includes(`<item name="android:colorPrimaryDark">#6d28d9</item>`),
-        '[cell=5, scenario=primary-dark-matches-status] colorPrimaryDark matches statusBarColor',
+        xml.includes('<item name="android:colorPrimaryDark">#6d28d9</item>'),
+        '[cell=5, scenario=primary-dark-matches-status] colorPrimaryDark matches statusBarColor'
       );
     },
-  },
+    'input': {
+      'roles': { 'topBar': TestFixture.colorFromHex('#6d28d9') }
+    },
+    'kind': 'edge',
+    'name': 'colorPrimaryDark uses statusBarColor value (same derivation)'
+  }
 ];
 
-new ScenarioRunner<Cell5Input, Cell5Output>(
+await new ScenarioRunner<Cell5Input, Cell5Output>(
   'CapacitorPlugin :: cell-5 :: emit:androidThemeXml',
   (input) => {
-    const state = makeState(input.roles);
+    const state = TestFixture.state({ 'roles': input.roles });
     // Pre-seed prior emitter outputs when the scenario requires them
     if (input.priorStatusBar !== undefined) {
-      state.outputs['capacitor:statusBar'] = { backgroundColor: input.priorStatusBar, style: 'DARK' as const, overlay: false };
+      state.outputs['capacitor:statusBar'] = { 'backgroundColor': input.priorStatusBar, 'overlay': false, 'style': 'DARK' as const };
     }
     if (input.priorSplashScreen !== undefined) {
-      state.outputs['capacitor:splashScreen'] = { backgroundColor: input.priorSplashScreen };
+      state.outputs['capacitor:splashScreen'] = { 'backgroundColor': input.priorSplashScreen };
     }
-    emitAndroidThemeXml.run(state, makeCtx());
+    emitAndroidThemeXml.run(state, TestFixture.context());
     const xml = state.outputs['capacitor:androidThemeXml'] as string | undefined;
     const statusBarColor = input.priorStatusBar;
-    return { xml, statusBarColor };
-  },
+    return { 'statusBarColor': statusBarColor, 'xml': xml };
+  }
 ).run(cell5Scenarios);
 
 // ---------------------------------------------------------------------------
@@ -842,12 +883,12 @@ new ScenarioRunner<Cell5Input, Cell5Output>(
 // as an ordering invariant.
 // ---------------------------------------------------------------------------
 
-interface Cell6Input {
-  readonly engineInput: InputInterface;
-  readonly pipeline:    readonly string[];
+interface Cell6InputInterface {
+  readonly 'engineInput': InputInterface;
+  readonly 'pipeline':    readonly string[];
 }
-interface Cell6Output {
-  readonly state: PaletteStateInterface;
+interface Cell6OutputInterface {
+  readonly 'state': PaletteStateInterface;
 }
 
 const STANDARD_PIPELINE: readonly string[] = [
@@ -857,15 +898,42 @@ const STANDARD_PIPELINE: readonly string[] = [
   'emit:capacitorStatusBar',
   'emit:capacitorTheme',
   'emit:capacitorSplashScreen',
-  'emit:androidThemeXml',
+  'emit:androidThemeXml'
 ];
 
-const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
+const cell6Scenarios: readonly ScenarioInterface<Cell6InputInterface, Cell6OutputInterface>[] = [
   {
-    name: 'full pipeline writes every output slot with correct shapes',
-    kind: 'happy',
-    input: {
-      engineInput: {
+    'assert': function(output, error) {
+      assert.strictEqual(error, undefined, '[cell=6, scenario=full-pipeline] no throw');
+
+      const statusBar = CapacitorOutputs.statusBar(output!.state);
+      assert.ok(statusBar !== undefined, '[cell=6, scenario=full-pipeline] statusBar present');
+      assert.match(statusBar.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=6, scenario=full-pipeline] statusBar.backgroundColor is hex');
+      assert.ok(statusBar.style === 'DARK' || statusBar.style === 'LIGHT', '[cell=6, scenario=full-pipeline] statusBar.style is DARK or LIGHT');
+      assert.strictEqual(typeof statusBar.overlay, 'boolean', '[cell=6, scenario=full-pipeline] statusBar.overlay is boolean');
+
+      const theme = CapacitorOutputs.theme(output!.state);
+      assert.ok(theme !== undefined, '[cell=6, scenario=full-pipeline] theme present');
+      assert.strictEqual(Object.keys(theme).length, 13, '[cell=6, scenario=full-pipeline] theme has 13 slots');
+
+      const splash = CapacitorOutputs.splashScreen(output!.state);
+      assert.ok(splash !== undefined, '[cell=6, scenario=full-pipeline] splashScreen present');
+      assert.match(splash.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=6, scenario=full-pipeline] splash.backgroundColor is hex');
+
+      const xml = CapacitorOutputs.androidThemeXml(output!.state);
+      assert.ok(xml !== undefined, '[cell=6, scenario=full-pipeline] androidThemeXml present');
+      assert.ok(xml.includes('<resources>'), '[cell=6, scenario=full-pipeline] XML has <resources>');
+      assert.ok(xml.includes('AppTheme.NoActionBarLaunch'), '[cell=6, scenario=full-pipeline] XML has splash theme style');
+
+      // Cross-task ordering invariant: androidThemeXml statusBarColor must
+      // reference the same value emit:capacitorStatusBar wrote.
+      assert.ok(
+        xml.includes(`<item name="android:statusBarColor">${statusBar.backgroundColor}</item>`),
+        '[cell=6, scenario=full-pipeline] androidThemeXml statusBarColor matches statusBar.backgroundColor'
+      );
+    },
+    'input': {
+      'engineInput': {
         'bypass':    undefined,
         'colors':    ['#8b5cf6', '#ffffff', '#ec4899'],
         'contrast':  undefined,
@@ -873,45 +941,22 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
         'maxColors': undefined,
         'metadata':  undefined,
         'roles':     FULL_ROLES,
-        'runtime':   undefined,
+        'runtime':   undefined
       },
-      pipeline: STANDARD_PIPELINE,
+      'pipeline': STANDARD_PIPELINE
     },
-    assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=6, scenario=full-pipeline] no throw');
-
-      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType | undefined;
-      assert.ok(statusBar, '[cell=6, scenario=full-pipeline] statusBar present');
-      assert.match(statusBar!.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=6, scenario=full-pipeline] statusBar.backgroundColor is hex');
-      assert.ok(['DARK', 'LIGHT'].includes(statusBar!.style), '[cell=6, scenario=full-pipeline] statusBar.style is DARK or LIGHT');
-      assert.strictEqual(typeof statusBar!.overlay, 'boolean', '[cell=6, scenario=full-pipeline] statusBar.overlay is boolean');
-
-      const theme = output!.state.outputs['capacitor:theme'] as CapacitorThemeOutputInterfaceType | undefined;
-      assert.ok(theme, '[cell=6, scenario=full-pipeline] theme present');
-      assert.strictEqual(Object.keys(theme!).length, 13, '[cell=6, scenario=full-pipeline] theme has 13 slots');
-
-      const splash = output!.state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterfaceType | undefined;
-      assert.ok(splash, '[cell=6, scenario=full-pipeline] splashScreen present');
-      assert.match(splash!.backgroundColor, /^#[0-9a-f]{6}$/i, '[cell=6, scenario=full-pipeline] splash.backgroundColor is hex');
-
-      const xml = output!.state.outputs['capacitor:androidThemeXml'] as string | undefined;
-      assert.ok(xml, '[cell=6, scenario=full-pipeline] androidThemeXml present');
-      assert.ok(xml!.includes('<resources>'), '[cell=6, scenario=full-pipeline] XML has <resources>');
-      assert.ok(xml!.includes('AppTheme.NoActionBarLaunch'), '[cell=6, scenario=full-pipeline] XML has splash theme style');
-
-      // Cross-task ordering invariant: androidThemeXml statusBarColor must
-      // reference the same value emit:capacitorStatusBar wrote.
-      assert.ok(
-        xml!.includes(`<item name="android:statusBarColor">${statusBar!.backgroundColor}</item>`),
-        '[cell=6, scenario=full-pipeline] androidThemeXml statusBarColor matches statusBar.backgroundColor',
-      );
-    },
+    'kind': 'happy',
+    'name': 'full pipeline writes every output slot with correct shapes'
   },
   {
-    name: 'single-color input (boundary: exactly one source color)',
-    kind: 'edge',
-    input: {
-      engineInput: {
+    'assert': function(output, error) {
+      assert.strictEqual(error, undefined, '[cell=6, scenario=single-color] no throw');
+      const statusBar = CapacitorOutputs.statusBar(output!.state);
+      assert.ok(statusBar !== undefined, '[cell=6, scenario=single-color] capacitor:statusBar present');
+      assert.ok(statusBar.backgroundColor.length > 0, '[cell=6, scenario=single-color] statusBar backgroundColor present');
+    },
+    'input': {
+      'engineInput': {
         'bypass':    undefined,
         'colors':    ['#000000'],
         'contrast':  undefined,
@@ -919,22 +964,22 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
         'maxColors': undefined,
         'metadata':  undefined,
         'roles':     FULL_ROLES,
-        'runtime':   undefined,
+        'runtime':   undefined
       },
-      pipeline: STANDARD_PIPELINE,
+      'pipeline': STANDARD_PIPELINE
     },
-    assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=6, scenario=single-color] no throw');
-      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType | undefined;
-      assert.ok(statusBar, '[cell=6, scenario=single-color] capacitor:statusBar present');
-      assert.ok(statusBar?.backgroundColor, '[cell=6, scenario=single-color] statusBar backgroundColor present');
-    },
+    'kind': 'edge',
+    'name': 'single-color input (boundary: exactly one source color)'
   },
   {
-    name: 'pure-white palette — all roles resolve to white (#ffffff)',
-    kind: 'edge',
-    input: {
-      engineInput: {
+    'assert': function(output, error) {
+      assert.strictEqual(error, undefined, '[cell=6, scenario=all-white] no throw');
+      const statusBar = CapacitorOutputs.statusBar(output!.state);
+      assert.ok(statusBar !== undefined, '[cell=6, scenario=all-white] statusBar present');
+      assert.strictEqual(statusBar.style, 'DARK', '[cell=6, scenario=all-white] white bar → DARK style');
+    },
+    'input': {
+      'engineInput': {
         'bypass':    undefined,
         'colors':    ['#ffffff', '#ffffff', '#ffffff'],
         'contrast':  undefined,
@@ -942,21 +987,22 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
         'maxColors': undefined,
         'metadata':  undefined,
         'roles':     FULL_ROLES,
-        'runtime':   undefined,
+        'runtime':   undefined
       },
-      pipeline: STANDARD_PIPELINE,
+      'pipeline': STANDARD_PIPELINE
     },
-    assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=6, scenario=all-white] no throw');
-      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType;
-      assert.strictEqual(statusBar.style, 'DARK', '[cell=6, scenario=all-white] white bar → DARK style');
-    },
+    'kind': 'edge',
+    'name': 'pure-white palette — all roles resolve to white (#ffffff)'
   },
   {
-    name: 'pure-black palette — statusBar style is LIGHT',
-    kind: 'edge',
-    input: {
-      engineInput: {
+    'assert': function(output, error) {
+      assert.strictEqual(error, undefined, '[cell=6, scenario=all-black] no throw');
+      const statusBar = CapacitorOutputs.statusBar(output!.state);
+      assert.ok(statusBar !== undefined, '[cell=6, scenario=all-black] statusBar present');
+      assert.strictEqual(statusBar.style, 'LIGHT', '[cell=6, scenario=all-black] black bar → LIGHT style');
+    },
+    'input': {
+      'engineInput': {
         'bypass':    undefined,
         'colors':    ['#000000', '#000000', '#000000'],
         'contrast':  undefined,
@@ -964,21 +1010,22 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
         'maxColors': undefined,
         'metadata':  undefined,
         'roles':     FULL_ROLES,
-        'runtime':   undefined,
+        'runtime':   undefined
       },
-      pipeline: STANDARD_PIPELINE,
+      'pipeline': STANDARD_PIPELINE
     },
-    assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=6, scenario=all-black] no throw');
-      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType;
-      assert.strictEqual(statusBar.style, 'LIGHT', '[cell=6, scenario=all-black] black bar → LIGHT style');
-    },
+    'kind': 'edge',
+    'name': 'pure-black palette — statusBar style is LIGHT'
   },
   {
-    name: 'statusBarOverlay metadata flows through the full pipeline',
-    kind: 'edge',
-    input: {
-      engineInput: {
+    'assert': function(output, error) {
+      assert.strictEqual(error, undefined, '[cell=6, scenario=overlay-metadata] no throw');
+      const statusBar = CapacitorOutputs.statusBar(output!.state);
+      assert.ok(statusBar !== undefined, '[cell=6, scenario=overlay-metadata] statusBar present');
+      assert.strictEqual(statusBar.overlay, true, '[cell=6, scenario=overlay-metadata] overlay propagated from metadata');
+    },
+    'input': {
+      'engineInput': {
         'bypass':    undefined,
         'colors':    ['#8b5cf6', '#ffffff', '#ec4899'],
         'contrast':  undefined,
@@ -986,21 +1033,22 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
         'maxColors': undefined,
         'metadata':  { 'capacitor': { 'statusBarOverlay': true } },
         'roles':     FULL_ROLES,
-        'runtime':   undefined,
+        'runtime':   undefined
       },
-      pipeline: STANDARD_PIPELINE,
+      'pipeline': STANDARD_PIPELINE
     },
-    assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=6, scenario=overlay-metadata] no throw');
-      const statusBar = output!.state.outputs['capacitor:statusBar'] as StatusBarOutputInterfaceType;
-      assert.strictEqual(statusBar.overlay, true, '[cell=6, scenario=overlay-metadata] overlay propagated from metadata');
-    },
+    'kind': 'edge',
+    'name': 'statusBarOverlay metadata flows through the full pipeline'
   },
   {
-    name: 'androidSplashResourceName metadata flows through the full pipeline',
-    kind: 'edge',
-    input: {
-      engineInput: {
+    'assert': function(output, error) {
+      assert.strictEqual(error, undefined, '[cell=6, scenario=android-splash-resource] no throw');
+      const splash = CapacitorOutputs.splashScreen(output!.state);
+      assert.ok(splash !== undefined, '[cell=6, scenario=android-splash-resource] splashScreen present');
+      assert.strictEqual(splash.androidSplashResourceName, 'custom_splash', '[cell=6, scenario=android-splash-resource] androidSplashResourceName propagated');
+    },
+    'input': {
+      'engineInput': {
         'bypass':    undefined,
         'colors':    ['#8b5cf6', '#ffffff', '#ec4899'],
         'contrast':  undefined,
@@ -1008,33 +1056,32 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
         'maxColors': undefined,
         'metadata':  { 'capacitor': { 'androidSplashResourceName': 'custom_splash' } },
         'roles':     FULL_ROLES,
-        'runtime':   undefined,
+        'runtime':   undefined
       },
-      pipeline: STANDARD_PIPELINE,
+      'pipeline': STANDARD_PIPELINE
     },
-    assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=6, scenario=android-splash-resource] no throw');
-      const splash = output!.state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterfaceType;
-      assert.strictEqual(splash.androidSplashResourceName, 'custom_splash', '[cell=6, scenario=android-splash-resource] androidSplashResourceName propagated');
-    },
+    'kind': 'edge',
+    'name': 'androidSplashResourceName metadata flows through the full pipeline'
   },
   {
-    name: 'missing colors array in input throws with validation message',
-    kind: 'unhappy',
-    input: {
-      engineInput: {} as InputInterface,
-      pipeline:    STANDARD_PIPELINE,
-    },
-    assert(_output, error) {
+    'assert': function(_output, error) {
       assert.ok(error instanceof Error, '[cell=6, scenario=missing-colors] expected throw');
-      assert.match((error as Error).message, /input invalid/, '[cell=6, scenario=missing-colors] message names context');
+      assert.match((error).message, /input invalid/, '[cell=6, scenario=missing-colors] message names context');
     },
+    'input': {
+      'engineInput': {} as InputInterface,
+      'pipeline':    STANDARD_PIPELINE
+    },
+    'kind': 'unhappy',
+    'name': 'missing colors array in input throws with validation message'
   },
   {
-    name: 'unknown task name in pipeline throws before run',
-    kind: 'unhappy',
-    input: {
-      engineInput: {
+    'assert': function(_output, error) {
+      assert.ok(error instanceof Error, '[cell=6, scenario=unknown-task] expected throw');
+      assert.match((error).message, /not registered/, '[cell=6, scenario=unknown-task] message explains failure');
+    },
+    'input': {
+      'engineInput': {
         'bypass':    undefined,
         'colors':    ['#ff0000'],
         'contrast':  undefined,
@@ -1042,43 +1089,43 @@ const cell6Scenarios: readonly ScenarioInterface<Cell6Input, Cell6Output>[] = [
         'maxColors': undefined,
         'metadata':  undefined,
         'roles':     undefined,
-        'runtime':   undefined,
+        'runtime':   undefined
       },
-      pipeline:    ['intake:hex', 'emit:nonexistent'],
+      'pipeline':    ['intake:hex', 'emit:nonexistent']
     },
-    assert(_output, error) {
-      assert.ok(error instanceof Error, '[cell=6, scenario=unknown-task] expected throw');
-      assert.match((error as Error).message, /not registered/, '[cell=6, scenario=unknown-task] message explains failure');
-    },
-  },
+    'kind': 'unhappy',
+    'name': 'unknown task name in pipeline throws before run'
+  }
 ];
 
-new ScenarioRunner<Cell6Input, Cell6Output>(
+await new ScenarioRunner<Cell6InputInterface, Cell6OutputInterface>(
   'CapacitorPlugin :: cell-6 :: pipeline',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = TestFixture.engine();
     engine.pipeline(input.pipeline);
-    const state = await engine.run(input.engineInput);
-    return { state };
-  },
+    const state = engine.run(input.engineInput);
+    return { 'state': state };
+  }
 ).run(cell6Scenarios);
 
 // --- Golden fixtures ---
 
-test('CapacitorPlugin :: golden :: androidThemeXml exact structure', () => {
+await test('CapacitorPlugin :: golden :: androidThemeXml exact structure', () => {
   // Locks the XML template shape. Any structural change (indent, attribute order,
   // style parent name) will break this test deliberately — it is a golden fixture.
-  const state = makeState({
-    'topBar':    hex('#1a1a2e'),
-    'surface':   hex('#1a1a2e'),
-    'background': hex('#0f0f1a'),
-    'primary':   hex('#8b5cf6'),
-    'text':      hex('#e2e8f0'),
+  const state = TestFixture.state({
+    'roles': {
+      'background': TestFixture.colorFromHex('#0f0f1a'),
+      'primary':   TestFixture.colorFromHex('#8b5cf6'),
+      'surface':   TestFixture.colorFromHex('#1a1a2e'),
+      'text':      TestFixture.colorFromHex('#e2e8f0'),
+      'topBar':    TestFixture.colorFromHex('#1a1a2e')
+    }
   });
   // Seed prior statusBar and splashScreen outputs as flat colon-keyed slots
-  state.outputs['capacitor:statusBar']   = { backgroundColor: '#1a1a2e', style: 'LIGHT', overlay: false };
-  state.outputs['capacitor:splashScreen'] = { backgroundColor: '#1a1a2e' };
-  emitAndroidThemeXml.run(state, makeCtx());
+  state.outputs['capacitor:statusBar']   = { 'backgroundColor': '#1a1a2e', 'overlay': false, 'style': 'LIGHT' };
+  state.outputs['capacitor:splashScreen'] = { 'backgroundColor': '#1a1a2e' };
+  emitAndroidThemeXml.run(state, TestFixture.context());
   const xml = state.outputs['capacitor:androidThemeXml'] as string;
 
   const expected = [
@@ -1093,7 +1140,7 @@ test('CapacitorPlugin :: golden :: androidThemeXml exact structure', () => {
     '        <item name="android:textColorPrimary">#e2e8f0</item>',
     '        <item name="postSplashScreenTheme">@style/AppTheme</item>',
     '    </style>',
-    '</resources>',
+    '</resources>'
   ].join('\n');
 
   assert.strictEqual(xml, expected, '[golden :: androidThemeXml] exact XML structure matches template');

@@ -1,17 +1,23 @@
-export type UploadedImageHeaderModel = {
-  readonly countLabel: string;
-  readonly removeAriaLabel: string;
-  readonly showInlineHeader: boolean;
-};
+export const buildUploadedImageHeaderModel = class UploadedImageHeaderModel {
+  public readonly countLabel: string;
+  public readonly removeAriaLabel: string;
+  public readonly showInlineHeader: boolean;
 
-export function buildUploadedImageHeaderModel(
-  name: string,
-  dominantColorCount: number,
-  showHeader: boolean
-): UploadedImageHeaderModel {
-  return {
-    countLabel: `${dominantColorCount} dominant color${dominantColorCount === 1 ? '' : 's'}`,
-    removeAriaLabel: `Remove ${name}`,
-    showInlineHeader: showHeader
-  };
-}
+  private constructor(countLabel: string, removeAriaLabel: string, showInlineHeader: boolean) {
+    this.countLabel = countLabel;
+    this.removeAriaLabel = removeAriaLabel;
+    this.showInlineHeader = showInlineHeader;
+  }
+
+  public static build(
+    name: string,
+    dominantColorCount: number,
+    showHeader: boolean
+  ): UploadedImageHeaderModel {
+    return new UploadedImageHeaderModel(
+      `${dominantColorCount} dominant color${dominantColorCount === 1 ? '' : 's'}`,
+      `Remove ${name}`,
+      showHeader
+    );
+  }
+};

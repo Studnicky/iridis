@@ -28,7 +28,7 @@ class GamutMapSrgb {
   readonly 'name' = 'gamutMapSrgb';
 
   apply(l: number, c: number, h: number): GamutMapResultInterfaceType {
-    if (inSrgbGamut(l, c, h)) {
+    if (SrgbGamutCheck.contains(l, c, h)) {
       return { 'c': c, 'h': h, 'inGamut': true, 'l': l };
     }
     if (l <= 0) {
@@ -46,7 +46,7 @@ class GamutMapSrgb {
     let hi = c;
     while (hi - lo > JND_CHROMA) {
       const mid = (lo + hi) / 2;
-      if (inSrgbGamut(l, mid, h)) {
+      if (SrgbGamutCheck.contains(l, mid, h)) {
         lo = mid;
       } else {
         hi = mid;
@@ -61,31 +61,33 @@ class GamutMapSrgb {
  * indicates the point is outside the sRGB gamut. Encapsulated here so
  * the gamut-map binary search doesn't allocate `RgbInterfaceType` records.
  */
-function inSrgbGamut(l: number, c: number, h: number): boolean {
-  const hRad = (h * Math.PI) / 180;
-  const a = c * Math.cos(hRad);
-  const b = c * Math.sin(hRad);
+class SrgbGamutCheck {
+  static contains(l: number, c: number, h: number): boolean {
+    const hRad = (h * Math.PI) / 180;
+    const a = c * Math.cos(hRad);
+    const b = c * Math.sin(hRad);
 
-  let x = l + 0.3963377774 * a + 0.2158037573 * b;
-  let y = l - 0.1055613458 * a - 0.0638541728 * b;
-  let z = l - 0.0894841775 * a - 1.291485548  * b;
+    let x = l + 0.3963377774 * a + 0.2158037573 * b;
+    let y = l - 0.1055613458 * a - 0.0638541728 * b;
+    let z = l - 0.0894841775 * a - 1.291485548  * b;
 
-  x = x * x * x;
-  y = y * y * y;
-  z = z * z * z;
+    x = x * x * x;
+    y = y * y * y;
+    z = z * z * z;
 
-  const rLin = +4.0767416621 * x - 3.3077115913 * y + 0.2309699292 * z;
-  const gLin = -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z;
-  const bLin = -0.0041960863 * x - 0.7034186147 * y + 1.707614701  * z;
+    const rLin = +4.0767416621 * x - 3.3077115913 * y + 0.2309699292 * z;
+    const gLin = -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z;
+    const bLin = -0.0041960863 * x - 0.7034186147 * y + 1.707614701  * z;
 
-  // Allow a tiny epsilon; floating-point error shouldn't kick a barely
-  // in-gamut color out into the binary-search branch.
-  const eps = 1e-6;
-  return (
-    rLin >= -eps && rLin <= 1 + eps &&
-    gLin >= -eps && gLin <= 1 + eps &&
-    bLin >= -eps && bLin <= 1 + eps
-  );
+    // Allow a tiny epsilon; floating-point error shouldn't kick a barely
+    // in-gamut color out into the binary-search branch.
+    const eps = 1e-6;
+    return (
+      rLin >= -eps && rLin <= 1 + eps &&
+      gLin >= -eps && gLin <= 1 + eps &&
+      bLin >= -eps && bLin <= 1 + eps
+    );
+  }
 }
 
 /** Singleton instance registered as the `gamutMapSrgb` math primitive. */

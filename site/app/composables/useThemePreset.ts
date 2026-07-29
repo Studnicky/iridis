@@ -9,22 +9,26 @@
  * per-theme adapter modules, not a switch/branch.
  */
 
-import { ref, watch } from 'vue';
+import type { ViteHotContext } from 'vite/types/hot.d.ts';
+
+import * as VueModule from 'vue';
 
 import { onNuxtReady } from '#imports';
 
 import type { ThemeDefinitionInterfaceType } from '../theme/ThemeDefinitionInterfaceType.ts';
 
 import { THEMES } from '../theme/presets/index.ts';
+import { THEME_PRESET_CONSTANTS } from './constants/ThemePresetConstants.ts';
 
-const STORAGE_KEY = 'iridis-theme-preset';
-const DEFAULT_THEME_KEY = 'futuristic';
+class ViteModule {
+  static readonly metadata: ImportMeta & { readonly 'hot'?: ViteHotContext } = import.meta;
+}
 
 /** Persisted, SSR-safe active theme key. Module-level so every consumer shares one instance. */
-const activeThemeKey = ref<string>(DEFAULT_THEME_KEY);
+const activeThemeKey = VueModule.ref<string>(THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY);
 
 /** Reactive ambient config AmbientBackground.vue reads — kept as its own ref so the component only re-renders on ambient changes, not on unrelated theme fields. */
-const activeAmbient = ref<ThemeDefinitionInterfaceType['ambient']>(THEMES[DEFAULT_THEME_KEY]!.ambient);
+const activeAmbient = VueModule.ref<ThemeDefinitionInterfaceType['ambient']>(THEMES[THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY]!.ambient);
 
 /** DOM writer — SSR-guarded. Sets the theme data attribute (its own adapter stylesheet cascades in font/radius/border-style) and updates the reactive ambient config. */
 class ThemePreset {
@@ -39,21 +43,21 @@ class ThemePreset {
    */
   static writeDomAttribute(key: string): void {
     if (typeof document === 'undefined') { return; }
-    const theme = THEMES[key] ?? THEMES[DEFAULT_THEME_KEY]!;
+    const theme = THEMES[key] ?? THEMES[THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY]!;
     document.documentElement.dataset.iridisTheme = theme.key;
   }
 
   static apply(key: string): void {
-    const theme = THEMES[key] ?? THEMES[DEFAULT_THEME_KEY]!;
+    const theme = THEMES[key] ?? THEMES[THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY]!;
     activeAmbient.value = theme.ambient;
     ThemePreset.writeDomAttribute(key);
   }
 
   static readPersistedKey(): string {
-    if (typeof window === 'undefined') { return DEFAULT_THEME_KEY; }
-    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (typeof window === 'undefined') { return THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY; }
+    const stored = window.localStorage.getItem(THEME_PRESET_CONSTANTS.STORAGE_KEY);
     if (stored !== null && THEMES[stored] !== undefined) { return stored; }
-    return DEFAULT_THEME_KEY;
+    return THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY;
   }
 }
 
@@ -62,19 +66,20 @@ let booted = false;
 let stopWatch: (() => void) | null = null;
 
 /** Active theme key/ambient state, the THEMES registry, and the DOM-writing applicator — the single entry point every consumer (theme-switcher UI, AmbientBackground.vue) uses. */
-export function useThemePreset(): {
-  'activeAmbient': typeof activeAmbient;
-  'activeThemeKey': typeof activeThemeKey;
-  'applyThemePreset': (key: string) => void;
-  'THEMES': Record<string, ThemeDefinitionInterfaceType>;
-} {
-  if (!booted) {
-    booted = true;
-    stopWatch = watch(activeThemeKey, (key) => {
-      ThemePreset.apply(key);
-      if (typeof window !== 'undefined') { window.localStorage.setItem(STORAGE_KEY, key); }
-    });
-    /**
+class UseThemePresetOperation {
+  static run(): {
+    'activeAmbient': typeof activeAmbient;
+    'activeThemeKey': typeof activeThemeKey;
+    'applyThemePreset': (key: string) => void;
+    'THEMES': Record<string, ThemeDefinitionInterfaceType>;
+  } {
+    if (!booted) {
+      booted = true;
+      stopWatch = VueModule.watch(activeThemeKey, (key) => {
+        ThemePreset.apply(key);
+        if (typeof window !== 'undefined') { window.localStorage.setItem(THEME_PRESET_CONSTANTS.STORAGE_KEY, key); }
+      });
+      /**
      * The site is fully static-prerendered — the prerendered HTML always
      * bakes in DEFAULT_THEME_KEY, since there is no persisted preference at
      * build time. Reading localStorage synchronously here would make the
@@ -88,24 +93,27 @@ export function useThemePreset(): {
      * skipping (hydration-time attribute/text patches are check-only and
      * never actually applied in production).
      */
-    const persisted = ThemePreset.readPersistedKey();
-    ThemePreset.writeDomAttribute(persisted);
-    onNuxtReady(() => {
-      if (persisted !== activeThemeKey.value) { activeThemeKey.value = persisted; }
-    });
+      const persisted = ThemePreset.readPersistedKey();
+      ThemePreset.writeDomAttribute(persisted);
+      onNuxtReady(() => {
+        if (persisted !== activeThemeKey.value) { activeThemeKey.value = persisted; }
+      });
+    }
+    return {
+      'activeAmbient':    activeAmbient,
+      'activeThemeKey':   activeThemeKey,
+      'applyThemePreset': ThemePreset.apply,
+      'THEMES':           THEMES
+    };
   }
-  return {
-    'activeAmbient':    activeAmbient,
-    'activeThemeKey':   activeThemeKey,
-    'applyThemePreset': ThemePreset.apply,
-    'THEMES':           THEMES
-  };
 }
+
+export const useThemePreset = UseThemePresetOperation.run;
 
 // Releases the activeThemeKey watcher before Vite re-evaluates this module on
 // HMR — without this, every reload registers a second watcher stacked on top
 // of the old one, each independently re-applying the theme on every change.
-import.meta.hot?.dispose(() => {
+ViteModule.metadata.hot?.dispose(() => {
   stopWatch?.();
   stopWatch = null;
   booted = false;

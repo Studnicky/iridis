@@ -13,6 +13,17 @@ value emitted above them.
 
 ## Install
 
+GitHub Packages requires a personal access token (classic) with
+`read:packages`; the token's account must also have read access to this
+package's repository. Expose the token as `NODE_AUTH_TOKEN`, then configure
+the `@studnicky` scope before installing:
+
+```ini
+# ~/.npmrc
+@studnicky:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
 ```bash
 npm install @studnicky/iridis @studnicky/iridis-stylesheet
 ```
@@ -20,35 +31,48 @@ npm install @studnicky/iridis @studnicky/iridis-stylesheet
 ## Usage
 
 ```ts
+import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+
 import { Engine, coreTasks }  from '@studnicky/iridis';
 import { stylesheetPlugin }   from '@studnicky/iridis-stylesheet';
 
-const engine = new Engine();
-for (const task of coreTasks) engine.tasks.register(task);
-engine.adopt(stylesheetPlugin);
+export function generateStylesheet(roleSchema: RoleSchemaInterfaceType) {
+  const engine = new Engine();
+  for (const task of coreTasks) engine.tasks.register(task);
+  engine.adopt(stylesheetPlugin);
 
-engine.pipeline([
-  'intake:any',
-  'expand:family',
-  'resolve:roles',
-  'enforce:contrast',
-  'derive:variant',
-  'emit:cssVars',
-]);
+  engine.pipeline([
+    'intake:any',
+    'resolve:roles',
+    'expand:family',
+    'enforce:contrast',
+    'derive:variant',
+    'emit:cssVars',
+  ]);
 
-const state = await engine.run({
-  'colors':   ['#8B5CF6'],
-  'roles':    yourRoleSchema,
-  'contrast': { 'level': 'AA' },
-  'metadata': { 'cssVarPrefix': '--c-' },
-});
+  const state = engine.run({
+    'bypass':   undefined,
+    'colors':   ['#8B5CF6'],
+    'contrast': {
+      'algorithm':  'wcag21',
+      'cvdCorrect': undefined,
+      'extra':      undefined,
+      'level':      'AA',
+    },
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  { 'cssVarPrefix': '--c-' },
+    'roles':     roleSchema,
+    'runtime':   undefined,
+  });
 
-const out = state.outputs['stylesheet:cssVars']!;
-document.documentElement.style.cssText = out.full;
+  const out = state.outputs['stylesheet:cssVars']!;
+  return out;
+}
 ```
 
-`state.outputs['stylesheet:cssVars']` is typed as `CssVarsOutputInterface` via the plugin's
-module augmentation:
+`CssVarsOutputInterfaceType` describes the object written to
+`state.outputs['stylesheet:cssVars']`:
 
 | Field | Shape | Notes |
 |---|---|---|

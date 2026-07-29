@@ -1,18 +1,16 @@
 import { ValidationError } from '@studnicky/errors';
 
+import type { ClusterMergeEntity } from '../entities/ClusterMergeEntity.ts';
 import type { ColorHintsInterfaceType, ColorRecordInterfaceType } from '../types/index.ts';
 
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { deltaE2000 } from './DeltaE2000.ts';
 
-type ClusterInterface = {
-  'centroid':  ColorRecordInterfaceType;
-  'weight':    number;
-};
-
-function recordWeight(record: ColorRecordInterfaceType): number {
-  const w = record.hints?.weight;
-  return typeof w === 'number' && w > 0 ? w : 1;
+class RecordWeight {
+  static of(record: ColorRecordInterfaceType): number {
+    const w = record.hints?.weight;
+    return typeof w === 'number' && w > 0 ? w : 1;
+  }
 }
 
 /**
@@ -22,7 +20,7 @@ function recordWeight(record: ColorRecordInterfaceType): number {
  * than by a circular-mean correction.
  */
 class Centroids {
-  static merge(a: ClusterInterface, b: ClusterInterface): ClusterInterface {
+  static merge(a: ClusterMergeEntity.Type, b: ClusterMergeEntity.Type): ClusterMergeEntity.Type {
     // Treat zero-weight inputs as weight=1 so the weighted average stays
     // defined. A zero-weight cluster is degenerate (the upstream task
     // should not produce one), but guarding here keeps a single bad input
@@ -101,19 +99,20 @@ class ClusterDeltaEMerge {
       });
     }
 
-    let clusters: ClusterInterface[] = colors.map((c) => {return {
+    let clusters: ClusterMergeEntity.Type[] = colors.map((c) => {return {
       'centroid': c,
-      'weight':   recordWeight(c)
+      'weight':   RecordWeight.of(c)
     };});
 
     while (clusters.length > targetK) {
       let bestI = 0;
       let bestJ = 1;
       let bestD = Infinity;
-      for (let i = 0; i < clusters.length; i++) {
+      const clustersLength = clusters.length;
+      for (let i = 0; i < clustersLength; i++) {
         const a = clusters[i];
         if (a === undefined) {continue;}
-        for (let j = i + 1; j < clusters.length; j++) {
+        for (let j = i + 1; j < clustersLength; j++) {
           const b = clusters[j];
           if (b === undefined) {continue;}
           // Non-finite distances (NaN from a degenerate centroid, e.g.

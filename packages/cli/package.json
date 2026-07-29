@@ -1,27 +1,64 @@
 {
   "name": "@studnicky/iridis-cli",
   "description": "Command-line interface for running the pipeline against a config file and writing outputs to disk.",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "type": "module",
   "bin": {
-    "iridis": "./src/main.ts"
+    "iridis": "./dist/main.js"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./types": "./src/types/index.ts",
-    "./Cli": "./src/Cli.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    },
+    "./Cli": {
+      "types": "./dist/Cli.d.ts",
+      "import": "./dist/Cli.js"
+    }
   },
   "files": [
-    "src"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
+    "build": "tsc --build --force tsconfig.build.json",
+    "prepare:publish": "node ../../scripts/package-pipeline.mjs cli",
+    "build:package": "pnpm run build && pnpm run prepare:publish",
+    "pack:dry": "pnpm run build:package && npm pack --dry-run ./.publish",
+    "publish:dry": "pnpm run build:package && npm publish --dry-run ./.publish",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test 'tests/**/*.test.ts'",
-    "clean": "rm -rf dist",
-    "prebuild": "rm -rf dist"
+    "clean": "rm -rf .publish dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Studnicky/iridis.git",
+    "directory": "packages/cli"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   },
   "dependencies": {
-    "@studnicky/iridis": "*",
-    "@studnicky/json-tology": "^0.27.0"
+    "@studnicky/errors": "^4.0.0",
+    "@studnicky/iridis": "workspace:*",
+    "@studnicky/iridis-capacitor": "workspace:*",
+    "@studnicky/iridis-contrast": "workspace:*",
+    "@studnicky/iridis-image": "workspace:*",
+    "@studnicky/iridis-rdf": "workspace:*",
+    "@studnicky/iridis-stylesheet": "workspace:*",
+    "@studnicky/iridis-tailwind": "workspace:*",
+    "@studnicky/iridis-vscode": "workspace:*",
+    "@studnicky/json-tology": "^0.27.0",
+    "@studnicky/types": "^4.0.0"
   }
 }
