@@ -54,12 +54,21 @@ prepare_dist() {
   pnpm run build
 }
 
+# packages/stylesheet and site both drive a real Chromium (CSS attribute
+# escaping, and the SSR/hydration boundary). A fresh runner has no browser
+# binaries, so install them there. Locally they are already present and this
+# is skipped, keeping the common path fast.
+prepare_browsers() {
+  if [ -z "${CI:-}" ]; then return 0; fi
+  pnpm --filter site exec playwright install --with-deps chromium
+}
+
 for check in "$@"; do
   case "$check" in
     stamp-version-check) pnpm run stamp-version:check ;;
     typecheck) prepare_dist && pnpm run typecheck ;;
     lint) prepare_dist && pnpm run lint ;;
-    test) prepare_dist && pnpm run test ;;
+    test) prepare_dist && prepare_browsers && pnpm run test ;;
     build) pnpm run build && verify_dist ;;
     generated-artifacts) pnpm run stamp-version:check ;;
     config-schema-check)
