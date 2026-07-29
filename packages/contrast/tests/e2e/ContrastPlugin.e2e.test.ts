@@ -2302,9 +2302,28 @@ await test('enforce:cvdSimulate keeps a realistic 32-pair correction budget', ()
     secondSignature.push(secondRole.hex);
   }
   assert.deepStrictEqual(secondSignature, firstSignature, '[cvd-performance] all 32 corrected role values are deterministic');
-  // The 750 ms ceiling leaves CI headroom while catching an unbounded or
-  // exhaustive candidate-search regression.
-  assert.ok(elapsedMs <= 750, `[cvd-performance] 32 pairs completed in ${elapsedMs.toFixed(2)} ms (budget 750 ms)`);
+
+  // What this guards is that correction cost stays proportional to the pair
+  // count, so an unbounded or exhaustive candidate search cannot creep in. A
+  // fixed millisecond ceiling cannot express that: it passes or fails on how
+  // fast the machine is, and a shared CI runner is several times slower than
+  // a developer laptop. So measure the same work at a quarter of the pairs
+  // and compare the two, which is a property of the algorithm rather than of
+  // the host. Linear growth predicts 8x; the 16x allowance plus a floor
+  // absorbs scheduling noise at these durations, while an exhaustive search
+  // would regress by orders of magnitude and still be caught.
+  const baselinePairs = pairs.slice(0, 4);
+  const baselineRoles: Record<string, ColorRecordInterfaceType> = { 'background': roles.background! };
+  for (const pair of baselinePairs) { baselineRoles[pair.foreground] = roles[pair.foreground]!; }
+  const baselineStartedAt = performance.now();
+  CvdTaskProbe.run(baselineRoles, baselinePairs, true);
+  const baselineElapsedMs = performance.now() - baselineStartedAt;
+
+  const ceilingMs = Math.max(250, baselineElapsedMs * 16);
+  assert.ok(
+    elapsedMs <= ceilingMs,
+    `[cvd-performance] 32 pairs took ${elapsedMs.toFixed(2)} ms against a ${ceilingMs.toFixed(2)} ms ceiling derived from 4 pairs at ${baselineElapsedMs.toFixed(2)} ms`
+  );
 });
 
 // ---------------------------------------------------------------------------
