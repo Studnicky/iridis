@@ -74,6 +74,14 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Animated scrolling is a vestibular trigger, so honor the same preference
+   the ambient and modal surfaces already respect. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 :root {
   /* engine-driven glow color — app.vue's SSR <style> head injection
      (Tokens.toCssText) guarantees --ui-primary/--ui-color-info-500 are set

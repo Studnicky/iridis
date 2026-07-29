@@ -58,15 +58,13 @@ class SnippetImporter {
 
   private extractRegion(source: string, region: string, relativePath: string): string {
     const lines = source.split('\n');
-    const startPattern = new RegExp(`//\\s*#region\\s+${region}\\b`);
-    const endPattern = new RegExp(`//\\s*#endregion\\s+${region}\\b`);
     const startIndex = lines.findIndex((line) => {
-      const matchesStart = startPattern.test(line);
-      return matchesStart;
+      const marker = SNIPPET_IMPORTER_CONSTANTS.REGION_PATTERN.exec(line);
+      return marker?.[1] === region;
     });
     const endIndex = lines.findIndex((line) => {
-      const matchesEnd = endPattern.test(line);
-      return matchesEnd;
+      const marker = SNIPPET_IMPORTER_CONSTANTS.ENDREGION_PATTERN.exec(line);
+      return marker?.[1] === region;
     });
 
     if (startIndex === -1 || endIndex === -1) {

@@ -169,7 +169,17 @@ class NavigationTargetsContext {
 
   #scrollToId(id: string): void {
     if (typeof document === 'undefined') { return; }
-    document.getElementById(id)?.scrollIntoView({ 'behavior': 'smooth', 'block': 'start', 'inline': 'nearest' });
+    // Animated scrolling is a vestibular trigger. `scroll-behavior: smooth`
+    // in main.css is overridden for reduced motion, but an explicit
+    // `behavior` here would win over the stylesheet, so resolve it too.
+    const prefersReducedMotion = typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(id)?.scrollIntoView({
+      'behavior': prefersReducedMotion ? 'auto' : 'smooth',
+      'block':    'start',
+      'inline':   'nearest'
+    });
   }
 }
 

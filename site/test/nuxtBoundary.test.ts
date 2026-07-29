@@ -140,10 +140,10 @@ class NuxtBoundaryHarness {
 
   static async waitForTargetNearTop(page: Page, identifier: string): Promise<void> {
     try {
-      // Smooth scrolling to the reading position competes with a full
-      // production build and a browser on the same machine. Playwright's
-      // 30s default is too tight under that load; 60s matches every other
-      // wait in this file and stays well inside the 240s test budget.
+      // The page runs with reducedMotion 'reduce', so scrolling resolves in
+      // one frame rather than animating. The explicit budget matches every
+      // other wait in this file and covers a heavily loaded machine, where
+      // Playwright's 30s default expires before the first frame lands.
       await page.waitForFunction((targetIdentifier) => {
         const target = document.getElementById(targetIdentifier);
         if (target === null) {return false;}
