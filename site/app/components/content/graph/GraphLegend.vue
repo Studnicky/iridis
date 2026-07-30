@@ -110,4 +110,19 @@ const state = computed(() => props.machine.state());
 .legend-swatch--dashed {
   background: transparent !important;
 }
+
+/* The base .legend-swatch already renders a solid, filled square through its
+   inline color/border binding above; this modifier exists only so every
+   swatch variant referenced in the template has a defining rule here,
+   alongside .legend-swatch--circle and .legend-swatch--dashed. */
+.legend-swatch--solid {
+}
+
+/* Color, font, and white-space wrapping are inherited from .legend-entry
+   (whose own color comes from the button's inline binding). line-height is
+   set explicitly so the label's text box aligns with the swatch's fixed
+   10px height rather than the browser's default line-height. */
+.legend-label {
+  line-height: 1;
+}
 </style>
