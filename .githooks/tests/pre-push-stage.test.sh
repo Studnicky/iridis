@@ -129,4 +129,37 @@ repo=$(make_repo feature/holding)
 rm -rf "$repo"
 pass_count=$((pass_count + 1))
 
+# Deleting a merged branch pushes no commits, so there is no diff to validate;
+# the hook must skip the full suite rather than assume everything changed.
+repo=$(make_repo feature/holding)
+(
+  cd "$repo" || exit 1
+  mkdir -p .githooks scripts
+  cp -R "$REPO_ROOT/.githooks/lib" .githooks/lib
+  cp "$REPO_ROOT/.githooks/pre-push" .githooks/pre-push
+  chmod +x .githooks/pre-push
+
+  base_sha=$(git rev-parse HEAD)
+  git update-ref refs/remotes/origin/develop "$base_sha"
+  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop
+
+  cat > scripts/hook-suite.sh <<'HOOK'
+#!/bin/sh
+printf '%s\n' "$1" >> hook-suite.calls
+exit 0
+HOOK
+  chmod +x scripts/hook-suite.sh
+
+  if ! printf 'refs/heads/fix/done-with-this 0000000000000000000000000000000000000000 refs/heads/fix/done-with-this %s\n' "$base_sha" | .githooks/pre-push >/tmp/pre-push-delete.out 2>&1; then
+    fail "branch deletion push" "$(cat /tmp/pre-push-delete.out)"
+  fi
+
+  assert_contains "deletion push short-circuits" "deletion-only push" "$(cat /tmp/pre-push-delete.out)"
+  if [ -f hook-suite.calls ]; then
+    fail "deletion push ran the suite" "$(cat hook-suite.calls)"
+  fi
+)
+rm -rf "$repo"
+pass_count=$((pass_count + 1))
+
 test_main
