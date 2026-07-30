@@ -28,6 +28,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # The site consumes the packages through their published exports, the
+      # same way any downstream consumer does, so it resolves to dist and
+      # genuinely needs the build.
+      - run: pnpm run build
       - run: pnpm --filter site run generate
         env:
           NUXT_APP_BASE_URL: /iridis/
