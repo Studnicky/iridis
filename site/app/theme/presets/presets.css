@@ -15,3 +15,22 @@
 @import './streamer.css';
 @import './gallery.css';
 @import './restaurant.css';
+
+/* Every preset animation lives either in the ambient subtree or on a hero
+   orb. Keep this rule after the preset imports so its equally specific
+   !important declaration wins over theme animation shorthands that are also
+   !important, including animations applied to particle children and pseudo
+   elements. */
+@media (prefers-reduced-motion: reduce) {
+  [data-iridis-theme] .ambient,
+  [data-iridis-theme] .ambient::before,
+  [data-iridis-theme] .ambient::after,
+  [data-iridis-theme] .ambient *,
+  [data-iridis-theme] .ambient *::before,
+  [data-iridis-theme] .ambient *::after,
+  [data-iridis-theme] .hero-orb,
+  [data-iridis-theme] .hero-orb::before,
+  [data-iridis-theme] .hero-orb::after {
+    animation: none !important;
+  }
+}

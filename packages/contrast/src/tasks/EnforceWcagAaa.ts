@@ -19,8 +19,8 @@ class EnforceWcagAaa implements TaskInterface {
     'writes':      ['roles', 'metadata[\'contrast:aaa\']']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    WcagPairEnforcer.run('aaa', 'contrast:aaa', 'EnforceWcagAaa', state, ctx);
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    WcagPairEnforcer.run('aaa', 'contrast:aaa', 'EnforceWcagAaa', state, context);
   }
 }
 

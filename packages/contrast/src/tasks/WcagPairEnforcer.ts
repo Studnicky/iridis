@@ -18,7 +18,7 @@ class WcagPairEnforcer {
     metadataKey: 'contrast:aa' | 'contrast:aaa',
     component: string,
     state: PaletteStateInterface,
-    ctx: PipelineContextInterface
+    context: PipelineContextInterface
   ): void {
     const pairs = state.input.roles?.contrastPairs ?? [];
     if (pairs.length === 0) {
@@ -28,16 +28,16 @@ class WcagPairEnforcer {
     const results: WcagPairResultInterfaceType[] = [];
 
     for (const pair of pairs) {
-      const algo = pair.algorithm ?? 'wcag21';
-      if (algo !== 'wcag21') {
+      const algorithm = pair.algorithm ?? 'wcag21';
+      if (algorithm !== 'wcag21') {
         continue;
       }
 
-      const fgRecord = state.roles[pair.foreground];
-      const bgRecord = state.roles[pair.background];
+      const foregroundRecord = state.roles[pair.foreground];
+      const backgroundRecord = state.roles[pair.background];
 
-      if (fgRecord === undefined || bgRecord === undefined) {
-        ctx.logger.warn(
+      if (foregroundRecord === undefined || backgroundRecord === undefined) {
+        context.logger.warn(
           LogBody.create()
             .component(component)
             .operation('run')
@@ -50,13 +50,13 @@ class WcagPairEnforcer {
       }
 
       const required = wcagRequiredRatio.apply(level, pair, state.roles);
-      const before = contrastWcag21.apply(fgRecord, bgRecord);
+      const before = contrastWcag21.apply(foregroundRecord, backgroundRecord);
 
-      const currentFg = ensureContrast.apply(fgRecord, bgRecord, required, 'wcag21');
-      const current   = contrastWcag21.apply(currentFg, bgRecord);
+      const currentForeground = ensureContrast.apply(foregroundRecord, backgroundRecord, required, 'wcag21');
+      const current   = contrastWcag21.apply(currentForeground, backgroundRecord);
 
       if (current < required) {
-        ctx.logger.warn(
+        context.logger.warn(
           LogBody.create()
             .component(component)
             .operation('run')
@@ -72,7 +72,7 @@ class WcagPairEnforcer {
         );
       }
 
-      state.roles[pair.foreground] = currentFg;
+      state.roles[pair.foreground] = currentForeground;
 
       results.push({
         'after':      current,
@@ -85,15 +85,16 @@ class WcagPairEnforcer {
       });
     }
 
-    state.metadata[metadataKey] = { 'pairs': results };
+    const metadata = { 'pairs': results };
+    state.metadata[metadataKey] = metadata;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component(component)
         .operation('run')
         .status(LOG_STATUS.SUCCESS)
         .message('Processed pairs')
-        .context({ 'meta': state.metadata[metadataKey], 'pairCount': results.length })
+        .context({ 'meta': metadata, 'pairCount': results.length })
         .build()
     );
   }

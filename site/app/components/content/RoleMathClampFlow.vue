@@ -7,7 +7,7 @@ const props = defineProps<{
   role: RoleMathEntryType;
 }>();
 
-const clampFlowModel = computed(() => buildRoleMathClampFlowModel(props.role));
+const clampFlowModel = computed(() => buildRoleMathClampFlowModel.build(props.role));
 </script>
 
 <template>

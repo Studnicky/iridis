@@ -1,19 +1,12 @@
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
+import type { JsonOutputEntity } from '../../entities/JsonOutputEntity.ts';
+import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
+import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 import type { ColorRecordInterfaceType } from '../../types/color.ts';
-import type {
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '../../types/pipeline.ts';
-import type { PaletteStateInterface } from '../../types/state.ts';
-
-type JsonOutput = {
-  'colors':   string[];
-  'roles':    Record<string, string>;
-  'variants': Record<string, Record<string, string>>;
-};
+import type { TaskManifestInterfaceType } from '../../types/pipeline.ts';
 
 class Hex {
   static to(color: ColorRecordInterfaceType): string {
@@ -41,7 +34,7 @@ class EmitJson implements TaskInterface {
     'writes':      ['outputs[\'core:json\']']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const colors = state.colors.map(Hex.to);
 
     const roles: Record<string, string> = {};
@@ -58,10 +51,10 @@ class EmitJson implements TaskInterface {
       variants[variantName] = flat;
     }
 
-    const output: JsonOutput = { 'colors': colors, 'roles': roles, 'variants': variants };
+    const output: JsonOutputEntity.Type = { 'colors': colors, 'roles': roles, 'variants': variants };
     state.outputs['core:json'] = output;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitJson')
         .operation('run')

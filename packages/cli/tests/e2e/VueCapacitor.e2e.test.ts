@@ -1,8 +1,9 @@
 /**
  * Vue-Capacitor example — golden regression suite.
  *
- * Subject: the category-w3c pipeline (engine API, not CLI) running the
- * `examples/vue-capacitor/category-w3c.config.json` scenario end-to-end.
+ * Subject: the category-w3c pipeline loaded from the canonical
+ * `site/app/examples/vueCapacitor/category-w3c.config.json` through the CLI
+ * config boundary and executed end-to-end.
  *
  * Cells:
  *   1. pipeline ordering  — resolve:roles MUST precede expand:family
@@ -12,93 +13,171 @@
  *   5. slot-check         — CLI accepts per-slot flat output.files keys
  */
 
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { join }    from 'node:path';
-import { tmpdir }  from 'node:os';
-import {
-  ScenarioRunner,
-  assert,
-  type ScenarioInterface,
-} from '../_runner/ScenarioRunner.ts';
+import type { ColorRecordInterfaceType, PaletteStateInterface } from '@studnicky/iridis/model';
+import type { JsonObjectType } from '@studnicky/types';
+
+import { Cli, ConfigLoader } from '@studnicky/iridis-cli';
+import { getContrastMetadata } from '@studnicky/iridis-contrast';
 import { Engine }    from '@studnicky/iridis/engine';
+import { contrastApca, contrastWcag21 } from '@studnicky/iridis/math';
 import { coreTasks } from '@studnicky/iridis/tasks';
-import type { PaletteStateInterface, RoleSchemaInterfaceType } from '@studnicky/iridis/model';
-import { Cli }       from '@studnicky/iridis-cli';
-import type { CliConfigInterface } from '@studnicky/iridis-cli/types';
+import { JsonObject, JsonValue } from '@studnicky/types';
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir }  from 'node:os';
+import { join }    from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
+
+import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
+
+const CATEGORY_CONFIG_PATH = fileURLToPath(new URL(
+  '../../../../site/app/examples/vueCapacitor/category-w3c.config.json',
+  import.meta.url
+));
 
 // ---------------------------------------------------------------------------
 // Fixture — shared inputs
 // ---------------------------------------------------------------------------
 
-const SEED = '#8B5CF6';
+class VueCapacitorTestFixture {
+  static async buildEngine(): Promise<Engine> {
+    const { contrastPlugin }   = await import('@studnicky/iridis-contrast');
+    const { stylesheetPlugin } = await import('@studnicky/iridis-stylesheet');
+    const { capacitorPlugin }  = await import('@studnicky/iridis-capacitor');
 
-const ROLE_SCHEMA = {
-  'name':        'category-w3c',
-  'description': 'WCAG 2.1 AA role schema for category colour palettes',
-  'roles': [
-    { 'name': 'canvas',   'intent': 'background', 'required': true,  'lightnessRange': [0.92, 1.0] as [number, number], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
-    { 'name': 'surface',  'intent': 'background', 'required': true,  'lightnessRange': [0.86, 0.96] as [number, number], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
-    { 'name': 'accent',   'intent': 'accent',     'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
-    { 'name': 'onAccent', 'intent': 'text',       'required': true,  'derivedFrom': 'accent', 'lightnessRange': [0.98, 1.0] as [number, number], 'chromaRange': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
-    { 'name': 'border',   'intent': 'muted',                         'lightnessRange': [0.60, 0.80] as [number, number], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'required': undefined },
-    { 'name': 'muted',    'intent': 'muted',                         'lightnessRange': [0.45, 0.65] as [number, number], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'required': undefined },
-    { 'name': 'text',     'intent': 'text',       'required': true,  'lightnessRange': [0.10, 0.25] as [number, number], 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
-  ],
-  'contrastPairs': [
-    { 'foreground': 'text',     'background': 'canvas',  'minRatio': 4.5, 'algorithm': 'wcag21' as const },
-    { 'foreground': 'text',     'background': 'surface', 'minRatio': 4.5, 'algorithm': 'wcag21' as const },
-    { 'foreground': 'onAccent', 'background': 'accent',  'minRatio': 4.5, 'algorithm': 'wcag21' as const },
-    { 'foreground': 'border',   'background': 'canvas',  'minRatio': 3.0, 'algorithm': 'wcag21' as const },
-  ],
-} satisfies RoleSchemaInterfaceType;
+    const engine = new Engine();
+    for (const task of coreTasks) {
+      engine.tasks.register(task);
+    }
+    engine.adopt(contrastPlugin);
+    engine.adopt(stylesheetPlugin);
+    engine.adopt(capacitorPlugin);
 
-const PIPELINE_CORRECT = [
-  'intake:any',
-  'resolve:roles',
-  'expand:family',
-  'enforce:wcagAA',
-  'derive:variant',
-  'emit:cssVars',
-  'emit:capacitorStatusBar',
-  'emit:capacitorTheme',
-] as const;
-
-async function buildEngine(): Promise<Engine> {
-  const { contrastPlugin }   = await import('@studnicky/iridis-contrast');
-  const { stylesheetPlugin } = await import('@studnicky/iridis-stylesheet');
-  const { capacitorPlugin }  = await import('@studnicky/iridis-capacitor');
-
-  const e = new Engine();
-  for (const task of coreTasks) {
-    e.tasks.register(task);
+    return engine;
   }
-  e.adopt(contrastPlugin);
-  e.adopt(stylesheetPlugin);
-  e.adopt(capacitorPlugin);
 
-  return e;
+  static objectOutput(state: PaletteStateInterface, key: string): JsonObjectType {
+    const output = state.outputs[key];
+    if (!JsonObject.is(output)) {
+      throw new Error(`Expected object output at ${key}`);
+    }
+    return output;
+  }
+
+  static requireOutput<T>(output: T | undefined, error: Error | undefined, message: string): T {
+    assert.strictEqual(error, undefined, `${message}: no error`);
+    if (output === undefined) {
+      assert.fail(`${message}: output is defined`);
+    }
+    return output;
+  }
+
+  static requireRole(state: PaletteStateInterface, name: string): ColorRecordInterfaceType {
+    const role = state.roles[name];
+    if (role === undefined) {
+      throw new Error(`Expected resolved role ${name}.`);
+    }
+    return role;
+  }
+
+  static async runPipeline(pipelineOrder?: readonly string[]): Promise<PaletteStateInterface> {
+    const config = await new ConfigLoader().load(CATEGORY_CONFIG_PATH);
+    const engine = await VueCapacitorTestFixture.buildEngine();
+    engine.pipeline([...(pipelineOrder ?? config.pipeline)]);
+    return engine.run(config.input);
+  }
+
+  static async temporaryDirectory(): Promise<string> {
+    const result = await mkdtemp(join(tmpdir(), 'iridis-vc-e2e-'));
+    return result;
+  }
+
+  static async typeScriptSchema(): Promise<JsonObjectType> {
+    const schemaModule = JsonValue.from(JSON.parse(JSON.stringify(await import(new URL(
+      '../../../../site/app/examples/vueCapacitor/categoryW3cRoleSchema.ts',
+      import.meta.url
+    ).href))));
+    if (!JsonObject.is(schemaModule)) {
+      throw new TypeError('The canonical Vue Capacitor TypeScript schema module is invalid.');
+    }
+    const schema = schemaModule.categoryW3cRoleSchema;
+    if (!JsonObject.is(schema)) {
+      throw new TypeError('The canonical Vue Capacitor TypeScript schema is invalid.');
+    }
+    return schema;
+  }
+
+  static async jsonDocument(relativePath: string): Promise<JsonObjectType> {
+    const value = JsonValue.from(JSON.parse(
+      await readFile(new URL(relativePath, import.meta.url), 'utf8')
+    ));
+    if (!JsonObject.is(value)) {
+      throw new TypeError(`${relativePath} must contain a JSON object.`);
+    }
+    return value;
+  }
+
+  static misorderedPipeline(pipeline: readonly string[]): string[] {
+    const result = [...pipeline];
+    const resolveIndex = result.indexOf('resolve:roles');
+    const expandIndex = result.indexOf('expand:family');
+    if (resolveIndex < 0 || expandIndex < 0) {
+      throw new Error('Canonical pipeline must contain resolve:roles and expand:family.');
+    }
+    result[resolveIndex] = 'expand:family';
+    result[expandIndex] = 'resolve:roles';
+    return result;
+  }
 }
 
-async function runPipeline(pipelineOrder: readonly string[]): Promise<PaletteStateInterface> {
-  const e = await buildEngine();
-  e.pipeline([...pipelineOrder]);
-  return e.run({
-    'bypass':   undefined,
-    'colors':   [SEED],
-    'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': undefined, 'extra': undefined, 'level': 'AA' },
-    'emit':     undefined,
-    'maxColors': undefined,
-    'metadata': {
-      'category':     'music',
-      'cssVarPrefix': '--c-',
-      'scopeAttr':    'data-category',
-      'scopePrefix':  'category',
-      'themeName':    'music',
-    },
-    'roles':    ROLE_SCHEMA,
-    'runtime':  undefined,
-  });
-}
+await test('Vue Capacitor CLI consumes structurally aligned canonical JSON artifacts', async () => {
+  const config = await new ConfigLoader().load(CATEGORY_CONFIG_PATH);
+  const schemaDocument = await VueCapacitorTestFixture.jsonDocument(
+    '../../../../site/app/examples/vueCapacitor/categoryW3cRoleSchema.json'
+  );
+  assert.deepEqual(schemaDocument, await VueCapacitorTestFixture.typeScriptSchema());
+  const serializedConfigRoles = JsonValue.from(JSON.parse(JSON.stringify(config.input.roles)));
+  assert.deepEqual(serializedConfigRoles, schemaDocument);
+  const contrastPairs = config.input.roles?.contrastPairs;
+  const apcaPairs = config.input.contrast?.extra;
+  if (contrastPairs === undefined || apcaPairs === undefined) {
+    throw new Error('The canonical CLI config must declare role and APCA contrast pairs.');
+  }
+  assert.deepEqual(apcaPairs, [
+    { 'algorithm': 'apca', 'background': 'canvas', 'foreground': 'text', 'minRatio': 75 },
+    { 'algorithm': 'apca', 'background': 'surface', 'foreground': 'text', 'minRatio': 75 },
+    { 'algorithm': 'apca', 'background': 'accent', 'foreground': 'onAccent', 'minRatio': 60 },
+    { 'algorithm': 'apca', 'background': 'canvas', 'foreground': 'border', 'minRatio': 45 }
+  ]);
+
+  const state = await VueCapacitorTestFixture.runPipeline();
+  assert.equal(getContrastMetadata(state.metadata, 'contrast:aa')?.pairs.length, 4);
+  assert.equal(getContrastMetadata(state.metadata, 'contrast:aaa')?.pairs.length, 4);
+  assert.equal(getContrastMetadata(state.metadata, 'contrast:apca')?.pairs.length, 4);
+  const cvd = getContrastMetadata(state.metadata, 'contrast:cvd');
+  assert.ok(cvd !== undefined);
+  assert.equal(cvd.warnings.length, 0);
+  assert.equal(cvd.corrections?.every((correction) => {
+    return correction.cvdTypesRemaining.length === 0;
+  }), true);
+  for (const pair of contrastPairs) {
+    const actualRatio = contrastWcag21.apply(
+      VueCapacitorTestFixture.requireRole(state, pair.foreground),
+      VueCapacitorTestFixture.requireRole(state, pair.background)
+    );
+    assert.ok(actualRatio >= pair.minRatio, `${pair.foreground}/${pair.background}: ${actualRatio}`);
+  }
+  for (const pair of apcaPairs) {
+    const actualLc = Math.abs(contrastApca.apply(
+      VueCapacitorTestFixture.requireRole(state, pair.foreground),
+      VueCapacitorTestFixture.requireRole(state, pair.background)
+    ));
+    assert.ok(actualLc >= pair.minRatio, `${pair.foreground}/${pair.background}: ${actualLc}`);
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Cell 1 — pipeline ordering: resolve:roles must precede expand:family
@@ -108,130 +187,128 @@ async function runPipeline(pipelineOrder: readonly string[]): Promise<PaletteSta
 // from accent) will be missing from the output entirely.
 // ---------------------------------------------------------------------------
 
-interface PipelineOrderInput {
-  readonly order: readonly string[];
+abstract class PipelineOrderInput {
+  abstract readonly 'misordered': boolean;
 }
-interface PipelineOrderOutput {
-  readonly roleNames:     string[];
-  readonly hasOnAccent:   boolean;
-}
+type PipelineOrderOutput = {
+  readonly 'hasOnAccent':   boolean;
+  readonly 'roleNames':     string[];
+};
 
 const pipelineOrderScenarios: readonly ScenarioInterface<PipelineOrderInput, PipelineOrderOutput>[] = [
   {
-    name: 'correct order (resolve before expand) produces onAccent role',
-    kind: 'happy',
-    input: {
-      order: [
-        'intake:any',
-        'resolve:roles',
-        'expand:family',
-        'enforce:wcagAA',
-        'derive:variant',
-        'emit:cssVars',
-        'emit:capacitorStatusBar',
-        'emit:capacitorTheme',
-      ],
-    },
-    async assert(output, error) {
-      assert.strictEqual(error, undefined,
-        '[cell=1, scenario=correct-order] no throw');
-      assert.ok(output!.hasOnAccent,
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(
+        output,
+        error,
+        '[cell=1, scenario=correct-order]'
+      );
+      assert.ok(result.hasOnAccent,
         '[cell=1, scenario=correct-order] onAccent role is present');
-      assert.ok(output!.roleNames.includes('accent'),
+      assert.ok(result.roleNames.includes('accent'),
         '[cell=1, scenario=correct-order] accent role is present');
     },
+    'input': { 'misordered': false },
+    'kind': 'happy',
+    'name': 'correct order (resolve before expand) produces onAccent role'
   },
   {
-    name: 'wrong order (expand before resolve) silently drops onAccent',
-    kind: 'unhappy',
-    input: {
-      order: [
-        'intake:any',
-        'expand:family',  // wrong: before resolve:roles
-        'resolve:roles',
-        'enforce:wcagAA',
-        'derive:variant',
-        'emit:cssVars',
-        'emit:capacitorStatusBar',
-        'emit:capacitorTheme',
-      ],
-    },
-    async assert(output, error) {
-      assert.strictEqual(error, undefined,
-        '[cell=1, scenario=wrong-order] no throw (silent failure)');
-      assert.strictEqual(output!.hasOnAccent, false,
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(
+        output,
+        error,
+        '[cell=1, scenario=wrong-order]'
+      );
+      assert.strictEqual(result.hasOnAccent, false,
         '[cell=1, scenario=wrong-order] onAccent is absent when expand runs before resolve');
     },
-  },
+    'input': { 'misordered': true },
+    'kind': 'unhappy',
+    'name': 'wrong order (expand before resolve) silently drops onAccent'
+  }
 ];
 
-new ScenarioRunner<PipelineOrderInput, PipelineOrderOutput>(
+await new ScenarioRunner<PipelineOrderInput, PipelineOrderOutput>(
   'VueCapacitor :: cell-1 :: pipeline-ordering',
   async (input) => {
-    const state = await runPipeline(input.order);
+    const config = await new ConfigLoader().load(CATEGORY_CONFIG_PATH);
+    const pipeline = input.misordered
+      ? VueCapacitorTestFixture.misorderedPipeline(config.pipeline)
+      : config.pipeline;
+    const state = await VueCapacitorTestFixture.runPipeline(pipeline);
     return {
-      'roleNames':   Object.keys(state.roles),
       'hasOnAccent': 'onAccent' in state.roles,
+      'roleNames':   Object.keys(state.roles)
     };
-  },
+  }
 ).run(pipelineOrderScenarios);
 
 // ---------------------------------------------------------------------------
 // Cell 2 — onAccent derivation
 //
 // With the correct pipeline order, onAccent is derived from the accent role
-// and pushed toward lightness [0.98, 1.0] by expand:family.
-// enforce:wcagAA adjusts it to meet 4.5:1 on accent.
+// and pushed toward lightness [0.98, 1.0] by expand:family. The accent's
+// schema range ensures that the pair meets 7:1 after WCAG enforcement.
 // ---------------------------------------------------------------------------
 
-interface OnAccentInput { readonly unused?: never }
-interface OnAccentOutput {
-  readonly onAccentHex:     string;
-  readonly accentHex:       string;
-  readonly onAccentLightness: number;
+interface OnAccentInputInterface { readonly 'unused'?: never }
+abstract class OnAccentOutput {
+  abstract readonly 'accentHex':         string;
+  abstract readonly 'contrastRatio':     number;
+  abstract readonly 'onAccentHex':       string;
+  abstract readonly 'onAccentLightness': number;
 }
 
-const onAccentScenarios: readonly ScenarioInterface<OnAccentInput, OnAccentOutput>[] = [
+const onAccentScenarios: readonly ScenarioInterface<OnAccentInputInterface, OnAccentOutput>[] = [
   {
-    name: 'onAccent is a light color (L >= 0.95) derived from accent',
-    kind: 'happy',
-    input: {},
-    async assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=2, scenario=derived] no throw');
-      assert.ok(output!.onAccentHex.match(/^#[0-9a-f]{6}$/i),
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(
+        output,
+        error,
+        '[cell=2, scenario=derived]'
+      );
+      assert.ok(/^#[0-9a-f]{6}$/i.test(result.onAccentHex),
         '[cell=2, scenario=derived] onAccent is a valid 6-digit hex');
-      assert.ok(output!.onAccentLightness >= 0.9,
-        `[cell=2, scenario=derived] onAccent lightness ${output!.onAccentLightness.toFixed(3)} should be ≥ 0.9 (high lightness range)`);
+      assert.ok(result.onAccentLightness >= 0.98,
+        `[cell=2, scenario=derived] onAccent lightness ${result.onAccentLightness.toFixed(3)} should be ≥ 0.98 (declared high-lightness range)`);
+      assert.ok(result.contrastRatio >= 7,
+        `[cell=2, scenario=derived] onAccent/accent contrast ${result.contrastRatio.toFixed(3)} should be ≥ 7`);
     },
+    'input': {},
+    'kind': 'happy',
+    'name': 'onAccent is a light color (L >= 0.98) derived from accent'
   },
   {
-    name: 'onAccent hex is stable across runs (deterministic)',
-    kind: 'edge',
-    input: {},
-    async assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=2, scenario=deterministic] no throw');
-      // Run again and compare
-      const state2 = await runPipeline(PIPELINE_CORRECT);
-      const onAccent2 = state2.roles['onAccent'];
-      assert.ok(onAccent2 !== undefined, '[cell=2, scenario=deterministic] second run has onAccent');
-      assert.strictEqual(output!.onAccentHex, onAccent2.hex,
+    'assert': async function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(
+        output,
+        error,
+        '[cell=2, scenario=deterministic]'
+      );
+      const secondState = await VueCapacitorTestFixture.runPipeline();
+      const secondOnAccent = VueCapacitorTestFixture.requireRole(secondState, 'onAccent');
+      assert.strictEqual(result.onAccentHex, secondOnAccent.hex,
         '[cell=2, scenario=deterministic] onAccent hex is identical across runs');
     },
-  },
+    'input': {},
+    'kind': 'edge',
+    'name': 'onAccent hex is stable across runs (deterministic)'
+  }
 ];
 
-new ScenarioRunner<OnAccentInput, OnAccentOutput>(
+await new ScenarioRunner<OnAccentInputInterface, OnAccentOutput>(
   'VueCapacitor :: cell-2 :: onAccent-derivation',
   async () => {
-    const state = await runPipeline(PIPELINE_CORRECT);
-    const onAccent = state.roles['onAccent']!;
-    const accent   = state.roles['accent']!;
+    const state = await VueCapacitorTestFixture.runPipeline();
+    const onAccent = VueCapacitorTestFixture.requireRole(state, 'onAccent');
+    const accent   = VueCapacitorTestFixture.requireRole(state, 'accent');
     return {
-      'onAccentHex':       onAccent.hex,
       'accentHex':         accent.hex,
-      'onAccentLightness': onAccent.oklch.l,
+      'contrastRatio':     contrastWcag21.apply(onAccent, accent),
+      'onAccentHex':       onAccent.hex,
+      'onAccentLightness': onAccent.oklch.l
     };
-  },
+  }
 ).run(onAccentScenarios);
 
 // ---------------------------------------------------------------------------
@@ -241,77 +318,76 @@ new ScenarioRunner<OnAccentInput, OnAccentOutput>(
 // state.outputs['capacitor:theme'] are written as flat top-level slots.
 // ---------------------------------------------------------------------------
 
-interface CapacitorOutputInput { readonly unused?: never }
-interface CapacitorOutputOutput {
-  readonly hasStatusBar:   boolean;
-  readonly hasTheme:       boolean;
-  readonly statusBarStyle: string;
-  readonly primaryHex:     string;
-  readonly themeKeyCount:  number;
+interface CapacitorOutputInputInterface { readonly 'unused'?: never }
+abstract class CapacitorOutputOutput {
+  abstract readonly 'hasStatusBar':   boolean;
+  abstract readonly 'hasTheme':       boolean;
+  abstract readonly 'primaryHex':     string;
+  abstract readonly 'statusBarStyle': string;
+  abstract readonly 'themeKeyCount':  number;
 }
 
-type StatusBarSlot = { style: string };
-type ThemeSlot = Record<string, string>;
-
-const capacitorOutputScenarios: readonly ScenarioInterface<CapacitorOutputInput, CapacitorOutputOutput>[] = [
+const capacitorOutputScenarios: readonly ScenarioInterface<CapacitorOutputInputInterface, CapacitorOutputOutput>[] = [
   {
-    name: 'capacitor output has statusBar and theme sub-objects',
-    kind: 'happy',
-    input: {},
-    async assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=3, scenario=shape] no throw');
-      assert.ok(output!.hasStatusBar,  '[cell=3, scenario=shape] statusBar present');
-      assert.ok(output!.hasTheme,      '[cell=3, scenario=shape] theme present');
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(output, error, '[cell=3, scenario=shape]');
+      assert.ok(result.hasStatusBar,  '[cell=3, scenario=shape] statusBar present');
+      assert.ok(result.hasTheme,      '[cell=3, scenario=shape] theme present');
     },
+    'input': {},
+    'kind': 'happy',
+    'name': 'capacitor output has statusBar and theme sub-objects'
   },
   {
-    name: 'statusBar style is DARK or LIGHT',
-    kind: 'happy',
-    input: {},
-    async assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=3, scenario=status-style] no throw');
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(output, error, '[cell=3, scenario=status-style]');
       assert.ok(
-        output!.statusBarStyle === 'DARK' || output!.statusBarStyle === 'LIGHT',
-        `[cell=3, scenario=status-style] style is DARK|LIGHT, got ${output!.statusBarStyle}`,
+        result.statusBarStyle === 'DARK' || result.statusBarStyle === 'LIGHT',
+        `[cell=3, scenario=status-style] style is DARK|LIGHT, got ${result.statusBarStyle}`
       );
     },
+    'input': {},
+    'kind': 'happy',
+    'name': 'statusBar style is DARK or LIGHT'
   },
   {
-    name: 'theme has all 13 canonical slots',
-    kind: 'happy',
-    input: {},
-    async assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=3, scenario=theme-keys] no throw');
-      assert.strictEqual(output!.themeKeyCount, 13,
-        `[cell=3, scenario=theme-keys] expected 13 theme keys, got ${output!.themeKeyCount}`);
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(output, error, '[cell=3, scenario=theme-keys]');
+      assert.strictEqual(result.themeKeyCount, 13,
+        `[cell=3, scenario=theme-keys] expected 13 theme keys, got ${result.themeKeyCount}`);
     },
+    'input': {},
+    'kind': 'happy',
+    'name': 'theme has all 13 canonical slots'
   },
   {
-    name: 'theme primary slot is a hex string',
-    kind: 'edge',
-    input: {},
-    async assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=3, scenario=theme-hex] no throw');
-      assert.ok(output!.primaryHex.match(/^#[0-9a-f]{6}$/i),
-        `[cell=3, scenario=theme-hex] primary is hex, got ${output!.primaryHex}`);
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(output, error, '[cell=3, scenario=theme-hex]');
+      assert.ok(/^#[0-9a-f]{6}$/i.test(result.primaryHex),
+        `[cell=3, scenario=theme-hex] primary is hex, got ${result.primaryHex}`);
     },
-  },
+    'input': {},
+    'kind': 'edge',
+    'name': 'theme primary slot is a hex string'
+  }
 ];
 
-new ScenarioRunner<CapacitorOutputInput, CapacitorOutputOutput>(
+await new ScenarioRunner<CapacitorOutputInputInterface, CapacitorOutputOutput>(
   'VueCapacitor :: cell-3 :: capacitor-output',
   async () => {
-    const state     = await runPipeline(PIPELINE_CORRECT);
-    const statusBar = state.outputs['capacitor:statusBar'] as StatusBarSlot | undefined;
-    const theme     = state.outputs['capacitor:theme']     as ThemeSlot | undefined;
+    const state     = await VueCapacitorTestFixture.runPipeline();
+    const statusBar = VueCapacitorTestFixture.objectOutput(state, 'capacitor:statusBar');
+    const theme     = VueCapacitorTestFixture.objectOutput(state, 'capacitor:theme');
+    const primary = theme.primary;
+    const style = statusBar.style;
     return {
-      'hasStatusBar':   statusBar !== undefined,
-      'hasTheme':       theme !== undefined,
-      'statusBarStyle': statusBar?.style ?? '',
-      'primaryHex':     theme?.['primary'] ?? '',
-      'themeKeyCount':  theme !== undefined ? Object.keys(theme).length : 0,
+      'hasStatusBar':   true,
+      'hasTheme':       true,
+      'primaryHex':     typeof primary === 'string' ? primary : '',
+      'statusBarStyle': typeof style === 'string' ? style : '',
+      'themeKeyCount':  Object.keys(theme).length
     };
-  },
+  }
 ).run(capacitorOutputScenarios);
 
 // ---------------------------------------------------------------------------
@@ -322,79 +398,97 @@ new ScenarioRunner<CapacitorOutputInput, CapacitorOutputOutput>(
 // dark-scheme media query (dark variants from derive:variant).
 // ---------------------------------------------------------------------------
 
-interface CssOutputInput { readonly unused?: never }
-interface CssOutputOutput {
-  readonly hasRootBlock:   boolean;
-  readonly hasDarkScheme:  boolean;
-  readonly hasForcedColors: boolean;
-  readonly allRolesPresent: boolean;
+interface CssOutputInputInterface { readonly 'unused'?: never }
+abstract class CssOutputOutput {
+  abstract readonly 'allRolesPresent': boolean;
+  abstract readonly 'hasDarkScheme':   boolean;
+  abstract readonly 'hasForcedColors': boolean;
+  abstract readonly 'hasRootBlock':    boolean;
 }
 
-const expectedRoles = ['canvas', 'surface', 'accent', 'border', 'muted', 'text', 'onAccent'];
-
-const cssOutputScenarios: readonly ScenarioInterface<CssOutputInput, CssOutputOutput>[] = [
+const cssOutputScenarios: readonly ScenarioInterface<CssOutputInputInterface, CssOutputOutput>[] = [
   {
-    name: 'full CSS output contains :root block',
-    kind: 'happy',
-    input: {},
-    async assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=4, scenario=root-block] no throw');
-      assert.ok(output!.hasRootBlock,
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(
+        output,
+        error,
+        '[cell=4, scenario=root-block]'
+      );
+      assert.ok(result.hasRootBlock,
         '[cell=4, scenario=root-block] full CSS contains :root');
     },
+    'input': {},
+    'kind': 'happy',
+    'name': 'full CSS output contains :root block'
   },
   {
-    name: 'dark-scheme media query is present (derive:variant produced dark variants)',
-    kind: 'happy',
-    input: {},
-    async assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=4, scenario=dark-scheme] no throw');
-      assert.ok(output!.hasDarkScheme,
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(
+        output,
+        error,
+        '[cell=4, scenario=dark-scheme]'
+      );
+      assert.ok(result.hasDarkScheme,
         '[cell=4, scenario=dark-scheme] @media prefers-color-scheme: dark present');
     },
+    'input': {},
+    'kind': 'happy',
+    'name': 'dark-scheme media query is present (derive:variant produced dark variants)'
   },
   {
-    name: 'forced-colors media query is present',
-    kind: 'happy',
-    input: {},
-    async assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=4, scenario=forced-colors] no throw');
-      assert.ok(output!.hasForcedColors,
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(
+        output,
+        error,
+        '[cell=4, scenario=forced-colors]'
+      );
+      assert.ok(result.hasForcedColors,
         '[cell=4, scenario=forced-colors] @media forced-colors: active present');
     },
+    'input': {},
+    'kind': 'happy',
+    'name': 'forced-colors media query is present'
   },
   {
-    name: 'all seven declared roles appear as CSS custom properties',
-    kind: 'happy',
-    input: {},
-    async assert(output, error) {
-      assert.strictEqual(error, undefined, '[cell=4, scenario=all-roles] no throw');
-      assert.ok(output!.allRolesPresent,
+    'assert': function(output, error) {
+      const result = VueCapacitorTestFixture.requireOutput(
+        output,
+        error,
+        '[cell=4, scenario=all-roles]'
+      );
+      assert.ok(result.allRolesPresent,
         '[cell=4, scenario=all-roles] all seven role names appear as --c-* vars in :root');
     },
-  },
+    'input': {},
+    'kind': 'happy',
+    'name': 'all seven declared roles appear as CSS custom properties'
+  }
 ];
 
-new ScenarioRunner<CssOutputInput, CssOutputOutput>(
+await new ScenarioRunner<CssOutputInputInterface, CssOutputOutput>(
   'VueCapacitor :: cell-4 :: css-output',
   async () => {
-    const state   = await runPipeline(PIPELINE_CORRECT);
-    const cssVars = state.outputs['stylesheet:cssVars'] as { full: string; rootBlock: string };
-    const full    = cssVars.full;
-    const root    = cssVars.rootBlock;
+    const state   = await VueCapacitorTestFixture.runPipeline();
+    const cssVars = VueCapacitorTestFixture.objectOutput(state, 'stylesheet:cssVars');
+    const full    = typeof cssVars.full === 'string' ? cssVars.full : '';
+    const root    = typeof cssVars.rootBlock === 'string' ? cssVars.rootBlock : '';
+    const roles = state.input.roles;
+    if (roles === undefined) {
+      throw new Error('The canonical Vue Capacitor config must declare roles.');
+    }
 
-    const allRolesPresent = expectedRoles.every(
-      (r) => root.includes(`--c-${r.replace(/([A-Z])/g, '-$1').toLowerCase()}`) ||
-             root.includes(`--c-${r}`),
+    const allRolesPresent = roles.roles.every(
+      (role) => {return root.includes(`--c-${role.name.replace(/([A-Z])/g, '-$1').toLowerCase()}`) ||
+             root.includes(`--c-${role.name}`);}
     );
 
     return {
-      'hasRootBlock':    full.includes(':root'),
+      'allRolesPresent': allRolesPresent,
       'hasDarkScheme':   full.includes('prefers-color-scheme: dark'),
       'hasForcedColors': full.includes('forced-colors: active'),
-      'allRolesPresent': allRolesPresent,
+      'hasRootBlock':    full.includes(':root')
     };
-  },
+  }
 ).run(cssOutputScenarios);
 
 // ---------------------------------------------------------------------------
@@ -406,112 +500,76 @@ new ScenarioRunner<CssOutputInput, CssOutputOutput>(
 // 'stylesheet:cssVars' key. No legacy sub-slot path normalisation is needed.
 // ---------------------------------------------------------------------------
 
-async function makeTmpDir(): Promise<string> {
-  return mkdtemp(join(tmpdir(), 'iridis-vc-e2e-'));
+abstract class SlotCheckInput {
+  abstract readonly 'outputFiles': Record<string, string>;
 }
-
-interface SlotCheckInput {
-  readonly outputFiles: Record<string, string>;
-}
-interface SlotCheckOutput {
-  readonly success: boolean;
+abstract class SlotCheckOutput {
+  abstract readonly 'success': boolean;
 }
 
 const slotCheckScenarios: readonly ScenarioInterface<SlotCheckInput, SlotCheckOutput>[] = [
   {
-    name: 'per-slot capacitor keys accepted by slot-check',
-    kind: 'happy',
-    input: {
-      outputFiles: {
-        'stylesheet:cssVars':  'music.css',
-        'capacitor:statusBar': 'music-statusbar.json',
-        'capacitor:theme':     'music-theme.json',
-      },
-    },
-    async assert(_output, error) {
+    'assert': function(_output, error) {
       assert.strictEqual(error, undefined,
         '[cell=5, scenario=flat-slots] CLI accepts per-slot flat output keys');
     },
+    'input': {
+      'outputFiles': {
+        'capacitor:statusBar': 'music-statusbar.json',
+        'capacitor:theme':     'music-theme.json',
+        'stylesheet:cssVars':  'music.css'
+      }
+    },
+    'kind': 'happy',
+    'name': 'per-slot capacitor keys accepted by slot-check'
   },
   {
-    name: 'stylesheet:cssVars-only output key passes slot-check',
-    kind: 'happy',
-    input: {
-      outputFiles: { 'stylesheet:cssVars': 'music.css' },
-    },
-    async assert(_output, error) {
+    'assert': function(_output, error) {
       assert.strictEqual(error, undefined,
         '[cell=5, scenario=css-only] stylesheet:cssVars output accepted by slot-check');
     },
+    'input': {
+      'outputFiles': { 'stylesheet:cssVars': 'music.css' }
+    },
+    'kind': 'happy',
+    'name': 'stylesheet:cssVars-only output key passes slot-check'
   },
   {
-    name: 'unknown slot key rejected by slot-check',
-    kind: 'unhappy',
-    input: {
-      outputFiles: { 'stylesheet:cssVars': 'music.css', 'ghost:slot': 'missing.json' },
-    },
-    async assert(_output, error) {
+    'assert': function(_output, error) {
       assert.ok(error instanceof Error,
         '[cell=5, scenario=unknown-slot] CLI throws for unknown slot key');
-      assert.match((error as Error).message, /Config error/,
+      assert.match((error).message, /Config error/,
         '[cell=5, scenario=unknown-slot] error is a config-level rejection');
-      assert.match((error as Error).message, /ghost:slot/,
+      assert.match((error).message, /ghost:slot/,
         '[cell=5, scenario=unknown-slot] error names the unresolved slot key');
     },
-  },
+    'input': {
+      'outputFiles': { 'ghost:slot': 'missing.json', 'stylesheet:cssVars': 'music.css' }
+    },
+    'kind': 'unhappy',
+    'name': 'unknown slot key rejected by slot-check'
+  }
 ];
 
-new ScenarioRunner<SlotCheckInput, SlotCheckOutput>(
+await new ScenarioRunner<SlotCheckInput, SlotCheckOutput>(
   'VueCapacitor :: cell-5 :: slot-check-drift',
   async (input) => {
-    const dir  = await makeTmpDir();
+    const dir  = await VueCapacitorTestFixture.temporaryDirectory();
     const outDir = join(dir, 'out');
     try {
-      const config: CliConfigInterface = {
-        'enableCapacitor':  true,
-        'enableContrast':   true,
-        'enableImage':      undefined,
-        'enableRdf':        undefined,
-        'enableStylesheet': true,
-        'enableTailwind':   undefined,
-        'enableVscode':     undefined,
-        'input': {
-          'bypass':    undefined,
-          'colors':    [SEED],
-          'contrast':  { 'algorithm': 'wcag21', 'cvdCorrect': undefined, 'extra': undefined, 'level': 'AA' },
-          'emit':      undefined,
-          'maxColors': undefined,
-          'metadata': {
-            'category':     'music',
-            'cssVarPrefix': '--c-',
-            'scopeAttr':    'data-category',
-            'scopePrefix':  'category',
-            'themeName':    'music',
-          },
-          'roles':     ROLE_SCHEMA,
-          'runtime':   undefined,
-        },
-        'output': {
-          'directory': outDir,
-          'files':     input.outputFiles,
-        },
-        'pipeline': [
-          'intake:any',
-          'resolve:roles',
-          'expand:family',
-          'enforce:wcagAA',
-          'derive:variant',
-          'emit:cssVars',
-          'emit:capacitorStatusBar',
-          'emit:capacitorTheme',
-        ],
+      const config = await VueCapacitorTestFixture.jsonDocument(
+        '../../../../site/app/examples/vueCapacitor/category-w3c.config.json'
+      );
+      config.output = {
+        'directory': outDir,
+        'files':     input.outputFiles
       };
-      const cfgPath = join(dir, 'iridis.config.json');
-      await writeFile(cfgPath, JSON.stringify(config, null, 2), 'utf-8');
-      await new Cli().run(cfgPath);
+      const configPath = join(dir, 'iridis.config.json');
+      await writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
+      await new Cli().run(configPath);
       return { 'success': true };
     } finally {
-      await rm(dir, { 'recursive': true, 'force': true });
+      await rm(dir, { 'force': true, 'recursive': true });
     }
-  },
+  }
 ).run(slotCheckScenarios);

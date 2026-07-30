@@ -8,7 +8,7 @@ const props = defineProps<{
   pairings: readonly ContrastPairingType[];
 }>();
 
-const tableModel = computed(() => buildPairingPreviewTableModel(props.pairings));
+const tableModel = computed(() => buildPairingPreviewTableModel.build(props.pairings));
 </script>
 
 <template>

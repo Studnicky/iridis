@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { complianceBadgeColor } from '~/utils/complianceBadgeColor.ts';
-import type { RoleComplianceRowType } from './roles/buildRolesComplianceRows.ts';
 import { buildRolesComplianceGridModel } from './roles/buildRolesComplianceGridModel.ts';
 
 const props = defineProps<{
-  rows: readonly RoleComplianceRowType[];
+  rows: Parameters<typeof buildRolesComplianceGridModel.build>[0];
   layout: {
     badgeSize: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
     cardClass?: string;
@@ -18,7 +17,7 @@ const props = defineProps<{
   naTooltip: string;
 }>();
 
-const gridModel = computed(() => buildRolesComplianceGridModel(props.rows, props.naTooltip));
+const gridModel = computed(() => buildRolesComplianceGridModel.build(props.rows, props.naTooltip));
 </script>
 
 <template>

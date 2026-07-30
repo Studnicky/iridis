@@ -1,99 +1,14 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterface,
+  PluginSchemaContributionInterfaceType,
   TaskInterface
 } from '@studnicky/iridis';
 
+import { CONTRAST_PLUGIN_SCHEMAS } from './constants/ContrastPluginSchemas.ts';
 import { enforceApca }        from './tasks/EnforceApca.ts';
 import { enforceCvdSimulate } from './tasks/EnforceCvdSimulate.ts';
 import { enforceWcagAa }      from './tasks/EnforceWcagAa.ts';
 import { enforceWcagAaa }     from './tasks/EnforceWcagAaa.ts';
-
-const wcagPairResultSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'after':      { 'type': 'number' },
-    'algorithm':  { 'enum': ['wcag21', 'apca'], 'type': 'string' },
-    'background': { 'type': 'string' },
-    'before':     { 'type': 'number' },
-    'foreground': { 'type': 'string' },
-    'pass':       { 'type': 'boolean' },
-    'required':   { 'type': 'number' }
-  },
-  'type': 'object'
-} as const;
-
-const apcaPairResultSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'afterLc':    { 'type': 'number' },
-    'algorithm':  { 'enum': ['apca'], 'type': 'string' },
-    'background': { 'type': 'string' },
-    'beforeLc':   { 'type': 'number' },
-    'foreground': { 'type': 'string' },
-    'pass':       { 'type': 'boolean' },
-    'requiredLc': { 'type': 'number' }
-  },
-  'type': 'object'
-} as const;
-
-const cvdWarningSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'background':                 { 'type': 'string' },
-    'cvdType':                    { 'type': 'string' },
-    'drop':                       { 'type': 'number' },
-    'dropThreshold':              { 'type': 'number' },
-    'foreground':                 { 'type': 'string' },
-    'minSimulatedContrast':       { 'type': 'number' },
-    'originalLuminanceContrast':  { 'type': 'number' },
-    'simulatedLuminanceContrast': { 'type': 'number' },
-    'simulatedContrastRatio':     { 'type': 'number' },
-    'simulatedContrastDropRatio': { 'type': 'number' }
-  },
-  'type': 'object'
-} as const;
-
-const cvdCorrectionSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'background':        { 'type': 'string' },
-    'cvdTypesFixed':     { 'items': { 'type': 'string' }, 'type': 'array' },
-    'cvdTypesRemaining': { 'items': { 'type': 'string' }, 'type': 'array' },
-    'foreground':        { 'type': 'string' }
-  },
-  'type': 'object'
-} as const;
-
-const wcagMetadataSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'aa': {
-      'additionalProperties': false,
-      'properties': { 'pairs': { 'items': wcagPairResultSchema, 'type': 'array' } },
-      'type': 'object'
-    },
-    'aaa': {
-      'additionalProperties': false,
-      'properties': { 'pairs': { 'items': wcagPairResultSchema, 'type': 'array' } },
-      'type': 'object'
-    },
-    'apca': {
-      'additionalProperties': false,
-      'properties': { 'pairs': { 'items': apcaPairResultSchema, 'type': 'array' } },
-      'type': 'object'
-    },
-    'cvd': {
-      'additionalProperties': false,
-      'properties': {
-        'corrections': { 'items': cvdCorrectionSchema, 'type': 'array' },
-        'warnings':    { 'items': cvdWarningSchema, 'type': 'array' }
-      },
-      'type': 'object'
-    }
-  },
-  'type': 'object'
-} as const;
 
 export class ContrastPlugin implements PluginInterface {
   readonly 'name'    = 'contrast';
@@ -109,13 +24,13 @@ export class ContrastPlugin implements PluginInterface {
     ];
   }
 
-  schemas(): PluginSchemaContributionInterface {
+  schemas(): PluginSchemaContributionInterfaceType {
     return {
       'metadata': {
-        'contrast:aa':   wcagMetadataSchema.properties.aa,
-        'contrast:aaa':  wcagMetadataSchema.properties.aaa,
-        'contrast:apca': wcagMetadataSchema.properties.apca,
-        'contrast:cvd':  wcagMetadataSchema.properties.cvd
+        'contrast:aa':   CONTRAST_PLUGIN_SCHEMAS.aa,
+        'contrast:aaa':  CONTRAST_PLUGIN_SCHEMAS.aaa,
+        'contrast:apca': CONTRAST_PLUGIN_SCHEMAS.apca,
+        'contrast:cvd':  CONTRAST_PLUGIN_SCHEMAS.cvd
       },
       'outputs': undefined
     };

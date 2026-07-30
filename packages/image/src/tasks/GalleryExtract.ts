@@ -49,6 +49,30 @@ import { ClusterDispatcher } from './ClusterDispatcher.ts';
  *   state.metadata['gallery:dominantColors']: the K representative colors
  *   state.colors:                             replaced with the K-color set
  */
+class TrimLogger {
+  private readonly context: PipelineContextInterface;
+
+  constructor(context: PipelineContextInterface) {
+    this.context = context;
+  }
+
+  log(
+    before: number,
+    after: number,
+    cap: number
+  ): void {
+    this.context.logger.debug(
+      LogBody.create()
+        .component('GalleryExtract')
+        .operation('run')
+        .status(LOG_STATUS.PARTIAL)
+        .message('trimmed delta-E input by weight')
+        .context({ 'after': after, 'before': before, 'cap': cap })
+        .build()
+    );
+  }
+}
+
 class GalleryExtract implements TaskInterface {
   readonly 'name' = 'gallery:extract';
 
@@ -61,14 +85,14 @@ class GalleryExtract implements TaskInterface {
     'writes':      ['colors', 'metadata.gallery:dominantColors']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const galleryConfig = state.metadata.gallery as
       | { 'algorithm'?: GalleryAlgorithmType; 'deltaECap'?: number; 'k'?: number; }
       | undefined;
     const k = galleryConfig?.k ?? 5;
     const algorithm: GalleryAlgorithmType = galleryConfig?.algorithm ?? 'median-cut';
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('GalleryExtract')
         .operation('run')
@@ -83,7 +107,7 @@ class GalleryExtract implements TaskInterface {
     );
 
     if (state.colors.length === 0) {
-      ctx.logger.warn(
+      context.logger.warn(
         LogBody.create()
           .component('GalleryExtract')
           .operation('run')
@@ -101,21 +125,7 @@ class GalleryExtract implements TaskInterface {
       k,
       {
         'deltaECap': galleryConfig?.deltaECap,
-        'onTrim':    (before, after, cap) => {
-          ctx.logger.debug(
-            LogBody.create()
-              .component('GalleryExtract')
-              .operation('run')
-              .status(LOG_STATUS.PARTIAL)
-              .message('trimmed delta-E input by weight')
-              .context({
-                'after':  after,
-                'before': before,
-                'cap':    cap
-              })
-              .build()
-          );
-        }
+        'onTrim':    new TrimLogger(context)
       }
     );
 
@@ -123,7 +133,7 @@ class GalleryExtract implements TaskInterface {
 
     state.colors.splice(0, state.colors.length, ...dominant);
 
-    ctx.logger.info(
+    context.logger.info(
       LogBody.create()
         .component('GalleryExtract')
         .operation('run')

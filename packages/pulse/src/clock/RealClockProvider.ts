@@ -1,6 +1,6 @@
 import type { ClockProviderInterface } from './ClockProviderInterface.ts';
 
-const clampUnit = (value: number): number => { const result = Math.min(1, Math.max(0, value)); return result; };
+import { UnitInterval } from './UnitInterval.ts';
 
 /**
  * Real-time clock provider: elapsed time is measured against `Date.now()`
@@ -22,7 +22,7 @@ export class RealClockProvider implements ClockProviderInterface {
 
   get t(): number {
     if (this.durationMs <= 0) {return 1;}
-    return clampUnit((Date.now() - this.startedAtMs) / this.durationMs);
+    return UnitInterval.clamp((Date.now() - this.startedAtMs) / this.durationMs);
   }
 
   advance(_deltaMs: number): void {

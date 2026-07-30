@@ -14,61 +14,64 @@
  *   6. image geometry extremes            — 1×1, wide×1, single row huge, monochrome
  */
 
-import { test } from 'node:test';
-import {
-  ScenarioRunner,
-  assert,
-  type ScenarioInterface,
-} from '../_runner/ScenarioRunner.ts';
+import type { PaletteStateInterface } from '@studnicky/iridis';
+import type { JsonValueType } from '@studnicky/types';
+
+import { imagePlugin }  from '@studnicky/iridis-image';
 import { Engine }       from '@studnicky/iridis/engine';
 import { coreTasks }    from '@studnicky/iridis/tasks';
-import { imagePlugin }  from '@studnicky/iridis-image';
-import type { PaletteStateInterface } from '@studnicky/iridis';
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
+
+import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function freshEngine(): Engine {
-  const engine = new Engine();
-  for (const t of coreTasks) engine.tasks.register(t);
-  engine.adopt(imagePlugin);
-  return engine;
-}
-
-/** Build an ImageData-shaped object from an array of [R,G,B,A] byte tuples. */
-function makeImageData(
-  pixels: readonly [number, number, number, number][],
-  width?: number,
-): { 'data': Uint8ClampedArray; 'width': number; 'height': number } {
-  const w = width ?? pixels.length;
-  const h = Math.ceil(pixels.length / w);
-  const data = new Uint8ClampedArray(w * h * 4);
-  for (let i = 0; i < pixels.length; i++) {
-    const px = pixels[i];
-    if (px === undefined) continue;
-    data[i * 4]     = px[0];
-    data[i * 4 + 1] = px[1];
-    data[i * 4 + 2] = px[2];
-    data[i * 4 + 3] = px[3];
+class ImageFixture {
+  static engine(): Engine {
+    const engine = new Engine();
+    for (const task of coreTasks) {engine.tasks.register(task);}
+    engine.adopt(imagePlugin);
+    return engine;
   }
-  return { 'data': data, 'width': w, 'height': h };
-}
 
-/** Opaque pixel shorthand. */
-function px(r: number, g: number, b: number): [number, number, number, number] {
-  return [r, g, b, 255];
-}
+  static imageData(
+    pixels: readonly [number, number, number, number][],
+    width?: number
+  ): { 'data': Uint8ClampedArray; 'height': number; 'width': number; } {
+    const imageWidth = width ?? pixels.length;
+    const imageHeight = Math.ceil(pixels.length / imageWidth);
+    const data = new Uint8ClampedArray(imageWidth * imageHeight * 4);
+    const pixelCount = pixels.length;
+    for (let index = 0; index < pixelCount; index++) {
+      const pixel = pixels[index];
+      if (pixel === undefined) {continue;}
+      data[index * 4] = pixel[0];
+      data[index * 4 + 1] = pixel[1];
+      data[index * 4 + 2] = pixel[2];
+      data[index * 4 + 3] = pixel[3];
+    }
+    return { 'data': data, 'height': imageHeight, 'width': imageWidth };
+  }
 
-/** Fully-transparent pixel. */
-function transparent(): [number, number, number, number] {
-  return [0, 0, 0, 0];
+  static pixel(red: number, green: number, blue: number, alpha = 255): [number, number, number, number] {
+    return [
+      Math.max(0, Math.min(255, Math.round(red))),
+      Math.max(0, Math.min(255, Math.round(green))),
+      Math.max(0, Math.min(255, Math.round(blue))),
+      Math.max(0, Math.min(255, Math.round(alpha)))
+    ];
+  }
 }
 
 type GalleryHistogramMeta = {
+  'binCount':    number;
   'bins':        readonly { 'hex': string; 'weight': number }[];
   'totalPixels': number;
-  'binCount':    number;
 } | undefined;
 
 // ---------------------------------------------------------------------------
@@ -88,107 +91,108 @@ type GalleryHistogramMeta = {
 //   - three visually-distinct primaries collapse to exactly three bins
 // ---------------------------------------------------------------------------
 
-interface HistogramBinInput {
-  readonly pixels: readonly [number, number, number, number][];
-  readonly meta?: Record<string, unknown>;
+abstract class HistogramBinInput {
+  abstract readonly 'meta'?: Record<string, JsonValueType>;
+  readonly 'pixels': readonly [number, number, number, number][];
 }
-interface HistogramBinOutput {
-  readonly state: PaletteStateInterface;
-  readonly colorCount: number;
-  readonly totalWeight: number;
-  readonly galMeta: GalleryHistogramMeta;
+abstract class HistogramBinOutput {
+  abstract readonly 'colorCount': number;
+  abstract readonly 'galMeta': GalleryHistogramMeta;
+  abstract readonly 'state': PaletteStateInterface;
+  abstract readonly 'totalWeight': number;
 }
 
 const histogramBinScenarios: readonly ScenarioInterface<HistogramBinInput, HistogramBinOutput>[] = [
   {
-    name: '100 reds + 50 greens + 25 blues → 3 bins, weights proportional',
-    kind: 'happy',
-    input: {
-      pixels: [
-        ...Array<null>(100).fill(null).map(() => px(255, 0, 0)),
-        ...Array<null>(50).fill(null).map(() => px(0, 255, 0)),
-        ...Array<null>(25).fill(null).map(() => px(0, 0, 255)),
-      ],
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=rgb-100-50-25] must not throw');
-      assert.ok(output, '[cell=1, scenario=rgb-100-50-25] output present');
-      assert.strictEqual(output!.colorCount, 3, '[cell=1, scenario=rgb-100-50-25] three non-empty bins');
-      assert.strictEqual(output!.totalWeight, 175, '[cell=1, scenario=rgb-100-50-25] total weight = pixel count');
-      assert.ok(output!.galMeta !== undefined, '[cell=1, scenario=rgb-100-50-25] histogram metadata written');
-      assert.strictEqual(output!.galMeta!.totalPixels, 175, '[cell=1, scenario=rgb-100-50-25] totalPixels matches');
-      assert.strictEqual(output!.galMeta!.binCount, 3, '[cell=1, scenario=rgb-100-50-25] binCount matches');
-      assert.strictEqual(output!.galMeta!.bins[0]?.weight, 100, '[cell=1, scenario=rgb-100-50-25] bins sorted descending');
+      assert.ok(output !== undefined, '[cell=1, scenario=rgb-100-50-25] output present');
+      assert.strictEqual(output.colorCount, 3, '[cell=1, scenario=rgb-100-50-25] three non-empty bins');
+      assert.strictEqual(output.totalWeight, 175, '[cell=1, scenario=rgb-100-50-25] total weight = pixel count');
+      assert.ok(output.galMeta !== undefined, '[cell=1, scenario=rgb-100-50-25] histogram metadata written');
+      assert.strictEqual(output.galMeta.totalPixels, 175, '[cell=1, scenario=rgb-100-50-25] totalPixels matches');
+      assert.strictEqual(output.galMeta.binCount, 3, '[cell=1, scenario=rgb-100-50-25] binCount matches');
+      assert.strictEqual(output.galMeta.bins.at(0)?.weight, 100, '[cell=1, scenario=rgb-100-50-25] bins sorted descending');
     },
+    'input': {
+      'pixels': [
+        ...Array<null>(100).fill(null).map(() => { const pixel = ImageFixture.pixel(255, 0, 0); return pixel; }),
+        ...Array<null>(50).fill(null).map(() => { const pixel = ImageFixture.pixel(0, 255, 0); return pixel; }),
+        ...Array<null>(25).fill(null).map(() => { const pixel = ImageFixture.pixel(0, 0, 255); return pixel; })
+      ]
+    },
+    'kind': 'happy',
+    'name': '100 reds + 50 greens + 25 blues → 3 bins, weights proportional'
   },
   {
-    name: 'single opaque pixel produces one bin with weight 1',
-    kind: 'happy',
-    input: { pixels: [px(128, 64, 32)] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=single-pixel] must not throw');
       assert.strictEqual(output!.colorCount, 1, '[cell=1, scenario=single-pixel] one bin');
       assert.strictEqual(output!.totalWeight, 1, '[cell=1, scenario=single-pixel] weight = 1');
     },
+    'input': { 'pixels': [ImageFixture.pixel(128, 64, 32)] },
+    'kind': 'happy',
+    'name': 'single opaque pixel produces one bin with weight 1'
   },
   {
-    // 5-bit quantisation: bucket width = 256/32 = 8. Values 200 and 204
-    // both map to bucket floor(200/8)=25 → same bin, so they must merge.
-    name: 'two pixels in same 5-bit bin merge to single weighted centroid',
-    kind: 'happy',
-    input: { pixels: [px(200, 0, 0), px(204, 0, 0)] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=same-bin-merge] must not throw');
       assert.strictEqual(output!.colorCount, 1, '[cell=1, scenario=same-bin-merge] one bin after merge');
       assert.strictEqual(output!.totalWeight, 2, '[cell=1, scenario=same-bin-merge] merged weight = 2');
     },
+    'input': { 'pixels': [ImageFixture.pixel(200, 0, 0), ImageFixture.pixel(204, 0, 0)] },
+    'kind': 'happy',
+    // 5-bit quantisation: bucket width = 256/32 = 8. Values 200 and 204
+    // both map to bucket floor(200/8)=25 → same bin, so they must merge.
+    'name': 'two pixels in same 5-bit bin merge to single weighted centroid'
   },
   {
-    name: 'monochrome image — all pixels identical → one bin',
-    kind: 'edge',
-    input: { pixels: Array<null>(64).fill(null).map(() => px(0, 0, 0)) },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=monochrome] must not throw');
       assert.strictEqual(output!.colorCount, 1, '[cell=1, scenario=monochrome] single bin');
       assert.strictEqual(output!.totalWeight, 64, '[cell=1, scenario=monochrome] weight = pixel count');
     },
+    'input': { 'pixels': Array<null>(64).fill(null).map(() => { const pixel = ImageFixture.pixel(0, 0, 0); return pixel; }) },
+    'kind': 'edge',
+    'name': 'monochrome image — all pixels identical → one bin'
   },
   {
-    name: 'full-color spectrum — 256 unique hues produce multiple bins',
-    kind: 'edge',
-    input: {
-      pixels: Array.from({ length: 256 }, (_, i): [number, number, number, number] =>
-        px(i, 255 - i, (i * 37) % 256),
-      ),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=full-spectrum] must not throw');
       assert.ok(output!.colorCount > 1, '[cell=1, scenario=full-spectrum] multiple bins for spectrum');
       assert.ok(output!.colorCount <= 256, '[cell=1, scenario=full-spectrum] at most one bin per pixel');
       assert.strictEqual(output!.totalWeight, 256, '[cell=1, scenario=full-spectrum] all 256 pixels accounted');
     },
-  },
+    'input': {
+      'pixels': Array<null>(256).fill(null).map((_value, index) => {
+        const pixel = ImageFixture.pixel(index, 255 - index, (index * 37) % 256);
+        return pixel;
+      })
+    },
+    'kind': 'edge',
+    'name': 'full-color spectrum — 256 unique hues produce multiple bins'
+  }
 ];
 
-new ScenarioRunner<HistogramBinInput, HistogramBinOutput>(
+await new ScenarioRunner<HistogramBinInput, HistogramBinOutput>(
   'GalleryHistogram :: cell-1 :: binning',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = ImageFixture.engine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
-      'colors':    [makeImageData(input.pixels)],
+      'colors':    [ImageFixture.imageData(input.pixels)],
       'contrast':  undefined,
       'emit':      undefined,
       'maxColors': undefined,
       'metadata':  input.meta,
       'roles':     undefined,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    const totalWeight = state.colors.reduce((s, c) => s + (c.hints?.weight ?? 0), 0);
+    const totalWeight = state.colors.reduce((s, c) => {return s + (c.hints?.weight ?? 0);}, 0);
     const galMeta = state.metadata['gallery:histogram'] as GalleryHistogramMeta;
-    return { state, colorCount: state.colors.length, totalWeight, galMeta };
-  },
+    return { 'colorCount': state.colors.length, 'galMeta': galMeta, 'state': state, 'totalWeight': totalWeight };
+  }
 ).run(histogramBinScenarios);
 
 // ---------------------------------------------------------------------------
@@ -199,65 +203,65 @@ new ScenarioRunner<HistogramBinInput, HistogramBinOutput>(
 // only count the opaque pixels in totalWeight and bin counts.
 // ---------------------------------------------------------------------------
 
-interface TransparentInput {
-  readonly pixels: readonly [number, number, number, number][];
-}
-interface TransparentOutput {
-  readonly colorCount:   number;
-  readonly totalWeight:  number;
+type TransparentInput = {
+  readonly 'pixels': readonly [number, number, number, number][];
+};
+abstract class TransparentOutput {
+  abstract readonly 'colorCount': number;
+  abstract readonly 'totalWeight': number;
 }
 
 const transparentScenarios: readonly ScenarioInterface<TransparentInput, TransparentOutput>[] = [
   {
-    name: 'one opaque + one fully-transparent pixel → 1 bin, weight 1',
-    kind: 'happy',
-    input: { pixels: [px(255, 0, 0), transparent()] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=opaque-plus-transparent] must not throw');
       assert.strictEqual(output!.colorCount, 1, '[cell=2, scenario=opaque-plus-transparent] transparent excluded');
       assert.strictEqual(output!.totalWeight, 1, '[cell=2, scenario=opaque-plus-transparent] weight only counts opaque');
     },
+    'input': { 'pixels': [ImageFixture.pixel(255, 0, 0), ImageFixture.pixel(0, 0, 0, 0)] },
+    'kind': 'happy',
+    'name': 'one opaque + one fully-transparent pixel → 1 bin, weight 1'
   },
   {
-    name: 'partially-opaque pixel (alpha=128) is included in histogram',
-    kind: 'edge',
-    input: { pixels: [[255, 0, 0, 128]] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=partial-alpha] must not throw');
       assert.strictEqual(output!.colorCount, 1, '[cell=2, scenario=partial-alpha] partial-alpha pixel binned');
       assert.strictEqual(output!.totalWeight, 1, '[cell=2, scenario=partial-alpha] weight = 1');
     },
+    'input': { 'pixels': [[255, 0, 0, 128]] },
+    'kind': 'edge',
+    'name': 'partially-opaque pixel (alpha=128) is included in histogram'
   },
   {
-    name: 'all-transparent image → zero bins, no error',
-    kind: 'edge',
-    input: { pixels: [transparent(), transparent(), transparent()] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=all-transparent] must not throw');
       assert.strictEqual(output!.colorCount, 0, '[cell=2, scenario=all-transparent] no bins from transparent pixels');
       assert.strictEqual(output!.totalWeight, 0, '[cell=2, scenario=all-transparent] zero weight');
     },
-  },
+    'input': { 'pixels': [ImageFixture.pixel(0, 0, 0, 0), ImageFixture.pixel(0, 0, 0, 0), ImageFixture.pixel(0, 0, 0, 0)] },
+    'kind': 'edge',
+    'name': 'all-transparent image → zero bins, no error'
+  }
 ];
 
-new ScenarioRunner<TransparentInput, TransparentOutput>(
+await new ScenarioRunner<TransparentInput, TransparentOutput>(
   'GalleryHistogram :: cell-2 :: transparent-pixel-skipping',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = ImageFixture.engine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
-      'colors':    [makeImageData(input.pixels)],
+      'colors':    [ImageFixture.imageData(input.pixels)],
       'contrast':  undefined,
       'emit':      undefined,
       'maxColors': undefined,
       'metadata':  undefined,
       'roles':     undefined,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    const totalWeight = state.colors.reduce((s, c) => s + (c.hints?.weight ?? 0), 0);
-    return { colorCount: state.colors.length, totalWeight };
-  },
+    const totalWeight = state.colors.reduce((s, c) => {return s + (c.hints?.weight ?? 0);}, 0);
+    return { 'colorCount': state.colors.length, 'totalWeight': totalWeight };
+  }
 ).run(transparentScenarios);
 
 // ---------------------------------------------------------------------------
@@ -270,83 +274,83 @@ new ScenarioRunner<TransparentInput, TransparentOutput>(
 // image (coarser quantisation → fewer distinct bins).
 // ---------------------------------------------------------------------------
 
-interface HistogramBitsInput {
-  readonly pixels: readonly [number, number, number, number][];
-  readonly histogramBits: number;
-}
-interface HistogramBitsOutput {
-  readonly colorCount: number;
+type HistogramBitsInput = {
+  readonly 'histogramBits': number;
+  readonly 'pixels': readonly [number, number, number, number][];
+};
+abstract class HistogramBitsOutput {
+  abstract readonly 'colorCount': number;
 }
 
 const histogramBitsScenarios: readonly ScenarioInterface<HistogramBitsInput, HistogramBitsOutput>[] = [
   {
-    name: '3-bit quantisation produces at least 1 bin from 4-primary image',
-    kind: 'edge',
-    input: {
-      pixels: [px(255, 0, 0), px(0, 255, 0), px(0, 0, 255), px(255, 255, 0)],
-      histogramBits: 3,
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=3bit] must not throw');
       assert.ok(output!.colorCount >= 1, '[cell=3, scenario=3bit] at least one bin');
       assert.ok(output!.colorCount <= 4, '[cell=3, scenario=3bit] at most four bins (coarse)');
     },
+    'input': {
+      'histogramBits': 3,
+      'pixels': [ImageFixture.pixel(255, 0, 0), ImageFixture.pixel(0, 255, 0), ImageFixture.pixel(0, 0, 255), ImageFixture.pixel(255, 255, 0)]
+    },
+    'kind': 'edge',
+    'name': '3-bit quantisation produces at least 1 bin from 4-primary image'
   },
   {
-    name: '7-bit quantisation treats 4 distinct primaries as separate bins',
-    kind: 'edge',
-    input: {
-      pixels: [px(255, 0, 0), px(0, 255, 0), px(0, 0, 255), px(255, 255, 0)],
-      histogramBits: 7,
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=7bit] must not throw');
       assert.strictEqual(output!.colorCount, 4, '[cell=3, scenario=7bit] 4 fine-grained bins for 4 distinct primaries');
     },
+    'input': {
+      'histogramBits': 7,
+      'pixels': [ImageFixture.pixel(255, 0, 0), ImageFixture.pixel(0, 255, 0), ImageFixture.pixel(0, 0, 255), ImageFixture.pixel(255, 255, 0)]
+    },
+    'kind': 'edge',
+    'name': '7-bit quantisation treats 4 distinct primaries as separate bins'
   },
   {
-    name: 'out-of-range bits (0) is clamped to 3 without error',
-    kind: 'edge',
-    input: {
-      pixels: [px(255, 0, 0), px(0, 255, 0)],
-      histogramBits: 0,
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=bits-clamp-low] must not throw for bits=0');
       assert.ok(output!.colorCount >= 1, '[cell=3, scenario=bits-clamp-low] at least one bin after clamp');
     },
+    'input': {
+      'histogramBits': 0,
+      'pixels': [ImageFixture.pixel(255, 0, 0), ImageFixture.pixel(0, 255, 0)]
+    },
+    'kind': 'edge',
+    'name': 'out-of-range bits (0) is clamped to 3 without error'
   },
   {
-    name: 'out-of-range bits (99) is clamped to 7 without error',
-    kind: 'edge',
-    input: {
-      pixels: [px(255, 0, 0), px(0, 255, 0)],
-      histogramBits: 99,
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=bits-clamp-high] must not throw for bits=99');
       assert.ok(output!.colorCount >= 1, '[cell=3, scenario=bits-clamp-high] at least one bin after clamp');
     },
-  },
+    'input': {
+      'histogramBits': 99,
+      'pixels': [ImageFixture.pixel(255, 0, 0), ImageFixture.pixel(0, 255, 0)]
+    },
+    'kind': 'edge',
+    'name': 'out-of-range bits (99) is clamped to 7 without error'
+  }
 ];
 
-new ScenarioRunner<HistogramBitsInput, HistogramBitsOutput>(
+await new ScenarioRunner<HistogramBitsInput, HistogramBitsOutput>(
   'GalleryHistogram :: cell-3 :: histogram-bits-boundary',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = ImageFixture.engine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
-      'colors':    [makeImageData(input.pixels)],
+      'colors':    [ImageFixture.imageData(input.pixels)],
       'contrast':  undefined,
       'emit':      undefined,
       'maxColors': undefined,
       'metadata':  { 'gallery': { 'histogramBits': input.histogramBits } },
       'roles':     undefined,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    return { colorCount: state.colors.length };
-  },
+    return { 'colorCount': state.colors.length };
+  }
 ).run(histogramBitsScenarios);
 
 // ---------------------------------------------------------------------------
@@ -357,105 +361,105 @@ new ScenarioRunner<HistogramBitsInput, HistogramBitsOutput>(
 // Filtering should not throw; it may result in fewer bins.
 // ---------------------------------------------------------------------------
 
-interface RangeFilterInput {
-  readonly pixels:          readonly [number, number, number, number][];
-  readonly lightnessRange?: readonly [number, number];
-  readonly chromaRange?:    readonly [number, number];
-  readonly expectedAtLeast: number;
-  readonly expectedAtMost:  number;
-}
-interface RangeFilterOutput {
-  readonly colorCount: number;
+type RangeFilterInput = {
+  readonly 'chromaRange'?:    readonly [number, number];
+  readonly 'expectedAtLeast': number;
+  readonly 'expectedAtMost':  number;
+  readonly 'lightnessRange'?: readonly [number, number];
+  readonly 'pixels':          readonly [number, number, number, number][];
+};
+abstract class RangeFilterOutput {
+  abstract readonly 'colorCount': number;
 }
 
 const rangeFilterScenarios: readonly ScenarioInterface<RangeFilterInput, RangeFilterOutput>[] = [
   {
-    name: 'lightnessRange [0,1] (full) passes all pixels',
-    kind: 'happy',
-    input: {
-      pixels: [px(255, 0, 0), px(0, 255, 0), px(0, 0, 0)],
-      lightnessRange: [0, 1],
-      expectedAtLeast: 1,
-      expectedAtMost: 3,
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=full-l-range] must not throw');
       assert.ok(output!.colorCount >= 1, '[cell=4, scenario=full-l-range] at least one bin');
       assert.ok(output!.colorCount <= 3, '[cell=4, scenario=full-l-range] at most 3 bins');
     },
+    'input': {
+      'expectedAtLeast': 1,
+      'expectedAtMost': 3,
+      'lightnessRange': [0, 1],
+      'pixels': [ImageFixture.pixel(255, 0, 0), ImageFixture.pixel(0, 255, 0), ImageFixture.pixel(0, 0, 0)]
+    },
+    'kind': 'happy',
+    'name': 'lightnessRange [0,1] (full) passes all pixels'
   },
   {
-    name: 'lightnessRange [0.9, 1] keeps only near-white pixels',
-    kind: 'edge',
-    input: {
-      pixels: [
-        px(255, 255, 255),  // very light — L ≈ 1.0, should pass
-        px(255, 0, 0),      // pure red — L ≈ 0.63, should fail lightness filter
-        px(0, 0, 0),        // black — L = 0, should fail
-      ],
-      lightnessRange: [0.9, 1],
-      expectedAtLeast: 1,
-      expectedAtMost: 1,
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=high-l-range] must not throw');
       assert.strictEqual(output!.colorCount, 1, '[cell=4, scenario=high-l-range] only near-white survives');
     },
+    'input': {
+      'expectedAtLeast': 1,
+      'expectedAtMost': 1,
+      'lightnessRange': [0.9, 1],
+      'pixels': [
+        ImageFixture.pixel(255, 255, 255),  // very light — L ≈ 1.0, should pass
+        ImageFixture.pixel(255, 0, 0),      // pure red — L ≈ 0.63, should fail lightness filter
+        ImageFixture.pixel(0, 0, 0)        // black — L = 0, should fail
+      ]
+    },
+    'kind': 'edge',
+    'name': 'lightnessRange [0.9, 1] keeps only near-white pixels'
   },
   {
-    name: 'chromaRange [0, 0.01] keeps only near-neutral pixels (greys)',
-    kind: 'edge',
-    input: {
-      pixels: [
-        px(128, 128, 128),  // grey — C ≈ 0, should pass
-        px(255, 0, 0),      // red — C ≈ 0.26, should fail chroma filter
-        px(0, 0, 255),      // blue — C ≈ 0.31, should fail chroma filter
-      ],
-      chromaRange: [0, 0.01],
-      expectedAtLeast: 1,
-      expectedAtMost: 1,
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=low-c-range] must not throw');
       assert.strictEqual(output!.colorCount, 1, '[cell=4, scenario=low-c-range] only grey survives chroma filter');
     },
+    'input': {
+      'chromaRange': [0, 0.01],
+      'expectedAtLeast': 1,
+      'expectedAtMost': 1,
+      'pixels': [
+        ImageFixture.pixel(128, 128, 128),  // grey — C ≈ 0, should pass
+        ImageFixture.pixel(255, 0, 0),      // red — C ≈ 0.26, should fail chroma filter
+        ImageFixture.pixel(0, 0, 255)      // blue — C ≈ 0.31, should fail chroma filter
+      ]
+    },
+    'kind': 'edge',
+    'name': 'chromaRange [0, 0.01] keeps only near-neutral pixels (greys)'
   },
   {
-    name: 'impossible range [1.1, 1.2] drops all pixels — zero bins, no throw',
-    kind: 'edge',
-    input: {
-      pixels: [px(255, 0, 0), px(0, 255, 0)],
-      lightnessRange: [1.1, 1.2],
-      expectedAtLeast: 0,
-      expectedAtMost: 0,
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=impossible-range] must not throw');
       assert.strictEqual(output!.colorCount, 0, '[cell=4, scenario=impossible-range] all pixels filtered out');
     },
-  },
+    'input': {
+      'expectedAtLeast': 0,
+      'expectedAtMost': 0,
+      'lightnessRange': [1.1, 1.2],
+      'pixels': [ImageFixture.pixel(255, 0, 0), ImageFixture.pixel(0, 255, 0)]
+    },
+    'kind': 'edge',
+    'name': 'impossible range [1.1, 1.2] drops all pixels — zero bins, no throw'
+  }
 ];
 
-new ScenarioRunner<RangeFilterInput, RangeFilterOutput>(
+await new ScenarioRunner<RangeFilterInput, RangeFilterOutput>(
   'GalleryHistogram :: cell-4 :: oklch-range-filters',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = ImageFixture.engine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
-    const galleryMeta: Record<string, unknown> = {};
-    if (input.lightnessRange !== undefined) galleryMeta['lightnessRange'] = input.lightnessRange;
-    if (input.chromaRange    !== undefined) galleryMeta['chromaRange']    = input.chromaRange;
-    const state = await engine.run({
+    const galleryMeta: Record<string, JsonValueType> = {};
+    if (input.lightnessRange !== undefined) {galleryMeta.lightnessRange = [...input.lightnessRange];}
+    if (input.chromaRange    !== undefined) {galleryMeta.chromaRange    = [...input.chromaRange];}
+    const state = engine.run({
       'bypass':    undefined,
-      'colors':    [makeImageData(input.pixels)],
+      'colors':    [ImageFixture.imageData(input.pixels)],
       'contrast':  undefined,
       'emit':      undefined,
       'maxColors': undefined,
       'metadata':  { 'gallery': galleryMeta },
       'roles':     undefined,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    return { colorCount: state.colors.length };
-  },
+    return { 'colorCount': state.colors.length };
+  }
 ).run(rangeFilterScenarios);
 
 // ---------------------------------------------------------------------------
@@ -467,40 +471,40 @@ new ScenarioRunner<RangeFilterInput, RangeFilterOutput>(
 // (the task returns early on empty input).
 // ---------------------------------------------------------------------------
 
-interface EmptyInputInput {
-  readonly colors: unknown[];
+abstract class EmptyInputInput {
+  abstract readonly 'colors': (JsonValueType | { 'data': Uint8ClampedArray; 'height': number; 'width': number })[];
 }
-interface EmptyInputOutput {
-  readonly colorCount: number;
+abstract class EmptyInputOutput {
+  abstract readonly 'colorCount': number;
 }
 
 const emptyInputScenarios: readonly ScenarioInterface<EmptyInputInput, EmptyInputOutput>[] = [
   {
-    name: 'empty colors array does not throw',
-    kind: 'edge',
-    input: { colors: [] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=empty-colors] must not throw');
       assert.strictEqual(output!.colorCount, 0, '[cell=5, scenario=empty-colors] no bins');
     },
+    'input': { 'colors': [] },
+    'kind': 'edge',
+    'name': 'empty colors array does not throw'
   },
   {
-    name: 'zero-by-zero ImageData does not throw',
-    kind: 'edge',
-    input: { colors: [{ 'data': new Uint8ClampedArray(0), 'width': 0, 'height': 0 }] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=zero-dimensions] must not throw');
       assert.strictEqual(output!.colorCount, 0, '[cell=5, scenario=zero-dimensions] zero dimensions = no pixels');
     },
-  },
+    'input': { 'colors': [{ 'data': new Uint8ClampedArray(0), 'height': 0, 'width': 0 }] },
+    'kind': 'edge',
+    'name': 'zero-by-zero ImageData does not throw'
+  }
 ];
 
-new ScenarioRunner<EmptyInputInput, EmptyInputOutput>(
+await new ScenarioRunner<EmptyInputInput, EmptyInputOutput>(
   'GalleryHistogram :: cell-5 :: empty-input',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = ImageFixture.engine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
       'colors':    input.colors,
       'contrast':  undefined,
@@ -508,10 +512,10 @@ new ScenarioRunner<EmptyInputInput, EmptyInputOutput>(
       'maxColors': undefined,
       'metadata':  undefined,
       'roles':     undefined,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    return { colorCount: state.colors.length };
-  },
+    return { 'colorCount': state.colors.length };
+  }
 ).run(emptyInputScenarios);
 
 // ---------------------------------------------------------------------------
@@ -527,92 +531,93 @@ new ScenarioRunner<EmptyInputInput, EmptyInputOutput>(
 //     skipped by intake:imagePixels and not crash histogram
 // ---------------------------------------------------------------------------
 
-interface GeometryInput {
-  readonly pixels:      readonly [number, number, number, number][];
-  readonly imageWidth?: number;
-}
-interface GeometryOutput {
-  readonly colorCount:  number;
-  readonly totalWeight: number;
+type GeometryInput = {
+  readonly 'imageWidth'?: number;
+  readonly 'pixels':      readonly [number, number, number, number][];
+};
+abstract class GeometryOutput {
+  abstract readonly 'colorCount': number;
+  abstract readonly 'totalWeight': number;
 }
 
 const geometryScenarios: readonly ScenarioInterface<GeometryInput, GeometryOutput>[] = [
   {
-    name: '1×1 image — single pixel produces one bin',
-    kind: 'edge',
-    input: { pixels: [px(100, 150, 200)] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=1x1] must not throw');
       assert.strictEqual(output!.colorCount, 1, '[cell=6, scenario=1x1] one bin');
       assert.strictEqual(output!.totalWeight, 1, '[cell=6, scenario=1x1] weight = 1');
     },
+    'input': { 'pixels': [ImageFixture.pixel(100, 150, 200)] },
+    'kind': 'edge',
+    'name': '1×1 image — single pixel produces one bin'
   },
   {
-    name: '1-wide × 500-tall image — all pixels accounted',
-    kind: 'edge',
-    input: {
-      pixels: Array.from({ length: 500 }, (_, i): [number, number, number, number] =>
-        px(i % 256, (i * 2) % 256, (i * 3) % 256),
-      ),
-      imageWidth: 1,
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=tall-single-col] must not throw');
       assert.strictEqual(output!.totalWeight, 500, '[cell=6, scenario=tall-single-col] 500 pixels accounted');
       assert.ok(output!.colorCount >= 1, '[cell=6, scenario=tall-single-col] at least one bin');
     },
+    'input': {
+      'imageWidth': 1,
+      'pixels': Array<null>(500).fill(null).map((_value, index) => {
+        const pixel = ImageFixture.pixel(index % 256, (index * 2) % 256, (index * 3) % 256);
+        return pixel;
+      })
+    },
+    'kind': 'edge',
+    'name': '1-wide × 500-tall image — all pixels accounted'
   },
   {
-    name: '1000-pixel image — weight totals to 1000',
-    kind: 'edge',
-    input: {
-      pixels: Array.from({ length: 1000 }, (): [number, number, number, number] => px(128, 0, 64)),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=1000px] must not throw');
       assert.strictEqual(output!.totalWeight, 1000, '[cell=6, scenario=1000px] 1000 pixels accounted');
       assert.strictEqual(output!.colorCount, 1, '[cell=6, scenario=1000px] one bin for uniform color');
     },
+    'input': {
+      'pixels': Array<null>(1000).fill(null).map(() => { const pixel = ImageFixture.pixel(128, 0, 64); return pixel; })
+    },
+    'kind': 'edge',
+    'name': '1000-pixel image — weight totals to 1000'
   },
   {
-    name: 'pure-black 1×1 image — black pixel binned (L ≈ 0)',
-    kind: 'edge',
-    input: { pixels: [px(0, 0, 0)] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=black] must not throw');
       assert.strictEqual(output!.colorCount, 1, '[cell=6, scenario=black] one bin for black');
     },
+    'input': { 'pixels': [ImageFixture.pixel(0, 0, 0)] },
+    'kind': 'edge',
+    'name': 'pure-black 1×1 image — black pixel binned (L ≈ 0)'
   },
   {
-    name: 'pure-white 1×1 image — white pixel binned (L ≈ 1)',
-    kind: 'edge',
-    input: { pixels: [px(255, 255, 255)] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=white] must not throw');
       assert.strictEqual(output!.colorCount, 1, '[cell=6, scenario=white] one bin for white');
     },
-  },
+    'input': { 'pixels': [ImageFixture.pixel(255, 255, 255)] },
+    'kind': 'edge',
+    'name': 'pure-white 1×1 image — white pixel binned (L ≈ 1)'
+  }
 ];
 
-new ScenarioRunner<GeometryInput, GeometryOutput>(
+await new ScenarioRunner<GeometryInput, GeometryOutput>(
   'GalleryHistogram :: cell-6 :: image-geometry-extremes',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = ImageFixture.engine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram']);
-    const imgData = makeImageData(input.pixels, input.imageWidth);
-    const state = await engine.run({
+    const imageData = ImageFixture.imageData(input.pixels, input.imageWidth);
+    const state = engine.run({
       'bypass':    undefined,
-      'colors':    [imgData],
+      'colors':    [imageData],
       'contrast':  undefined,
       'emit':      undefined,
       'maxColors': undefined,
       'metadata':  undefined,
       'roles':     undefined,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    const totalWeight = state.colors.reduce((s, c) => s + (c.hints?.weight ?? 0), 0);
-    return { colorCount: state.colors.length, totalWeight };
-  },
+    const totalWeight = state.colors.reduce((s, c) => {return s + (c.hints?.weight ?? 0);}, 0);
+    return { 'colorCount': state.colors.length, 'totalWeight': totalWeight };
+  }
 ).run(geometryScenarios);
 
 // ---------------------------------------------------------------------------
@@ -624,103 +629,103 @@ new ScenarioRunner<GeometryInput, GeometryOutput>(
 // histogram and extract must handle these without crashing.
 // ---------------------------------------------------------------------------
 
-interface ExtractIntegrationInput {
-  readonly pixels:    readonly [number, number, number, number][];
-  readonly k:         number;
-  readonly algorithm: 'median-cut' | 'delta-e';
-}
-interface ExtractIntegrationOutput {
-  readonly resultCount: number;
-  readonly totalWeight: number;
+type ExtractIntegrationInput = {
+  readonly 'algorithm': 'median-cut' | 'delta-e';
+  readonly 'k':         number;
+  readonly 'pixels':    readonly [number, number, number, number][];
+};
+abstract class ExtractIntegrationOutput {
+  abstract readonly 'resultCount': number;
+  abstract readonly 'totalWeight': number;
 }
 
 const extractIntegrationScenarios: readonly ScenarioInterface<ExtractIntegrationInput, ExtractIntegrationOutput>[] = [
   {
-    name: 'median-cut reduces 300-pixel 3-color image to ≤ k=3 clusters',
-    kind: 'happy',
-    input: {
-      pixels: [
-        ...Array<null>(100).fill(null).map(() => px(255, 0, 0)),
-        ...Array<null>(100).fill(null).map(() => px(0, 255, 0)),
-        ...Array<null>(100).fill(null).map(() => px(0, 0, 255)),
-      ],
-      k: 3,
-      algorithm: 'median-cut',
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6b, scenario=median-cut-3color] must not throw');
       assert.ok(output!.resultCount <= 3, '[cell=6b, scenario=median-cut-3color] ≤ k clusters');
       assert.strictEqual(output!.totalWeight, 300, '[cell=6b, scenario=median-cut-3color] total weight preserved');
     },
+    'input': {
+      'algorithm': 'median-cut',
+      'k': 3,
+      'pixels': [
+        ...Array<null>(100).fill(null).map(() => { const pixel = ImageFixture.pixel(255, 0, 0); return pixel; }),
+        ...Array<null>(100).fill(null).map(() => { const pixel = ImageFixture.pixel(0, 255, 0); return pixel; }),
+        ...Array<null>(100).fill(null).map(() => { const pixel = ImageFixture.pixel(0, 0, 255); return pixel; })
+      ]
+    },
+    'kind': 'happy',
+    'name': 'median-cut reduces 300-pixel 3-color image to ≤ k=3 clusters'
   },
   {
-    name: 'delta-e reduces 320-pixel 4-color image to ≤ k=3 clusters',
-    kind: 'happy',
-    input: {
-      pixels: [
-        ...Array<null>(80).fill(null).map(() => px(200, 10, 10)),
-        ...Array<null>(80).fill(null).map(() => px(210, 20, 20)),
-        ...Array<null>(80).fill(null).map(() => px(10, 200, 10)),
-        ...Array<null>(80).fill(null).map(() => px(10, 10, 200)),
-      ],
-      k: 3,
-      algorithm: 'delta-e',
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6b, scenario=delta-e-4color] must not throw');
       assert.ok(output!.resultCount <= 3, `[cell=6b, scenario=delta-e-4color] ≤ k=3 clusters, got ${String(output?.resultCount)}`);
       assert.strictEqual(output!.totalWeight, 320, '[cell=6b, scenario=delta-e-4color] total weight preserved');
     },
+    'input': {
+      'algorithm': 'delta-e',
+      'k': 3,
+      'pixels': [
+        ...Array<null>(80).fill(null).map(() => { const pixel = ImageFixture.pixel(200, 10, 10); return pixel; }),
+        ...Array<null>(80).fill(null).map(() => { const pixel = ImageFixture.pixel(210, 20, 20); return pixel; }),
+        ...Array<null>(80).fill(null).map(() => { const pixel = ImageFixture.pixel(10, 200, 10); return pixel; }),
+        ...Array<null>(80).fill(null).map(() => { const pixel = ImageFixture.pixel(10, 10, 200); return pixel; })
+      ]
+    },
+    'kind': 'happy',
+    'name': 'delta-e reduces 320-pixel 4-color image to ≤ k=3 clusters'
   },
   {
-    name: 'k=1 collapses all pixels to single representative',
-    kind: 'edge',
-    input: {
-      pixels: [
-        px(255, 0, 0), px(0, 255, 0), px(0, 0, 255),
-        px(255, 255, 0), px(255, 0, 255), px(0, 255, 255),
-      ],
-      k: 1,
-      algorithm: 'median-cut',
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6b, scenario=k=1] must not throw');
       assert.strictEqual(output!.resultCount, 1, '[cell=6b, scenario=k=1] exactly 1 cluster for k=1');
     },
+    'input': {
+      'algorithm': 'median-cut',
+      'k': 1,
+      'pixels': [
+        ImageFixture.pixel(255, 0, 0), ImageFixture.pixel(0, 255, 0), ImageFixture.pixel(0, 0, 255),
+        ImageFixture.pixel(255, 255, 0), ImageFixture.pixel(255, 0, 255), ImageFixture.pixel(0, 255, 255)
+      ]
+    },
+    'kind': 'edge',
+    'name': 'k=1 collapses all pixels to single representative'
   },
   {
-    name: 'k larger than bin count returns all bins (no phantom colors)',
-    kind: 'edge',
-    input: {
-      pixels: [px(255, 0, 0), px(0, 255, 0)],
-      k: 100,
-      algorithm: 'median-cut',
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6b, scenario=k-exceeds-bins] must not throw');
       assert.ok(output!.resultCount <= 2, '[cell=6b, scenario=k-exceeds-bins] cannot exceed available bins');
     },
-  },
+    'input': {
+      'algorithm': 'median-cut',
+      'k': 100,
+      'pixels': [ImageFixture.pixel(255, 0, 0), ImageFixture.pixel(0, 255, 0)]
+    },
+    'kind': 'edge',
+    'name': 'k larger than bin count returns all bins (no phantom colors)'
+  }
 ];
 
-new ScenarioRunner<ExtractIntegrationInput, ExtractIntegrationOutput>(
+await new ScenarioRunner<ExtractIntegrationInput, ExtractIntegrationOutput>(
   'GalleryHistogram :: cell-6b :: extract-integration',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = ImageFixture.engine();
     engine.pipeline(['intake:imagePixels', 'gallery:histogram', 'gallery:extract']);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
-      'colors':    [makeImageData(input.pixels)],
+      'colors':    [ImageFixture.imageData(input.pixels)],
       'contrast':  undefined,
       'emit':      undefined,
       'maxColors': undefined,
-      'metadata':  { 'gallery': { 'k': input.k, 'algorithm': input.algorithm } },
+      'metadata':  { 'gallery': { 'algorithm': input.algorithm, 'k': input.k } },
       'roles':     undefined,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    const totalWeight = state.colors.reduce((s, c) => s + (c.hints?.weight ?? 0), 0);
-    return { resultCount: state.colors.length, totalWeight };
-  },
+    const totalWeight = state.colors.reduce((s, c) => {return s + (c.hints?.weight ?? 0);}, 0);
+    return { 'resultCount': state.colors.length, 'totalWeight': totalWeight };
+  }
 ).run(extractIntegrationScenarios);
 
 // ---------------------------------------------------------------------------
@@ -731,30 +736,30 @@ new ScenarioRunner<ExtractIntegrationInput, ExtractIntegrationOutput>(
 // Kept as a bare test because it is a single golden assertion.
 // ---------------------------------------------------------------------------
 
-test('GalleryHistogram :: golden :: algorithm string round-trips through state.metadata.gallery', async () => {
-  const engine = freshEngine();
+await test('GalleryHistogram :: golden :: algorithm string round-trips through state.metadata.gallery', () => {
+  const engine = ImageFixture.engine();
   engine.pipeline(['intake:imagePixels', 'gallery:histogram', 'gallery:extract']);
 
   const pixels: [number, number, number, number][] = [
     [255, 0, 0, 255], [255, 0, 0, 255], [255, 0, 0, 255],
-    [0, 255, 0, 255], [0, 255, 0, 255],
+    [0, 255, 0, 255], [0, 255, 0, 255]
   ];
-  const state = await engine.run({
+  const state = engine.run({
     'bypass':    undefined,
-    'colors':    [makeImageData(pixels)],
+    'colors':    [ImageFixture.imageData(pixels)],
     'contrast':  undefined,
     'emit':      undefined,
     'maxColors': undefined,
-    'metadata':  { 'gallery': { 'k': 2, 'algorithm': 'median-cut' } },
+    'metadata':  { 'gallery': { 'algorithm': 'median-cut', 'k': 2 } },
     'roles':     undefined,
-    'runtime':   undefined,
+    'runtime':   undefined
   });
 
-  const meta = state.metadata['gallery'] as { 'algorithm'?: string } | undefined;
+  const meta = state.metadata.gallery as { 'algorithm'?: string } | undefined;
   assert.strictEqual(
     meta?.algorithm,
     'median-cut',
-    '[golden, scenario=algorithm-round-trip] algorithm value must echo back from metadata',
+    '[golden, scenario=algorithm-round-trip] algorithm value must echo back from metadata'
   );
 });
 
@@ -779,8 +784,8 @@ test('GalleryHistogram :: golden :: algorithm string round-trips through state.m
 // survive the trim and appear in the final K-color output.
 // ---------------------------------------------------------------------------
 
-test('GalleryHistogram :: regression :: saturated hues survive extraction despite dominant near-black background', async () => {
-  const engine = freshEngine();
+await test('GalleryHistogram :: regression :: saturated hues survive extraction despite dominant near-black background', () => {
+  const engine = ImageFixture.engine();
   engine.pipeline(['intake:imagePixels', 'gallery:histogram', 'gallery:extract']);
 
   // Background: 128 distinct near-black/near-neutral shades (5-bit
@@ -793,7 +798,7 @@ test('GalleryHistogram :: regression :: saturated hues survive extraction despit
     for (let g = 0; g < 8; g++) {
       for (let b = 0; b < 2; b++) {
         for (let rep = 0; rep < 60; rep++) {
-          background.push(px(r * 8, g * 8, b * 8));
+          background.push(ImageFixture.pixel(r * 8, g * 8, b * 8));
         }
       }
     }
@@ -805,7 +810,7 @@ test('GalleryHistogram :: regression :: saturated hues survive extraction despit
     [230, 20, 20],   // red
     [20, 60, 230],   // blue
     [20, 200, 60],   // green
-    [240, 130, 10],  // orange
+    [240, 130, 10]  // orange
   ];
   const saturatedPatches: [number, number, number, number][] = [];
   for (const [r, g, b] of hues) {
@@ -813,38 +818,38 @@ test('GalleryHistogram :: regression :: saturated hues survive extraction despit
       for (let k = 0; k < 5; k++) {
         const jr = i * 8 - 16;
         const jg = k * 8 - 16;
-        saturatedPatches.push(px(
+        saturatedPatches.push(ImageFixture.pixel(
           Math.max(0, Math.min(255, r + jr)),
           Math.max(0, Math.min(255, g + jg)),
-          b,
+          b
         ));
       }
     }
   }
   const pixels = [...background, ...saturatedPatches];
 
-  const state = await engine.run({
+  const state = engine.run({
     'bypass':    undefined,
-    'colors':    [makeImageData(pixels)],
+    'colors':    [ImageFixture.imageData(pixels)],
     'contrast':  undefined,
     'emit':      undefined,
     'maxColors': undefined,
     'metadata':  {
       'gallery': {
-        'k':         8,
         'algorithm': 'delta-e',
         'deltaECap': 128,
-      },
+        'k':         8
+      }
     },
     'roles':     undefined,
-    'runtime':   undefined,
+    'runtime':   undefined
   });
 
-  const chromaticOutputs = state.colors.filter((c) => c.oklch.c >= 0.15);
+  const chromaticOutputs = state.colors.filter((c) => {return c.oklch.c >= 0.15;});
   assert.ok(
     chromaticOutputs.length >= 3,
-    `[regression, scenario=black-bg-vs-saturated-hues] expected ≥3 high-chroma (c≥0.15) colors in output, ` +
-      `got ${String(chromaticOutputs.length)} of ${String(state.colors.length)}: ` +
-      state.colors.map((c) => `${c.hex}(c=${c.oklch.c.toFixed(3)})`).join(', '),
+    '[regression, scenario=black-bg-vs-saturated-hues] expected ≥3 high-chroma (c≥0.15) colors in output, ' +
+      `got ${String(chromaticOutputs.length)} of ${String(state.colors.length)}: ${
+        state.colors.map((c) => { const result = `${c.hex}(c=${c.oklch.c.toFixed(3)})`; return result; }).join(', ')}`
   );
 });

@@ -6,7 +6,10 @@ import { buildResolvedRoleTablePanelModel } from './buildResolvedRoleTablePanelM
 
 /** UTable — the current sort's top 6 rows, so this table itself demonstrates the shared roleSortKeys ordering. */
 const { sortedRoleContrastRows } = useIridis();
-const tableModel = computed(() => buildResolvedRoleTablePanelModel(sortedRoleContrastRows.value, 6));
+const tableModel = computed(() => buildResolvedRoleTablePanelModel.build(
+  sortedRoleContrastRows.value,
+  6
+));
 </script>
 
 <template>

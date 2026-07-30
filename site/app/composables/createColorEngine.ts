@@ -13,13 +13,17 @@ import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
  * both the live palette pipeline (useIridis) and the export pipeline
  * (useMultiOutput) build on before adopting their own extra emit plugins.
  */
-export function createColorEngine(): Engine {
-  const engine = new Engine();
-  for (const t of coreTasks) {engine.tasks.register(t);}
-  engine.tasks.register(intakeHexHint);
-  engine.tasks.register(deriveSemanticHues);
-  engine.tasks.register(pinDerivedRoles);
-  engine.tasks.register(deriveRoleRelations);
-  engine.adopt(contrastPlugin);
-  return engine;
+class CreateColorEngineOperation {
+  static run(): Engine {
+    const engine = new Engine();
+    for (const t of coreTasks) {engine.tasks.register(t);}
+    engine.tasks.register(intakeHexHint);
+    engine.tasks.register(deriveSemanticHues);
+    engine.tasks.register(pinDerivedRoles);
+    engine.tasks.register(deriveRoleRelations);
+    engine.adopt(contrastPlugin);
+    return engine;
+  }
 }
+
+export const createColorEngine = CreateColorEngineOperation.run;

@@ -3,25 +3,29 @@
 // The CIE ΔE 2000 formula is applied to these Lab values per Sharma et al. 2005.
 import type { ColorRecordInterfaceType } from '../types/index.ts';
 
-function oklchToOklab(l: number, c: number, h: number): [number, number, number] {
-  const hRad = (h * Math.PI) / 180;
-  return [l, c * Math.cos(hRad), c * Math.sin(hRad)];
+class OklabConversion {
+  static from(l: number, c: number, h: number): [number, number, number] {
+    const hRad = (h * Math.PI) / 180;
+    return [l, c * Math.cos(hRad), c * Math.sin(hRad)];
+  }
 }
 
-function deg(rad: number): number {
-  return (rad * 180) / Math.PI;
-}
+class AngleUnits {
+  static toDegrees(radians: number): number {
+    return (radians * 180) / Math.PI;
+  }
 
-function rad(d: number): number {
-  return (d * Math.PI) / 180;
+  static toRadians(degrees: number): number {
+    return (degrees * Math.PI) / 180;
+  }
 }
 
 class DeltaE2000 {
   readonly 'name' = 'deltaE2000';
 
   apply(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType): number {
-    const [L1, a1, b1] = oklchToOklab(a.oklch.l, a.oklch.c, a.oklch.h);
-    const [L2, a2, b2] = oklchToOklab(b.oklch.l, b.oklch.c, b.oklch.h);
+    const [L1, a1, b1] = OklabConversion.from(a.oklch.l, a.oklch.c, a.oklch.h);
+    const [L2, a2, b2] = OklabConversion.from(b.oklch.l, b.oklch.c, b.oklch.h);
 
     // OKLab L is 0..1; CIE Lab L is 0..100. Scale so the formula's hard-coded
     // constants (Sharma et al. 2005) operate on the magnitudes they expect.
@@ -41,9 +45,9 @@ class DeltaE2000 {
     const C1p = Math.sqrt(a1p * a1p + sb1 * sb1);
     const C2p = Math.sqrt(a2p * a2p + sb2 * sb2);
 
-    let h1p = deg(Math.atan2(sb1, a1p));
+    let h1p = AngleUnits.toDegrees(Math.atan2(sb1, a1p));
     if (h1p < 0) {h1p += 360;}
-    let h2p = deg(Math.atan2(sb2, a2p));
+    let h2p = AngleUnits.toDegrees(Math.atan2(sb2, a2p));
     if (h2p < 0) {h2p += 360;}
 
     const dLp = sL2 - sL1;
@@ -60,7 +64,7 @@ class DeltaE2000 {
       dhp = h2p - h1p + 360;
     }
 
-    const dHp = 2 * Math.sqrt(C1p * C2p) * Math.sin(rad(dhp / 2));
+    const dHp = 2 * Math.sqrt(C1p * C2p) * Math.sin(AngleUnits.toRadians(dhp / 2));
 
     const Lp = (sL1 + sL2) / 2;
     const Cp = (C1p + C2p) / 2;
@@ -77,10 +81,10 @@ class DeltaE2000 {
     }
 
     const T = 1
-      - 0.17 * Math.cos(rad(Hp - 30))
-      + 0.24 * Math.cos(rad(2 * Hp))
-      + 0.32 * Math.cos(rad(3 * Hp + 6))
-      - 0.20 * Math.cos(rad(4 * Hp - 63));
+      - 0.17 * Math.cos(AngleUnits.toRadians(Hp - 30))
+      + 0.24 * Math.cos(AngleUnits.toRadians(2 * Hp))
+      + 0.32 * Math.cos(AngleUnits.toRadians(3 * Hp + 6))
+      - 0.20 * Math.cos(AngleUnits.toRadians(4 * Hp - 63));
 
     const SL = 1 + 0.015 * Math.pow(Lp - 50, 2) / Math.sqrt(20 + Math.pow(Lp - 50, 2));
     const SC = 1 + 0.045 * Cp;
@@ -89,7 +93,7 @@ class DeltaE2000 {
     const Cp7 = Math.pow(Cp, 7);
     const RC = 2 * Math.sqrt(Cp7 / (Cp7 + factor25_7));
     const dTheta = 30 * Math.exp(-Math.pow((Hp - 275) / 25, 2));
-    const RT = -Math.sin(rad(2 * dTheta)) * RC;
+    const RT = -Math.sin(AngleUnits.toRadians(2 * dTheta)) * RC;
 
     const kC = 1; const kH = 1; const kL = 1;
     return Math.sqrt(

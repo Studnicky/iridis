@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.build.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "tsBuildInfoFile": "./tsconfig.build.tsbuildinfo"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules", "tests"],
+  "references": [
+    { "path": "../core/tsconfig.build.json" },
+    { "path": "../capacitor/tsconfig.build.json" },
+    { "path": "../contrast/tsconfig.build.json" },
+    { "path": "../image/tsconfig.build.json" },
+    { "path": "../rdf/tsconfig.build.json" },
+    { "path": "../stylesheet/tsconfig.build.json" },
+    { "path": "../tailwind/tsconfig.build.json" },
+    { "path": "../vscode/tsconfig.build.json" }
+  ]
+}

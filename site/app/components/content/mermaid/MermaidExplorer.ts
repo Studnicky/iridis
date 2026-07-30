@@ -9,21 +9,8 @@
  *   [pan-left] [centre  ] [pan-right]
  *   [expand  ] [pan-down] [fit     ]
  *
- * ## Node safety
- *
- * The module never touches `document` or `window` at module load. Every DOM
- * access is guarded inside methods that check `typeof document === 'undefined'`
- * and return immediately in non-browser contexts. The package is safe to import
- * in SSR / Node.js builds where the DOM lib is absent.
- *
- * ## TypeScript without DOM lib
- *
- * The package tsconfig uses `lib: ["ES2024"]` with no DOM lib so that the
- * package remains runtime-neutral. The minimum DOM surface used by
- * `MermaidExplorer` is declared as local `type` stubs with `declare const`
- * ambient globals. These stubs are structural: real browser objects satisfy
- * them at runtime; consumers with the DOM lib get `skipLibCheck: true` so the
- * stubs do not conflict with the real DOM types in consuming projects.
+ * DOM access stays inside guarded static operations, so importing this module
+ * during server rendering does not touch browser globals.
  *
  * @example
  * ```ts
@@ -32,246 +19,117 @@
  * ```
  */
 
-import { Scheduler } from '../runtime/Scheduler.js';
-import { createCameraDpadMachine } from '../viz/CameraControls.ts';
-import type { CameraControlSurfaceType } from '../viz/CameraControls.ts';
 import type { DpadMachine } from '../viz/DpadMachine.ts';
+
+import { Scheduler } from '../runtime/Scheduler.js';
+import { trustedMarkupRenderer } from '../trustedMarkupRenderer.ts';
+import { CameraControls } from '../viz/CameraControls.ts';
 import { ModalController } from '../viz/ModalController.ts';
-import { createViewportStatus } from '../viz/ViewportStatus.ts';
+import { ViewportStatus } from '../viz/ViewportStatus.ts';
 
-// ---------------------------------------------------------------------------
-// Minimal DOM surface declarations (no DOM lib in this package tsconfig)
-//
-// These describe exactly the subset of DOM APIs used by MermaidExplorer.
-// Declared as `type` so the noocodec lint rules that apply to `interface`
-// (suffix + method-name constraints) do not apply here.
-// ---------------------------------------------------------------------------
-
-/** Bounding rectangle returned by `getBoundingClientRect()`. */
-type ClientRectType = {
-  readonly 'left':   number;
-  readonly 'top':    number;
-  readonly 'width':  number;
-  readonly 'height': number;
-};
-
-/** SVG bounding box returned by `getBBox()`. */
-type SvgBBoxType = {
-  readonly 'x':      number;
-  readonly 'y':      number;
-  readonly 'width':  number;
-  readonly 'height': number;
-};
-
-/** Numeric SVG coordinate bounds. */
-type SvgBoundsType = {
-  readonly 'x': number;
-  readonly 'y': number;
-  readonly 'w': number;
-  readonly 'h': number;
-};
-
-/** Listener shape used in `addEventListener` stubs. */
-type DomListenerType = (event: DomEventType) => void;
-
-/** Minimal DOM event — members accessed by MermaidExplorer interaction code. */
-type DomEventType = {
-  readonly 'target':    DomElementType | null;
-  readonly 'key':       string | undefined;
-  readonly 'clientX':   number;
-  readonly 'clientY':   number;
-  readonly 'deltaY':    number;
-  readonly 'pointerId': number;
-  preventDefault():    void;
-  stopPropagation():   void;
-};
-
-/**
- * Minimal DOM Element.
- *
- * All properties that DOM exposes as writable are declared here, including
- * `textContent` (writable) and `disabled` (for `<button>`). Methods that
- * match the real DOM API are declared using the structural call-signature form
- * to avoid the `noocodec/interface-must-be-contract` restriction on `interface`
- * method declarations.
- */
-type DomElementType = {
-  'className':   string;
-  'textContent': string | null;
-  'title':       string;
-  'disabled':    boolean;
-  'type':        string;
-  'style':       Record<string, string>;
-  // Standard DOM serialisation properties, declared on the minimal stub so the
-  // explorer reads/writes them without a cast.
-  'innerHTML':   string;
-  'outerHTML':   string;
-  'dataset':     Record<string, string | undefined>;
-  'classList': {
-    add(name: string): void;
-  };
-  'getBoundingClientRect': () => ClientRectType;
-  'getAttribute':          (name: string) => string | null;
-  'setAttribute':          (name: string, value: string) => void;
-  'removeAttribute':       (name: string) => void;
-  'appendChild':           <T extends DomElementType>(node: T) => T;
-  'remove':                () => void;
-  'querySelector':         <T extends DomElementType>(selector: string) => T | null;
-  'querySelectorAll':      <T extends DomElementType>(selector: string) => ArrayLike<T>;
-  'addEventListener':      (
-    type:    string,
-    handler: DomListenerType,
-    options?: { 'passive': boolean },
-  ) => void;
-};
-
-/** Minimal SVGElement — extends DomElementType with `getBBox` and `setPointerCapture`. */
-type DomSvgElementType = DomElementType & {
-  'getBBox':             () => SvgBBoxType;
-  'setPointerCapture':   (pointerId: number) => void;
-};
-
-/**
- * Minimal `document` stub.
- *
- * `element` is the local stand-in for `document.createElement` (the real method name
- * `createElement` triggers the `no-restricted-syntax` rule that forbids
- * `create*`-prefixed method names on interfaces). Since this is an internal
- * structural stub typed via `declare const`, the stand-in maps structurally to the
- * real `document.createElement` at the ambient-declaration level — the name
- * `element` is the TYPE identifier here; the runtime value is still the real
- * `document` object whose `.element` property does not exist. We therefore
- * access `createElement` at call sites through a cast bridge:
- * `(document as DomDocumentBridgeType).element(tag)`.
- *
- * To avoid the cast pattern entirely (no `as` casts allowed), we declare
- * `document` typed as a wider object whose `element` property is the same
- * function as `createElement`. The widening is an ambient declaration; the
- * real `document` at runtime has `createElement` as a method, not `element`,
- * so we must access it through the standard string-keyed index access on a
- * cast of `unknown`. However since `as unknown` is itself a cast, we instead
- * type `document` as an object with BOTH `createElement` (the real name, used
- * at call sites) AND the body/query methods. The `no-restricted-syntax` rule
- * only flags `interface` member declarations, not `type` function-property
- * entries, so declaring the type as a `type` with a `createElement`
- * function-property field avoids the lint error.
- */
-type DomDocumentType = {
-  'body': DomElementType;
-  'createElement':  (tag: string) => DomElementType;
-  'querySelectorAll': <T extends DomElementType>(selector: string) => ArrayLike<T>;
-  'addEventListener':    (type: string, handler: DomListenerType) => void;
-  'removeEventListener': (type: string, handler: DomListenerType) => void;
-};
-
-/** Minimal MutationObserver handle. */
-type DomMutationObserverHandleType = {
-  'observe': (
-    target:  DomElementType,
-    options: { 'childList': boolean; 'subtree': boolean },
-  ) => void;
-};
-
-/** Constructor signature for MutationObserver. */
-type DomMutationObserverCtorType = new (callback: () => void) => DomMutationObserverHandleType;
-
-// ---------------------------------------------------------------------------
-// Ambient globals — accessed only INSIDE methods, never at module load.
-// ---------------------------------------------------------------------------
-
-declare const document:             DomDocumentType;
-declare const MutationObserver:     DomMutationObserverCtorType;
-declare const requestAnimationFrame: (cb: () => void) => void;
-
-// ---------------------------------------------------------------------------
-// Options
-// ---------------------------------------------------------------------------
-
-/**
- * Theme default values used when VitePress CSS custom properties
- * (`var(--vp-c-*)`) are not available in the host environment.
- */
-export type MermaidExplorerThemeType = {
-  /** Background colour for control chrome. Default: `'rgba(2,3,6,0.82)'`. */
-  'surface'?: string;
-  /** Border / icon colour for control buttons. Default: `'#22e8ff'`. */
-  'stroke'?: string;
-  /** Accent / hover colour. Default: `'#22e8ff'`. */
-  'accent'?: string;
-};
+/** Theme overrides written to the canonical variables consumed by Dpad.css. */
+class MermaidExplorerThemeOptions {
+  /** Overrides the D-pad accent and hover colour (`--ui-primary`). */
+  public readonly accent?: string;
+  /** Overrides the D-pad border colour (`--ui-border`). */
+  public readonly stroke?: string;
+  /** Overrides the D-pad control surface (`--ui-bg-elevated`). */
+  public readonly surface?: string;
+}
 
 /**
  * Options for `MermaidExplorer.install` and `MermaidExplorer.enhance`.
  *
- * All fields are optional; defaults are supplied by `MERMAID_EXPLORER_DEFAULTS`.
+ * All fields are optional; the explorer supplies canonical defaults.
  */
-export type MermaidExplorerOptionsType = {
-  /**
-   * CSS selector that identifies Mermaid diagram wrapper elements.
-   * Default: `'.vp-doc div.mermaid, .vp-doc .dagonizer-mermaid'`.
-   */
-  'selector'?: string;
+class MermaidExplorerOptionsInput {
   /**
    * Whether to render the D-pad navigation control.
    * Default: `true`.
    */
-  'controls'?: boolean;
+  public readonly controls?: boolean;
   /**
    * Whether to enable the fullscreen expand modal.
    * Default: `true`.
    */
-  'expand'?: boolean;
+  public readonly expand?: boolean;
   /**
    * How to fit the diagram on mount.
    * `'contain'` — scale to fit while never upscaling past 1×.
    * `'none'` — use natural scale.
    * Default: `'contain'`.
    */
-  'fit'?: 'contain' | 'none';
+  public readonly fit?: 'contain' | 'none';
+  /**
+   * CSS selector that identifies Mermaid diagram wrapper elements.
+   * Default: `'.vp-doc div.mermaid, .vp-doc .dagonizer-mermaid'`.
+   */
+  public readonly selector?: string;
   /** Override the control chrome colour palette. */
-  'theme'?: MermaidExplorerThemeType;
-};
+  public readonly theme?: MermaidExplorerThemeOptions;
+}
 
-// ---------------------------------------------------------------------------
-// Module-level defaults and constants
-// ---------------------------------------------------------------------------
+class MermaidExplorerTheme {
+  public readonly accent: string | undefined;
+  public readonly stroke: string | undefined;
+  public readonly surface: string | undefined;
 
-/** Zoom step — matches AnimatedDagGraph and MemoryGraph: ×1.25 / ÷1.25. */
-const ZOOM_STEP = 1.25;
-/** Zoom lower clamp — prevents the diagram from vanishing to a dot. */
-const ZOOM_MIN = 0.05;
-/** Zoom upper clamp — prevents losing detail at unreasonable magnification. */
-const ZOOM_MAX = 8;
-/** Pan step in screen pixels — matches AnimatedDagGraph `panBy({ x:±80 })`. */
-const PAN_STEP = 80;
+  public constructor(
+    accent: string | undefined,
+    stroke: string | undefined,
+    surface: string | undefined
+  ) {
+    this.accent = accent;
+    this.stroke = stroke;
+    this.surface = surface;
+  }
+}
 
-/** Fraction of the stage a fit-to-contain pass fills, leaving breathing room. */
-const FIT_MARGIN = 0.92;
-/** Extra SVG-coordinate padding around measured content to preserve markers and styled labels. */
-const SVG_BOUNDS_PADDING = 24;
-/** Max poll ticks for the bounded post-mount SVG detection interval. */
-const POLL_TICKS = 24;
-/** Poll interval in ms during bounded post-mount observation. */
-const POLL_INTERVAL_MS = 250;
-/** Dataset key that marks a diagram frame as already enhanced (idempotency). */
-const ENHANCED_KEY = 'dagExplorer';
-/** Dataset key that tracks the diagram render ID currently enhanced for this frame. */
-const ENHANCED_RENDER_KEY = 'dagExplorerRender';
-/** Default selector for Mermaid diagram wrapper elements. */
-const DEFAULT_SELECTOR = '.vp-doc div.mermaid, .vp-doc .dagonizer-mermaid';
+class MermaidExplorerOptions {
+  public readonly controls: boolean;
+  public readonly expand: boolean;
+  public readonly fit: 'contain' | 'none';
+  public readonly selector: string;
+  public readonly theme: MermaidExplorerTheme;
 
-/** Canonical defaults for all `MermaidExplorerOptionsType` fields. */
-const MERMAID_EXPLORER_DEFAULTS: Required<MermaidExplorerOptionsType> = {
-  'selector': DEFAULT_SELECTOR,
-  'controls': true,
-  'expand':   true,
-  'fit':      'contain',
-  'theme':    {},
-};
+  public constructor(
+    controls: boolean,
+    expand: boolean,
+    fit: 'contain' | 'none',
+    selector: string,
+    theme: MermaidExplorerTheme
+  ) {
+    this.controls = controls;
+    this.expand = expand;
+    this.fit = fit;
+    this.selector = selector;
+    this.theme = theme;
+  }
+}
 
-// ---------------------------------------------------------------------------
-// Internal camera state type
-// ---------------------------------------------------------------------------
+class NaturalSize {
+  public readonly h: number;
+  public readonly w: number;
+
+  public constructor(h: number, w: number) {
+    this.h = h;
+    this.w = w;
+  }
+}
+
+class SvgBounds {
+  public readonly h: number;
+  public readonly w: number;
+  public readonly x: number;
+  public readonly y: number;
+
+  public constructor(h: number, w: number, x: number, y: number) {
+    this.h = h;
+    this.w = w;
+    this.x = x;
+    this.y = y;
+  }
+}
 
 /**
  * Camera state managed per enhanced diagram instance.
@@ -280,14 +138,59 @@ const MERMAID_EXPLORER_DEFAULTS: Required<MermaidExplorerOptionsType> = {
  * are `translate(tx, ty) scale(scale)` applied from the top-left corner.
  * Zoom pivots are computed by adjusting `tx`/`ty` before updating `scale`.
  */
-type CameraStateType = {
+class CameraState {
   /** Current scale factor (1 = natural / un-zoomed size). */
-  'scale': number;
+  public scale: number;
   /** CSS translate-x in screen pixels. */
-  'tx': number;
+  public tx: number;
   /** CSS translate-y in screen pixels. */
-  'ty': number;
-};
+  public ty: number;
+
+  public constructor(scale: number, tx: number, ty: number) {
+    this.scale = scale;
+    this.tx = tx;
+    this.ty = ty;
+  }
+}
+
+class MermaidModalKeyHandler implements EventListenerObject {
+  #controller: InstanceType<typeof ModalController> | null;
+
+  public constructor() {
+    this.#controller = null;
+  }
+
+  public connect(controller: InstanceType<typeof ModalController>): void {
+    this.#controller = controller;
+  }
+
+  public handleEvent(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || this.#controller === null) {return;}
+    this.#controller.onKeyDown(event.key);
+  }
+}
+
+class MermaidModalHooks {
+  readonly #keyHandler: MermaidModalKeyHandler;
+  readonly #overlay: HTMLDivElement;
+
+  public constructor(overlay: HTMLDivElement, keyHandler: MermaidModalKeyHandler) {
+    this.#keyHandler = keyHandler;
+    this.#overlay = overlay;
+  }
+
+  public readonly onClose = (): void => {
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', this.#keyHandler);
+    this.#overlay.remove();
+  };
+
+  public readonly onOpen = (): void => {
+    document.body.appendChild(this.#overlay);
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', this.#keyHandler);
+  };
+}
 
 // ---------------------------------------------------------------------------
 // MermaidExplorer
@@ -306,7 +209,115 @@ type CameraStateType = {
  * that needs DOM access begins with a `typeof document === 'undefined'` guard
  * and returns immediately in non-browser contexts.
  */
-export class MermaidExplorer {
+export const MermaidExplorer = class MermaidExplorer {
+  static readonly #defaultSelector = '.vp-doc div.mermaid, .vp-doc .dagonizer-mermaid';
+  static readonly #enhancedKey = 'dagExplorer';
+  static readonly #enhancedRenderKey = 'dagExplorerRender';
+  static readonly #fitMargin = 0.92;
+  static readonly #maximumPollTicks = 24;
+  static readonly #maximumZoom = 8;
+  static readonly #minimumZoom = 0.05;
+  static readonly #panStep = 80;
+  static readonly #pollIntervalMilliseconds = 250;
+  static readonly #svgBoundsPadding = 24;
+  static readonly #zoomStep = 1.25;
+  static readonly #defaults = new MermaidExplorerOptions(
+    true,
+    true,
+    'contain',
+    MermaidExplorer.#defaultSelector,
+    new MermaidExplorerTheme(undefined, undefined, undefined)
+  );
+  static readonly #cameraControlsClass = class MermaidCameraControls {
+    readonly #camera: CameraState;
+    readonly #controller: InstanceType<typeof ModalController> | null;
+    readonly #frame: HTMLElement;
+    readonly #options: MermaidExplorerOptions;
+    readonly #svg: SVGSVGElement;
+
+    public constructor(
+      frame: HTMLElement,
+      svg: SVGSVGElement,
+      camera: CameraState,
+      options: MermaidExplorerOptions,
+      controller: InstanceType<typeof ModalController> | null
+    ) {
+      this.#camera = camera;
+      this.#controller = controller;
+      this.#frame = frame;
+      this.#options = options;
+      this.#svg = svg;
+    }
+
+    public can(action: Parameters<InstanceType<typeof DpadMachine>['press']>[0]): boolean {
+      if (action === 'expand') {return this.#options.expand;}
+      if (action === 'close') {return this.#controller !== null;}
+      return true;
+    }
+
+    public centre(): void {
+      const stageRect = this.#frame.getBoundingClientRect();
+      const svgRect = this.#svg.getBoundingClientRect();
+      this.#camera.tx += (stageRect.left + stageRect.width / 2)
+        - (svgRect.left + svgRect.width / 2);
+      this.#camera.ty += (stageRect.top + stageRect.height / 2)
+        - (svgRect.top + svgRect.height / 2);
+      MermaidExplorer.#paint(this.#svg, this.#camera);
+    }
+
+    public close(): void {
+      if (this.#controller === null) {return;}
+      this.#controller.close('programmatic');
+    }
+
+    public expand(): void {
+      if (!this.#options.expand) {return;}
+      MermaidExplorer.#modal(this.#svg, this.#options);
+    }
+
+    public fit(): void {
+      const natural = MermaidExplorer.#naturalSize(this.#svg);
+      MermaidExplorer.#fitContain(this.#frame, this.#svg, this.#camera, natural);
+    }
+
+    public pan(direction: 'up' | 'down' | 'left' | 'right'): void {
+      switch (direction) {
+        case 'down':
+          this.#camera.ty -= MermaidExplorer.#panStep;
+          break;
+        case 'left':
+          this.#camera.tx += MermaidExplorer.#panStep;
+          break;
+        case 'right':
+          this.#camera.tx -= MermaidExplorer.#panStep;
+          break;
+        case 'up':
+          this.#camera.ty += MermaidExplorer.#panStep;
+          break;
+      }
+      MermaidExplorer.#paint(this.#svg, this.#camera);
+    }
+
+    public zoomIn(): void {
+      this.#zoom(MermaidExplorer.#zoomStep);
+    }
+
+    public zoomOut(): void {
+      this.#zoom(1 / MermaidExplorer.#zoomStep);
+    }
+
+    #zoom(factor: number): void {
+      const stageRect = this.#frame.getBoundingClientRect();
+      MermaidExplorer.#zoomAbout(
+        this.#svg,
+        this.#camera,
+        factor,
+        stageRect.width / 2,
+        stageRect.height / 2
+      );
+    }
+  };
+
   private constructor() { /* static class — no instances */ }
 
   // ── Public API ─────────────────────────────────────────────────────────────
@@ -323,8 +334,8 @@ export class MermaidExplorer {
    *
    * @param options Optional configuration; all fields have sensible defaults.
    */
-  static install(options: MermaidExplorerOptionsType = {}): void {
-    if (typeof document === 'undefined') return;
+  public static install(options: MermaidExplorerOptionsInput = new MermaidExplorerOptionsInput()): void {
+    if (typeof document === 'undefined') {return;}
 
     const resolved = MermaidExplorer.#resolvedOptions(options);
     MermaidExplorer.#enhanceAll(resolved);
@@ -336,8 +347,8 @@ export class MermaidExplorer {
 
     // Bounded poll: belt-and-suspenders for Mermaid's flush-callback insertion.
     void (async () => {
-      for (let ticks = 0; ticks < POLL_TICKS; ticks += 1) {
-        await Scheduler.current().after(POLL_INTERVAL_MS);
+      for (let ticks = 0; ticks < MermaidExplorer.#maximumPollTicks; ticks += 1) {
+        await Scheduler.current().after(MermaidExplorer.#pollIntervalMilliseconds);
         MermaidExplorer.#enhanceAll(resolved);
       }
     })().catch(() => { /* scheduler reset cancels the bounded poll */ });
@@ -356,24 +367,29 @@ export class MermaidExplorer {
    * @param frame The wrapper element that contains the Mermaid `<svg>`.
    * @param options Optional configuration; all fields have sensible defaults.
    */
-  static enhance(frame: DomElementType, options: MermaidExplorerOptionsType = {}): void {
-    if (typeof document === 'undefined') return;
+  public static enhance(
+    frame: HTMLElement,
+    options: MermaidExplorerOptionsInput = new MermaidExplorerOptionsInput()
+  ): void {
+    if (typeof document === 'undefined') {return;}
 
-    const svg = frame.querySelector<DomSvgElementType>('svg');
-    if (svg === null) return;
+    const svg = frame.querySelector<SVGSVGElement>('svg');
+    if (svg === null) {return;}
 
     // Always normalize the current SVG before the idempotency guard. HMR and
     // framework renderers can replace the SVG inside an already-enhanced frame.
     MermaidExplorer.#sizeToIntrinsic(svg);
 
-    const renderId = frame.dataset[ENHANCED_RENDER_KEY];
-    if (frame.dataset[ENHANCED_KEY] === '1' && frame.dataset[`${ENHANCED_RENDER_KEY}Applied`] === renderId && renderId !== undefined) {
+    const renderId = frame.dataset[MermaidExplorer.#enhancedRenderKey];
+    if (frame.dataset[MermaidExplorer.#enhancedKey] === '1'
+      && frame.dataset[`${MermaidExplorer.#enhancedRenderKey}Applied`] === renderId
+      && renderId !== undefined) {
       MermaidExplorer.#refreshBounds(svg);
       return;
     }
 
-    frame.dataset[ENHANCED_KEY] = '1';
-    frame.dataset[`${ENHANCED_RENDER_KEY}Applied`] = renderId ?? '';
+    frame.dataset[MermaidExplorer.#enhancedKey] = '1';
+    frame.dataset[`${MermaidExplorer.#enhancedRenderKey}Applied`] = renderId ?? '';
     frame.classList.add('dag-mermaid-frame');
 
     const resolved = MermaidExplorer.#resolvedOptions(options);
@@ -384,7 +400,7 @@ export class MermaidExplorer {
     const natural = MermaidExplorer.#sizeToIntrinsic(svg);
 
     // Initialise camera.
-    const camera: CameraStateType = { 'scale': 1, 'tx': 0, 'ty': 0 };
+    const camera = new CameraState(1, 0, 0);
     MermaidExplorer.#paint(svg, camera);
 
     // Fit on first paint.
@@ -416,24 +432,30 @@ export class MermaidExplorer {
   // ── Private: option resolution ─────────────────────────────────────────────
 
   static #resolvedOptions(
-    options: MermaidExplorerOptionsType,
-  ): Required<MermaidExplorerOptionsType> {
-    return {
-      'selector': options.selector ?? MERMAID_EXPLORER_DEFAULTS.selector,
-      'controls': options.controls ?? MERMAID_EXPLORER_DEFAULTS.controls,
-      'expand':   options.expand   ?? MERMAID_EXPLORER_DEFAULTS.expand,
-      'fit':      options.fit      ?? MERMAID_EXPLORER_DEFAULTS.fit,
-      'theme':    options.theme    ?? MERMAID_EXPLORER_DEFAULTS.theme,
-    };
+    options: MermaidExplorerOptionsInput
+  ): MermaidExplorerOptions {
+    const theme = new MermaidExplorerTheme(
+      options.theme?.accent,
+      options.theme?.stroke,
+      options.theme?.surface
+    );
+    return new MermaidExplorerOptions(
+      options.controls ?? MermaidExplorer.#defaults.controls,
+      options.expand ?? MermaidExplorer.#defaults.expand,
+      options.fit ?? MermaidExplorer.#defaults.fit,
+      options.selector ?? MermaidExplorer.#defaults.selector,
+      theme
+    );
   }
 
   // ── Private: bulk enhance ──────────────────────────────────────────────────
 
-  static #enhanceAll(options: Required<MermaidExplorerOptionsType>): void {
-    const frames = document.querySelectorAll<DomElementType>(options.selector);
-    for (let i = 0; i < frames.length; i++) {
+  static #enhanceAll(options: MermaidExplorerOptions): void {
+    const frames = document.querySelectorAll<HTMLElement>(options.selector);
+    const frameCount = frames.length;
+    for (let i = 0; i < frameCount; i++) {
       const frame = frames[i];
-      if (frame !== undefined) MermaidExplorer.enhance(frame, options);
+      if (frame !== undefined) {MermaidExplorer.enhance(frame, options);}
     }
   }
 
@@ -446,8 +468,8 @@ export class MermaidExplorer {
    * enhance time via `transformOrigin`). Zoom-about-pivot is achieved by
    * adjusting `tx`/`ty` before calling this method (see `#zoomAbout`).
    */
-  static #paint(svg: DomSvgElementType, camera: CameraStateType): void {
-    svg.style['transform'] = `translate(${camera.tx}px,${camera.ty}px) scale(${camera.scale})`;
+  static #paint(svg: SVGSVGElement, camera: CameraState): void {
+    svg.style.transform = `translate(${camera.tx}px,${camera.ty}px) scale(${camera.scale})`;
   }
 
   /**
@@ -460,13 +482,16 @@ export class MermaidExplorer {
    * `renderedPosition` pivot and to the wheel handler in `MermaidEnhancer`.
    */
   static #zoomAbout(
-    svg:    DomSvgElementType,
-    camera: CameraStateType,
+    svg:    SVGSVGElement,
+    camera: CameraState,
     factor: number,
     pivotX: number,
-    pivotY: number,
+    pivotY: number
   ): void {
-    const next  = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, camera.scale * factor));
+    const next = Math.min(
+      MermaidExplorer.#maximumZoom,
+      Math.max(MermaidExplorer.#minimumZoom, camera.scale * factor)
+    );
     const ratio = next / camera.scale;
     camera.tx    = pivotX - (pivotX - camera.tx) * ratio;
     camera.ty    = pivotY - (pivotY - camera.ty) * ratio;
@@ -482,17 +507,21 @@ export class MermaidExplorer {
    * the SVG `viewBox` attribute, then to a 1024×768 safe default.
    */
   static #fitContain(
-    stage:   DomElementType,
-    svg:     DomSvgElementType,
-    camera:  CameraStateType,
-    natural: { readonly w: number; readonly h: number } | null = null,
+    stage:   HTMLElement,
+    svg:     SVGSVGElement,
+    camera:  CameraState,
+    natural: NaturalSize | null = null
   ): void {
     const stageRect = stage.getBoundingClientRect();
-    const fw = stageRect.width  || 400;
-    const fh = stageRect.height || 300;
+    const frameWidth = Number.isFinite(stageRect.width) && stageRect.width > 0
+      ? stageRect.width
+      : 400;
+    const frameHeight = Number.isFinite(stageRect.height) && stageRect.height > 0
+      ? stageRect.height
+      : 300;
 
     // Prefer a caller-supplied natural size (measured from the laid-out source
-    // SVG). A freshly innerHTML-cloned SVG can fail getBBox at first paint, so
+    // SVG). A freshly cloned SVG can fail getBBox at first paint, so
     // self-measuring is unreliable for the fullscreen modal.
     let nw = natural !== null && natural.w > 0 ? natural.w : 0;
     let nh = natural !== null && natural.h > 0 ? natural.h : 0;
@@ -503,10 +532,14 @@ export class MermaidExplorer {
       nh = measured.h;
     }
 
-    const scale = Math.min((fw * FIT_MARGIN) / nw, (fh * FIT_MARGIN) / nh, 1);
+    const scale = Math.min(
+      (frameWidth * MermaidExplorer.#fitMargin) / nw,
+      (frameHeight * MermaidExplorer.#fitMargin) / nh,
+      1
+    );
     camera.scale = scale;
-    camera.tx    = (fw - nw * scale) / 2;
-    camera.ty    = (fh - nh * scale) / 2;
+    camera.tx = (frameWidth - nw * scale) / 2;
+    camera.ty = (frameHeight - nh * scale) / 2;
     MermaidExplorer.#paint(svg, camera);
   }
 
@@ -518,13 +551,13 @@ export class MermaidExplorer {
    * outside the original viewBox. Two animation frames catch that settled
    * geometry and expand the SVG coordinate frame before the viewport clips it.
    */
-  static #refreshBounds(svg: DomSvgElementType, after?: () => void): void {
+  static #refreshBounds(svg: SVGSVGElement, after?: () => void): void {
     requestAnimationFrame(() => {
       MermaidExplorer.#sizeToIntrinsic(svg);
-      if (after !== undefined) after();
+      if (after !== undefined) {after();}
       requestAnimationFrame(() => {
         MermaidExplorer.#sizeToIntrinsic(svg);
-        if (after !== undefined) after();
+        if (after !== undefined) {after();}
       });
     });
   }
@@ -534,19 +567,43 @@ export class MermaidExplorer {
    * so sizing the element to it is distortion-free; then getBBox, then
    * a default.
    */
-  static #naturalSize(svg: DomSvgElementType): { readonly w: number; readonly h: number } {
+  static #naturalSize(svg: SVGSVGElement): NaturalSize {
     const vb = svg.getAttribute('viewBox');
     if (vb !== null) {
-      const parts = vb.trim().split(/[\s,]+/u);
+      const parts = MermaidExplorer.#viewBoxParts(vb);
       const w = parseFloat(parts[2] ?? '0');
       const h = parseFloat(parts[3] ?? '0');
-      if (w > 0 && h > 0) return { 'w': w, 'h': h };
+      if (w > 0 && h > 0) {return new NaturalSize(h, w);}
     }
     try {
       const bbox = svg.getBBox();
-      if (bbox.width > 0 && bbox.height > 0) return { 'w': bbox.width, 'h': bbox.height };
+      if (bbox.width > 0 && bbox.height > 0) {
+        return new NaturalSize(bbox.height, bbox.width);
+      }
     } catch { /* getBBox throws on detached/invisible SVG */ }
-    return { 'w': 1024, 'h': 768 };
+    return new NaturalSize(768, 1024);
+  }
+
+  static #viewBoxParts(viewBox: string): readonly string[] {
+    const parts: string[] = [];
+    let currentPart = '';
+    for (const character of viewBox.trim()) {
+      const isSeparator = character === ','
+        || character === ' '
+        || character === '\n'
+        || character === '\r'
+        || character === '\t';
+      if (isSeparator) {
+        if (currentPart.length > 0) {
+          parts.push(currentPart);
+          currentPart = '';
+        }
+      } else {
+        currentPart += character;
+      }
+    }
+    if (currentPart.length > 0) {parts.push(currentPart);}
+    return parts;
   }
 
   /**
@@ -556,35 +613,36 @@ export class MermaidExplorer {
    * CSS is applied, so the viewBox must be derived from actual rendered bounds
    * rather than Mermaid's initial layout assumptions.
    */
-  static #normalizeBounds(svg: DomSvgElementType): void {
+  static #normalizeBounds(svg: SVGSVGElement): void {
     MermaidExplorer.#showOverflow(svg);
     const content = MermaidExplorer.#contentBounds(svg);
-    if (content === null) return;
+    if (content === null) {return;}
 
-    const x = content.x - SVG_BOUNDS_PADDING;
-    const y = content.y - SVG_BOUNDS_PADDING;
-    const w = content.w + SVG_BOUNDS_PADDING * 2;
-    const h = content.h + SVG_BOUNDS_PADDING * 2;
-    if (w <= 0 || h <= 0) return;
+    const x = content.x - MermaidExplorer.#svgBoundsPadding;
+    const y = content.y - MermaidExplorer.#svgBoundsPadding;
+    const w = content.w + MermaidExplorer.#svgBoundsPadding * 2;
+    const h = content.h + MermaidExplorer.#svgBoundsPadding * 2;
+    if (w <= 0 || h <= 0) {return;}
     svg.setAttribute('viewBox', `${String(x)} ${String(y)} ${String(w)} ${String(h)}`);
   }
 
   /** Force the SVG and its rendered children to expose their measured bounds. */
-  static #showOverflow(svg: DomSvgElementType): void {
-    svg.style['overflow'] = 'visible';
-    const descendants = svg.querySelectorAll<DomElementType>('*');
-    for (let i = 0; i < descendants.length; i++) {
+  static #showOverflow(svg: SVGSVGElement): void {
+    svg.style.overflow = 'visible';
+    const descendants = svg.querySelectorAll<SVGElement>('*');
+    const descendantCount = descendants.length;
+    for (let i = 0; i < descendantCount; i++) {
       const child = descendants[i];
-      if (child !== undefined) child.style['overflow'] = 'visible';
+      if (child !== undefined) {child.style.overflow = 'visible';}
     }
   }
 
   /** Read rendered SVG content bounds, returning null while layout is unavailable. */
-  static #contentBounds(svg: DomSvgElementType): SvgBoundsType | null {
+  static #contentBounds(svg: SVGSVGElement): SvgBounds | null {
     try {
       const bbox = svg.getBBox();
       if (bbox.width > 0 && bbox.height > 0) {
-        return { 'x': bbox.x, 'y': bbox.y, 'w': bbox.width, 'h': bbox.height };
+        return new SvgBounds(bbox.height, bbox.width, bbox.x, bbox.y);
       }
     } catch { /* getBBox throws on detached/invisible SVG */ }
     return null;
@@ -596,36 +654,17 @@ export class MermaidExplorer {
    * auto-fills its container, which fights the transform-based camera; pinning a
    * known size lets the CSS transform scale and position it deterministically.
    */
-  static #sizeToIntrinsic(svg: DomSvgElementType): { readonly w: number; readonly h: number } {
+  static #sizeToIntrinsic(svg: SVGSVGElement): NaturalSize {
     MermaidExplorer.#normalizeBounds(svg);
     const n = MermaidExplorer.#naturalSize(svg);
     svg.removeAttribute('width');
     svg.removeAttribute('height');
-    svg.style['width']           = `${String(n.w)}px`;
-    svg.style['height']          = `${String(n.h)}px`;
-    svg.style['maxWidth']        = 'none';
-    svg.style['transformOrigin'] = '0 0';
-    svg.style['display']         = 'block';
+    svg.style.width           = `${String(n.w)}px`;
+    svg.style.height          = `${String(n.h)}px`;
+    svg.style.maxWidth        = 'none';
+    svg.style.transformOrigin = '0 0';
+    svg.style.display         = 'block';
     return n;
-  }
-
-  /**
-   * Re-centre the diagram in the stage WITHOUT changing scale.
-   *
-   * Measures the diagram's current rendered bounding rect relative to the
-   * stage and shifts the translate so the diagram is centred — matching
-   * `AnimatedDagGraph.centerView()` which calls `cy.center()`.
-   */
-  static #centre(
-    stage:  DomElementType,
-    svg:    DomSvgElementType,
-    camera: CameraStateType,
-  ): void {
-    const stageRect = stage.getBoundingClientRect();
-    const svgRect   = svg.getBoundingClientRect();
-    camera.tx += (stageRect.left + stageRect.width  / 2) - (svgRect.left + svgRect.width  / 2);
-    camera.ty += (stageRect.top  + stageRect.height / 2) - (svgRect.top  + svgRect.height / 2);
-    MermaidExplorer.#paint(svg, camera);
   }
 
   // ── Private: interaction wiring ────────────────────────────────────────────
@@ -638,8 +677,8 @@ export class MermaidExplorer {
    * gestures — matching the modal's pointer handling in `MermaidEnhancer`.
    */
   static #pointerPan(
-    svg:    DomSvgElementType,
-    camera: CameraStateType,
+    svg:    SVGSVGElement,
+    camera: CameraState
   ): void {
     let dragging = false;
     let lastX    = 0;
@@ -653,7 +692,7 @@ export class MermaidExplorer {
     });
 
     svg.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
+      if (!dragging) {return;}
       camera.tx += e.clientX - lastX;
       camera.ty += e.clientY - lastY;
       lastX = e.clientX;
@@ -674,9 +713,9 @@ export class MermaidExplorer {
    * stage so the point under the cursor stays fixed during zoom.
    */
   static #wheelZoom(
-    stage:  DomElementType,
-    svg:    DomSvgElementType,
-    camera: CameraStateType,
+    stage:  HTMLElement,
+    svg:    SVGSVGElement,
+    camera: CameraState
   ): void {
     stage.addEventListener('wheel', (e) => {
       e.preventDefault();
@@ -707,15 +746,18 @@ export class MermaidExplorer {
    * otherwise a disabled placeholder preserves the 3×3 grid shape.
    */
   static #dpad(
-    frame:   DomElementType,
-    svg:     DomSvgElementType,
-    camera:  CameraStateType,
-    options: Required<MermaidExplorerOptionsType>,
-  ): DomElementType {
+    frame:   HTMLElement,
+    svg:     SVGSVGElement,
+    camera:  CameraState,
+    options: MermaidExplorerOptions
+  ): HTMLDivElement {
     const wrap = document.createElement('div');
     wrap.className = 'dag-mermaid-dpad-wrap dagonizer-dpad-wrap dagonizer-dpad-anchor dagonizer-dpad-anchor--hover';
     wrap.setAttribute('aria-label', 'Diagram navigation controls');
-    const machine = createCameraDpadMachine(MermaidExplorer.#cameraControls(frame, svg, camera, options), 'inline');
+    const machine = CameraControls.create(
+      MermaidExplorer.#cameraControls(frame, svg, camera, options),
+      'inline'
+    );
     const grid = MermaidExplorer.#renderDpad(machine);
     MermaidExplorer.#themed(wrap, options.theme);
     wrap.appendChild(grid);
@@ -727,8 +769,8 @@ export class MermaidExplorer {
     label:   string,
     title:   string,
     disabled: boolean,
-    handler: () => void,
-  ): DomElementType {
+    handler: () => void
+  ): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.className   = disabled
       ? 'dagonizer-dpad-btn dagonizer-dpad-btn--disabled'
@@ -740,13 +782,13 @@ export class MermaidExplorer {
     btn.setAttribute('aria-label', title);
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (disabled) return;
+      if (disabled) {return;}
       handler();
     });
     return btn;
   }
 
-  static #renderDpad(machine: DpadMachine): DomElementType {
+  static #renderDpad(machine: InstanceType<typeof DpadMachine>): HTMLDivElement {
     const grid = document.createElement('div');
     grid.className = 'dag-mermaid-dpad dagonizer-dpad';
     for (const item of machine.state().items) {
@@ -758,65 +800,38 @@ export class MermaidExplorer {
   }
 
   static #cameraControls(
-    frame: DomElementType,
-    svg: DomSvgElementType,
-    camera: CameraStateType,
-    options: Required<MermaidExplorerOptionsType>,
-  ): CameraControlSurfaceType {
-    const controls: CameraControlSurfaceType = {
-      'can': (action) => action !== 'expand' || options.expand,
-      'getHint': () => createViewportStatus(camera.scale, 'inline', 'drag · wheel').hint,
-      'zoomIn': () => {
-        const stageRect = frame.getBoundingClientRect();
-        MermaidExplorer.#zoomAbout(svg, camera, ZOOM_STEP, stageRect.width / 2, stageRect.height / 2);
-      },
-      'zoomOut': () => {
-        const stageRect = frame.getBoundingClientRect();
-        MermaidExplorer.#zoomAbout(svg, camera, 1 / ZOOM_STEP, stageRect.width / 2, stageRect.height / 2);
-      },
-      'pan': (direction) => {
-        switch (direction) {
-          case 'up':
-            camera.ty += PAN_STEP;
-            break;
-          case 'down':
-            camera.ty -= PAN_STEP;
-            break;
-          case 'left':
-            camera.tx += PAN_STEP;
-            break;
-          case 'right':
-            camera.tx -= PAN_STEP;
-            break;
-        }
-        MermaidExplorer.#paint(svg, camera);
-      },
-      'centre': () => { MermaidExplorer.#centre(frame, svg, camera); },
-      'fit': () => { MermaidExplorer.#fitContain(frame, svg, camera); },
-    };
-    if (options.expand) {
-      controls.expand = () => { MermaidExplorer.#modal(svg, options); };
-    }
-    return controls;
+    frame: HTMLElement,
+    svg: SVGSVGElement,
+    camera: CameraState,
+    options: MermaidExplorerOptions,
+    controller: InstanceType<typeof ModalController> | null = null
+  ) {
+    return new MermaidExplorer.#cameraControlsClass(
+      frame,
+      svg,
+      camera,
+      options,
+      controller
+    );
   }
 
   /**
-   * Write `theme` default values as inline CSS custom properties on the
-   * D-pad wrap element. Only provided fields are written; absent fields fall
-   * through to the stylesheet's `var(--vp-c-*)` defaults.
+   * Write `theme` overrides as canonical design-system custom properties on
+   * the D-pad wrap element. Only provided fields are written; absent fields
+   * inherit the page's existing `--ui-*` values.
    */
   static #themed(
-    wrap:  DomElementType,
-    theme: MermaidExplorerThemeType,
+    wrap:  HTMLElement,
+    theme: MermaidExplorerTheme
   ): void {
     if (theme.surface !== undefined) {
-      wrap.style['--dag-explorer-surface'] = theme.surface;
+      wrap.style.setProperty('--ui-bg-elevated', theme.surface);
     }
     if (theme.stroke !== undefined) {
-      wrap.style['--dag-explorer-stroke'] = theme.stroke;
+      wrap.style.setProperty('--ui-border', theme.stroke);
     }
     if (theme.accent !== undefined) {
-      wrap.style['--dag-explorer-accent'] = theme.accent;
+      wrap.style.setProperty('--ui-primary', theme.accent);
     }
   }
 
@@ -827,15 +842,15 @@ export class MermaidExplorer {
    * independent D-pad. The expand slot becomes a close (✕ / Esc) control.
    *
    * The modal is appended to `document.body` and removed on close. The cloned
-   * SVG has its own independent `CameraStateType` so the modal's transform
+   * SVG has its own independent camera state so the modal's transform
    * state is fully isolated from the inline diagram's camera.
    *
    * Backdrop-click (on the overlay itself, not the stage) and Escape close
    * the modal — matching the `DiagramFrame.vue` expand modal pattern.
    */
   static #modal(
-    svg:     DomSvgElementType,
-    options: Required<MermaidExplorerOptionsType>,
+    svg:     SVGSVGElement,
+    options: MermaidExplorerOptions
   ): void {
     const overlay = document.createElement('div');
     overlay.className = 'dag-mermaid-modal dagonizer-modal-shell';
@@ -846,36 +861,32 @@ export class MermaidExplorer {
     const stage = document.createElement('div');
     stage.className = 'dag-mermaid-modal-stage dagonizer-modal-stage';
 
-    // Transfer SVG content into stage via innerHTML/outerHTML. This approach
-    // avoids `cloneNode` (no type available without DOM lib) and naturally
-    // resets any inline transforms from the source diagram, giving a clean
-    // camera for the modal's independent CameraStateType.
-    //
-    // `style`, `innerHTML`, and `outerHTML` are declared on the minimal DOM
-    // stub (DomElementType), so these read/write directly — no cast.
     const stageStyle = stage.style;
-    stageStyle['position']    = 'relative';
-    stageStyle['overflow']    = 'hidden';
-    stageStyle['flex']        = '1 1 auto';
-    stageStyle['cursor']      = 'grab';
-    stageStyle['userSelect']  = 'none';
-    stageStyle['touchAction'] = 'none';
+    stageStyle.position    = 'relative';
+    stageStyle.overflow    = 'hidden';
+    stageStyle.flex        = '1 1 auto';
+    stageStyle.cursor      = 'grab';
+    stageStyle.userSelect  = 'none';
+    stageStyle.touchAction = 'none';
 
-    // Temporarily clear the source transform so the cloned SVG starts at
-    // scale 1 / translate 0 (independent camera).
-    const svgStyle = svg.style;
-    const savedTransform: string = svgStyle['transform'] ?? '';
-    svgStyle['transform'] = '';
-
-    // Transfer the SVG into the stage via outerHTML → innerHTML.
-    stage.innerHTML = svg.outerHTML;
-
-    // Restore source SVG transform.
-    svgStyle['transform'] = savedTransform;
+    const clone = svg.cloneNode(true);
+    if (!(clone instanceof SVGSVGElement)) {
+      return;
+    }
+    clone.style.transform = '';
+    const serializedClone = new XMLSerializer().serializeToString(clone);
+    const cloneResult = trustedMarkupRenderer.render(stage, serializedClone, 'svg');
+    if (!cloneResult.accepted) {
+      return;
+    }
 
     const hint = document.createElement('div');
     hint.className   = 'dag-mermaid-modal-hint dagonizer-modal-hint';
-    hint.textContent = createViewportStatus(1, 'modal', 'drag · wheel · esc to close').hint ?? '';
+    hint.textContent = ViewportStatus.create({
+      'hint': 'drag · wheel · esc to close',
+      'mode': 'modal',
+      'zoomLevel': 1
+    }).hint ?? '';
     hint.setAttribute('aria-hidden', 'true');
 
     const dpadWrap = document.createElement('div');
@@ -886,35 +897,20 @@ export class MermaidExplorer {
     overlay.appendChild(hint);
     overlay.appendChild(dpadWrap);
 
-    let controller: ModalController | null = null;
-    const onKey: DomListenerType = (e) => {
-      controller?.onKeyDown(e.key);
-    };
-    controller = new ModalController({
-      'onOpen': () => {
-        document.body.appendChild(overlay);
-        document.body.style['overflow'] = 'hidden';
-        document.addEventListener('keydown', onKey);
-      },
-      'onClose': () => {
-        document.body.style['overflow'] = '';
-        document.removeEventListener('keydown', onKey);
-        overlay.remove();
-      },
-    });
+    const keyHandler = new MermaidModalKeyHandler();
+    const controller = new ModalController(new MermaidModalHooks(overlay, keyHandler));
+    keyHandler.connect(controller);
     controller.open();
 
-    // Re-select the cloned SVG that now lives in the stage.
-    const clonedSvg = stage.querySelector<DomSvgElementType>('svg');
+    const clonedSvg = stage.querySelector<SVGSVGElement>('svg');
     if (clonedSvg === null) {
-      // Clone failed — clean up and bail.
       controller.close('programmatic');
       return;
     }
 
     const modalNatural = MermaidExplorer.#sizeToIntrinsic(clonedSvg);
 
-    const modalCamera: CameraStateType = { 'scale': 1, 'tx': 0, 'ty': 0 };
+    const modalCamera = new CameraState(1, 0, 0);
     MermaidExplorer.#paint(clonedSvg, modalCamera);
 
     // Fit once the overlay has its layout dimensions. Double-rAF so the
@@ -933,18 +929,14 @@ export class MermaidExplorer {
     MermaidExplorer.#wheelZoom(stage, clonedSvg, modalCamera);
     MermaidExplorer.#bindSelection(stage, clonedSvg);
 
-    const baseControls = MermaidExplorer.#cameraControls(stage, clonedSvg, modalCamera, options);
-    const modalControls: CameraControlSurfaceType = {
-      'zoomIn': baseControls.zoomIn,
-      'zoomOut': baseControls.zoomOut,
-      'pan': baseControls.pan,
-      'centre': baseControls.centre,
-      'fit': baseControls.fit,
-      'close': () => { controller?.close('programmatic'); },
-    };
-    if (baseControls.can !== undefined) modalControls.can = baseControls.can;
-    if (baseControls.getZoomLevel !== undefined) modalControls.getZoomLevel = baseControls.getZoomLevel;
-    const machine = createCameraDpadMachine(modalControls, 'modal');
+    const modalControls = MermaidExplorer.#cameraControls(
+      stage,
+      clonedSvg,
+      modalCamera,
+      options,
+      controller
+    );
+    const machine = CameraControls.create(modalControls, 'modal');
     const grid = MermaidExplorer.#renderDpad(machine);
 
     MermaidExplorer.#themed(dpadWrap, options.theme);
@@ -952,23 +944,24 @@ export class MermaidExplorer {
 
     // Backdrop click (overlay itself, not stage or buttons) closes the modal.
     overlay.addEventListener('click', (e) => {
-      controller?.onBackdropPress(e.target === overlay);
+      controller.onBackdropPress(e.target === overlay);
     });
   }
 
   static #bindSelection(
-    stage: DomElementType,
-    svg: DomSvgElementType,
+    stage: HTMLElement,
+    svg: SVGSVGElement
   ): void {
-    const nodes = svg.querySelectorAll<DomElementType>('.node');
-    for (let i = 0; i < nodes.length; i++) {
+    const nodes = svg.querySelectorAll<SVGElement>('.node');
+    const nodeCount = nodes.length;
+    for (let i = 0; i < nodeCount; i++) {
       const node = nodes[i];
-      if (node === undefined) continue;
-      MermaidExplorer.#ensureClassAbsent(node, 'dag-mermaid-selected');
+      if (node === undefined) {continue;}
+      node.classList.remove('dag-mermaid-selected');
       node.addEventListener('click', (e) => {
         e.stopPropagation();
         MermaidExplorer.#clearSelection(svg);
-        MermaidExplorer.#ensureClassPresent(node, 'dag-mermaid-selected');
+        node.classList.add('dag-mermaid-selected');
       });
     }
 
@@ -979,52 +972,12 @@ export class MermaidExplorer {
     });
   }
 
-  static #clearSelection(svg: DomSvgElementType): void {
-    const selected = svg.querySelectorAll<DomElementType>('.dag-mermaid-selected');
-    for (let i = 0; i < selected.length; i++) {
+  static #clearSelection(svg: SVGSVGElement): void {
+    const selected = svg.querySelectorAll<SVGElement>('.dag-mermaid-selected');
+    const selectedCount = selected.length;
+    for (let i = 0; i < selectedCount; i++) {
       const node = selected[i];
-      if (node !== undefined) MermaidExplorer.#ensureClassAbsent(node, 'dag-mermaid-selected');
+      if (node !== undefined) {node.classList.remove('dag-mermaid-selected');}
     }
   }
-
-  static #ensureClassPresent(node: DomElementType, className: string): void {
-    const current = MermaidExplorer.#getClassName(node);
-    const classes = current.length === 0 ? [] : current.split(/\s+/u);
-    if (classes.includes(className)) return;
-    classes.push(className);
-    MermaidExplorer.#setClassName(node, classes.join(' '));
-  }
-
-  static #ensureClassAbsent(node: DomElementType, className: string): void {
-    const current = MermaidExplorer.#getClassName(node);
-    if (current.length === 0) return;
-    MermaidExplorer.#setClassName(
-      node,
-      current
-      .split(/\s+/u)
-      .filter((name) => name !== className)
-      .join(' '),
-    );
-  }
-
-  static #getClassName(node: DomElementType): string {
-    const value = node.className;
-    if (typeof value === 'string') return value.trim();
-    if (typeof node.getAttribute === 'function') {
-      const attr = node.getAttribute('class');
-      if (typeof attr === 'string') return attr.trim();
-    }
-    return '';
-  }
-
-  static #setClassName(node: DomElementType, className: string): void {
-    const value = node.className;
-    if (typeof value === 'string') {
-      node.className = className;
-      return;
-    }
-    if (typeof node.setAttribute === 'function') {
-      node.setAttribute('class', className);
-    }
-  }
-}
+};

@@ -24,7 +24,7 @@ const { dataLayout } = useDataLayout();
  * consume) and re-sorts locally so 'n/a' ranks distinctly rather than
  * inheriting whatever rank its overwritten 'fail'/'AA'/'AAA' string left it at.
  */
-const displayRoleRows = computed(() => buildRolesComplianceRows(
+const displayRoleRows = computed(() => buildRolesComplianceRows.build(
   framing.value,
   schemaName.value,
   sortedRoleContrastRows.value,
@@ -62,7 +62,7 @@ const cardLayoutByMode = {
 } as const;
 
 const activeCardLayout = computed(() => {
-  return selectDataCardLayout(dataLayout.value, cardLayoutByMode);
+  return selectDataCardLayout.select(dataLayout.value, cardLayoutByMode);
 });
 </script>
 
@@ -103,7 +103,9 @@ const activeCardLayout = computed(() => {
 
     <FootnoteText>
       Ratio and Compliance are live WCAG 2.1 measurements, nudged into range by the engine's contrast enforcement —
-      see <DocAnchorLink href="#10-math-primitives-reference">Math Primitives Reference</DocAnchorLink>
+      see <DocAnchorLink href="#10-math-primitives-reference">
+        Math Primitives Reference
+      </DocAnchorLink>
       for the WCAG/APCA math and how `enforce:contrast` corrects a failing pair.
     </FootnoteText>
   </UCard>

@@ -4,10 +4,10 @@ import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { ColorStreamHistoryState } from '../../composables/colorStreamHistoryState.ts';
 import { useIridis } from '../../composables/useIridis.ts';
 import { useLivingBackground } from '../../composables/useLivingBackground.ts';
-import { createCanvasRefSetter, COLOR_STREAM_ROLE_SPECS } from './colorStream/buildColorStreamShowcaseModel.ts';
-import { drawColorStreamStrip, drawComparisonBands } from './colorStream/drawColorStream.ts';
+import { buildColorStreamShowcaseModel } from './colorStream/buildColorStreamShowcaseModel.ts';
+import { drawColorStream } from './colorStream/drawColorStream.ts';
 
-const ROLES = COLOR_STREAM_ROLE_SPECS;
+const ROLES = buildColorStreamShowcaseModel.buildRoles();
 
 const reducedMotion = ref<boolean>(false);
 const cardRef = ref<HTMLElement | null>(null);
@@ -42,7 +42,7 @@ function drawAllStrips(): void {
     const alias = ROLES[index]!.alias;
     const canvas = canvasRefs[index];
     if (!canvas) { continue; }
-    drawColorStreamStrip(canvas, ColorStreamHistoryState.sampleArray(alias));
+    drawColorStream.drawStrip(canvas, ColorStreamHistoryState.sampleArray(alias));
   }
 }
 
@@ -72,22 +72,22 @@ function startLoop(): void {
 }
 
 function liveRefAt(index: number): (el: unknown) => void {
-  return createCanvasRefSetter(canvasRefs, index);
+  return buildColorStreamShowcaseModel.buildCanvasReferenceSetter(canvasRefs, index);
 }
 
 function naiveRefAt(index: number): (el: unknown) => void {
-  return createCanvasRefSetter(naiveCanvasRefs, index);
+  return buildColorStreamShowcaseModel.buildCanvasReferenceSetter(naiveCanvasRefs, index);
 }
 
 function engineRefAt(index: number): (el: unknown) => void {
-  return createCanvasRefSetter(engineCanvasRefs, index);
+  return buildColorStreamShowcaseModel.buildCanvasReferenceSetter(engineCanvasRefs, index);
 }
 
 onMounted(() => {
   useLivingBackground({ 'recordStream': true });
   reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const { roleViews } = useIridis();
-  watch(roleViews, (views) => { drawComparisonBands(ROLES, views, naiveCanvasRefs, engineCanvasRefs); }, { 'immediate': true });
+  watch(roleViews, (views) => { drawColorStream.drawComparisonBands(ROLES, views, naiveCanvasRefs, engineCanvasRefs); }, { 'immediate': true });
   if (reducedMotion.value) {
     drawAllStrips();
     return;

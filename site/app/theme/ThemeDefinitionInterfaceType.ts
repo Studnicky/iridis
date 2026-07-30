@@ -12,9 +12,9 @@
  * in `site/app/theme/presets/index.ts` / `presets.css` — never a branch added
  * to shared logic.
  */
-export type ThemeDefinitionInterfaceType = {
+export declare class ThemeDefinitionInterfaceType {
   /** Ambient background parameters — read by AmbientBackground.vue instead of hardcoded literals. */
-  'ambient': {
+  readonly 'ambient': {
     /** Number of lava blobs generated. */
     'blobCount': number;
     /** Whether the SVG goo metaball filter applies to the lava-blob layer. */
@@ -29,9 +29,9 @@ export type ThemeDefinitionInterfaceType = {
     'speedMultiplier': number;
   };
   /** How the role/palette DATA components (RolesTable, ResolvedRoles, PairingPreview, PaletteCarousel) group and lay out their rows — read via `useDataLayout()`, dispatched to per-layout container markup. The rows themselves come from the same sort/derive logic in every theme; only their container structure changes. */
-  'dataLayout': 'grid' | 'list' | 'pixel' | 'table';
+  readonly 'dataLayout': 'grid' | 'list' | 'pixel' | 'table';
   /** Registry key — stable, lowercase, used for persistence and DOM data attrs (and this theme's CSS adapter's `[data-iridis-theme]` selector). */
-  'key': string;
+  readonly 'key': string;
   /** Human-readable label shown in the theme-switcher <USelect>. */
-  'label': string;
-};
+  readonly 'label': string;
+}

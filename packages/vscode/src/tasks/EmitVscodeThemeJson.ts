@@ -6,6 +6,7 @@ import type {
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
 
+import { FramingSurface } from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
@@ -29,22 +30,26 @@ class EmitVscodeThemeJson implements TaskInterface {
     'reads':       [
       'outputs.vscode:workbenchColors',
       'outputs.vscode:semanticTokenRules',
-      'metadata.vscode:baseTokens'
+      'metadata.vscode:baseTokens',
+      'roles',
+      'runtime.framing',
+      'variants'
     ],
     'requires':    ['emit:vscodeSemanticRules', 'emit:vscodeUiPalette'],
     'writes':      ['outputs.vscode:themeJson']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const themeName   = (state.input.metadata?.themeName as string | undefined) ?? 'Color Engine Theme';
     const baseTokens  = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterfaceType>;
     const workbenchColors = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
     const semanticTokenRules = (state.outputs['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterfaceType>;
 
-    // Determine dark/light from background luminance
-    const bgRecord = state.roles.background;
-    const bgLum = bgRecord !== undefined ? bgRecord.oklch.l : 0;
-    const themeType: 'dark' | 'light' = bgLum > 0.5 ? 'light' : 'dark';
+    // Same resolved surface emit:vscodeUiPalette derived `workbenchColors`
+    // from (see FramingSurface), read through the same WCAG relative-luminance
+    // measure, so `type` always agrees with the colors above it.
+    const roles = FramingSurface.resolve(state);
+    const themeType: 'dark' | 'light' = FramingSurface.isLight(roles) ? 'light' : 'dark';
 
     // semanticTokenColors: copy from outputs['vscode:semanticTokenRules']
     const semanticTokenColors: Record<string, string | SemanticRuleEntryInterfaceType> = {};
@@ -90,7 +95,7 @@ class EmitVscodeThemeJson implements TaskInterface {
     };
 
     state.outputs['vscode:themeJson'] = themeJson;
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitVscodeThemeJson')
         .operation('run')

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { ViewerActionType, ViewerActionVariantType } from '~/components/content/viz/viewerActionsModel.ts';
+import { viewerActionsModel } from '~/components/content/viz/viewerActionsModel.ts';
 
 const props = withDefaults(defineProps<{
-  actions: readonly ViewerActionType[];
-  variant?: ViewerActionVariantType;
+  actions: readonly ReturnType<typeof viewerActionsModel.create>[];
+  variant?: 'header' | 'overlay';
 }>(), {
   'variant': 'header',
 });
 
 const emit = defineEmits<{
-  (event: 'action', id: ViewerActionType['id']): void;
+  (event: 'action', id: Parameters<typeof viewerActionsModel.create>[0]): void;
 }>();
 </script>
 
@@ -29,6 +29,8 @@ const emit = defineEmits<{
       :aria-pressed="action.pressed"
       :disabled="action.disabled === true"
       @click="emit('action', action.id)"
-    >{{ action.label }}</button>
+    >
+      {{ action.label }}
+    </button>
   </div>
 </template>

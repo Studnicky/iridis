@@ -17,11 +17,15 @@ import type { ColorRecordInterfaceType } from '@studnicky/iridis';
  * pixels to the same record routed through VS Code's theme JSON on a
  * P3-capable browser/editor.
  */
-export function recordToVscodeColor(record: ColorRecordInterfaceType): string {
-  const p3 = record.displayP3;
-  if (p3 === undefined) {return record.hex;}
-  const r = p3.r.toFixed(4);
-  const g = p3.g.toFixed(4);
-  const b = p3.b.toFixed(4);
-  return `color(display-p3 ${r} ${g} ${b})`;
+class VscodeColorSerializer {
+  static serialize(record: ColorRecordInterfaceType): string {
+    const p3 = record.displayP3;
+    if (p3 === undefined) {return record.hex;}
+    const red = p3.r.toFixed(4);
+    const green = p3.g.toFixed(4);
+    const blue = p3.b.toFixed(4);
+    return `color(display-p3 ${red} ${green} ${blue})`;
+  }
 }
+
+export const recordToVscodeColor = VscodeColorSerializer.serialize;

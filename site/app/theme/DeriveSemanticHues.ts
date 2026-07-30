@@ -31,7 +31,7 @@ class DeriveSemanticHues implements TaskInterface {
     'writes':      ['metadata']
   };
 
-  run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
     if (state.input.roles === undefined) {return;}
     if (state.metadata['derivation:semanticHuesEnabled'] === false) {return;}
     const config = state.metadata['derivation:config'] as DerivationConfigType | undefined;

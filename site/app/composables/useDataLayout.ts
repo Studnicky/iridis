@@ -6,14 +6,16 @@
  * `usePairingPreview()` sort/derive logic regardless of this value — only the
  * DOM structure the rows land in changes.
  */
-import { computed, type ComputedRef } from 'vue';
-
-import type { ThemeDefinitionInterfaceType } from '~/theme/ThemeDefinitionInterfaceType.ts';
+import * as VueModule from 'vue';
 
 import { useThemePreset } from './useThemePreset.ts';
 
-export function useDataLayout(): { 'dataLayout': ComputedRef<ThemeDefinitionInterfaceType['dataLayout']> } {
-  const { activeThemeKey, THEMES } = useThemePreset();
-  const dataLayout = computed(() => { const result = (THEMES[activeThemeKey.value] ?? Object.values(THEMES)[0]!).dataLayout; return result; });
-  return { 'dataLayout': dataLayout };
+class UseDataLayoutOperation {
+  static run() {
+    const { activeThemeKey, THEMES } = useThemePreset();
+    const dataLayout = VueModule.computed(() => { const result = (THEMES[activeThemeKey.value] ?? Object.values(THEMES)[0]!).dataLayout; return result; });
+    return { 'dataLayout': dataLayout };
+  }
 }
+
+export const useDataLayout = UseDataLayoutOperation.run;

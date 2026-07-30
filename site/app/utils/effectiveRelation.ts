@@ -8,10 +8,11 @@ import type { RoleRelationDerivationType } from '../composables/types/colorDeriv
  * seeded with the schema's own hueOffset, reproducing today's fixed output
  * exactly until the user changes it.
  */
-export function effectiveRelation(
-  schemaHueOffset: number | undefined,
-  relation: RoleRelationDerivationType | undefined
-): RoleRelationDerivationType {
-  if (relation !== undefined) {return relation;}
-  return { 'freeformOffset': schemaHueOffset ?? 0, 'hueAlgorithm': 'freeform', 'hueVariantIndex': 0 };
+class EffectiveRelationOperation {
+  static run(schemaHueOffset: number | undefined, relation: RoleRelationDerivationType | undefined): RoleRelationDerivationType {
+    if (relation !== undefined) {return relation;}
+    return { 'freeformOffset': schemaHueOffset ?? 0, 'hueAlgorithm': 'freeform', 'hueVariantIndex': 0 };
+  }
 }
+
+export const effectiveRelation = EffectiveRelationOperation.run;

@@ -1,6 +1,12 @@
+import type { ViteHotContext } from 'vite/types/hot.d.ts';
+
 import type { ColorSampleType } from './types/colorSample.ts';
 
 import { ColorStreamHistoryState } from './colorStreamHistoryState.ts';
+
+class ViteModule {
+  static readonly metadata: ImportMeta & { readonly 'hot'?: ViteHotContext } = import.meta;
+}
 
 /**
  * How often the reactive snapshot refreshes. A few Hz is plenty for a
@@ -16,43 +22,51 @@ let booted = false;
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let onVisibilityChange: (() => void) | null = null;
 
-function stop(): void {
-  if (intervalId !== null) {
-    clearInterval(intervalId);
-    intervalId = null;
-  }
-  if (onVisibilityChange !== null && typeof document !== 'undefined') {
-    document.removeEventListener('visibilitychange', onVisibilityChange);
-    onVisibilityChange = null;
-  }
-  booted = false;
-}
-
-function startRefreshLoop(): void {
-  stop();
-  if (typeof window === 'undefined' || typeof document === 'undefined') { return; }
-  intervalId = setInterval(() => {
-    if (document.visibilityState === 'visible') {
-      ColorStreamHistoryState.refreshSnapshot();
-    }
-  }, REFRESH_INTERVAL_MS);
-
-  onVisibilityChange = (): void => {
-    if (document.visibilityState === 'visible' && intervalId === null) {
-      intervalId = setInterval(() => {
-        if (document.visibilityState === 'visible') {
-          ColorStreamHistoryState.refreshSnapshot();
-        }
-      }, REFRESH_INTERVAL_MS);
-      return;
-    }
-    if (document.visibilityState !== 'visible' && intervalId !== null) {
+class StopOperation {
+  static run(): void {
+    if (intervalId !== null) {
       clearInterval(intervalId);
       intervalId = null;
     }
-  };
-  document.addEventListener('visibilitychange', onVisibilityChange);
+    if (onVisibilityChange !== null && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      onVisibilityChange = null;
+    }
+    booted = false;
+  }
 }
+
+const stop = StopOperation.run;
+
+class StartreferencereshLoopOperation {
+  static run(): void {
+    stop();
+    if (typeof window === 'undefined' || typeof document === 'undefined') { return; }
+    intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        ColorStreamHistoryState.refreshSnapshot();
+      }
+    }, REFRESH_INTERVAL_MS);
+
+    onVisibilityChange = (): void => {
+      if (document.visibilityState === 'visible' && intervalId === null) {
+        intervalId = setInterval(() => {
+          if (document.visibilityState === 'visible') {
+            ColorStreamHistoryState.refreshSnapshot();
+          }
+        }, REFRESH_INTERVAL_MS);
+        return;
+      }
+      if (document.visibilityState !== 'visible' && intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+  }
+}
+
+const startRefreshLoop = StartreferencereshLoopOperation.run;
 
 /**
  * Reactive per-alias sample-history snapshot for a scrolling "seismograph"
@@ -65,15 +79,19 @@ function startRefreshLoop(): void {
  * `ColorStreamHistoryState.sampleArray()` directly instead of subscribing to
  * this snapshot.
  */
-export function useColorStreamHistory(): Record<string, readonly ColorSampleType[]> {
-  if (!booted && typeof window !== 'undefined') {
-    booted = true;
-    startRefreshLoop();
+class UseColorStreamHistoryOperation {
+  static run(): Record<string, readonly ColorSampleType[]> {
+    if (!booted && typeof window !== 'undefined') {
+      booted = true;
+      startRefreshLoop();
+    }
+    return ColorStreamHistoryState.histories;
   }
-  return ColorStreamHistoryState.histories;
 }
+
+export const useColorStreamHistory = UseColorStreamHistoryOperation.run;
 
 // Tears the refresh loop down before Vite re-evaluates this module on HMR —
 // without this, every reload starts a second interval stacked on top of the
 // old one.
-import.meta.hot?.dispose(() => { stop(); });
+ViteModule.metadata.hot?.dispose(() => { stop(); });

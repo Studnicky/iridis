@@ -20,11 +20,15 @@ const props = defineProps<{ stage: PipelineStageType }>();
 const { enabledOptionalStages, cvdCorrect, contrastReport } = useIridis();
 const { send } = useIridisUiMachine();
 
-const stageModel = computed(() => buildPipelineStageModel(
+const stageModel = computed(() => buildPipelineStageModel.build(
   props.stage.value,
   enabledOptionalStages.value,
   contrastReport.value
 ));
+
+function updateCvdCorrect(cvdCorrect: boolean): void {
+  send({ type: IridisUiActionType.SET_CVD_CORRECT, cvdCorrect });
+}
 </script>
 
 <template>
@@ -97,7 +101,7 @@ const stageModel = computed(() => buildPipelineStageModel(
       >
         <USwitch
           :model-value="cvdCorrect"
-          @update:model-value="send({ type: IridisUiActionType.SET_CVD_CORRECT, cvdCorrect: $event as boolean })"
+          @update:model-value="updateCvdCorrect"
         />
       </ControlStrip>
 

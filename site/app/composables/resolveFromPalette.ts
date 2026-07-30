@@ -13,7 +13,11 @@ import { buildDecorativePalette } from './buildDecorativePalette.ts';
  * retrying here (rather than giving up after one empty read) is what lets the
  * loop pick up the palette once it becomes available.
  */
-export function resolveFromPalette(from: PaletteInterfaceType, views: RoleViewType[]): PaletteInterfaceType {
-  if (Object.keys(from).length > 0) { return from; }
-  return buildDecorativePalette(views);
+class ResolveFromPaletteOperation {
+  static run(from: PaletteInterfaceType, views: RoleViewType[]): PaletteInterfaceType {
+    if (Object.keys(from).length > 0) { return from; }
+    return buildDecorativePalette(views);
+  }
 }
+
+export const resolveFromPalette = ResolveFromPaletteOperation.run;

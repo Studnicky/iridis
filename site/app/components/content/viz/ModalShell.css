@@ -1,17 +1,4 @@
-/**
- * Shared modal/fullscreen shell chrome for visualization surfaces.
- *
- * Parameterization:
- *   --dagonizer-modal-backdrop
- *   --dagonizer-modal-blur
- *   --dagonizer-modal-surface
- *   --dagonizer-modal-border
- *   --dagonizer-modal-radius
- *   --dagonizer-modal-shadow
- *   --dagonizer-modal-hint-surface
- *   --dagonizer-modal-hint-border
- *   --dagonizer-modal-hint-text
- */
+/** Shared modal/fullscreen shell chrome driven by the Iridis UI tokens. */
 
 .dagonizer-modal-shell {
   position: fixed;
@@ -19,9 +6,9 @@
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  background: var(--dagonizer-modal-backdrop, rgba(0, 0, 0, 0.78));
-  backdrop-filter: blur(var(--dagonizer-modal-blur, 6px));
-  animation: dagonizer-modal-in 0.18s ease-out;
+  background: color-mix(in oklch, var(--ui-bg) 82%, transparent);
+  backdrop-filter: blur(6px);
+  animation: dagonizer-modal-in var(--iridis-tune) var(--iridis-ease);
 }
 
 .dagonizer-modal-stage {
@@ -40,11 +27,11 @@
 .dagonizer-modal-hint {
   flex: 0 0 auto;
   padding: 0.45rem 1rem;
-  background: var(--dagonizer-modal-hint-surface, rgba(2, 3, 6, 0.65));
-  border-top: 1px solid var(--dagonizer-modal-hint-border, var(--vp-c-divider, #2e3748));
-  font-family: var(--vp-font-family-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  background: color-mix(in oklch, var(--ui-bg-elevated) 88%, transparent);
+  border-top: 1px var(--iridis-border-style) var(--ui-border);
+  font-family: var(--font-mono);
   font-size: 0.68rem;
-  color: var(--dagonizer-modal-hint-text, var(--vp-c-text-3, #7a8290));
+  color: var(--ui-text-muted);
   text-align: center;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -55,22 +42,31 @@
   position: fixed;
   inset: 2rem;
   z-index: 9999;
-  border-radius: var(--dagonizer-modal-radius, 8px);
-  border: 1px solid var(--dagonizer-modal-border, var(--dagonizer-brand, #22e8ff));
-  box-shadow: var(--dagonizer-modal-shadow, 0 10px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--dagonizer-brand, #22e8ff));
-  background: var(--dagonizer-modal-surface, var(--vp-c-bg-elv, #0e1525));
-  animation: dagonizer-modal-in 0.18s ease-out;
+  border-radius: var(--iridis-radius-md);
+  border: 1px var(--iridis-border-style) var(--ui-primary);
+  box-shadow:
+    0 10px 50px color-mix(in oklch, var(--ui-bg) 55%, transparent),
+    0 0 0 1px var(--ui-primary);
+  background: var(--ui-bg-elevated);
+  animation: dagonizer-modal-in var(--iridis-tune) var(--iridis-ease);
 }
 
 .dagonizer-modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 9998;
-  background: var(--dagonizer-modal-backdrop, rgba(0, 0, 0, 0.72));
-  backdrop-filter: blur(var(--dagonizer-modal-blur, 6px));
+  background: color-mix(in oklch, var(--ui-bg) 78%, transparent);
+  backdrop-filter: blur(6px);
 }
 
 @keyframes dagonizer-modal-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dagonizer-modal-shell,
+  .dagonizer-modal-card {
+    animation: none;
+  }
 }

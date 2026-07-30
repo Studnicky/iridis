@@ -6,4 +6,4 @@
  * because `StateMachine<TState, ...>` requires `TState extends { readonly
  * 'variant': string }` — the same discriminant key IridisUiStateType uses.
  */
-export type TocBarStateType = { 'variant': 'compact' | 'expanded' | 'top' };
+export declare class TocBarStateType { 'variant': 'compact' | 'expanded' | 'top'; }

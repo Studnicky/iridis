@@ -6,11 +6,14 @@ import type {
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
 
-import { toCssVarName } from '@studnicky/iridis';
+import { CssVarName } from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
+import type { ColorsShapeRecordEntity } from '../entities/ColorsShapeRecordEntity.ts';
 import type { TailwindOutputInterfaceType } from '../types/index.ts';
+
+import { EMIT_TAILWIND_THEME_CONSTANTS } from './constants/EmitTailwindThemeConstants.ts';
 
 /**
  * Display-P3 channel triple → CSS Color 4 `color(display-p3 r g b)` at
@@ -32,18 +35,6 @@ class P3 {
   }
 }
 
-/** Regex that matches roles following the `<root>-<shade>` pattern where shade is numeric. */
-const SHADE_ROLE_RE = /^(.+)-(\d+)$/;
-
-/** Standard Tailwind shade values (50–950). Used to validate shade grouping. */
-const TAILWIND_SHADES = new Set([
-  '50', '100', '150', '200', '250', '300', '350', '400',
-  '450', '500', '550', '600', '650', '700', '750', '800',
-  '850', '900', '950'
-]);
-
-type ColorsShapeRecord = Record<string, string | Record<string, string>>;
-
 /**
  * Groups roles into shade scales when the name follows `<root>-<shade>` with a
  * numeric shade value.  Roles that do not match the pattern become flat color
@@ -51,14 +42,14 @@ type ColorsShapeRecord = Record<string, string | Record<string, string>>;
  * (kept flat) to avoid single-key nested objects.
  */
 class ColorsShape {
-  static build(roles: Record<string, ColorRecordInterfaceType>): ColorsShapeRecord {
+  static build(roles: Record<string, ColorRecordInterfaceType>): ColorsShapeRecordEntity.Type {
     // Collect candidate groups: root → { shade → hex }
     const groups: Record<string, Record<string, string>> = {};
     const flat:   Record<string, string>                 = {};
 
     for (const [role, record] of Object.entries(roles)) {
-      const match = SHADE_ROLE_RE.exec(role);
-      if (match !== null && TAILWIND_SHADES.has(match[2] ?? '')) {
+      const match = EMIT_TAILWIND_THEME_CONSTANTS.shadeRolePattern.exec(role);
+      if (match !== null && EMIT_TAILWIND_THEME_CONSTANTS.tailwindShades.has(match[2] ?? '')) {
         const root  = match[1]!;
         const shade = match[2]!;
         groups[root] ??= {};
@@ -68,7 +59,7 @@ class ColorsShape {
       }
     }
 
-    const colors: ColorsShapeRecord = {};
+    const colors: ColorsShapeRecordEntity.Type = {};
 
     // Flat roles first
     for (const [role, hex] of Object.entries(flat)) {
@@ -95,7 +86,7 @@ class ColorsShape {
  * which is safe to embed in a tailwind.config.js export default.
  */
 class ColorsToJs {
-  static serialize(colors: ColorsShapeRecord): string {
+  static serialize(colors: ColorsShapeRecordEntity.Type): string {
     const lines: string[] = ['{'];
     for (const [key, value] of Object.entries(colors)) {
       if (typeof value === 'string') {
@@ -136,7 +127,7 @@ class CssVarsSheet {
     prefix: string
   ): string {
     const decls = Object.entries(roles).map(([role, record]) => {
-      const varName = toCssVarName(role, prefix);
+      const varName = CssVarName.from(role, prefix);
       return `  ${varName}: ${record.hex};`;
     });
     const sRgbBlock = `:root {\n${decls.join('\n')}\n}`;
@@ -144,7 +135,7 @@ class CssVarsSheet {
     const p3Decls: string[] = [];
     for (const [role, record] of Object.entries(roles)) {
       if (record.displayP3 !== undefined) {
-        const varName = toCssVarName(role, prefix);
+        const varName = CssVarName.from(role, prefix);
         p3Decls.push(`  ${varName}: ${P3.serialize(record.displayP3)};`);
       }
     }
@@ -173,7 +164,7 @@ export class EmitTailwindTheme implements TaskInterface {
     'writes':      ['outputs.tailwind:theme']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const prefixRaw = state.metadata.cssVarPrefix;
     const prefix    = typeof prefixRaw === 'string' ? prefixRaw : '--c-';
 
@@ -199,7 +190,7 @@ export class EmitTailwindTheme implements TaskInterface {
 
     state.outputs['tailwind:theme'] = output;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitTailwindTheme')
         .operation('run')

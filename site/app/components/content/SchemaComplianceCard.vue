@@ -24,8 +24,22 @@ const { activateTarget } = useNavigationTargets();
 
 /** Compact pass/fail summary badges for whichever optional stages are currently enabled. */
 const stageSummaries = computed(() => {
-  return buildSchemaComplianceSummaries(enabledOptionalStages.value, contrastReport.value);
+  return buildSchemaComplianceSummaries.build(
+    enabledOptionalStages.value,
+    contrastReport.value.aa,
+    contrastReport.value.aaa,
+    contrastReport.value.apca
+  );
 });
+
+function updateColorSpace(colorSpace: 'displayP3' | 'srgb'): void {
+  send({ colorSpace, 'type': IridisUiActionType.SET_COLOR_SPACE });
+  activateTarget('pairingPreview');
+}
+
+function updateContrastStrictness(strictness: number): void {
+  send({ strictness, 'type': IridisUiActionType.SET_CONTRAST_STRICTNESS });
+}
 </script>
 
 <template>
@@ -51,7 +65,7 @@ const stageSummaries = computed(() => {
             :model-value="colorSpace"
             :items="[{ label: 'sRGB', value: 'srgb' }, { label: 'Display P3', value: 'displayP3' }]"
             class="w-full"
-            @update:model-value="($event) => { send({ colorSpace: $event as 'srgb' | 'displayP3', type: IridisUiActionType.SET_COLOR_SPACE }); activateTarget('pairingPreview'); }"
+            @update:model-value="updateColorSpace"
           />
           <FieldHelpText class="mt-0">
             <strong class="text-highlighted">Display P3</strong> allows for much wider gamut colors on compatible displays.
@@ -63,7 +77,7 @@ const stageSummaries = computed(() => {
       <div class="space-y-4">
         <ContrastStrictnessControl
           :strictness="contrastStrictness"
-          @update="($event) => send({ strictness: $event, type: IridisUiActionType.SET_CONTRAST_STRICTNESS })"
+          @update="updateContrastStrictness"
         />
         <div class="flex justify-end">
           <UButton

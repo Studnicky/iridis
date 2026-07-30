@@ -41,7 +41,7 @@ const emit = defineEmits<{ toggle: [] }>();
     >
       <RoleMathDetailsPanel
         :role="role"
-        :algorithm-label="describeHueAlgorithm(role.algorithmInfo?.hueAlgorithm)"
+        :algorithm-label="describeHueAlgorithm.describe(role.algorithmInfo?.hueAlgorithm)"
       />
     </div>
   </div>

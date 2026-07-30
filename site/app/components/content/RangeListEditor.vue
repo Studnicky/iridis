@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  appendRangeListEntry,
-  removeRangeListEntry,
-  updateRangeListEntry
-} from './buildRangeListModel.ts';
+import { buildRangeListModel } from './buildRangeListModel.ts';
 
 /**
  * A union-of-ranges editor: N sliders, each an independent [min,max] band,
@@ -26,14 +22,24 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ 'update:modelValue': [ranges: [number, number][]] }>();
 
-function updateRange(index: number, range: [number, number]): void {
-  emit('update:modelValue', updateRangeListEntry(props.modelValue, index, range));
+function updateRange(index: number, range: number | number[] | undefined): void {
+  if (!Array.isArray(range)) {
+    throw new TypeError('Range list updates require a minimum and maximum.');
+  }
+  const [minimum, maximum] = range;
+  if (minimum === undefined || maximum === undefined) {
+    throw new TypeError('Range list updates require a minimum and maximum.');
+  }
+  emit(
+    'update:modelValue',
+    buildRangeListModel.update(props.modelValue, index, [minimum, maximum])
+  );
 }
 function addRange(): void {
-  emit('update:modelValue', appendRangeListEntry(props.modelValue, props.defaultRange));
+  emit('update:modelValue', buildRangeListModel.append(props.modelValue, props.defaultRange));
 }
 function removeRange(index: number): void {
-  emit('update:modelValue', removeRangeListEntry(props.modelValue, index, props.defaultRange));
+  emit('update:modelValue', buildRangeListModel.remove(props.modelValue, index, props.defaultRange));
 }
 </script>
 
@@ -54,7 +60,7 @@ function removeRange(index: number): void {
           :max="max"
           :step="step"
           class="flex-1"
-          @update:model-value="updateRange(i, $event as [number, number])"
+          @update:model-value="updateRange(i, $event)"
         />
         <MutedMono class="w-20 shrink-0">
           {{ range[0].toFixed(2) }}–{{ range[1].toFixed(2) }}

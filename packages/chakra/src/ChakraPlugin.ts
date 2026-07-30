@@ -1,6 +1,6 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterface,
+  PluginSchemaContributionInterfaceType,
   TaskInterface
 } from '@studnicky/iridis';
 
@@ -24,7 +24,7 @@ export class ChakraPlugin implements PluginInterface {
     return [new EmitChakraTheme()];
   }
 
-  schemas(): PluginSchemaContributionInterface {
+  schemas(): PluginSchemaContributionInterfaceType {
     return {
       'metadata': undefined,
       'outputs':  { 'chakra:theme': chakraOutputSchema }

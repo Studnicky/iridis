@@ -15,6 +15,17 @@ the record for other plugins (`@studnicky/iridis-stylesheet`,
 
 ## Install
 
+GitHub Packages requires a personal access token (classic) with
+`read:packages`; the token's account must also have read access to this
+package's repository. Expose the token as `NODE_AUTH_TOKEN`, then configure
+the `@studnicky` scope before installing:
+
+```ini
+# ~/.npmrc
+@studnicky:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
 ```bash
 npm install @studnicky/iridis @studnicky/iridis-capacitor
 ```
@@ -22,40 +33,55 @@ npm install @studnicky/iridis @studnicky/iridis-capacitor
 ## Usage
 
 ```ts
+import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { capacitorPlugin }   from '@studnicky/iridis-capacitor';
 
-const engine = new Engine();
-for (const task of coreTasks) engine.tasks.register(task);
-engine.adopt(capacitorPlugin);
+export function generateCapacitorTheme(roleSchema: RoleSchemaInterfaceType) {
+  const engine = new Engine();
+  for (const task of coreTasks) engine.tasks.register(task);
+  engine.adopt(capacitorPlugin);
 
-engine.pipeline([
-  'intake:any',
-  'expand:family',
-  'resolve:roles',
-  'enforce:contrast',
-  'derive:variant',
-  'emit:capacitorStatusBar',
-  'emit:capacitorTheme',
-  'emit:capacitorSplashScreen',
-  'emit:androidThemeXml',
-]);
+  engine.pipeline([
+    'intake:any',
+    'resolve:roles',
+    'expand:family',
+    'enforce:contrast',
+    'derive:variant',
+    'emit:capacitorStatusBar',
+    'emit:capacitorTheme',
+    'emit:capacitorSplashScreen',
+    'emit:androidThemeXml',
+  ]);
 
-const state = await engine.run({
-  'colors':   ['#8B5CF6'],
-  'roles':    yourRoleSchema,
-  'contrast': { 'level': 'AA' },
-  'metadata': { 'themeName': 'music' },
-});
+  const state = engine.run({
+    'bypass':   undefined,
+    'colors':   ['#8B5CF6'],
+    'contrast': {
+      'algorithm':  'wcag21',
+      'cvdCorrect': undefined,
+      'extra':      undefined,
+      'level':      'AA',
+    },
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  { 'themeName': 'music' },
+    'roles':     roleSchema,
+    'runtime':   undefined,
+  });
 
-const statusBar      = state.outputs['capacitor:statusBar']!;
-const theme          = state.outputs['capacitor:theme']!;
-const splashScreen   = state.outputs['capacitor:splashScreen']!;
-const androidThemeXml = state.outputs['capacitor:androidThemeXml']!;
-// statusBar       : { backgroundColor: '#...', style: 'DARK' | 'LIGHT', overlay: boolean }
-// theme           : { primary, primaryDark, accent, background, surface, error, ... }
-// splashScreen    : { backgroundColor: '#...', androidSplashResourceName?: string }
-// androidThemeXml : '<?xml version="1.0" encoding="utf-8"?><resources>...</resources>'
+  const statusBar       = state.outputs['capacitor:statusBar']!;
+  const theme           = state.outputs['capacitor:theme']!;
+  const splashScreen    = state.outputs['capacitor:splashScreen']!;
+  const androidThemeXml = state.outputs['capacitor:androidThemeXml']!;
+  // statusBar       : { backgroundColor: '#...', style: 'DARK' | 'LIGHT', overlay: boolean }
+  // theme           : { primary, primaryDark, accent, background, surface, error, ... }
+  // splashScreen    : { backgroundColor: '#...', androidSplashResourceName?: string }
+  // androidThemeXml : '<?xml version="1.0" encoding="utf-8"?><resources>...</resources>'
+
+  return { androidThemeXml, splashScreen, statusBar, theme };
+}
 ```
 
 ## Tasks

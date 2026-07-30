@@ -11,35 +11,8 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { ChakraOutputInterfaceType } from '../types/index.ts';
 
-/**
- * Chakra shade tier each data source maps to. The engine has no
- * numeric-shade generator (no `s50`..`s900` scale) — the only per-role
- * color data available is the canonical resolved role
- * (`state.roles`) and the `dark`/`light` framings produced by
- * `derive:variant` (`state.variants['dark' | 'light']`). This maps
- * those three sources onto a minimal three-tier Chakra scale.
- */
-const TIER_SOURCES: readonly { 'source': 'roles' | 'dark' | 'light'; 'tier': string }[] = [
-  { 'source': 'light', 'tier': '100' },
-  { 'source': 'roles', 'tier': '500' },
-  { 'source': 'dark',  'tier': '900' }
-];
-
-/**
- * Chakra color-family name → resolved-role mapping, with an optional
- * fallback role consulted when the primary role never resolves. Order
- * mirrors Chakra's semantic palette conventions (brand first, neutral
- * last).
- */
-const FAMILY_ROLE_MAP: readonly { 'fallback'?: string; 'family': string; 'role': string }[] = [
-  { 'family': 'brand', 'role': 'brand' },
-  { 'fallback': 'brand', 'family': 'accent', 'role': 'accent-alt' },
-  { 'fallback': 'brand', 'family': 'success', 'role': 'success' },
-  { 'fallback': 'brand', 'family': 'warning', 'role': 'warning' },
-  { 'family': 'error', 'role': 'error' },
-  { 'fallback': 'brand', 'family': 'info', 'role': 'info' },
-  { 'fallback': 'text', 'family': 'neutral', 'role': 'muted' }
-];
+import { FAMILY_ROLE_MAP } from './constants/FamilyRoleMap.ts';
+import { TIER_SOURCES } from './constants/TierSources.ts';
 
 /**
  * Picks the role name that actually resolves in `roles`: the primary
@@ -121,7 +94,7 @@ export class EmitChakraTheme implements TaskInterface {
     'writes':      ['outputs.chakra:theme']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const colors: Record<string, Record<string, string>> = {};
 
     for (const mapping of FAMILY_ROLE_MAP) {
@@ -150,7 +123,7 @@ export class EmitChakraTheme implements TaskInterface {
 
     state.outputs['chakra:theme'] = output;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitChakraTheme')
         .operation('run')

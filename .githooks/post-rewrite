@@ -1,0 +1,12 @@
+#!/bin/bash
+set -o pipefail
+
+# shellcheck source=lib/runtime.sh
+source "$(dirname "$0")/lib/runtime.sh"
+
+[ "${SKIP_HOOKS:-}" = "true" ] && exit 0
+[ "${1:-}" = "rebase" ] || exit 0
+
+# shellcheck source=lib/dependency-install.sh
+hook_source_lib dependency-install.sh
+run_dependency_install "post-rewrite rebase" "ORIG_HEAD" "HEAD"

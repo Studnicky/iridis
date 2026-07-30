@@ -1,22 +1,30 @@
 import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
 
-export type RoleMathStatusModel = {
-  readonly color: 'warning' | 'secondary' | 'info' | 'primary' | 'success';
-  readonly label: 'Synthesized' | 'Derived' | 'Explicit Pin' | 'Clamped' | 'Direct Match';
-};
+export const buildRoleMathStatusModel = class RoleMathStatusModel {
+  public readonly color: 'warning' | 'secondary' | 'info' | 'primary' | 'success';
+  public readonly label: 'Synthesized' | 'Derived' | 'Explicit Pin' | 'Clamped' | 'Direct Match';
 
-export function buildRoleMathStatusModel(role: RoleMathEntryType): RoleMathStatusModel {
-  if (role.synthesized) {
-    return { color: 'warning', label: 'Synthesized' };
+  private constructor(
+    color: 'warning' | 'secondary' | 'info' | 'primary' | 'success',
+    label: 'Synthesized' | 'Derived' | 'Explicit Pin' | 'Clamped' | 'Direct Match'
+  ) {
+    this.color = color;
+    this.label = label;
   }
-  if (role.isDerived) {
-    return { color: 'secondary', label: 'Derived' };
+
+  public static build(role: RoleMathEntryType): RoleMathStatusModel {
+    if (role.synthesized) {
+      return new RoleMathStatusModel('warning', 'Synthesized');
+    }
+    if (role.isDerived) {
+      return new RoleMathStatusModel('secondary', 'Derived');
+    }
+    if (role.isPinned) {
+      return new RoleMathStatusModel('info', 'Explicit Pin');
+    }
+    if (role.clamp !== null) {
+      return new RoleMathStatusModel('primary', 'Clamped');
+    }
+    return new RoleMathStatusModel('success', 'Direct Match');
   }
-  if (role.isPinned) {
-    return { color: 'info', label: 'Explicit Pin' };
-  }
-  if (role.clamp) {
-    return { color: 'primary', label: 'Clamped' };
-  }
-  return { color: 'success', label: 'Direct Match' };
-}
+};

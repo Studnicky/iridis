@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
-import { UPLOADED_IMAGE_CARD_HELP_TEXT, UPLOADED_IMAGE_K_TIER_ITEMS } from './uploadedImage/buildUploadedImageCardModel.ts';
+import { buildUploadedImageCardModel } from './uploadedImage/buildUploadedImageCardModel.ts';
 
 /**
  * One uploaded image's own extraction card — thumbnail, filename, a remove
@@ -17,6 +17,7 @@ const emit = defineEmits<{
   'select-candidate': [label: string];
   'update': [patch: UploadedImageInterfaceType];
 }>();
+const cardModel = buildUploadedImageCardModel.build();
 </script>
 
 <template>
@@ -31,12 +32,12 @@ const emit = defineEmits<{
 
     <UploadedImageDetailsPanel
       :image="image"
-      :k-tier-items="UPLOADED_IMAGE_K_TIER_ITEMS"
-      :delta-e-cap-help="UPLOADED_IMAGE_CARD_HELP_TEXT.deltaECapHelp"
-      :histogram-help="UPLOADED_IMAGE_CARD_HELP_TEXT.histogramHelp"
-      :harmonize-help="UPLOADED_IMAGE_CARD_HELP_TEXT.harmonizeHelp"
-      :lightness-help="UPLOADED_IMAGE_CARD_HELP_TEXT.lightnessHelp"
-      :chroma-help="UPLOADED_IMAGE_CARD_HELP_TEXT.chromaHelp"
+      :k-tier-items="cardModel.kTierItems"
+      :delta-e-cap-help="cardModel.helpText.deltaECapHelp"
+      :histogram-help="cardModel.helpText.histogramHelp"
+      :harmonize-help="cardModel.helpText.harmonizeHelp"
+      :lightness-help="cardModel.helpText.lightnessHelp"
+      :chroma-help="cardModel.helpText.chromaHelp"
       @update="emit('update', $event)"
       @select-candidate="emit('select-candidate', $event)"
     />

@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { RoleComplianceRowType } from './roles/buildRolesComplianceRows.ts';
 import { complianceBadgeColor } from '~/utils/complianceBadgeColor.ts';
 import { buildRolesComplianceTableModel } from './roles/buildRolesComplianceTableModel.ts';
 
 const props = defineProps<{
-  rows: readonly RoleComplianceRowType[];
+  rows: Parameters<typeof buildRolesComplianceTableModel.build>[0];
   naTooltip: string;
 }>();
 
-const tableModel = computed(() => buildRolesComplianceTableModel(props.rows, props.naTooltip));
+const tableModel = computed(() => buildRolesComplianceTableModel.build(props.rows, props.naTooltip));
 </script>
 
 <template>

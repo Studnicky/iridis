@@ -1,6 +1,6 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterface,
+  PluginSchemaContributionInterfaceType,
   TaskInterface
 } from '@studnicky/iridis';
 
@@ -30,7 +30,7 @@ export class RdfPlugin implements PluginInterface {
     return [reasonAnnotate, reasonSerialize];
   }
 
-  schemas(): PluginSchemaContributionInterface {
+  schemas(): PluginSchemaContributionInterfaceType {
     return {
       'metadata': {
         'rdf:format': { 'description': 'Serialization format hint for reason:serialize (string; invalid values fall back to Turtle)' }

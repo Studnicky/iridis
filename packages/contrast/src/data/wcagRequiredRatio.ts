@@ -1,24 +1,19 @@
 import type { ColorRecordInterfaceType, ContrastPairInterfaceType } from '@studnicky/iridis';
 
-function isTextPair(
-  pair: ContrastPairInterfaceType,
-  roles: Record<string, ColorRecordInterfaceType>
-): boolean {
-  const fgRecord = roles[pair.foreground];
-  const bgRecord = roles[pair.background];
-  if (fgRecord === undefined || bgRecord === undefined) {
-    return false;
-  }
-  const fgIntent = fgRecord.hints?.intent;
-  const bgIntent = bgRecord.hints?.intent;
-  return (
-    (fgIntent === 'text' || bgIntent === 'text') &&
-    (fgIntent === 'background' || bgIntent === 'background')
-  );
-}
+import { TextForegroundIntent } from './TextForegroundIntent.ts';
 
 class WcagRequiredRatio {
   readonly 'name' = 'wcagRequiredRatio';
+
+  private isTextPair(
+    pair: ContrastPairInterfaceType,
+    roles: Record<string, ColorRecordInterfaceType>
+  ): boolean {
+    const foregroundRecord = roles[pair.foreground];
+    const backgroundRecord = roles[pair.background];
+    if (foregroundRecord === undefined || backgroundRecord === undefined) {return false;}
+    return TextForegroundIntent.matches(foregroundRecord.hints?.intent);
+  }
 
   apply(
     level: 'aa' | 'aaa',
@@ -30,9 +25,8 @@ class WcagRequiredRatio {
     }
 
     if (level === 'aa') {
-      if (isTextPair(pair, roles)) {
-        // Large text (≥18pt or ≥14pt bold): pairs with minRatio at/below 3.0 are large-text.
-        return pair.minRatio <= 3.0 ? 3.0 : 4.5;
+      if (this.isTextPair(pair, roles)) {
+        return 4.5;
       }
       return 3.0;
     }
@@ -41,7 +35,7 @@ class WcagRequiredRatio {
     if (roles[pair.foreground] === undefined || roles[pair.background] === undefined) {
       return 7.0;
     }
-    if (isTextPair(pair, roles)) {
+    if (this.isTextPair(pair, roles)) {
       return 7.0;
     }
     return 4.5;

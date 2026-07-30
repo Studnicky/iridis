@@ -5,11 +5,15 @@
  * this was extracted. Returns a trigger function; call it as often as you
  * like, only the last call within `delayMs` actually runs `fn`.
  */
-export function debounce(fn: () => void, delayMs: number): () => void {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  return () => {
-    if (typeof window === 'undefined') { return; }
-    if (timer !== undefined) { clearTimeout(timer); }
-    timer = setTimeout(() => { fn(); }, delayMs);
-  };
+class DebounceOperation {
+  static run(callback: () => void, delayMs: number): () => void {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    return () => {
+      if (typeof window === 'undefined') { return; }
+      if (timer !== undefined) { clearTimeout(timer); }
+      timer = setTimeout(() => { callback(); }, delayMs);
+    };
+  }
 }
+
+export const debounce = DebounceOperation.run;

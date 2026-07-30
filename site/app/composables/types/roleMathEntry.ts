@@ -9,20 +9,22 @@ import type { RoleMathClampType } from './roleMathClamp.ts';
  * role-math detail card surfaces when a schema supplies them (they are absent
  * from the canonical role type, so they read as `undefined` for stock schemas).
  */
-type RoleMathDefType = RoleDefinitionInterfaceType & {
-  'chromaClamp':     number | undefined;
-  'chromaTarget':    number | undefined;
-  'lightnessClamp':  number | undefined;
-  'lightnessTarget': number | undefined;
-};
+declare namespace RoleMathDefType {
+  type Type = RoleDefinitionInterfaceType & {
+    'chromaClamp':     number | undefined;
+    'chromaTarget':    number | undefined;
+    'lightnessClamp':  number | undefined;
+    'lightnessTarget': number | undefined;
+  };
+}
 
-export type RoleMathEntryType = {
+export declare class RoleMathEntryType {
   'algorithmInfo': RoleMathAlgorithmInfoType | null;
   'c': number;
   'candidates': RoleMathCandidateType[];
   'clamp': RoleMathClampType | null;
   'compliance': string;
-  'def': RoleMathDefType | undefined;
+  'def': RoleMathDefType.Type | undefined;
   'h': number;
   'hex': string;
   'isDerived': boolean;
@@ -33,4 +35,4 @@ export type RoleMathEntryType = {
   'pinnedSeedHex': string | null;
   'ratio': number;
   'synthesized': boolean;
-};
+}

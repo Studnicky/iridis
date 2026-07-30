@@ -2,7 +2,7 @@
 import type { ParticleRenderOutputType } from '~/theme/particles/index.ts';
 
 /**
- * One starfield layer, rendering whichever `ParticleRenderOutputType` its
+ * One starfield layer, rendering whichever `ParticleRenderOutputType.Type` its
  * shape's adapter (site/app/theme/particles/*.ts) produced — a `boxShadow`
  * string (the 'dot' shape's cheap hundreds-in-one-paint trick) or real
  * positioned `elements` (every other shape, since a box-shadow always takes
@@ -12,7 +12,7 @@ import type { ParticleRenderOutputType } from '~/theme/particles/index.ts';
  * bind to elements the OWNING SFC renders; since this wrapper div is now
  * rendered here, its styling must live here too.
  */
-defineProps<{ 'layerClass': string; 'layer': ParticleRenderOutputType }>();
+defineProps<{ 'layerClass': string; 'layer': ParticleRenderOutputType.Type }>();
 </script>
 
 <template>
@@ -44,12 +44,12 @@ defineProps<{ 'layerClass': string; 'layer': ParticleRenderOutputType }>();
   border-radius: 50%;
   transform-origin: 50vw 50vh;
 }
-.star-far-1 { animation: ambient-twinkle calc(4s / var(--iridis-ambient-speed, 1)) ease-in-out infinite, star-rotate calc(200s / var(--iridis-ambient-speed, 1)) linear infinite; }
-.star-far-2 { animation: ambient-twinkle calc(5s / var(--iridis-ambient-speed, 1)) ease-in-out infinite 2s, star-rotate calc(300s / var(--iridis-ambient-speed, 1)) linear infinite reverse; }
-.star-far-3 { animation: ambient-twinkle calc(6s / var(--iridis-ambient-speed, 1)) ease-in-out infinite 1s, star-rotate calc(400s / var(--iridis-ambient-speed, 1)) linear infinite; }
+.star-far-1 { animation: ambient-twinkle calc(4s / var(--iridis-ambient-speed)) ease-in-out infinite, star-rotate calc(200s / var(--iridis-ambient-speed)) linear infinite; }
+.star-far-2 { animation: ambient-twinkle calc(5s / var(--iridis-ambient-speed)) ease-in-out infinite 2s, star-rotate calc(300s / var(--iridis-ambient-speed)) linear infinite reverse; }
+.star-far-3 { animation: ambient-twinkle calc(6s / var(--iridis-ambient-speed)) ease-in-out infinite 1s, star-rotate calc(400s / var(--iridis-ambient-speed)) linear infinite; }
 
-.star-near-1 { width: 3px; height: 3px; animation: ambient-twinkle calc(3.5s / var(--iridis-ambient-speed, 1)) ease-in-out infinite reverse, star-rotate calc(150s / var(--iridis-ambient-speed, 1)) linear infinite reverse; }
-.star-near-2 { width: 3px; height: 3px; animation: ambient-twinkle calc(4.5s / var(--iridis-ambient-speed, 1)) ease-in-out infinite reverse 1.5s, star-rotate calc(250s / var(--iridis-ambient-speed, 1)) linear infinite; }
+.star-near-1 { width: 3px; height: 3px; animation: ambient-twinkle calc(3.5s / var(--iridis-ambient-speed)) ease-in-out infinite reverse, star-rotate calc(150s / var(--iridis-ambient-speed)) linear infinite reverse; }
+.star-near-2 { width: 3px; height: 3px; animation: ambient-twinkle calc(4.5s / var(--iridis-ambient-speed)) ease-in-out infinite reverse 1.5s, star-rotate calc(250s / var(--iridis-ambient-speed)) linear infinite; }
 
 /* Non-dot particle shapes — real positioned elements, translated back by
    half their own size so the vw/vh coordinate is the shape's CENTER,
@@ -57,7 +57,7 @@ defineProps<{ 'layerClass': string; 'layer': ParticleRenderOutputType }>();
 .particle { position: absolute; pointer-events: none; line-height: 1; }
 .particle-glyph { transform: translate(-50%, -50%); }
 /* Non-glyph shapes (square/streak) supply their own full transform (translate + rotate) inline — this is just the fallback if a future shape omits one. */
-.particle-shape { transform: translate(-50%, -50%); border-radius: 2px; }
+.particle-shape { transform: translate(-50%, -50%); border-radius: var(--iridis-radius-xs); }
 
 @keyframes ambient-twinkle { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.95; } }
 @keyframes star-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

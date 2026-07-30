@@ -14,15 +14,16 @@
  * (`[subject=X, kind=Y, scenario=Z]`) make any failure self-locating.
  */
 import { test } from 'node:test';
-import assert    from 'node:assert/strict';
 
-export type ScenarioKindType = 'happy' | 'edge' | 'unhappy';
+export namespace ScenarioRunner {
+  export type ScenarioKindType = 'happy' | 'edge' | 'unhappy';
 
-export interface ScenarioInterface<TInput, TOutput> {
-  readonly 'name':  string;
-  readonly 'kind':  ScenarioKindType;
-  readonly 'input': TInput;
-  assert(output: TOutput | undefined, error: unknown): void | Promise<void>;
+  export interface ScenarioInterface<TInput, TOutput> {
+    assert(output: TOutput | undefined, error: Error | undefined): void | Promise<void>;
+    readonly 'input': TInput;
+    readonly 'kind': ScenarioKindType;
+    readonly 'name': string;
+  }
 }
 
 export class ScenarioRunner<TInput, TOutput> {
@@ -34,20 +35,18 @@ export class ScenarioRunner<TInput, TOutput> {
     this.subject = subject;
   }
 
-  run(scenarios: readonly ScenarioInterface<TInput, TOutput>[]): void {
-    for (const sc of scenarios) {
-      test(`${this.suite} :: ${sc.kind} :: ${sc.name}`, async () => {
+  async run(scenarios: readonly ScenarioRunner.ScenarioInterface<TInput, TOutput>[]): Promise<void> {
+    for (const scenario of scenarios) {
+      await test(`${this.suite} :: ${scenario.kind} :: ${scenario.name}`, async () => {
         let output: TOutput | undefined;
-        let error:  unknown;
+        let error: Error | undefined;
         try {
-          output = await this.subject(sc.input);
-        } catch (e) {
-          error = e;
+          output = await this.subject(scenario.input);
+        } catch (errorValue) {
+          error = errorValue instanceof Error ? errorValue : new Error(String(errorValue));
         }
-        await sc.assert(output, error);
+        await scenario.assert(output, error);
       });
     }
   }
 }
-
-export { assert };

@@ -23,12 +23,13 @@ import type { RoleSortKeyType } from './roleSortKey.ts';
  * it only describes the effect; an EffectInterpreter handler performs the
  * actual mutation.
  */
-export type IridisUiEffectType =
+export declare namespace IridisUiEffectType {
+  type Type =
   | { 'hex': string | undefined; 'op': 'add'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
   | { 'index': number; 'op': 'remove'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
   | { 'hex': string; 'index': number; 'op': 'set'; 'variant': IridisUiEffectVariant.MUTATE_SEEDS }
   | { 'index': number; 'role': string | undefined; 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }
-  | { 'op': 'framing'; 'value': FramingType; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
+  | { 'op': 'framing'; 'value': FramingType.Type; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'schemaName'; 'value': string; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'strictness'; 'value': number; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
   | { 'op': 'colorSpace'; 'value': 'srgb' | 'displayP3'; 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }
@@ -55,3 +56,4 @@ export type IridisUiEffectType =
   | { 'cvdType': string; 'op': 'toggle'; 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }
   | { 'op': 'clear'; 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }
   | { 'targetId': string; 'variant': IridisUiEffectVariant.NAVIGATE_TO_TARGET };
+}

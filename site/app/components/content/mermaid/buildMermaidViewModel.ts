@@ -1,20 +1,24 @@
-export const MERMAID_INITIAL_FIT_DELAY_MS = 50;
-export const MERMAID_EXPAND_FIT_DELAYS_MS = [50, 320] as const;
-const MERMAID_WHEEL_ZOOM_FACTOR = 0.0015;
+export const buildMermaidViewModel = class MermaidViewModelBuilder {
+  public static readonly expandFitDelaysMs = [50, 320] as const;
+  public static readonly initialFitDelayMs = 50;
+  private static readonly wheelZoomFactor = 0.0015;
 
-export function createMermaidRenderId(): string {
-  return `mermaid-${Math.random().toString(36).substring(2, 9)}`;
-}
+  public static createRenderId(): string {
+    const randomSegment = Math.random().toString(36).substring(2, 9);
+    return `mermaid-${randomSegment}`;
+  }
 
-export function isMermaidExpandExitKey(key: string, isExpanded: boolean): boolean {
-  return key === 'Escape' && isExpanded;
-}
+  public static isExpandExitKey(key: string, isExpanded: boolean): boolean {
+    return key === 'Escape' && isExpanded;
+  }
 
-export function zoomFactorFromWheelDelta(deltaY: number): number {
-  return Math.exp(-deltaY * MERMAID_WHEEL_ZOOM_FACTOR);
-}
+  public static renderErrorMarkup(error: unknown): string {
+    const message = error instanceof Error ? error.message : String(error);
+    return `<div class="text-error font-mono text-sm p-4 whitespace-pre-wrap">Failed to render Mermaid diagram:\n${message}</div>`;
+  }
 
-export function buildMermaidRenderErrorMarkup(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
-  return `<div class="text-error font-mono text-sm p-4 whitespace-pre-wrap">Failed to render Mermaid diagram:\n${message}</div>`;
-}
+  public static zoomFactorFromWheelDelta(deltaY: number): number {
+    const scaledDelta = -deltaY * MermaidViewModelBuilder.wheelZoomFactor;
+    return Math.exp(scaledDelta);
+  }
+};

@@ -13,6 +13,17 @@ carries a populated `displayP3` slot.
 
 ## Install
 
+GitHub Packages requires a personal access token (classic) with
+`read:packages`; the token's account must also have read access to this
+package's repository. Expose the token as `NODE_AUTH_TOKEN`, then configure
+the `@studnicky` scope before installing:
+
+```ini
+# ~/.npmrc
+@studnicky:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
 ```bash
 npm install @studnicky/iridis @studnicky/iridis-tailwind
 ```
@@ -20,36 +31,51 @@ npm install @studnicky/iridis @studnicky/iridis-tailwind
 ## Usage
 
 ```ts
+import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { tailwindPlugin }    from '@studnicky/iridis-tailwind';
 
-const engine = new Engine();
-for (const task of coreTasks) engine.tasks.register(task);
-engine.adopt(tailwindPlugin);
+export function generateTailwindTheme(roleSchema: RoleSchemaInterfaceType) {
+  const engine = new Engine();
+  for (const task of coreTasks) engine.tasks.register(task);
+  engine.adopt(tailwindPlugin);
 
-engine.pipeline([
-  'intake:any',
-  'expand:family',
-  'resolve:roles',
-  'enforce:contrast',
-  'derive:variant',
-  'emit:tailwindTheme',
-]);
+  engine.pipeline([
+    'intake:any',
+    'resolve:roles',
+    'expand:family',
+    'enforce:contrast',
+    'derive:variant',
+    'emit:tailwindTheme',
+  ]);
 
-const state = await engine.run({
-  'colors':   ['#8B5CF6'],
-  'roles':    yourRoleSchema,
-  'contrast': { 'level': 'AA' },
-  'metadata': { 'cssVarPrefix': '--c-' },
-});
+  const state = engine.run({
+    'bypass':   undefined,
+    'colors':   ['#8B5CF6'],
+    'contrast': {
+      'algorithm':  'wcag21',
+      'cvdCorrect': undefined,
+      'extra':      undefined,
+      'level':      'AA',
+    },
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  { 'cssVarPrefix': '--c-' },
+    'roles':     roleSchema,
+    'runtime':   undefined,
+  });
 
-const out = state.outputs['tailwind:theme']!;
-// out.colors  : { accent: { 50: '#...', ... }, text: '#...', background: '#...' }
-// out.cssVars : ':root { --c-accent: #...; ... }' + optional @supports P3 block
-// out.config  : 'export default { theme: { extend: { colors: { ... } } } };'
+  const out = state.outputs['tailwind:theme']!;
+  // out.colors  : { accent: { 50: '#...', ... }, text: '#...', background: '#...' }
+  // out.cssVars : ':root { --c-accent: #...; ... }' + optional @supports P3 block
+  // out.config  : 'export default { theme: { extend: { colors: { ... } } } };'
+
+  return out;
+}
 ```
 
-`state.outputs['tailwind:theme']` is typed as `TailwindOutputInterface`:
+`state.outputs['tailwind:theme']` is typed as `TailwindOutputInterfaceType`:
 
 | Field | Shape | Notes |
 |---|---|---|

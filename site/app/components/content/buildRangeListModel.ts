@@ -1,31 +1,39 @@
-export type RangeListEntry = [number, number];
+export const buildRangeListModel = class RangeListModelBuilder {
+  private static clone(
+    ranges: readonly (readonly [number, number])[]
+  ): [number, number][] {
+    const clonedRanges: [number, number][] = [];
+    for (const range of ranges) {
+      clonedRanges.push([range[0], range[1]]);
+    }
+    return clonedRanges;
+  }
 
-function cloneRanges(ranges: readonly (readonly [number, number])[]): RangeListEntry[] {
-  return ranges.map((range) => [...range] as RangeListEntry);
-}
+  public static append(
+    ranges: readonly (readonly [number, number])[],
+    defaultRange: [number, number]
+  ): [number, number][] {
+    return [...RangeListModelBuilder.clone(ranges), defaultRange];
+  }
 
-export function updateRangeListEntry(
-  ranges: readonly (readonly [number, number])[],
-  index: number,
-  range: RangeListEntry
-): RangeListEntry[] {
-  const next = cloneRanges(ranges);
-  next[index] = range;
-  return next;
-}
+  public static remove(
+    ranges: readonly (readonly [number, number])[],
+    index: number,
+    defaultRange: [number, number]
+  ): [number, number][] {
+    const next = RangeListModelBuilder.clone(ranges).filter((_, entryIndex) => {
+      return entryIndex !== index;
+    });
+    return next.length > 0 ? next : [defaultRange];
+  }
 
-export function appendRangeListEntry(
-  ranges: readonly (readonly [number, number])[],
-  defaultRange: RangeListEntry
-): RangeListEntry[] {
-  return [...cloneRanges(ranges), defaultRange];
-}
-
-export function removeRangeListEntry(
-  ranges: readonly (readonly [number, number])[],
-  index: number,
-  defaultRange: RangeListEntry
-): RangeListEntry[] {
-  const next = cloneRanges(ranges).filter((_, entryIndex) => entryIndex !== index);
-  return next.length > 0 ? next : [defaultRange];
-}
+  public static update(
+    ranges: readonly (readonly [number, number])[],
+    index: number,
+    range: [number, number]
+  ): [number, number][] {
+    const next = RangeListModelBuilder.clone(ranges);
+    next[index] = range;
+    return next;
+  }
+};

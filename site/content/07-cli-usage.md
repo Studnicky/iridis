@@ -34,7 +34,13 @@ The config is a plain JSON file validated against `CliConfigSchema` (`packages/c
   "input": {
     "colors":   ["#8B5CF6"],
     "contrast": { "level": "AA", "algorithm": "wcag21" },
-    "roles":    { /* RoleSchemaInterface inline */ },
+    "roles": {
+      "name": "brand",
+      "roles": [
+        { "name": "accent", "intent": "accent", "required": true },
+        { "name": "onAccent", "intent": "onAccent", "required": true, "derivedFrom": "accent", "lightnessRange": [0.95, 1] }
+      ]
+    },
     "metadata": { "cssVarPrefix": "--c-" }
   },
   "enableContrast":   true,
@@ -65,7 +71,7 @@ The `enable*` flags control which plugin packages are dynamically imported. Only
 
 A full worked config that enables the Contrast and Capacitor plugins together:
 
-<<< @/examples/vue-capacitor/category-w3c.config.json
+<<< @/site/app/examples/vueCapacitor/category-w3c.config.json
 
 ## Wiring into a build pipeline
 

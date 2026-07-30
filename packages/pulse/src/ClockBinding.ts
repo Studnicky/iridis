@@ -7,7 +7,7 @@ import { VirtualClockProvider } from './clock/VirtualClockProvider.ts';
 /**
  * Binds a duration to a progress value `t` in [0, 1], backed by either a
  * real-time source (`Date.now()`) or a deterministic virtual stepper driven
- * by `advance(deltaMs)`. Construct via `ClockBinding.create(opts)`.
+ * by `advance(deltaMs)`. Construct via `ClockBinding.create(options)`.
  */
 export class ClockBinding implements SignalBindingInterfaceType {
   private readonly provider: ClockProviderInterface;
@@ -16,10 +16,10 @@ export class ClockBinding implements SignalBindingInterfaceType {
     this.provider = provider;
   }
 
-  static create(opts: ClockBindingOptionsInterfaceType): ClockBinding {
-    const provider = opts.mode === 'real'
-      ? RealClockProvider.create(opts.durationMs)
-      : VirtualClockProvider.create(opts.durationMs);
+  static create(options: ClockBindingOptionsInterfaceType): ClockBinding {
+    const provider = options.mode === 'real'
+      ? RealClockProvider.create(options.durationMs)
+      : VirtualClockProvider.create(options.durationMs);
     return new ClockBinding(provider);
   }
 

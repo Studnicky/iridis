@@ -10,10 +10,12 @@ const props = defineProps<{
   chipClass?: string;
 }>();
 
-const swatchListModel = computed(() => buildSwatchListModel(
+const swatchListModel = computed(() => buildSwatchListModel.build(
   props.swatches,
-  props.ariaLabelPrefix,
-  props.emptyLabel
+  {
+    'ariaLabelPrefix': props.ariaLabelPrefix,
+    'emptyLabel': props.emptyLabel
+  }
 ));
 </script>
 

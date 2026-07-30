@@ -2,38 +2,44 @@ import { computed } from 'vue';
 
 import { PanelAccordionState } from './panelAccordionState.ts';
 
-class Panel {
-  static open(id: string): void {
-    if (PanelAccordionState.openPanelIds.includes(id)) { return; }
-    PanelAccordionState.openPanelIds.push(id);
-    if (PanelAccordionState.openPanelIds.length > PanelAccordionState.MAX_OPEN_PANELS) { PanelAccordionState.openPanelIds.shift(); }
-  }
-
-  static close(id: string): void {
-    const index = PanelAccordionState.openPanelIds.indexOf(id);
-    if (index !== -1) { PanelAccordionState.openPanelIds.splice(index, 1); }
-  }
+declare class PanelAccordionOptionsInterfaceType {
+  defaultOpen: boolean | undefined;
 }
 
-type PanelAccordionOptionsInterfaceType = {
-  'defaultOpen': boolean | undefined;
-};
+class PanelController {
+  readonly isOpen;
+
+  constructor(private readonly panelId: string, private readonly state: PanelAccordionState) {
+    this.isOpen = computed(() => {
+      const result = state.openPanelIds.includes(panelId);
+      return result;
+    });
+  }
+
+  close(): void {
+    this.state.close(this.panelId);
+  }
+
+  open(): void {
+    this.state.open(this.panelId);
+  }
+
+  toggle(): void {
+    this.state.toggle(this.panelId);
+  }
+}
 
 /** One panel's open/close state within the shared accordion coordination — see panelAccordionState.ts. */
-export function usePanelAccordion(panelId: string, opts?: PanelAccordionOptionsInterfaceType) {
-  if (opts?.defaultOpen === true && !PanelAccordionState.seededPanelIds.has(panelId)) {
-    PanelAccordionState.seededPanelIds.add(panelId);
-    Panel.open(panelId);
-  }
-
-  const isOpen = computed(() => { const result = PanelAccordionState.openPanelIds.includes(panelId); return result; });
-
-  return {
-    'close': () => { const result = Panel.close(panelId); return result; },
-    'isOpen': isOpen,
-    'open': () => { const result = Panel.open(panelId); return result; },
-    'toggle': () => {
-      if (isOpen.value) { Panel.close(panelId); } else { Panel.open(panelId); }
+class UsePanelAccordionOperation {
+  static run(panelId: string, options?: PanelAccordionOptionsInterfaceType) {
+    const state = PanelAccordionState.current();
+    if (options?.defaultOpen === true && !state.seededPanelIds.has(panelId)) {
+      state.seededPanelIds.add(panelId);
+      state.open(panelId);
     }
-  };
+
+    return new PanelController(panelId, state);
+  }
 }
+
+export const usePanelAccordion = UsePanelAccordionOperation.run;

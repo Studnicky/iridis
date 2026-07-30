@@ -1,51 +1,11 @@
-/**
- * Shared chrome for documentation code samples.
- *
- * Covers both VitePress-managed Shiki blocks and custom sample panes that want
- * the same header/body contract.
- *
- * Parameterization:
- *   --dagonizer-code-sample-radius
- *   --dagonizer-code-sample-border
- *   --dagonizer-code-sample-surface
- *   --dagonizer-code-sample-grain
- *   --dagonizer-code-sample-grain-size
- *   --dagonizer-code-sample-header-surface
- *   --dagonizer-code-sample-header-border
- *   --dagonizer-code-sample-title
- *   --dagonizer-code-sample-meta
- *   --dagonizer-code-sample-accent
- *   --dagonizer-code-sample-command
- *   --dagonizer-code-sample-error
- *   --dagonizer-code-sample-font
- */
-
-.vp-doc div[class*='language-'],
-.vp-doc .vp-code-group,
-.dagonizer-code-sample {
-  --dagonizer-code-sample-radius: var(--dagonizer-surface-radius, 6px);
-  --dagonizer-code-sample-border: var(--dagonizer-surface-border, 1px solid var(--vp-c-divider, #2e3748));
-  --dagonizer-code-sample-surface: var(--dagonizer-surface-bg-deep, #11161d);
-  --dagonizer-code-sample-grain: var(--dagonizer-surface-grain, none);
-  --dagonizer-code-sample-grain-size: var(--dagonizer-surface-grain-size, 160px 160px);
-  --dagonizer-code-sample-header-surface: color-mix(in srgb, var(--vp-c-bg-alt, rgba(12, 16, 24, 0.92)) 88%, transparent);
-  --dagonizer-code-sample-header-border: var(--vp-c-divider, #2e3748);
-  --dagonizer-code-sample-title: var(--dagonizer-silver, var(--vp-c-text-1, #eef3f7));
-  --dagonizer-code-sample-meta: var(--vp-c-text-2, #a9b6cc);
-  --dagonizer-code-sample-accent: var(--dagonizer-cyan, var(--vp-c-brand-1, #22e8ff));
-  --dagonizer-code-sample-command: var(--dagonizer-gold, var(--vp-c-brand-3, #ffcc66));
-  --dagonizer-code-sample-error: var(--vp-c-danger-1, #e74c3c);
-  --dagonizer-code-sample-font: var(--vp-font-family-mono);
-}
+/** Shared Iridis chrome for documentation code samples. */
 
 .vp-doc div[class*='language-'],
 .dagonizer-code-sample {
   margin: 1.5rem 0;
-  border: var(--dagonizer-code-sample-border);
-  border-radius: var(--dagonizer-code-sample-radius);
-  background-color: var(--dagonizer-code-sample-surface);
-  background-image: var(--dagonizer-code-sample-grain);
-  background-size: var(--dagonizer-code-sample-grain-size);
+  border: 1px var(--iridis-border-style) var(--ui-border);
+  border-radius: var(--iridis-radius-md);
+  background-color: var(--ui-bg-muted);
   overflow: hidden;
 }
 
@@ -53,7 +13,7 @@
 .vp-doc div[class*='language-'] pre,
 .dagonizer-code-sample pre {
   background: transparent !important;
-  font-family: var(--dagonizer-code-sample-font);
+  font-family: var(--font-mono);
 }
 
 .vp-doc [class*='language-'] > span.lang,
@@ -61,8 +21,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  color: var(--dagonizer-code-sample-meta);
-  font-family: var(--dagonizer-code-sample-font);
+  color: var(--ui-text-muted);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -81,20 +41,20 @@
   inset-block-start: 0.7rem;
   width: 1.9rem;
   height: 1.9rem;
-  border: 1px solid var(--dagonizer-code-sample-header-border);
-  border-radius: 6px;
-  background-color: color-mix(in srgb, var(--dagonizer-code-sample-header-surface) 92%, transparent);
+  border: 1px var(--iridis-border-style) var(--ui-border);
+  border-radius: var(--iridis-radius-sm);
+  background-color: color-mix(in oklch, var(--ui-bg-elevated) 92%, transparent);
   backdrop-filter: blur(4px);
 }
 
 .vp-doc [class*='language-'] > button.copy:hover,
 .vp-doc [class*='language-'] > button.copy.copied {
-  border-color: var(--dagonizer-code-sample-accent);
+  border-color: var(--ui-primary);
 }
 
 .vp-doc [class*='language-'] > button.copy::before,
 .vp-doc [class*='language-'] > button.copy.copied::before {
-  background-color: var(--dagonizer-code-sample-accent);
+  background-color: var(--ui-primary);
 }
 
 .vp-doc [class*='language-'] pre {
@@ -108,7 +68,7 @@
 .vp-doc [class*='language-'][data-language='sh'] > span.lang,
 .vp-doc [class*='language-'][data-language='shellscript'] > span.lang,
 .dagonizer-code-sample--command .dagonizer-code-sample__meta {
-  color: var(--dagonizer-code-sample-command);
+  color: var(--ui-warning);
 }
 
 .vp-doc .vp-code-group {
@@ -118,18 +78,16 @@
 .vp-doc .vp-code-group .tabs {
   margin: 0;
   padding: 0.45rem 0.5rem 0;
-  border: var(--dagonizer-code-sample-border);
+  border: 1px var(--iridis-border-style) var(--ui-border);
   border-bottom: 0;
-  border-radius: var(--dagonizer-code-sample-radius) var(--dagonizer-code-sample-radius) 0 0;
-  background-color: var(--dagonizer-code-sample-surface);
-  background-image: var(--dagonizer-code-sample-grain);
-  background-size: var(--dagonizer-code-sample-grain-size);
+  border-radius: var(--iridis-radius-md) var(--iridis-radius-md) 0 0;
+  background-color: var(--ui-bg-muted);
 }
 
 .vp-doc .vp-code-group .tabs label {
-  border-radius: 6px 6px 0 0;
-  color: var(--dagonizer-code-sample-meta);
-  font-family: var(--dagonizer-code-sample-font);
+  border-radius: var(--iridis-radius-sm) var(--iridis-radius-sm) 0 0;
+  color: var(--ui-text-muted);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -137,11 +95,11 @@
 }
 
 .vp-doc .vp-code-group .tabs label:hover {
-  color: var(--dagonizer-code-sample-accent);
+  color: var(--ui-primary);
 }
 
 .vp-doc .vp-code-group .blocks {
-  border-radius: 0 0 var(--dagonizer-code-sample-radius) var(--dagonizer-code-sample-radius);
+  border-radius: 0 0 var(--iridis-radius-md) var(--iridis-radius-md);
 }
 
 .vp-doc .vp-code-group .blocks div[class*='language-'] {
@@ -156,8 +114,8 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.7rem 0.8rem;
-  border-bottom: 1px solid var(--dagonizer-code-sample-header-border);
-  background: var(--dagonizer-code-sample-header-surface);
+  border-bottom: 1px var(--iridis-border-style) var(--ui-border);
+  background: color-mix(in oklch, var(--ui-bg-elevated) 88%, transparent);
 }
 
 .dagonizer-code-sample__title-group {
@@ -169,8 +127,8 @@
 
 .dagonizer-code-sample__title {
   min-width: 0;
-  color: var(--dagonizer-code-sample-title);
-  font-family: var(--dagonizer-code-sample-font);
+  color: var(--ui-text-highlighted);
+  font-family: var(--font-mono);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -196,14 +154,14 @@
 }
 
 .dagonizer-code-sample__source {
-  border-top: 1px solid var(--dagonizer-code-sample-header-border);
+  border-top: 1px var(--iridis-border-style) var(--ui-border);
 }
 
 .dagonizer-code-sample__source > summary {
   cursor: pointer;
   padding: 0.6rem 0.8rem;
-  color: var(--dagonizer-code-sample-accent);
-  font-family: var(--dagonizer-code-sample-font);
+  color: var(--ui-primary);
+  font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -211,14 +169,14 @@
 }
 
 .dagonizer-code-sample__source > summary:hover {
-  color: var(--dagonizer-code-sample-command);
+  color: var(--ui-warning);
 }
 
 .dagonizer-code-sample--error {
-  border-color: color-mix(in srgb, var(--dagonizer-code-sample-error) 55%, var(--vp-c-divider, #2e3748));
+  border-color: color-mix(in oklch, var(--ui-error) 55%, var(--ui-border));
 }
 
 .dagonizer-code-sample--error .dagonizer-code-sample__title,
 .dagonizer-code-sample--error .dagonizer-code-sample__meta {
-  color: var(--dagonizer-code-sample-error);
+  color: var(--ui-error);
 }

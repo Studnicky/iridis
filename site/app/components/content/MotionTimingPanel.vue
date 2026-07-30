@@ -10,6 +10,12 @@ const emit = defineEmits<{
   'update:tuneMs': [value: number];
   'update:easeKey': [value: string];
 }>();
+
+function updateTuneMs(tuneMs: number | undefined): void {
+  if (tuneMs !== undefined) {
+    emit('update:tuneMs', tuneMs);
+  }
+}
 </script>
 
 <template>
@@ -34,7 +40,7 @@ const emit = defineEmits<{
             :min="100"
             :max="1500"
             :step="50"
-            @update:model-value="($event) => { if ($event !== undefined) emit('update:tuneMs', $event); }"
+            @update:model-value="updateTuneMs"
           />
         </UFormField>
         <UFormField label="Easing">

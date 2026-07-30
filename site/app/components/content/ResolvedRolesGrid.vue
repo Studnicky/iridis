@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { buildResolvedRolesGridValueModel } from './buildResolvedRolesGridModel.ts';
+import { buildResolvedRolesGridModel } from './buildResolvedRolesGridModel.ts';
 
 defineProps<{
   rows: readonly {
@@ -40,11 +40,11 @@ defineProps<{
       </template>
       <div :class="layout.showTitleSlot ? 'flex items-center gap-2' : 'min-w-0'">
         <MutedMono :class="layout.valueClass">
-          {{ buildResolvedRolesGridValueModel(row, layout).hexLabel }}
+          {{ buildResolvedRolesGridModel.build(row, layout).hexLabel }}
         </MutedMono>
-        <div :class="buildResolvedRolesGridValueModel(row, layout).containerClass">
+        <div :class="buildResolvedRolesGridModel.build(row, layout).containerClass">
           <span
-            v-for="metric in buildResolvedRolesGridValueModel(row, layout).metrics"
+            v-for="metric in buildResolvedRolesGridModel.build(row, layout).metrics"
             :key="metric"
           >{{ metric }}</span>
         </div>

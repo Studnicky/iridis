@@ -1,3 +1,9 @@
+import type { ColorHintsInterfaceTypeEntity } from '../entities/ColorHintsInterfaceTypeEntity.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { OklchInterfaceTypeEntity } from '../entities/OklchInterfaceTypeEntity.ts';
+import type { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
+import type { RequiredSchemaShapeType } from './RequiredSchemaShapeType.ts';
+
 /**
  * Canonical color intent ontology. Drives every downstream semantic
  * decision: forced-colors token selection (`EmitCssVars.forcedColorsToken`),
@@ -65,11 +71,7 @@ export type SourceFormatType =
 
 export type ColorSpaceType = 'srgb' | 'displayP3';
 
-export type OklchInterfaceType = {
-  'c': number;
-  'h': number;
-  'l': number;
-};
+export type OklchInterfaceType = OklchInterfaceTypeEntity.Type;
 
 /** Result of {@link import('../math/GamutMapSrgb.ts')}'s sRGB gamut-mapping search. */
 export type GamutMapResultInterfaceType = OklchInterfaceType & {
@@ -77,17 +79,20 @@ export type GamutMapResultInterfaceType = OklchInterfaceType & {
   'inGamut': boolean;
 };
 
-export type RgbInterfaceType = {
-  'b': number;
-  'g': number;
-  'r': number;
-};
+export type RgbInterfaceType = RgbInterfaceTypeEntity.Type;
 
-export type ColorHintsInterfaceType = {
-  'intent': ColorIntentType | undefined;
-  'role':   string | undefined;
-  'weight': number | undefined;
-};
+type ColorHintsSchemaShapeType = ColorHintsInterfaceTypeEntity.Type;
+
+/**
+ * Every optional schema field is widened from an optional key to a required
+ * key holding `T | undefined`, matching this codebase's monomorphic-shape
+ * convention — `FromSchema` marks a non-`required` field optional (`field?:
+ * T`), not present-but-`undefined`, and JSON Schema has no way to express
+ * the latter, so the widening happens here at the consumption site instead
+ * of inside the entity (where the lint-mandated `Type = FromSchema<typeof
+ * Schema>` shape must stay verbatim).
+ */
+export type ColorHintsInterfaceType = RequiredSchemaShapeType<ColorHintsSchemaShapeType>;
 
 /**
  * Canonical color record. Every record allocated anywhere in iridis
@@ -124,12 +129,18 @@ export type ColorHintsInterfaceType = {
  *    the pipeline; the schema-declared `intent` overrides intake-level
  *    intent at `resolve:roles`.
  */
+type ColorRecordSchemaShapeType = ColorRecordInterfaceTypeEntity.Type;
+
+/**
+ * Every optional schema field is widened from an optional key to a required
+ * key holding `T | undefined`, matching this codebase's monomorphic-shape
+ * convention (see {@link ColorHintsInterfaceType}). `hints` is additionally
+ * pinned to {@link ColorHintsInterfaceType} — nesting another entity's
+ * `Schema` object literal makes `FromSchema` re-derive that nested shape
+ * from scratch, losing the nested entity's own optional-field widening.
+ */
 export type ColorRecordInterfaceType = {
-  'alpha':        number;
-  'displayP3':    RgbInterfaceType | undefined;
-  'hex':          string;
-  'hints':        ColorHintsInterfaceType | undefined;
-  'oklch':        OklchInterfaceType;
-  'rgb':          RgbInterfaceType;
-  'sourceFormat': SourceFormatType;
+  [K in keyof ColorRecordSchemaShapeType]-?: K extends 'hints'
+    ? ColorHintsInterfaceType | undefined
+    : {} extends Pick<ColorRecordSchemaShapeType, K> ? ColorRecordSchemaShapeType[K] | undefined : ColorRecordSchemaShapeType[K];
 };

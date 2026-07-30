@@ -10,32 +10,32 @@ import type {
 } from '../../types/index.ts';
 
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
+import { OKLCH_RANGES } from './constants/OklchRanges.ts';
 
-const DEFAULT_L_RANGE: readonly [number, number] = [0.05, 0.95];
-const DEFAULT_C_RANGE: readonly [number, number] = [0.0,  0.40];
-
-function clampToRange(value: number, range: readonly [number, number]): number {
-  const result = Math.max(range[0], Math.min(range[1], value));
-  return result;
-}
-
-function roleRangeFor(
-  color: ColorRecordInterfaceType,
-  state: PaletteStateInterface
-): { 'cRange': readonly [number, number]; 'lRange': readonly [number, number]; } {
-  const roleName = color.hints?.role;
-
-  if (roleName !== undefined && state.input.roles !== undefined) {
-    const def = state.input.roles.roles.find((r) => {return r.name === roleName;});
-    if (def !== undefined) {
-      return {
-        'cRange': def.chromaRange   ?? DEFAULT_C_RANGE,
-        'lRange': def.lightnessRange ?? DEFAULT_L_RANGE
-      };
-    }
+class OklchRangeGeometry {
+  static clampToRange(value: number, range: readonly [number, number]): number {
+    const result = Math.max(range[0], Math.min(range[1], value));
+    return result;
   }
 
-  return { 'cRange': DEFAULT_C_RANGE, 'lRange': DEFAULT_L_RANGE };
+  static roleRangeFor(
+    color: ColorRecordInterfaceType,
+    state: PaletteStateInterface
+  ): { 'cRange': readonly [number, number]; 'lRange': readonly [number, number]; } {
+    const roleName = color.hints?.role;
+
+    if (roleName !== undefined && state.input.roles !== undefined) {
+      const definition = state.input.roles.roles.find((role) => {return role.name === roleName;});
+      if (definition !== undefined) {
+        return {
+          'cRange': definition.chromaRange    ?? OKLCH_RANGES.DEFAULT_CHROMA_RANGE,
+          'lRange': definition.lightnessRange ?? OKLCH_RANGES.DEFAULT_LIGHTNESS_RANGE
+        };
+      }
+    }
+
+    return { 'cRange': OKLCH_RANGES.DEFAULT_CHROMA_RANGE, 'lRange': OKLCH_RANGES.DEFAULT_LIGHTNESS_RANGE };
+  }
 }
 
 /**
@@ -60,16 +60,17 @@ class ClampOklch implements TaskInterface {
     'writes':      ['colors']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (let i = 0; i < state.colors.length; i++) {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    const colorCount = state.colors.length;
+    for (let i = 0; i < colorCount; i++) {
       const color = state.colors[i];
       if (color === undefined) {continue;}
 
-      const { cRange, lRange } = roleRangeFor(color, state);
+      const { cRange, lRange } = OklchRangeGeometry.roleRangeFor(color, state);
       const { c, h, l } = color.oklch;
 
-      const clampedL = clampToRange(l, lRange);
-      const clampedC = clampToRange(c, cRange);
+      const clampedL = OklchRangeGeometry.clampToRange(l, lRange);
+      const clampedC = OklchRangeGeometry.clampToRange(c, cRange);
 
       if (clampedL === l && clampedC === c) {
         continue;
@@ -83,7 +84,7 @@ class ClampOklch implements TaskInterface {
       );
 
       state.colors[i] = updated;
-      ctx.logger.debug(
+      context.logger.debug(
         LogBody.create()
           .component('ClampOklch')
           .operation('run')

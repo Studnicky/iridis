@@ -45,8 +45,9 @@ import type { ModeType } from './mode.ts';
 import type { RoleSortKeyType } from './roleSortKey.ts';
 
 /** Events accepted by the shared UI FSM (mode switching, carousel nav/drag, seed edits, palette params). */
-export type IridisUiEventType =
-  | { 'mode': ModeType; 'type': IridisUiActionType.SELECT_MODE }
+export declare namespace IridisUiEventType {
+  type Type =
+  | { 'mode': ModeType.Type; 'type': IridisUiActionType.SELECT_MODE }
   | { 'index': number; 'type': IridisUiActionType.SELECT_CARD }
   | { 'count': number; 'delta': number; 'type': IridisUiActionType.NAVIGATE }
   | { 'type': IridisUiActionType.DRAG_START }
@@ -56,7 +57,7 @@ export type IridisUiEventType =
   | { 'index': number; 'type': IridisUiActionType.REMOVE_SEED }
   | { 'hex': string; 'index': number; 'type': IridisUiActionType.SET_SEED }
   | { 'index': number; 'role': string | undefined; 'type': IridisUiActionType.PIN_SEED_ROLE }
-  | { 'framing': FramingType; 'type': IridisUiActionType.SET_FRAMING }
+  | { 'framing': FramingType.Type; 'type': IridisUiActionType.SET_FRAMING }
   | { 'schemaName': string; 'type': IridisUiActionType.SET_SCHEMA }
   | { 'strictness': number; 'type': IridisUiActionType.SET_CONTRAST_STRICTNESS }
   | { 'colorSpace': 'srgb' | 'displayP3'; 'type': IridisUiActionType.SET_COLOR_SPACE }
@@ -83,3 +84,4 @@ export type IridisUiEventType =
   | { 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS }
   | { 'targetId': string; 'type': IridisUiActionType.NAVIGATE_TO_TARGET }
   | { 'keys': RoleSortKeyType[]; 'type': IridisUiActionType.SET_ROLE_SORT };
+}

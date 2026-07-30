@@ -13,7 +13,7 @@ const props = defineProps<{
   class?: string;
 }>();
 
-const lang = computed(() => resolveSupportedCodeLang(props.language));
+const lang = computed(() => resolveSupportedCodeLang.resolve(props.language));
 </script>
 
 <template>

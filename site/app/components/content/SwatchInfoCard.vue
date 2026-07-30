@@ -11,10 +11,13 @@ const props = withDefaults(defineProps<{
   swatchClass?: string;
   variant?: 'row' | 'tile';
 }>(), {
+  ariaLabel: undefined,
+  class: undefined,
   surface: 'plain',
+  swatchClass: undefined,
   variant: 'row'
 });
-const cardModel = computed(() => buildSwatchInfoCardModel(props.variant, props.surface));
+const cardModel = computed(() => buildSwatchInfoCardModel.build(props.variant, props.surface));
 </script>
 
 <template>

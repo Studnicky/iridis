@@ -15,7 +15,7 @@ const emit = defineEmits<{
   'pick-color': [index: number, hex: string];
 }>();
 
-const seedCardItems = computed(() => buildPickerSeedGridModel(props.pickerSeeds));
+const seedCardItems = computed(() => buildPickerSeedGridModel.build(props.pickerSeeds));
 </script>
 
 <template>

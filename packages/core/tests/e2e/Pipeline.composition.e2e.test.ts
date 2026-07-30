@@ -15,28 +15,23 @@
 
 import type {
   ColorRecordInterfaceType,
+  ContrastReportEntryInterfaceType,
   InputInterface,
   PaletteStateInterface,
-  RoleSchemaInterfaceType,
-  TaskInterface,
+  RoleSchemaInterfaceType
 } from '@studnicky/iridis';
+
 import { Engine }    from '@studnicky/iridis';
 import { coreTasks } from '@studnicky/iridis/tasks';
-import {
-  ScenarioRunner,
-  assert,
-  type ScenarioInterface,
-} from '../_runner/ScenarioRunner.ts';
+import assert from 'node:assert/strict';
+
+import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
+
+import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
-
-function freshEngine(): Engine {
-  const engine = new Engine();
-  for (const t of coreTasks) { engine.tasks.register(t); }
-  return engine;
-}
 
 type JsonOutput = {
   'colors':   string[];
@@ -44,21 +39,33 @@ type JsonOutput = {
   'variants': Record<string, Record<string, string>>;
 };
 
-function makeHintedRecord(
-  l: number, c: number, h: number,
-  r: number, g: number, b: number,
-  hex: string,
-  role: string,
-): ColorRecordInterfaceType {
-  return {
-    'oklch':        { l, c, h },
-    'rgb':          { r, g, b },
-    hex,
-    'alpha':        1,
-    'sourceFormat': 'hex',
-    'displayP3':    undefined,
-    'hints':        { 'role': role, 'intent': undefined, 'weight': undefined },
-  };
+class PipelineFixtures {
+  static freshEngine(): Engine {
+    const engine = new Engine();
+    for (const t of coreTasks) { engine.tasks.register(t); }
+    return engine;
+  }
+
+  static makeHintedRecord(
+    l: number, c: number, h: number,
+    r: number, g: number, b: number,
+    hex: string,
+    role: string
+  ): ColorRecordInterfaceType {
+    return {
+      'alpha':        1,
+      'displayP3':    undefined,
+      'hex': hex,
+      'hints':        { 'intent': undefined, 'role': role, 'weight': undefined },
+      'oklch':        { 'c': c, 'h': h, 'l': l },
+      'rgb':          { 'b': b, 'g': g, 'r': r },
+      'sourceFormat': 'hex'
+    };
+  }
+
+  static seedHintedColors(state: PaletteStateInterface): void {
+    state.colors.push(hintedAccent, hintedSurface);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -69,103 +76,102 @@ function makeHintedRecord(
 // exact — the role receives the exact same object reference (no clone).
 // ---------------------------------------------------------------------------
 
-interface RoleAssignmentInput {
-  readonly mode: 'distance' | 'hint';
-}
-interface RoleAssignmentOutput {
-  readonly hasAccent:   boolean;
-  readonly hasSurface:  boolean;
-  readonly hasText:     boolean;
-  readonly accentIsRef: boolean;   // only meaningful in hint mode
-  readonly surfaceIsRef: boolean;  // only meaningful in hint mode
-}
-
-const hintedAccent  = makeHintedRecord(0.6, 0.15, 250, 0.3, 0.2, 0.8, '#4d33cc', 'accent');
-const hintedSurface = makeHintedRecord(0.95, 0.01, 0, 0.95, 0.95, 0.95, '#f2f2f2', 'surface');
+const hintedAccent  = PipelineFixtures.makeHintedRecord(0.6, 0.15, 250, 0.3, 0.2, 0.8, '#4d33cc', 'accent');
+const hintedSurface = PipelineFixtures.makeHintedRecord(0.95, 0.01, 0, 0.95, 0.95, 0.95, '#f2f2f2', 'surface');
 
 const hintSchema: RoleSchemaInterfaceType = {
-  'name': 'hint-schema',
-  'roles': [
-    { 'name': 'accent',  'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-    { 'name': 'surface', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-  ], 'contrastPairs': undefined, 'description': undefined,
+  'contrastPairs': undefined,
+  'description': undefined, 'name': 'hint-schema', 'roles': [
+    { 'chromaRange': undefined,  'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'accent', 'required': true },
+    { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'surface', 'required': true }
+  ]
 };
 
 const distanceSchema: RoleSchemaInterfaceType = {
-  'name': 'hint-test',
-  'roles': [
-    { 'name': 'accent',  'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-    { 'name': 'surface', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-    { 'name': 'text',    'required': false, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-  ], 'contrastPairs': undefined, 'description': undefined,
+  'contrastPairs': undefined,
+  'description': undefined, 'name': 'hint-test', 'roles': [
+    { 'chromaRange': undefined,  'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'accent', 'required': true },
+    { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'surface', 'required': true },
+    { 'chromaRange': undefined,    'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'text', 'required': false }
+  ]
 };
 
-const roleAssignmentScenarios: readonly ScenarioInterface<RoleAssignmentInput, RoleAssignmentOutput>[] = [
+const roleAssignmentScenarios: readonly ScenarioInterface<{ readonly 'mode': 'distance' | 'hint' }, {
+  readonly 'accentIsRef': boolean;   // only meaningful in hint mode
+  readonly 'hasAccent':   boolean;
+  readonly 'hasSurface':  boolean;
+  readonly 'hasText':     boolean;
+  readonly 'surfaceIsRef': boolean;  // only meaningful in hint mode
+}>[] = [
   {
-    name: 'hex-string input resolves all three roles via distance matching',
-    kind: 'happy',
-    input: { mode: 'distance' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,           '[cell=1, scenario=distance] no throw');
       assert.strictEqual(output!.hasAccent,   true,  '[cell=1, scenario=distance] accent assigned');
       assert.strictEqual(output!.hasSurface,  true,  '[cell=1, scenario=distance] surface assigned');
       assert.strictEqual(output!.hasText,     true,  '[cell=1, scenario=distance] text assigned');
     },
+    'input': { 'mode': 'distance' },
+    'kind': 'happy',
+    'name': 'hex-string input resolves all three roles via distance matching'
   },
   {
-    name: 'hint.role causes exact (reference-equal) role assignment',
-    kind: 'happy',
-    input: { mode: 'hint' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,            '[cell=1, scenario=hint] no throw');
       assert.strictEqual(output!.hasAccent,   true,   '[cell=1, scenario=hint] accent assigned');
       assert.strictEqual(output!.hasSurface,  true,   '[cell=1, scenario=hint] surface assigned');
       assert.strictEqual(output!.accentIsRef,  true,  '[cell=1, scenario=hint] accent is exact hinted reference');
       assert.strictEqual(output!.surfaceIsRef, true,  '[cell=1, scenario=hint] surface is exact hinted reference');
     },
-  },
+    'input': { 'mode': 'hint' },
+    'kind': 'happy',
+    'name': 'hint.role causes exact (reference-equal) role assignment'
+  }
 ];
 
-new ScenarioRunner<RoleAssignmentInput, RoleAssignmentOutput>(
+new ScenarioRunner<{ readonly 'mode': 'distance' | 'hint' }, {
+  readonly 'accentIsRef': boolean;
+  readonly 'hasAccent':   boolean;
+  readonly 'hasSurface':  boolean;
+  readonly 'hasText':     boolean;
+  readonly 'surfaceIsRef': boolean;
+}>(
   'Pipeline.composition :: cell-1 :: role-assignment',
-  async (input) => {
+  (input) => {
     if (input.mode === 'distance') {
-      const engine = freshEngine();
+      const engine = PipelineFixtures.freshEngine();
       engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'emit:json']);
       // Three colors with distinct lightness so each role resolves via distance
-      const state = await engine.run({
-        'colors': ['#6d28d9', '#f5f3ff', '#1c1917'],
-        'roles':  distanceSchema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
+      const state = engine.run({
+        'bypass': undefined,
+        'colors': ['#6d28d9', '#f5f3ff', '#1c1917'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles':  distanceSchema, 'runtime': undefined
       });
       return {
-        hasAccent:   'accent'  in state.roles,
-        hasSurface:  'surface' in state.roles,
-        hasText:     'text'    in state.roles,
-        accentIsRef:  false,
-        surfaceIsRef: false,
+        'accentIsRef':  false,
+        'hasAccent':   'accent'  in state.roles,
+        'hasSurface':  'surface' in state.roles,
+        'hasText':     'text'    in state.roles,
+        'surfaceIsRef': false
       };
     }
 
     // hint mode: seed state directly via onRunStart hook
-    const engine = freshEngine();
+    const engine = PipelineFixtures.freshEngine();
     engine.tasks.hook('onRunStart', {
+      'manifest': { 'description': undefined, 'name': 'seed:hinted', 'phase': 'onRunStart', 'reads': undefined, 'requires': undefined, 'writes': undefined },
       'name': 'seed:hinted',
-      'manifest': { 'name': 'seed:hinted', 'phase': 'onRunStart', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
-      run(state: PaletteStateInterface): void {
-        state.colors.push(hintedAccent, hintedSurface);
-      },
-    } as TaskInterface);
+      'run': PipelineFixtures.seedHintedColors
+    });
     engine.pipeline(['resolve:roles', 'expand:family', 'emit:json']);
 
-    const state = await engine.run({ 'colors': [], 'roles': hintSchema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
+    const state = engine.run({ 'bypass': undefined, 'colors': [], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': hintSchema, 'runtime': undefined });
     return {
-      hasAccent:    'accent'  in state.roles,
-      hasSurface:   'surface' in state.roles,
-      hasText:      false,
-      accentIsRef:  state.roles['accent']  === hintedAccent,
-      surfaceIsRef: state.roles['surface'] === hintedSurface,
+      'accentIsRef':  state.roles.accent  === hintedAccent,
+      'hasAccent':    'accent'  in state.roles,
+      'hasSurface':   'surface' in state.roles,
+      'hasText':      false,
+      'surfaceIsRef': state.roles.surface === hintedSurface
     };
-  },
+  }
 ).run(roleAssignmentScenarios);
 
 // ---------------------------------------------------------------------------
@@ -177,75 +183,84 @@ new ScenarioRunner<RoleAssignmentInput, RoleAssignmentOutput>(
 // ---------------------------------------------------------------------------
 
 const variantSchema: RoleSchemaInterfaceType = {
-  'name':  'variant-test',
-  'roles': [
-    { 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-    { 'name': 'muted',   'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-  ], 'contrastPairs': undefined, 'description': undefined,
+  'contrastPairs': undefined,
+  'description': undefined, 'name':  'variant-test', 'roles': [
+    { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'primary', 'required': true },
+    { 'chromaRange': undefined,   'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'muted', 'required': true }
+  ]
 };
 
-interface VariantInput  { readonly colors: string[] }
-interface VariantOutput {
-  readonly hasDark:        boolean;
-  readonly hasLight:       boolean;
-  readonly darkRoleCount:  number;
-  readonly lightRoleCount: number;
-  readonly stateRoleCount: number;
-  readonly primaryL:       number;
-  readonly darkPrimaryL:   number;
-  readonly jsonHasDark:    boolean;
-  readonly jsonHasLight:   boolean;
-}
+type VariantInput =  { readonly 'colors': string[] };
 
-const variantScenarios: readonly ScenarioInterface<VariantInput, VariantOutput>[] = [
+const variantScenarios: readonly ScenarioInterface<VariantInput, {
+  readonly 'darkPrimaryL':   number;
+  readonly 'darkRoleCount':  number;
+  readonly 'hasDark':        boolean;
+  readonly 'hasLight':       boolean;
+  readonly 'jsonHasDark':    boolean;
+  readonly 'jsonHasLight':   boolean;
+  readonly 'lightRoleCount': number;
+  readonly 'primaryL':       number;
+  readonly 'stateRoleCount': number;
+}>[] = [
   {
-    name: 'two seeds produce dark and light variants with matching role counts',
-    kind: 'happy',
-    input: { colors: ['#6366f1', '#a5b4fc'] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                             '[cell=2, scenario=two-seeds] no throw');
       assert.strictEqual(output!.hasDark,  true,                      '[cell=2, scenario=two-seeds] variants.dark exists');
       assert.strictEqual(output!.hasLight, true,                      '[cell=2, scenario=two-seeds] variants.light exists');
       assert.strictEqual(
         output!.darkRoleCount, output!.stateRoleCount,
-        '[cell=2, scenario=two-seeds] dark variant count matches role count',
+        '[cell=2, scenario=two-seeds] dark variant count matches role count'
       );
       assert.strictEqual(
         output!.lightRoleCount, output!.stateRoleCount,
-        '[cell=2, scenario=two-seeds] light variant count matches role count',
+        '[cell=2, scenario=two-seeds] light variant count matches role count'
       );
       const eps = 0.05;
       assert.ok(
         Math.abs(output!.darkPrimaryL - (1 - output!.primaryL)) < eps,
-        `[cell=2, scenario=two-seeds] dark.primary.L ≈ 1 - primary.L; got ${output!.darkPrimaryL}`,
+        `[cell=2, scenario=two-seeds] dark.primary.L ≈ 1 - primary.L; got ${output!.darkPrimaryL}`
       );
       assert.strictEqual(output!.jsonHasDark,  true, '[cell=2, scenario=two-seeds] json.variants.dark present');
       assert.strictEqual(output!.jsonHasLight, true, '[cell=2, scenario=two-seeds] json.variants.light present');
     },
-  },
+    'input': { 'colors': ['#6366f1', '#a5b4fc'] },
+    'kind': 'happy',
+    'name': 'two seeds produce dark and light variants with matching role counts'
+  }
 ];
 
-new ScenarioRunner<VariantInput, VariantOutput>(
+new ScenarioRunner<VariantInput, {
+  readonly 'darkPrimaryL':   number;
+  readonly 'darkRoleCount':  number;
+  readonly 'hasDark':        boolean;
+  readonly 'hasLight':       boolean;
+  readonly 'jsonHasDark':    boolean;
+  readonly 'jsonHasLight':   boolean;
+  readonly 'lightRoleCount': number;
+  readonly 'primaryL':       number;
+  readonly 'stateRoleCount': number;
+}>(
   'Pipeline.composition :: cell-2 :: derive-variant',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = PipelineFixtures.freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles', 'derive:variant', 'emit:json']);
-    const state = await engine.run({ 'colors': input.colors, 'roles': variantSchema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
-    const dark  = state.variants['dark']  as Record<string, ColorRecordInterfaceType> | undefined;
-    const light = state.variants['light'] as Record<string, ColorRecordInterfaceType> | undefined;
+    const state = engine.run({ 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': variantSchema, 'runtime': undefined });
+    const dark  = state.variants.dark;
+    const light = state.variants.light;
     const json  = state.outputs['core:json']   as JsonOutput | undefined;
     return {
-      hasDark:        'dark'  in state.variants,
-      hasLight:       'light' in state.variants,
-      darkRoleCount:  Object.keys(dark  ?? {}).length,
-      lightRoleCount: Object.keys(light ?? {}).length,
-      stateRoleCount: Object.keys(state.roles).length,
-      primaryL:       state.roles['primary']?.oklch.l ?? 0,
-      darkPrimaryL:   dark?.['primary']?.oklch.l ?? -1,
-      jsonHasDark:    json !== undefined && 'dark'  in json.variants,
-      jsonHasLight:   json !== undefined && 'light' in json.variants,
+      'darkPrimaryL':   dark?.primary?.oklch.l ?? -1,
+      'darkRoleCount':  Object.keys(dark  ?? {}).length,
+      'hasDark':        'dark'  in state.variants,
+      'hasLight':       'light' in state.variants,
+      'jsonHasDark':    json !== undefined && 'dark'  in json.variants,
+      'jsonHasLight':   json !== undefined && 'light' in json.variants,
+      'lightRoleCount': Object.keys(light ?? {}).length,
+      'primaryL':       state.roles.primary?.oklch.l ?? 0,
+      'stateRoleCount': Object.keys(state.roles).length
     };
-  },
+  }
 ).run(variantScenarios);
 
 // ---------------------------------------------------------------------------
@@ -256,42 +271,27 @@ new ScenarioRunner<VariantInput, VariantOutput>(
 // ---------------------------------------------------------------------------
 
 const contrastReportSchema: RoleSchemaInterfaceType = {
-  'name': 'contrast-report-test',
-  'roles': [
-    { 'name': 'text',    'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-    { 'name': 'surface', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-  ],
   'contrastPairs': [
-    { 'foreground': 'text', 'background': 'surface', 'minRatio': 3.0, 'algorithm': undefined },
-  ], 'description': undefined,
+    { 'algorithm': undefined, 'background': 'surface', 'foreground': 'text', 'minRatio': 3.0 }
+  ],
+  'description': undefined,
+  'name': 'contrast-report-test', 'roles': [
+    { 'chromaRange': undefined,    'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'text', 'required': true },
+    { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'surface', 'required': true }
+  ]
 };
 
-type ContrastReportEntry = {
-  'foreground': string;
-  'background': string;
-  'ratio':      number;
-  'minRatio':   number;
-  'passed':     boolean;
-  'adjusted':   boolean;
-};
-
-interface ContrastReportInput  { readonly fgHex: string; readonly bgHex: string }
-interface ContrastReportOutput {
-  readonly reportLength:   number;
-  readonly foreground:     string;
-  readonly background:     string;
-  readonly ratioIsNumber:  boolean;
-  readonly minRatioIsNum:  boolean;
-  readonly passedIsBool:   boolean;
-  readonly adjustedIsBool: boolean;
-}
-
-const contrastReportScenarios: readonly ScenarioInterface<ContrastReportInput, ContrastReportOutput>[] = [
+const contrastReportScenarios: readonly ScenarioInterface<{ readonly 'bgHex': string; readonly 'fgHex': string; }, {
+  readonly 'adjustedIsBool': boolean;
+  readonly 'background':     string;
+  readonly 'foreground':     string;
+  readonly 'minRatioIsNum':  boolean;
+  readonly 'passedIsBool':   boolean;
+  readonly 'ratioIsNumber':  boolean;
+  readonly 'reportLength':   number;
+}>[] = [
   {
-    name: 'high-contrast pair produces one-entry report with correct field types',
-    kind: 'happy',
-    input: { fgHex: '#1a1a2e', bgHex: '#eeeeff' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                           '[cell=3, scenario=report-shape] no throw');
       assert.strictEqual(output!.reportLength,   1,                  '[cell=3, scenario=report-shape] one entry for one pair');
       assert.strictEqual(output!.foreground,  'text',                '[cell=3, scenario=report-shape] foreground is "text"');
@@ -301,30 +301,41 @@ const contrastReportScenarios: readonly ScenarioInterface<ContrastReportInput, C
       assert.strictEqual(output!.passedIsBool,    true,              '[cell=3, scenario=report-shape] passed is boolean');
       assert.strictEqual(output!.adjustedIsBool,  true,              '[cell=3, scenario=report-shape] adjusted is boolean');
     },
-  },
+    'input': { 'bgHex': '#eeeeff', 'fgHex': '#1a1a2e' },
+    'kind': 'happy',
+    'name': 'high-contrast pair produces one-entry report with correct field types'
+  }
 ];
 
-new ScenarioRunner<ContrastReportInput, ContrastReportOutput>(
+new ScenarioRunner<{ readonly 'bgHex': string; readonly 'fgHex': string; }, {
+  readonly 'adjustedIsBool': boolean;
+  readonly 'background':     string;
+  readonly 'foreground':     string;
+  readonly 'minRatioIsNum':  boolean;
+  readonly 'passedIsBool':   boolean;
+  readonly 'ratioIsNumber':  boolean;
+  readonly 'reportLength':   number;
+}>(
   'Pipeline.composition :: cell-3 :: contrast-report',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = PipelineFixtures.freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles', 'enforce:contrast']);
-    const state = await engine.run({
-      'colors': [input.fgHex, input.bgHex],
-      'roles':  contrastReportSchema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined,
+    const state = engine.run({
+      'bypass': undefined,
+      'colors': [input.fgHex, input.bgHex], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles':  contrastReportSchema, 'runtime': undefined
     });
-    const report = state.metadata['core:contrastReport'] as ContrastReportEntry[] | undefined;
+    const report = state.metadata['core:contrastReport'] as ContrastReportEntryInterfaceType[] | undefined;
     const entry  = Array.isArray(report) ? report[0] : undefined;
     return {
-      reportLength:   Array.isArray(report) ? report.length : 0,
-      foreground:     entry?.foreground     ?? '',
-      background:     entry?.background     ?? '',
-      ratioIsNumber:  typeof entry?.ratio    === 'number',
-      minRatioIsNum:  typeof entry?.minRatio === 'number',
-      passedIsBool:   typeof entry?.passed   === 'boolean',
-      adjustedIsBool: typeof entry?.adjusted === 'boolean',
+      'adjustedIsBool': typeof entry?.adjusted === 'boolean',
+      'background':     entry?.background     ?? '',
+      'foreground':     entry?.foreground     ?? '',
+      'minRatioIsNum':  typeof entry?.minRatio === 'number',
+      'passedIsBool':   typeof entry?.passed   === 'boolean',
+      'ratioIsNumber':  typeof entry?.ratio    === 'number',
+      'reportLength':   Array.isArray(report) ? report.length : 0
     };
-  },
+  }
 ).run(contrastReportScenarios);
 
 // ---------------------------------------------------------------------------
@@ -336,49 +347,50 @@ new ScenarioRunner<ContrastReportInput, ContrastReportOutput>(
 // ---------------------------------------------------------------------------
 
 const idempotentSchema: RoleSchemaInterfaceType = {
-  'name': 'idempotent-test',
-  'roles': [
-    { 'name': 'text',      'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-    { 'name': 'surface',   'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-    { 'name': 'text-muted', 'derivedFrom': 'text', 'chromaRange': [0.01, 0.05], 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'required': undefined },
-  ],
   'contrastPairs': [
-    { 'foreground': 'text', 'background': 'surface', 'minRatio': 4.5, 'algorithm': undefined },
-  ], 'description': undefined,
+    { 'algorithm': undefined, 'background': 'surface', 'foreground': 'text', 'minRatio': 4.5 }
+  ],
+  'description': undefined,
+  'name': 'idempotent-test', 'roles': [
+    { 'chromaRange': undefined,      'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'text', 'required': true },
+    { 'chromaRange': undefined,   'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'surface', 'required': true },
+    { 'chromaRange': [0.01, 0.05], 'derivedFrom': 'text', 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'text-muted', 'required': undefined }
+  ]
 };
 
-interface IdempotentInput  { readonly fgHex: string; readonly bgHex: string }
-interface IdempotentOutput { readonly lastEntryAdjusted: boolean; readonly reportIsArray: boolean }
-
-const idempotentScenarios: readonly ScenarioInterface<IdempotentInput, IdempotentOutput>[] = [
+const idempotentScenarios: readonly ScenarioInterface<{ readonly 'bgHex': string; readonly 'fgHex': string; }, {
+  readonly 'lastEntryAdjusted': boolean; readonly 'reportIsArray': boolean
+}>[] = [
   {
-    name: 'second enforce:contrast does not adjust an already-passing pair',
-    kind: 'happy',
-    input: { fgHex: '#111111', bgHex: '#f0f0f0' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                              '[cell=4, scenario=idempotent] no throw');
       assert.strictEqual(output!.reportIsArray,        true,           '[cell=4, scenario=idempotent] contrastReport is array');
       assert.strictEqual(output!.lastEntryAdjusted,    false,          '[cell=4, scenario=idempotent] second enforce is no-op');
     },
-  },
+    'input': { 'bgHex': '#f0f0f0', 'fgHex': '#111111' },
+    'kind': 'happy',
+    'name': 'second enforce:contrast does not adjust an already-passing pair'
+  }
 ];
 
-new ScenarioRunner<IdempotentInput, IdempotentOutput>(
+new ScenarioRunner<{ readonly 'bgHex': string; readonly 'fgHex': string; }, {
+  readonly 'lastEntryAdjusted': boolean; readonly 'reportIsArray': boolean
+}>(
   'Pipeline.composition :: cell-4 :: idempotency',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = PipelineFixtures.freshEngine();
     engine.pipeline([
       'intake:hex', 'resolve:roles', 'enforce:contrast',
-      'expand:family', 'enforce:contrast', 'emit:json',
+      'expand:family', 'enforce:contrast', 'emit:json'
     ]);
-    const state  = await engine.run({ 'colors': [input.fgHex, input.bgHex], 'roles': idempotentSchema, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined });
-    const report = state.metadata['core:contrastReport'] as ContrastReportEntry[] | undefined;
+    const state  = engine.run({ 'bypass': undefined, 'colors': [input.fgHex, input.bgHex], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': idempotentSchema, 'runtime': undefined });
+    const report = state.metadata['core:contrastReport'] as ContrastReportEntryInterfaceType[] | undefined;
     const last   = Array.isArray(report) && report.length > 0 ? report[report.length - 1] : undefined;
     return {
-      reportIsArray:     Array.isArray(report),
-      lastEntryAdjusted: last?.adjusted ?? false,
+      'lastEntryAdjusted': last?.adjusted ?? false,
+      'reportIsArray':     Array.isArray(report)
     };
-  },
+  }
 ).run(idempotentScenarios);
 
 // ---------------------------------------------------------------------------
@@ -389,73 +401,77 @@ new ScenarioRunner<IdempotentInput, IdempotentOutput>(
 // cleanly. In both cases emit:json still writes and colors are parsed normally.
 // ---------------------------------------------------------------------------
 
-interface EmptySchemaInput {
-  readonly mode: 'empty-list' | 'no-schema';
-  readonly colors: string[];
-}
-interface EmptySchemaOutput {
-  readonly rolesEmpty:    boolean;
-  readonly variantsEmpty: boolean;
-  readonly colorsLength:  number;
-  readonly jsonOk:        boolean;
-}
+type EmptySchemaInput = {
+  readonly 'colors': string[];
+  readonly 'mode': 'empty-list' | 'no-schema';
+};
 
-const emptySchemaScenarios: readonly ScenarioInterface<EmptySchemaInput, EmptySchemaOutput>[] = [
+const emptySchemaScenarios: readonly ScenarioInterface<EmptySchemaInput, {
+  readonly 'colorsLength':  number;
+  readonly 'jsonOk':        boolean;
+  readonly 'rolesEmpty':    boolean;
+  readonly 'variantsEmpty': boolean;
+}>[] = [
   {
-    name: 'empty roles list produces empty state.roles and state.variants',
-    kind: 'edge',
-    input: { mode: 'empty-list', colors: ['#ff0000', '#00ff00'] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                     '[cell=5, scenario=empty-list] no throw');
       assert.strictEqual(output!.rolesEmpty,    true,          '[cell=5, scenario=empty-list] state.roles is empty');
       assert.strictEqual(output!.variantsEmpty, true,          '[cell=5, scenario=empty-list] state.variants is empty');
       assert.strictEqual(output!.colorsLength,  2,             '[cell=5, scenario=empty-list] colors still parsed');
       assert.strictEqual(output!.jsonOk,        true,          '[cell=5, scenario=empty-list] emit:json succeeds');
     },
+    'input': { 'colors': ['#ff0000', '#00ff00'], 'mode': 'empty-list' },
+    'kind': 'edge',
+    'name': 'empty roles list produces empty state.roles and state.variants'
   },
   {
-    name: 'no roles field — resolve and expand skip cleanly',
-    kind: 'edge',
-    input: { mode: 'no-schema', colors: ['#ff6b6b', '#4ecdc4'] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                     '[cell=5, scenario=no-schema] no throw');
       assert.strictEqual(output!.rolesEmpty,    true,          '[cell=5, scenario=no-schema] state.roles is empty');
       assert.strictEqual(output!.variantsEmpty, true,          '[cell=5, scenario=no-schema] state.variants is empty');
       assert.strictEqual(output!.colorsLength,  2,             '[cell=5, scenario=no-schema] colors still parsed');
       assert.strictEqual(output!.jsonOk,        true,          '[cell=5, scenario=no-schema] emit:json succeeds');
     },
+    'input': { 'colors': ['#ff6b6b', '#4ecdc4'], 'mode': 'no-schema' },
+    'kind': 'edge',
+    'name': 'no roles field — resolve and expand skip cleanly'
   },
   {
-    name: 'empty input colors with empty schema produces fully-empty state',
-    kind: 'edge',
-    input: { mode: 'empty-list', colors: [] },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                     '[cell=5, scenario=all-empty] no throw');
       assert.strictEqual(output!.rolesEmpty,    true,          '[cell=5, scenario=all-empty] roles empty');
       assert.strictEqual(output!.variantsEmpty, true,          '[cell=5, scenario=all-empty] variants empty');
       assert.strictEqual(output!.colorsLength,  0,             '[cell=5, scenario=all-empty] no colors');
     },
-  },
+    'input': { 'colors': [], 'mode': 'empty-list' },
+    'kind': 'edge',
+    'name': 'empty input colors with empty schema produces fully-empty state'
+  }
 ];
 
-new ScenarioRunner<EmptySchemaInput, EmptySchemaOutput>(
+new ScenarioRunner<EmptySchemaInput, {
+  readonly 'colorsLength':  number;
+  readonly 'jsonOk':        boolean;
+  readonly 'rolesEmpty':    boolean;
+  readonly 'variantsEmpty': boolean;
+}>(
   'Pipeline.composition :: cell-5 :: empty-schema',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = PipelineFixtures.freshEngine();
     engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'enforce:contrast', 'emit:json']);
 
     const runInput: InputInterface = input.mode === 'empty-list'
-      ? { 'colors': input.colors, 'roles': { 'name': 'empty-schema', 'roles': [], 'contrastPairs': undefined, 'description': undefined }, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'runtime': undefined }
-      : { 'colors': input.colors, 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined };
+      ? { 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': { 'contrastPairs': undefined, 'description': undefined, 'name': 'empty-schema', 'roles': [] }, 'runtime': undefined }
+      : { 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined };
 
-    const state = await engine.run(runInput);
+    const state = engine.run(runInput);
     const json  = state.outputs['core:json'] as JsonOutput | undefined;
 
     return {
-      rolesEmpty:    Object.keys(state.roles).length    === 0,
-      variantsEmpty: Object.keys(state.variants).length === 0,
-      colorsLength:  state.colors.length,
-      jsonOk:        json !== undefined,
+      'colorsLength':  state.colors.length,
+      'jsonOk':        json !== undefined,
+      'rolesEmpty':    Object.keys(state.roles).length    === 0,
+      'variantsEmpty': Object.keys(state.variants).length === 0
     };
-  },
+  }
 ).run(emptySchemaScenarios);

@@ -5,6 +5,7 @@ const props = withDefaults(defineProps<{
   role?: 'group' | 'region';
   variant?: 'default' | 'control' | 'showcase';
 }>(), {
+  help: undefined,
   role: 'region',
   variant: 'default'
 });

@@ -1,44 +1,66 @@
-export type LegendSwatchType = 'solid' | 'dashed' | 'square' | 'circle';
+class LegendItem {
+  public readonly active: boolean | undefined;
+  public readonly color: string;
+  public readonly key: string;
+  public readonly label: string;
+  public readonly swatch: 'solid' | 'dashed' | 'square' | 'circle';
 
-export type LegendItemType = {
-  readonly 'key': string;
-  readonly 'swatch': LegendSwatchType;
-  readonly 'color': string;
-  readonly 'label': string;
-  readonly 'active'?: boolean;
-};
+  public constructor(
+    active: boolean | undefined,
+    color: string,
+    key: string,
+    label: string,
+    swatch: 'solid' | 'dashed' | 'square' | 'circle'
+  ) {
+    this.active = active;
+    this.color = color;
+    this.key = key;
+    this.label = label;
+    this.swatch = swatch;
+  }
+}
 
-export type LegendSectionType = {
-  readonly 'key': string;
-  readonly 'label': string;
-  readonly 'entries': readonly LegendItemType[];
-};
+class LegendSection {
+  public readonly entries: readonly LegendItem[];
+  public readonly key: string;
+  public readonly label: string;
 
-type LegendHooksType = {
-  'getSections': () => readonly LegendSectionType[];
-  'toggle'?: (key: string) => void;
-};
+  public constructor(entries: readonly LegendItem[], key: string, label: string) {
+    this.entries = entries;
+    this.key = key;
+    this.label = label;
+  }
+}
 
-type LegendStateType = {
-  readonly 'sections': readonly LegendSectionType[];
-};
+class LegendState {
+  public readonly sections: readonly LegendSection[];
 
-export class LegendMachine {
-  readonly #hooks: LegendHooksType;
+  public constructor(sections: readonly LegendSection[]) {
+    this.sections = sections;
+  }
+}
 
-  constructor(hooks: LegendHooksType) {
+interface LegendHooksInterface {
+  getSections(): readonly LegendSection[];
+  readonly 'toggle'?: (key: string) => void;
+}
+
+export const LegendMachine = class LegendMachine {
+  readonly #hooks: LegendHooksInterface;
+
+  public constructor(hooks: LegendHooksInterface) {
     this.#hooks = hooks;
   }
 
-  state(): LegendStateType {
-    return { 'sections': this.#hooks.getSections() };
+  public state(): LegendState {
+    return new LegendState(this.#hooks.getSections());
   }
 
-  isToggleable(item: LegendItemType): boolean {
+  public isToggleable(item: LegendItem): boolean {
     return item.active !== undefined && this.#hooks.toggle !== undefined;
   }
 
-  toggle(key: string): void {
+  public toggle(key: string): void {
     this.#hooks.toggle?.(key);
   }
-}
+};

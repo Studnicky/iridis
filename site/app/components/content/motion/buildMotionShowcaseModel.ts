@@ -1,48 +1,82 @@
-import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
 import type { ColorSampleType } from '~/composables/types/colorSample.ts';
 
-export const EASE_PRESETS: Record<string, string> = {
-  Bouncy: 'cubic-bezier(0.68, -0.55, 0.27, 1.55)',
-  'Ease in/out': 'ease-in-out',
-  Linear: 'linear',
-  'Smooth (default)': 'cubic-bezier(0.33, 0, 0.2, 1)',
-  Snappy: 'cubic-bezier(0.16, 1, 0.3, 1)'
-};
+import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
 
-/** The decorative aliases whose engine-computed current hex we show live below. */
-export const LIVE_ROLES: readonly string[] = ALIAS_COLOR_NAMES.filter((alias) => alias !== 'neutral');
+class LiveMotionSwatch {
+  public readonly hex: string;
+  public readonly role: string;
 
-export type LiveMotionSwatchType = {
-  role: string;
-  hex: string;
-};
-
-export type NamedAnimationType = {
-  kind: 'dot' | 'orbit' | 'sonar' | 'radar' | 'chroma';
-  class?: string;
-  duration: string;
-  label: string;
-  note: string;
-};
-
-/** `kind: 'dot'` swatches share one template; everything else renders bespoke markup. */
-export const NAMED_ANIMATIONS: readonly NamedAnimationType[] = [
-  { kind: 'dot', class: 'pulse', duration: '3s', label: 'pulse-glow', note: 'carousel arrows, active dot' },
-  { kind: 'dot', class: 'float', duration: '7s', label: 'float', note: 'hero logo, floating orbs' },
-  { kind: 'dot', class: 'spin-slow', duration: '26s', label: 'spin', note: 'ambient background accent' },
-  { kind: 'dot', class: 'glass', duration: '4s', label: 'sheen', note: 'every glass panel’s top edge' },
-  { kind: 'orbit', duration: '2.2-3.8s', label: 'orbit', note: 'three roles, three independent rings' },
-  { kind: 'sonar', duration: '2.4s', label: 'sonar', note: 'success/warning/error/primary in sequence' },
-  { kind: 'radar', duration: '2.6s', label: 'radar', note: 'primary bleeding into secondary, one sweep' },
-  { kind: 'chroma', duration: '4s', label: 'chroma', note: 'the accent hue cycling the full wheel' }
-];
-
-export function buildLiveMotionSwatches(
-  colorStreamHistory: Record<string, readonly ColorSampleType[] | undefined>
-): LiveMotionSwatchType[] {
-  return LIVE_ROLES.map((role) => {
-    const samples = colorStreamHistory[role];
-    const last = samples?.[samples.length - 1];
-    return { role, hex: last?.hex ?? `var(--ui-color-${role}-500)` };
-  });
+  public constructor(hex: string, role: string) {
+    this.hex = hex;
+    this.role = role;
+  }
 }
+
+class NamedAnimation {
+  public readonly class: string | undefined;
+  public readonly duration: string;
+  public readonly kind: 'dot' | 'orbit' | 'sonar' | 'radar' | 'chroma';
+  public readonly label: string;
+  public readonly note: string;
+
+  public constructor(
+    animationClass: string | undefined,
+    duration: string,
+    kind: NamedAnimation['kind'],
+    label: string,
+    note: string
+  ) {
+    this.class = animationClass;
+    this.duration = duration;
+    this.kind = kind;
+    this.label = label;
+    this.note = note;
+  }
+}
+
+export const buildMotionShowcaseModel = class MotionShowcaseModelBuilder {
+  private static readonly defaultEase = 'cubic-bezier(0.33, 0, 0.2, 1)';
+
+  private static readonly liveRoles = ALIAS_COLOR_NAMES.filter((alias) => {
+    return alias !== 'neutral';
+  });
+
+  public static readonly easePresets: Readonly<Record<string, string>> = Object.freeze({
+    'Bouncy': 'cubic-bezier(0.68, -0.55, 0.27, 1.55)',
+    'Ease in/out': 'ease-in-out',
+    'Linear': 'linear',
+    'Smooth (default)': MotionShowcaseModelBuilder.defaultEase,
+    'Snappy': 'cubic-bezier(0.16, 1, 0.3, 1)'
+  });
+
+  public static readonly namedAnimations: readonly NamedAnimation[] = [
+    new NamedAnimation('pulse', '3s', 'dot', 'pulse-glow', 'carousel arrows, active dot'),
+    new NamedAnimation('float', '7s', 'dot', 'float', 'hero logo, floating orbs'),
+    new NamedAnimation('spin-slow', '26s', 'dot', 'spin', 'ambient background accent'),
+    new NamedAnimation('glass', '4s', 'dot', 'sheen', 'every glass panel’s top edge'),
+    new NamedAnimation(undefined, '2.2-3.8s', 'orbit', 'orbit', 'three roles, three independent rings'),
+    new NamedAnimation(undefined, '2.4s', 'sonar', 'sonar', 'success/warning/error/primary in sequence'),
+    new NamedAnimation(undefined, '2.6s', 'radar', 'radar', 'primary bleeding into secondary, one sweep'),
+    new NamedAnimation(undefined, '4s', 'chroma', 'chroma', 'the accent hue cycling the full wheel')
+  ];
+
+  public static buildLiveMotionSwatches(
+    colorStreamHistory: Record<string, readonly ColorSampleType[] | undefined>
+  ): LiveMotionSwatch[] {
+    const result: LiveMotionSwatch[] = [];
+    for (const role of MotionShowcaseModelBuilder.liveRoles) {
+      const samples = colorStreamHistory[role];
+      const last = samples?.[samples.length - 1];
+      result.push(new LiveMotionSwatch(
+        last?.hex ?? `var(--ui-color-${role}-500)`,
+        role
+      ));
+    }
+    return result;
+  }
+
+  public static resolveEase(key: string): string {
+    return MotionShowcaseModelBuilder.easePresets[key]
+      ?? MotionShowcaseModelBuilder.defaultEase;
+  }
+};

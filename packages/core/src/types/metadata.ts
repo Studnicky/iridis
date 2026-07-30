@@ -1,12 +1,11 @@
-import type { OklchInterfaceType } from './color.ts';
+import type { JsonObjectType } from '@studnicky/types';
+
+import type { EngineMetadataInterfaceTypeEntity } from '../entities/EngineMetadataInterfaceTypeEntity.ts';
+import type { HueTargetOverrideInterfaceTypeEntity } from '../entities/HueTargetOverrideInterfaceTypeEntity.ts';
+import type { RoleClampInterfaceTypeEntity } from '../entities/RoleClampInterfaceTypeEntity.ts';
 
 /** One clamp record written by `resolve:roles` when a seed color is nudged into a role's declared ranges. */
-export type RoleClampInterfaceType = {
-  'resolvedHex':   string;
-  'resolvedOklch': OklchInterfaceType;
-  'seedHex':       string;
-  'seedOklch':     OklchInterfaceType;
-};
+export type RoleClampInterfaceType = RoleClampInterfaceTypeEntity.Type;
 
 /** `metadata['core:roleClamps']`: per-role clamp record, keyed by role name. */
 export type RoleClampMapInterfaceType = Record<string, RoleClampInterfaceType>;
@@ -25,11 +24,19 @@ export type RoleDistanceMapInterfaceType = Record<string, Record<string, number>
  */
 export type HueOffsetOverrideMapInterfaceType = Record<string, number>;
 
-/** One role's absolute-hue-target override — see `core:hueTargetOverrides`. */
-export type HueTargetOverrideInterfaceType = {
-  'hue':       number;
-  'hueClamp': number | undefined;
-};
+type HueTargetOverrideSchemaShapeType = HueTargetOverrideInterfaceTypeEntity.Type;
+
+/**
+ * One role's absolute-hue-target override — see `core:hueTargetOverrides`.
+ * `hueClamp` is widened from an optional key to a required key holding
+ * `T | undefined`, matching this codebase's monomorphic-shape convention —
+ * `FromSchema` marks a non-`required` field optional (`field?: T`), not
+ * present-but-`undefined`, and JSON Schema has no way to express the
+ * latter, so the widening happens here at the consumption site instead of
+ * inside the entity (where the lint-mandated `Type = FromSchema<typeof
+ * Schema>` shape must stay verbatim).
+ */
+export type HueTargetOverrideInterfaceType = { [K in keyof HueTargetOverrideSchemaShapeType]-?: {} extends Pick<HueTargetOverrideSchemaShapeType, K> ? HueTargetOverrideSchemaShapeType[K] | undefined : HueTargetOverrideSchemaShapeType[K] };
 
 /**
  * `metadata['core:hueTargetOverrides']`: per-role absolute `hue`/`hueClamp`
@@ -41,22 +48,30 @@ export type HueTargetOverrideInterfaceType = {
  */
 export type HueTargetOverrideMapInterfaceType = Record<string, HueTargetOverrideInterfaceType>;
 
-/** Known `state.metadata` keys written by core tasks, and their runtime shapes. */
+type EngineMetadataSchemaShapeType = EngineMetadataInterfaceTypeEntity.Type;
+
+/**
+ * Known `state.metadata` keys written by core tasks, and their runtime
+ * shapes. Every field is widened from an optional key to a required key
+ * holding `T | undefined` (see {@link HueTargetOverrideInterfaceType}).
+ * `core:hueTargetOverrides` is additionally pinned to a map of
+ * {@link HueTargetOverrideInterfaceType} — nesting another entity's
+ * `Schema` object literal makes `FromSchema` re-derive that nested shape
+ * from scratch, losing its own optional-field widening.
+ */
 export type EngineMetadataInterfaceType = {
-  'core:hueOffsetOverrides': HueOffsetOverrideMapInterfaceType | undefined;
-  'core:hueTargetOverrides': HueTargetOverrideMapInterfaceType | undefined;
-  'core:roleClamps':         RoleClampMapInterfaceType | undefined;
-  'core:roleDistances':      RoleDistanceMapInterfaceType | undefined;
-  'core:rolesDerived':       string[] | undefined;
-  'core:rolesPinned':        string[] | undefined;
-  'core:rolesSynthesized':   string[] | undefined;
+  [K in keyof EngineMetadataSchemaShapeType]-?: K extends 'core:hueTargetOverrides'
+    ? Record<string, HueTargetOverrideInterfaceType> | undefined
+    : {} extends Pick<EngineMetadataSchemaShapeType, K> ? EngineMetadataSchemaShapeType[K] | undefined : EngineMetadataSchemaShapeType[K];
 };
 
 /** Type-safe accessor for a known `state.metadata` key, returning `undefined` when unset. */
-export function getEngineMetadata<K extends keyof EngineMetadataInterfaceType>(
-  metadata: Record<string, unknown>,
-  key: K
-): EngineMetadataInterfaceType[K] {
-  const result = metadata[key] as EngineMetadataInterfaceType[K];
-  return result;
+export class EngineMetadata {
+  static get<K extends keyof EngineMetadataInterfaceType>(
+    metadata: JsonObjectType,
+    key: K
+  ): EngineMetadataInterfaceType[K] {
+    const result = metadata[key] as EngineMetadataInterfaceType[K];
+    return result;
+  }
 }

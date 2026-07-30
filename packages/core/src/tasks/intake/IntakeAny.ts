@@ -1,7 +1,10 @@
+import type { JsonValueType } from '@studnicky/types';
+
 import { ValidationError } from '@studnicky/errors';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
+import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 import type {
   PaletteStateInterface,
   PipelineContextInterface,
@@ -17,7 +20,7 @@ import { intakeNamed }                            from './IntakeNamed.ts';
 import { intakeOklch }                            from './IntakeOklch.ts';
 import { intakeP3 }                               from './IntakeP3.ts';
 import { intakeRgb }                              from './IntakeRgb.ts';
-import { isImagePixelInput }                      from './IsImagePixelInput.ts';
+import { IsImagePixelInput }                      from './IsImagePixelInput.ts';
 
 /**
  * Non-image delegates tried in order for every scalar entry.
@@ -34,20 +37,22 @@ const SCALAR_DELEGATES = [
   intakeNamed
 ] as const;
 
-/**
- * Attempts a single delegate's `parse` against `raw`, swallowing a parse
- * failure into `undefined`. Extracted to a wrapper so the dispatch loop in
- * {@link IntakeAny.run} does not carry a try/catch in its body (V8
- * de-optimises try/catch inside hot loops).
- */
-function tryParse(
-  delegate: (typeof SCALAR_DELEGATES)[number],
-  raw: unknown
-): ReturnType<(typeof SCALAR_DELEGATES)[number]['parse']> | undefined {
-  try {
-    return delegate.parse(raw);
-  } catch {
-    return undefined;
+class ScalarDelegateDispatch {
+  /**
+   * Attempts a single delegate's `parse` against `raw`, swallowing a parse
+   * failure into `undefined`. Extracted to a wrapper so the dispatch loop in
+   * {@link IntakeAny.run} does not carry a try/catch in its body (V8
+   * de-optimises try/catch inside hot loops).
+   */
+  static tryParse(
+    delegate: (typeof SCALAR_DELEGATES)[number],
+    raw: JsonValueType | RawImagePixelInputInterface
+  ): ReturnType<(typeof SCALAR_DELEGATES)[number]['parse']> | undefined {
+    try {
+      return delegate.parse(raw);
+    } catch {
+      return undefined;
+    }
   }
 }
 
@@ -77,27 +82,26 @@ class IntakeAny implements TaskInterface {
     'writes':      ['colors']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (let i = 0; i < state.input.colors.length; i++) {
-      const raw = state.input.colors[i];
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    for (const [i, raw] of state.input.colors.entries()) {
 
       // ImageData entries produce N records (one per pixel). Handle first.
-      if (isImagePixelInput(raw)) {
-        intakeImagePixels.pushAllPixels(raw, state, ctx);
+      if (IsImagePixelInput.check(raw)) {
+        intakeImagePixels.pushAllPixels(raw, state, context);
         continue;
       }
 
       // Scalar entries: try each delegate until one parse() succeeds.
       let matched = false;
       for (const delegate of SCALAR_DELEGATES) {
-        const record = tryParse(delegate, raw);
+        const record = ScalarDelegateDispatch.tryParse(delegate, raw);
         if (record === undefined) {
           // format mismatch — try next delegate
           continue;
         }
         state.colors.push(record);
         matched = true;
-        ctx.logger.debug(
+        context.logger.debug(
           LogBody.create()
             .component('IntakeAny')
             .operation('run')
@@ -139,7 +143,7 @@ class IntakeAny implements TaskInterface {
       }
     }
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('IntakeAny')
         .operation('run')

@@ -1,19 +1,16 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useColorMode } from '#imports';
-import {
-  buildMermaidRenderErrorMarkup,
-  createMermaidRenderId,
-} from './mermaid/buildMermaidViewModel.ts';
+import { buildMermaidViewModel } from './mermaid/buildMermaidViewModel.ts';
 import { MermaidExplorer } from './mermaid/MermaidExplorer.ts';
-import { mermaidThemeSignature, renderMermaidDiagram } from './mermaid/renderMermaidDiagram.ts';
+import { renderMermaidDiagram } from './mermaid/renderMermaidDiagram.ts';
+import { trustedMarkupRenderer } from './trustedMarkupRenderer.ts';
 
 const props = defineProps<{
   code: string;
 }>();
 
-const svgContent = ref('');
-const renderId = createMermaidRenderId();
+const renderId = buildMermaidViewModel.createRenderId();
 const colorMode = useColorMode();
 const viewportRef = ref<HTMLElement | null>(null);
 let renderRaf: number | null = null;
@@ -29,25 +26,32 @@ const activateExplorer = (): void => {
   explorerRaf = requestAnimationFrame(() => {
     explorerRaf = null;
     if (viewportRef.value === null) return;
-    MermaidExplorer.enhance(viewportRef.value as unknown as Parameters<typeof MermaidExplorer.enhance>[0]);
+    MermaidExplorer.enhance(viewportRef.value);
   });
 };
 
 const renderMermaid = async () => {
   const seq = ++renderSeq;
   if (!props.code) return;
-  const themeSignature = mermaidThemeSignature();
+  const themeSignature = renderMermaidDiagram.themeSignature();
   if (lastRenderedCode === props.code && lastRenderedThemeSignature === themeSignature) {
     return;
   }
 
   try {
-    const rendered = await renderMermaidDiagram(renderId, props.code);
+    const rendered = await renderMermaidDiagram.render(renderId, props.code);
     if (seq !== renderSeq) return;
 
-    svgContent.value = rendered;
-    if (viewportRef.value !== null) {
-      viewportRef.value.dataset['dagExplorerRender'] = String(seq);
+    const viewport = viewportRef.value;
+    if (viewport === null) {
+      return;
+    }
+    const result = trustedMarkupRenderer.render(viewport, rendered, 'svg');
+    if (!result.accepted) {
+      return;
+    }
+    if (result.changed) {
+      viewport.dataset['dagExplorerRender'] = String(seq);
     }
     lastRenderedCode = props.code;
     lastRenderedThemeSignature = themeSignature;
@@ -59,7 +63,9 @@ const renderMermaid = async () => {
   } catch (e) {
     if (seq !== renderSeq) return;
     console.error('Mermaid render error:', e);
-    svgContent.value = buildMermaidRenderErrorMarkup(e);
+    if (viewportRef.value !== null) {
+      trustedMarkupRenderer.renderError(viewportRef.value, e);
+    }
   }
 };
 
@@ -95,6 +101,5 @@ onBeforeUnmount(() => {
   <div
     ref="viewportRef"
     class="dagonizer-mermaid"
-    v-html="svgContent"
   />
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
-import { modeFromTabValue, MODE_SWITCH_TAB_ITEMS, tabValueFromMode } from './buildModeSwitchModel.ts';
+import { buildModeSwitchModel } from './buildModeSwitchModel.ts';
 
 /**
  * Mode selector. The demo is EITHER a color picker OR an image extractor, never
@@ -17,9 +17,9 @@ const { mode } = useIridis();
 // getter here (`'0' === 0` is false) would leave every trigger permanently
 // unselected and the [data-state='active'] CSS would never apply.
 const activeTab = computed({
-  get: () => tabValueFromMode(mode.value),
+  get: () => buildModeSwitchModel.tabValue(mode.value),
   set: (val: number | string) => {
-    mode.value = modeFromTabValue(val);
+    mode.value = buildModeSwitchModel.mode(val);
   }
 });
 
@@ -29,7 +29,7 @@ const activeTab = computed({
   <div class="flex justify-center w-full mb-6">
     <UTabs
       v-model="activeTab"
-      :items="[...MODE_SWITCH_TAB_ITEMS]"
+      :items="[...buildModeSwitchModel.tabItems]"
       :content="false"
       class="w-full max-w-sm output-tabs"
       :ui="{ indicator: 'hidden' }"

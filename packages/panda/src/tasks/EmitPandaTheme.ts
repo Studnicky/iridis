@@ -123,7 +123,7 @@ export class EmitPandaTheme implements TaskInterface {
     'writes':      ['outputs.panda:theme']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const colors = TokenColors.build(state.roles);
 
     const pandaConfig = PandaConfigModule.serialize(colors);
@@ -137,7 +137,7 @@ export class EmitPandaTheme implements TaskInterface {
 
     state.outputs['panda:theme'] = output;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitPandaTheme')
         .operation('run')

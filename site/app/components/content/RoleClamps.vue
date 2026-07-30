@@ -1,9 +1,14 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useRoleMathList } from '~/composables/useRoleMathList.ts';
 
 const { mathList } = useRoleMathList();
 
 const openRoleName = ref<string | null>(null);
+
+function toggleRole(roleName: string): void {
+  openRoleName.value = openRoleName.value === roleName ? null : roleName;
+}
 </script>
 
 <template>
@@ -25,7 +30,7 @@ const openRoleName = ref<string | null>(null);
       <RoleMathGrid
         :roles="mathList"
         :open-role-name="openRoleName"
-        @toggle="(roleName) => openRoleName = openRoleName === roleName ? null : roleName"
+        @toggle="toggleRole"
       />
     </div>
   </div>

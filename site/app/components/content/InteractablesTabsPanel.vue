@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { RoleViewType } from '~/composables/types/index.ts';
-import { buildInteractablesTabsViewModel } from './interactables/buildInteractablesShowcaseModel.ts';
+import { buildInteractablesShowcaseModel } from './interactables/buildInteractablesShowcaseModel.ts';
 
 const props = defineProps<{
   roleViews: readonly RoleViewType[];
@@ -10,7 +10,7 @@ const props = defineProps<{
   compliancePct: number;
 }>();
 
-const tabsModel = computed(() => buildInteractablesTabsViewModel(
+const tabsModel = computed(() => buildInteractablesShowcaseModel.buildTabs(
   props.roleViews,
   props.backgroundHex,
   props.complianceLabel,

@@ -1,4 +1,4 @@
-export default defineAppConfig({
+export default {
   'ui': {
     'button': {
       'variants': {
@@ -17,4 +17,4 @@ export default defineAppConfig({
       }
     }
   }
-});
+};

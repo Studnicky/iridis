@@ -17,40 +17,73 @@
  *   9. emit:cssVarsScoped custom prefix — scopePrefix metadata override
  */
 
+import type { InputInterface, RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { JsonObjectType } from '@studnicky/types';
+
+import { stylesheetPlugin }            from '@studnicky/iridis-stylesheet';
+import { Engine }                      from '@studnicky/iridis/engine';
+import { coreTasks }                   from '@studnicky/iridis/tasks';
+import assert                          from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { test }                        from 'node:test';
-import {
-  ScenarioRunner,
-  assert,
-  type ScenarioInterface,
-} from '../_runner/ScenarioRunner.ts';
 
-import { Engine }                                   from '@studnicky/iridis/engine';
-import { coreTasks }                                from '@studnicky/iridis/tasks';
-import type { InputInterface, RoleSchemaInterfaceType } from '@studnicky/iridis';
-import { stylesheetPlugin }                         from '@studnicky/iridis-stylesheet';
-import type {
-  CssVarsOutputInterfaceType,
-  CssVarsScopedOutputInterfaceType,
-} from '@studnicky/iridis-stylesheet/types';
+import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
+
+import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
+import { CssVarsScenarioOutputEntity } from '../entities/CssVarsScenarioOutputEntity.ts';
+import { CssVarsScopedScenarioOutputEntity } from '../entities/CssVarsScopedScenarioOutputEntity.ts';
+import { CssVarsWideGamutScenarioOutputEntity } from '../entities/CssVarsWideGamutScenarioOutputEntity.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function freshEngine(): Engine {
-  const engine = new Engine();
-  for (const t of coreTasks) engine.tasks.register(t);
-  engine.adopt(stylesheetPlugin);
-  return engine;
+class StylesheetTestFixture {
+  static freshEngine(): Engine {
+    const engine = new Engine();
+    for (const t of coreTasks) {engine.tasks.register(t);}
+    engine.adopt(stylesheetPlugin);
+    return engine;
+  }
+
+  static cssVarsPipeline(extra: readonly string[] = []): readonly string[] {
+    return ['intake:hex', 'resolve:roles', ...extra, 'emit:cssVars'];
+  }
+
+  static cssVarsScopedPipeline(extra: readonly string[] = []): readonly string[] {
+    return ['intake:hex', 'resolve:roles', ...extra, 'emit:cssVarsScoped'];
+  }
 }
 
-function cssVarsPipeline(extra: readonly string[] = []): readonly string[] {
-  return ['intake:hex', 'resolve:roles', ...extra, 'emit:cssVars'];
-}
+class StylesheetScenarioOutput {
+  static cssVars(cssVars: JsonObjectType[string]): CssVarsScenarioOutputEntity.Type {
+    const output = { 'cssVars': cssVars };
+    if (!CssVarsScenarioOutputEntity.validate(output)) {
+      throw new Error('outputs.stylesheet:cssVars is invalid');
+    }
+    return output;
+  }
 
-function cssVarsScopedPipeline(extra: readonly string[] = []): readonly string[] {
-  return ['intake:hex', 'resolve:roles', ...extra, 'emit:cssVarsScoped'];
+  static cssVarsWideGamut(
+    cssVars: JsonObjectType[string],
+    displayP3: JsonObjectType[string]
+  ): CssVarsWideGamutScenarioOutputEntity.Type {
+    const output = displayP3 === undefined
+      ? { 'cssVars': cssVars }
+      : { 'cssVars': cssVars, 'displayP3': displayP3 };
+    if (!CssVarsWideGamutScenarioOutputEntity.validate(output)) {
+      throw new Error('outputs.stylesheet:cssVars wide-gamut result is invalid');
+    }
+    return output;
+  }
+
+  static scoped(scoped: JsonObjectType[string]): CssVarsScopedScenarioOutputEntity.Type {
+    const output = { 'scoped': scoped };
+    if (!CssVarsScopedScenarioOutputEntity.validate(output)) {
+      throw new Error('outputs.stylesheet:cssVarsScoped is invalid');
+    }
+    return output;
+  }
 }
 
 // Single-role schema — minimal baseline
@@ -58,7 +91,7 @@ const SINGLE_ROLE: RoleSchemaInterfaceType = {
   'contrastPairs': undefined,
   'description': undefined,
   'name': 'single',
-  'roles': [{ 'name': 'primary', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined }],
+  'roles': [{ 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'primary', 'required': true }]
 };
 
 // Two-role schema — covers a real-world "foreground + background" pair
@@ -67,9 +100,9 @@ const TWO_ROLES: RoleSchemaInterfaceType = {
   'description': undefined,
   'name': 'two',
   'roles': [
-    { 'name': 'primary',   'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-    { 'name': 'secondary', 'required': false, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-  ],
+    { 'chromaRange': undefined,   'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'primary', 'required': true },
+    { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'secondary', 'required': false }
+  ]
 };
 
 // All-intent schema — exercises every forcedColorsToken branch
@@ -78,17 +111,17 @@ const ALL_INTENT_ROLES: RoleSchemaInterfaceType = {
   'description': undefined,
   'name': 'all-intent',
   'roles': [
-    { 'name': 'bg',        'required': true,  'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
-    { 'name': 'fg',        'required': true,  'intent': 'text', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined       },
-    { 'name': 'acc',       'required': true,  'intent': 'accent', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined     },
-    { 'name': 'muted',     'required': false, 'intent': 'muted', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined      },
-    { 'name': 'critical',  'required': false, 'intent': 'critical', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined   },
-    { 'name': 'positive',  'required': false, 'intent': 'positive', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined   },
-    { 'name': 'lnk',       'required': false, 'intent': 'link', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined       },
-    { 'name': 'btn',       'required': false, 'intent': 'button', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined     },
-    { 'name': 'onAcc',     'required': false, 'intent': 'onAccent', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined   },
-    { 'name': 'onBtn',     'required': false, 'intent': 'onButton', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined   },
-  ],
+    { 'chromaRange': undefined,        'derivedFrom': undefined,  'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'background', 'lightnessRange': undefined, 'name': 'bg', 'required': true },
+    { 'chromaRange': undefined,        'derivedFrom': undefined,  'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'text', 'lightnessRange': undefined, 'name': 'fg', 'required': true       },
+    { 'chromaRange': undefined,       'derivedFrom': undefined,  'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'accent', 'lightnessRange': undefined, 'name': 'acc', 'required': true     },
+    { 'chromaRange': undefined,     'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'muted', 'lightnessRange': undefined, 'name': 'muted', 'required': false      },
+    { 'chromaRange': undefined,  'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'critical', 'lightnessRange': undefined, 'name': 'critical', 'required': false   },
+    { 'chromaRange': undefined,  'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'positive', 'lightnessRange': undefined, 'name': 'positive', 'required': false   },
+    { 'chromaRange': undefined,       'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'link', 'lightnessRange': undefined, 'name': 'lnk', 'required': false       },
+    { 'chromaRange': undefined,       'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'button', 'lightnessRange': undefined, 'name': 'btn', 'required': false     },
+    { 'chromaRange': undefined,     'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'onAccent', 'lightnessRange': undefined, 'name': 'onAcc', 'required': false   },
+    { 'chromaRange': undefined,     'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'onButton', 'lightnessRange': undefined, 'name': 'onBtn', 'required': false   }
+  ]
 };
 
 // Wide-gamut role — permissive chroma so resolve:roles doesn't shrink the OKLCH
@@ -98,29 +131,29 @@ const WIDE_GAMUT_ROLE: RoleSchemaInterfaceType = {
   'name': 'wide-gamut',
   'roles': [
     {
-      'name':            'primary',
-      'required':        true,
-      'intent':          'accent',
-      'lightnessRange':  [0.05, 0.95],
       'chromaRange':     [0.00, 0.50],
       'derivedFrom': undefined,
       'description': undefined,
       'hue': undefined,
       'hueClamp': undefined,
-      'hueOffset': undefined
-    },
-  ],
+      'hueOffset': undefined,
+      'intent':          'accent',
+      'lightnessRange':  [0.05, 0.95],
+      'name':            'primary',
+      'required':        true
+    }
+  ]
 };
 
-// CamelCase role name — exercises toCssVarName kebab conversion
+// CamelCase role name — exercises CssVarName.from kebab conversion
 const CAMEL_ROLE: RoleSchemaInterfaceType = {
   'contrastPairs': undefined,
   'description': undefined,
   'name': 'camel',
   'roles': [
-    { 'name': 'primaryText', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-    { 'name': 'onBackground', 'required': true, 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined },
-  ],
+    { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'primaryText', 'required': true },
+    { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'onBackground', 'required': true }
+  ]
 };
 
 // ---------------------------------------------------------------------------
@@ -132,56 +165,56 @@ const CAMEL_ROLE: RoleSchemaInterfaceType = {
 // invalid input space); noted below.
 // ---------------------------------------------------------------------------
 
-interface PluginShapeInput  { readonly run: true }
-interface PluginShapeOutput {
-  readonly satisfiesPluginShape: boolean;
-  readonly name:                 string;
-  readonly version:              string;
-  readonly taskNames:            readonly string[];
-}
+type PluginShapeInput = true;
+type PluginShapeOutput = {
+  readonly 'name':                 string;
+  readonly 'satisfiesPluginShape': boolean;
+  readonly 'taskNames':            readonly string[];
+  readonly 'version':              string;
+};
 
 const pluginShapeScenarios: readonly ScenarioInterface<PluginShapeInput, PluginShapeOutput>[] = [
   {
-    name: 'singleton satisfies the plugin shape with stable name and version',
-    kind: 'happy',
-    input: { run: true },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=singleton] no throw');
       assert.strictEqual(output!.satisfiesPluginShape, true,        '[cell=1, scenario=singleton] satisfies PluginInterface shape');
       assert.strictEqual(output!.name,                 'stylesheet', '[cell=1, scenario=singleton] name is stylesheet');
       assert.strictEqual(output!.version,              '0.1.0',     '[cell=1, scenario=singleton] version is 0.1.0');
     },
+    'input': true,
+    'kind': 'happy',
+    'name': 'singleton satisfies the plugin shape with stable name and version'
   },
   {
-    name: 'tasks() returns exactly emit:cssVars and emit:cssVarsScoped',
-    kind: 'happy',
-    input: { run: true },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=task-names] no throw');
       assert.deepStrictEqual(
         [...output!.taskNames].sort(),
         ['emit:cssVars', 'emit:cssVarsScoped'],
-        '[cell=1, scenario=task-names] exactly two emit tasks returned',
+        '[cell=1, scenario=task-names] exactly two emit tasks returned'
       );
     },
-  },
+    'input': true,
+    'kind': 'happy',
+    'name': 'tasks() returns exactly emit:cssVars and emit:cssVarsScoped'
+  }
   // unhappy: structurally impossible — plugin is a sealed singleton; no
   // invalid input exists for tasks() or shape inspection.
 ];
 
-new ScenarioRunner<PluginShapeInput, PluginShapeOutput>(
+await new ScenarioRunner<PluginShapeInput, PluginShapeOutput>(
   'StylesheetPlugin :: cell-1 :: plugin-shape',
   (_input) => {
     return {
-      satisfiesPluginShape: typeof stylesheetPlugin.tasks === 'function'
+      'name':                 stylesheetPlugin.name,
+      'satisfiesPluginShape': typeof stylesheetPlugin.tasks === 'function'
         && typeof stylesheetPlugin.schemas === 'function'
         && typeof stylesheetPlugin.name === 'string'
         && typeof stylesheetPlugin.version === 'string',
-      name:                 stylesheetPlugin.name,
-      version:              stylesheetPlugin.version,
-      taskNames:            stylesheetPlugin.tasks().map((t) => t.name),
+      'taskNames':            stylesheetPlugin.tasks().map((t) => { const result = t.name; return result; }),
+      'version':              stylesheetPlugin.version
     };
-  },
+  }
 ).run(pluginShapeScenarios);
 
 // ---------------------------------------------------------------------------
@@ -195,26 +228,15 @@ new ScenarioRunner<PluginShapeInput, PluginShapeOutput>(
 // Edge: empty palette (no roles resolved) and single-role palette.
 // ---------------------------------------------------------------------------
 
-interface CssVarsBasicInput {
-  readonly colors: InputInterface['colors'];
-  readonly roles:  RoleSchemaInterfaceType;
-  readonly pipeline: readonly string[];
-  readonly metadata?: InputInterface['metadata'];
+interface CssVarsBasicInputInterface {
+  readonly 'colors': InputInterface['colors'];
+  readonly 'metadata'?: InputInterface['metadata'];
+  readonly 'pipeline': readonly string[];
+  readonly 'roles':  RoleSchemaInterfaceType;
 }
-interface CssVarsBasicOutput {
-  readonly cssVars: CssVarsOutputInterfaceType;
-}
-
-const cssVarsBasicScenarios: readonly ScenarioInterface<CssVarsBasicInput, CssVarsBasicOutput>[] = [
+const cssVarsBasicScenarios: readonly ScenarioInterface<CssVarsBasicInputInterface, CssVarsScenarioOutputEntity.Type>[] = [
   {
-    name: 'single-role palette writes :root block and map',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=single-role] no throw');
       const cv = output!.cssVars;
       assert.ok(cv.rootBlock.startsWith(':root {'), '[cell=2, scenario=single-role] rootBlock opens :root');
@@ -222,21 +244,21 @@ const cssVarsBasicScenarios: readonly ScenarioInterface<CssVarsBasicInput, CssVa
         '[cell=2, scenario=single-role] --c-primary declared in rootBlock');
       assert.strictEqual(Object.keys(cv.map).length, 1,
         '[cell=2, scenario=single-role] map has one entry');
-      assert.strictEqual(cv.map['primary'], '--c-primary',
+      assert.strictEqual(cv.map.primary, '--c-primary',
         '[cell=2, scenario=single-role] map entry is --c-primary');
       assert.ok(cv.full.includes(':root {'),
         '[cell=2, scenario=single-role] full contains :root block');
     },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'happy',
+    'name': 'single-role palette writes :root block and map'
   },
   {
-    name: 'two-role palette writes one var per role and complete map',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6', '#c4b5fd'],
-      roles:    TWO_ROLES,
-      pipeline: cssVarsPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=two-roles] no throw');
       const cv = output!.cssVars;
       assert.match(cv.rootBlock, /--c-primary:\s+#[0-9a-f]{6};/,
@@ -245,40 +267,40 @@ const cssVarsBasicScenarios: readonly ScenarioInterface<CssVarsBasicInput, CssVa
         '[cell=2, scenario=two-roles] secondary var declared');
       assert.strictEqual(Object.keys(cv.map).length, 2,
         '[cell=2, scenario=two-roles] map has two entries');
-      assert.strictEqual(cv.map['primary'],   '--c-primary',   '[cell=2, scenario=two-roles] primary mapped');
-      assert.strictEqual(cv.map['secondary'], '--c-secondary', '[cell=2, scenario=two-roles] secondary mapped');
+      assert.strictEqual(cv.map.primary,   '--c-primary',   '[cell=2, scenario=two-roles] primary mapped');
+      assert.strictEqual(cv.map.secondary, '--c-secondary', '[cell=2, scenario=two-roles] secondary mapped');
     },
+    'input': {
+      'colors':   ['#5b21b6', '#c4b5fd'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    TWO_ROLES
+    },
+    'kind': 'happy',
+    'name': 'two-role palette writes one var per role and complete map'
   },
   {
-    name: 'all-intent roles produce one var per role',
-    kind: 'happy',
-    input: {
-      colors:   ['#1a1a2e', '#e0e0e0', '#7b2d8b', '#888', '#b00020', '#388e3c', '#0066cc', '#1976d2', '#ffffff', '#fff9c4'],
-      roles:    ALL_INTENT_ROLES,
-      pipeline: cssVarsPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=all-roles] no throw');
       const cv = output!.cssVars;
-      const expectedRoles = ALL_INTENT_ROLES.roles.map((r) => r.name);
+      const expectedRoles = ALL_INTENT_ROLES.roles.map((r) => { const result = r.name; return result; });
       for (const roleName of expectedRoles) {
-        const varSuffix = roleName.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`);
+        const varSuffix = roleName.replace(/[A-Z]/g, (m) => { const result = `-${m.toLowerCase()}`; return result; });
         assert.ok(roleName in cv.map,
           `[cell=2, scenario=all-roles] map contains role '${roleName}'`);
-        assert.match(cv.rootBlock, new RegExp(`--c-${varSuffix}:`),
+        assert.ok(cv.rootBlock.includes(`--c-${varSuffix}:`),
           `[cell=2, scenario=all-roles] rootBlock declares --c-${varSuffix}`);
       }
     },
+    'input': {
+      'colors':   ['#1a1a2e', '#e0e0e0', '#7b2d8b', '#888', '#b00020', '#388e3c', '#0066cc', '#1976d2', '#ffffff', '#fff9c4'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    ALL_INTENT_ROLES
+    },
+    'kind': 'happy',
+    'name': 'all-intent roles produce one var per role'
   },
   {
-    name: 'output shape has all required fields even with single-role palette',
-    kind: 'edge',
-    input: {
-      colors:   ['#000000'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=output-shape] no throw');
       const cv = output!.cssVars;
       assert.ok(typeof cv.rootBlock    === 'string', '[cell=2, scenario=output-shape] rootBlock is string');
@@ -289,15 +311,22 @@ const cssVarsBasicScenarios: readonly ScenarioInterface<CssVarsBasicInput, CssVa
       assert.ok(typeof cv.full         === 'string', '[cell=2, scenario=output-shape] full is string');
       assert.ok(typeof cv.map          === 'object', '[cell=2, scenario=output-shape] map is object');
     },
-  },
+    'input': {
+      'colors':   ['#000000'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'edge',
+    'name': 'output shape has all required fields even with single-role palette'
+  }
 ];
 
-new ScenarioRunner<CssVarsBasicInput, CssVarsBasicOutput>(
+await new ScenarioRunner<CssVarsBasicInputInterface, CssVarsScenarioOutputEntity.Type>(
   'StylesheetPlugin :: cell-2 :: emit:cssVars.basic',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = StylesheetTestFixture.freshEngine();
     engine.pipeline(input.pipeline);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
       'colors':    input.colors,
       'contrast':  undefined,
@@ -305,12 +334,10 @@ new ScenarioRunner<CssVarsBasicInput, CssVarsBasicOutput>(
       'maxColors': undefined,
       'metadata':  input.metadata,
       'roles':     input.roles,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
-    if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
-    return { cssVars };
-  },
+    return StylesheetScenarioOutput.cssVars(state.outputs['stylesheet:cssVars']);
+  }
 ).run(cssVarsBasicScenarios);
 
 // ---------------------------------------------------------------------------
@@ -322,85 +349,65 @@ new ScenarioRunner<CssVarsBasicInput, CssVarsBasicOutput>(
 // Dark-scheme block appears only when derive:variant produces a 'dark' variant.
 // ---------------------------------------------------------------------------
 
-interface CssVarsCascadeInput {
-  readonly colors:    InputInterface['colors'];
-  readonly roles:     RoleSchemaInterfaceType;
-  readonly pipeline:  readonly string[];
-  readonly metadata?: InputInterface['metadata'];
+interface CssVarsCascadeInputInterface {
+  readonly 'colors':    InputInterface['colors'];
+  readonly 'metadata'?: InputInterface['metadata'];
+  readonly 'pipeline':  readonly string[];
+  readonly 'roles':     RoleSchemaInterfaceType;
 }
-interface CssVarsCascadeOutput {
-  readonly cssVars: CssVarsOutputInterfaceType;
-}
+const FORCED_TOKENS = new Map<string, string>([
+  ['accent',     'Highlight'],
+  ['background', 'Canvas'],
+  ['button',     'ButtonFace'],
+  ['critical',   'CanvasText'],
+  ['link',       'LinkText'],
+  ['muted',      'GrayText'],
+  ['onAccent',   'HighlightText'],
+  ['onButton',   'ButtonText'],
+  ['positive',   'CanvasText'],
+  ['text',       'CanvasText']
+]);
 
-const FORCED_TOKENS: Readonly<Record<string, string>> = {
-  'text':       'CanvasText',
-  'background': 'Canvas',
-  'accent':     'Highlight',
-  'muted':      'GrayText',
-  'critical':   'CanvasText',
-  'positive':   'CanvasText',
-  'link':       'LinkText',
-  'button':     'ButtonFace',
-  'onAccent':   'HighlightText',
-  'onButton':   'ButtonText',
-};
-
-const cssVarsCascadeScenarios: readonly ScenarioInterface<CssVarsCascadeInput, CssVarsCascadeOutput>[] = [
+const cssVarsCascadeScenarios: readonly ScenarioInterface<CssVarsCascadeInputInterface, CssVarsScenarioOutputEntity.Type>[] = [
   {
-    name: 'forcedColors block always emitted and contains @media (forced-colors: active)',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=forced-colors-present] no throw');
       assert.match(output!.cssVars.forcedColors, /@media \(forced-colors: active\)/,
         '[cell=3, scenario=forced-colors-present] forced-colors block present');
       assert.match(output!.cssVars.forcedColors, /:root/,
         '[cell=3, scenario=forced-colors-present] forced-colors wraps :root');
     },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'happy',
+    'name': 'forcedColors block always emitted and contains @media (forced-colors: active)'
   },
   {
-    name: 'all intent types map to correct forced-colors system tokens',
-    kind: 'happy',
-    input: {
-      colors:   ['#1a1a2e', '#e0e0e0', '#7b2d8b', '#888', '#b00020', '#388e3c', '#0066cc', '#1976d2', '#ffffff', '#fff9c4'],
-      roles:    ALL_INTENT_ROLES,
-      pipeline: cssVarsPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=all-intents] no throw');
       const fc = output!.cssVars.forcedColors;
       for (const role of ALL_INTENT_ROLES.roles) {
-        const varSuffix    = role.name.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`);
-        const expectedToken = FORCED_TOKENS[role.intent ?? ''] ?? 'CanvasText';
-        assert.match(
-          fc,
-          new RegExp(`--c-${varSuffix}:\\s+${expectedToken};`),
-          `[cell=3, scenario=all-intents] role '${role.name}' (intent=${role.intent}) maps to ${expectedToken}`,
+        const varSuffix    = role.name.replace(/[A-Z]/g, (match) => { const result = `-${match.toLowerCase()}`; return result; });
+        const expectedToken = FORCED_TOKENS.get(role.intent ?? '') ?? 'CanvasText';
+        assert.ok(
+          fc.includes(`--c-${varSuffix}: ${expectedToken};`),
+          `[cell=3, scenario=all-intents] role '${role.name}' (intent=${role.intent}) maps to ${expectedToken}`
         );
       }
     },
+    'input': {
+      'colors':   ['#1a1a2e', '#e0e0e0', '#7b2d8b', '#888', '#b00020', '#388e3c', '#0066cc', '#1976d2', '#ffffff', '#fff9c4'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    ALL_INTENT_ROLES
+    },
+    'kind': 'happy',
+    'name': 'all intent types map to correct forced-colors system tokens'
   },
   {
-    name: 'text-intent role maps to CanvasText (not Canvas) in forced-colors',
-    kind: 'happy',
-    input: {
-      colors:   ['#1a1a2e', '#e0e0e0'],
-      roles:    {
-        'contrastPairs': undefined,
-        'description': undefined,
-        'name': 'text-bg',
-        'roles': [
-          { 'name': 'bg',   'required': true, 'intent': 'background', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
-          { 'name': 'text', 'required': true, 'intent': 'text', 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'lightnessRange': undefined },
-        ],
-      },
-      pipeline: cssVarsPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=text-not-canvas] no throw');
       const fc = output!.cssVars.forcedColors;
       assert.doesNotMatch(fc, /--c-text:\s+Canvas;/,
@@ -408,84 +415,99 @@ const cssVarsCascadeScenarios: readonly ScenarioInterface<CssVarsCascadeInput, C
       assert.match(fc, /--c-text:\s+CanvasText;/,
         '[cell=3, scenario=text-not-canvas] text role maps to CanvasText');
     },
+    'input': {
+      'colors':   ['#1a1a2e', '#e0e0e0'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    {
+        'contrastPairs': undefined,
+        'description': undefined,
+        'name': 'text-bg',
+        'roles': [
+          { 'chromaRange': undefined,   'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'background', 'lightnessRange': undefined, 'name': 'bg', 'required': true },
+          { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'text', 'lightnessRange': undefined, 'name': 'text', 'required': true }
+        ]
+      }
+    },
+    'kind': 'happy',
+    'name': 'text-intent role maps to CanvasText (not Canvas) in forced-colors'
   },
   {
-    name: 'role without intent declaration falls safe to CanvasText in forced-colors',
-    kind: 'edge',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,    // no intent declared
-      pipeline: cssVarsPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=no-intent-fallback] no throw');
       assert.match(output!.cssVars.forcedColors, /--c-primary:\s+CanvasText;/,
         '[cell=3, scenario=no-intent-fallback] undeclared intent falls to CanvasText');
     },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    SINGLE_ROLE    // no intent declared
+    },
+    'kind': 'edge',
+    'name': 'role without intent declaration falls safe to CanvasText in forced-colors'
   },
   {
-    name: 'dark-scheme block absent when derive:variant not in pipeline',
-    kind: 'edge',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsPipeline(),  // no derive:variant
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=no-dark-scheme] no throw');
       assert.strictEqual(output!.cssVars.darkScheme, '',
         '[cell=3, scenario=no-dark-scheme] darkScheme empty without derive:variant');
       assert.ok(!output!.cssVars.full.includes('@media (prefers-color-scheme: dark)'),
         '[cell=3, scenario=no-dark-scheme] full contains no dark-scheme media query');
     },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),  // no derive:variant
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'edge',
+    'name': 'dark-scheme block absent when derive:variant not in pipeline'
   },
   {
-    name: 'dark-scheme block present and wraps :root when derive:variant in pipeline',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6', '#c4b5fd'],
-      roles:    TWO_ROLES,
-      pipeline: cssVarsPipeline(['derive:variant']),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=dark-scheme-present] no throw');
       assert.match(output!.cssVars.darkScheme, /@media \(prefers-color-scheme: dark\)/,
         '[cell=3, scenario=dark-scheme-present] darkScheme has media query');
       assert.match(output!.cssVars.darkScheme, /:root/,
         '[cell=3, scenario=dark-scheme-present] darkScheme wraps :root');
     },
+    'input': {
+      'colors':   ['#5b21b6', '#c4b5fd'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(['derive:variant']),
+      'roles':    TWO_ROLES
+    },
+    'kind': 'happy',
+    'name': 'dark-scheme block present and wraps :root when derive:variant in pipeline'
   },
   {
-    name: 'cascade order in full: :root precedes @supports precedes @media forced-colors',
-    kind: 'happy',
-    input: {
-      colors:   [{ 'l': 0.7, 'c': 0.4, 'h': 30 }],
-      roles:    WIDE_GAMUT_ROLE,
-      pipeline: ['intake:oklch', 'resolve:roles', 'emit:cssVars'],
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=cascade-order] no throw');
       const full = output!.cssVars.full;
-      const rootIdx      = full.indexOf(':root');
-      const supportsIdx  = full.indexOf('@supports');
-      const forcedIdx    = full.indexOf('@media (forced-colors');
-      assert.ok(rootIdx >= 0,     '[cell=3, scenario=cascade-order] :root present in full');
-      assert.ok(supportsIdx >= 0, '[cell=3, scenario=cascade-order] @supports present in full');
-      assert.ok(forcedIdx >= 0,   '[cell=3, scenario=cascade-order] @media forced-colors present in full');
-      assert.ok(rootIdx < supportsIdx,
+      const rootIndex      = full.indexOf(':root');
+      const supportsIndex  = full.indexOf('@supports');
+      const forcedIndex    = full.indexOf('@media (forced-colors');
+      assert.ok(rootIndex >= 0,     '[cell=3, scenario=cascade-order] :root present in full');
+      assert.ok(supportsIndex >= 0, '[cell=3, scenario=cascade-order] @supports present in full');
+      assert.ok(forcedIndex >= 0,   '[cell=3, scenario=cascade-order] @media forced-colors present in full');
+      assert.ok(rootIndex < supportsIndex,
         '[cell=3, scenario=cascade-order] :root precedes @supports');
-      assert.ok(supportsIdx < forcedIdx,
+      assert.ok(supportsIndex < forcedIndex,
         '[cell=3, scenario=cascade-order] @supports precedes @media forced-colors');
     },
-  },
+    'input': {
+      'colors':   [{ 'c': 0.4, 'h': 30, 'l': 0.7 }],
+      'pipeline': ['intake:oklch', 'resolve:roles', 'emit:cssVars'],
+      'roles':    WIDE_GAMUT_ROLE
+    },
+    'kind': 'happy',
+    'name': 'cascade order in full: :root precedes @supports precedes @media forced-colors'
+  }
 ];
 
-new ScenarioRunner<CssVarsCascadeInput, CssVarsCascadeOutput>(
+await new ScenarioRunner<CssVarsCascadeInputInterface, CssVarsScenarioOutputEntity.Type>(
   'StylesheetPlugin :: cell-3 :: emit:cssVars.cascade',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = StylesheetTestFixture.freshEngine();
     engine.pipeline(input.pipeline);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
       'colors':    input.colors,
       'contrast':  undefined,
@@ -493,12 +515,10 @@ new ScenarioRunner<CssVarsCascadeInput, CssVarsCascadeOutput>(
       'maxColors': undefined,
       'metadata':  input.metadata,
       'roles':     input.roles,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
-    if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
-    return { cssVars };
-  },
+    return StylesheetScenarioOutput.cssVars(state.outputs['stylesheet:cssVars']);
+  }
 ).run(cssVarsCascadeScenarios);
 
 // ---------------------------------------------------------------------------
@@ -510,108 +530,104 @@ new ScenarioRunner<CssVarsCascadeInput, CssVarsCascadeOutput>(
 // [<scopeAttr>='<themeName>'] when scopeAttr is set.
 // ---------------------------------------------------------------------------
 
-interface CssVarsNamingInput {
-  readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterfaceType;
-  readonly pipeline: readonly string[];
-  readonly metadata: InputInterface['metadata'];
+interface CssVarsNamingInputInterface {
+  readonly 'colors':   InputInterface['colors'];
+  readonly 'metadata': InputInterface['metadata'];
+  readonly 'pipeline': readonly string[];
+  readonly 'roles':    RoleSchemaInterfaceType;
 }
-interface CssVarsNamingOutput {
-  readonly cssVars: CssVarsOutputInterfaceType;
-}
-
-const cssVarsNamingScenarios: readonly ScenarioInterface<CssVarsNamingInput, CssVarsNamingOutput>[] = [
+const cssVarsNamingScenarios: readonly ScenarioInterface<CssVarsNamingInputInterface, CssVarsScenarioOutputEntity.Type>[] = [
   {
-    name: 'default --c- prefix applied to role vars',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsPipeline(),
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=default-prefix] no throw');
       assert.match(output!.cssVars.rootBlock, /--c-primary:/,
         '[cell=4, scenario=default-prefix] default --c- prefix used');
     },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'metadata': {},
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'happy',
+    'name': 'default --c- prefix applied to role vars'
   },
   {
-    name: 'custom cssVarPrefix overrides default --c- prefix',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsPipeline(),
-      metadata: { 'cssVarPrefix': '--brand-' },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=custom-prefix] no throw');
       assert.match(output!.cssVars.rootBlock, /--brand-primary:/,
         '[cell=4, scenario=custom-prefix] --brand- prefix used in rootBlock');
       assert.ok(!output!.cssVars.rootBlock.includes('--c-primary'),
         '[cell=4, scenario=custom-prefix] default --c- prefix absent');
-      assert.strictEqual(output!.cssVars.map['primary'], '--brand-primary',
+      assert.strictEqual(output!.cssVars.map.primary, '--brand-primary',
         '[cell=4, scenario=custom-prefix] map reflects custom prefix');
     },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'metadata': { 'cssVarPrefix': '--brand-' },
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'happy',
+    'name': 'custom cssVarPrefix overrides default --c- prefix'
   },
   {
-    name: 'camelCase role names are kebab-cased in emitted vars',
-    kind: 'edge',
-    input: {
-      colors:   ['#5b21b6', '#c4b5fd'],
-      roles:    CAMEL_ROLE,
-      pipeline: cssVarsPipeline(),
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=camel-kebab] no throw');
       assert.match(output!.cssVars.rootBlock, /--c-primary-text:/,
         '[cell=4, scenario=camel-kebab] primaryText → --c-primary-text');
       assert.match(output!.cssVars.rootBlock, /--c-on-background:/,
         '[cell=4, scenario=camel-kebab] onBackground → --c-on-background');
-      assert.strictEqual(output!.cssVars.map['primaryText'],   '--c-primary-text',
+      assert.strictEqual(output!.cssVars.map.primaryText,   '--c-primary-text',
         '[cell=4, scenario=camel-kebab] map entry kebab-cased for primaryText');
-      assert.strictEqual(output!.cssVars.map['onBackground'],  '--c-on-background',
+      assert.strictEqual(output!.cssVars.map.onBackground,  '--c-on-background',
         '[cell=4, scenario=camel-kebab] map entry kebab-cased for onBackground');
     },
+    'input': {
+      'colors':   ['#5b21b6', '#c4b5fd'],
+      'metadata': {},
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    CAMEL_ROLE
+    },
+    'kind': 'edge',
+    'name': 'camelCase role names are kebab-cased in emitted vars'
   },
   {
-    name: 'scopedBlock uses data-theme selector by default',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsPipeline(),
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=scoped-default] no throw');
       assert.match(output!.cssVars.scopedBlock, /\[data-theme='default'\]/,
         "[cell=4, scenario=scoped-default] default scopedBlock uses [data-theme='default']");
     },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'metadata': {},
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'happy',
+    'name': 'scopedBlock uses data-theme selector by default'
   },
   {
-    name: 'scopeAttr metadata changes the scoped attribute name',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsPipeline(),
-      metadata: { 'scopeAttr': 'data-scheme', 'themeName': 'light' },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=4, scenario=scoped-attr] no throw');
       assert.match(output!.cssVars.scopedBlock, /\[data-scheme='light'\]/,
         "[cell=4, scenario=scoped-attr] scopedBlock uses custom [data-scheme='light']");
     },
-  },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'metadata': { 'scopeAttr': 'data-scheme', 'themeName': 'light' },
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'happy',
+    'name': 'scopeAttr metadata changes the scoped attribute name'
+  }
 ];
 
-new ScenarioRunner<CssVarsNamingInput, CssVarsNamingOutput>(
+await new ScenarioRunner<CssVarsNamingInputInterface, CssVarsScenarioOutputEntity.Type>(
   'StylesheetPlugin :: cell-4 :: emit:cssVars.naming',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = StylesheetTestFixture.freshEngine();
     engine.pipeline(input.pipeline);
     const runInput: InputInterface = {
       'bypass':    undefined,
@@ -621,13 +637,11 @@ new ScenarioRunner<CssVarsNamingInput, CssVarsNamingOutput>(
       'maxColors': undefined,
       'metadata':  input.metadata,
       'roles':     input.roles,
-      'runtime':   undefined,
+      'runtime':   undefined
     };
-    const state = await engine.run(runInput);
-    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
-    if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
-    return { cssVars };
-  },
+    const state = engine.run(runInput);
+    return StylesheetScenarioOutput.cssVars(state.outputs['stylesheet:cssVars']);
+  }
 ).run(cssVarsNamingScenarios);
 
 // ---------------------------------------------------------------------------
@@ -644,27 +658,15 @@ new ScenarioRunner<CssVarsNamingInput, CssVarsNamingOutput>(
 // intake:p3 path: displayP3 carried verbatim at 4dp precision.
 // ---------------------------------------------------------------------------
 
-interface CssVarsWideGamutInput {
-  readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterfaceType;
-  readonly pipeline: readonly string[];
-  readonly metadata?: InputInterface['metadata'];
+interface CssVarsWideGamutInputInterface {
+  readonly 'colors':   InputInterface['colors'];
+  readonly 'metadata'?: InputInterface['metadata'];
+  readonly 'pipeline': readonly string[];
+  readonly 'roles':    RoleSchemaInterfaceType;
 }
-interface CssVarsWideGamutOutput {
-  readonly cssVars: CssVarsOutputInterfaceType;
-  readonly displayP3?: { r: number; g: number; b: number } | undefined;
-}
-
-const cssVarsWideGamutScenarios: readonly ScenarioInterface<CssVarsWideGamutInput, CssVarsWideGamutOutput>[] = [
+const cssVarsWideGamutScenarios: readonly ScenarioInterface<CssVarsWideGamutInputInterface, CssVarsWideGamutScenarioOutputEntity.Type>[] = [
   {
-    name: 'sRGB-only input produces empty wideGamut and no @supports in full',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=srgb-only] no throw');
       assert.strictEqual(output!.cssVars.wideGamut, '',
         '[cell=5, scenario=srgb-only] wideGamut is empty string for sRGB-only input');
@@ -673,17 +675,16 @@ const cssVarsWideGamutScenarios: readonly ScenarioInterface<CssVarsWideGamutInpu
       assert.ok(!output!.cssVars.full.includes('display-p3'),
         '[cell=5, scenario=srgb-only] full contains no display-p3 syntax');
     },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'pipeline': StylesheetTestFixture.cssVarsPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'happy',
+    'name': 'sRGB-only input produces empty wideGamut and no @supports in full'
   },
   {
-    name: 'out-of-sRGB OKLCH populates displayP3 and emits @supports wideGamut block',
-    kind: 'happy',
-    input: {
-      // l=0.7, c=0.4, h=30 — vivid red-orange, well outside sRGB
-      colors:   [{ 'l': 0.7, 'c': 0.4, 'h': 30 }],
-      roles:    WIDE_GAMUT_ROLE,
-      pipeline: ['intake:oklch', 'resolve:roles', 'emit:cssVars'],
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=oklch-out-of-srgb] no throw');
       const cv = output!.cssVars;
       // sRGB fallback — channels must be clamped into gamut
@@ -700,50 +701,58 @@ const cssVarsWideGamutScenarios: readonly ScenarioInterface<CssVarsWideGamutInpu
       assert.ok(output!.displayP3 !== undefined,
         '[cell=5, scenario=oklch-out-of-srgb] displayP3 populated on role record');
     },
+    'input': {
+      // l=0.7, c=0.4, h=30 — vivid red-orange, well outside sRGB
+      'colors':   [{ 'c': 0.4, 'h': 30, 'l': 0.7 }],
+      'pipeline': ['intake:oklch', 'resolve:roles', 'emit:cssVars'],
+      'roles':    WIDE_GAMUT_ROLE
+    },
+    'kind': 'happy',
+    'name': 'out-of-sRGB OKLCH populates displayP3 and emits @supports wideGamut block'
   },
   {
-    name: 'intake:p3 string input preserves displayP3 at 4dp precision',
-    kind: 'happy',
-    input: {
-      colors:   ['color(display-p3 0.99 0.42 0.18)'],
-      roles:    WIDE_GAMUT_ROLE,
-      pipeline: ['intake:p3', 'resolve:roles', 'emit:cssVars'],
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=intake-p3] no throw');
       const cv = output!.cssVars;
       assert.ok(cv.wideGamut.length > 0,
         '[cell=5, scenario=intake-p3] wideGamut block emitted');
       assert.ok(
         cv.wideGamut.includes('color(display-p3 0.9900 0.4200 0.1800)'),
-        `[cell=5, scenario=intake-p3] P3 value serialized at 4dp, got:\n${cv.wideGamut}`,
+        `[cell=5, scenario=intake-p3] P3 value serialized at 4dp, got:\n${cv.wideGamut}`
       );
     },
+    'input': {
+      'colors':   ['color(display-p3 0.99 0.42 0.18)'],
+      'pipeline': ['intake:p3', 'resolve:roles', 'emit:cssVars'],
+      'roles':    WIDE_GAMUT_ROLE
+    },
+    'kind': 'happy',
+    'name': 'intake:p3 string input preserves displayP3 at 4dp precision'
   },
   {
-    name: 'wideGamut block emitted inside @supports query wrapper',
-    kind: 'edge',
-    input: {
-      colors:   [{ 'l': 0.7, 'c': 0.4, 'h': 30 }],
-      roles:    WIDE_GAMUT_ROLE,
-      pipeline: ['intake:oklch', 'resolve:roles', 'emit:cssVars'],
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=supports-wrapper] no throw');
       assert.match(output!.cssVars.wideGamut, /^@supports/,
         '[cell=5, scenario=supports-wrapper] wideGamut string opens with @supports');
       assert.match(output!.cssVars.wideGamut, /:root \{/,
         '[cell=5, scenario=supports-wrapper] @supports block contains :root block');
     },
-  },
+    'input': {
+      'colors':   [{ 'c': 0.4, 'h': 30, 'l': 0.7 }],
+      'pipeline': ['intake:oklch', 'resolve:roles', 'emit:cssVars'],
+      'roles':    WIDE_GAMUT_ROLE
+    },
+    'kind': 'edge',
+    'name': 'wideGamut block emitted inside @supports query wrapper'
+  }
 ];
 
-new ScenarioRunner<CssVarsWideGamutInput, CssVarsWideGamutOutput>(
+await new ScenarioRunner<CssVarsWideGamutInputInterface, CssVarsWideGamutScenarioOutputEntity.Type>(
   'StylesheetPlugin :: cell-5 :: emit:cssVars.wide-gamut',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = StylesheetTestFixture.freshEngine();
     engine.pipeline(input.pipeline);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
       'colors':    input.colors,
       'contrast':  undefined,
@@ -751,13 +760,11 @@ new ScenarioRunner<CssVarsWideGamutInput, CssVarsWideGamutOutput>(
       'maxColors': undefined,
       'metadata':  input.metadata,
       'roles':     input.roles,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    const cssVars = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
-    if (!cssVars) throw new Error('outputs.stylesheet:cssVars not set');
-    const displayP3 = state.roles['primary']?.displayP3;
-    return { cssVars, displayP3 };
-  },
+    const displayP3 = state.roles.primary?.displayP3;
+    return StylesheetScenarioOutput.cssVarsWideGamut(state.outputs['stylesheet:cssVars'], displayP3);
+  }
 ).run(cssVarsWideGamutScenarios);
 
 // ---------------------------------------------------------------------------
@@ -771,98 +778,94 @@ new ScenarioRunner<CssVarsWideGamutInput, CssVarsWideGamutOutput>(
 // The default scopePrefix is 'theme'; state.metadata.scopePrefix overrides it.
 // ---------------------------------------------------------------------------
 
-interface CssVarsScopedBasicInput {
-  readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterfaceType;
-  readonly pipeline: readonly string[];
-  readonly metadata?: InputInterface['metadata'];
+interface CssVarsScopedBasicInputInterface {
+  readonly 'colors':   InputInterface['colors'];
+  readonly 'metadata'?: InputInterface['metadata'];
+  readonly 'pipeline': readonly string[];
+  readonly 'roles':    RoleSchemaInterfaceType;
 }
-interface CssVarsScopedBasicOutput {
-  readonly scoped: CssVarsScopedOutputInterfaceType;
-}
-
-const cssVarsScopedBasicScenarios: readonly ScenarioInterface<CssVarsScopedBasicInput, CssVarsScopedBasicOutput>[] = [
+const cssVarsScopedBasicScenarios: readonly ScenarioInterface<CssVarsScopedBasicInputInterface, CssVarsScopedScenarioOutputEntity.Type>[] = [
   {
-    name: 'single-role sRGB palette writes default block with [data-theme] selector',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsScopedPipeline(),
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=single-role-scoped] no throw');
       const sc = output!.scoped;
       assert.ok('default' in sc.blocks, '[cell=6, scenario=single-role-scoped] blocks has default key');
-      assert.match(sc.blocks['default'] as string, /\[data-theme='default'\]/,
+      assert.match(sc.blocks.default, /\[data-theme='default'\]/,
         "[cell=6, scenario=single-role-scoped] default block uses [data-theme='default'] selector");
-      assert.match(sc.blocks['default'] as string, /--c-primary:\s+#[0-9a-f]{6};/,
+      assert.match(sc.blocks.default, /--c-primary:\s+#[0-9a-f]{6};/,
         '[cell=6, scenario=single-role-scoped] primary var declared in default block');
       assert.deepStrictEqual(sc.wideGamut, {},
         '[cell=6, scenario=single-role-scoped] wideGamut empty for sRGB-only input');
       assert.ok(sc.full.includes("[data-theme='default']"),
         '[cell=6, scenario=single-role-scoped] full includes default block');
     },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'metadata': {},
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'happy',
+    'name': 'single-role sRGB palette writes default block with [data-theme] selector'
   },
   {
-    name: 'two-role sRGB palette declares both vars in default block',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6', '#c4b5fd'],
-      roles:    TWO_ROLES,
-      pipeline: cssVarsScopedPipeline(),
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=two-roles-scoped] no throw');
-      const block = output!.scoped.blocks['default'] as string;
+      const block = output!.scoped.blocks.default!;
       assert.match(block, /--c-primary:\s+#[0-9a-f]{6};/,
         '[cell=6, scenario=two-roles-scoped] primary var in default block');
       assert.match(block, /--c-secondary:\s+#[0-9a-f]{6};/,
         '[cell=6, scenario=two-roles-scoped] secondary var in default block');
     },
+    'input': {
+      'colors':   ['#5b21b6', '#c4b5fd'],
+      'metadata': {},
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(),
+      'roles':    TWO_ROLES
+    },
+    'kind': 'happy',
+    'name': 'two-role sRGB palette declares both vars in default block'
   },
   {
-    name: 'output shape has blocks, wideGamut, and full fields',
-    kind: 'edge',
-    input: {
-      colors:   ['#000000'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsScopedPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=output-shape-scoped] no throw');
       const sc = output!.scoped;
       assert.ok(typeof sc.blocks    === 'object', '[cell=6, scenario=output-shape-scoped] blocks is object');
       assert.ok(typeof sc.wideGamut === 'object', '[cell=6, scenario=output-shape-scoped] wideGamut is object');
       assert.ok(typeof sc.full      === 'string', '[cell=6, scenario=output-shape-scoped] full is string');
     },
+    'input': {
+      'colors':   ['#000000'],
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'edge',
+    'name': 'output shape has blocks, wideGamut, and full fields'
   },
   {
-    name: 'sRGB-only input produces no @supports and no display-p3 in full',
-    kind: 'edge',
-    input: {
-      colors:   ['#5b21b6', '#c4b5fd'],
-      roles:    TWO_ROLES,
-      pipeline: cssVarsScopedPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=no-supports-srgb] no throw');
       assert.ok(!output!.scoped.full.includes('@supports'),
         '[cell=6, scenario=no-supports-srgb] full contains no @supports for sRGB-only');
       assert.ok(!output!.scoped.full.includes('display-p3'),
         '[cell=6, scenario=no-supports-srgb] full contains no display-p3 for sRGB-only');
     },
-  },
+    'input': {
+      'colors':   ['#5b21b6', '#c4b5fd'],
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(),
+      'roles':    TWO_ROLES
+    },
+    'kind': 'edge',
+    'name': 'sRGB-only input produces no @supports and no display-p3 in full'
+  }
 ];
 
-new ScenarioRunner<CssVarsScopedBasicInput, CssVarsScopedBasicOutput>(
+await new ScenarioRunner<CssVarsScopedBasicInputInterface, CssVarsScopedScenarioOutputEntity.Type>(
   'StylesheetPlugin :: cell-6 :: emit:cssVarsScoped.basic',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = StylesheetTestFixture.freshEngine();
     engine.pipeline(input.pipeline);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
       'colors':    input.colors,
       'contrast':  undefined,
@@ -870,12 +873,10 @@ new ScenarioRunner<CssVarsScopedBasicInput, CssVarsScopedBasicOutput>(
       'maxColors': undefined,
       'metadata':  input.metadata,
       'roles':     input.roles,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
-    if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
-    return { scoped };
-  },
+    return StylesheetScenarioOutput.scoped(state.outputs['stylesheet:cssVarsScoped']);
+  }
 ).run(cssVarsScopedBasicScenarios);
 
 // ---------------------------------------------------------------------------
@@ -887,79 +888,75 @@ new ScenarioRunner<CssVarsScopedBasicInput, CssVarsScopedBasicOutput>(
 // order: default sRGB, [dark sRGB, ...].
 // ---------------------------------------------------------------------------
 
-interface CssVarsScopedVariantsInput {
-  readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterfaceType;
-  readonly pipeline: readonly string[];
-  readonly metadata?: InputInterface['metadata'];
+interface CssVarsScopedVariantsInputInterface {
+  readonly 'colors':   InputInterface['colors'];
+  readonly 'metadata'?: InputInterface['metadata'];
+  readonly 'pipeline': readonly string[];
+  readonly 'roles':    RoleSchemaInterfaceType;
 }
-interface CssVarsScopedVariantsOutput {
-  readonly scoped: CssVarsScopedOutputInterfaceType;
-}
-
-const cssVarsScopedVariantsScenarios: readonly ScenarioInterface<CssVarsScopedVariantsInput, CssVarsScopedVariantsOutput>[] = [
+const cssVarsScopedVariantsScenarios: readonly ScenarioInterface<CssVarsScopedVariantsInputInterface, CssVarsScopedScenarioOutputEntity.Type>[] = [
   {
-    name: 'derive:variant produces dark block under [data-theme=\'dark\'] selector',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6', '#c4b5fd'],
-      roles:    TWO_ROLES,
-      pipeline: cssVarsScopedPipeline(['derive:variant']),
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=7, scenario=dark-variant] no throw');
       const sc = output!.scoped;
       assert.ok('dark' in sc.blocks, '[cell=7, scenario=dark-variant] blocks has dark key');
-      assert.match(sc.blocks['dark'] as string, /\[data-theme='dark'\]/,
+      assert.match(sc.blocks.dark, /\[data-theme='dark'\]/,
         "[cell=7, scenario=dark-variant] dark block uses [data-theme='dark'] selector");
       assert.ok(sc.full.includes("[data-theme='dark']"),
         '[cell=7, scenario=dark-variant] full includes dark block');
     },
+    'input': {
+      'colors':   ['#5b21b6', '#c4b5fd'],
+      'metadata': {},
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(['derive:variant']),
+      'roles':    TWO_ROLES
+    },
+    'kind': 'happy',
+    'name': 'derive:variant produces dark block under [data-theme=\'dark\'] selector'
   },
   {
-    name: 'default block appears before dark block in full',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6', '#c4b5fd'],
-      roles:    TWO_ROLES,
-      pipeline: cssVarsScopedPipeline(['derive:variant']),
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=7, scenario=block-order] no throw');
       const full = output!.scoped.full;
-      const defaultIdx = full.indexOf("[data-theme='default']");
-      const darkIdx    = full.indexOf("[data-theme='dark']");
-      assert.ok(defaultIdx >= 0, '[cell=7, scenario=block-order] default block present in full');
-      assert.ok(darkIdx >= 0,    '[cell=7, scenario=block-order] dark block present in full');
-      assert.ok(defaultIdx < darkIdx,
+      const defaultIndex = full.indexOf("[data-theme='default']");
+      const darkIndex    = full.indexOf("[data-theme='dark']");
+      assert.ok(defaultIndex >= 0, '[cell=7, scenario=block-order] default block present in full');
+      assert.ok(darkIndex >= 0,    '[cell=7, scenario=block-order] dark block present in full');
+      assert.ok(defaultIndex < darkIndex,
         '[cell=7, scenario=block-order] default block precedes dark block in full');
     },
+    'input': {
+      'colors':   ['#5b21b6', '#c4b5fd'],
+      'metadata': {},
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(['derive:variant']),
+      'roles':    TWO_ROLES
+    },
+    'kind': 'happy',
+    'name': 'default block appears before dark block in full'
   },
   {
-    name: 'no derive:variant means only default block in blocks',
-    kind: 'edge',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsScopedPipeline(),  // no derive:variant
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=7, scenario=no-variants] no throw');
       const sc = output!.scoped;
       assert.deepStrictEqual(Object.keys(sc.blocks), ['default'],
         '[cell=7, scenario=no-variants] only default block when no variants');
     },
-  },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(),  // no derive:variant
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'edge',
+    'name': 'no derive:variant means only default block in blocks'
+  }
 ];
 
-new ScenarioRunner<CssVarsScopedVariantsInput, CssVarsScopedVariantsOutput>(
+await new ScenarioRunner<CssVarsScopedVariantsInputInterface, CssVarsScopedScenarioOutputEntity.Type>(
   'StylesheetPlugin :: cell-7 :: emit:cssVarsScoped.variants',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = StylesheetTestFixture.freshEngine();
     engine.pipeline(input.pipeline);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
       'colors':    input.colors,
       'contrast':  undefined,
@@ -967,12 +964,10 @@ new ScenarioRunner<CssVarsScopedVariantsInput, CssVarsScopedVariantsOutput>(
       'maxColors': undefined,
       'metadata':  input.metadata,
       'roles':     input.roles,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
-    if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
-    return { scoped };
-  },
+    return StylesheetScenarioOutput.scoped(state.outputs['stylesheet:cssVarsScoped']);
+  }
 ).run(cssVarsScopedVariantsScenarios);
 
 // ---------------------------------------------------------------------------
@@ -984,32 +979,20 @@ new ScenarioRunner<CssVarsScopedVariantsInput, CssVarsScopedVariantsOutput>(
 // category in the full string. Categories with no P3 records emit no sibling.
 // ---------------------------------------------------------------------------
 
-interface CssVarsScopedWideGamutInput {
-  readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterfaceType;
-  readonly pipeline: readonly string[];
-  readonly metadata?: InputInterface['metadata'];
+interface CssVarsScopedWideGamutInputInterface {
+  readonly 'colors':   InputInterface['colors'];
+  readonly 'metadata'?: InputInterface['metadata'];
+  readonly 'pipeline': readonly string[];
+  readonly 'roles':    RoleSchemaInterfaceType;
 }
-interface CssVarsScopedWideGamutOutput {
-  readonly scoped: CssVarsScopedOutputInterfaceType;
-}
-
-const cssVarsScopedWideGamutScenarios: readonly ScenarioInterface<CssVarsScopedWideGamutInput, CssVarsScopedWideGamutOutput>[] = [
+const cssVarsScopedWideGamutScenarios: readonly ScenarioInterface<CssVarsScopedWideGamutInputInterface, CssVarsScopedScenarioOutputEntity.Type>[] = [
   {
-    name: 'out-of-sRGB OKLCH emits @supports sibling for default category',
-    kind: 'happy',
-    input: {
-      colors:   [{ 'l': 0.7, 'c': 0.4, 'h': 30 }],
-      roles:    WIDE_GAMUT_ROLE,
-      pipeline: ['intake:oklch', 'resolve:roles', 'emit:cssVarsScoped'],
-      metadata: { 'scopePrefix': 'iridis' },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=8, scenario=oklch-scoped-p3] no throw');
       const sc = output!.scoped;
       assert.ok('default' in sc.wideGamut,
         '[cell=8, scenario=oklch-scoped-p3] wideGamut has default entry');
-      const defaultP3 = sc.wideGamut['default'] as string;
+      const defaultP3 = sc.wideGamut.default;
       assert.match(defaultP3, /@supports \(color: color\(display-p3 0 0 0\)\)/,
         '[cell=8, scenario=oklch-scoped-p3] wideGamut block opens with @supports query');
       assert.match(defaultP3, /\[data-iridis='default'\]/,
@@ -1017,51 +1000,59 @@ const cssVarsScopedWideGamutScenarios: readonly ScenarioInterface<CssVarsScopedW
       assert.match(defaultP3, /--c-primary:\s+color\(display-p3 [\d.]+ [\d.]+ [\d.]+\);/,
         '[cell=8, scenario=oklch-scoped-p3] P3 value declared under the scoped selector');
     },
+    'input': {
+      'colors':   [{ 'c': 0.4, 'h': 30, 'l': 0.7 }],
+      'metadata': { 'scopePrefix': 'iridis' },
+      'pipeline': ['intake:oklch', 'resolve:roles', 'emit:cssVarsScoped'],
+      'roles':    WIDE_GAMUT_ROLE
+    },
+    'kind': 'happy',
+    'name': 'out-of-sRGB OKLCH emits @supports sibling for default category'
   },
   {
-    name: 'sRGB scoped block precedes its @supports sibling in full',
-    kind: 'happy',
-    input: {
-      colors:   [{ 'l': 0.7, 'c': 0.4, 'h': 30 }],
-      roles:    WIDE_GAMUT_ROLE,
-      pipeline: ['intake:oklch', 'resolve:roles', 'emit:cssVarsScoped'],
-      metadata: { 'scopePrefix': 'iridis' },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=8, scenario=scoped-cascade-order] no throw');
       const full = output!.scoped.full;
-      const sRgbIdx     = full.indexOf("[data-iridis='default'] {");
-      const supportsIdx = full.indexOf('@supports (color: color(display-p3 0 0 0))');
-      assert.ok(sRgbIdx >= 0,     '[cell=8, scenario=scoped-cascade-order] sRGB scoped block present');
-      assert.ok(supportsIdx >= 0, '[cell=8, scenario=scoped-cascade-order] @supports block present');
-      assert.ok(sRgbIdx < supportsIdx,
+      const sRgbIndex     = full.indexOf("[data-iridis='default'] {");
+      const supportsIndex = full.indexOf('@supports (color: color(display-p3 0 0 0))');
+      assert.ok(sRgbIndex >= 0,     '[cell=8, scenario=scoped-cascade-order] sRGB scoped block present');
+      assert.ok(supportsIndex >= 0, '[cell=8, scenario=scoped-cascade-order] @supports block present');
+      assert.ok(sRgbIndex < supportsIndex,
         '[cell=8, scenario=scoped-cascade-order] sRGB scoped block precedes @supports sibling');
     },
+    'input': {
+      'colors':   [{ 'c': 0.4, 'h': 30, 'l': 0.7 }],
+      'metadata': { 'scopePrefix': 'iridis' },
+      'pipeline': ['intake:oklch', 'resolve:roles', 'emit:cssVarsScoped'],
+      'roles':    WIDE_GAMUT_ROLE
+    },
+    'kind': 'happy',
+    'name': 'sRGB scoped block precedes its @supports sibling in full'
   },
   {
-    name: 'sRGB-only input has empty wideGamut map and no @supports in full',
-    kind: 'edge',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsScopedPipeline(),
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=8, scenario=srgb-no-supports-scoped] no throw');
       assert.deepStrictEqual(output!.scoped.wideGamut, {},
         '[cell=8, scenario=srgb-no-supports-scoped] wideGamut is empty object for sRGB-only');
       assert.ok(!output!.scoped.full.includes('@supports'),
         '[cell=8, scenario=srgb-no-supports-scoped] full has no @supports for sRGB-only');
     },
-  },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'edge',
+    'name': 'sRGB-only input has empty wideGamut map and no @supports in full'
+  }
 ];
 
-new ScenarioRunner<CssVarsScopedWideGamutInput, CssVarsScopedWideGamutOutput>(
+await new ScenarioRunner<CssVarsScopedWideGamutInputInterface, CssVarsScopedScenarioOutputEntity.Type>(
   'StylesheetPlugin :: cell-8 :: emit:cssVarsScoped.wide-gamut',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = StylesheetTestFixture.freshEngine();
     engine.pipeline(input.pipeline);
-    const state = await engine.run({
+    const state = engine.run({
       'bypass':    undefined,
       'colors':    input.colors,
       'contrast':  undefined,
@@ -1069,12 +1060,10 @@ new ScenarioRunner<CssVarsScopedWideGamutInput, CssVarsScopedWideGamutOutput>(
       'maxColors': undefined,
       'metadata':  input.metadata,
       'roles':     input.roles,
-      'runtime':   undefined,
+      'runtime':   undefined
     });
-    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
-    if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
-    return { scoped };
-  },
+    return StylesheetScenarioOutput.scoped(state.outputs['stylesheet:cssVarsScoped']);
+  }
 ).run(cssVarsScopedWideGamutScenarios);
 
 // ---------------------------------------------------------------------------
@@ -1085,87 +1074,83 @@ new ScenarioRunner<CssVarsScopedWideGamutInput, CssVarsScopedWideGamutOutput>(
 // propagate into both blocks and wideGamut entries.
 // ---------------------------------------------------------------------------
 
-interface CssVarsScopedPrefixInput {
-  readonly colors:   InputInterface['colors'];
-  readonly roles:    RoleSchemaInterfaceType;
-  readonly pipeline: readonly string[];
-  readonly metadata: InputInterface['metadata'];
+interface CssVarsScopedPrefixInputInterface {
+  readonly 'colors':   InputInterface['colors'];
+  readonly 'metadata': InputInterface['metadata'];
+  readonly 'pipeline': readonly string[];
+  readonly 'roles':    RoleSchemaInterfaceType;
 }
-interface CssVarsScopedPrefixOutput {
-  readonly scoped: CssVarsScopedOutputInterfaceType;
-}
-
-const cssVarsScopedPrefixScenarios: readonly ScenarioInterface<CssVarsScopedPrefixInput, CssVarsScopedPrefixOutput>[] = [
+const cssVarsScopedPrefixScenarios: readonly ScenarioInterface<CssVarsScopedPrefixInputInterface, CssVarsScopedScenarioOutputEntity.Type>[] = [
   {
-    name: 'default scopePrefix is theme when metadata absent',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6'],
-      roles:    SINGLE_ROLE,
-      pipeline: cssVarsScopedPipeline(),
-      metadata: {},
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=9, scenario=default-scope-prefix] no throw');
-      assert.match(output!.scoped.blocks['default'] as string, /\[data-theme='default'\]/,
+      assert.match(output!.scoped.blocks.default!, /\[data-theme='default'\]/,
         "[cell=9, scenario=default-scope-prefix] default scopePrefix is 'theme'");
     },
+    'input': {
+      'colors':   ['#5b21b6'],
+      'metadata': {},
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(),
+      'roles':    SINGLE_ROLE
+    },
+    'kind': 'happy',
+    'name': 'default scopePrefix is theme when metadata absent'
   },
   {
-    name: 'custom scopePrefix replaces theme in selectors',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6', '#c4b5fd'],
-      roles:    TWO_ROLES,
-      pipeline: cssVarsScopedPipeline(),
-      metadata: { 'scopePrefix': 'app-palette' },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=9, scenario=custom-scope-prefix] no throw');
-      assert.match(output!.scoped.blocks['default'] as string, /\[data-app-palette='default'\]/,
-        "[cell=9, scenario=custom-scope-prefix] custom scopePrefix used in blocks selector");
+      assert.match(output!.scoped.blocks.default!, /\[data-app-palette='default'\]/,
+        '[cell=9, scenario=custom-scope-prefix] custom scopePrefix used in blocks selector');
       assert.ok(!output!.scoped.full.includes('[data-theme='),
         '[cell=9, scenario=custom-scope-prefix] default theme prefix absent from full');
     },
+    'input': {
+      'colors':   ['#5b21b6', '#c4b5fd'],
+      'metadata': { 'scopePrefix': 'app-palette' },
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(),
+      'roles':    TWO_ROLES
+    },
+    'kind': 'happy',
+    'name': 'custom scopePrefix replaces theme in selectors'
   },
   {
-    name: 'custom scopePrefix propagates into variant blocks',
-    kind: 'happy',
-    input: {
-      colors:   ['#5b21b6', '#c4b5fd'],
-      roles:    TWO_ROLES,
-      pipeline: cssVarsScopedPipeline(['derive:variant']),
-      metadata: { 'scopePrefix': 'myapp' },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=9, scenario=prefix-variants] no throw');
-      assert.match(output!.scoped.blocks['dark'] as string, /\[data-myapp='dark'\]/,
-        "[cell=9, scenario=prefix-variants] dark variant block uses custom scopePrefix");
+      assert.match(output!.scoped.blocks.dark!, /\[data-myapp='dark'\]/,
+        '[cell=9, scenario=prefix-variants] dark variant block uses custom scopePrefix');
     },
+    'input': {
+      'colors':   ['#5b21b6', '#c4b5fd'],
+      'metadata': { 'scopePrefix': 'myapp' },
+      'pipeline': StylesheetTestFixture.cssVarsScopedPipeline(['derive:variant']),
+      'roles':    TWO_ROLES
+    },
+    'kind': 'happy',
+    'name': 'custom scopePrefix propagates into variant blocks'
   },
   {
-    name: 'scopePrefix with P3 input propagates into wideGamut @supports block',
-    kind: 'edge',
-    input: {
-      colors:   [{ 'l': 0.7, 'c': 0.4, 'h': 30 }],
-      roles:    WIDE_GAMUT_ROLE,
-      pipeline: ['intake:oklch', 'resolve:roles', 'emit:cssVarsScoped'],
-      metadata: { 'scopePrefix': 'custom-scope' },
-    },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=9, scenario=prefix-p3] no throw');
       assert.ok('default' in output!.scoped.wideGamut,
         '[cell=9, scenario=prefix-p3] wideGamut has default entry');
-      assert.match(output!.scoped.wideGamut['default'] as string, /\[data-custom-scope='default'\]/,
+      assert.match(output!.scoped.wideGamut.default, /\[data-custom-scope='default'\]/,
         "[cell=9, scenario=prefix-p3] P3 @supports block scoped under [data-custom-scope='default']");
     },
-  },
+    'input': {
+      'colors':   [{ 'c': 0.4, 'h': 30, 'l': 0.7 }],
+      'metadata': { 'scopePrefix': 'custom-scope' },
+      'pipeline': ['intake:oklch', 'resolve:roles', 'emit:cssVarsScoped'],
+      'roles':    WIDE_GAMUT_ROLE
+    },
+    'kind': 'edge',
+    'name': 'scopePrefix with P3 input propagates into wideGamut @supports block'
+  }
 ];
 
-new ScenarioRunner<CssVarsScopedPrefixInput, CssVarsScopedPrefixOutput>(
+await new ScenarioRunner<CssVarsScopedPrefixInputInterface, CssVarsScopedScenarioOutputEntity.Type>(
   'StylesheetPlugin :: cell-9 :: emit:cssVarsScoped.scope-prefix',
-  async (input) => {
-    const engine = freshEngine();
+  (input) => {
+    const engine = StylesheetTestFixture.freshEngine();
     engine.pipeline(input.pipeline);
     const runInput: InputInterface = {
       'bypass':    undefined,
@@ -1175,13 +1160,11 @@ new ScenarioRunner<CssVarsScopedPrefixInput, CssVarsScopedPrefixOutput>(
       'maxColors': undefined,
       'metadata':  input.metadata,
       'roles':     input.roles,
-      'runtime':   undefined,
+      'runtime':   undefined
     };
-    const state = await engine.run(runInput);
-    const scoped = state.outputs['stylesheet:cssVarsScoped'] as CssVarsScopedOutputInterfaceType | undefined;
-    if (!scoped) throw new Error('outputs.stylesheet:cssVarsScoped not set');
-    return { scoped };
-  },
+    const state = engine.run(runInput);
+    return StylesheetScenarioOutput.scoped(state.outputs['stylesheet:cssVarsScoped']);
+  }
 ).run(cssVarsScopedPrefixScenarios);
 
 // ---------------------------------------------------------------------------
@@ -1194,33 +1177,33 @@ new ScenarioRunner<CssVarsScopedPrefixInput, CssVarsScopedPrefixOutput>(
 
 const CSS_VARS_GOLDEN = new URL(
   '../fixtures/emit-cssVars-golden.css',
-  import.meta.url,
+  import.meta.url
 );
 
 const GOLDEN_ROLES: RoleSchemaInterfaceType = {
+  'contrastPairs': [
+    { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'foreground', 'minRatio': 4.5 }
+  ],
   'description': undefined,
   'name':  'golden-cssvars',
   'roles': [
-    { 'name': 'background', 'required': true, 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'chromaRange': [0.00, 0.03], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
-    { 'name': 'foreground', 'required': true, 'intent': 'text',       'lightnessRange': [0.90, 0.99], 'chromaRange': [0.00, 0.03], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
-    { 'name': 'accent',     'required': true, 'intent': 'accent',     'lightnessRange': [0.55, 0.70], 'chromaRange': [0.15, 0.25], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined },
-  ],
-  'contrastPairs': [
-    { 'foreground': 'foreground', 'background': 'background', 'minRatio': 4.5, 'algorithm': 'wcag21' },
-  ],
+    { 'chromaRange': [0.00, 0.03], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'name': 'background', 'required': true },
+    { 'chromaRange': [0.00, 0.03], 'derivedFrom': undefined, 'description': undefined,       'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'text', 'lightnessRange': [0.90, 0.99], 'name': 'foreground', 'required': true },
+    { 'chromaRange': [0.15, 0.25],     'derivedFrom': undefined, 'description': undefined,     'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'accent', 'lightnessRange': [0.55, 0.70], 'name': 'accent', 'required': true }
+  ]
 };
 
-test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fixture', async () => {
-  const engine = freshEngine();
+await test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fixture', () => {
+  const engine = StylesheetTestFixture.freshEngine();
   engine.pipeline([
     'intake:hex',
     'resolve:roles',
     'expand:family',
     'enforce:contrast',
-    'emit:cssVars',
+    'emit:cssVars'
   ]);
 
-  const state = await engine.run({
+  const state = engine.run({
     'bypass':    undefined,
     'colors':    ['#5b21b6', '#0f172a', '#f8fafc'],
     'contrast':  undefined,
@@ -1228,11 +1211,10 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
     'maxColors': undefined,
     'metadata':  undefined,
     'roles':     GOLDEN_ROLES,
-    'runtime':   undefined,
+    'runtime':   undefined
   });
 
-  const out = state.outputs['stylesheet:cssVars'] as CssVarsOutputInterfaceType | undefined;
-  assert.ok(out !== undefined, 'cssVars output present');
+  const out = StylesheetScenarioOutput.cssVars(state.outputs['stylesheet:cssVars']).cssVars;
   const actual = `${out.full}\n`;
 
   // Requirement-level assertions (independent of the golden fixture).
@@ -1241,12 +1223,20 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
   // satisfy these explicit requirements.
 
   // 1. :root block declares one CSS variable per role.
+  const declarationsByProperty = new Map<string, string>();
+  const rootBlockLines = out.rootBlock.split('\n');
+  const rootBlockLineCount = rootBlockLines.length;
+  for (let lineIndex = 0; lineIndex < rootBlockLineCount; lineIndex++) {
+    const line = rootBlockLines[lineIndex] ?? '';
+    const separatorIndex = line.indexOf(':');
+    if (separatorIndex >= 0) {
+      declarationsByProperty.set(line.slice(0, separatorIndex).trim(), line);
+    }
+  }
   for (const role of GOLDEN_ROLES.roles) {
-    assert.match(
-      out.rootBlock,
-      new RegExp(`--c-${role.name}:\\s+#[0-9a-fA-F]{6};`),
-      `:root must declare --c-${role.name} as a hex value`,
-    );
+    const declaration = declarationsByProperty.get(`--c-${role.name}`);
+    assert.match(declaration ?? '', /#[0-9a-fA-F]{6};/,
+      `:root must declare --c-${role.name} as a hex value`);
   }
 
   // 2. forced-colors block exists and maps each role's CSS var to a system
@@ -1255,16 +1245,16 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
     'forced-colors block must be a (forced-colors: active) media query');
 
   const FORCED_BY_INTENT: Readonly<Record<string, string>> = {
-    'text':       'CanvasText',
-    'background': 'Canvas',
     'accent':     'Highlight',
-    'muted':      'GrayText',
-    'critical':   'CanvasText',
-    'positive':   'CanvasText',
-    'link':       'LinkText',
+    'background': 'Canvas',
     'button':     'ButtonFace',
+    'critical':   'CanvasText',
+    'link':       'LinkText',
+    'muted':      'GrayText',
     'onAccent':   'HighlightText',
     'onButton':   'ButtonText',
+    'positive':   'CanvasText',
+    'text':       'CanvasText'
   };
 
   for (const role of GOLDEN_ROLES.roles) {
@@ -1273,10 +1263,9 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
       : 'CanvasText';
     assert.ok(expectedToken !== undefined,
       `test setup: GOLDEN_ROLES role '${role.name}' uses intent '${role.intent}' which lacks a FORCED_BY_INTENT mapping in this test`);
-    assert.match(
-      out.forcedColors,
-      new RegExp(`--c-${role.name}:\\s+${expectedToken};`),
-      `forced-colors must map --c-${role.name} (intent='${role.intent}') to ${expectedToken}`,
+    assert.ok(
+      out.forcedColors.includes(`--c-${role.name}: ${expectedToken};`),
+      `forced-colors must map --c-${role.name} (intent='${role.intent}') to ${expectedToken}`
     );
   }
 
@@ -1287,7 +1276,7 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
   assert.match(out.forcedColors, /--c-foreground:\s+CanvasText;/,
     'foreground role with intent=text must map to CanvasText');
 
-  if (process.env['UPDATE_GOLDENS'] === '1') {
+  if (process.env.UPDATE_GOLDENS === '1') {
     writeFileSync(CSS_VARS_GOLDEN, actual);
   }
 
@@ -1295,6 +1284,6 @@ test('emit:cssVars :: golden :: stable seed + role schema matches locked CSS fix
   assert.strictEqual(
     actual,
     expected,
-    'emit:cssVars output drifted from the golden fixture; regenerate with UPDATE_GOLDENS=1 if intentional',
+    'emit:cssVars output drifted from the golden fixture; regenerate with UPDATE_GOLDENS=1 if intentional'
   );
 });

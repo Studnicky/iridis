@@ -1,0 +1,54 @@
+name: pnpm-node-setup
+description: Setup Node, pnpm, and install dependencies with the shared
+  registry/cache settings.
+
+inputs:
+  node-version:
+    required: false
+    default: '24'
+  pnpm-version:
+    required: false
+    default: '10.32.1'
+  scope:
+    required: false
+    default: '@studnicky'
+  install:
+    required: false
+    default: 'true'
+  install-args:
+    required: false
+    default: '--frozen-lockfile'
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
+      with:
+        version: ${{ inputs.pnpm-version }}
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+        registry-url: 'https://npm.pkg.github.com'
+        scope: ${{ inputs.scope }}
+    - if: inputs.install == 'true'
+      shell: bash
+      env:
+        INSTALL_ARGS: ${{ inputs.install-args }}
+        NODE_AUTH_TOKEN: ${{ github.token }}
+      run: |
+        case "$INSTALL_ARGS" in
+          "--frozen-lockfile")
+            pnpm install --frozen-lockfile
+            ;;
+          "--prod --frozen-lockfile")
+            pnpm install --prod --frozen-lockfile
+            ;;
+          "--no-frozen-lockfile")
+            pnpm install --no-frozen-lockfile
+            ;;
+          *)
+            echo "pnpm-node-setup: unsupported install args '$INSTALL_ARGS'" >&2
+            exit 1
+            ;;
+        esac

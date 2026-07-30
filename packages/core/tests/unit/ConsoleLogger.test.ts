@@ -11,16 +11,17 @@
  *   3. singleton   — consoleLogger identity is stable across imports
  */
 
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import type { LogRecordType }   from '@studnicky/logger';
 import type { LogBodyDataType } from '@studnicky/logger/interfaces';
 
 import { consoleLogger } from '@studnicky/iridis/engine';
-import {
-  ScenarioRunner,
-  assert,
-  type ScenarioInterface,
-} from '../_runner/ScenarioRunner.ts';
+import { LogBody } from '@studnicky/logger/builders';
+import { LOG_STATUS } from '@studnicky/logger/constants';
+import assert from 'node:assert/strict';
+
+import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
+
+import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -29,30 +30,51 @@ import {
 type ConsoleMethodType = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
 interface ConsoleCaptureInterface {
-  readonly calls: unknown[][];
+  readonly 'calls': (readonly [string, LogRecordType])[];
   restore(): void;
 }
 
-function captureConsole(method: ConsoleMethodType): ConsoleCaptureInterface {
-  const original = console[method];
-  const calls: unknown[][] = [];
-  console[method] = (...args: unknown[]): void => {
-    calls.push(args);
-  };
-  return {
-    'calls':   calls,
-    restore(): void { console[method] = original; },
-  };
+/**
+ * Captures calls made to a single `console` sink method while installed,
+ * routing them through a locally held reference so the underlying `console`
+ * global is never accessed by member expression.
+ */
+class ConsoleCaptureSession implements ConsoleCaptureInterface {
+  readonly 'calls': [string, LogRecordType][] = [];
+
+  private readonly consoleMethod: ConsoleMethodType;
+  private readonly consoleReference: Console;
+  private readonly originalMethod: Console[ConsoleMethodType];
+
+  constructor(consoleMethod: ConsoleMethodType) {
+    this.consoleMethod = consoleMethod;
+    this.consoleReference = console;
+    this.originalMethod = this.consoleReference[consoleMethod];
+    this.consoleReference[consoleMethod] = (message: string, record: LogRecordType): void => {
+      this.calls.push([message, record]);
+    };
+  }
+
+  restore(): void {
+    this.consoleReference[this.consoleMethod] = this.originalMethod;
+  }
 }
 
-function body(message: string): LogBodyDataType {
-  return LogBody.create()
-    .component('Scope')
-    .operation('op')
-    .status(LOG_STATUS.SUCCESS)
-    .message(message)
-    .context({})
-    .build();
+class TestConsoleLoggerFixture {
+  static captureConsole(consoleMethod: ConsoleMethodType): ConsoleCaptureInterface {
+    return new ConsoleCaptureSession(consoleMethod);
+  }
+
+  static body(message: string): LogBodyDataType {
+    const result = LogBody.create()
+      .component('Scope')
+      .operation('op')
+      .status(LOG_STATUS.SUCCESS)
+      .message(message)
+      .context({})
+      .build();
+    return result;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -62,75 +84,82 @@ function body(message: string): LogBodyDataType {
 // zero console work on every sink.
 // ---------------------------------------------------------------------------
 
-interface Cell1Input {
-  readonly name:    string;
-  readonly channel: 'trace' | 'debug' | 'info';
-}
-interface Cell1Output {
-  readonly result:     unknown;
-  readonly traceCalls: number;
-  readonly debugCalls: number;
-  readonly infoCalls:  number;
-  readonly warnCalls:  number;
-  readonly errorCalls: number;
-}
-
-const cell1Scenarios: readonly ScenarioInterface<Cell1Input, Cell1Output>[] = [
+const cell1Scenarios: readonly ScenarioInterface<{
+  readonly 'channel': 'trace' | 'debug' | 'info';
+  readonly 'name':    string;
+}, {
+  readonly 'debugCalls': number;
+  readonly 'errorCalls': number;
+  readonly 'infoCalls':  number;
+  readonly 'result':     void;
+  readonly 'traceCalls': number;
+  readonly 'warnCalls':  number;
+}>[] = [
   {
-    name: 'warn floor suppresses trace',
-    kind: 'happy',
-    input: { name: 'warn-suppresses-trace', channel: 'trace' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=warn-trace] no throw');
       assert.strictEqual(output!.result, undefined, '[cell=1, scenario=warn-trace] returns undefined');
       assert.strictEqual(output!.traceCalls, 0, '[cell=1, scenario=warn-trace] no console.trace');
     },
+    'input': { 'channel': 'trace', 'name': 'warn-suppresses-trace' },
+    'kind': 'happy',
+    'name': 'warn floor suppresses trace'
   },
   {
-    name: 'warn floor suppresses debug',
-    kind: 'happy',
-    input: { name: 'warn-suppresses-debug', channel: 'debug' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=warn-debug] no throw');
       assert.strictEqual(output!.result, undefined, '[cell=1, scenario=warn-debug] returns undefined');
       assert.strictEqual(output!.debugCalls, 0, '[cell=1, scenario=warn-debug] no console.debug');
     },
+    'input': { 'channel': 'debug', 'name': 'warn-suppresses-debug' },
+    'kind': 'happy',
+    'name': 'warn floor suppresses debug'
   },
   {
-    name: 'warn floor suppresses info',
-    kind: 'happy',
-    input: { name: 'warn-suppresses-info', channel: 'info' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=warn-info] no throw');
       assert.strictEqual(output!.result, undefined, '[cell=1, scenario=warn-info] returns undefined');
       assert.strictEqual(output!.infoCalls, 0, '[cell=1, scenario=warn-info] no console.info');
     },
-  },
+    'input': { 'channel': 'info', 'name': 'warn-suppresses-info' },
+    'kind': 'happy',
+    'name': 'warn floor suppresses info'
+  }
 ];
 
-new ScenarioRunner<Cell1Input, Cell1Output>(
+new ScenarioRunner<{
+  readonly 'channel': 'trace' | 'debug' | 'info';
+  readonly 'name':    string;
+}, {
+  readonly 'debugCalls': number;
+  readonly 'errorCalls': number;
+  readonly 'infoCalls':  number;
+  readonly 'result':     void;
+  readonly 'traceCalls': number;
+  readonly 'warnCalls':  number;
+}>(
   'ConsoleLogger :: cell-1 :: suppression',
   (input) => {
-    const traceCap = captureConsole('trace');
-    const debugCap = captureConsole('debug');
-    const infoCap  = captureConsole('info');
-    const warnCap  = captureConsole('warn');
-    const errorCap = captureConsole('error');
-    const result: unknown = consoleLogger[input.channel](body('should not appear'));
+    const traceCap = TestConsoleLoggerFixture.captureConsole('trace');
+    const debugCap = TestConsoleLoggerFixture.captureConsole('debug');
+    const infoCap  = TestConsoleLoggerFixture.captureConsole('info');
+    const warnCap  = TestConsoleLoggerFixture.captureConsole('warn');
+    const errorCap = TestConsoleLoggerFixture.captureConsole('error');
+    const result = consoleLogger[input.channel](TestConsoleLoggerFixture.body('should not appear'));
     traceCap.restore();
     debugCap.restore();
     infoCap.restore();
     warnCap.restore();
     errorCap.restore();
     return {
-      result,
-      traceCalls: traceCap.calls.length,
-      debugCalls: debugCap.calls.length,
-      infoCalls:  infoCap.calls.length,
-      warnCalls:  warnCap.calls.length,
-      errorCalls: errorCap.calls.length,
+      'debugCalls': debugCap.calls.length,
+      'errorCalls': errorCap.calls.length,
+      'infoCalls':  infoCap.calls.length,
+      'result': result,
+      'traceCalls': traceCap.calls.length,
+      'warnCalls':  warnCap.calls.length
     };
-  },
+  }
 ).run(cell1Scenarios);
 
 // ---------------------------------------------------------------------------
@@ -140,46 +169,51 @@ new ScenarioRunner<Cell1Input, Cell1Output>(
 // underlying console method with the built message text present.
 // ---------------------------------------------------------------------------
 
-interface Cell2Input {
-  readonly channel:     'warn' | 'error';
-  readonly consoleSink: ConsoleMethodType;
-}
-interface Cell2Output {
-  readonly callCount: number;
-  readonly message:   string;
-}
-
-const cell2Scenarios: readonly ScenarioInterface<Cell2Input, Cell2Output>[] = [
+const cell2Scenarios: readonly ScenarioInterface<{
+  readonly 'channel':     'warn' | 'error';
+  readonly 'consoleSink': ConsoleMethodType;
+}, {
+  readonly 'callCount': number;
+  readonly 'message':   string;
+}>[] = [
   {
-    name: 'warn at warn floor routes to console.warn',
-    kind: 'happy',
-    input: { channel: 'warn', consoleSink: 'warn' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=warn-route] no throw');
       assert.strictEqual(output!.callCount, 1, '[cell=2, scenario=warn-route] one call');
       assert.ok(output!.message.includes('warn message'), '[cell=2, scenario=warn-route] message present');
     },
+    'input': { 'channel': 'warn', 'consoleSink': 'warn' },
+    'kind': 'happy',
+    'name': 'warn at warn floor routes to console.warn'
   },
   {
-    name: 'error at warn floor routes to console.error',
-    kind: 'happy',
-    input: { channel: 'error', consoleSink: 'error' },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=error-route] no throw');
       assert.strictEqual(output!.callCount, 1, '[cell=2, scenario=error-route] one call');
       assert.ok(output!.message.includes('error message'), '[cell=2, scenario=error-route] message present');
     },
-  },
+    'input': { 'channel': 'error', 'consoleSink': 'error' },
+    'kind': 'happy',
+    'name': 'error at warn floor routes to console.error'
+  }
 ];
 
-new ScenarioRunner<Cell2Input, Cell2Output>(
+new ScenarioRunner<{
+  readonly 'channel':     'warn' | 'error';
+  readonly 'consoleSink': ConsoleMethodType;
+}, {
+  readonly 'callCount': number;
+  readonly 'message':   string;
+}>(
   'ConsoleLogger :: cell-2 :: routing',
   (input) => {
-    const cap = captureConsole(input.consoleSink);
-    consoleLogger[input.channel](body(`${input.channel} message`));
-    cap.restore();
-    return { callCount: cap.calls.length, message: String(cap.calls[0]?.[0] ?? '') };
-  },
+    const consoleCapture = TestConsoleLoggerFixture.captureConsole(input.consoleSink);
+    consoleLogger[input.channel](TestConsoleLoggerFixture.body(`${input.channel} message`));
+    consoleCapture.restore();
+    const firstCall = consoleCapture.calls[0];
+    const firstMessage = firstCall === undefined ? '' : firstCall[0];
+    return { 'callCount': consoleCapture.calls.length, 'message': firstMessage };
+  }
 ).run(cell2Scenarios);
 
 // ---------------------------------------------------------------------------
@@ -191,7 +225,7 @@ new ScenarioRunner<Cell2Input, Cell2Output>(
 
 import { test } from 'node:test';
 
-test('ConsoleLogger :: cell-3 :: singleton :: consoleLogger is a stable process-wide instance', () => {
+void test('ConsoleLogger :: cell-3 :: singleton :: consoleLogger is a stable process-wide instance', () => {
   assert.strictEqual(typeof consoleLogger.debug, 'function', '[cell=3, scenario=singleton] exposes LoggerInterface shape');
   assert.strictEqual(typeof consoleLogger.child, 'function', '[cell=3, scenario=singleton] exposes child()');
 });

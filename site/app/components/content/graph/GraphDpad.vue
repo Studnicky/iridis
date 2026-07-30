@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import { DpadMachine } from '~/components/content/viz/DpadMachine.ts';
 
 const props = withDefaults(defineProps<{
-  machine: DpadMachine;
+  machine: InstanceType<typeof DpadMachine>;
   dpadReady?: boolean;
 }>(), {});
 
@@ -17,19 +17,32 @@ const state = computed(() => {
   };
 });
 
-function onPress(action: 'zoom-in' | 'pan-up' | 'zoom-out' | 'pan-left' | 'centre' | 'pan-right' | 'expand' | 'close' | 'pan-down' | 'fit'): void {
+function onPress(action: Parameters<InstanceType<typeof DpadMachine>['press']>[0]): void {
   void props.machine.press(action);
 }
 </script>
 
 <template>
-  <div class="dagonizer-dpad-wrap" aria-label="Graph navigation controls">
-    <aside v-if="state.zoomLevel !== null" class="dagonizer-dpad-hud" aria-live="polite">
+  <div
+    class="dagonizer-dpad-wrap"
+    aria-label="Graph navigation controls"
+  >
+    <aside
+      v-if="state.zoomLevel !== null"
+      class="dagonizer-dpad-hud"
+      aria-live="polite"
+    >
       <span class="dagonizer-dpad-hud-level">{{ state.zoomText }}</span>
-      <span v-if="state.hint !== null" class="dagonizer-dpad-hud-hint">{{ state.hint }}</span>
+      <span
+        v-if="state.hint !== null"
+        class="dagonizer-dpad-hud-hint"
+      >{{ state.hint }}</span>
     </aside>
 
-    <div class="dagonizer-dpad" aria-label="Navigation D-pad">
+    <div
+      class="dagonizer-dpad"
+      aria-label="Navigation D-pad"
+    >
       <button
         v-for="item in state.items"
         :key="item.action"
@@ -39,7 +52,9 @@ function onPress(action: 'zoom-in' | 'pan-up' | 'zoom-out' | 'pan-left' | 'centr
         :title="item.title"
         :aria-label="item.title"
         @click="onPress(item.action)"
-      >{{ item.label }}</button>
+      >
+        {{ item.label }}
+      </button>
     </div>
   </div>
 </template>

@@ -2,7 +2,8 @@
 import { computed, ref, watch } from 'vue';
 import { highlightCode } from '~/theme/highlightCode.ts';
 import type { SupportedLangType } from '~/composables/types/supportedLang.ts';
-import { buildCodeBlockPreviewState, CODE_BLOCK_COPY_RESET_DELAY_MS } from './code/buildCodeBlockViewModel.ts';
+import { buildCodeBlockViewModel } from './code/buildCodeBlockViewModel.ts';
+import { trustedMarkupRenderer } from './trustedMarkupRenderer.ts';
 
 /**
  * Real multi-language syntax highlighting (Shiki: CSS, JSON, JS/TS, XML) using
@@ -20,7 +21,7 @@ import { buildCodeBlockPreviewState, CODE_BLOCK_COPY_RESET_DELAY_MS } from './co
  * for long formats (JSON, RDF, Android XML) behind a "Show full file"
  * disclosure; Copy always copies the full `code`, regardless of preview state.
  */
-const props = defineProps<{ code: string; lang: SupportedLangType; vscodeTheme: object; caption?: string; previewLines?: number }>();
+const props = defineProps<{ code: string; lang: SupportedLangType.Type; vscodeTheme: object; caption?: string; previewLines?: number }>();
 
 // Top-level await so SSR/prerender waits for the highlighted HTML before
 // serializing the page — a fire-and-forget watch() never resolves in time
@@ -29,11 +30,30 @@ const props = defineProps<{ code: string; lang: SupportedLangType; vscodeTheme: 
 const html = ref<string>(await highlightCode(props.code, props.lang, props.vscodeTheme));
 
 watch(
-  () => [props.code, props.lang, props.vscodeTheme],
-  async ([code, lang, theme]) => {
-    html.value = await highlightCode(code as string, lang as SupportedLangType, theme as object);
+  () => ({
+    'code': props.code,
+    'lang': props.lang,
+    'theme': props.vscodeTheme
+  }),
+  async (highlightInput) => {
+    html.value = await highlightCode(
+      highlightInput.code,
+      highlightInput.lang,
+      highlightInput.theme
+    );
   },
   { deep: true }
+);
+
+const codeMarkupRef = ref<HTMLElement | null>(null);
+watch(
+  [html, codeMarkupRef],
+  ([markup, element]) => {
+    if (element !== null) {
+      trustedMarkupRenderer.render(element, markup, 'html');
+    }
+  },
+  { 'flush': 'post', 'immediate': true }
 );
 
 /** Copy-to-clipboard lives here (not the caller) since this component already owns `code`. */
@@ -44,11 +64,14 @@ async function copy(): Promise<void> {
   await navigator.clipboard.writeText(props.code);
   copied.value = true;
   if (copiedTimer !== undefined) {clearTimeout(copiedTimer);}
-  copiedTimer = setTimeout(() => { copied.value = false; }, CODE_BLOCK_COPY_RESET_DELAY_MS);
+  copiedTimer = setTimeout(() => { copied.value = false; }, buildCodeBlockViewModel.copyResetDelayMs);
 }
 
 /** Line count drives both the "N lines" disclosure label and whether the preview clamp applies at all — a short file with a `previewLines` prop still renders fully open. */
-const previewState = computed(() => buildCodeBlockPreviewState(props.code, props.previewLines));
+const previewState = computed(() => buildCodeBlockViewModel.previewState(
+  props.code,
+  props.previewLines
+));
 const expanded = ref(previewState.value.expandedByDefault);
 </script>
 
@@ -75,9 +98,9 @@ const expanded = ref(previewState.value.expandedByDefault);
       />
     </div>
     <div
+      ref="codeMarkupRef"
       class="code-block overflow-auto text-xs leading-relaxed [&_pre]:rounded-none [&_pre]:p-3"
       :class="previewState.isLong && !expanded ? 'max-h-40' : 'max-h-[28rem]'"
-      v-html="html"
     />
     <button
       v-if="previewState.isLong"
@@ -105,7 +128,7 @@ const expanded = ref(previewState.value.expandedByDefault);
   display: flex;
   flex-direction: column;
   border-radius: 0.5rem;
-  border: 1px solid color-mix(in oklch, var(--ui-primary) 18%, transparent);
+  border: 1px var(--iridis-border-style) color-mix(in oklch, var(--ui-primary) 18%, transparent);
   overflow: hidden;
 }
 .code-block-toolbar {
@@ -116,7 +139,7 @@ const expanded = ref(previewState.value.expandedByDefault);
   flex: none;
   padding: 0.4rem 0.5rem;
   background: color-mix(in oklch, var(--ui-bg-elevated) 70%, transparent);
-  border-bottom: 1px solid color-mix(in oklch, var(--ui-primary) 14%, transparent);
+  border-bottom: 1px var(--iridis-border-style) color-mix(in oklch, var(--ui-primary) 14%, transparent);
 }
 /* File-tab label — pushed left by `margin-right: auto` so the Copy button
    stays pinned right whether or not a caption is present. */
@@ -130,7 +153,7 @@ const expanded = ref(previewState.value.expandedByDefault);
   padding: 0.2rem 0.55rem;
   border-radius: 0.3rem;
   background: color-mix(in oklch, var(--ui-bg) 60%, transparent);
-  border: 1px solid color-mix(in oklch, var(--ui-primary) 14%, transparent);
+  border: 1px var(--iridis-border-style) color-mix(in oklch, var(--ui-primary) 14%, transparent);
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--ui-text-muted);
@@ -149,7 +172,7 @@ const expanded = ref(previewState.value.expandedByDefault);
   width: 100%;
   padding: 0.35rem 0.5rem;
   background: color-mix(in oklch, var(--ui-bg-elevated) 70%, transparent);
-  border-top: 1px solid color-mix(in oklch, var(--ui-primary) 14%, transparent);
+  border-top: 1px var(--iridis-border-style) color-mix(in oklch, var(--ui-primary) 14%, transparent);
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--ui-text-muted);

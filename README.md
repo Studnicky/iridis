@@ -13,12 +13,11 @@
 
 Variable-input-count seed colors expand into role-resolved, contrast-enforced palettes via a sequenced task pipeline. The docs site runs the live engine against its own brand palette; every chrome and syntax token on the page is the output of `engine.run()`.
 
-- [Getting started](https://studnicky.github.io/iridis/getting-started) — install, the smallest possible pipeline, the shape of the output.
-- [Try it out](https://studnicky.github.io/iridis/try-it-out) — edit seed colors and a role schema in the browser; the page recomputes through the engine on every keystroke.
-- [Pipeline](https://studnicky.github.io/iridis/concepts/pipeline), [Role schemas](https://studnicky.github.io/iridis/concepts/role-schemas), [ColorRecord](https://studnicky.github.io/iridis/concepts/color-record) — engine concepts.
-- [Contrast](https://studnicky.github.io/iridis/concepts/contrast) and [Accessibility calculations](https://studnicky.github.io/iridis/concepts/accessibility-calculations) — WCAG 2.1 AA/AAA, APCA Lc targets, CVD simulation and correction.
-- [Recipes](https://studnicky.github.io/iridis/recipes/cli) — end-to-end snippets for the CLI, cascading CSS variables, and the Vue + Capacitor sample app.
-- [Reference](https://studnicky.github.io/iridis/reference/hex) — per-color-space pages (Hex, RGB, HSV, CMYK, OKLCH) and accessibility-standards pages (WCAG 2.1, APCA).
+- [What is Iridis](https://studnicky.github.io/iridis/#01-what-is-iridis) and [the four stages](https://studnicky.github.io/iridis/#02-the-four-stages) — installation, pipeline concepts, and state flow.
+- [Adopting Iridis](https://studnicky.github.io/iridis/#03-adopting-existing-apps) and the [Engine API](https://studnicky.github.io/iridis/#04-engine-api) — integration strategy, role schemas, contrast, and engine composition.
+- [Vue + Capacitor](https://studnicky.github.io/iridis/#05-recipe-vue-capacitor), [plugin ecosystem](https://studnicky.github.io/iridis/#06-plugin-ecosystem), [CLI](https://studnicky.github.io/iridis/#07-cli-usage), and [VS Code themes](https://studnicky.github.io/iridis/#08-vscode-theme-recipe) — end-to-end recipes and output targets.
+- [Task registry](https://studnicky.github.io/iridis/#09-task-registry-reference), [math primitives](https://studnicky.github.io/iridis/#10-math-primitives-reference), and [architecture](https://studnicky.github.io/iridis/#11-architecture-internals) — complete technical references.
+- [Living Color](https://studnicky.github.io/iridis/#12-living-color) — palette algebra, animation, state transitions, signal bindings, and named trajectories.
 
 ## Packages
 
@@ -34,6 +33,14 @@ Variable-input-count seed colors expand into role-resolved, contrast-enforced pa
 ### Input
 
 - [`@studnicky/iridis-image`](packages/image) — Extracts a palette from image pixels — histogram, dominant-color clustering, and harmonization tasks.
+
+### Living color
+
+- [`@studnicky/iridis-algebra`](packages/algebra) — Palette vector math in OKLCH×N space through `lerp`, `subtract`, `nearest`, `drift`, and `perpendicular`.
+- [`@studnicky/iridis-anima`](packages/anima) — Evaluates palette curves with easing, chromatic detours, and per-frame contrast enforcement through `evaluate`, `evaluateStops`, and `evaluateEnforced`.
+- [`@studnicky/iridis-fsm`](packages/fsm) — Drives named palette transitions with `PaletteStateMachine` and enter, exit, and rejection hooks.
+- [`@studnicky/iridis-pulse`](packages/pulse) — Binds real or virtual clocks and arbitrary scalar sources to palette curves through `ClockBinding` and `ValueBinding`.
+- [`@studnicky/iridis-trajectory`](packages/trajectory) — Registers reusable multi-stop palette curves through `TrajectoryRegistry`, `sunriseTrajectory`, `duskFadeTrajectory`, and `focusPulseTrajectory`.
 
 ### Output targets
 
@@ -55,6 +62,17 @@ Node.js >= 24 (matches `engines.node` in `package.json`).
 
 ## Install
 
+Iridis packages are published through GitHub Packages under the `@studnicky` scope. Configure npm to use that registry before installing them. Local installs require `NODE_AUTH_TOKEN` to contain a personal access token (classic) with `read:packages` permission; the GitHub account that owns the token must have read access to the package and its linked repository. Keep the token in your shell or secret manager, never in `.npmrc` or source control.
+
+Add the following environment-backed configuration to your project or user `.npmrc`:
+
+```ini
+@studnicky:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+Install the core package:
+
 ```bash
 npm install @studnicky/iridis
 ```
@@ -67,18 +85,20 @@ npm install @studnicky/iridis-stylesheet @studnicky/iridis-tailwind @studnicky/i
 
 ## Develop
 
-```sh
+```bash
 git clone https://github.com/Studnicky/iridis.git
 cd iridis
-npm install
-npm run typecheck
-npm test
+pnpm install
+pnpm run build
+pnpm run typecheck
+pnpm test
+pnpm run packages:verify
 
 # Preferred one-shot debug launch
-npm run site:debug
+pnpm run site:debug
 ```
 
-iridis ships source, not a build step — `typecheck` is the closest equivalent to `build` in this workspace.
+All 18 public packages build compiled ESM and declarations into `dist/`. `pnpm run build` emits 1,296 artifacts from 324 TypeScript sources. `pnpm run packages:verify` validates 18 staged archives, all 42 public subpaths, strict NodeNext consumer typechecking, runtime imports, metadata, dependency closure, and the compiled CLI executable. Local verification does not publish packages; remote versioning and publication require separate explicit authorization.
 
 The docs/demo site lives in [`site/`](site) — a Nuxt app that runs the real engine live against its own theme. See [`site/README.md`](site/README.md).
 

@@ -1,9 +1,13 @@
 import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 
 /** A single named state: the palette it settles at once a transition into it completes. */
-export type PaletteStateInterfaceType = {
-  'palette': PaletteInterfaceType;
-};
+export class PaletteStateInterfaceType {
+  readonly 'palette': PaletteInterfaceType;
+
+  constructor(palette: PaletteInterfaceType) {
+    this.palette = palette;
+  }
+}
 
 /** Caller-supplied schema: state name → palette definition. */
 export type PaletteStateSchemaType = Record<string, PaletteStateInterfaceType>;

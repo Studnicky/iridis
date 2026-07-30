@@ -11,6 +11,7 @@ import {
   darken,
   desaturate,
   ensureContrast,
+  FramingSurface,
   lighten,
   mixHsl,
   saturate
@@ -31,21 +32,25 @@ class ApplyModifiers implements TaskInterface {
     'description': 'Produces base + per-modifier semantic token rules from MODIFIER_TRANSFORMS, ensuring each rule meets contrast against the background role.',
     'name':        'vscode:applyModifiers',
     'phase':       undefined,
-    'reads':       ['metadata.vscode:baseTokens', 'roles'],
+    'reads':       ['metadata.vscode:baseTokens', 'roles', 'runtime.framing', 'variants'],
     'requires':    ['vscode:expandTokens'],
     'writes':      ['metadata.vscode:semanticTokenRules']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const baseTokens = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterfaceType>;
 
-    const bgRecord  = state.roles.background ?? colorRecordFactory.fromHex('#000000');
+    // Same resolved surface vscode:expandTokens derived baseTokens from;
+    // mixWith lookups (e.g. `deprecated` mixing toward `error`) must stay
+    // consistent with whichever framing produced the base token colors.
+    const roles = FramingSurface.resolve(state);
+    const bgRecord = roles.background ?? colorRecordFactory.fromHex('#000000');
     const rules: Record<string, SemanticRuleEntryInterfaceType> = {};
 
-    const typesLen = VscodeTokenData.TOKEN_TYPES.length;
+    const typeCount = VscodeTokenData.TOKEN_TYPES.length;
 
     // 23 base rules: emit P3 form when the record carries it, hex otherwise.
-    for (let i = 0; i < typesLen; i++) {
+    for (let i = 0; i < typeCount; i++) {
       const tokenType = VscodeTokenData.TOKEN_TYPES[i];
       if (tokenType === undefined) {continue;}
       const baseRecord = baseTokens[tokenType];
@@ -54,15 +59,15 @@ class ApplyModifiers implements TaskInterface {
     }
 
     // 23 token types × N modifiers from TOKEN_MODIFIERS (the VS Code spec set).
-    const modifiersLen = VscodeTokenData.TOKEN_MODIFIERS.length;
+    const modifierCount = VscodeTokenData.TOKEN_MODIFIERS.length;
 
-    for (let i = 0; i < typesLen; i++) {
+    for (let i = 0; i < typeCount; i++) {
       const tokenType = VscodeTokenData.TOKEN_TYPES[i];
       if (tokenType === undefined) {continue;}
       const baseRecord = baseTokens[tokenType];
       if (baseRecord === undefined) {continue;}
 
-      for (let j = 0; j < modifiersLen; j++) {
+      for (let j = 0; j < modifierCount; j++) {
         const modifier = VscodeTokenData.TOKEN_MODIFIERS[j];
         if (modifier === undefined) {continue;}
 
@@ -88,7 +93,7 @@ class ApplyModifiers implements TaskInterface {
         }
 
         if (transform.mixWith !== undefined && transform.mixWeight !== undefined && transform.mixWeight !== 0) {
-          const mixRecord = state.roles[transform.mixWith];
+          const mixRecord = roles[transform.mixWith];
           if (mixRecord !== undefined) {
             color = mixHsl.apply(color, mixRecord, transform.mixWeight);
           }
@@ -102,7 +107,7 @@ class ApplyModifiers implements TaskInterface {
     }
 
     state.metadata['vscode:semanticTokenRules'] = rules;
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('ApplyModifiers')
         .operation('run')
