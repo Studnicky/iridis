@@ -21,6 +21,17 @@ run actually nudged into range, when one was).
 
 ## Install
 
+GitHub Packages requires a personal access token (classic) with
+`read:packages`; the token's account must also have read access to this
+package's repository. Expose the token as `NODE_AUTH_TOKEN`, then configure
+the `@studnicky` scope before installing:
+
+```ini
+# ~/.npmrc
+@studnicky:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
 ```bash
 npm install @studnicky/iridis @studnicky/iridis-rdf
 ```
@@ -28,33 +39,48 @@ npm install @studnicky/iridis @studnicky/iridis-rdf
 ## Usage
 
 ```ts
+import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { rdfPlugin }         from '@studnicky/iridis-rdf';
 
-const engine = new Engine();
-for (const task of coreTasks) engine.tasks.register(task);
-engine.adopt(rdfPlugin);
+export function generateReasoningGraph(roleSchema: RoleSchemaInterfaceType) {
+  const engine = new Engine();
+  for (const task of coreTasks) engine.tasks.register(task);
+  engine.adopt(rdfPlugin);
 
-engine.pipeline([
-  'intake:any',
-  'expand:family',
-  'resolve:roles',
-  'enforce:contrast',
-  'reason:annotate',
-  'reason:serialize',
-]);
+  engine.pipeline([
+    'intake:any',
+    'resolve:roles',
+    'expand:family',
+    'enforce:contrast',
+    'reason:annotate',
+    'reason:serialize',
+  ]);
 
-const state = await engine.run({
-  'colors':   ['#8B5CF6'],
-  'roles':    yourRoleSchema,
-  'contrast': { 'level': 'AA' },
-  'metadata': { 'reasoning': { 'format': 'Turtle' } },
-});
+  const state = engine.run({
+    'bypass':   undefined,
+    'colors':   ['#8B5CF6'],
+    'contrast': {
+      'algorithm':  'wcag21',
+      'cvdCorrect': undefined,
+      'extra':      undefined,
+      'level':      'AA',
+    },
+    'emit':      undefined,
+    'maxColors': undefined,
+    'metadata':  { 'rdf:format': 'Turtle' },
+    'roles':     roleSchema,
+    'runtime':   undefined,
+  });
 
-const graph      = state.outputs['rdf:reasoningGraph']!;
-const serialized = state.outputs['rdf:serialized']!;
-// graph      : IterableStoreInterface // the live n3 Store, ready for SPARQL.
-// serialized : string                 // the serialised text in the requested format.
+  const graph      = state.outputs['rdf:reasoningGraph']!;
+  const serialized = state.outputs['rdf:serialized']!;
+  // graph      : IterableStoreInterface // the live n3 Store, ready for SPARQL.
+  // serialized : string                 // the serialised text in the requested format.
+
+  return { graph, serialized };
+}
 ```
 
 ## Tasks

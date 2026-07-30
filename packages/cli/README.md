@@ -7,6 +7,17 @@ library API uses. The CLI is a thin shell around `engine.run()`.
 
 ## Install
 
+GitHub Packages requires a personal access token (classic) with
+`read:packages`; the token's account must also have read access to this
+package's repository. Expose the token as `NODE_AUTH_TOKEN`, then configure
+the `@studnicky` scope before installing:
+
+```ini
+# ~/.npmrc
+@studnicky:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
 ```bash
 npm install --save-dev @studnicky/iridis-cli
 ```
@@ -95,7 +106,7 @@ import {
 } from '@studnicky/iridis-cli';
 
 const cli = new Cli();
-await cli.run(['./palette.config.json']);
+await cli.run('./palette.config.json');
 ```
 
 The four exported classes (`Cli`, `ConfigLoader`, `PluginResolver`,

@@ -1,7 +1,10 @@
+import type { JsonValueType } from '@studnicky/types';
+
 import { ValidationError } from '@studnicky/errors';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
+import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 import type {
   ColorRecordInterfaceType,
   PaletteStateInterface,
@@ -186,7 +189,7 @@ class IntakeNamed implements TaskInterface {
    * a recognized CSS named color string.
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: unknown): ColorRecordInterfaceType {
+  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
     if (typeof raw !== 'string') {
       throw ValidationError.create({
         'message': 'intake:named — expected a string input',
@@ -219,7 +222,7 @@ class IntakeNamed implements TaskInterface {
    * Extracted from {@link IntakeNamed.run} so the loop body contains only
    * a function call, not a try-catch, per V8 optimization guidance.
    */
-  private parseEntry(raw: unknown, index: number): ColorRecordInterfaceType {
+  private parseEntry(raw: JsonValueType | RawImagePixelInputInterface, index: number): ColorRecordInterfaceType {
     try {
       return this.parse(raw);
     } catch {
@@ -239,12 +242,11 @@ class IntakeNamed implements TaskInterface {
     }
   }
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (let i = 0; i < state.input.colors.length; i++) {
-      const raw = state.input.colors[i];
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    for (const [i, raw] of state.input.colors.entries()) {
       const record = this.parseEntry(raw, i);
       state.colors.push(record);
-      ctx.logger.debug(
+      context.logger.debug(
         LogBody.create()
           .component('IntakeNamed')
           .operation('run')

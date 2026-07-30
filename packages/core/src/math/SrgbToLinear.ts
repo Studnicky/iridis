@@ -1,10 +1,12 @@
 import type { RgbInterfaceType } from '../types/index.ts';
 
-function decode(v: number): number {
-  if (v <= 0.04045) {
-    return v / 12.92;
+class GammaDecode {
+  static channel(v: number): number {
+    if (v <= 0.04045) {
+      return v / 12.92;
+    }
+    return Math.pow((v + 0.055) / 1.055, 2.4);
   }
-  return Math.pow((v + 0.055) / 1.055, 2.4);
 }
 
 class SrgbToLinear {
@@ -12,9 +14,9 @@ class SrgbToLinear {
 
   apply(r: number, g: number, b: number): RgbInterfaceType {
     return {
-      'b': decode(b),
-      'g': decode(g),
-      'r': decode(r)
+      'b': GammaDecode.channel(b),
+      'g': GammaDecode.channel(g),
+      'r': GammaDecode.channel(r)
     };
   }
 }

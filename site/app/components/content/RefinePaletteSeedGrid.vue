@@ -11,7 +11,11 @@ const emit = defineEmits<{
   pin: [index: number, role: string | undefined];
 }>();
 
-const seedGridModel = computed(() => buildRefinePaletteSeedGridModel(props.activeSeeds));
+const seedGridModel = computed(() => buildRefinePaletteSeedGridModel.build(props.activeSeeds));
+
+function forwardPin(index: number, role: string | undefined): void {
+  emit('pin', index, role);
+}
 </script>
 
 <template>
@@ -32,7 +36,7 @@ const seedGridModel = computed(() => buildRefinePaletteSeedGridModel(props.activ
           :index="i"
           :roles="sortedPinnableRoles"
           :seed-roles="seedGridModel.seedRoles"
-          @pin="(index, role) => emit('pin', index, role)"
+          @pin="forwardPin"
         />
       </SeedCard>
     </template>

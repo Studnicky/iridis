@@ -16,39 +16,84 @@ import type {
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface,
-  TaskManifestInterfaceType,
+  TaskManifestInterfaceType
 } from '@studnicky/iridis';
+
 import { Engine, TaskRegistry } from '@studnicky/iridis';
-import {
-  ScenarioRunner,
-  assert,
-  type ScenarioInterface,
-} from '../_runner/ScenarioRunner.ts';
+import assert from 'node:assert/strict';
+
+import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
+
+import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-function makeTask(
-  name:   string,
-  calls?: string[],
-  phase?: LifecyclePhaseType,
-): TaskInterface {
-  const manifest: TaskManifestInterfaceType = {
-    'description': undefined,
-    'name':        name,
-    'phase':       phase,
-    'reads':       undefined,
-    'requires':    undefined,
-    'writes':      undefined
-  };
-  return {
-    'name': name,
-    'manifest': manifest,
-    run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
+class TaskFixtures {
+  static makeTask(
+    name: string,
+    options?: { readonly 'calls'?: string[]; readonly 'phase'?: LifecyclePhaseType }
+  ): TaskInterface {
+    const manifest: TaskManifestInterfaceType = {
+      'description': undefined,
+      'name':        name,
+      'phase':       options?.phase,
+      'reads':       undefined,
+      'requires':    undefined,
+      'writes':      undefined
+    };
+    return {
+      'manifest': manifest,
+      'name': name,
+      'run': TaskFixtures.makeCallRecorderRun(name, options?.calls)
+    };
+  }
+
+  static makeCallRecorderRun(
+    name: string,
+    calls?: string[]
+  ): (state: PaletteStateInterface, context: PipelineContextInterface) => void {
+    return (_state: PaletteStateInterface, _context: PipelineContextInterface): void => {
       calls?.push(name);
-    },
-  };
+    };
+  }
+
+  static makeLogPushRun(log: string[], label: string): () => void {
+    return (): void => {
+      log.push(label);
+    };
+  }
+
+  static makeNoOpRun(): (state: PaletteStateInterface, context: PipelineContextInterface) => void {
+    return (_state: PaletteStateInterface, _context: PipelineContextInterface): void => {};
+  }
+
+  static makeMetadataSnapshotRun(
+    log: string[],
+    label: string,
+    metadataKey: string
+  ): (state: PaletteStateInterface) => void {
+    return (state: PaletteStateInterface): void => {
+      log.push(label);
+      state.metadata[metadataKey] = state.colors.length;
+    };
+  }
+
+  static makeColorPushRun(log: string[], label: string): (state: PaletteStateInterface) => void {
+    return (state: PaletteStateInterface): void => {
+      log.push(label);
+      state.colors.push({
+        'alpha':        1,
+        'displayP3':    undefined,
+        'hex':          '#80cc33',
+        'hints':        undefined,
+        'oklch':        { 'c': 0.1, 'h': 120, 'l': 0.5 },
+        'rgb':          { 'b': 0.2, 'g': 0.8, 'r': 0.5 },
+        'sourceFormat': 'hex'
+      });
+    };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -58,46 +103,45 @@ function makeTask(
 // in that order. Each registered name must be resolvable via resolve().
 // ---------------------------------------------------------------------------
 
-interface RegisterInput  { readonly count: number }
-interface RegisterOutput {
-  readonly manifestCount: number;
-  readonly namesInOrder:  boolean;
-  readonly firstResolvable: boolean;
-}
-
-const registerScenarios: readonly ScenarioInterface<RegisterInput, RegisterOutput>[] = [
+const registerScenarios: readonly ScenarioInterface<
+  { readonly 'count': number },
+  { readonly 'firstResolvable': boolean; readonly 'manifestCount': number; readonly 'namesInOrder': boolean }
+>[] = [
   {
-    name: 'register 50 tasks; list returns all 50 in insertion order',
-    kind: 'happy',
-    input: { count: 50 },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error,                undefined, '[cell=1, scenario=50-tasks] no throw');
       assert.strictEqual(output!.manifestCount, 50,       '[cell=1, scenario=50-tasks] 50 manifests');
       assert.strictEqual(output!.namesInOrder,  true,     '[cell=1, scenario=50-tasks] manifests in insertion order');
       assert.strictEqual(output!.firstResolvable, true,   '[cell=1, scenario=50-tasks] first task resolvable');
     },
+    'input': { 'count': 50 },
+    'kind': 'happy',
+    'name': 'register 50 tasks; list returns all 50 in insertion order'
   },
   {
-    name: 'register 1 task; list returns exactly 1',
-    kind: 'edge',
-    input: { count: 1 },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error,               undefined, '[cell=1, scenario=1-task] no throw');
       assert.strictEqual(output!.manifestCount, 1,        '[cell=1, scenario=1-task] 1 manifest');
     },
+    'input': { 'count': 1 },
+    'kind': 'edge',
+    'name': 'register 1 task; list returns exactly 1'
   },
   {
-    name: 'empty registry list returns 0',
-    kind: 'edge',
-    input: { count: 0 },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error,               undefined, '[cell=1, scenario=0-tasks] no throw');
       assert.strictEqual(output!.manifestCount, 0,        '[cell=1, scenario=0-tasks] empty list');
     },
-  },
+    'input': { 'count': 0 },
+    'kind': 'edge',
+    'name': 'empty registry list returns 0'
+  }
 ];
 
-new ScenarioRunner<RegisterInput, RegisterOutput>(
+new ScenarioRunner<
+  { readonly 'count': number },
+  { readonly 'firstResolvable': boolean; readonly 'manifestCount': number; readonly 'namesInOrder': boolean }
+>(
   'TaskRegistry :: cell-1 :: register',
   (input) => {
     const registry = new TaskRegistry();
@@ -105,16 +149,16 @@ new ScenarioRunner<RegisterInput, RegisterOutput>(
     for (let i = 0; i < input.count; i++) {
       const name = `task:${i.toString().padStart(3, '0')}`;
       names.push(name);
-      registry.register(makeTask(name));
+      registry.register(TaskFixtures.makeTask(name));
     }
     const manifests    = registry.list();
-    const listedNames  = manifests.map((m) => m.name);
+    const listedNames  = manifests.map((m) => { const result = m.name; return result; });
     const namesMatch   = JSON.stringify(listedNames) === JSON.stringify(names);
     const firstResolvable = names.length > 0
       ? (() => { try { registry.resolve(names[0]!); return true; } catch { return false; } })()
       : true;
-    return { manifestCount: manifests.length, namesInOrder: namesMatch, firstResolvable };
-  },
+    return { 'firstResolvable': firstResolvable, 'manifestCount': manifests.length, 'namesInOrder': namesMatch };
+  }
 ).run(registerScenarios);
 
 // ---------------------------------------------------------------------------
@@ -124,79 +168,61 @@ new ScenarioRunner<RegisterInput, RegisterOutput>(
 // by the main task must be visible to the onRunEnd hook.
 // ---------------------------------------------------------------------------
 
-interface HooksInput  { readonly colorsPreloaded: number }
-interface HooksOutput {
-  readonly executionOrder: readonly string[];
-  readonly startSaw:       number;
-  readonly endSaw:         number;
-}
+type HooksOutput = {
+  readonly 'endSaw':         number;
+  readonly 'executionOrder': readonly string[];
+  readonly 'startSaw':       number;
+};
 
-const hooksScenarios: readonly ScenarioInterface<HooksInput, HooksOutput>[] = [
+const hooksScenarios: readonly ScenarioInterface<{ readonly 'colorsPreloaded': number }, HooksOutput>[] = [
   {
-    name: 'start → main → end order; end hook sees mutation from main',
-    kind: 'happy',
-    input: { colorsPreloaded: 0 },
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=hook-order] no throw');
       assert.deepStrictEqual(
         output!.executionOrder, ['start', 'main', 'end'],
-        '[cell=2, scenario=hook-order] execution order start → main → end',
+        '[cell=2, scenario=hook-order] execution order start → main → end'
       );
       assert.strictEqual(output!.startSaw, 0, '[cell=2, scenario=hook-order] start hook sees 0 colors before main');
       assert.strictEqual(output!.endSaw,   1, '[cell=2, scenario=hook-order] end hook sees 1 color after main adds one');
     },
-  },
+    'input': { 'colorsPreloaded': 0 },
+    'kind': 'happy',
+    'name': 'start → main → end order; end hook sees mutation from main'
+  }
 ];
 
-new ScenarioRunner<HooksInput, HooksOutput>(
+new ScenarioRunner<{ readonly 'colorsPreloaded': number }, HooksOutput>(
   'TaskRegistry :: cell-2 :: hooks',
-  async (_input) => {
+  (_input) => {
     const engine = new Engine();
     const log: string[] = [];
 
     engine.tasks.hook('onRunStart', {
+      'manifest': { 'description': undefined, 'name': 'hook:start', 'phase': 'onRunStart', 'reads': undefined, 'requires': undefined, 'writes': undefined },
       'name': 'hook:start',
-      'manifest': { 'name': 'hook:start', 'phase': 'onRunStart', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
-      run(state: PaletteStateInterface): void {
-        log.push('start');
-        (state.metadata as Record<string, unknown>)['startSaw'] = state.colors.length;
-      },
+      'run': TaskFixtures.makeMetadataSnapshotRun(log, 'start', 'startSaw')
     });
 
     engine.tasks.register({
+      'manifest': { 'description': undefined, 'name': 'task:main', 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       'name': 'task:main',
-      'manifest': { 'name': 'task:main', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
-      run(state: PaletteStateInterface): void {
-        log.push('main');
-        state.colors.push({
-          'oklch':        { 'l': 0.5, 'c': 0.1, 'h': 120 },
-          'rgb':          { 'r': 0.5, 'g': 0.8, 'b': 0.2 },
-          'hex':          '#80cc33',
-          'alpha':        1,
-          'sourceFormat': 'hex',
-          'displayP3':    undefined,
-          'hints':        undefined,
-        });
-      },
+      'run': TaskFixtures.makeColorPushRun(log, 'main')
     });
 
     engine.tasks.hook('onRunEnd', {
+      'manifest': { 'description': undefined, 'name': 'hook:end', 'phase': 'onRunEnd', 'reads': undefined, 'requires': undefined, 'writes': undefined },
       'name': 'hook:end',
-      'manifest': { 'name': 'hook:end', 'phase': 'onRunEnd', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
-      run(state: PaletteStateInterface): void {
-        log.push('end');
-        (state.metadata as Record<string, unknown>)['endSaw'] = state.colors.length;
-      },
+      'run': TaskFixtures.makeMetadataSnapshotRun(log, 'end', 'endSaw')
     });
 
     engine.pipeline(['task:main']);
-    const state = await engine.run({ 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
+    const state = engine.run({ 'bypass': undefined, 'colors': [], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
     return {
-      executionOrder: log,
-      startSaw:       state.metadata['startSaw'] as number,
-      endSaw:         state.metadata['endSaw']   as number,
+      'endSaw':         state.metadata.endSaw   as number,
+      'executionOrder': log,
+      'startSaw':       state.metadata.startSaw as number
     };
-  },
+  }
 ).run(hooksScenarios);
 
 // ---------------------------------------------------------------------------
@@ -206,48 +232,47 @@ new ScenarioRunner<HooksInput, HooksOutput>(
 // re-registration must execute the new implementation only (no duplicate call).
 // ---------------------------------------------------------------------------
 
-interface ReplaceInput  { readonly dummy?: undefined }
-interface ReplaceOutput {
-  readonly log:           readonly string[];
-  readonly resolvedIsV2:  boolean;
-}
+type ReplaceOutput = {
+  readonly 'log':           readonly string[];
+  readonly 'resolvedIsV2':  boolean;
+};
 
-const replaceScenarios: readonly ScenarioInterface<ReplaceInput, ReplaceOutput>[] = [
+const replaceScenarios: readonly ScenarioInterface<{ readonly 'dummy'?: undefined }, ReplaceOutput>[] = [
   {
-    name: 're-register same name; run executes v2 only; resolve returns v2',
-    kind: 'happy',
-    input: {},
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,                             '[cell=3, scenario=replace] no throw');
       assert.deepStrictEqual(output!.log, ['v2'],                     '[cell=3, scenario=replace] only v2 executed');
       assert.strictEqual(output!.resolvedIsV2, true,                  '[cell=3, scenario=replace] resolve returns v2');
     },
-  },
+    'input': {},
+    'kind': 'happy',
+    'name': 're-register same name; run executes v2 only; resolve returns v2'
+  }
 ];
 
-new ScenarioRunner<ReplaceInput, ReplaceOutput>(
+new ScenarioRunner<{ readonly 'dummy'?: undefined }, ReplaceOutput>(
   'TaskRegistry :: cell-3 :: replace',
-  async (_input) => {
+  (_input) => {
     const engine = new Engine();
     const log: string[] = [];
 
     const v2: TaskInterface = {
+      'manifest': { 'description': undefined, 'name': 'task:replaceable', 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       'name': 'task:replaceable',
-      'manifest': { 'name': 'task:replaceable', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
-      run(): void { log.push('v2'); },
+      'run': TaskFixtures.makeLogPushRun(log, 'v2')
     };
 
     engine.tasks.register({
+      'manifest': { 'description': undefined, 'name': 'task:replaceable', 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
       'name': 'task:replaceable',
-      'manifest': { 'name': 'task:replaceable', 'description': undefined, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
-      run(): void { log.push('v1'); },
+      'run': TaskFixtures.makeLogPushRun(log, 'v1')
     });
     engine.tasks.register(v2);
     engine.pipeline(['task:replaceable']);
-    await engine.run({ 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
+    engine.run({ 'bypass': undefined, 'colors': [], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
 
-    return { log, resolvedIsV2: engine.tasks.resolve('task:replaceable') === v2 };
-  },
+    return { 'log': log, 'resolvedIsV2': engine.tasks.resolve('task:replaceable') === v2 };
+  }
 ).run(replaceScenarios);
 
 // ---------------------------------------------------------------------------
@@ -258,35 +283,34 @@ new ScenarioRunner<ReplaceInput, ReplaceOutput>(
 // through their hook channel.
 // ---------------------------------------------------------------------------
 
-interface PhaseSkipInput  { readonly dummy?: undefined }
-interface PhaseSkipOutput { readonly ran: readonly string[] }
+type PhaseSkipOutput = { readonly 'ran': readonly string[] };
 
-const phaseSkipScenarios: readonly ScenarioInterface<PhaseSkipInput, PhaseSkipOutput>[] = [
+const phaseSkipScenarios: readonly ScenarioInterface<{ readonly 'dummy'?: undefined }, PhaseSkipOutput>[] = [
   {
-    name: 'lifecycle task in pipeline skips main-loop execution (fires 0 times)',
-    kind: 'edge',
-    input: {},
-    assert(output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined,            '[cell=4, scenario=phase-skip] no throw');
       assert.strictEqual(output!.ran.length, 0,       '[cell=4, scenario=phase-skip] phase-marked task not run in main loop');
     },
-  },
+    'input': {},
+    'kind': 'edge',
+    'name': 'lifecycle task in pipeline skips main-loop execution (fires 0 times)'
+  }
 ];
 
-new ScenarioRunner<PhaseSkipInput, PhaseSkipOutput>(
+new ScenarioRunner<{ readonly 'dummy'?: undefined }, PhaseSkipOutput>(
   'TaskRegistry :: cell-4 :: phase-skip',
-  async (_input) => {
+  (_input) => {
     const engine = new Engine();
     const ran: string[] = [];
     engine.tasks.register({
+      'manifest': { 'description': undefined, 'name': 'task:lifecycle', 'phase': 'onRunStart', 'reads': undefined, 'requires': undefined, 'writes': undefined },
       'name': 'task:lifecycle',
-      'manifest': { 'name': 'task:lifecycle', 'phase': 'onRunStart', 'description': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
-      run(): void { ran.push('lifecycle'); },
+      'run': TaskFixtures.makeLogPushRun(ran, 'lifecycle')
     });
     engine.pipeline(['task:lifecycle']);
-    await engine.run({ 'colors': [], 'bypass': undefined, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
-    return { ran };
-  },
+    engine.run({ 'bypass': undefined, 'colors': [], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
+    return { 'ran': ran };
+  }
 ).run(phaseSkipScenarios);
 
 // ---------------------------------------------------------------------------
@@ -297,67 +321,68 @@ new ScenarioRunner<PhaseSkipInput, PhaseSkipOutput>(
 // resolve() for an unregistered name must throw with the name in the message.
 // ---------------------------------------------------------------------------
 
-interface ErrorPathInput {
-  readonly scenario: 'register-empty' | 'hook-empty' | 'resolve-missing';
-}
-interface ErrorPathOutput { readonly dummy: undefined }
-
-const errorPathScenarios: readonly ScenarioInterface<ErrorPathInput, ErrorPathOutput>[] = [
+const errorPathScenarios: readonly ScenarioInterface<
+  { readonly 'scenario': 'register-empty' | 'hook-empty' | 'resolve-missing' },
+  { readonly 'dummy': undefined }
+>[] = [
   {
-    name: 'register with empty name throws with "name" in message',
-    kind: 'unhappy',
-    input: { scenario: 'register-empty' },
-    assert(_output, error) {
+    'assert': function(_output, error) {
       assert.ok(error instanceof Error,                                       '[cell=5, scenario=register-empty] expected throw');
       assert.ok(
-        (error as Error).message.toLowerCase().includes('name'),
-        `[cell=5, scenario=register-empty] message mentions "name"; got: ${(error as Error).message}`,
+        (error).message.toLowerCase().includes('name'),
+        `[cell=5, scenario=register-empty] message mentions "name"; got: ${(error).message}`
       );
     },
+    'input': { 'scenario': 'register-empty' },
+    'kind': 'unhappy',
+    'name': 'register with empty name throws with "name" in message'
   },
   {
-    name: 'hook with empty name throws with "name" in message',
-    kind: 'unhappy',
-    input: { scenario: 'hook-empty' },
-    assert(_output, error) {
+    'assert': function(_output, error) {
       assert.ok(error instanceof Error,                                       '[cell=5, scenario=hook-empty] expected throw');
       assert.ok(
-        (error as Error).message.toLowerCase().includes('name'),
-        `[cell=5, scenario=hook-empty] message mentions "name"; got: ${(error as Error).message}`,
+        (error).message.toLowerCase().includes('name'),
+        `[cell=5, scenario=hook-empty] message mentions "name"; got: ${(error).message}`
       );
     },
+    'input': { 'scenario': 'hook-empty' },
+    'kind': 'unhappy',
+    'name': 'hook with empty name throws with "name" in message'
   },
   {
-    name: 'resolve missing name throws with name in message',
-    kind: 'unhappy',
-    input: { scenario: 'resolve-missing' },
-    assert(_output, error) {
+    'assert': function(_output, error) {
       assert.ok(error instanceof Error,                                          '[cell=5, scenario=resolve-missing] expected throw');
       assert.ok(
-        (error as Error).message.includes('does:not:exist'),
-        `[cell=5, scenario=resolve-missing] task name in error; got: ${(error as Error).message}`,
+        (error).message.includes('does:not:exist'),
+        `[cell=5, scenario=resolve-missing] task name in error; got: ${(error).message}`
       );
     },
-  },
+    'input': { 'scenario': 'resolve-missing' },
+    'kind': 'unhappy',
+    'name': 'resolve missing name throws with name in message'
+  }
 ];
 
-new ScenarioRunner<ErrorPathInput, ErrorPathOutput>(
+new ScenarioRunner<
+  { readonly 'scenario': 'register-empty' | 'hook-empty' | 'resolve-missing' },
+  { readonly 'dummy': undefined }
+>(
   'TaskRegistry :: cell-5 :: error-paths',
   (_input) => {
     const registry = new TaskRegistry();
     if (_input.scenario === 'register-empty') {
       registry.register({
-        'name': '',
-        run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void {}, 'manifest': undefined,
+        'manifest': undefined,
+        'name': '', 'run': TaskFixtures.makeNoOpRun()
       });
     } else if (_input.scenario === 'hook-empty') {
       registry.hook('onRunStart', {
-        'name': '',
-        run(_state: PaletteStateInterface, _ctx: PipelineContextInterface): void {}, 'manifest': undefined,
+        'manifest': undefined,
+        'name': '', 'run': TaskFixtures.makeNoOpRun()
       });
     } else {
       registry.resolve('does:not:exist');
     }
-    return { dummy: undefined };
-  },
+    return { 'dummy': undefined };
+  }
 ).run(errorPathScenarios);

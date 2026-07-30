@@ -13,39 +13,39 @@ export type GalleryAlgorithmType = 'median-cut' | 'delta-e' | 'k-means' | 'wu-qu
 /**
  * Output written to state.metadata['gallery:histogram'] by gallery:histogram.
  */
-export type GalleryHistogramSlotInterfaceType = {
-  'binCount':    number;
-  'bins':        { 'hex': string; 'weight': number }[];
-  'totalPixels': number;
-};
+export abstract class GalleryHistogramSlotInterfaceType {
+  abstract 'binCount': number;
+  abstract 'bins': { 'hex': string; 'weight': number }[];
+  abstract 'totalPixels': number;
+}
 
 /**
  * Output written to state.metadata['gallery:harmonizeDetails'] by gallery:harmonize
  * when a hue shift is applied.
  */
-export type GalleryHarmonizeDetailsInterfaceType = {
-  'after':    string;
-  'before':   string;
-  'deltaE':   number;
-  'hueShift': number;
-};
+export abstract class GalleryHarmonizeDetailsInterfaceType {
+  abstract 'after': string;
+  abstract 'before': string;
+  abstract 'deltaE': number;
+  abstract 'hueShift': number;
+}
 
 /**
  * Output written to state.metadata['gallery:dominantColors'] by gallery:extract.
  */
-export type GalleryDominantColorsSlotType = ColorRecordInterfaceType[];
+export abstract class GalleryDominantColorsSlotType extends Array<ColorRecordInterfaceType> {}
 
 /**
  * One labeled candidate palette produced by `gallery:extractCandidates`.
  */
-export type GalleryCandidateInterfaceType = {
-  'algorithm': GalleryAlgorithmType;
-  'colors':    ColorRecordInterfaceType[];
-  'k':         number;
-  'label':     string;
-};
+export abstract class GalleryCandidateInterfaceType {
+  abstract 'algorithm': GalleryAlgorithmType;
+  abstract 'colors': ColorRecordInterfaceType[];
+  abstract 'k': number;
+  abstract 'label': string;
+}
 
 /**
  * Output written to state.metadata['gallery:candidates'] by gallery:extractCandidates.
  */
-export type GalleryCandidatesSlotType = GalleryCandidateInterfaceType[];
+export abstract class GalleryCandidatesSlotType extends Array<GalleryCandidateInterfaceType> {}

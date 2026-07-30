@@ -1,23 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
-import {
-  appendDismissibleAlert,
-  removeDismissibleAlert,
-  type DismissibleAlertItem
-} from './buildDismissibleAlertsModel.ts';
+import { buildDismissibleAlertsModel } from './buildDismissibleAlertsModel.ts';
 
 const COLORS = ALIAS_COLOR_NAMES;
-const alerts = ref<readonly DismissibleAlertItem[]>([]);
+const alerts = ref(buildDismissibleAlertsModel.empty);
 let alertId = 0;
 
 function addAlert(): void {
-  alerts.value = appendDismissibleAlert(alerts.value, COLORS, alertId);
+  alerts.value = buildDismissibleAlertsModel.append(alerts.value, COLORS, alertId);
   alertId += 1;
 }
 
 function removeAlert(id: number): void {
-  alerts.value = removeDismissibleAlert(alerts.value, id);
+  alerts.value = alerts.value.filter((alert) => {
+    return alert.id !== id;
+  });
 }
 </script>
 

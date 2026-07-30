@@ -1,23 +1,24 @@
 import { isValidHex } from '~/utils/isValidHex.ts';
 
-export type PickerSeedHexCommitResult = {
-  readonly acceptedHex: string | null;
-  readonly inputValue: string;
-};
+class PickerSeedHexCommitResult {
+  public readonly acceptedHex: string | null;
+  public readonly inputValue: string;
 
-export function buildPickerSeedHexCommitResult(
-  rawValue: string,
-  fallbackHex: string
-): PickerSeedHexCommitResult {
-  const inputValue = rawValue.trim();
-  if (isValidHex(inputValue)) {
-    return {
-      acceptedHex: inputValue,
-      inputValue
-    };
+  public constructor(acceptedHex: string | null, inputValue: string) {
+    this.acceptedHex = acceptedHex;
+    this.inputValue = inputValue;
   }
-  return {
-    acceptedHex: null,
-    inputValue: fallbackHex
-  };
 }
+
+export const buildPickerSeedModel = class PickerSeedModelBuilder {
+  public static buildHexCommitResult(
+    rawValue: string,
+    fallbackHex: string
+  ): PickerSeedHexCommitResult {
+    const inputValue = rawValue.trim();
+    if (isValidHex(inputValue)) {
+      return new PickerSeedHexCommitResult(inputValue, inputValue);
+    }
+    return new PickerSeedHexCommitResult(null, fallbackHex);
+  }
+};

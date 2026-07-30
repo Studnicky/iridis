@@ -35,7 +35,7 @@ readonly manifest: TaskManifestInterface = {
 };
 ```
 
-The engine **does not** enforce dependency ordering at runtime—that is your responsibility via the pipeline array. If a task writes `state.roles` and a later task reads `state.roles`, your `engine.pipeline()` array must reflect that execution order.
+For every registered, non-lifecycle task named by `manifest.requires`, the engine checks that the required task appears earlier in the pipeline. `engine.pipeline()` rejects missing and out-of-order predecessors. Callers and plugins remain responsible for registering tasks before declaring the sequence, and the `reads` and `writes` arrays remain documentation rather than inferred dependencies.
 
 The manifest shape itself, along with the `TaskInterface` every task implements:
 

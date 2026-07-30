@@ -64,7 +64,10 @@ function onKey(event: KeyboardEvent, idx: number): void {
           :class="['ui-tabs__badge', `ui-tabs__badge--${tab.tone ?? 'default'}`]"
         >{{ tab.badge }}</span>
       </button>
-      <div v-if="$slots['tab-suffix']" class="ui-tabs__suffix">
+      <div
+        v-if="$slots['tab-suffix']"
+        class="ui-tabs__suffix"
+      >
         <slot name="tab-suffix" />
       </div>
     </div>
@@ -85,9 +88,9 @@ function onKey(event: KeyboardEvent, idx: number): void {
 
 <style scoped>
 .ui-tabs {
-  background: var(--vp-c-bg-elv);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
+  background: var(--ui-bg-elevated);
+  border: 1px var(--iridis-border-style) var(--ui-border);
+  border-radius: var(--iridis-radius-md);
   overflow: hidden;
   min-height: 320px;
   display: flex;
@@ -97,8 +100,8 @@ function onKey(event: KeyboardEvent, idx: number): void {
 .ui-tabs__row {
   display: flex;
   align-items: stretch;
-  background: var(--vp-c-bg-alt);
-  border-bottom: 1px solid var(--vp-c-divider);
+  background: var(--ui-bg-muted);
+  border-bottom: 1px var(--iridis-border-style) var(--ui-border);
   padding: 0.25rem 0.25rem 0;
   gap: 0.15rem;
   overflow-x: auto;
@@ -122,11 +125,11 @@ function onKey(event: KeyboardEvent, idx: number): void {
   gap: 0.45rem;
   padding: 0.5rem 0.9rem;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px var(--iridis-border-style) transparent;
   border-bottom: 0;
-  border-radius: 4px 4px 0 0;
-  color: var(--vp-c-text-2);
-  font-family: var(--vp-font-family-mono);
+  border-radius: var(--iridis-radius-sm) var(--iridis-radius-sm) 0 0;
+  color: var(--ui-text-muted);
+  font-family: var(--font-mono);
   font-size: 0.74rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -136,14 +139,14 @@ function onKey(event: KeyboardEvent, idx: number): void {
 }
 
 .ui-tabs__button:hover {
-  background: var(--vp-c-bg);
-  color: var(--vp-c-text-1);
+  background: var(--ui-bg);
+  color: var(--ui-text);
 }
 
 .ui-tabs__button--active {
-  background: var(--vp-c-bg-elv);
-  color: var(--dagonizer-brand);
-  border-color: var(--vp-c-divider);
+  background: var(--ui-bg-elevated);
+  color: var(--ui-primary);
+  border-color: var(--ui-border);
   position: relative;
 }
 
@@ -154,11 +157,11 @@ function onKey(event: KeyboardEvent, idx: number): void {
   right: 0;
   bottom: -1px;
   height: 1px;
-  background: var(--vp-c-bg-elv);
+  background: var(--ui-bg-elevated);
 }
 
 .ui-tabs__button:focus-visible {
-  outline: 2px solid var(--dagonizer-brand);
+  outline: 2px var(--iridis-border-style) var(--ui-primary);
   outline-offset: 1px;
 }
 
@@ -171,21 +174,21 @@ function onKey(event: KeyboardEvent, idx: number): void {
   min-width: 18px;
   padding: 0 0.4rem;
   height: 16px;
-  border-radius: 8px;
-  background: var(--vp-c-bg-alt);
-  color: var(--vp-c-text-3);
-  font-family: var(--vp-font-family-mono);
+  border-radius: var(--iridis-radius-lg);
+  background: var(--ui-bg-muted);
+  color: var(--ui-text-dimmed);
+  font-family: var(--font-mono);
   font-size: 0.62rem;
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0;
 }
 
-.ui-tabs__badge--accent { background: rgba(34, 232, 255, 0.14); color: var(--dagonizer-brand); }
-.ui-tabs__badge--warn { background: rgba(212, 166, 73, 0.18); color: var(--dagonizer-brand3); }
+.ui-tabs__badge--accent { background: color-mix(in oklch, var(--ui-primary) 14%, transparent); color: var(--ui-primary); }
+.ui-tabs__badge--warn { background: color-mix(in oklch, var(--ui-warning) 18%, transparent); color: var(--ui-warning); }
 .ui-tabs__badge--live {
-  background: var(--dagonizer-brand);
-  color: var(--vp-c-bg);
+  background: var(--ui-primary);
+  color: var(--ui-primary-contrast);
   animation: ui-tabs-badge-pulse 1.4s ease-in-out infinite;
 }
 
@@ -211,7 +214,7 @@ function onKey(event: KeyboardEvent, idx: number): void {
 }
 
 @keyframes ui-tabs-badge-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 232, 255, 0.55); }
-  50% { box-shadow: 0 0 0 4px rgba(34, 232, 255, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--ui-primary) 55%, transparent); }
+  50% { box-shadow: 0 0 0 4px transparent; }
 }
 </style>

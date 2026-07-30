@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
-import {
-  buildHueDerivationRoleNames,
-  deriveHueSpecimens,
-  hueHexAt,
-  resolveBaseHue
-} from './derivation/buildHueDerivationSpecimens.ts';
+import { buildHueDerivationSpecimens } from './derivation/buildHueDerivationSpecimens.ts';
 
 /**
  * Live reference for the 8 hue-derivation algorithms Derivation Settings lets
@@ -18,17 +13,17 @@ import {
  * seed vs resolved hue.
  */
 const { roleViews } = useIridis();
-const roleNames = computed(() => buildHueDerivationRoleNames(roleViews.value));
+const roleNames = computed(() => buildHueDerivationSpecimens.buildRoleNames(roleViews.value));
 const selectedRole = ref<string>('brand');
 const spacing = ref<number>(30);
 
 const baseHue = computed<number>(() => {
-  return resolveBaseHue(roleViews.value, selectedRole.value);
+  return buildHueDerivationSpecimens.resolveBaseHue(roleViews.value, selectedRole.value);
 });
 
 /** analogous/split-complementary/compound take the spacing slider; the rest have a fixed geometric angle and ignore it. */
 const derived = computed(() => {
-  return deriveHueSpecimens(baseHue.value, spacing.value);
+  return buildHueDerivationSpecimens.buildSpecimens(baseHue.value, spacing.value);
 });
 </script>
 
@@ -39,7 +34,7 @@ const derived = computed(() => {
 
       <div class="flex items-center gap-3">
         <SwatchSummaryRow
-          :hex="hueHexAt(baseHue)"
+          :hex="buildHueDerivationSpecimens.resolveHexAt(baseHue)"
           aria-label="Selected seed hue"
           class="w-auto min-w-0"
         >
@@ -70,7 +65,7 @@ const derived = computed(() => {
           :description="a.description"
           :count-label="a.countLabel"
           :hues="a.hues"
-          :hex-at="hueHexAt"
+          :hex-at="buildHueDerivationSpecimens.resolveHexAt"
         />
       </div>
 

@@ -10,7 +10,7 @@
 import { EffectInterpreter } from '@studnicky/fsm';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
-import { shallowRef } from 'vue';
+import * as VueModule from 'vue';
 
 import type { TocBarEventType } from './types/index.ts';
 
@@ -20,7 +20,7 @@ import { logger } from './logger.ts';
 const interpreter = EffectInterpreter.create({ 'handlers': {}, 'machine': new TocBarMachine() });
 interpreter.start();
 
-const state = shallowRef(interpreter.getState());
+const state = VueModule.shallowRef(interpreter.getState());
 interpreter.subscribe((next) => { state.value = next; });
 
 /**
@@ -36,20 +36,28 @@ interpreter.subscribe((next) => { state.value = next; });
  * never fire in practice, but if that invariant is ever broken it logs
  * through the app logger instead of surfacing only as an unhandled rejection.
  */
-function send(event: TocBarEventType): void {
-  interpreter.send(event).catch((err: unknown) => {
-    logger.error(
-      LogBody.create()
-        .component('useTocBarMachine')
-        .operation('send')
-        .status(LOG_STATUS.FAILED)
-        .message(`FSM rejected event "${event.type}"`)
-        .context({ 'error': err instanceof Error ? err.message : String(err) })
-        .build()
-    );
-  });
+class SendOperation {
+  static run(event: TocBarEventType.Type): void {
+    interpreter.send(event).catch((error: unknown) => {
+      logger.error(
+        LogBody.create()
+          .component('useTocBarMachine')
+          .operation('send')
+          .status(LOG_STATUS.FAILED)
+          .message(`FSM rejected event "${event.type}"`)
+          .context({ 'error': error instanceof Error ? error.message : String(error) })
+          .build()
+      );
+    });
+  }
 }
 
-export function useTocBarMachine() {
-  return { 'send': send, 'state': state };
+const send = SendOperation.run;
+
+class UseTocBarMachineOperation {
+  static run() {
+    return { 'send': send, 'state': state };
+  }
 }
+
+export const useTocBarMachine = UseTocBarMachineOperation.run;

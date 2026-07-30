@@ -1,35 +1,12 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterface,
+  PluginSchemaContributionInterfaceType,
   TaskInterface
 } from '@studnicky/iridis';
 
-import { emitCssVars }       from './tasks/EmitCssVars.ts';
-import { emitCssVarsScoped } from './tasks/EmitCssVarsScoped.ts';
-
-const cssVarsOutputSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'darkScheme':   { 'type': 'string' },
-    'forcedColors': { 'type': 'string' },
-    'full':         { 'type': 'string' },
-    'map':          { 'additionalProperties': { 'type': 'string' }, 'type': 'object' },
-    'rootBlock':    { 'type': 'string' },
-    'scopedBlock':  { 'type': 'string' },
-    'wideGamut':    { 'type': 'string' }
-  },
-  'type': 'object'
-} as const;
-
-const cssVarsScopedOutputSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'blocks':    { 'additionalProperties': { 'type': 'string' }, 'type': 'object' },
-    'full':      { 'type': 'string' },
-    'wideGamut': { 'additionalProperties': { 'type': 'string' }, 'type': 'object' }
-  },
-  'type': 'object'
-} as const;
+import { CSS_VARS_OUTPUT_SCHEMAS } from './constants/CssVarsOutputSchemas.ts';
+import { emitCssVars }             from './tasks/EmitCssVars.ts';
+import { emitCssVarsScoped }       from './tasks/EmitCssVarsScoped.ts';
 
 class StylesheetPlugin implements PluginInterface {
   readonly 'name'    = 'stylesheet';
@@ -40,12 +17,12 @@ class StylesheetPlugin implements PluginInterface {
     return [emitCssVars, emitCssVarsScoped];
   }
 
-  schemas(): PluginSchemaContributionInterface {
+  schemas(): PluginSchemaContributionInterfaceType {
     return {
       'metadata': undefined,
       'outputs': {
-        'stylesheet:cssVars':       cssVarsOutputSchema,
-        'stylesheet:cssVarsScoped': cssVarsScopedOutputSchema
+        'stylesheet:cssVars':       CSS_VARS_OUTPUT_SCHEMAS.CSS_VARS,
+        'stylesheet:cssVarsScoped': CSS_VARS_OUTPUT_SCHEMAS.CSS_VARS_SCOPED
       }
     };
   }

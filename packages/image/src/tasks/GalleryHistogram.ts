@@ -35,40 +35,40 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
  *     should not bias clustering.
  */
 
-type BinAccumulatorInterface = {
-  'aSum':   number;
-  'bSum':   number;
-  'gSum':   number;
-  'rSum':   number;
-  'weight': number;
-};
+abstract class BinAccumulator {
+  abstract 'aSum': number;
+  abstract 'bSum': number;
+  abstract 'gSum': number;
+  abstract 'rSum': number;
+  abstract 'weight': number;
+}
 
 const DEFAULT_BITS_PER_CHANNEL = 5;
 
-/** Accepts either a single range or a list of ranges (union) so callers who only need one envelope don't have to wrap it. */
-type RangeOrRangesType = readonly [number, number] | readonly (readonly [number, number])[];
-
 class RangeList {
-  static to(range: RangeOrRangesType): readonly (readonly [number, number])[] {
+  static to(
+    range: readonly [number, number] | readonly (readonly [number, number])[]
+  ): readonly (readonly [number, number])[] {
     return typeof range[0] === 'number' ? [range as readonly [number, number]] : range as readonly (readonly [number, number])[];
+  }
+
+  static contains(ranges: readonly (readonly [number, number])[], value: number): boolean {
+    for (const [lowerBound, upperBound] of ranges) {
+      if (value >= lowerBound && value <= upperBound) {return true;}
+    }
+    return false;
   }
 }
 
-/** True if `v` falls inside any range in the list — multiple ranges are a union, not required to be contiguous. */
-function inAnyRange(v: number, ranges: readonly (readonly [number, number])[]): boolean {
-  const result = ranges.some(([lo, hi]) => {return v >= lo && v <= hi;});
-  return result;
-}
-
-function packBin(r: number, g: number, b: number, bits: number): number {
-  // r,g,b are sRGB 0..1 floats; quantise to (2^bits) levels per channel
-  // and pack into a single integer key.
-  const levels = 1 << bits;
-  const denom = 256 / levels;
-  const ri = Math.min(levels - 1, Math.floor((r * 255) / denom));
-  const gi = Math.min(levels - 1, Math.floor((g * 255) / denom));
-  const bi = Math.min(levels - 1, Math.floor((b * 255) / denom));
-  return (ri << (2 * bits)) | (gi << bits) | bi;
+class HistogramMath {
+  static packBin(red: number, green: number, blue: number, bits: number): number {
+    const levels = 1 << bits;
+    const denominator = 256 / levels;
+    const redIndex = Math.min(levels - 1, Math.floor((red * 255) / denominator));
+    const greenIndex = Math.min(levels - 1, Math.floor((green * 255) / denominator));
+    const blueIndex = Math.min(levels - 1, Math.floor((blue * 255) / denominator));
+    return (redIndex << (2 * bits)) | (greenIndex << bits) | blueIndex;
+  }
 }
 
 class GalleryHistogram implements TaskInterface {
@@ -83,9 +83,9 @@ class GalleryHistogram implements TaskInterface {
     'writes':      ['colors', 'metadata.gallery:histogram']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     if (state.colors.length === 0) {
-      ctx.logger.warn(
+      context.logger.warn(
         LogBody.create()
           .component('GalleryHistogram')
           .operation('run')
@@ -98,14 +98,18 @@ class GalleryHistogram implements TaskInterface {
     }
 
     const galleryConfig = state.metadata.gallery as
-      | { 'chromaRange'?: RangeOrRangesType; 'histogramBits'?: number; 'lightnessRange'?: RangeOrRangesType; }
+      | {
+        'chromaRange'?: readonly [number, number] | readonly (readonly [number, number])[];
+        'histogramBits'?: number;
+        'lightnessRange'?: readonly [number, number] | readonly (readonly [number, number])[];
+      }
       | undefined;
     const rawBits = galleryConfig?.histogramBits ?? DEFAULT_BITS_PER_CHANNEL;
     const bits = Math.max(3, Math.min(7, Math.floor(rawBits)));
     const lRanges = RangeList.to(galleryConfig?.lightnessRange ?? [0, 1] as const);
     const cRanges = RangeList.to(galleryConfig?.chromaRange    ?? [0, 0.5] as const);
 
-    const bins = new Map<number, BinAccumulatorInterface>();
+    const bins = new Map<number, BinAccumulator>();
     let totalPixels = 0;
     let droppedFiltered = 0;
 
@@ -117,10 +121,12 @@ class GalleryHistogram implements TaskInterface {
       // toward the colors the user actually cares about. Each envelope is a
       // UNION of ranges — e.g. two disjoint lightness bands can both be kept
       // at once without also keeping the midtones between them.
-      if (!inAnyRange(c.oklch.l, lRanges)) { droppedFiltered++; continue; }
-      if (!inAnyRange(c.oklch.c, cRanges)) { droppedFiltered++; continue; }
+      const lightnessInRange = RangeList.contains(lRanges, c.oklch.l);
+      if (!lightnessInRange) { droppedFiltered++; continue; }
+      const chromaInRange = RangeList.contains(cRanges, c.oklch.c);
+      if (!chromaInRange) { droppedFiltered++; continue; }
       const w = (typeof c.hints?.weight === 'number' && c.hints.weight > 0) ? c.hints.weight : 1;
-      const key = packBin(c.rgb.r, c.rgb.g, c.rgb.b, bits);
+      const key = HistogramMath.packBin(c.rgb.r, c.rgb.g, c.rgb.b, bits);
       const existing = bins.get(key);
       if (existing === undefined) {
         bins.set(key, {
@@ -162,7 +168,7 @@ class GalleryHistogram implements TaskInterface {
 
     state.colors.splice(0, state.colors.length, ...records);
 
-    ctx.logger.info(
+    context.logger.info(
       LogBody.create()
         .component('GalleryHistogram')
         .operation('run')

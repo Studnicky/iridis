@@ -3,10 +3,7 @@ import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
 import type { AliasColorType } from '~/theme/types/aliasColor.ts';
-import {
-  buildInteractablesShowcaseViewModel,
-  defaultCheckedColors
-} from './interactables/buildInteractablesShowcaseModel.ts';
+import { buildInteractablesShowcaseModel } from './interactables/buildInteractablesShowcaseModel.ts';
 
 /**
  * Toggleable/selectable Nuxt UI controls — split out of the Components card
@@ -20,10 +17,9 @@ import {
 const { roleViews, roles, contrastStrictness, sortedRoleContrastRows, contrastReport } = useIridis();
 
 const COLORS = ALIAS_COLOR_NAMES;
-type ColorType = AliasColorType;
 
 /** A real filter applied to the avatar/badge row below, not decoration. */
-const checkedColors = ref<ColorType[]>(defaultCheckedColors());
+const checkedColors = ref<AliasColorType.Type[]>(buildInteractablesShowcaseModel.resolveDefaultCheckedColors());
 
 // 'background' is required in every schema tier and resolved synchronously
 // before any component reads this — never a hardcoded placeholder.
@@ -37,7 +33,7 @@ const checkedColors = ref<ColorType[]>(defaultCheckedColors());
  * SchemaComplianceCard and PipelineExplainer render as "X/Y pairs passing" —
  * so the label 'APCA' next to this number always matches the metric behind it. */
 const showcaseModel = computed(() => {
-  return buildInteractablesShowcaseViewModel(
+  return buildInteractablesShowcaseModel.build(
     contrastStrictness.value,
     sortedRoleContrastRows.value,
     contrastReport.value.apca?.pairs ?? [],

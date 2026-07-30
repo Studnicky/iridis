@@ -20,7 +20,10 @@ const tabsProps = computed(() => ({
     v-bind="tabsProps"
     class="ui-code-tabs"
   >
-    <template v-if="$slots['tab-suffix']" #tab-suffix>
+    <template
+      v-if="$slots['tab-suffix']"
+      #tab-suffix
+    >
       <slot name="tab-suffix" />
     </template>
     <template
@@ -39,7 +42,7 @@ const tabsProps = computed(() => ({
 }
 
 .ui-code-tabs :deep(.ui-tabs__row) {
-  background: var(--vp-c-bg-soft);
+  background: var(--ui-bg-muted);
 }
 
 .ui-code-tabs :deep(.ui-tabs__pane > *) {

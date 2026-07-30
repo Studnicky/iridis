@@ -14,7 +14,10 @@ import { buildPairingPreviewModel } from './buildPairingPreviewModel.ts';
 const { pairings } = usePairingPreview();
 const { dataLayout } = useDataLayout();
 
-const previewModel = computed(() => buildPairingPreviewModel(dataLayout.value, pairings.value.length));
+const previewModel = computed(() => buildPairingPreviewModel.build(
+  dataLayout.value,
+  pairings.value.length
+));
 </script>
 
 <template>

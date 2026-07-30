@@ -1,7 +1,10 @@
+import type { JsonValueType } from '@studnicky/types';
+
 import { ValidationError } from '@studnicky/errors';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
+import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 import type {
   ColorRecordInterfaceType,
   PaletteStateInterface,
@@ -11,7 +14,7 @@ import type {
 } from '../../types/index.ts';
 
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
-import { isImagePixelInput }  from './IsImagePixelInput.ts';
+import { IsImagePixelInput }  from './IsImagePixelInput.ts';
 
 /**
  * Intake task for `ImageData`-shaped inputs (`{data: Uint8ClampedArray,
@@ -45,8 +48,8 @@ class IntakeImagePixels implements TaskInterface {
    * Used by IntakeAny for format dispatch (via try/catch).
    * The full pixel set is pushed separately via {@link pushAllPixels}.
    */
-  parse(raw: unknown): ColorRecordInterfaceType {
-    if (!isImagePixelInput(raw)) {
+  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
+    if (!IsImagePixelInput.check(raw)) {
       throw ValidationError.create({
         'message': 'intake:imagePixels — expected an ImageData-shaped object',
         'path':    'raw',
@@ -87,11 +90,11 @@ class IntakeImagePixels implements TaskInterface {
    * Called by `IntakeAny` after `isImagePixelInput` confirms the entry is an image.
    */
   pushAllPixels(
-    raw: unknown,
+    raw: JsonValueType | RawImagePixelInputInterface,
     state: PaletteStateInterface,
-    ctx: PipelineContextInterface
+    context: PipelineContextInterface
   ): void {
-    if (!isImagePixelInput(raw)) {
+    if (!IsImagePixelInput.check(raw)) {
       return;
     }
     const { data, height, width } = raw;
@@ -111,7 +114,7 @@ class IntakeImagePixels implements TaskInterface {
       pushed++;
     }
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('IntakeImagePixels')
         .operation('pushAllPixels')
@@ -126,14 +129,13 @@ class IntakeImagePixels implements TaskInterface {
     );
   }
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
-    for (let i = 0; i < state.input.colors.length; i++) {
-      const raw = state.input.colors[i];
-      if (!isImagePixelInput(raw)) {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    for (const [i, raw] of state.input.colors.entries()) {
+      if (!IsImagePixelInput.check(raw)) {
         // Non-image entries are skipped so that intake:imagePixels can
         // coexist in a pipeline with intake:hex / intake:any for mixed inputs.
         // Strict single-format validation is the caller's responsibility.
-        ctx.logger.trace(
+        context.logger.trace(
           LogBody.create()
             .component('IntakeImagePixels')
             .operation('run')
@@ -144,7 +146,7 @@ class IntakeImagePixels implements TaskInterface {
         );
         continue;
       }
-      this.pushAllPixels(raw, state, ctx);
+      this.pushAllPixels(raw, state, context);
     }
   }
 }

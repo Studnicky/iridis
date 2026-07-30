@@ -1,31 +1,36 @@
+import type { CSSProperties } from 'vue';
+
 import type { ContrastPairingType } from '~/composables/types/contrastPairing.ts';
 
-export type PairingPreviewTableRowModel = {
-  readonly backgroundHex: string;
-  readonly complianceLabel: string;
-  readonly foregroundHex: string;
-  readonly key: ContrastPairingType['key'];
-  readonly label: string;
-  readonly previewStyle: {
-    readonly backgroundColor: string;
-    readonly color: string;
-  };
-};
+class PairingPreviewTableRowModel {
+  public readonly backgroundHex: string;
+  public readonly complianceLabel: string;
+  public readonly foregroundHex: string;
+  public readonly key: ContrastPairingType['key'];
+  public readonly label: string;
+  public readonly previewStyle: CSSProperties;
 
-export function buildPairingPreviewTableModel(
-  pairings: readonly ContrastPairingType[]
-): readonly PairingPreviewTableRowModel[] {
-  return pairings.map((pairing) => {
-    return {
-      backgroundHex: pairing.background.hex,
-      complianceLabel: pairing.complianceLabel,
-      foregroundHex: pairing.foreground.hex,
-      key: pairing.key,
-      label: pairing.label,
-      previewStyle: {
-        backgroundColor: pairing.background.hex,
-        color: pairing.foreground.hex
-      }
+  public constructor(pairing: ContrastPairingType) {
+    this.backgroundHex = pairing.background.hex;
+    this.complianceLabel = pairing.complianceLabel;
+    this.foregroundHex = pairing.foreground.hex;
+    this.key = pairing.key;
+    this.label = pairing.label;
+    this.previewStyle = {
+      'backgroundColor': pairing.background.hex,
+      'color': pairing.foreground.hex
     };
-  });
+  }
 }
+
+export const buildPairingPreviewTableModel = class PairingPreviewTableModelBuilder {
+  public static build(
+    pairings: readonly ContrastPairingType[]
+  ): readonly PairingPreviewTableRowModel[] {
+    const rows: PairingPreviewTableRowModel[] = [];
+    for (const pairing of pairings) {
+      rows.push(new PairingPreviewTableRowModel(pairing));
+    }
+    return rows;
+  }
+};

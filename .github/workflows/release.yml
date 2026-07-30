@@ -1,9 +1,12 @@
 name: Publish GitHub release
 
-# Fires when a version tag is pushed. Reads the matching CHANGELOG section
-# and the per-tag readme-header.svg, composes a release body, and creates or
-# updates the GitHub release. The SVG URL uses the tag ref so each release
-# page renders the version that was stamped at tag time.
+# A read-only job validates, builds, verifies, stages, and packs the complete
+# release. The write-capable job consumes only that immutable workflow artifact,
+# publishes missing packages, verifies registry integrity, and creates the
+# GitHub release after all 18 packages are confirmed. The write-capable job
+# only runs when the NPM_PUBLISH_ENABLED repository variable is set to
+# 'true', a defense-in-depth guard against an accidental tag push silently
+# publishing.
 
 on:
   push:
@@ -12,81 +15,203 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to (re)publish a release for (e.g. v0.4.1)'
+        description: 'Tag to (re)publish a release for (e.g. v0.11.0)'
         required: true
 
-permissions:
-  contents: write
-
 jobs:
-  publish:
+  prepare:
+    permissions:
+      contents: read
+      packages: read
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      version: ${{ steps.tag.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-
-      - name: Resolve tag
+      - name: Resolve and validate tag
         id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_TAG_INPUT: ${{ inputs.tag }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG='${{ inputs.tag }}'
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$RELEASE_TAG_INPUT"
           else
-            TAG="${GITHUB_REF#refs/tags/}"
+            case "$RELEASE_REF" in
+              refs/tags/*) TAG="${RELEASE_REF#refs/tags/}" ;;
+              *) echo "::error::Release ref is not a tag ref"; exit 1 ;;
+            esac
+          fi
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tag must match vX.Y.Z exactly"
+            exit 1
           fi
           VERSION="${TAG#v}"
-          echo "tag=$TAG"         >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Verify stamped SVG matches tag version
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          cache: pnpm
+
+      # Cheap and dependency-free, so it runs first and fails the release
+      # before anything is installed or built.
+      - name: Verify release stamp
+        env:
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
           STAMPED=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' readme-header.svg | head -1 || true)
-          EXPECTED='${{ steps.tag.outputs.tag }}'
-          if [ "$STAMPED" != "$EXPECTED" ]; then
-            echo "::error::readme-header.svg carries '$STAMPED' but the tag is '$EXPECTED'. Run 'npm run stamp-version' before tagging."
+          if [ "$STAMPED" != "$RELEASE_TAG" ]; then
+            echo "::error::readme-header.svg carries '$STAMPED' but the tag is '$RELEASE_TAG'."
             exit 1
           fi
 
-      - name: Extract CHANGELOG section
-        id: changelog
+      - name: Use release npm
         run: |
-          VERSION='${{ steps.tag.outputs.version }}'
-          # Capture lines between "## [<version>]" and the next "## [" header.
-          awk -v v="$VERSION" '
-            $0 ~ "^## \\[" v "\\]" { capture = 1; next }
-            capture && /^## \[/    { exit }
-            capture                { print }
-          ' CHANGELOG.md > /tmp/section.md
-          if [ ! -s /tmp/section.md ]; then
-            echo "::error::No CHANGELOG section found for [$VERSION]"
+          npm install --global npm@11.18.0 --ignore-scripts --registry https://registry.npmjs.org
+          test "$(npm --version)" = "11.18.0"
+
+      - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm install --frozen-lockfile
+
+      # Must follow the install: package-publish.mjs reads the manifests
+      # through package-pipeline.mjs, which imports typescript.
+      - name: Verify release manifests
+        env:
+          RELEASE_VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          node scripts/package-publish.mjs \
+            --verify-manifests \
+            --expected-version "$RELEASE_VERSION"
+
+      - name: Verify all package archives and isolated consumers
+        run: pnpm run packages:verify
+
+      - name: Stage all package archives
+        run: pnpm run packages:stage
+
+      - name: Extract CHANGELOG section
+        env:
+          RELEASE_VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          awk -v v="$RELEASE_VERSION" '
+            $1 == "##" && $2 == v { capture = 1; next }
+            capture && /^## /     { exit }
+            capture               { print }
+          ' packages/core/CHANGELOG.md > release-section.md
+          if [ ! -s release-section.md ]; then
+            echo "::error::No CHANGELOG section found for $RELEASE_VERSION"
             exit 1
           fi
 
       - name: Compose release body
-        id: body
+        env:
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          TAG='${{ steps.tag.outputs.tag }}'
-          REPO='${{ github.repository }}'
-          SVG_URL="https://raw.githubusercontent.com/${REPO}/${TAG}/readme-header.svg"
+          SVG_URL="https://raw.githubusercontent.com/${RELEASE_REPOSITORY}/${RELEASE_TAG}/readme-header.svg"
           {
-            echo "<p align=\"center\"><img src=\"${SVG_URL}\" alt=\"iridis ${TAG}\" width=\"720\" /></p>"
+            echo "<p align=\"center\"><img src=\"${SVG_URL}\" alt=\"iridis ${RELEASE_TAG}\" width=\"720\" /></p>"
             echo
-            cat /tmp/section.md
-          } > /tmp/body.md
-          echo "path=/tmp/body.md" >> "$GITHUB_OUTPUT"
+            cat release-section.md
+          } > release-body.md
+          test -s release-body.md
+
+      - name: Prepare verified release bundle
+        env:
+          RELEASE_VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          node scripts/package-publish.mjs \
+            --prepare-bundle \
+            --expected-version "$RELEASE_VERSION" \
+            --release-body release-body.md \
+            --bundle release-bundle
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: iridis-release-${{ steps.tag.outputs.tag }}
+          path: release-bundle
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+          overwrite: true
+
+  publish:
+    needs: prepare
+    permissions:
+      contents: write
+      packages: write
+    # Defense-in-depth: a tag push still no-ops until the repo variable is set true.
+    if: ${{ vars.NPM_PUBLISH_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          cache: pnpm
+
+      - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm run build
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: iridis-release-${{ needs.prepare.outputs.tag }}
+          path: release-bundle
+
+      # pnpm resolves workspace:* to the real version and skips private
+      # packages, so `site` and the design-system lint package stay
+      # unpublished. It is also idempotent: a package whose version is
+      # already on the registry is skipped rather than failing the release,
+      # which is what makes a re-run after a partial failure safe.
+      - name: Publish all packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm -r publish --no-git-checks --access public
 
       - name: Create or update release
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_BODY_PATH: release-bundle/release-body.md
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
         run: |
-          TAG='${{ steps.tag.outputs.tag }}'
-          if gh release view "$TAG" --repo '${{ github.repository }}' >/dev/null 2>&1; then
-            gh release edit "$TAG" \
-              --repo '${{ github.repository }}' \
-              --title "$TAG" \
-              --notes-file '${{ steps.body.outputs.path }}'
+          if gh release view "$RELEASE_TAG" --repo "$RELEASE_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" \
+              --repo "$RELEASE_REPOSITORY" \
+              --title "$RELEASE_TAG" \
+              --notes-file "$RELEASE_BODY_PATH"
           else
-            gh release create "$TAG" \
-              --repo '${{ github.repository }}' \
-              --title "$TAG" \
-              --notes-file '${{ steps.body.outputs.path }}'
+            gh release create "$RELEASE_TAG" \
+              --repo "$RELEASE_REPOSITORY" \
+              --title "$RELEASE_TAG" \
+              --notes-file "$RELEASE_BODY_PATH"
           fi

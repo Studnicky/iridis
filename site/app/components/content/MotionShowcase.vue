@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 
 import { useColorStreamHistory } from '../../composables/useColorStreamHistory.ts';
 import { useLivingBackground } from '../../composables/useLivingBackground.ts';
-import { buildLiveMotionSwatches, EASE_PRESETS, NAMED_ANIMATIONS } from './motion/buildMotionShowcaseModel.ts';
+import { buildMotionShowcaseModel } from './motion/buildMotionShowcaseModel.ts';
 
 /**
  * A "look and feel" motion page — the kind every design system ships one of —
@@ -23,7 +23,9 @@ useLivingBackground();
 const colorStreamHistory = useColorStreamHistory();
 
 /** Current (most recent) hex per decorative role, falling back to the role's static token when the history is still empty. */
-const liveSwatches = computed(() => buildLiveMotionSwatches(colorStreamHistory));
+const liveSwatches = computed(() => {
+  return buildMotionShowcaseModel.buildLiveMotionSwatches(colorStreamHistory);
+});
 
 onMounted(() => {
   const styles = getComputedStyle(document.documentElement);
@@ -37,7 +39,10 @@ watch(tuneMs, (ms) => {
   document.documentElement.style.setProperty('--iridis-tune', `${ms}ms`);
 });
 watch(easeKey, (key) => {
-  document.documentElement.style.setProperty('--iridis-ease', EASE_PRESETS[key] ?? EASE_PRESETS['Smooth (default)']!);
+  document.documentElement.style.setProperty(
+    '--iridis-ease',
+    buildMotionShowcaseModel.resolveEase(key)
+  );
 });
 </script>
 
@@ -48,7 +53,7 @@ watch(easeKey, (key) => {
         :reduced-motion="reducedMotion"
         :tune-ms="tuneMs"
         :ease-key="easeKey"
-        :ease-options="Object.keys(EASE_PRESETS)"
+        :ease-options="Object.keys(buildMotionShowcaseModel.easePresets)"
         @update:tune-ms="tuneMs = $event"
         @update:ease-key="easeKey = $event"
       />
@@ -76,7 +81,9 @@ watch(easeKey, (key) => {
       <p class="text-xs text-muted">
         This card is a live demo of <strong class="text-highlighted">Living Color</strong> — the engine's
         palette-as-animated-vector layer, not just a static derivation. See
-        <DocAnchorLink href="#living-color">Living Color</DocAnchorLink> for the underlying
+        <DocAnchorLink href="#living-color">
+          Living Color
+        </DocAnchorLink> for the underlying
         package (<code>iridis-anima</code>, <code>iridis-pulse</code>, <code>iridis-fsm</code>) that drives every
         transition here.
       </p>
@@ -84,7 +91,7 @@ watch(easeKey, (key) => {
       <ShowcasePlane label="Named animation library">
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <NamedAnimationSpecimen
-            v-for="a in NAMED_ANIMATIONS"
+            v-for="a in buildMotionShowcaseModel.namedAnimations"
             :key="a.label"
             :animation="a"
           />

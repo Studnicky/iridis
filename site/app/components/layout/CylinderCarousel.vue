@@ -557,13 +557,13 @@ onBeforeUnmount(() => {
      The glow stays purely in the text-shadow, which doesn't touch fill
      contrast. */
   color: var(--ui-text-highlighted);
-  border-bottom: 1px solid color-mix(in oklch, var(--glow) 22%, transparent);
+  border-bottom: 1px var(--iridis-border-style) color-mix(in oklch, var(--glow) 22%, transparent);
   text-shadow: 0 0 12px color-mix(in oklch, var(--glow) 60%, transparent);
 }
 .cyl-card-tag-label { text-align: center; }
 .cyl-dotlight {
   position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
-  width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: var(--ui-primary); box-shadow: 0 0 10px var(--ui-primary);
+  width: 0.5rem; height: 0.5rem; border-radius: var(--iridis-radius-full); background: var(--ui-primary); box-shadow: 0 0 10px var(--ui-primary);
 }
 /* Cards must fit their content — no internal vertical scroll, ever. cardH
    (see cardStyle() in the script) is already the natural height of the
@@ -580,6 +580,13 @@ onBeforeUnmount(() => {
    horizontal stays truly clipped (no card content is meant to scroll
    sideways) while vertical stays truly visible. */
 .cyl-card-body { flex: 1 1 auto; overflow-x: clip; overflow-y: visible; padding: 1rem 1.1rem; }
+/* Deliberately empty — see naturalCardHeight()'s doc comment above. This
+   wrapper's whole job is to carry no imposed height/overflow of its own, so
+   its offsetHeight always reflects the slot content's true natural height.
+   Kept as an explicit rule (not just a bare class in the template) so that
+   stays a documented invariant, not an accidental omission. */
+.cyl-card-content {
+}
 .cyl-card-body :deep(.iridis-card) {
   background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important;
 }

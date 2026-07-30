@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
-import { buildPickerSeedHexCommitResult } from './picker/buildPickerSeedModel.ts';
+import { buildPickerSeedModel } from './picker/buildPickerSeedModel.ts';
 
 /**
  * The Refine stage's "Palette" card — seed-color entry, the first card in
@@ -31,13 +30,24 @@ const sendPickerAction = useModeGuardedSend(mode, send, 'picker');
  * reaching SET_SEED with a malformed hex.
  */
 function commitHexText(index: number, event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const result = buildPickerSeedHexCommitResult(input.value, pickerSeeds.value[index]?.hex ?? '');
+  if (!(event.target instanceof HTMLInputElement)) {
+    return;
+  }
+  const input = event.target;
+  const result = buildPickerSeedModel.buildHexCommitResult(input.value, pickerSeeds.value[index]?.hex ?? '');
   if (result.acceptedHex !== null) {
     sendPickerAction({ hex: result.acceptedHex, index, type: IridisUiActionType.SET_SEED });
     return;
   }
   input.value = result.inputValue;
+}
+
+function removeSeed(index: number): void {
+  sendPickerAction({ index, 'type': IridisUiActionType.REMOVE_SEED });
+}
+
+function setSeedColor(index: number, hex: string): void {
+  sendPickerAction({ hex, index, 'type': IridisUiActionType.SET_SEED });
 }
 </script>
 
@@ -50,9 +60,9 @@ function commitHexText(index: number, event: Event): void {
       :can-add="pickerSeeds.length < 32"
       :can-remove="pickerSeeds.length > 1"
       @add="sendPickerAction({ 'hex': undefined, 'type': IridisUiActionType.ADD_SEED })"
-      @remove="(index) => sendPickerAction({ type: IridisUiActionType.REMOVE_SEED, index })"
+      @remove="removeSeed"
       @commit-hex="commitHexText"
-      @pick-color="(index, hex) => sendPickerAction({ type: IridisUiActionType.SET_SEED, index, hex })"
+      @pick-color="setSeedColor"
     />
   </div>
 </template>

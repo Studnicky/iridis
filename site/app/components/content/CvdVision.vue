@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import type { CvdType } from '@studnicky/iridis';
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { buildCvdReport, CVD_TYPES, cvdTypeLabel } from './cvd/buildCvdVisionModel.ts';
+import { buildCvdVisionModel } from './cvd/buildCvdVisionModel.ts';
 
 /**
  * The CVD home — everything color-vision-deficiency-related lives here, not
@@ -16,8 +17,16 @@ import { buildCvdReport, CVD_TYPES, cvdTypeLabel } from './cvd/buildCvdVisionMod
 const { cvdCorrect, cvdPreviewTypes, contrastReport, send } = useIridis();
 
 const cvdReport = computed(() => {
-  return buildCvdReport(contrastReport.value.cvd);
+  return buildCvdVisionModel.buildReport(contrastReport.value.cvd);
 });
+
+function updateCvdCorrect(cvdCorrect: boolean): void {
+  send({ cvdCorrect, 'type': IridisUiActionType.SET_CVD_CORRECT });
+}
+
+function toggleCvdPreview(cvdType: CvdType): void {
+  send({ cvdType, 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW });
+}
 </script>
 
 <template>
@@ -38,7 +47,7 @@ const cvdReport = computed(() => {
       >
         <USwitch
           :model-value="cvdCorrect"
-          @update:model-value="($event) => send({ 'cvdCorrect': $event as boolean, 'type': IridisUiActionType.SET_CVD_CORRECT })"
+          @update:model-value="updateCvdCorrect"
         />
       </ControlStrip>
 
@@ -61,17 +70,17 @@ const cvdReport = computed(() => {
 
       <div class="grid gap-3 sm:grid-cols-2">
         <CvdTypeCard
-          v-for="t in CVD_TYPES"
+          v-for="t in buildCvdVisionModel.types"
           :key="t.value"
           :type="t"
           :previewing="cvdPreviewTypes.has(t.value)"
-          @toggle="($event) => send({ 'cvdType': $event, 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW })"
+          @toggle="toggleCvdPreview"
         />
       </div>
 
       <CvdWarningsPanel
         :report="cvdReport"
-        :cvd-type-label="cvdTypeLabel"
+        :cvd-type-label="buildCvdVisionModel.labelType"
       />
 
       <div class="space-y-1 border-t border-default pt-3 text-xs text-muted">

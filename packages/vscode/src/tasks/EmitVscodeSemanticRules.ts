@@ -14,10 +14,12 @@ import type { SemanticRuleEntryInterfaceType } from '../types/augmentation.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
 import { SCOPE_MAPPINGS } from '../data/scopeMappings.ts';
 
-function defaultFontStyle(selector: string): string | undefined {
-  // selector may be 'variable' or 'variable.readonly'
-  const baseType = selector.includes('.') ? selector.split('.')[0] : selector;
-  return baseType !== undefined && baseType.length > 0 ? (FONT_STYLES[baseType] ?? undefined) : undefined;
+class SemanticRuleStyle {
+  static defaultFontStyle(selector: string): string | undefined {
+    // selector may be 'variable' or 'variable.readonly'
+    const baseType = selector.includes('.') ? selector.split('.')[0] : selector;
+    return baseType !== undefined && baseType.length > 0 ? (FONT_STYLES[baseType] ?? undefined) : undefined;
+  }
 }
 
 class EmitVscodeSemanticRules implements TaskInterface {
@@ -32,7 +34,7 @@ class EmitVscodeSemanticRules implements TaskInterface {
     'writes':      ['outputs.vscode:semanticTokenRules']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const semanticRules = (state.metadata['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterfaceType>;
     const result: Record<string, SemanticRuleEntryInterfaceType> = {};
 
@@ -40,14 +42,14 @@ class EmitVscodeSemanticRules implements TaskInterface {
       const foreground = rule.foreground !== undefined && rule.foreground.length > 0 ? rule.foreground : undefined;
       // Apply font style: modifier transform style takes precedence,
       // then fall back to FONT_STYLES for the base token type part of the selector.
-      const rawFontStyle = rule.fontStyle ?? defaultFontStyle(selector);
+      const rawFontStyle = rule.fontStyle ?? SemanticRuleStyle.defaultFontStyle(selector);
       const fontStyle = rawFontStyle !== undefined && rawFontStyle.length > 0 ? rawFontStyle : undefined;
       const entry: SemanticRuleEntryInterfaceType = { 'fontStyle': fontStyle, 'foreground': foreground };
       result[selector] = entry;
     }
 
     state.outputs['vscode:semanticTokenRules'] = result;
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitVscodeSemanticRules')
         .operation('run')
@@ -61,7 +63,7 @@ class EmitVscodeSemanticRules implements TaskInterface {
     const baseTokens = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterfaceType>;
     for (const key of Object.keys(SCOPE_MAPPINGS)) {
       if (!(key in baseTokens) && !(key in result)) {
-        ctx.logger.debug(
+        context.logger.debug(
           LogBody.create()
             .component('EmitVscodeSemanticRules')
             .operation('run')

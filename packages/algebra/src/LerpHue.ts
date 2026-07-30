@@ -8,17 +8,21 @@ import { Hue } from './Hue.ts';
  * (decreasing hue) sweeps is angularly shorter; `clockwise`/`counterClockwise`
  * force that sweep direction regardless of distance.
  */
-export const lerpHue = (a: number, b: number, t: number, direction: HueDirectionType = 'shortestArc'): number => {
-  const forwardSweep  = Hue.normalize(b - a);
-  const backwardSweep = Hue.normalize(a - b);
+class LerpHue {
+  static of(a: number, b: number, t: number, direction: HueDirectionType = 'shortestArc'): number {
+    const forwardSweep  = Hue.normalize(b - a);
+    const backwardSweep = Hue.normalize(a - b);
 
-  let resolvedDirection: 'clockwise' | 'counterClockwise';
-  if (direction === 'shortestArc') {
-    resolvedDirection = forwardSweep <= backwardSweep ? 'clockwise' : 'counterClockwise';
-  } else {
-    resolvedDirection = direction;
+    let resolvedDirection: 'clockwise' | 'counterClockwise';
+    if (direction === 'shortestArc') {
+      resolvedDirection = forwardSweep <= backwardSweep ? 'clockwise' : 'counterClockwise';
+    } else {
+      resolvedDirection = direction;
+    }
+
+    const sweep = resolvedDirection === 'clockwise' ? forwardSweep : -backwardSweep;
+    return Hue.normalize(a + t * sweep);
   }
+}
 
-  const sweep = resolvedDirection === 'clockwise' ? forwardSweep : -backwardSweep;
-  return Hue.normalize(a + t * sweep);
-};
+export { LerpHue };

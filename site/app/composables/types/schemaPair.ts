@@ -1,6 +1,6 @@
 import type { RoleSchemaInterfaceType } from '@studnicky/iridis/model';
 
-export type SchemaPairType = {
+export declare class SchemaPairType {
   'dark':  RoleSchemaInterfaceType;
   'light': RoleSchemaInterfaceType;
-};
+}

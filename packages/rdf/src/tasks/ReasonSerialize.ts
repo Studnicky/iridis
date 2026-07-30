@@ -4,18 +4,18 @@ import type {
   TaskInterface,
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
-import type { Quad } from 'n3';
+import type { JsonValueType } from '@studnicky/types';
 
 import { LogBody, LogFault } from '@studnicky/logger/builders';
 import { LOG_STATUS }        from '@studnicky/logger/constants';
+import { JsonValue }         from '@studnicky/types';
 import { Writer }            from 'n3';
 
-import type { IterableStoreInterface } from '../types/augmentation.ts';
-
-type SerializationFormatType = 'Turtle' | 'TriG' | 'N-Quads' | 'application/ld+json';
+import type { SerializationFormatEntity } from '../entities/SerializationFormatEntity.ts';
+import type { IterableStoreInterface } from '../interfaces/IterableStoreInterface.ts';
 
 class Format {
-  static resolve(raw: unknown): SerializationFormatType {
+  static resolve(raw: JsonValueType | undefined): SerializationFormatEntity.Type {
     if (typeof raw !== 'string') {
       return 'Turtle';
     }
@@ -30,21 +30,19 @@ class Format {
 }
 
 class SerializedStore {
-  static from(store: IterableStoreInterface, format: SerializationFormatType): string {
+  static from(store: IterableStoreInterface, format: SerializationFormatEntity.Type): string {
     const writer = new Writer({ 'format': format });
 
     for (const quad of store) {
-      // quad is typed as unknown in IterableStoreInterface to avoid cross-package
-      // @types/n3 vs @rdfjs/types conflicts; the store is always an n3 Store here.
-      writer.addQuad(quad as Quad);
+      writer.addQuad(quad);
     }
 
     // n3's Writer.end invokes its callback synchronously for in-memory string
     // output (no I/O), so the result is available before end() returns.
     let result = '';
     let failure: Error | null = null;
-    writer.end((err: unknown, output: unknown) => {
-      if (err instanceof Error) {failure = err;}
+    writer.end((error: Error | null, output: string) => {
+      if (error instanceof Error) {failure = error;}
       else if (typeof output === 'string') {result = output;}
     });
     if (failure !== null) {throw failure;}
@@ -64,10 +62,10 @@ class ReasonSerialize implements TaskInterface {
     'writes':      ['rdf:serialized']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const graph = state.outputs['rdf:reasoningGraph'] as IterableStoreInterface | undefined;
     if (graph === undefined) {
-      ctx.logger.warn(
+      context.logger.warn(
         LogBody.create()
           .component('ReasonSerialize')
           .operation('run')
@@ -80,9 +78,9 @@ class ReasonSerialize implements TaskInterface {
       return;
     }
 
-    const format = Format.resolve(state.metadata['rdf:format']);
+    const format = Format.resolve(JsonValue.from(state.metadata['rdf:format']));
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('ReasonSerialize')
         .operation('run')
@@ -96,13 +94,13 @@ class ReasonSerialize implements TaskInterface {
 
     try {
       serialized = SerializedStore.from(graph, format);
-    } catch (err) {
-      ctx.logger.error(
+    } catch (error) {
+      context.logger.error(
         LogFault.create()
           .component('ReasonSerialize')
           .operation('run')
           .status(LOG_STATUS.FAILED)
-          .fromError(err instanceof Error ? err : new Error(String(err)))
+          .fromError(error instanceof Error ? error : new Error(String(error)))
           .context({})
           .build()
       );
@@ -112,7 +110,7 @@ class ReasonSerialize implements TaskInterface {
 
     state.outputs['rdf:serialized'] = serialized;
 
-    ctx.logger.info(
+    context.logger.info(
       LogBody.create()
         .component('ReasonSerialize')
         .operation('run')

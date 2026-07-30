@@ -1,12 +1,8 @@
 <script setup lang="ts" generic="T extends string | number">
-import {
-  segmentedSliderIndexFor,
-  segmentedSliderValueAt,
-  type SegmentedSliderItem
-} from './buildSegmentedSliderModel.ts';
+import { buildSegmentedSliderModel } from './buildSegmentedSliderModel.ts';
 
 const props = defineProps<{
-  items: readonly SegmentedSliderItem<T>[];
+  items: readonly { label: string; value: T }[];
   modelValue: T;
   minWidth?: number;
   gap?: number;
@@ -35,11 +31,11 @@ const emit = defineEmits<{ 'update:modelValue': [value: T] }>();
       </template>
     </BalancedWrap>
     <USlider
-      :model-value="segmentedSliderIndexFor(items, modelValue)"
+      :model-value="buildSegmentedSliderModel.indexFor(items, modelValue)"
       :min="0"
       :max="items.length - 1"
       :step="1"
-      @update:model-value="emit('update:modelValue', segmentedSliderValueAt(items, Number($event), modelValue))"
+      @update:model-value="emit('update:modelValue', buildSegmentedSliderModel.valueAt(items, Number($event), modelValue))"
     />
   </div>
 </template>

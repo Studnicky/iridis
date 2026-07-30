@@ -1,47 +1,15 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterface,
+  PluginSchemaContributionInterfaceType,
   TaskInterface
 } from '@studnicky/iridis';
 
+import { IMAGE_PLUGIN_SCHEMAS } from './constants/ImagePluginSchemas.ts';
 import { galleryAssignRoles }       from './tasks/GalleryAssignRoles.ts';
 import { galleryExtract }           from './tasks/GalleryExtract.ts';
 import { galleryExtractCandidates } from './tasks/GalleryExtractCandidates.ts';
 import { galleryHarmonize }         from './tasks/GalleryHarmonize.ts';
 import { galleryHistogram }         from './tasks/GalleryHistogram.ts';
-
-const galleryHistogramSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'binCount':    { 'minimum': 0, 'type': 'number' },
-    'bins':        { 'type': 'array' },
-    'totalPixels': { 'minimum': 0, 'type': 'number' }
-  },
-  'type': 'object'
-} as const;
-
-const galleryDominantColorsSchema = {
-  'type': 'array'
-} as const;
-
-const galleryHarmonizedSchema = {
-  'type': 'boolean'
-} as const;
-
-const galleryCandidatesSchema = {
-  'items': {
-    'additionalProperties': false,
-    'properties': {
-      'algorithm': { 'type': 'string' },
-      'colors':    { 'type': 'array' },
-      'k':         { 'minimum': 0, 'type': 'number' },
-      'label':     { 'type': 'string' }
-    },
-    'required': ['algorithm', 'k', 'label', 'colors'],
-    'type': 'object'
-  },
-  'type': 'array'
-} as const;
 
 /**
  * ImagePlugin
@@ -62,13 +30,13 @@ export class ImagePlugin implements PluginInterface {
     return [galleryHistogram, galleryExtract, galleryExtractCandidates, galleryAssignRoles, galleryHarmonize];
   }
 
-  schemas(): PluginSchemaContributionInterface {
+  schemas(): PluginSchemaContributionInterfaceType {
     return {
       'metadata': {
-        'gallery:candidates':     galleryCandidatesSchema,
-        'gallery:dominantColors': galleryDominantColorsSchema,
-        'gallery:harmonized':    galleryHarmonizedSchema,
-        'gallery:histogram':     galleryHistogramSchema
+        'gallery:candidates':     IMAGE_PLUGIN_SCHEMAS.GALLERY_CANDIDATES,
+        'gallery:dominantColors': IMAGE_PLUGIN_SCHEMAS.GALLERY_DOMINANT_COLORS,
+        'gallery:harmonized':    IMAGE_PLUGIN_SCHEMAS.GALLERY_HARMONIZED,
+        'gallery:histogram':     IMAGE_PLUGIN_SCHEMAS.GALLERY_HISTOGRAM
       },
       'outputs': undefined
     };

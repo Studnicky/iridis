@@ -2,7 +2,7 @@
 import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
 import type { AliasColorType } from '~/theme/types/aliasColor.ts';
 
-const model = defineModel<AliasColorType[]>({ required: true });
+const model = defineModel<AliasColorType.Type[]>({ required: true });
 const colors = ALIAS_COLOR_NAMES;
 </script>
 

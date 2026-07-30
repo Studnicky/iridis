@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useToast } from '#imports';
 import { ref } from 'vue';
 
 const toast = useToast();

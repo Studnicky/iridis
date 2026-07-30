@@ -4,12 +4,7 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
-import {
-  buildCombineCandidateSelectionEvent,
-  buildImageSeedHexes,
-  buildSelectedPalettes,
-  COMBINE_STAGE_HELP_TEXT
-} from './combine/buildCombineStageModel.ts';
+import { buildCombineStageModel } from './combine/buildCombineStageModel.ts';
 import PaletteCandidatePicker from './PaletteCandidatePicker.vue';
 import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
 
@@ -35,12 +30,12 @@ const { send } = useIridisUiMachine();
 const sendImageAction = useModeGuardedSend(mode, send, 'image');
 
 function selectCandidate(candidate: GalleryCandidateInterfaceType): void {
-  sendImageAction(buildCombineCandidateSelectionEvent(candidate));
+  sendImageAction(buildCombineStageModel.buildCandidateSelectionEvent(candidate));
 }
 
 /** Read-only reference — each uploaded image's own already-extracted palette, so it's clear what's feeding the merge below without duplicating that image's own (editable) controls, which live on its own card in Upload. */
-const selectedPalettes = computed(() => buildSelectedPalettes(uploadedImages.value, effectiveHexesFor));
-const extractedHueHexes = computed(() => buildImageSeedHexes(imageSeeds.value));
+const selectedPalettes = computed(() => buildCombineStageModel.buildSelectedPalettes(uploadedImages.value, effectiveHexesFor));
+const extractedHueHexes = computed(() => buildCombineStageModel.buildImageSeedHexes(imageSeeds.value));
 </script>
 
 <template>
@@ -82,11 +77,11 @@ const extractedHueHexes = computed(() => buildImageSeedHexes(imageSeeds.value));
       :harmonize-threshold="imgHarmonize"
       :lightness-range="imgLightnessRange"
       :chroma-range="imgChromaRange"
-      :delta-e-cap-help="COMBINE_STAGE_HELP_TEXT.deltaECapHelp"
-      :histogram-help="COMBINE_STAGE_HELP_TEXT.histogramHelp"
-      :harmonize-help="COMBINE_STAGE_HELP_TEXT.harmonizeHelp"
-      :lightness-help="COMBINE_STAGE_HELP_TEXT.lightnessHelp"
-      :chroma-help="COMBINE_STAGE_HELP_TEXT.chromaHelp"
+      :delta-e-cap-help="buildCombineStageModel.helpText.deltaECapHelp"
+      :histogram-help="buildCombineStageModel.helpText.histogramHelp"
+      :harmonize-help="buildCombineStageModel.helpText.harmonizeHelp"
+      :lightness-help="buildCombineStageModel.helpText.lightnessHelp"
+      :chroma-help="buildCombineStageModel.helpText.chromaHelp"
       @rerun="reRunCombine"
       @update:combine-locked="combineLocked = $event"
       @update:schema-name="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: $event })"

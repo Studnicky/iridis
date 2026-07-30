@@ -7,7 +7,7 @@ const props = defineProps<{
   role: RoleMathEntryType;
 }>();
 
-const statusModel = computed(() => buildRoleMathStatusModel(props.role));
+const statusModel = computed(() => buildRoleMathStatusModel.build(props.role));
 </script>
 
 <template>

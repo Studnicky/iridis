@@ -6,7 +6,7 @@ import type {
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
 
-import { getOrCreateMetadata, luminance } from '@studnicky/iridis';
+import { luminance, PaletteMetadataSlot } from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
@@ -48,11 +48,11 @@ class EmitCapacitorStatusBar implements TaskInterface {
     'writes':      ['outputs.capacitor:statusBar']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const barColor = BarColor.resolve(state.roles);
 
     if (barColor === undefined) {
-      ctx.logger.warn(
+      context.logger.warn(
         LogBody.create()
           .component('EmitCapacitorStatusBar')
           .operation('run')
@@ -65,7 +65,7 @@ class EmitCapacitorStatusBar implements TaskInterface {
     }
 
     // Resolve consumer overlay preference from metadata
-    const capacitorMeta = getOrCreateMetadata(state, 'capacitor');
+    const capacitorMeta = PaletteMetadataSlot.getOrCreate(state, 'capacitor');
     const overlay = capacitorMeta.statusBarOverlay === true;
 
     const textColor = TextColor.resolve(state.roles);
@@ -85,7 +85,7 @@ class EmitCapacitorStatusBar implements TaskInterface {
 
     state.outputs['capacitor:statusBar'] = output;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitCapacitorStatusBar')
         .operation('run')

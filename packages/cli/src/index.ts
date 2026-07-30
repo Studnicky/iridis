@@ -3,6 +3,7 @@
 export { Cli }              from './Cli.ts';
 export { CliConfigSchema }  from './CliConfigSchema.ts';
 export { ConfigLoader }     from './ConfigLoader.ts';
+export { CliConfigEntity }  from './entities/CliConfigEntity.ts';
+export type { CliConfigInterface } from './interfaces/CliConfigInterface.ts';
 export { OutputWriter }     from './OutputWriter.ts';
 export { PluginResolver }   from './PluginResolver.ts';
-export type { CliConfigInterface } from './types/index.ts';

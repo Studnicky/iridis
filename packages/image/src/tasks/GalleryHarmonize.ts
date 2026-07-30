@@ -33,12 +33,12 @@ class GalleryHarmonize implements TaskInterface {
     'writes':      ['roles.accent', 'metadata.gallery:harmonized']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const accent = state.roles.accent;
     const frame  = state.roles.frame;
 
     if (accent === undefined || frame === undefined) {
-      ctx.logger.warn(
+      context.logger.warn(
         LogBody.create()
           .component('GalleryHarmonize')
           .operation('run')
@@ -55,7 +55,7 @@ class GalleryHarmonize implements TaskInterface {
     const threshold = galleryConfig?.harmonizeThreshold ?? 10;
     const deltaE = deltaE2000.apply(accent, frame);
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('GalleryHarmonize')
         .operation('run')
@@ -66,7 +66,7 @@ class GalleryHarmonize implements TaskInterface {
     );
 
     if (deltaE >= threshold) {
-      ctx.logger.info(
+      context.logger.info(
         LogBody.create()
           .component('GalleryHarmonize')
           .operation('run')
@@ -98,7 +98,7 @@ class GalleryHarmonize implements TaskInterface {
       'hueShift': shift
     };
 
-    ctx.logger.info(
+    context.logger.info(
       LogBody.create()
         .component('GalleryHarmonize')
         .operation('run')

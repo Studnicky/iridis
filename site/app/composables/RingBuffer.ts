@@ -23,7 +23,8 @@ export class RingBuffer<T> {
     this.snapshotCache.length = 0;
     if (this.length === 0) { return; }
     if (this.length < this.capacity) {
-      for (let index = 0; index < this.length; index += 1) {
+      const snapshotLength = this.length;
+      for (let index = 0; index < snapshotLength; index += 1) {
         const value = this.items[index];
         if (value !== undefined) { this.snapshotCache.push(value); }
       }

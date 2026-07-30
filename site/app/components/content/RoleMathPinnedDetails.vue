@@ -7,7 +7,7 @@ const props = defineProps<{
   role: RoleMathEntryType;
 }>();
 
-const pinnedDetailsModel = computed(() => buildRoleMathPinnedDetailsModel(props.role));
+const pinnedDetailsModel = computed(() => buildRoleMathPinnedDetailsModel.build(props.role));
 </script>
 
 <template>

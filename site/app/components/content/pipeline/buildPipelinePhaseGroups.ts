@@ -1,74 +1,126 @@
 import { coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
+
 import { COLOR_PIPELINE } from '~/composables/colorPipeline.ts';
 import { OPTIONAL_STAGE_NAMES } from '~/composables/optionalStageNames.ts';
 import { intakeHexHint } from '~/theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '~/theme/PinDerivedRoles.ts';
 
-type PipelineTaskType = {
-  name: string;
-  manifest?: {
-    description?: string;
-    reads?: string[];
-    writes?: string[];
-  };
-};
+class PipelineStage {
+  public readonly description: string;
+  public readonly label: string;
+  public readonly optional: boolean;
+  public readonly reads: string[];
+  public readonly value: string;
+  public readonly writes: string[];
 
-export type PipelineStageType = {
-  label: string;
-  description: string;
-  optional: boolean;
-  reads: string[];
-  value: string;
-  writes: string[];
-};
-
-const TASKS_BY_NAME = new Map(
-  [...coreTasks, intakeHexHint, pinDerivedRoles, ...contrastPlugin.tasks()].map((task) => [task.name, task] as const)
-);
-
-function stageFor(name: string, index: number): PipelineStageType {
-  const task = TASKS_BY_NAME.get(name) as PipelineTaskType | undefined;
-  return {
-    'label': `${index + 1}. ${name}`,
-    'description': task?.manifest?.description ?? '(task not registered)',
-    'optional': OPTIONAL_STAGE_NAMES.includes(name),
-    'reads': task?.manifest?.reads ?? [],
-    'value': name,
-    'writes': task?.manifest?.writes ?? []
-  };
-}
-
-function stageNamesByPrefix(stages: readonly PipelineStageType[]): Map<string, string[]> {
-  const byPrefix = new Map<string, string[]>();
-  for (const stage of stages) {
-    const prefix = stage.value.split(':')[0] ?? stage.value;
-    const list = byPrefix.get(prefix) ?? [];
-    list.push(stage.value);
-    byPrefix.set(prefix, list);
+  public constructor(
+    description: string,
+    label: string,
+    optional: boolean,
+    reads: string[],
+    value: string,
+    writes: string[]
+  ) {
+    this.description = description;
+    this.label = label;
+    this.optional = optional;
+    this.reads = reads;
+    this.value = value;
+    this.writes = writes;
   }
-  return byPrefix;
 }
 
-export function buildPipelinePhaseGroups(): {
-  readonly label: string;
-  readonly stages: PipelineStageType[];
-}[] {
-  const stages = COLOR_PIPELINE.map(stageFor);
-  const stagesByValue = new Map<string, PipelineStageType>(stages.map((stage) => [stage.value, stage]));
-  const namesByPrefix = stageNamesByPrefix(stages);
-  const namesFor = (...prefixes: string[]) => prefixes.flatMap((prefix) => namesByPrefix.get(prefix) ?? []);
-  const enforceStageNames = namesByPrefix.get('enforce') ?? [];
+class PipelinePhaseGroup {
+  public readonly label: string;
+  public readonly stages: PipelineStage[];
 
-  return [
-    { 'label': 'Intake', 'names': namesFor('intake') },
-    { 'label': 'Resolve', 'names': namesFor('derive', 'resolve', 'pin', 'expand') },
-    { 'label': 'Enforce', 'names': enforceStageNames },
-    { 'label': 'Emit', 'names': namesFor('emit') }
-  ]
-    .map((group) => ({
-      'label': group.label,
-      'stages': group.names.map((name) => stagesByValue.get(name)).filter((stage): stage is PipelineStageType => stage !== undefined)
-    }))
-    .filter((group) => group.stages.length > 0);
+  public constructor(label: string, stages: PipelineStage[]) {
+    this.label = label;
+    this.stages = stages;
+  }
 }
+
+class PipelinePhaseDefinition {
+  public readonly label: string;
+  public readonly prefixes: readonly string[];
+
+  public constructor(label: string, prefixes: readonly string[]) {
+    this.label = label;
+    this.prefixes = prefixes;
+  }
+}
+
+export const buildPipelinePhaseGroups = class PipelinePhaseGroupsBuilder {
+  private static readonly phaseDefinitions: readonly PipelinePhaseDefinition[] = [
+    new PipelinePhaseDefinition('Intake', ['intake']),
+    new PipelinePhaseDefinition('Resolve', ['derive', 'resolve', 'pin', 'expand']),
+    new PipelinePhaseDefinition('Enforce', ['enforce']),
+    new PipelinePhaseDefinition('Emit', ['emit'])
+  ];
+
+  private static readonly tasksByName = new Map(
+    [...coreTasks, intakeHexHint, pinDerivedRoles, ...contrastPlugin.tasks()].map((task) => {
+      return [task.name, task];
+    })
+  );
+
+  public static build(): readonly PipelinePhaseGroup[] {
+    const stages = COLOR_PIPELINE.map((name, index) => {
+      const result = this.buildStage(name, index);
+      return result;
+    });
+    const stagesByValue = new Map(stages.map((stage) => {
+      return [stage.value, stage];
+    }));
+    const namesByPrefix = this.buildStageNamesByPrefix(stages);
+    const groups: PipelinePhaseGroup[] = [];
+    for (const definition of this.phaseDefinitions) {
+      const phaseStages: PipelineStage[] = [];
+      for (const name of this.resolveStageNames(namesByPrefix, definition.prefixes)) {
+        const stage = stagesByValue.get(name);
+        if (stage !== undefined) {
+          phaseStages.push(stage);
+        }
+      }
+      if (phaseStages.length > 0) {
+        groups.push(new PipelinePhaseGroup(definition.label, phaseStages));
+      }
+    }
+    return groups;
+  }
+
+  private static buildStage(name: string, index: number): PipelineStage {
+    const task = this.tasksByName.get(name);
+    return new PipelineStage(
+      task?.manifest?.description ?? '(task not registered)',
+      `${index + 1}. ${name}`,
+      OPTIONAL_STAGE_NAMES.includes(name),
+      task?.manifest?.reads ?? [],
+      name,
+      task?.manifest?.writes ?? []
+    );
+  }
+
+  private static buildStageNamesByPrefix(stages: readonly PipelineStage[]): Map<string, string[]> {
+    const byPrefix = new Map<string, string[]>();
+    for (const stage of stages) {
+      const prefix = stage.value.split(':')[0] ?? stage.value;
+      const names = byPrefix.get(prefix) ?? [];
+      names.push(stage.value);
+      byPrefix.set(prefix, names);
+    }
+    return byPrefix;
+  }
+
+  private static resolveStageNames(
+    namesByPrefix: ReadonlyMap<string, string[]>,
+    prefixes: readonly string[]
+  ): string[] {
+    const names: string[] = [];
+    for (const prefix of prefixes) {
+      names.push(...(namesByPrefix.get(prefix) ?? []));
+    }
+    return names;
+  }
+};

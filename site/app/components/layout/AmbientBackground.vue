@@ -223,7 +223,7 @@ const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAm
      wants muted/desaturated, an arcade/streamer theme wants punchy and
      saturated. Set per-theme in site/app/theme/presets/<key>.css; 1/1 here
      is the neutral (futuristic) default. */
-  filter: saturate(var(--iridis-ambient-saturate, 1)) contrast(var(--iridis-ambient-contrast, 1));
+  filter: saturate(var(--iridis-ambient-saturate)) contrast(var(--iridis-ambient-contrast));
 }
 
 /* ─── perspective grid floor ─── */
@@ -236,7 +236,7 @@ const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAm
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, var(--glow) 10%, transparent 70%);
   opacity: 0.1;
-  animation: ambient-grid-pan calc(18s / var(--iridis-ambient-speed, 1)) linear infinite;
+  animation: ambient-grid-pan calc(18s / var(--iridis-ambient-speed)) linear infinite;
 }
 
 /* ─── gooey lava-lamp wash (CSS blur applied inline so gooEnabled can toggle it) ───

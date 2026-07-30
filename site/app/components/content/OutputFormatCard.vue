@@ -11,7 +11,7 @@ import { buildOutputFormatCardModel } from './buildOutputFormatCardModel.ts';
  */
 const props = defineProps<{ formatKey: string }>();
 const { outputsByKey } = useMultiOutput();
-const cardModel = computed(() => buildOutputFormatCardModel(
+const cardModel = computed(() => buildOutputFormatCardModel.build(
   props.formatKey,
   outputsByKey.value[props.formatKey]
 ));

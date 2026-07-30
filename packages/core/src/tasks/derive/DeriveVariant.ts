@@ -19,35 +19,37 @@ const DEFAULT_VARIANTS: readonly VariantConfigInterfaceType[] = [
   { 'invertLightness': false, 'lightnessOffset': undefined, 'lightnessTarget': undefined, 'name': 'light' }
 ];
 
-function invertLightness(color: ColorRecordInterfaceType): ColorRecordInterfaceType {
-  const { c, h, l } = color.oklch;
-  const inverted = 1 - l;
-  return colorRecordFactory.fromOklch(
-    clamp01.apply(inverted),
-    clamp.apply(0, 0.5, c),
-    h,
-    { 'alpha': color.alpha }
-  );
-}
+class VariantLightness {
+  static invert(color: ColorRecordInterfaceType): ColorRecordInterfaceType {
+    const { c, h, l } = color.oklch;
+    const inverted = 1 - l;
+    return colorRecordFactory.fromOklch(
+      clamp01.apply(inverted),
+      clamp.apply(0, 0.5, c),
+      h,
+      { 'alpha': color.alpha }
+    );
+  }
 
-function offsetLightness(color: ColorRecordInterfaceType, offset: number): ColorRecordInterfaceType {
-  const { c, h, l } = color.oklch;
-  return colorRecordFactory.fromOklch(
-    clamp01.apply(l + offset),
-    clamp.apply(0, 0.5, c),
-    h,
-    { 'alpha': color.alpha }
-  );
-}
+  static offset(color: ColorRecordInterfaceType, offset: number): ColorRecordInterfaceType {
+    const { c, h, l } = color.oklch;
+    return colorRecordFactory.fromOklch(
+      clamp01.apply(l + offset),
+      clamp.apply(0, 0.5, c),
+      h,
+      { 'alpha': color.alpha }
+    );
+  }
 
-function targetLightness(color: ColorRecordInterfaceType, target: number): ColorRecordInterfaceType {
-  const { c, h } = color.oklch;
-  return colorRecordFactory.fromOklch(
-    clamp01.apply(target),
-    clamp.apply(0, 0.5, c),
-    h,
-    { 'alpha': color.alpha }
-  );
+  static target(color: ColorRecordInterfaceType, target: number): ColorRecordInterfaceType {
+    const { c, h } = color.oklch;
+    return colorRecordFactory.fromOklch(
+      clamp01.apply(target),
+      clamp.apply(0, 0.5, c),
+      h,
+      { 'alpha': color.alpha }
+    );
+  }
 }
 
 /**
@@ -73,7 +75,7 @@ class DeriveVariant implements TaskInterface {
     'writes':      ['variants']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const configRaw = state.metadata['core:variantConfig'];
     const configs: readonly VariantConfigInterfaceType[] = Array.isArray(configRaw)
       ? configRaw
@@ -82,7 +84,7 @@ class DeriveVariant implements TaskInterface {
     const roleNames = Object.keys(state.roles);
 
     if (roleNames.length === 0) {
-      ctx.logger.debug(
+      context.logger.debug(
         LogBody.create()
           .component('DeriveVariant')
           .operation('run')
@@ -102,18 +104,18 @@ class DeriveVariant implements TaskInterface {
         if (color === undefined) {continue;}
 
         if (config.invertLightness) {
-          variantRoles[roleName] = invertLightness(color);
+          variantRoles[roleName] = VariantLightness.invert(color);
         } else if (config.lightnessTarget !== undefined) {
-          variantRoles[roleName] = targetLightness(color, config.lightnessTarget);
+          variantRoles[roleName] = VariantLightness.target(color, config.lightnessTarget);
         } else if (config.lightnessOffset !== undefined) {
-          variantRoles[roleName] = offsetLightness(color, config.lightnessOffset);
+          variantRoles[roleName] = VariantLightness.offset(color, config.lightnessOffset);
         } else {
           variantRoles[roleName] = color;
         }
       }
 
       state.variants[config.name] = variantRoles;
-      ctx.logger.debug(
+      context.logger.debug(
         LogBody.create()
           .component('DeriveVariant')
           .operation('run')

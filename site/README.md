@@ -1,6 +1,6 @@
 # iridis site
 
-> The iridis demo/docs site — a Nuxt 3 app that runs the real engine live against its own theme.
+> The iridis demo/docs site — a Nuxt 4 app that runs the real engine live against its own theme.
 
 Every color, chart, code panel, and animation on this page is produced by `engine.run()` against
 whatever seeds or image the user feeds it — nothing here is a static mockup. See the root

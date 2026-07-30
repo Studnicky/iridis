@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { useAsyncData } from '#imports'
-import { computed, reactive, ref, watch } from 'vue';
-import { docPanelId } from '~/composables/docPanelId.ts';
-import { sanitizeDocAnchorId } from '~/composables/sanitizeDocAnchorId.ts';
+import type {} from '#build/content/types';
+
+import { queryCollection, useAsyncData } from '#imports';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { documentPanelId } from '~/composables/documentPanelId.ts';
+import { sanitizeDocumentAnchorId } from '~/composables/sanitizeDocumentAnchorId.ts';
 import { SEQUENTIAL_STAGE_NAMES } from '~/composables/sequentialStageNames.ts';
 import { STAGE_GROUPS } from '~/composables/stageGroups.ts';
 import { useIridis } from '~/composables/useIridis.ts';
@@ -16,11 +18,10 @@ import { IridisUiActionType } from '~/composables/types/index.ts';
  * Refine (palette seed entry, role assignment, CVD preview, schema/compliance
  * settings), Explore (the resolved roles/pairings/spectrum, plus the
  * component/interactable/motion showcases), Stylesheets (every emit-plugin
- * output format), and Reference — then the docs list. The SAME
- * left-arrow/centered-title/right-arrow header and Next/Previous navigation
- * spans the whole page: after Reference, Next continues into the first doc;
- * a doc's Previous eventually leads back to Reference. Every color is
- * produced by engine.run().
+ * output format), and Reference — then the remaining reference documents.
+ * The same left-arrow/centered-title/right-arrow header and Next/Previous
+ * navigation follows that rendered order exactly. Every color is produced
+ * by engine.run().
  *
  * Each stage carousel is a SEPARATE `<CylinderCarousel>` instance with its
  * own independently-scoped local active index (`stageIndex`, bound via
@@ -33,8 +34,8 @@ const {
   'removeUploadedImage': removeUploadedImage, 'updateUploadedImageSetting': updateUploadedImageSetting,
   'selectEntryCandidate': selectEntryCandidate
 } = useIridis();
-const { 'registerDocTargets': registerDocTargets, 'registerStageIndexSetter': registerStageIndexSetter } = useNavigationTargets();
-watch(allDocs, (docs) => { if (docs) {registerDocTargets(docs);} }, { 'immediate': true });
+const { 'registerDocumentTargets': registerDocumentTargets, 'registerStageIndexSetter': registerStageIndexSetter } = useNavigationTargets();
+watch(allDocs, (docs) => { if (docs) {registerDocumentTargets(docs);} }, { 'immediate': true });
 
 /** Theme-preset switcher options, derived from the THEMES registry so the list grows automatically as more themes are registered. */
 const { 'THEMES': THEMES, 'activeThemeKey': activeThemeKey } = useThemePreset();
@@ -60,6 +61,12 @@ function findUploadedImage(itemKey: string) {
   return uploadedImages.value.find((img) => img.id === id);
 }
 
+function uploadedImageFor(itemKey: string) {
+  const image = findUploadedImage(itemKey);
+  if (image === undefined) {throw new RangeError(`No uploaded image matches carousel item ${itemKey}`);}
+  return image;
+}
+
 /**
  * The Upload stage's own top-level carousel gets one slide per uploaded
  * image, dynamically appended after the static dropzone slide — every
@@ -78,25 +85,22 @@ watch(() => uploadedImages.value.length, (next, prev) => {
   else if (next < prev) stageIndex['upload'] = 0;
 });
 
-/** Every doc's scroll-anchor id, in the same order they render — the tail of the site-wide Next/Previous sequence, after every stage. */
-const docAnchorIds = computed(() => (allDocs.value ?? []).map((doc) => sanitizeDocAnchorId(doc.path)));
-
 /**
  * The plain-English "what is this" docs (01, 02) are hoisted to render
  * directly under the intro block (WhatIsIridis), default-open, instead of
- * buried at the bottom with the rest (NARR-4). `docAnchorIds`/`fullSequence`
- * are unaffected — Next/Previous sequencing reads from `allDocs` order, not
- * from where a doc happens to render — so each id still resolves exactly
- * once regardless of which loop renders its `AccordionPanel`.
+ * buried at the bottom with the rest (NARR-4).
  */
 const HOISTED_DOC_IDS = new Set(['01-what-is-iridis', '02-the-four-stages']);
-const hoistedDocs = computed(() => (allDocs.value ?? []).filter((doc) => HOISTED_DOC_IDS.has(sanitizeDocAnchorId(doc.path))));
-const remainingDocs = computed(() => (allDocs.value ?? []).filter((doc) => !HOISTED_DOC_IDS.has(sanitizeDocAnchorId(doc.path))));
+const hoistedDocs = computed(() => (allDocs.value ?? []).filter((doc) => HOISTED_DOC_IDS.has(sanitizeDocumentAnchorId(doc.path))));
+const remainingDocs = computed(() => (allDocs.value ?? []).filter((doc) => !HOISTED_DOC_IDS.has(sanitizeDocumentAnchorId(doc.path))));
+const hoistedDocAnchorIds = computed(() => hoistedDocs.value.map((doc) => sanitizeDocumentAnchorId(doc.path)));
+const remainingDocAnchorIds = computed(() => remainingDocs.value.map((doc) => sanitizeDocumentAnchorId(doc.path)));
 
-/** The ONE Next/Previous sequence spanning the whole page: every stage (Combine included only while visible), then every doc. */
+/** The one Next/Previous sequence, in the exact order targets render in the DOM. */
 const fullSequence = computed(() => [
+  ...hoistedDocAnchorIds.value,
   ...SEQUENTIAL_STAGE_NAMES.filter((name) => name !== 'combine' || uploadedImages.value.length > 0),
-  ...docAnchorIds.value
+  ...remainingDocAnchorIds.value
 ]);
 
 /** Id to navigate to when a left/right arrow anywhere on the page is clicked — undefined at either end of the whole-site sequence. */
@@ -108,20 +112,71 @@ function adjacentInSequence(currentId: string | undefined, delta: 1 | -1): strin
   return seq[i + delta];
 }
 
-/** The doc currently shown in the docs section's own header — updated whenever its arrows (or a stage's "Next" past Reference) land on a doc. Defaults to the first doc once the list loads. */
-const currentDocId = ref<string | undefined>(undefined);
-watch(docAnchorIds, (ids) => { if (currentDocId.value === undefined && ids.length > 0) currentDocId.value = ids[0]; }, { 'immediate': true });
+/** The remaining-doc section header always names a document rendered inside that section. */
+const currentRemainingDocId = ref<string | undefined>(undefined);
+let remainingDocumentFrame: number | undefined;
+let remainingDocumentElements: HTMLElement[] = [];
+
+function synchronizeCurrentRemainingDocument(): void {
+  if (remainingDocumentElements.length === 0) {return;}
+  const readingPosition = window.innerHeight * 0.2;
+  const activeElement = remainingDocumentElements.reduce((active, element) => {
+    return element.getBoundingClientRect().top <= readingPosition + 1 ? element : active;
+  });
+  if (remainingDocAnchorIds.value.includes(activeElement.id)) {
+    currentRemainingDocId.value = activeElement.id;
+  }
+}
+
+function onRemainingDocumentScroll(): void {
+  if (remainingDocumentFrame !== undefined) {return;}
+  remainingDocumentFrame = window.requestAnimationFrame(() => {
+    remainingDocumentFrame = undefined;
+    synchronizeCurrentRemainingDocument();
+  });
+}
+
+function teardownRemainingDocumentScrollSpy(): void {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('scroll', onRemainingDocumentScroll);
+    if (remainingDocumentFrame !== undefined) {
+      window.cancelAnimationFrame(remainingDocumentFrame);
+    }
+  }
+  remainingDocumentFrame = undefined;
+  remainingDocumentElements = [];
+}
+
+function setupRemainingDocumentScrollSpy(): void {
+  teardownRemainingDocumentScrollSpy();
+  if (typeof document === 'undefined' || typeof window === 'undefined') {return;}
+  remainingDocumentElements = remainingDocAnchorIds.value
+    .map((identifier) => document.getElementById(identifier))
+    .filter((element): element is HTMLElement => element !== null);
+  if (remainingDocumentElements.length === 0) {return;}
+
+  window.addEventListener('scroll', onRemainingDocumentScroll, { 'passive': true });
+}
+
+watch(remainingDocAnchorIds, (identifiers) => {
+  if (currentRemainingDocId.value === undefined || !identifiers.includes(currentRemainingDocId.value)) {
+    currentRemainingDocId.value = identifiers[0];
+  }
+  nextTick(setupRemainingDocumentScrollSpy);
+}, { 'immediate': true });
+
+onMounted(() => {nextTick(setupRemainingDocumentScrollSpy);});
+onBeforeUnmount(teardownRemainingDocumentScrollSpy);
 
 function goTo(targetId: string | undefined): void {
   if (!targetId) return;
   send({ 'targetId': targetId, 'type': IridisUiActionType.NAVIGATE_TO_TARGET });
-  if (docAnchorIds.value.includes(targetId)) currentDocId.value = targetId;
+  if (remainingDocAnchorIds.value.includes(targetId)) {currentRemainingDocId.value = targetId;}
 }
 
 function docTitle(id: string | undefined): string {
   if (id === undefined) return '';
-  const index = docAnchorIds.value.indexOf(id);
-  return (index === -1 ? undefined : allDocs.value?.[index]?.title) ?? '';
+  return allDocs.value?.find((doc) => sanitizeDocumentAnchorId(doc.path) === id)?.title ?? '';
 }
 
 /** Human label for a fullSequence id — a stage's own STAGE_GROUPS label, or a doc's title. Used by the section-level Prev/Next buttons so they read as a destination ("Upload" / "Explore"), not a bare chevron (NAV-7). */
@@ -150,9 +205,12 @@ function outputFormatKey(itemKey: string): string {
  * FSM event.
  */
 function onDocsClick(e: MouseEvent): void {
-  const anchor = (e.target as HTMLElement).closest('a[href^="#"]');
+  if (!(e.target instanceof Element)) {return;}
+  const anchor = e.target.closest('a[href^="#"]');
   if (!anchor) {return;}
-  const targetId = anchor.getAttribute('href')!.slice(1);
+  const href = anchor.getAttribute('href');
+  if (!href) {return;}
+  const targetId = href.slice(1);
   if (!targetId) {return;}
   e.preventDefault();
   goTo(targetId);
@@ -239,9 +297,9 @@ function onDocsClick(e: MouseEvent): void {
       <div @click="onDocsClick">
         <AccordionPanel
           v-for="doc in hoistedDocs"
-          :id="sanitizeDocAnchorId(doc.path)"
+          :id="sanitizeDocumentAnchorId(doc.path)"
           :key="doc.path"
-          :panel-id="docPanelId(doc.path)"
+          :panel-id="documentPanelId(doc.path)"
           :title="doc.title || doc.path"
           icon="i-material-symbols-article-outline-rounded"
           :default-open="true"
@@ -298,11 +356,11 @@ function onDocsClick(e: MouseEvent): void {
           <template #default="{ item, active }">
             <UploadIntakeCard v-if="item.key === 'upload'" />
             <UploadedImageCard
-              v-else-if="findUploadedImage(item.key)"
-              :image="findUploadedImage(item.key)!"
-              @remove="removeUploadedImage(findUploadedImage(item.key)!.id)"
-              @update="updateUploadedImageSetting(findUploadedImage(item.key)!.id, $event)"
-              @select-candidate="selectEntryCandidate(findUploadedImage(item.key)!.id, $event)"
+              v-else-if="item.key.startsWith(UPLOADED_IMAGE_KEY_PREFIX)"
+              :image="uploadedImageFor(item.key)"
+              @remove="removeUploadedImage(uploadedImageFor(item.key).id)"
+              @update="updateUploadedImageSetting(uploadedImageFor(item.key).id, $event)"
+              @select-candidate="selectEntryCandidate(uploadedImageFor(item.key).id, $event)"
             />
             <CombineCard v-else-if="item.key === 'combine'" />
             <PickerIntakeCard v-else-if="item.key === 'picker'" />
@@ -349,34 +407,35 @@ function onDocsClick(e: MouseEvent): void {
 
       <section
         v-if="remainingDocs.length > 0"
+        id="remaining-documents"
         class="mt-32 space-y-4 border-t border-default pt-24 toc-scroll-target"
       >
         <div class="flex items-center justify-center gap-4">
           <UButton
             icon="i-material-symbols-arrow-back-rounded"
-            :label="stepLabel(currentDocId, -1)"
+            :label="stepLabel(currentRemainingDocId, -1)"
             color="neutral"
             variant="soft"
             size="lg"
-            :class="{ invisible: !adjacentInSequence(currentDocId, -1) }"
-            :disabled="!adjacentInSequence(currentDocId, -1)"
-            :aria-label="stepLabel(currentDocId, -1) ? undefined : 'Previous doc'"
-            @click="goTo(adjacentInSequence(currentDocId, -1))"
+            :class="{ invisible: !adjacentInSequence(currentRemainingDocId, -1) }"
+            :disabled="!adjacentInSequence(currentRemainingDocId, -1)"
+            :aria-label="stepLabel(currentRemainingDocId, -1) ? undefined : 'Previous doc'"
+            @click="goTo(adjacentInSequence(currentRemainingDocId, -1))"
           />
           <h2 class="font-display text-lg font-bold uppercase tracking-widest glow-text text-center">
-            {{ docTitle(currentDocId) }}
+            {{ docTitle(currentRemainingDocId) }}
           </h2>
           <UButton
             trailing
             icon="i-material-symbols-arrow-forward-rounded"
-            :label="stepLabel(currentDocId, 1)"
+            :label="stepLabel(currentRemainingDocId, 1)"
             color="primary"
             variant="soft"
             size="lg"
-            :class="{ invisible: !adjacentInSequence(currentDocId, 1) }"
-            :disabled="!adjacentInSequence(currentDocId, 1)"
-            :aria-label="stepLabel(currentDocId, 1) ? undefined : 'Next doc'"
-            @click="goTo(adjacentInSequence(currentDocId, 1))"
+            :class="{ invisible: !adjacentInSequence(currentRemainingDocId, 1) }"
+            :disabled="!adjacentInSequence(currentRemainingDocId, 1)"
+            :aria-label="stepLabel(currentRemainingDocId, 1) ? undefined : 'Next doc'"
+            @click="goTo(adjacentInSequence(currentRemainingDocId, 1))"
           />
         </div>
 
@@ -386,9 +445,9 @@ function onDocsClick(e: MouseEvent): void {
         >
           <AccordionPanel
             v-for="doc in remainingDocs"
-            :id="sanitizeDocAnchorId(doc.path)"
+            :id="sanitizeDocumentAnchorId(doc.path)"
             :key="doc.path"
-            :panel-id="docPanelId(doc.path)"
+            :panel-id="documentPanelId(doc.path)"
             :title="doc.title || doc.path"
             icon="i-material-symbols-article-outline-rounded"
             :default-open="false"

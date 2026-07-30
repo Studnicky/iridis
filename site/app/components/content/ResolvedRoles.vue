@@ -40,7 +40,7 @@ const cardLayoutByMode = {
 } as const;
 
 const activeCardLayout = computed(() => {
-  return selectDataCardLayout(dataLayout.value, cardLayoutByMode);
+  return selectDataCardLayout.select(dataLayout.value, cardLayoutByMode);
 });
 </script>
 

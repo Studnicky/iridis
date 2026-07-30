@@ -1,24 +1,4 @@
-/**
- * explorer.css — MermaidExplorer control chrome + Mermaid theme integration.
- *
- * Sections:
- *   1. Mermaid diagram theme — colour-maps Mermaid's SVG node shapes to
- *      VitePress CSS custom properties so diagrams are theme-aware.
- *   2. Diagram frame — the wrapper that positions the D-pad over the SVG.
- *   3. D-pad control grid — 3×3 navigation grid, hover-reveal, button styles.
- *   4. Fullscreen modal — overlay, stage, hint bar, animation.
- *
- * Custom property defaults:
- *   --dag-explorer-surface  default surface colour (set by MermaidExplorer.#applyTheme)
- *   --dag-explorer-stroke   default stroke / border colour
- *   --dag-explorer-accent   default accent / hover colour
- *   --dag-explorer-selected-stroke  selected node stroke colour
- *   --dag-explorer-selected-width   selected node stroke width
- *   --dag-explorer-selected-glow    selected node glow tint
- *
- * All --vp-c-* references are VitePress design tokens; when this stylesheet is
- * used outside VitePress the --dag-explorer-* defaults apply.
- */
+/** MermaidExplorer chrome and diagram colors driven by Iridis UI tokens. */
 
 @import '../viz/Dpad.css';
 @import './ModalShell.css';
@@ -32,7 +12,7 @@
  * node — rect (rectangle, subroutine), circle (round), ellipse, polygon
  * (rhombus), and path (hexagon, stadium, etc.).
  *
- * Uses VitePress surface/brand tokens so diagrams adapt to light/dark mode.
+ * Uses Iridis surface/brand tokens so diagrams adapt to framing and presets.
  * The class selector targets `.dagonizer-mermaid` (our own enhanced frames)
  * and `.mermaid` (Mermaid's own class) inside `.vp-doc`.
  */
@@ -46,8 +26,8 @@
 .vp-doc div.mermaid .node ellipse,
 .vp-doc div.mermaid .node polygon,
 .vp-doc div.mermaid .node path {
-  fill:   var(--vp-c-bg-soft, #101318);
-  stroke: var(--vp-c-brand-1, #22e8ff);
+  fill: var(--ui-bg-muted);
+  stroke: var(--ui-primary);
 }
 
 .vp-doc .dagonizer-mermaid .node.dag-mermaid-selected rect,
@@ -60,9 +40,9 @@
 .vp-doc div.mermaid .node.dag-mermaid-selected ellipse,
 .vp-doc div.mermaid .node.dag-mermaid-selected polygon,
 .vp-doc div.mermaid .node.dag-mermaid-selected path {
-  stroke: var(--dag-explorer-selected-stroke, var(--dagonizer-brand, #22e8ff));
-  stroke-width: var(--dag-explorer-selected-width, 3px);
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--dag-explorer-selected-glow, var(--dagonizer-brand, #22e8ff)) 55%, transparent));
+  stroke: var(--ui-primary);
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 10px color-mix(in oklch, var(--ui-primary) 55%, transparent));
 }
 
 /* Node labels */
@@ -70,43 +50,43 @@
 .vp-doc div.mermaid .nodeLabel,
 .vp-doc .dagonizer-mermaid .label,
 .vp-doc div.mermaid .label {
-  color:       var(--vp-c-text-1, #eef3f7);
-  font-family: var(--vp-font-family-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  color: var(--ui-text-highlighted);
+  font-family: var(--font-mono);
   font-size:   0.82rem;
 }
 
 /* Edge lines */
 .vp-doc .dagonizer-mermaid .edgePath .path,
 .vp-doc div.mermaid        .edgePath .path {
-  stroke: var(--vp-c-brand-1, #22e8ff);
+  stroke: var(--ui-primary);
 }
 
 /* Arrowhead markers */
 .vp-doc .dagonizer-mermaid marker path,
 .vp-doc div.mermaid        marker path {
-  fill:   var(--vp-c-brand-1, #22e8ff);
-  stroke: var(--vp-c-brand-1, #22e8ff);
+  fill: var(--ui-primary);
+  stroke: var(--ui-primary);
 }
 
 /* Edge labels */
 .vp-doc .dagonizer-mermaid .edgeLabel .label rect,
 .vp-doc div.mermaid        .edgeLabel .label rect {
-  fill:         var(--vp-c-bg-soft, #101318);
-  stroke:       var(--vp-c-divider, #2e3748);
+  fill: var(--ui-bg-muted);
+  stroke: var(--ui-border);
   fill-opacity: 0.88;
 }
 .vp-doc .dagonizer-mermaid .edgeLabel .label span,
 .vp-doc div.mermaid        .edgeLabel .label span {
-  color:       var(--vp-c-text-2, #ccd6f6);
-  font-family: var(--vp-font-family-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  color: var(--ui-text);
+  font-family: var(--font-mono);
   font-size:   0.75rem;
 }
 
 /* Subgraph fill */
 .vp-doc .dagonizer-mermaid .cluster rect,
 .vp-doc div.mermaid        .cluster rect {
-  fill:         var(--vp-c-bg-alt, #0e1525);
-  stroke:       var(--vp-c-divider, #2e3748);
+  fill: var(--ui-bg-elevated);
+  stroke: var(--ui-border);
   fill-opacity: 0.6;
 }
 
@@ -156,12 +136,6 @@
  * D-pad grid: 3×3 grid, 32px × 32px cells with 4px gaps.
  * Matches GraphDpad.vue exactly: `grid-template-columns: repeat(3, 32px)`.
  */
-.dag-mermaid-dpad-wrap {
-  --dagonizer-dpad-surface: var(--dag-explorer-surface, var(--vp-c-bg-alt, #0e1525));
-  --dagonizer-dpad-stroke: var(--dag-explorer-stroke, var(--vp-c-divider, #2e3748));
-  --dagonizer-dpad-accent: var(--dag-explorer-accent, var(--dagonizer-brand, #22e8ff));
-}
-
 /* ==========================================================================
    4. Fullscreen modal
    ========================================================================== */

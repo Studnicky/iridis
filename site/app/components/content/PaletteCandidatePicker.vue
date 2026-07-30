@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
-import { buildPaletteCandidateModels } from './picker/buildPaletteCandidateModel.ts';
+import { buildPaletteCandidateModel } from './picker/buildPaletteCandidateModel.ts';
 
 /**
  * Presents the (typically 3) non-destructive candidate palettes from
@@ -21,7 +21,7 @@ const emit = defineEmits<{
   select: [candidate: GalleryCandidateInterfaceType];
 }>();
 
-const candidateModels = computed(() => buildPaletteCandidateModels(props.candidates, props.selectedLabel));
+const candidateModels = computed(() => buildPaletteCandidateModel.build(props.candidates, props.selectedLabel));
 </script>
 
 <template>

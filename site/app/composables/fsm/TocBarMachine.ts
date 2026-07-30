@@ -19,14 +19,14 @@ import type { TocBarEventType, TocBarStateType } from '../types/index.ts';
  * 'top') is a safe no-op that returns the state unchanged — there is no
  * (state, event) pair this reducer rejects, so the machine can never wedge.
  */
-export class TocBarMachine extends StateMachine<TocBarStateType, TocBarEventType, never> {
+export class TocBarMachine extends StateMachine<TocBarStateType, TocBarEventType.Type, never> {
   constructor() { super(); }
 
   getInitialState(): TocBarStateType {
     return { 'variant': 'top' };
   }
 
-  reduce(state: TocBarStateType, event: TocBarEventType): FsmStepType<TocBarStateType, never> {
+  reduce(state: TocBarStateType, event: TocBarEventType.Type): FsmStepType<TocBarStateType, never> {
     switch (event.type) {
       case 'PAST_HERO':
         return { 'effects': [], 'state': state.variant === 'top' ? { 'variant': 'expanded' } : state };

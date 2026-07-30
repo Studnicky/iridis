@@ -3,17 +3,29 @@ import type { HueAlgorithmType } from '~/composables/types/colorDerivation.ts';
 import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
 
 defineProps<{
-  algorithmOptions: readonly { label: string; value: HueAlgorithmType }[];
+  algorithmOptions: readonly { label: string; value: HueAlgorithmType.Type }[];
   role: RoleMathEntryType;
   variantItems: readonly { label: string; value: number }[];
   variantLabel: string;
 }>();
 
 const emit = defineEmits<{
-  'algorithm-change': [algorithm: HueAlgorithmType];
+  'algorithm-change': [algorithm: HueAlgorithmType.Type];
   'freeform-offset-change': [offset: number];
   'variant-change': [variantIndex: number];
 }>();
+
+function updateAlgorithm(algorithm: HueAlgorithmType.Type): void {
+  emit('algorithm-change', algorithm);
+}
+
+function updateFreeformOffset(offset: string | number): void {
+  emit('freeform-offset-change', Number(offset));
+}
+
+function updateVariant(variantIndex: number): void {
+  emit('variant-change', variantIndex);
+}
 </script>
 
 <template>
@@ -28,7 +40,7 @@ const emit = defineEmits<{
       :items="algorithmOptions"
       size="xs"
       class="w-32 flex-none"
-      @update:model-value="($event) => emit('algorithm-change', $event)"
+      @update:model-value="updateAlgorithm"
     />
     <AppSelect
       v-if="role.algorithmInfo && role.algorithmInfo.hueAlgorithm !== 'freeform'"
@@ -36,7 +48,7 @@ const emit = defineEmits<{
       :items="variantItems"
       size="xs"
       class="w-24 flex-none"
-      @update:model-value="($event) => emit('variant-change', $event)"
+      @update:model-value="updateVariant"
     />
     <UInput
       v-else
@@ -44,7 +56,7 @@ const emit = defineEmits<{
       :model-value="role.algorithmInfo?.freeformOffset ?? 0"
       size="xs"
       class="w-16 flex-none"
-      @update:model-value="($event) => emit('freeform-offset-change', Number($event))"
+      @update:model-value="updateFreeformOffset"
     />
     <span class="flex-none text-xs text-dimmed">{{ variantLabel }}</span>
   </div>

@@ -1,19 +1,21 @@
 <script setup lang="ts">
+import type { AliasColorType } from '~/theme/types/aliasColor.ts';
+
 import { computed } from 'vue';
 
 import { useIridis } from '~/composables/useIridis.ts';
-import { buildScaleCardAdjacentRatios, SCALE_CARD_SHADES } from './scale/buildScaleCardModel.ts';
+import { buildScaleCardModel } from './scale/buildScaleCardModel.ts';
 
 /**
  * One semantic alias's full 50→950 ramp plus sample components in that color.
  * Pure content — rendered by PaletteCarousel's grid, one card per alias.
  */
-const props = defineProps<{ alias: { key: string; label: string } }>();
+const props = defineProps<{ alias: { key: AliasColorType.Type; label: string } }>();
 
 const { roles, scales } = useIridis();
 
 /** WCAG contrast ratio between each adjacent pair of shades in this alias's ramp — reveals the real perceptual "step" between consecutive stops. */
-const adjacentRatios = computed(() => buildScaleCardAdjacentRatios(roles.value, scales.value, props.alias.key));
+const scaleCardModel = computed(() => buildScaleCardModel.build(roles.value, scales.value, props.alias.key));
 </script>
 
 <template>
@@ -26,7 +28,7 @@ const adjacentRatios = computed(() => buildScaleCardAdjacentRatios(roles.value, 
   >
     <div class="mb-4 grid grid-cols-11 gap-0.5 overflow-hidden rounded-lg">
       <div
-        v-for="s in SCALE_CARD_SHADES"
+        v-for="s in scaleCardModel.shades"
         :key="s"
         class="h-14 ring-1 ring-inset ring-(--ui-border)/70"
         :style="{ backgroundColor: `var(--ui-color-${alias.key}-${s})` }"
@@ -35,11 +37,11 @@ const adjacentRatios = computed(() => buildScaleCardAdjacentRatios(roles.value, 
     </div>
 
     <div
-      v-if="adjacentRatios.length > 0"
+      v-if="scaleCardModel.adjacentRatios.length > 0"
       class="mb-3 flex flex-wrap gap-x-2 gap-y-0.5 font-mono text-[10px] leading-tight text-(--ui-text-dimmed)"
     >
       <span
-        v-for="pair in adjacentRatios"
+        v-for="pair in scaleCardModel.adjacentRatios"
         :key="`${pair.from}-${pair.to}`"
         :title="`${alias.key}-${pair.from} vs ${alias.key}-${pair.to}`"
       >{{ pair.from }}↔{{ pair.to }}: {{ pair.ratio.toFixed(2) }}</span>

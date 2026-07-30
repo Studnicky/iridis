@@ -10,10 +10,10 @@ import { oklchToHex } from '../utils/oklchToHex.ts';
 import { sampleT } from '../utils/sampleT.ts';
 
 /** One role's naive-RGB-lerp and OKLCH-lerp color bands, sampled at `count` evenly-spaced points across the same 0..1 progress axis. */
-type ComparisonBandsType = {
-  'engine': string[];
-  'naive':  string[];
-};
+declare class ComparisonBandsType {
+  engine: string[];
+  naive: string[];
+}
 
 class ColorStreamComparison {
   /** Linearly interpolates each RGB channel independently between two hex colors — the "naive" CSS-style approach. */

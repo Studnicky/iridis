@@ -14,16 +14,8 @@
  * (`[subject=X, kind=Y, scenario=Z]`) make any failure self-locating.
  */
 import { test } from 'node:test';
-import assert    from 'node:assert/strict';
 
-export type ScenarioKindType = 'happy' | 'edge' | 'unhappy';
-
-export interface ScenarioInterface<TInput, TOutput> {
-  readonly 'name':  string;
-  readonly 'kind':  ScenarioKindType;
-  readonly 'input': TInput;
-  assert(output: TOutput | undefined, error: unknown): void | Promise<void>;
-}
+import type { ScenarioInterface } from './ScenarioInterface.ts';
 
 export class ScenarioRunner<TInput, TOutput> {
   private readonly suite:   string;
@@ -36,18 +28,16 @@ export class ScenarioRunner<TInput, TOutput> {
 
   run(scenarios: readonly ScenarioInterface<TInput, TOutput>[]): void {
     for (const sc of scenarios) {
-      test(`${this.suite} :: ${sc.kind} :: ${sc.name}`, async () => {
+      void test(`${this.suite} :: ${sc.kind} :: ${sc.name}`, async () => {
         let output: TOutput | undefined;
-        let error:  unknown;
+        let error:  Error | undefined;
         try {
           output = await this.subject(sc.input);
-        } catch (e) {
-          error = e;
+        } catch (thrown) {
+          error = thrown instanceof Error ? thrown : new Error(String(thrown));
         }
         await sc.assert(output, error);
       });
     }
   }
 }
-
-export { assert };

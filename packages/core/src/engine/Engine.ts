@@ -227,7 +227,10 @@ export class Engine implements EngineInterface {
    * name in the existing `order` resolves to).
    */
   private validateRequiresOrdering(order: readonly string[]): void {
-    for (let i = 0; i < order.length; i++) {
+    const orderLength = order.length;
+    const orderIndexByName = new Map<string, number>(order.map((name, index) => { return [name, index]; }));
+
+    for (let i = 0; i < orderLength; i++) {
       const name     = order[i]!;
       const task     = this.tasks.resolve(name);
       const requires = task.manifest?.requires;
@@ -245,7 +248,7 @@ export class Engine implements EngineInterface {
           continue;
         }
 
-        const depIndex = order.indexOf(dep);
+        const depIndex = orderIndexByName.get(dep) ?? -1;
 
         if (depIndex === -1) {
           throw ModuleError.create(
@@ -319,7 +322,7 @@ export class Engine implements EngineInterface {
       },
       'variants': {}
     };
-    const ctx: PipelineContextInterface = {
+    const pipelineContext: PipelineContextInterface = {
       'engine':    this,
       'logger':    consoleLogger,
       'startedAt': Date.now(),
@@ -327,7 +330,7 @@ export class Engine implements EngineInterface {
     };
 
     for (const hook of this.tasks.hooks('onRunStart')) {
-      hook.run(state, ctx);
+      hook.run(state, pipelineContext);
     }
 
     if (this.sequence === null || this.sequenceVersion !== this.tasks.version()) {
@@ -341,11 +344,11 @@ export class Engine implements EngineInterface {
       if (task.manifest?.phase !== undefined) {
         continue;
       }
-      task.run(state, ctx);
+      task.run(state, pipelineContext);
     }
 
     for (const hook of this.tasks.hooks('onRunEnd')) {
-      hook.run(state, ctx);
+      hook.run(state, pipelineContext);
     }
 
     const stateResult = this.validator.validate(PaletteStateSchema, state);

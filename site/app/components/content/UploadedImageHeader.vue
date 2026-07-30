@@ -13,7 +13,7 @@ const emit = defineEmits<{
   remove: [];
 }>();
 
-const headerModel = computed(() => buildUploadedImageHeaderModel(
+const headerModel = computed(() => buildUploadedImageHeaderModel.build(
   props.name,
   props.dominantColorCount,
   props.showHeader

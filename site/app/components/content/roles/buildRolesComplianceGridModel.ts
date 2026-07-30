@@ -1,28 +1,62 @@
-import type { RoleComplianceRowType } from './buildRolesComplianceRows.ts';
+class RolesComplianceGridSourceRow {
+  public readonly compliance: string;
+  public readonly hex: string;
+  public readonly name: string;
+  public readonly ratio: number;
 
-export type RolesComplianceGridRowModel = {
-  readonly ariaLabel: string;
-  readonly compliance: string;
-  readonly hex: string;
-  readonly name: string;
-  readonly ratio: number;
-  readonly ratioLabel: string;
-  readonly tooltip: string | undefined;
-};
-
-export function buildRolesComplianceGridModel(
-  rows: readonly RoleComplianceRowType[],
-  naTooltip: string
-): readonly RolesComplianceGridRowModel[] {
-  return rows.map((row) => {
-    return {
-      ariaLabel: `${row.name} ${row.hex}`,
-      compliance: row.compliance,
-      hex: row.hex,
-      name: row.name,
-      ratio: row.ratio,
-      ratioLabel: row.ratio.toFixed(2),
-      tooltip: row.compliance === 'n/a' ? naTooltip : undefined
-    };
-  });
+  public constructor(compliance: string, hex: string, name: string, ratio: number) {
+    this.compliance = compliance;
+    this.hex = hex;
+    this.name = name;
+    this.ratio = ratio;
+  }
 }
+
+class RolesComplianceGridRow {
+  public readonly ariaLabel: string;
+  public readonly compliance: string;
+  public readonly hex: string;
+  public readonly name: string;
+  public readonly ratio: number;
+  public readonly ratioLabel: string;
+  public readonly tooltip: string | undefined;
+
+  public constructor(
+    ariaLabel: string,
+    compliance: string,
+    hex: string,
+    name: string,
+    ratio: number,
+    ratioLabel: string,
+    tooltip: string | undefined
+  ) {
+    this.ariaLabel = ariaLabel;
+    this.compliance = compliance;
+    this.hex = hex;
+    this.name = name;
+    this.ratio = ratio;
+    this.ratioLabel = ratioLabel;
+    this.tooltip = tooltip;
+  }
+}
+
+export const buildRolesComplianceGridModel = class RolesComplianceGridModel {
+  public static build(
+    rows: readonly RolesComplianceGridSourceRow[],
+    naTooltip: string
+  ): readonly RolesComplianceGridRow[] {
+    const result: RolesComplianceGridRow[] = [];
+    for (const row of rows) {
+      result.push(new RolesComplianceGridRow(
+        `${row.name} ${row.hex}`,
+        row.compliance,
+        row.hex,
+        row.name,
+        row.ratio,
+        row.ratio.toFixed(2),
+        row.compliance === 'n/a' ? naTooltip : undefined
+      ));
+    }
+    return result;
+  }
+};

@@ -19,69 +19,45 @@
  * scroll this far.
  */
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+
+import type { Graph } from '@cosmos.gl/graph';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useRoleMathList } from '~/composables/useRoleMathList.ts';
 import { buildColorGraphBuffers } from './graph/buildColorGraphBuffers.ts';
-import {
-  buildColorGraphLegendTabs,
-  COLOR_GRAPH_CAPTURE_FIT_ZOOM_DELAY_MS,
-  COLOR_GRAPH_FIT_DELAYS_MS,
-  COLOR_GRAPH_FIT_PADDING,
-  COLOR_GRAPH_MAX_INIT_ATTEMPTS,
-  COLOR_GRAPH_PAN_STEP,
-  COLOR_GRAPH_SPACE_SIZE,
-  COLOR_GRAPH_ZOOM_STEP,
-  DEFAULT_CATEGORY_VISIBILITY
-} from './graph/buildColorGraphViewModel.ts';
-import { createCameraDpadMachine } from './viz/CameraControls.ts';
-import { getColorGraphPointCentroid, translateColorGraphPoints } from './graph/buildColorGraphViewportModel.ts';
-import { backgroundColorFromTheme, paintColorGraphLabels, resizeColorGraphLabelCanvas } from './graph/colorGraphLabelPainter.ts';
-import { createViewportStatus } from './viz/ViewportStatus.ts';
+import { buildColorGraphViewModel } from './graph/buildColorGraphViewModel.ts';
+import { buildColorGraphViewportModel } from './graph/buildColorGraphViewportModel.ts';
+import { colorGraphLabelPainter } from './graph/colorGraphLabelPainter.ts';
+import { CameraControls } from './viz/CameraControls.ts';
 import { LegendMachine } from './viz/LegendMachine.ts';
-import type { ResolutionCategory } from './graph/buildColorGraphViewModel.ts';
+import { ViewportStatus } from './viz/ViewportStatus.ts';
 
 const props = defineProps<{ enabled?: boolean }>();
-
-type GraphHandle = {
-  setPointPositions(arr: Float32Array, dontRescale?: boolean): void;
-  setPointColors(arr: Float32Array): void;
-  setPointSizes(arr: Float32Array): void;
-  setLinks(arr: Float32Array): void;
-  setLinkColors(arr: Float32Array): void;
-  setConfigPartial(config: Record<string, unknown>): void;
-  render(alpha?: number, transitionDuration?: number): void;
-  start(alpha?: number): void;
-  pause(): void;
-  fitView(duration?: number, padding?: number): void;
-  getZoomLevel(): number;
-  setZoomLevel(level: number, duration?: number): void;
-  spaceToScreenPosition(point: readonly [number, number]): readonly [number, number];
-  getPointPositions(): readonly number[];
-  destroy(): void;
-};
-type CosmosCtor = new (div: HTMLDivElement, config: Record<string, unknown>) => GraphHandle;
 
 const { framing } = useIridis();
 const { mathList } = useRoleMathList();
 
-const categoryVisible = ref<Record<ResolutionCategory, boolean>>({ ...DEFAULT_CATEGORY_VISIBILITY });
+const categoryVisible = ref(buildColorGraphViewModel.createCategoryVisibility());
 
 function onCategoryToggle(key: string): void {
-  const category = key as ResolutionCategory;
-  if (category in categoryVisible.value) {
-    categoryVisible.value[category] = !categoryVisible.value[category];
-  }
+  buildColorGraphViewModel.toggleCategoryVisibility(categoryVisible.value, key);
 }
 
 const legendMachine = new LegendMachine({
-  'getSections': () => buildColorGraphLegendTabs(mathList.value.length, categoryVisible.value),
+  'getSections': () => buildColorGraphViewModel.buildLegendTabs(
+    mathList.value.length,
+    categoryVisible.value
+  ),
   'toggle': onCategoryToggle,
 });
 
-const dpadMachine = createCameraDpadMachine({
+const dpadMachine = CameraControls.create({
   'can': () => graph.value !== null,
   'getZoomLevel': () => zoomLevel.value,
-  'getHint': () => createViewportStatus(zoomLevel.value, 'inline', 'drag · wheel').hint,
+  'getHint': () => ViewportStatus.create({
+    'hint': 'drag · wheel',
+    'mode': 'inline',
+    'zoomLevel': zoomLevel.value
+  }).hint,
   'zoomIn': () => { zoomIn(); },
   'zoomOut': () => { zoomOut(); },
   'pan': (direction) => {
@@ -105,20 +81,34 @@ const zoomLevel = ref(1);
 const fitZoomLevel = ref<number | null>(null);
 const fullscreen = ref(false);
 
-const graph = shallowRef<GraphHandle | null>(null);
-type PointMeta = {
-  readonly name: string;
-  readonly hex: string;
-  readonly clamped: boolean;
-  readonly category: ResolutionCategory;
-  readonly algorithm: string | null;
-};
+const graph = shallowRef<Graph | null>(null);
+class PointMeta {
+  public readonly algorithm: string | null;
+  public readonly category: 'pinned' | 'synthesized' | 'derived' | 'direct';
+  public readonly clamped: boolean;
+  public readonly hex: string;
+  public readonly name: string;
+
+  public constructor(
+    algorithm: string | null,
+    category: 'pinned' | 'synthesized' | 'derived' | 'direct',
+    clamped: boolean,
+    hex: string,
+    name: string
+  ) {
+    this.algorithm = algorithm;
+    this.category = category;
+    this.clamped = clamped;
+    this.hex = hex;
+    this.name = name;
+  }
+}
 let labelMeta: PointMeta[] = [];
 let labelRaf: number | null = null;
 let paintRaf: number | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let visibilityPoll: number | null = null;
-let GraphCtor: CosmosCtor | null = null;
+let GraphCtor: typeof import('@cosmos.gl/graph').Graph | null = null;
 let graphRuntimeArmed = false;
 let graphBooting = false;
 const fitTimers: ReturnType<typeof setTimeout>[] = [];
@@ -176,7 +166,7 @@ async function bootGraphRuntime(): Promise<void> {
   try {
     if (GraphCtor === null) {
       const mod = await import('@cosmos.gl/graph');
-      GraphCtor = (mod as unknown as { Graph: CosmosCtor }).Graph;
+      GraphCtor = mod.Graph;
     }
 
     const container = containerRef.value;
@@ -205,7 +195,7 @@ async function bootGraphRuntime(): Promise<void> {
         return;
       }
       if (graph.value !== null) return;
-      if (initAttempts >= COLOR_GRAPH_MAX_INIT_ATTEMPTS) {
+      if (initAttempts >= buildColorGraphViewModel.maximumInitAttempts) {
         initFailed = true;
         stopVisibilityPoll();
         return;
@@ -220,7 +210,9 @@ async function bootGraphRuntime(): Promise<void> {
       // times to give up — either way, further calls to tryInit would be
       // wasted work (or, for the failure case, a fresh doomed WebGL2 context
       // allocation) with no path to success.
-      if (visibilityPoll !== null && (graph.value !== null || initAttempts >= COLOR_GRAPH_MAX_INIT_ATTEMPTS)) {
+      if (visibilityPoll !== null
+        && (graph.value !== null
+          || initAttempts >= buildColorGraphViewModel.maximumInitAttempts)) {
         stopVisibilityPoll();
       }
     };
@@ -295,13 +287,13 @@ function initCosmos(container: HTMLDivElement): void {
   initAttempts += 1;
   try {
     graph.value = new GraphCtor(container, {
-      // cosmos's own default ('#222222') ignores the site's light/dark
+      // cosmos's own dark-gray default ignores the site's light/dark
       // framing outright, so the WebGL canvas never matches the page around
       // it and (worse, on some builds) renders fully opaque black — set it
       // from the resolved --ui-bg token instead, re-applied below whenever
       // framing changes.
-      'backgroundColor': backgroundColorFromTheme(),
-      'spaceSize': COLOR_GRAPH_SPACE_SIZE,
+      'backgroundColor': colorGraphLabelPainter.backgroundColorFromTheme(),
+      'spaceSize': buildColorGraphViewModel.spaceSize,
       // Tuned to the scale buildBuffers seeds (hub ring radius 900, leaf
       // satellite radius 260) so the live simulation relaxes into an airy
       // layout rather than collapsing into a tight clump: repulsion
@@ -338,7 +330,7 @@ function initCosmos(container: HTMLDivElement): void {
       syncGraphVisibility();
     });
   } catch (err) {
-    if (initAttempts >= COLOR_GRAPH_MAX_INIT_ATTEMPTS) {
+    if (initAttempts >= buildColorGraphViewModel.maximumInitAttempts) {
       initFailed = true;
     }
     loadError.value = err instanceof Error ? err.message : String(err);
@@ -362,12 +354,15 @@ function pollZoom(): void {
 
 function zoomIn(): void {
   const g = graph.value; if (g === null) return;
-  try { g.setZoomLevel(g.getZoomLevel() * COLOR_GRAPH_ZOOM_STEP); pollZoom(); } catch { /* ignore */ }
+  try {
+    g.setZoomLevel(g.getZoomLevel() * buildColorGraphViewModel.zoomStep);
+    pollZoom();
+  } catch { /* ignore */ }
 }
 function zoomOut(): void {
   const g = graph.value; if (g === null) return;
   try {
-    const next = g.getZoomLevel() / COLOR_GRAPH_ZOOM_STEP;
+    const next = g.getZoomLevel() / buildColorGraphViewModel.zoomStep;
     g.setZoomLevel(Math.max(next, fitZoomLevel.value ?? 0));
     pollZoom();
   } catch { /* ignore */ }
@@ -382,16 +377,16 @@ function panBy(dx: number, dy: number): void {
   if (zoom === 0) return;
   const worldDx = dx / zoom;
   const worldDy = dy / zoom;
-  const next = translateColorGraphPoints(flat, worldDx, worldDy);
+  const next = buildColorGraphViewportModel.translatePoints(flat, worldDx, worldDy);
   // setPointPositions() auto-pauses the simulation for the caller to settle
   // a deliberate layout; start() forces it running again immediately so a
   // manual pan doesn't permanently freeze the live simulation.
   try { g.setPointPositions(next, true); g.start(0.3); scheduleLabelPaint(); } catch { /* ignore */ }
 }
-function panUp(): void { panBy(0, -COLOR_GRAPH_PAN_STEP); }
-function panDown(): void { panBy(0, +COLOR_GRAPH_PAN_STEP); }
-function panLeft(): void { panBy(+COLOR_GRAPH_PAN_STEP, 0); }
-function panRight(): void { panBy(-COLOR_GRAPH_PAN_STEP, 0); }
+function panUp(): void { panBy(0, -buildColorGraphViewModel.panStep); }
+function panDown(): void { panBy(0, +buildColorGraphViewModel.panStep); }
+function panLeft(): void { panBy(+buildColorGraphViewModel.panStep, 0); }
+function panRight(): void { panBy(-buildColorGraphViewModel.panStep, 0); }
 
 function centre(): void {
   const g = graph.value;
@@ -400,11 +395,11 @@ function centre(): void {
   let flat: readonly number[] = [];
   try { flat = g.getPointPositions(); } catch { return; }
   if (flat.length === 0) return;
-  const centroid = getColorGraphPointCentroid(flat);
+  const centroid = buildColorGraphViewportModel.pointCentroid(flat);
   if (centroid === null) return;
   let screenX = 0, screenY = 0;
   try {
-    const screen = g.spaceToScreenPosition(centroid);
+    const screen = g.spaceToScreenPosition([centroid[0], centroid[1]]);
     screenX = screen[0]; screenY = screen[1];
   } catch { return; }
   const rect = container.getBoundingClientRect();
@@ -412,7 +407,7 @@ function centre(): void {
   if (zoom === 0) return;
   const worldDx = (rect.width / 2 - screenX) / zoom;
   const worldDy = (rect.height / 2 - screenY) / zoom;
-  const next = translateColorGraphPoints(flat, worldDx, worldDy);
+  const next = buildColorGraphViewportModel.translatePoints(flat, worldDx, worldDy);
   try { g.setPointPositions(next, true); g.start(0.3); scheduleLabelPaint(); } catch { /* ignore */ }
 }
 
@@ -425,15 +420,17 @@ function armFitSequence(): void {
   // an extra, later fit (1200ms) beyond the original 0/250/500/750ms sweep
   // catches that continued spread instead of framing an early, tighter
   // snapshot as if it were final.
-  for (const delayMs of COLOR_GRAPH_FIT_DELAYS_MS) {
-    fitTimers.push(setTimeout(() => { handle.fitView(200, COLOR_GRAPH_FIT_PADDING); }, delayMs));
+  for (const delayMs of buildColorGraphViewModel.fitDelaysMs) {
+    fitTimers.push(setTimeout(() => {
+      handle.fitView(200, buildColorGraphViewModel.fitPadding);
+    }, delayMs));
   }
   fitTimers.push(setTimeout(() => {
     try {
       const level = graph.value?.getZoomLevel() ?? null;
       if (level !== null) fitZoomLevel.value = level;
     } catch { /* ignore */ }
-  }, COLOR_GRAPH_CAPTURE_FIT_ZOOM_DELAY_MS));
+  }, buildColorGraphViewModel.captureFitZoomDelayMs));
 }
 function fit(): void { armFitSequence(); }
 function expand(): void { fullscreen.value = !fullscreen.value; }
@@ -455,7 +452,9 @@ watch(fullscreen, () => {
     resizeLabelCanvas();
     const schedule = (delayMs: number): void => {
       fitTimers.push(setTimeout(() => {
-        try { graph.value?.fitView(300, COLOR_GRAPH_FIT_PADDING); } catch { /* ignore */ }
+        try {
+          graph.value?.fitView(300, buildColorGraphViewModel.fitPadding);
+        } catch { /* ignore */ }
       }, delayMs));
     };
     schedule(0);
@@ -501,7 +500,9 @@ watch(framing, () => {
   const g = graph.value;
   if (g === null) return;
   try {
-    g.setConfigPartial({ 'backgroundColor': backgroundColorFromTheme() });
+    g.setConfigPartial({
+      'backgroundColor': colorGraphLabelPainter.backgroundColorFromTheme()
+    });
     g.render(1);
   } catch { /* ignore */ }
 });
@@ -509,7 +510,8 @@ watch(framing, () => {
 function paint(): void {
   const handle = graph.value;
   if (handle === null) return;
-  const { positions, colors, sizes, links, linkColors, meta } = buildColorGraphBuffers(mathList.value, categoryVisible.value);
+  const { positions, colors, sizes, links, linkColors, meta }
+    = buildColorGraphBuffers.build(mathList.value, categoryVisible.value);
   labelMeta = meta;
   handle.setPointPositions(positions);
   handle.setPointColors(colors);
@@ -591,14 +593,14 @@ function resizeLabelCanvas(): void {
   // at all (same ancestor-transform quirk documented for IntersectionObserver
   // above). Without this, a resize captured while the face was still mid-
   // transition sticks around forever since nothing else ever corrects it.
-  resizeColorGraphLabelCanvas(canvas, container);
+  colorGraphLabelPainter.resizeLabelCanvas(canvas, container);
 }
 
 function paintLabels(): void {
   const handle = graph.value;
   const canvas = labelsRef.value;
   if (handle === null || canvas === null) return;
-  paintColorGraphLabels(handle, canvas, labelMeta, categoryVisible.value);
+  colorGraphLabelPainter.paintLabels(handle, canvas, labelMeta, categoryVisible.value);
 }
 </script>
 
@@ -614,5 +616,5 @@ function paintLabels(): void {
     :dpad-ready="graph !== null"
     :zoom-level="zoomLevel"
     :role-count="mathList.length"
-    />
+  />
 </template>

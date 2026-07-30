@@ -1,29 +1,17 @@
-import type { LoggerInterface } from '@studnicky/logger/interfaces';
-
-import type { EngineInterface } from './engine.ts';
-import type { TaskRegistryInterface } from './registry.ts';
-import type { PaletteStateInterface } from './state.ts';
+import type { TaskManifestInterfaceTypeEntity } from '../entities/TaskManifestInterfaceTypeEntity.ts';
+import type { RequiredSchemaShapeType } from './RequiredSchemaShapeType.ts';
 
 export type LifecyclePhaseType = 'onRunStart' | 'onRunEnd';
 
-export interface PipelineContextInterface {
-  readonly 'engine':    EngineInterface;
-  readonly 'logger':    LoggerInterface;
-  readonly 'startedAt': number;
-  readonly 'tasks':     TaskRegistryInterface;
-}
+type TaskManifestSchemaShapeType = TaskManifestInterfaceTypeEntity.Type;
 
-export type TaskManifestInterfaceType = {
-  'description': string | undefined;
-  'name':        string;
-  'phase':       LifecyclePhaseType | undefined;
-  'reads':       string[] | undefined;
-  'requires':    string[] | undefined;
-  'writes':      string[] | undefined;
-};
-
-export interface TaskInterface {
-  readonly 'manifest': TaskManifestInterfaceType | undefined;
-  readonly 'name':     string;
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void;
-}
+/**
+ * Every optional schema field is widened from an optional key to a required
+ * key holding `T | undefined`, matching this codebase's monomorphic-shape
+ * convention — `FromSchema` marks a non-`required` field optional (`field?:
+ * T`), not present-but-`undefined`, and JSON Schema has no way to express
+ * the latter, so the widening happens here at the consumption site instead
+ * of inside the entity (where the lint-mandated `Type = FromSchema<typeof
+ * Schema>` shape must stay verbatim).
+ */
+export type TaskManifestInterfaceType = RequiredSchemaShapeType<TaskManifestSchemaShapeType>;

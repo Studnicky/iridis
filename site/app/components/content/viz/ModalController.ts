@@ -1,64 +1,57 @@
-/**
- * Shared lifecycle controller for visualization modal/expanded shells.
- *
- * This owns the renderer-agnostic semantics:
- *
- * - open / close / toggle state;
- * - Escape dismissal;
- * - backdrop dismissal;
- * - state-change notifications for resize, scroll locking, focus, or teardown.
- *
- * Content rendering, fullscreen APIs, DOM structure, and backend-specific fit
- * behavior remain local to the consumer.
- */
+/** Shared lifecycle controller for visualization modal and expanded shells. */
+interface ModalControllerHooksInterface {
+  readonly 'onClose'?: (reason: 'programmatic' | 'escape' | 'backdrop') => void;
+  readonly 'onOpen'?: () => void;
+  readonly 'onStateChange'?: (
+    open: boolean,
+    reason: 'programmatic' | 'escape' | 'backdrop' | null
+  ) => void;
+}
 
-export type ModalDismissReasonType = 'programmatic' | 'escape' | 'backdrop';
+export const ModalController = class ModalController {
+  readonly #onClose: ModalControllerHooksInterface['onClose'];
+  readonly #onOpen: ModalControllerHooksInterface['onOpen'];
+  readonly #onStateChange: ModalControllerHooksInterface['onStateChange'];
+  #open: boolean;
 
-export type ModalControllerHooksType = {
-  'onOpen'?: () => void;
-  'onClose'?: (reason: ModalDismissReasonType) => void;
-  'onStateChange'?: (open: boolean, reason: ModalDismissReasonType | null) => void;
-};
-
-export class ModalController {
-  #open = false;
-  readonly #hooks: ModalControllerHooksType;
-
-  constructor(hooks: ModalControllerHooksType = {}) {
-    this.#hooks = hooks;
+  public constructor(hooks: ModalControllerHooksInterface = {}) {
+    this.#onClose = hooks.onClose;
+    this.#onOpen = hooks.onOpen;
+    this.#onStateChange = hooks.onStateChange;
+    this.#open = false;
   }
 
-  isOpen(): boolean {
+  public isOpen(): boolean {
     return this.#open;
   }
 
-  open(): boolean {
-    if (this.#open) return false;
+  public open(): boolean {
+    if (this.#open) {return false;}
     this.#open = true;
-    this.#hooks.onOpen?.();
-    this.#hooks.onStateChange?.(true, null);
+    this.#onOpen?.();
+    this.#onStateChange?.(true, null);
     return true;
   }
 
-  close(reason: ModalDismissReasonType = 'programmatic'): boolean {
-    if (!this.#open) return false;
+  public close(reason: 'programmatic' | 'escape' | 'backdrop' = 'programmatic'): boolean {
+    if (!this.#open) {return false;}
     this.#open = false;
-    this.#hooks.onClose?.(reason);
-    this.#hooks.onStateChange?.(false, reason);
+    this.#onClose?.(reason);
+    this.#onStateChange?.(false, reason);
     return true;
   }
 
-  toggle(): boolean {
+  public toggle(): boolean {
     return this.#open ? this.close('programmatic') : this.open();
   }
 
-  onKeyDown(key: string | undefined): boolean {
-    if (key !== 'Escape') return false;
+  public onKeyDown(key: string | undefined): boolean {
+    if (key !== 'Escape') {return false;}
     return this.close('escape');
   }
 
-  onBackdropPress(isBackdropTarget: boolean): boolean {
-    if (!isBackdropTarget) return false;
+  public onBackdropPress(isBackdropTarget: boolean): boolean {
+    if (!isBackdropTarget) {return false;}
     return this.close('backdrop');
   }
-}
+};

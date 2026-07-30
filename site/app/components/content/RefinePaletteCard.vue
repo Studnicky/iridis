@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { IridisUiActionType } from '~/composables/types/index.ts';
-import { sortPinnableRoles } from './refine/buildRefinePaletteModel.ts';
+import { buildRefinePaletteModel } from './refine/buildRefinePaletteModel.ts';
 
 /**
  * The Refine stage's "Palette" card — reviews the current seed/hue list
@@ -27,7 +27,7 @@ import { sortPinnableRoles } from './refine/buildRefinePaletteModel.ts';
 const { activeSeeds, pinnableRoles, mode } = useIridis();
 const { send } = useIridisUiMachine();
 
-const sortedPinnableRoles = computed(() => sortPinnableRoles(pinnableRoles.value));
+const sortedPinnableRoles = computed(() => buildRefinePaletteModel.sortPinnableRoles(pinnableRoles.value));
 
 function pinRole(index: number, role: string | undefined): void {
   send({ index: index, role: role, type: IridisUiActionType.PIN_SEED_ROLE });

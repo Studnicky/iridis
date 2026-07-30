@@ -18,7 +18,7 @@ import { buildPipelinePhaseGroups } from './pipeline/buildPipelinePhaseGroups.ts
  * palette-building itself, see the note above the accordion) doesn't render
  * a header (NARR-7).
  */
-const PHASE_GROUPS = computed(() => buildPipelinePhaseGroups());
+const PHASE_GROUPS = computed(() => buildPipelinePhaseGroups.build());
 </script>
 
 <template>
@@ -29,7 +29,9 @@ const PHASE_GROUPS = computed(() => buildPipelinePhaseGroups());
       Every useful iridis pipeline passes through four conceptual stages &mdash;
       <span class="font-mono text-xs">intake &rarr; resolve &rarr; enforce &rarr; emit</span> &mdash; even though the
       task names and order below are yours to define. See
-      <DocAnchorLink href="#02-the-four-stages">The Four Stages</DocAnchorLink> for the data flow,
+      <DocAnchorLink href="#02-the-four-stages">
+        The Four Stages
+      </DocAnchorLink> for the data flow,
       the registry, and how plugins contribute optional stages.
     </p>
     <p class="mb-3 text-sm text-muted">

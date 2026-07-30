@@ -6,10 +6,12 @@ import type {
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
 
-import { toCssVarName } from '@studnicky/iridis';
+import { CssVarName } from '@studnicky/iridis';
 
 import type { CssVarsOutputInterfaceType } from '../types/index.ts';
 
+import { CssAttributeSelector } from '../util/CssAttributeSelector.ts';
+import { CssCustomPropertyPrefix } from '../util/CssCustomPropertyPrefix.ts';
 import { P3Serializer } from '../util/P3Serializer.ts';
 
 /**
@@ -37,19 +39,21 @@ import { P3Serializer } from '../util/P3Serializer.ts';
  * mapping MUST declare an `intent` on the schema; see
  * {@link RoleDefinitionInterfaceType.intent}.
  */
-function forcedColorsToken(record: ColorRecordInterfaceType): string {
-  switch (record.hints?.intent) {
-    case 'accent':     return 'Highlight';
-    case 'background': return 'Canvas';
-    case 'button':     return 'ButtonFace';
-    case 'critical':   return 'CanvasText';
-    case 'link':       return 'LinkText';
-    case 'muted':      return 'GrayText';
-    case 'onAccent':   return 'HighlightText';
-    case 'onButton':   return 'ButtonText';
-    case 'positive':   return 'CanvasText';
-    case 'text':       return 'CanvasText';
-    default:           return 'CanvasText';
+class ForcedColorsToken {
+  static resolve(record: ColorRecordInterfaceType): string {
+    switch (record.hints?.intent) {
+      case 'accent':     return 'Highlight';
+      case 'background': return 'Canvas';
+      case 'button':     return 'ButtonFace';
+      case 'critical':   return 'CanvasText';
+      case 'link':       return 'LinkText';
+      case 'muted':      return 'GrayText';
+      case 'onAccent':   return 'HighlightText';
+      case 'onButton':   return 'ButtonText';
+      case 'positive':   return 'CanvasText';
+      case 'text':       return 'CanvasText';
+      default:           return 'CanvasText';
+    }
   }
 }
 
@@ -59,7 +63,7 @@ class Declarations {
     prefix: string
   ): string[] {
     const result = Object.entries(roles).map(([role, record]) => {
-      const varName = toCssVarName(role, prefix);
+      const varName = CssVarName.from(role, prefix);
       return `  ${varName}: ${record.hex};`;
     });
     return result;
@@ -84,9 +88,7 @@ class ScopedBlock {
     scopeName: string
   ): string {
     const decls = Declarations.build(roles, prefix);
-    const selector = typeof scopeAttr === 'string' && scopeAttr.length > 0
-      ? `[${scopeAttr}='${scopeName}']`
-      : `[data-theme='${scopeName}']`;
+    const selector = CssAttributeSelector.from(scopeAttr ?? 'data-theme', scopeName);
     return `${selector} {\n${decls.join('\n')}\n}`;
   }
 }
@@ -107,8 +109,8 @@ class ForcedColorsBlock {
     prefix: string
   ): string {
     const decls = Object.entries(roles).map(([role, record]) => {
-      const varName = toCssVarName(role, prefix);
-      const token = forcedColorsToken(record);
+      const varName = CssVarName.from(role, prefix);
+      const token = ForcedColorsToken.resolve(record);
       return `  ${varName}: ${token};`;
     });
     return `@media (forced-colors: active) {\n  :root {\n${decls.map((d) => { const result = `  ${d}`; return result; }).join('\n')}\n  }\n}`;
@@ -138,7 +140,7 @@ class WideGamutBlock {
     const p3Decls: string[] = [];
     for (const [role, record] of Object.entries(roles)) {
       if (record.displayP3 !== undefined) {
-        const varName = toCssVarName(role, prefix);
+        const varName = CssVarName.from(role, prefix);
         p3Decls.push(`  ${varName}: ${P3Serializer.serialize(record.displayP3)};`);
       }
     }
@@ -154,7 +156,7 @@ class VarMap {
   ): Record<string, string> {
     const map: Record<string, string> = {};
     for (const role of Object.keys(roles)) {
-      map[role] = toCssVarName(role, prefix);
+      map[role] = CssVarName.from(role, prefix);
     }
     return map;
   }
@@ -175,8 +177,10 @@ class EmitCssVars implements TaskInterface {
   // math() accessor satisfies PluginInterface if ever used standalone; not required here
   // but the class only needs TaskInterface
 
-  run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
-    const prefix    = typeof state.metadata.cssVarPrefix === 'string' ? state.metadata.cssVarPrefix : '--c-';
+  run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
+    const prefix = CssCustomPropertyPrefix.from(
+      typeof state.metadata.cssVarPrefix === 'string' ? state.metadata.cssVarPrefix : undefined
+    );
     const scopeAttr = typeof state.metadata.scopeAttr   === 'string' ? state.metadata.scopeAttr   : undefined;
     const themeName = typeof state.metadata.themeName   === 'string' ? state.metadata.themeName   : 'default';
 

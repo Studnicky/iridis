@@ -10,7 +10,7 @@ import type {
 
 import { clusterMedianCut } from '../../math/ClusterMedianCut.ts';
 
-const DEFAULT_MAX = 64;
+const DEFAULT_MAXIMUM_COLOR_COUNT = 64;
 
 /**
  * Pipeline task that caps `state.colors.length` at `input.maxColors`
@@ -33,18 +33,18 @@ class ClampCount implements TaskInterface {
     'writes':      ['colors']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     if (state.input.bypass === true) {
       return;
     }
 
-    const max = state.input.maxColors ?? DEFAULT_MAX;
+    const maximumColorCount = state.input.maxColors ?? DEFAULT_MAXIMUM_COLOR_COUNT;
 
-    if (state.colors.length <= max) {
+    if (state.colors.length <= maximumColorCount) {
       return;
     }
 
-    ctx.logger.info(
+    context.logger.info(
       LogBody.create()
         .component('ClampCount')
         .operation('run')
@@ -52,12 +52,12 @@ class ClampCount implements TaskInterface {
         .message('Reducing colors via clusterMedianCut')
         .context({
           'from': state.colors.length,
-          'to':   max
+          'to':   maximumColorCount
         })
         .build()
     );
 
-    const clustered = clusterMedianCut.apply(state.colors, max);
+    const clustered = clusterMedianCut.apply(state.colors, maximumColorCount);
 
     state.colors.length = 0;
     for (const c of clustered) {

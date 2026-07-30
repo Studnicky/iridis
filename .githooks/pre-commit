@@ -1,0 +1,41 @@
+#!/bin/sh
+set -eu
+
+# shellcheck source=lib/runtime.sh
+if . "$(dirname "$0")/lib/runtime.sh" && hook_skip_in_ci; then
+  exit 0
+fi
+
+tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/iridis-pre-commit.XXXXXX")
+trap 'rm -rf "$tmpdir"' EXIT INT TERM
+
+bash scripts/security-suite.sh gitleaks-staged >"$tmpdir/gitleaks.log" 2>&1 &
+gitleaks_pid=$!
+
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm exec lint-staged >"$tmpdir/lint-staged.log" 2>&1 &
+  lint_staged_pid=$!
+fi
+
+staged_files=$(git diff --cached --name-only)
+case "$staged_files" in
+  *package.json*|*pnpm-lock.yaml*|*packages/*|*scripts/stamp-version.mjs*)
+    bash scripts/ci-suite.sh generated-artifacts >"$tmpdir/generated-artifacts.log" 2>&1 &
+    generated_artifacts_pid=$!
+    ;;
+esac
+
+if ! wait "$gitleaks_pid"; then
+  cat "$tmpdir/gitleaks.log" >&2
+  exit 1
+fi
+
+if [ -n "${lint_staged_pid:-}" ] && ! wait "$lint_staged_pid"; then
+  cat "$tmpdir/lint-staged.log" >&2
+  exit 1
+fi
+
+if [ -n "${generated_artifacts_pid:-}" ] && ! wait "$generated_artifacts_pid"; then
+  echo "pre-commit: generated artifacts may be out of date; CI will gate this." >&2
+  cat "$tmpdir/generated-artifacts.log" >&2
+fi

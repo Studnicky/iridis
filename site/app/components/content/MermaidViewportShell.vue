@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { createCameraDpadMachine } from './viz/CameraControls.ts';
-import { createViewportStatus } from './viz/ViewportStatus.ts';
+import { ref, watch } from 'vue';
+import { CameraControls } from './viz/CameraControls.ts';
+import { ViewportStatus } from './viz/ViewportStatus.ts';
+import { trustedMarkupRenderer } from './trustedMarkupRenderer.ts';
 
 const props = withDefaults(defineProps<{
   expanded: boolean;
@@ -27,10 +29,25 @@ const emit = defineEmits<{
 }>();
 
 const viewportRef = defineModel<HTMLElement | null>('viewportRef', { default: null });
+const diagramMarkupRef = ref<HTMLElement | null>(null);
 
-const dpadMachine = createCameraDpadMachine({
+watch(
+  [() => props.svgContent, diagramMarkupRef],
+  ([markup, element]) => {
+    if (element !== null) {
+      trustedMarkupRenderer.render(element, markup, 'svg');
+    }
+  },
+  { 'flush': 'post', 'immediate': true }
+);
+
+const dpadMachine = CameraControls.create({
   'getZoomLevel': () => props.scale,
-  'getHint': () => createViewportStatus(props.scale, 'inline', 'drag · wheel').hint,
+  'getHint': () => ViewportStatus.create({
+    'hint': 'drag · wheel',
+    'mode': 'inline',
+    'zoomLevel': props.scale
+  }).hint,
   'can': (action) => action !== 'close',
   'zoomIn': () => { emit('zoomIn'); },
   'zoomOut': () => { emit('zoomOut'); },
@@ -79,8 +96,8 @@ const dpadMachine = createCameraDpadMachine({
           :style="{ transform: `translate(var(--diagram-translate-x), var(--diagram-translate-y)) scale(var(--diagram-scale))`, transition: dragging ? 'none' : 'transform 75ms ease-out' }"
         >
           <div
+            ref="diagramMarkupRef"
             class="mermaid-container [&_svg]:max-w-none [&_svg]:w-auto [&_svg]:h-auto"
-            v-html="svgContent"
           />
         </div>
       </div>

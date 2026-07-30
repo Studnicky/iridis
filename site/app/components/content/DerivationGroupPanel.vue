@@ -10,18 +10,22 @@ defineProps<{
     readonly parentHex: string;
     readonly children: readonly RoleMathEntryType[];
   };
-  bulkAlgorithm: HueAlgorithmType;
-  algorithmOptions: { label: string; value: HueAlgorithmType }[];
-  variantOptions: (algorithm: HueAlgorithmType) => { label: string; value: number }[];
+  bulkAlgorithm: HueAlgorithmType.Type;
+  algorithmOptions: readonly { label: string; value: HueAlgorithmType.Type }[];
+  variantOptions: (algorithm: HueAlgorithmType.Type) => readonly { label: string; value: number }[];
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   'apply-all': [];
-  'bulk-algorithm-change': [algorithm: HueAlgorithmType];
-  'algorithm-change': [role: RoleMathEntryType, algorithm: HueAlgorithmType];
+  'bulk-algorithm-change': [algorithm: HueAlgorithmType.Type];
+  'algorithm-change': [role: RoleMathEntryType, algorithm: HueAlgorithmType.Type];
   'variant-change': [role: RoleMathEntryType, hueVariantIndex: number];
   'freeform-offset-change': [role: RoleMathEntryType, offsetDeg: number];
 }>();
+
+function updateBulkAlgorithm(algorithm: HueAlgorithmType.Type): void {
+  emit('bulk-algorithm-change', algorithm);
+}
 </script>
 
 <template>
@@ -44,7 +48,7 @@ defineEmits<{
           :items="algorithmOptions"
           size="xs"
           class="w-40"
-          @update:model-value="($event) => $emit('bulk-algorithm-change', $event)"
+          @update:model-value="updateBulkAlgorithm"
         />
         <UButton
           size="xs"

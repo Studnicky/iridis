@@ -1,1 +1,2 @@
-export type * from './config.ts';
+export { CliConfigEntity } from '../entities/CliConfigEntity.ts';
+export type { CliConfigInterface } from '../interfaces/CliConfigInterface.ts';

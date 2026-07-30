@@ -2,60 +2,77 @@ import type { PluginInterface } from '@studnicky/iridis';
 
 import { CliExitError } from '@studnicky/errors';
 
-import type { CliConfigInterface } from './types/index.ts';
+import type { FlagKeyEntity } from './entities/FlagKeyEntity.ts';
 
-type FlagKey =
-  | 'enableCapacitor'
-  | 'enableContrast'
-  | 'enableImage'
-  | 'enableRdf'
-  | 'enableStylesheet'
-  | 'enableTailwind'
-  | 'enableVscode';
+import { PLUGIN_PACKAGE_CONSTANTS } from './constants/PluginPackages.ts';
 
-type PluginPackageMap = Readonly<Record<FlagKey, string>>;
+class PluginImporter {
+  static async enableCapacitor(): Promise<PluginInterface | null | undefined> {
+    const module = await import('@studnicky/iridis-capacitor');
+    return module.capacitorPlugin;
+  }
 
-const PLUGIN_PACKAGES: PluginPackageMap = {
-  'enableCapacitor':  '@studnicky/iridis-capacitor',
-  'enableContrast':   '@studnicky/iridis-contrast',
-  'enableImage':      '@studnicky/iridis-image',
-  'enableRdf':        '@studnicky/iridis-rdf',
-  'enableStylesheet': '@studnicky/iridis-stylesheet',
-  'enableTailwind':   '@studnicky/iridis-tailwind',
-  'enableVscode':     '@studnicky/iridis-vscode'
-} as const;
+  static async enableContrast(): Promise<PluginInterface | null | undefined> {
+    const module = await import('@studnicky/iridis-contrast');
+    return module.contrastPlugin;
+  }
 
-const PLUGIN_EXPORT_NAMES: Readonly<Record<FlagKey, string>> = {
-  'enableCapacitor':  'capacitorPlugin',
-  'enableContrast':   'contrastPlugin',
-  'enableImage':      'imagePlugin',
-  'enableRdf':        'rdfPlugin',
-  'enableStylesheet': 'stylesheetPlugin',
-  'enableTailwind':   'tailwindPlugin',
-  'enableVscode':     'vscodePlugin'
-} as const;
+  static async enableImage(): Promise<PluginInterface | null | undefined> {
+    const module = await import('@studnicky/iridis-image');
+    return module.imagePlugin;
+  }
+
+  static async enableRdf(): Promise<PluginInterface | null | undefined> {
+    const module = await import('@studnicky/iridis-rdf');
+    return module.rdfPlugin;
+  }
+
+  static async enableStylesheet(): Promise<PluginInterface | null | undefined> {
+    const module = await import('@studnicky/iridis-stylesheet');
+    return module.stylesheetPlugin;
+  }
+
+  static async enableTailwind(): Promise<PluginInterface | null | undefined> {
+    const module = await import('@studnicky/iridis-tailwind');
+    return module.tailwindPlugin;
+  }
+
+  static async enableVscode(): Promise<PluginInterface | null | undefined> {
+    const module = await import('@studnicky/iridis-vscode');
+    return module.vscodePlugin;
+  }
+}
+
+const PLUGIN_IMPORTERS = {
+  'enableCapacitor':  PluginImporter.enableCapacitor,
+  'enableContrast':   PluginImporter.enableContrast,
+  'enableImage':      PluginImporter.enableImage,
+  'enableRdf':        PluginImporter.enableRdf,
+  'enableStylesheet': PluginImporter.enableStylesheet,
+  'enableTailwind':   PluginImporter.enableTailwind,
+  'enableVscode':     PluginImporter.enableVscode
+} satisfies Readonly<Record<FlagKeyEntity.Type, () => Promise<PluginInterface | null | undefined>>>;
 
 export class PluginResolver {
-  async resolve(config: CliConfigInterface): Promise<readonly PluginInterface[]> {
+  async resolve(config: Partial<Record<FlagKeyEntity.Type, boolean | undefined>>): Promise<readonly PluginInterface[]> {
     const plugins: PluginInterface[] = [];
 
-    for (const flag of Object.keys(PLUGIN_PACKAGES) as FlagKey[]) {
+    for (const flag of PLUGIN_PACKAGE_CONSTANTS.PLUGIN_FLAGS) {
       if (config[flag] !== true) {
         continue;
       }
 
-      const packageName  = PLUGIN_PACKAGES[flag];
-      const exportName   = PLUGIN_EXPORT_NAMES[flag];
-      const pluginModule = await import(packageName) as Record<string, unknown>;
-      const plugin       = pluginModule[exportName];
+      const packageName  = PLUGIN_PACKAGE_CONSTANTS.PACKAGES[flag];
+      const exportName   = PLUGIN_PACKAGE_CONSTANTS.EXPORT_NAMES[flag];
+      const plugin = await PLUGIN_IMPORTERS[flag]();
 
-      if (plugin === undefined || plugin === null || typeof (plugin as PluginInterface).tasks !== 'function') {
+      if (plugin === undefined || plugin === null || typeof plugin.tasks !== 'function') {
         const error = new CliExitError(1);
         error.message = `Package ${packageName} does not export a valid plugin as '${exportName}'`;
         throw error;
       }
 
-      plugins.push(plugin as PluginInterface);
+      plugins.push(plugin);
     }
 
     return plugins;

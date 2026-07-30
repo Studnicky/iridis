@@ -1,13 +1,15 @@
-/** Shape of a single variant configuration entry (read by derive:variant). */
-export type VariantConfigInterfaceType = {
-  'invertLightness': boolean;
-  'lightnessOffset': number | undefined;
-  /**
-   * Absolute target OKLCH lightness for every role in this variant. Takes
-   * precedence over `lightnessOffset`. Lets a caller request a fixed tonal
-   * step (e.g. an 11-stop 50→950 scale) resolved through the engine's own
-   * `colorRecordFactory` rather than computing the ramp downstream.
-   */
-  'lightnessTarget': number | undefined;
-  'name':            string;
-};
+import type { VariantConfigInterfaceTypeEntity } from '../entities/VariantConfigInterfaceTypeEntity.ts';
+
+type VariantConfigSchemaShapeType = VariantConfigInterfaceTypeEntity.Type;
+
+/**
+ * Shape of a single variant configuration entry (read by derive:variant).
+ * Every optional schema field is widened from an optional key to a required
+ * key holding `T | undefined`, matching this codebase's monomorphic-shape
+ * convention — `FromSchema` marks a non-`required` field optional (`field?:
+ * T`), not present-but-`undefined`, and JSON Schema has no way to express
+ * the latter, so the widening happens here at the consumption site instead
+ * of inside the entity (where the lint-mandated `Type = FromSchema<typeof
+ * Schema>` shape must stay verbatim).
+ */
+export type VariantConfigInterfaceType = { [K in keyof VariantConfigSchemaShapeType]-?: {} extends Pick<VariantConfigSchemaShapeType, K> ? VariantConfigSchemaShapeType[K] | undefined : VariantConfigSchemaShapeType[K] };

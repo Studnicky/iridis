@@ -1,0 +1,179 @@
+#!/bin/bash
+set -eu
+
+# shellcheck source=lib/runtime.sh
+if . "$(dirname "$0")/lib/runtime.sh" && hook_skip_in_ci; then
+  exit 0
+fi
+
+echo "pre-push: running iridis checks"
+
+git_root=$(git rev-parse --show-toplevel)
+default_ref=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@origin/@')
+default_ref=${default_ref:-origin/develop}
+
+if ! git show-ref --verify --quiet "refs/remotes/${default_ref}"; then
+  remote_branch=${default_ref#origin/}
+  git fetch --quiet origin "+refs/heads/${remote_branch}:refs/remotes/origin/${remote_branch}" || true
+fi
+
+cd "$git_root"
+
+push_info=$(cat)
+
+# shellcheck source=lib/branch-check.sh
+. "$(dirname "$0")/lib/branch-check.sh"
+# shellcheck source=lib/changes.sh
+. "$(dirname "$0")/lib/changes.sh"
+# shellcheck source=lib/push-range.sh
+. "$(dirname "$0")/lib/push-range.sh"
+# shellcheck source=lib/rebase-check.sh
+. "$(dirname "$0")/lib/rebase-check.sh"
+
+empty_sha=0000000000000000000000000000000000000000
+
+# Git names the refs being pushed on stdin, and they need not include the
+# checked-out branch: `git push origin v1.2.3` pushes a tag and no branch at
+# all. Branch policy therefore reads the refs in the push, not HEAD.
+push_range=""
+pushed_branches=""
+pushed_tags=""
+while read -r local_ref local_sha _remote_ref _remote_sha; do
+  case "$local_ref" in
+    refs/heads/*)
+      pushed_branches="$pushed_branches ${local_ref#refs/heads/}"
+      if [ "$local_sha" != "$empty_sha" ] && [ -z "$push_range" ]; then
+        push_range=$(compute_push_range "$local_sha") || true
+      fi
+      case "$local_ref" in
+        refs/heads/release/*|refs/heads/hotfix/*) base_ref=origin/main ;;
+        *) base_ref="$default_ref" ;;
+      esac
+      if ! git show-ref --verify --quiet "refs/remotes/${base_ref}"; then
+        remote_branch=${base_ref#origin/}
+        git fetch --quiet origin "+refs/heads/${remote_branch}:refs/remotes/origin/${remote_branch}" || true
+      fi
+      if [ -n "$base_ref" ] && [ "$local_sha" != "$empty_sha" ]; then
+        check_rebased_onto_base "${base_ref#origin/}" "$local_sha" "$local_ref"
+      fi
+      ;;
+    refs/tags/*)
+      pushed_tags="$pushed_tags ${local_ref#refs/tags/}"
+      ;;
+  esac
+done <<EOF
+$push_info
+EOF
+
+for pushed_branch in $pushed_branches; do
+  check_branch_name "$pushed_branch"
+  case "$pushed_branch" in
+    main|develop)
+      echo "pre-push: protected branch '$pushed_branch' cannot be pushed directly" >&2
+      exit 1
+      ;;
+  esac
+done
+
+tag_only_push=false
+if [ -z "$pushed_branches" ] && [ -n "$pushed_tags" ]; then
+  tag_only_push=true
+fi
+
+if [ -n "$push_range" ]; then
+  classify_changes "$push_range"
+else
+  _set_all_changed
+fi
+
+tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/iridis-pre-push.XXXXXX")
+trap 'rm -rf "$tmpdir"' EXIT INT TERM
+
+run_suite() {
+  name="$1"
+  shift
+  log="$tmpdir/${name}.log"
+  (
+    "$@"
+  ) >"$log" 2>&1 &
+  printf '%s\n' "$!" > "$tmpdir/${name}.pid"
+}
+
+run_stage() {
+  stage="$1"
+  shift
+  for item in "$@"; do
+    name="${item%%:*}"
+    command="${item#*:}"
+    run_suite "$name" bash -c "$command"
+  done
+  wait_stage "$stage" "$@"
+}
+
+wait_stage() {
+  stage="$1"
+  shift
+  failures=0
+  for item in "$@"; do
+    name="${item%%:*}"
+    pid_file="$tmpdir/${name}.pid"
+    [ -f "$pid_file" ] || continue
+    pid=$(cat "$pid_file")
+    if ! wait "$pid"; then
+      failures=1
+      echo "pre-push: ${stage}/${name} failed; log follows" >&2
+      cat "$tmpdir/${name}.log" >&2
+    fi
+  done
+  return "$failures"
+}
+
+policy_stage=()
+# Release gates ask whether changed packages still owe a changeset, which is a
+# question about a branch proposing a release. A tag names a commit that has
+# already been versioned and merged, so its changesets are spent by definition
+# and the gate would report every released package as owing one.
+if [ "$tag_only_push" = false ] && { [ "$CHANGED_RELEASE" = true ] || [ "$CHANGED_SOURCE" = true ]; }; then
+  policy_stage+=("release_gates:bash scripts/hook-suite.sh release-gates '$default_ref'")
+fi
+
+if [ "$CHANGED_CI" = true ]; then
+  policy_stage+=("generated_artifacts:bash scripts/hook-suite.sh generated-artifacts")
+fi
+
+if [ "${#policy_stage[@]}" -gt 0 ]; then
+  run_stage policy "${policy_stage[@]}"
+fi
+
+validation_stage=()
+test_stage=()
+if [ "$CHANGED_CI" = true ]; then
+  validation_stage+=("typecheck:bash scripts/hook-suite.sh typecheck")
+  validation_stage+=("lint:bash scripts/hook-suite.sh lint")
+  validation_stage+=("build:bash scripts/hook-suite.sh build")
+fi
+
+if [ "$CHANGED_AUDIT" = true ]; then
+  validation_stage+=("audit:bash scripts/hook-suite.sh audit")
+fi
+
+if [ "$CHANGED_SOURCE" = true ] || [ "$CHANGED_LOCKFILES" = true ] || [ "$CHANGED_CONFIG" = true ] || [ "$CHANGED_TESTS" = true ]; then
+  test_stage+=("test:bash scripts/hook-suite.sh test")
+fi
+
+if [ -n "$push_range" ] && { [ "$CHANGED_SOURCE" = true ] || [ "$CHANGED_SECURITY_CONFIG" = true ]; }; then
+  validation_stage+=("semgrep:bash scripts/hook-suite.sh semgrep '$push_range'")
+fi
+
+if [ "$CHANGED_ANALYSIS" = true ]; then
+  echo "pre-push: blast radius"
+  validation_stage+=("diagram:bash scripts/hook-suite.sh diagram '$default_ref'")
+fi
+
+if [ "${#validation_stage[@]}" -gt 0 ]; then
+  run_stage validation "${validation_stage[@]}"
+fi
+
+if [ "${#test_stage[@]}" -gt 0 ]; then
+  run_stage tests "${test_stage[@]}"
+fi

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { InteractablesAccordionItem } from './interactables/buildInteractablesShowcaseModel.ts';
+import type { buildInteractablesShowcaseModel } from './interactables/buildInteractablesShowcaseModel.ts';
 
 defineProps<{
-  items: readonly InteractablesAccordionItem[];
+  items: ReturnType<typeof buildInteractablesShowcaseModel.build>['accordionItems'];
 }>();
 </script>
 

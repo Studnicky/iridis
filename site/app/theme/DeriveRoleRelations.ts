@@ -35,7 +35,7 @@ class DeriveRoleRelations implements TaskInterface {
     'writes':      ['metadata']
   };
 
-  run(state: PaletteStateInterface, _ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
     const config = state.metadata['derivation:config'] as DerivationConfigType | undefined;
     if (config === undefined || state.input.roles === undefined) {return;}
 

@@ -1,33 +1,66 @@
 import type { RoleHexMapType, ScaleMapType } from '~/composables/types/index.ts';
+
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 import { Tokens } from '~/theme/Tokens.ts';
 
-export const SCALE_CARD_SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
+class ScaleCardAdjacentRatio {
+  public readonly from: number;
+  public readonly ratio: number;
+  public readonly to: number;
 
-export type ScaleCardAdjacentRatioType = {
-  from: number;
-  to: number;
-  ratio: number;
-};
-
-export function buildScaleCardAdjacentRatios(
-  roles: RoleHexMapType,
-  scales: ScaleMapType,
-  aliasKey: string
-): ScaleCardAdjacentRatioType[] {
-  const hexes = SCALE_CARD_SHADES.map((shade) => Tokens.resolveAliasShadeHex(roles, scales, aliasKey, shade));
-  const pairs: ScaleCardAdjacentRatioType[] = [];
-  for (let index = 0; index < SCALE_CARD_SHADES.length - 1; index += 1) {
-    const fromHex = hexes[index];
-    const toHex = hexes[index + 1];
-    if (fromHex === undefined || toHex === undefined) {
-      continue;
-    }
-    pairs.push({
-      from: SCALE_CARD_SHADES[index]!,
-      to: SCALE_CARD_SHADES[index + 1]!,
-      ratio: contrastRatio(fromHex, toHex)
-    });
+  public constructor(from: number, ratio: number, to: number) {
+    this.from = from;
+    this.ratio = ratio;
+    this.to = to;
   }
-  return pairs;
 }
+
+export const buildScaleCardModel = class ScaleCardModel {
+  private static readonly shadeValues: readonly number[] = [
+    50,
+    100,
+    200,
+    300,
+    400,
+    500,
+    600,
+    700,
+    800,
+    900,
+    950
+  ];
+
+  public readonly adjacentRatios: readonly ScaleCardAdjacentRatio[];
+  public readonly shades: readonly number[];
+
+  private constructor(
+    adjacentRatios: readonly ScaleCardAdjacentRatio[],
+    shades: readonly number[]
+  ) {
+    this.adjacentRatios = adjacentRatios;
+    this.shades = shades;
+  }
+
+  public static build(
+    roles: RoleHexMapType,
+    scales: ScaleMapType,
+    aliasKey: string
+  ): ScaleCardModel {
+    const adjacentRatios: ScaleCardAdjacentRatio[] = [];
+    let previousHex: string | undefined;
+    let previousShade: number | undefined;
+    for (const shade of ScaleCardModel.shadeValues) {
+      const hex = Tokens.resolveAliasShadeHex(roles, scales, aliasKey, shade);
+      if (previousHex !== undefined && previousShade !== undefined && hex !== undefined) {
+        adjacentRatios.push(new ScaleCardAdjacentRatio(
+          previousShade,
+          contrastRatio(previousHex, hex),
+          shade
+        ));
+      }
+      previousHex = hex;
+      previousShade = shade;
+    }
+    return new ScaleCardModel(adjacentRatios, ScaleCardModel.shadeValues);
+  }
+};

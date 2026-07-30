@@ -1,144 +1,234 @@
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
 import type { HueAlgorithmType, RoleRelationDerivationType } from '~/composables/types/colorDerivation.ts';
+import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+
+import { SEMANTIC_HUE } from '~/theme/semanticHue.ts';
 import { capitalize } from '~/utils/capitalize.ts';
 import { hueCircularDistance } from '~/utils/hueCircularDistance.ts';
 import { hueVariantLabel } from '~/utils/hueVariantLabel.ts';
 import { normalizeHue } from '~/utils/normalizeHue.ts';
 import { selectHueAlgorithm } from '~/utils/selectHueAlgorithm.ts';
-import { SEMANTIC_HUE } from '~/theme/semanticHue.ts';
 
-export type DerivationRelationGroup = {
-  readonly parentName: string;
-  readonly parentHex: string;
-  readonly parentHue: number;
-  readonly children: readonly RoleMathEntryType[];
-};
+class DerivationRelationGroup {
+  public readonly children: RoleMathEntryType[];
+  public readonly parentHex: string;
+  public readonly parentHue: number;
+  public readonly parentName: string;
 
-export type SemanticHueGuideEntry = {
-  readonly familyName: string;
-  readonly hue: number;
-  readonly role: string;
-};
-
-const HUE_FAMILY_NAMES: readonly { max: number; name: string }[] = [
-  { 'max': 20, 'name': 'red' },
-  { 'max': 50, 'name': 'orange' },
-  { 'max': 90, 'name': 'yellow' },
-  { 'max': 170, 'name': 'green' },
-  { 'max': 200, 'name': 'teal' },
-  { 'max': 260, 'name': 'blue' },
-  { 'max': 300, 'name': 'violet' },
-  { 'max': 340, 'name': 'magenta' },
-  { 'max': 361, 'name': 'red' },
-];
-
-export const HUE_ALGORITHM_OPTIONS: { label: string; value: HueAlgorithmType }[] = [
-  { label: 'Monochromatic', value: 'monochromatic' },
-  { label: 'Complementary', value: 'complementary' },
-  { label: 'Analogous', value: 'analogous' },
-  { label: 'Triadic', value: 'triadic' },
-  { label: 'Tetradic', value: 'tetradic' },
-  { label: 'Split-complementary', value: 'split-complementary' },
-  { label: 'Compound', value: 'compound' },
-  { label: 'Freeform', value: 'freeform' },
-];
-
-export function buildSemanticHueGuide(): SemanticHueGuideEntry[] {
-  return Object.entries(SEMANTIC_HUE).map(([role, hue]) => ({
-    'role': role,
-    'hue': hue,
-    'familyName': hueFamilyName(hue),
-  }));
-}
-
-export function buildSemanticHueGuideDisplayEntries(
-  entries: readonly SemanticHueGuideEntry[]
-): readonly SemanticHueGuideEntry[] {
-  return entries.map((entry) => ({
-    ...entry,
-    role: capitalize(entry.role)
-  }));
-}
-
-export function buildRelationGroups(
-  mathList: readonly RoleMathEntryType[],
-  parentHexFallback: string
-): readonly DerivationRelationGroup[] {
-  const byParent = new Map<string, RoleMathEntryType[]>();
-  for (const role of mathList) {
-    if (!role.isDerived || role.parentRole === undefined) continue;
-    const list = byParent.get(role.parentRole) ?? [];
-    list.push(role);
-    byParent.set(role.parentRole, list);
+  public constructor(
+    children: RoleMathEntryType[],
+    parentHex: string,
+    parentHue: number,
+    parentName: string
+  ) {
+    this.children = children;
+    this.parentHex = parentHex;
+    this.parentHue = parentHue;
+    this.parentName = parentName;
   }
-  const parents = new Map(mathList.map((role) => [role.name, role]));
-  return Array.from(byParent.entries()).map(([parentName, children]) => ({
-    'parentName': parentName,
-    'parentHex': parents.get(parentName)?.hex ?? parentHexFallback,
-    'parentHue': parents.get(parentName)?.h ?? 0,
-    'children': children,
-  }));
 }
 
-export function buildVariantOptions(algorithm: HueAlgorithmType): { label: string; value: number }[] {
-  return selectHueAlgorithm(algorithm, 0).map((offset, index) => ({ 'label': hueVariantLabel(offset), 'value': index }));
+class SemanticHueGuideEntry {
+  public readonly familyName: string;
+  public readonly hue: number;
+  public readonly role: string;
+
+  public constructor(familyName: string, hue: number, role: string) {
+    this.familyName = familyName;
+    this.hue = hue;
+    this.role = role;
+  }
 }
 
-export function buildGroupRelationBatch(
-  group: DerivationRelationGroup,
-  algorithm: HueAlgorithmType
-): Record<string, RoleRelationDerivationType> {
-  const offsets = selectHueAlgorithm(algorithm, 0);
-  const candidateHues = offsets.map((offset) => normalizeHue(group.parentHue + offset));
-  const batch: Record<string, RoleRelationDerivationType> = {};
-  for (const child of group.children) {
-    let bestIndex = 0;
-    let bestDistance = Infinity;
-    candidateHues.forEach((candidateHue, index) => {
-      const distance = hueCircularDistance(child.h, candidateHue);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestIndex = index;
-      }
+class HueFamilyRange {
+  public readonly maximum: number;
+  public readonly name: string;
+
+  public constructor(maximum: number, name: string) {
+    this.maximum = maximum;
+    this.name = name;
+  }
+}
+
+class HueAlgorithmOption {
+  public readonly label: string;
+  public readonly value: HueAlgorithmType.Type;
+
+  public constructor(label: string, value: HueAlgorithmType.Type) {
+    this.label = label;
+    this.value = value;
+  }
+}
+
+class HueVariantOption {
+  public readonly label: string;
+  public readonly value: number;
+
+  public constructor(label: string, value: number) {
+    this.label = label;
+    this.value = value;
+  }
+}
+
+export const buildDerivationRelations = class DerivationRelationsBuilder {
+  private static readonly hueFamilyRanges: readonly HueFamilyRange[] = [
+    new HueFamilyRange(20, 'red'),
+    new HueFamilyRange(50, 'orange'),
+    new HueFamilyRange(90, 'yellow'),
+    new HueFamilyRange(170, 'green'),
+    new HueFamilyRange(200, 'teal'),
+    new HueFamilyRange(260, 'blue'),
+    new HueFamilyRange(300, 'violet'),
+    new HueFamilyRange(340, 'magenta'),
+    new HueFamilyRange(361, 'red')
+  ];
+
+  public static readonly hueAlgorithmOptions: readonly HueAlgorithmOption[] = [
+    new HueAlgorithmOption('Monochromatic', 'monochromatic'),
+    new HueAlgorithmOption('Complementary', 'complementary'),
+    new HueAlgorithmOption('Analogous', 'analogous'),
+    new HueAlgorithmOption('Triadic', 'triadic'),
+    new HueAlgorithmOption('Tetradic', 'tetradic'),
+    new HueAlgorithmOption('Split-complementary', 'split-complementary'),
+    new HueAlgorithmOption('Compound', 'compound'),
+    new HueAlgorithmOption('Freeform', 'freeform')
+  ];
+
+  public static buildSemanticHueGuide(): readonly SemanticHueGuideEntry[] {
+    const result = Object.entries(SEMANTIC_HUE).map(([role, hue]) => {
+      return new SemanticHueGuideEntry(this.resolveHueFamilyName(hue), hue, role);
     });
-    batch[child.name] = { 'freeformOffset': undefined, 'hueAlgorithm': algorithm, 'hueVariantIndex': bestIndex };
+    return result;
   }
-  return batch;
-}
 
-export function buildAlgorithmRelationUpdate(
-  role: RoleMathEntryType,
-  algorithm: HueAlgorithmType
-): RoleRelationDerivationType {
-  return algorithm === 'freeform'
-    ? { 'hueAlgorithm': algorithm, 'hueVariantIndex': 0, 'freeformOffset': role.algorithmInfo?.offsetDeg ?? 0 }
-    : { 'freeformOffset': undefined, 'hueAlgorithm': algorithm, 'hueVariantIndex': 0 };
-}
+  public static buildSemanticHueGuideDisplayEntries(
+    entries: readonly SemanticHueGuideEntry[]
+  ): readonly SemanticHueGuideEntry[] {
+    const result = entries.map((entry) => {
+      return new SemanticHueGuideEntry(entry.familyName, entry.hue, capitalize(entry.role));
+    });
+    return result;
+  }
 
-export function buildVariantRelationUpdate(role: RoleMathEntryType, hueVariantIndex: number): RoleRelationDerivationType {
-  const algorithm = role.algorithmInfo?.hueAlgorithm ?? 'monochromatic';
-  return { 'freeformOffset': undefined, 'hueAlgorithm': algorithm, 'hueVariantIndex': hueVariantIndex };
-}
+  public static buildRelationGroups(
+    mathList: readonly RoleMathEntryType[]
+  ): readonly DerivationRelationGroup[] {
+    const byParent = new Map<string, RoleMathEntryType[]>();
+    for (const role of mathList) {
+      if (!role.isDerived || role.parentRole === undefined) {
+        continue;
+      }
+      const children = byParent.get(role.parentRole) ?? [];
+      children.push(role);
+      byParent.set(role.parentRole, children);
+    }
+    const parents = new Map(mathList.map((role) => {
+      return [role.name, role];
+    }));
+    const groups: DerivationRelationGroup[] = [];
+    for (const [parentName, children] of byParent.entries()) {
+      const parent = parents.get(parentName);
+      if (parent === undefined) {continue;}
+      groups.push(new DerivationRelationGroup(
+        children,
+        parent.hex,
+        parent.h,
+        parentName
+      ));
+    }
+    return groups;
+  }
 
-export function buildFreeformRelationUpdate(offsetDeg: number): RoleRelationDerivationType {
-  return { 'hueAlgorithm': 'freeform', 'hueVariantIndex': 0, 'freeformOffset': offsetDeg };
-}
+  public static buildVariantOptions(algorithm: HueAlgorithmType.Type): readonly HueVariantOption[] {
+    const result = selectHueAlgorithm(algorithm, 0).map((offset, index) => {
+      return new HueVariantOption(hueVariantLabel(offset), index);
+    });
+    return result;
+  }
 
-export function defaultBulkAlgorithmFor(group: DerivationRelationGroup): HueAlgorithmType {
-  return group.children[0]?.algorithmInfo?.hueAlgorithm ?? 'analogous';
-}
+  public static buildGroupRelationBatch(
+    group: DerivationRelationGroup,
+    algorithm: HueAlgorithmType.Type
+  ): Record<string, RoleRelationDerivationType> {
+    const offsets = selectHueAlgorithm(algorithm, 0);
+    const candidateHues = offsets.map((offset) => {
+      const result = normalizeHue(group.parentHue + offset);
+      return result;
+    });
+    const batch: Record<string, RoleRelationDerivationType> = {};
+    for (const child of group.children) {
+      let bestIndex = 0;
+      let bestDistance = Infinity;
+      candidateHues.forEach((candidateHue, index) => {
+        const distance = hueCircularDistance(child.h, candidateHue);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+      batch[child.name] = {
+        'freeformOffset': undefined,
+        'hueAlgorithm': algorithm,
+        'hueVariantIndex': bestIndex
+      };
+    }
+    return batch;
+  }
 
-export function buildBulkAlgorithmState(
-  current: Readonly<Record<string, HueAlgorithmType>>,
-  parentName: string,
-  algorithm: HueAlgorithmType
-): Record<string, HueAlgorithmType> {
-  return {
-    ...current,
-    [parentName]: algorithm
-  };
-}
+  public static buildAlgorithmRelationUpdate(
+    role: RoleMathEntryType,
+    algorithm: HueAlgorithmType.Type
+  ): RoleRelationDerivationType {
+    if (algorithm === 'freeform') {
+      return {
+        'freeformOffset': role.algorithmInfo?.offsetDeg ?? 0,
+        'hueAlgorithm': algorithm,
+        'hueVariantIndex': 0
+      };
+    }
+    return {
+      'freeformOffset': undefined,
+      'hueAlgorithm': algorithm,
+      'hueVariantIndex': 0
+    };
+  }
 
-function hueFamilyName(hueDeg: number): string {
-  return HUE_FAMILY_NAMES.find((family) => hueDeg <= family.max)?.name ?? 'red';
-}
+  public static buildVariantRelationUpdate(
+    role: RoleMathEntryType,
+    hueVariantIndex: number
+  ): RoleRelationDerivationType {
+    const algorithm = role.algorithmInfo?.hueAlgorithm ?? 'monochromatic';
+    return {
+      'freeformOffset': undefined,
+      'hueAlgorithm': algorithm,
+      'hueVariantIndex': hueVariantIndex
+    };
+  }
+
+  public static buildFreeformRelationUpdate(offsetDegrees: number): RoleRelationDerivationType {
+    return {
+      'freeformOffset': offsetDegrees,
+      'hueAlgorithm': 'freeform',
+      'hueVariantIndex': 0
+    };
+  }
+
+  public static resolveDefaultBulkAlgorithm(group: DerivationRelationGroup): HueAlgorithmType.Type {
+    return group.children[0]?.algorithmInfo?.hueAlgorithm ?? 'analogous';
+  }
+
+  public static buildBulkAlgorithmState(
+    current: Readonly<Record<string, HueAlgorithmType.Type>>,
+    parentName: string,
+    algorithm: HueAlgorithmType.Type
+  ): Record<string, HueAlgorithmType.Type> {
+    const result: Record<string, HueAlgorithmType.Type> = { ...current };
+    result[parentName] = algorithm;
+    return result;
+  }
+
+  private static resolveHueFamilyName(hueDegrees: number): string {
+    return this.hueFamilyRanges.find((family) => {
+      return hueDegrees <= family.maximum;
+    })?.name ?? 'red';
+  }
+};

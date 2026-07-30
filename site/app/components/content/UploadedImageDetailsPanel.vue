@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
-import { buildUploadedImageFieldPatch } from './uploadedImage/buildUploadedImagePatchModel.ts';
+import { buildUploadedImagePatchModel } from './uploadedImage/buildUploadedImagePatchModel.ts';
 
 defineProps<{
   image: UploadedImageInterfaceType;
@@ -34,12 +34,12 @@ const emit = defineEmits<{
       :harmonize-help="harmonizeHelp"
       :lightness-help="lightnessHelp"
       :chroma-help="chromaHelp"
-      @update:algorithm="emit('update', buildUploadedImageFieldPatch(image, 'algorithm', $event))"
-      @update:delta-e-cap="emit('update', buildUploadedImageFieldPatch(image, 'deltaECap', $event))"
-      @update:histogram-bits="emit('update', buildUploadedImageFieldPatch(image, 'histogramBits', $event))"
-      @update:harmonize-threshold="emit('update', buildUploadedImageFieldPatch(image, 'harmonizeThreshold', $event))"
-      @update:lightness-range="emit('update', buildUploadedImageFieldPatch(image, 'lightnessRange', $event))"
-      @update:chroma-range="emit('update', buildUploadedImageFieldPatch(image, 'chromaRange', $event))"
+      @update:algorithm="emit('update', buildUploadedImagePatchModel.buildAlgorithm(image, $event))"
+      @update:delta-e-cap="emit('update', buildUploadedImagePatchModel.buildDeltaECap(image, $event))"
+      @update:histogram-bits="emit('update', buildUploadedImagePatchModel.buildHistogramBits(image, $event))"
+      @update:harmonize-threshold="emit('update', buildUploadedImagePatchModel.buildHarmonizeThreshold(image, $event))"
+      @update:lightness-range="emit('update', buildUploadedImagePatchModel.buildLightnessRange(image, $event))"
+      @update:chroma-range="emit('update', buildUploadedImagePatchModel.buildChromaRange(image, $event))"
     >
       <template #beforeHistogramBits>
         <UFormField
@@ -51,7 +51,7 @@ const emit = defineEmits<{
             :model-value="image.k"
             :min-width="48"
             :gap="8"
-            @update:model-value="emit('update', buildUploadedImageFieldPatch(image, 'k', $event))"
+            @update:model-value="emit('update', buildUploadedImagePatchModel.buildK(image, $event))"
           />
         </UFormField>
       </template>

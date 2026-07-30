@@ -10,13 +10,12 @@ if (configPath === undefined) {
   process.exit(1);
 }
 
-new Cli().run(configPath)
-  .then(() => {
-    process.exit(0);
-  })
-  .catch((err: unknown) => {
-    const message  = err instanceof Error ? err.message : String(err);
-    const exitCode = err instanceof CliExitError ? err.exitCode : 1;
-    process.stderr.write(`Error: ${message}\n`);
-    process.exit(exitCode);
-  });
+try {
+  await new Cli().run(configPath);
+  process.exit(0);
+} catch (error) {
+  const message  = error instanceof Error ? error.message : String(error);
+  const exitCode = error instanceof CliExitError ? error.exitCode : 1;
+  process.stderr.write(`Error: ${message}\n`);
+  process.exit(exitCode);
+}

@@ -1,111 +1,139 @@
-export type DpadActionType =
-  | 'zoom-in'
-  | 'pan-up'
-  | 'zoom-out'
-  | 'pan-left'
-  | 'centre'
-  | 'pan-right'
-  | 'expand'
-  | 'close'
-  | 'pan-down'
-  | 'fit';
+interface DpadHooksInterface {
+  can(action: DpadItem['action']): boolean;
+  readonly 'getHint': (() => string | null) | undefined;
+  readonly 'getZoomLevel': (() => number | null) | undefined;
+  readonly 'getZoomText': (() => string | null) | undefined;
+  run(action: DpadItem['action']): void | Promise<void>;
+}
 
-export type DpadModeType = 'inline' | 'modal';
+class DpadMetadata {
+  public readonly label: string;
+  public readonly title: string;
 
-type DpadHooksType = {
-  'can'?: (action: DpadActionType) => boolean;
-  'run': (action: DpadActionType) => void | Promise<void>;
-  'getZoomLevel'?: () => number | null;
-  'getZoomText'?: () => string | null;
-  'getHint'?: () => string | null;
-};
+  public constructor(label: string, title: string) {
+    this.label = label;
+    this.title = title;
+  }
+}
 
-type DpadItemType = {
-  readonly 'action': DpadActionType;
-  readonly 'label': string;
-  readonly 'title': string;
-  readonly 'disabled': boolean;
-};
+class DpadItem {
+  public readonly action:
+    | 'zoom-in'
+    | 'pan-up'
+    | 'zoom-out'
+    | 'pan-left'
+    | 'centre'
+    | 'pan-right'
+    | 'expand'
+    | 'close'
+    | 'pan-down'
+    | 'fit';
+  public readonly disabled: boolean;
+  public readonly label: string;
+  public readonly title: string;
 
-type DpadStateType = {
-  readonly 'mode': DpadModeType;
-  readonly 'zoomLevel': number | null;
-  readonly 'zoomText': string | null;
-  readonly 'hint': string | null;
-  readonly 'items': readonly DpadItemType[];
-};
+  public constructor(
+    action: DpadItem['action'],
+    disabled: boolean,
+    label: string,
+    title: string
+  ) {
+    this.action = action;
+    this.disabled = disabled;
+    this.label = label;
+    this.title = title;
+  }
+}
 
-const INLINE_GRID: readonly DpadActionType[] = [
-  'zoom-in', 'pan-up', 'zoom-out',
-  'pan-left', 'centre', 'pan-right',
-  'expand', 'pan-down', 'fit',
-];
+class DpadState {
+  public readonly hint: string | null;
+  public readonly items: readonly DpadItem[];
+  public readonly mode: 'inline' | 'modal';
+  public readonly zoomLevel: number | null;
+  public readonly zoomText: string | null;
 
-const MODAL_GRID: readonly DpadActionType[] = [
-  'zoom-in', 'pan-up', 'zoom-out',
-  'pan-left', 'centre', 'pan-right',
-  'close', 'pan-down', 'fit',
-];
-
-const META: Readonly<Record<DpadActionType, { readonly 'label': string; readonly 'title': string }>> = {
-  'zoom-in':  { 'label': '＋', 'title': 'Zoom in' },
-  'pan-up':   { 'label': '▲', 'title': 'Pan up' },
-  'zoom-out': { 'label': '－', 'title': 'Zoom out' },
-  'pan-left': { 'label': '◀', 'title': 'Pan left' },
-  'centre':   { 'label': '⊙', 'title': 'Centre view' },
-  'pan-right':{ 'label': '▶', 'title': 'Pan right' },
-  'expand':   { 'label': '⛶', 'title': 'Expand fullscreen' },
-  'close':    { 'label': '✕', 'title': 'Close (Esc)' },
-  'pan-down': { 'label': '▼', 'title': 'Pan down' },
-  'fit':      { 'label': '⤢', 'title': 'Fit to view' },
-};
+  public constructor(
+    hint: string | null,
+    items: readonly DpadItem[],
+    mode: 'inline' | 'modal',
+    zoomLevel: number | null,
+    zoomText: string | null
+  ) {
+    this.hint = hint;
+    this.items = items;
+    this.mode = mode;
+    this.zoomLevel = zoomLevel;
+    this.zoomText = zoomText;
+  }
+}
 
 /**
  * Package-owned D-pad state machine.
  *
- * The machine owns:
- * - canonical button ordering and labels;
- * - inline vs modal lower-left slot behavior;
- * - disabled-state evaluation through capability hooks;
- * - zoom HUD state exposure.
- *
- * Visualizations supply only action hooks. They do not redefine the control.
+ * The machine owns canonical button ordering and labels, inline versus modal
+ * lower-left behavior, disabled-state evaluation, and zoom HUD state.
  */
-export class DpadMachine {
-  readonly #hooks: DpadHooksType;
+export const DpadMachine = class DpadMachine {
+  static readonly #inlineGrid: readonly DpadItem['action'][] = [
+    'zoom-in', 'pan-up', 'zoom-out',
+    'pan-left', 'centre', 'pan-right',
+    'expand', 'pan-down', 'fit'
+  ];
 
-  #mode: DpadModeType;
+  static readonly #metadataByAction = new Map<DpadItem['action'], DpadMetadata>([
+    ['centre', new DpadMetadata('⊙', 'Centre view')],
+    ['close', new DpadMetadata('✕', 'Close (Esc)')],
+    ['expand', new DpadMetadata('⛶', 'Expand fullscreen')],
+    ['fit', new DpadMetadata('⤢', 'Fit to view')],
+    ['pan-down', new DpadMetadata('▼', 'Pan down')],
+    ['pan-left', new DpadMetadata('◀', 'Pan left')],
+    ['pan-right', new DpadMetadata('▶', 'Pan right')],
+    ['pan-up', new DpadMetadata('▲', 'Pan up')],
+    ['zoom-in', new DpadMetadata('＋', 'Zoom in')],
+    ['zoom-out', new DpadMetadata('－', 'Zoom out')]
+  ]);
 
-  constructor(hooks: DpadHooksType, mode: DpadModeType = 'inline') {
+  static readonly #modalGrid: readonly DpadItem['action'][] = [
+    'zoom-in', 'pan-up', 'zoom-out',
+    'pan-left', 'centre', 'pan-right',
+    'close', 'pan-down', 'fit'
+  ];
+
+  readonly #hooks: DpadHooksInterface;
+  #mode: 'inline' | 'modal';
+
+  public constructor(hooks: DpadHooksInterface, mode: 'inline' | 'modal' = 'inline') {
     this.#hooks = hooks;
     this.#mode = mode;
   }
 
-  setMode(mode: DpadModeType): void {
+  public setMode(mode: 'inline' | 'modal'): void {
     this.#mode = mode;
   }
 
-  state(): DpadStateType {
-    const actions = this.#mode === 'modal' ? MODAL_GRID : INLINE_GRID;
-    return {
-      'mode': this.#mode,
-      'zoomLevel': this.#hooks.getZoomLevel?.() ?? null,
-      'zoomText': this.#hooks.getZoomText?.() ?? (() => {
-        const level = this.#hooks.getZoomLevel?.() ?? null;
-        return level === null ? null : `${level.toFixed(2)}×`;
-      })(),
-      'hint': this.#hooks.getHint?.() ?? 'drag · wheel',
-      'items': actions.map((action) => ({
-        'action': action,
-        'label': META[action].label,
-        'title': META[action].title,
-        'disabled': this.#hooks.can?.(action) === false,
-      })),
-    };
+  public state(): DpadState {
+    const actions = this.#mode === 'modal' ? DpadMachine.#modalGrid : DpadMachine.#inlineGrid;
+    const items = actions.map((action) => {
+      const metadata = DpadMachine.#metadataByAction.get(action);
+      if (metadata === undefined) {
+        throw new Error(`Unknown D-pad action: ${action}`);
+      }
+      return new DpadItem(action, !this.#hooks.can(action), metadata.label, metadata.title);
+    });
+    const zoomLevel = this.#hooks.getZoomLevel?.() ?? null;
+    const zoomText = this.#hooks.getZoomText?.()
+      ?? (zoomLevel === null ? null : `${zoomLevel.toFixed(2)}×`);
+    return new DpadState(
+      this.#hooks.getHint?.() ?? 'drag · wheel',
+      items,
+      this.#mode,
+      zoomLevel,
+      zoomText
+    );
   }
 
-  async press(action: DpadActionType): Promise<void> {
-    if (this.#hooks.can?.(action) === false) return;
+  public async press(action: DpadItem['action']): Promise<void> {
+    if (!this.#hooks.can(action)) {return;}
     await this.#hooks.run(action);
   }
-}
+};

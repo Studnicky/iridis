@@ -3,27 +3,26 @@
  *
  * Domain: theming. Parameters describe HSL deltas applied to derive each
  * token type from its family root color. Data literals live in
- * `data/derivationParams.ts`.
+ * `data/VscodeTokenData.ts`.
  */
 
 import type { InferType } from '@studnicky/json-tology/types';
 
-export const DerivationParamsSchema = {
-  '$id': 'https://studnicky.dev/iridis-vscode/DerivationParams',
-  'additionalProperties': false,
-  'properties': {
-    'hue':   { 'type': 'number' },
-    'light': { 'type': 'number' },
-    'sat':   { 'type': 'number' }
-  },
-  'type': 'object'
-} as const;
+import type { DerivationParametersSchema } from '../DerivationParametersSchema.ts';
+import type { DerivationParametersInterfaceTypeEntity } from '../entities/DerivationParametersInterfaceTypeEntity.ts';
 
-export type DerivationParamsInterfaceType = {
-  'hue': number | undefined;
-  'light': number | undefined;
-  'sat': number | undefined;
+type DerivationParametersSchemaShapeType = DerivationParametersInterfaceTypeEntity.Type;
+
+/**
+ * Every optional schema field is widened from an optional key to a required
+ * key holding `T | undefined`, matching this codebase's monomorphic-shape
+ * convention — `FromSchema` marks a non-`required` field optional (`field?:
+ * T`), not present-but-`undefined`, and JSON Schema has no way to express
+ * the latter, so the widening happens here at the consumption site instead
+ * of inside the entity.
+ */
+export type DerivationParametersInterfaceType = {
+  [K in keyof DerivationParametersSchemaShapeType]-?: {} extends Pick<DerivationParametersSchemaShapeType, K> ? DerivationParametersSchemaShapeType[K] | undefined : DerivationParametersSchemaShapeType[K];
 };
 
-/** Schema-derived type for derivation parameters (validation shape). */
-export type DerivationParamsSchemaType = InferType<typeof DerivationParamsSchema>;
+export type DerivationParametersSchemaType = InferType<typeof DerivationParametersSchema>;

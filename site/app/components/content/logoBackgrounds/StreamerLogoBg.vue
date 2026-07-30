@@ -52,7 +52,7 @@ const sparks: SparkType[] = buildStaggeredItems('logo-spark', SPARK_ROLES.length
   position: absolute;
   inset: 0.4rem;
   border-radius: 50%;
-  border: 2px solid var(--ui-color-error-500);
+  border: 2px var(--iridis-border-style) var(--ui-color-error-500);
   box-shadow: 0 0 0.6rem var(--ui-color-error-500), 0 0 1.2rem color-mix(in oklch, var(--ui-color-error-500) 60%, transparent);
   animation: logo-streamer-ring-pulse 1.2s ease-in-out infinite;
 }

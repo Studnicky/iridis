@@ -5,24 +5,23 @@ import type {
   TaskInterface,
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
+import type { JsonValueType } from '@studnicky/types';
 
+import { darken, lighten } from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
+import type { MuiPaletteColorEntity } from '../entities/MuiPaletteColorEntity.ts';
 import type { MuiOutputInterfaceType } from '../types/index.ts';
 
-/** MUI's `PaletteColor` shape: base tone plus its light/dark steps and paired text. */
-type MuiPaletteColor = {
-  'contrastText': string;
-  'dark':         string;
-  'light':        string;
-  'main':         string;
-};
+import { DERIVED_SHADE_OFFSETS } from './constants/DerivedShadeOffsets.ts';
 
 /**
  * Builds a single MUI palette color family (primary/secondary/error/...) from
- * a role name, falling back to the engine's `s300`/`s700` shade variants for
- * `light`/`dark` and to the paired `on-<role>` role for `contrastText`.
+ * a role name. `light`/`dark` prefer the engine's `s300`/`s700` shade
+ * variants when present, else are derived from the role's own color via
+ * {@link lighten}/{@link darken}; `contrastText` reads the paired
+ * `on-<role>` role.
  *
  * Returns `undefined` when the base role itself is absent — MUI expects a
  * family to be either fully present or omitted, never partially populated
@@ -33,13 +32,13 @@ class PaletteFamily {
     roles:    Record<string, ColorRecordInterfaceType>,
     variants: Record<string, Record<string, ColorRecordInterfaceType>>,
     role:     string
-  ): MuiPaletteColor | undefined {
+  ): MuiPaletteColorEntity.Type | undefined {
     const base = roles[role];
     if (base === undefined) {return undefined;}
 
     const main  = base.hex;
-    const light = variants.s300?.[role]?.hex ?? main;
-    const dark  = variants.s700?.[role]?.hex ?? main;
+    const light = variants.s300?.[role]?.hex ?? lighten.apply(base, DERIVED_SHADE_OFFSETS.light).hex;
+    const dark  = variants.s700?.[role]?.hex ?? darken.apply(base, DERIVED_SHADE_OFFSETS.dark).hex;
 
     const contrastText = roles[`on-${role}`]?.hex ?? roles.text?.hex ?? '#ffffff';
 
@@ -53,14 +52,14 @@ class PaletteFamily {
  * import into `createTheme({ palette })`.
  */
 class PaletteToJs {
-  static serialize(palette: Record<string, unknown>, indent = 2): string {
+  static serialize(palette: Record<string, JsonValueType>, indent = 2): string {
     const pad = ' '.repeat(indent);
     const lines: string[] = ['{'];
     for (const [key, value] of Object.entries(palette)) {
       if (typeof value === 'string') {
         lines.push(`${pad}'${key}': '${value}',`);
-      } else if (value !== null && typeof value === 'object') {
-        const nested = PaletteToJs.serialize(value as Record<string, unknown>, indent + 2);
+      } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        const nested = PaletteToJs.serialize(value, indent + 2);
         lines.push(`${pad}'${key}': ${nested},`);
       }
     }
@@ -85,10 +84,10 @@ export class EmitMuiTheme implements TaskInterface {
     'writes':      ['outputs.mui:theme']
   };
 
-  run(state: PaletteStateInterface, ctx: PipelineContextInterface): void {
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const { roles, variants } = state;
 
-    const palette: Record<string, unknown> = {};
+    const palette: Record<string, JsonValueType> = {};
 
     const primary = PaletteFamily.build(roles, variants, 'brand');
     if (primary !== undefined) {palette.primary = primary;}
@@ -139,7 +138,7 @@ export class EmitMuiTheme implements TaskInterface {
 
     state.outputs['mui:theme'] = output;
 
-    ctx.logger.debug(
+    context.logger.debug(
       LogBody.create()
         .component('EmitMuiTheme')
         .operation('run')

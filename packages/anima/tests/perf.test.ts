@@ -1,7 +1,7 @@
+import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 
 import { evaluate } from '../src/index.ts';
 
@@ -10,22 +10,24 @@ const ROLE_NAMES = [
   'muted', 'onAccent', 'onButton', 'positive', 'surface', 'text'
 ];
 
-function makePalette(hueOffset: number): PaletteInterfaceType {
-  const palette: PaletteInterfaceType = {};
-  for (let i = 0; i < ROLE_NAMES.length; i += 1) {
-    palette[ROLE_NAMES[i] as string] = { 'c': 0.1, 'h': (i * 30 + hueOffset) % 360, 'l': 0.5 };
+class PerformanceFixture {
+  static makePalette(hueOffset: number): PaletteInterfaceType {
+    const palette: PaletteInterfaceType = {};
+    for (const [roleIndex, roleName] of ROLE_NAMES.entries()) {
+      palette[roleName] = { 'c': 0.1, 'h': (roleIndex * 30 + hueOffset) % 360, 'l': 0.5 };
+    }
+    return palette;
   }
-  return palette;
 }
 
-const FROM = makePalette(0);
-const TO   = makePalette(180);
+const FROM = PerformanceFixture.makePalette(0);
+const TO   = PerformanceFixture.makePalette(180);
 
-test('evaluate: a 12-role palette frame evaluates well under budget (averaged over many iterations)', () => {
+await test('evaluate: a 12-role palette frame evaluates well under budget (averaged over many iterations)', () => {
   const ITERATIONS = 1000;
 
   // Warm up.
-  for (let i = 0; i < 100; i += 1) evaluate(FROM, TO, 0.5);
+  for (let i = 0; i < 100; i += 1) {evaluate(FROM, TO, 0.5);}
 
   const startedAt = process.hrtime.bigint();
   for (let i = 0; i < ITERATIONS; i += 1) {
