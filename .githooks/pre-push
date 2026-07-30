@@ -38,15 +38,24 @@ empty_sha=0000000000000000000000000000000000000000
 push_range=""
 pushed_branches=""
 pushed_tags=""
-while read -r local_ref local_sha _remote_ref _remote_sha; do
-  case "$local_ref" in
+has_pushed_content=false
+# A ref-deletion push reports local_ref as the literal string "(delete)"
+# rather than the ref's path, so branch/tag identity is read from remote_ref
+# instead — the field that names the ref whether it's being created, updated,
+# or deleted.
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
     refs/heads/*)
-      pushed_branches="$pushed_branches ${local_ref#refs/heads/}"
-      if [ "$local_sha" != "$empty_sha" ] && [ -z "$push_range" ]; then
-        push_range=$(compute_push_range "$local_sha") || true
+      branch_name="${remote_ref#refs/heads/}"
+      pushed_branches="$pushed_branches $branch_name"
+      if [ "$local_sha" != "$empty_sha" ]; then
+        has_pushed_content=true
+        if [ -z "$push_range" ]; then
+          push_range=$(compute_push_range "$local_sha") || true
+        fi
       fi
-      case "$local_ref" in
-        refs/heads/release/*|refs/heads/hotfix/*) base_ref=origin/main ;;
+      case "$branch_name" in
+        release/*|hotfix/*) base_ref=origin/main ;;
         *) base_ref="$default_ref" ;;
       esac
       if ! git show-ref --verify --quiet "refs/remotes/${base_ref}"; then
@@ -54,11 +63,14 @@ while read -r local_ref local_sha _remote_ref _remote_sha; do
         git fetch --quiet origin "+refs/heads/${remote_branch}:refs/remotes/origin/${remote_branch}" || true
       fi
       if [ -n "$base_ref" ] && [ "$local_sha" != "$empty_sha" ]; then
-        check_rebased_onto_base "${base_ref#origin/}" "$local_sha" "$local_ref"
+        check_rebased_onto_base "${base_ref#origin/}" "$local_sha" "$remote_ref"
       fi
       ;;
     refs/tags/*)
-      pushed_tags="$pushed_tags ${local_ref#refs/tags/}"
+      pushed_tags="$pushed_tags ${remote_ref#refs/tags/}"
+      if [ "$local_sha" != "$empty_sha" ]; then
+        has_pushed_content=true
+      fi
       ;;
   esac
 done <<EOF
@@ -74,6 +86,15 @@ for pushed_branch in $pushed_branches; do
       ;;
   esac
 done
+
+# A push that only deletes refs introduces no commits, so there is no diff to
+# validate; the earlier loop leaves push_range empty in this case, which would
+# otherwise fall through to `_set_all_changed` and run the full suite for a
+# ref that no longer exists.
+if [ "$has_pushed_content" = false ] && { [ -n "$pushed_branches" ] || [ -n "$pushed_tags" ]; }; then
+  echo "pre-push: deletion-only push, skipping validation"
+  exit 0
+fi
 
 tag_only_push=false
 if [ -z "$pushed_branches" ] && [ -n "$pushed_tags" ]; then
