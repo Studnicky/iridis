@@ -38,12 +38,16 @@ empty_sha=0000000000000000000000000000000000000000
 push_range=""
 pushed_branches=""
 pushed_tags=""
+has_pushed_content=false
 while read -r local_ref local_sha _remote_ref _remote_sha; do
   case "$local_ref" in
     refs/heads/*)
       pushed_branches="$pushed_branches ${local_ref#refs/heads/}"
-      if [ "$local_sha" != "$empty_sha" ] && [ -z "$push_range" ]; then
-        push_range=$(compute_push_range "$local_sha") || true
+      if [ "$local_sha" != "$empty_sha" ]; then
+        has_pushed_content=true
+        if [ -z "$push_range" ]; then
+          push_range=$(compute_push_range "$local_sha") || true
+        fi
       fi
       case "$local_ref" in
         refs/heads/release/*|refs/heads/hotfix/*) base_ref=origin/main ;;
@@ -59,6 +63,9 @@ while read -r local_ref local_sha _remote_ref _remote_sha; do
       ;;
     refs/tags/*)
       pushed_tags="$pushed_tags ${local_ref#refs/tags/}"
+      if [ "$local_sha" != "$empty_sha" ]; then
+        has_pushed_content=true
+      fi
       ;;
   esac
 done <<EOF
@@ -74,6 +81,15 @@ for pushed_branch in $pushed_branches; do
       ;;
   esac
 done
+
+# A push that only deletes refs introduces no commits, so there is no diff to
+# validate; the earlier loop leaves push_range empty in this case, which would
+# otherwise fall through to `_set_all_changed` and run the full suite for a
+# ref that no longer exists.
+if [ "$has_pushed_content" = false ] && { [ -n "$pushed_branches" ] || [ -n "$pushed_tags" ]; }; then
+  echo "pre-push: deletion-only push, skipping validation"
+  exit 0
+fi
 
 tag_only_push=false
 if [ -z "$pushed_branches" ] && [ -n "$pushed_tags" ]; then
