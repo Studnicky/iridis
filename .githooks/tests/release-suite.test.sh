@@ -27,8 +27,8 @@ assert_release_suite_dispatches_shared_gates() {
   pass_count=$((pass_count + 1))
 }
 
-assert_release_suite_backmerge_preserves_base_changesets() {
-  local repo base_sha
+assert_release_suite_backmerge_accepts_release_changeset_delta() {
+  local repo base_sha main_sha
 
   repo=$(make_repo)
   (
@@ -36,26 +36,99 @@ assert_release_suite_backmerge_preserves_base_changesets() {
     mkdir -p .changeset packages/a
     printf '%s\n' '{"name":"repo","version":"1.0.0"}' > package.json
     printf '%s\n' '{"name":"a","version":"1.0.0"}' > packages/a/package.json
+    printf '%s\n' 'release' > .changeset/release.md
     printf '%s\n' 'pending' > .changeset/pending.md
     git add -A
-    git commit -q -m "chore: pending develop changeset"
+    git commit -q -m "chore: prepare release changesets"
     base_sha=$(git rev-parse HEAD)
     git update-ref refs/remotes/origin/develop "$base_sha"
 
-    PATH="$repo/bin:$PATH" /bin/bash "$RELEASE_SUITE" verify-backmerge 1.0.0 origin/develop
+    git switch -q -c main "$base_sha"
+    git rm -q .changeset/release.md
+    git commit -q -m "chore(release): consume release changeset"
+    main_sha=$(git rev-parse HEAD)
+    git update-ref refs/remotes/origin/main "$main_sha"
 
-    printf '%s\n' 'changed' > .changeset/pending.md
+    git switch -q develop
+    git merge --ff-only -q main
+    PATH="$repo/bin:$PATH" /bin/bash "$RELEASE_SUITE" verify-backmerge 1.0.0 origin/develop origin/main
+  )
+  rm -rf "$repo"
+  pass_count=$((pass_count + 1))
+}
+
+assert_release_suite_backmerge_accepts_omitted_approved_delta() {
+  local repo base_sha main_sha
+
+  repo=$(make_repo)
+  (
+    cd "$repo" || exit 1
+    mkdir -p .changeset packages/a
+    printf '%s\n' '{"name":"repo","version":"1.0.0"}' > package.json
+    printf '%s\n' '{"name":"a","version":"1.0.0"}' > packages/a/package.json
+    printf '%s\n' 'release' > .changeset/release.md
+    printf '%s\n' 'provenance' > .changeset/provenance.md
+    printf '%s\n' 'pending' > .changeset/pending.md
+    git add -A
+    git commit -q -m "chore: prepare release changesets"
+    base_sha=$(git rev-parse HEAD)
+    git update-ref refs/remotes/origin/develop "$base_sha"
+
+    git switch -q -c main "$base_sha"
+    git rm -q .changeset/release.md .changeset/provenance.md
+    git commit -q -m "chore(release): consume release changesets"
+    main_sha=$(git rev-parse HEAD)
+    git update-ref refs/remotes/origin/main "$main_sha"
+
+    git switch -q develop
+    git merge --ff-only -q main
+    printf '%s\n' 'provenance' > .changeset/provenance.md
+    git add .changeset/provenance.md
+    git commit -q -m "chore: retain provenance changeset"
+    PATH="$repo/bin:$PATH" /bin/bash "$RELEASE_SUITE" verify-backmerge 1.0.0 origin/develop origin/main
+  )
+  rm -rf "$repo"
+  pass_count=$((pass_count + 1))
+}
+
+assert_release_suite_backmerge_rejects_pending_changeset_delta() {
+  local repo base_sha main_sha
+
+  repo=$(make_repo)
+  (
+    cd "$repo" || exit 1
+    mkdir -p .changeset packages/a
+    printf '%s\n' '{"name":"repo","version":"1.0.0"}' > package.json
+    printf '%s\n' '{"name":"a","version":"1.0.0"}' > packages/a/package.json
+    printf '%s\n' 'release' > .changeset/release.md
+    printf '%s\n' 'pending' > .changeset/pending.md
+    git add -A
+    git commit -q -m "chore: prepare release changesets"
+    base_sha=$(git rev-parse HEAD)
+    git update-ref refs/remotes/origin/develop "$base_sha"
+
+    git switch -q -c main "$base_sha"
+    git rm -q .changeset/release.md
+    git commit -q -m "chore(release): consume release changeset"
+    main_sha=$(git rev-parse HEAD)
+    git update-ref refs/remotes/origin/main "$main_sha"
+
+    git switch -q develop
+    git merge --ff-only -q main
+    printf '%s\n' 'altered pending' > .changeset/pending.md
     git add .changeset/pending.md
     git commit -q -m "chore: alter pending changeset"
-    if PATH="$repo/bin:$PATH" /bin/bash "$RELEASE_SUITE" verify-backmerge 1.0.0 origin/develop 2>/tmp/release-suite-backmerge.out; then
-      fail "release backmerge changesets" "expected changed .changeset entries to fail"
+    if PATH="$repo/bin:$PATH" /bin/bash "$RELEASE_SUITE" verify-backmerge 1.0.0 origin/develop origin/main 2>/tmp/release-suite-backmerge.out; then
+      fail "release backmerge changesets" "expected altered pending .changeset entry to fail"
     fi
-    assert_contains "release backmerge error" "Release backmerge changes .changeset entries" "$(cat /tmp/release-suite-backmerge.out)"
+    assert_contains "release backmerge error" "Release backmerge .changeset delta contains records not approved by origin/main" "$(cat /tmp/release-suite-backmerge.out)"
   )
   rm -rf "$repo"
   pass_count=$((pass_count + 1))
 }
 
 assert_release_suite_dispatches_shared_gates
-assert_release_suite_backmerge_preserves_base_changesets
+assert_release_suite_backmerge_accepts_release_changeset_delta
+assert_release_suite_backmerge_accepts_omitted_approved_delta
+assert_release_suite_backmerge_rejects_pending_changeset_delta
 test_main
