@@ -13,7 +13,7 @@
       "postcss": ">=8.5.18",
       "read-yaml-file>js-yaml": "3.15.2",
       "semver": "7.8.5",
-      "fast-uri": "3.1.7",
+      "fast-uri": "3.1.8",
       "@apidevtools/json-schema-ref-parser>js-yaml": "4.3.2",
       "shell-quote": "1.11.0",
       "@studnicky/fetch>undici": "8.11.2",
