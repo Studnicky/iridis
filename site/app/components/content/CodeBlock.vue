@@ -125,6 +125,8 @@ const expanded = ref(previewState.value.expandedByDefault);
    below it. No absolute positioning, so there is no scrollbar/corner overlap
    to fight: the button's containment is structural, not coordinate math. */
 .code-block-wrap {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   border-radius: 0.5rem;

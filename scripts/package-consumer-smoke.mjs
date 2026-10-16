@@ -38,8 +38,8 @@ import { packagePipeline } from './package-pipeline.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPECTED_PACKAGES = 18;
-const EXPECTED_SOURCES = 324;
-const EXPECTED_ARTIFACTS = 1296;
+const EXPECTED_SOURCES = 330;
+const EXPECTED_ARTIFACTS = 1320;
 const EXPECTED_EXPORTS = 42;
 const METADATA_FILES = ['README.md', 'LICENSE', 'CHANGELOG.md', 'package.json'];
 const DEPENDENCY_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies'];
@@ -436,8 +436,12 @@ const dependencyEntriesFor = (manifest) => {
       if (typeof range !== 'string' || (range !== WORKSPACE_RANGE && validRange(range) === null)) {
         fail(`invalid ${field} range for ${manifest.name}: ${name}=${String(range)}`);
       }
-      const optional = field === 'optionalDependencies'
-        || (field === 'peerDependencies' && manifest.peerDependenciesMeta?.[name]?.optional === true);
+      const optionalPeer = field === 'peerDependencies'
+        && manifest.peerDependenciesMeta?.[name]?.optional === true;
+      if (optionalPeer) {
+        continue;
+      }
+      const optional = field === 'optionalDependencies';
       entries.push({
         field,
         name,

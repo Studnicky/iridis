@@ -172,7 +172,7 @@ html.is-switching-theme *::after {
 body {
   position: relative;
   background: var(--ui-bg);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 #__nuxt { position: relative; z-index: 1; }
 
@@ -309,8 +309,8 @@ body {
 .hero-orb:nth-child(1) { width: 7rem; height: 7rem; left: 8%; top: 50%; animation-delay: 0s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
 .hero-orb:nth-child(2) { width: 10rem; height: 10rem; left: 28%; top: 8%; animation-delay: 0.9s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
 .hero-orb:nth-child(3) { width: 13rem; height: 13rem; left: 48%; top: 50%; animation-delay: 1.8s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
-.hero-orb:nth-child(4) { width: 16rem; height: 16rem; left: 68%; top: 8%; animation-delay: 2.7s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
-.hero-orb:nth-child(5) { width: 19rem; height: 19rem; left: 88%; top: 50%; animation-delay: 3.6s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
+.hero-orb:nth-child(4) { width: 16rem; height: 16rem; right: 0; left: auto; top: 8%; animation-delay: 2.7s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
+.hero-orb:nth-child(5) { width: 19rem; height: 19rem; right: 0; left: auto; top: 50%; animation-delay: 3.6s; opacity: calc(0.45 * var(--iridis-glow-strength)); }
 
 /* ── Orbit: three rings, each its own palette role, spinning at independent
    speeds/directions while the whole rig slowly precesses — genuinely three

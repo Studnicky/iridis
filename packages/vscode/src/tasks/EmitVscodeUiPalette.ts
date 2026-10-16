@@ -5,28 +5,13 @@ import type {
   TaskInterface,
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
+import type { RoleProvenanceMapInterfaceType } from '@studnicky/iridis/types';
 
 import { ModuleError } from '@studnicky/errors';
-import {
-  colorRecordFactory,
-  contrastText,
-  darken,
-  FramingSurface,
-  lighten,
-  mixHsl
-} from '@studnicky/iridis';
+import { EngineMetadata, FramingSurface, mixHsl } from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 
-import { recordToVscodeColor } from '../util/recordToVscodeColor.ts';
-
-/**
- * Derives all 101 VS Code workbench colors from the 16-role palette.
- *
- * Lifted from vscode-arcade-blaster/dev/themes/tools/uiPaletteGenerator.ts.
- * The derivation formulas use core math primitives directly via typed
- * imports (no string-keyed dispatch).
- */
 
 class Role {
   static get(roles: Readonly<Record<string, ColorRecordInterfaceType>>, name: string): ColorRecordInterfaceType {
@@ -45,197 +30,158 @@ class EmitVscodeUiPalette implements TaskInterface {
   readonly 'name' = 'emit:vscodeUiPalette';
 
   readonly 'manifest': TaskManifestInterfaceType = {
-    'description': 'Derives 101 VS Code workbench colors from the 16-role palette. Lifts uiPaletteGenerator.ts derivation.',
+    'description': 'Emits 129 VS Code workbench colors from the resolved 64-role VS Code vocabulary.',
     'name':        'emit:vscodeUiPalette',
     'phase':       undefined,
-    'reads':       ['roles', 'runtime.framing', 'variants'],
-    'requires':    undefined,
+    'reads':       ['roles', 'metadata.core:roleProvenance', 'runtime.framing', 'variants'],
+    'requires':    ['vscode:deriveUiRoles'],
     'writes':      ['outputs.vscode:workbenchColors']
   };
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    // `state.runtime.framing` selects state.roles or a state.variants
-    // entry (see FramingSurface); every slot below derives from that
-    // resolved surface, not state.roles directly.
     const roles = FramingSurface.resolve(state);
+    const color = (name: string): string => {
+      const record = Role.get(roles, name);
+      return record.hex;
+    };
+    const alpha = (name: string, suffix: string): string => {
+      const record = Role.get(roles, name);
+      return `${record.hex}${suffix}`;
+    };
 
-    const bgRole      = Role.get(roles, 'background');
-    const fgRole      = Role.get(roles, 'foreground');
-    const accentRole  = Role.get(roles, 'keyword');
-    const mutedRole   = Role.get(roles, 'muted');
-    const surfaceRole = Role.get(roles, 'surface');
-    const errorRole   = Role.get(roles, 'error');
-    const infoRole    = Role.get(roles, 'info');
-    const successRole = Role.get(roles, 'success');
-    const warningRole = Role.get(roles, 'warning');
-    const functionRole = Role.get(roles, 'function');
-    const typeRole    = Role.get(roles, 'type');
-
-    // Two parallel strings per role:
-    //  - `*_HEX` for math/composition paths (mixHsl/lighten/darken/contrastText)
-    //    and for the `${...}40` template alpha-suffix idiom (CSS Color 4
-    //    `color(display-p3 …)` cannot accept an 8-digit alpha suffix);
-    //  - `*` (the P3-aware form via {@link recordToVscodeColor}) for slot
-    //    values that pass a role through verbatim, those gain
-    //    `color(display-p3 r g b)` when the underlying record carries P3.
-    const bg_HEX      = bgRole.hex;
-    const fg_HEX      = fgRole.hex;
-    const accent_HEX  = accentRole.hex;
-    const muted_HEX   = mutedRole.hex;
-    const error_HEX   = errorRole.hex;
-    const info_HEX    = infoRole.hex;
-    const success_HEX = successRole.hex;
-    const warning_HEX = warningRole.hex;
-    const functionHex = functionRole.hex;
-    const type_HEX    = typeRole.hex;
-
-    const bg      = recordToVscodeColor(bgRole);
-    const fg      = recordToVscodeColor(fgRole);
-    const accent  = recordToVscodeColor(accentRole);
-    const muted   = recordToVscodeColor(mutedRole);
-    const surface = recordToVscodeColor(surfaceRole);
-    const error   = recordToVscodeColor(errorRole);
-    const info    = recordToVscodeColor(infoRole);
-    const success = recordToVscodeColor(successRole);
-    const warning = recordToVscodeColor(warningRole);
-    const functionColor = recordToVscodeColor(functionRole);
-    const type_   = recordToVscodeColor(typeRole);
-
-    // Single shared light/dark measure (see FramingSurface): WCAG relative
-    // luminance of the background role, thresholded at 0.5. EmitVscodeThemeJson
-    // reads the same resolved roles through the same measure, so the emitted
-    // `type` field always agrees with the chrome-mixing weights derived here.
-    const isLight = FramingSurface.isLight(roles);
-
-    const fromHex = (h: string): ColorRecordInterfaceType => { const result = colorRecordFactory.fromHex(h); return result; };
-
-    const mixHslHex = (a: string, b: string, w: number): string =>
-    { const result = mixHsl.apply(fromHex(a), fromHex(b), w).hex; return result; };
-    const lightenHex = (c: string, a: number): string =>
-    { const result = lighten.apply(fromHex(c), a).hex; return result; };
-    const darkenHex = (c: string, a: number): string =>
-    { const result = darken.apply(fromHex(c), a).hex; return result; };
-    const contrastTextHex = (c: string): string =>
-    { const result = contrastText.apply(fromHex(c)).hex; return result; };
-
-    // Math-derived intermediates always work in hex; the math helpers
-    // (`fromHex` → core math → `.hex`) cannot accept a P3 functional
-    // string. `${color}40` alpha-suffix concatenation likewise requires
-    // a 6-digit hex; CSS Color 4 forbids the 8-digit alpha shorthand on
-    // `color(display-p3 ...)` (the `/ alpha` slash-suffix form is the
-    // only legal P3 alpha syntax, but VS Code's parser predates that).
-    // Direct role passthroughs (slot value === a role) use the P3-aware
-    // local so wide-gamut roles surface as `color(display-p3 r g b)`.
-    const activeSelection = mixHslHex(bg_HEX, accent_HEX, isLight ? 0.28 : 0.35);
-    const border = mixHslHex(bg_HEX, fg_HEX, isLight ? 0.14 : 0.12);
-    const chromeBackground = isLight ? mixHslHex(bg_HEX, fg_HEX, 0.06) : darkenHex(bg_HEX, 0.2);
-    const chromeInactiveBackground = isLight ? mixHslHex(bg_HEX, fg_HEX, 0.04) : darkenHex(bg_HEX, 0.15);
-    const hover = mixHslHex(bg_HEX, fg_HEX, isLight ? 0.06 : 0.08);
-    const inputBackground = isLight ? mixHslHex(bg_HEX, fg_HEX, 0.04) : darkenHex(bg_HEX, 0.1);
-    const selection = mixHslHex(bg_HEX, accent_HEX, isLight ? 0.18 : 0.25);
-
+    const provenance: Readonly<RoleProvenanceMapInterfaceType> = EngineMetadata.get(state.metadata, 'core:roleProvenance') ?? {};
+    const bracketBackgroundRole = provenance.bracketMatch?.origin === 'stated' ? 'bracketMatch' : 'selection';
+    const bracketBorderRole = provenance.bracketMatch?.origin === 'stated' ? 'bracketMatch' : 'accent';
     const workbenchColors: Record<string, string> = {
-      'activityBar.background':                        chromeInactiveBackground,
-      'activityBar.border':                            border,
-      'activityBar.foreground':                        fg,
-      'activityBar.inactiveForeground':                muted,
-      'activityBarBadge.background':                   accent,
-      'activityBarBadge.foreground':                   contrastTextHex(accent_HEX),
-      'badge.background':                              accent,
-      'badge.foreground':                              contrastTextHex(accent_HEX),
-      'button.background':                             accent,
-      'button.foreground':                             contrastTextHex(accent_HEX),
-      'button.hoverBackground':                        lightenHex(accent_HEX, 0.1),
-      'button.secondaryBackground':                    activeSelection,
-      'button.secondaryForeground':                    fg,
-      'button.secondaryHoverBackground':               mixHslHex(activeSelection, fg_HEX, 0.1),
-      'editor.background':                             bg,
-      'editor.findMatchBackground':                    `${accent_HEX}40`,
-      'editor.findMatchHighlightBackground':           `${accent_HEX}25`,
-      'editor.foreground':                             fg,
-      'editor.lineHighlightBackground':                hover,
-      'editor.selectionBackground':                    selection,
-      'editor.selectionHighlightBackground':           `${selection}80`,
-      'editorBracketMatch.background':                 `${selection}60`,
-      'editorBracketMatch.border':                     `${accent_HEX}80`,
-      'editorCursor.foreground':                       accent,
-      'editorGroupHeader.tabsBackground':              surface,
-      'editorGroupHeader.tabsBorder':                  border,
-      'editorHint.foreground':                         success,
-      'editorIndentGuide.activeBackground1':           mixHslHex(bg_HEX, fg_HEX, 0.2),
-      'editorIndentGuide.background1':                 border,
-      'editorInfo.foreground':                         info,
-      'editorLineNumber.activeForeground':             fg,
-      'editorLineNumber.foreground':                   muted,
-      'editorWhitespace.foreground':                   border,
-      'errorForeground':                               error,
-      'focusBorder':                                   `${accent_HEX}80`,
-      'gitDecoration.addedResourceForeground':         success,
-      'gitDecoration.conflictingResourceForeground':   warning,
-      'gitDecoration.deletedResourceForeground':       error,
-      'gitDecoration.ignoredResourceForeground':       muted,
-      'gitDecoration.modifiedResourceForeground':      info,
-      'gitDecoration.untrackedResourceForeground':     warning,
-      'input.background':                              inputBackground,
-      'input.border':                                  border,
-      'input.foreground':                              fg,
-      'input.placeholderForeground':                   muted,
-      'inputOption.activeBackground':                  `${accent_HEX}30`,
-      'inputOption.activeBorder':                      accent,
-      'list.activeSelectionBackground':                activeSelection,
-      'list.activeSelectionForeground':                fg,
-      'list.focusBackground':                          activeSelection,
-      'list.highlightForeground':                      accent,
-      'list.hoverBackground':                          hover,
-      'panel.background':                              surface,
-      'panel.border':                                  border,
-      'panelTitle.activeForeground':                   fg,
-      'panelTitle.inactiveForeground':                 muted,
-      'peekView.border':                               accent,
-      'progressBar.background':                        accent,
-      'scrollbarSlider.activeBackground':              `${muted_HEX}70`,
-      'scrollbarSlider.background':                    `${muted_HEX}30`,
-      'scrollbarSlider.hoverBackground':               `${muted_HEX}50`,
-      'sideBar.background':                            surface,
-      'sideBar.border':                                border,
-      'sideBar.foreground':                            mixHslHex(fg_HEX, muted_HEX, 0.3),
-      'sideBarSectionHeader.foreground':               fg,
-      'statusBar.background':                          chromeBackground,
-      'statusBar.border':                              border,
-      'statusBar.debuggingBackground':                 accent,
-      'statusBar.debuggingForeground':                 contrastTextHex(accent_HEX),
-      'statusBar.foreground':                          mixHslHex(fg_HEX, muted_HEX, 0.5),
-      'tab.activeBackground':                          bg,
-      'tab.activeBorder':                              accent,
-      'tab.activeForeground':                          fg,
-      'tab.border':                                    border,
-      'tab.hoverBackground':                           hover,
-      'tab.inactiveBackground':                        surface,
-      'tab.inactiveForeground':                        muted,
-      'terminal.ansiBlack':                            border,
-      'terminal.ansiBlue':                             info,
-      'terminal.ansiBrightBlack':                      muted,
-      'terminal.ansiBrightBlue':                       lightenHex(info_HEX, 0.15),
-      'terminal.ansiBrightCyan':                       lightenHex(functionHex, 0.15),
-      'terminal.ansiBrightGreen':                      lightenHex(success_HEX, 0.15),
-      'terminal.ansiBrightMagenta':                    lightenHex(type_HEX, 0.15),
-      'terminal.ansiBrightRed':                        lightenHex(error_HEX, 0.15),
-      'terminal.ansiBrightWhite':                      '#ffffff',
-      'terminal.ansiBrightYellow':                     lightenHex(warning_HEX, 0.15),
-      'terminal.ansiCyan':                             functionColor,
-      'terminal.ansiGreen':                            success,
-      'terminal.ansiMagenta':                          type_,
-      'terminal.ansiRed':                              error,
-      'terminal.ansiWhite':                            fg,
-      'terminal.ansiYellow':                           warning,
-      'terminal.background':                           bg,
-      'terminal.foreground':                           fg,
-      'titleBar.activeBackground':                     chromeBackground,
-      'titleBar.activeForeground':                     mixHslHex(fg_HEX, muted_HEX, 0.3),
-      'titleBar.border':                               border,
-      'titleBar.inactiveBackground':                   chromeInactiveBackground,
-      'titleBar.inactiveForeground':                   muted,
-      'warningForeground':                             warning
+      'activityBar.background':                        color('chromeInactive'),
+      'activityBar.border':                            color('border'),
+      'activityBar.foreground':                        color('foreground'),
+      'activityBar.inactiveForeground':                color('muted'),
+      'activityBarBadge.background':                   color('accent'),
+      'activityBarBadge.foreground':                   color('onAccent'),
+      'badge.background':                              color('accent'),
+      'badge.foreground':                              color('onAccent'),
+      'button.background':                             color('accent'),
+      'button.foreground':                             color('onAccent'),
+      'button.hoverBackground':                        color('accentHover'),
+      'button.secondaryBackground':                    color('buttonSecondary'),
+      'button.secondaryForeground':                    color('foreground'),
+      'button.secondaryHoverBackground':               mixHsl.apply(Role.get(roles, 'buttonSecondary'), Role.get(roles, 'foreground'), 0.1).hex,
+      'diffEditor.insertedLineBackground':             alpha('diffInserted', '20'),
+      'diffEditor.insertedTextBackground':             alpha('diffInserted', '40'),
+      'diffEditor.removedLineBackground':              alpha('diffRemoved', '20'),
+      'diffEditor.removedTextBackground':              alpha('diffRemoved', '40'),
+      'editor.background':                             color('background'),
+      'editor.findMatchBackground':                    alpha('findMatch', '40'),
+      'editor.findMatchHighlightBackground':           alpha('findMatch', '25'),
+      'editor.foreground':                             color('foreground'),
+      'editor.lineHighlightBackground':                color('hover'),
+      'editor.selectionBackground':                    color('selection'),
+      'editor.selectionHighlightBackground':           alpha('selection', '80'),
+      'editorBracketHighlight.foreground1':            color('bracketLevel1'),
+      'editorBracketHighlight.foreground2':            color('bracketLevel2'),
+      'editorBracketHighlight.foreground3':            color('bracketLevel3'),
+      'editorBracketHighlight.foreground4':            color('bracketLevel4'),
+      'editorBracketHighlight.foreground5':            color('bracketLevel5'),
+      'editorBracketHighlight.foreground6':            color('bracketLevel6'),
+      'editorBracketMatch.background':                 alpha(bracketBackgroundRole, '60'),
+      'editorBracketMatch.border':                     alpha(bracketBorderRole, '80'),
+      'editorCursor.foreground':                       color('accent'),
+      'editorError.foreground':                        color('error'),
+      'editorGroupHeader.tabsBackground':              color('surface'),
+      'editorGroupHeader.tabsBorder':                  color('border'),
+      'editorGutter.addedBackground':                  color('gitAdded'),
+      'editorGutter.deletedBackground':                color('gitDeleted'),
+      'editorGutter.modifiedBackground':               color('gitModified'),
+      'editorHint.foreground':                         color('success'),
+      'editorHoverWidget.background':                 color('widgetBackground'),
+      'editorHoverWidget.border':                     color('widgetBorder'),
+      'editorIndentGuide.activeBackground1':           color('guideActive'),
+      'editorIndentGuide.background1':                 color('guide'),
+      'editorInfo.foreground':                          color('info'),
+      'editorLineNumber.activeForeground':             color('foreground'),
+      'editorLineNumber.foreground':                   color('muted'),
+      'editorSuggestWidget.background':                color('widgetBackground'),
+      'editorSuggestWidget.border':                    color('widgetBorder'),
+      'editorWarning.foreground':                      color('warning'),
+      'editorWhitespace.foreground':                   color('guide'),
+      'editorWidget.background':                       color('widgetBackground'),
+      'editorWidget.border':                           color('widgetBorder'),
+      'errorForeground':                               color('error'),
+      'focusBorder':                                   alpha('accent', '80'),
+      'gitDecoration.addedResourceForeground':         color('gitAdded'),
+      'gitDecoration.conflictingResourceForeground':   color('gitConflicting'),
+      'gitDecoration.deletedResourceForeground':       color('gitDeleted'),
+      'gitDecoration.ignoredResourceForeground':       color('muted'),
+      'gitDecoration.modifiedResourceForeground':      color('gitModified'),
+      'gitDecoration.untrackedResourceForeground':     color('gitUntracked'),
+      'input.background':                              color('inputBackground'),
+      'input.border':                                  color('border'),
+      'input.foreground':                              color('foreground'),
+      'input.placeholderForeground':                   color('muted'),
+      'inputOption.activeBackground':                  alpha('findMatch', '30'),
+      'inputOption.activeBorder':                      color('accent'),
+      'list.activeSelectionBackground':                color('selectionList'),
+      'list.activeSelectionForeground':                color('foreground'),
+      'list.focusBackground':                          color('selectionList'),
+      'list.highlightForeground':                      color('accent'),
+      'list.hoverBackground':                          color('hover'),
+      'list.warningForeground':                        color('warning'),
+      'menu.background':                               color('widgetBackground'),
+      'menu.border':                                   color('widgetBorder'),
+      'notifications.background':                      color('widgetBackground'),
+      'notifications.border':                          color('widgetBorder'),
+      'panel.background':                              color('surface'),
+      'panel.border':                                  color('border'),
+      'panelTitle.activeForeground':                   color('foreground'),
+      'panelTitle.inactiveForeground':                 color('muted'),
+      'peekView.border':                               color('accent'),
+      'progressBar.background':                        color('accent'),
+      'quickInput.background':                         color('widgetBackground'),
+      'scrollbarSlider.activeBackground':              alpha('muted', '70'),
+      'scrollbarSlider.background':                    alpha('muted', '30'),
+      'scrollbarSlider.hoverBackground':               alpha('muted', '50'),
+      'sideBar.background':                            color('surface'),
+      'sideBar.border':                                color('border'),
+      'sideBar.foreground':                            color('chromeForeground'),
+      'sideBarSectionHeader.foreground':               color('foreground'),
+      'statusBar.background':                          color('chrome'),
+      'statusBar.border':                              color('border'),
+      'statusBar.debuggingBackground':                 color('accent'),
+      'statusBar.debuggingForeground':                 color('onAccent'),
+      'statusBar.foreground':                          color('chromeForeground'),
+      'tab.activeBackground':                          color('background'),
+      'tab.activeBorder':                              color('accent'),
+      'tab.activeForeground':                          color('foreground'),
+      'tab.border':                                    color('border'),
+      'tab.hoverBackground':                           color('hover'),
+      'tab.inactiveBackground':                        color('surface'),
+      'tab.inactiveForeground':                        color('muted'),
+      'terminal.ansiBlack':                            color('ansiBlack'),
+      'terminal.ansiBlue':                             color('ansiBlue'),
+      'terminal.ansiBrightBlack':                      color('ansiBrightBlack'),
+      'terminal.ansiBrightBlue':                       color('ansiBrightBlue'),
+      'terminal.ansiBrightCyan':                       color('ansiBrightCyan'),
+      'terminal.ansiBrightGreen':                      color('ansiBrightGreen'),
+      'terminal.ansiBrightMagenta':                    color('ansiBrightMagenta'),
+      'terminal.ansiBrightRed':                        color('ansiBrightRed'),
+      'terminal.ansiBrightWhite':                      color('ansiBrightWhite'),
+      'terminal.ansiBrightYellow':                     color('ansiBrightYellow'),
+      'terminal.ansiCyan':                             color('ansiCyan'),
+      'terminal.ansiGreen':                            color('ansiGreen'),
+      'terminal.ansiMagenta':                          color('ansiMagenta'),
+      'terminal.ansiRed':                              color('ansiRed'),
+      'terminal.ansiWhite':                            color('ansiWhite'),
+      'terminal.ansiYellow':                           color('ansiYellow'),
+      'terminal.background':                           color('background'),
+      'terminal.foreground':                           color('foreground'),
+      'textLink.activeForeground':                     color('link'),
+      'textLink.foreground':                           color('link'),
+      'titleBar.activeBackground':                     color('chrome'),
+      'titleBar.activeForeground':                     color('chromeForeground'),
+      'titleBar.border':                               color('border'),
+      'titleBar.inactiveBackground':                   color('chromeInactive'),
+      'titleBar.inactiveForeground':                   color('muted')
     };
 
     state.outputs['vscode:workbenchColors'] = workbenchColors;
@@ -244,7 +190,7 @@ class EmitVscodeUiPalette implements TaskInterface {
         .component('EmitVscodeUiPalette')
         .operation('run')
         .status(LOG_STATUS.SUCCESS)
-        .message('Derived workbench colors')
+        .message('Emitted workbench colors')
         .context({ 'count': Object.keys(workbenchColors).length })
         .build()
     );

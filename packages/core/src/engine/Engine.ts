@@ -309,6 +309,20 @@ export class Engine implements EngineInterface {
       }
     }
 
+    const contrastPairs = input.roles?.contrastPairs;
+    if (contrastPairs !== undefined) {
+      for (const [index, pair] of contrastPairs.entries()) {
+        if (pair.maxRatio !== undefined && pair.maxRatio < pair.minRatio) {
+          const path = `contrastPairs[${index}].maxRatio`;
+          throw ValidationError.create({
+            'message':    `input.roles invalid: ${path}: must be greater than or equal to minRatio`,
+            'path':       'input.roles',
+            'violations': [{ 'message': 'must be greater than or equal to minRatio', 'path': path }]
+          });
+        }
+      }
+    }
+
     const state: PaletteStateInterface = {
       'colors':   [],
       'input':    input,

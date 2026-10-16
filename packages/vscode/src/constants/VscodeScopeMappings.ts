@@ -8,7 +8,7 @@
  * SemanticPaletteInterface.  The emit:vscodeSemanticRules task projects the 23
  * derived base-token colours onto these scopes to produce tokenColors[].
  */
-export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
+const mappings: Readonly<Record<string, readonly string[]>> = {
 
   'attribute': [
     // Generic attributes
@@ -913,3 +913,73 @@ export const SCOPE_MAPPINGS: Readonly<Record<string, readonly string[]>> = {
   ]
 
 } as const;
+
+/**
+ * Maps every published TextMate scope group to a generated base token. The
+ * table is exhaustive so theme emission never drops a scope group because its
+ * descriptive name differs from the semantic-token vocabulary.
+ */
+const baseTokens: Readonly<Record<string, string>> = {
+  'attribute':         'property',
+  'boolean':           'boolean',
+  'bracket':           'punctuation',
+  'builtin':           'type',
+  'class':             'class',
+  'comment':           'comment',
+  'comparison':        'operator',
+  'constant':          'constant',
+  'control':           'keyword',
+  'cssProperty':       'property',
+  'cssPseudo':         'property',
+  'cssSelector':       'type',
+  'cssUnit':           'number',
+  'cssValue':          'string',
+  'decorator':         'decorator',
+  'deprecated':        'comment',
+  'docComment':        'comment',
+  'docKeyword':        'keyword',
+  'enum':              'enum',
+  'enumMember':        'enumMember',
+  'escape':            'string',
+  'function':          'function',
+  'import':            'keyword',
+  'interface':         'interface',
+  'invalid':           'keyword',
+  'jsonKey':           'jsonKey',
+  'jsonValue':         'string',
+  'keyword':           'keyword',
+  'library':           'type',
+  'logical':           'operator',
+  'macro':             'macro',
+  'markdownBold':      'string',
+  'markdownCode':      'string',
+  'markdownHeading':   'type',
+  'markdownItalic':    'string',
+  'markdownLink':      'string',
+  'markdownQuote':     'comment',
+  'method':            'method',
+  'modifier':          'keyword',
+  'namespace':         'namespace',
+  'number':            'number',
+  'operator':          'operator',
+  'parameter':         'parameter',
+  'property':          'property',
+  'propertyReadonly':  'property',
+  'punctuation':       'punctuation',
+  'regexp':            'regexp',
+  'storage':           'type',
+  'string':            'string',
+  'tag':               'type',
+  'tagAttribute':      'property',
+  'tagPunctuation':    'punctuation',
+  'this':              'variable',
+  'type':              'type',
+  'typeParameter':     'typeParameter',
+  'variable':          'variable',
+  'variableReadonly':  'variable'
+} satisfies Readonly<Record<keyof typeof mappings, string>>;
+
+export const VSCODE_SCOPE_MAPPINGS = Object.freeze({
+  'baseTokens': baseTokens,
+  'mappings':   mappings
+});

@@ -1,30 +1,18 @@
 # @studnicky/iridis-vscode
 
-Generates a complete VS Code `theme.json` (workbench `colors`,
-`semanticTokenColors`, and `tokenColors` rules) from a 16-role palette. The
-plugin ships the canonical `vscodeRoleSchema16` schema and a five-task pipeline
-that lifts the raw palette into a full editor theme.
-
-Wide-gamut roles (records with `displayP3` populated) serialise to
-`color(display-p3 r g b)` strings in every emitted theme slot; sRGB-only roles
-stay as `#rrggbb` hex. VS Code 1.85+ accepts the CSS Color 4 form in any colour
-slot.
+Generate a portable VS Code `theme.json` from an explicitly framed, tiered palette. The plugin resolves a 64-role vocabulary, emits 129 registry-backed workbench colours, semantic-token rules, and TextMate token colours. Every emitted colour is sRGB `#RRGGBB` or `#RRGGBBAA`.
 
 ## Install
 
-GitHub Packages requires a personal access token (classic) with
-`read:packages`; the token's account must also have read access to this
-package's repository. Expose the token as `NODE_AUTH_TOKEN`, then configure
-the `@studnicky` scope before installing:
-
-```ini
-# ~/.npmrc
-@studnicky:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
-
 ```bash
 npm install @studnicky/iridis @studnicky/iridis-vscode
+```
+
+Packages publish through GitHub Packages. Configure npm with a token that has `read:packages` access:
+
+```ini
+@studnicky:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
 ## Usage
@@ -32,57 +20,77 @@ npm install @studnicky/iridis @studnicky/iridis-vscode
 ```ts
 import { Engine, coreTasks } from '@studnicky/iridis';
 import {
-  vscodePlugin,
-  vscodeRoleSchema16,
+  VSCODE_ROLE_SCHEMAS_64,
+  vscodePlugin
 } from '@studnicky/iridis-vscode';
 
 const engine = new Engine();
 for (const task of coreTasks) engine.tasks.register(task);
 engine.adopt(vscodePlugin);
-
 engine.pipeline([
-  'intake:hex',
+  'vscode:seedRoles',
   'resolve:roles',
   'expand:family',
+  'vscode:deriveUiRoles',
   'enforce:contrast',
   'derive:variant',
   'vscode:expandTokens',
   'vscode:applyModifiers',
   'emit:vscodeSemanticRules',
   'emit:vscodeUiPalette',
-  'emit:vscodeThemeJson',
+  'emit:vscodeThemeJson'
 ]);
 
 const state = engine.run({
-  'bypass':    undefined,
-  'colors':    ['#8B5CF6', '#EC4899', '#0d1117', '#e6edf3' /* ...16 seeds */ ],
-  'contrast':  undefined,
-  'emit':      undefined,
+  'bypass': undefined,
+  'colors': [{
+    'tier': 4,
+    'framing': 'dark',
+    'roles': {
+      'background': '#101820',
+      'foreground': '#f5f7fa',
+      'keyword': '#7c3aed',
+      'error': '#ef4444'
+    }
+  }],
+  'contrast': undefined,
+  'emit': undefined,
   'maxColors': undefined,
-  'metadata':  { 'themeName': 'Iridis Dark' },
-  'roles':     vscodeRoleSchema16,
-  'runtime':   undefined,
+  'metadata': { 'themeName': 'Iridis Dark' },
+  'roles': VSCODE_ROLE_SCHEMAS_64.dark,
+  'runtime': { 'colorSpace': undefined, 'extra': undefined, 'framing': 'dark' }
 });
 
-const themeJson       = state.outputs['vscode:themeJson']!;
-const workbenchColors = state.outputs['vscode:workbenchColors'];
-const semanticRules   = state.outputs['vscode:semanticTokenRules'];
-// themeJson.colors:              workbench Record<string, string>
-// themeJson.semanticTokenColors: Record<string, string | { foreground, fontStyle }>
-// themeJson.tokenColors:         TokenColorRule[] driven by SCOPE_MAPPINGS
+const themeJson = state.outputs['vscode:themeJson'];
 ```
+
+`vscode:seedRoles` requires exactly one object in `input.colors`. Its `framing` must equal `input.runtime.framing`; it rejects extra, missing, or malformed role keys. Roles supplied by name remain caller-stated and exact, while the core pipeline derives missing roles. `metadata['core:roleProvenance']` records each role's origin and ordered adjustment evidence. `metadata['core:contrastReport']` records every declared contrast result; it reports a failed caller-stated pair without changing that colour.
+
+## Schemas and tiers
+
+Use `VSCODE_ROLE_SCHEMAS_64.dark` or `.light` for the declared framing. The schemas are explicit dark and light role definitions; light themes are generated through the light schema, not by inverting a dark output. `VSCODE_ROLE_SCHEMAS_16` exports a backward-compatible 16-role view of the same canonical definitions.
+
+| Tier | Exact supplied roles |
+|---|---|
+| 4 | `background`, `foreground`, `keyword`, `error` |
+| 8 | Tier 4 plus `type`, `function`, `number`, `constant` |
+| 16 | `background`, `foreground`, `surface`, `muted`, `keyword`, `type`, `function`, `variable`, `string`, `number`, `constant`, `comment`, `error`, `warning`, `info`, `success` |
+| 64 | The 16 base roles plus accent, UI, ANSI, Git, diff, bracket, and widget roles declared by `VSCODE_ROLE_SCHEMAS_64` |
+
+The schema declares WCAG pairs for foreground, muted text, syntax roles, status colours, `onAccent`, links, and chrome foreground. It also declares bounded pairs for `surface` and `accent`. The contrast task adjusts derived roles into the declared bands and reports a failing caller-stated pair without changing its colour.
 
 ## Tasks
 
-| Name | Role |
+| Task | Purpose |
 |---|---|
-| `vscode:expandTokens` | Materialises 23 base tokens from the resolved 16-role palette. |
-| `vscode:applyModifiers` | Applies 10 colour modifiers to the base tokens, producing 253 semantic-token rules and re-enforcing contrast against the background role. |
-| `emit:vscodeSemanticRules` | Writes `state.outputs['vscode:semanticTokenRules']` from the modifier output. Maps onto `editor.semanticTokenColorCustomizations.rules`. |
-| `emit:vscodeUiPalette` | Writes `state.outputs['vscode:workbenchColors']` covering 100+ workbench slots (`editor.background`, `sideBar.foreground`, ...). Selects light/dark variants via the resolved `background` luminance. |
-| `emit:vscodeThemeJson` | Writes `state.outputs['vscode:themeJson']` combining the previous outputs into a single `theme.json` ready for the `themes` array in `package.json`. Requires `emit:vscodeSemanticRules` AND `emit:vscodeUiPalette`. |
+| `vscode:seedRoles` | Validates the structured tiered palette and creates named caller-stated seed records. |
+| `vscode:deriveUiRoles` | Derives absent UI extension roles while preserving caller-stated roles. |
+| `vscode:expandTokens` | Builds 27 syntax and TextMate base tokens from the resolved framing surface. |
+| `vscode:applyModifiers` | Generates semantic token rules and enforces their background contrast. |
+| `emit:vscodeSemanticRules` | Writes `outputs['vscode:semanticTokenRules']`. |
+| `emit:vscodeUiPalette` | Writes `outputs['vscode:workbenchColors']` from the 64-role vocabulary. |
+| `emit:vscodeThemeJson` | Combines workbench, semantic, and TextMate token output into `outputs['vscode:themeJson']`. |
 
-Each emit task writes its own flat slot. Any subset of the emit tasks can run
-independently. `emit:vscodeThemeJson` fails fast if its dependencies were not run.
+`emit:vscodeThemeJson` requires both preceding emit tasks. The two emit tasks may run in either order after their own prerequisites.
 
 Part of [iridis](https://github.com/Studnicky/iridis).

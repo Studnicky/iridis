@@ -1,9 +1,13 @@
 
+    <https://studnicky.dev/iridis#adjustedFrom> <https://studnicky.dev/iridis/color/0f172a>;
+    <https://studnicky.dev/iridis#adjustedTo> <https://studnicky.dev/iridis/color/0d1528>;
+    <https://studnicky.dev/iridis#adjustmentOperation> "role-range".
     <https://studnicky.dev/iridis#chromaRangeMax> 0.0500;
-    <https://studnicky.dev/iridis#chromaRangeMax> 0.2500.
+    <https://studnicky.dev/iridis#chromaRangeMax> 0.2500;
     <https://studnicky.dev/iridis#chromaRangeMin> 0.0000;
     <https://studnicky.dev/iridis#chromaRangeMin> 0.1000;
     <https://studnicky.dev/iridis#clampedFrom> <https://studnicky.dev/iridis/color/0f172a>.
+    <https://studnicky.dev/iridis#hasAdjustment> <https://studnicky.dev/iridis/role/background/adjustment/0>;
     <https://studnicky.dev/iridis#hasColor> <https://studnicky.dev/iridis/color/0d1528>;
     <https://studnicky.dev/iridis#hasColor> <https://studnicky.dev/iridis/color/5b21b6>;
     <https://studnicky.dev/iridis#lightnessRangeMax> 0.2000;
@@ -16,6 +20,8 @@
     <https://studnicky.dev/iridis#oklchH> 292.76;
     <https://studnicky.dev/iridis#oklchL> 0.2000;
     <https://studnicky.dev/iridis#oklchL> 0.4320;
+    <https://studnicky.dev/iridis#resolutionOrigin> "derived".
+    <https://studnicky.dev/iridis#resolutionOrigin> "derived";
     <https://studnicky.dev/iridis#rgbB> 0.1571.
     <https://studnicky.dev/iridis#rgbB> 0.7137.
     <https://studnicky.dev/iridis#rgbG> 0.0832;
@@ -26,5 +32,6 @@
 <https://studnicky.dev/iridis/color/5b21b6> <https://studnicky.dev/iridis#hex> "#5b21b6";
 <https://studnicky.dev/iridis/pair/background-on-primary> <https://studnicky.dev/iridis#wcag21Ratio> 2.02.
 <https://studnicky.dev/iridis/pair/primary-on-background> <https://studnicky.dev/iridis#wcag21Ratio> 2.02.
+<https://studnicky.dev/iridis/role/background/adjustment/0> a <https://studnicky.dev/iridis#Adjustment>;
 <https://studnicky.dev/iridis/role/background> a <https://studnicky.dev/iridis#Role>;
 <https://studnicky.dev/iridis/role/primary> a <https://studnicky.dev/iridis#Role>;

@@ -284,7 +284,7 @@ function onDocsClick(e: MouseEvent): void {
           />
           <span class="text-xs font-medium uppercase tracking-wide text-muted">Dark</span>
         </div>
-        <span class="text-xs text-muted">Every color here is <code class="font-mono">engine.run()</code>.</span>
+        <span class="text-xs text-muted">Preset changes typography and surface treatment; framing changes shared semantic color output.</span>
       </div>
     </UContainer>
 
@@ -403,6 +403,10 @@ function onDocsClick(e: MouseEvent): void {
             <ColorStreamCard v-else-if="item.key === 'colorStream'" />
           </template>
         </CylinderCarousel>
+      </section>
+
+      <section class="pt-8">
+        <VscodeTierDemo />
       </section>
 
       <section

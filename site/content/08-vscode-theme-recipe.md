@@ -1,83 +1,149 @@
 ---
 title: 8. VS Code Theme Recipe
-description: How the VS Code plugin runs a second engine pass to derive a full editor theme from a 16-role palette.
+description: Generate a framed 64-role VS Code theme from a tiered palette.
 ---
 
-`@studnicky/iridis-vscode` derives a complete VS Code `theme.json` — workbench `colors`, `semanticTokenColors`, and `tokenColors` — from a 16-role palette. It's a five-task pipeline extension, not a single emit task, because a VS Code theme has more surface area than a CSS variable block: workbench chrome, editor syntax highlighting, and the newer semantic-token layer all need independently-derived color sets that then get assembled together.
+`@studnicky/iridis-vscode` emits a complete VS Code `theme.json`: workbench `colors`, semantic token rules, and TextMate `tokenColors`. It accepts a named palette at one of four exact tiers, resolves the full 64-role vocabulary, and emits sRGB hex values compatible with VS Code theme colour slots.
 
-## Why a second engine pass
+## Use the interactive demonstrator
 
-The plugin's tasks run *after* the core pipeline resolves roles and enforces contrast — `vscode:expandTokens` and `vscode:applyModifiers` are their own mini-pipeline stage that takes the resolved 16-role palette and expands it into VS Code's much larger color vocabulary (23 base tokens, then 253 semantic-token rules), re-checking contrast against the background role as it goes. This is the "second engine pass" referenced in `MultiOutput.vue`: the core pipeline produces a role palette sized for UI theming; the VS Code plugin then derives an editor-theme-sized palette from that role palette using its own derivation tables (`DERIVATION_PARAMS`, `MODIFIER_TRANSFORMS`, `SCOPE_MAPPINGS`) rather than reusing `derive:variant`.
+The [home-page demonstrator](/) makes the theme-generation model inspectable before it becomes a file. It follows one visible causal sequence:
 
-## Pipeline stages
+1. Select Aurora or Ember and choose an exact 4-, 8-, 16-, or 64-role tier.
+2. Edit the hexadecimal values in that tier’s structured `roles` object.
+3. Set the page’s shared light or dark framing.
+4. Inspect the generated VS Code workbench and syntax preview, role provenance, and declared contrast checks.
+5. Copy or download the emitted `theme.json` only after the palette validates.
 
-| Stage | Task | What it does |
-|---|---|---|
-| 1 | `vscode:expandTokens` | Derives 23 VS Code base token colors from the resolved framing surface (see below), using `DERIVATION_PARAMS`. Writes `metadata['vscode:baseTokens']`. |
-| 2 | `vscode:applyModifiers` | Applies 10 color modifiers (from `MODIFIER_TRANSFORMS`) to the base tokens, producing 253 semantic-token rules, and re-enforces contrast against the resolved `background` role for each. Writes `metadata['vscode:semanticTokenRules']`. |
-| 3a | `emit:vscodeSemanticRules` | Shapes the semantic-token rule map for `editor.semanticTokenColorCustomizations.rules`, using `SCOPE_MAPPINGS` and `FONT_STYLES`. Writes `outputs['vscode:semanticTokenRules']`. |
-| 3b | `emit:vscodeUiPalette` | Derives 100+ workbench UI colors (`editor.background`, `sideBar.foreground`, etc.) from the resolved framing surface. Writes `outputs['vscode:workbenchColors']`. |
-| 4 | `emit:vscodeThemeJson` | Combines the semantic rules and workbench colors into one `theme.json` shape (`{ name, type, colors, semanticTokenColors, tokenColors }`). Requires both `emit:vscodeSemanticRules` and `emit:vscodeUiPalette` to have already run. Writes `outputs['vscode:themeJson']`. |
+A presentation preset changes the site’s typography and surface treatment. It does not change the semantic palette. The shared framing switch controls both the site color system and the emitted VS Code theme, so light and dark output remain a single, understandable state rather than two independent settings.
 
-Stages 3a and 3b are independent of each other and can run in either order (both depend only on stage 2's output), but stage 4 fails fast if either hasn't run yet.
+Each tier accepts its exact role set. Changing the tier replaces the editor fields with that set, and every supplied role remains pinned by name. An invalid hexadecimal value produces a visible, recoverable validation error; correcting the field regenerates the preview and export.
 
-Wide-gamut roles (records with `displayP3` populated) serialize to the CSS Color 4 `color(display-p3 r g b)` form in every emitted theme slot; sRGB-only roles stay as `#rrggbb`. VS Code 1.85+ accepts either form in any color slot.
+## Select an explicit schema and framing
 
-## `runtime.framing` and the emitted theme type
+Use the schema that matches the palette framing:
 
-All four vscode tasks that touch role colors — `vscode:expandTokens`, `vscode:applyModifiers`, `emit:vscodeUiPalette`, and `emit:vscodeThemeJson` — resolve the same *framing surface* before reading any role, via the core `FramingSurface` helper (`@studnicky/iridis`). This is what makes `input.runtime.framing` (`'dark' | 'light'`) actually do something:
+```ts
+import {
+  VSCODE_ROLE_SCHEMAS_64,
+  vscodePlugin
+} from '@studnicky/iridis-vscode';
 
-- With `runtime.framing` unset, every task reads `state.roles` directly — omitting `framing` and omitting `runtime` entirely produce byte-identical output.
-- With `runtime.framing` set, `FramingSurface` measures the WCAG relative luminance of the `background` role in `state.roles`. If that measured appearance already matches the requested framing, `state.roles` is used unchanged. Otherwise it searches `state.variants` (populated by `derive:variant`, which must run earlier in the pipeline) for a variant whose `background` reads as the requested appearance, and uses that variant's roles for every workbench color, base token, and semantic rule.
-- If no variant matches (for example, `derive:variant` didn't run, or every configured variant shares one appearance), the tasks fall back to `state.roles` rather than throwing.
+const schema = VSCODE_ROLE_SCHEMAS_64.dark;
+```
 
-`derive:variant`'s default variant configuration names variants after the *transform* it applies, not the appearance it produces: the `dark`-named variant inverts lightness, and the `light`-named variant leaves lightness untouched. Given dark seeds, the `dark`-named variant is the one that reads light, and the `light`-named variant is the one that stays dark. `FramingSurface` never selects a variant by matching its name against `runtime.framing` — it measures each candidate's actual background luminance and picks whichever one matches the requested appearance, so this naming quirk in `derive:variant` never leaks into which surface gets emitted.
+`VSCODE_ROLE_SCHEMAS_64.dark` and `.light` are independent, explicit schemas. A light theme is generated with the light schema and `runtime.framing: 'light'`; it is not generated by inverting a dark theme. `VSCODE_ROLE_SCHEMAS_16` provides the 16-role view of the same canonical definitions.
 
-The emitted theme `type` field (`'dark' | 'light'` in `theme.json`) is a separate, downstream fact: `emit:vscodeThemeJson` measures the *same* resolved framing surface with the *same* WCAG relative-luminance threshold `emit:vscodeUiPalette` used to derive the workbench colors. Both tasks therefore always agree — the declared `type` can never contradict the background color actually shipped in `colors["editor.background"]`.
+## Provide a tiered palette
 
-## Producing a theme file
+`vscode:seedRoles` receives exactly one object in `input.colors`:
+
+```json
+{
+  "tier": 4,
+  "framing": "dark",
+  "roles": {
+    "background": "#101820",
+    "foreground": "#f5f7fa",
+    "keyword": "#7c3aed",
+    "error": "#ef4444"
+  }
+}
+```
+
+The body contains only `tier`, `framing`, and `roles`. `input.runtime.framing` is required and must equal the body’s `framing`. Each tier has an exact key set:
+
+| Tier | Roles supplied by the palette |
+|---|---|
+| 4 | `background`, `foreground`, `keyword`, `error` |
+| 8 | Tier 4 plus `type`, `function`, `number`, `constant` |
+| 16 | The complete base syntax vocabulary: `background`, `foreground`, `surface`, `muted`, `keyword`, `type`, `function`, `variable`, `string`, `number`, `constant`, `comment`, `error`, `warning`, `info`, `success` |
+| 64 | All 16 base roles plus the extension roles in `VSCODE_ROLE_SCHEMAS_64` |
+
+Every supplied role is pinned by name. The pipeline derives absent roles from schema definitions and preserves pinned values. The resulting metadata records pinned role names at `core:rolesPinned` and the declared contrast results at `core:contrastReport`.
+
+## Run the pipeline
 
 ```ts
 import { Engine, coreTasks } from '@studnicky/iridis';
-import { vscodePlugin, vscodeRoleSchema16 } from '@studnicky/iridis-vscode';
 import { writeFileSync } from 'node:fs';
+import {
+  VSCODE_ROLE_SCHEMAS_64,
+  vscodePlugin
+} from '@studnicky/iridis-vscode';
 
 const engine = new Engine();
 for (const task of coreTasks) engine.tasks.register(task);
 engine.adopt(vscodePlugin);
-
 engine.pipeline([
-  'intake:hex',
+  'vscode:seedRoles',
   'resolve:roles',
   'expand:family',
+  'vscode:deriveUiRoles',
   'enforce:contrast',
   'derive:variant',
   'vscode:expandTokens',
   'vscode:applyModifiers',
   'emit:vscodeSemanticRules',
   'emit:vscodeUiPalette',
-  'emit:vscodeThemeJson',
+  'emit:vscodeThemeJson'
 ]);
 
-const state = await engine.run({
-  colors: ['#8B5CF6', '#EC4899', '#0d1117', '#e6edf3' /* ...16 seeds, one per vscodeRoleSchema16 role */],
-  roles: vscodeRoleSchema16,
-  metadata: { themeName: 'Iridis Dark' },
+const state = engine.run({
+  'bypass': undefined,
+  'colors': [{
+    'tier': 4,
+    'framing': 'dark',
+    'roles': {
+      'background': '#101820',
+      'foreground': '#f5f7fa',
+      'keyword': '#7c3aed',
+      'error': '#ef4444'
+    }
+  }],
+  'contrast': undefined,
+  'emit': undefined,
+  'maxColors': undefined,
+  'metadata': { 'themeName': 'Iridis Dark' },
+  'roles': VSCODE_ROLE_SCHEMAS_64.dark,
+  'runtime': { 'colorSpace': undefined, 'extra': undefined, 'framing': 'dark' }
 });
 
-const themeJson = state.outputs['vscode:themeJson']!;
-writeFileSync('themes/iridis-dark-color-theme.json', JSON.stringify(themeJson, null, 2));
+writeFileSync(
+  'themes/iridis-dark-color-theme.json',
+  JSON.stringify(state.outputs['vscode:themeJson'], null, 2)
+);
 ```
 
-`vscodeRoleSchema16` is the canonical 16-role schema the plugin expects — pass 16 seed colors matching its roles, in order.
+## Pipeline stages
 
-## Loading it as a VS Code extension theme
+| Stage | Task | Result |
+|---|---|---|
+| 1 | `vscode:seedRoles` | Validates the structured palette and creates role-hinted seed records. |
+| 2 | `resolve:roles` | Assigns and pins supplied role seeds. |
+| 3 | `expand:family` | Fills missing schema roles through their derivation rules. |
+| 4 | `vscode:deriveUiRoles` | Derives missing UI extension roles and preserves supplied ones. |
+| 5 | `enforce:contrast` | Enforces every declared minimum and maximum WCAG contrast bound. |
+| 6 | `derive:variant` | Produces configured role variants for consumers that request them. |
+| 7 | `vscode:expandTokens` | Derives 27 syntax and TextMate base tokens from the resolved framing surface. |
+| 8 | `vscode:applyModifiers` | Creates semantic token colours with background contrast enforcement. |
+| 9 | `emit:vscodeSemanticRules` and `emit:vscodeUiPalette` | Write semantic rules and 129 workbench colours. |
+| 10 | `emit:vscodeThemeJson` | Assembles `{ name, type, colors, semanticTokenColors, tokenColors }`. |
 
-The written file is a standard VS Code color theme contribution. Reference it from an extension's `package.json`:
+The two stage 9 tasks may run in either order after their prerequisites. The final task requires both outputs.
+
+## Contrast and output contract
+
+The canonical schema declares text and syntax pairs against `background`, `onAccent` against `accent`, links against `background`, and chrome foreground against chrome. `surface` and `accent` also use bounded contrast pairs, so they remain subordinate rather than becoming indistinguishable or over-emphasised.
+
+All emitted colour values use canonical sRGB `#RRGGBB` or alpha-bearing `#RRGGBBAA`. The emitter does not output `color(display-p3 ...)`, and it omits the inert `warningForeground` VS Code colour ID.
+
+## Load the generated file
+
+Reference the result from a standard VS Code extension contribution:
 
 ```json
 {
-  "name": "iridis-dark-theme",
   "contributes": {
     "themes": [
       {
@@ -89,5 +155,3 @@ The written file is a standard VS Code color theme contribution. Reference it fr
   }
 }
 ```
-
-For local testing without publishing an extension, symlink or copy the generated `theme.json` into an existing theme extension's `themes/` directory, or load the workspace folder in VS Code's Extension Development Host (`F5`) with the `package.json` above.

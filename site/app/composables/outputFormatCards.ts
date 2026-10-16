@@ -17,6 +17,5 @@ export const OUTPUT_FORMAT_CARDS: readonly CarouselCardType[] = [
   { 'key': 'output-capacitor', 'label': 'Capacitor' },
   { 'key': 'output-androidThemeXml', 'label': 'Android theme.xml' },
   { 'key': 'output-json', 'label': 'JSON' },
-  { 'key': 'output-rdf', 'label': 'RDF (Turtle)' },
-  { 'key': 'output-vscode', 'label': 'VS Code theme' }
+  { 'key': 'output-rdf', 'label': 'RDF (Turtle)' }
 ];

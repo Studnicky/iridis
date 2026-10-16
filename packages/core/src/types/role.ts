@@ -5,30 +5,24 @@ import type { RequiredSchemaShapeType } from './RequiredSchemaShapeType.ts';
 export type ContrastAlgorithmType = 'wcag21' | 'apca';
 
 type RoleDefinitionSchemaShapeType = RoleDefinitionInterfaceTypeEntity.Type;
-
-/**
- * Every optional schema field is widened from an optional key to a required
- * key holding `T | undefined`, matching this codebase's monomorphic-shape
- * convention — `FromSchema` marks a non-`required` field optional (`field?:
- * T`), not present-but-`undefined`, and JSON Schema has no way to express
- * the latter, so the widening happens here at the consumption site instead
- * of inside the entity (where the lint-mandated `Type = FromSchema<typeof
- * Schema>` shape must stay verbatim). `chromaRange`/`lightnessRange` are
- * additionally narrowed from `number[]` to the exact `[number, number]`
- * tuple JSON Schema's array `items` keyword cannot express.
- */
+/** Schema-backed role shape with exact contrast-range tuples and optional adjustment controls. */
 export type RoleDefinitionInterfaceType = RequiredSchemaShapeType<
   RoleDefinitionSchemaShapeType,
   {
     'chromaRange':    [number, number];
     'lightnessRange': [number, number];
-  }
+  },
+  'chromaScale' | 'lightnessOffset'
 >;
 
 type ContrastPairSchemaShapeType = ContrastPairInterfaceTypeEntity.Type;
 
-/** Every optional schema field is widened from an optional key to a required key holding `T | undefined` (see {@link RoleDefinitionInterfaceType}). */
-export type ContrastPairInterfaceType = RequiredSchemaShapeType<ContrastPairSchemaShapeType>;
+/** Schema-backed contrast pair with an optional upper contrast bound. */
+export type ContrastPairInterfaceType = RequiredSchemaShapeType<
+  ContrastPairSchemaShapeType,
+  never,
+  'maxRatio'
+>;
 
 export type RoleSchemaInterfaceType = {
   'contrastPairs': ContrastPairInterfaceType[] | undefined;

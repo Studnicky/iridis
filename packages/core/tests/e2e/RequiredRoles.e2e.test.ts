@@ -27,6 +27,7 @@ import assert                       from 'node:assert/strict';
 import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
+import { EngineMetadata } from '../../src/types/metadata.ts';
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -166,10 +167,11 @@ new ScenarioRunner<ChromaRangeInput, { readonly 'c': number; readonly 'roleAssig
 ).run(chromaRangeScenarios);
 
 // ---------------------------------------------------------------------------
-// Cell 3 — hueOffset: assigned hue forced to absolute target
+// Cell 3 — hueOffset: assigned hue shifted by a signed relative delta
 //
-// hueOffset is treated as an absolute target hue. The assigned color's hue
-// must equal the declared offset within floating-point tolerance.
+// hueOffset is treated as a signed delta from the assigned input hue. The
+// resulting hue wraps into [0, 360) and equals the shifted input hue within
+// floating-point tolerance.
 // ---------------------------------------------------------------------------
 
 interface HueOffsetInputInterface { readonly 'colors': InputInterface['colors']; readonly 'hueOffset': number }
@@ -177,29 +179,29 @@ interface HueOffsetInputInterface { readonly 'colors': InputInterface['colors'];
 const hueOffsetScenarios: readonly ScenarioInterface<HueOffsetInputInterface, { readonly 'h': number; readonly 'roleAssigned': boolean }>[] = [
   {
     'assert': function(output, error) {
-      assert.strictEqual(error, undefined,           '[cell=3, scenario=red-to-green] no throw');
-      assert.strictEqual(output!.roleAssigned, true,  '[cell=3, scenario=red-to-green] anchor assigned');
+      assert.strictEqual(error, undefined,           '[cell=3, scenario=forward-wrap] no throw');
+      assert.strictEqual(output!.roleAssigned, true,  '[cell=3, scenario=forward-wrap] anchor assigned');
       assert.ok(
-        Math.abs(output!.h - 142) < 0.01,
-        `[cell=3, scenario=red-to-green] anchor.h must equal 142; got ${output!.h}`
+        Math.abs(output!.h - 10) < 0.01,
+        `[cell=3, scenario=forward-wrap] anchor.h must equal 10; got ${output!.h}`
       );
     },
-    'input': { 'colors': ['#ff0000'], 'hueOffset': 142 },
+    'input': { 'colors': [{ 'c': 0.1, 'h': 350, 'l': 0.5 }], 'hueOffset': 20 },
     'kind': 'happy',
-    'name': 'red input (#ff0000) forced to hueOffset=142 (green)'
+    'name': 'input hue 350 shifted by +20 wraps to 10'
   },
   {
     'assert': function(output, error) {
-      assert.strictEqual(error, undefined,           '[cell=3, scenario=already-at-target] no throw');
-      assert.strictEqual(output!.roleAssigned, true,  '[cell=3, scenario=already-at-target] role assigned');
+      assert.strictEqual(error, undefined,           '[cell=3, scenario=backward-shift] no throw');
+      assert.strictEqual(output!.roleAssigned, true,  '[cell=3, scenario=backward-shift] role assigned');
       assert.ok(
-        Math.abs(output!.h - 200) < 0.5,
-        `[cell=3, scenario=already-at-target] anchor.h ≈ 200; got ${output!.h}`
+        Math.abs(output!.h - 170) < 0.5,
+        `[cell=3, scenario=backward-shift] anchor.h ≈ 170; got ${output!.h}`
       );
     },
-    'input': { 'colors': [{ 'c': 0.1, 'h': 200, 'l': 0.5 }], 'hueOffset': 200 },
+    'input': { 'colors': [{ 'c': 0.1, 'h': 200, 'l': 0.5 }], 'hueOffset': -30 },
     'kind': 'edge',
-    'name': 'input already at hueOffset=200 requires no nudge'
+    'name': 'input hue 200 shifted by -30 equals 170'
   }
 ];
 
@@ -285,7 +287,7 @@ new ScenarioRunner<CombinedInput, { readonly 'c': number; readonly 'l': number; 
 //
 // When the input colors array is empty a required role with all three
 // constraints must be synthesized to their center values. The synthesized
-// role name must appear in state.metadata['core:rolesSynthesized']. A required role
+// role provenance records origin: 'synthesized'. A required role
 // with no constraints still produces a synthesized record. A second role with
 // a point range (l=0.5, c=0) round-trips its hex correctly.
 // ---------------------------------------------------------------------------
@@ -295,8 +297,8 @@ const synthesisScenarios: readonly ScenarioInterface<
   {
     readonly 'c':            number;
     readonly 'h':            number;
+    readonly 'hasSynthesizedProvenance': boolean;
     readonly 'hexIsValid':   boolean;
-    readonly 'inSynthList':  boolean;
     readonly 'l':            number;
     readonly 'rgbRInRange':  boolean;
     readonly 'roleAssigned': boolean;
@@ -309,7 +311,7 @@ const synthesisScenarios: readonly ScenarioInterface<
       assert.ok(output!.l >= 0.6 && output!.l <= 0.8,         `[cell=5, scenario=full-synthesis] l in range; got ${output!.l}`);
       assert.ok(output!.c >= 0.10 && output!.c <= 0.15,       `[cell=5, scenario=full-synthesis] c in range; got ${output!.c}`);
       assert.ok(Math.abs(output!.h - 200) < 0.01,             `[cell=5, scenario=full-synthesis] h = 200; got ${output!.h}`);
-      assert.strictEqual(output!.inSynthList, true,           '[cell=5, scenario=full-synthesis] rolesSynthesized includes synth');
+      assert.strictEqual(output!.hasSynthesizedProvenance, true, '[cell=5, scenario=full-synthesis] provenance marks synth as synthesized');
       assert.strictEqual(output!.hexIsValid,  true,           '[cell=5, scenario=full-synthesis] hex is valid 6-digit lowercase');
       assert.strictEqual(output!.rgbRInRange, true,           '[cell=5, scenario=full-synthesis] rgb.r in [0..1]');
     },
@@ -335,8 +337,8 @@ new ScenarioRunner<
   {
     readonly 'c':            number;
     readonly 'h':            number;
+    readonly 'hasSynthesizedProvenance': boolean;
     readonly 'hexIsValid':   boolean;
-    readonly 'inSynthList':  boolean;
     readonly 'l':            number;
     readonly 'rgbRInRange':  boolean;
     readonly 'roleAssigned': boolean;
@@ -363,12 +365,12 @@ new ScenarioRunner<
     engine.pipeline(['intake:hex', 'resolve:roles']);
     const state = engine.run({ 'bypass': undefined, 'colors': [], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': schema, 'runtime': undefined });
     const role       = state.roles.synth;
-    const synthList  = state.metadata['core:rolesSynthesized'];
+    const synthProvenance = EngineMetadata.get(state.metadata, 'core:roleProvenance')?.synth;
     return {
       'c':            role?.oklch.c ?? -1,
       'h':            role?.oklch.h ?? -1,
+      'hasSynthesizedProvenance': synthProvenance?.origin === 'synthesized',
       'hexIsValid':   typeof role?.hex === 'string' && /^#[0-9a-f]{6}$/.test(role.hex),
-      'inSynthList':  Array.isArray(synthList) && (synthList as string[]).includes('synth'),
       'l':            role?.oklch.l ?? -1,
       'rgbRInRange':  role !== undefined && role.rgb.r >= 0 && role.rgb.r <= 1,
       'roleAssigned': role !== undefined
