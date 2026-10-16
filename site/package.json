@@ -62,7 +62,7 @@
     "nuxt": "^4.4.8",
     "nuxt-swiper": "^2.0.2",
     "parse5": "8.0.1",
-    "postcss": "8.5.16",
+    "postcss": "8.5.23",
     "postcss-value-parser": "4.2.0",
     "reka-ui": "2.9.10",
     "shiki": "^2.5.0",
