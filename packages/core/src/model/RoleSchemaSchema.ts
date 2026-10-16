@@ -9,6 +9,7 @@ export const RoleSchemaSchema = {
           'algorithm':  { 'enum': ['wcag21', 'apca'], 'type': 'string' },
           'background': { 'type': 'string' },
           'foreground': { 'type': 'string' },
+          'maxRatio':   { 'maximum': 21, 'minimum': 1, 'type': 'number' },
           'minRatio':   { 'maximum': 21, 'minimum': 1, 'type': 'number' }
         },
         'required': ['foreground', 'background', 'minRatio'],
@@ -28,6 +29,7 @@ export const RoleSchemaSchema = {
             'minItems': 2,
             'type':     'array'
           },
+          'chromaScale':    { 'minimum': 0, 'type': 'number' },
           'derivedFrom':    { 'description': 'Other role name; if present, expand:family seeds from it.', 'type': 'string' },
           'description': { 'type': 'string' },
           'hue':        { 'maximum': 360, 'minimum':    0, 'type': 'number' },
@@ -37,6 +39,7 @@ export const RoleSchemaSchema = {
             'enum': ['text', 'background', 'accent', 'muted', 'critical', 'positive', 'link', 'button', 'onAccent', 'onButton'],
             'type': 'string'
           },
+          'lightnessOffset': { 'maximum': 1, 'minimum': -1, 'type': 'number' },
           'lightnessRange': {
             'items':    { 'maximum': 1, 'minimum': 0, 'type': 'number' },
             'maxItems': 2,

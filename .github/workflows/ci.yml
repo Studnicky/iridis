@@ -7,6 +7,9 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -16,6 +19,9 @@ jobs:
     uses: ./.github/workflows/detect-changes.yml
 
   validate:
+    permissions:
+      contents: read
+      packages: read
     name: node checks
     needs: [ detect-changes ]
     if: needs.detect-changes.outputs.ci == 'true' || github.event_name ==
@@ -25,6 +31,9 @@ jobs:
       preset: full
 
   site:
+    permissions:
+      contents: read
+      packages: read
     name: site
     needs: [ detect-changes ]
     if: needs.detect-changes.outputs.docs == 'true' || github.event_name ==
@@ -34,6 +43,9 @@ jobs:
       preset: site
 
   audit:
+    permissions:
+      contents: read
+      packages: read
     name: audit
     needs: [ detect-changes ]
     if: needs.detect-changes.outputs.audit == 'true' || github.event_name ==

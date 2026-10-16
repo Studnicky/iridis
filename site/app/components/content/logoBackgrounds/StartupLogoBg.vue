@@ -57,7 +57,7 @@ const bubbles: RisingBubbleType[] = buildStaggeredItems('logo-bubble', BUBBLE_CO
   border-width: 1px;
   border-style: var(--iridis-border-style);
   background: radial-gradient(circle at 32% 28%,
-    color-mix(in oklch, var(--bubble-highlight) 60%, white) 0%,
+    color-mix(in oklch, var(--bubble-highlight) 60%, var(--ui-text-highlighted)) 0%,
     color-mix(in oklch, var(--bubble-highlight) 18%, transparent) 45%,
     transparent 75%);
   animation-name: logo-bubble-rise;

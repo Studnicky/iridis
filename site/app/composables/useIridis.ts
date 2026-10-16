@@ -6,14 +6,14 @@
  * from hueOffset on the schema roles. The projector only reads those hexes.
  */
 
-import type { ColorRecordInterfaceType, CvdType, PaletteStateInterface, RoleClampMapInterfaceType, RoleDistanceMapInterfaceType } from '@studnicky/iridis';
+import type { ColorRecordInterfaceType, CvdType, PaletteStateInterface, RoleDistanceMapInterfaceType, RoleProvenanceMapInterfaceType } from '@studnicky/iridis';
 import type { ApcaPairResultSetInterfaceType, CvdResultSetInterfaceType, WcagPairResultSetInterfaceType } from '@studnicky/iridis-contrast';
 import type {
   GalleryAlgorithmType, GalleryCandidateInterfaceType, GalleryCandidatesSlotType, GalleryDominantColorsSlotType, GalleryHistogramSlotInterfaceType
 } from '@studnicky/iridis-image/types';
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
-import { EngineMetadata } from '@studnicky/iridis';
+import { colorRecordFactory, EngineMetadata } from '@studnicky/iridis';
 import { getContrastMetadata } from '@studnicky/iridis-contrast';
 import { imagePlugin } from '@studnicky/iridis-image';
 import * as VueModule from 'vue';
@@ -23,6 +23,7 @@ import { useNuxtApp, useRuntimeConfig } from '#imports';
 import type {
   DerivationConfigType, FramingType, IridisUiEffectType, IridisUiEffectVariant, ModeType, PickerSeedType, RoleHexMapType, RoleRelationDerivationType, RoleViewType, ScaleMapType
   , UploadedImageInterfaceType } from './types/index.ts';
+import type { RoleMathClampType } from './types/roleMathClamp.ts';
 import type { RoleSortableRowType } from './types/roleSortableRow.ts';
 import type { RoleSortKeyType } from './types/roleSortKey.ts';
 
@@ -198,6 +199,25 @@ class GalleryMetadataSlot {
     if (value === undefined) {return [];}
     if (GalleryMetadataSlot.isHistogram(value)) {return value.bins;}
     throw new TypeError('Metadata slot gallery:histogram does not match the histogram schema');
+  }
+}
+
+class RoleClampReadModel {
+  static fromProvenance(provenance: RoleProvenanceMapInterfaceType): Record<string, RoleMathClampType> {
+    const clamps: Record<string, RoleMathClampType> = {};
+    for (const [roleName, evidence] of Object.entries(provenance)) {
+      const rangeAdjustment = evidence.adjustments.find((adjustment) => {return adjustment.operation === 'role-range';});
+      if (rangeAdjustment === undefined) {continue;}
+      const resolvedOklch = colorRecordFactory.fromHex(rangeAdjustment.afterHex).oklch;
+      const seedOklch = colorRecordFactory.fromHex(rangeAdjustment.beforeHex).oklch;
+      clamps[roleName] = {
+        'resolvedHex': rangeAdjustment.afterHex.toLowerCase(),
+        'roleOklch': `L ${resolvedOklch.l.toFixed(2)} · C ${resolvedOklch.c.toFixed(2)} · H ${Math.round(resolvedOklch.h)}`,
+        'seedHex': rangeAdjustment.beforeHex.toLowerCase(),
+        'seedOklch': `L ${seedOklch.l.toFixed(2)} · C ${seedOklch.c.toFixed(2)} · H ${Math.round(seedOklch.h)}`
+      };
+    }
+    return clamps;
   }
 }
 
@@ -383,7 +403,7 @@ class IridisContextFactory {
 
     const roles = VueModule.ref<RoleHexMapType>({});
     const roleViews = VueModule.ref<RoleViewType[]>([]);
-    const roleClamps = VueModule.ref<RoleClampMapInterfaceType>({});
+    const roleClamps = VueModule.ref<Record<string, RoleMathClampType>>({});
     const roleDistances = VueModule.ref<RoleDistanceMapInterfaceType>({});
     const rolesSynthesized = VueModule.ref<string[]>([]);
     const rolesPinned = VueModule.ref<string[]>([]);
@@ -519,11 +539,20 @@ class IridisContextFactory {
         }
         roles.value = engineMaps.roles;
         roleViews.value = views;
-        roleClamps.value = EngineMetadata.get(state.metadata, 'core:roleClamps') ?? {};
+        const provenance = EngineMetadata.get(state.metadata, 'core:roleProvenance') ?? {};
+        roleClamps.value = RoleClampReadModel.fromProvenance(provenance);
         roleDistances.value = EngineMetadata.get(state.metadata, 'core:roleDistances') ?? {};
-        rolesSynthesized.value = EngineMetadata.get(state.metadata, 'core:rolesSynthesized') ?? [];
-        rolesPinned.value = EngineMetadata.get(state.metadata, 'core:rolesPinned') ?? [];
-        rolesDerived.value = EngineMetadata.get(state.metadata, 'core:rolesDerived') ?? [];
+        const derivedRoles: string[] = [];
+        const statedRoles: string[] = [];
+        const synthesizedRoles: string[] = [];
+        for (const [roleName, evidence] of Object.entries(provenance)) {
+          if (evidence.origin === 'derived') {derivedRoles.push(roleName);}
+          if (evidence.origin === 'stated') {statedRoles.push(roleName);}
+          if (evidence.origin === 'synthesized') {synthesizedRoles.push(roleName);}
+        }
+        rolesSynthesized.value = synthesizedRoles;
+        rolesPinned.value = statedRoles;
+        rolesDerived.value = derivedRoles;
         scales.value = engineMaps.scales;
         contrastReport.value = {
           'aa':   getContrastMetadata(state.metadata, 'contrast:aa'),

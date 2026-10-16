@@ -42,8 +42,8 @@ await test('renders the nameless site theme shape and a named dark theme through
   const lightRuleCount = HighlightCodeFixture.lightTheme.tokenColors.length;
   const darkRuleCount = HighlightCodeFixture.darkTheme.tokenColors.length;
   const [lightHtml, darkHtml] = await Promise.all([
-    highlightCode('const answer = 42;', 'javascript', HighlightCodeFixture.lightTheme),
-    highlightCode('const answer = 42;', 'javascript', HighlightCodeFixture.darkTheme)
+    highlightCode('if (answer) {}', 'javascript', HighlightCodeFixture.lightTheme),
+    highlightCode('if (answer) {}', 'javascript', HighlightCodeFixture.darkTheme)
   ]);
 
   assert.equal(lightHtml.includes('background-color:#f7f7f7'), true);

@@ -368,6 +368,47 @@ test('direct external dependencies resolve from their declaring package and vali
   });
 });
 
+
+test('optional peer dependencies are excluded from copied external closures', async () => {
+  await packageConsumerSmoke.withTemporaryDirectory('iridis-optional-peer-test-', async (root) => {
+    const workspace = join(root, 'workspace');
+    const packageDirectory = join(workspace, 'packages', 'a');
+    const packageA = join(root, 'extracted', 'a');
+    const externalHost = join(workspace, 'node_modules', 'external-host');
+    const optionalPeer = join(externalHost, 'node_modules', 'optional-peer');
+    const consumer = join(root, 'consumer');
+    const manifest = {
+      'dependencies': { 'external-host': '^1.0.0' },
+      'name': '@fixture/a',
+      'version': '1.0.0'
+    };
+    for (const directory of [packageDirectory, packageA, optionalPeer, consumer]) {
+      mkdirSync(directory, { 'recursive': true });
+    }
+    writeFileSync(join(packageA, 'package.json'), JSON.stringify(manifest));
+    writeFileSync(join(externalHost, 'package.json'), JSON.stringify({
+      'name': 'external-host',
+      'peerDependencies': { 'optional-peer': '^2.0.0' },
+      'peerDependenciesMeta': { 'optional-peer': { 'optional': true } },
+      'version': '1.0.0'
+    }));
+    writeFileSync(join(optionalPeer, 'package.json'), JSON.stringify({
+      'name': 'optional-peer',
+      'version': '1.0.0'
+    }));
+    const record = { 'directoryName': 'a', manifest, packageDirectory };
+    const closure = packageConsumerSmoke.installTarget(
+      record,
+      new Map([[manifest.name, record]]),
+      new Map([[manifest.name, packageA]]),
+      consumer
+    );
+
+    assert.deepEqual(closure, { 'externalPackages': 1, 'internalPackages': 1 });
+    assert.equal(existsSync(join(consumer, 'node_modules', 'external-host')), true);
+    assert.equal(existsSync(join(consumer, 'node_modules', 'optional-peer')), false);
+  });
+});
 test('canonical npm package validation accepts valid leading-hyphen names', async (context) => {
   const validNames = ['-foo', '@-scope/pkg', '@scope/-pkg', 'buffer'];
   for (const dependencyName of validNames) {

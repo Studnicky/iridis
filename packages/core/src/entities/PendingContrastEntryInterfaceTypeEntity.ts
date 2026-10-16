@@ -8,12 +8,14 @@ export namespace PendingContrastEntryInterfaceTypeEntity {
   export const Schema = {
     'additionalProperties': false,
     'properties': {
-      'adjusted': { 'type': 'boolean' },
-      'algo':     { 'enum': ['wcag21', 'apca'] },
-      'minRatio': { 'type': 'number' },
+      'adjusted':              { 'type': 'boolean' },
+      'adjustmentDisposition': { 'enum': ['not-needed', 'applied', 'preserved-stated', 'unresolved'] },
+      'algo':                  { 'enum': ['wcag21', 'apca'] },
+      'maxRatio': { 'maximum': 21, 'minimum': 1, 'type': 'number' },
+      'minRatio': { 'maximum': 21, 'minimum': 1, 'type': 'number' },
       'pair':     ContrastPairInterfaceTypeEntity.Schema
     },
-    'required': ['adjusted', 'algo', 'minRatio', 'pair'],
+    'required': ['adjusted', 'adjustmentDisposition', 'algo', 'minRatio', 'pair'],
     'type': 'object'
   } as const;
 

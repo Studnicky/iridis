@@ -47,7 +47,7 @@
     to right,
     transparent 0%,
     var(--ui-color-success-500) 60%,
-    color-mix(in oklch, var(--ui-color-success-500) 90%, white) 100%
+    color-mix(in oklch, var(--ui-color-success-500) 90%, var(--ui-text-highlighted)) 100%
   );
   transform: rotate(28deg);
   opacity: 0;

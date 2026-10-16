@@ -1,0 +1,22 @@
+{
+  "exceptions": [
+    {
+      "advisoryId": "1240912",
+      "createdAt": "2026-10-15T00:00:00Z",
+      "expiresAt": "2026-11-14T23:59:59Z",
+      "paths": [
+        "site>nuxt>@nuxt/nitro-server>nitropack>listhen>node-forge"
+      ],
+      "reason": "GitHub Pages build dependency"
+    },
+    {
+      "advisoryId": "1240992",
+      "createdAt": "2026-10-15T00:00:00Z",
+      "expiresAt": "2026-11-14T23:59:59Z",
+      "paths": [
+        "site>@nuxt/content>micromatch>braces"
+      ],
+      "reason": "GitHub Pages build dependency"
+    }
+  ]
+}

@@ -11,8 +11,8 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
 
 import type { SemanticRuleEntryInterfaceType } from '../types/augmentation.ts';
 
+import { VSCODE_SCOPE_MAPPINGS } from '../constants/VscodeScopeMappings.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
-import { SCOPE_MAPPINGS } from '../data/scopeMappings.ts';
 
 class SemanticRuleStyle {
   static defaultFontStyle(selector: string): string | undefined {
@@ -61,7 +61,7 @@ class EmitVscodeSemanticRules implements TaskInterface {
 
     // Validate scope coverage: log any SCOPE_MAPPINGS keys with no colour
     const baseTokens = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterfaceType>;
-    for (const key of Object.keys(SCOPE_MAPPINGS)) {
+    for (const key of Object.keys(VSCODE_SCOPE_MAPPINGS.mappings)) {
       if (!(key in baseTokens) && !(key in result)) {
         context.logger.debug(
           LogBody.create()

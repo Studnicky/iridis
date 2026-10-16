@@ -4,23 +4,10 @@ import { resolve } from 'node:path';
 import { test } from 'node:test';
 
 import { DefaultThemeCss } from '../app/theme/DefaultThemeCss.ts';
+import { SiteDesignSystemCssSources } from './fixtures/SiteDesignSystemCssSources.ts';
 import { TestPatterns } from './fixtures/TestPatterns.ts';
 
 const SITE_ROOT = resolve(import.meta.dirname, '..');
-const CHROME_STYLESHEETS = [
-  'app/components/content/graph/GraphLegend.vue',
-  'app/components/content/mermaid/ModalShell.css',
-  'app/components/content/mermaid/explorer.css',
-  'app/components/content/ui/UiCodeBlock.vue',
-  'app/components/content/ui/UiCodeTabs.vue',
-  'app/components/content/ui/UiLegendTitle.vue',
-  'app/components/content/ui/UiTabs.vue',
-  'app/components/content/viz/CodeSample.css',
-  'app/components/content/viz/Dpad.css',
-  'app/components/content/viz/ModalShell.css',
-  'app/components/content/viz/ViewerActions.css',
-  'app/components/content/viz/ViewerOverlay.css'
-];
 
 class SiteDesignSystemCssHarness {
   static collectTokens(css: string, pattern: RegExp): Set<string> {
@@ -33,32 +20,42 @@ class SiteDesignSystemCssHarness {
   }
 }
 
-await test('visualization chrome uses only defined Iridis design-system tokens', () => {
-  let chromeCss = '';
-  for (const path of CHROME_STYLESHEETS) {chromeCss += `${readFileSync(resolve(SITE_ROOT, path), 'utf8')}\n`;}
-  chromeCss += readFileSync(resolve(SITE_ROOT, 'app/components/content/DerivationRelations.vue'), 'utf8');
+await test('all site CSS and Vue styles consume defined engine color tokens', () => {
+  const styleSources = SiteDesignSystemCssSources.collect(resolve(SITE_ROOT, 'app'));
   const mainCss = readFileSync(resolve(SITE_ROOT, 'app/assets/css/main.css'), 'utf8');
   const tokenDefinitions = `${mainCss}\n${DefaultThemeCss.generate()}`;
   const definedTokens = SiteDesignSystemCssHarness.collectTokens(tokenDefinitions, TestPatterns.CSS_TOKEN_DEFINITION);
-  const referencedTokens = SiteDesignSystemCssHarness.collectTokens(chromeCss, TestPatterns.CSS_TOKEN_REFERENCE);
   const undefinedTokens: string[] = [];
-  for (const token of referencedTokens) {
-    if (!definedTokens.has(token)) {undefinedTokens.push(token);}
+
+  assert.ok(styleSources.length > 0);
+  for (const [sourcePath, sourceCss] of styleSources) {
+    const css = sourceCss.replaceAll(SiteDesignSystemCssSources.CSS_COMMENT, '');
+    const referencedTokens = SiteDesignSystemCssHarness.collectTokens(css, TestPatterns.CSS_TOKEN_REFERENCE);
+    for (const token of referencedTokens) {
+      if (token.startsWith('--ui-') && !definedTokens.has(token)) {
+        undefinedTokens.push(`${sourcePath}: ${token}`);
+      }
+    }
+    assert.doesNotMatch(css, TestPatterns.CSS_EXTERNAL_TOKEN, sourcePath);
+    assert.doesNotMatch(css, TestPatterns.CSS_LITERAL_COLOR, sourcePath);
+    assert.doesNotMatch(css, SiteDesignSystemCssSources.ENGINE_COLOR_TOKEN_FALLBACK, sourcePath);
+    assert.doesNotMatch(css, SiteDesignSystemCssSources.RAW_COLOR_MIX_ENDPOINT, sourcePath);
   }
 
-  assert.doesNotMatch(chromeCss, TestPatterns.CSS_EXTERNAL_TOKEN);
-  assert.doesNotMatch(chromeCss, TestPatterns.CSS_HARDCODED_BORDER_STYLE);
-  assert.doesNotMatch(chromeCss, TestPatterns.CSS_HARDCODED_RADIUS);
-  assert.doesNotMatch(chromeCss, TestPatterns.CSS_LITERAL_COLOR);
-  assert.doesNotMatch(chromeCss, TestPatterns.CSS_TOKEN_FALLBACK);
-  assert.doesNotMatch(mainCss, TestPatterns.CSS_TOKEN_FALLBACK);
   assert.deepEqual(undefinedTokens, []);
 });
 
+await test('Nuxt UI solid buttons rely on the engine contrast token without a fallback', () => {
+  const appConfig = readFileSync(resolve(SITE_ROOT, 'app/app.config.ts'), 'utf8');
+
+  assert.match(appConfig, SiteDesignSystemCssSources.PRIMARY_CONTRAST_CLASS);
+  assert.doesNotMatch(appConfig, TestPatterns.CSS_TOKEN_FALLBACK);
+  assert.doesNotMatch(appConfig, SiteDesignSystemCssSources.FORBIDDEN_APP_CONFIG_COLOR_FALLBACK);
+});
+
 await test('each modal shell disables its entrance animation for reduced motion', () => {
-  for (const path of CHROME_STYLESHEETS) {
-    if (!path.endsWith('ModalShell.css')) {continue;}
-    const css = readFileSync(resolve(SITE_ROOT, path), 'utf8');
-    assert.match(css, TestPatterns.CSS_MODAL_REDUCED_MOTION);
+  for (const [sourcePath, sourceCss] of SiteDesignSystemCssSources.collect(resolve(SITE_ROOT, 'app'))) {
+    if (!sourcePath.endsWith('ModalShell.css')) {continue;}
+    assert.match(sourceCss, TestPatterns.CSS_MODAL_REDUCED_MOTION, sourcePath);
   }
 });

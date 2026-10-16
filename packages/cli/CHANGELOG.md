@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.12.0
+
+### Patch Changes
+
+- Updated dependencies [10db49c]
+  - @studnicky/iridis@0.12.0
+  - @studnicky/iridis-capacitor@0.12.0
+  - @studnicky/iridis-contrast@0.12.0
+  - @studnicky/iridis-image@0.12.0
+  - @studnicky/iridis-rdf@0.12.0
+  - @studnicky/iridis-stylesheet@0.12.0
+  - @studnicky/iridis-tailwind@0.12.0
+  - @studnicky/iridis-vscode@0.12.0
+
 ## 0.11.0
 
 ### Breaking

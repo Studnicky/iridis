@@ -220,6 +220,152 @@ class NuxtBoundaryHarness {
   }
 }
 
+await test('canonical VS Code tier demo keeps its controls, output, feedback, and framing coherent', { 'timeout': 180_000 }, async (context) => {
+  assert.ok(
+    existsSync(NITRO_SERVER),
+    `Nitro entrypoint missing at ${NITRO_SERVER}. Run the suite through 'pnpm --filter site run test', whose pretest builds it.`
+  );
+
+  const { 'child': nitro, 'origin': origin } = await NuxtBoundaryHarness.startNitro();
+  context.after(async () => {await NuxtBoundaryHarness.stopNitro(nitro);});
+  await NuxtBoundaryHarness.waitForSsr(origin);
+
+  const browser = await chromium.launch({ 'headless': true });
+  context.after(async () => {await browser.close();});
+  const page = await browser.newPage({ 'reducedMotion': 'reduce', 'viewport': { 'height': 900, 'width': 1280 } });
+  await page.goto(origin, { 'waitUntil': 'networkidle' });
+
+  const demo = page.getByRole('region', { 'name': 'Palette to VS Code theme' });
+  const demoLayout = await page.evaluate(() => {
+    const demoElement = document.querySelector<HTMLElement>('[aria-labelledby="vscode-tier-demo-title"]');
+    const finalStage = document.getElementById('result');
+    const remainingDocuments = document.getElementById('remaining-documents');
+    const stageScene = document.querySelector<HTMLElement>('.cyl-scene-wrap');
+    if (demoElement === null || finalStage === null || remainingDocuments === null || stageScene === null) {
+      return {
+        'demoAfterFinalStage': false,
+        'demoBeforeDocumentation': false,
+        'demoLeft': Number.NaN,
+        'demoWidth': Number.NaN,
+        'hasRequiredElements': false,
+        'sceneLeft': Number.NaN,
+        'sceneWidth': Number.NaN
+      };
+    }
+    const demoBounds = demoElement.getBoundingClientRect();
+    const sceneBounds = stageScene.getBoundingClientRect();
+    return {
+      'demoAfterFinalStage': Boolean(finalStage.compareDocumentPosition(demoElement) & Node.DOCUMENT_POSITION_FOLLOWING),
+      'demoBeforeDocumentation': Boolean(demoElement.compareDocumentPosition(remainingDocuments) & Node.DOCUMENT_POSITION_FOLLOWING),
+      'demoLeft': demoBounds.left,
+      'demoWidth': demoBounds.width,
+      'hasRequiredElements': true,
+      'sceneLeft': sceneBounds.left,
+      'sceneWidth': sceneBounds.width
+    };
+  });
+  assert.ok(demoLayout.hasRequiredElements, 'The walkthrough, theme demo, and documentation sections must render.');
+  assert.ok(demoLayout.demoAfterFinalStage, 'The VS Code theme demo must follow the palette walkthrough.');
+  assert.ok(demoLayout.demoBeforeDocumentation, 'The VS Code theme demo must precede the reference documentation.');
+  assert.ok(
+    Math.abs(demoLayout.sceneLeft - demoLayout.demoLeft) <= 1,
+    'The stage scene and VS Code demo must share a left grid edge.'
+  );
+  assert.ok(
+    Math.abs(demoLayout.sceneWidth - demoLayout.demoWidth) <= 1,
+    'The stage scene and VS Code demo must share a content width.'
+  );
+  await demo.scrollIntoViewIfNeeded();
+  const palette = demo.getByLabel('Shipped palette');
+  const tier = demo.getByLabel('Seed tier');
+  assert.equal(await palette.count(), 1);
+  assert.equal(await tier.count(), 1);
+
+  await palette.focus();
+  await page.keyboard.press('Tab');
+  assert.equal(await page.locator('#vscode-tier:focus').count(), 1);
+
+  await tier.selectOption('8');
+  await assert.doesNotReject(demo.getByText('Exact 8-role seed set', { 'exact': true }).waitFor());
+  assert.equal(await demo.locator('input[aria-label$="seed color"]').count(), 8);
+  await assert.doesNotReject(page.getByText('8-role tier selected. Its exact seed-role set replaces the editor fields.', { 'exact': true }).waitFor());
+
+  const framingSwitch = page.locator('[role="switch"][aria-label="Dark framing"], [role="switch"][aria-label="Light framing"]');
+  assert.equal(await framingSwitch.count(), 1);
+  const initialFraming = await framingSwitch.getAttribute('aria-checked');
+  const initialFramingDescription = await demo.getByText('Color framing:', { 'exact': false }).textContent();
+  await framingSwitch.click();
+  assert.notEqual(await framingSwitch.getAttribute('aria-checked'), initialFraming);
+  const framingDescription = await demo.getByText('Color framing:', { 'exact': false }).textContent();
+  if (framingDescription === null) { throw new Error('The canonical demo must expose its shared framing state.'); }
+  assert.notEqual(framingDescription, initialFramingDescription);
+  assert.ok(framingDescription.includes('light') || framingDescription.includes('dark'), 'The shared framing result must name light or dark.');
+  const colorMode = await page.locator('html').getAttribute('data-iridis-framing');
+  assert.ok(colorMode === 'light' || colorMode === 'dark');
+  const background = demo.getByLabel('background seed color');
+  assert.equal(await background.count(), 1);
+  await background.fill('invalid');
+  const alert = demo.getByRole('alert');
+  await assert.doesNotReject(alert.waitFor());
+  const alertMessage = (await alert.textContent() ?? '').toLowerCase();
+  assert.ok(alertMessage.includes('hex') || alertMessage.includes('color') || alertMessage.includes('invalid'));
+  await background.fill('#101820');
+  await alert.waitFor({ 'state': 'detached' });
+  await assert.doesNotReject(demo.getByLabel('VS Code theme preview').waitFor());
+
+  assert.equal(await demo.getByRole('button', { 'exact': true, 'name': 'Copy theme JSON' }).count(), 1);
+  assert.equal(await demo.getByRole('button', { 'exact': true, 'name': 'Download theme JSON' }).count(), 1);
+
+  await palette.focus();
+  const focusStyle = await palette.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return { 'boxShadow': style.boxShadow, 'outlineStyle': style.outlineStyle, 'outlineWidth': style.outlineWidth };
+  });
+  assert.ok(
+    focusStyle.outlineStyle !== 'none' || focusStyle.boxShadow !== 'none',
+    `The palette control needs a visible keyboard focus indicator: ${JSON.stringify(focusStyle)}`
+  );
+
+  const mobile = await browser.newPage({ 'reducedMotion': 'reduce', 'viewport': { 'height': 844, 'width': 390 } });
+  await mobile.goto(origin, { 'waitUntil': 'networkidle' });
+  const mobileDimensions = await mobile.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth;
+    const overflowOwners: { readonly 'className': string; readonly 'identifier': string; readonly 'left': number; readonly 'right': number; readonly 'tagName': string }[] = [];
+    let farthestRight = { 'className': '', 'identifier': '', 'left': 0, 'right': 0, 'tagName': '' };
+    for (const element of document.querySelectorAll<HTMLElement>('body *')) {
+      const bounds = element.getBoundingClientRect();
+      const dimensions = {
+        'className': element.className, 'identifier': element.id,
+        'left': Math.round(bounds.left), 'right': Math.round(bounds.right), 'tagName': element.tagName
+      };
+      if (dimensions.right > farthestRight.right) {farthestRight = dimensions;}
+      if (bounds.left >= 0 && bounds.right <= viewportWidth) {continue;}
+      overflowOwners.push(dimensions);
+      if (overflowOwners.length === 8) {break;}
+    }
+    const overflowContainers: { readonly 'className': string; readonly 'clientWidth': number; readonly 'identifier': string; readonly 'overflowX': string; readonly 'scrollWidth': number; readonly 'tagName': string }[] = [];
+    for (const element of document.querySelectorAll<HTMLElement>('body *')) {
+      if (element.scrollWidth <= element.clientWidth) {continue;}
+      overflowContainers.push({
+        'className': element.className, 'clientWidth': element.clientWidth, 'identifier': element.id,
+        'overflowX': getComputedStyle(element).overflowX, 'scrollWidth': element.scrollWidth, 'tagName': element.tagName
+      });
+      if (overflowContainers.length === 8) {break;}
+    }
+    window.scrollTo({ 'left': viewportWidth, 'top': window.scrollY });
+    const horizontalScrollX = window.scrollX;
+    window.scrollTo({ 'left': 0, 'top': window.scrollY });
+    return {
+      'clientWidth': viewportWidth, 'farthestRight': farthestRight, 'horizontalScrollX': horizontalScrollX, 'overflowContainers': overflowContainers,
+      'overflowOwners': overflowOwners, 'scrollWidth': document.documentElement.scrollWidth
+    };
+  });
+  assert.ok(
+    mobileDimensions.horizontalScrollX === 0,
+    `The responsive page must not introduce horizontal overflow: ${JSON.stringify(mobileDimensions)}`
+  );
+  await mobile.close();
+});
 await test('built Nuxt app SSRs and hydrates the rendered navigation order', { 'timeout': 240_000 }, async (context) => {
   // The production build is produced once by site's `pretest` script, not
   // here. Nuxt takes a lockfile for the duration of a build, and `node --test`

@@ -31,7 +31,7 @@
   height: 0.85rem;
   border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
   background: radial-gradient(ellipse at 50% 30%,
-    color-mix(in oklch, var(--ui-warning) 95%, white) 0%,
+    color-mix(in oklch, var(--ui-warning) 95%, var(--ui-text-highlighted)) 0%,
     var(--ui-color-warning-500) 55%,
     color-mix(in oklch, var(--ui-error) 70%, transparent) 100%);
   filter: blur(0.5px);
