@@ -1,61 +1,53 @@
 ---
 title: 7. CLI Usage
-description: Run iridis directly from your terminal using a JSON configuration file.
+description: Run an iridis pipeline from a validated JSON configuration file.
 ---
 
-You don't have to write Node.js scripts to use iridis. The `@studnicky/iridis-cli` package allows you to run the engine directly from your terminal using a JSON configuration file.
+`@studnicky/iridis-cli` loads a JSON configuration, adopts the requested plugins, runs the named pipeline, and writes declared output slots inside the configured output directory.
+
+## Install and run
 
 ```bash
-npm install -g @studnicky/iridis-cli
-
-iridis ./palette.config.json
-```
-
-The CLI dynamically imports and runs the plugins defined in your configuration file. This makes it perfect for integrating into CI/CD pipelines, build scripts, or code generation workflows.
-
-## Install
-
-```bash
-npm install --save-dev @studnicky/iridis-cli
-```
-
-The CLI package declares the core engine as a peer dependency; install the plugins you need alongside it. Once installed, the `iridis` binary is available as an npm script command:
-
-```bash
+npm install --save-dev @studnicky/iridis-cli @studnicky/iridis-stylesheet
 npx iridis ./palette.config.json
 ```
 
-## Config file shape
+The executable accepts one argument:
 
-The config is a plain JSON file validated against `CliConfigSchema` (`packages/cli/src/CliConfigSchema.ts`). Three top-level fields are required: `input`, `pipeline`, and `output`.
+```text
+iridis <config.json>
+```
+
+It exits non-zero for a missing config path, configuration validation failure, plugin-resolution failure, or pipeline error.
+
+## Configuration
+
+A config requires `input`, `pipeline`, and `output`. Optional `enable*` flags dynamically import the matching installed plugin; the CLI never installs packages.
 
 ```json
 {
   "input": {
-    "colors":   ["#8B5CF6"],
-    "contrast": { "level": "AA", "algorithm": "wcag21" },
+    "colors": ["#101820", "#f5f7fa", "#7c3aed", "#ef4444"],
     "roles": {
-      "name": "brand",
+      "name": "example",
       "roles": [
-        { "name": "accent", "intent": "accent", "required": true },
-        { "name": "onAccent", "intent": "onAccent", "required": true, "derivedFrom": "accent", "lightnessRange": [0.95, 1] }
+        { "name": "background", "intent": "background", "required": true, "lightnessRange": [0.06, 0.18] },
+        { "name": "foreground", "intent": "text", "required": true, "lightnessRange": [0.88, 0.98] },
+        { "name": "accent", "intent": "accent", "required": true, "lightnessRange": [0.60, 0.80] }
+      ],
+      "contrastPairs": [
+        { "foreground": "foreground", "background": "background", "minRatio": 7, "algorithm": "wcag21" },
+        { "foreground": "accent", "background": "background", "minRatio": 4.5, "algorithm": "wcag21" }
       ]
     },
     "metadata": { "cssVarPrefix": "--c-" }
   },
-  "enableContrast":   true,
   "enableStylesheet": true,
-  "enableCapacitor":  false,
-  "enableVscode":     false,
-  "enableTailwind":   false,
-  "enableImage":      false,
-  "enableRdf":        false,
   "pipeline": [
     "intake:any",
     "resolve:roles",
     "expand:family",
-    "enforce:wcagAA",
-    "derive:variant",
+    "enforce:contrast",
     "emit:cssVars"
   ],
   "output": {
@@ -67,13 +59,23 @@ The config is a plain JSON file validated against `CliConfigSchema` (`packages/c
 }
 ```
 
-The `enable*` flags control which plugin packages are dynamically imported. Only flags set to `true` trigger an import, and the corresponding package must already be installed, the CLI does not install dependencies on your behalf. The `pipeline` array maps directly to `engine.pipeline()` in the library API; task names must be registered by either the core task set or one of the adopted plugins.
+`output.files` maps a slot written by the configured pipeline to a relative file name. The CLI rejects an output key that no selected task writes and rejects a file path that escapes `output.directory`.
 
-A full worked config that enables the Contrast and Capacitor plugins together:
+## Plugin flags
 
-<<< @/site/app/examples/vueCapacitor/category-w3c.config.json
+| Flag | Package adopted when `true` |
+|---|---|
+| `enableCapacitor` | `@studnicky/iridis-capacitor` |
+| `enableContrast` | `@studnicky/iridis-contrast` |
+| `enableImage` | `@studnicky/iridis-image` |
+| `enableRdf` | `@studnicky/iridis-rdf` |
+| `enableStylesheet` | `@studnicky/iridis-stylesheet` |
+| `enableTailwind` | `@studnicky/iridis-tailwind` |
+| `enableVscode` | `@studnicky/iridis-vscode` |
 
-## Wiring into a build pipeline
+The `pipeline` array passes task names to `engine.pipeline()`. Each selected plugin must be installed beside the CLI package. The [task registry](/09-task-registry-reference) lists the shipped task names and their declared state slots.
+
+## CI integration
 
 ```json
 {
@@ -94,5 +96,3 @@ A full worked config that enables the Contrast and Capacitor plugins together:
     name: palette
     path: out/
 ```
-
-The CLI exits with code `0` on success and non-zero on validation or pipeline errors. Standard output carries progress logs; standard error carries fatal messages, both are machine-readable in CI.

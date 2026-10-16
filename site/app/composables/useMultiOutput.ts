@@ -3,30 +3,23 @@ import type { MuiOutputInterfaceType } from '@studnicky/iridis-mui';
 import type { PandaOutputInterfaceType } from '@studnicky/iridis-panda';
 import type { ShadcnOutputInterfaceType } from '@studnicky/iridis-shadcn';
 import type { TailwindOutputInterfaceType } from '@studnicky/iridis-tailwind';
-import type { ThemeJsonInterfaceType } from '@studnicky/iridis-vscode/types';
 
-import { coreTasks, Engine } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
 import { chakraPlugin } from '@studnicky/iridis-chakra';
-import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { muiPlugin } from '@studnicky/iridis-mui';
 import { pandaPlugin } from '@studnicky/iridis-panda';
 import { rdfPlugin } from '@studnicky/iridis-rdf';
 import { shadcnPlugin } from '@studnicky/iridis-shadcn';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
 import { tailwindPlugin } from '@studnicky/iridis-tailwind';
-import { vscodePlugin, vscodeRoleSchema16 } from '@studnicky/iridis-vscode';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
 /**
  * One palette, every output format the engine actually has a real emit
  * plugin for — CSS vars, Tailwind, shadcn/ui, MUI, Chakra UI, Panda CSS,
- * UnoCSS, Capacitor/Android, VS Code theme, RDF/OWL, and raw JSON. Two engine
- * runs: the main one uses this site's own role schema (iridis-4..32), the VS
- * Code one uses vscodeRoleSchema16 — ExpandTokens.ts (packages/vscode)
- * requires roles named background/muted/foreground/keyword/type/... that
- * don't exist in this site's schema and throws if they're absent, so it gets
- * its own dedicated pass rather than being bolted onto the main pipeline.
+ * UnoCSS, Capacitor/Android, RDF/OWL, and raw JSON. The VS Code tier demo owns
+ * VS Code generation because it accepts the exact structured role sets that the
+ * VS Code palette contract requires; arbitrary site picker seeds do not.
  *
  * Module-singleton (mirrors useThemePreset.ts's pattern) so every Stylesheets-stage
  * OutputFormatCard reads the SAME computed outputs without each re-running
@@ -35,7 +28,6 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
  */
 import * as VueModule from 'vue';
 
-import { intakeHexHint } from '~/theme/IntakeHexHint.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { debounce } from '~/utils/debounce.ts';
 
@@ -45,7 +37,6 @@ import type { OutputRowType } from './types/outputRow.ts';
 import { OUTPUT_FORMATTING_PATTERNS } from './constants/OutputFormattingPatterns.ts';
 import { contrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
-import { globalVscodeTheme } from './globalVscodeTheme.ts';
 import { logger } from './logger.ts';
 import { optionalContrastStages } from './optionalContrastStages.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
@@ -144,31 +135,6 @@ class OutputSlot {
       && typeof value.unoConfig === 'string';
   }
 
-  private static isSemanticRule(value: unknown): boolean {
-    return OutputSlot.isRecord(value)
-      && (value.fontStyle === undefined || typeof value.fontStyle === 'string')
-      && (value.foreground === undefined || typeof value.foreground === 'string');
-  }
-
-  private static isTokenColor(value: unknown): boolean {
-    return OutputSlot.isRecord(value)
-      && typeof value.name === 'string'
-      && (typeof value.scope === 'string' || (Array.isArray(value.scope) && value.scope.every((scope) => {return typeof scope === 'string';})))
-      && OutputSlot.isSemanticRule(value.settings);
-  }
-
-  private static isVscodeTheme(value: unknown): value is ThemeJsonInterfaceType {
-    return OutputSlot.isRecord(value)
-      && OutputSlot.isStringRecord(value.colors)
-      && typeof value.name === 'string'
-      && value.semanticHighlighting === true
-      && OutputSlot.isRecord(value.semanticTokenColors)
-      && Object.values(value.semanticTokenColors).every((rule) => {return typeof rule === 'string' || OutputSlot.isSemanticRule(rule);})
-      && Array.isArray(value.tokenColors)
-      && value.tokenColors.every(OutputSlot.isTokenColor)
-      && (value.type === 'dark' || value.type === 'light' || value.type === 'hc-dark' || value.type === 'hc-light');
-  }
-
   static chakra(value: unknown): ChakraOutputInterfaceType {
     if (OutputSlot.isChakra(value)) {return value;}
     throw new TypeError('Output slot chakra:theme must provide a string config');
@@ -199,10 +165,6 @@ class OutputSlot {
     throw new TypeError('Output slot tailwind:theme must provide a string config');
   }
 
-  static vscodeTheme(value: unknown): ThemeJsonInterfaceType {
-    if (OutputSlot.isVscodeTheme(value)) {return value;}
-    throw new TypeError('Output slot vscode:themeJson must match the VS Code theme schema');
-  }
 }
 
 const outputsByKey = VueModule.ref<Record<string, OutputRowType | undefined>>({});
@@ -282,45 +244,15 @@ class MainOutputs {
   }
 }
 
-/** vscodeRoleSchema16 only documents dark-mode clamps (see its own header comment), so this pass always themes dark regardless of the site's framing toggle. */
-class VscodeOutput {
-  static build(activeSeeds: readonly PickerSeedType[]): OutputRowType | undefined {
-    const engine = new Engine();
-    for (const t of coreTasks) {engine.tasks.register(t);}
-    engine.tasks.register(intakeHexHint);
-    engine.adopt(contrastPlugin);
-    engine.adopt(vscodePlugin);
-    engine.pipeline([
-      'intake:hexHint', 'resolve:roles', 'expand:family', 'enforce:contrast',
-      'vscode:expandTokens', 'vscode:applyModifiers', 'emit:vscodeSemanticRules', 'emit:vscodeUiPalette', 'emit:vscodeThemeJson'
-    ]);
-    const st = engine.run({
-      'bypass':   undefined,
-      'colors':   pickerSeedInputs(activeSeeds),
-      'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': undefined, 'extra': undefined, 'level': 'AA' },
-      'emit':     undefined,
-      'maxColors': undefined,
-      'metadata': undefined,
-      'roles':    vscodeRoleSchema16,
-      'runtime':  { 'colorSpace': 'srgb', 'extra': undefined, 'framing': 'dark' }
-    });
-    const themeJson = st.outputs['vscode:themeJson'];
-    if (themeJson === undefined) {return undefined;}
-    const validatedTheme = OutputSlot.vscodeTheme(themeJson);
-    globalVscodeTheme.value = validatedTheme;
-    return { 'label': 'VS Code theme', 'lang': 'javascript', 'text': stringifyLoose(validatedTheme) };
-  }
-}
-
 let activated = false;
 let observeStarted = false;
 
 /**
- * Two full `engine.run()` passes (buildMainOutputs + buildVscodeOutput) are
- * genuinely expensive — deferring them until the Stylesheets stage has
+ * The full `engine.run()` output pass is genuinely expensive — deferring it
+ * until the Stylesheets stage has
  * actually scrolled into view (or is about to) means a visit that never
  * reaches Stylesheets never pays for them at all, and the reactive `watch` below (which
- * would otherwise re-run both passes on every seed/framing/schema change
+ * would otherwise re-run the pass on every seed/framing/schema change
  * site-wide) doesn't even start ticking until then either.
  */
 class ActivateOperation {
@@ -335,7 +267,6 @@ class ActivateOperation {
           contrastStrictness.value, derivationConfig.value, semanticHuesEnabled.value,
           cvdCorrect.value, colorSpace.value
         );
-        rows.vscode = VscodeOutput.build(activeSeeds.value);
         outputsByKey.value = rows;
       } catch (e) {
         logger.error(
@@ -386,7 +317,7 @@ class ObserveResultVisibilityOperation {
 
 const observeResultVisibility = ObserveResultVisibilityOperation.run;
 
-/** Reactive, deterministically-keyed output rows plus the shared VS Code theme used to highlight every CodeBlock — the single entry point every OutputFormatCard reads from. Generation itself doesn't start until the Stylesheets stage is about to be visible (see observeResultVisibility). */
+/** Reactive, deterministically-keyed output rows — the single entry point every OutputFormatCard reads from. Generation starts only when the Stylesheets stage is about to be visible (see observeResultVisibility). */
 class UseMultiOutputOperation {
   static run(): { 'outputsByKey': typeof outputsByKey } {
     observeResultVisibility();

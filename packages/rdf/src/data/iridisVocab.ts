@@ -56,7 +56,19 @@ class IridisVocab {
    */
   /** This role's color is a hue-rotated offset of another role's (ExpandFamily), rather than resolved independently from a seed. Object is the parent role's IRI. */
   readonly 'derivedFrom' = `${this.base}derivedFrom`;
-  /** True when the user explicitly pinned a seed to this role (PIN_SEED_ROLE), overriding distance-matching/derivation entirely. */
+  /** Canonical resolution origin from `core:roleProvenance`: 'stated', 'derived', or 'synthesized'. */
+  readonly 'resolutionOrigin' = `${this.base}resolutionOrigin`;
+  /** Connects a role to a concrete adjustment resource for each canonical transformation. */
+  readonly 'hasAdjustment' = `${this.base}hasAdjustment`;
+  /** Resource type for one provenance adjustment. */
+  readonly 'Adjustment' = `${this.base}Adjustment`;
+  /** The color resource before a canonical provenance adjustment. */
+  readonly 'adjustedFrom' = `${this.base}adjustedFrom`;
+  /** The color resource after a canonical provenance adjustment. */
+  readonly 'adjustedTo' = `${this.base}adjustedTo`;
+  /** Canonical adjustment operation: 'hue-target', 'role-range', or 'contrast'. */
+  readonly 'adjustmentOperation' = `${this.base}adjustmentOperation`;
+  /** Compatibility predicate emitted when canonical provenance marks a role as caller-stated. */
   readonly 'pinned' = `${this.base}pinned`;
   /** True when no seed candidate was close enough (all exceeded the schema's max OKLCH distance) and the color was mathematically synthesized instead. */
   readonly 'synthesized' = `${this.base}synthesized`;
@@ -76,10 +88,9 @@ class IridisVocab {
   readonly 'hueClamp' = `${this.base}hueClamp`;
 
   /**
-   * Emitted only for a role this specific run actually clamped (metadata
-   * `core:roleClamps`) — the seed color that got nudged, and where it landed.
-   * Object is the seed's own color IRI (`Iri.color(seedHex)`), which may or
-   * may not otherwise appear as any role's `hasColor` target.
+   * Derived compatibility predicate for a canonical `role-range` adjustment.
+   * The object is the color resource before that adjustment; `hasAdjustment`
+   * retains the operation and exact before/after links.
    */
   readonly 'clampedFrom' = `${this.base}clampedFrom`;
 }

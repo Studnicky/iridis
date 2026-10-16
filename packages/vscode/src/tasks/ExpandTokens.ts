@@ -26,7 +26,7 @@ class ExpandTokens implements TaskInterface {
   readonly 'name' = 'vscode:expandTokens';
 
   readonly 'manifest': TaskManifestInterfaceType = {
-    'description': 'Derives 23 VS Code base token colours from the 16 palette roles using DERIVATION_PARAMS.',
+    'description': 'Derives 27 VS Code base token colours from the 16 palette roles using DERIVATION_PARAMS.',
     'name':        'vscode:expandTokens',
     'phase':       undefined,
     'reads':       ['roles', 'runtime.framing', 'variants'],

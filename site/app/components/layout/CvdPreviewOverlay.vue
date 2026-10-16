@@ -131,7 +131,9 @@ const activeFilterChain = computed<string>(() => {
 .cvd-preview-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
 .cvd-preview-wrap {
+  min-width: 0;
   min-height: 100vh;
+  overflow-x: clip;
 }
 
 @media (prefers-reduced-motion: no-preference) {

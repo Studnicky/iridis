@@ -4,8 +4,13 @@ import type { PendingContrastEntryInterfaceTypeEntity } from '../entities/Pendin
 import type { RequiredSchemaShapeType } from './RequiredSchemaShapeType.ts';
 import type { ContrastPairInterfaceType } from './role.ts';
 
+/** Classifies the action contrast enforcement takes for a pair. */
+export type ContrastAdjustmentDispositionType = 'not-needed' | 'applied' | 'preserved-stated' | 'unresolved';
+
 /** Shape of a single contrast report entry (written by enforce:contrast). */
-export type ContrastReportEntryInterfaceType = ContrastReportEntryInterfaceTypeEntity.Type;
+export type ContrastReportEntryInterfaceType = Omit<ContrastReportEntryInterfaceTypeEntity.Type, 'adjustmentDisposition'> & {
+  'adjustmentDisposition': ContrastAdjustmentDispositionType;
+};
 
 /**
  * A contrast pair queued during the nudge pass, held until reconciliation
@@ -16,7 +21,8 @@ export type ContrastReportEntryInterfaceType = ContrastReportEntryInterfaceTypeE
  * at the consumption site (every field of the entity's own `Type` is
  * already required, so only `pair` needs the fix-up).
  */
-export type PendingContrastEntryInterfaceType = Omit<PendingContrastEntryInterfaceTypeEntity.Type, 'pair'> & {
+export type PendingContrastEntryInterfaceType = Omit<PendingContrastEntryInterfaceTypeEntity.Type, 'adjustmentDisposition' | 'pair'> & {
+  'adjustmentDisposition': ContrastAdjustmentDispositionType;
   'pair': ContrastPairInterfaceType;
 };
 

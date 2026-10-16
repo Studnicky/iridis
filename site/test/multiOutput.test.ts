@@ -1,11 +1,34 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { register } from 'node:module';
 import { test } from 'node:test';
 import { createRenderer, h } from 'vue';
 
 import type { OutputRowType } from '../app/composables/types/outputRow.ts';
 
+import { OUTPUT_FORMAT_CARDS } from '../app/composables/outputFormatCards.ts';
+
 register('./fixtures/NuxtImportsLoader.mjs', import.meta.url);
+
+await test('OUTPUT_FORMAT_CARDS matches useMultiOutput non-VS-Code rows in pipeline order', () => {
+  assert.deepEqual(
+    OUTPUT_FORMAT_CARDS,
+    [
+      { 'key': 'output-cssVars', 'label': 'CSS variables' },
+      { 'key': 'output-cssVarsScoped', 'label': 'CSS vars (scoped)' },
+      { 'key': 'output-tailwind', 'label': 'Tailwind' },
+      { 'key': 'output-shadcn', 'label': 'shadcn/ui' },
+      { 'key': 'output-mui', 'label': 'MUI' },
+      { 'key': 'output-chakra', 'label': 'Chakra UI' },
+      { 'key': 'output-panda', 'label': 'Panda CSS' },
+      { 'key': 'output-unocss', 'label': 'UnoCSS' },
+      { 'key': 'output-capacitor', 'label': 'Capacitor' },
+      { 'key': 'output-androidThemeXml', 'label': 'Android theme.xml' },
+      { 'key': 'output-json', 'label': 'JSON' },
+      { 'key': 'output-rdf', 'label': 'RDF (Turtle)' }
+    ]
+  );
+});
 
 class HostNode {
   readonly children: HostNode[] = [];
@@ -91,11 +114,13 @@ class OutputAssertions {
   }
 }
 
-await test('useMultiOutput validates real plugin slots and falls back from an unknown schema', async () => {
+await test('useMultiOutput uses the current framing for non-VS-Code outputs and falls back from an unknown schema', async () => {
   const { useIridis } = await import('../app/composables/useIridis.ts');
   const { useMultiOutput } = await import('../app/composables/useMultiOutput.ts');
   const iridis = useIridis();
   iridis.schemaName.value = 'not-registered';
+  iridis.run('light');
+  assert.equal(iridis.framing.value, 'light');
 
   const renderer = createRenderer<HostNode, HostElement>({
     'createComment':       HostOperations.createComment,
@@ -117,7 +142,16 @@ await test('useMultiOutput validates real plugin slots and falls back from an un
 
   if (OutputHarness.outputs === undefined) {throw new Error('Output ref was not registered during component setup');}
   const rows = OutputHarness.outputs.value;
-  const expectedKeys = ['androidThemeXml', 'capacitor', 'chakra', 'cssVars', 'cssVarsScoped', 'json', 'mui', 'panda', 'rdf', 'shadcn', 'tailwind', 'unocss', 'vscode'];
+  const expectedKeys = ['androidThemeXml', 'capacitor', 'chakra', 'cssVars', 'cssVarsScoped', 'json', 'mui', 'panda', 'rdf', 'shadcn', 'tailwind', 'unocss'];
   assert.deepEqual(Object.keys(rows).toSorted(), expectedKeys);
   assert.equal(Object.values(rows).every(OutputAssertions.hasText), true);
+  assert.equal(rows.vscode, undefined);
+});
+
+await test('useMultiOutput does not retain the legacy VS Code pipeline', async () => {
+  const source = await readFile(new URL('../app/composables/useMultiOutput.ts', import.meta.url), 'utf8');
+  assert.equal(source.includes('intakeHexHint'), false);
+  assert.equal(source.includes('vscodeRoleSchema16'), false);
+  assert.equal(source.includes('VSCODE_ROLE_SCHEMAS_16'), false);
+  assert.equal(source.includes('vscode:seedRoles'), false);
 });

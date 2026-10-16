@@ -88,6 +88,10 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm install --frozen-lockfile
 
+      - name: Validate release quality gates
+        run: bash scripts/ci-suite.sh typecheck lint test
+      - name: Audit production dependencies
+        run: bash scripts/ci-suite.sh audit
       # Must follow the install: package-publish.mjs reads the manifests
       # through package-pipeline.mjs, which imports typescript.
       - name: Verify release manifests

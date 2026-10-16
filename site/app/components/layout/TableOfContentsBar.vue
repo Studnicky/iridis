@@ -283,6 +283,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .toc-bar {
+  overflow-x: clip;
   position: static;
   z-index: 60;
   padding: 0.75rem 1rem;
@@ -316,6 +317,9 @@ onBeforeUnmount(() => {
 }
 .toc-row-1-desktop { display: none; }
 .toc-row-1-mobile {
+  contain: paint;
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;

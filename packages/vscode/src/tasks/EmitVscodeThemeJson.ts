@@ -6,6 +6,7 @@ import type {
   TaskManifestInterfaceType
 } from '@studnicky/iridis';
 
+import { ModuleError } from '@studnicky/errors';
 import { FramingSurface } from '@studnicky/iridis';
 import { LogBody } from '@studnicky/logger/builders';
 import { LOG_STATUS } from '@studnicky/logger/constants';
@@ -16,9 +17,8 @@ import type {
   TokenColorRuleInterfaceType
 } from '../types/augmentation.ts';
 
+import { VSCODE_SCOPE_MAPPINGS } from '../constants/VscodeScopeMappings.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
-import { SCOPE_MAPPINGS } from '../data/scopeMappings.ts';
-import { recordToVscodeColor } from '../util/recordToVscodeColor.ts';
 
 class EmitVscodeThemeJson implements TaskInterface {
   readonly 'name' = 'emit:vscodeThemeJson';
@@ -61,19 +61,23 @@ class EmitVscodeThemeJson implements TaskInterface {
       }
     }
 
-    // tokenColors: build from SCOPE_MAPPINGS + baseTokens + FONT_STYLES.
-    // Each foreground is serialised via {@link recordToVscodeColor} so any
-    // record carrying `displayP3` emits `color(display-p3 r g b)` instead
-    // of the gamut-mapped hex; sRGB-only records stay as hex.
+    // Every published TextMate scope group resolves through SCOPE_BASE_TOKENS
+    // to a generated base token and serialises as canonical sRGB hex.
     const tokenColors: TokenColorRuleInterfaceType[] = [];
-    for (const [paletteKey, scopes] of Object.entries(SCOPE_MAPPINGS)) {
-      const foregroundRecord = baseTokens[paletteKey];
-      if (foregroundRecord === undefined) {continue;}
+    for (const [paletteKey, scopes] of Object.entries(VSCODE_SCOPE_MAPPINGS.mappings)) {
+      const baseToken = VSCODE_SCOPE_MAPPINGS.baseTokens[paletteKey];
+      const foregroundRecord = baseToken === undefined ? undefined : baseTokens[baseToken];
+      if (foregroundRecord === undefined) {
+        throw ModuleError.create('EmitVscodeThemeJson: missing mapped base token', {
+          'context':  { 'baseToken': baseToken, 'paletteKey': paletteKey, 'task': 'EmitVscodeThemeJson' },
+          'scenario': 'NOT_FOUND'
+        });
+      }
 
       const fontStyle = FONT_STYLES[paletteKey];
       const settings: TokenColorRuleInterfaceType['settings'] = {
         'fontStyle':  undefined,
-        'foreground': recordToVscodeColor(foregroundRecord)
+        'foreground': foregroundRecord.hex
       };
       if (fontStyle !== undefined && fontStyle.length > 0) {
         settings.fontStyle = fontStyle;

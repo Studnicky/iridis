@@ -1,13 +1,13 @@
 /**
  * VscodePlugin — scenario-matrix e2e suite.
  *
- * Subject: `VscodePlugin` and the five vscode tasks it registers.
+ * Subject: `VscodePlugin` and the seven vscode tasks it registers.
  * Drives the full intake → resolve → expand → enforce → derive →
  * vscode:expandTokens → vscode:applyModifiers → emit:* pipeline.
  *
  * Cells:
  *   1. plugin-shape        — singleton, version, task list, manifest fields
- *   2. workbench-colors    — 101-slot palette, key slots present, sRGB/P3 routing
+ *   2. workbench-colors    — 129-key palette, key slots present, sRGB/P3 routing
  *   3. semantic-rules      — base rules, modifier-selector cross-product, fontStyle
  *   4. theme-json-assembly — assembled ThemeJsonInterfaceType shape invariants
  *   5. token-colors        — tokenColors array from SCOPE_MAPPINGS + baseTokens
@@ -22,6 +22,7 @@ import type {
   PaletteStateInterface,
   PipelineContextInterface,
   PluginInterface,
+  RoleSchemaInterfaceType,
   TaskInterface
 } from '@studnicky/iridis';
 import type {
@@ -32,12 +33,12 @@ import type {
 
 import {
   applyModifiers,
+  deriveVscodeUiRoles,
   emitVscodeSemanticRules,
   emitVscodeThemeJson,
   emitVscodeUiPalette,
   expandTokens,
-  vscodePlugin,
-  vscodeRoleSchema16
+  vscodePlugin
 } from '@studnicky/iridis-vscode';
 import { consoleLogger, Engine }       from '@studnicky/iridis/engine';
 import { colorRecordFactory, luminance } from '@studnicky/iridis/math';
@@ -46,12 +47,15 @@ import assert from 'node:assert/strict';
 import { test }    from 'node:test';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
+import { VSCODE_ROLE_SCHEMAS_16 } from '../../src/index.ts';
+
+const roleSchema16 = VSCODE_ROLE_SCHEMAS_16.dark;
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-/** Sixteen in-sRGB seeds covering every required role via vscodeRoleSchema16. */
+/** Sixteen in-sRGB seeds that derive the complete VS Code role vocabulary. */
 const SEEDS_SRGB: readonly string[] = [
   '#0d1117', '#e6edf3', '#161b22', '#7d8590',
   '#8b5cf6', '#a78bfa', '#22d3ee', '#34d399',
@@ -65,17 +69,43 @@ const SEEDS_SRGB: readonly string[] = [
  */
 const SEEDS_WITH_P3: readonly string[] = [
   '#0d1117', '#e6edf3', '#161b22', '#7d8590',
-  'color(display-p3 1.0 0.30 0.20)',
-  '#a78bfa', '#22d3ee', '#34d399',
-  '#fb7185', '#fbbf24', '#f59e0b', '#737373',
+  'color(display-p3 0.70 0.40 1.00)',
+  '#e11d48', '#22d3ee', '#34d399',
+  '#e11d48', '#fbbf24', '#f59e0b', '#737373',
   '#ef4444', '#facc15', '#3b82f6', '#10b981'
 ];
+
+await test('VscodePlugin :: role schemas :: dark and light expose the complete 16-role vocabulary', () => {
+  const expected = [
+    'background', 'foreground', 'surface', 'muted', 'keyword', 'type', 'function', 'variable',
+    'string', 'number', 'constant', 'comment', 'error', 'warning', 'info', 'success'
+  ];
+  const schemas: readonly (readonly ['dark' | 'light', RoleSchemaInterfaceType])[] = [
+    ['dark', VSCODE_ROLE_SCHEMAS_16.dark],
+    ['light', VSCODE_ROLE_SCHEMAS_16.light]
+  ];
+  for (let schemaCount = schemas.length, schemaIndex = 0; schemaIndex < schemaCount; schemaIndex += 1) {
+    const [framing, schema] = schemas[schemaIndex]!;
+    const roleNames: string[] = [];
+    const roleCount = schema.roles.length;
+    for (let index = 0; index < roleCount; index += 1) {
+      const role = schema.roles[index];
+      if (role === undefined) {
+        throw new TypeError(`Missing role definition at ${index}`);
+      }
+      roleNames.push(role.name);
+    }
+    assert.deepStrictEqual(roleNames, expected, `${framing} schema role vocabulary`);
+    assert.ok(!roleNames.includes('accent'), `${framing} 16-role view leaves accent to vscode:deriveUiRoles`);
+  }
+});
 
 /** Full hex pipeline (intake:hex) */
 const PIPELINE_HEX: readonly string[] = [
   'intake:hex',
   'resolve:roles',
   'expand:family',
+  'vscode:deriveUiRoles',
   'enforce:contrast',
   'derive:variant',
   'vscode:expandTokens',
@@ -90,6 +120,7 @@ const PIPELINE_ANY: readonly string[] = [
   'intake:any',
   'resolve:roles',
   'expand:family',
+  'vscode:deriveUiRoles',
   'enforce:contrast',
   'derive:variant',
   'vscode:expandTokens',
@@ -100,6 +131,7 @@ const PIPELINE_ANY: readonly string[] = [
 ];
 
 /** Build a fresh Engine with all core tasks + vscodePlugin adopted. */
+
 class VscodeTestData {
   static engine(): Engine {
     const engine = new Engine();
@@ -119,7 +151,7 @@ class VscodeTestData {
   ): PaletteStateInterface {
     const engine = VscodeTestData.engine();
     engine.pipeline(pipeline);
-    return engine.run({ 'colors': seeds, 'roles': vscodeRoleSchema16 } as InputInterface);
+    return engine.run({ 'colors': seeds, 'roles': roleSchema16 } as InputInterface);
   }
 
   /** Same as {@link runFull} but sets `input.runtime.framing` explicitly. */
@@ -130,6 +162,7 @@ class VscodeTestData {
   ): PaletteStateInterface {
     const engine = VscodeTestData.engine();
     engine.pipeline(pipeline);
+    const roleSchema = framing === 'light' ? VSCODE_ROLE_SCHEMAS_16.light : VSCODE_ROLE_SCHEMAS_16.dark;
     const input: InputInterface = {
       'bypass':    undefined,
       'colors':    seeds,
@@ -137,7 +170,7 @@ class VscodeTestData {
       'emit':      undefined,
       'maxColors': undefined,
       'metadata':  undefined,
-      'roles':     vscodeRoleSchema16,
+      'roles':     roleSchema,
       'runtime':   { 'colorSpace': undefined, 'extra': undefined, 'framing': framing }
     };
     return engine.run(input);
@@ -148,7 +181,7 @@ class VscodeTestData {
 // Cell 1 — plugin shape
 //
 // VscodePlugin is a singleton class instance. The plugin must advertise a
-// stable name and version, expose exactly five tasks by name, and each task
+// stable name and version, expose exactly seven tasks by name, and each task
 // must be an instance of its class and carry the correct manifest.name.
 // ---------------------------------------------------------------------------
 
@@ -168,20 +201,22 @@ const pluginShapeScenarios: readonly ScenarioRunner.ScenarioInterface<PluginShap
       assert.strictEqual(output!.name,    'vscode', '[cell=1, scenario=singleton] name');
       assert.strictEqual(output!.version, '0.1.0',  '[cell=1, scenario=singleton] version');
       assert.deepStrictEqual(
-        [...output!.taskNames].sort(),
+        output!.taskNames,
         [
-          'emit:vscodeSemanticRules',
-          'emit:vscodeThemeJson',
-          'emit:vscodeUiPalette',
+          'vscode:seedRoles',
+          'vscode:deriveUiRoles',
+          'vscode:expandTokens',
           'vscode:applyModifiers',
-          'vscode:expandTokens'
+          'emit:vscodeSemanticRules',
+          'emit:vscodeUiPalette',
+          'emit:vscodeThemeJson'
         ],
-        '[cell=1, scenario=singleton] all five task names'
+        '[cell=1, scenario=singleton] all seven registered task names in pipeline order'
       );
     },
     'input': { 'plugin': vscodePlugin },
     'kind': 'happy',
-    'name': 'singleton exposes name version and five tasks'
+    'name': 'singleton exposes name version and seven tasks'
   },
   {
     'assert': function(output, error) {
@@ -213,12 +248,21 @@ const pluginShapeScenarios: readonly ScenarioRunner.ScenarioInterface<PluginShap
     'name': 'each task is the correct class instance with matching manifest.name'
   },
   {
-    'assert': function(_output, error) {
+    'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=1, scenario=tasks-fresh] no throw');
       const t1 = vscodePlugin.tasks();
       const t2 = vscodePlugin.tasks();
-      assert.strictEqual(t1.length, 5, '[cell=1, scenario=tasks-fresh] length stable');
-      assert.strictEqual(t2.length, 5, '[cell=1, scenario=tasks-fresh] second call length stable');
+      assert.notStrictEqual(t1, t2, '[cell=1, scenario=tasks-fresh] calls return distinct arrays');
+      assert.deepStrictEqual(
+        t1.map((task) => { const result = task.name; return result; }),
+        output!.taskNames,
+        '[cell=1, scenario=tasks-fresh] first call preserves the registered task order'
+      );
+      assert.deepStrictEqual(
+        t2.map((task) => { const result = task.name; return result; }),
+        output!.taskNames,
+        '[cell=1, scenario=tasks-fresh] second call preserves the registered task order'
+      );
     },
     'input': { 'plugin': vscodePlugin },
     'kind': 'edge',
@@ -238,7 +282,7 @@ await new ScenarioRunner<PluginShapeInputInterface, PluginShapeOutput>(
 // ---------------------------------------------------------------------------
 // Cell 2 — workbench colors (outputs.vscode.workbenchColors)
 //
-// emit:vscodeUiPalette derives ~101 VS Code workbench-color slots from the
+// emit:vscodeUiPalette emits 129 VS Code workbench-color slots from the
 // resolved 16-role palette. This cell asserts:
 //   - the slot map is populated with expected UI keys
 //   - direct-passthrough slots carry the role's color form (hex for sRGB roles)
@@ -294,23 +338,13 @@ const workbenchColorsScenarios: readonly ScenarioRunner.ScenarioInterface<Workbe
   {
     'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=srgb-shape] no throw');
-      // Role-resolution math may re-derive colors through OKLCH and surface displayP3
-      // even when the raw input seed is a plain hex string (e.g. ensureContrast can
-      // produce a displayP3 record via colorRecordFactory.fromOklch). The invariant
-      // for sRGB-only inputs is therefore that every slot is either a valid hex string
-      // OR a valid color(display-p3 ...) functional notation — never empty or malformed.
-      const hexPattern   = /^#[0-9a-f]{6,8}$/;
-      const p3Pattern    = /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+\)$/;
       for (const [slot, value] of Object.entries(output!.colors)) {
-        assert.ok(
-          hexPattern.test(value) || p3Pattern.test(value),
-          `[cell=2, scenario=srgb-shape] slot ${slot} must be hex or P3 notation, got: ${value}`
-        );
+        assert.match(value, /^#[0-9a-f]{6,8}$/, `[cell=2, scenario=srgb-shape] ${slot} is canonical sRGB hex, got: ${value}`);
       }
     },
     'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
     'kind': 'happy',
-    'name': 'sRGB-only seeds produce hex or P3 strings (never empty) for all workbench slots'
+    'name': 'sRGB-only seeds produce canonical hexadecimal workbench colors'
   },
   {
     'assert': function(output, error) {
@@ -362,42 +396,26 @@ const workbenchColorsScenarios: readonly ScenarioRunner.ScenarioInterface<Workbe
   {
     'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=p3-passthrough] no throw');
-      const p3Pattern = /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+\)$/;
-      // editorCursor.foreground = direct keyword (accent) passthrough
-      assert.match(
-        VscodeTestData.get(output!.colors, 'editorCursor.foreground') ?? '',
-        p3Pattern,
-        '[cell=2, scenario=p3-passthrough] editorCursor.foreground emits P3 for wide-gamut accent'
-      );
-      // tab.activeBorder = direct keyword passthrough
-      assert.match(
-        VscodeTestData.get(output!.colors, 'tab.activeBorder') ?? '',
-        p3Pattern,
-        '[cell=2, scenario=p3-passthrough] tab.activeBorder emits P3 for wide-gamut accent'
-      );
-      // activityBarBadge.background = direct keyword passthrough
-      assert.match(
-        VscodeTestData.get(output!.colors, 'activityBarBadge.background') ?? '',
-        p3Pattern,
-        '[cell=2, scenario=p3-passthrough] activityBarBadge.background emits P3 for wide-gamut accent'
-      );
+      const cursor = VscodeTestData.get(output!.colors, 'editorCursor.foreground') ?? '';
+      const tabBorder = VscodeTestData.get(output!.colors, 'tab.activeBorder') ?? '';
+      const activityBadge = VscodeTestData.get(output!.colors, 'activityBarBadge.background') ?? '';
+      assert.match(cursor, /^#[0-9a-f]{6,8}$/, '[cell=2, scenario=p3-passthrough] editorCursor.foreground gamut-maps wide-gamut input to hex');
+      assert.match(tabBorder, /^#[0-9a-f]{6,8}$/, '[cell=2, scenario=p3-passthrough] tab.activeBorder gamut-maps wide-gamut input to hex');
+      assert.match(activityBadge, /^#[0-9a-f]{6,8}$/, '[cell=2, scenario=p3-passthrough] activityBarBadge.background gamut-maps wide-gamut input to hex');
     },
     'input': { 'pipeline': PIPELINE_ANY, 'seeds': SEEDS_WITH_P3 },
     'kind': 'edge',
-    'name': 'direct-passthrough accent slots emit color(display-p3 ...) for wide-gamut input'
+    'name': 'direct-passthrough accent slots gamut-map wide-gamut input to canonical sRGB hex'
   },
   {
     'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=2, scenario=bright-white] no throw');
-      assert.strictEqual(
-        VscodeTestData.get(output!.colors, 'terminal.ansiBrightWhite'),
-        '#ffffff',
-        '[cell=2, scenario=bright-white] terminal.ansiBrightWhite is #ffffff'
-      );
+      const value = VscodeTestData.get(output!.colors, 'terminal.ansiBrightWhite') ?? '';
+      assert.match(value, /^#[0-9a-f]{6,8}$/, '[cell=2, scenario=bright-white] terminal.ansiBrightWhite is derived as hex');
     },
     'input': { 'pipeline': PIPELINE_HEX, 'seeds': SEEDS_SRGB },
     'kind': 'edge',
-    'name': 'terminal.ansiBrightWhite is always #ffffff regardless of palette'
+    'name': 'terminal.ansiBrightWhite is derived from terminal.ansiWhite rather than a literal'
   }
 ];
 
@@ -484,14 +502,18 @@ const semanticRulesScenarios: readonly ScenarioRunner.ScenarioInterface<Semantic
   {
     'assert': function(output, error) {
       assert.strictEqual(error, undefined,                      '[cell=3, scenario=output-rules] no throw');
-      assert.ok(Object.keys(output!.outputRules).length >= 23, '[cell=3, scenario=output-rules] at least 23 output rules');
+      const outputSelectors = Object.keys(output!.outputRules);
+      const outputBaseRules = outputSelectors.filter((selector) => {return !selector.includes('.');});
+      const outputModifierRuleCount = outputSelectors.length - outputBaseRules.length;
+      assert.strictEqual(outputBaseRules.length, 27, '[cell=3, scenario=output-rules] 27 output base rules');
+      assert.strictEqual(outputModifierRuleCount, 270, '[cell=3, scenario=output-rules] 270 output modifier-selector rules');
       const commentRule = output!.outputRules.comment;
       assert.ok(commentRule !== undefined,                      '[cell=3, scenario=output-rules] comment rule present');
       assert.ok(typeof commentRule.foreground === 'string',     '[cell=3, scenario=output-rules] comment rule has foreground');
     },
     'input': { 'seeds': SEEDS_SRGB },
     'kind': 'happy',
-    'name': 'outputs.vscode.semanticTokenRules has at least 23 entries and comment rule exists'
+    'name': 'outputs.vscode.semanticTokenRules has 27 base rules and 270 modifier-selector rules'
   },
   {
     'assert': function(output, error) {
@@ -508,21 +530,14 @@ const semanticRulesScenarios: readonly ScenarioRunner.ScenarioInterface<Semantic
   {
     'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=3, scenario=p3-semantic] no throw');
-      // The keyword base token is derived from the keyword role which carries P3
       const keywordRule = output!.metaRules.keyword;
       assert.ok(keywordRule !== undefined, '[cell=3, scenario=p3-semantic] keyword rule present');
       assert.ok(typeof keywordRule.foreground === 'string', '[cell=3, scenario=p3-semantic] keyword rule has foreground');
-      // foreground may be hex (after ensureContrast re-derives via oklch) or P3 depending on
-      // whether the contrast adjustment round-trips through P3; either way it must be a valid color string
-      assert.ok(
-        /^#[0-9a-f]{6,8}$/.test(keywordRule.foreground)
-          || /^color\(display-p3/.test(keywordRule.foreground),
-        `[cell=3, scenario=p3-semantic] keyword foreground is a valid color string, got ${keywordRule.foreground}`
-      );
+      assert.match(keywordRule.foreground, /^#[0-9a-f]{6,8}$/, `[cell=3, scenario=p3-semantic] keyword foreground is canonical sRGB hex, got ${keywordRule.foreground}`);
     },
     'input': { 'seeds': SEEDS_WITH_P3 },
     'kind': 'edge',
-    'name': 'wide-gamut input: base rules carry P3 foreground for keyword base token'
+    'name': 'wide-gamut input: base rules gamut-map keyword foreground to hex'
   }
 ];
 
@@ -576,7 +591,7 @@ const themeJsonScenarios: readonly ScenarioRunner.ScenarioInterface<ThemeJsonInp
       assert.ok(typeof tj.colors === 'object',                       '[cell=4, scenario=shape] colors is object');
       assert.ok(Object.keys(tj.colors).length >= 50,                 '[cell=4, scenario=shape] colors has at least 50 entries');
       assert.ok(typeof tj.semanticTokenColors === 'object',          '[cell=4, scenario=shape] semanticTokenColors is object');
-      assert.ok(Object.keys(tj.semanticTokenColors).length >= 23,    '[cell=4, scenario=shape] semanticTokenColors has at least 23 entries');
+      assert.strictEqual(Object.keys(tj.semanticTokenColors).length, 297,  '[cell=4, scenario=shape] semanticTokenColors has 297 rules');
       assert.ok(Array.isArray(tj.tokenColors),                       '[cell=4, scenario=shape] tokenColors is array');
       assert.ok(tj.tokenColors.length > 0,                           '[cell=4, scenario=shape] tokenColors non-empty');
     },
@@ -727,17 +742,13 @@ const tokenColorsScenarios: readonly ScenarioRunner.ScenarioInterface<TokenColor
     'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=5, scenario=keyword-p3] no throw');
       const kwEntry = output!.tokenColors.find((e) => {return e.name === 'keyword';});
-      assert.ok(kwEntry !== undefined,              '[cell=5, scenario=keyword-p3] keyword entry present');
+      assert.ok(kwEntry !== undefined, '[cell=5, scenario=keyword-p3] keyword entry present');
       assert.ok(typeof kwEntry.settings.foreground === 'string', '[cell=5, scenario=keyword-p3] keyword foreground is string');
-      assert.match(
-        kwEntry.settings.foreground,
-        /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+\)$/,
-        '[cell=5, scenario=keyword-p3] keyword tokenColor emits P3 for wide-gamut keyword role'
-      );
+      assert.match(kwEntry.settings.foreground, /^#[0-9a-f]{6,8}$/, '[cell=5, scenario=keyword-p3] keyword tokenColor gamut-maps to hex');
     },
     'input': { 'seeds': SEEDS_WITH_P3 },
     'kind': 'edge',
-    'name': 'wide-gamut keyword tokenColors entry emits P3 foreground'
+    'name': 'wide-gamut keyword tokenColors entry gamut-maps to a hex foreground'
   }
 ];
 
@@ -777,23 +788,23 @@ abstract class P3PropagationOutput {
 const p3PropagationScenarios: readonly ScenarioRunner.ScenarioInterface<P3PropagationInput, P3PropagationOutput>[] = [
   {
     'assert': function(output, error) {
-      assert.strictEqual(error, undefined,              '[cell=6, scenario=keyword-p3] no throw');
-      assert.strictEqual(output!.keywordDisplayP3, true, '[cell=6, scenario=keyword-p3] keyword.displayP3 defined');
+      assert.strictEqual(error, undefined, '[cell=6, scenario=keyword-p3] no throw');
+      assert.match(output!.cursorForeground, /^#[0-9a-f]{6,8}$/, '[cell=6, scenario=keyword-p3] wide-gamut input emits cursor hex');
+      assert.match(output!.tabActiveBorder, /^#[0-9a-f]{6,8}$/, '[cell=6, scenario=keyword-p3] wide-gamut input emits tab hex');
     },
     'input': { 'seeds': SEEDS_WITH_P3 },
     'kind': 'happy',
-    'name': 'wide-gamut keyword role carries displayP3 after resolve:roles'
+    'name': 'wide-gamut keyword input reaches direct slots as canonical sRGB hex'
   },
   {
     'assert': function(output, error) {
       assert.strictEqual(error, undefined, '[cell=6, scenario=p3-direct] no throw');
-      const p3 = /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+\)$/;
-      assert.match(output!.cursorForeground, p3,  '[cell=6, scenario=p3-direct] editorCursor.foreground is P3');
-      assert.match(output!.tabActiveBorder,  p3,  '[cell=6, scenario=p3-direct] tab.activeBorder is P3');
+      assert.match(output!.cursorForeground, /^#[0-9a-f]{6,8}$/, '[cell=6, scenario=p3-direct] editorCursor.foreground is hex');
+      assert.match(output!.tabActiveBorder, /^#[0-9a-f]{6,8}$/, '[cell=6, scenario=p3-direct] tab.activeBorder is hex');
     },
     'input': { 'seeds': SEEDS_WITH_P3 },
     'kind': 'happy',
-    'name': 'direct keyword passthrough slots emit color(display-p3 ...) form'
+    'name': 'direct keyword slots emit canonical sRGB hex'
   },
   {
     'assert': function(output, error) {
@@ -979,7 +990,7 @@ const unhappyScenarios: readonly ScenarioRunner.ScenarioInterface<UnhappyInputIn
           'derive:variant',
           'vscode:applyModifiers'
         ]);
-        return engine.run({ 'colors': SEEDS_SRGB, 'roles': vscodeRoleSchema16 } as InputInterface);
+        return engine.run({ 'colors': SEEDS_SRGB, 'roles': roleSchema16 } as InputInterface);
       }
     },
     'kind': 'unhappy',
@@ -1007,7 +1018,7 @@ const unhappyScenarios: readonly ScenarioRunner.ScenarioInterface<UnhappyInputIn
           'vscode:expandTokens',
           'emit:vscodeSemanticRules'
         ]);
-        return engine.run({ 'colors': SEEDS_SRGB, 'roles': vscodeRoleSchema16 } as InputInterface);
+        return engine.run({ 'colors': SEEDS_SRGB, 'roles': roleSchema16 } as InputInterface);
       }
     },
     'kind': 'unhappy',
@@ -1037,7 +1048,7 @@ const unhappyScenarios: readonly ScenarioRunner.ScenarioInterface<UnhappyInputIn
           'emit:vscodeSemanticRules',
           'emit:vscodeThemeJson'
         ]);
-        return engine.run({ 'colors': SEEDS_SRGB, 'roles': vscodeRoleSchema16 } as InputInterface);
+        return engine.run({ 'colors': SEEDS_SRGB, 'roles': roleSchema16 } as InputInterface);
       }
     },
     'kind': 'unhappy',
@@ -1060,6 +1071,7 @@ const unhappyScenarios: readonly ScenarioRunner.ScenarioInterface<UnhappyInputIn
           'intake:hex',
           'resolve:roles',
           'expand:family',
+          'vscode:deriveUiRoles',
           'enforce:contrast',
           'derive:variant',
           'vscode:expandTokens',
@@ -1067,7 +1079,7 @@ const unhappyScenarios: readonly ScenarioRunner.ScenarioInterface<UnhappyInputIn
           'emit:vscodeUiPalette',
           'emit:vscodeThemeJson'
         ]);
-        return engine.run({ 'colors': SEEDS_SRGB, 'roles': vscodeRoleSchema16 } as InputInterface);
+        return engine.run({ 'colors': SEEDS_SRGB, 'roles': roleSchema16 } as InputInterface);
       }
     },
     'kind': 'unhappy',
@@ -1097,7 +1109,7 @@ const unhappyScenarios: readonly ScenarioRunner.ScenarioInterface<UnhappyInputIn
           'emit':      undefined,
           'maxColors': undefined,
           'metadata':  undefined,
-          'roles':     vscodeRoleSchema16,
+          'roles':     roleSchema16,
           'runtime':   undefined
         });
       }
@@ -1237,6 +1249,7 @@ class DirectTaskFixture {
   /** Sixteen roles the vscode tasks require, independent of any role-schema clamp. */
   static buildState(backgroundHex: string): PaletteStateInterface {
     const hexes: Readonly<Record<string, string>> = {
+      'accent':     '#7c3aed',
       'background': backgroundHex,
       'comment':    '#6a737d',
       'constant':   '#79c0ff',
@@ -1281,7 +1294,7 @@ class DirectTaskFixture {
     };
   }
 
-  /** Runs the five vscode tasks directly (bypassing resolve:roles/enforce:contrast clamps) so an
+  /** Runs the six downstream vscode tasks directly (bypassing resolve:roles/enforce:contrast clamps) so an
    *  intentionally-crafted crossover background survives unaltered into both emitters. */
   static runDirect(backgroundHex: string): PaletteStateInterface {
     const state = DirectTaskFixture.buildState(backgroundHex);
@@ -1293,6 +1306,7 @@ class DirectTaskFixture {
       'tasks':     engine.tasks
     };
 
+    deriveVscodeUiRoles.run(state, context);
     expandTokens.run(state, context);
     applyModifiers.run(state, context);
     emitVscodeSemanticRules.run(state, context);
@@ -1324,6 +1338,46 @@ await test('VscodePlugin :: cell-10 :: theme-type-reconciliation :: #767676 (WCA
 // bare test since the assertion doesn't fit the single-subject table pattern.
 // ---------------------------------------------------------------------------
 
+await test('VscodePlugin :: workbench colors :: accent slots read the named accent role', () => {
+  const state = DirectTaskFixture.runDirect('#10161f');
+  const colors = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
+
+  assert.strictEqual(colors['editorCursor.foreground'], '#7c3aed', '[accent] cursor foreground reads accent');
+  assert.strictEqual(colors['tab.activeBorder'], '#7c3aed', '[accent] tab border reads accent');
+  assert.strictEqual(colors['activityBarBadge.background'], '#7c3aed', '[accent] activity badge reads accent');
+  assert.notStrictEqual(colors['editorCursor.foreground'], '#8b5cf6', '[accent] cursor foreground does not substitute keyword');
+});
+
+await test('VscodePlugin :: workbench colors :: terminal bright white derives from terminal white', () => {
+  const state = DirectTaskFixture.buildState('#10161f');
+  state.roles.foreground = colorRecordFactory.fromHex('#223344');
+  const engine = new Engine();
+  const context: PipelineContextInterface = {
+    'engine':    engine,
+    'logger':    consoleLogger,
+    'startedAt': Date.now(),
+    'tasks':     engine.tasks
+  };
+
+  deriveVscodeUiRoles.run(state, context);
+  emitVscodeUiPalette.run(state, context);
+  const colors = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
+  assert.strictEqual(colors['terminal.ansiWhite'], '#223344', '[terminal] ansiWhite reads foreground');
+  assert.notStrictEqual(colors['terminal.ansiBrightWhite'], '#ffffff', '[terminal] bright white changes with foreground');
+  assert.notStrictEqual(colors['terminal.ansiBrightWhite'], colors['terminal.ansiWhite'], '[terminal] bright white applies a foreground derivation');
+});
+
+await test('VscodePlugin :: token colors :: every published scope group is emitted as canonical hex', () => {
+  const state = VscodeTestData.runFull(SEEDS_SRGB, PIPELINE_HEX);
+  const themeJson = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
+  const tokenColors = themeJson?.tokenColors ?? [];
+
+  assert.strictEqual(tokenColors.length, 57, '[scope coverage] each published scope group emits a token rule');
+  for (const entry of tokenColors) {
+    assert.match(entry.settings.foreground ?? '', /^#[0-9a-f]{6,8}$/, `[scope coverage] ${entry.name} foreground is canonical sRGB hex`);
+  }
+});
+
 await test('VscodePlugin :: golden :: themeJson key set is stable across refactors', () => {
   const state = VscodeTestData.runFull(SEEDS_SRGB, PIPELINE_HEX);
   const tj    = state.outputs['vscode:themeJson'] as ThemeJsonInterfaceType | undefined;
@@ -1346,7 +1400,6 @@ await test('VscodePlugin :: golden :: themeJson key set is stable across refacto
     'terminal.foreground',
     'focusBorder',
     'errorForeground',
-    'warningForeground',
     'gitDecoration.addedResourceForeground'
   ];
   for (const key of requiredColorKeys) {

@@ -2,17 +2,17 @@
 set -eu
 
 run_audit_check() {
-  if command -v pnpm >/dev/null 2>&1; then
-    pnpm audit --prod --audit-level high
+  if command -v node >/dev/null 2>&1 && command -v pnpm >/dev/null 2>&1; then
+    node scripts/audit-production-dependencies.mjs
     return $?
   fi
 
   if [ "${SECURITY_SUITE_REQUIRE_TOOLS:-false}" = "true" ]; then
-    echo "security-suite: pnpm is required for this run" >&2
+    echo "security-suite: node and pnpm are required for this run" >&2
     return 127
   fi
 
-  echo "security-suite: pnpm not installed; skipping audit" >&2
+  echo "security-suite: node or pnpm is not installed; skipping audit" >&2
   return 0
 }
 

@@ -143,9 +143,9 @@ class CvdCandidateProbe {
             'chromaRange': [Math.max(0, foreground.oklch.c - 0.01), Math.min(0.5, foreground.oklch.c + 0.01)],
             'derivedFrom': undefined,
             'description': undefined,
-            'hue': undefined,
+            'hue': foreground.oklch.h,
             'hueClamp': undefined,
-            'hueOffset': foreground.oklch.h,
+            'hueOffset': undefined,
             'intent': undefined,
             'lightnessRange': [Math.max(0, foreground.oklch.l - 0.01), Math.min(1, foreground.oklch.l + 0.01)],
             'name': 'text',
@@ -155,9 +155,9 @@ class CvdCandidateProbe {
             'chromaRange': [Math.max(0, background.oklch.c - 0.01), Math.min(0.5, background.oklch.c + 0.01)],
             'derivedFrom': undefined,
             'description': undefined,
-            'hue': undefined,
+            'hue': background.oklch.h,
             'hueClamp': undefined,
-            'hueOffset': background.oklch.h,
+            'hueOffset': undefined,
             'intent': undefined,
             'lightnessRange': [Math.max(0, background.oklch.l - 0.01), Math.min(1, background.oklch.l + 0.01)],
             'name': 'background',
@@ -412,8 +412,8 @@ const CVD_RED_GREEN_ROLES: RoleSchemaInterfaceType = {
   'description': undefined,
   'name':  'cvd-red-green',
   'roles': [
-    { 'chromaRange': [0.10, 0.40],       'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 29, 'intent': undefined, 'lightnessRange': [0.40, 0.70], 'name': 'text', 'required': true  },
-    { 'chromaRange': [0.10, 0.40], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 142, 'intent': undefined, 'lightnessRange': [0.40, 0.70], 'name': 'background', 'required': true }
+    { 'chromaRange': [0.10, 0.40],       'derivedFrom': undefined, 'description': undefined, 'hue': 29, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.40, 0.70], 'name': 'text', 'required': true  },
+    { 'chromaRange': [0.10, 0.40], 'derivedFrom': undefined, 'description': undefined, 'hue': 142, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.40, 0.70], 'name': 'background', 'required': true }
   ]
 };
 
@@ -425,8 +425,8 @@ const CVD_BLUE_YELLOW_ROLES: RoleSchemaInterfaceType = {
   'description': undefined,
   'name':  'cvd-blue-yellow',
   'roles': [
-    { 'chromaRange': [0.10, 0.40],       'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 264, 'intent': undefined, 'lightnessRange': [0.30, 0.60], 'name': 'text', 'required': true },
-    { 'chromaRange': [0.10, 0.40], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 110, 'intent': undefined, 'lightnessRange': [0.85, 1.00], 'name': 'background', 'required': true }
+    { 'chromaRange': [0.10, 0.40],       'derivedFrom': undefined, 'description': undefined, 'hue': 264, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.30, 0.60], 'name': 'text', 'required': true },
+    { 'chromaRange': [0.10, 0.40], 'derivedFrom': undefined, 'description': undefined, 'hue': 110, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.85, 1.00], 'name': 'background', 'required': true }
   ]
 };
 
@@ -438,8 +438,8 @@ const CVD_ISOLUM_ROLES: RoleSchemaInterfaceType = {
   'description': undefined,
   'name':  'cvd-isolum',
   'roles': [
-    { 'chromaRange': [0.20, 0.30],       'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 29, 'intent': undefined, 'lightnessRange': [0.55, 0.70], 'name': 'text', 'required': true  },
-    { 'chromaRange': [0.20, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 142, 'intent': undefined, 'lightnessRange': [0.70, 0.85], 'name': 'background', 'required': true }
+    { 'chromaRange': [0.20, 0.30],       'derivedFrom': undefined, 'description': undefined, 'hue': 29, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.55, 0.70], 'name': 'text', 'required': true  },
+    { 'chromaRange': [0.20, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': 142, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.70, 0.85], 'name': 'background', 'required': true }
   ]
 };
 
@@ -491,9 +491,9 @@ const CVD_SHARED_FOREGROUND_ROLES: RoleSchemaInterfaceType = {
   'description': undefined,
   'name': 'cvd-shared-foreground',
   'roles': [
-    { 'chromaRange': [0.15, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 29, 'intent': undefined, 'lightnessRange': [0.50, 0.56], 'name': 'text', 'required': true },
-    { 'chromaRange': [0.12, 0.25], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 142, 'intent': undefined, 'lightnessRange': [0.48, 0.55], 'name': 'backgroundLow', 'required': true },
-    { 'chromaRange': [0.15, 0.28], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 142, 'intent': undefined, 'lightnessRange': [0.58, 0.64], 'name': 'backgroundHigh', 'required': true }
+    { 'chromaRange': [0.15, 0.30], 'derivedFrom': undefined, 'description': undefined, 'hue': 29, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.50, 0.56], 'name': 'text', 'required': true },
+    { 'chromaRange': [0.12, 0.25], 'derivedFrom': undefined, 'description': undefined, 'hue': 142, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.48, 0.55], 'name': 'backgroundLow', 'required': true },
+    { 'chromaRange': [0.15, 0.28], 'derivedFrom': undefined, 'description': undefined, 'hue': 142, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.58, 0.64], 'name': 'backgroundHigh', 'required': true }
   ]
 };
 
@@ -518,8 +518,8 @@ const CVD_EXTREMUM_ROLES: RoleSchemaInterfaceType = {
   'description': undefined,
   'name': 'cvd-extremum',
   'roles': [
-    { 'chromaRange': [0.04, 0.08], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 19, 'intent': undefined, 'lightnessRange': [0.15, 0.23], 'name': 'text', 'required': true },
-    { 'chromaRange': [0.05, 0.10], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 283, 'intent': undefined, 'lightnessRange': [0.43, 0.52], 'name': 'background', 'required': true }
+    { 'chromaRange': [0.04, 0.08], 'derivedFrom': undefined, 'description': undefined, 'hue': 19, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.15, 0.23], 'name': 'text', 'required': true },
+    { 'chromaRange': [0.05, 0.10], 'derivedFrom': undefined, 'description': undefined, 'hue': 283, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.43, 0.52], 'name': 'background', 'required': true }
   ]
 };
 
@@ -531,8 +531,8 @@ const CVD_PARTIAL_CORRECTION_ROLES: RoleSchemaInterfaceType = {
   'description': undefined,
   'name': 'cvd-partial-correction',
   'roles': [
-    { 'chromaRange': [0.13, 0.17], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 255.34034740179777, 'intent': undefined, 'lightnessRange': [0.65, 0.72], 'name': 'text', 'required': true },
-    { 'chromaRange': [0.24, 0.28], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 45.69293302483857, 'intent': undefined, 'lightnessRange': [0.40, 0.48], 'name': 'background', 'required': true }
+    { 'chromaRange': [0.13, 0.17], 'derivedFrom': undefined, 'description': undefined, 'hue': 255.34034740179777, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.65, 0.72], 'name': 'text', 'required': true },
+    { 'chromaRange': [0.24, 0.28], 'derivedFrom': undefined, 'description': undefined, 'hue': 45.69293302483857, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.40, 0.48], 'name': 'background', 'required': true }
   ]
 };
 

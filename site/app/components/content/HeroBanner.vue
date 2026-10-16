@@ -24,7 +24,7 @@ const { activateTarget } = useNavigationTargets();
 </script>
 
 <template>
-  <section class="relative overflow-hidden rounded-3xl px-6 pt-12 pb-8 sm:pt-16">
+  <section class="relative overflow-x-clip overflow-y-hidden rounded-3xl px-6 pt-12 pb-8 sm:pt-16">
     <!-- floating engine-colored orbs. Masked to fade to zero opacity well
          before the section's own overflow-hidden edge, so the clip boundary
          is never crossed at visible alpha — no hard seam. -->

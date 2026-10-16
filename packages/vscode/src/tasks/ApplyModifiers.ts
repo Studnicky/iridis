@@ -23,7 +23,6 @@ import type { SemanticRuleEntryInterfaceType } from '../types/augmentation.ts';
 
 import { MODIFIER_TRANSFORMS } from '../data/modifierTransforms.ts';
 import { VscodeTokenData } from '../data/VscodeTokenData.ts';
-import { recordToVscodeColor } from '../util/recordToVscodeColor.ts';
 
 class ApplyModifiers implements TaskInterface {
   readonly 'name' = 'vscode:applyModifiers';
@@ -49,16 +48,16 @@ class ApplyModifiers implements TaskInterface {
 
     const typeCount = VscodeTokenData.TOKEN_TYPES.length;
 
-    // 23 base rules: emit P3 form when the record carries it, hex otherwise.
+    // 27 base rules: emit P3 form when the record carries it, hex otherwise.
     for (let i = 0; i < typeCount; i++) {
       const tokenType = VscodeTokenData.TOKEN_TYPES[i];
       if (tokenType === undefined) {continue;}
       const baseRecord = baseTokens[tokenType];
       if (baseRecord === undefined) {continue;}
-      rules[tokenType] = { 'fontStyle': undefined, 'foreground': recordToVscodeColor(baseRecord) };
+      rules[tokenType] = { 'fontStyle': undefined, 'foreground': baseRecord.hex };
     }
 
-    // 23 token types × N modifiers from TOKEN_MODIFIERS (the VS Code spec set).
+    // 27 token types × N modifiers from TOKEN_MODIFIERS (the VS Code spec set).
     const modifierCount = VscodeTokenData.TOKEN_MODIFIERS.length;
 
     for (let i = 0; i < typeCount; i++) {
@@ -102,7 +101,7 @@ class ApplyModifiers implements TaskInterface {
         color = ensureContrast.apply(color, bgRecord, 4.5);
 
         const selector = `${tokenType}.${modifier}`;
-        rules[selector] = { 'fontStyle': transform.fontStyle, 'foreground': recordToVscodeColor(color) };
+        rules[selector] = { 'fontStyle': transform.fontStyle, 'foreground': color.hex };
       }
     }
 

@@ -22,7 +22,7 @@ Every task registered by the core engine and by each official plugin, grouped by
 | `clamp:count` | `colors`, `input.maxColors`, `input.bypass` | `colors` | — | Reduces colors to `maxColors` (default 64) via weighted median-cut clustering when exceeded. |
 | `resolve:roles` | `colors`, `input.roles`, `metadata` | `roles`, `metadata` | — | Assigns colors to schema roles by hint match then OKLCH distance, then nudges into declared ranges. |
 | `expand:family` | `roles`, `input.roles`, `metadata` | `roles` | — | Derives missing roles with `derivedFrom` set, applying OKLCH deltas from the source role. |
-| `enforce:contrast` | `roles`, `input.roles`, `input.contrast` | `roles`, `metadata['core:contrastReport']` | — | Checks and nudges foreground role colors to meet `minRatio` for each contrast pair. |
+| `enforce:contrast` | `roles`, `input.roles`, `input.contrast` | `roles`, `metadata['core:contrastReport']` | — | Enforces every declared WCAG contrast pair, including `minRatio` and optional `maxRatio` bounds. |
 | `derive:variant` | `roles`, `metadata['core:variantConfig']` | `variants` | — | Produces light/dark variants by transforming all roles. |
 | `emit:json` | `colors`, `roles`, `variants` | `outputs['core:json']` | — | Writes `outputs['core:json']` with `{colors, roles, variants}` flattened to hex strings. |
 
@@ -49,11 +49,13 @@ Every task registered by the core engine and by each official plugin, grouped by
 
 | Task | Reads | Writes | Requires | Description |
 |---|---|---|---|---|
-| `vscode:expandTokens` | `roles` | `metadata.vscode:baseTokens` | — | Derives 23 VS Code base token colors from the 16 resolved roles. |
-| `vscode:applyModifiers` | `metadata.vscode:baseTokens`, `roles` | `metadata.vscode:semanticTokenRules` | `vscode:expandTokens` | Applies the modifier-transform table to base tokens, producing per-type × per-modifier semantic-token rules with re-enforced contrast. |
-| `emit:vscodeSemanticRules` | `metadata.vscode:semanticTokenRules`, `metadata.vscode:baseTokens` | `outputs.vscode:semanticTokenRules` | `vscode:applyModifiers` | Shapes the semantic-token rule map for `editor.semanticTokenColorCustomizations.rules`. |
-| `emit:vscodeUiPalette` | `roles` | `outputs.vscode:workbenchColors` | — | Derives 100+ VS Code workbench colors from the 16-role palette. |
-| `emit:vscodeThemeJson` | `outputs.vscode:workbenchColors`, `outputs.vscode:semanticTokenRules`, `metadata.vscode:baseTokens` | `outputs.vscode:themeJson` | `emit:vscodeSemanticRules`, `emit:vscodeUiPalette` | Assembles the complete `theme.json`: `{ name, type, colors, semanticTokenColors, tokenColors }`. |
+| `vscode:seedRoles` | `input.colors`, `runtime.framing` | `colors` | — | Validates exactly one `{ tier, framing, roles }` palette body, requires matching framing, and creates named seed records for the exact 4/8/16/64 tier key set. |
+| `vscode:deriveUiRoles` | `roles`, `metadata.core:rolesPinned` | `roles` | `expand:family` | Derives missing UI extension roles from the resolved vocabulary and leaves supplied pinned roles unchanged. |
+| `vscode:expandTokens` | `roles`, `runtime.framing`, `variants` | `metadata.vscode:baseTokens` | — | Derives 27 syntax and TextMate base tokens from the resolved framing surface. |
+| `vscode:applyModifiers` | `metadata.vscode:baseTokens`, `roles`, `runtime.framing`, `variants` | `metadata.vscode:semanticTokenRules` | `vscode:expandTokens` | Creates semantic-token rules and applies background contrast enforcement. |
+| `emit:vscodeSemanticRules` | `metadata.vscode:semanticTokenRules`, `metadata.vscode:baseTokens` | `outputs.vscode:semanticTokenRules` | `vscode:applyModifiers` | Shapes semantic rules for VS Code’s semantic-token customisation map. |
+| `emit:vscodeUiPalette` | `roles`, `runtime.framing`, `variants` | `outputs.vscode:workbenchColors` | `vscode:deriveUiRoles` | Emits 129 registry-backed workbench colour slots from the 64-role vocabulary. |
+| `emit:vscodeThemeJson` | `outputs.vscode:workbenchColors`, `outputs.vscode:semanticTokenRules`, `metadata.vscode:baseTokens`, `roles`, `runtime.framing`, `variants` | `outputs.vscode:themeJson` | `emit:vscodeSemanticRules`, `emit:vscodeUiPalette` | Assembles `{ name, type, colors, semanticTokenColors, tokenColors }`. |
 
 ## `@studnicky/iridis-stylesheet`
 

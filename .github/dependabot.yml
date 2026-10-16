@@ -1,0 +1,61 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    versioning-strategy: increase
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      linting:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+        patterns:
+          - '@eslint/*'
+          - '@stylistic/eslint-plugin'
+          - '@typescript-eslint/*'
+          - 'eslint'
+          - 'eslint-*'
+          - 'typescript-eslint'
+      vue:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+        patterns:
+          - '@vue/*'
+          - 'vue'
+          - 'vue-*'
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+        exclude-patterns:
+          - '@eslint/*'
+          - '@stylistic/eslint-plugin'
+          - '@typescript-eslint/*'
+          - 'eslint'
+          - 'eslint-*'
+          - 'typescript-eslint'
+          - '@vue/*'
+          - 'vue'
+          - 'vue-*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci

@@ -79,12 +79,7 @@ class UseRoleMathListOperation {
           'algorithmInfo': algorithmInfo,
           'c': oklch.c,
           'candidates': candidates,
-          'clamp': clamp !== undefined ? {
-            'resolvedHex': clamp.resolvedHex.toLowerCase(),
-            'roleOklch': `L ${clamp.resolvedOklch.l.toFixed(2)} · C ${clamp.resolvedOklch.c.toFixed(2)} · H ${Math.round(clamp.resolvedOklch.h)}`,
-            'seedHex': clamp.seedHex.toLowerCase(),
-            'seedOklch': `L ${clamp.seedOklch.l.toFixed(2)} · C ${clamp.seedOklch.c.toFixed(2)} · H ${Math.round(clamp.seedOklch.h)}`
-          } : null,
+          'clamp': clamp ?? null,
           'compliance': complianceFor(ratio, minimumRatioForRole(schema, roleName)),
           // RoleMathDefType layers derivation-geometry fields (chromaClamp/
           // chromaTarget/lightnessClamp/lightnessTarget) onto the canonical
