@@ -7,6 +7,7 @@ import type {
   PaletteStateInterface,
   PipelineContextInterface,
   RoleDefinitionInterfaceType,
+  RoleProvenanceInterfaceType,
   TaskInterface,
   TaskManifestInterfaceType
 } from '../../types/index.ts';
@@ -14,6 +15,7 @@ import type {
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
+import { EngineMetadata } from '../../types/metadata.ts';
 import { RoleGeometry } from '../RoleGeometry.ts';
 
 // json-schema-uninexpressible: composes RoleDefinitionInterfaceType, itself widened from a
@@ -30,38 +32,80 @@ class RoleDerivation {
   static deriveColor(
     source: ColorRecordInterfaceType,
     role: RoleDefinitionInterfaceType
-  ): ColorRecordInterfaceType {
+  ): {
+    readonly 'adjustments': RoleProvenanceInterfaceType['adjustments'];
+    readonly 'color': ColorRecordInterfaceType;
+  } {
     const { c, h, l } = source.oklch;
+    const derivesFromSource = role.lightnessOffset !== undefined || role.chromaScale !== undefined;
+    const sourceL = l + (role.lightnessOffset ?? 0);
+    const sourceC = c * (role.chromaScale ?? 1);
+    let targetL = l;
+    let targetC = c;
 
-    const targetL = role.lightnessRange !== undefined ? RoleGeometry.rangeCenter(role.lightnessRange) : l;
-    const targetC = role.chromaRange    !== undefined ? RoleGeometry.rangeCenter(role.chromaRange)    : c;
+    if (derivesFromSource) {
+      targetL = sourceL;
+      targetC = sourceC;
+      if (role.lightnessRange !== undefined) {
+        targetL = clamp.apply(role.lightnessRange[0], role.lightnessRange[1], sourceL);
+      }
+      if (role.chromaRange !== undefined) {
+        targetC = clamp.apply(role.chromaRange[0], role.chromaRange[1], sourceC);
+      }
+    } else {
+      if (role.lightnessRange !== undefined) {
+        targetL = RoleGeometry.rangeCenter(role.lightnessRange);
+      }
+      if (role.chromaRange !== undefined) {
+        targetC = RoleGeometry.rangeCenter(role.chromaRange);
+      }
+    }
 
-    let targetH: number;
+    let targetH = h;
     if (role.hue !== undefined) {
       targetH = RoleGeometry.hueTowards(h, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
     } else if (role.hueOffset !== undefined) {
       targetH = ((h + role.hueOffset) % 360 + 360) % 360;
-    } else {
-      targetH = h;
     }
 
     const hints: ColorHintsInterfaceType | undefined = role.intent === undefined
       ? undefined
       : { 'intent': role.intent, 'role': undefined, 'weight': undefined };
+    const options = { 'alpha': source.alpha, 'hints': hints };
+    const adjustments: RoleProvenanceInterfaceType['adjustments'] = [];
+    let color = source;
+    const ranged = colorRecordFactory.fromOklch(
+      clamp01.apply(targetL),
+      clamp.apply(0, 0.5, targetC),
+      h,
+      options
+    );
 
-    return colorRecordFactory.fromOklch(
+    if (ranged.hex !== color.hex) {
+      adjustments.push({ 'afterHex': ranged.hex, 'beforeHex': color.hex, 'operation': 'role-range' });
+      color = ranged;
+    }
+
+    const hued = colorRecordFactory.fromOklch(
       clamp01.apply(targetL),
       clamp.apply(0, 0.5, targetC),
       targetH,
-      { 'alpha': source.alpha, 'hints': hints }
+      options
     );
+
+    if (hued.hex !== color.hex) {
+      adjustments.push({ 'afterHex': hued.hex, 'beforeHex': color.hex, 'operation': 'hue-target' });
+    }
+
+    return { 'adjustments': adjustments, 'color': hued };
   }
 }
 
 /**
  * Pipeline task that fills in roles declared with `derivedFrom` from
  * the assigned source role's color, applying the role's own
- * lightness/chroma centers (and `hueOffset` if set) as the OKLCH
+ * lightness/chroma centers, or source-relative derivation controls when set,
+ * plus `hueOffset` as the OKLCH
  * coordinates. Already-assigned derived roles are left alone; explicit
  * input wins over family derivation.
  *
@@ -85,7 +129,7 @@ class ExpandFamily implements TaskInterface {
     'phase':       undefined,
     'reads':       ['roles', 'input.roles', 'metadata'],
     'requires':    undefined,
-    'writes':      ['roles']
+    'writes':      ['roles', 'metadata']
   };
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
@@ -102,8 +146,9 @@ class ExpandFamily implements TaskInterface {
       return;
     }
 
-    const hueOffsetOverrides = state.metadata['core:hueOffsetOverrides'] as Record<string, number> | undefined;
-    const hueTargetOverrides = state.metadata['core:hueTargetOverrides'] as Record<string, { 'hue': number; 'hueClamp': number | undefined }> | undefined;
+    const hueOffsetOverrides = EngineMetadata.get(state.metadata, 'core:hueOffsetOverrides');
+    const hueTargetOverrides = EngineMetadata.get(state.metadata, 'core:hueTargetOverrides');
+    const roleProvenance = EngineMetadata.get(state.metadata, 'core:roleProvenance') ?? {};
 
     let pending: PendingDerivedRoleType[] = [];
     for (const inputRole of state.input.roles.roles) {
@@ -153,10 +198,10 @@ class ExpandFamily implements TaskInterface {
           'hueOffset': offsetOverride ?? inputRole.hueOffset
         };
 
-        state.roles[role.name] = RoleDerivation.deriveColor(sourceColor, role);
-        const existingDerived = state.metadata['core:rolesDerived'];
-        const priorDerived: string[] = Array.isArray(existingDerived) ? (existingDerived as string[]) : [];
-        state.metadata['core:rolesDerived'] = [...priorDerived, role.name];
+        const derivation = RoleDerivation.deriveColor(sourceColor, role);
+        state.roles[role.name] = derivation.color;
+        roleProvenance[role.name] = { 'adjustments': derivation.adjustments, 'origin': 'derived' };
+        state.metadata['core:roleProvenance'] = roleProvenance;
 
         context.logger.debug(
           LogBody.create()

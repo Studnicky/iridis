@@ -23,7 +23,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc --build --force tsconfig.build.json",
+    "build": "pnpm run clean && tsc --build --force tsconfig.build.json",
     "prepare:publish": "node ../../scripts/package-pipeline.mjs vscode",
     "build:package": "pnpm run build && pnpm run prepare:publish",
     "pack:dry": "pnpm run build:package && npm pack --dry-run ./.publish",

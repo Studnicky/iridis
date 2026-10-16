@@ -39,7 +39,7 @@
     "@studnicky/logger": "^4.0.0",
     "@studnicky/types": "^4.0.0",
     "@types/n3": "^1.26.1",
-    "n3": "^2.1.1"
+    "n3": "^2.13.9"
   },
   "devDependencies": {
     "typescript": "^6.0.0"

@@ -5,10 +5,12 @@ import type {
 } from '@studnicky/iridis';
 
 import { applyModifiers }          from './tasks/ApplyModifiers.ts';
+import { deriveVscodeUiRoles }  from './tasks/DeriveVscodeUiRoles.ts';
 import { emitVscodeSemanticRules } from './tasks/EmitVscodeSemanticRules.ts';
 import { emitVscodeThemeJson }     from './tasks/EmitVscodeThemeJson.ts';
 import { emitVscodeUiPalette }     from './tasks/EmitVscodeUiPalette.ts';
 import { expandTokens }            from './tasks/ExpandTokens.ts';
+import { seedVscodeRoles }       from './tasks/SeedVscodeRoles.ts';
 
 const VSCODE_PLUGIN_SCHEMAS = {
   'baseTokens': {
@@ -39,14 +41,16 @@ const VSCODE_PLUGIN_SCHEMAS = {
 /**
  * VscodePlugin
  *
- * Registers five tasks that produce a complete VS Code theme from a
- * 16-role palette resolved by the engine's core intake/role tasks.
+ * Registers seven tasks that produce a complete VS Code theme from a
+ * tiered palette resolved by the engine's core role tasks.
  *
  * Pipeline dependency order:
- *   vscode:expandTokens
+ *   vscode:seedRoles → resolve:roles → expand:family
+ *   → vscode:deriveUiRoles
+ *   → vscode:expandTokens
  *   → vscode:applyModifiers
- *   → emit:vscodeSemanticRules  (parallel with emit:vscodeUiPalette)
- *   → emit:vscodeUiPalette      (parallel with emit:vscodeSemanticRules)
+ *   → emit:vscodeSemanticRules (parallel with emit:vscodeUiPalette)
+ *   → emit:vscodeUiPalette (parallel with emit:vscodeSemanticRules)
  *   → emit:vscodeThemeJson
  */
 class VscodePlugin implements PluginInterface {
@@ -56,6 +60,8 @@ class VscodePlugin implements PluginInterface {
 
   tasks(): readonly TaskInterface[] {
     return [
+      seedVscodeRoles,
+      deriveVscodeUiRoles,
       expandTokens,
       applyModifiers,
       emitVscodeSemanticRules,

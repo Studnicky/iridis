@@ -7,15 +7,17 @@ export namespace ContrastReportEntryInterfaceTypeEntity {
   export const Schema = {
     'additionalProperties': false,
     'properties': {
-      'adjusted':   { 'type': 'boolean' },
-      'algorithm':  { 'type': 'string' },
+      'adjusted':              { 'type': 'boolean' },
+      'adjustmentDisposition': { 'enum': ['not-needed', 'applied', 'preserved-stated', 'unresolved'] },
+      'algorithm':             { 'type': 'string' },
       'background': { 'type': 'string' },
       'foreground': { 'type': 'string' },
-      'minRatio':   { 'type': 'number' },
+      'maxRatio':   { 'maximum': 21, 'minimum': 1, 'type': 'number' },
+      'minRatio':   { 'maximum': 21, 'minimum': 1, 'type': 'number' },
       'passed':     { 'type': 'boolean' },
       'ratio':      { 'type': 'number' }
     },
-    'required': ['adjusted', 'algorithm', 'background', 'foreground', 'minRatio', 'passed', 'ratio'],
+    'required': ['adjusted', 'adjustmentDisposition', 'algorithm', 'background', 'foreground', 'minRatio', 'passed', 'ratio'],
     'type': 'object'
   } as const;
 

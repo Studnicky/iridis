@@ -405,36 +405,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .cyl { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%; }
-/* Full-bleed: breaks the scene out of the parent <UContainer>'s max-width so
-   there's genuine room for 2 real neighbours on each side before anything
-   needs to clip, rather than the coverflow's side cards hitting a narrower
-   container edge and getting cut off. .cyl-scene's own overflow-x:hidden
-   (below) is what actually stops off-screen cards from expanding page
-   scroll — it now clips at the true viewport edge instead of a narrower one. */
-/* `left: 50%` on a position:relative element resolves against its OWN
-   PARENT's width, not the viewport (that containing-block rule only differs
-   for position:absolute) — so it can never correctly full-bleed a relatively
-   positioned element out of a centered container. margin-left with a mixed
-   %/vw calc() is the robust trick: the parent-relative and viewport-relative
-   terms cancel out algebraically as long as the parent itself is centered
-   (mx-auto), landing the box's left edge at the true viewport edge (x=0)
-   regardless of the parent's own width. */
-/* align-self:flex-start exempts this item from .cyl's align-items:center
-   cross-axis centering — that centering is computed against .cyl's own
-   (narrow, container-width) cross-axis size, which fights the margin-based
-   full-bleed math below (it would re-center the already-100vw box against
-   the wrong, narrower width). With centering off, the margin trick lands
-   the box's left edge at the true viewport edge as intended. */
-/* isolation:isolate gives the scene its own permanent stacking context,
-   independent of any ancestor. Without it, toggling CvdPreviewOverlay's
-   `filter` on `.cvd-preview-wrap` (an ancestor of this whole page) creates
-   or destroys a compositing layer on that ancestor — which can force the
-   cards' per-element 3D transforms (perspective()/rotateY()/translateZ() in
-   faceStyle()) to re-establish paint order, visibly "popping" the deck even
-   though no box position actually changes. Isolating this subtree's
-   stacking context up front means an ancestor filter switching on or off
-   never touches it. */
-.cyl-scene-wrap { position: relative; isolation: isolate; align-self: flex-start; width: 100vw; margin-left: calc(50% - 50vw); }
+/* The scene stays inside the same content column as every other stage.
+   Off-active faces remain visually distinct through their depth transforms,
+   but their clipping boundary now aligns with the page grid. */
+.cyl-scene-wrap { position: relative; isolation: isolate; width: 100%; overflow-x: clip; }
 .cyl-scene {
   position: relative;
   width: 100%;

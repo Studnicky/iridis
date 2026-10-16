@@ -3,7 +3,7 @@ export default {
     'button': {
       'variants': {
         'variant': {
-          'solid': 'text-[var(--ui-primary-contrast,white)] dark:text-[var(--ui-primary-contrast,gray-900)]'
+          'solid': 'text-[var(--ui-primary-contrast)]'
         }
       }
     },

@@ -29,6 +29,11 @@ class Iri {
     const result = `https://studnicky.dev/iridis/palette/run-${startedAt}`;
     return result;
   }
+
+  static adjustment(roleName: string, index: number): string {
+    const result = `https://studnicky.dev/iridis/role/${roleName}/adjustment/${index}`;
+    return result;
+  }
 }
 
 class ReasonAnnotate implements TaskInterface {
@@ -61,6 +66,12 @@ class ReasonAnnotate implements TaskInterface {
     const p3RNode     = DataFactory.namedNode(iridisVocab.displayP3R);
     const p3GNode     = DataFactory.namedNode(iridisVocab.displayP3G);
     const p3BNode     = DataFactory.namedNode(iridisVocab.displayP3B);
+    const resolutionOriginNode = DataFactory.namedNode(iridisVocab.resolutionOrigin);
+    const hasAdjustmentNode    = DataFactory.namedNode(iridisVocab.hasAdjustment);
+    const adjustmentTypeNode   = DataFactory.namedNode(iridisVocab.Adjustment);
+    const adjustedFromNode     = DataFactory.namedNode(iridisVocab.adjustedFrom);
+    const adjustedToNode       = DataFactory.namedNode(iridisVocab.adjustedTo);
+    const adjustmentOperationNode = DataFactory.namedNode(iridisVocab.adjustmentOperation);
     const derivedFromNode = DataFactory.namedNode(iridisVocab.derivedFrom);
     const pinnedNode      = DataFactory.namedNode(iridisVocab.pinned);
     const synthesizedNode = DataFactory.namedNode(iridisVocab.synthesized);
@@ -74,16 +85,12 @@ class ReasonAnnotate implements TaskInterface {
     const xsdDecimalNode = DataFactory.namedNode(XSD_IRI.DECIMAL);
     const xsdBooleanNode = DataFactory.namedNode(XSD_IRI.BOOLEAN);
 
-    // Schema role definitions (derivedFrom/intent/ranges/hueClamp) and this
-    // run's own resolution metadata (which roles were pinned/synthesized/
-    // clamped) — both already flow through the engine, just never read by
-    // this task before. Neither requires new plumbing.
+    // Schema role definitions describe the role set. Canonical provenance
+    // records this run's origin and every actual color adjustment.
     const roleDefByName = new Map<string, RoleDefinitionInterfaceType>(
       (state.input.roles?.roles ?? []).map((def) => {return [def.name, def];})
     );
-    const rolesPinned      = new Set(EngineMetadata.get(state.metadata, 'core:rolesPinned') ?? []);
-    const rolesSynthesized = new Set(EngineMetadata.get(state.metadata, 'core:rolesSynthesized') ?? []);
-    const roleClamps       = EngineMetadata.get(state.metadata, 'core:roleClamps') ?? {};
+    const roleProvenance = EngineMetadata.get(state.metadata, 'core:roleProvenance') ?? {};
 
     for (const [roleName, color] of Object.entries(state.roles)) {
       const role  = DataFactory.namedNode(Iri.role(roleName));
@@ -131,15 +138,34 @@ class ReasonAnnotate implements TaskInterface {
       if (def?.hueClamp !== undefined) {
         store.addQuad(DataFactory.quad(role, hueClampNode, DataFactory.literal(def.hueClamp.toFixed(2), xsdDecimalNode)));
       }
-      if (rolesPinned.has(roleName)) {
-        store.addQuad(DataFactory.quad(role, pinnedNode, DataFactory.literal('true', xsdBooleanNode)));
-      }
-      if (rolesSynthesized.has(roleName)) {
-        store.addQuad(DataFactory.quad(role, synthesizedNode, DataFactory.literal('true', xsdBooleanNode)));
-      }
-      const clamp = roleClamps[roleName];
-      if (clamp !== undefined) {
-        store.addQuad(DataFactory.quad(role, clampedFromNode, DataFactory.namedNode(Iri.color(clamp.seedHex))));
+      const provenance = roleProvenance[roleName];
+      if (provenance !== undefined) {
+        store.addQuad(DataFactory.quad(
+          role,
+          resolutionOriginNode,
+          DataFactory.literal(provenance.origin, DataFactory.namedNode(XSD_IRI.STRING))
+        ));
+        if (provenance.origin === 'stated') {
+          store.addQuad(DataFactory.quad(role, pinnedNode, DataFactory.literal('true', xsdBooleanNode)));
+        }
+        if (provenance.origin === 'synthesized') {
+          store.addQuad(DataFactory.quad(role, synthesizedNode, DataFactory.literal('true', xsdBooleanNode)));
+        }
+        for (const [index, adjustment] of provenance.adjustments.entries()) {
+          const adjustmentNode = DataFactory.namedNode(Iri.adjustment(roleName, index));
+          store.addQuad(DataFactory.quad(role, hasAdjustmentNode, adjustmentNode));
+          store.addQuad(DataFactory.quad(adjustmentNode, rdfTypeNode, adjustmentTypeNode));
+          store.addQuad(DataFactory.quad(adjustmentNode, adjustedFromNode, DataFactory.namedNode(Iri.color(adjustment.beforeHex))));
+          store.addQuad(DataFactory.quad(adjustmentNode, adjustedToNode, DataFactory.namedNode(Iri.color(adjustment.afterHex))));
+          store.addQuad(DataFactory.quad(
+            adjustmentNode,
+            adjustmentOperationNode,
+            DataFactory.literal(adjustment.operation, DataFactory.namedNode(XSD_IRI.STRING))
+          ));
+          if (adjustment.operation === 'role-range') {
+            store.addQuad(DataFactory.quad(role, clampedFromNode, DataFactory.namedNode(Iri.color(adjustment.beforeHex))));
+          }
+        }
       }
 
       store.addQuad(DataFactory.quad(paletteNode, hasRoleNode, role));

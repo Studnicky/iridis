@@ -2,7 +2,7 @@ import type { FromSchema, JsonValueType } from '@studnicky/types';
 
 import { Validator } from '../model/Validator.ts';
 import { HueTargetOverrideInterfaceTypeEntity } from './HueTargetOverrideInterfaceTypeEntity.ts';
-import { RoleClampInterfaceTypeEntity } from './RoleClampInterfaceTypeEntity.ts';
+import { RoleProvenanceInterfaceTypeEntity } from './RoleProvenanceInterfaceTypeEntity.ts';
 
 /** Known `state.metadata` keys written by core tasks, and their runtime shapes. */
 export namespace EngineMetadataInterfaceTypeEntity {
@@ -17,10 +17,6 @@ export namespace EngineMetadataInterfaceTypeEntity {
         'additionalProperties': HueTargetOverrideInterfaceTypeEntity.Schema,
         'type': 'object'
       },
-      'core:roleClamps': {
-        'additionalProperties': RoleClampInterfaceTypeEntity.Schema,
-        'type': 'object'
-      },
       'core:roleDistances': {
         'additionalProperties': {
           'additionalProperties': { 'type': 'number' },
@@ -28,17 +24,9 @@ export namespace EngineMetadataInterfaceTypeEntity {
         },
         'type': 'object'
       },
-      'core:rolesDerived': {
-        'items': { 'type': 'string' },
-        'type': 'array'
-      },
-      'core:rolesPinned': {
-        'items': { 'type': 'string' },
-        'type': 'array'
-      },
-      'core:rolesSynthesized': {
-        'items': { 'type': 'string' },
-        'type': 'array'
+      'core:roleProvenance': {
+        'additionalProperties': RoleProvenanceInterfaceTypeEntity.Schema,
+        'type': 'object'
       }
     },
     'required': [],

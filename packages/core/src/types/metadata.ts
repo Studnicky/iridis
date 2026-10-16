@@ -2,16 +2,20 @@ import type { JsonObjectType } from '@studnicky/types';
 
 import type { EngineMetadataInterfaceTypeEntity } from '../entities/EngineMetadataInterfaceTypeEntity.ts';
 import type { HueTargetOverrideInterfaceTypeEntity } from '../entities/HueTargetOverrideInterfaceTypeEntity.ts';
-import type { RoleClampInterfaceTypeEntity } from '../entities/RoleClampInterfaceTypeEntity.ts';
+import type { RoleProvenanceInterfaceTypeEntity } from '../entities/RoleProvenanceInterfaceTypeEntity.ts';
 
-/** One clamp record written by `resolve:roles` when a seed color is nudged into a role's declared ranges. */
-export type RoleClampInterfaceType = RoleClampInterfaceTypeEntity.Type;
-
-/** `metadata['core:roleClamps']`: per-role clamp record, keyed by role name. */
-export type RoleClampMapInterfaceType = Record<string, RoleClampInterfaceType>;
-
-/** `metadata['core:roleDistances']`: per-role OKLCH distance to each candidate color's hex, keyed by role name. */
+/** metadata core role distance map: per-role OKLCH distance to each candidate color hex, keyed by role name. */
 export type RoleDistanceMapInterfaceType = Record<string, Record<string, number>>;
+
+/** Canonical origin and ordered adjustment evidence for one role. */
+export type RoleProvenanceInterfaceType = RoleProvenanceInterfaceTypeEntity.Type;
+
+/**
+ * Canonical per-role resolution evidence. origin states whether the result is
+ * caller-stated, derived, or synthesized; adjustments records every
+ * transformation in resolution order.
+ */
+export type RoleProvenanceMapInterfaceType = Record<string, RoleProvenanceInterfaceType>;
 
 /**
  * `metadata['core:hueOffsetOverrides']`: per-role `hueOffset` override,
