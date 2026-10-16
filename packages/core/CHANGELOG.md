@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0
+
+### Minor Changes
+
+- 10db49c: Palette resolution preserves every caller-stated role exactly, records canonical role provenance, and enforces contrast bands for generated roles. VS Code themes expose the 64-role palette vocabulary and RDF output records role provenance.
+
 ## 0.11.0
 
 ### Breaking

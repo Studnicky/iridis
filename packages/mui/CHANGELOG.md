@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.0
+
+### Patch Changes
+
+- Updated dependencies [10db49c]
+  - @studnicky/iridis@0.12.0
+
 ## 0.11.0
 
 ### Breaking
