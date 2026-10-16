@@ -19,11 +19,29 @@ release_suite_verify_lockstep() {
 release_suite_verify_backmerge() {
   expected_version="$1"
   base_ref="${2:-origin/develop}"
+  main_ref="${3:-origin/main}"
 
   assert_workspace_lockstep_version "$expected_version"
-  if ! git diff --quiet "$base_ref"..HEAD -- .changeset; then
-    echo "::error::Release backmerge changes .changeset entries relative to ${base_ref}; preserve pending develop changesets." >&2
-    git diff --name-status "$base_ref"..HEAD -- .changeset >&2
+  approved_changeset_delta=$(git diff --name-status "$base_ref".."$main_ref" -- .changeset)
+  actual_changeset_delta=$(git diff --name-status "$base_ref"..HEAD -- .changeset)
+  unexpected_changeset_delta=''
+
+  if [ -n "$actual_changeset_delta" ]; then
+    while IFS= read -r actual_changeset_record; do
+      if ! printf '%s\n' "$approved_changeset_delta" | grep -F -x -q -- "$actual_changeset_record"; then
+        unexpected_changeset_delta="${unexpected_changeset_delta}${actual_changeset_record}\n"
+      fi
+    done <<EOF_INNER
+$actual_changeset_delta
+EOF_INNER
+  fi
+
+  if [ -n "$unexpected_changeset_delta" ]; then
+    echo "::error::Release backmerge .changeset delta contains records not approved by ${main_ref}; preserve pending develop changesets." >&2
+    echo "Approved ${main_ref} delta:" >&2
+    printf '%s\n' "$approved_changeset_delta" >&2
+    echo "Unexpected backmerge records:" >&2
+    printf '%b' "$unexpected_changeset_delta" >&2
     return 1
   fi
 }
@@ -46,7 +64,7 @@ case "${1:-}" in
     release_suite_verify_lockstep "${2:?missing version}"
     ;;
   verify-backmerge)
-    release_suite_verify_backmerge "${2:?missing version}" "${3:-origin/develop}"
+    release_suite_verify_backmerge "${2:?missing version}" "${3:-origin/develop}" "${4:-origin/main}"
     ;;
   publish-gates)
     release_suite_publish_gates "${2:?missing version}"
