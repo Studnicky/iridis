@@ -13,7 +13,10 @@ minimumReleaseAge: 10080
 # These selectors match only its current package set and require review by
 # 2026-11-15. pnpm has no native TTL setting; future Rollup releases remain
 # subject to the age gate.
+# dompurify@3.4.17 is a Mermaid transitive dependency used only by the
+# GitHub Pages site. This narrowly scoped review exception expires 2026-11-16.
 minimumReleaseAgeExclude:
+  - 'dompurify@3.4.17'
   - 'rollup@4.64.7'
   - '@rollup/rollup-android-arm-eabi@4.64.7'
   - '@rollup/rollup-android-arm64@4.64.7'
