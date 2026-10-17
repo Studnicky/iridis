@@ -1,3 +1,5 @@
+import { DocumentationPipelinePatterns } from './DocumentationPipelinePatterns.ts';
+
 export class DocumentationPipelineFixture {
   static readonly DOCUMENTS = [
     '../../packages/capacitor/README.md',
@@ -12,5 +14,5 @@ export class DocumentationPipelineFixture {
     '../content/08-vscode-theme-recipe.md'
   ] as const;
 
-  static readonly FENCED_CODE_PATTERN = /^```(ts|json)\n([\s\S]*?)^```$/gmu;
+  static readonly FENCED_CODE_PATTERN = DocumentationPipelinePatterns.FENCED_CODE;
 }

@@ -8,18 +8,24 @@
  *   3. `lightnessTarget` variant config produces an engine-resolved tonal step.
  */
 
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
-
-import { Engine } from '@studnicky/iridis';
-import { rgbToOklch } from '@studnicky/iridis/math';
-import { coreTasks } from '@studnicky/iridis/tasks';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+
+import { Engine } from '../../src/engine/Engine.ts';
+import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
+import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
+import { rgbToOklch } from '../../src/math/RgbToOklch.ts';
+import { coreTasks } from '../../src/tasks/index.ts';
 
 class EngineSyncHueScaleFixture {
   static engineFor(pipeline: readonly string[]): Engine {
     const engine = new Engine();
-    for (const task of coreTasks) {engine.tasks.register(task);}
+    for (let index = 0; index < coreTasks.length; index += 1) {
+      const task = coreTasks[index];
+      if (task !== undefined) {
+        engine.tasks.register(task);
+      }
+    }
     engine.pipeline([...pipeline]);
     return engine;
   }
@@ -28,11 +34,12 @@ class EngineSyncHueScaleFixture {
     const r = parseInt(hex.slice(1, 3), 16) / 255;
     const g = parseInt(hex.slice(3, 5), 16) / 255;
     const b = parseInt(hex.slice(5, 7), 16) / 255;
-    return rgbToOklch.apply(r, g, b).oklch.h;
+    const result = rgbToOklch.apply(r, g, b).oklch.h;
+    return result;
   }
 }
 
-const SCHEMA: RoleSchemaInterfaceType = {
+const SCHEMA = RoleSchemaInterfaceTypeEntity.intake({
   'contrastPairs': undefined,
   'description': undefined, 'name': 'test', 'roles': [
     { 'chromaRange': [0.00, 0.04], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'background', 'lightnessRange': [0.04, 0.14], 'name': 'background', 'required': true },
@@ -42,30 +49,30 @@ const SCHEMA: RoleSchemaInterfaceType = {
     // derived role with an absolute hue (must override the brand-relative path)
     { 'chromaRange': [0.16, 0.28],    'derivedFrom': 'brand', 'description': undefined, 'hue': 150, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'positive', 'lightnessRange': [0.55, 0.70], 'name': 'success', 'required': undefined }
   ]
-};
+});
 
 void test('Engine.run is synchronous', () => {
   const engine = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles']);
-  const result = engine.run({ 'bypass': undefined, 'colors': ['#7c3aed'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': SCHEMA, 'runtime': undefined });
+  const result = engine.run(InputInterfaceTypeEntity.intake({ 'colors': ['#7c3aed'], 'contrast': undefined, 'emit': undefined, 'maximumColorCount': undefined, 'metadata': undefined, 'roles': SCHEMA, 'runtime': undefined }));
   assert.ok(!(result instanceof Promise), 'run() returns a plain state, not a Promise');
   assert.equal(typeof result.roles.brand?.hex, 'string');
 });
 
 void test('an unclamped hue nudges a directly-resolved role toward its target, bounded by the default clamp', () => {
-  const withHue = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles']).run({ 'bypass': undefined, 'colors': ['#06b6d4'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': SCHEMA, 'runtime': undefined });
+  const withHue = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles']).run(InputInterfaceTypeEntity.intake({ 'colors': ['#06b6d4'], 'contrast': undefined, 'emit': undefined, 'maximumColorCount': undefined, 'metadata': undefined, 'roles': SCHEMA, 'runtime': undefined }));
   // Baseline: the same schema with no hue target on 'error'. Selection is
   // hue-blind (lightness/chroma proximity), so 'error' picks the same candidate;
   // only the nudge toward 27 differs — isolating the nudge's effect.
-  const noHue: RoleSchemaInterfaceType = {
-    ...SCHEMA,
-    'contrastPairs': undefined, 'description': undefined, 'roles': SCHEMA.roles.map((r) => {
-      if (r.name !== 'error') { return r; }
-      const rest = { ...r };
-      rest.hue = undefined;
-      return rest;
-    })
-  };
-  const baseline = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles']).run({ 'bypass': undefined, 'colors': ['#06b6d4'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': noHue, 'runtime': undefined });
+  const noHue = RoleSchemaInterfaceTypeEntity.intake({
+    'name': 'no-hue',
+    'roles': [{
+      'chromaRange': [0.16, 0.28],
+      'intent': 'critical',
+      'lightnessRange': [0.55, 0.70],
+      'name': 'error'
+    }]
+  });
+  const baseline = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles']).run(InputInterfaceTypeEntity.intake({ 'colors': ['#06b6d4'], 'contrast': undefined, 'emit': undefined, 'maximumColorCount': undefined, 'metadata': undefined, 'roles': noHue, 'runtime': undefined }));
   const withH = EngineSyncHueScaleFixture.hueOf(withHue.roles.error!.hex);
   const baseH = EngineSyncHueScaleFixture.hueOf(baseline.roles.error!.hex);
   const rotated  = Math.abs(((withH - baseH + 540) % 360) - 180);
@@ -78,7 +85,7 @@ void test('an unclamped hue nudges a directly-resolved role toward its target, b
 
 void test('an unclamped hue nudges a derived role toward its target, bounded by the default clamp', () => {
   const engine = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles', 'expand:family']);
-  const state = engine.run({ 'bypass': undefined, 'colors': ['#7c3aed'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': SCHEMA, 'runtime': undefined }); // violet brand (~293°)
+  const state = engine.run(InputInterfaceTypeEntity.intake({ 'colors': ['#7c3aed'], 'contrast': undefined, 'emit': undefined, 'maximumColorCount': undefined, 'metadata': undefined, 'roles': SCHEMA, 'runtime': undefined })); // violet brand (~293°)
   const brandHue = EngineSyncHueScaleFixture.hueOf(state.roles.brand!.hex);
   const successHue = EngineSyncHueScaleFixture.hueOf(state.roles.success!.hex);
   // brand is >90° from the target (150), so 'success' rotates the default 90°
@@ -92,7 +99,7 @@ void test('an unclamped hue nudges a derived role toward its target, bounded by 
 });
 
 void test('expand:family preserves explicit derived intent without inheriting source intent', () => {
-  const schema: RoleSchemaInterfaceType = {
+  const schema = RoleSchemaInterfaceTypeEntity.intake({
     'contrastPairs': undefined,
     'description': undefined,
     'name': 'derived-intent',
@@ -101,28 +108,29 @@ void test('expand:family preserves explicit derived intent without inheriting so
       { 'chromaRange': [0.00, 0.05], 'derivedFrom': 'brand', 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'onAccent', 'lightnessRange': [0.00, 0.30], 'name': 'overlayGlyph', 'required': undefined },
       { 'chromaRange': [0.00, 0.05], 'derivedFrom': 'brand', 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': [0.00, 0.30], 'name': 'genericGlyph', 'required': undefined }
     ]
-  };
-  const state = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles', 'expand:family']).run({
-    'bypass': undefined,
+  });
+  const state = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles', 'expand:family']).run(InputInterfaceTypeEntity.intake({
     'colors': ['#7c3aed'],
     'contrast': undefined,
     'emit': undefined,
-    'maxColors': undefined,
+    'maximumColorCount': undefined,
     'metadata': undefined,
     'roles': schema,
     'runtime': undefined
-  });
+  }));
 
   const overlayGlyph = state.roles.overlayGlyph;
   const genericGlyph = state.roles.genericGlyph;
   assert.ok(overlayGlyph !== undefined);
   assert.ok(genericGlyph !== undefined);
-  assert.deepStrictEqual(overlayGlyph.hints, { 'intent': 'onAccent', 'role': undefined, 'weight': undefined });
+  assert.equal(overlayGlyph.hints?.intent, 'onAccent');
+  assert.equal(overlayGlyph.hints?.role, undefined);
+  assert.equal(overlayGlyph.hints?.weight, undefined);
   assert.strictEqual(genericGlyph.hints, undefined);
 });
 
 void test('hueClamp bounds the nudge so semantics stay rooted in the palette', () => {
-  const clamped: RoleSchemaInterfaceType = {
+  const clamped = RoleSchemaInterfaceTypeEntity.intake({
     'contrastPairs': undefined,
     'description': undefined, 'name': 'clamped', 'roles': [
       { 'chromaRange': [0.00, 0.04], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'background', 'lightnessRange': [0.04, 0.14], 'name': 'background', 'required': true },
@@ -130,9 +138,9 @@ void test('hueClamp bounds the nudge so semantics stay rooted in the palette', (
       // target green (150) but clamp the rotation to 40°
       { 'chromaRange': [0.14, 0.26],    'derivedFrom': 'brand', 'description': undefined, 'hue': 150, 'hueClamp': 40, 'hueOffset': undefined, 'intent': 'positive', 'lightnessRange': [0.55, 0.70], 'name': 'success', 'required': undefined }
     ]
-  };
+  });
   const engine = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles', 'expand:family']);
-  const state = engine.run({ 'bypass': undefined, 'colors': ['#b11e12'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': clamped, 'runtime': undefined }); // red brand (~hue 30)
+  const state = engine.run(InputInterfaceTypeEntity.intake({ 'colors': ['#b11e12'], 'contrast': undefined, 'emit': undefined, 'maximumColorCount': undefined, 'metadata': undefined, 'roles': clamped, 'runtime': undefined })); // red brand (~hue 30)
   const brandHue = EngineSyncHueScaleFixture.hueOf(state.roles.brand!.hex);
   const successHue = EngineSyncHueScaleFixture.hueOf(state.roles.success!.hex);
   const delta = Math.abs(((successHue - brandHue + 540) % 360) - 180);
@@ -141,7 +149,7 @@ void test('hueClamp bounds the nudge so semantics stay rooted in the palette', (
 });
 
 void test('core:hueOffsetOverrides overrides a derived role\'s schema hueOffset', () => {
-  const schema: RoleSchemaInterfaceType = {
+  const schema = RoleSchemaInterfaceTypeEntity.intake({
     'contrastPairs': undefined,
     'description': undefined, 'name': 'overridden', 'roles': [
       { 'chromaRange': [0.00, 0.04], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'background', 'lightnessRange': [0.04, 0.14], 'name': 'background', 'required': true },
@@ -149,13 +157,12 @@ void test('core:hueOffsetOverrides overrides a derived role\'s schema hueOffset'
       // schema says +30, override says +120 (triadic) — the override must win
       { 'chromaRange': [0.12, 0.30], 'derivedFrom': 'brand', 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 30, 'intent': undefined, 'lightnessRange': [0.55, 0.78], 'name': 'accent-two', 'required': undefined }
     ]
-  };
-  const engine = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles', 'expand:family']);
-  const state = engine.run({
-    'bypass': undefined,
-    'colors': ['#7c3aed'],
-    'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': { 'core:hueOffsetOverrides': { 'accent-two': 120 } }, 'roles': schema, 'runtime': undefined
   });
+  const engine = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles', 'expand:family']);
+  const state = engine.run(InputInterfaceTypeEntity.intake({
+    'colors': ['#7c3aed'],
+    'contrast': undefined, 'emit': undefined, 'maximumColorCount': undefined, 'metadata': { 'core:hueOffsetOverrides': { 'accent-two': 120 } }, 'roles': schema, 'runtime': undefined
+  }));
   const brandHue = EngineSyncHueScaleFixture.hueOf(state.roles.brand!.hex);
   const derivedHue = EngineSyncHueScaleFixture.hueOf(state.roles['accent-two']!.hex);
   const delta = ((derivedHue - brandHue + 360) % 360);
@@ -163,20 +170,19 @@ void test('core:hueOffsetOverrides overrides a derived role\'s schema hueOffset'
 });
 
 void test('core:hueTargetOverrides overrides a directly-resolved role\'s schema hue', () => {
-  const schema: RoleSchemaInterfaceType = {
+  const schema = RoleSchemaInterfaceTypeEntity.intake({
     'contrastPairs': undefined,
     'description': undefined, 'name': 'target-overridden', 'roles': [
       { 'chromaRange': [0.00, 0.04], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'background', 'lightnessRange': [0.04, 0.14], 'name': 'background', 'required': true },
       // no hue in schema; override pins it to 300 (magenta), bounded to 20°
       { 'chromaRange': [0.16, 0.28], 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': 'critical', 'lightnessRange': [0.55, 0.70], 'name': 'error', 'required': undefined }
     ]
-  };
-  const engine = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles']);
-  const state = engine.run({
-    'bypass': undefined,
-    'colors': ['#06b6d4'], // cyan, ~hue 220
-    'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': { 'core:hueTargetOverrides': { 'error': { 'hue': 300, 'hueClamp': 20 } } }, 'roles': schema, 'runtime': undefined
   });
+  const engine = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles']);
+  const state = engine.run(InputInterfaceTypeEntity.intake({
+    'colors': ['#06b6d4'], // cyan, ~hue 220
+    'contrast': undefined, 'emit': undefined, 'maximumColorCount': undefined, 'metadata': { 'core:hueTargetOverrides': { 'error': { 'hue': 300, 'hueClamp': 20 } } }, 'roles': schema, 'runtime': undefined
+  }));
   const h = EngineSyncHueScaleFixture.hueOf(state.roles.error!.hex);
   const rotatedFromCandidate = Math.abs(((h - 220 + 540) % 360) - 180);
   assert.ok(rotatedFromCandidate <= 25, `error rotated only ${rotatedFromCandidate.toFixed(0)}° from its cyan candidate (bounded by the override's 20° clamp), not jumped straight to 300°`);
@@ -184,14 +190,13 @@ void test('core:hueTargetOverrides overrides a directly-resolved role\'s schema 
 
 void test('lightnessTarget produces an engine-resolved tonal step', () => {
   const engine = EngineSyncHueScaleFixture.engineFor(['intake:hex', 'resolve:roles', 'derive:variant']);
-  const state = engine.run({
-    'bypass': undefined,
+  const state = engine.run(InputInterfaceTypeEntity.intake({
     'colors': ['#7c3aed'],
-    'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': { 'core:variantConfig': [
+    'contrast': undefined, 'emit': undefined, 'maximumColorCount': undefined, 'metadata': { 'core:variantConfig': [
       { 'invertLightness': false, 'lightnessTarget': 0.95, 'name': 's100' },
       { 'invertLightness': false, 'lightnessTarget': 0.30, 'name': 's900' }
     ] }, 'roles':  SCHEMA, 'runtime': undefined
-  });
+  }));
   const light = state.variants.s100?.brand;
   const dark = state.variants.s900?.brand;
   assert.ok(light !== undefined && dark !== undefined, 'both tonal steps present');

@@ -1,76 +1,178 @@
-import { ValidationError } from '@studnicky/errors';
+import { ValidationError } from '@studnicky/errors/node';
 
-import type { ClusterPointEntity } from '../entities/ClusterPointEntity.ts';
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { LabInputEntity } from '../entities/LabInputEntity.ts';
 
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
 class RecordWeight {
-  static of(record: ColorRecordInterfaceType): number {
-    const w = record.hints?.weight;
-    return typeof w === 'number' && w > 0 ? w : 1;
+  static of(record: ColorRecordInterfaceTypeEntity.Type): number {
+    const weight = record.hints?.weight;
+    const result = typeof weight === 'number' && weight > 0 ? weight : 1;
+    return result;
   }
 }
 
 /** Cartesian (L, a, b) so hue wraparound never distorts distance/mean the way averaging raw hue degrees would. */
 class Point {
-  static to(record: ColorRecordInterfaceType): ClusterPointEntity.Type {
-    const hRad = (record.oklch.h * Math.PI) / 180;
-    return { 'a': record.oklch.c * Math.cos(hRad), 'b': record.oklch.c * Math.sin(hRad), 'l': record.oklch.l };
+  static to(record: ColorRecordInterfaceTypeEntity.Type): LabInputEntity.Type {
+    const hueRadians = (record.oklch.h * Math.PI) / 180;
+    const result = { 'a': record.oklch.c * Math.cos(hueRadians), 'b': record.oklch.c * Math.sin(hueRadians), 'l': record.oklch.l };
+    return result;
   }
 }
 
 class SquaredDistance {
-  static between(p: ClusterPointEntity.Type, q: ClusterPointEntity.Type): number {
-    const dl = p.l - q.l; const da = p.a - q.a; const db = p.b - q.b;
-    return dl * dl + da * da + db * db;
+  static between(first: LabInputEntity.Type, second: LabInputEntity.Type): number {
+    const lightnessDifference = first.l - second.l;
+    const firstAxisDifference = first.a - second.a;
+    const secondAxisDifference = first.b - second.b;
+    const result = lightnessDifference * lightnessDifference + firstAxisDifference * firstAxisDifference + secondAxisDifference * secondAxisDifference;
+    return result;
   }
 }
 
 class PointConversion {
-  static toRecord(p: ClusterPointEntity.Type, alpha: number, weight: number): ColorRecordInterfaceType {
-    const c = Math.sqrt(p.a * p.a + p.b * p.b);
-    let h = (Math.atan2(p.b, p.a) * 180) / Math.PI;
-    if (h < 0) {h += 360;}
-    return colorRecordFactory.fromOklch(p.l, c, h, { 'alpha': alpha, 'hints': { 'intent': undefined, 'role': undefined, 'weight': weight }, 'sourceFormat': 'oklch' });
+  static toRecord(point: LabInputEntity.Type, alpha: number, weight: number): ColorRecordInterfaceTypeEntity.Type {
+    const chroma = Math.sqrt(point.a * point.a + point.b * point.b);
+    let hue = (Math.atan2(point.b, point.a) * 180) / Math.PI;
+    if (hue < 0) {hue += 360;}
+    const result = colorRecordFactory.fromOklch(point.l, chroma, hue, { 'alpha': alpha, 'hints': { 'weight': weight }, 'sourceFormat': 'oklch' });
+    return result;
   }
 }
 
-/** Weighted k-means++ seeding: each successive centroid is picked with probability proportional to weight × squared distance from the nearest already-chosen centroid, so the initial spread already covers the color space instead of clumping around whichever pixel happens to be first. */
 class CentroidSeeding {
-  static weightedPlusPlus(points: ClusterPointEntity.Type[], weights: number[], k: number): ClusterPointEntity.Type[] {
-    const centroids: ClusterPointEntity.Type[] = [];
-    const firstIndex = weights.indexOf(Math.max(...weights));
-    centroids.push(points[firstIndex]!);
+  static score(point: LabInputEntity.Type, weight: number, centroids: readonly LabInputEntity.Type[]): number {
+    let minimumDistance = Infinity;
+    const centroidCount = centroids.length;
+    for (let centroidIndex = 0; centroidIndex < centroidCount; centroidIndex++) {
+      const distance = SquaredDistance.between(point, centroids[centroidIndex]!);
+      if (distance < minimumDistance) {minimumDistance = distance;}
+    }
+    const result = minimumDistance * weight;
+    return result;
+  }
 
-    while (centroids.length < k) {
-      const scores = points.map((p, i) => {
-        let minimumDistance = Infinity;
-        for (const c of centroids) {
-          const d = SquaredDistance.between(p, c);
-          if (d < minimumDistance) {minimumDistance = d;}
+  static firstAvailableIndex(points: readonly LabInputEntity.Type[], centroids: readonly LabInputEntity.Type[]): number {
+    const pointCount = points.length;
+    for (let pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+      let selected = false;
+      const centroidCount = centroids.length;
+      for (let centroidIndex = 0; centroidIndex < centroidCount; centroidIndex++) {
+        if (points[pointIndex] === centroids[centroidIndex]) {
+          selected = true;
+          break;
         }
-        return minimumDistance * weights[i]!;
-      });
-      const total = scores.reduce((s, v) => {return s + v;}, 0);
+      }
+      if (!selected) {return pointIndex;}
+    }
+    return 0;
+  }
+
+  static weightedPlusPlus(points: readonly LabInputEntity.Type[], weights: readonly number[], count: number): LabInputEntity.Type[] {
+    const centroids: LabInputEntity.Type[] = [];
+    let greatestWeightIndex = 0;
+    const pointCount = points.length;
+    for (let pointIndex = 1; pointIndex < pointCount; pointIndex++) {
+      if (weights[pointIndex]! > weights[greatestWeightIndex]!) {greatestWeightIndex = pointIndex;}
+    }
+    centroids.push(points[greatestWeightIndex]!);
+
+    while (centroids.length < count) {
+      const scores = new Array<number>(pointCount);
+      let total = 0;
+      for (let pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+        const score = CentroidSeeding.score(points[pointIndex]!, weights[pointIndex]!, centroids);
+        scores[pointIndex] = score;
+        total += score;
+      }
       if (total <= 0) {
-        // Every remaining point coincides with an existing centroid — pick any leftover point.
-        const takenIndex = new Set(centroids.map((c) => {const result = points.findIndex((p) => {return p === c;});
-          return result;}));
-        const nextIndex = points.findIndex((_, i) => {return !takenIndex.has(i);});
-        centroids.push(points[nextIndex === -1 ? 0 : nextIndex]!);
+        const availableIndex = CentroidSeeding.firstAvailableIndex(points, centroids);
+        centroids.push(points[availableIndex]!);
         continue;
       }
-      let threshold = total / 2; // deterministic (no Math.random dependency) — picks the point at the cumulative-weight midpoint of the score distribution.
-      let chosen = points[0]!;
-      const pointsLength = points.length;
-      for (let i = 0; i < pointsLength; i++) {
-        threshold -= scores[i]!;
-        if (threshold <= 0) { chosen = points[i]!; break; }
+      let remainingThreshold = total / 2;
+      let chosenIndex = 0;
+      for (let pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+        remainingThreshold -= scores[pointIndex]!;
+        if (remainingThreshold <= 0) {
+          chosenIndex = pointIndex;
+          break;
+        }
       }
-      centroids.push(chosen);
+      centroids.push(points[chosenIndex]!);
     }
     return centroids;
+  }
+}
+
+class ClusterSummary {
+  static assign(points: readonly LabInputEntity.Type[], centroids: readonly LabInputEntity.Type[], assignments: number[]): boolean {
+    let changed = false;
+    const pointCount = points.length;
+    for (let pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+      let nearestCentroidIndex = 0;
+      let nearestDistance = Infinity;
+      const centroidCount = centroids.length;
+      for (let centroidIndex = 0; centroidIndex < centroidCount; centroidIndex++) {
+        const distance = SquaredDistance.between(points[pointIndex]!, centroids[centroidIndex]!);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestCentroidIndex = centroidIndex;
+        }
+      }
+      if (assignments[pointIndex] !== nearestCentroidIndex) {
+        assignments[pointIndex] = nearestCentroidIndex;
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  static recalculate(points: readonly LabInputEntity.Type[], weights: readonly number[], assignments: readonly number[], centroids: readonly LabInputEntity.Type[]): LabInputEntity.Type[] {
+    const sums = new Array<{ 'a': number; 'b': number; 'l': number; 'weight': number }>(centroids.length);
+    const centroidCount = centroids.length;
+    for (let centroidIndex = 0; centroidIndex < centroidCount; centroidIndex++) {
+      sums[centroidIndex] = { 'a': 0, 'b': 0, 'l': 0, 'weight': 0 };
+    }
+    const pointCount = points.length;
+    for (let pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+      const sum = sums[assignments[pointIndex]!]!;
+      const weight = weights[pointIndex]!;
+      const point = points[pointIndex]!;
+      sum.l += point.l * weight;
+      sum.a += point.a * weight;
+      sum.b += point.b * weight;
+      sum.weight += weight;
+    }
+    const result = new Array<LabInputEntity.Type>(centroidCount);
+    for (let centroidIndex = 0; centroidIndex < centroidCount; centroidIndex++) {
+      const sum = sums[centroidIndex]!;
+      result[centroidIndex] = sum.weight > 0 ? { 'a': sum.a / sum.weight, 'b': sum.b / sum.weight, 'l': sum.l / sum.weight } : centroids[centroidIndex]!;
+    }
+    return result;
+  }
+
+  static records(centroids: readonly LabInputEntity.Type[], assignments: readonly number[], weights: readonly number[], alphas: readonly number[]): ColorRecordInterfaceTypeEntity.Type[] {
+    const centroidCount = centroids.length;
+    const clusterWeights = new Array<number>(centroidCount).fill(0);
+    const clusterAlphas = new Array<number>(centroidCount).fill(0);
+    const pointCount = assignments.length;
+    for (let pointIndex = 0; pointIndex < pointCount; pointIndex++) {
+      const centroidIndex = assignments[pointIndex]!;
+      const weight = weights[pointIndex]!;
+      clusterWeights[centroidIndex]! += weight;
+      clusterAlphas[centroidIndex]! += alphas[pointIndex]! * weight;
+    }
+    const result: ColorRecordInterfaceTypeEntity.Type[] = [];
+    for (let centroidIndex = 0; centroidIndex < centroidCount; centroidIndex++) {
+      const clusterWeight = clusterWeights[centroidIndex]!;
+      if (clusterWeight > 0) {
+        result.push(PointConversion.toRecord(centroids[centroidIndex]!, clusterAlphas[centroidIndex]! / clusterWeight, clusterWeight));
+      }
+    }
+    return result;
   }
 }
 
@@ -92,7 +194,7 @@ const MAXIMUM_ITERATIONS = 20;
 class ClusterKMeans {
   readonly 'name' = 'clusterKMeans';
 
-  apply(colors: readonly ColorRecordInterfaceType[], k: number): ColorRecordInterfaceType[] {
+  apply(colors: readonly ColorRecordInterfaceTypeEntity.Type[], k: number): ColorRecordInterfaceTypeEntity.Type[] {
     if (colors.length === 0) {return [];}
     if (k < 1) {
       throw ValidationError.create({
@@ -106,58 +208,28 @@ class ClusterKMeans {
       });
     }
 
-    const targetK = Math.min(Math.floor(k), colors.length);
-    const points = colors.map(Point.to);
-    const weights = colors.map((c) => {const result = RecordWeight.of(c); return result;});
-    const alphas = colors.map((c) => {const result = c.alpha;
-      return result;});
+    const targetCount = Math.min(Math.floor(k), colors.length);
+    const points = new Array<LabInputEntity.Type>(colors.length);
+    const weights = new Array<number>(colors.length);
+    const alphas = new Array<number>(colors.length);
+    const colorCount = colors.length;
+    for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
+      const color = colors[colorIndex]!;
+      points[colorIndex] = Point.to(color);
+      weights[colorIndex] = RecordWeight.of(color);
+      alphas[colorIndex] = color.alpha;
+    }
 
-    let centroids = CentroidSeeding.weightedPlusPlus(points, weights, targetK);
+    let centroids = CentroidSeeding.weightedPlusPlus(points, weights, targetCount);
     const assignments = new Array<number>(points.length).fill(0);
-
-    for (let iter = 0; iter < MAXIMUM_ITERATIONS; iter++) {
-      let changed = false;
-      const pointsLength = points.length;
-      for (let i = 0; i < pointsLength; i++) {
-        let bestIndex = 0; let bestDist = Infinity;
-        const centroidsLength = centroids.length;
-        for (let ci = 0; ci < centroidsLength; ci++) {
-          const d = SquaredDistance.between(points[i]!, centroids[ci]!);
-          if (d < bestDist) { bestDist = d; bestIndex = ci; }
-        }
-        if (assignments[i] !== bestIndex) { assignments[i] = bestIndex; changed = true; }
-      }
-
-      const sums = centroids.map(() => {return { 'a': 0, 'b': 0, 'l': 0, 'w': 0 };});
-      const pointsLengthForSums = points.length;
-      for (let i = 0; i < pointsLengthForSums; i++) {
-        const s = sums[assignments[i]!]!;
-        const w = weights[i]!;
-        s.l += points[i]!.l * w;
-        s.a += points[i]!.a * w;
-        s.b += points[i]!.b * w;
-        s.w += w;
-      }
-      centroids = sums.map((s, ci) => {return s.w > 0 ? { 'a': s.a / s.w, 'b': s.b / s.w, 'l': s.l / s.w } : centroids[ci]!;});
-
+    for (let iteration = 0; iteration < MAXIMUM_ITERATIONS; iteration++) {
+      const changed = ClusterSummary.assign(points, centroids, assignments);
+      centroids = ClusterSummary.recalculate(points, weights, assignments, centroids);
       if (!changed) {break;}
     }
 
-    const clusterWeight = new Array<number>(centroids.length).fill(0);
-    const clusterAlpha = new Array<number>(centroids.length).fill(0);
-    const pointsLengthForWeights = points.length;
-    for (let i = 0; i < pointsLengthForWeights; i++) {
-      const ci = assignments[i]!;
-      clusterWeight[ci]! += weights[i]!;
-      clusterAlpha[ci]! += alphas[i]! * weights[i]!;
-    }
-
-    return centroids.reduce<ColorRecordInterfaceType[]>((accumulated, c, ci) => {
-      if (clusterWeight[ci]! > 0) {
-        accumulated.push(PointConversion.toRecord(c, clusterAlpha[ci]! / clusterWeight[ci]!, clusterWeight[ci]!));
-      }
-      return accumulated;
-    }, []);
+    const result = ClusterSummary.records(centroids, assignments, weights, alphas);
+    return result;
   }
 }
 

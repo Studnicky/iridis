@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
-import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
-import type { AliasColorType } from '~/theme/types/aliasColor.ts';
+import type { AliasColorEntity } from '~/theme/entities/AliasColorEntity.ts';
 import { buildInteractablesShowcaseModel } from './interactables/buildInteractablesShowcaseModel.ts';
 
 /**
@@ -16,10 +15,9 @@ import { buildInteractablesShowcaseModel } from './interactables/buildInteractab
  */
 const { roleViews, roles, contrastStrictness, sortedRoleContrastRows, contrastReport } = useIridis();
 
-const COLORS = ALIAS_COLOR_NAMES;
 
 /** A real filter applied to the avatar/badge row below, not decoration. */
-const checkedColors = ref<AliasColorType.Type[]>(buildInteractablesShowcaseModel.resolveDefaultCheckedColors());
+const checkedColors = ref<AliasColorEntity.Type[]>(buildInteractablesShowcaseModel.resolveDefaultCheckedColors());
 
 // 'background' is required in every schema tier and resolved synchronously
 // before any component reads this — never a hardcoded placeholder.
@@ -33,13 +31,23 @@ const checkedColors = ref<AliasColorType.Type[]>(buildInteractablesShowcaseModel
  * SchemaComplianceCard and PipelineExplainer render as "X/Y pairs passing" —
  * so the label 'APCA' next to this number always matches the metric behind it. */
 const showcaseModel = computed(() => {
-  return buildInteractablesShowcaseModel.build(
+  const apcaPairs = contrastReport.value.apca?.pairs ?? [];
+  let apcaPassingPairCount = 0;
+  for (let index = 0; index < apcaPairs.length; index++) {
+    const pair = apcaPairs[index];
+    if (pair?.pass === true) {
+      apcaPassingPairCount++;
+    }
+  }
+  const result = buildInteractablesShowcaseModel.build(
     contrastStrictness.value,
     sortedRoleContrastRows.value,
-    contrastReport.value.apca?.pairs ?? [],
+    apcaPairs.length,
+    apcaPassingPairCount,
     roleViews.value.length,
     roles.value['background']!
   );
+  return result;
 });
 
 </script>

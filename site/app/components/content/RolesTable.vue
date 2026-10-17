@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useDataLayout } from '~/composables/useDataLayout.ts';
 import { useIridis } from '~/composables/useIridis.ts';
+import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { buildRolesComplianceRows } from './roles/buildRolesComplianceRows.ts';
 import { selectDataCardLayout } from './selectDataCardLayout.ts';
 
@@ -18,15 +19,19 @@ const { framing, roleSortKeys, schemaName, sortedRoleContrastRows } = useIridis(
 const { dataLayout } = useDataLayout();
 
 /**
- * sortedRoleContrastRows scored every role against the flat 4.5-default
- * threshold upstream; re-labels structural rows 'n/a' here (render-site
- * only, doesn't touch the shared compliance/minRatio utilities other pages
- * consume) and re-sorts locally so 'n/a' ranks distinctly rather than
- * inheriting whatever rank its overwritten 'fail'/'AA'/'AAA' string left it at.
+ * sortedRoleContrastRows scores declared foreground roles against their own
+ * minimum contrast target and uses 4.5 only when no pair is declared. This
+ * render-only step labels structural rows 'n/a' without changing the shared
+ * minimum-ratio and compliance utilities, then re-sorts so 'n/a' has its own
+ * rank rather than inheriting the overwritten 'fail'/'AA'/'AAA' value.
  */
+const selectedRoleSchema = computed(() => {
+  const result = roleSchemaByName[schemaName.value]?.[framing.value];
+  return result;
+});
+
 const displayRoleRows = computed(() => buildRolesComplianceRows.build(
-  framing.value,
-  schemaName.value,
+  selectedRoleSchema.value,
   sortedRoleContrastRows.value,
   roleSortKeys.value
 ));
@@ -62,8 +67,14 @@ const cardLayoutByMode = {
 } as const;
 
 const activeCardLayout = computed(() => {
-  return selectDataCardLayout.select(dataLayout.value, cardLayoutByMode);
+  return selectDataCardLayout.select(
+    dataLayout.value,
+    cardLayoutByMode.grid,
+    cardLayoutByMode.list,
+    cardLayoutByMode.pixel
+  );
 });
+const rendersTable = computed(() => dataLayout.value.select(false, false, false, true));
 </script>
 
 <template>
@@ -96,7 +107,7 @@ const activeCardLayout = computed(() => {
     />
 
     <RolesComplianceTable
-      v-show="dataLayout === 'table'"
+      v-show="rendersTable"
       :rows="displayRoleRows"
       :na-tooltip="NA_TOOLTIP"
     />

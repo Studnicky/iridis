@@ -1,10 +1,11 @@
-import type { FromSchema, JsonValueType } from '@studnicky/types';
+import type { InferType, NominalSchemaType } from '@studnicky/json-tology/types';
 
-import { Validator } from '../model/Validator.ts';
+import { EntityCompiler } from '@studnicky/entity/node';
 
 /** Declarative pipeline-task manifest: name, lifecycle phase, and read/write/require slots. */
 export namespace TaskManifestInterfaceTypeEntity {
   export const Schema = {
+    '$id': 'https://iridis.dev/schema/core/task-manifest',
     'additionalProperties': false,
     'properties': {
       'description': { 'type': 'string' },
@@ -18,10 +19,9 @@ export namespace TaskManifestInterfaceTypeEntity {
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = NominalSchemaType<typeof Schema>;
 
-  export const validate = (value: JsonValueType): value is Type => {
-    const result = new Validator().validate(Schema, value);
-    return result.valid;
-  };
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, InferType<typeof Schema>>(Schema);
 }

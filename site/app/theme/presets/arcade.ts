@@ -1,16 +1,19 @@
 import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
 
+import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
+import { renderSquare } from '../particles/renderSquare.ts';
+
 /** Retro pixel-art — scattered chunky pixel-blinks, visible grid, snappy pace. Visual (fonts/radius/border) lives in ./arcade.css. */
 export const arcade: ThemeDefinitionInterfaceType = {
   'ambient': {
     'blobCount':       0,
-    'gooEnabled':      false,
-    'gridEnabled':     true,
+    'gooFilter':       'none',
+    'gridDisplay':     'block',
     'particleCounts':  [70, 70, 60, 35, 35],
-    'particleShape':   'square',
+    'particleRenderer': renderSquare,
     'speedMultiplier': 0.6
   },
-  'dataLayout': 'pixel',
+  'dataLayout': DataLayoutStrategy.pixel,
   'key':   'arcade',
   'label': 'Arcade'
 };

@@ -1,10 +1,10 @@
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 
 /** A single named state: the palette it settles at once a transition into it completes. */
 export class PaletteStateInterfaceType {
-  readonly 'palette': PaletteInterfaceType;
+  readonly 'palette': PaletteInterfaceTypeEntity.Type;
 
-  constructor(palette: PaletteInterfaceType) {
+  constructor(palette: PaletteInterfaceTypeEntity.Type) {
     this.palette = palette;
   }
 }

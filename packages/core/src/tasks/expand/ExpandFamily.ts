@@ -1,40 +1,39 @@
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type {
-  ColorHintsInterfaceType,
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  RoleDefinitionInterfaceType,
-  RoleProvenanceInterfaceType,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '../../types/index.ts';
+import type { ColorHintsInterfaceTypeEntity } from '../../entities/ColorHintsInterfaceTypeEntity.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
+import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
+import { RoleDefinitionInterfaceTypeEntity } from '../../entities/RoleDefinitionInterfaceTypeEntity.ts';
+import { RoleProvenanceInterfaceTypeEntity } from '../../entities/RoleProvenanceInterfaceTypeEntity.ts';
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
-import { EngineMetadata } from '../../types/metadata.ts';
+import { Metadata } from '../../types/metadata.ts';
 import { RoleGeometry } from '../RoleGeometry.ts';
 
-// json-schema-uninexpressible: composes RoleDefinitionInterfaceType, itself widened from a
-// JSON Schema entity via the codebase's hidden-class convention (T | undefined on optional
-// keys) — re-deriving that shape from a nested Schema loses the widening and breaks
-// exactOptionalPropertyTypes assignability against RoleDefinitionInterfaceType call sites.
 /** A derived role whose source has not resolved yet, queued for a later pass by `expand:family`. */
-type PendingDerivedRoleType = {
-  'derivedFrom': string;
-  'inputRole':   RoleDefinitionInterfaceType;
-};
+class PendingDerivedRole {
+  readonly 'derivedFrom': string;
+  readonly 'inputRole': RoleDefinitionInterfaceTypeEntity.Type;
+
+  constructor(derivedFrom: string, inputRole: RoleDefinitionInterfaceTypeEntity.Type) {
+    this.derivedFrom = derivedFrom;
+    this.inputRole = inputRole;
+  }
+}
 
 class RoleDerivation {
   static deriveColor(
-    source: ColorRecordInterfaceType,
-    role: RoleDefinitionInterfaceType
+    source: ColorRecordInterfaceTypeEntity.Type,
+    role: RoleDefinitionInterfaceTypeEntity.Type
   ): {
-    readonly 'adjustments': RoleProvenanceInterfaceType['adjustments'];
-    readonly 'color': ColorRecordInterfaceType;
+    readonly 'adjustments': RoleProvenanceInterfaceTypeEntity.Type['adjustments'];
+    readonly 'color': ColorRecordInterfaceTypeEntity.Type;
   } {
     const { c, h, l } = source.oklch;
     const derivesFromSource = role.lightnessOffset !== undefined || role.chromaScale !== undefined;
@@ -68,11 +67,11 @@ class RoleDerivation {
       targetH = ((h + role.hueOffset) % 360 + 360) % 360;
     }
 
-    const hints: ColorHintsInterfaceType | undefined = role.intent === undefined
+    const hints: ColorHintsInterfaceTypeEntity.Type | undefined = role.intent === undefined
       ? undefined
-      : { 'intent': role.intent, 'role': undefined, 'weight': undefined };
+      : { 'intent': role.intent };
     const options = { 'alpha': source.alpha, 'hints': hints };
-    const adjustments: RoleProvenanceInterfaceType['adjustments'] = [];
+    const adjustments: RoleProvenanceInterfaceTypeEntity.Type['adjustments'] = [];
     let color = source;
     const ranged = colorRecordFactory.fromOklch(
       clamp01.apply(targetL),
@@ -123,121 +122,183 @@ class RoleDerivation {
 class ExpandFamily implements TaskInterface {
   readonly 'name' = 'expand:family';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Derives missing roles that have derivedFrom set. Applies OKLCH deltas from the source role (hueOffset/hue/hueClamp, optionally overridden per role via metadata[\'core:hueOffsetOverrides\']/[\'core:hueTargetOverrides\']). Never overwrites an already-assigned role.',
     'name':        'expand:family',
-    'phase':       undefined,
     'reads':       ['roles', 'input.roles', 'metadata'],
-    'requires':    undefined,
     'writes':      ['roles', 'metadata']
-  };
+  });
+
+  private static collectPending(
+    state: PaletteStateInterface,
+    context: PipelineContextInterface,
+    roles: PaletteRoleState
+  ): PendingDerivedRole[] {
+    const roleDefinitions = state.input.roles?.roles;
+    if (roleDefinitions === undefined) {
+      return [];
+    }
+
+    const pending: PendingDerivedRole[] = [];
+    for (let roleIndex = 0; roleIndex < roleDefinitions.length; roleIndex += 1) {
+      const inputRole = roleDefinitions.at(roleIndex);
+      const derivedFrom = inputRole?.derivedFrom;
+      if (inputRole === undefined || derivedFrom === undefined || derivedFrom === '') {
+        continue;
+      }
+      if (roles.has(inputRole.name)) {
+        context.logger.debug(
+          LogBody.create({
+            'component': 'ExpandFamily',
+            'context': { 'role': inputRole.name },
+            'message': 'Role already assigned; skipping',
+            'operation': 'run',
+            'status': LOG_STATUS.SKIPPED
+          })
+        );
+        continue;
+      }
+      pending.push(new PendingDerivedRole(derivedFrom, RoleDefinitionInterfaceTypeEntity.intake(inputRole)));
+    }
+    return pending;
+  }
+
+  private static derivePendingRole(
+    state: PaletteStateInterface,
+    context: PipelineContextInterface,
+    roles: PaletteRoleState,
+    pendingRole: PendingDerivedRole,
+    hueOffsetOverrides: ReturnType<typeof Metadata.hueOffsetOverrides>,
+    hueTargetOverrides: ReturnType<typeof Metadata.hueTargetOverrides>,
+    roleProvenance: ReturnType<typeof Metadata.roleProvenance>
+  ): boolean {
+    const { derivedFrom, inputRole } = pendingRole;
+    const sourceColor = roles.get(derivedFrom);
+    if (sourceColor === undefined) {
+      return false;
+    }
+
+    const offsetOverride = hueOffsetOverrides?.[inputRole.name];
+    const targetOverride = hueTargetOverrides?.[inputRole.name];
+    const hue = targetOverride?.hue ?? inputRole.hue;
+    const hueClamp = targetOverride?.hueClamp ?? inputRole.hueClamp;
+    const hueOffset = offsetOverride ?? inputRole.hueOffset;
+    const role = RoleDefinitionInterfaceTypeEntity.intake({
+      'name': inputRole.name,
+      ...(inputRole.chromaRange === undefined ? {} : { 'chromaRange': inputRole.chromaRange }),
+      ...(inputRole.chromaScale === undefined ? {} : { 'chromaScale': inputRole.chromaScale }),
+      ...(inputRole.derivedFrom === undefined ? {} : { 'derivedFrom': inputRole.derivedFrom }),
+      ...(inputRole.description === undefined ? {} : { 'description': inputRole.description }),
+      ...(hue === undefined ? {} : { 'hue': hue }),
+      ...(hueClamp === undefined ? {} : { 'hueClamp': hueClamp }),
+      ...(hueOffset === undefined ? {} : { 'hueOffset': hueOffset }),
+      ...(inputRole.intent === undefined ? {} : { 'intent': inputRole.intent }),
+      ...(inputRole.lightnessOffset === undefined ? {} : { 'lightnessOffset': inputRole.lightnessOffset }),
+      ...(inputRole.lightnessRange === undefined ? {} : { 'lightnessRange': inputRole.lightnessRange }),
+      ...(inputRole.required === undefined ? {} : { 'required': inputRole.required })
+    });
+    const derivation = RoleDerivation.deriveColor(sourceColor, role);
+    roles.set(role.name, derivation.color);
+    roleProvenance.set(role.name, RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': derivation.adjustments, 'origin': 'derived' }));
+    context.logger.debug(
+      LogBody.create({
+        'component': 'ExpandFamily',
+        'context': { 'derivedFrom': derivedFrom, 'role': role.name },
+        'message': 'Derived role from source',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
+    );
+    return true;
+  }
+
+  private static resolvePending(
+    state: PaletteStateInterface,
+    context: PipelineContextInterface,
+    roles: PaletteRoleState,
+    initialPending: PendingDerivedRole[],
+    hueOffsetOverrides: ReturnType<typeof Metadata.hueOffsetOverrides>,
+    hueTargetOverrides: ReturnType<typeof Metadata.hueTargetOverrides>,
+    roleProvenance: ReturnType<typeof Metadata.roleProvenance>
+  ): PendingDerivedRole[] {
+    let pending = initialPending;
+    let progressed = true;
+    while (progressed && pending.length > 0) {
+      progressed = false;
+      const stillPending: PendingDerivedRole[] = [];
+      for (let pendingIndex = 0; pendingIndex < pending.length; pendingIndex += 1) {
+        const pendingRole = pending.at(pendingIndex);
+        if (pendingRole === undefined) {
+          continue;
+        }
+        const derived = ExpandFamily.derivePendingRole(
+          state,
+          context,
+          roles,
+          pendingRole,
+          hueOffsetOverrides,
+          hueTargetOverrides,
+          roleProvenance
+        );
+        if (derived) {
+          progressed = true;
+        } else {
+          stillPending.push(pendingRole);
+        }
+      }
+      pending = stillPending;
+    }
+    return pending;
+  }
+
+  private static warnUnresolved(context: PipelineContextInterface, pending: readonly PendingDerivedRole[]): void {
+    for (let pendingIndex = 0; pendingIndex < pending.length; pendingIndex += 1) {
+      const pendingRole = pending.at(pendingIndex);
+      if (pendingRole === undefined) {
+        continue;
+      }
+      context.logger.warn(
+        LogBody.create({
+          'component': 'ExpandFamily',
+          'context': { 'derivedFrom': pendingRole.derivedFrom, 'role': pendingRole.inputRole.name },
+          'message': 'Role derivedFrom source is not assigned',
+          'operation': 'run',
+          'status': LOG_STATUS.INVALID
+        })
+      );
+    }
+  }
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     if (state.input.roles === undefined) {
       context.logger.debug(
-        LogBody.create()
-          .component('ExpandFamily')
-          .operation('run')
-          .status(LOG_STATUS.SKIPPED)
-          .message('No role schema; skipping')
-          .context({})
-          .build()
+        LogBody.create({
+          'component': 'ExpandFamily',
+          'context': {},
+          'message': 'No role schema; skipping',
+          'operation': 'run',
+          'status': LOG_STATUS.SKIPPED
+        })
       );
       return;
     }
 
-    const hueOffsetOverrides = EngineMetadata.get(state.metadata, 'core:hueOffsetOverrides');
-    const hueTargetOverrides = EngineMetadata.get(state.metadata, 'core:hueTargetOverrides');
-    const roleProvenance = EngineMetadata.get(state.metadata, 'core:roleProvenance') ?? {};
-
-    let pending: PendingDerivedRoleType[] = [];
-    for (const inputRole of state.input.roles.roles) {
-      if (inputRole.derivedFrom === undefined || inputRole.derivedFrom === '') {
-        continue;
-      }
-      if (state.roles[inputRole.name] !== undefined) {
-        context.logger.debug(
-          LogBody.create()
-            .component('ExpandFamily')
-            .operation('run')
-            .status(LOG_STATUS.SKIPPED)
-            .message('Role already assigned; skipping')
-            .context({ 'role': inputRole.name })
-            .build()
-        );
-        continue;
-      }
-      pending.push({ 'derivedFrom': inputRole.derivedFrom, 'inputRole': inputRole });
-    }
-
-    // Fixed-point resolution: a derived role whose source is itself a
-    // derived role appearing later in `roles` is unresolvable on its first
-    // pass and stays queued; each further pass retries whatever is left.
-    // The loop terminates once a full pass derives nothing new — this is
-    // the cycle guard, so a genuine derivedFrom cycle can never spin forever.
-    // Each pass rebuilds the pending list from scratch (rather than
-    // splicing mid-loop, which is O(n^2) over repeated passes).
-    let progressed = true;
-    while (progressed && pending.length > 0) {
-      progressed = false;
-      const stillPending: PendingDerivedRoleType[] = [];
-
-      for (const { derivedFrom, inputRole } of pending) {
-        const sourceColor = state.roles[derivedFrom];
-        if (sourceColor === undefined) {
-          stillPending.push({ 'derivedFrom': derivedFrom, 'inputRole': inputRole });
-          continue;
-        }
-
-        const offsetOverride = hueOffsetOverrides?.[inputRole.name];
-        const targetOverride = hueTargetOverrides?.[inputRole.name];
-        const role = {
-          ...inputRole,
-          'hue':       targetOverride?.hue ?? inputRole.hue,
-          'hueClamp':  targetOverride?.hueClamp ?? inputRole.hueClamp,
-          'hueOffset': offsetOverride ?? inputRole.hueOffset
-        };
-
-        const derivation = RoleDerivation.deriveColor(sourceColor, role);
-        state.roles[role.name] = derivation.color;
-        roleProvenance[role.name] = { 'adjustments': derivation.adjustments, 'origin': 'derived' };
-        state.metadata['core:roleProvenance'] = roleProvenance;
-
-        context.logger.debug(
-          LogBody.create()
-            .component('ExpandFamily')
-            .operation('run')
-            .status(LOG_STATUS.SUCCESS)
-            .message('Derived role from source')
-            .context({
-              'derivedFrom': derivedFrom,
-              'role':        role.name
-            })
-            .build()
-        );
-
-        progressed = true;
-      }
-
-      pending = stillPending;
-    }
-
-    // Whatever remains after the fixed point has an unassigned source —
-    // either it was never in the schema, or it sits in a derivedFrom cycle.
-    for (const { derivedFrom, inputRole } of pending) {
-      context.logger.warn(
-        LogBody.create()
-          .component('ExpandFamily')
-          .operation('run')
-          .status(LOG_STATUS.INVALID)
-          .message('Role derivedFrom source is not assigned')
-          .context({
-            'derivedFrom': derivedFrom,
-            'role':        inputRole.name
-          })
-          .build()
-      );
-    }
+    const hueOffsetOverrides = Metadata.hueOffsetOverrides(state.metadata);
+    const hueTargetOverrides = Metadata.hueTargetOverrides(state.metadata);
+    const roleProvenance = Metadata.roleProvenance(state.metadata);
+    const roles = PaletteRoleState.admit(state.roles);
+    const pending = ExpandFamily.resolvePending(
+      state,
+      context,
+      roles,
+      ExpandFamily.collectPending(state, context, roles),
+      hueOffsetOverrides,
+      hueTargetOverrides,
+      roleProvenance
+    );
+    roles.commit();
+    Metadata.writeRoleProvenance(state.metadata, roleProvenance);
+    ExpandFamily.warnUnresolved(context, pending);
   }
 }
 

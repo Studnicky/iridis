@@ -1,4 +1,4 @@
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
 export const buildRoleMathPinnedDetailsModel = class RoleMathPinnedDetailsModel {
   public readonly ariaLabel: string;
@@ -13,9 +13,9 @@ export const buildRoleMathPinnedDetailsModel = class RoleMathPinnedDetailsModel 
     this.label = 'Pinned seed';
   }
 
-  public static build(role: RoleMathEntryType): RoleMathPinnedDetailsModel | null {
+  public static build(role: RoleMathEntry): RoleMathPinnedDetailsModel | null {
     const pinnedSeedHex = role.pinnedSeedHex;
-    if (!role.isPinned || pinnedSeedHex === null || pinnedSeedHex.length === 0) {
+    if (!role.origin.isPinned() || pinnedSeedHex === null || pinnedSeedHex.length === 0) {
       return null;
     }
     return new RoleMathPinnedDetailsModel(

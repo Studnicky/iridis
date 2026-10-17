@@ -1,16 +1,12 @@
 {
   "name": "@studnicky/iridis-mui",
   "description": "Emits an MUI theme (createTheme() palette config) from resolved roles.",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./types": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/types/index.js"
     }
   },
   "files": [
@@ -39,8 +35,12 @@
     "@studnicky/iridis": "workspace:*"
   },
   "dependencies": {
-    "@studnicky/logger": "^4.0.0",
-    "@studnicky/types": "^4.0.0"
+    "@studnicky/entity": "^15.2.1",
+    "@studnicky/json-tology": "0.27.1",
+    "@studnicky/logger": "^15.2.1",
+    "@studnicky/types": "^15.2.1",
+    "@types/json-schema": "^7.0.15",
+    "json-schema": "0.4.0"
   },
   "devDependencies": {
     "typescript": "^6.0.0"

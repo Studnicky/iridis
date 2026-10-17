@@ -1,13 +1,18 @@
-import type { ThemeDefinitionInterfaceType } from '~/theme/ThemeDefinitionInterfaceType.ts';
+import type { DataLayoutStrategy } from '~/theme/DataLayoutStrategy.ts';
 
 export const selectDataCardLayout = class DataCardLayoutSelector {
-  public static select<T extends Record<Exclude<ThemeDefinitionInterfaceType['dataLayout'], 'table'>, unknown>>(
-    dataLayout: ThemeDefinitionInterfaceType['dataLayout'],
-    layouts: T
-  ): T[Exclude<ThemeDefinitionInterfaceType['dataLayout'], 'table'>] | undefined {
-    if (dataLayout === 'table') {
-      return undefined;
-    }
-    return layouts[dataLayout];
+  public static select<GridType, ListType, PixelType>(
+    dataLayout: DataLayoutStrategy,
+    grid: GridType,
+    list: ListType,
+    pixel: PixelType
+  ): GridType | ListType | PixelType | undefined {
+    const result = dataLayout.select<GridType | ListType | PixelType | undefined>(
+      grid,
+      list,
+      pixel,
+      undefined
+    );
+    return result;
   }
 };

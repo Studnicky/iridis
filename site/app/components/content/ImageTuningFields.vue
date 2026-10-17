@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import type { ClusterStrategyInterface } from '@studnicky/iridis-image';
+
 import { ALGORITHM_HELP } from '~/composables/algorithmHelp.ts';
 import { ALGORITHM_ITEMS } from '~/composables/algorithmItems.ts';
-import type { GalleryAlgorithmType } from '@studnicky/iridis-image/types';
 
 defineProps<{
-  algorithm: GalleryAlgorithmType;
+  strategy: ClusterStrategyInterface;
   deltaECap: number;
   histogramBits: number;
   harmonizeThreshold: number;
@@ -20,33 +21,53 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'update:algorithm': [value: GalleryAlgorithmType];
+  'update:strategy': [value: ClusterStrategyInterface];
   'update:deltaECap': [value: number];
   'update:histogramBits': [value: number];
   'update:harmonizeThreshold': [value: number];
   'update:lightnessRange': [value: [number, number][]];
   'update:chromaRange': [value: [number, number][]];
 }>();
+
+const algorithmItems = ALGORITHM_ITEMS.map((item) => {
+  const result = { 'label': item.label, 'value': item.strategy.serializeAlgorithm() };
+  return result;
+});
+
+function selectedAlgorithm(strategy: ClusterStrategyInterface): string {
+  const result = strategy.serializeAlgorithm();
+  return result;
+}
+
+function selectStrategy(algorithm: string): void {
+  for (const item of ALGORITHM_ITEMS) {
+    if (item.strategy.serializeAlgorithm() === algorithm) {
+      emit('update:strategy', item.strategy);
+      return;
+    }
+  }
+  throw new RangeError(`Unsupported clustering algorithm: ${algorithm}`);
+}
 </script>
 
 <template>
   <div class="grid gap-x-4 gap-y-3 sm:grid-cols-2">
     <UFormField label="Clustering algorithm">
       <AppSelect
-        :model-value="algorithm"
-        :items="ALGORITHM_ITEMS"
+        :model-value="selectedAlgorithm(strategy)"
+        :items="algorithmItems"
         class="w-full"
-        @update:model-value="emit('update:algorithm', $event as GalleryAlgorithmType)"
+        @update:model-value="selectStrategy"
       />
       <FieldHelpText
         v-if="showAlgorithmHelp"
       >
-        {{ ALGORITHM_HELP[algorithm] }}
+        {{ ALGORITHM_HELP[strategy.serializeAlgorithm()] }}
       </FieldHelpText>
     </UFormField>
 
     <UFormField
-      v-if="algorithm === 'delta-e'"
+      v-if="strategy.serializeAlgorithm() === 'delta-e'"
       :label="`Merge input cap · ${deltaECap}`"
     >
       <USlider

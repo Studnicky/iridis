@@ -1,5 +1,5 @@
-import type { ParticleElementType } from './types/particleElement.ts';
-import type { ParticleRendererType } from './types/particleRenderer.ts';
+import type { ParticleElementInterface } from './interfaces/particleElementInterface.ts';
+import type { ParticleRendererInterface } from './interfaces/particleRendererInterface.ts';
 
 import { randomDelay } from './randomDelay.ts';
 import { randomPlacement } from './randomPlacement.ts';
@@ -12,8 +12,8 @@ import { randomPlacement } from './randomPlacement.ts';
  * desyncs the particles.
  */
 class RenderHeartOperation {
-  static readonly run: ParticleRendererType.Type = ({ colorVar, count, sizePx }) => {
-    const elements: ParticleElementType.Type[] = [];
+  static readonly render: ParticleRendererInterface['render'] = ({ colorVar, count, sizePx }) => {
+    const elements: ParticleElementInterface[] = [];
     for (let i = 0; i < count; i += 1) {
       const { x, y } = randomPlacement();
       elements.push({
@@ -25,8 +25,8 @@ class RenderHeartOperation {
         }
       });
     }
-    return { 'elements': elements, 'kind': 'elements' };
+    return { 'rendering': { 'elements': elements, 'surface': 'elements' } };
   };
 }
 
-export const renderHeart: ParticleRendererType.Type = RenderHeartOperation.run;
+export const renderHeart: ParticleRendererInterface = { 'render': RenderHeartOperation.render };

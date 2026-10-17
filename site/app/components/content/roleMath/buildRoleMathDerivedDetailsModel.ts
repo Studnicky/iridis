@@ -1,4 +1,4 @@
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
 class RoleMathDerivedMetric {
   public readonly label: string;
@@ -19,44 +19,47 @@ export const buildRoleMathDerivedDetailsModel = class RoleMathDerivedDetailsMode
     this.metrics = metrics;
   }
 
-  private static algorithmSummary(role: RoleMathEntryType): string | null {
+  private static algorithmSummary(role: RoleMathEntry): string | null {
     const algorithmInfo = role.algorithmInfo;
     if (algorithmInfo === null) {
       return null;
     }
     const computedHues: string[] = [];
-    for (const hue of algorithmInfo.computedHues) {
-      computedHues.push(`${Math.round(hue)}°`);
+    for (let index = 0; index < algorithmInfo.computedHues.length; index += 1) {
+      const hue = algorithmInfo.computedHues[index];
+      if (hue !== undefined) {
+        computedHues.push(`${Math.round(hue)}°`);
+      }
     }
     return `Seed hue ${Math.round(algorithmInfo.baseHue)}° → computed ${computedHues.join(', ')}`;
   }
 
-  public static build(role: RoleMathEntryType): RoleMathDerivedDetailsModel {
+  public static build(role: RoleMathEntry): RoleMathDerivedDetailsModel {
     const metrics: RoleMathDerivedMetric[] = [];
     const definition = role.def;
     if (definition !== undefined) {
-      if (definition.lightnessTarget !== undefined) {
+      if (definition.lightnessRange !== undefined) {
         metrics.push(new RoleMathDerivedMetric(
-          'Lightness Target',
-          definition.lightnessTarget.toFixed(3)
+          'Lightness Range',
+          `${definition.lightnessRange[0].toFixed(3)}–${definition.lightnessRange[1].toFixed(3)}`
         ));
       }
-      if (definition.lightnessClamp !== undefined) {
+      if (definition.chromaRange !== undefined) {
         metrics.push(new RoleMathDerivedMetric(
-          'Lightness Clamp',
-          definition.lightnessClamp.toFixed(3)
+          'Chroma Range',
+          `${definition.chromaRange[0].toFixed(3)}–${definition.chromaRange[1].toFixed(3)}`
         ));
       }
-      if (definition.chromaTarget !== undefined) {
+      if (definition.lightnessOffset !== undefined) {
         metrics.push(new RoleMathDerivedMetric(
-          'Chroma Target',
-          definition.chromaTarget.toFixed(3)
+          'Lightness Offset',
+          definition.lightnessOffset.toFixed(3)
         ));
       }
-      if (definition.chromaClamp !== undefined) {
+      if (definition.chromaScale !== undefined) {
         metrics.push(new RoleMathDerivedMetric(
-          'Chroma Clamp',
-          definition.chromaClamp.toFixed(3)
+          'Chroma Scale',
+          definition.chromaScale.toFixed(3)
         ));
       }
       if (definition.hue !== undefined) {

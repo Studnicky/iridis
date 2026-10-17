@@ -4,7 +4,7 @@ import { colorRecordFactory } from '@studnicky/iridis';
 import { useDataLayout } from '~/composables/useDataLayout.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
-import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
+import { AliasColorEntity } from '~/theme/entities/AliasColorEntity.ts';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 import { Tokens } from '~/theme/Tokens.ts';
 import { complianceFor } from '~/utils/complianceFor.ts';
@@ -14,11 +14,15 @@ import { capitalize } from '~/utils/capitalize.ts';
 
 const TABLE_SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 
-const ALIASES = ALIAS_COLOR_NAMES.map((key) => ({ key, 'label': capitalize(key) }));
+const ALIASES = AliasColorEntity.Values.map((key) => ({ key, 'label': capitalize(key) }));
 
 /** Same sort as every other role listing on the page — an alias's sort row is its base (500-shade) resolved color, the same hex ScaleCard shows as this alias's representative swatch. */
 const { roles, scales, roleSortKeys, schemaName, framing } = useIridis();
 const { dataLayout } = useDataLayout();
+const rendersGrid = computed(() => dataLayout.value.select(true, false, false, false));
+const rendersList = computed(() => dataLayout.value.select(false, true, false, false));
+const rendersPixel = computed(() => dataLayout.value.select(false, false, true, false));
+const rendersTable = computed(() => dataLayout.value.select(false, false, false, true));
 
 const sortedAliases = computed(() => {
   // 'background' is required in every schema tier — resolved before any
@@ -49,7 +53,7 @@ const sortedAliases = computed(() => {
   <div class="space-y-3">
     <RoleSortControls />
     <div
-      v-show="dataLayout === 'grid'"
+      v-show="rendersGrid"
       class="palette-grid"
     >
       <div
@@ -61,7 +65,7 @@ const sortedAliases = computed(() => {
       </div>
     </div>
     <div
-      v-show="dataLayout === 'list'"
+      v-show="rendersList"
       class="palette-list"
     >
       <div
@@ -73,7 +77,7 @@ const sortedAliases = computed(() => {
       </div>
     </div>
     <div
-      v-show="dataLayout === 'pixel'"
+      v-show="rendersPixel"
       class="palette-pixel"
     >
       <div
@@ -85,7 +89,7 @@ const sortedAliases = computed(() => {
       </div>
     </div>
     <table
-      v-show="dataLayout === 'table'"
+      v-show="rendersTable"
       class="palette-table w-full border-collapse text-left text-sm"
     >
       <thead>

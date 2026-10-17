@@ -413,20 +413,19 @@ const assertInternalDependencyRanges = (manifest, workspaceVersions) => {
   }
 };
 
-const assertReleaseContract = (rootDirectory, packages) => {
-  const workspaceManifestPath = join(rootDirectory, 'package.json');
-  assertSafeFile(workspaceManifestPath, 'workspace manifest', rootDirectory);
-  const workspaceManifest = readJson(workspaceManifestPath);
-  if (typeof workspaceManifest.version !== 'string') {
-    fail('workspace manifest requires a version');
+const assertReleaseContract = (_rootDirectory, packages) => {
+  const [firstPackage] = packages;
+  if (firstPackage === undefined) {
+    fail('workspace contains no public packages');
   }
+  const releaseVersion = firstPackage.manifest.version;
 
   let repositoryUrl;
   for (const packageRecord of packages) {
     const { directoryName, manifest } = packageRecord;
-    if (manifest.version !== workspaceManifest.version) {
+    if (manifest.version !== releaseVersion) {
       fail(
-        `package version mismatch for ${manifest.name}: expected ${workspaceManifest.version}`
+        `package version mismatch for ${manifest.name}: expected ${releaseVersion}`
       );
     }
 

@@ -93,7 +93,8 @@ await test('rejects sibling-prefix, encoded, alternate-separator, and absolute e
       `<<< @/${absoluteSiblingPath}`
     ];
 
-    for (const directive of directives) {
+    for (let index = 0; index < directives.length; index += 1) {
+      const directive = directives[index]!;
       assert.throws(
         () => {
           snippetImporter.resolve(directive, fixture.repositoryRoot());
@@ -212,16 +213,18 @@ await test('reports the missing region and relative source path', () => {
   try {
     fixture.write('region.ts', 'export const value = 1;');
 
-    assert.throws(
-      () => {
-        snippetImporter.resolve('<<< @/region.ts#missing', fixture.repositoryRoot());
-      },
-      (error: unknown) => {
-        assert.ok(error instanceof Error);
-        assert.equal(error.message, 'SnippetImporter: region "missing" not found in region.ts');
-        return true;
+    let thrown: Error | undefined;
+    try {
+      snippetImporter.resolve('<<< @/region.ts#missing', fixture.repositoryRoot());
+    } catch (error) {
+      if (error instanceof Error) {
+        thrown = error;
+      } else {
+        throw error;
       }
-    );
+    }
+    assert.ok(thrown instanceof Error);
+    assert.equal(thrown.message, 'SnippetImporter: region "missing" not found in region.ts');
   } finally {
     fixture.cleanup();
   }

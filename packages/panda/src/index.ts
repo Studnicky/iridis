@@ -6,4 +6,4 @@ export { PandaPlugin };
 export { EmitPandaTheme };
 export const pandaPlugin    = new PandaPlugin();
 export const emitPandaTheme = new EmitPandaTheme();
-export type { PandaOutputInterfaceType } from './types/index.ts';
+export type { PandaOutputInterface } from './interfaces/PandaOutputInterface.ts';

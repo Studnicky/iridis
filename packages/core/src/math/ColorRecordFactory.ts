@@ -1,13 +1,10 @@
-import { ValidationError } from '@studnicky/errors';
+import { ValidationError } from '@studnicky/errors/node';
 
-import type {
-  ColorHintsInterfaceType,
-  ColorRecordInterfaceType,
-  OklchInterfaceType,
-  RgbInterfaceType,
-  SourceFormatType
-} from '../types/index.ts';
+import type { ColorHintsInterfaceTypeEntity } from '../entities/ColorHintsInterfaceTypeEntity.ts';
 
+import { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import { OklchInterfaceTypeEntity } from '../entities/OklchInterfaceTypeEntity.ts';
+import { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
 import { clamp } from './Clamp.ts';
 import { clamp01 } from './Clamp01.ts';
 import { HEX_PATTERNS } from './constants/HexPatterns.ts';
@@ -18,7 +15,7 @@ import { rgbToHex } from './RgbToHex.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
 class RawOklchConversion {
-  static fromRgb(r: number, g: number, b: number): OklchInterfaceType {
+  static fromRgb(r: number, g: number, b: number): OklchInterfaceTypeEntity.Type {
     const { 'b': bl, 'g': gl, 'r': rl } = srgbToLinear.apply(r, g, b);
 
     let x = 0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl;
@@ -39,16 +36,17 @@ class RawOklchConversion {
       h += 360;
     }
 
-    return {
+    const result = OklchInterfaceTypeEntity.create({
       'c': clamp.apply(0, 0.5, c),
       'h': h % 360,
       'l': clamp01.apply(labL)
-    };
+    });
+    return result;
   }
 }
 
 class RawRgbConversion {
-  static fromHsl(h: number, s: number, l: number): RgbInterfaceType {
+  static fromHsl(h: number, s: number, l: number): RgbInterfaceTypeEntity.Type {
     const hh = ((h % 360) + 360) % 360;
     const ss = clamp01.apply(s);
     const ll = clamp01.apply(l);
@@ -57,9 +55,9 @@ class RawRgbConversion {
     const x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
     const m = ll - c / 2;
 
-    let r = 0;
-    let g = 0;
-    let b = 0;
+    let r: number;
+    let g: number;
+    let b: number;
 
     if (hh < 60) {
       r = c; g = x; b = 0;
@@ -75,26 +73,78 @@ class RawRgbConversion {
       r = c; g = 0; b = x;
     }
 
-    return { 'b': clamp01.apply(b + m), 'g': clamp01.apply(g + m), 'r': clamp01.apply(r + m) };
+    const result = RgbInterfaceTypeEntity.create({ 'b': clamp01.apply(b + m), 'g': clamp01.apply(g + m), 'r': clamp01.apply(r + m) });
+    return result;
   }
 }
 
+class ColorRecordOrigin {
+  readonly #sourceFormat: string;
+
+  private constructor(sourceFormat: string) {
+    this.#sourceFormat = sourceFormat;
+  }
+
+  static resolve(source: string): ColorRecordOrigin {
+    const origin = ColorRecordOrigin.#origins.get(source);
+    if (origin === undefined) {
+      throw ValidationError.create({
+        'message': 'ColorRecordFactory: unsupported source format',
+        'path':    'sourceFormat',
+        'violations': [{
+          'details': { 'received': source },
+          'message': 'value is not a supported color source format',
+          'path':    'sourceFormat'
+        }]
+      });
+    }
+    return origin;
+  }
+
+  write(
+    alpha: number,
+    hex: string,
+    oklch: OklchInterfaceTypeEntity.Type,
+    rgb: RgbInterfaceTypeEntity.Type,
+    options?: { 'displayP3'?: RgbInterfaceTypeEntity.Type; 'hints'?: ColorHintsInterfaceTypeEntity.Type }
+  ): ColorRecordInterfaceTypeEntity.Type {
+    const { displayP3, hints } = options ?? {};
+    const result = ColorRecordInterfaceTypeEntity.intake({
+      'alpha': alpha,
+      ...(displayP3 === undefined ? {} : { 'displayP3': displayP3 }),
+      'hex': hex,
+      ...(hints === undefined ? {} : { 'hints': hints }),
+      'oklch': oklch,
+      'rgb': rgb,
+      'sourceFormat': this.#sourceFormat
+    });
+    return result;
+  }
+
+  static readonly #origins: ReadonlyMap<string, ColorRecordOrigin> = new Map([
+    ['displayP3', new ColorRecordOrigin('displayP3')],
+    ['hex', new ColorRecordOrigin('hex')],
+    ['hsl', new ColorRecordOrigin('hsl')],
+    ['imagePixel', new ColorRecordOrigin('imagePixel')],
+    ['lab', new ColorRecordOrigin('lab')],
+    ['named', new ColorRecordOrigin('named')],
+    ['oklch', new ColorRecordOrigin('oklch')],
+    ['rgb', new ColorRecordOrigin('rgb')]
+  ]);
+}
+
 /**
- * Factory for canonical {@link ColorRecordInterfaceType} values. Every record
+ * Factory for canonical {@link ColorRecordInterfaceTypeEntity.Type} values. Every record
  * leaves this factory with all three encodings (`oklch`, `rgb`, `hex`)
  * populated and consistent: the OKLCH/RGB transforms below round-trip
  * through the Björn Ottosson OKLab matrices, and the hex string is
  * derived from the same RGB triple. Inputs are clamped into the valid
  * encoding ranges (L/C/alpha into [0,1]/[0,0.5]/[0,1]; hue mod 360).
  *
- * Every record is allocated with the SAME field set in the SAME key
- * order (`alpha`, `displayP3`, `hex`, `hints`, `oklch`, `rgb`,
- * `sourceFormat` — alphabetical, enforced by the workspace's
- * perfectionist/sort-objects eslint rule) so V8 collapses all records
- * into a single hidden class. Optional fields default to `undefined`
- * (explicit, not absent) so
- * downstream code can read `record.hints?.role` without forcing a
- * second hidden class to materialise on the spread/append path.
+ * Every record contains the required `alpha`, `hex`, `oklch`, `rgb`,
+ * and `sourceFormat` fields. Optional `displayP3` and `hints` fields
+ * are included only when values exist, so each emitted record conforms
+ * to the canonical JSON Schema contract.
  *
  * Use the singleton `colorRecordFactory` rather than `new`; it has no
  * state and registries assume reference identity.
@@ -143,33 +193,32 @@ class ColorRecordFactory {
     l: number,
     c: number,
     h: number,
-    options?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
-  ): ColorRecordInterfaceType {
-    const { alpha = 1, hints, sourceFormat = 'oklch' } = options ?? {};
+    options?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceTypeEntity.Type | undefined; 'origin'?: ColorRecordInterfaceTypeEntity.Type | undefined; 'sourceFormat'?: string; }
+  ): ColorRecordInterfaceTypeEntity.Type {
+    const { alpha = 1, hints, origin, sourceFormat = 'oklch' } = options ?? {};
     const mapped = gamutMapSrgb.apply(l, c, h);
     const rgb    = oklchToRgbRaw.apply(mapped.l, mapped.c, mapped.h);
 
-    let displayP3: { 'b': number; 'g': number; 'r': number; } | undefined;
+    let displayP3: RgbInterfaceTypeEntity.Type | undefined;
     if (!mapped.inGamut) {
       const p3 = oklchToDisplayP3.apply(l, c, h);
-      displayP3 = {
+      displayP3 = RgbInterfaceTypeEntity.create({
         'b': clamp01.apply(p3.b),
         'g': clamp01.apply(p3.g),
         'r': clamp01.apply(p3.r)
-      };
+      });
     } else {
       displayP3 = undefined;
     }
 
-    return {
-      'alpha':        clamp01.apply(alpha),
-      'displayP3':    displayP3,
-      'hex':          rgbToHex.apply(rgb.r, rgb.g, rgb.b),
-      'hints':        hints,
-      'oklch':        { 'c': clamp.apply(0, 0.5, c), 'h': ((h % 360) + 360) % 360, 'l': clamp01.apply(l) },
-      'rgb':          rgb,
-      'sourceFormat': sourceFormat
-    };
+    const result = ColorRecordOrigin.resolve(origin?.sourceFormat ?? sourceFormat).write(
+      clamp01.apply(alpha),
+      rgbToHex.apply(rgb.r, rgb.g, rgb.b),
+      OklchInterfaceTypeEntity.create({ 'c': clamp.apply(0, 0.5, c), 'h': ((h % 360) + 360) % 360, 'l': clamp01.apply(l) }),
+      rgb,
+      { ...(displayP3 === undefined ? {} : { 'displayP3': displayP3 }), ...(hints === undefined ? {} : { 'hints': hints }) }
+    );
+    return result;
   }
 
   /**
@@ -187,22 +236,21 @@ class ColorRecordFactory {
     r: number,
     g: number,
     b: number,
-    options?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
-  ): ColorRecordInterfaceType {
-    const { alpha = 1, hints, sourceFormat = 'rgb' } = options ?? {};
+    options?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceTypeEntity.Type | undefined; 'origin'?: ColorRecordInterfaceTypeEntity.Type | undefined; 'sourceFormat'?: string; }
+  ): ColorRecordInterfaceTypeEntity.Type {
+    const { alpha = 1, hints, origin, sourceFormat = 'rgb' } = options ?? {};
     const rc    = clamp01.apply(r);
     const gc    = clamp01.apply(g);
     const bc    = clamp01.apply(b);
     const oklch = RawOklchConversion.fromRgb(rc, gc, bc);
-    return {
-      'alpha':        clamp01.apply(alpha),
-      'displayP3':    undefined,
-      'hex':          rgbToHex.apply(rc, gc, bc),
-      'hints':        hints,
-      'oklch':        oklch,
-      'rgb':          { 'b': bc, 'g': gc, 'r': rc },
-      'sourceFormat': sourceFormat
-    };
+    const result = ColorRecordOrigin.resolve(origin?.sourceFormat ?? sourceFormat).write(
+      clamp01.apply(alpha),
+      rgbToHex.apply(rc, gc, bc),
+      oklch,
+      RgbInterfaceTypeEntity.create({ 'b': bc, 'g': gc, 'r': rc }),
+      hints === undefined ? undefined : { 'hints': hints }
+    );
+    return result;
   }
 
   /**
@@ -220,9 +268,9 @@ class ColorRecordFactory {
    */
   fromHex(
     hex: string,
-    options?: { 'alphaOverride'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
-  ): ColorRecordInterfaceType {
-    const { alphaOverride, hints, sourceFormat = 'hex' } = options ?? {};
+    options?: { 'alphaOverride'?: number; 'hints'?: ColorHintsInterfaceTypeEntity.Type | undefined; 'origin'?: ColorRecordInterfaceTypeEntity.Type | undefined; 'sourceFormat'?: string; }
+  ): ColorRecordInterfaceTypeEntity.Type {
+    const { alphaOverride, hints, origin, sourceFormat = 'hex' } = options ?? {};
     const cleaned = hex.replace(HEX_PATTERNS.LEADING_HASH, '');
     if (!HEX_PATTERNS.VALID_HEX.test(cleaned)) {
       throw ValidationError.create({
@@ -243,15 +291,14 @@ class ColorRecordFactory {
       : 1;
     const alpha = alphaOverride ?? parsedAlpha;
     const oklch = RawOklchConversion.fromRgb(r, g, b);
-    return {
-      'alpha':        clamp01.apply(alpha),
-      'displayP3':    undefined,
-      'hex':          `#${cleaned.slice(0, 6).toLowerCase()}`,
-      'hints':        hints,
-      'oklch':        oklch,
-      'rgb':          { 'b': b, 'g': g, 'r': r },
-      'sourceFormat': sourceFormat
-    };
+    const result = ColorRecordOrigin.resolve(origin?.sourceFormat ?? sourceFormat).write(
+      clamp01.apply(alpha),
+      `#${cleaned.slice(0, 6).toLowerCase()}`,
+      oklch,
+      RgbInterfaceTypeEntity.create({ 'b': b, 'g': g, 'r': r }),
+      hints === undefined ? undefined : { 'hints': hints }
+    );
+    return result;
   }
 
   /**
@@ -264,11 +311,12 @@ class ColorRecordFactory {
     h: number,
     s: number,
     l: number,
-    options?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceType | undefined; 'sourceFormat'?: SourceFormatType; }
-  ): ColorRecordInterfaceType {
-    const { alpha = 1, hints, sourceFormat = 'hsl' } = options ?? {};
+    options?: { 'alpha'?: number; 'hints'?: ColorHintsInterfaceTypeEntity.Type | undefined; 'origin'?: ColorRecordInterfaceTypeEntity.Type | undefined; 'sourceFormat'?: string; }
+  ): ColorRecordInterfaceTypeEntity.Type {
+    const { alpha = 1, hints, origin, sourceFormat = 'hsl' } = options ?? {};
     const rgb = RawRgbConversion.fromHsl(h, s, l);
-    return this.fromRgb(rgb.r, rgb.g, rgb.b, { 'alpha': alpha, 'hints': hints, 'sourceFormat': sourceFormat });
+    const result = this.fromRgb(rgb.r, rgb.g, rgb.b, { 'alpha': alpha, 'hints': hints, 'origin': origin, 'sourceFormat': sourceFormat });
+    return result;
   }
 }
 

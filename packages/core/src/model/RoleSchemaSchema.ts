@@ -1,20 +1,11 @@
+import { ContrastPairInterfaceTypeEntity } from '../entities/ContrastPairInterfaceTypeEntity.ts';
+
 export const RoleSchemaSchema = {
   '$id':       'https://studnicky.dev/iridis/RoleSchema',
   'additionalProperties': false,
   'properties': {
     'contrastPairs': {
-      'items': {
-        'additionalProperties': false,
-        'properties': {
-          'algorithm':  { 'enum': ['wcag21', 'apca'], 'type': 'string' },
-          'background': { 'type': 'string' },
-          'foreground': { 'type': 'string' },
-          'maxRatio':   { 'maximum': 21, 'minimum': 1, 'type': 'number' },
-          'minRatio':   { 'maximum': 21, 'minimum': 1, 'type': 'number' }
-        },
-        'required': ['foreground', 'background', 'minRatio'],
-        'type':     'object'
-      },
+      'items': ContrastPairInterfaceTypeEntity.Schema,
       'type':  'array'
     },
     'description': { 'type': 'string' },

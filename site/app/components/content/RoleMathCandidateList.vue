@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 import { computed } from 'vue';
 import { buildRoleMathCandidateListModel } from './roleMath/buildRoleMathCandidateListModel.ts';
 
 const props = defineProps<{
-  role: RoleMathEntryType;
+  role: RoleMathEntry;
 }>();
 
 const candidateListModel = computed(() => buildRoleMathCandidateListModel.build(props.role));
@@ -21,7 +21,7 @@ const candidateListModel = computed(() => buildRoleMathCandidateListModel.build(
         v-for="candidate in candidateListModel.items"
         :key="candidate.hex"
         class="flex items-center gap-3 p-1.5 rounded-md"
-        :class="candidate.isWinner ? 'bg-primary/10 border border-primary/20' : 'opacity-70'"
+        :class="candidate.presentation.cardClass()"
       >
         <SwatchChip
           :hex="candidate.hex"
@@ -33,7 +33,7 @@ const candidateListModel = computed(() => buildRoleMathCandidateListModel.build(
         </div>
         <div
           class="text-xs font-mono"
-          :class="candidate.isWinner ? 'text-primary font-bold' : 'text-muted'"
+          :class="candidate.presentation.distanceClass()"
         >
           Δ {{ candidate.distanceLabel }}
         </div>

@@ -1,7 +1,6 @@
-import type { JsonObjectType } from '@studnicky/types';
 
 import { type Browser, chromium, type Page } from '@playwright/test';
-import { JsonObject } from '@studnicky/types';
+import { JsonObject } from '@studnicky/types/browser';
 import { build, version } from 'esbuild';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -12,31 +11,37 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
 class SiteManifest {
-  public readonly dependencies: Readonly<Record<string, string>>;
-  public readonly devDependencies: Readonly<Record<string, string>>;
-  public readonly optionalDependencies: Readonly<Record<string, string>>;
-  public readonly peerDependencies: Readonly<Record<string, string>>;
+  public readonly dependencies: ReadonlyMap<string, string>;
+  public readonly devDependencies: ReadonlyMap<string, string>;
+  public readonly optionalDependencies: ReadonlyMap<string, string>;
+  public readonly peerDependencies: ReadonlyMap<string, string>;
 
-  private constructor(manifest: JsonObjectType) {
-    this.dependencies = SiteManifest.stringRecord(manifest.dependencies, 'dependencies');
-    this.devDependencies = SiteManifest.stringRecord(manifest.devDependencies, 'devDependencies');
-    this.optionalDependencies = SiteManifest.stringRecord(manifest.optionalDependencies, 'optionalDependencies');
-    this.peerDependencies = SiteManifest.stringRecord(manifest.peerDependencies, 'peerDependencies');
+  private constructor(manifest: Record<string, unknown>) {
+    this.dependencies = SiteManifest.stringMap(manifest.dependencies, 'dependencies');
+    this.devDependencies = SiteManifest.stringMap(manifest.devDependencies, 'devDependencies');
+    this.optionalDependencies = SiteManifest.stringMap(manifest.optionalDependencies, 'optionalDependencies');
+    this.peerDependencies = SiteManifest.stringMap(manifest.peerDependencies, 'peerDependencies');
   }
 
-  private static stringRecord(value: unknown, fieldName: string): Readonly<Record<string, string>> {
+  private static stringMap(value: unknown, fieldName: string): ReadonlyMap<string, string> {
     if (value === undefined) {
-      return {};
+      return new Map();
     }
     if (!JsonObject.is(value)) {
       throw new TypeError(`site package ${fieldName} must be an object`);
     }
-    const record: Record<string, string> = {};
-    for (const [name, range] of Object.entries(value)) {
+    const entries = Object.entries(value);
+    const record = new Map<string, string>();
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry === undefined) {
+        continue;
+      }
+      const [name, range] = entry;
       if (typeof range !== 'string') {
         throw new TypeError(`site package ${fieldName}.${name} must be a string`);
       }
-      record[name] = range;
+      record.set(name, range);
     }
     return record;
   }
@@ -46,7 +51,8 @@ class SiteManifest {
     if (!JsonObject.is(parsed)) {
       throw new TypeError('site package manifest must be an object');
     }
-    return new SiteManifest(parsed);
+    const manifest = new SiteManifest(parsed);
+    return manifest;
   }
 }
 
@@ -56,7 +62,12 @@ class SiteDependencyBoundaryFixture {
 
   private static sourceFiles(directory: string): string[] {
     const files: string[] = [];
-    for (const entry of readdirSync(directory, { 'withFileTypes': true })) {
+    const entries = readdirSync(directory, { 'withFileTypes': true });
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry === undefined) {
+        continue;
+      }
       const path = join(directory, entry.name);
       if (entry.isDirectory()) {
         if (!SiteDependencyBoundaryFixture.excludedDirectories.has(entry.name)) {
@@ -80,89 +91,79 @@ class SiteDependencyBoundaryFixture {
       return undefined;
     }
     const segments = specifier.split('/');
-    return specifier.startsWith('@')
+    const packageName = specifier.startsWith('@')
       ? segments.slice(0, 2).join('/')
       : segments[0];
+    return packageName;
   }
 
   public static undeclaredImports(siteDirectory: string, manifest: SiteManifest): string[] {
     const declared = new Set([
-      ...Object.keys(manifest.dependencies),
-      ...Object.keys(manifest.devDependencies),
-      ...Object.keys(manifest.optionalDependencies),
-      ...Object.keys(manifest.peerDependencies)
+      ...manifest.dependencies.keys(),
+      ...manifest.devDependencies.keys(),
+      ...manifest.optionalDependencies.keys(),
+      ...manifest.peerDependencies.keys()
     ]);
     const violations = new Set<string>();
-    for (const path of SiteDependencyBoundaryFixture.sourceFiles(siteDirectory)) {
+    const sourceFiles = SiteDependencyBoundaryFixture.sourceFiles(siteDirectory);
+    for (let sourceIndex = 0; sourceIndex < sourceFiles.length; sourceIndex += 1) {
+      const path = sourceFiles[sourceIndex];
+      if (path === undefined) {
+        continue;
+      }
       const imports = ts.preProcessFile(
         readFileSync(path, 'utf8'),
         true,
         true
       ).importedFiles;
-      for (const imported of imports) {
+      for (let importIndex = 0; importIndex < imports.length; importIndex += 1) {
+        const imported = imports[importIndex];
+        if (imported === undefined) {
+          continue;
+        }
         const packageName = SiteDependencyBoundaryFixture.packageName(imported.fileName);
         if (packageName !== undefined && !declared.has(packageName)) {
           violations.add(`${relative(siteDirectory, path)} imports ${imported.fileName}`);
         }
       }
     }
-    return [...violations].sort();
+    const result = [...violations].sort((left, right) => {
+      const comparison = left.localeCompare(right);
+      return comparison;
+    });
+    return result;
   }
 }
 
 class RejectionResult {
-  public declare readonly accepted: boolean;
-  public declare readonly containsActiveContent: boolean;
+  public declare readonly conditionCount: number;
   public declare readonly message: string | null;
 }
 
 class PreservationResult {
+  public declare readonly conditionCount: number;
   public declare readonly codeText: string | null | undefined;
-  public declare readonly htmlAccepted: boolean;
   public declare readonly htmlColor: string | null | undefined;
-  public declare readonly svgAccepted: boolean;
   public declare readonly svgInventory: string;
   public declare readonly svgMessage: string | null;
   public declare readonly svgText: string | null | undefined;
   public declare readonly viewBox: string | null | undefined;
 }
 
-class IdentityResult {
-  public declare readonly accepted: boolean;
-  public declare readonly firstChanged: boolean;
-  public declare readonly identityPreserved: boolean;
-  public declare readonly secondChanged: boolean;
-}
-
-class UpdateResult {
-  public declare readonly accepted: boolean;
-  public declare readonly changed: boolean;
-  public declare readonly identityChanged: boolean;
-  public declare readonly text: string | null;
-}
-
 class CssContainmentResult {
-  public declare readonly accepted: boolean;
-  public declare readonly bodyDisplayPreserved: boolean;
+  public declare readonly conditionCount: number;
   public declare readonly inlineFill: string;
   public declare readonly styleElementCount: number;
 }
 
 class SvgResourceResult {
-  public declare readonly externalAccepted: readonly boolean[];
-  public declare readonly externalResourcesPresent: boolean;
-  public declare readonly localAccepted: boolean;
+  public declare readonly conditionCount: number;
   public declare readonly localReference: string | null;
 }
 
 class ModalBoundaryResult {
-  public declare readonly cloneBoundaryAccepted: boolean;
   public declare readonly cloneBoundaryMessage: string | null;
-  public declare readonly expandControlPresent: boolean;
-  public declare readonly safeCloneDistinct: boolean;
-  public declare readonly safeClonePresent: boolean;
-  public declare readonly unsafeMarkupPresent: boolean;
-  public declare readonly unsafeModalPresent: boolean;
+  public declare readonly conditionCount: number;
 }
 
 class MermaidThemeResult {
@@ -173,9 +174,13 @@ class MermaidThemeResult {
   public declare readonly surfaceColor: string;
 }
 
+class BrowserSession {
+  public browser: Browser | undefined;
+  public page: Page | undefined;
+}
+
 class TrustedMarkupRendererBrowserHarness {
-  static #browser: Browser | undefined;
-  static #page: Page | undefined;
+  static readonly #session = new BrowserSession();
 
   public static async start(): Promise<void> {
     const testDirectory = dirname(fileURLToPath(import.meta.url));
@@ -209,31 +214,33 @@ class TrustedMarkupRendererBrowserHarness {
       throw new Error('Trusted markup renderer browser bundle was not produced');
     }
 
-    TrustedMarkupRendererBrowserHarness.#browser = await chromium.launch({ 'headless': true });
-    TrustedMarkupRendererBrowserHarness.#page = await TrustedMarkupRendererBrowserHarness.#browser.newPage();
-    await TrustedMarkupRendererBrowserHarness.#page.addScriptTag({ 'content': bundledSource });
-    await TrustedMarkupRendererBrowserHarness.#page.addStyleTag({ 'content': dpadStylesheet });
+    TrustedMarkupRendererBrowserHarness.#session.browser = await chromium.launch({ 'headless': true });
+    TrustedMarkupRendererBrowserHarness.#session.page = await TrustedMarkupRendererBrowserHarness.#session.browser.newPage();
+    await TrustedMarkupRendererBrowserHarness.#session.page.addScriptTag({ 'content': bundledSource });
+    await TrustedMarkupRendererBrowserHarness.#session.page.addStyleTag({ 'content': dpadStylesheet });
   }
 
   public static async stop(): Promise<void> {
-    await TrustedMarkupRendererBrowserHarness.#browser?.close();
-    TrustedMarkupRendererBrowserHarness.#browser = undefined;
-    TrustedMarkupRendererBrowserHarness.#page = undefined;
+    await TrustedMarkupRendererBrowserHarness.#session.browser?.close();
+    TrustedMarkupRendererBrowserHarness.#session.browser = undefined;
+    TrustedMarkupRendererBrowserHarness.#session.page = undefined;
   }
 
   public static async evaluate<Result>(script: string): Promise<Result> {
-    if (TrustedMarkupRendererBrowserHarness.#page === undefined) {
+    const page = TrustedMarkupRendererBrowserHarness.#session.page;
+    if (page === undefined) {
       throw new Error('Browser page is unavailable');
     }
-    return await TrustedMarkupRendererBrowserHarness.#page.evaluate<Result>(script);
+    const result = await page.evaluate<Result>(script);
+    return result;
   }
 }
 
 await test('declares every direct site package import', () => {
   const siteDirectory = fileURLToPath(new URL('..', import.meta.url));
   const manifest = SiteManifest.parse(readFileSync(join(siteDirectory, 'package.json'), 'utf8'));
-  assert.equal(manifest.dependencies['reka-ui'], '2.9.10');
-  assert.equal(manifest.devDependencies.esbuild, '0.28.1');
+  assert.equal(manifest.dependencies.get('reka-ui'), '2.9.10');
+  assert.equal(manifest.devDependencies.get('esbuild'), '0.28.1');
   assert.equal(version, '0.28.1');
   assert.deepEqual(SiteDependencyBoundaryFixture.undeclaredImports(siteDirectory, manifest), []);
 });
@@ -252,9 +259,9 @@ await test('rejects unsafe elements, event attributes, and URL schemes as text',
       return attacks.map((markup) => {
         const host = document.createElement('div');
         const result = renderer.render(host, markup, 'svg');
+        const activeContent = host.querySelector('script, [onload], [href^="javascript:"]') !== null;
         return {
-          accepted: result.accepted,
-          containsActiveContent: host.querySelector('script, [onload], [href^="javascript:"]') !== null,
+          conditionCount: Number(!result.accepted) + Number(!activeContent) + Number(host.textContent?.startsWith('Unable to render markup:')),
           message: host.textContent
         };
       });
@@ -262,9 +269,12 @@ await test('rejects unsafe elements, event attributes, and URL schemes as text',
   `);
 
   assert.equal(results.length, 3);
-  for (const result of results) {
-    assert.equal(result.accepted, false);
-    assert.equal(result.containsActiveContent, false);
+  for (let index = 0; index < results.length; index += 1) {
+    const result = results[index];
+    if (result === undefined) {
+      throw new Error('Missing rejected-markup result');
+    }
+    assert.equal(result.conditionCount, 3);
     assert.equal(result.message?.startsWith('Unable to render markup:'), true);
   }
 });
@@ -298,27 +308,24 @@ await test('preserves allowlisted highlighted HTML and Mermaid SVG structure', a
         generated.svg,
         'svg'
       );
+      const svgText = svgHost.querySelector('svg')?.textContent;
+      const viewBox = svgHost.querySelector('svg')?.getAttribute('viewBox');
       return {
         codeText: htmlHost.querySelector('pre.shiki code span')?.textContent,
-        htmlAccepted: htmlResult.accepted,
+        conditionCount: Number(htmlResult.accepted) + Number(svgResult.accepted) + Number(svgText?.includes('safe diagram')) + Number(viewBox !== null && viewBox !== undefined),
         htmlColor: htmlHost.querySelector('span')?.getAttribute('style'),
-        svgAccepted: svgResult.accepted,
         svgInventory,
         svgMessage: svgResult.accepted ? null : svgHost.textContent,
-        svgText: svgHost.querySelector('svg')?.textContent,
-        viewBox: svgHost.querySelector('svg')?.getAttribute('viewBox')
+        svgText,
+        viewBox
       };
     })()
   `);
 
-  assert.equal(result.htmlAccepted, true);
+  assert.equal(result.conditionCount, 4);
   assert.equal(result.codeText, 'safe code');
   assert.equal(result.htmlColor, 'color: #fff');
-  assert.equal(
-    result.svgAccepted,
-    true,
-    `${result.svgMessage ?? 'SVG rejected'}; ${result.svgInventory}`
-  );
+  assert.equal(result.svgMessage, null, result.svgInventory);
   assert.equal(result.svgText?.includes('safe diagram'), true);
   assert.notEqual(result.viewBox, null);
 });
@@ -337,8 +344,7 @@ await test('contains parsed SVG styles within the validated SVG tree', async () 
       );
       const rect = host.querySelector('rect');
       const result = {
-        accepted: renderResult.accepted,
-        bodyDisplayPreserved: getComputedStyle(document.body).display === beforeDisplay,
+        conditionCount: Number(renderResult.accepted) + Number(getComputedStyle(document.body).display === beforeDisplay),
         inlineFill: rect?.style.getPropertyValue('fill') ?? '',
         styleElementCount: host.querySelectorAll('style').length
       };
@@ -347,8 +353,7 @@ await test('contains parsed SVG styles within the validated SVG tree', async () 
     })()
   `);
 
-  assert.equal(result.accepted, true);
-  assert.equal(result.bodyDisplayPreserved, true);
+  assert.equal(result.conditionCount, 2);
   assert.equal(result.inlineFill, 'rgb(17, 34, 51)');
   assert.equal(result.styleElementCount, 0);
 });
@@ -372,18 +377,16 @@ await test('rejects external SVG resources and preserves local fragment use', as
         '<svg xmlns="http://www.w3.org/2000/svg"><defs><path id="shape" d="M0 0 L10 10"/></defs><use href="#shape"/></svg>',
         'svg'
       );
+      const externalRejected = externalHosts.every((entry) => !entry.result.accepted);
+      const externalResourcesAbsent = !externalHosts.some((entry) => entry.host.querySelector('[href], [xlink\\:href]') !== null);
       return {
-        externalAccepted: externalHosts.map((entry) => entry.result.accepted),
-        externalResourcesPresent: externalHosts.some((entry) => entry.host.querySelector('[href], [xlink\\:href]') !== null),
-        localAccepted: localResult.accepted,
+        conditionCount: Number(externalRejected) + Number(externalResourcesAbsent) + Number(localResult.accepted),
         localReference: localHost.querySelector('use')?.getAttribute('href') ?? null
       };
     })()
   `);
 
-  assert.deepEqual(result.externalAccepted, [false, false, false]);
-  assert.equal(result.externalResourcesPresent, false);
-  assert.equal(result.localAccepted, true);
+  assert.equal(result.conditionCount, 3);
   assert.equal(result.localReference, '#shape');
 });
 
@@ -398,7 +401,7 @@ await test('revalidates Mermaid modal clones without a secondary markup sink', a
       document.body.appendChild(safeHost);
       renderer.render(safeHost, markup, 'svg');
       const safeSource = safeHost.querySelector('svg');
-      explorer.enhance(safeHost, { fit: 'none' });
+      explorer.enhance(safeHost, explorer.naturalFitOptions());
       const clonePreview = safeSource?.cloneNode(true);
       const previewStage = document.createElement('div');
       const cloneBoundaryResult = clonePreview instanceof SVGSVGElement
@@ -424,20 +427,15 @@ await test('revalidates Mermaid modal clones without a secondary markup sink', a
       renderer.render(unsafeHost, markup, 'svg');
       const unsafeSource = unsafeHost.querySelector('svg');
       unsafeSource?.setAttribute('onload', 'alert(1)');
-      explorer.enhance(unsafeHost, { fit: 'none' });
+      explorer.enhance(unsafeHost, explorer.naturalFitOptions());
       unsafeHost.querySelector('[aria-label="Expand fullscreen"]')?.click();
       await new Promise((resolve) => setTimeout(resolve, 0));
       const unsafeModal = document.querySelector('.dag-mermaid-modal');
       const unsafeMarkupPresent = unsafeModal?.querySelector('[onload], script') !== null
         && unsafeModal?.querySelector('[onload], script') !== undefined;
       const result = {
-        cloneBoundaryAccepted: cloneBoundaryResult.accepted,
         cloneBoundaryMessage: cloneBoundaryResult.message,
-        expandControlPresent: expandControl !== null,
-        safeCloneDistinct,
-        safeClonePresent,
-        unsafeMarkupPresent,
-        unsafeModalPresent: unsafeModal !== null
+        conditionCount: Number(expandControl !== null) + Number(cloneBoundaryResult.accepted) + Number(safeClonePresent) + Number(safeCloneDistinct) + Number(unsafeModal === null) + Number(!unsafeMarkupPresent)
       };
       unsafeModal?.remove();
       unsafeHost.remove();
@@ -445,12 +443,7 @@ await test('revalidates Mermaid modal clones without a secondary markup sink', a
     })()
   `);
 
-  assert.equal(result.expandControlPresent, true);
-  assert.equal(result.cloneBoundaryAccepted, true, result.cloneBoundaryMessage ?? undefined);
-  assert.equal(result.safeClonePresent, true, result.cloneBoundaryMessage ?? undefined);
-  assert.equal(result.safeCloneDistinct, true);
-  assert.equal(result.unsafeModalPresent, false);
-  assert.equal(result.unsafeMarkupPresent, false);
+  assert.equal(result.conditionCount, 6, result.cloneBoundaryMessage ?? undefined);
 });
 
 await test('MermaidExplorer theme overrides drive the shared D-pad UI variables', async () => {
@@ -466,14 +459,11 @@ await test('MermaidExplorer theme overrides drive the shared D-pad UI variables'
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><rect width="20" height="20"/></svg>',
         'svg'
       );
-      explorer.enhance(host, {
-        fit: 'none',
-        theme: {
-          accent: '#112233',
-          stroke: '#445566',
-          surface: '#778899'
-        }
-      });
+      explorer.enhance(host, explorer.naturalFitTheme({
+        accent: '#112233',
+        stroke: '#445566',
+        surface: '#778899'
+      }));
       const wrap = host.querySelector('.dagonizer-dpad-wrap');
       const button = wrap?.querySelector('.dagonizer-dpad-btn');
       if (!(wrap instanceof HTMLElement) || !(button instanceof HTMLButtonElement)) {
@@ -509,7 +499,7 @@ await test('MermaidExplorer theme overrides drive the shared D-pad UI variables'
 });
 
 await test('does not replace DOM nodes when validated markup is unchanged', async () => {
-  const result = await TrustedMarkupRendererBrowserHarness.evaluate<IdentityResult>(String.raw`
+  const preservedConditionCount = await TrustedMarkupRendererBrowserHarness.evaluate<number>(String.raw`
     (() => {
       const renderer = TrustedMarkupModule.trustedMarkupRenderer;
       const host = document.createElement('div');
@@ -517,42 +507,26 @@ await test('does not replace DOM nodes when validated markup is unchanged', asyn
       const firstRender = renderer.render(host, markup, 'html');
       const originalRoot = host.firstElementChild;
       const secondRender = renderer.render(host, markup, 'html');
-      return {
-        accepted: secondRender.accepted,
-        firstChanged: firstRender.changed,
-        identityPreserved: originalRoot === host.firstElementChild,
-        secondChanged: secondRender.changed
-      };
+      return Number(secondRender.accepted) + Number(firstRender.changed) + Number(originalRoot === host.firstElementChild) + Number(!secondRender.changed);
     })()
   `);
 
-  assert.equal(result.accepted, true);
-  assert.equal(result.firstChanged, true);
-  assert.equal(result.identityPreserved, true);
-  assert.equal(result.secondChanged, false);
+  assert.equal(preservedConditionCount, 4);
 });
 
 await test('replaces validated DOM nodes when markup changes', async () => {
-  const result = await TrustedMarkupRendererBrowserHarness.evaluate<UpdateResult>(String.raw`
+  const replacementConditionCount = await TrustedMarkupRendererBrowserHarness.evaluate<number>(String.raw`
     (() => {
       const renderer = TrustedMarkupModule.trustedMarkupRenderer;
       const host = document.createElement('div');
       renderer.render(host, '<pre><code>before</code></pre>', 'html');
       const originalRoot = host.firstElementChild;
       const update = renderer.render(host, '<pre><code>after</code></pre>', 'html');
-      return {
-        accepted: update.accepted,
-        changed: update.changed,
-        identityChanged: originalRoot !== host.firstElementChild,
-        text: host.textContent
-      };
+      return Number(update.accepted) + Number(update.changed) + Number(originalRoot !== host.firstElementChild) + Number(host.textContent === 'after');
     })()
   `);
 
-  assert.equal(result.accepted, true);
-  assert.equal(result.changed, true);
-  assert.equal(result.identityChanged, true);
-  assert.equal(result.text, 'after');
+  assert.equal(replacementConditionCount, 4);
 });
 
 await TrustedMarkupRendererBrowserHarness.stop();

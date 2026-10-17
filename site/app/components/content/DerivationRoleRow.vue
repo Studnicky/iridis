@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { HueAlgorithmType } from '~/composables/types/colorDerivation.ts';
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
 defineProps<{
   algorithmOptions: readonly { label: string; value: HueAlgorithmType.Type }[];
-  role: RoleMathEntryType;
+  role: RoleMathEntry;
   variantItems: readonly { label: string; value: number }[];
   variantLabel: string;
 }>();

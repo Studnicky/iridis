@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AliasColorType } from '~/theme/types/aliasColor.ts';
+import type { AliasColorEntity } from '~/theme/entities/AliasColorEntity.ts';
 
 import { computed } from 'vue';
 
@@ -10,7 +10,7 @@ import { buildScaleCardModel } from './scale/buildScaleCardModel.ts';
  * One semantic alias's full 50→950 ramp plus sample components in that color.
  * Pure content — rendered by PaletteCarousel's grid, one card per alias.
  */
-const props = defineProps<{ alias: { key: AliasColorType.Type; label: string } }>();
+const props = defineProps<{ alias: { key: AliasColorEntity.Type; label: string } }>();
 
 const { roles, scales } = useIridis();
 

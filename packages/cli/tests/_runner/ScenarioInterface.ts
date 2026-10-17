@@ -1,9 +1,11 @@
-import type { ScenarioKindType } from './ScenarioKindType.ts';
+interface ScenarioAssertionOptionsInterface<TOutput> {
+  readonly 'error'?: Error;
+  readonly 'output'?: TOutput;
+}
 
 /** One row of a {@link import('./ScenarioRunner.ts').ScenarioRunner} coverage matrix. */
 export interface ScenarioInterface<TInput, TOutput> {
-  assert(output: TOutput | undefined, error: Error | undefined): void | Promise<void>;
+  assert(options: ScenarioAssertionOptionsInterface<TOutput>): void | Promise<void>;
   readonly 'input': TInput;
-  readonly 'kind':  ScenarioKindType;
-  readonly 'name':  string;
+  readonly 'name': string;
 }

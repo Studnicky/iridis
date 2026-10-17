@@ -1,6 +1,6 @@
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 
-import type { EnforceOptionsInterfaceType } from './types/index.ts';
+import type { EnforceOptionsInterface } from './interfaces/EnforceOptionsInterface.ts';
 
 import { enforceContrast } from './EnforceContrast.ts';
 import { evaluate } from './Evaluate.ts';
@@ -8,13 +8,14 @@ import { evaluate } from './Evaluate.ts';
 /** Evaluates a two-stop curve at `t`, then re-validates the frame's contrast pairs. */
 class EvaluateEnforced {
   static apply(
-    from: PaletteInterfaceType,
-    to: PaletteInterfaceType,
+    from: PaletteInterfaceTypeEntity.Type,
+    to: PaletteInterfaceTypeEntity.Type,
     t: number,
-    options: EnforceOptionsInterfaceType
-  ): PaletteInterfaceType {
+    options: EnforceOptionsInterface
+  ): PaletteInterfaceTypeEntity.Type {
     const frame = evaluate(from, to, t, options);
-    return enforceContrast(frame, options.contrastPairs, options.level ?? 'aa');
+    const result = enforceContrast(frame, options.contrastPairs, options.enforcer);
+    return result;
   }
 }
 

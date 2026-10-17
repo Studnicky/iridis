@@ -7,10 +7,12 @@
  */
 
 import assert from 'node:assert/strict';
-import { register } from 'node:module';
+import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 
-register('./fixtures/NuxtImportsLoader.mjs', import.meta.url);
+import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
+
+registerHooks(NuxtImportsLoader);
 
 const BalancedWrapWidthLatchTestModules = Object.freeze({
   'BALANCED_WRAP_CONSTANTS': (await import('../app/composables/constants/BalancedWrapConstants.ts')).BALANCED_WRAP_CONSTANTS,
@@ -64,7 +66,8 @@ await test('container width jittering across a packing boundary does not change 
 
   const rawReadings = [207, 209, 207, 209, 207, 209, 207];
   const rowCounts: number[] = [];
-  for (const rawReading of rawReadings) {
+  for (let index = 0; index < rawReadings.length; index += 1) {
+    const rawReading = rawReadings[index]!;
     const latchedWidth = accept(rawReading);
     rowCounts.push(BalancedWrapWidthLatchTestModules.packBalancedRows(widths, latchedWidth, gap).length);
   }

@@ -1,106 +1,83 @@
-import type {
-  PaletteStateInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '@studnicky/iridis';
+import type { PaletteStateInterface, TaskInterface } from '@studnicky/iridis';
 
+import {
+  InputInterfaceTypeEntity,
+  Metadata,
+  RoleProvenanceInterfaceTypeEntity,
+  RoleSchemaInterfaceTypeEntity,
+  TaskManifestInterfaceTypeEntity
+} from '@studnicky/iridis';
 import { iridisVocab, rdfPlugin } from '@studnicky/iridis-rdf';
 import { Engine }    from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
-import { DataFactory, Store } from 'n3';
+import { DataFactory, Parser, Store } from 'n3';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 class ProvenanceFixtureTask implements TaskInterface {
   readonly 'name' = 'test:install-provenance';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Install controlled canonical role provenance for RDF annotation tests',
     'name':        'test:install-provenance',
-    'phase':       undefined,
     'reads':       ['roles'],
-    'requires':    undefined,
-    'writes':      ['metadata[\'core:roleProvenance\']']
-  };
+    'writes':      ["metadata['core:roleProvenance']"]
+  });
 
   run(state: PaletteStateInterface): void {
     const derived = state.roles.derived;
     if (derived === undefined) {
       throw new Error('derived role must resolve before provenance installation');
     }
-    state.metadata['core:roleProvenance'] = {
-      'derived': {
+    const provenance = new Map([
+      ['derived', RoleProvenanceInterfaceTypeEntity.create({
         'adjustments': [{
           'afterHex':  derived.hex,
           'beforeHex': '#010203',
           'operation': 'role-range'
         }],
         'origin': 'derived'
-      },
-      'stated': {
+      })],
+      ['stated', RoleProvenanceInterfaceTypeEntity.create({
         'adjustments': [],
         'origin':      'stated'
-      }
-    };
+      })]
+    ]);
+    Metadata.writeRoleProvenance(state.metadata, provenance);
   }
 }
 
 class RdfProvenanceFixture {
   static run(): Store {
     const engine = new Engine();
-    for (const task of coreTasks) {engine.tasks.register(task);}
+    for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
+      const task = coreTasks.at(taskIndex);
+      if (task !== undefined) {
+        engine.tasks.register(task);
+      }
+    }
     engine.tasks.register(new ProvenanceFixtureTask());
     engine.adopt(rdfPlugin);
     engine.pipeline(['intake:hex', 'resolve:roles', 'test:install-provenance', 'reason:annotate']);
 
-    const state = engine.run({
-      'bypass':    undefined,
-      'colors':    ['#a898c3', '#10161f'],
-      'contrast':  undefined,
-      'emit':      undefined,
-      'maxColors': undefined,
-      'metadata':  undefined,
-      'roles': {
-        'contrastPairs': undefined,
-        'description':   undefined,
-        'name':          'rdf-provenance',
+    const state = engine.run(InputInterfaceTypeEntity.create({
+      'colors': ['#a898c3', '#10161f'],
+      'roles': RoleSchemaInterfaceTypeEntity.create({
+        'name': 'rdf-provenance',
         'roles': [
-          {
-            'chromaRange':    undefined,
-            'derivedFrom':    undefined,
-            'description':    undefined,
-            'hue':            undefined,
-            'hueClamp':       undefined,
-            'hueOffset':      undefined,
-            'intent':         undefined,
-            'lightnessRange': undefined,
-            'name':           'stated',
-            'required':       true
-          },
-          {
-            'chromaRange':    undefined,
-            'derivedFrom':    undefined,
-            'description':    undefined,
-            'hue':            undefined,
-            'hueClamp':       undefined,
-            'hueOffset':      undefined,
-            'intent':         undefined,
-            'lightnessRange': undefined,
-            'name':           'derived',
-            'required':       true
-          }
+          { 'name': 'stated', 'required': true },
+          { 'name': 'derived', 'required': true }
         ]
-      },
-      'runtime': undefined
-    });
-    const graph = state.outputs['rdf:reasoningGraph'];
-    if (!(graph instanceof Store)) {
-      throw new Error('reason:annotate must emit an RDF Store');
+      })
+    }));
+    const serializedGraph = state.outputs['rdf:reasoningGraph'];
+    if (typeof serializedGraph !== 'string') {
+      throw new Error('reason:annotate must emit an N-Quads string');
     }
+    const graph = new Store(new Parser({ 'format': 'N-Quads' }).parse(serializedGraph));
     return graph;
   }
 }
-
 
 void test('reason:annotate emits canonical stated and derived provenance without legacy metadata', () => {
   const graph = RdfProvenanceFixture.run();
@@ -124,7 +101,8 @@ void test('reason:annotate emits canonical stated and derived provenance without
 
   const adjustments = graph.getQuads(derived, hasAdjustment, null, null);
   assert.strictEqual(adjustments.length, 1, 'derived role links to its canonical adjustment');
-  const adjustment = adjustments[0]!.object;
+  const adjustment = adjustments[0]?.object;
+  assert.ok(adjustment !== undefined, 'derived role adjustment is present');
   assert.strictEqual(
     graph.countQuads(derived, origin, DataFactory.literal('derived'), null),
     1,

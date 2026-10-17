@@ -25,7 +25,7 @@
  * browsers' own accessibility/CVD-simulation tools use for real-time filters.
  * All four filters are predefined so toggling any combination is instant.
  */
-import type { CvdMatrixInterfaceType } from '@studnicky/iridis-contrast';
+import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 
 import { cvdMatrices } from '@studnicky/iridis-contrast';
 import { computed } from 'vue';
@@ -37,7 +37,7 @@ const { cvdPreviewTypes } = useIridis();
 const SRGB_GAMMA = 2.2;
 
 /** Pads a row-major 3x3 RGB matrix into feColorMatrix's 4x5 grid (alpha untouched). */
-function toFeColorMatrixValues(m: CvdMatrixInterfaceType): string {
+function toFeColorMatrixValues(m: CvdMatrixInterfaceTypeEntity.Type): string {
   const v = m.matrix;
   return [
     v[0], v[1], v[2], 0, 0,

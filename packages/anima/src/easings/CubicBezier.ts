@@ -1,51 +1,59 @@
-import type { EasingFunctionType } from '../types/index.ts';
+import type { EasingFunctionInterface } from '../interfaces/EasingFunctionInterface.ts';
 
 const NEWTON_ITERATIONS = 4;
 
 class CubicBezier {
   private static coefficientA(first: number, second: number): number {
-    return 1.0 - 3.0 * second + 3.0 * first;
+    const result = 1.0 - 3.0 * second + 3.0 * first;
+    return result;
   }
 
   private static coefficientB(first: number, second: number): number {
-    return 3.0 * second - 6.0 * first;
+    const result = 3.0 * second - 6.0 * first;
+    return result;
   }
 
   private static coefficientC(first: number): number {
-    return 3.0 * first;
+    const result = 3.0 * first;
+    return result;
   }
 
-  private static calculate(t: number, first: number, second: number): number {
-    return ((CubicBezier.coefficientA(first, second) * t + CubicBezier.coefficientB(first, second)) * t + CubicBezier.coefficientC(first)) * t;
+  private static calculate(progress: number, first: number, second: number): number {
+    const result = ((CubicBezier.coefficientA(first, second) * progress + CubicBezier.coefficientB(first, second)) * progress + CubicBezier.coefficientC(first)) * progress;
+    return result;
   }
 
-  private static slope(t: number, first: number, second: number): number {
-    return 3.0 * CubicBezier.coefficientA(first, second) * t * t + 2.0 * CubicBezier.coefficientB(first, second) * t + CubicBezier.coefficientC(first);
+  private static slope(progress: number, first: number, second: number): number {
+    const result = 3.0 * CubicBezier.coefficientA(first, second) * progress * progress + 2.0 * CubicBezier.coefficientB(first, second) * progress + CubicBezier.coefficientC(first);
+    return result;
   }
 
-  /**
-   * Standard CSS-style cubic-bezier easing over control points (p1x, p1y) and
-   * (p2x, p2y), with the curve's endpoints pinned to (0,0) and (1,1). Solves
-   * for t given x via Newton-Raphson (falling back to the last guess if the
-   * slope degenerates), then evaluates y at that t.
-   */
-  static create(firstX: number, firstY: number, secondX: number, secondY: number): EasingFunctionType {
-    const solveTForX = (x: number): number => {
+  static create(firstX: number, firstY: number, secondX: number, secondY: number): EasingFunctionInterface {
+    const solveProgressForX = (x: number): number => {
       let guess = x;
       for (let iteration = 0; iteration < NEWTON_ITERATIONS; iteration += 1) {
         const slope = CubicBezier.slope(guess, firstX, secondX);
-        if (slope === 0) {return guess;}
+        if (slope === 0) {
+          return guess;
+        }
         const currentX = CubicBezier.calculate(guess, firstX, secondX) - x;
         guess -= currentX / slope;
       }
       return guess;
     };
-
-    return (t: number): number => {
-      if (t <= 0) {return 0;}
-      if (t >= 1) {return 1;}
-      return CubicBezier.calculate(solveTForX(t), firstY, secondY);
-    };
+    const result: EasingFunctionInterface = Object.freeze({
+      'apply': function apply(progress: number): number {
+        if (progress <= 0) {
+          return 0;
+        }
+        if (progress >= 1) {
+          return 1;
+        }
+        const y = CubicBezier.calculate(solveProgressForX(progress), firstY, secondY);
+        return y;
+      }
+    });
+    return result;
   }
 }
 

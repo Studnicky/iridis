@@ -10,7 +10,7 @@ import { STAGE_GROUPS } from '~/composables/stageGroups.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
 import { useThemePreset } from '~/composables/useThemePreset.ts';
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 
 /**
  * iridis × Nuxt UI. A compact hero, then the stage carousels reflecting the
@@ -39,7 +39,7 @@ watch(allDocs, (docs) => { if (docs) {registerDocumentTargets(docs);} }, { 'imme
 
 /** Theme-preset switcher options, derived from the THEMES registry so the list grows automatically as more themes are registered. */
 const { 'THEMES': THEMES, 'activeThemeKey': activeThemeKey } = useThemePreset();
-const themeOptions = computed(() => Object.values(THEMES).map((t) => ({ 'label': t.label, 'value': t.key })));
+const themeOptions = computed(() => Array.from(THEMES.values()).map((theme) => ({ 'label': theme.label, 'value': theme.key })));
 
 /** One local active-index per stage carousel — keyed by stage name (STAGE_GROUPS[].name). */
 const stageIndex = reactive<Record<string, number>>(
@@ -170,7 +170,7 @@ onBeforeUnmount(teardownRemainingDocumentScrollSpy);
 
 function goTo(targetId: string | undefined): void {
   if (!targetId) return;
-  send({ 'targetId': targetId, 'type': IridisUiActionType.NAVIGATE_TO_TARGET });
+  send(IridisUiEvent.navigateToTarget(targetId));
   if (remainingDocAnchorIds.value.includes(targetId)) {currentRemainingDocId.value = targetId;}
 }
 
@@ -280,7 +280,7 @@ function onDocsClick(e: MouseEvent): void {
             unchecked-icon="material-symbols:light-mode-rounded"
             checked-icon="material-symbols:dark-mode-rounded"
             :aria-label="framing === 'dark' ? 'Dark framing' : 'Light framing'"
-            @update:model-value="send({ framing: $event ? 'dark' : 'light', type: IridisUiActionType.SET_FRAMING })"
+            @update:model-value="send($event ? IridisUiEvent.setDarkFraming() : IridisUiEvent.setLightFraming())"
           />
           <span class="text-xs font-medium uppercase tracking-wide text-muted">Dark</span>
         </div>

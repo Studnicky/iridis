@@ -28,10 +28,10 @@ npm install @studnicky/iridis @studnicky/iridis-mui
 ```ts
 import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
 
-import { Engine, coreTasks } from '@studnicky/iridis';
-import { muiPlugin }         from '@studnicky/iridis-mui';
+import { Engine, coreTasks }          from '@studnicky/iridis';
+import { muiPlugin, type MuiOutputInterface } from '@studnicky/iridis-mui';
 
-export function generateMuiTheme(roleSchema: RoleSchemaInterfaceType) {
+export function generateMuiTheme(roleSchema: RoleSchemaInterfaceType): MuiOutputInterface {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(muiPlugin);
@@ -69,11 +69,11 @@ export function generateMuiTheme(roleSchema: RoleSchemaInterfaceType) {
 }
 ```
 
-`state.outputs['mui:theme']` is typed as `MuiOutputInterfaceType`:
+`state.outputs['mui:theme']` conforms to the root-exported `MuiOutputInterface`:
 
 | Field | Shape | Notes |
 |---|---|---|
-| `palette` | `Record<string, JsonValueType>` | The built `createTheme()` palette object. |
+| `palette` | `Record<string, JSONSchema7Type>` | The built `createTheme()` palette object. |
 | `config` | `string` | Source of an `export default { palette: {...} };` module, ready to spread into `createTheme()`. |
 
 ## Role mapping

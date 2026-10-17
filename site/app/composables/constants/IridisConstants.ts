@@ -1,5 +1,5 @@
-import type { ColorRecordInterfaceType } from '@studnicky/iridis';
-import type { GalleryAlgorithmType } from '@studnicky/iridis-image/types';
+import type { ColorRecordInterfaceTypeEntity } from '@studnicky/iridis';
+import type { GalleryAlgorithmTypeEntity } from '@studnicky/iridis-image';
 
 import { Tokens } from '../../theme/Tokens.ts';
 
@@ -23,10 +23,10 @@ export namespace IRIDIS_CONSTANTS {
   export const IMAGE_ENTRY_STAGES = ['intake:any', 'gallery:histogram', 'gallery:extractCandidates', 'gallery:extract'];
 
   /** Empty placeholder replaced by gallery:extractCandidates. */
-  export const EMPTY_CANDIDATE_COLORS: ColorRecordInterfaceType[] = [];
+  export const EMPTY_CANDIDATE_COLORS: ColorRecordInterfaceTypeEntity.Type[] = [];
 
   /** All supported clustering algorithms. */
-  export const ALL_CANDIDATE_ALGORITHM_NAMES: readonly GalleryAlgorithmType[] = ['median-cut', 'wu-quantize', 'k-means', 'delta-e'];
+  export const ALL_CANDIDATE_ALGORITHM_NAMES: readonly GalleryAlgorithmTypeEntity.Type[] = ['median-cut', 'wu-quantize', 'k-means', 'delta-e'];
 
   /** Total entries used to approximate a cumulative weighted histogram. */
   export const CUMULATIVE_HISTOGRAM_BUDGET = 1000;

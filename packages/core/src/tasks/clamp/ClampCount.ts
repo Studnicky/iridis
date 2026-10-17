@@ -1,22 +1,21 @@
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { LogBodyConfigEntity } from '@studnicky/logger/entities';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type {
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '../../types/index.ts';
 
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
 import { clusterMedianCut } from '../../math/ClusterMedianCut.ts';
 
 const DEFAULT_MAXIMUM_COLOR_COUNT = 64;
 
 /**
- * Pipeline task that caps `state.colors.length` at `input.maxColors`
- * (default 64) by running median-cut clustering when the limit is
- * exceeded. Skipped entirely when `input.bypass` is true, useful for
- * tests that need to assert against the raw intake set.
+ * Pipeline task that caps `state.colors.length` at `input.maximumColorCount`
+ * (default 64) by running median-cut clustering when the limit is exceeded.
+ * `Infinity` leaves the input color count unrestricted.
  *
  * Mutates `state.colors` in place rather than reassigning so other
  * tasks holding a reference (rare, but legal) see the new contents.
@@ -24,45 +23,45 @@ const DEFAULT_MAXIMUM_COLOR_COUNT = 64;
 class ClampCount implements TaskInterface {
   readonly 'name' = 'clamp:count';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
-    'description': 'Reduces state.colors to maxColors (default 64) via median-cut clustering when the limit is exceeded and bypass is not set.',
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+    'description': 'Reduces state.colors to maximumColorCount (default 64) via median-cut clustering when the limit is exceeded; Infinity preserves every input color.',
     'name':        'clamp:count',
-    'phase':       undefined,
-    'reads':       ['colors', 'input.maxColors', 'input.bypass'],
+    'reads':       ['colors', 'input.maximumColorCount'],
     'requires':    ['clusterMedianCut'],
     'writes':      ['colors']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    if (state.input.bypass === true) {
-      return;
+    let maximumColorCount = DEFAULT_MAXIMUM_COLOR_COUNT;
+    if (state.input.maximumColorCount !== undefined) {
+      maximumColorCount = state.input.maximumColorCount;
     }
 
-    const maximumColorCount = state.input.maxColors ?? DEFAULT_MAXIMUM_COLOR_COUNT;
+    if (maximumColorCount === Infinity) {
+      return;
+    }
 
     if (state.colors.length <= maximumColorCount) {
       return;
     }
 
     context.logger.info(
-      LogBody.create()
-        .component('ClampCount')
-        .operation('run')
-        .status(LOG_STATUS.PARTIAL)
-        .message('Reducing colors via clusterMedianCut')
-        .context({
+      LogBody.create(LogBodyConfigEntity.intake({
+        'component': 'ClampCount',
+        'context': {
           'from': state.colors.length,
           'to':   maximumColorCount
-        })
-        .build()
+        },
+        'message': 'Reducing colors via clusterMedianCut',
+        'operation': 'run',
+        'status': LOG_STATUS.PARTIAL
+      }))
     );
 
     const clustered = clusterMedianCut.apply(state.colors, maximumColorCount);
 
     state.colors.length = 0;
-    for (const c of clustered) {
-      state.colors.push(c);
-    }
+    state.colors.push(...clustered);
   }
 }
 

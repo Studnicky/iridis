@@ -1,52 +1,70 @@
-import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
+import type { ClusterStrategyInterface } from '@studnicky/iridis-image';
+
+import type { UploadedImage } from '~/composables/types/index.ts';
 
 export const buildUploadedImagePatchModel = class UploadedImagePatchModelBuilder {
-  public static buildAlgorithm(
-    image: UploadedImageInterfaceType,
-    algorithm: UploadedImageInterfaceType['algorithm']
-  ): UploadedImageInterfaceType {
-    return { ...image, 'algorithm': algorithm };
+  public static buildStrategy(
+    image: UploadedImage,
+    strategy: ClusterStrategyInterface
+  ): UploadedImage {
+    const result: UploadedImage = {
+      'candidates':            image.candidates,
+      'chromaRange':            image.chromaRange,
+      'deltaECap':              image.deltaECap,
+      'dominantColorRecords':   image.dominantColorRecords,
+      'harmonizeThreshold':     image.harmonizeThreshold,
+      'histogram':              image.histogram,
+      'histogramBits':          image.histogramBits,
+      'id':                     image.id,
+      'k':                      image.k,
+      'lightnessRange':         image.lightnessRange,
+      'name':                   image.name,
+      'selectedCandidateLabel': image.selectedCandidateLabel,
+      'source':                 image.source,
+      'strategy':               strategy
+    };
+    return result;
   }
 
   public static buildChromaRange(
-    image: UploadedImageInterfaceType,
-    chromaRange: UploadedImageInterfaceType['chromaRange']
-  ): UploadedImageInterfaceType {
+    image: UploadedImage,
+    chromaRange: UploadedImage['chromaRange']
+  ): UploadedImage {
     return { ...image, 'chromaRange': chromaRange };
   }
 
   public static buildDeltaECap(
-    image: UploadedImageInterfaceType,
-    deltaECap: UploadedImageInterfaceType['deltaECap']
-  ): UploadedImageInterfaceType {
+    image: UploadedImage,
+    deltaECap: UploadedImage['deltaECap']
+  ): UploadedImage {
     return { ...image, 'deltaECap': deltaECap };
   }
 
   public static buildHarmonizeThreshold(
-    image: UploadedImageInterfaceType,
-    harmonizeThreshold: UploadedImageInterfaceType['harmonizeThreshold']
-  ): UploadedImageInterfaceType {
+    image: UploadedImage,
+    harmonizeThreshold: UploadedImage['harmonizeThreshold']
+  ): UploadedImage {
     return { ...image, 'harmonizeThreshold': harmonizeThreshold };
   }
 
   public static buildHistogramBits(
-    image: UploadedImageInterfaceType,
-    histogramBits: UploadedImageInterfaceType['histogramBits']
-  ): UploadedImageInterfaceType {
+    image: UploadedImage,
+    histogramBits: UploadedImage['histogramBits']
+  ): UploadedImage {
     return { ...image, 'histogramBits': histogramBits };
   }
 
   public static buildK(
-    image: UploadedImageInterfaceType,
-    k: UploadedImageInterfaceType['k']
-  ): UploadedImageInterfaceType {
+    image: UploadedImage,
+    k: UploadedImage['k']
+  ): UploadedImage {
     return { ...image, 'k': k };
   }
 
   public static buildLightnessRange(
-    image: UploadedImageInterfaceType,
-    lightnessRange: UploadedImageInterfaceType['lightnessRange']
-  ): UploadedImageInterfaceType {
+    image: UploadedImage,
+    lightnessRange: UploadedImage['lightnessRange']
+  ): UploadedImage {
     return { ...image, 'lightnessRange': lightnessRange };
   }
 };

@@ -1,11 +1,4 @@
-import type { JsonObjectType } from '@studnicky/types';
-
-import type {
-  ApcaPairResultSetInterfaceType,
-  ContrastMetadataInterfaceType,
-  CvdResultSetInterfaceType,
-  WcagPairResultSetInterfaceType
-} from './types/augmentation.ts';
+import type { JSONSchema7Type } from 'json-schema';
 
 import { ApcaPairResultSetInterfaceTypeEntity } from './entities/ApcaPairResultSetInterfaceTypeEntity.ts';
 import { CvdResultSetInterfaceTypeEntity } from './entities/CvdResultSetInterfaceTypeEntity.ts';
@@ -13,34 +6,18 @@ import { WcagPairResultSetInterfaceTypeEntity } from './entities/WcagPairResultS
 
 class ContrastMetadataReader {
   static getContrastMetadata(
-    metadata: JsonObjectType,
-    key: 'contrast:aa'
-  ): WcagPairResultSetInterfaceType | undefined;
-  static getContrastMetadata(
-    metadata: JsonObjectType,
-    key: 'contrast:aaa'
-  ): WcagPairResultSetInterfaceType | undefined;
-  static getContrastMetadata(
-    metadata: JsonObjectType,
-    key: 'contrast:apca'
-  ): ApcaPairResultSetInterfaceType | undefined;
-  static getContrastMetadata(
-    metadata: JsonObjectType,
-    key: 'contrast:cvd'
-  ): CvdResultSetInterfaceType | undefined;
-  static getContrastMetadata(
-    metadata: JsonObjectType,
-    key: keyof ContrastMetadataInterfaceType
-  ): ContrastMetadataInterfaceType[keyof ContrastMetadataInterfaceType] {
+    metadata: Record<string, JSONSchema7Type | undefined>,
+    key: string
+  ): WcagPairResultSetInterfaceTypeEntity.Type | ApcaPairResultSetInterfaceTypeEntity.Type | CvdResultSetInterfaceTypeEntity.Type | undefined {
     const value = metadata[key];
 
-    if ((key === 'contrast:aa' || key === 'contrast:aaa') && WcagPairResultSetInterfaceTypeEntity.validate(value)) {
+    if ((key === 'contrast:aa' || key === 'contrast:aaa') && value !== undefined && WcagPairResultSetInterfaceTypeEntity.validate(value)) {
       return value;
     }
-    if (key === 'contrast:apca' && ApcaPairResultSetInterfaceTypeEntity.validate(value)) {
+    if (key === 'contrast:apca' && value !== undefined && ApcaPairResultSetInterfaceTypeEntity.validate(value)) {
       return value;
     }
-    if (key === 'contrast:cvd' && CvdResultSetInterfaceTypeEntity.validate(value)) {
+    if (key === 'contrast:cvd' && value !== undefined && CvdResultSetInterfaceTypeEntity.validate(value)) {
       return value;
     }
 

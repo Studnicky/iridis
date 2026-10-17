@@ -6,9 +6,11 @@ class RgbToHex {
   apply(r: number, g: number, b: number): string {
     const toHex = (v: number): string => {
       const byte = Math.round(clamp01.apply(v) * 255);
-      return byte.toString(16).padStart(2, '0');
+      const hex = byte.toString(16).padStart(2, '0');
+      return hex;
     };
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    const hex = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    return hex;
   }
 }
 

@@ -1,16 +1,5 @@
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '@studnicky/iridis';
-
-import { CssVarName } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
-
-import type { CssVarsScopedOutputInterfaceType } from '../types/index.ts';
+import { type ColorRecordInterfaceTypeEntity, CssVarName, type PaletteStateInterface, type PipelineContextInterface, type TaskInterface, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import { CssAttributeSelector } from '../util/CssAttributeSelector.ts';
 import { CssCustomPropertyPrefix } from '../util/CssCustomPropertyPrefix.ts';
@@ -19,7 +8,7 @@ import { P3Serializer } from '../util/P3Serializer.ts';
 class ScopedCategoryBlock {
   static build(
     category:    string,
-    roles:       Record<string, ColorRecordInterfaceType>,
+    roles:       Record<string, ColorRecordInterfaceTypeEntity.Type>,
     prefix:      string,
     scopePrefix: string
   ): string {
@@ -50,20 +39,25 @@ class ScopedCategoryBlock {
 class ScopedWideGamutBlock {
   static build(
     category:    string,
-    roles:       Record<string, ColorRecordInterfaceType>,
+    roles:       Record<string, ColorRecordInterfaceTypeEntity.Type>,
     prefix:      string,
     scopePrefix: string
   ): string {
     const p3Decls: string[] = [];
-    for (const [role, record] of Object.entries(roles)) {
-      if (record.displayP3 !== undefined) {
-        const varName = CssVarName.from(role, prefix);
-        p3Decls.push(`  ${varName}: ${P3Serializer.serialize(record.displayP3)};`);
+    const entries = Object.entries(roles);
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry !== undefined) {
+        const [role, record] = entry;
+        if (record.displayP3 !== undefined) {
+          const varName = CssVarName.from(role, prefix);
+          p3Decls.push(`  ${varName}: ${P3Serializer.serialize(record.displayP3)};`);
+        }
       }
     }
     if (p3Decls.length === 0) {return '';}
     const selector = CssAttributeSelector.from(`data-${scopePrefix}`, category);
-    return `@supports (color: color(display-p3 0 0 0)) {\n  ${selector} {\n${p3Decls.map((d) => { const result = `  ${d}`; return result; }).join('\n')}\n  }\n}`;
+    return `@supports (color: color(display-p3 0 0 0)) {\n  ${selector} {\n${p3Decls.map((declaration) => { const result = ['  ', declaration].join(''); return result; }).join('\n')}\n  }\n}`;
   }
 }
 
@@ -81,72 +75,20 @@ class ScopedWideGamutBlock {
  * supported. Categories with no P3 records emit no `@supports` block.
  */
 class EmitCssVarsScoped implements TaskInterface {
-  readonly 'name' = 'emit:cssVarsScoped';
-
-  readonly 'manifest': TaskManifestInterfaceType = {
-    'description': 'Emit per-category scoped CSS custom property blocks for Vue/Capacitor use cases',
-    'name':        'emit:cssVarsScoped',
-    'phase':       undefined,
-    'reads':       ['roles', 'variants', 'metadata'],
-    'requires':    undefined,
-    'writes':      ['outputs.stylesheet:cssVarsScoped']
-  };
-
+  readonly name = 'emit:cssVarsScoped';
+  readonly manifest: TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({ 'description': 'Emit per-category scoped CSS custom property blocks for Vue/Capacitor use cases', 'name': 'emit:cssVarsScoped', 'reads': ['roles', 'variants', 'metadata'], 'writes': ['outputs.stylesheet:cssVarsScoped'] });
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    const prefix = CssCustomPropertyPrefix.from(
-      typeof state.metadata.cssVarPrefix === 'string' ? state.metadata.cssVarPrefix : undefined
-    );
-    const scopePrefix = typeof state.metadata.scopePrefix  === 'string' ? state.metadata.scopePrefix  : 'theme';
-
-    const blocks:    Record<string, string> = {};
+    const prefix = CssCustomPropertyPrefix.from(typeof state.metadata.cssVarPrefix === 'string' ? state.metadata.cssVarPrefix : undefined);
+    const scopePrefix = typeof state.metadata.scopePrefix === 'string' ? state.metadata.scopePrefix : 'theme';
+    const blocks: Record<string, string> = { 'default': ScopedCategoryBlock.build('default', state.roles, prefix, scopePrefix) };
     const wideGamut: Record<string, string> = {};
-
-    // Root roles go under 'default'.
-    blocks.default    = ScopedCategoryBlock.build('default', state.roles, prefix, scopePrefix);
-    const defaultP3      = ScopedWideGamutBlock.build('default', state.roles, prefix, scopePrefix);
-    if (defaultP3.length > 0) {
-      wideGamut.default = defaultP3;
-    }
-
-    // Each variant key becomes a scoped block (and possibly a P3 sibling).
-    for (const [variantName, variantRoles] of Object.entries(state.variants)) {
-      blocks[variantName] = ScopedCategoryBlock.build(variantName, variantRoles, prefix, scopePrefix);
-      const variantP3     = ScopedWideGamutBlock.build(variantName, variantRoles, prefix, scopePrefix);
-      if (variantP3.length > 0) {
-        wideGamut[variantName] = variantP3;
-      }
-    }
-
-    // Cascade order per category: sRGB scoped block → P3 @supports override.
-    // Categories without a P3 sibling fall through to sRGB on every browser.
-    const parts: string[] = [];
-    for (const category of Object.keys(blocks)) {
-      parts.push(blocks[category]!);
-      const p3 = wideGamut[category];
-      if (p3 !== undefined && p3.length > 0) {parts.push(p3);}
-    }
-    const full = parts.join('\n\n');
-
-    const output: CssVarsScopedOutputInterfaceType = {
-      'blocks':    blocks,
-      'full':      full,
-      'wideGamut': wideGamut
-    };
-
-    state.outputs['stylesheet:cssVarsScoped'] = output;
-
-    context.logger.debug(
-      LogBody.create()
-        .component('EmitCssVarsScoped')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Emitted scoped blocks')
-        .context({
-          'count':          Object.keys(blocks).length,
-          'wideGamutCount': Object.keys(wideGamut).length
-        })
-        .build()
-    );
+    const defaultP3 = ScopedWideGamutBlock.build('default', state.roles, prefix, scopePrefix);
+    if (defaultP3.length > 0) { wideGamut.default = defaultP3; }
+    const variants = Object.entries(state.variants);
+    for (let index=0;index<variants.length;index+=1) { const variant=variants[index]; if (variant !== undefined) { const [name, roles]=variant; Object.defineProperty(blocks,name,{ 'configurable':true,'enumerable':true,'value':ScopedCategoryBlock.build(name,roles,prefix,scopePrefix),'writable':true }); const p3=ScopedWideGamutBlock.build(name,roles,prefix,scopePrefix); if(p3.length>0){Object.defineProperty(wideGamut,name,{ 'configurable':true,'enumerable':true,'value':p3,'writable':true });} } }
+    const full=Object.values(blocks).concat(Object.values(wideGamut)).join('\n\n');
+    state.outputs['stylesheet:cssVarsScoped']={ 'blocks':blocks,'full':full,'wideGamut':wideGamut };
+    context.logger.debug(LogBody.create({ 'component':'EmitCssVarsScoped','context':{'count':Object.keys(blocks).length,'wideGamutCount':Object.keys(wideGamut).length},'message':'Emitted scoped blocks','operation':'run','status':LOG_STATUS.SUCCESS }));
   }
 }
 

@@ -1,18 +1,32 @@
 import type {
   PaletteStateInterface,
   PipelineContextInterface,
-  RoleDefinitionInterfaceType,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { contrastWcag21, EngineMetadata } from '@studnicky/iridis';
-import { LogBody }        from '@studnicky/logger/builders';
-import { LOG_STATUS }     from '@studnicky/logger/constants';
-import { DataFactory, Store } from 'n3';
+import {
+  contrastWcag21,
+  Metadata,
+  TaskManifestInterfaceTypeEntity
+} from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
+import { DataFactory, Store, Writer } from 'n3';
 
 import { iridisVocab } from '../data/iridisVocab.ts';
 import { XSD_IRI }     from './constants/XsdIri.ts';
+
+class NQuads {
+  static serialize(store: Store): string {
+    const writer = new Writer({ 'format': 'N-Quads' });
+    for (const quad of store) {writer.addQuad(quad);}
+    let result = '';
+    writer.end((error: Error | null, output: string) => {
+      if (error !== null) {throw error;}
+      result = output;
+    });
+    return result;
+  }
+}
 
 class Iri {
   static color(hex: string): string {
@@ -39,171 +53,120 @@ class Iri {
 class ReasonAnnotate implements TaskInterface {
   readonly 'name' = 'reason:annotate';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Annotate palette with RDF triples via n3 Store',
     'name':        'reason:annotate',
-    'phase':       undefined,
     'reads':       ['roles', 'colors'],
-    'requires':    undefined,
     'writes':      ['rdf:reasoningGraph']
-  };
+  });
+
+  private static emitColor(store: Store, roleName: string, color: PaletteStateInterface['roles'][string]): void {
+    const colorNode = DataFactory.namedNode(Iri.color(color.hex));
+    const decimalNode = DataFactory.namedNode(XSD_IRI.DECIMAL);
+    store.addQuad(DataFactory.quad(colorNode, DataFactory.namedNode(iridisVocab.hex), DataFactory.literal(color.hex, DataFactory.namedNode(XSD_IRI.STRING))));
+    store.addQuad(DataFactory.quad(colorNode, DataFactory.namedNode(iridisVocab.oklchL), DataFactory.literal(color.oklch.l.toFixed(4), decimalNode)));
+    store.addQuad(DataFactory.quad(colorNode, DataFactory.namedNode(iridisVocab.oklchC), DataFactory.literal(color.oklch.c.toFixed(4), decimalNode)));
+    store.addQuad(DataFactory.quad(colorNode, DataFactory.namedNode(iridisVocab.oklchH), DataFactory.literal(color.oklch.h.toFixed(2), decimalNode)));
+    store.addQuad(DataFactory.quad(colorNode, DataFactory.namedNode(iridisVocab.rgbR), DataFactory.literal(color.rgb.r.toFixed(4), decimalNode)));
+    store.addQuad(DataFactory.quad(colorNode, DataFactory.namedNode(iridisVocab.rgbG), DataFactory.literal(color.rgb.g.toFixed(4), decimalNode)));
+    store.addQuad(DataFactory.quad(colorNode, DataFactory.namedNode(iridisVocab.rgbB), DataFactory.literal(color.rgb.b.toFixed(4), decimalNode)));
+    if (color.displayP3 !== undefined) {
+      store.addQuad(DataFactory.quad(colorNode, DataFactory.namedNode(iridisVocab.displayP3R), DataFactory.literal(color.displayP3.r.toFixed(4), decimalNode)));
+      store.addQuad(DataFactory.quad(colorNode, DataFactory.namedNode(iridisVocab.displayP3G), DataFactory.literal(color.displayP3.g.toFixed(4), decimalNode)));
+      store.addQuad(DataFactory.quad(colorNode, DataFactory.namedNode(iridisVocab.displayP3B), DataFactory.literal(color.displayP3.b.toFixed(4), decimalNode)));
+    }
+    const roleNode = DataFactory.namedNode(Iri.role(roleName));
+    store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.hasColor), colorNode));
+  }
+
+  private static emitDefinition(store: Store, state: PaletteStateInterface, roleName: string): void {
+    const definitions = state.input.roles?.roles ?? [];
+    const definitionCount = definitions.length;
+    for (let definitionIndex = 0; definitionIndex < definitionCount; definitionIndex++) {
+      const definition = definitions[definitionIndex];
+      if (definition?.name !== roleName) {
+        continue;
+      }
+      const roleNode = DataFactory.namedNode(Iri.role(roleName));
+      const decimalNode = DataFactory.namedNode(XSD_IRI.DECIMAL);
+      if (definition.derivedFrom !== undefined) {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.derivedFrom), DataFactory.namedNode(Iri.role(definition.derivedFrom))));}
+      if (definition.intent !== undefined) {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.intent), DataFactory.literal(definition.intent, DataFactory.namedNode(XSD_IRI.STRING))));}
+      if (definition.lightnessRange !== undefined) {
+        store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.leastPermittedLightness), DataFactory.literal(definition.lightnessRange[0].toFixed(4), decimalNode)));
+        store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.greatestPermittedLightness), DataFactory.literal(definition.lightnessRange[1].toFixed(4), decimalNode)));
+      }
+      if (definition.chromaRange !== undefined) {
+        store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.leastPermittedChroma), DataFactory.literal(definition.chromaRange[0].toFixed(4), decimalNode)));
+        store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.greatestPermittedChroma), DataFactory.literal(definition.chromaRange[1].toFixed(4), decimalNode)));
+      }
+      if (definition.hueClamp !== undefined) {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.hueClamp), DataFactory.literal(definition.hueClamp.toFixed(2), decimalNode)));}
+      return;
+    }
+  }
+
+  private static emitProvenance(store: Store, state: PaletteStateInterface, roleName: string): void {
+    const provenance = Metadata.roleProvenance(state.metadata).get(roleName);
+    if (provenance === undefined) {
+      return;
+    }
+    const roleNode = DataFactory.namedNode(Iri.role(roleName));
+    const booleanNode = DataFactory.namedNode(XSD_IRI.BOOLEAN);
+    store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.resolutionOrigin), DataFactory.literal(provenance.origin, DataFactory.namedNode(XSD_IRI.STRING))));
+    if (provenance.origin === 'stated') {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.pinned), DataFactory.literal('true', booleanNode)));}
+    if (provenance.origin === 'synthesized') {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.synthesized), DataFactory.literal('true', booleanNode)));}
+    const adjustmentCount = provenance.adjustments.length;
+    for (let adjustmentIndex = 0; adjustmentIndex < adjustmentCount; adjustmentIndex++) {
+      const adjustment = provenance.adjustments[adjustmentIndex];
+      if (adjustment === undefined) {
+        continue;
+      }
+      const adjustmentNode = DataFactory.namedNode(Iri.adjustment(roleName, adjustmentIndex));
+      store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.hasAdjustment), adjustmentNode));
+      store.addQuad(DataFactory.quad(adjustmentNode, DataFactory.namedNode(XSD_IRI.RDF_TYPE), DataFactory.namedNode(iridisVocab.Adjustment)));
+      store.addQuad(DataFactory.quad(adjustmentNode, DataFactory.namedNode(iridisVocab.adjustedFrom), DataFactory.namedNode(Iri.color(adjustment.beforeHex))));
+      store.addQuad(DataFactory.quad(adjustmentNode, DataFactory.namedNode(iridisVocab.adjustedTo), DataFactory.namedNode(Iri.color(adjustment.afterHex))));
+      store.addQuad(DataFactory.quad(adjustmentNode, DataFactory.namedNode(iridisVocab.adjustmentOperation), DataFactory.literal(adjustment.operation, DataFactory.namedNode(XSD_IRI.STRING))));
+      if (adjustment.operation === 'role-range') {store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(iridisVocab.clampedFrom), DataFactory.namedNode(Iri.color(adjustment.beforeHex))));}
+    }
+  }
+
+  private static emitContrasts(store: Store, state: PaletteStateInterface): void {
+    const entries = Object.entries(state.roles);
+    const roleCount = entries.length;
+    const decimalNode = DataFactory.namedNode(XSD_IRI.DECIMAL);
+    for (let foregroundIndex = 0; foregroundIndex < roleCount; foregroundIndex++) {
+      const foregroundEntry = entries[foregroundIndex];
+      if (foregroundEntry === undefined) {continue;}
+      for (let backgroundIndex = 0; backgroundIndex < roleCount; backgroundIndex++) {
+        if (foregroundIndex === backgroundIndex) {continue;}
+        const backgroundEntry = entries[backgroundIndex];
+        if (backgroundEntry === undefined) {continue;}
+        const ratio = contrastWcag21.apply(foregroundEntry[1], backgroundEntry[1]);
+        const pairIri = `https://studnicky.dev/iridis/pair/${foregroundEntry[0]}-on-${backgroundEntry[0]}`;
+        store.addQuad(DataFactory.quad(DataFactory.namedNode(pairIri), DataFactory.namedNode(iridisVocab.wcag21Ratio), DataFactory.literal(ratio.toFixed(2), decimalNode)));
+      }
+    }
+  }
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    const store       = new Store();
+    const store = new Store();
+    const entries = Object.entries(state.roles);
+    const roleCount = entries.length;
     const paletteNode = DataFactory.namedNode(Iri.palette(context.startedAt));
-    const roleType    = DataFactory.namedNode(iridisVocab.Role);
-    const rdfTypeNode = DataFactory.namedNode(XSD_IRI.RDF_TYPE);
-    const hasRoleNode  = DataFactory.namedNode(iridisVocab.hasRole);
-    const hasColorNode = DataFactory.namedNode(iridisVocab.hasColor);
-    const oklchLNode  = DataFactory.namedNode(iridisVocab.oklchL);
-    const oklchCNode  = DataFactory.namedNode(iridisVocab.oklchC);
-    const oklchHNode  = DataFactory.namedNode(iridisVocab.oklchH);
-    const rgbRNode    = DataFactory.namedNode(iridisVocab.rgbR);
-    const rgbGNode    = DataFactory.namedNode(iridisVocab.rgbG);
-    const rgbBNode    = DataFactory.namedNode(iridisVocab.rgbB);
-    const hexNode     = DataFactory.namedNode(iridisVocab.hex);
-    const ratioNode   = DataFactory.namedNode(iridisVocab.wcag21Ratio);
-    const p3RNode     = DataFactory.namedNode(iridisVocab.displayP3R);
-    const p3GNode     = DataFactory.namedNode(iridisVocab.displayP3G);
-    const p3BNode     = DataFactory.namedNode(iridisVocab.displayP3B);
-    const resolutionOriginNode = DataFactory.namedNode(iridisVocab.resolutionOrigin);
-    const hasAdjustmentNode    = DataFactory.namedNode(iridisVocab.hasAdjustment);
-    const adjustmentTypeNode   = DataFactory.namedNode(iridisVocab.Adjustment);
-    const adjustedFromNode     = DataFactory.namedNode(iridisVocab.adjustedFrom);
-    const adjustedToNode       = DataFactory.namedNode(iridisVocab.adjustedTo);
-    const adjustmentOperationNode = DataFactory.namedNode(iridisVocab.adjustmentOperation);
-    const derivedFromNode = DataFactory.namedNode(iridisVocab.derivedFrom);
-    const pinnedNode      = DataFactory.namedNode(iridisVocab.pinned);
-    const synthesizedNode = DataFactory.namedNode(iridisVocab.synthesized);
-    const intentNode      = DataFactory.namedNode(iridisVocab.intent);
-    const lightnessRangeMinimumNode = DataFactory.namedNode(iridisVocab.lightnessRangeMin);
-    const lightnessRangeMaximumNode = DataFactory.namedNode(iridisVocab.lightnessRangeMax);
-    const chromaRangeMinimumNode    = DataFactory.namedNode(iridisVocab.chromaRangeMin);
-    const chromaRangeMaximumNode    = DataFactory.namedNode(iridisVocab.chromaRangeMax);
-    const hueClampNode     = DataFactory.namedNode(iridisVocab.hueClamp);
-    const clampedFromNode  = DataFactory.namedNode(iridisVocab.clampedFrom);
-    const xsdDecimalNode = DataFactory.namedNode(XSD_IRI.DECIMAL);
-    const xsdBooleanNode = DataFactory.namedNode(XSD_IRI.BOOLEAN);
-
-    // Schema role definitions describe the role set. Canonical provenance
-    // records this run's origin and every actual color adjustment.
-    const roleDefByName = new Map<string, RoleDefinitionInterfaceType>(
-      (state.input.roles?.roles ?? []).map((def) => {return [def.name, def];})
-    );
-    const roleProvenance = EngineMetadata.get(state.metadata, 'core:roleProvenance') ?? {};
-
-    for (const [roleName, color] of Object.entries(state.roles)) {
-      const role  = DataFactory.namedNode(Iri.role(roleName));
-      const colorN = DataFactory.namedNode(Iri.color(color.hex));
-
-      store.addQuad(DataFactory.quad(role,    rdfTypeNode,  roleType));
-      store.addQuad(DataFactory.quad(role,    hasColorNode, colorN));
-      store.addQuad(DataFactory.quad(colorN,  hexNode,      DataFactory.literal(color.hex, DataFactory.namedNode(XSD_IRI.STRING))));
-      store.addQuad(DataFactory.quad(colorN,  oklchLNode,   DataFactory.literal(color.oklch.l.toFixed(4), xsdDecimalNode)));
-      store.addQuad(DataFactory.quad(colorN,  oklchCNode,   DataFactory.literal(color.oklch.c.toFixed(4), xsdDecimalNode)));
-      store.addQuad(DataFactory.quad(colorN,  oklchHNode,   DataFactory.literal(color.oklch.h.toFixed(2), xsdDecimalNode)));
-      store.addQuad(DataFactory.quad(colorN,  rgbRNode,     DataFactory.literal(color.rgb.r.toFixed(4), xsdDecimalNode)));
-      store.addQuad(DataFactory.quad(colorN,  rgbGNode,     DataFactory.literal(color.rgb.g.toFixed(4), xsdDecimalNode)));
-      store.addQuad(DataFactory.quad(colorN,  rgbBNode,     DataFactory.literal(color.rgb.b.toFixed(4), xsdDecimalNode)));
-
-      // Display-P3 channels: emitted ONLY when the record carries a
-      // wide-gamut value (out-of-sRGB OKLCH input or `intake:p3` origin).
-      // Channels are xsd:decimal literals at 4dp, matching CSS Color 4
-      // `color(display-p3 r g b)` semantics; SPARQL consumers can join
-      // these triples with the hex literal to surface the wide-gamut
-      // form when supported, fall back to hex when not.
-      if (color.displayP3 !== undefined) {
-        store.addQuad(DataFactory.quad(colorN, p3RNode, DataFactory.literal(color.displayP3.r.toFixed(4), xsdDecimalNode)));
-        store.addQuad(DataFactory.quad(colorN, p3GNode, DataFactory.literal(color.displayP3.g.toFixed(4), xsdDecimalNode)));
-        store.addQuad(DataFactory.quad(colorN, p3BNode, DataFactory.literal(color.displayP3.b.toFixed(4), xsdDecimalNode)));
-      }
-
-      // Resolution/relations — HOW this role's color was actually arrived
-      // at, not just its final value.
-      const def = roleDefByName.get(roleName);
-      if (def?.derivedFrom !== undefined) {
-        store.addQuad(DataFactory.quad(role, derivedFromNode, DataFactory.namedNode(Iri.role(def.derivedFrom))));
-      }
-      if (def?.intent !== undefined) {
-        store.addQuad(DataFactory.quad(role, intentNode, DataFactory.literal(def.intent, DataFactory.namedNode(XSD_IRI.STRING))));
-      }
-      if (def?.lightnessRange !== undefined) {
-        store.addQuad(DataFactory.quad(role, lightnessRangeMinimumNode, DataFactory.literal(def.lightnessRange[0].toFixed(4), xsdDecimalNode)));
-        store.addQuad(DataFactory.quad(role, lightnessRangeMaximumNode, DataFactory.literal(def.lightnessRange[1].toFixed(4), xsdDecimalNode)));
-      }
-      if (def?.chromaRange !== undefined) {
-        store.addQuad(DataFactory.quad(role, chromaRangeMinimumNode, DataFactory.literal(def.chromaRange[0].toFixed(4), xsdDecimalNode)));
-        store.addQuad(DataFactory.quad(role, chromaRangeMaximumNode, DataFactory.literal(def.chromaRange[1].toFixed(4), xsdDecimalNode)));
-      }
-      if (def?.hueClamp !== undefined) {
-        store.addQuad(DataFactory.quad(role, hueClampNode, DataFactory.literal(def.hueClamp.toFixed(2), xsdDecimalNode)));
-      }
-      const provenance = roleProvenance[roleName];
-      if (provenance !== undefined) {
-        store.addQuad(DataFactory.quad(
-          role,
-          resolutionOriginNode,
-          DataFactory.literal(provenance.origin, DataFactory.namedNode(XSD_IRI.STRING))
-        ));
-        if (provenance.origin === 'stated') {
-          store.addQuad(DataFactory.quad(role, pinnedNode, DataFactory.literal('true', xsdBooleanNode)));
-        }
-        if (provenance.origin === 'synthesized') {
-          store.addQuad(DataFactory.quad(role, synthesizedNode, DataFactory.literal('true', xsdBooleanNode)));
-        }
-        for (const [index, adjustment] of provenance.adjustments.entries()) {
-          const adjustmentNode = DataFactory.namedNode(Iri.adjustment(roleName, index));
-          store.addQuad(DataFactory.quad(role, hasAdjustmentNode, adjustmentNode));
-          store.addQuad(DataFactory.quad(adjustmentNode, rdfTypeNode, adjustmentTypeNode));
-          store.addQuad(DataFactory.quad(adjustmentNode, adjustedFromNode, DataFactory.namedNode(Iri.color(adjustment.beforeHex))));
-          store.addQuad(DataFactory.quad(adjustmentNode, adjustedToNode, DataFactory.namedNode(Iri.color(adjustment.afterHex))));
-          store.addQuad(DataFactory.quad(
-            adjustmentNode,
-            adjustmentOperationNode,
-            DataFactory.literal(adjustment.operation, DataFactory.namedNode(XSD_IRI.STRING))
-          ));
-          if (adjustment.operation === 'role-range') {
-            store.addQuad(DataFactory.quad(role, clampedFromNode, DataFactory.namedNode(Iri.color(adjustment.beforeHex))));
-          }
-        }
-      }
-
-      store.addQuad(DataFactory.quad(paletteNode, hasRoleNode, role));
+    for (let roleIndex = 0; roleIndex < roleCount; roleIndex++) {
+      const entry = entries[roleIndex];
+      if (entry === undefined) {continue;}
+      const [roleName, color] = entry;
+      const roleNode = DataFactory.namedNode(Iri.role(roleName));
+      store.addQuad(DataFactory.quad(roleNode, DataFactory.namedNode(XSD_IRI.RDF_TYPE), DataFactory.namedNode(iridisVocab.Role)));
+      store.addQuad(DataFactory.quad(paletteNode, DataFactory.namedNode(iridisVocab.hasRole), roleNode));
+      ReasonAnnotate.emitColor(store, roleName, color);
+      ReasonAnnotate.emitDefinition(store, state, roleName);
+      ReasonAnnotate.emitProvenance(store, state, roleName);
     }
-
-    const roleEntries = Object.entries(state.roles);
-    const roleCount   = roleEntries.length;
-
-    for (let i = 0; i < roleCount; i += 1) {
-      for (let j = 0; j < roleCount; j += 1) {
-        if (i === j) {
-          continue;
-        }
-        const [fgName, fg] = roleEntries[i]!;
-        const [bgName, bg] = roleEntries[j]!;
-        const pairIri      = `https://studnicky.dev/iridis/pair/${fgName}-on-${bgName}`;
-        const ratio        = contrastWcag21.apply(fg, bg);
-
-        store.addQuad(DataFactory.quad(
-          DataFactory.namedNode(pairIri),
-          ratioNode,
-          DataFactory.literal(ratio.toFixed(2), xsdDecimalNode)
-        ));
-      }
-    }
-
-    state.outputs['rdf:reasoningGraph'] = store;
-
-    context.logger.info(
-      LogBody.create()
-        .component('ReasonAnnotate')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('RDF annotation complete')
-        .context({ 'roleCount': Object.keys(state.roles).length })
-        .build()
-    );
+    ReasonAnnotate.emitContrasts(store, state);
+    state.outputs['rdf:reasoningGraph'] = NQuads.serialize(store);
+    context.logger.info(LogBody.create({ 'component': 'ReasonAnnotate', 'context': { 'roleCount': roleCount }, 'message': 'RDF annotation complete', 'operation': 'run', 'status': LOG_STATUS.SUCCESS }));
   }
 }
-
 export const reasonAnnotate = new ReasonAnnotate();

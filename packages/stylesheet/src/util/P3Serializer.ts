@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceType } from '@studnicky/iridis';
+import type { ColorRecordInterfaceTypeEntity } from '@studnicky/iridis';
 
 /**
  * Serialise a Display-P3 channel triple into CSS Color 4
@@ -11,7 +11,7 @@ import type { ColorRecordInterfaceType } from '@studnicky/iridis';
  * fall back to the sRGB hex without an extra branch.
  */
 export class P3Serializer {
-  static serialize(p3: ColorRecordInterfaceType['displayP3']): string {
+  static serialize(p3: ColorRecordInterfaceTypeEntity.Type['displayP3']): string {
     if (p3 === undefined) {return '';}
     const r = p3.r.toFixed(4);
     const g = p3.g.toFixed(4);

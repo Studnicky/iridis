@@ -1,5 +1,7 @@
-import type { FromSchema, JsonObjectType } from '@studnicky/types';
+import type { InferType } from '@studnicky/json-tology/types';
+import type { JSONSchema7Type } from 'json-schema';
 
+import { EntityCompiler } from '@studnicky/entity/node';
 import { Validator } from '@studnicky/iridis/model';
 
 import { CvdCorrectionInterfaceTypeEntity } from './CvdCorrectionInterfaceTypeEntity.ts';
@@ -23,12 +25,15 @@ export namespace CvdResultSetInterfaceTypeEntity {
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema> & {
-    'corrections': CvdCorrectionInterfaceTypeEntity.Type[] | undefined;
+  export type Type = InferType<typeof Schema> & {
+    'corrections': CvdCorrectionInterfaceTypeEntity.Type[];
   };
 
-  export const validate = (value: JsonObjectType[string]): value is Type => {
+  export const validate = (value: JSONSchema7Type): value is Type => {
     const result = new Validator().validate(Schema, value);
-    return result.valid;
+    const isValid = result.errors.length === 0;
+    return isValid;
   };
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type>(Schema);
 }

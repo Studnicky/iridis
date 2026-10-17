@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 import { computed } from 'vue';
 import { buildRoleMathPinnedDetailsModel } from './roleMath/buildRoleMathPinnedDetailsModel.ts';
 
 const props = defineProps<{
-  role: RoleMathEntryType;
+  role: RoleMathEntry;
 }>();
 
 const pinnedDetailsModel = computed(() => buildRoleMathPinnedDetailsModel.build(props.role));
 </script>
 
 <template>
-  <div v-if="props.role.isPinned">
+  <div v-if="props.role.origin.isPinned()">
     <StatusNote class="space-y-1">
       <div>This role was explicitly pinned by the user, so distance-matching against candidate seeds was skipped entirely.</div>
     </StatusNote>

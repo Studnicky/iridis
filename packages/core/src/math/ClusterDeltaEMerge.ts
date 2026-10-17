@@ -1,15 +1,17 @@
-import { ValidationError } from '@studnicky/errors';
+import { ValidationError } from '@studnicky/errors/node';
 
 import type { ClusterMergeEntity } from '../entities/ClusterMergeEntity.ts';
-import type { ColorHintsInterfaceType, ColorRecordInterfaceType } from '../types/index.ts';
+import type { ColorHintsInterfaceTypeEntity } from '../entities/ColorHintsInterfaceTypeEntity.ts';
 
+import { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { deltaE2000 } from './DeltaE2000.ts';
 
 class RecordWeight {
-  static of(record: ColorRecordInterfaceType): number {
+  static of(record: ColorRecordInterfaceTypeEntity.Type): number {
     const w = record.hints?.weight;
-    return typeof w === 'number' && w > 0 ? w : 1;
+    const result = typeof w === 'number' && w > 0 ? w : 1;
+    return result;
   }
 }
 
@@ -42,9 +44,87 @@ class Centroids {
     if (H < 0) {H += 360;}
     const alpha = (a.centroid.alpha * wa + b.centroid.alpha * wb) / tot;
     return {
-      'centroid': colorRecordFactory.fromOklch(L, C, H, { 'alpha': alpha, 'hints': { 'intent': undefined, 'role': undefined, 'weight': tot }, 'sourceFormat': 'oklch' }),
+      'centroid': colorRecordFactory.fromOklch(L, C, H, { 'alpha': alpha, 'hints': { 'weight': tot }, 'sourceFormat': 'oklch' }),
       'weight':   tot
     };
+  }
+}
+
+class ClusterRecords {
+  static asClusters(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): ClusterMergeEntity.Type[] {
+    const result = new Array<ClusterMergeEntity.Type>(colors.length);
+    const colorCount = colors.length;
+    for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
+      const color = colors[colorIndex]!;
+      result[colorIndex] = { 'centroid': color, 'weight': RecordWeight.of(color) };
+    }
+    return result;
+  }
+
+  static withMergedPair(
+    clusters: readonly ClusterMergeEntity.Type[],
+    merged: ClusterMergeEntity.Type,
+    pair: { 'firstIndex': number; 'secondIndex': number }
+  ): ClusterMergeEntity.Type[] {
+    const result = new Array<ClusterMergeEntity.Type>(clusters.length - 1);
+    let resultIndex = 0;
+    const clusterCount = clusters.length;
+    for (let clusterIndex = 0; clusterIndex < clusterCount; clusterIndex++) {
+      if (clusterIndex === pair.firstIndex) {
+        result[resultIndex] = merged;
+        resultIndex += 1;
+      } else if (clusterIndex !== pair.secondIndex) {
+        result[resultIndex] = clusters[clusterIndex]!;
+        resultIndex += 1;
+      }
+    }
+    return result;
+  }
+
+  static withWeights(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): ColorRecordInterfaceTypeEntity.Type[] {
+    const result = new Array<ColorRecordInterfaceTypeEntity.Type>(colors.length);
+    const colorCount = colors.length;
+    for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
+      const color = colors[colorIndex]!;
+      if (typeof color.hints?.weight === 'number' && color.hints.weight > 0) {
+        result[colorIndex] = color;
+        continue;
+      }
+      const hints: ColorHintsInterfaceTypeEntity.Type = { 'weight': 1 };
+      if (color.hints?.intent !== undefined) {hints.intent = color.hints.intent;}
+      if (color.hints?.role !== undefined) {hints.role = color.hints.role;}
+      result[colorIndex] = colorRecordFactory.fromOklch(color.oklch.l, color.oklch.c, color.oklch.h, { 'alpha': color.alpha, 'hints': hints, 'sourceFormat': color.sourceFormat });
+    }
+    return result;
+  }
+}
+
+class ClosestPair {
+  static of(clusters: readonly ClusterMergeEntity.Type[]): { 'firstIndex': number; 'secondIndex': number } {
+    let firstIndex = 0;
+    let secondIndex = 1;
+    let minimumDistance = Infinity;
+    const clusterCount = clusters.length;
+    for (let outerIndex = 0; outerIndex < clusterCount; outerIndex++) {
+      const first = clusters[outerIndex];
+      if (first === undefined) {continue;}
+      for (let innerIndex = outerIndex + 1; innerIndex < clusterCount; innerIndex++) {
+        const second = clusters[innerIndex];
+        if (second === undefined) {continue;}
+        const rawDistance = deltaE2000.apply(
+          ColorRecordInterfaceTypeEntity.intake(first.centroid),
+          ColorRecordInterfaceTypeEntity.intake(second.centroid)
+        );
+        const distance = Number.isFinite(rawDistance) ? rawDistance : Infinity;
+        if (distance < minimumDistance) {
+          minimumDistance = distance;
+          firstIndex = outerIndex;
+          secondIndex = innerIndex;
+        }
+      }
+    }
+    const result = { 'firstIndex': firstIndex, 'secondIndex': secondIndex };
+    return result;
   }
 }
 
@@ -66,8 +146,11 @@ class Centroids {
 class ClusterDeltaEMerge {
   readonly 'name' = 'clusterDeltaEMerge';
 
-  apply(colors: readonly ColorRecordInterfaceType[], k: number): ColorRecordInterfaceType[] {
-    if (colors.length === 0) {return [];}
+  apply(colors: readonly ColorRecordInterfaceTypeEntity.Type[], k: number): ColorRecordInterfaceTypeEntity.Type[] {
+    if (colors.length === 0) {
+      const result: ColorRecordInterfaceTypeEntity.Type[] = [];
+      return result;
+    }
     if (k < 1) {
       throw ValidationError.create({
         'message': 'ClusterDeltaEMerge.apply: k must be a positive number',
@@ -79,78 +162,28 @@ class ClusterDeltaEMerge {
         }]
       });
     }
-    const targetK = Math.min(Math.floor(k), colors.length);
-    if (targetK >= colors.length) {
-      /* Pass-through: no clustering needed. Return inputs verbatim when
-         a weight is already declared (preserves `displayP3` + every hint
-         the upstream task attached); otherwise reallocate via the factory
-         (the only sanctioned allocation point; spread-append would
-         break the monomorphic hidden class per ColorRecordInterfaceType
-         docs) while preserving the existing `role`/`intent` hints
-         alongside the stamped `weight: 1`. */
-      return colors.map((c) => {
-        if (typeof c.hints?.weight === 'number' && c.hints.weight > 0) {return c;}
-        const hints: ColorHintsInterfaceType = {
-          'intent': c.hints?.intent,
-          'role':   c.hints?.role,
-          'weight': 1
-        };
-        return colorRecordFactory.fromOklch(c.oklch.l, c.oklch.c, c.oklch.h, { 'alpha': c.alpha, 'hints': hints, 'sourceFormat': c.sourceFormat });
-      });
+    const targetCount = Math.min(Math.floor(k), colors.length);
+    if (targetCount >= colors.length) {
+      const result = ClusterRecords.withWeights(colors);
+      return result;
     }
 
-    let clusters: ClusterMergeEntity.Type[] = colors.map((c) => {return {
-      'centroid': c,
-      'weight':   RecordWeight.of(c)
-    };});
-
-    while (clusters.length > targetK) {
-      let bestI = 0;
-      let bestJ = 1;
-      let bestD = Infinity;
-      const clustersLength = clusters.length;
-      for (let i = 0; i < clustersLength; i++) {
-        const a = clusters[i];
-        if (a === undefined) {continue;}
-        for (let j = i + 1; j < clustersLength; j++) {
-          const b = clusters[j];
-          if (b === undefined) {continue;}
-          // Non-finite distances (NaN from a degenerate centroid, e.g.
-          // zero-chroma both sides where the deltaE branch divides by
-          // C1p*C2p === 0) would silently skip the pair otherwise and,
-          // if EVERY pair returns NaN, the nearest-pair scan never picks
-          // a winner and the loop spins forever. Coerce non-finite to
-          // Infinity so the comparison is total, and the fallback below
-          // guarantees forward progress when all pairs tie.
-          const raw = deltaE2000.apply(a.centroid, b.centroid);
-          const d   = Number.isFinite(raw) ? raw : Infinity;
-          if (d < bestD) {
-            bestD = d;
-            bestI = i;
-            bestJ = j;
-          }
-        }
-      }
-      // Forward-progress guarantee: if every pair scanned to Infinity
-      // (a pathological all-NaN centroid set), still merge the first
-      // two clusters so we drain toward targetK rather than hang.
-      if (bestD === Infinity) {
-        bestI = 0;
-        bestJ = 1;
-      }
-      const a = clusters[bestI];
-      const b = clusters[bestJ];
-      if (a === undefined || b === undefined) {break;}
-      const merged = Centroids.merge(a, b);
-      clusters = [
-        ...clusters.slice(0, bestI),
-        merged,
-        ...clusters.slice(bestI + 1, bestJ),
-        ...clusters.slice(bestJ + 1)
-      ];
+    let clusters = ClusterRecords.asClusters(colors);
+    while (clusters.length > targetCount) {
+      const pair = ClosestPair.of(clusters);
+      const first = clusters[pair.firstIndex];
+      const second = clusters[pair.secondIndex];
+      if (first === undefined || second === undefined) {break;}
+      const merged = Centroids.merge(first, second);
+      clusters = ClusterRecords.withMergedPair(clusters, merged, pair);
     }
 
-    return clusters.map((cl) => { const result = cl.centroid; return result; });
+    const result = new Array<ColorRecordInterfaceTypeEntity.Type>(clusters.length);
+    const clusterCount = clusters.length;
+    for (let clusterIndex = 0; clusterIndex < clusterCount; clusterIndex++) {
+      result[clusterIndex] = ColorRecordInterfaceTypeEntity.intake(clusters[clusterIndex]!.centroid);
+    }
+    return result;
   }
 }
 

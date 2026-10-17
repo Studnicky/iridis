@@ -1,5 +1,6 @@
 import type { RoleViewType } from '~/composables/types/index.ts';
-import type { AliasColorType } from '~/theme/types/aliasColor.ts';
+
+import { AliasColorEntity } from '~/theme/entities/AliasColorEntity.ts';
 
 class InteractablesAccordionItem {
   public readonly content: string;
@@ -12,12 +13,12 @@ class InteractablesAccordionItem {
 }
 
 class InteractablesTabItem {
-  public readonly label: 'Overview' | 'Roles' | 'Contrast';
-  public readonly slot: 'overview' | 'rolesTab' | 'contrastTab';
+  public readonly label: string;
+  public readonly slot: string;
 
   public constructor(
-    label: 'Overview' | 'Roles' | 'Contrast',
-    slot: 'overview' | 'rolesTab' | 'contrastTab'
+    label: string,
+    slot: string
   ) {
     this.label = label;
     this.slot = slot;
@@ -69,31 +70,43 @@ export const buildInteractablesShowcaseModel = class InteractablesShowcaseModelB
     new InteractablesTabItem('Contrast', 'contrastTab')
   ];
 
-  public static resolveDefaultCheckedColors(): AliasColorType.Type[] {
-    return ['primary', 'success', 'error'];
+  public static resolveDefaultCheckedColors(): AliasColorEntity.Type[] {
+    const result = [
+      AliasColorEntity.Values[0],
+      AliasColorEntity.Values[2],
+      AliasColorEntity.Values[4]
+    ];
+    return result;
   }
 
   public static build(
     strictness: number,
     rows: readonly { 'compliance': string }[],
-    apcaPairs: readonly { 'pass': boolean }[],
+    apcaPairCount: number,
+    apcaPassingPairCount: number,
     resolvedRoleCount: number,
     backgroundHex: string
   ): InteractablesShowcaseViewModel {
     const complianceLabel = this.resolveComplianceLabel(strictness);
-    const compliancePercent = this.resolveCompliancePercent(strictness, rows, apcaPairs);
+    const compliancePercent = this.resolveCompliancePercent(
+      strictness,
+      rows,
+      apcaPairCount,
+      apcaPassingPairCount
+    );
     const accordionItems = this.buildAccordionItems(
       resolvedRoleCount,
       complianceLabel,
       compliancePercent,
       backgroundHex
     );
-    return new InteractablesShowcaseViewModel(
+    const result = new InteractablesShowcaseViewModel(
       accordionItems,
       backgroundHex,
       complianceLabel,
       compliancePercent
     );
+    return result;
   }
 
   public static buildTabs(
@@ -102,12 +115,13 @@ export const buildInteractablesShowcaseModel = class InteractablesShowcaseModelB
     complianceLabel: string,
     compliancePercent: number
   ): InteractablesTabsViewModel {
-    return new InteractablesTabsViewModel(
+    const result = new InteractablesTabsViewModel(
       `${compliancePercent}% of roles meet ${complianceLabel}.`,
       `${roleViews.length} roles resolved · background ${backgroundHex} · compliance target ${complianceLabel}.`,
       this.tabItems,
       roleViews.slice(0, 16)
     );
+    return result;
   }
 
   private static buildAccordionItems(
@@ -116,43 +130,46 @@ export const buildInteractablesShowcaseModel = class InteractablesShowcaseModelB
     compliancePercent: number,
     backgroundHex: string
   ): InteractablesAccordionItem[] {
-    return [
+    const result = [
       new InteractablesAccordionItem(`${resolvedRoleCount} roles currently resolved.`, 'Resolved roles'),
       new InteractablesAccordionItem(`${complianceLabel} — ${compliancePercent}% of roles passing.`, 'Compliance target'),
       new InteractablesAccordionItem(`Current background role hex: ${backgroundHex}.`, 'Background')
     ];
+    return result;
   }
 
   private static resolveComplianceLabel(strictness: number): string {
-    return ['AA', 'AAA', 'APCA'][strictness] ?? 'AA';
+    const label = ['AA', 'AAA', 'APCA'][strictness] ?? 'AA';
+    return label;
   }
 
   private static resolveCompliancePercent(
     strictness: number,
     rows: readonly { 'compliance': string }[],
-    apcaPairs: readonly { 'pass': boolean }[]
+    apcaPairCount: number,
+    apcaPassingPairCount: number
   ): number {
     if (strictness === 2) {
-      if (apcaPairs.length === 0) {
+      if (apcaPairCount === 0) {
         return 0;
       }
-      let passing = 0;
-      for (const pair of apcaPairs) {
-        if (pair.pass) {
-          passing++;
-        }
-      }
-      return Math.round((passing / apcaPairs.length) * 100);
+      const percentage = Math.round((apcaPassingPairCount / apcaPairCount) * 100);
+      return percentage;
     }
     if (rows.length === 0) {
       return 0;
     }
     let passing = 0;
-    for (const row of rows) {
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index];
+      if (row === undefined) {
+        continue;
+      }
       if (strictness === 1 ? row.compliance === 'AAA' : row.compliance !== 'fail') {
         passing++;
       }
     }
-    return Math.round((passing / rows.length) * 100);
+    const percentage = Math.round((passing / rows.length) * 100);
+    return percentage;
   }
 };

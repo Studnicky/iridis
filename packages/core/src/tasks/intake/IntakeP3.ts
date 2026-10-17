@@ -1,21 +1,17 @@
-import type { JsonValueType } from '@studnicky/types';
+import { ValidationError } from '@studnicky/errors/node';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import { ValidationError } from '@studnicky/errors';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
-
+import type { ColorHintsInterfaceTypeEntity } from '../../entities/ColorHintsInterfaceTypeEntity.ts';
+import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
+import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
-import type {
-  ColorHintsInterfaceType,
-  ColorRecordInterfaceType,
-  OklchInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  RgbInterfaceType,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '../../types/index.ts';
+import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
+import { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import { OklchInterfaceTypeEntity } from '../../entities/OklchInterfaceTypeEntity.ts';
+import { RgbInterfaceTypeEntity } from '../../entities/RgbInterfaceTypeEntity.ts';
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { gamutMapSrgb } from '../../math/GamutMapSrgb.ts';
@@ -48,21 +44,19 @@ import { P3_PATTERNS } from './constants/P3Patterns.ts';
 class IntakeP3 implements TaskInterface {
   readonly 'name' = 'intake:p3';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Parses CSS color(display-p3 r g b [/ alpha]) strings into ColorRecord entries with displayP3 populated.',
     'name':        'intake:p3',
-    'phase':       undefined,
     'reads':       ['input.colors'],
-    'requires':    undefined,
     'writes':      ['colors']
-  };
+  });
 
   /**
    * Parses a single value as a CSS `color(display-p3 …)` string. Throws when
    * the input is not a string or does not match the Display-P3 pattern.
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
+  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type {
     if (typeof raw !== 'string') {
       throw ValidationError.create({
         'message': 'intake:p3 — expected a string input',
@@ -74,7 +68,8 @@ class IntakeP3 implements TaskInterface {
         }]
       });
     }
-    const match = P3_PATTERNS.DISPLAY_P3.exec(raw.trim());
+    const normalized = raw.trim().replace(P3_PATTERNS.WHITESPACE, ' ');
+    const match = P3_PATTERNS.DISPLAY_P3.exec(normalized);
     if (match === null) {
       throw ValidationError.create({
         'message': 'intake:p3 — not a display-p3 string',
@@ -92,7 +87,8 @@ class IntakeP3 implements TaskInterface {
     const p3B   = parseFloat(match[3]!);
     const alpha = match[4] !== undefined ? parseFloat(match[4]) : 1;
 
-    return P3Conversion.recordFromP3(p3R, p3G, p3B, alpha, undefined);
+    const result = P3Conversion.recordFromP3(p3R, p3G, p3B, alpha, undefined);
+    return result;
   }
 
   /**
@@ -100,9 +96,10 @@ class IntakeP3 implements TaskInterface {
    * Extracted from {@link IntakeP3.run} so the loop body contains only
    * a function call, not a try-catch, per V8 optimization guidance.
    */
-  private parseEntry(raw: JsonValueType | RawImagePixelInputInterface, index: number): ColorRecordInterfaceType {
+  private parseEntry(raw: ColorInputEntity.Type | RawImagePixelInputInterface, index: number): ColorRecordInterfaceTypeEntity.Type {
     try {
-      return this.parse(raw);
+      const result = this.parse(raw);
+      return result;
     } catch {
       throw ValidationError.create({
         'message': `intake:p3 — entry at index ${index} is not a Display-P3 string`,
@@ -121,20 +118,25 @@ class IntakeP3 implements TaskInterface {
   }
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    for (const [i, raw] of state.input.colors.entries()) {
-      const record = this.parseEntry(raw, i);
+    const inputColors = state.input.colors;
+    for (let index = 0; index < inputColors.length; index += 1) {
+      const raw = inputColors[index];
+      if (raw === undefined) {
+        continue;
+      }
+      const record = this.parseEntry(raw, index);
       state.colors.push(record);
       context.logger.debug(
-        LogBody.create()
-          .component('IntakeP3')
-          .operation('run')
-          .status(LOG_STATUS.SUCCESS)
-          .message('Parsed display-p3 value')
-          .context({
+        LogBody.create({
+          'component': 'IntakeP3',
+          'context': {
             'hex': record.hex,
             'raw': raw
-          })
-          .build()
+          },
+          'message': 'Parsed display-p3 value',
+          'operation': 'run',
+          'status': LOG_STATUS.SUCCESS
+        })
       );
     }
   }
@@ -149,9 +151,11 @@ class P3 {
     const sign = v < 0 ? -1 : 1;
     const abs  = Math.abs(v);
     if (abs <= 0.04045) {
-      return sign * (abs / 12.92);
+      const result = sign * (abs / 12.92);
+      return result;
     }
-    return sign * Math.pow((abs + 0.055) / 1.055, 2.4);
+    const result = sign * Math.pow((abs + 0.055) / 1.055, 2.4);
+    return result;
   }
 }
 
@@ -167,8 +171,8 @@ class P3Conversion {
     p3G:   number,
     p3B:   number,
     alpha: number,
-    hints: ColorHintsInterfaceType | undefined
-  ): ColorRecordInterfaceType {
+    hints: ColorHintsInterfaceTypeEntity.Type | undefined
+  ): ColorRecordInterfaceTypeEntity.Type {
     // 1. Display-P3 gamma → linear Display-P3 (sign-preserving for
     //    out-of-range floats; spec guarantees inputs in [0, 1] but be
     //    tolerant of slightly-out-of-range floats).
@@ -196,38 +200,39 @@ class P3Conversion {
       lsG >= 0 && lsG <= 1 &&
       lsB >= 0 && lsB <= 1;
 
-    let safeRgb: RgbInterfaceType;
+    let safeRgb: RgbInterfaceTypeEntity.Type;
     if (inSrgb) {
       const encoded = linearToSrgb.apply(lsR, lsG, lsB);
-      safeRgb = {
+      safeRgb = RgbInterfaceTypeEntity.create({
         'b': clamp01.apply(encoded.b),
         'g': clamp01.apply(encoded.g),
         'r': clamp01.apply(encoded.r)
-      };
+      });
     } else {
       const mapped     = gamutMapSrgb.apply(oklch.l, oklch.c, oklch.h);
       const mappedLin  = P3Conversion.oklchToLinearSrgb(mapped.l, mapped.c, mapped.h);
       const mappedSrgb = linearToSrgb.apply(mappedLin.r, mappedLin.g, mappedLin.b);
-      safeRgb = {
+      safeRgb = RgbInterfaceTypeEntity.create({
         'b': clamp01.apply(mappedSrgb.b),
         'g': clamp01.apply(mappedSrgb.g),
         'r': clamp01.apply(mappedSrgb.r)
-      };
+      });
     }
 
-    return {
-      'alpha':        clamp01.apply(alpha),
-      'displayP3':    {
+    const result = ColorRecordInterfaceTypeEntity.create({
+      'alpha': clamp01.apply(alpha),
+      'displayP3': RgbInterfaceTypeEntity.create({
         'b': clamp01.apply(p3B),
         'g': clamp01.apply(p3G),
         'r': clamp01.apply(p3R)
-      },
-      'hex':          rgbToHex.apply(safeRgb.r, safeRgb.g, safeRgb.b),
-      'hints':        hints,
-      'oklch':        oklch,
-      'rgb':          safeRgb,
+      }),
+      'hex': rgbToHex.apply(safeRgb.r, safeRgb.g, safeRgb.b),
+      ...(hints === undefined ? {} : { 'hints': hints }),
+      'oklch': oklch,
+      'rgb': safeRgb,
       'sourceFormat': 'displayP3'
-    };
+    });
+    return result;
   }
 
   /**
@@ -236,7 +241,7 @@ class P3Conversion {
    * linear) and avoid clamping for out-of-gamut inputs. Same Björn
    * Ottosson matrices.
    */
-  static linearSrgbToOklch(rl: number, gl: number, bl: number): OklchInterfaceType {
+  static linearSrgbToOklch(rl: number, gl: number, bl: number): OklchInterfaceTypeEntity.Type {
     let x = 0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl;
     let y = 0.2119034982 * rl + 0.6806995451 * gl + 0.1073969566 * bl;
     let z = 0.0883024619 * rl + 0.2817188376 * gl + 0.6299787005 * bl;
@@ -257,21 +262,26 @@ class P3Conversion {
       h += 360;
     }
 
-    return {
+    const result = OklchInterfaceTypeEntity.create({
       'c': clamp.apply(0, 0.5, c),
       'h': h % 360,
       'l': clamp01.apply(labL)
-    };
+    });
+    return result;
   }
 
   static signCbrt(v: number): number {
-    if (v < 0) {return -Math.cbrt(-v);}
-    return Math.cbrt(v);
+    if (v < 0) {
+      const result = -Math.cbrt(-v);
+      return result;
+    }
+    const result = Math.cbrt(v);
+    return result;
   }
 
   /** OKLCH → linear sRGB (Björn Ottosson). Local helper; mirrors the
    *  matrix used in OklchToRgbRaw/OklchToDisplayP3. */
-  static oklchToLinearSrgb(l: number, c: number, h: number): RgbInterfaceType {
+  static oklchToLinearSrgb(l: number, c: number, h: number): RgbInterfaceTypeEntity.Type {
     const hRad = (h * Math.PI) / 180;
     const a = c * Math.cos(hRad);
     const b = c * Math.sin(hRad);
@@ -284,10 +294,11 @@ class P3Conversion {
     y = y * y * y;
     z = z * z * z;
 
-    return {
+    const result = RgbInterfaceTypeEntity.create({
       'b': -0.0041960863 * x - 0.7034186147 * y + 1.707614701  * z,
       'g': -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z,
       'r': +4.0767416621 * x - 3.3077115913 * y + 0.2309699292 * z
-    };
+    });
+    return result;
   }
 }

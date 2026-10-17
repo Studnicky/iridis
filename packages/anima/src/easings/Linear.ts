@@ -1,4 +1,8 @@
-import type { EasingFunctionType } from '../types/index.ts';
+import type { EasingFunctionInterface } from '../interfaces/EasingFunctionInterface.ts';
 
 /** Identity easing: progress advances at a constant rate. */
-export const linear: EasingFunctionType = Number;
+export const linear: EasingFunctionInterface = Object.freeze({
+  'apply': function apply(progress: number): number {
+    return progress;
+  }
+});

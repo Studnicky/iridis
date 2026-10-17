@@ -1,14 +1,13 @@
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
+import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
 import type {
-  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '../../types/index.ts';
 
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { OKLCH_RANGES } from './constants/OklchRanges.ts';
 
@@ -19,13 +18,16 @@ class OklchRangeGeometry {
   }
 
   static roleRangeFor(
-    color: ColorRecordInterfaceType,
+    color: ColorRecordInterfaceTypeEntity.Type,
     state: PaletteStateInterface
   ): { 'cRange': readonly [number, number]; 'lRange': readonly [number, number]; } {
     const roleName = color.hints?.role;
 
     if (roleName !== undefined && state.input.roles !== undefined) {
-      const definition = state.input.roles.roles.find((role) => {return role.name === roleName;});
+      const definition = state.input.roles.roles.find((role): boolean => {
+        const result = role.name === roleName;
+        return result;
+      });
       if (definition !== undefined) {
         return {
           'cRange': definition.chromaRange    ?? OKLCH_RANGES.DEFAULT_CHROMA_RANGE,
@@ -34,7 +36,8 @@ class OklchRangeGeometry {
       }
     }
 
-    return { 'cRange': OKLCH_RANGES.DEFAULT_CHROMA_RANGE, 'lRange': OKLCH_RANGES.DEFAULT_LIGHTNESS_RANGE };
+    const result = { 'cRange': OKLCH_RANGES.DEFAULT_CHROMA_RANGE, 'lRange': OKLCH_RANGES.DEFAULT_LIGHTNESS_RANGE };
+    return result;
   }
 }
 
@@ -51,14 +54,12 @@ class OklchRangeGeometry {
 class ClampOklch implements TaskInterface {
   readonly 'name' = 'clamp:oklch';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Clamps each color OKLCH L and C into role-defined ranges (or sensible defaults). Preserves hue.',
     'name':        'clamp:oklch',
-    'phase':       undefined,
     'reads':       ['colors', 'input.roles'],
-    'requires':    undefined,
     'writes':      ['colors']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const colorCount = state.colors.length;
@@ -85,19 +86,19 @@ class ClampOklch implements TaskInterface {
 
       state.colors[i] = updated;
       context.logger.debug(
-        LogBody.create()
-          .component('ClampOklch')
-          .operation('run')
-          .status(LOG_STATUS.SUCCESS)
-          .message('Clamped color')
-          .context({
+        LogBody.create({
+          'component': 'ClampOklch',
+          'context': {
             'cFrom':    c,
             'cTo':      clampedC,
             'index':    i,
             'lFrom':    l,
             'lTo':      clampedL
-          })
-          .build()
+          },
+          'message': 'Clamped color',
+          'operation': 'run',
+          'status': LOG_STATUS.SUCCESS
+        })
       );
     }
   }

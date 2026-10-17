@@ -1,24 +1,23 @@
-import type { FromSchema, JsonObjectType } from '@studnicky/types';
+import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
-import { Validator } from '@studnicky/iridis/model';
+import { EntityCompiler } from '@studnicky/entity/node';
 
 export namespace PandaThemeScenarioOutputEntity {
   export const Schema = {
     '$id': 'https://studnicky.dev/iridis-panda/tests/PandaThemeScenarioOutput',
     'additionalProperties': false,
     'properties': {
-      'colors':      { 'additionalProperties': true, 'type': 'object' },
+      'colors': { 'additionalProperties': { 'type': 'string' }, 'type': 'object' },
       'pandaConfig': { 'type': 'string' },
-      'unoConfig':   { 'type': 'string' }
+      'unoConfig': { 'type': 'string' }
     },
     'required': ['colors', 'pandaConfig', 'unoConfig'],
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = NominalSchemaType<typeof Schema>;
 
-  export const validate = (value: JsonObjectType[string]): value is Type => {
-    const result = new Validator().validate(Schema, value);
-    return result.valid;
-  };
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
 }

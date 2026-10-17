@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
-import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
+import { UseModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
 import { buildCombineStageModel } from './combine/buildCombineStageModel.ts';
 import PaletteCandidatePicker from './PaletteCandidatePicker.vue';
-import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
+import type { ClusterStrategyInterface, GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
 
 /**
  * The Combine stage — final merge tuning across every uploaded image. Its own
@@ -19,18 +19,40 @@ import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/type
  * histogram across every image, not any one photo's own reduction.
  */
 const {
-  schemaName, mode, imageSeeds, running, uploadedImages, effectiveHexesFor,
-  imgAlgorithm, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
+  schemaName, imageSeeds, running, uploadedImages, effectiveHexesFor,
+  imgStrategy, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange,
   candidates, selectedCandidateLabel,
   combineLocked, reRunCombine
 } = useIridis();
 const { send } = useIridisUiMachine();
 
 /** Image extraction/upload/sampling implies the engine should theme from the extracted image. */
-const sendImageAction = useModeGuardedSend(mode, send, 'image');
+const sendImageAction = UseModeGuardedSend.image(send);
 
-function selectCandidate(candidate: GalleryCandidateInterfaceType): void {
+function selectCandidate(candidate: GalleryCandidateOutputEntity.Type): void {
   sendImageAction(buildCombineStageModel.buildCandidateSelectionEvent(candidate));
+}
+
+class ImageAlgorithmEventResolver {
+  static resolve(strategy: ClusterStrategyInterface): IridisUiEvent {
+    const algorithm = strategy.serializeAlgorithm();
+    const factories = new Map<string, () => IridisUiEvent>([
+      ['delta-e', IridisUiEvent.setDeltaEImageAlgorithm],
+      ['k-means', IridisUiEvent.setKMeansImageAlgorithm],
+      ['median-cut', IridisUiEvent.setMedianCutImageAlgorithm],
+      ['wu-quantize', IridisUiEvent.setWuQuantizeImageAlgorithm]
+    ]);
+    const factory = factories.get(algorithm);
+    if (factory === undefined) {
+      throw new RangeError(`Unsupported image algorithm: ${algorithm}`);
+    }
+    const result = factory();
+    return result;
+  }
+}
+
+function updateImageStrategy(strategy: ClusterStrategyInterface): void {
+  sendImageAction(ImageAlgorithmEventResolver.resolve(strategy));
 }
 
 /** Read-only reference — each uploaded image's own already-extracted palette, so it's clear what's feeding the merge below without duplicating that image's own (editable) controls, which live on its own card in Upload. */
@@ -71,7 +93,7 @@ const extractedHueHexes = computed(() => buildCombineStageModel.buildImageSeedHe
       :running="running"
       :combine-locked="combineLocked"
       :schema-name="schemaName"
-      :algorithm="imgAlgorithm"
+      :strategy="imgStrategy"
       :delta-e-cap="imgDeltaECap"
       :histogram-bits="imgHistogramBits"
       :harmonize-threshold="imgHarmonize"
@@ -84,13 +106,13 @@ const extractedHueHexes = computed(() => buildCombineStageModel.buildImageSeedHe
       :chroma-help="buildCombineStageModel.helpText.chromaHelp"
       @rerun="reRunCombine"
       @update:combine-locked="combineLocked = $event"
-      @update:schema-name="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: $event })"
-      @update:algorithm="sendImageAction({ algorithm: $event, type: IridisUiActionType.SET_IMAGE_ALGORITHM })"
-      @update:delta-e-cap="sendImageAction({ cap: $event, type: IridisUiActionType.SET_IMAGE_DELTA_E_CAP })"
-      @update:histogram-bits="sendImageAction({ bits: $event, type: IridisUiActionType.SET_IMAGE_HISTOGRAM_BITS })"
-      @update:harmonize-threshold="sendImageAction({ threshold: $event, type: IridisUiActionType.SET_IMAGE_HARMONIZE })"
-      @update:lightness-range="sendImageAction({ range: $event, type: IridisUiActionType.SET_IMAGE_LIGHTNESS_RANGE })"
-      @update:chroma-range="sendImageAction({ range: $event, type: IridisUiActionType.SET_IMAGE_CHROMA_RANGE })"
+      @update:schema-name="send(IridisUiEvent.setSchema($event))"
+      @update:strategy="updateImageStrategy"
+      @update:delta-e-cap="sendImageAction(IridisUiEvent.setImageDeltaECap($event))"
+      @update:histogram-bits="sendImageAction(IridisUiEvent.setImageHistogramBits($event))"
+      @update:harmonize-threshold="sendImageAction(IridisUiEvent.setImageHarmonize($event))"
+      @update:lightness-range="sendImageAction(IridisUiEvent.setImageLightnessRange($event))"
+      @update:chroma-range="sendImageAction(IridisUiEvent.setImageChromaRange($event))"
     />
 
     <SwatchList

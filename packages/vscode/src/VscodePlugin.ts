@@ -1,6 +1,6 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterfaceType,
+  PluginSchemaContributionInterfaceEntity,
   TaskInterface
 } from '@studnicky/iridis';
 
@@ -70,7 +70,7 @@ class VscodePlugin implements PluginInterface {
     ];
   }
 
-  schemas(): PluginSchemaContributionInterfaceType {
+  schemas(): PluginSchemaContributionInterfaceEntity.Type {
     return {
       'metadata': {
         'vscode:baseTokens':         VSCODE_PLUGIN_SCHEMAS.baseTokens,

@@ -1,12 +1,12 @@
 import type {
-  ApcaPairResultSetInterfaceType,
-  CvdResultSetInterfaceType,
-  WcagPairResultSetInterfaceType
+  ApcaPairResultSetInterfaceTypeEntity,
+  CvdResultSetInterfaceTypeEntity,
+  WcagPairResultSetInterfaceTypeEntity
 } from '@studnicky/iridis-contrast';
 
 export const pipelineStageSummaries = class PipelineStageSummaries {
   public static buildPairSummary(
-    report: ApcaPairResultSetInterfaceType | WcagPairResultSetInterfaceType
+    report: ApcaPairResultSetInterfaceTypeEntity.Type | WcagPairResultSetInterfaceTypeEntity.Type
   ): string {
     let passing = 0;
     for (const pair of report.pairs) {
@@ -17,14 +17,14 @@ export const pipelineStageSummaries = class PipelineStageSummaries {
     return `${passing}/${report.pairs.length} pairs passing`;
   }
 
-  public static buildCvdCorrectionSummary(report: CvdResultSetInterfaceType): string | undefined {
-    if (report.corrections === undefined) {
-      return undefined;
-    }
+  public static buildCvdCorrectionSummary(report: CvdResultSetInterfaceTypeEntity.Type): string {
     let autoCorrected = 0;
     let stillFailing = 0;
     for (const correction of report.corrections) {
-      if (correction.cvdTypesRemaining.length === 0) {
+      const hasRemainingCvdType = correction.cvdTypesRemaining.some(() => {
+        return true;
+      });
+      if (!hasRemainingCvdType) {
         autoCorrected++;
       } else {
         stillFailing++;

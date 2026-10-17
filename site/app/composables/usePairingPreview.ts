@@ -1,4 +1,4 @@
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis/model';
+import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
 
 import { computed } from 'vue';
 
@@ -16,9 +16,10 @@ class BestForegroundAgainstOperation {
   static run(bg: RoleViewType, candidates: readonly RoleViewType[]): { 'ratio': number; 'view': RoleViewType } {
     let best = candidates[0]!;
     let bestRatio = contrastRatio(best.hex, bg.hex);
-    for (const c of candidates.slice(1)) {
-      const ratio = contrastRatio(c.hex, bg.hex);
-      if (ratio > bestRatio) { best = c; bestRatio = ratio; }
+    for (let index = 1; index < candidates.length; index += 1) {
+      const candidate = candidates[index]!;
+      const ratio = contrastRatio(candidate.hex, bg.hex);
+      if (ratio > bestRatio) { best = candidate; bestRatio = ratio; }
     }
     return { 'ratio': bestRatio, 'view': best };
   }
@@ -27,7 +28,7 @@ class BestForegroundAgainstOperation {
 const bestForegroundAgainst = BestForegroundAgainstOperation.run;
 
 class LabelForOperation {
-  static run(ratio: number, schema: RoleSchemaInterfaceType | undefined, roleName: string): string {
+  static run(ratio: number, schema: RoleSchemaInterfaceTypeEntity.Type | undefined, roleName: string): string {
     const compliance = complianceFor(ratio, minimumRatioForRole(schema, roleName));
     const suffix = compliance === 'fail' ? 'decorative only' : `${compliance} pass`;
     return `${ratio.toFixed(1)}:1 — ${suffix}`;
@@ -50,23 +51,39 @@ class UsePairingPreviewOperation {
 
     const pairings = computed<ContrastPairingType[]>(() => {
       const views = roleViews.value;
-      if (views.length < 2) {return [];}
+      if (views.length < 2) {
+        const emptyPairings: ContrastPairingType[] = [];
+        return emptyPairings;
+      }
 
       const schema = roleSchemaByName[schemaName.value]?.[framing.value];
 
-      const byLightness = [...views].sort((a, b) => {return a.l - b.l;});
+      const byLightness = [...views].sort((left, right) => {
+        const lightnessDifference = left.l - right.l;
+        return lightnessDifference;
+      });
       const darkest = byLightness[0]!;
       const lightest = byLightness[byLightness.length - 1]!;
 
-      const lightOnDark = bestForegroundAgainst(darkest, views.filter((v) => {return v.name !== darkest.name;}));
-      const darkOnLight = bestForegroundAgainst(lightest, views.filter((v) => {return v.name !== lightest.name;}));
+      const lightOnDarkCandidates = views.filter((view) => {
+        const isDifferentRole = view.name !== darkest.name;
+        return isDifferentRole;
+      });
+      const lightOnDark = bestForegroundAgainst(darkest, lightOnDarkCandidates);
+      const darkOnLightCandidates = views.filter((view) => {
+        const isDifferentRole = view.name !== lightest.name;
+        return isDifferentRole;
+      });
+      const darkOnLight = bestForegroundAgainst(lightest, darkOnLightCandidates);
 
       /* Lower-contrast sample: the highest ratio still under the AA threshold
      * across every role pair, so it's legible-ish rather than illegibly low. */
       let lowContrast: { 'bg': RoleViewType; 'fg': RoleViewType; 'ratio': number } | undefined;
       let dimmest: { 'bg': RoleViewType; 'fg': RoleViewType; 'ratio': number } | undefined;
-      for (const bg of views) {
-        for (const fg of views) {
+      for (let backgroundIndex = 0; backgroundIndex < views.length; backgroundIndex += 1) {
+        const bg = views[backgroundIndex]!;
+        for (let foregroundIndex = 0; foregroundIndex < views.length; foregroundIndex += 1) {
+          const fg = views[foregroundIndex]!;
           if (bg.name === fg.name) {continue;}
           const ratio = contrastRatio(fg.hex, bg.hex);
           if (ratio < 4.5 && (lowContrast === undefined || ratio > lowContrast.ratio)) {

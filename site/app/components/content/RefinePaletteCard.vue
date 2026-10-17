@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 import { buildRefinePaletteModel } from './refine/buildRefinePaletteModel.ts';
 
 /**
@@ -30,7 +30,7 @@ const { send } = useIridisUiMachine();
 const sortedPinnableRoles = computed(() => buildRefinePaletteModel.sortPinnableRoles(pinnableRoles.value));
 
 function pinRole(index: number, role: string | undefined): void {
-  send({ index: index, role: role, type: IridisUiActionType.PIN_SEED_ROLE });
+  send(IridisUiEvent.pinSeedRole(index, role));
 }
 </script>
 

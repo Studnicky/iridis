@@ -1,7 +1,8 @@
-import { InputSchema } from '@studnicky/iridis/model';
+import { InputInterfaceTypeEntity } from '@studnicky/iridis';
 
 export const CliConfigSchema = {
   '$id': 'https://studnicky.dev/iridis-cli/CliConfig',
+  'additionalProperties': false,
   'properties': {
     'enableCapacitor':  { 'type': 'boolean' },
     'enableContrast':   { 'type': 'boolean' },
@@ -10,44 +11,9 @@ export const CliConfigSchema = {
     'enableStylesheet': { 'type': 'boolean' },
     'enableTailwind':   { 'type': 'boolean' },
     'enableVscode':     { 'type': 'boolean' },
-    'input': {
-      'properties': {
-        'colors': {
-          'items': { 'type': 'string' },
-          'minItems': 1,
-          'type': 'array'
-        },
-        'contrast': {
-          ...InputSchema.properties.contrast,
-          'properties': {
-            ...InputSchema.properties.contrast.properties,
-            'extra': {
-              'items': {
-                'additionalProperties': false,
-                'properties': {
-                  'algorithm':  { 'enum': ['wcag21', 'apca'], 'type': 'string' },
-                  'background': { 'type': 'string' },
-                  'foreground': { 'type': 'string' },
-                  'minRatio':   { 'type': 'number' }
-                },
-                'required': ['background', 'foreground', 'minRatio'],
-                'type': 'object'
-              },
-              'type': 'array'
-            }
-          }
-        },
-        'metadata': {
-          'type': 'object'
-        },
-        'roles': {
-          'type': 'object'
-        }
-      },
-      'required': ['colors'],
-      'type': 'object'
-    },
+    'input': InputInterfaceTypeEntity.Schema,
     'output': {
+      'additionalProperties': false,
       'properties': {
         'directory': { 'type': 'string' },
         'files': {

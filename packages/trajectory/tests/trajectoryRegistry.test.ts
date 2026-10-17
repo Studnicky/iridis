@@ -1,14 +1,20 @@
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { TrajectoryRegistry } from '../src/index.ts';
 import { sunriseTrajectory } from '../src/SunriseTrajectory.ts';
+import { TrajectoryRegistryTestPatterns } from './fixtures/TrajectoryRegistryTestPatterns.ts';
 
 class PaletteAssertions {
-  static close(actual: PaletteInterfaceType, expected: PaletteInterfaceType): void {
-    for (const role of Object.keys(expected)) {
+  static close(actual: PaletteInterfaceTypeEntity.Type, expected: PaletteInterfaceTypeEntity.Type): void {
+    const roles = Object.keys(expected);
+    for (let index = 0; index < roles.length; index += 1) {
+      const role = roles[index];
+      if (role === undefined) {
+        continue;
+      }
       const actualColor = actual[role];
       const expectedColor = expected[role];
       assert.ok(actualColor !== undefined, `${role}: actual color exists`);
@@ -64,16 +70,16 @@ await test('resolve: built-in "sunrise" at t=0.5 lands mid-segment, between stop
 
 await test('resolve: unknown trajectory name throws a clear error', () => {
   const registry = new TrajectoryRegistry();
-  assert.throws(() => { const result = registry.resolve('nonexistent', 0.5); return result; }, /Unknown trajectory "nonexistent"/);
+  assert.throws(() => { const result = registry.resolve('nonexistent', 0.5); return result; }, TrajectoryRegistryTestPatterns.unknownTrajectory);
 });
 
 await test('registerTrajectory: custom trajectory can be registered and resolved by name', () => {
   const registry = new TrajectoryRegistry();
-  const stops: PaletteInterfaceType[] = [
+  const stops: PaletteInterfaceTypeEntity.Type[] = [
     { 'accent': { 'c': 0.1, 'h': 0,   'l': 0.5 } },
     { 'accent': { 'c': 0.1, 'h': 100, 'l': 0.5 } }
   ];
-  registry.registerTrajectory('custom', { 'opts': undefined, 'stops': stops });
+  registry.registerTrajectory('custom', { 'stops': stops });
   const result = registry.resolve('custom', 0);
   const firstStop = stops[0];
   assert.ok(firstStop !== undefined, 'custom trajectory has a first stop');
@@ -86,10 +92,10 @@ await test('registerTrajectory: custom trajectory can be registered and resolved
 
 await test('registerTrajectory: registering under a built-in name overwrites it', () => {
   const registry = new TrajectoryRegistry();
-  const overrideStops: PaletteInterfaceType[] = [
+  const overrideStops: PaletteInterfaceTypeEntity.Type[] = [
     { 'accent': { 'c': 0.3, 'h': 0, 'l': 0.9 } }
   ];
-  registry.registerTrajectory('sunrise', { 'opts': undefined, 'stops': overrideStops });
+  registry.registerTrajectory('sunrise', { 'stops': overrideStops });
   const result = registry.resolve('sunrise', 0);
   const firstStop = overrideStops[0];
   assert.ok(firstStop !== undefined, 'override trajectory has a first stop');

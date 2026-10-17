@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
 
 import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
@@ -11,15 +11,17 @@ class Hue {
     let diff = b - a;
     if (diff > 180) {diff -= 360;}
     if (diff < -180) {diff += 360;}
-    return ((a + diff * t) % 360 + 360) % 360;
+    const result = ((a + diff * t) % 360 + 360) % 360;
+    return result;
   }
 
   /** True when an OKLCH chroma is low enough that its paired hue is powerless (CSS Color 4 §12.2). */
   static isAchromatic(c: number): boolean {
-    return c < ACHROMATIC_CHROMA_EPSILON;
+    const result = c < ACHROMATIC_CHROMA_EPSILON;
+    return result;
   }
 
-  static resolve(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType, t: number): number {
+  static resolve(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type, t: number): number {
     const aAchromatic = Hue.isAchromatic(a.oklch.c);
     const bAchromatic = Hue.isAchromatic(b.oklch.c);
 
@@ -32,20 +34,22 @@ class Hue {
     if (bAchromatic) {
       return a.oklch.h;
     }
-    return Hue.lerp(a.oklch.h, b.oklch.h, t);
+    const result = Hue.lerp(a.oklch.h, b.oklch.h, t);
+    return result;
   }
 }
 
 class MixOklch {
   readonly 'name' = 'mixOklch';
 
-  apply(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType, t: number): ColorRecordInterfaceType {
+  apply(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type, t: number): ColorRecordInterfaceTypeEntity.Type {
     const tc = clamp01.apply(t);
     const l = a.oklch.l + (b.oklch.l - a.oklch.l) * tc;
     const c = a.oklch.c + (b.oklch.c - a.oklch.c) * tc;
     const h = Hue.resolve(a, b, tc);
     const alpha = a.alpha + (b.alpha - a.alpha) * tc;
-    return colorRecordFactory.fromOklch(l, c, h, { 'alpha': alpha });
+    const mixed = colorRecordFactory.fromOklch(l, c, h, { 'alpha': alpha });
+    return mixed;
   }
 }
 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { AliasColorType } from '~/theme/types/aliasColor.ts';
+import type { AliasColorEntity } from '~/theme/entities/AliasColorEntity.ts';
 
 defineProps<{
-  aliasKey: AliasColorType.Type;
+  aliasKey: AliasColorEntity.Type;
 }>();
 </script>
 

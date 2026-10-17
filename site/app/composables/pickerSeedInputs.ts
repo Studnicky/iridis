@@ -1,14 +1,17 @@
-import type { SeedInputType } from '../theme/types/seedInput.ts';
 import type { PickerSeedType } from './types/pickerSeed.ts';
 
+import { SeedInputEntity } from '../theme/types/SeedInputEntity.ts';
+
 class PickerSeedInputsOperation {
-  static run(seeds: readonly PickerSeedType[]): SeedInputType.Type[] {
-    const inputs: SeedInputType.Type[] = [];
-    for (const seed of seeds) {
+  static run(seeds: readonly PickerSeedType[]): SeedInputEntity.Type[] {
+    const inputs: SeedInputEntity.Type[] = [];
+    for (let index = 0; index < seeds.length; index += 1) {
+      const seed = seeds[index];
+      if (seed === undefined) {continue;}
       if (seed.role === undefined) {
-        inputs.push(seed.hex);
+        inputs.push(SeedInputEntity.intake(seed.hex));
       } else {
-        inputs.push({ 'hex': seed.hex, 'role': seed.role });
+        inputs.push(SeedInputEntity.intake({ 'hex': seed.hex, 'role': seed.role }));
       }
     }
     return inputs;

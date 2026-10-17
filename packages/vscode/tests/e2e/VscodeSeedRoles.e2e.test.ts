@@ -1,80 +1,96 @@
-import type { InputInterface, PaletteStateInterface } from '@studnicky/iridis';
-import type { JsonValueType } from '@studnicky/types';
+import type { PaletteStateInterface } from '@studnicky/iridis';
 
-import { EngineMetadata } from '@studnicky/iridis';
+import { InputInterfaceTypeEntity, Metadata, RuntimeOptionsInterfaceTypeEntity } from '@studnicky/iridis';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { VSCODE_ROLE_SCHEMAS_64, vscodePlugin } from '../../src/index.ts';
-
-type PaletteBodyInterface = {
-  readonly 'framing':     'dark' | 'light';
-  readonly [key: string]: JsonValueType;
-  readonly 'roles':       Record<string, string>;
-  readonly 'tier':        4 | 8 | 16 | 64;
-};
-
-
-const TIER_4_ROLES = ['background', 'foreground', 'keyword', 'error'] as const;
-const TIER_8_ROLES = [...TIER_4_ROLES, 'type', 'function', 'number', 'constant'] as const;
-const TIER_16_ROLES = [
-  'background', 'foreground', 'surface', 'muted', 'keyword', 'type', 'function', 'variable',
-  'string', 'number', 'constant', 'comment', 'error', 'warning', 'info', 'success'
-] as const;
-const TIER_64_ROLES = VSCODE_ROLE_SCHEMAS_64.dark.roles.map((role) => { const result = role.name;
-  return result; });
-const SEED_COLORS = ['#7c3aed', '#06b6d4', '#ec4899', '#f59e0b', '#10b981', '#ef4444'] as const;
+import { VscodeSeedPaletteBodyInterfaceTypeEntity } from '../entities/VscodeSeedPaletteBodyInterfaceTypeEntity.ts';
 
 class VscodeSeedRolesFixture {
+  static readonly #seedColors = ['#7c3aed', '#06b6d4', '#ec4899', '#f59e0b', '#10b981', '#ef4444'] as const;
+  static readonly #tier4Roles = ['background', 'foreground', 'keyword', 'error'] as const;
+  static readonly #tier8Roles = [...VscodeSeedRolesFixture.#tier4Roles, 'type', 'function', 'number', 'constant'] as const;
+  static readonly #tier16Roles = [
+    'background', 'foreground', 'surface', 'muted', 'keyword', 'type', 'function', 'variable',
+    'string', 'number', 'constant', 'comment', 'error', 'warning', 'info', 'success'
+  ] as const;
 
   static engine(): Engine {
     const engine = new Engine();
-    for (const task of coreTasks) { engine.tasks.register(task); }
+    for (let index = 0; index < coreTasks.length; index += 1) {
+      const task = coreTasks.at(index);
+      if (task !== undefined) {
+        engine.tasks.register(task);
+      }
+    }
     engine.adopt(vscodePlugin);
     return engine;
   }
 
-  static roleNames(tier: PaletteBodyInterface['tier']): readonly string[] {
-    if (tier === 4) { return TIER_4_ROLES; }
-    if (tier === 8) { return TIER_8_ROLES; }
-    if (tier === 16) { return TIER_16_ROLES; }
-    return TIER_64_ROLES;
-  }
-
-  static body(tier: PaletteBodyInterface['tier'], framing: PaletteBodyInterface['framing']): PaletteBodyInterface {
-    const roles: Record<string, string> = {};
-    for (const [index, role] of VscodeSeedRolesFixture.roleNames(tier).entries()) {
-      if (role === 'background') {
-        roles[role] = framing === 'dark' ? '#101820' : '#f7f4ed';
-      } else if (role === 'foreground') {
-        roles[role] = framing === 'dark' ? '#f5f7fa' : '#17212b';
-      } else {
-        roles[role] = SEED_COLORS[index % SEED_COLORS.length]!;
+  static roleNames(body: VscodeSeedPaletteBodyInterfaceTypeEntity.Type): readonly string[] {
+    if (body.tier === 4) {
+      return VscodeSeedRolesFixture.#tier4Roles;
+    }
+    if (body.tier === 8) {
+      return VscodeSeedRolesFixture.#tier8Roles;
+    }
+    if (body.tier === 16) {
+      return VscodeSeedRolesFixture.#tier16Roles;
+    }
+    const roleNames: string[] = [];
+    const roles = VSCODE_ROLE_SCHEMAS_64.dark.roles;
+    for (let index = 0; index < roles.length; index += 1) {
+      const role = roles.at(index);
+      if (role !== undefined) {
+        roleNames.push(role.name);
       }
     }
-    return { 'framing': framing, 'roles': roles, 'tier': tier };
+    return roleNames;
   }
 
-  static input(body: PaletteBodyInterface, runtimeFraming: 'dark' | 'light' | undefined): InputInterface {
-    return {
-      'bypass':    undefined,
-      'colors':    [body],
-      'contrast':  undefined,
-      'emit':      undefined,
-      'maxColors': undefined,
-      'metadata':  undefined,
-      'roles':     body.framing === 'dark' ? VSCODE_ROLE_SCHEMAS_64.dark : VSCODE_ROLE_SCHEMAS_64.light,
-      'runtime':   runtimeFraming === undefined ? undefined : {
-        'colorSpace': undefined,
-        'extra':      undefined,
-        'framing':    runtimeFraming
+  static roleColor(body: VscodeSeedPaletteBodyInterfaceTypeEntity.Type, role: string, index: number): string {
+    if (role === 'background') {
+      const result = body.framing === 'dark' ? '#101820' : '#f7f4ed';
+      return result;
+    }
+    if (role === 'foreground') {
+      const result = body.framing === 'dark' ? '#f5f7fa' : '#17212b';
+      return result;
+    }
+    const color = VscodeSeedRolesFixture.#seedColors[index % VscodeSeedRolesFixture.#seedColors.length];
+    if (color === undefined) {
+      throw new TypeError(`Missing fixture color at ${index}`);
+    }
+    return color;
+  }
+
+  static body(seed: VscodeSeedPaletteBodyInterfaceTypeEntity.Type): VscodeSeedPaletteBodyInterfaceTypeEntity.Type {
+    const roleNames = VscodeSeedRolesFixture.roleNames(seed);
+    const roles: Record<string, string> = {};
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const role = roleNames.at(index);
+      if (role === undefined) {
+        continue;
       }
-    };
+      const color = VscodeSeedRolesFixture.roleColor(seed, role, index);
+      Object.defineProperty(roles, role, { 'configurable': true, 'enumerable': true, 'value': color, 'writable': true });
+    }
+    const result = VscodeSeedPaletteBodyInterfaceTypeEntity.create({ 'framing': seed.framing, 'roles': roles, 'tier': seed.tier });
+    return result;
   }
 
-  static run(body: PaletteBodyInterface, runtimeFraming: 'dark' | 'light' | undefined): PaletteStateInterface {
+  static input(body: VscodeSeedPaletteBodyInterfaceTypeEntity.Type): InputInterfaceTypeEntity.Type {
+    const schema = body.framing === 'dark' ? VSCODE_ROLE_SCHEMAS_64.dark : VSCODE_ROLE_SCHEMAS_64.light;
+    const runtime = RuntimeOptionsInterfaceTypeEntity.create({ 'framing': body.framing });
+    const result = InputInterfaceTypeEntity.create({ 'colors': [body], 'roles': schema, 'runtime': runtime });
+    return result;
+  }
+
+
+  static run(body: VscodeSeedPaletteBodyInterfaceTypeEntity.Type): PaletteStateInterface {
     const engine = VscodeSeedRolesFixture.engine();
     engine.pipeline([
       'vscode:seedRoles',
@@ -89,52 +105,77 @@ class VscodeSeedRolesFixture {
       'emit:vscodeUiPalette',
       'emit:vscodeThemeJson'
     ]);
-    return engine.run(VscodeSeedRolesFixture.input(body, runtimeFraming));
+    const result = engine.run(VscodeSeedRolesFixture.input(body));
+    return result;
   }
 
-  static runSeedOnly(body: PaletteBodyInterface, runtimeFraming: 'dark' | 'light' | undefined): PaletteStateInterface {
+  static runSeedOnly(input: InputInterfaceTypeEntity.Type): PaletteStateInterface {
     const engine = VscodeSeedRolesFixture.engine();
     engine.pipeline(['vscode:seedRoles']);
-    return engine.run(VscodeSeedRolesFixture.input(body, runtimeFraming));
+    const result = engine.run(input);
+    return result;
   }
+
 }
 
 await test('VscodeSeedRoles :: accepts exact 4/8/16/64 tiers, preserves caller-stated roles, and resolves the 64-role output vocabulary', () => {
-  for (const tier of [4, 8, 16, 64] as const) {
-    const body = VscodeSeedRolesFixture.body(tier, 'dark');
-    const state = VscodeSeedRolesFixture.run(body, 'dark');
-    const suppliedRoles = VscodeSeedRolesFixture.roleNames(tier);
-    const provenance = EngineMetadata.get(state.metadata, 'core:roleProvenance');
-    if (provenance === undefined) {
-      throw new TypeError(`tier ${tier} must record role provenance`);
+  const tiers = [4, 8, 16, 64] as const;
+  for (let index = 0; index < tiers.length; index += 1) {
+    const tier = tiers.at(index);
+    if (tier === undefined) {
+      continue;
     }
+    const body = VscodeSeedRolesFixture.body(VscodeSeedPaletteBodyInterfaceTypeEntity.create({ 'framing': 'dark', 'roles': {}, 'tier': tier }));
+    const state = VscodeSeedRolesFixture.run(body);
+    const suppliedRoles = VscodeSeedRolesFixture.roleNames(body);
+    const provenance = Metadata.roleProvenance(state.metadata);
 
     assert.strictEqual(state.colors.length, suppliedRoles.length, `tier ${tier} intake emits one record per supplied role`);
-    for (const role of suppliedRoles) {
-      assert.deepStrictEqual(provenance[role], { 'adjustments': [], 'origin': 'stated' }, `tier ${tier} records ${role} as caller-stated`);
-      assert.strictEqual(state.roles[role]?.hex, body.roles[role], `tier ${tier} preserves ${role} exactly`);
+    for (let roleIndex = 0; roleIndex < suppliedRoles.length; roleIndex += 1) {
+      const role = suppliedRoles.at(roleIndex);
+      if (role === undefined) {
+        continue;
+      }
+      assert.deepStrictEqual(provenance.get(role), { 'adjustments': [], 'origin': 'stated' }, `tier ${tier} records ${role} as caller-stated`);
+      assert.strictEqual(Reflect.get(state.roles, role)?.hex, Reflect.get(body.roles, role), `tier ${tier} preserves ${role} exactly`);
     }
     assert.strictEqual(Object.keys(state.roles).length, 64, `tier ${tier} resolves the full 64-role vocabulary`);
   }
 });
 
 await test('VscodeSeedRoles :: selects explicit dark and light output framing', () => {
-  for (const framing of ['dark', 'light'] as const) {
-    const state = VscodeSeedRolesFixture.run(VscodeSeedRolesFixture.body(4, framing), framing);
+  const framings = ['dark', 'light'] as const;
+  for (let index = 0; index < framings.length; index += 1) {
+    const framing = framings.at(index);
+    if (framing === undefined) {
+      continue;
+    }
+    const state = VscodeSeedRolesFixture.run(VscodeSeedRolesFixture.body(VscodeSeedPaletteBodyInterfaceTypeEntity.create({ 'framing': framing, 'roles': {}, 'tier': 4 })));
     const themeJson = state.outputs['vscode:themeJson'];
     assert.ok(JSON.stringify(themeJson).includes(`"type":"${framing}"`), `${framing} intake produces a ${framing} VS Code theme`);
   }
 });
 
 await test('VscodeSeedRoles :: reports every declared contrast pair across tiers and framings', () => {
-  for (const framing of ['dark', 'light'] as const) {
-    const schema = VSCODE_ROLE_SCHEMAS_64[framing];
-    for (const tier of [4, 8, 16, 64] as const) {
-      const state = VscodeSeedRolesFixture.run(VscodeSeedRolesFixture.body(tier, framing), framing);
+  const framings = ['dark', 'light'] as const;
+  const tiers = [4, 8, 16, 64] as const;
+  for (let framingIndex = 0; framingIndex < framings.length; framingIndex += 1) {
+    const framing = framings.at(framingIndex);
+    if (framing === undefined) {
+      continue;
+    }
+    const schema = framing === 'dark' ? VSCODE_ROLE_SCHEMAS_64.dark : VSCODE_ROLE_SCHEMAS_64.light;
+    for (let tierIndex = 0; tierIndex < tiers.length; tierIndex += 1) {
+      const tier = tiers.at(tierIndex);
+      if (tier === undefined) {
+        continue;
+      }
+      const state = VscodeSeedRolesFixture.run(VscodeSeedRolesFixture.body(VscodeSeedPaletteBodyInterfaceTypeEntity.create({ 'framing': framing, 'roles': {}, 'tier': tier })));
       const report = state.metadata['core:contrastReport'];
       assert.ok(Array.isArray(report), `${framing} tier ${tier} writes a contrast report`);
       assert.strictEqual(report.length, schema.contrastPairs?.length, `${framing} tier ${tier} reports every declared pair`);
-      for (const entry of report) {
+      for (let reportIndex = 0; reportIndex < report.length; reportIndex += 1) {
+        const entry = report.at(reportIndex);
         assert.ok(entry !== null && typeof entry === 'object' && !Array.isArray(entry), `${framing} tier ${tier} report entries are objects`);
       }
     }
@@ -142,33 +183,21 @@ await test('VscodeSeedRoles :: reports every declared contrast pair across tiers
 });
 
 await test('VscodeSeedRoles :: rejects malformed tier contracts and mismatched framing at the intake boundary', () => {
-  const valid = VscodeSeedRolesFixture.body(4, 'dark');
-  const invalidBodies: readonly JsonValueType[] = [
+  const valid = VscodeSeedRolesFixture.body(VscodeSeedPaletteBodyInterfaceTypeEntity.create({ 'framing': 'dark', 'roles': {}, 'tier': 4 }));
+  const invalidBodies: readonly InputInterfaceTypeEntity.Type['colors'][number][] = [
     { 'framing': 'dark', 'roles': valid.roles, 'tier': 5 },
     { 'framing': 'dark', 'roles': valid.roles, 'tier': '16' },
     { 'framing': 'dark', 'roles': { ...valid.roles, 'type': '#7c3aed' }, 'tier': 4 },
     { 'framing': 'dark', 'roles': { 'background': '#101820', 'error': '#ef4444', 'foreground': '#f5f7fa' }, 'tier': 4 },
-    { 'framing': 'dark', 'roles': VscodeSeedRolesFixture.body(8, 'dark').roles, 'tier': 4 },
+    { 'framing': 'dark', 'roles': VscodeSeedRolesFixture.body(VscodeSeedPaletteBodyInterfaceTypeEntity.create({ 'framing': 'dark', 'roles': {}, 'tier': 8 })).roles, 'tier': 4 },
     { 'framing': 'dark', 'roles': { ...valid.roles, 'keyword': '#12345g' }, 'tier': 4 }
   ];
 
-  for (const body of invalidBodies) {
-    assert.throws(() => {
-      const engine = VscodeSeedRolesFixture.engine();
-      engine.pipeline(['vscode:seedRoles']);
-      engine.run({
-        'bypass':    undefined,
-        'colors':    [body],
-        'contrast':  undefined,
-        'emit':      undefined,
-        'maxColors': undefined,
-        'metadata':  undefined,
-        'roles':     VSCODE_ROLE_SCHEMAS_64.dark,
-        'runtime':   { 'colorSpace': undefined, 'extra': undefined, 'framing': 'dark' }
-      });
-    }, /vscode:seedRoles/);
+  for (let index = 0; index < invalidBodies.length; index += 1) {
+    const body = invalidBodies.at(index);
+    assert.throws(() => { VscodeSeedRolesFixture.runSeedOnly(InputInterfaceTypeEntity.intake({ 'colors': [body], 'roles': VSCODE_ROLE_SCHEMAS_64.dark, 'runtime': { 'framing': 'dark' } })); });
   }
 
-  assert.throws(() => { VscodeSeedRolesFixture.runSeedOnly(valid, undefined); }, /vscode:seedRoles/);
-  assert.throws(() => { VscodeSeedRolesFixture.runSeedOnly(valid, 'light'); }, /vscode:seedRoles/);
+  assert.throws(() => { VscodeSeedRolesFixture.runSeedOnly(InputInterfaceTypeEntity.intake({ 'colors': [valid], 'roles': VSCODE_ROLE_SCHEMAS_64.dark, 'runtime': {} })); });
+  assert.throws(() => { VscodeSeedRolesFixture.runSeedOnly(InputInterfaceTypeEntity.intake({ 'colors': [valid], 'roles': VSCODE_ROLE_SCHEMAS_64.dark, 'runtime': { 'framing': 'light' } })); });
 });

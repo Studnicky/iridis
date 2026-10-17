@@ -4,11 +4,10 @@ import { test } from 'node:test';
 import typescript from 'typescript';
 
 class SchemaInterfaceTypeConsumerCompiler {
-  static collectDiagnosticMessages(exactOptionalPropertyTypes: boolean): string[] {
-    const fixturePath = resolve(import.meta.dirname, '../fixtures/RoleInterfaceTypeConsumer.ts');
+  static collectDefaultOptionalPropertyDiagnostics(): string[] {
     const compilerOptions = {
       'allowImportingTsExtensions': true,
-      'exactOptionalPropertyTypes': exactOptionalPropertyTypes,
+      'exactOptionalPropertyTypes': false,
       'module':                     typescript.ModuleKind.ESNext,
       'moduleResolution':           typescript.ModuleResolutionKind.Bundler,
       'noEmit':                     true,
@@ -16,16 +15,41 @@ class SchemaInterfaceTypeConsumerCompiler {
       'strict':                     true,
       'target':                     typescript.ScriptTarget.ES2023
     } satisfies typescript.CompilerOptions;
+    const result = SchemaInterfaceTypeConsumerCompiler.collectDiagnosticMessages(compilerOptions);
+    return result;
+  }
+
+  static collectExactOptionalPropertyDiagnostics(): string[] {
+    const compilerOptions = {
+      'allowImportingTsExtensions': true,
+      'exactOptionalPropertyTypes': true,
+      'module':                     typescript.ModuleKind.ESNext,
+      'moduleResolution':           typescript.ModuleResolutionKind.Bundler,
+      'noEmit':                     true,
+      'skipLibCheck':               true,
+      'strict':                     true,
+      'target':                     typescript.ScriptTarget.ES2023
+    } satisfies typescript.CompilerOptions;
+    const result = SchemaInterfaceTypeConsumerCompiler.collectDiagnosticMessages(compilerOptions);
+    return result;
+  }
+
+  private static collectDiagnosticMessages(compilerOptions: typescript.CompilerOptions): string[] {
+    const fixturePath = resolve(import.meta.dirname, '../fixtures/RoleInterfaceTypeConsumer.ts');
     const program = typescript.createProgram([fixturePath], compilerOptions);
+    const diagnostics = typescript.getPreEmitDiagnostics(program);
     const messages: string[] = [];
-    for (const diagnostic of typescript.getPreEmitDiagnostics(program)) {
-      messages.push(typescript.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
+    for (let index = 0; index < diagnostics.length; index += 1) {
+      const diagnostic = diagnostics[index];
+      if (diagnostic !== undefined) {
+        messages.push(typescript.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
+      }
     }
     return messages;
   }
 }
 
 await test('schema-derived interfaces preserve explicit undefined across consumer compiler options', () => {
-  assert.deepEqual(SchemaInterfaceTypeConsumerCompiler.collectDiagnosticMessages(false), []);
-  assert.deepEqual(SchemaInterfaceTypeConsumerCompiler.collectDiagnosticMessages(true), []);
+  assert.deepEqual(SchemaInterfaceTypeConsumerCompiler.collectDefaultOptionalPropertyDiagnostics(), []);
+  assert.deepEqual(SchemaInterfaceTypeConsumerCompiler.collectExactOptionalPropertyDiagnostics(), []);
 });

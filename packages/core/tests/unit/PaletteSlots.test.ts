@@ -1,37 +1,28 @@
-import type { PaletteStateInterface } from '@studnicky/iridis';
+import type { JSONSchema7Type } from 'json-schema';
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
+
+import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
+import { RuntimeOptionsInterfaceTypeEntity } from '../../src/entities/RuntimeOptionsInterfaceTypeEntity.ts';
 import { PaletteMetadataSlot } from '../../src/model/PaletteMetadataSlot.ts';
 import { PaletteOutputSlot } from '../../src/model/PaletteOutputSlot.ts';
 
 class PaletteSlotTestFixture {
-  static malformedValues(): readonly (readonly never[] | null | number | string)[] {
+  static malformedValues(): readonly JSONSchema7Type[] {
     return [[], null, 42, 'invalid'];
   }
 
   static state(): PaletteStateInterface {
     return {
       'colors': [],
-      'input': {
-        'bypass':    undefined,
-        'colors':    [],
-        'contrast':  undefined,
-        'emit':      undefined,
-        'maxColors': undefined,
-        'metadata':  undefined,
-        'roles':     undefined,
-        'runtime':   undefined
-      },
+      'input': InputInterfaceTypeEntity.intake({ 'colors': [] }),
       'metadata': {},
       'outputs':  {},
       'roles':    {},
-      'runtime': {
-        'colorSpace': undefined,
-        'extra':      undefined,
-        'framing':    undefined
-      },
+      'runtime': RuntimeOptionsInterfaceTypeEntity.intake({}),
       'variants': {}
     };
   }
@@ -54,7 +45,12 @@ await test('PaletteOutputSlot creates a missing slot and reuses its object ident
 await test('PaletteOutputSlot replaces malformed runtime values with object slots', () => {
   const state = PaletteSlotTestFixture.state();
 
-  for (const malformed of PaletteSlotTestFixture.malformedValues()) {
+  const malformedValues = PaletteSlotTestFixture.malformedValues();
+  for (let index = 0; index < malformedValues.length; index += 1) {
+    const malformed = malformedValues.at(index);
+    if (malformed === undefined) {
+      throw new Error(`Missing malformed slot value at index ${index}`);
+    }
     state.outputs.plugin = malformed;
     const replacement = PaletteOutputSlot.getOrCreate(state, 'plugin');
 
@@ -81,7 +77,12 @@ await test('PaletteMetadataSlot creates a missing slot and reuses its object ide
 await test('PaletteMetadataSlot replaces malformed runtime values with object slots', () => {
   const state = PaletteSlotTestFixture.state();
 
-  for (const malformed of PaletteSlotTestFixture.malformedValues()) {
+  const malformedValues = PaletteSlotTestFixture.malformedValues();
+  for (let index = 0; index < malformedValues.length; index += 1) {
+    const malformed = malformedValues.at(index);
+    if (malformed === undefined) {
+      throw new Error(`Missing malformed slot value at index ${index}`);
+    }
     state.metadata.plugin = malformed;
     const replacement = PaletteMetadataSlot.getOrCreate(state, 'plugin');
 

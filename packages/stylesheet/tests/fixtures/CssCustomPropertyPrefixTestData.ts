@@ -1,0 +1,1 @@
+export const CssCustomPropertyPrefixTestData = Object.freeze({ 'ERROR_PATTERN': /value must be a CSS custom-property prefix/u, 'INVALID_PREFIXES': ['--safe-} body {', '--safe-;', '--safe:', '--safe prefix-', '--safe-\n', '--safe-/*comment*/', 'brand-', ''] });

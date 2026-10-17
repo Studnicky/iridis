@@ -1,29 +1,25 @@
-import type { JsonValueType } from '@studnicky/types';
+import { ValidationError } from '@studnicky/errors/node';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import { ValidationError } from '@studnicky/errors';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
-
-import type { HslInputEntity } from '../../entities/HslInputEntity.ts';
+import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
-import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
-import type { ColorRecordInterfaceType } from '../../types/color.ts';
-import type { TaskManifestInterfaceType } from '../../types/pipeline.ts';
 
+import { HslInputEntity } from '../../entities/HslInputEntity.ts';
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
-class HslInputGuard {
-  static check(value: JsonValueType | RawImagePixelInputInterface): value is HslInputEntity.Type {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {return false;}
-    if (!('h' in value) || !('s' in value) || !('l' in value)) {return false;}
-    return typeof value.h === 'number' && Number.isFinite(value.h)
-      && typeof value.s === 'number' && Number.isFinite(value.s)
-      && typeof value.l === 'number' && Number.isFinite(value.l)
-      && !('r' in value && typeof value.r === 'number')
-      && !('c' in value && typeof value.c === 'number');
+class HslInputBoundary {
+  static intake(value: ColorInputEntity.Type): HslInputEntity.Type | undefined {
+    try {
+      const result = HslInputEntity.intake(value);
+      return result;
+    } catch {
+      return undefined;
+    }
   }
 }
 
@@ -38,22 +34,21 @@ class HslInputGuard {
 class IntakeHsl implements TaskInterface {
   readonly 'name' = 'intake:hsl';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Parses {h,s,l,a?} (h: deg, s/l: 0..1 or 0..100) into ColorRecord entries. Throws on non-HSL input.',
     'name':        'intake:hsl',
-    'phase':       undefined,
     'reads':       ['input.colors'],
-    'requires':    undefined,
     'writes':      ['colors']
-  };
+  });
 
   /**
    * Parses a single value as an HSL object. Throws when the input is not a
    * valid `{h,s,l}` object or carries keys from a different format (r/c).
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
-    if (!HslInputGuard.check(raw)) {
+  parse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+    const input = HslInputBoundary.intake(raw);
+    if (input === undefined) {
       throw ValidationError.create({
         'message': 'intake:hsl — expected an {h,s,l} object',
         'path':    'raw',
@@ -65,13 +60,14 @@ class IntakeHsl implements TaskInterface {
       });
     }
 
-    const { h, l, s } = raw;
-    const a = typeof raw.a === 'number' ? raw.a : 1;
+    const { h, l, s } = input;
+    const a = input.a ?? 1;
     const alpha = a > 1 ? a / 100 : a;
     const sat = s > 1 ? s / 100 : s;
     const lig = l > 1 ? l / 100 : l;
 
-    return colorRecordFactory.fromHsl(h, sat, lig, { 'alpha': clamp01.apply(alpha), 'sourceFormat': 'hsl' });
+    const result = colorRecordFactory.fromHsl(h, sat, lig, { 'alpha': clamp01.apply(alpha), 'sourceFormat': 'hsl' });
+    return result;
   }
 
   /**
@@ -79,16 +75,29 @@ class IntakeHsl implements TaskInterface {
    * {@link IntakeHsl.run} does not carry a try/catch in its body (V8
    * de-optimises try/catch inside hot loops).
    */
-  #tryParse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType | undefined {
+  #tryParse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type | undefined {
     try {
-      return this.parse(raw);
+      const result = this.parse(raw);
+      return result;
     } catch {
       return undefined;
     }
   }
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    for (const [i, raw] of state.input.colors.entries()) {
+    for (let i = 0; i < state.input.colors.length; i += 1) {
+      const raw = state.input.colors[i];
+      if (raw === undefined) {
+        throw ValidationError.create({
+          'message': `intake:hsl — entry at index ${i} is not an HSL object`,
+          'path':    `input.colors[${i}]`,
+          'violations': [{
+            'details': { 'index': i },
+            'message': 'entry is absent',
+            'path':    `input.colors[${i}]`
+          }]
+        });
+      }
       const record = this.#tryParse(raw);
       if (record === undefined) {
         throw ValidationError.create({
@@ -105,16 +114,16 @@ class IntakeHsl implements TaskInterface {
           }]
         });
       }
-      const typed = HslInputGuard.check(raw) ? raw : undefined;
+      const typed = HslInputBoundary.intake(raw);
       state.colors.push(record);
       context.logger.debug(
-        LogBody.create()
-          .component('IntakeHsl')
-          .operation('run')
-          .status(LOG_STATUS.SUCCESS)
-          .message('Parsed hsl value')
-          .context({ 'h': typed?.h, 'hex': record.hex, 'l': typed?.l, 's': typed?.s })
-          .build()
+        LogBody.create({
+          'component': 'IntakeHsl',
+          'context': { 'h': typed?.h, 'hex': record.hex, 'l': typed?.l, 's': typed?.s },
+          'message': 'Parsed hsl value',
+          'operation': 'run',
+          'status': LOG_STATUS.SUCCESS
+        })
       );
     }
   }

@@ -1,25 +1,26 @@
-import type { FromSchema, JsonValueType } from '@studnicky/types';
+import type { EntityCreateFunctionInterface, EntityIntakeFunctionInterface } from '@studnicky/entity/interfaces';
+import type { NodeStaticType } from '@studnicky/entity/types';
 
-import { JsonTology } from '@studnicky/json-tology';
+import { EntityCompiler } from '@studnicky/entity/node';
+import { SchemaNode } from '@studnicky/entity/types';
 
 /** OKLCH color: lightness, chroma, hue. */
 export namespace OklchInterfaceTypeEntity {
-  export const Schema = {
-    '$id': 'urn:iridis-algebra:OklchInterfaceType',
-    'additionalProperties': false,
-    'properties': {
-      'c': { 'type': 'number' },
-      'h': { 'type': 'number' },
-      'l': { 'type': 'number' }
+  export const Schema = SchemaNode.defineObject(
+    { '$id': 'urn:iridis-algebra:OklchInterfaceType', 'type': 'object' },
+    {
+      'c': SchemaNode.defineNumber({ 'type': 'number' }),
+      'h': SchemaNode.defineNumber({ 'type': 'number' }),
+      'l': SchemaNode.defineNumber({ 'type': 'number' })
     },
-    'required': ['c', 'h', 'l'],
-    'type': 'object'
-  } as const;
+    ['c', 'h', 'l'],
+    { 'additionalProperties': false, 'patternProperties': {} }
+  );
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = NodeStaticType<typeof Schema>;
 
-  export const validate = (value: JsonValueType): value is Type => {
-    const conforms = JsonTology.is(Schema, value);
-    return conforms;
-  };
+  export const validate = EntityCompiler.compile<Type>(Schema.schema);
+
+  export const intake: EntityIntakeFunctionInterface<Type> = EntityCompiler.compileIntake<Type>(Schema.schema);
+  export const create: EntityCreateFunctionInterface<Type> = EntityCompiler.compileCreate<Type>(Schema.schema);
 }

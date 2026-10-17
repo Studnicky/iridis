@@ -1,6 +1,9 @@
-import type { SchemaPairType } from '../composables/types/index.ts';
+import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { JsonValue } from '@studnicky/types/browser';
 
-import { contrastConfigFor } from '../composables/contrastConfigFor.ts';
+import type { SchemaPair } from '../composables/types/index.ts';
+
+import { ContrastConfigFor } from '../composables/contrastConfigFor.ts';
 import { createColorEngine } from '../composables/createColorEngine.ts';
 import { optionalContrastStages } from '../composables/optionalContrastStages.ts';
 import { pickerSeedInputs } from '../composables/pickerSeedInputs.ts';
@@ -21,40 +24,64 @@ export class DefaultThemeCss {
     { 'hex': '#ec4899', 'role': undefined }
   ];
 
-  private static schemaPair(): SchemaPairType {
-    for (const [name, pair] of Object.entries(roleSchemaByName)) {
-      if (name === 'iridis-32') {return pair;}
+  private static schemaPair(): SchemaPair {
+    const entries = Object.entries(roleSchemaByName);
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry?.[0] === 'iridis-32') {
+        const pair = entry[1];
+        return pair;
+      }
     }
     throw new RangeError('No role schema is registered for iridis-32');
   }
 
-  private static generateFrame(framing: 'dark' | 'light'): string {
+  private static generateDarkFrame(): string {
     const engine = createColorEngine();
     engine.pipeline(spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(2)));
     const pair = DefaultThemeCss.schemaPair();
-    const state = engine.run({
-      'bypass':   undefined,
+    const state = engine.run(InputInterfaceTypeEntity.create({
       'colors':   pickerSeedInputs(DefaultThemeCss.seeds),
-      'contrast': contrastConfigFor(2, true),
-      'emit':     undefined,
-      'maxColors': undefined,
+      'contrast': ContrastConfigFor.forStrictness(2, ContrastConfigFor.correctingCvd),
       'metadata': {
-        'core:variantConfig': VARIANT_CONFIG,
-        'derivation:config': DEFAULT_DERIVATION_CONFIG,
-        'derivation:semanticHuesEnabled': true
+        'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
+        'derivation:config': JsonValue.from(DEFAULT_DERIVATION_CONFIG),
+        'derivation:semanticHuesEnabled': JsonValue.from(true)
       },
-      'roles':   framing === 'dark' ? pair.dark : pair.light,
-      'runtime': { 'colorSpace': 'srgb', 'extra': undefined, 'framing': framing }
-    });
+      'roles':   pair.dark,
+      'runtime': { 'colorSpace': 'srgb', 'framing': 'dark' }
+    }));
     const maps = Tokens.extractEngineMaps(state);
     const css = Tokens.toCssText(Tokens.mapFromEngine(maps.roles, maps.scales));
-    const selector = framing === 'dark' ? 'html:root.dark' : 'html:root, html:root:not(.dark)';
-    return css.replace(DefaultThemeCss.baseSelector, selector);
+    const themedCss = css.replace(DefaultThemeCss.baseSelector, 'html:root.dark');
+    return themedCss;
+  }
+
+  private static generateLightFrame(): string {
+    const engine = createColorEngine();
+    engine.pipeline(spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(2)));
+    const pair = DefaultThemeCss.schemaPair();
+    const state = engine.run(InputInterfaceTypeEntity.create({
+      'colors':   pickerSeedInputs(DefaultThemeCss.seeds),
+      'contrast': ContrastConfigFor.forStrictness(2, ContrastConfigFor.correctingCvd),
+      'metadata': {
+        'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
+        'derivation:config': JsonValue.from(DEFAULT_DERIVATION_CONFIG),
+        'derivation:semanticHuesEnabled': JsonValue.from(true)
+      },
+      'roles':   pair.light,
+      'runtime': { 'colorSpace': 'srgb', 'framing': 'light' }
+    }));
+    const maps = Tokens.extractEngineMaps(state);
+    const css = Tokens.toCssText(Tokens.mapFromEngine(maps.roles, maps.scales));
+    const themedCss = css.replace(DefaultThemeCss.baseSelector, 'html:root, html:root:not(.dark)');
+    return themedCss;
   }
 
   static generate(): string {
-    const light = DefaultThemeCss.generateFrame('light');
-    const dark = DefaultThemeCss.generateFrame('dark');
-    return `${light}\n${dark}`;
+    const light = DefaultThemeCss.generateLightFrame();
+    const dark = DefaultThemeCss.generateDarkFrame();
+    const themeCss = `${light  }\n${  dark}`;
+    return themeCss;
   }
 }

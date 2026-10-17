@@ -1,5 +1,4 @@
-import type { RgbInterfaceType } from '../types/index.ts';
-
+import { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
 import { clamp01 } from './Clamp01.ts';
 import { linearToSrgb } from './LinearToSrgb.ts';
 
@@ -16,7 +15,7 @@ import { linearToSrgb } from './LinearToSrgb.ts';
 class OklchToRgbRaw {
   readonly 'name' = 'oklchToRgbRaw';
 
-  apply(l: number, c: number, h: number): RgbInterfaceType {
+  apply(l: number, c: number, h: number): RgbInterfaceTypeEntity.Type {
     const hRad = (h * Math.PI) / 180;
     const a = c * Math.cos(hRad);
     const b = c * Math.sin(hRad);
@@ -35,11 +34,12 @@ class OklchToRgbRaw {
 
     const encoded = linearToSrgb.apply(rLin, gLin, bLin);
 
-    return {
+    const result = RgbInterfaceTypeEntity.create({
       'b': clamp01.apply(encoded.b),
       'g': clamp01.apply(encoded.g),
       'r': clamp01.apply(encoded.r)
-    };
+    });
+    return result;
   }
 }
 

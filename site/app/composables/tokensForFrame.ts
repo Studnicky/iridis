@@ -1,4 +1,4 @@
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 
 import type { RoleHexMapType } from './types/index.ts';
 
@@ -7,14 +7,21 @@ import { DECORATIVE_ALIASES } from './decorativeAliases.ts';
 
 /** Builds the partial `--ui-color-{alias}-500` token set for one animation frame's palette. */
 class TokensForFrameOperation {
-  static run(frame: PaletteInterfaceType): RoleHexMapType {
+  static run(frame: PaletteInterfaceTypeEntity.Type): RoleHexMapType {
     const tokens: RoleHexMapType = {};
-    for (const [alias, roleName] of Object.entries(DECORATIVE_ALIASES)) {
+    const entries = Object.entries(DECORATIVE_ALIASES);
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry === undefined) {
+        throw new RangeError(`Decorative alias entry list is missing entry ${index}`);
+      }
+      const [alias, roleName] = entry;
       const role = frame[roleName];
       if (role === undefined) { continue; }
-      tokens[`--ui-color-${alias}-500`] = oklchToHex(role.l, role.c, role.h);
+      Object.defineProperty(tokens, `--ui-color-${alias}-500`, { 'configurable': true, 'enumerable': true, 'value': oklchToHex(role.l, role.c, role.h), 'writable': true });
     }
-    return tokens;
+    const result = tokens;
+    return result;
   }
 }
 

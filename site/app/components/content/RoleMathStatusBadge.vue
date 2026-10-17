@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 import { computed } from 'vue';
 import { buildRoleMathStatusModel } from './roleMath/buildRoleMathStatusModel.ts';
 
 const props = defineProps<{
-  role: RoleMathEntryType;
+  role: RoleMathEntry;
 }>();
 
 const statusModel = computed(() => buildRoleMathStatusModel.build(props.role));
@@ -12,10 +12,10 @@ const statusModel = computed(() => buildRoleMathStatusModel.build(props.role));
 
 <template>
   <UBadge
-    :color="statusModel.color"
+    :color="statusModel.presentation.badgeColor()"
     variant="subtle"
     size="sm"
   >
-    {{ statusModel.label }}
+    {{ statusModel.presentation.badgeLabel() }}
   </UBadge>
 </template>

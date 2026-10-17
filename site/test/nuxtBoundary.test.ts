@@ -1,7 +1,11 @@
+import type { InferType } from '@studnicky/json-tology/types';
+
 import { chromium, type Page } from '@playwright/test';
+import { EntityCompiler } from '@studnicky/entity/node';
 import assert from 'node:assert/strict';
 import { type ChildProcess, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { createServer } from 'node:net';
 import { resolve } from 'node:path';
 import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
@@ -12,17 +16,28 @@ import { TestPatterns } from './fixtures/TestPatterns.ts';
 
 const SITE_ROOT = resolve(import.meta.dirname, '..');
 const NITRO_SERVER = resolve(SITE_ROOT, '.output/server/index.mjs');
+namespace NitroListeningMessageEntity {
+  export const Schema = {
+    'additionalProperties': false,
+    'properties': {
+      'port': { 'minimum': 1, 'type': 'integer' },
+      'type': { 'const': 'nitro-listening', 'type': 'string' }
+    },
+    'required': ['port', 'type'],
+    'type': 'object'
+  } as const;
+
+  export type Type = InferType<typeof Schema>;
+
+  export const intake: ReturnType<typeof EntityCompiler.compileIntake<Type>> = EntityCompiler.compileIntake<Type>(Schema);
+  export const create: ReturnType<typeof EntityCompiler.compileCreate<Type>> = EntityCompiler.compileCreate<Type>(Schema);
+  export const validate: ReturnType<typeof EntityCompiler.compile<Type>> = EntityCompiler.compile<Type>(Schema);
+}
 
 class NuxtBoundaryHarness {
-  static isListeningMessage(message: unknown): message is { readonly 'port': number; readonly 'type': 'nitro-listening' } {
-    if (typeof message !== 'object' || message === null) {return false;}
-    return Reflect.get(message, 'type') === 'nitro-listening'
-      && Number.isInteger(Reflect.get(message, 'port'))
-      && Reflect.get(message, 'port') > 0;
-  }
-
   static hasExited(child: ChildProcess): boolean {
-    return child.exitCode !== null || child.signalCode !== null;
+    const result = child.exitCode !== null || child.signalCode !== null;
+    return result;
   }
 
   static async waitForExit(child: ChildProcess, timeoutMs: number): Promise<boolean> {
@@ -51,6 +66,24 @@ class NuxtBoundaryHarness {
   }
 
   static async startNitro(): Promise<{ readonly 'child': ChildProcess; readonly 'origin': string }> {
+    const requestedPort = await new Promise<number>((resolvePort, rejectPort) => {
+      const server = createServer();
+      server.once('error', rejectPort);
+      server.once('listening', () => {
+        const address = server.address();
+        if (address === null || typeof address === 'string') {
+          server.close();
+          rejectPort(new Error('Ephemeral port allocation did not return a TCP address'));
+          return;
+        }
+        const port = address.port;
+        server.close((error) => {
+          if (error !== undefined) {rejectPort(error); return;}
+          resolvePort(port);
+        });
+      });
+      server.listen(0, '127.0.0.1');
+    });
     const child = spawn(process.execPath, ['--input-type=module', '--eval', `
       import { Server } from 'node:net';
 
@@ -69,7 +102,7 @@ class NuxtBoundaryHarness {
       await import(${JSON.stringify(pathToFileURL(NITRO_SERVER).href)});
     `], {
       'cwd': SITE_ROOT,
-      'env': { ...process.env, 'HOST': '127.0.0.1', 'NODE_ENV': 'production', 'PORT': '0' },
+      'env': { ...process.env, 'HOST': '127.0.0.1', 'NITRO_PORT': String(requestedPort), 'NODE_ENV': 'production', 'PORT': String(requestedPort) },
       'stdio': ['ignore', 'pipe', 'pipe', 'ipc']
     });
     let standardOutput = '';
@@ -90,14 +123,14 @@ class NuxtBoundaryHarness {
         const fail = (message: string, cause?: unknown): void => {
           cleanup();
           const output = `${standardOutput}\n${standardError}`.trim();
-          rejectPort(new Error(`${message}${output.length > 0 ? `\n${output}` : ''}`, { 'cause': cause }));
+          const outputSuffix = output.length > 0 ? `\n${  output}` : '';
+          rejectPort(new Error(message + outputSuffix, { 'cause': cause }));
         };
         const onError = (error: Error): void => {fail('Nitro child failed to start', error);};
-        const onExit = (code: number | null, signal: NodeJS.Signals | null): void => {
+        const onExit = (code: number | null, signal: string | null): void => {
           fail(`Nitro child exited before listening (code ${String(code)}, signal ${String(signal)})`);
         };
-        const onMessage = (message: unknown): void => {
-          if (!NuxtBoundaryHarness.isListeningMessage(message)) {return;}
+        const onMessage = (message: NitroListeningMessageEntity.Type): void => {
           cleanup();
           resolvePort(message.port);
         };
@@ -106,7 +139,9 @@ class NuxtBoundaryHarness {
         }, 15_000);
         child.once('error', onError);
         child.once('exit', onExit);
-        child.on('message', onMessage);
+        child.on('message', (message) => {
+          onMessage(NitroListeningMessageEntity.intake(message));
+        });
       });
       return { 'child': child, 'origin': `http://127.0.0.1:${port}` };
     } catch (error) {
@@ -147,7 +182,8 @@ class NuxtBoundaryHarness {
         const target = document.getElementById(targetIdentifier);
         if (target === null) {return false;}
         const bounds = target.getBoundingClientRect();
-        return bounds.bottom > 0 && bounds.top < window.innerHeight * 0.4;
+        const result = bounds.bottom > 0 && bounds.top < window.innerHeight * 0.4;
+        return result;
       }, identifier, { 'timeout': 60_000 });
       const settledGeometry = await page.evaluate(async (targetIdentifier) => {
         const target = document.getElementById(targetIdentifier);
@@ -448,7 +484,8 @@ await test('built Nuxt app SSRs and hydrates the rendered navigation order', { '
   assert.equal(await nextDocumentButton.count(), 1);
   await nextDocumentButton.click();
   await assert.doesNotReject(page.waitForFunction(() => {
-    return document.querySelector('#remaining-documents h2')?.textContent?.includes('3. Adopting Iridis In An Existing App') === true;
+    const result = document.querySelector('#remaining-documents h2')?.textContent?.includes('3. Adopting Iridis In An Existing App') === true;
+    return result;
   }));
   await NuxtBoundaryHarness.waitForTargetNearTop(page, '03-adopting-existing-apps');
 
@@ -509,13 +546,14 @@ await test('built Nuxt app SSRs and hydrates the rendered navigation order', { '
     probe.append(shape, glyph, lavaBlob);
     document.body.append(probe, heroOrb);
 
-    const animationNames: Record<string, readonly string[]> = {};
-    for (const presetKey of presetKeys) {
+    const animationNames = new Map<string, readonly string[]>();
+    for (let index = 0; index < presetKeys.length; index += 1) {
+      const presetKey = presetKeys[index]!;
       document.documentElement.dataset.iridisTheme = presetKey;
       await new Promise<void>((resolveFrame) => {
         window.requestAnimationFrame(() => {resolveFrame();});
       });
-      animationNames[presetKey] = [
+      animationNames.set(presetKey, [
         getComputedStyle(probe).animationName,
         getComputedStyle(probe, '::before').animationName,
         getComputedStyle(probe, '::after').animationName,
@@ -525,7 +563,7 @@ await test('built Nuxt app SSRs and hydrates the rendered navigation order', { '
         getComputedStyle(heroOrb).animationName,
         getComputedStyle(heroOrb, '::before').animationName,
         getComputedStyle(heroOrb, '::after').animationName
-      ];
+      ]);
     }
 
     if (previousPresetKey === undefined) {
@@ -535,10 +573,12 @@ await test('built Nuxt app SSRs and hydrates the rendered navigation order', { '
     }
     probe.remove();
     heroOrb.remove();
-    return animationNames;
-  }, Object.keys(THEMES).sort());
-  assert.equal(Object.keys(reducedMotionByPreset).length, Object.keys(THEMES).length);
-  for (const [presetKey, animationNames] of Object.entries(reducedMotionByPreset)) {
+    const result = Array.from(animationNames.entries());
+    return result;
+  }, Object.keys(THEMES).toSorted((left, right) => { const result = left.localeCompare(right); return result; }));
+  assert.equal(reducedMotionByPreset.length, Object.keys(THEMES).length);
+  for (let index = 0; index < reducedMotionByPreset.length; index += 1) {
+    const [presetKey, animationNames] = reducedMotionByPreset[index]!;
     assert.deepEqual(
       new Set(animationNames),
       new Set(['none']),
