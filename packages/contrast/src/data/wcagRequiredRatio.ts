@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceType, ContrastPairInterfaceType } from '@studnicky/iridis';
+import type { ColorRecordInterfaceTypeEntity, ContrastPairInterfaceTypeEntity } from '@studnicky/iridis';
 
 import { TextForegroundIntent } from './TextForegroundIntent.ts';
 
@@ -6,39 +6,40 @@ class WcagRequiredRatio {
   readonly 'name' = 'wcagRequiredRatio';
 
   private isTextPair(
-    pair: ContrastPairInterfaceType,
-    roles: Record<string, ColorRecordInterfaceType>
+    pair: ContrastPairInterfaceTypeEntity.Type,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>
   ): boolean {
     const foregroundRecord = roles[pair.foreground];
     const backgroundRecord = roles[pair.background];
-    if (foregroundRecord === undefined || backgroundRecord === undefined) {return false;}
-    return TextForegroundIntent.matches(foregroundRecord.hints?.intent);
+    if (foregroundRecord === undefined || backgroundRecord === undefined) {
+      return false;
+    }
+    const result = TextForegroundIntent.matches(foregroundRecord.hints);
+    return result;
   }
 
-  apply(
-    level: 'aa' | 'aaa',
-    pair: ContrastPairInterfaceType,
-    roles: Record<string, ColorRecordInterfaceType>
+  forAa(
+    pair: ContrastPairInterfaceTypeEntity.Type,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>
   ): number {
-    if (pair.minRatio > 0) {
-      return pair.minRatio;
+    const minimumContrastRatio = pair.minimumContrastRatio;
+    if (minimumContrastRatio !== undefined) {
+      return minimumContrastRatio;
     }
+    const result = this.isTextPair(pair, roles) ? 4.5 : 3.0;
+    return result;
+  }
 
-    if (level === 'aa') {
-      if (this.isTextPair(pair, roles)) {
-        return 4.5;
-      }
-      return 3.0;
+  forAaa(
+    pair: ContrastPairInterfaceTypeEntity.Type,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>
+  ): number {
+    const minimumContrastRatio = pair.minimumContrastRatio;
+    if (minimumContrastRatio !== undefined) {
+      return minimumContrastRatio;
     }
-
-    // AAA level: roles must exist; default to 7.0 when absent.
-    if (roles[pair.foreground] === undefined || roles[pair.background] === undefined) {
-      return 7.0;
-    }
-    if (this.isTextPair(pair, roles)) {
-      return 7.0;
-    }
-    return 4.5;
+    const result = this.isTextPair(pair, roles) ? 7.0 : 4.5;
+    return result;
   }
 }
 

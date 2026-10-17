@@ -15,88 +15,17 @@
  *   defaultLibrary:         Subtle, blend toward muted (built-in, not user code)
  */
 
-import type { ModifierTransformInterfaceType } from '../types/index.ts';
+import type { ModifierTransformInterfaceTypeEntity } from '../entities/ModifierTransformInterfaceTypeEntity.ts';
 
-export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInterfaceType>> = {
-
-  'abstract': {
-    'fontStyle':   'italic',
-    'lightness':    3,
-    'mixWeight':   undefined,
-    'mixWith':     undefined,
-    'saturation':  -8
-  },
-
-  'async': {
-    'fontStyle':   'italic',
-    'lightness':   undefined,
-    'mixWeight':    0.12,
-    'mixWith':     'info',
-    'saturation':  undefined
-  },
-
-  'declaration': {
-    'fontStyle':   'bold',
-    'lightness':    5,
-    'mixWeight':   undefined,
-    'mixWith':     undefined,
-    'saturation':  undefined
-  },
-
-  'defaultLibrary': {
-    'fontStyle':   undefined,
-    'lightness':   -5,
-    'mixWeight':    0.15,
-    'mixWith':     'muted',
-    'saturation': -10
-  },
-
-  'definition': {
-    'fontStyle':   'bold',
-    'lightness':    5,
-    'mixWeight':   undefined,
-    'mixWith':     undefined,
-    'saturation':  undefined
-  },
-
-  'deprecated': {
-    'fontStyle':   'strikethrough',
-    'lightness':  -10,
-    'mixWeight':    0.3,
-    'mixWith':     'muted',
-    'saturation': -40
-  },
-
-  'documentation': {
-    'fontStyle':   'italic',
-    'lightness':   undefined,
-    'mixWeight':    0.25,
-    'mixWith':     'comment',
-    'saturation': -15
-  },
-
-  'modification': {
-    'fontStyle':   'bold',
-    'lightness':    3,
-    'mixWeight':    0.1,
-    'mixWith':     'warning',
-    'saturation':   8
-  },
-
-  'readonly': {
-    'fontStyle':   'bold',
-    'lightness':    8,
-    'mixWeight':    0.15,
-    'mixWith':     'constant',
-    'saturation':  -5
-  },
-
-  'static': {
-    'fontStyle':   'underline',
-    'lightness':   undefined,
-    'mixWeight':   undefined,
-    'mixWith':     undefined,
-    'saturation': -12
-  }
-
+export const MODIFIER_TRANSFORMS: Readonly<Record<string, ModifierTransformInterfaceTypeEntity.Type>> = {
+  'abstract':       { 'fontStyle': 'italic', 'lightness': 3, 'saturation': -8 },
+  'async':          { 'fontStyle': 'italic', 'mixWeight': 0.12, 'mixWith': 'info' },
+  'declaration':    { 'fontStyle': 'bold', 'lightness': 5 },
+  'defaultLibrary': { 'lightness': -5, 'mixWeight': 0.15, 'mixWith': 'muted', 'saturation': -10 },
+  'definition':     { 'fontStyle': 'bold', 'lightness': 5 },
+  'deprecated':     { 'fontStyle': 'strikethrough', 'lightness': -10, 'mixWeight': 0.3, 'mixWith': 'muted', 'saturation': -40 },
+  'documentation':  { 'fontStyle': 'italic', 'mixWeight': 0.25, 'mixWith': 'comment', 'saturation': -15 },
+  'modification':   { 'fontStyle': 'bold', 'lightness': 3, 'mixWeight': 0.1, 'mixWith': 'warning', 'saturation': 8 },
+  'readonly':       { 'fontStyle': 'bold', 'lightness': 8, 'mixWeight': 0.15, 'mixWith': 'constant', 'saturation': -5 },
+  'static':         { 'fontStyle': 'underline', 'saturation': -12 }
 } as const;

@@ -4,54 +4,52 @@ import { colorRecordFactory } from '@studnicky/iridis';
 
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 
+import type { ColorGraphCategoryVisibility } from './ColorGraphCategoryVisibility.ts';
+import type { ColorGraphNodeCategory } from './ColorGraphNodeCategory.ts';
+
 class ColorGraphPointMeta {
   public readonly algorithm: string | null;
-  public readonly category: 'pinned' | 'synthesized' | 'derived' | 'direct';
-  public readonly clamped: boolean;
+  public readonly category: ColorGraphNodeCategory;
   public readonly hex: string;
+  public readonly labelSuffix: string;
   public readonly name: string;
 
   public constructor(
     algorithm: string | null,
-    category: 'pinned' | 'synthesized' | 'derived' | 'direct',
-    clamped: boolean,
+    category: ColorGraphNodeCategory,
     hex: string,
+    labelSuffix: string,
     name: string
   ) {
     this.algorithm = algorithm;
     this.category = category;
-    this.clamped = clamped;
     this.hex = hex;
+    this.labelSuffix = labelSuffix;
     this.name = name;
-  }
-}
-
-class ColorGraphCategoryVisibility {
-  public readonly derived: boolean;
-  public readonly direct: boolean;
-  public readonly pinned: boolean;
-  public readonly synthesized: boolean;
-
-  public constructor(derived: boolean, direct: boolean, pinned: boolean, synthesized: boolean) {
-    this.derived = derived;
-    this.direct = direct;
-    this.pinned = pinned;
-    this.synthesized = synthesized;
   }
 }
 
 export const colorGraphLabelPainter = class ColorGraphLabelPainter {
   public static backgroundColorFromTheme(): [number, number, number, number] {
-    if (typeof document === 'undefined') {return [0, 0, 0, 1];}
+    if (typeof document === 'undefined') {
+      const fallbackColor: [number, number, number, number] = [0, 0, 0, 1];
+      return fallbackColor;
+    }
     const hex = getComputedStyle(document.documentElement).getPropertyValue('--ui-bg').trim();
-    if (hex.length === 0) {return [0, 0, 0, 1];}
+    if (hex.length === 0) {
+      const fallbackColor: [number, number, number, number] = [0, 0, 0, 1];
+      return fallbackColor;
+    }
     const [red, green, blue] = ColorGraphLabelPainter.rgbOf(hex);
     return [red, green, blue, 1];
   }
 
   private static devicePixelRatio(): number {
     const devicePixelRatio = window.devicePixelRatio;
-    return devicePixelRatio === 0 || Number.isNaN(devicePixelRatio) ? 1 : devicePixelRatio;
+    const resolvedRatio = devicePixelRatio === 0 || Number.isNaN(devicePixelRatio)
+      ? 1
+      : devicePixelRatio;
+    return resolvedRatio;
   }
 
   public static paintLabels(
@@ -85,43 +83,70 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
 
     for (let index = 0; index < labelCount; index++) {
       const meta = labelMeta[index];
-      if (meta === undefined || categoryVisible[meta.category] !== true) {continue;}
-      const worldX = positions[index * 2];
-      const worldY = positions[index * 2 + 1];
-      if (worldX === undefined || worldY === undefined) {continue;}
-      const screenPosition = ColorGraphLabelPainter.screenPosition(handle, worldX, worldY);
-      if (screenPosition === null) {continue;}
-      const [screenX, screenY] = screenPosition;
-      if (screenX < 0 || screenY < 0 || screenX > width || screenY > height) {continue;}
-
-      const label = meta.algorithm !== null ? `${meta.name} · ${meta.algorithm}` : meta.name;
-      const text = meta.clamped ? `${label} ⏚` : label;
-      const textWidth = context.measureText(text).width;
-      const pillWidth = textWidth + padX * 2;
-      const pillHeight = 13 + padY * 2;
-      const x = screenX + 8;
-      const y = screenY - pillHeight / 2;
-
-      context.fillStyle = meta.hex;
-      ColorGraphLabelPainter.roundRect(context, x, y, pillWidth, pillHeight, 4);
-      context.fill();
-      context.fillStyle = ColorGraphLabelPainter.readableTextColor(meta.hex);
-      context.fillText(text, x + padX, y + pillHeight / 2);
+      if (meta === undefined) {continue;}
+      ColorGraphLabelPainter.paintLabel(
+        categoryVisible,
+        context,
+        handle,
+        height,
+        index,
+        meta,
+        padX,
+        padY,
+        positions,
+        width
+      );
     }
+  }
+
+  private static paintLabel(
+    categoryVisible: ColorGraphCategoryVisibility,
+    context: CanvasRenderingContext2D,
+    handle: Graph,
+    height: number,
+    index: number,
+    meta: ColorGraphPointMeta,
+    padX: number,
+    padY: number,
+    positions: readonly number[],
+    width: number
+  ): void {
+    if (!categoryVisible.isVisible(meta.category)) {return;}
+    const worldX = positions[index * 2];
+    const worldY = positions[index * 2 + 1];
+    if (worldX === undefined || worldY === undefined) {return;}
+    const screenPosition = ColorGraphLabelPainter.screenPosition(handle, worldX, worldY);
+    if (screenPosition === null) {return;}
+    const [screenX, screenY] = screenPosition;
+    if (screenX < 0 || screenY < 0 || screenX > width || screenY > height) {return;}
+    const label = meta.algorithm !== null ? `${meta.name} · ${meta.algorithm}` : meta.name;
+    const text = `${label}${meta.labelSuffix}`;
+    const textWidth = context.measureText(text).width;
+    const pillWidth = textWidth + padX * 2;
+    const pillHeight = 13 + padY * 2;
+    const x = screenX + 8;
+    const y = screenY - pillHeight / 2;
+    context.fillStyle = meta.hex;
+    ColorGraphLabelPainter.roundRect(context, x, y, pillWidth, pillHeight, 4);
+    context.fill();
+    context.fillStyle = ColorGraphLabelPainter.readableTextColor(meta.hex);
+    context.fillText(text, x + padX, y + pillHeight / 2);
   }
 
   private static pointPositions(handle: Graph): readonly number[] | null {
     try {
-      return handle.getPointPositions();
+      const positions = handle.getPointPositions();
+      return positions;
     } catch {
       return null;
     }
   }
 
   private static readableTextColor(hex: string): string {
-    return contrastRatio(hex, '#ffffff') >= contrastRatio(hex, '#000000')
+    const readableTextColor = contrastRatio(hex, '#ffffff') >= contrastRatio(hex, '#000000')
       ? '#ffffff'
       : '#000000';
+    return readableTextColor;
   }
 
   public static resizeLabelCanvas(canvas: HTMLCanvasElement, container: HTMLDivElement): void {
@@ -139,7 +164,8 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
 
   private static rgbOf(hex: string): [number, number, number] {
     const { 'b': blue, 'g': green, 'r': red } = colorRecordFactory.fromHex(hex).rgb;
-    return [red, green, blue];
+    const rgb: [number, number, number] = [red, green, blue];
+    return rgb;
   }
 
   private static roundRect(
@@ -170,7 +196,8 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
     worldY: number
   ): readonly [number, number] | null {
     try {
-      return handle.spaceToScreenPosition([worldX, worldY]);
+      const position = handle.spaceToScreenPosition([worldX, worldY]);
+      return position;
     } catch {
       return null;
     }

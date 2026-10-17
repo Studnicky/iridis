@@ -31,6 +31,16 @@ const PACKAGE_MANIFESTS = readdirSync(join(WORKSPACE_ROOT, 'packages'), { 'withF
     return { manifest, relativePath };
   });
 
+const releaseVersion = () => {
+  const versions = new Set(PACKAGE_MANIFESTS
+    .filter(({ manifest }) => manifest.private !== true)
+    .map(({ manifest }) => manifest.version));
+  assert.equal(versions.size, 1, 'public package manifests must have one release version');
+  const [version] = versions;
+  assert.equal(typeof version, 'string');
+  return version;
+};
+
 const runCli = (arguments_, environment = {}) => {
   const inheritedEnvironment = Object.fromEntries(
     Object.entries(process.env).filter(([name]) => name !== 'NODE_AUTH_TOKEN')
@@ -162,7 +172,7 @@ await test('CLI accepts the canonical manifest-verification arguments', () => {
   const result = runCli([
     '--verify-manifests',
     '--expected-version',
-    WORKSPACE_MANIFEST.version
+    releaseVersion()
   ]);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(JSON.parse(result.stdout), { 'verifiedManifests': 18 });
@@ -176,7 +186,7 @@ await test('CLI rejects missing canonical publish-bundle arguments before public
   const missingBundle = runCli([
     '--publish-bundle',
     '--expected-version',
-    WORKSPACE_MANIFEST.version
+    releaseVersion()
   ], { 'NODE_AUTH_TOKEN': 'fixture-token' });
   assert.equal(missingBundle.status, 1);
   assert.match(missingBundle.stderr, /provide --bundle VALUE exactly once/u);
@@ -186,7 +196,7 @@ await test('CLI recognizes complete publish-bundle arguments without invoking a 
   const result = runCli([
     '--publish-bundle',
     '--expected-version',
-    WORKSPACE_MANIFEST.version,
+    releaseVersion(),
     '--bundle',
     'release-bundle'
   ]);
@@ -199,7 +209,7 @@ await test('CLI and all workspace manifests expose no direct-publication bypass'
   const result = runCli([
     '--publish',
     '--expected-version',
-    WORKSPACE_MANIFEST.version,
+    releaseVersion(),
     '--bundle',
     'release-bundle'
   ], { 'NODE_AUTH_TOKEN': 'fixture-token' });
@@ -266,16 +276,28 @@ await test('plans every staged package in dependency-first order', () => {
   }
 });
 
-await test('rejects workspace, count, source, and staged-manifest drift before publication', () => {
+await test('accepts private-root drift and rejects public release-manifest drift before publication', () => {
   const rootDirectory = createFixture();
   try {
+    writeFixtureFile(rootDirectory, 'package.json', `{
+  "name": "@fixture/workspace",
+  "private": true,
+  "version": "9.9.9",
+  "workspaces": [
+    "packages/*"
+  ]
+}\n`);
+    assert.deepEqual(
+      packagePublisher.plan(VERSION, rootDirectory, 3).map(({ name }) => name),
+      ['@fixture/core', '@fixture/plugin', '@fixture/cli']
+    );
     assert.throws(
       () => packagePublisher.plan(VERSION, rootDirectory, 18),
       /expected 18 public packages, found 3/u
     );
     assert.throws(
       () => packagePublisher.plan('1.2.4', rootDirectory, 3),
-      /workspace manifest mismatch.*expected 1\.2\.4/u
+      /source manifest mismatch.*expected 1\.2\.4/u
     );
     const sourceManifest = manifestFor('core');
     sourceManifest.version = '1.2.2';

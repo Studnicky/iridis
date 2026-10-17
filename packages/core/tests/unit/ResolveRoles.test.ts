@@ -12,23 +12,27 @@
  *   5. no-schema     — task is a no-op when no roles schema provided
  */
 
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  RoleSchemaInterfaceType,
-  TaskInterface
-} from '@studnicky/iridis';
+import type { JSONSchema7Type } from 'json-schema';
 
-import { Engine }             from '@studnicky/iridis';
-import { coreTasks }          from '@studnicky/iridis/tasks';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
+import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../src/interfaces/PipelineContextInterface.ts';
+import type { TaskInterface } from '../../src/interfaces/TaskInterface.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
+import { Engine } from '../../src/engine/Engine.ts';
+import { ColorHintsInterfaceTypeEntity } from '../../src/entities/ColorHintsInterfaceTypeEntity.ts';
+import { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import { ContrastPairInterfaceTypeEntity } from '../../src/entities/ContrastPairInterfaceTypeEntity.ts';
+import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
+import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
+import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
+import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
+import { coreTasks } from '../../src/tasks/index.ts';
 import { intakeP3 } from '../../src/tasks/intake/IntakeP3.ts';
 
 // ---------------------------------------------------------------------------
@@ -38,9 +42,39 @@ import { intakeP3 } from '../../src/tasks/intake/IntakeP3.ts';
 class TestEngineFixture {
   static freshEngine(pipeline: readonly string[] = ['intake:hex', 'resolve:roles']): Engine {
     const engine = new Engine();
-    for (const task of coreTasks) {engine.tasks.register(task);}
+    for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
+      const task = coreTasks[taskIndex];
+      if (task !== undefined) {engine.tasks.register(task);}
+    }
     engine.pipeline(pipeline);
     return engine;
+  }
+
+  static admitRoleSchema(value: JSONSchema7Type): RoleSchemaInterfaceTypeEntity.Type {
+    const schema = RoleSchemaInterfaceTypeEntity.intake(value);
+    const contrastPairs = schema.contrastPairs?.map((pair) => {
+      const result = ContrastPairInterfaceTypeEntity.intake(pair);
+      return result;
+    });
+    const roles = schema.roles.map((role) => {
+      const result = RoleDefinitionInterfaceTypeEntity.intake(role);
+      return result;
+    });
+    const result = RoleSchemaInterfaceTypeEntity.intake({
+      ...(contrastPairs === undefined ? {} : { 'contrastPairs': contrastPairs }),
+      ...(schema.description === undefined ? {} : { 'description': schema.description }),
+      'name': schema.name,
+      'roles': roles
+    });
+    return result;
+  }
+
+  static input(colors: readonly string[], roles: RoleSchemaInterfaceTypeEntity.Type | undefined = undefined): InputInterfaceTypeEntity.Type {
+    const result = InputInterfaceTypeEntity.create({
+      'colors': [...colors],
+      ...(roles === undefined ? {} : { 'roles': roles })
+    });
+    return result;
   }
 }
 
@@ -55,186 +89,153 @@ class TestEngineFixture {
 //   - hue is preserved when only chroma changes
 // ---------------------------------------------------------------------------
 
-type Cell1Input = {
+interface Cell1InputInterface {
   readonly 'colors':  readonly string[];
   readonly 'role':    string;
-  readonly 'roles':   RoleSchemaInterfaceType;
+  readonly 'roles':   JSONSchema7Type;
 };
-const cell1Scenarios: readonly ScenarioInterface<Cell1Input, {
-  readonly 'assigned': ReturnType<typeof colorRecordFactory.fromHex>;
-  readonly 'roleExists': boolean;
-}>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=1, scenario=high-chroma-clamp] must not throw');
-      assert.strictEqual(output!.roleExists, true, '[cell=1, scenario=high-chroma-clamp] role populated');
-      assert.ok(
-        output!.assigned.oklch.c >= 0.00 && output!.assigned.oklch.c <= 0.03,
-        `[cell=1, scenario=high-chroma-clamp] stored chroma in [0, 0.03]; got ${output!.assigned.oklch.c}`
-      );
+class ResolveRolesCell1Scenarios {
+  static readonly 'values': readonly ScenarioInterface<Cell1InputInterface, {
+    readonly 'assigned': ReturnType<typeof colorRecordFactory.fromHex>;
+    readonly 'resolvedHex': string;
+  }>[] = [
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=1, scenario=high-chroma-clamp] must not throw');
+        assert.notStrictEqual(output!.resolvedHex, '', '[cell=1, scenario=high-chroma-clamp] role populated');
+        assert.ok(
+          output!.assigned.oklch.c >= 0.00 && output!.assigned.oklch.c <= 0.03,
+          `[cell=1, scenario=high-chroma-clamp] stored chroma in [0, 0.03]; got ${output!.assigned.oklch.c}`
+        );
+      },
+      'input': {
+        'colors': ['#3b82f6'],
+        'role': 'background',
+        'roles': {
+          'name':  'background-only', 'roles': [{
+            'chromaRange':    [0.00, 0.03],
+            'lightnessRange': [0.94, 0.99],
+            'name':           'background',
+            'required':       true
+          }]
+        }
+      },
+      'kind': 'happy',
+      'name': 'high-chroma seed clamped into chromaRange [0, 0.03]'
     },
-    'input': {
-      'colors': ['#3b82f6'],
-      'role': 'background',
-      'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'background-only', 'roles': [{
-          'chromaRange':    [0.00, 0.03],
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.94, 0.99],
-          'name':           'background',
-          'required':       true
-        }]
-      }
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=1, scenario=low-chroma-lift] must not throw');
+        assert.ok(
+          output!.assigned.oklch.c >= 0.15 && output!.assigned.oklch.c <= 0.25,
+          `[cell=1, scenario=low-chroma-lift] chroma in [0.15, 0.25]; got ${output!.assigned.oklch.c}`
+        );
+      },
+      'input': {
+        'colors': ['#808080'],
+        'role': 'accent',
+        'roles': {
+          'name':  'accent-only', 'roles': [{
+            'chromaRange':    [0.15, 0.25],
+            'lightnessRange': [0.50, 0.60],
+            'name':           'accent',
+            'required':       true
+          }]
+        }
+      },
+      'kind': 'happy',
+      'name': 'low-chroma input lifted to chromaRange floor [0.15, 0.25]'
     },
-    'kind': 'happy',
-    'name': 'high-chroma seed clamped into chromaRange [0, 0.03]'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=1, scenario=low-chroma-lift] must not throw');
-      assert.ok(
-        output!.assigned.oklch.c >= 0.15 && output!.assigned.oklch.c <= 0.25,
-        `[cell=1, scenario=low-chroma-lift] chroma in [0.15, 0.25]; got ${output!.assigned.oklch.c}`
-      );
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=1, scenario=hex-round-trip] must not throw');
+        const reparsed = colorRecordFactory.fromHex(output!.assigned.hex);
+        assert.ok(
+          reparsed.oklch.c >= 0.00 && reparsed.oklch.c <= 0.03,
+          `[cell=1, scenario=hex-round-trip] rendered hex ${output!.assigned.hex} chroma in [0, 0.03]; got ${reparsed.oklch.c}`
+        );
+      },
+      'input': {
+        'colors': ['#3b82f6'],
+        'role': 'background',
+        'roles': {
+          'name':  'background-only', 'roles': [{
+            'chromaRange':    [0.00, 0.03],
+            'lightnessRange': [0.94, 0.99],
+            'name':           'background',
+            'required':       true
+          }]
+        }
+      },
+      'kind': 'happy',
+      'name': 'rendered hex round-trips inside declared chromaRange'
     },
-    'input': {
-      'colors': ['#808080'],
-      'role': 'accent',
-      'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'accent-only', 'roles': [{
-          'chromaRange':    [0.15, 0.25],
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.50, 0.60],
-          'name':           'accent',
-          'required':       true
-        }]
-      }
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=1, scenario=hue-preserved] must not throw');
+        const sourceHue = colorRecordFactory.fromHex('#3b82f6').oklch.h;
+        const hueDiff   = Math.abs(((output!.assigned.oklch.h - sourceHue + 540) % 360) - 180);
+        assert.ok(
+          hueDiff < 10,
+          `[cell=1, scenario=hue-preserved] hue approximately preserved (source ~${sourceHue.toFixed(1)}, got ${output!.assigned.oklch.h.toFixed(1)}, diff ${hueDiff.toFixed(2)})`
+        );
+      },
+      'input': {
+        'colors': ['#3b82f6'],
+        'role': 'soft',
+        'roles': {
+          'name':  'soft-blue', 'roles': [{
+            'chromaRange':    [0.00, 0.03],
+            'lightnessRange': [0.94, 0.99],
+            'name':           'soft',
+            'required':       true
+          }]
+        }
+      },
+      'kind': 'happy',
+      'name': 'hue preserved when only chroma is clamped'
     },
-    'kind': 'happy',
-    'name': 'low-chroma input lifted to chromaRange floor [0.15, 0.25]'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=1, scenario=hex-round-trip] must not throw');
-      const reparsed = colorRecordFactory.fromHex(output!.assigned.hex);
-      assert.ok(
-        reparsed.oklch.c >= 0.00 && reparsed.oklch.c <= 0.03,
-        `[cell=1, scenario=hex-round-trip] rendered hex ${output!.assigned.hex} chroma in [0, 0.03]; got ${reparsed.oklch.c}`
-      );
-    },
-    'input': {
-      'colors': ['#3b82f6'],
-      'role': 'background',
-      'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'background-only', 'roles': [{
-          'chromaRange':    [0.00, 0.03],
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.94, 0.99],
-          'name':           'background',
-          'required':       true
-        }]
-      }
-    },
-    'kind': 'happy',
-    'name': 'rendered hex round-trips inside declared chromaRange'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=1, scenario=hue-preserved] must not throw');
-      const sourceHue = colorRecordFactory.fromHex('#3b82f6').oklch.h;
-      const hueDiff   = Math.abs(((output!.assigned.oklch.h - sourceHue + 540) % 360) - 180);
-      assert.ok(
-        hueDiff < 10,
-        `[cell=1, scenario=hue-preserved] hue approximately preserved (source ~${sourceHue.toFixed(1)}, got ${output!.assigned.oklch.h.toFixed(1)}, diff ${hueDiff.toFixed(2)})`
-      );
-    },
-    'input': {
-      'colors': ['#3b82f6'],
-      'role': 'soft',
-      'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'soft-blue', 'roles': [{
-          'chromaRange':    [0.00, 0.03],
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.94, 0.99],
-          'name':           'soft',
-          'required':       true
-        }]
-      }
-    },
-    'kind': 'happy',
-    'name': 'hue preserved when only chroma is clamped'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=1, scenario=conformant-chroma] must not throw');
-      assert.ok(
-        output!.assigned.oklch.c >= 0.00 && output!.assigned.oklch.c <= 0.05,
-        `[cell=1, scenario=conformant-chroma] chroma already conformant; got ${output!.assigned.oklch.c}`
-      );
-    },
-    'input': {
-      'colors': ['#f0f4ff'],
-      'role': 'light',
-      'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'light-bg', 'roles': [{
-          'chromaRange':    [0.00, 0.05],
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.90, 1.00],
-          'name':           'light',
-          'required':       true
-        }]
-      }
-    },
-    'kind': 'edge',
-    'name': 'already-conformant chroma: no rebuild, value unchanged'
-  }
-];
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=1, scenario=conformant-chroma] must not throw');
+        assert.ok(
+          output!.assigned.oklch.c >= 0.00 && output!.assigned.oklch.c <= 0.05,
+          `[cell=1, scenario=conformant-chroma] chroma already conformant; got ${output!.assigned.oklch.c}`
+        );
+      },
+      'input': {
+        'colors': ['#f0f4ff'],
+        'role': 'light',
+        'roles': {
+          'name':  'light-bg', 'roles': [{
+            'chromaRange':    [0.00, 0.05],
+            'lightnessRange': [0.90, 1.00],
+            'name':           'light',
+            'required':       true
+          }]
+        }
+      },
+      'kind': 'edge',
+      'name': 'already-conformant chroma: no rebuild, value unchanged'
+    }
+  ];
+}
 
-new ScenarioRunner<Cell1Input, {
+new ScenarioRunner<Cell1InputInterface, {
   readonly 'assigned': ReturnType<typeof colorRecordFactory.fromHex>;
-  readonly 'roleExists': boolean;
+  readonly 'resolvedHex': string;
 }>(
   'ResolveRoles :: cell-1 :: chroma-range',
   (input) => {
     const engine = TestEngineFixture.freshEngine();
-    const state  = engine.run({ 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': input.roles, 'runtime': undefined });
+    const state  = engine.run(TestEngineFixture.input(input.colors, TestEngineFixture.admitRoleSchema(input.roles)));
     const assigned = state.roles[input.role];
     return {
       'assigned':   assigned ?? colorRecordFactory.fromOklch(0, 0, 0),
-      'roleExists': assigned !== undefined
+      'resolvedHex': assigned?.hex ?? ''
     };
   }
-).run(cell1Scenarios);
+).run(ResolveRolesCell1Scenarios.values);
 
 // ---------------------------------------------------------------------------
 // Cell 2 — lightnessRange enforcement
@@ -245,130 +246,110 @@ new ScenarioRunner<Cell1Input, {
 //   - L preserved when already in range
 // ---------------------------------------------------------------------------
 
-type Cell2Input = {
+interface Cell2InputInterface {
   readonly 'colors': readonly string[];
-  readonly 'lMax':   number;
-  readonly 'lMin':   number;
+  readonly 'lightnessMaximum':   number;
+  readonly 'lightnessMinimum':   number;
   readonly 'role':   string;
-  readonly 'roles':  RoleSchemaInterfaceType;
+  readonly 'roles':  JSONSchema7Type;
 };
-const cell2Scenarios: readonly ScenarioInterface<Cell2Input, {
-  readonly 'l':    number;
-  readonly 'lMax': number;
-  readonly 'lMin': number;
-}>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=2, scenario=dark-lifted] must not throw');
-      assert.ok(
-        output!.l >= output!.lMin && output!.l <= output!.lMax,
-        `[cell=2, scenario=dark-lifted] L in [${output!.lMin}, ${output!.lMax}]; got ${output!.l}`
-      );
+class ResolveRolesCell2Scenarios {
+  static readonly 'values': readonly ScenarioInterface<Cell2InputInterface, {
+    readonly 'l':    number;
+    readonly 'lightnessMaximum': number;
+    readonly 'lightnessMinimum': number;
+  }>[] = [
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=2, scenario=dark-lifted] must not throw');
+        assert.ok(
+          output!.l >= output!.lightnessMinimum && output!.l <= output!.lightnessMaximum,
+          `[cell=2, scenario=dark-lifted] L in [${output!.lightnessMinimum}, ${output!.lightnessMaximum}]; got ${output!.l}`
+        );
+      },
+      'input': {
+        'colors': ['#1a1a2e'],
+        'lightnessMaximum': 0.99,
+        'lightnessMinimum': 0.94,
+        'role': 'background', 'roles': {
+          'name':  'bg-only', 'roles': [{
+            'chromaRange':    [0.00, 0.05],
+            'lightnessRange': [0.94, 0.99],
+            'name':           'background',
+            'required':       true
+          }]
+        }
+      },
+      'kind': 'happy',
+      'name': 'dark color assigned to very-light role: L lifted into [0.94, 0.99]'
     },
-    'input': {
-      'colors': ['#1a1a2e'],
-      'lMax': 0.99,
-      'lMin': 0.94,
-      'role': 'background', 'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'bg-only', 'roles': [{
-          'chromaRange':    [0.00, 0.05],
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.94, 0.99],
-          'name':           'background',
-          'required':       true
-        }]
-      }
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=2, scenario=bright-clamped] must not throw');
+        assert.ok(
+          output!.l >= output!.lightnessMinimum && output!.l <= output!.lightnessMaximum,
+          `[cell=2, scenario=bright-clamped] L in [${output!.lightnessMinimum}, ${output!.lightnessMaximum}]; got ${output!.l}`
+        );
+      },
+      'input': {
+        'colors': ['#ffffff'],
+        'lightnessMaximum': 0.15,
+        'lightnessMinimum': 0.05,
+        'role': 'dark', 'roles': {
+          'name':  'dark-only', 'roles': [{
+            'chromaRange':    [0.00, 0.05],
+            'lightnessRange': [0.05, 0.15],
+            'name':           'dark',
+            'required':       true
+          }]
+        }
+      },
+      'kind': 'happy',
+      'name': 'bright color assigned to very-dark role: L clamped into [0.05, 0.15]'
     },
-    'kind': 'happy',
-    'name': 'dark color assigned to very-light role: L lifted into [0.94, 0.99]'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=2, scenario=bright-clamped] must not throw');
-      assert.ok(
-        output!.l >= output!.lMin && output!.l <= output!.lMax,
-        `[cell=2, scenario=bright-clamped] L in [${output!.lMin}, ${output!.lMax}]; got ${output!.l}`
-      );
-    },
-    'input': {
-      'colors': ['#ffffff'],
-      'lMax': 0.15,
-      'lMin': 0.05,
-      'role': 'dark', 'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'dark-only', 'roles': [{
-          'chromaRange':    [0.00, 0.05],
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.05, 0.15],
-          'name':           'dark',
-          'required':       true
-        }]
-      }
-    },
-    'kind': 'happy',
-    'name': 'bright color assigned to very-dark role: L clamped into [0.05, 0.15]'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=2, scenario=conformant-L] must not throw');
-      assert.ok(
-        output!.l >= output!.lMin && output!.l <= output!.lMax,
-        `[cell=2, scenario=conformant-L] L in [${output!.lMin}, ${output!.lMax}]; got ${output!.l}`
-      );
-    },
-    'input': {
-      'colors': ['#808080'],
-      'lMax': 0.60,
-      'lMin': 0.40,
-      'role': 'mid', 'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'mid-only', 'roles': [{
-          'chromaRange': undefined,
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.40, 0.60],
-          'name':           'mid',
-          'required':       true
-        }]
-      }
-    },
-    'kind': 'edge',
-    'name': 'mid-tone color assigned to mid-range role: L already conformant'
-  }
-];
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=2, scenario=conformant-L] must not throw');
+        assert.ok(
+          output!.l >= output!.lightnessMinimum && output!.l <= output!.lightnessMaximum,
+          `[cell=2, scenario=conformant-L] L in [${output!.lightnessMinimum}, ${output!.lightnessMaximum}]; got ${output!.l}`
+        );
+      },
+      'input': {
+        'colors': ['#808080'],
+        'lightnessMaximum': 0.60,
+        'lightnessMinimum': 0.40,
+        'role': 'mid', 'roles': {
+          'name':  'mid-only', 'roles': [{
+            'lightnessRange': [0.40, 0.60],
+            'name':           'mid',
+            'required':       true
+          }]
+        }
+      },
+      'kind': 'edge',
+      'name': 'mid-tone color assigned to mid-range role: L already conformant'
+    }
+  ];
+}
 
-new ScenarioRunner<Cell2Input, {
+new ScenarioRunner<Cell2InputInterface, {
   readonly 'l':    number;
-  readonly 'lMax': number;
-  readonly 'lMin': number;
+  readonly 'lightnessMaximum': number;
+  readonly 'lightnessMinimum': number;
 }>(
   'ResolveRoles :: cell-2 :: lightness-range',
   (input) => {
     const engine = TestEngineFixture.freshEngine();
-    const state  = engine.run({ 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': input.roles, 'runtime': undefined });
+    const state  = engine.run(TestEngineFixture.input(input.colors, TestEngineFixture.admitRoleSchema(input.roles)));
     const assigned = state.roles[input.role];
     return {
       'l':    assigned?.oklch.l ?? -1,
-      'lMax': input.lMax,
-      'lMin': input.lMin
+      'lightnessMaximum': input.lightnessMaximum,
+      'lightnessMinimum': input.lightnessMinimum
     };
   }
-).run(cell2Scenarios);
+).run(ResolveRolesCell2Scenarios.values);
 
 // ---------------------------------------------------------------------------
 // Cell 3 — hint-match priority
@@ -377,51 +358,46 @@ new ScenarioRunner<Cell2Input, {
 // distance selection. When multiple colors are present the hinted one wins.
 // ---------------------------------------------------------------------------
 
-type Cell3Input = {
+interface Cell3InputInterface {
   readonly 'colors':    readonly string[];
   readonly 'hintedHex': string;
   readonly 'hintRole':  string;
-  readonly 'roles':     RoleSchemaInterfaceType;
+  readonly 'roles':     JSONSchema7Type;
 };
-const cell3Scenarios: readonly ScenarioInterface<Cell3Input, {
-  readonly 'assignedHex': string;
-  readonly 'hintedHex':   string;
-}>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=3, scenario=hint-wins] must not throw');
-      assert.strictEqual(
-        output!.assignedHex,
-        output!.hintedHex,
-        '[cell=3, scenario=hint-wins] a caller-stated role remains exact'
-      );
-    },
-    'input': {
-      'colors':    ['#808080', '#3b82f6'],
-      'hintedHex': '#3b82f6',
-      'hintRole':  'accent',
-      'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'accent-only', 'roles': [{
-          'chromaRange':    [0.10, 0.30],
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.50, 0.65],
-          'name':           'accent',
-          'required':       true
-        }]
-      }
-    },
-    'kind': 'happy',
-    'name': 'hinted color wins over closer candidate'
-  }
-];
+class ResolveRolesCell3Scenarios {
+  static readonly 'values': readonly ScenarioInterface<Cell3InputInterface, {
+    readonly 'assignedHex': string;
+    readonly 'hintedHex':   string;
+  }>[] = [
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=3, scenario=hint-wins] must not throw');
+        assert.strictEqual(
+          output!.assignedHex,
+          output!.hintedHex,
+          '[cell=3, scenario=hint-wins] a caller-stated role remains exact'
+        );
+      },
+      'input': {
+        'colors':    ['#808080', '#3b82f6'],
+        'hintedHex': '#3b82f6',
+        'hintRole':  'accent',
+        'roles': {
+          'name':  'accent-only', 'roles': [{
+            'chromaRange':    [0.10, 0.30],
+            'lightnessRange': [0.50, 0.65],
+            'name':           'accent',
+            'required':       true
+          }]
+        }
+      },
+      'kind': 'happy',
+      'name': 'hinted color wins over closer candidate'
+    }
+  ];
+}
 
-new ScenarioRunner<Cell3Input, {
+new ScenarioRunner<Cell3InputInterface, {
   readonly 'assignedHex': string;
   readonly 'hintedHex':   string;
 }>(
@@ -440,36 +416,42 @@ new ScenarioRunner<Cell3Input, {
     // onRunStart hook + the intake-derived records.
 
     const engine = new Engine();
-    for (const t of coreTasks) {engine.tasks.register(t);}
+    for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
+      const task = coreTasks[taskIndex];
+      if (task !== undefined) {engine.tasks.register(task);}
+    }
 
     // Build the hinted record directly via factory
     const hintedRecord = colorRecordFactory.fromHex(input.hintedHex, {
-      'hints': { 'intent': undefined, 'role': input.hintRole, 'weight': undefined },
+      'hints': ColorHintsInterfaceTypeEntity.create({ 'role': input.hintRole }),
       'sourceFormat': 'hex'
     });
 
     // Seed state with both the hinted record and the other colors via hooks
-    const otherColors = input.colors.filter((c) => {return c !== input.hintedHex;});
+    const otherColors = input.colors.filter((color) => {
+      const result = color !== input.hintedHex;
+      return result;
+    });
 
     const seedHintRun = (state: PaletteStateInterface, _pipelineContext: PipelineContextInterface): void => {
       state.colors.push(hintedRecord);
     };
     const seedTask: TaskInterface = {
-      'manifest': { 'description': undefined, 'name': 'seed:hint', 'phase': 'onRunStart', 'reads': undefined, 'requires': undefined, 'writes': undefined },
+      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'seed:hint', 'phase': 'onRunStart' }),
       'name':     'seed:hint',
       'run':      seedHintRun
     };
-    engine.tasks.hook('onRunStart', seedTask);
+    engine.tasks.hook(seedTask);
     engine.pipeline(['intake:hex', 'resolve:roles']);
 
-    const state = engine.run({ 'bypass': undefined, 'colors': otherColors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': input.roles, 'runtime': undefined });
+    const state = engine.run(TestEngineFixture.input(otherColors, TestEngineFixture.admitRoleSchema(input.roles)));
     const assigned = state.roles[input.hintRole];
     return {
       'assignedHex': assigned?.hex ?? '',
       'hintedHex':   input.hintedHex
     };
   }
-).run(cell3Scenarios);
+).run(ResolveRolesCell3Scenarios.values);
 
 // ---------------------------------------------------------------------------
 // Cell 4 — synthesis when no input colors
@@ -482,101 +464,87 @@ new ScenarioRunner<Cell3Input, {
 // ---------------------------------------------------------------------------
 
 
-const cell4Scenarios: readonly ScenarioInterface<{
-  readonly 'cMid':  number;
-  readonly 'lMid':  number;
-  readonly 'role':  string;
-  readonly 'roles': RoleSchemaInterfaceType;
-}, {
-  readonly 'assigned': ReturnType<typeof colorRecordFactory.fromOklch>;
-  readonly 'roleExists': boolean;
-}>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=4, scenario=synth-required] must not throw');
-      assert.strictEqual(output!.roleExists, true, '[cell=4, scenario=synth-required] role populated');
-      assert.ok(
-        Math.abs(output!.assigned.oklch.l - 0.60) < 1e-9,
-        `[cell=4, scenario=synth-required] L = range center 0.60; got ${output!.assigned.oklch.l}`
-      );
-      assert.ok(
-        Math.abs(output!.assigned.oklch.c - 0.20) < 1e-9,
-        `[cell=4, scenario=synth-required] C = range center 0.20; got ${output!.assigned.oklch.c}`
-      );
+class ResolveRolesCell4Scenarios {
+  static readonly 'values': readonly ScenarioInterface<{
+    readonly 'cMid':  number;
+    readonly 'lMid':  number;
+    readonly 'role':  string;
+    readonly 'roles': JSONSchema7Type;
+  }, {
+    readonly 'assigned': ReturnType<typeof colorRecordFactory.fromOklch>;
+    readonly 'resolvedHex': string;
+  }>[] = [
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=4, scenario=synth-required] must not throw');
+        assert.notStrictEqual(output!.resolvedHex, '', '[cell=4, scenario=synth-required] role populated');
+        assert.ok(
+          Math.abs(output!.assigned.oklch.l - 0.60) < 1e-9,
+          `[cell=4, scenario=synth-required] L = range center 0.60; got ${output!.assigned.oklch.l}`
+        );
+        assert.ok(
+          Math.abs(output!.assigned.oklch.c - 0.20) < 1e-9,
+          `[cell=4, scenario=synth-required] C = range center 0.20; got ${output!.assigned.oklch.c}`
+        );
+      },
+      'input': {
+        'cMid': 0.20,
+        'lMid': 0.60,
+        'role': 'accent',
+        'roles': {
+          'name':  'accent-synth', 'roles': [{
+            'chromaRange':    [0.10, 0.30],
+            'lightnessRange': [0.50, 0.70],
+            'name':           'accent',
+            'required':       true
+          }]
+        }
+      },
+      'kind': 'happy',
+      'name': 'required role synthesised from lightnessRange and chromaRange centers'
     },
-    'input': {
-      'cMid': 0.20,
-      'lMid': 0.60,
-      'role': 'accent',
-      'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'accent-synth', 'roles': [{
-          'chromaRange':    [0.10, 0.30],
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.50, 0.70],
-          'name':           'accent',
-          'required':       true
-        }]
-      }
-    },
-    'kind': 'happy',
-    'name': 'required role synthesised from lightnessRange and chromaRange centers'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=4, scenario=optional-not-synth] must not throw');
-      assert.strictEqual(output!.roleExists, false, '[cell=4, scenario=optional-not-synth] optional role not populated');
-    },
-    'input': {
-      'cMid': 0,
-      'lMid': 0.60,
-      'role': 'optional',
-      'roles': {
-        'contrastPairs': undefined,
-        'description': undefined, 'name':  'optional-only', 'roles': [{
-          'chromaRange': undefined,
-          'derivedFrom': undefined,
-          'description': undefined,
-          'hue': undefined,
-          'hueClamp': undefined,
-          'hueOffset': undefined,
-          'intent': undefined,
-          'lightnessRange': [0.50, 0.70],
-          'name':           'optional',
-          'required': undefined
-        }]
-      }
-    },
-    'kind': 'edge',
-    'name': 'optional role (not required) is not synthesised when no colors'
-  }
-];
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=4, scenario=optional-not-synth] must not throw');
+        assert.strictEqual(output!.resolvedHex, '', '[cell=4, scenario=optional-not-synth] optional role not populated');
+      },
+      'input': {
+        'cMid': 0,
+        'lMid': 0.60,
+        'role': 'optional',
+        'roles': {
+          'name':  'optional-only', 'roles': [{
+            'lightnessRange': [0.50, 0.70],
+            'name':           'optional'
+          }]
+        }
+      },
+      'kind': 'edge',
+      'name': 'optional role (not required) is not synthesised when no colors'
+    }
+  ];
+}
 
 new ScenarioRunner<{
   readonly 'cMid':  number;
   readonly 'lMid':  number;
   readonly 'role':  string;
-  readonly 'roles': RoleSchemaInterfaceType;
+  readonly 'roles': JSONSchema7Type;
 }, {
   readonly 'assigned': ReturnType<typeof colorRecordFactory.fromOklch>;
-  readonly 'roleExists': boolean;
+  readonly 'resolvedHex': string;
 }>(
   'ResolveRoles :: cell-4 :: synthesis',
   (input) => {
     const engine = TestEngineFixture.freshEngine(['resolve:roles']);
-    const state  = engine.run({ 'bypass': undefined, 'colors': [], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': input.roles, 'runtime': undefined });
+    const state  = engine.run(TestEngineFixture.input([], TestEngineFixture.admitRoleSchema(input.roles)));
     const assigned = state.roles[input.role];
     return {
       'assigned':   assigned ?? colorRecordFactory.fromOklch(0, 0, 0),
-      'roleExists': assigned !== undefined
+      'resolvedHex': assigned?.hex ?? ''
     };
   }
-).run(cell4Scenarios);
+).run(ResolveRolesCell4Scenarios.values);
 
 // ---------------------------------------------------------------------------
 // Cell 5 — no-schema no-op
@@ -585,56 +553,56 @@ new ScenarioRunner<{
 // touching state.roles (roles stays empty {}).
 // ---------------------------------------------------------------------------
 
-type Cell5Input = {
+interface Cell5InputInterface {
   readonly 'colors': readonly string[];
 };
-type Cell5Output = {
-  readonly 'rolesKeys': string[];
+interface Cell5OutputInterface {
+  readonly 'roles': PaletteStateInterface['roles'];
 };
 
-const cell5Scenarios: readonly ScenarioInterface<Cell5Input, Cell5Output>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=5, scenario=no-schema] must not throw');
-      assert.deepStrictEqual(output!.rolesKeys, [], '[cell=5, scenario=no-schema] roles stays empty');
+class ResolveRolesCell5Scenarios {
+  static readonly 'values': readonly ScenarioInterface<Cell5InputInterface, Cell5OutputInterface>[] = [
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=5, scenario=no-schema] must not throw');
+        assert.deepStrictEqual(Object.keys(output!.roles), [], '[cell=5, scenario=no-schema] roles stays empty');
+      },
+      'input': { 'colors': ['#ff0000', '#00ff00'] },
+      'kind': 'edge',
+      'name': 'no roles schema: state.roles remains empty'
     },
-    'input': { 'colors': ['#ff0000', '#00ff00'] },
-    'kind': 'edge',
-    'name': 'no roles schema: state.roles remains empty'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined, '[cell=5, scenario=empty-no-schema] must not throw');
-      assert.deepStrictEqual(output!.rolesKeys, [], '[cell=5, scenario=empty-no-schema] roles stays empty');
-    },
-    'input': { 'colors': [] },
-    'kind': 'edge',
-    'name': 'empty colors no roles schema: roles empty'
-  }
-];
+    {
+      'assert': function(output, error) {
+        assert.strictEqual(error, undefined, '[cell=5, scenario=empty-no-schema] must not throw');
+        assert.deepStrictEqual(Object.keys(output!.roles), [], '[cell=5, scenario=empty-no-schema] roles stays empty');
+      },
+      'input': { 'colors': [] },
+      'kind': 'edge',
+      'name': 'empty colors no roles schema: roles empty'
+    }
+  ];
+}
 
-new ScenarioRunner<Cell5Input, Cell5Output>(
+new ScenarioRunner<Cell5InputInterface, Cell5OutputInterface>(
   'ResolveRoles :: cell-5 :: no-schema',
   (input) => {
     const engine = TestEngineFixture.freshEngine();
-    const state  = engine.run({ 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
-    return { 'rolesKeys': Object.keys(state.roles) };
+    const state  = engine.run(TestEngineFixture.input(input.colors));
+    const result = { 'roles': state.roles };
+    return result;
   }
-).run(cell5Scenarios);
+).run(ResolveRolesCell5Scenarios.values);
 
 class RoleSeedTask implements TaskInterface {
   readonly 'name' = 'seed:role-resolution-contract';
 
-  readonly 'manifest' = {
-    'description': undefined,
+  readonly 'manifest': TaskInterface['manifest'] = TaskManifestInterfaceTypeEntity.create({
     'name': 'seed:role-resolution-contract',
-    'phase': 'onRunStart' as const,
-    'reads': undefined,
-    'requires': undefined,
+    'phase': 'onRunStart',
     'writes': ['colors']
-  };
+  });
 
-  constructor(private readonly seeds: readonly ColorRecordInterfaceType[]) {}
+  constructor(private readonly seeds: readonly ColorRecordInterfaceTypeEntity.Type[]) {}
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
     state.colors.push(...this.seeds);
@@ -642,18 +610,22 @@ class RoleSeedTask implements TaskInterface {
 }
 
 class RoleResolutionFixture {
-  static run(schema: RoleSchemaInterfaceType, seeds: readonly ColorRecordInterfaceType[]): PaletteStateInterface {
+  static run(schema: JSONSchema7Type, seeds: readonly ColorRecordInterfaceTypeEntity.Type[]): PaletteStateInterface {
     const engine = new Engine();
-    for (const task of coreTasks) {engine.tasks.register(task);}
-    engine.tasks.hook('onRunStart', new RoleSeedTask(seeds));
+    for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
+      const task = coreTasks[taskIndex];
+      if (task !== undefined) {engine.tasks.register(task);}
+    }
+    engine.tasks.hook(new RoleSeedTask(seeds));
     engine.pipeline(['resolve:roles', 'expand:family']);
-    return engine.run({ 'bypass': undefined, 'colors': [], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': schema, 'runtime': undefined });
+    const result = engine.run(TestEngineFixture.input([], TestEngineFixture.admitRoleSchema(schema)));
+    return result;
   }
 
-  static seed(role: string, l: number, c: number, h: number): ColorRecordInterfaceType {
+  static seed(role: string, l: number, c: number, h: number): ColorRecordInterfaceTypeEntity.Type {
     const result = colorRecordFactory.fromOklch(l, c, h, {
       'alpha': 1,
-      'hints': { 'intent': undefined, 'role': role, 'weight': undefined },
+      'hints': ColorHintsInterfaceTypeEntity.create({ 'role': role }),
       'sourceFormat': 'oklch'
     });
     return result;
@@ -662,19 +634,20 @@ class RoleResolutionFixture {
 
 void test('a hinted derived role is pinned, nudged, and preserved by family expansion', () => {
   const state = RoleResolutionFixture.run({
-    'contrastPairs': undefined,
-    'description': undefined,
     'name': 'hinted-derived',
     'roles': [
-      { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'root', 'required': true },
-      { 'chromaRange': undefined, 'derivedFrom': 'root', 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 30, 'intent': undefined, 'lightnessRange': undefined, 'name': 'accent', 'required': undefined }
+      { 'name': 'root', 'required': true },
+      { 'derivedFrom': 'root', 'hueOffset': 30, 'name': 'accent' }
     ]
   }, [
     RoleResolutionFixture.seed('root', 0.60, 0.10, 240),
     RoleResolutionFixture.seed('accent', 0.63, 0.11, 15)
   ]);
   const accent = state.roles.accent;
-  const statedSeed = state.colors.find((color) => {return color.hints?.role === 'accent';});
+  const statedSeed = state.colors.find((color) => {
+    const result = color.hints?.role === 'accent';
+    return result;
+  });
   assert.strictEqual(accent, statedSeed, 'the hinted derived role retains the original record');
   assert.deepStrictEqual(state.metadata['core:roleProvenance'], {
     'accent': { 'adjustments': [], 'origin': 'stated' },
@@ -684,14 +657,12 @@ void test('a hinted derived role is pinned, nudged, and preserved by family expa
 
 void test('direct and derived hue offsets are signed relative deltas, including wrap and chains', () => {
   const state = RoleResolutionFixture.run({
-    'contrastPairs': undefined,
-    'description': undefined,
     'name': 'relative-hue-offsets',
     'roles': [
-      { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'root', 'required': true },
-      { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': -30, 'intent': undefined, 'lightnessRange': undefined, 'name': 'direct', 'required': true },
-      { 'chromaRange': undefined, 'derivedFrom': 'root', 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': -30, 'intent': undefined, 'lightnessRange': undefined, 'name': 'derived', 'required': undefined },
-      { 'chromaRange': undefined, 'derivedFrom': 'derived', 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': 50, 'intent': undefined, 'lightnessRange': undefined, 'name': 'chained', 'required': undefined }
+      { 'name': 'root', 'required': true },
+      { 'hueOffset': -30, 'name': 'direct', 'required': true },
+      { 'derivedFrom': 'root', 'hueOffset': -30, 'name': 'derived' },
+      { 'derivedFrom': 'derived', 'hueOffset': 50, 'name': 'chained' }
     ]
   }, [
     RoleResolutionFixture.seed('root', 0.60, 0.10, 350),
@@ -708,12 +679,10 @@ void test('direct and derived hue offsets are signed relative deltas, including 
 
 void test('relative lightness and chroma derivation clamps each source-relative coordinate to the role range', () => {
   const state = RoleResolutionFixture.run({
-    'contrastPairs': undefined,
-    'description': undefined,
     'name': 'relative-lightness-chroma',
     'roles': [
-      { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'root', 'required': true },
-      { 'chromaRange': [0.05, 0.25], 'chromaScale': 2, 'derivedFrom': 'root', 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessOffset': 0.30, 'lightnessRange': [0.65, 0.75], 'name': 'surface', 'required': undefined }
+      { 'name': 'root', 'required': true },
+      { 'chromaRange': [0.05, 0.25], 'chromaScale': 2, 'derivedFrom': 'root', 'lightnessOffset': 0.30, 'lightnessRange': [0.65, 0.75], 'name': 'surface' }
     ]
   }, [RoleResolutionFixture.seed('root', 0.60, 0.20, 100)]);
   const surface = state.roles.surface;
@@ -724,29 +693,30 @@ void test('relative lightness and chroma derivation clamps each source-relative 
 
 void test('a conformant Display-P3 role seed retains verbatim P3 metadata when role intent is applied', () => {
   const p3Candidate = intakeP3.parse('color(display-p3 0.9 0.2 0.1)');
-  const hintedP3: ColorRecordInterfaceType = {
-    ...p3Candidate,
-    'hints': { 'intent': undefined, 'role': 'accent', 'weight': undefined }
-  };
+  const p3Channels = p3Candidate.displayP3;
+  assert.ok(p3Channels !== undefined, 'Display-P3 intake retains P3 channels');
+  const hintedP3 = ColorRecordInterfaceTypeEntity.create({
+    'alpha': p3Candidate.alpha,
+    'displayP3': p3Channels,
+    'hex': p3Candidate.hex,
+    'hints': ColorHintsInterfaceTypeEntity.create({ 'role': 'accent' }),
+    'oklch': p3Candidate.oklch,
+    'rgb': p3Candidate.rgb,
+    'sourceFormat': p3Candidate.sourceFormat
+  });
   const state = RoleResolutionFixture.run({
-    'contrastPairs': undefined,
-    'description': undefined,
     'name': 'p3-intent-preservation',
     'roles': [{
-      'chromaRange': undefined,
-      'derivedFrom': undefined,
-      'description': undefined,
-      'hue': undefined,
-      'hueClamp': undefined,
-      'hueOffset': undefined,
       'intent': 'accent',
-      'lightnessRange': undefined,
       'name': 'accent',
       'required': true
     }]
   }, [hintedP3]);
   const accent = state.roles.accent;
-  const statedSeed = state.colors.find((color) => {return color.hints?.role === 'accent';});
+  const statedSeed = state.colors.find((color) => {
+    const result = color.hints?.role === 'accent';
+    return result;
+  });
   assert.strictEqual(accent, statedSeed, 'the hinted derived role retains the original record');
   assert.ok(accent !== undefined, 'the hinted Display-P3 role resolves');
   assert.deepStrictEqual(accent.displayP3, p3Candidate.displayP3, 'verbatim Display-P3 channels are preserved');

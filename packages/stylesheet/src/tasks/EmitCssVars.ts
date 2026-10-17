@@ -1,14 +1,13 @@
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+import {
+  type ColorRecordInterfaceTypeEntity,
+  CssVarName,
+  type PaletteStateInterface,
+  type PipelineContextInterface,
+  type TaskInterface,
+  TaskManifestInterfaceTypeEntity
 } from '@studnicky/iridis';
 
-import { CssVarName } from '@studnicky/iridis';
-
-import type { CssVarsOutputInterfaceType } from '../types/index.ts';
+import type { CssVarsOutputInterface } from '../interfaces/CssVarsOutputInterface.ts';
 
 import { CssAttributeSelector } from '../util/CssAttributeSelector.ts';
 import { CssCustomPropertyPrefix } from '../util/CssCustomPropertyPrefix.ts';
@@ -40,26 +39,21 @@ import { P3Serializer } from '../util/P3Serializer.ts';
  * {@link RoleDefinitionInterfaceType.intent}.
  */
 class ForcedColorsToken {
-  static resolve(record: ColorRecordInterfaceType): string {
-    switch (record.hints?.intent) {
-      case 'accent':     return 'Highlight';
-      case 'background': return 'Canvas';
-      case 'button':     return 'ButtonFace';
-      case 'critical':   return 'CanvasText';
-      case 'link':       return 'LinkText';
-      case 'muted':      return 'GrayText';
-      case 'onAccent':   return 'HighlightText';
-      case 'onButton':   return 'ButtonText';
-      case 'positive':   return 'CanvasText';
-      case 'text':       return 'CanvasText';
-      default:           return 'CanvasText';
-    }
+  static readonly #tokens = new Map<string, string>([
+    ['accent', 'Highlight'], ['background', 'Canvas'], ['button', 'ButtonFace'],
+    ['critical', 'CanvasText'], ['link', 'LinkText'], ['muted', 'GrayText'],
+    ['onAccent', 'HighlightText'], ['onButton', 'ButtonText'], ['positive', 'CanvasText'], ['text', 'CanvasText']
+  ]);
+
+  static resolve(record: ColorRecordInterfaceTypeEntity.Type): string {
+    const result = ForcedColorsToken.#tokens.get(record.hints?.intent ?? '') ?? 'CanvasText';
+    return result;
   }
 }
 
 class Declarations {
   static build(
-    roles: Record<string, ColorRecordInterfaceType>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     prefix: string
   ): string[] {
     const result = Object.entries(roles).map(([role, record]) => {
@@ -72,7 +66,7 @@ class Declarations {
 
 class RootBlock {
   static build(
-    roles: Record<string, ColorRecordInterfaceType>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     prefix: string
   ): string {
     const decls = Declarations.build(roles, prefix);
@@ -82,7 +76,7 @@ class RootBlock {
 
 class ScopedBlock {
   static build(
-    roles: Record<string, ColorRecordInterfaceType>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     prefix: string,
     scopeAttr: string | undefined,
     scopeName: string
@@ -93,19 +87,31 @@ class ScopedBlock {
   }
 }
 
+class IndentedDeclarations {
+  static join(declarations: readonly string[]): string {
+    const lines: string[] = [];
+    for (let index = 0; index < declarations.length; index += 1) {
+      const declaration = declarations[index];
+      if (declaration !== undefined) { lines.push(['  ', declaration].join('')); }
+    }
+    const result = lines.join('\n');
+    return result;
+  }
+}
+
 class DarkSchemeBlock {
   static build(
-    darkRoles: Record<string, ColorRecordInterfaceType>,
+    darkRoles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     prefix: string
   ): string {
     const decls = Declarations.build(darkRoles, prefix);
-    return `@media (prefers-color-scheme: dark) {\n  :root {\n${decls.map((d) => { const result = `  ${d}`; return result; }).join('\n')}\n  }\n}`;
+    return `@media (prefers-color-scheme: dark) {\n  :root {\n${IndentedDeclarations.join(decls)}\n  }\n}`;
   }
 }
 
 class ForcedColorsBlock {
   static build(
-    roles: Record<string, ColorRecordInterfaceType>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     prefix: string
   ): string {
     const decls = Object.entries(roles).map(([role, record]) => {
@@ -113,7 +119,7 @@ class ForcedColorsBlock {
       const token = ForcedColorsToken.resolve(record);
       return `  ${varName}: ${token};`;
     });
-    return `@media (forced-colors: active) {\n  :root {\n${decls.map((d) => { const result = `  ${d}`; return result; }).join('\n')}\n  }\n}`;
+    return `@media (forced-colors: active) {\n  :root {\n${IndentedDeclarations.join(decls)}\n  }\n}`;
   }
 }
 
@@ -134,29 +140,43 @@ class ForcedColorsBlock {
  */
 class WideGamutBlock {
   static build(
-    roles: Record<string, ColorRecordInterfaceType>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     prefix: string
   ): string {
     const p3Decls: string[] = [];
-    for (const [role, record] of Object.entries(roles)) {
-      if (record.displayP3 !== undefined) {
-        const varName = CssVarName.from(role, prefix);
-        p3Decls.push(`  ${varName}: ${P3Serializer.serialize(record.displayP3)};`);
+    const entries = Object.entries(roles);
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry !== undefined) {
+        const [role, record] = entry;
+        if (record.displayP3 !== undefined) {
+          const varName = CssVarName.from(role, prefix);
+          p3Decls.push(`  ${varName}: ${P3Serializer.serialize(record.displayP3)};`);
+        }
       }
     }
     if (p3Decls.length === 0) {return '';}
-    return `@supports (color: color(display-p3 0 0 0)) {\n  :root {\n${p3Decls.map((d) => { const result = `  ${d}`; return result; }).join('\n')}\n  }\n}`;
+    return `@supports (color: color(display-p3 0 0 0)) {\n  :root {\n${IndentedDeclarations.join(p3Decls)}\n  }\n}`;
   }
 }
 
 class VarMap {
   static build(
-    roles: Record<string, ColorRecordInterfaceType>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     prefix: string
   ): Record<string, string> {
     const map: Record<string, string> = {};
-    for (const role of Object.keys(roles)) {
-      map[role] = CssVarName.from(role, prefix);
+    const rolesNames = Object.keys(roles);
+    for (let index = 0; index < rolesNames.length; index += 1) {
+      const role = rolesNames[index];
+      if (role !== undefined) {
+        Object.defineProperty(map, role, {
+          'configurable': true,
+          'enumerable':   true,
+          'value':        CssVarName.from(role, prefix),
+          'writable':     true
+        });
+      }
     }
     return map;
   }
@@ -165,14 +185,12 @@ class VarMap {
 class EmitCssVars implements TaskInterface {
   readonly name = 'emit:cssVars';
 
-  readonly manifest: TaskManifestInterfaceType = {
+  readonly manifest: TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Emit CSS custom property blocks from resolved roles and variants',
     'name':        'emit:cssVars',
-    'phase':       undefined,
     'reads':       ['roles', 'variants', 'metadata'],
-    'requires':    undefined,
     'writes':      ['outputs.stylesheet:cssVars']
-  };
+  });
 
   // math() accessor satisfies PluginInterface if ever used standalone; not required here
   // but the class only needs TaskInterface
@@ -201,7 +219,7 @@ class EmitCssVars implements TaskInterface {
     const full  = parts.join('\n\n');
     const map   = VarMap.build(state.roles, prefix);
 
-    const output: CssVarsOutputInterfaceType = {
+    const output: CssVarsOutputInterface = {
       'darkScheme':   darkScheme,
       'forcedColors': forcedColors,
       'full':         full,

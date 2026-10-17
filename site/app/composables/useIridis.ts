@@ -6,28 +6,38 @@
  * from hueOffset on the schema roles. The projector only reads those hexes.
  */
 
-import type { ColorRecordInterfaceType, CvdType, PaletteStateInterface, RoleDistanceMapInterfaceType, RoleProvenanceMapInterfaceType } from '@studnicky/iridis';
-import type { ApcaPairResultSetInterfaceType, CvdResultSetInterfaceType, WcagPairResultSetInterfaceType } from '@studnicky/iridis-contrast';
 import type {
-  GalleryAlgorithmType, GalleryCandidateInterfaceType, GalleryCandidatesSlotType, GalleryDominantColorsSlotType, GalleryHistogramSlotInterfaceType
+  ColorRecordInterfaceTypeEntity, PaletteStateInterface, RoleProvenanceInterfaceTypeEntity
+} from '@studnicky/iridis';
+import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { ClusterStrategyInterface } from '@studnicky/iridis-image';
+import type {
+  GalleryDominantColorsSlotType, GalleryHistogramSlotInterfaceType
 } from '@studnicky/iridis-image/types';
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
-import { colorRecordFactory, EngineMetadata } from '@studnicky/iridis';
-import { getContrastMetadata } from '@studnicky/iridis-contrast';
-import { imagePlugin } from '@studnicky/iridis-image';
+import { colorRecordFactory, InputInterfaceTypeEntity, Metadata } from '@studnicky/iridis';
+import {
+  ApcaPairResultSetInterfaceTypeEntity,
+  CvdResultSetInterfaceTypeEntity,
+  WcagPairResultSetInterfaceTypeEntity
+} from '@studnicky/iridis-contrast';
+import { ClusterDispatcher, GalleryCandidateOutputEntity, imagePlugin } from '@studnicky/iridis-image';
+import { JsonValue } from '@studnicky/types/browser';
 import * as VueModule from 'vue';
 
 import { useNuxtApp, useRuntimeConfig } from '#imports';
 
 import type {
-  DerivationConfigType, FramingType, IridisUiEffectType, IridisUiEffectVariant, ModeType, PickerSeedType, RoleHexMapType, RoleRelationDerivationType, RoleViewType, ScaleMapType
-  , UploadedImageInterfaceType } from './types/index.ts';
+  DerivationConfigType, FramingType, ModeType, PickerSeedType, RoleHexMapType, RoleRelationDerivationType, RoleViewType, ScaleMapType
+  , UploadedImage } from './types/index.ts';
 import type { RoleMathClampType } from './types/roleMathClamp.ts';
 import type { RoleSortableRowType } from './types/roleSortableRow.ts';
 import type { RoleSortKeyType } from './types/roleSortKey.ts';
 
 import { contrastRatio } from '../theme/ContrastRatio.ts';
+import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
+import { Tokens } from '../theme/Tokens.ts';
 import { cloneRanges } from '../utils/cloneRanges.ts';
 import { complianceFor } from '../utils/complianceFor.ts';
 import { debounce } from '../utils/debounce.ts';
@@ -36,42 +46,28 @@ import { keyedDebounce } from '../utils/keyedDebounce.ts';
 import { minimumRatioForRole } from '../utils/minimumRatioForRole.ts';
 import { sortRoleRows } from '../utils/sortRoleRows.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
-import { contrastConfigFor } from './contrastConfigFor.ts';
+import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
 import { optionalContrastStages } from './optionalContrastStages.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
 import { schemaRoleCount } from './schemaRoleCount.ts';
 import { spliceOptionalStages } from './spliceOptionalStages.ts';
-import { DEFAULT_DERIVATION_CONFIG, DEFAULT_SCHEMA_NAME, IridisUiActionType } from './types/index.ts';
-import { VARIANT_CONFIG } from './variantConfig.ts';
-
-declare namespace IridisEffects {
-  type MutateSeeds = Extract<IridisUiEffectType.Type, { 'variant': IridisUiEffectVariant.MUTATE_SEEDS }>;
-  type SetPaletteParameter = Extract<IridisUiEffectType.Type, { 'variant': IridisUiEffectVariant.SET_PALETTE_PARAM }>;
-  type ExtractImage = Extract<IridisUiEffectType.Type, { 'variant': IridisUiEffectVariant.EXTRACT_IMAGE }>;
-  type PinSeedRole = Extract<IridisUiEffectType.Type, { 'variant': IridisUiEffectVariant.PIN_SEED_ROLE }>;
-  type UpdateDiagramView = Extract<IridisUiEffectType.Type, { 'variant': IridisUiEffectVariant.UPDATE_DIAGRAM_VIEW }>;
-  type UpdateCvdPreview = Extract<IridisUiEffectType.Type, { 'variant': IridisUiEffectVariant.UPDATE_CVD_PREVIEW }>;
-  type PopulatePickerFromImage = Extract<IridisUiEffectType.Type, { 'variant': IridisUiEffectVariant.POPULATE_PICKER_FROM_IMAGE }>;
-  type NavigateToTarget = Extract<IridisUiEffectType.Type, { 'variant': IridisUiEffectVariant.NAVIGATE_TO_TARGET }>;
-  type SelectImageCandidate = Extract<IridisUiEffectType.Type, { 'variant': IridisUiEffectVariant.SELECT_IMAGE_CANDIDATE }>;
-}
-
-import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
-import { Tokens } from '../theme/Tokens.ts';
+import { DEFAULT_DERIVATION_CONFIG, DEFAULT_SCHEMA_NAME, IridisUiEvent } from './types/index.ts';
 import { useIridisUiMachine } from './useIridisUiMachine.ts';
 import { useNavigationTargets } from './useNavigationTargets.ts';
+import { VARIANT_CONFIG } from './variantConfig.ts';
 
 class ViteModule {
   static readonly metadata: ImportMeta & { readonly 'hot'?: ViteHotContext } = import.meta;
 }
 
-/** Builds the four candidate-algorithm configs for gallery:extractCandidates, every one sharing `k` (the same color count the primary extraction uses). Full `GalleryCandidateInterfaceType` shape: `colors` is the not-yet-computed placeholder above, `label` defaults to the algorithm name — gallery:extractCandidates' own fallback for an unlabeled config. */
+/** Builds the serializable candidate requests accepted at the gallery metadata boundary. The extraction task resolves each algorithm into its executable ClusterStrategy internally. */
 class AllCandidateAlgorithmsOperation {
-  static run(k: number): GalleryCandidateInterfaceType[] {
+  static run(k: number) {
     const result = IRIDIS_CONSTANTS.ALL_CANDIDATE_ALGORITHM_NAMES.map((algorithm) => {
-      return { 'algorithm': algorithm, 'colors': IRIDIS_CONSTANTS.EMPTY_CANDIDATE_COLORS, 'k': k, 'label': algorithm };
+      const candidate = { 'algorithm': algorithm, 'k': k, 'label': algorithm };
+      return candidate;
     });
     return result;
   }
@@ -80,144 +76,208 @@ class AllCandidateAlgorithmsOperation {
 const allCandidateAlgorithms = AllCandidateAlgorithmsOperation.run;
 
 class CvdTypeRegistry {
-  static resolve(value: string): CvdType {
-    if (value === 'protanopia' || value === 'deuteranopia' || value === 'tritanopia' || value === 'achromatopsia') {return value;}
+  static resolve(value: string): CvdMatrixInterfaceTypeEntity.Type['name'] {
+    if (value === 'protanopia' || value === 'deuteranopia' || value === 'tritanopia' || value === 'achromatopsia') {
+      const result = value;
+      return result;
+    }
     throw new RangeError(`Unsupported CVD preview type: ${value}`);
   }
 }
 
-class GalleryMetadataSlot {
-  private static isRecord(value: unknown): value is Record<string, unknown> {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
+namespace GalleryMetadataSlotEntity {
+  export class GalleryMetadataSlot {
+    private static isRecord(value: unknown): value is Record<string, unknown> {
+      const result = value !== null && typeof value === 'object' && !Array.isArray(value);
+      return result;
+    }
+
+    private static isRgb(value: unknown): boolean {
+      const result = GalleryMetadataSlot.isRecord(value)
+        && typeof value.b === 'number'
+        && typeof value.g === 'number'
+        && typeof value.r === 'number';
+      return result;
+    }
+
+    private static isOklch(value: unknown): boolean {
+      const result = GalleryMetadataSlot.isRecord(value)
+        && typeof value.c === 'number'
+        && typeof value.h === 'number'
+        && typeof value.l === 'number';
+      return result;
+    }
+
+    private static isSourceFormat(value: unknown): boolean {
+      const result = value === 'hex'
+        || value === 'rgb'
+        || value === 'hsl'
+        || value === 'oklch'
+        || value === 'lab'
+        || value === 'named'
+        || value === 'imagePixel'
+        || value === 'displayP3';
+      return result;
+    }
+
+    private static isIntent(value: unknown): boolean {
+      const result = value === undefined
+        || value === 'text'
+        || value === 'background'
+        || value === 'accent'
+        || value === 'muted'
+        || value === 'critical'
+        || value === 'positive'
+        || value === 'link'
+        || value === 'button'
+        || value === 'onAccent'
+        || value === 'onButton';
+      return result;
+    }
+
+    private static isHints(value: unknown): boolean {
+      const result = value === undefined
+        || (GalleryMetadataSlot.isRecord(value)
+          && GalleryMetadataSlot.isIntent(value.intent)
+          && (value.role === undefined || typeof value.role === 'string')
+          && (value.weight === undefined || typeof value.weight === 'number'));
+      return result;
+    }
+
+    private static isColorRecord(value: unknown): value is ColorRecordInterfaceTypeEntity.Type {
+      const result = GalleryMetadataSlot.isRecord(value)
+        && typeof value.alpha === 'number'
+        && typeof value.hex === 'string'
+        && GalleryMetadataSlot.isOklch(value.oklch)
+        && GalleryMetadataSlot.isRgb(value.rgb)
+        && GalleryMetadataSlot.isSourceFormat(value.sourceFormat)
+        && (value.displayP3 === undefined || GalleryMetadataSlot.isRgb(value.displayP3))
+        && GalleryMetadataSlot.isHints(value.hints);
+      return result;
+    }
+
+    private static isDominantColors(value: unknown): value is GalleryDominantColorsSlotType {
+      const result = Array.isArray(value) && value.every(GalleryMetadataSlot.isColorRecord);
+      return result;
+    }
+
+    private static isHistogram(value: unknown): value is GalleryHistogramSlotInterfaceType {
+      const result = GalleryMetadataSlot.isRecord(value)
+        && typeof value.binCount === 'number'
+        && Array.isArray(value.bins)
+        && value.bins.every((bin) => {
+          const isValid = GalleryMetadataSlot.isRecord(bin) && typeof bin.hex === 'string' && typeof bin.weight === 'number';
+          return isValid;
+        })
+        && typeof value.totalPixels === 'number';
+      return result;
+    }
+
+    static candidates(metadata: PaletteStateInterface['metadata']): GalleryCandidateOutputEntity.Type[] {
+      const value = metadata['gallery:candidates'];
+      if (value === undefined) {return [];}
+      if (!Array.isArray(value)) {
+        throw new TypeError('Metadata slot gallery:candidates does not match the candidate palette schema');
+      }
+      const result = value.map(GalleryCandidateOutputEntity.intake);
+      return result;
+    }
+
+    static dominantColors(metadata: PaletteStateInterface['metadata']): GalleryDominantColorsSlotType {
+      const value = metadata['gallery:dominantColors'];
+      if (value === undefined) {return [];}
+      if (GalleryMetadataSlot.isDominantColors(value)) {return value;}
+      throw new TypeError('Metadata slot gallery:dominantColors does not match the color-record schema');
+    }
+
+    static histogram(metadata: PaletteStateInterface['metadata']): GalleryHistogramSlotInterfaceType['bins'] {
+      const value = metadata['gallery:histogram'];
+      if (value === undefined) {return [];}
+      if (GalleryMetadataSlot.isHistogram(value)) {return value.bins;}
+      throw new TypeError('Metadata slot gallery:histogram does not match the histogram schema');
+    }
   }
 
-  private static isRgb(value: unknown): boolean {
-    return GalleryMetadataSlot.isRecord(value)
-      && typeof value.b === 'number'
-      && typeof value.g === 'number'
-      && typeof value.r === 'number';
+}
+class ContrastMetadataSlot {
+  static apca(metadata: PaletteStateInterface['metadata']): ApcaPairResultSetInterfaceTypeEntity.Type | undefined {
+    const value = metadata['contrast:apca'];
+    if (value === undefined) {
+      const result = undefined;
+      return result;
+    }
+    const result = ApcaPairResultSetInterfaceTypeEntity.intake(value);
+    return result;
   }
 
-  private static isOklch(value: unknown): boolean {
-    return GalleryMetadataSlot.isRecord(value)
-      && typeof value.c === 'number'
-      && typeof value.h === 'number'
-      && typeof value.l === 'number';
+  static cvd(metadata: PaletteStateInterface['metadata']): CvdResultSetInterfaceTypeEntity.Type | undefined {
+    const value = metadata['contrast:cvd'];
+    if (value === undefined) {
+      const result = undefined;
+      return result;
+    }
+    const result = CvdResultSetInterfaceTypeEntity.intake(value);
+    return result;
   }
 
-  private static isSourceFormat(value: unknown): boolean {
-    return value === 'hex'
-      || value === 'rgb'
-      || value === 'hsl'
-      || value === 'oklch'
-      || value === 'lab'
-      || value === 'named'
-      || value === 'imagePixel'
-      || value === 'displayP3';
+  static wcagAa(metadata: PaletteStateInterface['metadata']): WcagPairResultSetInterfaceTypeEntity.Type | undefined {
+    const value = metadata['contrast:aa'];
+    if (value === undefined) {
+      const result = undefined;
+      return result;
+    }
+    const result = WcagPairResultSetInterfaceTypeEntity.intake(value);
+    return result;
   }
 
-  private static isIntent(value: unknown): boolean {
-    return value === undefined
-      || value === 'text'
-      || value === 'background'
-      || value === 'accent'
-      || value === 'muted'
-      || value === 'critical'
-      || value === 'positive'
-      || value === 'link'
-      || value === 'button'
-      || value === 'onAccent'
-      || value === 'onButton';
-  }
-
-  private static isHints(value: unknown): boolean {
-    return value === undefined
-      || (GalleryMetadataSlot.isRecord(value)
-        && GalleryMetadataSlot.isIntent(value.intent)
-        && (value.role === undefined || typeof value.role === 'string')
-        && (value.weight === undefined || typeof value.weight === 'number'));
-  }
-
-  private static isColorRecord(value: unknown): value is ColorRecordInterfaceType {
-    return GalleryMetadataSlot.isRecord(value)
-      && typeof value.alpha === 'number'
-      && typeof value.hex === 'string'
-      && GalleryMetadataSlot.isOklch(value.oklch)
-      && GalleryMetadataSlot.isRgb(value.rgb)
-      && GalleryMetadataSlot.isSourceFormat(value.sourceFormat)
-      && (value.displayP3 === undefined || GalleryMetadataSlot.isRgb(value.displayP3))
-      && GalleryMetadataSlot.isHints(value.hints);
-  }
-
-  private static isAlgorithm(value: unknown): value is GalleryAlgorithmType {
-    return value === 'median-cut' || value === 'delta-e' || value === 'k-means' || value === 'wu-quantize';
-  }
-
-  private static isCandidate(value: unknown): value is GalleryCandidateInterfaceType {
-    return GalleryMetadataSlot.isRecord(value)
-      && GalleryMetadataSlot.isAlgorithm(value.algorithm)
-      && Array.isArray(value.colors)
-      && value.colors.every(GalleryMetadataSlot.isColorRecord)
-      && typeof value.k === 'number'
-      && typeof value.label === 'string';
-  }
-
-  private static isCandidates(value: unknown): value is GalleryCandidatesSlotType {
-    return Array.isArray(value) && value.every(GalleryMetadataSlot.isCandidate);
-  }
-
-  private static isDominantColors(value: unknown): value is GalleryDominantColorsSlotType {
-    return Array.isArray(value) && value.every(GalleryMetadataSlot.isColorRecord);
-  }
-
-  private static isHistogram(value: unknown): value is GalleryHistogramSlotInterfaceType {
-    return GalleryMetadataSlot.isRecord(value)
-      && typeof value.binCount === 'number'
-      && Array.isArray(value.bins)
-      && value.bins.every((bin) => {
-        return GalleryMetadataSlot.isRecord(bin) && typeof bin.hex === 'string' && typeof bin.weight === 'number';
-      })
-      && typeof value.totalPixels === 'number';
-  }
-
-  static candidates(metadata: PaletteStateInterface['metadata']): GalleryCandidatesSlotType {
-    const value = metadata['gallery:candidates'];
-    if (value === undefined) {return [];}
-    if (GalleryMetadataSlot.isCandidates(value)) {return value;}
-    throw new TypeError('Metadata slot gallery:candidates does not match the candidate palette schema');
-  }
-
-  static dominantColors(metadata: PaletteStateInterface['metadata']): GalleryDominantColorsSlotType {
-    const value = metadata['gallery:dominantColors'];
-    if (value === undefined) {return [];}
-    if (GalleryMetadataSlot.isDominantColors(value)) {return value;}
-    throw new TypeError('Metadata slot gallery:dominantColors does not match the color-record schema');
-  }
-
-  static histogram(metadata: PaletteStateInterface['metadata']): GalleryHistogramSlotInterfaceType['bins'] {
-    const value = metadata['gallery:histogram'];
-    if (value === undefined) {return [];}
-    if (GalleryMetadataSlot.isHistogram(value)) {return value.bins;}
-    throw new TypeError('Metadata slot gallery:histogram does not match the histogram schema');
+  static wcagAaa(metadata: PaletteStateInterface['metadata']): WcagPairResultSetInterfaceTypeEntity.Type | undefined {
+    const value = metadata['contrast:aaa'];
+    if (value === undefined) {
+      const result = undefined;
+      return result;
+    }
+    const result = WcagPairResultSetInterfaceTypeEntity.intake(value);
+    return result;
   }
 }
 
 class RoleClampReadModel {
-  static fromProvenance(provenance: RoleProvenanceMapInterfaceType): Record<string, RoleMathClampType> {
-    const clamps: Record<string, RoleMathClampType> = {};
-    for (const [roleName, evidence] of Object.entries(provenance)) {
-      const rangeAdjustment = evidence.adjustments.find((adjustment) => {return adjustment.operation === 'role-range';});
+  private static rangeAdjustment(value: RoleProvenanceInterfaceTypeEntity.Type['adjustments'][number]): { readonly 'afterHex': string; readonly 'beforeHex': string } | undefined {
+    if (value.operation !== 'role-range') {
+      const result = undefined;
+      return result;
+    }
+    const result = { 'afterHex': value.afterHex, 'beforeHex': value.beforeHex };
+    return result;
+  }
+
+  static fromProvenance(provenance: ReadonlyMap<string, RoleProvenanceInterfaceTypeEntity.Type>): Map<string, RoleMathClampType> {
+    const clamps = new Map<string, RoleMathClampType>();
+    for (const [roleName, evidence] of provenance) {
+      let rangeAdjustment: { readonly 'afterHex': string; readonly 'beforeHex': string } | undefined;
+      for (let adjustmentIndex = 0; adjustmentIndex < evidence.adjustments.length; adjustmentIndex += 1) {
+        const adjustment = evidence.adjustments[adjustmentIndex];
+        if (adjustment === undefined) {
+          throw new RangeError(`Role provenance for ${roleName} is missing adjustment ${adjustmentIndex}`);
+        }
+        const candidate = RoleClampReadModel.rangeAdjustment(adjustment);
+        if (candidate !== undefined) {
+          rangeAdjustment = candidate;
+          break;
+        }
+      }
       if (rangeAdjustment === undefined) {continue;}
       const resolvedOklch = colorRecordFactory.fromHex(rangeAdjustment.afterHex).oklch;
       const seedOklch = colorRecordFactory.fromHex(rangeAdjustment.beforeHex).oklch;
-      clamps[roleName] = {
+      clamps.set(roleName, {
         'resolvedHex': rangeAdjustment.afterHex.toLowerCase(),
         'roleOklch': `L ${resolvedOklch.l.toFixed(2)} · C ${resolvedOklch.c.toFixed(2)} · H ${Math.round(resolvedOklch.h)}`,
         'seedHex': rangeAdjustment.beforeHex.toLowerCase(),
         'seedOklch': `L ${seedOklch.l.toFixed(2)} · C ${seedOklch.c.toFixed(2)} · H ${Math.round(seedOklch.h)}`
-      };
+      });
     }
-    return clamps;
+    const result = clamps;
+    return result;
   }
 }
 
@@ -241,39 +301,36 @@ class IridisContextFactory {
     engine.adopt(imagePlugin);
 
     /* ─── shared reactive state ─── */
-    const {
-      'registerExtractImageHandler': registerExtractImageHandler, 'registerMutateSeedsHandler': registerMutateSeedsHandler,
-      'registerNavigateToTargetHandler': registerNavigateToTargetHandler, 'registerPinSeedRoleHandler': registerPinSeedRoleHandler,
-      'registerPopulatePickerFromImageHandler': registerPopulatePickerFromImageHandler, 'registerSelectImageCandidateHandler': registerSelectImageCandidateHandler,
-      'registerSetPaletteParamHandler': registerSetPaletteParamHandler,
-      'registerUpdateCvdPreviewHandler': registerUpdateCvdPreviewHandler,
-      'registerUpdateDiagramViewHandler': registerUpdateDiagramViewHandler,
-      'send': sendUiEvent, 'state': uiState
-    } = useIridisUiMachine();
+    const { 'registerEffectHandlers': registerEffectHandlers, 'send': sendUiEvent, 'state': uiState } = useIridisUiMachine();
     /** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
-    class ModeGetOperation {
-      static run(): ModeType.Type {
-        const result = uiState.value.mode;
-        return result;
-      }
-    }
-
     class ModeSetOperation {
-      static run(mode: ModeType.Type): void {
-        sendUiEvent({ 'mode': mode, 'type': IridisUiActionType.SELECT_MODE });
+      static run(selection: string): void {
+        if (selection === 'image') {
+          sendUiEvent(IridisUiEvent.selectImageMode());
+          return;
+        }
+        if (selection === 'picker') {
+          sendUiEvent(IridisUiEvent.selectPickerMode());
+          return;
+        }
+        throw new RangeError(`Unsupported palette mode: ${selection}`);
       }
     }
 
     const mode = VueModule.computed<ModeType.Type>({
-      'get': ModeGetOperation.run,
+      'get': () => {
+        const result: ModeType.Type = uiState.value.selectsImageMode() ? 'image' : 'picker';
+        return result;
+      },
       'set': ModeSetOperation.run
     });
     class DefaultPaletteSeedsOperation {
       static run(): PickerSeedType[] {
-        return [
+        const result = [
           { 'hex': '#000000', 'role': undefined },
           { 'hex': '#ffffff', 'role': undefined }
         ];
+        return result;
       }
     }
 
@@ -298,8 +355,18 @@ class IridisContextFactory {
     class WithPreservedRolesOperation {
       static run(hexes: readonly string[], previous: readonly PickerSeedType[]): PickerSeedType[] {
         const roleByHex = new Map<string, string | undefined>();
-        for (const seed of previous) {roleByHex.set(seed.hex, seed.role);}
-        return hexes.map((hex) => {return { 'hex': hex, 'role': roleByHex.get(hex) };});
+        for (let index = 0; index < previous.length; index += 1) {
+          const seed = previous[index];
+          if (seed === undefined) {
+            throw new RangeError(`Palette seed list is missing entry ${index}`);
+          }
+          roleByHex.set(seed.hex, seed.role);
+        }
+        const result = hexes.map((hex) => {
+          const seed = { 'hex': hex, 'role': roleByHex.get(hex) };
+          return seed;
+        });
+        return result;
       }
     }
 
@@ -307,13 +374,26 @@ class IridisContextFactory {
 
     class HydratePaletteSeedsOperation {
       static run(hexes: readonly string[], previous: readonly PickerSeedType[]): PickerSeedType[] {
-        return hexes.length === 0 ? defaultPaletteSeeds() : withPreservedRoles(hexes, previous);
+        const result = hexes.length === 0 ? defaultPaletteSeeds() : withPreservedRoles(hexes, previous);
+        return result;
       }
     }
 
     const hydratePaletteSeeds = HydratePaletteSeedsOperation.run;
 
     const framing = VueModule.ref<FramingType.Type>('dark');
+    class ApplyCurrentFramingTokensOperation {
+      static run(tokens: RoleHexMapType): void {
+        if (framing.value === 'dark') {
+          Tokens.applyDark(tokens);
+          return;
+        }
+        Tokens.applyLight(tokens);
+      }
+    }
+
+    const applyCurrentFramingTokens = ApplyCurrentFramingTokensOperation.run;
+
     const schemaName = VueModule.ref<string>(DEFAULT_SCHEMA_NAME);
     const contrastStrictness = VueModule.ref<number>(2);
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
@@ -338,7 +418,7 @@ class IridisContextFactory {
     class RelationUpdateOperation {
       static run(roleName: string, relation: RoleRelationDerivationType): void {
         const patch: Record<string, RoleRelationDerivationType> = {};
-        patch[roleName] = relation;
+        Object.defineProperty(patch, roleName, { 'configurable': true, 'enumerable': true, 'value': relation, 'writable': true });
         relationsUpdate(patch);
       }
     }
@@ -357,7 +437,7 @@ class IridisContextFactory {
     class RelationsUpdateOperation {
       static run(newRelations: Record<string, RoleRelationDerivationType>): void {
         const updated: DerivationConfigType = { 'relations': { ...derivationConfig.value.relations, ...newRelations } };
-        sendUiEvent({ 'config': updated, 'type': IridisUiActionType.SET_DERIVATION_CONFIG });
+        sendUiEvent(IridisUiEvent.setDerivationConfig(updated));
       }
     }
 
@@ -372,8 +452,16 @@ class IridisContextFactory {
  */
     const semanticHuesEnabled = VueModule.ref(true);
     class SemanticHuesEnabledSetOperation {
-      static run(enabled: boolean): void {
-        sendUiEvent({ 'enabled': enabled, 'type': IridisUiActionType.SET_SEMANTIC_HUES_ENABLED });
+      static run(nextState: boolean | string): void {
+        if (nextState === true) {
+          sendUiEvent(IridisUiEvent.setSemanticHuesEnabled());
+          return;
+        }
+        if (nextState === false) {
+          sendUiEvent(IridisUiEvent.setSemanticHuesDisabled());
+          return;
+        }
+        throw new TypeError('Semantic hue state must be boolean');
       }
     }
 
@@ -393,7 +481,7 @@ class IridisContextFactory {
  * Empty = preview off. Consumed by a display-layer component, not by the
  * engine pipeline — changing it never triggers a recompute.
  */
-    const cvdPreviewTypes = VueModule.ref<Set<CvdType>>(new Set());
+    const cvdPreviewTypes = VueModule.ref<Set<CvdMatrixInterfaceTypeEntity.Type['name']>>(new Set());
 
     /** Diagram view state (zoom level, pan offset, expanded fullscreen mode). */
     const diagramScale = VueModule.ref<number>(1);
@@ -403,8 +491,8 @@ class IridisContextFactory {
 
     const roles = VueModule.ref<RoleHexMapType>({});
     const roleViews = VueModule.ref<RoleViewType[]>([]);
-    const roleClamps = VueModule.ref<Record<string, RoleMathClampType>>({});
-    const roleDistances = VueModule.ref<RoleDistanceMapInterfaceType>({});
+    const roleClamps = VueModule.ref<Map<string, RoleMathClampType>>(new Map());
+    const roleDistances = VueModule.ref<Map<string, ReadonlyMap<string, number>>>(new Map());
     const rolesSynthesized = VueModule.ref<string[]>([]);
     const rolesPinned = VueModule.ref<string[]>([]);
     const rolesDerived = VueModule.ref<string[]>([]);
@@ -420,7 +508,10 @@ class IridisContextFactory {
  * has completed.
  */
     const activeOperations = VueModule.ref<number>(0);
-    const running = VueModule.computed<boolean>(() => {return activeOperations.value > 0;});
+    const running = VueModule.computed<boolean>(() => {
+      const result = activeOperations.value > 0;
+      return result;
+    });
     /** Marks one operation as started — pair with `endOperation()` in a `finally`. */
     class BeginOperationOperation {
       static run(): void { activeOperations.value += 1; }
@@ -451,10 +542,12 @@ class IridisContextFactory {
       const bg = roles.value.background;
       if (bg === undefined) {throw new Error('Resolved palette is missing the required background role');}
       const schema = roleSchemaByName[schemaName.value]?.[framing.value];
-      return roleViews.value.map((r) => {
-        const ratio = contrastRatio(r.hex, bg);
-        return { 'c': r.c, 'compliance': complianceFor(ratio, minimumRatioForRole(schema, r.name)), 'h': r.h, 'hex': r.hex, 'l': r.l, 'name': r.name, 'ratio': ratio };
+      const result = roleViews.value.map((role) => {
+        const ratio = contrastRatio(role.hex, bg);
+        const row = { 'c': role.c, 'compliance': complianceFor(ratio, minimumRatioForRole(schema, role.name)), 'h': role.h, 'hex': role.hex, 'l': role.l, 'name': role.name, 'ratio': ratio };
+        return row;
       });
+      return result;
     });
 
     const sortedRoleContrastRows = VueModule.computed(() => { const result = sortRoleRows(roleContrastRows.value, roleSortKeys.value); return result; });
@@ -462,14 +555,14 @@ class IridisContextFactory {
 
     /** Raw contrast-check metadata from the last run, keyed by algorithm rather than the `contrast:*` metadata prefix. */
     const contrastReport = VueModule.ref<{
-      'aa'?:   WcagPairResultSetInterfaceType;
-      'aaa'?:  WcagPairResultSetInterfaceType;
-      'apca'?: ApcaPairResultSetInterfaceType;
-      'cvd'?:  CvdResultSetInterfaceType;
+      'aa'?:   WcagPairResultSetInterfaceTypeEntity.Type;
+      'aaa'?:  WcagPairResultSetInterfaceTypeEntity.Type;
+      'apca'?: ApcaPairResultSetInterfaceTypeEntity.Type;
+      'cvd'?:  CvdResultSetInterfaceTypeEntity.Type;
     }>({});
 
     /* Image-extraction controls (mirror the engine's gallery config knobs). */
-    const imgAlgorithm = VueModule.ref<GalleryAlgorithmType>('delta-e');
+    const imgStrategy = VueModule.ref<ClusterStrategyInterface>(ClusterDispatcher.resolve('delta-e'));
     const imgK = VueModule.ref<number>(8);
     const imgHistogramBits = VueModule.ref<number>(5);
     const imgDeltaECap = VueModule.ref<number>(128);
@@ -485,9 +578,9 @@ class IridisContextFactory {
  * settings. The combine stage (see `combine()` below) concatenates every
  * entry's `dominantColors` into the final palette that themes the page.
  */
-    const uploadedImages = VueModule.ref<UploadedImageInterfaceType[]>([]);
+    const uploadedImages = VueModule.ref<UploadedImage[]>([]);
     /** The (typically 3) non-destructive candidate palettes from gallery:extractCandidates for the last image-driven run — one algorithm's clustering result each. */
-    const candidates = VueModule.ref<GalleryCandidateInterfaceType[]>([]);
+    const candidates = VueModule.ref<GalleryCandidateOutputEntity.Type[]>([]);
     /** Label of the candidate currently populating imageSeeds, if the user picked one via PaletteCandidatePicker.vue — null means imageSeeds still holds the default gallery:dominantColors extraction. */
     const selectedCandidateLabel = VueModule.ref<string | null>(null);
     /**
@@ -508,7 +601,10 @@ class IridisContextFactory {
     VueModule.watch(schemaName, (v) => { imgK.value = schemaRoleCount(v); }, { 'immediate': true });
 
     /** Whichever seed list is live for the current mode — imageSeeds and pickerSeeds share one shape now, so this is a plain switch, not a reshape. */
-    const activeSeeds = VueModule.computed<PickerSeedType[]>(() => {return (mode.value === 'image' ? imageSeeds.value : pickerSeeds.value);});
+    const activeSeeds = VueModule.computed<PickerSeedType[]>(() => {
+      const result = mode.value === 'image' ? imageSeeds.value : pickerSeeds.value;
+      return result;
+    });
 
     /**
  * Role names a seed can actually be pinned to for the active schema+framing —
@@ -524,28 +620,38 @@ class IridisContextFactory {
       const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
       const schema = pair?.[framing.value];
       if (schema === undefined) {return [];}
-      return schema.roles.reduce<string[]>((names, role) => {
+      const result = schema.roles.reduce<string[]>((names, role) => {
         if (IRIDIS_CONSTANTS.USED_ROLE_NAMES.has(role.name)) { names.push(role.name); }
         return names;
       }, []);
+      return result;
     });
 
     class IngestOperation {
       static run(state: PaletteStateInterface): void {
         const engineMaps = Tokens.extractEngineMaps(state);
         const views: RoleViewType[] = [];
-        for (const [name, r] of Object.entries(state.roles)) {
-          views.push({ 'c': r.oklch.c, 'displayP3': r.displayP3, 'h': r.oklch.h, 'hex': r.hex, 'l': r.oklch.l, 'name': name });
+        const roleNames = Object.keys(state.roles);
+        for (let index = 0; index < roleNames.length; index += 1) {
+          const name = roleNames[index];
+          if (name === undefined) {
+            throw new RangeError(`Resolved role list is missing entry ${index}`);
+          }
+          const role = state.roles[name];
+          if (role === undefined) {
+            throw new RangeError(`Resolved role ${name} is missing its color record`);
+          }
+          views.push({ 'c': role.oklch.c, 'displayP3': role.displayP3, 'h': role.oklch.h, 'hex': role.hex, 'l': role.oklch.l, 'name': name });
         }
         roles.value = engineMaps.roles;
         roleViews.value = views;
-        const provenance = EngineMetadata.get(state.metadata, 'core:roleProvenance') ?? {};
+        const provenance = Metadata.roleProvenance(state.metadata);
         roleClamps.value = RoleClampReadModel.fromProvenance(provenance);
-        roleDistances.value = EngineMetadata.get(state.metadata, 'core:roleDistances') ?? {};
+        roleDistances.value = Metadata.roleDistances(state.metadata);
         const derivedRoles: string[] = [];
         const statedRoles: string[] = [];
         const synthesizedRoles: string[] = [];
-        for (const [roleName, evidence] of Object.entries(provenance)) {
+        for (const [roleName, evidence] of provenance) {
           if (evidence.origin === 'derived') {derivedRoles.push(roleName);}
           if (evidence.origin === 'stated') {statedRoles.push(roleName);}
           if (evidence.origin === 'synthesized') {synthesizedRoles.push(roleName);}
@@ -555,13 +661,13 @@ class IridisContextFactory {
         rolesDerived.value = derivedRoles;
         scales.value = engineMaps.scales;
         contrastReport.value = {
-          'aa':   getContrastMetadata(state.metadata, 'contrast:aa'),
-          'aaa':  getContrastMetadata(state.metadata, 'contrast:aaa'),
-          'apca': getContrastMetadata(state.metadata, 'contrast:apca'),
-          'cvd':  getContrastMetadata(state.metadata, 'contrast:cvd')
+          'aa':   ContrastMetadataSlot.wcagAa(state.metadata),
+          'aaa':  ContrastMetadataSlot.wcagAaa(state.metadata),
+          'apca': ContrastMetadataSlot.apca(state.metadata),
+          'cvd':  ContrastMetadataSlot.cvd(state.metadata)
         };
         if (typeof document !== 'undefined') {
-          Tokens.apply(Tokens.mapFromEngine(engineMaps.roles, engineMaps.scales), framing.value);
+          applyCurrentFramingTokens(Tokens.mapFromEngine(engineMaps.roles, engineMaps.scales));
         }
       }
     }
@@ -581,9 +687,10 @@ class IridisContextFactory {
  * in the same tick instead of the class flipping instantly while the old
  * colors linger for a debounce window.
  */
+    let pendingFraming: FramingType.Type | undefined;
     class RunOperation {
-      static run(framingOverride?: FramingType.Type): void {
-        const targetFraming = framingOverride ?? framing.value;
+      static run(): void {
+        const targetFraming = pendingFraming ?? framing.value;
         const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
         if (pair === undefined) {return;}
         // Neither pickerSeeds nor imageSeeds has a seed yet on the very first pass
@@ -598,21 +705,18 @@ class IridisContextFactory {
         try {
           engine.pipeline(pipelineBuild(REQUIRED_COLOR_STAGES));
           const targetRoles = pair[targetFraming];
-          const state = engine.run({
-            'bypass':   undefined,
+          const state = engine.run(InputInterfaceTypeEntity.create({
             'colors':   pickerSeedInputs(seeds),
-            'contrast': contrastConfigFor(contrastStrictness.value, cvdCorrect.value),
-            'emit':     undefined,
-            'maxColors': undefined,
-            'metadata': { 'core:variantConfig': VARIANT_CONFIG, 'derivation:config': derivationConfig.value, 'derivation:semanticHuesEnabled': semanticHuesEnabled.value },
+            'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
+            'metadata': { 'core:variantConfig': JsonValue.from(VARIANT_CONFIG), 'derivation:config': JsonValue.from(derivationConfig.value), 'derivation:semanticHuesEnabled': JsonValue.from(semanticHuesEnabled.value) },
             'roles':    targetRoles,
-            'runtime':  { 'colorSpace': colorSpace.value, 'extra': undefined, 'framing': targetFraming }
-          });
-          if (framingOverride !== undefined) {
-            framing.value = framingOverride;
+            'runtime':  { 'colorSpace': colorSpace.value, 'framing': targetFraming }
+          }));
+          if (pendingFraming !== undefined) {
+            framing.value = pendingFraming;
             if (typeof document !== 'undefined') {
               document.documentElement.classList.add('is-switching-theme');
-              if (framingOverride === 'dark') {
+              if (pendingFraming === 'dark') {
                 document.documentElement.classList.add('dark');
               } else {
                 document.documentElement.classList.remove('dark');
@@ -623,8 +727,9 @@ class IridisContextFactory {
             }
           }
           ingest(state);
+          pendingFraming = undefined;
           if (typeof document !== 'undefined') {
-            Tokens.apply(Tokens.mapFromEngine(roles.value, scales.value), targetFraming);
+            applyCurrentFramingTokens(Tokens.mapFromEngine(roles.value, scales.value));
           }
         } catch (e) {
           error.value = e instanceof Error ? e.message : String(e);
@@ -642,8 +747,8 @@ class IridisContextFactory {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         await new Promise<void>((resolve, reject) => {
-          img.onload = () => { const result = resolve(); return result; };
-          img.onerror = () => { const result = reject(new Error('Image load failed')); return result; };
+          img.onload = () => { resolve(); };
+          img.onerror = () => { reject(new Error('Image load failed')); };
           img.src = sourceUrl;
         });
         const MAXIMUM_DIMENSION = 180;
@@ -656,11 +761,12 @@ class IridisContextFactory {
         const context = canvas.getContext('2d', { 'willReadFrequently': true });
         if (context === null) {throw new Error('no 2D context');}
         context.drawImage(img, 0, 0, w, h);
-        return { 'data': context.getImageData(0, 0, w, h).data, 'height': h, 'width': w };
+        const result = { 'data': context.getImageData(0, 0, w, h).data, 'height': h, 'width': w };
+        return result;
       }
     }
 
-    /** Raw decoded pixel buffers, keyed by `UploadedImageInterfaceType.id` — kept out of the reactive `uploadedImages` entries so Vue never deep-wraps a pixel array. */
+    /** Raw decoded pixel buffers, keyed by `UploadedImage.id` — kept out of the reactive `uploadedImages` entries so Vue never deep-wraps a pixel array. */
     class PixelCache {
       static readonly entries = new Map<string, { 'data': Uint8ClampedArray; 'height': number; 'width': number }>();
     }
@@ -679,24 +785,24 @@ class IridisContextFactory {
     class ImageId {
       static make(): string {
         nextImageId += 1;
-        return `img-${nextImageId}-${Date.now().toString(36)}`;
+        const result = `img-${nextImageId}-${Date.now().toString(36)}`;
+        return result;
       }
     }
 
     /**
  * Seeds a freshly-uploaded entry's own settings from the CURRENT combine-stage
  * refs — sensible per-image defaults that become independently mutable
- * afterward. Returns a full `UploadedImageInterfaceType`: the not-yet-computed
+ * afterward. Returns a full `UploadedImage`: the not-yet-computed
  * fields (`candidates`, `dominantColorRecords`, `histogram`, `id`, `name`,
- * `selectedCandidateLabel`, `src`) get placeholder defaults that the caller
+ * `selectedCandidateLabel`, `source`) get placeholder defaults that the caller
  * overwrites with the real per-call values (a freshly-uploaded entry) — also
  * reused as-is by `combineNowRun` to build the combine stage's own gallery
  * metadata, where those placeholders are never read.
  */
     class DefaultEntrySettingsOperation {
-      static run(): UploadedImageInterfaceType {
-        return {
-          'algorithm':               imgAlgorithm.value,
+      static run(): UploadedImage {
+        const result = {
           'candidates':               [],
           'chromaRange':              cloneRanges(imgChromaRange.value),
           'deltaECap':                imgDeltaECap.value,
@@ -709,8 +815,10 @@ class IridisContextFactory {
           'lightnessRange':           cloneRanges(imgLightnessRange.value),
           'name':                     '',
           'selectedCandidateLabel':   null,
-          'src':                      ''
+          'source':                   '',
+          'strategy':                 imgStrategy.value
         };
+        return result;
       }
     }
 
@@ -718,18 +826,9 @@ class IridisContextFactory {
 
     /** Builds the `metadata.gallery` object handed to engine.run() — shared by EntryStage1.extract (per-image, passing that entry directly) and combineNowRun (the combine stage itself, passing `defaultEntrySettings()`), rather than two independent object literals repeating the same field list and range-cloning. */
     class GalleryMetadata {
-      static build(source: UploadedImageInterfaceType): {
-        'algorithm':          GalleryAlgorithmType;
-        'candidates':         GalleryCandidateInterfaceType[];
-        'chromaRange':        [number, number][];
-        'deltaECap':          number;
-        'harmonizeThreshold': number;
-        'histogramBits':      number;
-        'k':                  number;
-        'lightnessRange':     [number, number][];
-      } {
-        return {
-          'algorithm':          source.algorithm,
+      static build(source: UploadedImage) {
+        const result = {
+          'algorithm':          source.strategy.serializeAlgorithm(),
           'candidates':         allCandidateAlgorithms(source.k),
           'chromaRange':        cloneRanges(source.chromaRange),
           'deltaECap':          source.deltaECap,
@@ -738,6 +837,7 @@ class IridisContextFactory {
           'k':                  source.k,
           'lightnessRange':     cloneRanges(source.lightnessRange)
         };
+        return result;
       }
     }
 
@@ -748,29 +848,35 @@ class IridisContextFactory {
  * histogram/dominantColors.
  */
     class EntryStage1 {
-      static extract(entry: UploadedImageInterfaceType): void {
+      static extract(entry: UploadedImage): void {
         const pixels = PixelCache.entries.get(entry.id);
         if (pixels === undefined) {return;}
         engine.pipeline(IRIDIS_CONSTANTS.IMAGE_ENTRY_STAGES);
-        const state = engine.run({
-          'bypass':   undefined,
-          'colors':   [pixels],
-          'contrast': undefined,
-          'emit':     undefined,
-          'maxColors': undefined,
+        const state = engine.run(InputInterfaceTypeEntity.create({
+          'colors': [pixels],
           'metadata': {
-            'gallery': GalleryMetadata.build(entry)
-          },
-          'roles':    undefined,
-          'runtime':  undefined
+            'gallery': JsonValue.from(GalleryMetadata.build(entry))
+          }
+        }));
+        const hist = GalleryMetadataSlotEntity.GalleryMetadataSlot.histogram(state.metadata);
+        const sortedHistogram = [...hist].sort((left, right) => {
+          const result = right.weight - left.weight;
+          return result;
         });
-        const hist = GalleryMetadataSlot.histogram(state.metadata);
-        entry.histogram = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
-        const dominant = GalleryMetadataSlot.dominantColors(state.metadata);
-        const validDominant = dominant.filter((c) => { const result = isValidHex(c.hex);
-          return result; });
-        entry.dominantColorRecords = validDominant.map((c) => { return { 'hex': c.hex, 'weight': c.hints?.weight ?? 1 }; });
-        entry.candidates = GalleryMetadataSlot.candidates(state.metadata);
+        entry.histogram = sortedHistogram.slice(0, 96);
+        const dominant = GalleryMetadataSlotEntity.GalleryMetadataSlot.dominantColors(state.metadata);
+        const dominantColorRecords: { 'hex': string; 'weight': number }[] = [];
+        for (let index = 0; index < dominant.length; index += 1) {
+          const color = dominant[index];
+          if (color === undefined) {
+            throw new RangeError(`Dominant color list is missing entry ${index}`);
+          }
+          if (isValidHex(color.hex)) {
+            dominantColorRecords.push({ 'hex': color.hex, 'weight': color.hints?.weight ?? 1 });
+          }
+        }
+        entry.dominantColorRecords = dominantColorRecords;
+        entry.candidates = GalleryMetadataSlotEntity.GalleryMetadataSlot.candidates(state.metadata);
       }
     }
 
@@ -786,14 +892,22 @@ class IridisContextFactory {
  * significant regardless of how much of the source image it actually covers.
  */
     class WeightedHexesForOperation {
-      static run(entry: UploadedImageInterfaceType): readonly { 'hex': string; 'weight': number }[] {
+      static run(entry: UploadedImage): readonly { 'hex': string; 'weight': number }[] {
         if (entry.selectedCandidateLabel !== null) {
-          const match = entry.candidates.find((c) => {return c.label === entry.selectedCandidateLabel;});
+          const match = entry.candidates.find((candidate) => {
+            const result = candidate.label === entry.selectedCandidateLabel;
+            return result;
+          });
           if (match !== undefined) {
-            return match.colors.map((c) => {return { 'hex': c.hex, 'weight': c.hints?.weight ?? 1 };});
+            const result = match.colors.map((color) => {
+              const weightedColor = { 'hex': color.hex, 'weight': color.hints?.weight ?? 1 };
+              return weightedColor;
+            });
+            return result;
           }
         }
-        return entry.dominantColorRecords;
+        const result = entry.dominantColorRecords;
+        return result;
       }
     }
 
@@ -801,9 +915,11 @@ class IridisContextFactory {
 
     /** Plain hex list (no weight) — used wherever only the color values matter, e.g. the Upload card's per-image summary swatches. */
     class EffectiveHexesForOperation {
-      static run(entry: UploadedImageInterfaceType): readonly string[] {
-        const result = weightedHexesFor(entry).map((w) => {const result = w.hex;
-          return result;});
+      static run(entry: UploadedImage): readonly string[] {
+        const result = weightedHexesFor(entry).map((weightedColor) => {
+          const hex = weightedColor.hex;
+          return hex;
+        });
         return result;
       }
     }
@@ -820,15 +936,28 @@ class IridisContextFactory {
  */
     class ExpandWeightedOperation {
       static run(weighted: readonly { 'hex': string; 'weight': number }[], budget: number): string[] {
-        const totalWeight = weighted.reduce((sum, w) => {return sum + w.weight;}, 0);
-        if (totalWeight <= 0) {return weighted.map((w) => {const result = w.hex;
-          return result;});}
-        const expanded: string[] = [];
-        for (const w of weighted) {
-          const count = Math.max(1, Math.round((w.weight / totalWeight) * budget));
-          for (let i = 0; i < count; i++) {expanded.push(w.hex);}
+        const totalWeight = weighted.reduce((sum, weightedColor) => {
+          const result = sum + weightedColor.weight;
+          return result;
+        }, 0);
+        if (totalWeight <= 0) {
+          const result = weighted.map((weightedColor) => {
+            const hex = weightedColor.hex;
+            return hex;
+          });
+          return result;
         }
-        return expanded;
+        const expanded: string[] = [];
+        for (let index = 0; index < weighted.length; index += 1) {
+          const weightedColor = weighted[index];
+          if (weightedColor === undefined) {
+            throw new RangeError(`Weighted palette is missing entry ${index}`);
+          }
+          const count = Math.max(1, Math.round((weightedColor.weight / totalWeight) * budget));
+          for (let occurrence = 0; occurrence < count; occurrence += 1) {expanded.push(weightedColor.hex);}
+        }
+        const result = expanded;
+        return result;
       }
     }
 
@@ -842,7 +971,7 @@ class IridisContextFactory {
  * resulting histogram genuinely reflects the merged pixel density across
  * every uploaded image, not an equal-weight-per-representative-color
  * approximation. The combine-stage settings are the existing shared
- * imgAlgorithm/imgK/imgHistogramBits/imgDeltaECap/imgHarmonize/imgLightnessRange/
+ * imgStrategy/imgK/imgHistogramBits/imgDeltaECap/imgHarmonize/imgLightnessRange/
  * imgChromaRange refs — they now control the FINAL merge across all images,
  * not any single photo's extraction.
  */
@@ -887,24 +1016,25 @@ class IridisContextFactory {
           if (pair === undefined) { return; }
           const activeRoles = pair[framing.value];
           engine.pipeline(pipelineBuild(IRIDIS_CONSTANTS.REQUIRED_IMAGE_STAGES));
-          const state = engine.run({
-            'bypass':   undefined,
+          const state = engine.run(InputInterfaceTypeEntity.create({
             'colors':   combinedHexes,
-            'contrast': contrastConfigFor(contrastStrictness.value, cvdCorrect.value),
-            'emit':     undefined,
-            'maxColors': undefined,
+            'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
             'metadata': {
-              'core:variantConfig': VARIANT_CONFIG,
-              'derivation:config': derivationConfig.value,
-              'derivation:semanticHuesEnabled': semanticHuesEnabled.value,
-              'gallery': GalleryMetadata.build(defaultEntrySettings())
+              'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
+              'derivation:config': JsonValue.from(derivationConfig.value),
+              'derivation:semanticHuesEnabled': JsonValue.from(semanticHuesEnabled.value),
+              'gallery': JsonValue.from(GalleryMetadata.build(defaultEntrySettings()))
             },
             'roles':    activeRoles,
-            'runtime':  { 'colorSpace': colorSpace.value, 'extra': undefined, 'framing': framing.value }
+            'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
+          }));
+          const hist = GalleryMetadataSlotEntity.GalleryMetadataSlot.histogram(state.metadata);
+          const sortedHistogram = [...hist].sort((left, right) => {
+            const result = right.weight - left.weight;
+            return result;
           });
-          const hist = GalleryMetadataSlot.histogram(state.metadata);
-          histogram.value = [...hist].sort((a, b) => {return b.weight - a.weight;}).slice(0, 96);
-          const dominant = GalleryMetadataSlot.dominantColors(state.metadata);
+          histogram.value = sortedHistogram.slice(0, 96);
+          const dominant = GalleryMetadataSlotEntity.GalleryMetadataSlot.dominantColors(state.metadata);
           const schemaCount = schemaRoleCount(schemaName.value);
           const extracted: string[] = [];
           for (const color of dominant) {
@@ -913,9 +1043,9 @@ class IridisContextFactory {
           }
           imageSeeds.value = hydratePaletteSeeds(extracted, imageSeeds.value);
           pickerSeeds.value = hydratePaletteSeeds(extracted, pickerSeeds.value);
-          candidates.value = GalleryMetadataSlot.candidates(state.metadata);
+          candidates.value = GalleryMetadataSlotEntity.GalleryMetadataSlot.candidates(state.metadata);
           selectedCandidateLabel.value = null;
-          sendUiEvent({ 'hexes': extracted, 'type': IridisUiActionType.POPULATE_PICKER_FROM_IMAGE });
+          sendUiEvent(IridisUiEvent.populatePickerFromImage(extracted));
           ingest(state);
         } catch (e) {
           error.value = e instanceof Error ? e.message : String(e);
@@ -956,7 +1086,7 @@ class IridisContextFactory {
         beginOperation();
         error.value = null;
         try {
-          const added: UploadedImageInterfaceType[] = [];
+          const added: UploadedImage[] = [];
           const sourceCount = sources.length;
           for (let i = 0; i < sourceCount; i++) {
             const source = sources[i];
@@ -966,16 +1096,10 @@ class IridisContextFactory {
             const pixels = await ToPixels.decode(sourceUrl);
             const id = ImageId.make();
             PixelCache.entries.set(id, pixels);
-            const entry: UploadedImageInterfaceType = {
-              ...defaultEntrySettings(),
-              'candidates':              [],
-              'dominantColorRecords':    [],
-              'histogram':               [],
-              'id':                      id,
-              'name':                    name,
-              'selectedCandidateLabel':  null,
-              'src':                     sourceUrl
-            };
+            const entry = defaultEntrySettings();
+            entry.id = id;
+            entry.name = name;
+            entry.source = sourceUrl;
             EntryStage1.extract(entry);
             added.push(entry);
           }
@@ -994,13 +1118,19 @@ class IridisContextFactory {
     /** Drops one uploaded image and recombines — every other entry is untouched. */
     class RemoveUploadedImageOperation {
       static run(id: string): void {
-        const entry = uploadedImages.value.find((e) => {return e.id === id;});
-        if (entry?.src.startsWith('blob:') === true) {
-          URL.revokeObjectURL(entry.src);
+        const entry = uploadedImages.value.find((uploadedImage) => {
+          const result = uploadedImage.id === id;
+          return result;
+        });
+        if (entry?.source.startsWith('blob:') === true) {
+          URL.revokeObjectURL(entry.source);
         }
         PixelCache.entries.delete(id);
         entryReextract.cancel(id);
-        uploadedImages.value = uploadedImages.value.filter((e) => {return e.id !== id;});
+        uploadedImages.value = uploadedImages.value.filter((uploadedImage) => {
+          const result = uploadedImage.id !== id;
+          return result;
+        });
         scheduleCombine();
       }
     }
@@ -1010,14 +1140,17 @@ class IridisContextFactory {
     /**
  * Mutates ONE uploaded image's own settings and schedules ONLY that image's
  * re-extraction (debounced), not every uploaded image. `patch` is a full
- * `UploadedImageInterfaceType` — the caller (UploadedImageCard.vue) builds it
+ * `UploadedImage` — the caller (UploadedImageCard.vue) builds it
  * by spreading the entry's own current props with the one changed field
  * overridden, so every key is already present; `Object.assign` below just
  * reassigns each field to its (mostly unchanged) value.
  */
     class UploadedImageSettingUpdateOperation {
-      static run(id: string, patch: UploadedImageInterfaceType): void {
-        const entry = uploadedImages.value.find((e) => {return e.id === id;});
+      static run(id: string, patch: UploadedImage): void {
+        const entry = uploadedImages.value.find((uploadedImage) => {
+          const result = uploadedImage.id === id;
+          return result;
+        });
         if (entry === undefined) {return;}
         Object.assign(entry, patch);
         entryReextract.schedule(id);
@@ -1028,7 +1161,10 @@ class IridisContextFactory {
 
     /** Per-entry debounce so rapid slider drags on one image's settings don't re-run its extraction on every step. */
     const entryReextract = keyedDebounce((id: string) => {
-      const entry = uploadedImages.value.find((e) => {return e.id === id;});
+      const entry = uploadedImages.value.find((uploadedImage) => {
+        const result = uploadedImage.id === id;
+        return result;
+      });
       if (entry !== undefined) {EntryStage1.extract(entry);}
       combine();
     }, 180);
@@ -1044,7 +1180,10 @@ class IridisContextFactory {
  */
     class SelectEntryCandidateOperation {
       static run(id: string, label: string): void {
-        const entry = uploadedImages.value.find((e) => {return e.id === id;});
+        const entry = uploadedImages.value.find((uploadedImage) => {
+          const result = uploadedImage.id === id;
+          return result;
+        });
         if (entry === undefined) {return;}
         entry.selectedCandidateLabel = label;
         combine();
@@ -1053,49 +1192,47 @@ class IridisContextFactory {
 
     const selectEntryCandidate = SelectEntryCandidateOperation.run;
 
-    /**
- * Performs the picker-seed array mutation for the FSM's MUTATE_SEEDS effect.
- * Registered once below via registerMutateSeedsHandler — PaletteControls.vue
- * triggers this indirectly via useIridisUiMachine().send({type: IridisUiActionType.ADD_SEED|...}),
- * never by calling array mutation directly.
- */
-    class MutateSeedsOperation {
-      static run(effect: IridisEffects.MutateSeeds): void {
-        if (effect.op === 'add') {
-          // A freshly added seed with no explicit hex starts as the current
-          // engine-resolved brand color (a required role in every schema tier),
-          // never a hardcoded placeholder — the user edits it from there.
-          const nextHex = effect.hex ?? roles.value.brand;
-          if (nextHex === undefined) {throw new Error('Cannot add a seed before the required brand role is resolved');}
-          if (pickerSeeds.value.length < 32) {pickerSeeds.value = [...pickerSeeds.value, { 'hex': nextHex, 'role': undefined }];}
-        } else if (effect.op === 'remove') {
-          if (pickerSeeds.value.length > 1) {pickerSeeds.value = pickerSeeds.value.filter((_, index) => {return index !== effect.index;});}
-        } else if (effect.op === 'set') {
-          pickerSeeds.value = pickerSeeds.value.map((seed, index) => {return (index === effect.index ? { ...seed, 'hex': effect.hex } : seed);});
+    class SeedMutationOperation {
+      static add(hex: string | undefined): void {
+        const nextHex = hex ?? roles.value.brand;
+        if (nextHex === undefined) { throw new Error('Cannot add a seed before the required brand role is resolved'); }
+        if (pickerSeeds.value.length < 32) {
+          pickerSeeds.value = [...pickerSeeds.value, { 'hex': nextHex, 'role': undefined }];
         }
-        // Explicit, not just relying on the pickerSeeds deep watch below — every
-        // seed edit is a config change that must re-run the engine.
+        schedule();
+      }
+
+      static remove(index: number): void {
+        if (pickerSeeds.value.length > 1) {
+          pickerSeeds.value = pickerSeeds.value.filter((_, seedIndex) => {
+            const result = seedIndex !== index;
+            return result;
+          });
+        }
+        schedule();
+      }
+
+      static set(index: number, hex: string): void {
+        pickerSeeds.value = pickerSeeds.value.map((seed, seedIndex) => {
+          const result = seedIndex === index ? { ...seed, 'hex': hex } : seed;
+          return result;
+        });
         schedule();
       }
     }
 
-    const mutateSeeds = MutateSeedsOperation.run;
-    registerMutateSeedsHandler(mutateSeeds);
-
-    /**
- * Performs the seed-role pin/unpin mutation for the FSM's PIN_SEED_ROLE effect.
- * Pinning attaches `hints.role` (via IntakeHexHint) so ResolveRoles assigns that
- * seed to the named role directly instead of by nearest-OKLCH-distance.
- * Ensures that a role can only be pinned to one seed at a time.
- */
     class PinSeedRoleOperation {
-      static run(effect: IridisEffects.PinSeedRole): void {
-        const applyPin = (seeds: PickerSeedType[]): PickerSeedType[] => { const result = seeds.map((seed, index) => {
-          if (effect.role !== undefined && seed.role === effect.role && index !== effect.index) {
-            return { ...seed, 'role': undefined };
-          }
-          return (index === effect.index ? { ...seed, 'role': effect.role } : seed);
-        }); return result; };
+      static run(index: number, role: string | undefined): void {
+        const applyPin = (seeds: PickerSeedType[]): PickerSeedType[] => {
+          const result = seeds.map((seed, seedIndex) => {
+            if (role !== undefined && seed.role === role && seedIndex !== index) {
+              return { ...seed, 'role': undefined };
+            }
+            const nextSeed = seedIndex === index ? { ...seed, 'role': role } : seed;
+            return nextSeed;
+          });
+          return result;
+        };
         if (mode.value === 'image') {
           imageSeeds.value = applyPin(imageSeeds.value);
         } else {
@@ -1105,196 +1242,149 @@ class IridisContextFactory {
       }
     }
 
-    const pinSeedRole = PinSeedRoleOperation.run;
-    registerPinSeedRoleHandler(pinSeedRole);
-
-    /**
- * Performs the framing/schemaName/contrastLevel/imgAlgorithm mutation for the
- * FSM's SET_PALETTE_PARAM effect. Registered below via
- * registerSetPaletteParamHandler — components send SET_FRAMING/SET_SCHEMA/
- * SET_CONTRAST/SET_IMAGE_ALGORITHM events rather than assigning these refs directly.
- *
- * Every branch both mutates its ref AND explicitly triggers the engine
- * re-run that config implies — never just the mutation, relying on some
- * other decoupled watcher to notice. Framing skips the debounce entirely
- * (see run()'s framingOverride doc); every other picker/schema/contrast
- * param goes through schedule() (the general debounced run()); every
- * combine-stage image param goes through scheduleCombine() (re-runs the
- * COMBINE stage — see `combine()` — over whatever every uploaded image's
- * Stage 1 already produced; a no-op if no image is uploaded). These params
- * no longer redecode or re-run any per-image extraction: that only happens
- * via `uploadedImageSettingUpdate()` for one image's own settings. The deep
- * watches below still exist as a safety net for state changed outside this
- * handler, but each of THIS handler's own mutations is responsible for its
- * own re-run, not just relying on being watched.
- */
-    class PaletteParamSetOperation {
-      static run(effect: IridisEffects.SetPaletteParameter): void {
-        if (effect.op === 'framing') {run(effect.value); return;}
-        if (effect.op === 'schemaName') {schemaName.value = effect.value; schedule(); scheduleCombine(); return;}
-        if (effect.op === 'strictness') {contrastStrictness.value = effect.value; schedule(); return;}
-        if (effect.op === 'colorSpace') {colorSpace.value = effect.value; schedule(); return;}
-        if (effect.op === 'cvdCorrect') {cvdCorrect.value = effect.value; schedule(); return;}
-        if (effect.op === 'imgAlgorithm') {imgAlgorithm.value = effect.value; scheduleCombine(); return;}
-        if (effect.op === 'imgK') {imgK.value = effect.value; scheduleCombine(); return;}
-        if (effect.op === 'imgHistogramBits') {imgHistogramBits.value = effect.value; scheduleCombine(); return;}
-        if (effect.op === 'imgDeltaECap') {imgDeltaECap.value = effect.value; scheduleCombine(); return;}
-        if (effect.op === 'imgHarmonize') {imgHarmonize.value = effect.value; scheduleCombine(); return;}
-        if (effect.op === 'imgLightnessRange') {imgLightnessRange.value = effect.value; scheduleCombine(); return;}
-        if (effect.op === 'imgChromaRange') {imgChromaRange.value = effect.value; scheduleCombine(); return;}
-        if (effect.op === 'derivation') {derivationConfig.value = effect.value; schedule(); return;}
-        if (effect.op === 'semanticHuesEnabled') {semanticHuesEnabled.value = effect.value; schedule(); return;}
-        // Sort order is a pure display concern — it never changes what the engine
-        // derives, so unlike every branch above there's no schedule()/scheduleCombine()
-        // call here on purpose.
-        if (effect.op === 'roleSort') {roleSortKeys.value = effect.value; return;}
-      }
+    class PaletteParameterOperation {
+      static disableCvdCorrection(): void { cvdCorrect.value = false; schedule(); }
+      static disableSemanticHues(): void { semanticHuesEnabled.value = false; schedule(); }
+      static enableCvdCorrection(): void { cvdCorrect.value = true; schedule(); }
+      static enableSemanticHues(): void { semanticHuesEnabled.value = true; schedule(); }
+      static setContrastStrictness(strictness: number): void { contrastStrictness.value = strictness; schedule(); }
+      static setDarkFraming(): void { pendingFraming = 'dark'; run(); }
+      static setDeltaEImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('delta-e'); scheduleCombine(); }
+      static setDerivationConfig(config: DerivationConfigType): void { derivationConfig.value = config; schedule(); }
+      static setDisplayP3ColorSpace(): void { colorSpace.value = 'displayP3'; schedule(); }
+      static setImageChromaRange(range: [number, number][]): void { imgChromaRange.value = range; scheduleCombine(); }
+      static setImageDeltaECap(cap: number): void { imgDeltaECap.value = cap; scheduleCombine(); }
+      static setImageHarmonize(threshold: number): void { imgHarmonize.value = threshold; scheduleCombine(); }
+      static setImageHistogramBits(bits: number): void { imgHistogramBits.value = bits; scheduleCombine(); }
+      static setImageK(k: number): void { imgK.value = k; scheduleCombine(); }
+      static setImageLightnessRange(range: [number, number][]): void { imgLightnessRange.value = range; scheduleCombine(); }
+      static setKMeansImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('k-means'); scheduleCombine(); }
+      static setLightFraming(): void { pendingFraming = 'light'; run(); }
+      static setMedianCutImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('median-cut'); scheduleCombine(); }
+      static setRoleSort(keys: RoleSortKeyType[]): void { roleSortKeys.value = keys; }
+      static setSchema(nextSchemaName: string): void { schemaName.value = nextSchemaName; schedule(); scheduleCombine(); }
+      static setSrgbColorSpace(): void { colorSpace.value = 'srgb'; schedule(); }
+      static setWuQuantizeImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('wu-quantize'); scheduleCombine(); }
     }
 
-    const paletteParamSet = PaletteParamSetOperation.run;
-    registerSetPaletteParamHandler(paletteParamSet);
+    class DiagramViewOperation {
+      static fit(): void { DiagramViewOperation.reset(); }
+      static pan(dx: number, dy: number): void { diagramTranslateX.value += dx; diagramTranslateY.value += dy; }
+      static reset(): void { diagramScale.value = 1; diagramTranslateX.value = 0; diagramTranslateY.value = 0; }
+      static toggleExpansion(): void { diagramIsExpanded.value = !diagramIsExpanded.value; }
+      static zoom(factor: number): void { diagramScale.value = Math.min(8, Math.max(0.05, diagramScale.value * factor)); }
+    }
 
-    /**
- * Performs diagram view state mutations (zoom, pan, expand/collapse) for the
- * FSM's UPDATE_DIAGRAM_VIEW effect. MermaidDiagram.vue sends DIAGRAM_* events
- * rather than mutating scale/translate/isExpanded directly.
- */
-    class DiagramViewUpdateOperation {
-      static run(effect: IridisEffects.UpdateDiagramView): void {
-        if (effect.op === 'zoom') {
-          diagramScale.value = Math.min(8, Math.max(0.05, diagramScale.value * effect.factor));
-        } else if (effect.op === 'pan') {
-          diagramTranslateX.value += effect.dx;
-          diagramTranslateY.value += effect.dy;
-        } else if (effect.op === 'reset' || effect.op === 'fit') {
-          diagramScale.value = 1;
-          diagramTranslateX.value = 0;
-          diagramTranslateY.value = 0;
-        } else if (effect.op === 'toggleExpand') {
-          diagramIsExpanded.value = !diagramIsExpanded.value;
+    class CvdPreviewOperation {
+      static clear(): void { cvdPreviewTypes.value = new Set(); }
+
+      static toggle(cvdTypeName: string): void {
+        const cvdType = CvdTypeRegistry.resolve(cvdTypeName);
+        const next = new Set(cvdPreviewTypes.value);
+        if (next.has(cvdType)) {
+          next.delete(cvdType);
+        } else {
+          next.add(cvdType);
         }
+        cvdPreviewTypes.value = next;
       }
     }
 
-    const diagramViewUpdate = DiagramViewUpdateOperation.run;
-    registerUpdateDiagramViewHandler(diagramViewUpdate);
-
-    /**
- * Performs CVD preview type mutations (toggle/clear) for the FSM's
- * UPDATE_CVD_PREVIEW effect. CvdVision.vue sends CVD_* events rather than
- * mutating cvdPreviewTypes directly.
- */
-    class CvdPreviewUpdateOperation {
-      static run(effect: IridisEffects.UpdateCvdPreview): void {
-        if (effect.op === 'toggle') {
-          const cvdType = CvdTypeRegistry.resolve(effect.cvdType);
-          const next = new Set(cvdPreviewTypes.value);
-          if (next.has(cvdType)) {
-            next.delete(cvdType);
-          } else {
-            next.add(cvdType);
-          }
-          cvdPreviewTypes.value = next;
-        } else if (effect.op === 'clear') {
-          cvdPreviewTypes.value = new Set();
-        }
-      }
-    }
-
-    const cvdPreviewUpdate = CvdPreviewUpdateOperation.run;
-    registerUpdateCvdPreviewHandler(cvdPreviewUpdate);
-
-    /**
- * Populates picker palette from extracted hues. Called when image extraction
- * completes or when extraction settings change, replacing picker seeds with
- * the N extracted hues (where N = schema count).
- */
     class PopulatePickerFromImageOperation {
-      static run(effect: IridisEffects.PopulatePickerFromImage): void {
-        pickerSeeds.value = hydratePaletteSeeds(effect.hexes, pickerSeeds.value);
+      static run(hexes: string[]): void {
+        pickerSeeds.value = hydratePaletteSeeds(hexes, pickerSeeds.value);
       }
     }
-
-    const populatePickerFromImage = PopulatePickerFromImageOperation.run;
-    registerPopulatePickerFromImageHandler(populatePickerFromImage);
 
     const { 'activateTarget': activateNavigationTarget } = useNavigationTargets();
 
-    /**
- * Resolves a NAVIGATE_TO_TARGET effect's targetId against the navigation
- * target table and moves there. useNavigationTargets.ts owns the resolution
- * logic (which stage a card belongs to, how to scroll to it) since it also
- * owns the target table itself.
- */
     class NavigateToTargetOperation {
-      static run(effect: IridisEffects.NavigateToTarget): void {
-        activateNavigationTarget(effect.targetId);
+      static run(targetId: string): void {
+        activateNavigationTarget(targetId);
       }
     }
 
-    const navigateToTarget = NavigateToTargetOperation.run;
-    registerNavigateToTargetHandler(navigateToTarget);
-
-    /** Mirrors HeroBanner.vue's `${base}logo.png` resolution — the sample extraction source. */
     class LogoUrlOperation {
       static run(): string {
         const appConfiguration = useRuntimeConfig().app;
         if (
           typeof appConfiguration !== 'object'
-      || appConfiguration === null
-      || !('baseURL' in appConfiguration)
-      || typeof appConfiguration.baseURL !== 'string'
+          || !('baseURL' in appConfiguration)
+          || typeof appConfiguration.baseURL !== 'string'
         ) {
           throw new TypeError('Nuxt runtime configuration must provide app.baseURL');
         }
-        return `${appConfiguration.baseURL}logo.png`;
+        const result = `${appConfiguration.baseURL}logo.png`;
+        return result;
       }
     }
 
     const logoUrl = LogoUrlOperation.run;
 
-    /**
- * Performs image extraction for the FSM's EXTRACT_IMAGE effect (one or more
- * uploaded files, or the built-in sample — the iridis logo). Registered
- * below via registerExtractImageHandler. The sample is added as ONE MORE
- * `uploadedImages` entry, same as any uploaded file — it never replaces
- * what's already uploaded.
- */
-    class ImageEffectExtractOperation {
-      static async run(effect: IridisEffects.ExtractImage): Promise<void> {
-        if (effect.source === 'sample') {
-          await addUploadedImages([logoUrl()], ['Sample']);
-          return;
-        }
-        const files = Array.isArray(effect.file) ? effect.file : [effect.file];
-        await addUploadedImages(files);
+    class ImageEffectExtractionOperation {
+      static files(files: File | File[]): void {
+        const sources = Array.isArray(files) ? files : [files];
+        ImageEffectExtractionOperation.observe(addUploadedImages(sources));
+      }
+
+      static sample(): void {
+        ImageEffectExtractionOperation.observe(addUploadedImages([logoUrl()], ['Sample']));
+      }
+
+      private static observe(task: Promise<void>): void {
+        task.catch(() => {});
       }
     }
 
-    const imageEffectExtract = ImageEffectExtractOperation.run;
-    // registerExtractImageHandler expects a void-returning handler — imageEffectExtract is
-    // async, so it's wrapped here and its promise explicitly discarded (the FSM effect
-    // itself is fire-and-forget; addUploadedImagesUnqueued already reports its own errors
-    // via the shared `error` ref).
-    registerExtractImageHandler((effect) => { void imageEffectExtract(effect); });
-
-    /**
- * Swaps imageSeeds to a candidate palette from gallery:extractCandidates
- * (PaletteCandidatePicker.vue) instead of the default gallery:dominantColors
- * extraction. schedule() re-runs the color pipeline against the new seeds —
- * the image itself is not re-decoded, only which palette themes the page.
- */
     class SelectImageCandidateOperation {
-      static run(effect: IridisEffects.SelectImageCandidate): void {
-        imageSeeds.value = hydratePaletteSeeds(effect.hexes, imageSeeds.value);
-        pickerSeeds.value = hydratePaletteSeeds(effect.hexes, pickerSeeds.value);
-        selectedCandidateLabel.value = effect.label;
+      static run(hexes: string[], label: string): void {
+        imageSeeds.value = hydratePaletteSeeds(hexes, imageSeeds.value);
+        pickerSeeds.value = hydratePaletteSeeds(hexes, pickerSeeds.value);
+        selectedCandidateLabel.value = label;
         schedule();
       }
     }
 
-    const selectImageCandidate = SelectImageCandidateOperation.run;
-    registerSelectImageCandidateHandler(selectImageCandidate);
+    registerEffectHandlers({
+      'addSeed': SeedMutationOperation.add,
+      'clearCvdPreviews': CvdPreviewOperation.clear,
+      'disableCvdCorrection': PaletteParameterOperation.disableCvdCorrection,
+      'disableSemanticHues': PaletteParameterOperation.disableSemanticHues,
+      'enableCvdCorrection': PaletteParameterOperation.enableCvdCorrection,
+      'enableSemanticHues': PaletteParameterOperation.enableSemanticHues,
+      'extractImageFiles': ImageEffectExtractionOperation.files,
+      'extractSampleImage': ImageEffectExtractionOperation.sample,
+      'fitDiagram': DiagramViewOperation.fit,
+      'navigateToTarget': NavigateToTargetOperation.run,
+      'panDiagram': DiagramViewOperation.pan,
+      'pinSeedRole': PinSeedRoleOperation.run,
+      'populatePickerFromImage': PopulatePickerFromImageOperation.run,
+      'removeSeed': SeedMutationOperation.remove,
+      'resetDiagram': DiagramViewOperation.reset,
+      'selectImageCandidate': SelectImageCandidateOperation.run,
+      'setContrastStrictness': PaletteParameterOperation.setContrastStrictness,
+      'setDarkFraming': PaletteParameterOperation.setDarkFraming,
+      'setDeltaEImageAlgorithm': PaletteParameterOperation.setDeltaEImageAlgorithm,
+      'setDerivationConfig': PaletteParameterOperation.setDerivationConfig,
+      'setDisplayP3ColorSpace': PaletteParameterOperation.setDisplayP3ColorSpace,
+      'setImageChromaRange': PaletteParameterOperation.setImageChromaRange,
+      'setImageDeltaECap': PaletteParameterOperation.setImageDeltaECap,
+      'setImageHarmonize': PaletteParameterOperation.setImageHarmonize,
+      'setImageHistogramBits': PaletteParameterOperation.setImageHistogramBits,
+      'setImageK': PaletteParameterOperation.setImageK,
+      'setImageLightnessRange': PaletteParameterOperation.setImageLightnessRange,
+      'setKMeansImageAlgorithm': PaletteParameterOperation.setKMeansImageAlgorithm,
+      'setLightFraming': PaletteParameterOperation.setLightFraming,
+      'setMedianCutImageAlgorithm': PaletteParameterOperation.setMedianCutImageAlgorithm,
+      'setRoleSort': PaletteParameterOperation.setRoleSort,
+      'setSchema': PaletteParameterOperation.setSchema,
+      'setSeed': SeedMutationOperation.set,
+      'setSrgbColorSpace': PaletteParameterOperation.setSrgbColorSpace,
+      'setWuQuantizeImageAlgorithm': PaletteParameterOperation.setWuQuantizeImageAlgorithm,
+      'toggleCvdPreview': CvdPreviewOperation.toggle,
+      'toggleDiagramExpansion': DiagramViewOperation.toggleExpansion,
+      'zoomDiagram': DiagramViewOperation.zoom
+    });
 
     let booted = false;
     /** Stop-handles for the two deep watches below, captured so HMR teardown can release them — empty until `useIridis()` has booted once on the client. */
@@ -1315,17 +1405,17 @@ class IridisContextFactory {
             // framing is intentionally absent here — its swap is dispatched synchronously
             // by paletteParamSet() via run(effect.value), not through this debounce.
             stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
-            stopWatches.push(VueModule.watch([schemaName, imgAlgorithm, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
+            stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
           }
         }
-        return {
+        const result = {
           'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdCorrect': cvdCorrect,
           'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
           'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
           'effectiveHexesFor': effectiveHexesFor, 'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing,
           'histogram': histogram,
-          'imageSeeds': imageSeeds, 'imgAlgorithm': imgAlgorithm, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
-          'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'mode': mode, 'pickerSeeds': pickerSeeds,
+          'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
+          'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'pickerSeeds': pickerSeeds,
           'pinnableRoles': pinnableRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
           'roles': roles, 'rolesDerived': rolesDerived,
           'roleSortKeys': roleSortKeys, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,
@@ -1337,11 +1427,18 @@ class IridisContextFactory {
           'selectEntryCandidate': selectEntryCandidate, 'semanticHuesEnabled': semanticHuesEnabled, 'send': sendUiEvent, 'setSemanticHuesEnabled': semanticHuesEnabledSet, 'sortedRoleContrastRows': sortedRoleContrastRows, 'updateRelation': relationUpdate, 'updateRelations': relationsUpdate,
           'updateUploadedImageSetting': uploadedImageSettingUpdate, 'uploadedImages': uploadedImages
         };
+        return result;
       }
     }
 
     const dispose = (): void => {
-      for (const stopWatch of stopWatches) { stopWatch(); }
+      for (let index = 0; index < stopWatches.length; index += 1) {
+        const stopWatch = stopWatches[index];
+        if (stopWatch === undefined) {
+          throw new RangeError(`Watch cleanup list is missing entry ${index}`);
+        }
+        stopWatch();
+      }
       stopWatches = [];
       booted = false;
     };
@@ -1369,7 +1466,8 @@ class IridisContextRegistry {
 class UseIridisOperation {
   static run() {
     const context = IridisContextRegistry.resolve(useNuxtApp());
-    return context.use();
+    const result = context.use();
+    return result;
   }
 }
 

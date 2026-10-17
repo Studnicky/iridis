@@ -1,32 +1,77 @@
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '@studnicky/iridis';
+import type { PaletteStateInterface, PipelineContextInterface, TaskInterface } from '@studnicky/iridis';
 
-import { ModuleError } from '@studnicky/errors';
-import { FramingSurface } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
-
-import type {
-  SemanticRuleEntryInterfaceType,
-  ThemeJsonInterfaceType,
-  TokenColorRuleInterfaceType
-} from '../types/augmentation.ts';
+import { ModuleError } from '@studnicky/errors/node';
+import { FramingSurface, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
+import { JsonObject } from '@studnicky/types/node';
 
 import { VSCODE_SCOPE_MAPPINGS } from '../constants/VscodeScopeMappings.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
+import { SemanticRuleEntryInterfaceTypeEntity } from '../entities/SemanticRuleEntryInterfaceTypeEntity.ts';
+import { ThemeJsonInterfaceTypeEntity } from '../entities/ThemeJsonInterfaceTypeEntity.ts';
+import { TokenColorRuleInterfaceTypeEntity } from '../entities/TokenColorRuleInterfaceTypeEntity.ts';
+import { VscodeMetadata } from '../VscodeMetadata.ts';
+import { VscodeOutputs } from '../VscodeOutputs.ts';
+
+class ThemeJsonValues {
+  static name(state: PaletteStateInterface): string {
+    const candidate = state.input.metadata?.themeName;
+    const result = typeof candidate === 'string' ? candidate : 'Color Engine Theme';
+    return result;
+  }
+
+  static semanticTokenColors(rules: ReadonlyMap<string, SemanticRuleEntryInterfaceTypeEntity.Type>): Record<string, string | SemanticRuleEntryInterfaceTypeEntity.Type> {
+    const result = new Map<string, string | SemanticRuleEntryInterfaceTypeEntity.Type>();
+    for (const [selector, rule] of rules) {
+      if (rule.fontStyle !== undefined && rule.fontStyle.length > 0) {
+        result.set(selector, rule);
+      } else if (rule.foreground !== undefined && rule.foreground.length > 0) {
+        result.set(selector, rule.foreground);
+      }
+    }
+    const semanticTokenColors = JsonObject.fromEntries(result);
+    return semanticTokenColors;
+  }
+
+  static tokenColors(baseTokens: ReadonlyMap<string, { readonly 'hex': string }>): TokenColorRuleInterfaceTypeEntity.Type[] {
+    const mappingEntries = Object.entries(VSCODE_SCOPE_MAPPINGS.mappings);
+    const mappingBaseTokens = new Map(Object.entries(VSCODE_SCOPE_MAPPINGS.baseTokens));
+    const result: TokenColorRuleInterfaceTypeEntity.Type[] = [];
+    for (let index = 0; index < mappingEntries.length; index += 1) {
+      const entry = mappingEntries.at(index);
+      if (entry === undefined) {
+        continue;
+      }
+      const [paletteKey, scopes] = entry;
+      const baseToken = mappingBaseTokens.get(paletteKey);
+      const foregroundRecord = baseToken === undefined ? undefined : baseTokens.get(baseToken);
+      if (foregroundRecord === undefined) {
+        throw ModuleError.create('EmitVscodeThemeJson: missing mapped base token', {
+          'context':  { 'baseToken': baseToken, 'paletteKey': paletteKey, 'task': 'EmitVscodeThemeJson' },
+          'scenario': 'NOT_FOUND'
+        });
+      }
+      const fontStyle = FONT_STYLES[paletteKey];
+      const settings = SemanticRuleEntryInterfaceTypeEntity.create({
+        ...(fontStyle === undefined || fontStyle.length === 0 ? {} : { 'fontStyle': fontStyle }),
+        'foreground': foregroundRecord.hex
+      });
+      result.push(TokenColorRuleInterfaceTypeEntity.create({
+        'name':     paletteKey,
+        'scope':    [...scopes],
+        'settings': settings
+      }));
+    }
+    return result;
+  }
+}
 
 class EmitVscodeThemeJson implements TaskInterface {
   readonly 'name' = 'emit:vscodeThemeJson';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Assembles the complete VS Code theme JSON: { name, type, colors, semanticTokenColors, tokenColors }.',
     'name':        'emit:vscodeThemeJson',
-    'phase':       undefined,
     'reads':       [
       'outputs.vscode:workbenchColors',
       'outputs.vscode:semanticTokenRules',
@@ -37,80 +82,38 @@ class EmitVscodeThemeJson implements TaskInterface {
     ],
     'requires':    ['emit:vscodeSemanticRules', 'emit:vscodeUiPalette'],
     'writes':      ['outputs.vscode:themeJson']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    const themeName   = (state.input.metadata?.themeName as string | undefined) ?? 'Color Engine Theme';
-    const baseTokens  = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterfaceType>;
-    const workbenchColors = (state.outputs['vscode:workbenchColors'] ?? {}) as Record<string, string>;
-    const semanticTokenRules = (state.outputs['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterfaceType>;
-
-    // Same resolved surface emit:vscodeUiPalette derived `workbenchColors`
-    // from (see FramingSurface), read through the same WCAG relative-luminance
-    // measure, so `type` always agrees with the colors above it.
+    const themeName = ThemeJsonValues.name(state);
+    const baseTokens = VscodeMetadata.baseTokens(state.metadata);
+    const workbenchColors = VscodeOutputs.workbenchColors(state.outputs);
+    const semanticTokenRules = VscodeOutputs.semanticTokenRules(state.outputs);
     const roles = FramingSurface.resolve(state);
     const themeType: 'dark' | 'light' = FramingSurface.isLight(roles) ? 'light' : 'dark';
-
-    // semanticTokenColors: copy from outputs['vscode:semanticTokenRules']
-    const semanticTokenColors: Record<string, string | SemanticRuleEntryInterfaceType> = {};
-    for (const [selector, rule] of Object.entries(semanticTokenRules)) {
-      if (rule.fontStyle !== undefined && rule.fontStyle.length > 0) {
-        semanticTokenColors[selector] = { ...rule };
-      } else if (rule.foreground !== undefined && rule.foreground.length > 0) {
-        semanticTokenColors[selector] = rule.foreground;
-      }
-    }
-
-    // Every published TextMate scope group resolves through SCOPE_BASE_TOKENS
-    // to a generated base token and serialises as canonical sRGB hex.
-    const tokenColors: TokenColorRuleInterfaceType[] = [];
-    for (const [paletteKey, scopes] of Object.entries(VSCODE_SCOPE_MAPPINGS.mappings)) {
-      const baseToken = VSCODE_SCOPE_MAPPINGS.baseTokens[paletteKey];
-      const foregroundRecord = baseToken === undefined ? undefined : baseTokens[baseToken];
-      if (foregroundRecord === undefined) {
-        throw ModuleError.create('EmitVscodeThemeJson: missing mapped base token', {
-          'context':  { 'baseToken': baseToken, 'paletteKey': paletteKey, 'task': 'EmitVscodeThemeJson' },
-          'scenario': 'NOT_FOUND'
-        });
-      }
-
-      const fontStyle = FONT_STYLES[paletteKey];
-      const settings: TokenColorRuleInterfaceType['settings'] = {
-        'fontStyle':  undefined,
-        'foreground': foregroundRecord.hex
-      };
-      if (fontStyle !== undefined && fontStyle.length > 0) {
-        settings.fontStyle = fontStyle;
-      }
-      tokenColors.push({
-        'name':     paletteKey,
-        'scope':    [...scopes],
-        'settings': settings
-      });
-    }
-
-    const themeJson: ThemeJsonInterfaceType = {
-      'colors':               workbenchColors,
+    const semanticTokenColors = ThemeJsonValues.semanticTokenColors(semanticTokenRules);
+    const tokenColors = ThemeJsonValues.tokenColors(baseTokens);
+    const themeJson = ThemeJsonInterfaceTypeEntity.create({
+      'colors':               JsonObject.fromEntries(workbenchColors),
       'name':                 themeName,
       'semanticHighlighting': true,
       'semanticTokenColors':  semanticTokenColors,
       'tokenColors':          tokenColors,
       'type':                 themeType
-    };
-
+    });
     state.outputs['vscode:themeJson'] = themeJson;
     context.logger.debug(
-      LogBody.create()
-        .component('EmitVscodeThemeJson')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Assembled theme JSON')
-        .context({
-          'colors':              Object.keys(workbenchColors).length,
-          'semanticTokenColors': Object.keys(semanticTokenColors).length,
+      LogBody.create({
+        'component': 'EmitVscodeThemeJson',
+        'context': {
+          'colors':              workbenchColors.size,
+          'semanticTokenColors': semanticTokenRules.size,
           'tokenColors':         tokenColors.length
-        })
-        .build()
+        },
+        'message': 'Assembled theme JSON',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

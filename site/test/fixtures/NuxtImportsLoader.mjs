@@ -1,5 +1,4 @@
 const nuxtImportsUrl = `data:text/javascript,${encodeURIComponent(`
-const TEST_NUXT_APP = Symbol.for('iridis.test.nuxt-app');
 const fallbackNuxtApp = {};
 
 export function useRuntimeConfig() {
@@ -7,20 +6,20 @@ export function useRuntimeConfig() {
 }
 
 export function useNuxtApp() {
-  const nuxtApp = globalThis[TEST_NUXT_APP];
+  const nuxtApp = Reflect.get(globalThis, 'iridisTestNuxtApp');
   return typeof nuxtApp === 'object' && nuxtApp !== null
     ? nuxtApp
     : fallbackNuxtApp;
 }
 `)}`;
 
-export async function resolve(specifier, context, nextResolve) {
+export function resolve(specifier, context, nextResolve) {
   if (specifier === '#imports') {
     return { 'shortCircuit': true, 'url': nuxtImportsUrl };
   }
   if (specifier.startsWith('~/')) {
     const appModuleUrl = new URL(`../../app/${specifier.slice(2)}`, import.meta.url);
-    return await nextResolve(appModuleUrl.href, context);
+    return nextResolve(appModuleUrl.href, context);
   }
-  return await nextResolve(specifier, context);
+  return nextResolve(specifier, context);
 }

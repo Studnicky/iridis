@@ -1,19 +1,22 @@
-import type { JsonObjectType } from '@studnicky/types';
+import type { JsonSchemaObjectType } from '@studnicky/json-tology/types';
+import type { JSONSchema7Type } from 'json-schema';
 
-import { ModuleError, ValidationError } from '@studnicky/errors';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { ModuleError, ValidationError } from '@studnicky/errors/node';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
+import { JsonObject, JsonValue } from '@studnicky/types/node';
 
+import type { ValidationErrorInterfaceTypeEntity } from '../entities/ValidationErrorInterfaceTypeEntity.ts';
 import type {
   EngineInterface,
-  InputInterface,
   PaletteStateInterface,
   PipelineContextInterface,
   PluginInterface,
   TaskInterface
 } from '../types/index.ts';
 
-import { InputSchema }         from '../model/InputSchema.ts';
+import { InputInterfaceTypeEntity } from '../entities/InputInterfaceTypeEntity.ts';
+import { RuntimeOptionsInterfaceTypeEntity } from '../entities/RuntimeOptionsInterfaceTypeEntity.ts';
+import { ContrastRatioSchema } from '../model/ContrastRatioSchema.ts';
 import { PaletteStateSchema }  from '../model/PaletteStateSchema.ts';
 import { PluginSchema }        from '../model/PluginSchema.ts';
 import { RoleSchemaSchema }    from '../model/RoleSchemaSchema.ts';
@@ -21,6 +24,93 @@ import { TaskManifestSchema }  from '../model/TaskManifestSchema.ts';
 import { Validator }           from '../model/Validator.ts';
 import { TaskRegistry }        from '../registry/TaskRegistry.ts';
 import { consoleLogger }       from './ConsoleLogger.ts';
+
+class InputJsonRecord {
+  static admit(value: InputInterfaceTypeEntity.Type['metadata'], path: string): Record<string, JSONSchema7Type> | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    const result: Record<string, JSONSchema7Type> = {};
+    const entries = Object.entries(value);
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry === undefined) {
+        continue;
+      }
+      const [name, candidate] = entry;
+      if (!JsonValue.is(candidate) || !JsonObject.write(result, name, candidate)) {
+        throw ValidationError.create({
+          'message': `input invalid: ${path}.${name} must be JSON data`,
+          'path':    `input.${path}.${name}`,
+          'violations': [{ 'message': 'must be JSON data', 'path': `input.${path}.${name}` }]
+        });
+      }
+    }
+    return result;
+  }
+}
+
+class ContrastRatioDomain {
+  static readonly apca = new ContrastRatioDomain(ContrastRatioSchema.apca.minimum, ContrastRatioSchema.apca.maximum);
+  static readonly wcag21 = new ContrastRatioDomain(ContrastRatioSchema.wcag21.minimum, ContrastRatioSchema.wcag21.maximum);
+
+  readonly maximum: number;
+  readonly minimum: number;
+
+  private constructor(minimum: number, maximum: number) {
+    this.maximum = maximum;
+    this.minimum = minimum;
+  }
+}
+
+class ContrastPairBounds {
+  static validate(
+    ratios: {
+      readonly 'maximumContrastRatio'?: number;
+      readonly 'minimumContrastRatio'?: number;
+    },
+    domain: ContrastRatioDomain,
+    location: {
+      readonly 'collectionName': string;
+      readonly 'index': number;
+      readonly 'inputPath': string;
+    }
+  ): void {
+    const { maximumContrastRatio, minimumContrastRatio } = ratios;
+    const { collectionName, index, inputPath } = location;
+    ContrastPairBounds.validateRatio(minimumContrastRatio, domain, inputPath, collectionName, index, 'minimumContrastRatio');
+    ContrastPairBounds.validateRatio(maximumContrastRatio, domain, inputPath, collectionName, index, 'maximumContrastRatio');
+    if (maximumContrastRatio === undefined || minimumContrastRatio === undefined || maximumContrastRatio >= minimumContrastRatio) {
+      return;
+    }
+    const path = `${collectionName}[${index}].maximumContrastRatio`;
+    throw ValidationError.create({
+      'message': `${inputPath} invalid: ${path}: must be greater than or equal to minimumContrastRatio`,
+      'path': inputPath,
+      'violations': [{ 'message': 'must be greater than or equal to minimumContrastRatio', 'path': path }]
+    });
+  }
+
+  private static validateRatio(
+    value: number | undefined,
+    domain: ContrastRatioDomain,
+    inputPath: string,
+    collectionName: string,
+    index: number,
+    propertyName: string
+  ): void {
+    if (value === undefined || (value >= domain.minimum && value <= domain.maximum)) {
+      return;
+    }
+    const path = `${collectionName}[${index}].${propertyName}`;
+    throw ValidationError.create({
+      'message': `${inputPath} invalid: ${path}: must be between ${domain.minimum} and ${domain.maximum} for the effective contrast algorithm`,
+      'path': inputPath,
+      'violations': [{ 'message': `must be between ${domain.minimum} and ${domain.maximum} for the effective contrast algorithm`, 'path': path }]
+    });
+  }
+}
 
 /**
  * The single composition root of the iridis pipeline. An Engine owns one
@@ -70,13 +160,13 @@ export class Engine implements EngineInterface {
    * Key: slot name (e.g. 'json', 'cssVars'). Value: the JSON Schema to validate
    * state.outputs[key] against at run exit.
    */
-  private readonly outputSchemas:   Map<string, JsonObjectType> = new Map();
+  private readonly outputSchemas:   Map<string, JsonSchemaObjectType> = new Map();
 
   /**
    * Accumulated plugin metadata schema contributions.
    * Key: slot name. Value: the JSON Schema to validate state.metadata[key] against.
    */
-  private readonly metadataSchemas: Map<string, JsonObjectType> = new Map();
+  private readonly metadataSchemas: Map<string, JsonSchemaObjectType> = new Map();
 
   /**
    * Registers every task and math primitive a plugin contributes in a
@@ -89,97 +179,111 @@ export class Engine implements EngineInterface {
    * Rejects on first failure.
    */
   adopt(plugin: PluginInterface): void {
-    const pluginResult = this.validator.validate(PluginSchema, plugin);
-    if (!pluginResult.valid) {
-      const first = pluginResult.errors[0];
-      throw ValidationError.create({
-        'message':    `plugin invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-        'path':       'plugin',
-        'violations': pluginResult.errors
-      });
-    }
+    this.validatePlugin(plugin);
+    this.warnOnDuplicatePlugin(plugin);
+    this.registerPluginTasks(plugin);
+    this.registerPluginSchemas(plugin);
+    this.sequence = null;
+    this.validateConfiguredOrder();
+  }
 
+  private validatePlugin(plugin: PluginInterface): void {
+    const identity = { 'name': plugin.name, 'version': plugin.version };
+    const result = this.validator.validate(PluginSchema, identity);
+    if (result.errors.length > 0) {
+      this.throwInvalid('plugin invalid', 'plugin', result.errors);
+    }
+    if (typeof plugin.tasks !== 'function') {
+      this.throwInvalid('plugin invalid', 'plugin.tasks', [{ 'message': 'must be a function', 'path': 'plugin.tasks' }]);
+    }
+    if (plugin.schemas !== undefined && typeof plugin.schemas !== 'function') {
+      this.throwInvalid('plugin invalid', 'plugin.schemas', [{ 'message': 'must be a function when supplied', 'path': 'plugin.schemas' }]);
+    }
+  }
+
+  private warnOnDuplicatePlugin(plugin: PluginInterface): void {
     if (this.adoptedPlugins.has(plugin.name)) {
-      consoleLogger.warn(
-        LogBody.create()
-          .component('Engine')
-          .operation('adopt')
-          .status(LOG_STATUS.PARTIAL)
-          .message(`Plugin '${plugin.name}' (v${plugin.version}) is already adopted; re-adopting will overwrite its tasks`)
-          .context({ 'plugin': plugin.name, 'version': plugin.version })
-          .build()
-      );
+      consoleLogger.warn(LogBody.create({
+        'component': 'Engine',
+        'context': { 'plugin': plugin.name, 'version': plugin.version },
+        'message': `Plugin '${plugin.name}' (v${plugin.version}) is already adopted; re-adopting will overwrite its tasks`,
+        'operation': 'adopt',
+        'status': LOG_STATUS.PARTIAL
+      }));
     }
     this.adoptedPlugins.add(plugin.name);
+  }
 
-    for (const task of plugin.tasks()) {
-      if (task.manifest !== undefined) {
-        const manifestResult = this.validator.validate(TaskManifestSchema, task.manifest);
-        if (!manifestResult.valid) {
-          const first = manifestResult.errors[0];
-          throw ValidationError.create({
-            'message':    `manifest invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-            'path':       `plugin.tasks['${task.name}'].manifest`,
-            'violations': manifestResult.errors
-          });
-        }
+  private registerPluginTasks(plugin: PluginInterface): void {
+    const tasks = plugin.tasks();
+    for (let index = 0; index < tasks.length; index += 1) {
+      const task = tasks[index];
+      if (task !== undefined) {
+        this.registerPluginTask(plugin.name, task);
       }
+    }
+  }
 
-      const phase = task.manifest?.phase;
-      if (phase !== undefined) {
-        this.tasks.hook(phase, task);
-      } else {
-        this.tasks.register(task);
+  private registerPluginTask(pluginName: string, task: TaskInterface): void {
+    if (task.manifest !== undefined) {
+      const result = this.validator.validate(TaskManifestSchema, task.manifest);
+      if (result.errors.length > 0) {
+        this.throwInvalid('manifest invalid', `plugin.tasks['${task.name}'].manifest`, result.errors);
       }
     }
 
-    // Validate and register plugin-contributed schemas
-    if (typeof plugin.schemas === 'function') {
-      const contrib = plugin.schemas();
-
-      if (contrib.outputs !== undefined) {
-        for (const [slot, schema] of Object.entries(contrib.outputs)) {
-          if (!this.validator.tryCompile(schema)) {
-            throw ModuleError.create(
-              `plugin '${plugin.name}' contributed malformed output schema for slot '${slot}'`,
-              {
-                'context':  { 'kind': 'outputs', 'plugin': plugin.name, 'slot': slot },
-                'scenario': 'CONFIGURATION'
-              }
-            );
-          }
-          this.outputSchemas.set(slot, schema);
-        }
-      }
-
-      if (contrib.metadata !== undefined) {
-        for (const [slot, schema] of Object.entries(contrib.metadata)) {
-          if (!this.validator.tryCompile(schema)) {
-            throw ModuleError.create(
-              `plugin '${plugin.name}' contributed malformed metadata schema for slot '${slot}'`,
-              {
-                'context':  { 'kind': 'metadata', 'plugin': plugin.name, 'slot': slot },
-                'scenario': 'CONFIGURATION'
-              }
-            );
-          }
-          this.metadataSchemas.set(slot, schema);
-        }
-      }
+    const phase = task.manifest?.phase;
+    if (phase !== undefined) {
+      this.tasks.hook(task);
+      return;
     }
+    this.tasks.register(task);
+  }
 
-    // Adopting tasks may shadow names already present in the resolved
-    // sequence; invalidate so the next `run()` rebuilds against the
-    // current registry contents. (`this.tasks.version()` also changed, so
-    // `run()` would rebuild regardless — nulling here keeps the invariant
-    // obvious at the call site that mutated the registry.)
-    this.sequence = null;
+  private registerPluginSchemas(plugin: PluginInterface): void {
+    if (typeof plugin.schemas !== 'function') {
+      return;
+    }
+    const contribution = plugin.schemas();
+    if (contribution.outputs !== undefined) {
+      this.registerSchemaSlots(plugin.name, JsonValue.from(contribution.outputs), this.outputSchemas, 'outputs');
+    }
+    if (contribution.metadata !== undefined) {
+      this.registerSchemaSlots(plugin.name, JsonValue.from(contribution.metadata), this.metadataSchemas, 'metadata');
+    }
+  }
 
-    // An override may shadow a task in the already-declared `order` with a
-    // version whose `requires` the current order violates (e.g. the new
-    // task now depends on something that runs after it). Re-run the same
-    // ordering check `pipeline()` performs so a broken override fails fast
-    // here instead of silently executing out of order on the next `run()`.
+  private registerSchemaSlots(
+    pluginName: string,
+    contributedSchemas: JSONSchema7Type,
+    targetSchemas: Map<string, JsonSchemaObjectType>,
+    slotKind: string
+  ): void {
+    if (!JsonObject.is(contributedSchemas)) {
+      throw ModuleError.create(`plugin '${pluginName}' contributed malformed ${slotKind} schemas`, {
+        'context': { 'kind': slotKind, 'plugin': pluginName },
+        'scenario': 'CONFIGURATION'
+      });
+    }
+    const entries = Object.entries(contributedSchemas);
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry === undefined) {
+        continue;
+      }
+      const [slot, candidate] = entry;
+      const schema = JsonValue.from(candidate);
+      if (!this.validator.tryCompile(schema)) {
+        throw ModuleError.create(`plugin '${pluginName}' contributed malformed ${slotKind} schema for slot '${slot}'`, {
+          'context': { 'kind': slotKind, 'plugin': pluginName, 'slot': slot },
+          'scenario': 'CONFIGURATION'
+        });
+      }
+      targetSchemas.set(slot, schema);
+    }
+  }
+
+  private validateConfiguredOrder(): void {
     if (this.order.length > 0) {
       this.validateRequiresOrdering(this.order);
     }
@@ -194,19 +298,22 @@ export class Engine implements EngineInterface {
    * Re-validates each named task's manifest at pipeline declaration time.
    */
   pipeline(order: readonly string[]): void {
-    for (const name of order) {
-      if (!this.tasks.has(name)) {
-        throw ModuleError.create(`Engine.pipeline: task '${name}' is not registered`, {
-          'context':  { 'operation': 'pipeline', 'taskName': name },
-          'scenario': 'NOT_FOUND'
-        });
+    for (let index = 0; index < order.length; index += 1) {
+      const name = order[index];
+      if (name === undefined || this.tasks.has(name)) {
+        continue;
       }
+      throw ModuleError.create(`Engine.pipeline: task '${name}' is not registered`, {
+        'context':  { 'operation': 'pipeline', 'taskName': name },
+        'scenario': 'NOT_FOUND'
+      });
     }
 
     this.validateRequiresOrdering(order);
 
     this.order           = order;
-    this.sequence        = order.map((name) => { const result = this.tasks.resolve(name); return result; });
+    const sequence       = this.resolveTasks(order);
+    this.sequence        = sequence;
     this.sequenceVersion = this.tasks.version();
   }
 
@@ -239,37 +346,39 @@ export class Engine implements EngineInterface {
         continue;
       }
 
-      for (const dep of requires) {
-        if (!this.tasks.has(dep)) {
-          continue;
-        }
-
-        if (this.tasks.resolve(dep).manifest?.phase !== undefined) {
-          continue;
-        }
-
-        const depIndex = orderIndexByName.get(dep) ?? -1;
-
-        if (depIndex === -1) {
-          throw ModuleError.create(
-            `Engine.pipeline: task '${name}' requires '${dep}', which is missing from the pipeline entirely`,
-            {
-              'context':  { 'dependency': dep, 'operation': 'pipeline', 'reason': 'missing-from-pipeline', 'taskName': name },
-              'scenario': 'CONFIGURATION'
-            }
-          );
-        }
-
-        if (depIndex >= i) {
-          throw ModuleError.create(
-            `Engine.pipeline: task '${name}' requires '${dep}', which must appear earlier in the pipeline`,
-            {
-              'context':  { 'dependency': dep, 'operation': 'pipeline', 'reason': 'out-of-order', 'taskName': name },
-              'scenario': 'CONFIGURATION'
-            }
-          );
+      for (let dependencyIndex = 0; dependencyIndex < requires.length; dependencyIndex += 1) {
+        const dependency = requires[dependencyIndex];
+        if (dependency !== undefined) {
+          this.validateTaskDependency(name, i, dependency, orderIndexByName);
         }
       }
+    }
+  }
+
+  private validateTaskDependency(taskName: string, taskIndex: number, dependency: string, orderIndexByName: ReadonlyMap<string, number>): void {
+    if (!this.tasks.has(dependency) || this.tasks.resolve(dependency).manifest?.phase !== undefined) {
+      return;
+    }
+
+    const predecessorIndex = orderIndexByName.get(dependency);
+    if (predecessorIndex === undefined) {
+      throw ModuleError.create(
+        `Engine.pipeline: task '${taskName}' requires '${dependency}', which is missing from the pipeline entirely`,
+        {
+          'context':  { 'dependency': dependency, 'operation': 'pipeline', 'reason': 'missing-from-pipeline', 'taskName': taskName },
+          'scenario': 'CONFIGURATION'
+        }
+      );
+    }
+
+    if (predecessorIndex >= taskIndex) {
+      throw ModuleError.create(
+        `Engine.pipeline: task '${taskName}' requires '${dependency}', which must appear earlier in the pipeline`,
+        {
+          'context':  { 'dependency': dependency, 'operation': 'pipeline', 'reason': 'out-of-order', 'taskName': taskName },
+          'scenario': 'CONFIGURATION'
+        }
+      );
     }
   }
 
@@ -286,127 +395,223 @@ export class Engine implements EngineInterface {
    *   - PaletteStateSchema on final state at exit
    *   - Plugin-contributed output/metadata schemas at exit
    */
-  run(input: InputInterface): PaletteStateInterface {
-    const inputResult = this.validator.validate(InputSchema, input);
-    if (!inputResult.valid) {
-      const first = inputResult.errors[0];
-      throw ValidationError.create({
-        'message':    `input invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-        'path':       'input',
-        'violations': inputResult.errors
-      });
-    }
+  run(input: InputInterfaceTypeEntity.Type): PaletteStateInterface {
+    this.validateInput(input);
+    const state = this.createState(input);
+    const context = this.createPipelineContext();
+    this.runHookTasks(this.tasks.onRunStartTasks(), state, context);
+    this.runPipelineTasks(this.resolveSequence(), state, context);
+    this.runHookTasks(this.tasks.onRunEndTasks(), state, context);
+    this.validateState(state);
+    this.validatePluginSlots(this.outputSchemas, state.outputs, 'outputs');
+    this.validatePluginSlots(this.metadataSchemas, state.metadata, 'metadata');
+    return state;
+  }
 
+  private validateInput(input: InputInterfaceTypeEntity.Type): void {
+    const { maximumColorCount, ...schemaInput } = input;
+    this.validateMaximumColorCount(maximumColorCount);
+    const result = this.validator.validate(
+      InputInterfaceTypeEntity.Schema,
+      maximumColorCount === Infinity ? schemaInput : input
+    );
+    if (result.errors.length > 0) {
+      this.throwInvalid('input invalid', 'input', result.errors);
+    }
     if (input.roles !== undefined) {
-      const rolesResult = this.validator.validate(RoleSchemaSchema, input.roles);
-      if (!rolesResult.valid) {
-        const first = rolesResult.errors[0];
-        throw ValidationError.create({
-          'message':    `input.roles invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-          'path':       'input.roles',
-          'violations': rolesResult.errors
-        });
+      const roleResult = this.validator.validate(RoleSchemaSchema, input.roles);
+      if (roleResult.errors.length > 0) {
+        this.throwInvalid('input.roles invalid', 'input.roles', roleResult.errors);
       }
     }
+    this.validateContrastPairBounds(input);
+  }
 
-    const contrastPairs = input.roles?.contrastPairs;
-    if (contrastPairs !== undefined) {
-      for (const [index, pair] of contrastPairs.entries()) {
-        if (pair.maxRatio !== undefined && pair.maxRatio < pair.minRatio) {
-          const path = `contrastPairs[${index}].maxRatio`;
-          throw ValidationError.create({
-            'message':    `input.roles invalid: ${path}: must be greater than or equal to minRatio`,
-            'path':       'input.roles',
-            'violations': [{ 'message': 'must be greater than or equal to minRatio', 'path': path }]
-          });
-        }
-      }
+  private validateMaximumColorCount(maximumColorCount: number | undefined): void {
+    if (maximumColorCount === undefined || maximumColorCount === Infinity) {
+      return;
     }
-
-    const state: PaletteStateInterface = {
-      'colors':   [],
-      'input':    input,
-      'metadata': { ...input.metadata },
-      'outputs':  {},
-      'roles':    {},
-      'runtime':  {
-        'colorSpace': input.runtime?.colorSpace,
-        'extra':      input.runtime?.extra,
-        'framing':    input.runtime?.framing
-      },
-      'variants': {}
-    };
-    const pipelineContext: PipelineContextInterface = {
-      'engine':    this,
-      'logger':    consoleLogger,
-      'startedAt': Date.now(),
-      'tasks':     this.tasks
-    };
-
-    for (const hook of this.tasks.hooks('onRunStart')) {
-      hook.run(state, pipelineContext);
+    if (Number.isSafeInteger(maximumColorCount) && maximumColorCount >= 1) {
+      return;
     }
+    throw ValidationError.create({
+      'message': 'input invalid: maximumColorCount must be a safe integer greater than or equal to 1, or Infinity',
+      'path':    'input.maximumColorCount',
+      'violations': [{
+        'message': 'must be a safe integer greater than or equal to 1, or Infinity',
+        'path':    'input.maximumColorCount'
+      }]
+    });
+  }
 
-    if (this.sequence === null || this.sequenceVersion !== this.tasks.version()) {
-      this.sequence = this.order.length > 0
-        ? this.order.map((name) => { const result = this.tasks.resolve(name); return result; })
-        : this.tasks.list().map((manifest) => { const result = this.tasks.resolve(manifest.name); return result; });
-      this.sequenceVersion = this.tasks.version();
+  private validateContrastPairBounds(input: InputInterfaceTypeEntity.Type): void {
+    const defaultDomain = input.contrast?.algorithm === 'apca'
+      ? ContrastRatioDomain.apca
+      : ContrastRatioDomain.wcag21;
+    this.validateRoleContrastPairs(input, defaultDomain);
+    this.validateExtraContrastPairs(input, defaultDomain);
+  }
+
+  private validateRoleContrastPairs(input: InputInterfaceTypeEntity.Type, defaultDomain: ContrastRatioDomain): void {
+    const pairs = input.roles?.contrastPairs;
+    if (pairs === undefined) {
+      return;
     }
-
-    for (const task of this.sequence) {
-      if (task.manifest?.phase !== undefined) {
+    for (let pairIndex = 0; pairIndex < pairs.length; pairIndex += 1) {
+      const pair = pairs[pairIndex];
+      if (pair === undefined) {
         continue;
       }
-      task.run(state, pipelineContext);
+      let domain = defaultDomain;
+      if (pair.algorithm === 'apca') {
+        domain = ContrastRatioDomain.apca;
+      } else if (pair.algorithm === 'wcag21') {
+        domain = ContrastRatioDomain.wcag21;
+      }
+      ContrastPairBounds.validate(
+        {
+          ...(pair.maximumContrastRatio === undefined ? {} : { 'maximumContrastRatio': pair.maximumContrastRatio }),
+          ...(pair.minimumContrastRatio === undefined ? {} : { 'minimumContrastRatio': pair.minimumContrastRatio })
+        },
+        domain,
+        { 'collectionName': 'contrastPairs', 'index': pairIndex, 'inputPath': 'input.roles' }
+      );
     }
+  }
 
-    for (const hook of this.tasks.hooks('onRunEnd')) {
-      hook.run(state, pipelineContext);
+  private validateExtraContrastPairs(input: InputInterfaceTypeEntity.Type, defaultDomain: ContrastRatioDomain): void {
+    const pairs = input.contrast?.extra;
+    if (pairs === undefined) {
+      return;
     }
-
-    const stateResult = this.validator.validate(PaletteStateSchema, state);
-    if (!stateResult.valid) {
-      const first = stateResult.errors[0];
-      throw ValidationError.create({
-        'message':    `output state invalid: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-        'path':       'state',
-        'violations': stateResult.errors
-      });
+    for (let pairIndex = 0; pairIndex < pairs.length; pairIndex += 1) {
+      const pair = pairs[pairIndex];
+      if (pair === undefined) {
+        continue;
+      }
+      let domain = defaultDomain;
+      if (pair.algorithm === 'apca') {
+        domain = ContrastRatioDomain.apca;
+      } else if (pair.algorithm === 'wcag21') {
+        domain = ContrastRatioDomain.wcag21;
+      }
+      ContrastPairBounds.validate(
+        {
+          ...(pair.maximumContrastRatio === undefined ? {} : { 'maximumContrastRatio': pair.maximumContrastRatio }),
+          ...(pair.minimumContrastRatio === undefined ? {} : { 'minimumContrastRatio': pair.minimumContrastRatio })
+        },
+        domain,
+        { 'collectionName': 'extra', 'index': pairIndex, 'inputPath': 'input.contrast' }
+      );
     }
+  }
 
-    // Validate plugin-contributed output slot schemas
-    for (const [slot, schema] of this.outputSchemas) {
-      const slotValue = state.outputs[slot];
-      if (slotValue !== undefined) {
-        const slotResult = this.validator.validate(schema, slotValue);
-        if (!slotResult.valid) {
-          const first = slotResult.errors[0];
-          throw ValidationError.create({
-            'message':    `failed plugin schema: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-            'path':       `outputs['${slot}']`,
-            'violations': slotResult.errors
-          });
-        }
+  private createState(input: InputInterfaceTypeEntity.Type): PaletteStateInterface {
+    const metadata = InputJsonRecord.admit(input.metadata, 'metadata') ?? {};
+    const extra = InputJsonRecord.admit(input.runtime?.extra, 'runtime.extra');
+    const runtime = RuntimeOptionsInterfaceTypeEntity.create({
+      ...(input.runtime?.colorSpace === undefined ? {} : { 'colorSpace': input.runtime.colorSpace }),
+      ...(extra === undefined ? {} : { 'extra': extra }),
+      ...(input.runtime?.framing === undefined ? {} : { 'framing': input.runtime.framing })
+    });
+    return {
+      'colors': [], 'input': input, 'metadata': metadata, 'outputs': {}, 'roles': {}, 'runtime': runtime,
+      'variants': {}
+    };
+  }
+
+  private createPipelineContext(): PipelineContextInterface {
+    return { 'logger': consoleLogger, 'startedAt': Date.now() };
+  }
+
+  private resolveSequence(): readonly TaskInterface[] {
+    if (this.sequence === null || this.sequenceVersion !== this.tasks.version()) {
+      this.sequence = this.order.length > 0
+        ? this.resolveOrderedTasks()
+        : this.resolveRegisteredTasks();
+      this.sequenceVersion = this.tasks.version();
+    }
+    return this.sequence;
+  }
+
+  private resolveOrderedTasks(): readonly TaskInterface[] {
+    const result = this.resolveTasks(this.order);
+    return result;
+  }
+
+  private resolveRegisteredTasks(): readonly TaskInterface[] {
+    const manifests = this.tasks.list();
+    const result: TaskInterface[] = [];
+    for (let index = 0; index < manifests.length; index += 1) {
+      const manifest = manifests[index];
+      if (manifest !== undefined) {
+        result.push(this.tasks.resolve(manifest.name));
       }
     }
+    return result;
+  }
 
-    // Validate plugin-contributed metadata slot schemas
-    for (const [slot, schema] of this.metadataSchemas) {
-      const slotValue = state.metadata[slot];
-      if (slotValue !== undefined) {
-        const slotResult = this.validator.validate(schema, slotValue);
-        if (!slotResult.valid) {
-          const first = slotResult.errors[0];
-          throw ValidationError.create({
-            'message':    `failed plugin schema: ${first !== undefined ? `${first.path}: ${first.message}` : 'unknown error'}`,
-            'path':       `metadata['${slot}']`,
-            'violations': slotResult.errors
-          });
-        }
+  private resolveTasks(names: readonly string[]): readonly TaskInterface[] {
+    const result: TaskInterface[] = [];
+    for (let index = 0; index < names.length; index += 1) {
+      const name = names[index];
+      if (name !== undefined) {
+        result.push(this.tasks.resolve(name));
       }
     }
+    return result;
+  }
 
-    return state;
+  private runHookTasks(tasks: readonly TaskInterface[], state: PaletteStateInterface, context: PipelineContextInterface): void {
+    for (let index = 0; index < tasks.length; index += 1) {
+      const task = tasks[index];
+      if (task !== undefined) {
+        task.run(state, context);
+      }
+    }
+  }
+
+  private runPipelineTasks(tasks: readonly TaskInterface[], state: PaletteStateInterface, context: PipelineContextInterface): void {
+    for (let index = 0; index < tasks.length; index += 1) {
+      const task = tasks[index];
+      if (task !== undefined && task.manifest?.phase === undefined) {
+        task.run(state, context);
+      }
+    }
+  }
+
+  private validateState(state: PaletteStateInterface): void {
+    const result = this.validator.validate(PaletteStateSchema, state);
+    if (result.errors.length > 0) {
+      this.throwInvalid('output state invalid', 'state', result.errors);
+    }
+  }
+
+  private validatePluginSlots(schemas: ReadonlyMap<string, JsonSchemaObjectType>, slots: Record<string, JSONSchema7Type>, namespace: string): void {
+    const entries = [...schemas.entries()];
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry === undefined) {
+        continue;
+      }
+      const [slot, schema] = entry;
+      const value = slots[slot];
+      if (value === undefined) {
+        continue;
+      }
+      const result = this.validator.validate(schema, value);
+      if (result.errors.length > 0) {
+        this.throwInvalid('failed plugin schema', `${namespace}['${slot}']`, result.errors);
+      }
+    }
+  }
+
+  private throwInvalid(prefix: string, path: string, errors: ValidationErrorInterfaceTypeEntity.Type[]): void {
+    if (errors.length === 0) {
+      return;
+    }
+    const first = errors[0];
+    const detail = first === undefined ? 'unknown error' : `${first.path}: ${first.message}`;
+    throw ValidationError.create({ 'message': `${prefix}: ${detail}`, 'path': path, 'violations': errors });
   }
 }

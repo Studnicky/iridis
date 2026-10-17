@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { AccordionContent, AccordionHeader, AccordionItem, AccordionTrigger } from 'reka-ui';
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { buildPipelineStageModel } from './pipeline/buildPipelineStageModel.ts';
@@ -27,7 +27,7 @@ const stageModel = computed(() => buildPipelineStageModel.build(
 ));
 
 function updateCvdCorrect(cvdCorrect: boolean): void {
-  send({ type: IridisUiActionType.SET_CVD_CORRECT, cvdCorrect });
+  send(cvdCorrect ? IridisUiEvent.setCvdCorrectionEnabled() : IridisUiEvent.setCvdCorrectionDisabled());
 }
 </script>
 

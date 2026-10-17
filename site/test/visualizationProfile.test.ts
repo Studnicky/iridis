@@ -30,7 +30,6 @@ await test('profile static files decode valid paths and remain contained under t
   for (let resultIndex = 0; resultIndex < resultCount; resultIndex += 1) {
     const result = results[resultIndex];
     if (result === undefined) { throw new Error('Profile result index must resolve'); }
-    if (result.filePath === undefined) { throw new Error('Fixture paths must resolve to files'); }
     const relativePath = relative(realpathSync(publicRoot), result.filePath);
     assert.equal(isAbsolute(relativePath), false);
     assert.equal(relativePath === '..' || relativePath.startsWith(`..${sep}`), false);

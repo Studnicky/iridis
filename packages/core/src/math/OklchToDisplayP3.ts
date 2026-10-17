@@ -1,4 +1,4 @@
-import type { RgbInterfaceType } from '../types/index.ts';
+import { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
 
 /**
  * OKLCH → linear sRGB → linear Display-P3 → gamma-encoded Display-P3.
@@ -23,7 +23,7 @@ import type { RgbInterfaceType } from '../types/index.ts';
 class OklchToDisplayP3 {
   readonly 'name' = 'oklchToDisplayP3';
 
-  apply(l: number, c: number, h: number): RgbInterfaceType {
+  apply(l: number, c: number, h: number): RgbInterfaceTypeEntity.Type {
     const hRad = (h * Math.PI) / 180;
     const a = c * Math.cos(hRad);
     const b = c * Math.sin(hRad);
@@ -48,11 +48,12 @@ class OklchToDisplayP3 {
     const p3bLin = 0.0170827 * rLin + 0.0723968 * gLin + 0.9105206 * bLin;
 
     // Display-P3 transfer function (same gamma curve as sRGB).
-    return {
+    const result = RgbInterfaceTypeEntity.create({
       'b': P3.encode(p3bLin),
       'g': P3.encode(p3gLin),
       'r': P3.encode(p3rLin)
-    };
+    });
+    return result;
   }
 }
 
@@ -62,9 +63,11 @@ class P3 {
     const sign = v < 0 ? -1 : 1;
     const abs  = Math.abs(v);
     if (abs <= 0.0031308) {
-      return sign * 12.92 * abs;
+      const result = sign * 12.92 * abs;
+      return result;
     }
-    return sign * (1.055 * Math.pow(abs, 1 / 2.4) - 0.055);
+    const result = sign * (1.055 * Math.pow(abs, 1 / 2.4) - 0.055);
+    return result;
   }
 }
 

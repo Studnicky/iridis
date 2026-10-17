@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
+import type { UploadedImage } from '~/composables/types/index.ts';
 import { buildUploadedImagePatchModel } from './uploadedImage/buildUploadedImagePatchModel.ts';
 
 defineProps<{
-  image: UploadedImageInterfaceType;
+  image: UploadedImage;
   kTierItems: readonly { label: string; value: number }[];
   deltaECapHelp: string;
   histogramHelp: string;
@@ -14,7 +14,7 @@ defineProps<{
 
 const emit = defineEmits<{
   'select-candidate': [label: string];
-  'update': [patch: UploadedImageInterfaceType];
+  'update': [patch: UploadedImage];
 }>();
 </script>
 
@@ -23,7 +23,7 @@ const emit = defineEmits<{
     <Histogram :bins="image.histogram" />
 
     <ImageTuningFields
-      :algorithm="image.algorithm"
+      :strategy="image.strategy"
       :delta-e-cap="image.deltaECap"
       :histogram-bits="image.histogramBits"
       :harmonize-threshold="image.harmonizeThreshold"
@@ -34,7 +34,7 @@ const emit = defineEmits<{
       :harmonize-help="harmonizeHelp"
       :lightness-help="lightnessHelp"
       :chroma-help="chromaHelp"
-      @update:algorithm="emit('update', buildUploadedImagePatchModel.buildAlgorithm(image, $event))"
+      @update:strategy="emit('update', buildUploadedImagePatchModel.buildStrategy(image, $event))"
       @update:delta-e-cap="emit('update', buildUploadedImagePatchModel.buildDeltaECap(image, $event))"
       @update:histogram-bits="emit('update', buildUploadedImagePatchModel.buildHistogramBits(image, $event))"
       @update:harmonize-threshold="emit('update', buildUploadedImagePatchModel.buildHarmonizeThreshold(image, $event))"

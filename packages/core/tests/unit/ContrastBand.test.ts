@@ -1,86 +1,83 @@
-import { JsonValue } from '@studnicky/types';
+import { JsonValue } from '@studnicky/types/node';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import type { ColorRecordInterfaceType, ContrastPairInterfaceType, PaletteStateInterface, RoleSchemaInterfaceType, TaskInterface, TaskManifestInterfaceType } from '../../src/types/index.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
+import type { TaskInterface } from '../../src/interfaces/TaskInterface.ts';
 
 import { Engine } from '../../src/engine/Engine.ts';
+import { ColorHintsInterfaceTypeEntity } from '../../src/entities/ColorHintsInterfaceTypeEntity.ts';
+import { ContrastPairInterfaceTypeEntity } from '../../src/entities/ContrastPairInterfaceTypeEntity.ts';
 import { ContrastReportEntryInterfaceTypeEntity } from '../../src/entities/ContrastReportEntryInterfaceTypeEntity.ts';
+import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
+import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
+import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
+import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { contrastWcag21 } from '../../src/math/ContrastWcag21.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
-import { EngineMetadata } from '../../src/types/metadata.ts';
+import { Metadata } from '../../src/types/metadata.ts';
 
 class ContrastBandSeedTask implements TaskInterface {
-  readonly 'background': ColorRecordInterfaceType;
-  readonly 'foreground': ColorRecordInterfaceType;
-  readonly 'foregroundStated': boolean;
+  readonly #colors: readonly ColorRecordInterfaceTypeEntity.Type[];
   readonly 'name' = 'seed:contrast-band';
-  readonly 'pair': ContrastPairInterfaceType;
 
-  readonly 'manifest': TaskManifestInterfaceType = {
-    'description': undefined,
-    'name':        'seed:contrast-band',
-    'phase':       'onRunStart',
-    'reads':       undefined,
-    'requires':    undefined,
-    'writes':      ['colors']
-  };
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+    'name':   'seed:contrast-band',
+    'phase':  'onRunStart',
+    'writes': ['colors']
+  });
 
   constructor(
-    pair:             ContrastPairInterfaceType,
-    foreground:       ColorRecordInterfaceType,
-    background:       ColorRecordInterfaceType,
-    foregroundStated: boolean
+    colors: readonly ColorRecordInterfaceTypeEntity.Type[]
   ) {
-    this.pair = pair;
-    this.foreground = foreground;
-    this.background = background;
-    this.foregroundStated = foregroundStated;
+    this.#colors = colors;
   }
 
   run(state: PaletteStateInterface): void {
-    state.colors.push(this.foreground, this.background);
+    state.colors.push(...this.#colors);
   }
 }
 
 class ContrastBandFixture {
   static run(
-    pair:              ContrastPairInterfaceType,
-    foreground:        ColorRecordInterfaceType | string,
-    background:        ColorRecordInterfaceType | string,
-    foregroundStated = false
+    pair:              ContrastPairInterfaceTypeEntity.Type,
+    foreground:        ColorRecordInterfaceTypeEntity.Type | string,
+    background:        ColorRecordInterfaceTypeEntity.Type | string,
+    foregroundRole: string | undefined = undefined
   ): PaletteStateInterface {
     const engine = new Engine();
-    for (const task of coreTasks) {engine.tasks.register(task);}
-    const seedTask = new ContrastBandSeedTask(
-      pair,
-      typeof foreground === 'string'
-        ? colorRecordFactory.fromHex(foreground, {
-          'hints': { 'intent': undefined, 'role': foregroundStated ? pair.foreground : undefined, 'weight': undefined }
-        })
-        : foreground,
-      typeof background === 'string'
-        ? colorRecordFactory.fromHex(background, {
-          'hints': { 'intent': undefined, 'role': pair.background, 'weight': undefined }
-        })
-        : background,
-      foregroundStated
-    );
-    engine.tasks.hook('onRunStart', seedTask);
+    for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
+      const task = coreTasks[taskIndex];
+      if (task !== undefined) {
+        engine.tasks.register(task);
+      }
+    }
+    let resolvedForeground: ColorRecordInterfaceTypeEntity.Type;
+    if (typeof foreground === 'string') {
+      resolvedForeground = foregroundRole === undefined
+        ? colorRecordFactory.fromHex(foreground)
+        : colorRecordFactory.fromHex(foreground, {
+          'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': foregroundRole })
+        });
+    } else {
+      resolvedForeground = foreground;
+    }
+    const resolvedBackground = typeof background === 'string'
+      ? colorRecordFactory.fromHex(background, {
+        'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': pair.background })
+      })
+      : background;
+    const seedTask = new ContrastBandSeedTask([resolvedForeground, resolvedBackground]);
+    engine.tasks.hook(seedTask);
     engine.pipeline(['resolve:roles', 'enforce:contrast']);
-    return engine.run({
-      'bypass':    undefined,
-      'colors':    [],
-      'contrast':  undefined,
-      'emit':      undefined,
-      'maxColors': undefined,
-      'metadata':  undefined,
-      'roles':     ContrastBandFixture.schema(pair),
-      'runtime':   undefined
-    });
+    const result = engine.run(InputInterfaceTypeEntity.intake({
+      'colors': [],
+      'roles':  ContrastBandFixture.schema(pair)
+    }));
+    return result;
   }
-
 
   static report(state: PaletteStateInterface): ContrastReportEntryInterfaceTypeEntity.Type {
     const report = JsonValue.from(state.metadata['core:contrastReport']);
@@ -94,28 +91,26 @@ class ContrastBandFixture {
     return entry;
   }
 
-  private static schema(pair: ContrastPairInterfaceType): RoleSchemaInterfaceType {
-    return {
+  private static schema(pair: ContrastPairInterfaceTypeEntity.Type): RoleSchemaInterfaceTypeEntity.Type {
+    const result = RoleSchemaInterfaceTypeEntity.create({
       'contrastPairs': [pair],
-      'description':   undefined,
       'name':          'contrast-band',
       'roles': [
-        { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': pair.foreground, 'required': true },
-        { 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': pair.background, 'required': true }
+        RoleDefinitionInterfaceTypeEntity.create({ 'name': pair.foreground, 'required': true }),
+        RoleDefinitionInterfaceTypeEntity.create({ 'name': pair.background, 'required': true })
       ]
-    };
+    });
+    return result;
   }
-
 }
 
 void test('enforce:contrast reduces an excessive ratio into the declared upper band and reports it', () => {
-  const state = ContrastBandFixture.run({
-    'algorithm':  undefined,
+  const state = ContrastBandFixture.run(ContrastPairInterfaceTypeEntity.intake({
     'background': 'background',
     'foreground': 'accent',
-    'maxRatio':   4.5,
-    'minRatio':   3
-  }, '#ffffff', '#10161f');
+    'maximumContrastRatio': 4.5,
+    'minimumContrastRatio': 3
+  }), '#ffffff', '#10161f');
   const report = ContrastBandFixture.report(state);
   const accent = state.roles.accent;
   const background = state.roles.background;
@@ -125,18 +120,17 @@ void test('enforce:contrast reduces an excessive ratio into the declared upper b
   assert.ok(ratio >= 3 && ratio <= 4.5, `accent ratio enters [3, 4.5], got ${ratio}`);
   assert.strictEqual(report.adjusted, true, 'upper-band violation adjusts the foreground');
   assert.strictEqual(report.adjustmentDisposition, 'applied', 'report records the adjustment action');
-  assert.strictEqual(report.maxRatio, 4.5, 'report records the declared upper bound');
+  assert.strictEqual(report.maximumContrastRatio, 4.5, 'report records the declared upper bound');
   assert.strictEqual(report.passed, true, 'report passes only after the final ratio enters the band');
   assert.ok(report.ratio >= 3 && report.ratio <= 4.5, `report records the final banded ratio, got ${report.ratio}`);
 });
 
 void test('enforce:contrast retains lower-bound adjustment when no upper bound is declared', () => {
-  const state = ContrastBandFixture.run({
-    'algorithm':  undefined,
+  const state = ContrastBandFixture.run(ContrastPairInterfaceTypeEntity.intake({
     'background': 'background',
     'foreground': 'text',
-    'minRatio':   4.5
-  }, '#18222f', '#10161f');
+    'minimumContrastRatio': 4.5
+  }), '#18222f', '#10161f');
   const report = ContrastBandFixture.report(state);
   const text = state.roles.text;
   const background = state.roles.background;
@@ -146,11 +140,11 @@ void test('enforce:contrast retains lower-bound adjustment when no upper bound i
   assert.ok(ratio >= 4.5, `text ratio reaches the lower floor, got ${ratio}`);
   assert.strictEqual(report.adjusted, true, 'lower-band violation adjusts the foreground');
   assert.strictEqual(report.adjustmentDisposition, 'applied', 'report records the adjustment action');
-  assert.strictEqual('maxRatio' in report, false, 'unbounded reports omit maxRatio');
+  assert.strictEqual('maximumContrastRatio' in report, false, 'unbounded reports omit maximumContrastRatio');
   assert.strictEqual(report.passed, true, 'lower-bound report passes after adjustment');
 
-  const provenance = EngineMetadata.get(state.metadata, 'core:roleProvenance');
-  assert.deepStrictEqual(provenance?.text, {
+  const provenance = Metadata.roleProvenance(state.metadata);
+  assert.deepStrictEqual(provenance?.get('text'), {
     'adjustments': [{ 'afterHex': text.hex, 'beforeHex': '#18222f', 'operation': 'contrast' }],
     'origin':      'derived'
   }, 'derived foreground records its exact contrast adjustment');
@@ -158,12 +152,11 @@ void test('enforce:contrast retains lower-bound adjustment when no upper bound i
 
 void test('enforce:contrast preserves a stated foreground that fails the declared minimum ratio', () => {
   const foreground = '#18222f';
-  const state = ContrastBandFixture.run({
-    'algorithm':  undefined,
+  const state = ContrastBandFixture.run(ContrastPairInterfaceTypeEntity.intake({
     'background': 'background',
     'foreground': 'text',
-    'minRatio':   4.5
-  }, foreground, '#10161f', true);
+    'minimumContrastRatio': 4.5
+  }), foreground, '#10161f', 'text');
   const report = ContrastBandFixture.report(state);
   const text = state.roles.text;
 
@@ -173,8 +166,8 @@ void test('enforce:contrast preserves a stated foreground that fails the declare
   assert.strictEqual(report.adjustmentDisposition, 'preserved-stated', 'report explains why adjustment is blocked');
   assert.strictEqual(report.passed, false, 'report retains the failing contrast result');
 
-  const provenance = EngineMetadata.get(state.metadata, 'core:roleProvenance');
-  assert.deepStrictEqual(provenance?.text, {
+  const provenance = Metadata.roleProvenance(state.metadata);
+  assert.deepStrictEqual(provenance?.get('text'), {
     'adjustments': [],
     'origin':      'stated'
   }, 'stated foreground retains immutable provenance');
@@ -183,15 +176,14 @@ void test('enforce:contrast preserves a stated foreground that fails the declare
 void test('enforce:contrast installs a gamut-mapped bounded solver result even when its hex is unchanged', () => {
   const foreground = colorRecordFactory.fromOklch(0.94, 0.36, 180);
   const background = colorRecordFactory.fromOklch(0.62, 0.16, 180, {
-    'hints': { 'intent': undefined, 'role': 'background', 'weight': undefined }
+    'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': 'background' })
   });
-  const state = ContrastBandFixture.run({
-    'algorithm':  undefined,
+  const state = ContrastBandFixture.run(ContrastPairInterfaceTypeEntity.intake({
     'background': 'background',
     'foreground': 'accent',
-    'maxRatio':   4.5,
-    'minRatio':   3
-  }, foreground, background);
+    'maximumContrastRatio': 4.5,
+    'minimumContrastRatio': 3
+  }), foreground, background);
   const report = ContrastBandFixture.report(state);
   const accent = state.roles.accent;
   const resolvedBackground = state.roles.background;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
@@ -24,21 +24,22 @@ const { activateTarget } = useNavigationTargets();
 
 /** Compact pass/fail summary badges for whichever optional stages are currently enabled. */
 const stageSummaries = computed(() => {
-  return buildSchemaComplianceSummaries.build(
-    enabledOptionalStages.value,
-    contrastReport.value.aa,
-    contrastReport.value.aaa,
-    contrastReport.value.apca
-  );
+  const reports = {
+    'aa': contrastReport.value.aa,
+    'aaa': contrastReport.value.aaa,
+    'apca': contrastReport.value.apca
+  };
+  const result = buildSchemaComplianceSummaries.build(enabledOptionalStages.value, reports);
+  return result;
 });
 
 function updateColorSpace(colorSpace: 'displayP3' | 'srgb'): void {
-  send({ colorSpace, 'type': IridisUiActionType.SET_COLOR_SPACE });
+  send(colorSpace === 'displayP3' ? IridisUiEvent.displayP3ColorSpace() : IridisUiEvent.setSrgbColorSpace());
   activateTarget('pairingPreview');
 }
 
 function updateContrastStrictness(strictness: number): void {
-  send({ strictness, 'type': IridisUiActionType.SET_CONTRAST_STRICTNESS });
+  send(IridisUiEvent.setContrastStrictness(strictness));
 }
 </script>
 
@@ -53,7 +54,7 @@ function updateContrastStrictness(strictness: number): void {
           </template>
           <SchemaSelector
             :model-value="schemaName"
-            @update:model-value="send({ type: IridisUiActionType.SET_SCHEMA, schemaName: $event })"
+            @update:model-value="send(IridisUiEvent.setSchema($event))"
           />
         </SectionIntro>
 

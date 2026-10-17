@@ -1,16 +1,17 @@
 import assert from 'node:assert/strict';
-import { register } from 'node:module';
+import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 import * as VueModule from 'vue';
 
-register('./fixtures/NuxtImportsLoader.mjs', import.meta.url);
+import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
+
+registerHooks(NuxtImportsLoader);
 
 const NavigationTestModules = Object.freeze({
   'resetAccordion': (await import('../app/composables/__resetPanelAccordionForTests.ts')).__resetPanelAccordionForTests,
   'useAccordion': (await import('../app/composables/usePanelAccordion.ts')).usePanelAccordion,
   'useNavigation': (await import('../app/composables/useNavigationTargets.ts')).useNavigationTargets
 });
-const TEST_NUXT_APP = Symbol.for('iridis.test.nuxt-app');
 
 class ScrollRecorder {
   static readonly identifiers: string[] = [];
@@ -39,26 +40,26 @@ class SelectionRecorder {
 
 class AnimationFrameQueue {
   static readonly callbacks = new Map<number, FrameRequestCallback>();
-  static #nextIdentifier = 1;
+  static readonly state = { 'nextIdentifier': 1 };
 
   static cancel(identifier: number): void {AnimationFrameQueue.callbacks.delete(identifier);}
 
   static flush(): void {
     const callbacks = [...AnimationFrameQueue.callbacks.values()];
     AnimationFrameQueue.callbacks.clear();
-    for (const callback of callbacks) {callback(0);}
+    for (let index = 0; index < callbacks.length; index += 1) {callbacks[index]!(0);}
   }
 
   static request(callback: FrameRequestCallback): number {
-    const identifier = AnimationFrameQueue.#nextIdentifier;
-    AnimationFrameQueue.#nextIdentifier += 1;
+    const identifier = AnimationFrameQueue.state.nextIdentifier;
+    AnimationFrameQueue.state.nextIdentifier += 1;
     AnimationFrameQueue.callbacks.set(identifier, callback);
     return identifier;
   }
 
   static reset(): void {
     AnimationFrameQueue.callbacks.clear();
-    AnimationFrameQueue.#nextIdentifier = 1;
+    AnimationFrameQueue.state.nextIdentifier = 1;
   }
 }
 
@@ -76,8 +77,8 @@ class NavigationTestEnvironment {
 
   static reset(): void {
     AnimationFrameQueue.reset();
-    Reflect.deleteProperty(globalThis, 'document');
-    Reflect.deleteProperty(globalThis, 'window');
+    Reflect.set(globalThis, 'document', undefined);
+    Reflect.set(globalThis, 'window', undefined);
   }
 }
 
@@ -208,9 +209,9 @@ await test('direct stage navigation cancels a pending document scroll and remain
 await test('navigation registrations are shared within one app and isolated between SSR requests', (context) => {
   const firstNuxtApp = {};
   const secondNuxtApp = {};
-  context.after(() => { Reflect.deleteProperty(globalThis, TEST_NUXT_APP); });
+  context.after(() => { Reflect.set(globalThis, 'iridisTestNuxtApp', undefined); });
 
-  Reflect.set(globalThis, TEST_NUXT_APP, firstNuxtApp);
+  Reflect.set(globalThis, 'iridisTestNuxtApp', firstNuxtApp);
   const firstNavigation = NavigationTestModules.useNavigation();
   const firstSelections: number[] = [];
   const card = firstNavigation.cardTargets[0];
@@ -221,7 +222,7 @@ await test('navigation registrations are shared within one app and isolated betw
   firstNavigationAgain.activateTarget(card.id);
   assert.deepEqual(firstSelections, [0]);
 
-  Reflect.set(globalThis, TEST_NUXT_APP, secondNuxtApp);
+  Reflect.set(globalThis, 'iridisTestNuxtApp', secondNuxtApp);
   const secondNavigation = NavigationTestModules.useNavigation();
   secondNavigation.activateTarget(card.id);
   assert.deepEqual(firstSelections, [0]);

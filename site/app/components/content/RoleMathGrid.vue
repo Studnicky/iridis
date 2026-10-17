@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
 defineProps<{
-  roles: readonly RoleMathEntryType[];
+  roles: readonly RoleMathEntry[];
   openRoleName: string | null;
 }>();
 

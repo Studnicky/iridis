@@ -1,8 +1,7 @@
-import type { HueDirectionType } from '@studnicky/iridis-algebra';
-
-import { lerpHue } from '@studnicky/iridis-algebra';
+import type { HueInterpolationInterface } from '../interfaces/HueInterpolationInterface.ts';
 
 import { CHROMATIC_DETOUR } from './constants/ChromaticDetour.ts';
+import { hueInterpolations } from './HueInterpolations.ts';
 
 /**
  * True when the direct hue sweep from `from` to `to` passes through the
@@ -12,46 +11,50 @@ import { CHROMATIC_DETOUR } from './constants/ChromaticDetour.ts';
  */
 class ChromaticDetourHue {
   private static isWarm(hue: number): boolean {
-    return hue <= 60 || hue >= 300;
+    const result = hue <= 60 || hue >= 300;
+    return result;
   }
 
   private static isCool(hue: number): boolean {
-    return hue >= 180 && hue <= 300;
+    const result = hue >= 180 && hue <= 300;
+    return result;
   }
 
   private static isInDeadZone(hue: number): boolean {
-    return hue >= CHROMATIC_DETOUR.deadZoneLowerBound && hue < CHROMATIC_DETOUR.deadZoneUpperBound;
+    const result = hue >= CHROMATIC_DETOUR.deadZoneLowerBound && hue < CHROMATIC_DETOUR.deadZoneUpperBound;
+    return result;
   }
 
-  private static crossesDeadZone(from: number, to: number, direction: HueDirectionType): boolean {
+  private static crossesDeadZone(from: number, to: number, interpolation: HueInterpolationInterface): boolean {
     for (let sampleIndex = 1; sampleIndex < CHROMATIC_DETOUR.deadZoneSampleCount; sampleIndex += 1) {
-      const sampleT = sampleIndex / CHROMATIC_DETOUR.deadZoneSampleCount;
-      if (ChromaticDetourHue.isInDeadZone(lerpHue(from, to, sampleT, direction))) {return true;}
+      const sampleProgress = sampleIndex / CHROMATIC_DETOUR.deadZoneSampleCount;
+      const hue = interpolation.apply(from, to, sampleProgress);
+      if (ChromaticDetourHue.isInDeadZone(hue)) {
+        return true;
+      }
     }
     return false;
   }
 
-  /**
-   * Hue-path composer for warm-to-cool role transitions. When the direct hue
-   * sweep would cross the dull brown/gray dead zone, the path is composed as
-   * two segments through an intermediate green hue instead; otherwise it
-   * falls through to the direct sweep unchanged.
-   */
+  /** Composes warm-to-cool transitions through green when their supplied hue path crosses the dead zone. */
   static apply(
     from: number,
     to: number,
-    t: number,
-    direction: HueDirectionType = 'shortestArc'
+    progress: number,
+    interpolation: HueInterpolationInterface = hueInterpolations.shortestArc
   ): number {
     const isWarmToCool = ChromaticDetourHue.isWarm(from) && ChromaticDetourHue.isCool(to);
-    if (!isWarmToCool || !ChromaticDetourHue.crossesDeadZone(from, to, direction)) {
-      return lerpHue(from, to, t, direction);
+    if (!isWarmToCool || !ChromaticDetourHue.crossesDeadZone(from, to, interpolation)) {
+      const result = interpolation.apply(from, to, progress);
+      return result;
     }
 
-    if (t <= 0.5) {
-      return lerpHue(from, CHROMATIC_DETOUR.hue, t / 0.5, direction);
+    if (progress <= 0.5) {
+      const result = interpolation.apply(from, CHROMATIC_DETOUR.hue, progress / 0.5);
+      return result;
     }
-    return lerpHue(CHROMATIC_DETOUR.hue, to, (t - 0.5) / 0.5, direction);
+    const result = interpolation.apply(CHROMATIC_DETOUR.hue, to, (progress - 0.5) / 0.5);
+    return result;
   }
 }
 

@@ -1,33 +1,25 @@
-import type { JsonValueType } from '@studnicky/types';
+import { ValidationError } from '@studnicky/errors/node';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import { ValidationError } from '@studnicky/errors';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
+import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import type { LabInputEntity } from '../../entities/LabInputEntity.ts';
-import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '../../types/index.ts';
-
+import { LabInputEntity } from '../../entities/LabInputEntity.ts';
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
-class LabInputGuard {
-  static check(value: JsonValueType | RawImagePixelInputInterface): value is LabInputEntity.Type {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {return false;}
-    if (!('l' in value) || !('a' in value) || !('b' in value)) {return false;}
-    return typeof value.l === 'number' && Number.isFinite(value.l)
-      && typeof value.a === 'number' && Number.isFinite(value.a)
-      && typeof value.b === 'number' && Number.isFinite(value.b)
-      && !('r' in value && typeof value.r === 'number')
-      && !('s' in value && typeof value.s === 'number')
-      && !('c' in value && typeof value.c === 'number')
-      && !('h' in value && typeof value.h === 'number');
+class LabInputBoundary {
+  static intake(value: ColorInputEntity.Type): LabInputEntity.Type | undefined {
+    try {
+      const result = LabInputEntity.intake(value);
+      return result;
+    } catch {
+      return undefined;
+    }
   }
 }
 
@@ -57,19 +49,24 @@ class LabConversion {
     let bv =  0.0556434 * x - 0.2040259 * y + 1.0572252 * z;
 
     const linearToSrgb = (v: number): number => {
-      if (v <= 0.0031308) {return 12.92 * v;}
-      return 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+      if (v <= 0.0031308) {
+        const result = 12.92 * v;
+        return result;
+      }
+      const result = 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+      return result;
     };
 
     r = linearToSrgb(r);
     g = linearToSrgb(g);
     bv = linearToSrgb(bv);
 
-    return [
+    const result: [number, number, number] = [
       clamp01.apply(r),
       clamp01.apply(g),
       clamp01.apply(bv)
     ];
+    return result;
   }
 }
 
@@ -84,22 +81,21 @@ class LabConversion {
 class IntakeLab implements TaskInterface {
   readonly 'name' = 'intake:lab';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Parses {l,a,b} CIE Lab D65 into ColorRecord entries. Throws on non-Lab input.',
     'name':        'intake:lab',
-    'phase':       undefined,
     'reads':       ['input.colors'],
-    'requires':    undefined,
     'writes':      ['colors']
-  };
+  });
 
   /**
    * Parses a single value as a CIE Lab object. Throws when the input is not
    * a valid `{l,a,b}` object or carries conflicting format keys.
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
-    if (!LabInputGuard.check(raw)) {
+  parse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+    const input = LabInputBoundary.intake(raw);
+    if (input === undefined) {
       throw ValidationError.create({
         'message': 'intake:lab — expected an {l,a,b} object',
         'path':    'raw',
@@ -111,9 +107,10 @@ class IntakeLab implements TaskInterface {
       });
     }
 
-    const { a, b, l } = raw;
+    const { a, b, l } = input;
     const [r, g, bv] = LabConversion.toRgb(l, a, b);
-    return colorRecordFactory.fromRgb(r, g, bv, { 'sourceFormat': 'lab' });
+    const result = colorRecordFactory.fromRgb(r, g, bv, { 'sourceFormat': 'lab' });
+    return result;
   }
 
   /**
@@ -121,9 +118,10 @@ class IntakeLab implements TaskInterface {
    * Extracted from {@link IntakeLab.run} so the loop body contains only
    * a function call, not a try-catch, per V8 optimization guidance.
    */
-  private parseEntry(raw: JsonValueType | RawImagePixelInputInterface, index: number): ColorRecordInterfaceType {
+  private parseEntry(raw: ColorInputEntity.Type, index: number): ColorRecordInterfaceTypeEntity.Type {
     try {
-      return this.parse(raw);
+      const result = this.parse(raw);
+      return result;
     } catch {
       throw ValidationError.create({
         'message': `intake:lab — entry at index ${index} is not a CIE Lab object`,
@@ -142,23 +140,35 @@ class IntakeLab implements TaskInterface {
   }
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    for (const [i, raw] of state.input.colors.entries()) {
+    for (let i = 0; i < state.input.colors.length; i += 1) {
+      const raw = state.input.colors[i];
+      if (raw === undefined) {
+        throw ValidationError.create({
+          'message': `intake:lab — entry at index ${i} is not a CIE Lab object`,
+          'path':    `input.colors[${i}]`,
+          'violations': [{
+            'details': { 'index': i },
+            'message': 'entry is absent',
+            'path':    `input.colors[${i}]`
+          }]
+        });
+      }
       const record = this.parseEntry(raw, i);
       state.colors.push(record);
-      const typed = LabInputGuard.check(raw) ? raw : undefined;
+      const typed = LabInputBoundary.intake(raw);
       context.logger.debug(
-        LogBody.create()
-          .component('IntakeLab')
-          .operation('run')
-          .status(LOG_STATUS.SUCCESS)
-          .message('Parsed lab value')
-          .context({
+        LogBody.create({
+          'component': 'IntakeLab',
+          'context': {
             'a': typed?.a,
             'b': typed?.b,
             'hex': record.hex,
             'l': typed?.l
-          })
-          .build()
+          },
+          'message': 'Parsed lab value',
+          'operation': 'run',
+          'status': LOG_STATUS.SUCCESS
+        })
       );
     }
   }

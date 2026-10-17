@@ -1,3 +1,5 @@
+import { randomUnitInterval } from './randomUnitInterval.ts';
+
 /** Shared placement helper every renderer uses — a viewport-relative (vw/vh) position so the field scales with the window instead of clipping on a fixed px canvas. */
 
 /** A region, in the same vw/vh scale as the returned placement, no roll is allowed to land inside — re-rolled instead. */
@@ -11,7 +13,8 @@ const MAXIMUM_REROLLS = 20;
 
 class IsInsideExclusionOperation {
   static run(x: number, y: number, rectangle: PlacementTypes.ExclusionRectangleType): boolean {
-    return x >= rectangle.xMin && x <= rectangle.xMax && y >= rectangle.yMin && y <= rectangle.yMax;
+    const isInside = x >= rectangle.xMin && x <= rectangle.xMax && y >= rectangle.yMin && y <= rectangle.yMax;
+    return isInside;
   }
 }
 
@@ -19,15 +22,16 @@ const isInsideExclusion = IsInsideExclusionOperation.run;
 
 class RandomPlacementOperation {
   static run(): { 'x': string; 'y': string } {
-    let x = Math.random() * 100;
-    let y = Math.random() * 100;
+    let x = randomUnitInterval() * 100;
+    let y = randomUnitInterval() * 100;
     let attempts = 0;
     while (activeExclusion !== null && isInsideExclusion(x, y, activeExclusion) && attempts < MAXIMUM_REROLLS) {
-      x = Math.random() * 100;
-      y = Math.random() * 100;
+      x = randomUnitInterval() * 100;
+      y = randomUnitInterval() * 100;
       attempts += 1;
     }
-    return { 'x': x.toFixed(2), 'y': y.toFixed(2) };
+    const placement = { 'x': x.toFixed(2), 'y': y.toFixed(2) };
+    return placement;
   }
 }
 

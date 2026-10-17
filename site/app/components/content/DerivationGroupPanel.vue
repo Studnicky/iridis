@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 import type { HueAlgorithmType } from '~/composables/types/colorDerivation.ts';
 import { capitalize } from '~/utils/capitalize.ts';
 import { hueVariantLabel } from '~/utils/hueVariantLabel.ts';
@@ -8,7 +8,7 @@ defineProps<{
   group: {
     readonly parentName: string;
     readonly parentHex: string;
-    readonly children: readonly RoleMathEntryType[];
+    readonly children: readonly RoleMathEntry[];
   };
   bulkAlgorithm: HueAlgorithmType.Type;
   algorithmOptions: readonly { label: string; value: HueAlgorithmType.Type }[];
@@ -18,9 +18,9 @@ defineProps<{
 const emit = defineEmits<{
   'apply-all': [];
   'bulk-algorithm-change': [algorithm: HueAlgorithmType.Type];
-  'algorithm-change': [role: RoleMathEntryType, algorithm: HueAlgorithmType.Type];
-  'variant-change': [role: RoleMathEntryType, hueVariantIndex: number];
-  'freeform-offset-change': [role: RoleMathEntryType, offsetDeg: number];
+  'algorithm-change': [role: RoleMathEntry, algorithm: HueAlgorithmType.Type];
+  'variant-change': [role: RoleMathEntry, hueVariantIndex: number];
+  'freeform-offset-change': [role: RoleMathEntry, offsetDeg: number];
 }>();
 
 function updateBulkAlgorithm(algorithm: HueAlgorithmType.Type): void {

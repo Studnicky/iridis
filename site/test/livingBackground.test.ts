@@ -3,7 +3,7 @@
  * targeting, and OKLCH->hex conversion — none of which need a real DOM.
  */
 
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -37,7 +37,11 @@ await test('buildDecorativePalette restricts to the six decorative roles, skippi
 });
 
 await test('buildDecorativePalette skips roles absent from roleViews', () => {
-  const palette = buildDecorativePalette(views.filter((v) => {return v.name !== 'info';}));
+  const visibleViews = views.filter((view) => {
+    const isVisible = view.name !== 'info';
+    return isVisible;
+  });
+  const palette = buildDecorativePalette(visibleViews);
   assert.equal(palette.info, undefined);
   assert.ok(palette.brand !== undefined);
 });
@@ -46,7 +50,9 @@ await test('driftTarget keeps l and h fixed per role, nudges c within the subtle
   const from = buildDecorativePalette(views);
   const toLow = driftTarget(from, () => { const result = 0; return result; });
   const toHigh = driftTarget(from, () => { const result = 1; return result; });
-  for (const role of Object.keys(from)) {
+  const roles = Object.keys(from);
+  for (let index = 0; index < roles.length; index += 1) {
+    const role = roles[index]!;
     const before = from[role]!;
     const afterLow = toLow[role]!;
     const afterHigh = toHigh[role]!;
@@ -79,13 +85,16 @@ await test('oklchToHex composes oklchToRgb + rgbToHex into a valid hex string', 
 });
 
 await test('tokensForFrame emits one --ui-color-{alias}-500 token per decorative alias, each a valid hex', () => {
-  const palette: PaletteInterfaceType = buildDecorativePalette(views);
+  const palette: PaletteInterfaceTypeEntity.Type = buildDecorativePalette(views);
   const tokens = tokensForFrame(palette);
   assert.deepEqual(new Set(Object.keys(tokens)), new Set([
     '--ui-color-error-500', '--ui-color-info-500', '--ui-color-primary-500',
     '--ui-color-secondary-500', '--ui-color-success-500', '--ui-color-warning-500'
   ]));
-  for (const hex of Object.values(tokens)) {assert.match(hex, TestPatterns.HEX);}
+  const tokenValues = Object.values(tokens);
+  for (let index = 0; index < tokenValues.length; index += 1) {
+    assert.match(tokenValues[index]!, TestPatterns.HEX);
+  }
 });
 
 await test('createRingBuffer returns exactly N items, oldest-to-newest, when pushed fewer than capacity', () => {
@@ -105,5 +114,8 @@ await test('createRingBuffer evicts the oldest entries once past capacity, maint
 await test('useColorStreamHistory returns empty arrays for every decorative alias before any ticks have run', () => {
   const history = useColorStreamHistory();
   assert.deepEqual(new Set(Object.keys(history)), new Set(['error', 'info', 'primary', 'secondary', 'success', 'warning']));
-  for (const samples of Object.values(history)) { assert.deepEqual(samples, []); }
+  const histories = Object.values(history);
+  for (let index = 0; index < histories.length; index += 1) {
+    assert.deepEqual(histories[index]!, []);
+  }
 });

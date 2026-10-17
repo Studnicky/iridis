@@ -1,17 +1,14 @@
-import type { JsonValueType } from '@studnicky/types';
+import { ValidationError } from '@studnicky/errors/node';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import { ValidationError } from '@studnicky/errors';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
-
+import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
-import type {
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '../../types/index.ts';
+import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
 import { intakeHex }                              from './IntakeHex.ts';
 import { intakeHsl }                              from './IntakeHsl.ts';
 import { intakeImagePixels }                      from './IntakeImagePixels.ts';
@@ -27,7 +24,12 @@ import { IsImagePixelInput }                      from './IsImagePixelInput.ts';
  * Hex runs before Named so that any-cased three-hex-char strings like
  * `"f0f"` resolve as hex, not as a named color miss.
  */
-const SCALAR_DELEGATES = [
+interface ScalarDelegateInterface {
+  readonly 'name': string;
+  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type;
+}
+
+const SCALAR_DELEGATES: readonly ScalarDelegateInterface[] = [
   intakeHex,
   intakeP3,
   intakeRgb,
@@ -35,7 +37,7 @@ const SCALAR_DELEGATES = [
   intakeOklch,
   intakeLab,
   intakeNamed
-] as const;
+];
 
 class ScalarDelegateDispatch {
   /**
@@ -45,11 +47,12 @@ class ScalarDelegateDispatch {
    * de-optimises try/catch inside hot loops).
    */
   static tryParse(
-    delegate: (typeof SCALAR_DELEGATES)[number],
-    raw: JsonValueType | RawImagePixelInputInterface
-  ): ReturnType<(typeof SCALAR_DELEGATES)[number]['parse']> | undefined {
+    delegate: ScalarDelegateInterface,
+    raw: ColorInputEntity.Type | RawImagePixelInputInterface
+  ): ColorRecordInterfaceTypeEntity.Type | undefined {
     try {
-      return delegate.parse(raw);
+      const result = delegate.parse(raw);
+      return result;
     } catch {
       return undefined;
     }
@@ -73,17 +76,20 @@ class ScalarDelegateDispatch {
 class IntakeAny implements TaskInterface {
   readonly 'name' = 'intake:any';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Recommended default intake task. Dispatches each entry to the first matching format delegate. Throws if no delegate matches.',
     'name':        'intake:any',
-    'phase':       undefined,
     'reads':       ['input.colors'],
-    'requires':    undefined,
     'writes':      ['colors']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    for (const [i, raw] of state.input.colors.entries()) {
+    const inputColors = state.input.colors;
+    for (let inputIndex = 0; inputIndex < inputColors.length; inputIndex += 1) {
+      const raw = inputColors.at(inputIndex);
+      if (raw === undefined) {
+        continue;
+      }
 
       // ImageData entries produce N records (one per pixel). Handle first.
       if (IsImagePixelInput.check(raw)) {
@@ -93,7 +99,11 @@ class IntakeAny implements TaskInterface {
 
       // Scalar entries: try each delegate until one parse() succeeds.
       let matched = false;
-      for (const delegate of SCALAR_DELEGATES) {
+      for (let delegateIndex = 0; delegateIndex < SCALAR_DELEGATES.length; delegateIndex += 1) {
+        const delegate = SCALAR_DELEGATES.at(delegateIndex);
+        if (delegate === undefined) {
+          continue;
+        }
         const record = ScalarDelegateDispatch.tryParse(delegate, raw);
         if (record === undefined) {
           // format mismatch — try next delegate
@@ -102,25 +112,25 @@ class IntakeAny implements TaskInterface {
         state.colors.push(record);
         matched = true;
         context.logger.debug(
-          LogBody.create()
-            .component('IntakeAny')
-            .operation('run')
-            .status(LOG_STATUS.SUCCESS)
-            .message('Dispatched entry')
-            .context({
+          LogBody.create({
+            'component': 'IntakeAny',
+            'context': {
               'delegate': delegate.name,
               'hex':      record.hex,
-              'index':    i
-            })
-            .build()
+              'index':    inputIndex
+            },
+            'message': 'Dispatched entry',
+            'operation': 'run',
+            'status': LOG_STATUS.SUCCESS
+          })
         );
         break;
       }
 
       if (!matched) {
         throw ValidationError.create({
-          'message': `intake:any — entry at index ${i} does not match any known color format`,
-          'path':    `input.colors[${i}]`,
+          'message': `intake:any — entry at index ${inputIndex} does not match any known color format`,
+          'path':    `input.colors[${inputIndex}]`,
           'violations': [{
             'details': {
               'acceptedFormats': [
@@ -133,24 +143,24 @@ class IntakeAny implements TaskInterface {
                 'CSS named color',
                 'ImageData'
               ],
-              'index':    i,
+              'index':    inputIndex,
               'received': JSON.stringify(raw) ?? 'undefined'
             },
             'message': 'entry does not match any known color format',
-            'path':    `input.colors[${i}]`
+            'path':    `input.colors[${inputIndex}]`
           }]
         });
       }
     }
 
     context.logger.debug(
-      LogBody.create()
-        .component('IntakeAny')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Total colors after intake')
-        .context({ 'count': state.colors.length })
-        .build()
+      LogBody.create({
+        'component': 'IntakeAny',
+        'context': { 'count': state.colors.length },
+        'message': 'Total colors after intake',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

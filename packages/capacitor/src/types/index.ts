@@ -1,10 +1,16 @@
+import type { JSONSchema7Type } from 'json-schema';
+
 export abstract class StatusBarOutputInterfaceType {
+  [key: string]: JSONSchema7Type;
+
   abstract 'backgroundColor': string;
-  abstract 'overlay':         boolean;
-  abstract 'style':           'DARK' | 'LIGHT';
+  abstract 'overlay':         JSONSchema7Type;
+  abstract 'style':           JSONSchema7Type;
 }
 
 export abstract class CapacitorThemeOutputInterfaceType {
+  [key: string]: JSONSchema7Type;
+
   abstract 'accent':         string;
   abstract 'background':     string;
   abstract 'error':          string;
@@ -21,7 +27,9 @@ export abstract class CapacitorThemeOutputInterfaceType {
 }
 
 export abstract class SplashScreenOutputInterfaceType {
-  abstract 'androidSplashResourceName': string | undefined;
+  [key: string]: JSONSchema7Type;
+
+  abstract 'androidSplashResourceName'?: string;
   abstract 'backgroundColor':            string;
 }
 

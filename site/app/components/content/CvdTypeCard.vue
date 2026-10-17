@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { CvdType } from '@studnicky/iridis';
+import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 
 defineProps<{
   type: {
-    value: CvdType;
+    value: CvdMatrixInterfaceTypeEntity.Type['name'];
     label: string;
     prevalence: string;
     description: string;
@@ -12,7 +12,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  toggle: [cvdType: CvdType];
+  toggle: [cvdType: CvdMatrixInterfaceTypeEntity.Type['name']];
 }>();
 </script>
 

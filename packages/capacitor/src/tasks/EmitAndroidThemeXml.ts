@@ -1,22 +1,25 @@
 import type {
-  ColorRecordInterfaceType,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { SplashScreenOutputInterfaceType, StatusBarOutputInterfaceType } from '../types/index.ts';
+import { CapacitorOutputsEntity } from '../entities/CapacitorOutputsEntity.ts';
 
 class HexRole {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceType>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     ...names: string[]
   ): string {
-    for (const name of names) {
+    for (let index = 0; index < names.length; index += 1) {
+      const name = names[index];
+      if (name === undefined) {
+        continue;
+      }
       const record = roles[name];
       if (record !== undefined) {
         return record.hex;
@@ -36,20 +39,24 @@ class XmlItem {
 class EmitAndroidThemeXml implements TaskInterface {
   readonly 'name' = 'emit:androidThemeXml';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Emit Android themes.xml fragment for Capacitor splash screen and status bar.',
     'name':        'emit:androidThemeXml',
-    'phase':       undefined,
     'reads':       ['roles', 'outputs.capacitor:statusBar', 'outputs.capacitor:splashScreen'],
-    'requires':    undefined,
     'writes':      ['outputs.capacitor:androidThemeXml']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const roles = state.roles;
 
-    const priorStatusBar    = state.outputs['capacitor:statusBar']    as StatusBarOutputInterfaceType   | undefined;
-    const priorSplashScreen = state.outputs['capacitor:splashScreen'] as SplashScreenOutputInterfaceType | undefined;
+    const statusBarOutput = state.outputs['capacitor:statusBar'];
+    const priorStatusBar = statusBarOutput === undefined
+      ? undefined
+      : CapacitorOutputsEntity.intake({ 'statusBar': statusBarOutput }).statusBar;
+    const splashScreenOutput = state.outputs['capacitor:splashScreen'];
+    const priorSplashScreen = splashScreenOutput === undefined
+      ? undefined
+      : CapacitorOutputsEntity.intake({ 'splashScreen': splashScreenOutput }).splashScreen;
 
     const statusBarColor = priorStatusBar?.backgroundColor
       ?? HexRole.resolve(roles, 'topBar', 'surface', 'base');
@@ -81,16 +88,17 @@ class EmitAndroidThemeXml implements TaskInterface {
       '</resources>'
     ].join('\n');
 
+    CapacitorOutputsEntity.intake({ 'androidThemeXml': xml });
     state.outputs['capacitor:androidThemeXml'] = xml;
 
     context.logger.debug(
-      LogBody.create()
-        .component('EmitAndroidThemeXml')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Android themes.xml fragment generated')
-        .context({})
-        .build()
+      LogBody.create({
+        'component': 'EmitAndroidThemeXml',
+        'context': {},
+        'message': 'Android themes.xml fragment generated',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

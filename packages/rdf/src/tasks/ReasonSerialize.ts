@@ -1,21 +1,19 @@
 import type {
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
-import type { JsonValueType } from '@studnicky/types';
+import type { JSONSchema7Type } from 'json-schema';
 
-import { LogBody, LogFault } from '@studnicky/logger/builders';
-import { LOG_STATUS }        from '@studnicky/logger/constants';
-import { JsonValue }         from '@studnicky/types';
-import { Writer }            from 'n3';
+import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody, LogFault } from '@studnicky/logger/node';
+import { JsonValue } from '@studnicky/types/node';
+import { Parser, Store, Writer } from 'n3';
 
 import type { SerializationFormatEntity } from '../entities/SerializationFormatEntity.ts';
-import type { IterableStoreInterface } from '../interfaces/IterableStoreInterface.ts';
 
 class Format {
-  static resolve(raw: JsonValueType | undefined): SerializationFormatEntity.Type {
+  static resolve(raw: JSONSchema7Type | undefined): SerializationFormatEntity.Type {
     if (typeof raw !== 'string') {
       return 'Turtle';
     }
@@ -30,8 +28,8 @@ class Format {
 }
 
 class SerializedStore {
-  static from(store: IterableStoreInterface, format: SerializationFormatEntity.Type): string {
-    const writer = new Writer({ 'format': format });
+  static from(serializedGraph: string, writer: Writer): string {
+    const store = new Store(new Parser({ 'format': 'N-Quads' }).parse(serializedGraph));
 
     for (const quad of store) {
       writer.addQuad(quad);
@@ -53,26 +51,18 @@ class SerializedStore {
 class ReasonSerialize implements TaskInterface {
   readonly 'name' = 'reason:serialize';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Serialize rdf:reasoningGraph to Turtle / TriG / N-Quads / JSON-LD',
     'name':        'reason:serialize',
-    'phase':       undefined,
     'reads':       ['rdf:reasoningGraph', 'rdf:format'],
-    'requires':    undefined,
     'writes':      ['rdf:serialized']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    const graph = state.outputs['rdf:reasoningGraph'] as IterableStoreInterface | undefined;
-    if (graph === undefined) {
+    const graph = state.outputs['rdf:reasoningGraph'];
+    if (typeof graph !== 'string') {
       context.logger.warn(
-        LogBody.create()
-          .component('ReasonSerialize')
-          .operation('run')
-          .status(LOG_STATUS.SKIPPED)
-          .message('rdf:reasoningGraph is absent; run reason:annotate first')
-          .context({})
-          .build()
+        LogBody.create({ 'component': 'ReasonSerialize', 'context': {}, 'message': 'rdf:reasoningGraph is absent; run reason:annotate first', 'operation': 'run', 'status': LOG_STATUS.SKIPPED })
       );
 
       return;
@@ -81,28 +71,17 @@ class ReasonSerialize implements TaskInterface {
     const format = Format.resolve(JsonValue.from(state.metadata['rdf:format']));
 
     context.logger.debug(
-      LogBody.create()
-        .component('ReasonSerialize')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('serializing graph')
-        .context({ 'format': format })
-        .build()
+      LogBody.create({ 'component': 'ReasonSerialize', 'context': { 'format': format }, 'message': 'serializing graph', 'operation': 'run', 'status': LOG_STATUS.SUCCESS })
     );
 
     let serialized: string;
 
     try {
-      serialized = SerializedStore.from(graph, format);
+      const writer = new Writer({ 'format': format });
+      serialized = SerializedStore.from(graph, writer);
     } catch (error) {
       context.logger.error(
-        LogFault.create()
-          .component('ReasonSerialize')
-          .operation('run')
-          .status(LOG_STATUS.FAILED)
-          .fromError(error instanceof Error ? error : new Error(String(error)))
-          .context({})
-          .build()
+        LogFault.create({ 'component': 'ReasonSerialize', 'context': {}, 'message': error instanceof Error ? error.message : String(error), 'name': error instanceof Error ? error.name : 'Error', 'operation': 'run', 'status': LOG_STATUS.FAILED })
       );
 
       return;
@@ -111,16 +90,7 @@ class ReasonSerialize implements TaskInterface {
     state.outputs['rdf:serialized'] = serialized;
 
     context.logger.info(
-      LogBody.create()
-        .component('ReasonSerialize')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('serialization complete')
-        .context({
-          'format': format,
-          'length': serialized.length
-        })
-        .build()
+      LogBody.create({ 'component': 'ReasonSerialize', 'context': { 'format': format, 'length': serialized.length }, 'message': 'serialization complete', 'operation': 'run', 'status': LOG_STATUS.SUCCESS })
     );
   }
 }

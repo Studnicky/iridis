@@ -1,29 +1,32 @@
 // Delta E 2000 computed via OKLCH-derived Lab (D65). OKLCH is a direct reparametrisation
 // of OKLab, so (L, a*, b*) = (oklch.l, c*cos(h), c*sin(h)) in the OKLab encoding.
 // The CIE ΔE 2000 formula is applied to these Lab values per Sharma et al. 2005.
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
 
 class OklabConversion {
   static from(l: number, c: number, h: number): [number, number, number] {
     const hRad = (h * Math.PI) / 180;
-    return [l, c * Math.cos(hRad), c * Math.sin(hRad)];
+    const result: [number, number, number] = [l, c * Math.cos(hRad), c * Math.sin(hRad)];
+    return result;
   }
 }
 
 class AngleUnits {
   static toDegrees(radians: number): number {
-    return (radians * 180) / Math.PI;
+    const degrees = (radians * 180) / Math.PI;
+    return degrees;
   }
 
   static toRadians(degrees: number): number {
-    return (degrees * Math.PI) / 180;
+    const radians = (degrees * Math.PI) / 180;
+    return radians;
   }
 }
 
 class DeltaE2000 {
   readonly 'name' = 'deltaE2000';
 
-  apply(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType): number {
+  apply(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type): number {
     const [L1, a1, b1] = OklabConversion.from(a.oklch.l, a.oklch.c, a.oklch.h);
     const [L2, a2, b2] = OklabConversion.from(b.oklch.l, b.oklch.c, b.oklch.h);
 
@@ -53,7 +56,7 @@ class DeltaE2000 {
     const dLp = sL2 - sL1;
     const dCp = C2p - C1p;
 
-    let dhp = 0;
+    let dhp: number;
     if (C1p * C2p === 0) {
       dhp = 0;
     } else if (Math.abs(h2p - h1p) <= 180) {
@@ -96,12 +99,13 @@ class DeltaE2000 {
     const RT = -Math.sin(AngleUnits.toRadians(2 * dTheta)) * RC;
 
     const kC = 1; const kH = 1; const kL = 1;
-    return Math.sqrt(
+    const delta = Math.sqrt(
       Math.pow(dLp  / (kL * SL), 2) +
       Math.pow(dCp  / (kC * SC), 2) +
       Math.pow(dHp  / (kH * SH), 2) +
       RT * (dCp / (kC * SC)) * (dHp / (kH * SH))
     );
+    return delta;
   }
 }
 

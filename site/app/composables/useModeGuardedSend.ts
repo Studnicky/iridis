@@ -1,34 +1,36 @@
-import type { IridisUiEventType } from './types/iridisUiEvent.ts';
-import type { ModeType } from './types/mode.ts';
-
+import { IridisUiEvent } from './types/iridisUiEvent.ts';
 import { useIridisUiMachine } from './useIridisUiMachine.ts';
 
-declare class WritableModeReference {
-  value: ModeType.Type;
-}
+/** Sends an effect event only after its concrete picker or image interaction context is active. */
+export class UseModeGuardedSend {
+  static image(send: (event: IridisUiEvent) => void): (event: IridisUiEvent) => void {
+    const result = UseModeGuardedSend.create(send, IridisUiEvent.selectImageMode, (event) => {
+      const active = event.selectsImageMode();
+      return active;
+    });
+    return result;
+  }
 
-/**
- * Forces `mode` to `targetMode` (if it differs) before forwarding the event
- * to `send`, so the mode switch lands before the FSM observes the event that
- * implies it — but only while the carousel is 'idle'. Forcing the switch
- * mid-drag would settle (cancel) an in-flight drag as a side effect of an
- * unrelated form action (e.g. dragging a Combine slider), so the switch is
- * skipped for this call; the guarded event is still forwarded regardless,
- * since every mode-guarded event is effect-only and doesn't read `mode` at
- * reduce time. The next mode-guarded action fired once the drag settles
- * (DRAG_END) picks up the deferred switch. A direct `mode.value` assignment
- * elsewhere (e.g. ModeSwitch, image-drop) still goes through unconditionally
- * — the reducer itself accepts SELECT_MODE in every variant, settling any
- * in-flight drag when the user explicitly switches modes.
- */
-class UseModeGuardedSendOperation {
-  static run(mode: WritableModeReference, send: (event: IridisUiEventType.Type) => void, targetMode: ModeType.Type): (event: IridisUiEventType.Type) => void {
+  static picker(send: (event: IridisUiEvent) => void): (event: IridisUiEvent) => void {
+    const result = UseModeGuardedSend.create(send, IridisUiEvent.selectPickerMode, (event) => {
+      const active = !event.selectsImageMode();
+      return active;
+    });
+    return result;
+  }
+
+  private static create(
+    send: (event: IridisUiEvent) => void,
+    selectMode: () => IridisUiEvent,
+    isActive: (state: ReturnType<typeof useIridisUiMachine>['state']['value']) => boolean
+  ): (event: IridisUiEvent) => void {
     const { state } = useIridisUiMachine();
-    return (event) => {
-      if (mode.value !== targetMode && state.value.variant === 'idle') { mode.value = targetMode; }
+    const result = (event: IridisUiEvent): void => {
+      if (!state.value.isDragging() && !isActive(state.value)) {
+        send(selectMode());
+      }
       send(event);
     };
+    return result;
   }
 }
-
-export const useModeGuardedSend = UseModeGuardedSendOperation.run;

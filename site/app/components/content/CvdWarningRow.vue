@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { CvdPairWarningInterfaceType } from '@studnicky/iridis-contrast/types';
+import type { CvdPairWarningInterfaceTypeEntity } from '@studnicky/iridis-contrast/types';
 
 defineProps<{
-  warning: CvdPairWarningInterfaceType;
-  cvdTypeLabel: (cvdType: CvdPairWarningInterfaceType['cvdType']) => string;
+  warning: CvdPairWarningInterfaceTypeEntity.Type;
+  cvdTypeLabel: (cvdType: CvdPairWarningInterfaceTypeEntity.Type['cvdType']) => string;
 }>();
 </script>
 

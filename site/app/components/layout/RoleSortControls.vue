@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 import { ROLE_SORT_FIELD_OPTIONS } from '~/utils/roleSortFieldOptions.ts';
 import { roleSortFieldLabel } from '~/utils/roleSortFieldLabel.ts';
 import type { RoleSortFieldType } from '~/composables/types/roleSortField.ts';
@@ -29,14 +29,17 @@ function addKey(): void {
   // resolve an index from and falls back to rendering the placeholder
   // instead of a stale selection.
   newField.value = undefined;
-  send({ 'keys': [...roleSortKeys.value, { 'desc': false, field }], 'type': IridisUiActionType.SET_ROLE_SORT });
+  send(IridisUiEvent.setRoleSort([...roleSortKeys.value, { 'desc': false, field }]));
 }
 function removeKey(index: number): void {
-  send({ 'keys': roleSortKeys.value.filter((_, i) => i !== index), 'type': IridisUiActionType.SET_ROLE_SORT });
+  send(IridisUiEvent.setRoleSort(roleSortKeys.value.filter((_, keyIndex) => keyIndex !== index)));
 }
 function toggleKeyDesc(index: number): void {
-  const next = roleSortKeys.value.map((k, i) => (i === index ? { ...k, 'desc': !k.desc } : k));
-  send({ 'keys': next, 'type': IridisUiActionType.SET_ROLE_SORT });
+  const next = roleSortKeys.value.map((key, keyIndex) => {
+    const result = keyIndex === index ? { ...key, 'desc': !key.desc } : key;
+    return result;
+  });
+  send(IridisUiEvent.setRoleSort(next));
 }
 </script>
 

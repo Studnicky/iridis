@@ -4,16 +4,17 @@
  */
 
 import assert from 'node:assert/strict';
-import { register } from 'node:module';
+import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 
-register('./fixtures/NuxtImportsLoader.mjs', import.meta.url);
+import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
+
+registerHooks(NuxtImportsLoader);
 
 const PanelAccordionTestModules = Object.freeze({
   'reset': (await import('../app/composables/__resetPanelAccordionForTests.ts')).__resetPanelAccordionForTests,
   'use': (await import('../app/composables/usePanelAccordion.ts')).usePanelAccordion
 });
-const TEST_NUXT_APP = Symbol.for('iridis.test.nuxt-app');
 
 await test('opening panels one at a time up to 3 keeps all 3 open', () => {
   PanelAccordionTestModules.reset();
@@ -99,15 +100,15 @@ await test('defaultOpen respects the max-3 rule when several panels seed at once
 await test('accordion state is shared within one app and isolated between SSR requests', (context) => {
   const firstNuxtApp = {};
   const secondNuxtApp = {};
-  context.after(() => { Reflect.deleteProperty(globalThis, TEST_NUXT_APP); });
+  context.after(() => { Reflect.set(globalThis, 'iridisTestNuxtApp', undefined); });
 
-  Reflect.set(globalThis, TEST_NUXT_APP, firstNuxtApp);
+  Reflect.set(globalThis, 'iridisTestNuxtApp', firstNuxtApp);
   const firstPanel = PanelAccordionTestModules.use('request-panel');
   firstPanel.open();
   const firstPanelAgain = PanelAccordionTestModules.use('request-panel');
   assert.equal(firstPanelAgain.isOpen.value, true);
 
-  Reflect.set(globalThis, TEST_NUXT_APP, secondNuxtApp);
+  Reflect.set(globalThis, 'iridisTestNuxtApp', secondNuxtApp);
   const secondPanel = PanelAccordionTestModules.use('request-panel');
   assert.equal(secondPanel.isOpen.value, false);
   secondPanel.open();

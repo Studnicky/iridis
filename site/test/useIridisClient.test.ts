@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
-import { register } from 'node:module';
+import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
 import 'vue';
 
-register('./fixtures/NuxtImportsLoader.mjs', import.meta.url);
+import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
+
+registerHooks(NuxtImportsLoader);
 
 class FakeImage {
   crossOrigin = '';
@@ -22,11 +24,16 @@ class FakeClassList {
   readonly #names: Set<string>;
 
   constructor(names: Set<string>) {this.#names = names;}
-  add(...names: string[]): void {for (const name of names) {this.#names.add(name);}}
-  remove(...names: string[]): void {for (const name of names) {this.#names.delete(name);}}
+  add(...names: string[]): void {
+    for (let index = 0; index < names.length; index += 1) {this.#names.add(names[index]!);}
+  }
 
-  toggle(name: string, enabled?: boolean): boolean {
-    const next = enabled ?? !this.#names.has(name);
+  remove(...names: string[]): void {
+    for (let index = 0; index < names.length; index += 1) {this.#names.delete(names[index]!);}
+  }
+
+  toggle(name: string): boolean {
+    const next = !this.#names.has(name);
     if (next) {this.#names.add(name);} else {this.#names.delete(name);}
     return next;
   }

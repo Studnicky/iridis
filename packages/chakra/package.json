@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-chakra",
   "description": "Emits a Chakra UI extendTheme() color-token scale from resolved roles and their dark/light variants.",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "type": "module",
   "exports": {
     ".": {
@@ -39,9 +39,14 @@
     "@studnicky/iridis": "workspace:*"
   },
   "dependencies": {
-    "@studnicky/logger": "^4.0.0"
+    "@studnicky/logger": "^15.2.1",
+    "@types/json-schema": "^7.0.15",
+    "json-schema": "0.4.0"
   },
   "devDependencies": {
+    "@studnicky/entity": "^15.2.1",
+    "@studnicky/json-tology": "0.27.1",
+    "@studnicky/types": "^15.2.1",
     "typescript": "^6.0.0"
   },
   "repository": {

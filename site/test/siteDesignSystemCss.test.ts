@@ -28,7 +28,8 @@ await test('all site CSS and Vue styles consume defined engine color tokens', ()
   const undefinedTokens: string[] = [];
 
   assert.ok(styleSources.length > 0);
-  for (const [sourcePath, sourceCss] of styleSources) {
+  for (let sourceIndex = 0; sourceIndex < styleSources.length; sourceIndex += 1) {
+    const [sourcePath, sourceCss] = styleSources[sourceIndex]!;
     const css = sourceCss.replaceAll(SiteDesignSystemCssSources.CSS_COMMENT, '');
     const referencedTokens = SiteDesignSystemCssHarness.collectTokens(css, TestPatterns.CSS_TOKEN_REFERENCE);
     for (const token of referencedTokens) {
@@ -54,7 +55,9 @@ await test('Nuxt UI solid buttons rely on the engine contrast token without a fa
 });
 
 await test('each modal shell disables its entrance animation for reduced motion', () => {
-  for (const [sourcePath, sourceCss] of SiteDesignSystemCssSources.collect(resolve(SITE_ROOT, 'app'))) {
+  const styleSources = SiteDesignSystemCssSources.collect(resolve(SITE_ROOT, 'app'));
+  for (let sourceIndex = 0; sourceIndex < styleSources.length; sourceIndex += 1) {
+    const [sourcePath, sourceCss] = styleSources[sourceIndex]!;
     if (!sourcePath.endsWith('ModalShell.css')) {continue;}
     assert.match(sourceCss, TestPatterns.CSS_MODAL_REDUCED_MOTION, sourcePath);
   }

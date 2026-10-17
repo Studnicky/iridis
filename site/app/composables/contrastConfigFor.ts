@@ -1,22 +1,64 @@
-/** Contrast level per strictness tier — index matches contrastStrictness's three UI values (0=AA, 1=AAA, 2=APCA/Lc); any other value falls back to Lc. */
-const CONTRAST_LEVEL_BY_STRICTNESS: Record<number, 'AA' | 'AAA' | 'Lc'> = { '0': 'AA', '1': 'AAA' };
+import { ContrastOptionsInterfaceTypeEntity } from '@studnicky/iridis';
 
-/**
- * Maps contrastStrictness + cvdCorrect to the engine's `input.contrast` config
- * — shared by the live palette pipeline (useIridis's run() and
- * combineNowRun()) and the export pipeline (useMultiOutput) so all three
- * enforce the identical contrast standard and CVD auto-correction.
- */
-class ContrastConfigForOperation {
-  static run(strictness: number, cvdCorrect: boolean): { 'algorithm': 'apca' | 'wcag21'; 'cvdCorrect': boolean; 'extra': undefined; 'level': 'AA' | 'AAA' | 'Lc' } {
-    const level = CONTRAST_LEVEL_BY_STRICTNESS[strictness] ?? 'Lc';
-    return {
-      'algorithm':  strictness === 2 ? 'apca' : 'wcag21',
-      'cvdCorrect': cvdCorrect,
-      'extra':      undefined,
-      'level':      level
-    };
+abstract class CvdCorrectionBehavior {
+  public abstract serialize(): boolean;
+}
+
+class AdvisoryCvdCorrectionBehavior extends CvdCorrectionBehavior {
+  public serialize(): boolean {
+    return false;
   }
 }
 
-export const contrastConfigFor = ContrastConfigForOperation.run;
+class CorrectingCvdCorrectionBehavior extends CvdCorrectionBehavior {
+  public serialize(): boolean {
+    return true;
+  }
+}
+
+abstract class ContrastStandardBehavior {
+  public abstract serialize(correction: CvdCorrectionBehavior): ContrastOptionsInterfaceTypeEntity.Type;
+}
+
+class WcagAaContrastStandardBehavior extends ContrastStandardBehavior {
+  public serialize(correction: CvdCorrectionBehavior): ContrastOptionsInterfaceTypeEntity.Type {
+    const result = ContrastOptionsInterfaceTypeEntity.create({ 'algorithm': 'wcag21', 'cvdCorrect': correction.serialize(), 'level': 'AA' });
+    return result;
+  }
+}
+
+class WcagAaaContrastStandardBehavior extends ContrastStandardBehavior {
+  public serialize(correction: CvdCorrectionBehavior): ContrastOptionsInterfaceTypeEntity.Type {
+    const result = ContrastOptionsInterfaceTypeEntity.create({ 'algorithm': 'wcag21', 'cvdCorrect': correction.serialize(), 'level': 'AAA' });
+    return result;
+  }
+}
+
+class ApcaContrastStandardBehavior extends ContrastStandardBehavior {
+  public serialize(correction: CvdCorrectionBehavior): ContrastOptionsInterfaceTypeEntity.Type {
+    const result = ContrastOptionsInterfaceTypeEntity.create({ 'algorithm': 'apca', 'cvdCorrect': correction.serialize(), 'level': 'Lc' });
+    return result;
+  }
+}
+
+/** Resolves UI controls into executable contrast behavior at the engine-input boundary. */
+export class ContrastConfigFor {
+  public static readonly advisoryCvd = new AdvisoryCvdCorrectionBehavior();
+  public static readonly correctingCvd = new CorrectingCvdCorrectionBehavior();
+  private static readonly wcagAa = new WcagAaContrastStandardBehavior();
+  private static readonly wcagAaa = new WcagAaaContrastStandardBehavior();
+  private static readonly apca = new ApcaContrastStandardBehavior();
+
+  public static forStrictness(strictness: number, correction: CvdCorrectionBehavior): ContrastOptionsInterfaceTypeEntity.Type {
+    if (strictness === 0) {
+      const result = ContrastConfigFor.wcagAa.serialize(correction);
+      return result;
+    }
+    if (strictness === 1) {
+      const result = ContrastConfigFor.wcagAaa.serialize(correction);
+      return result;
+    }
+    const result = ContrastConfigFor.apca.serialize(correction);
+    return result;
+  }
+}

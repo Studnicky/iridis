@@ -1,5 +1,4 @@
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
-
+import { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -11,12 +10,21 @@ const ROLE_NAMES = [
 ];
 
 class PerformanceFixture {
-  static makePalette(hueOffset: number): PaletteInterfaceType {
-    const palette: PaletteInterfaceType = {};
-    for (const [roleIndex, roleName] of ROLE_NAMES.entries()) {
-      palette[roleName] = { 'c': 0.1, 'h': (roleIndex * 30 + hueOffset) % 360, 'l': 0.5 };
+  static makePalette(hueOffset: number): PaletteInterfaceTypeEntity.Type {
+    const palette: PaletteInterfaceTypeEntity.Type = {};
+    for (let roleIndex = 0; roleIndex < ROLE_NAMES.length; roleIndex += 1) {
+      const roleName = ROLE_NAMES[roleIndex];
+      if (roleName !== undefined) {
+        Object.defineProperty(palette, roleName, {
+          'configurable': true,
+          'enumerable':   true,
+          'value':        { 'c': 0.1, 'h': (roleIndex * 30 + hueOffset) % 360, 'l': 0.5 },
+          'writable':     true
+        });
+      }
     }
-    return palette;
+    const admittedPalette = PaletteInterfaceTypeEntity.create(palette);
+    return admittedPalette;
   }
 }
 

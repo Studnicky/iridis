@@ -40,8 +40,14 @@ const cardLayoutByMode = {
 } as const;
 
 const activeCardLayout = computed(() => {
-  return selectDataCardLayout.select(dataLayout.value, cardLayoutByMode);
+  return selectDataCardLayout.select(
+    dataLayout.value,
+    cardLayoutByMode.grid,
+    cardLayoutByMode.list,
+    cardLayoutByMode.pixel
+  );
 });
+const rendersTable = computed(() => dataLayout.value.select(false, false, false, true));
 </script>
 
 <template>
@@ -69,7 +75,7 @@ const activeCardLayout = computed(() => {
     />
 
     <ResolvedRolesTable
-      v-show="dataLayout === 'table'"
+      v-show="rendersTable"
       :rows="sortedRoleContrastRows"
     />
   </UCard>

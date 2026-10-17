@@ -1,3 +1,5 @@
+import { GalleryCandidateOutputEntity } from '../entities/GalleryCandidateOutputEntity.ts';
+
 const GALLERY_HISTOGRAM = {
   'additionalProperties': false,
   'properties': {
@@ -17,17 +19,7 @@ const GALLERY_HARMONIZED = {
 } as const;
 
 const GALLERY_CANDIDATES = {
-  'items': {
-    'additionalProperties': false,
-    'properties': {
-      'algorithm': { 'type': 'string' },
-      'colors':    { 'type': 'array' },
-      'k':         { 'minimum': 0, 'type': 'number' },
-      'label':     { 'type': 'string' }
-    },
-    'required': ['algorithm', 'k', 'label', 'colors'],
-    'type': 'object'
-  },
+  'items': GalleryCandidateOutputEntity.Schema,
   'type': 'array'
 } as const;
 

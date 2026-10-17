@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 import { describeHueAlgorithm } from './derivation/describeHueAlgorithm.ts';
 
 defineProps<{
-  role: RoleMathEntryType;
+  role: RoleMathEntry;
   isOpen: boolean;
 }>();
 

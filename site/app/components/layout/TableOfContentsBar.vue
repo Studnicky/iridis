@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
+import { TocBarEvent } from '~/composables/types/tocBarEvent.ts';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useDebouncedResizeObserver } from '~/composables/useDebouncedResizeObserver.ts';
 import { useIridis } from '~/composables/useIridis.ts';
@@ -42,7 +43,7 @@ const visibleStageTargets = computed(() => stageTargets
 const visibleCardTargets = computed(() => cardTargets
   .filter((target) => target.stage !== 'combine' || uploadedImages.value.length > 0));
 
-function select(id: string): void { send({ 'targetId': id, 'type': IridisUiActionType.NAVIGATE_TO_TARGET }); }
+function select(id: string): void { send(IridisUiEvent.navigateToTarget(id)); }
 
 /** Scrollspy: which stage section is currently "in view" — the one authoritative "you are here", read by Row 1's active chip AND Row 2's card filter. Defaults to the first visible stage so SSR/pre-hydration content isn't unmarked. */
 const activeStageId = ref<string>(visibleStageTargets.value[0]?.id ?? '');
@@ -84,9 +85,9 @@ const activeStageCardTargets = computed(() => visibleCardTargets.value
   .filter((target) => target.stage === activeStageId.value));
 
 /** True once the user has scrolled past the hero — before that, the bar stays in normal document flow (non-sticky) so the hero is the first thing a mobile visitor sees. Derived from TocBarMachine's state rather than a local ref (see useTocBarMachine.ts / fsm/TocBarMachine.ts). */
-const pastHero = computed(() => tocState.value.variant !== 'top');
+const pastHero = computed(() => tocState.value.isPastHero());
 /** Compact = sticky AND actively scrolling down (reading) — collapses to a slim single row (current stage only), re-expanding the instant the user scrolls up to navigate. */
-const compact = computed(() => tocState.value.variant === 'compact');
+const compact = computed(() => tocState.value.isCompact());
 
 let heroObserver: IntersectionObserver | null = null;
 function setupHeroObserver(): void {
@@ -95,7 +96,7 @@ function setupHeroObserver(): void {
   if (!sentinel) { return; }
   heroObserver = new IntersectionObserver((entries) => {
     const entry = entries[0];
-    if (entry) { sendToc({ 'type': entry.isIntersecting ? 'RETURN_TOP' : 'PAST_HERO' }); }
+    if (entry) { sendToc(entry.isIntersecting ? TocBarEvent.returnTop() : TocBarEvent.pastHero()); }
   });
   heroObserver.observe(sentinel);
 }
@@ -143,7 +144,7 @@ function onScroll(): void {
     if (rebaselinePending) { return; }
     const delta = y - lastScrollY;
     if (Math.abs(delta) >= SCROLL_INTENT_THRESHOLD_PX) {
-      sendToc({ 'type': delta > 0 ? 'SCROLL_DOWN' : 'SCROLL_UP' });
+      sendToc(delta > 0 ? TocBarEvent.scrollDown() : TocBarEvent.scrollUp());
       lastScrollY = y;
     }
   });
@@ -164,7 +165,7 @@ function onScroll(): void {
  * every frame and the page never settles. Sampling after the patch and after
  * the next frame's layout means the delta starts at ~0, as intended.
  */
-watch(() => tocState.value.variant, () => {
+watch(() => tocState.value, () => {
   if (typeof window === 'undefined') { return; }
   rebaselinePending = true;
   window.requestAnimationFrame(() => {

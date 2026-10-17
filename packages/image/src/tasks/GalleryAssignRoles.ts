@@ -1,14 +1,15 @@
 import type {
-  ColorRecordInterfaceType,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { oklchToRgb } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import {
+  oklchToRgb,
+  TaskManifestInterfaceTypeEntity
+} from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 /**
  * `gallery:assignRoles`
@@ -27,64 +28,74 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
 class GalleryAssignRoles implements TaskInterface {
   readonly 'name' = 'gallery:assignRoles';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Assign dominant colors to gallery roles: canvas, frame, accent, muted, text',
     'name':        'gallery:assignRoles',
-    'phase':       undefined,
     'reads':       ['colors'],
-    'requires':    undefined,
     'writes':      ['roles']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const colors = state.colors;
 
     if (colors.length === 0) {
       context.logger.warn(
-        LogBody.create()
-          .component('GalleryAssignRoles')
-          .operation('run')
-          .status(LOG_STATUS.INVALID)
-          .message('state.colors is empty; cannot assign roles')
-          .context({})
-          .build()
+        LogBody.create({
+          'component': 'GalleryAssignRoles',
+          'context': {},
+          'message': 'state.colors is empty; cannot assign roles',
+          'operation': 'run',
+          'status': LOG_STATUS.INVALID
+        })
       );
       return;
     }
 
     context.logger.debug(
-      LogBody.create()
-        .component('GalleryAssignRoles')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('assigning gallery roles')
-        .context({ 'colorCount': colors.length })
-        .build()
+      LogBody.create({
+        'component': 'GalleryAssignRoles',
+        'context': { 'colorCount': colors.length },
+        'message': 'assigning gallery roles',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
+
+    const firstColor = colors[0];
+    if (firstColor === undefined) {
+      throw new RangeError('A non-empty color list must have a first color');
+    }
 
     // canvas: darkest (lowest L)
-    const canvas = colors.reduce((best: ColorRecordInterfaceType, c: ColorRecordInterfaceType) =>
-    {return c.oklch.l < best.oklch.l ? c : best;}
-    );
+    const canvas = colors.reduce((best: ColorRecordInterfaceTypeEntity.Type, color: ColorRecordInterfaceTypeEntity.Type) => {
+      const result = color.oklch.l < best.oklch.l ? color : best;
+      return result;
+    }, firstColor);
 
     // frame: closest to mid-luminance (L nearest 0.5)
-    const frame = colors.reduce((best: ColorRecordInterfaceType, c: ColorRecordInterfaceType) => {
-      const d  = Math.abs(c.oklch.l - 0.5);
-      const bd = Math.abs(best.oklch.l - 0.5);
-      return d < bd ? c : best;
-    });
+    const frame = colors.reduce((best: ColorRecordInterfaceTypeEntity.Type, color: ColorRecordInterfaceTypeEntity.Type) => {
+      const distance  = Math.abs(color.oklch.l - 0.5);
+      const bestDistance = Math.abs(best.oklch.l - 0.5);
+      const result = distance < bestDistance ? color : best;
+      return result;
+    }, firstColor);
 
     // accent: highest chroma
-    const accent = colors.reduce((best: ColorRecordInterfaceType, c: ColorRecordInterfaceType) =>
-    {return c.oklch.c > best.oklch.c ? c : best;}
-    );
+    const accent = colors.reduce((best: ColorRecordInterfaceTypeEntity.Type, color: ColorRecordInterfaceTypeEntity.Type) => {
+      const result = color.oklch.c > best.oklch.c ? color : best;
+      return result;
+    }, firstColor);
 
     // muted: lowest chroma among non-neutral colors (C > 0.02), excluding accent
-    const nonNeutral = colors.filter((c) => {return c.oklch.c > 0.02 && c !== accent;});
+    const nonNeutral = colors.filter((color) => {
+      const result = color.oklch.c > 0.02 && color !== accent;
+      return result;
+    });
     const muteSource = nonNeutral.length > 0 ? nonNeutral : colors;
-    const muted      = muteSource.reduce((best: ColorRecordInterfaceType, c: ColorRecordInterfaceType) =>
-    {return c.oklch.c < best.oklch.c ? c : best;}
-    );
+    const muted = muteSource.reduce((best: ColorRecordInterfaceTypeEntity.Type, color: ColorRecordInterfaceTypeEntity.Type) => {
+      const result = color.oklch.c < best.oklch.c ? color : best;
+      return result;
+    }, firstColor);
 
     // text: auto-derived: white when canvas is dark (L <= 0.5), black otherwise
     const text = this.deriveTextColor(canvas);
@@ -96,27 +107,29 @@ class GalleryAssignRoles implements TaskInterface {
     state.roles.text   = text;
 
     context.logger.info(
-      LogBody.create()
-        .component('GalleryAssignRoles')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('roles assigned')
-        .context({
+      LogBody.create({
+        'component': 'GalleryAssignRoles',
+        'context': {
           'accent': accent.hex,
           'canvas': canvas.hex,
           'frame':  frame.hex,
           'muted':  muted.hex,
           'text':   text.hex
-        })
-        .build()
+        },
+        'message': 'roles assigned',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 
-  private deriveTextColor(canvas: ColorRecordInterfaceType): ColorRecordInterfaceType {
+  private deriveTextColor(canvas: ColorRecordInterfaceTypeEntity.Type): ColorRecordInterfaceTypeEntity.Type {
     if (canvas.oklch.l <= 0.5) {
-      return oklchToRgb.apply(1.0, 0.0, 0.0, 1.0);
+      const result = oklchToRgb.apply(1.0, 0.0, 0.0, 1.0);
+      return result;
     }
-    return oklchToRgb.apply(0.0, 0.0, 0.0, 1.0);
+    const result = oklchToRgb.apply(0.0, 0.0, 0.0, 1.0);
+    return result;
   }
 }
 

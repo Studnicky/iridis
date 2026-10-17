@@ -22,7 +22,8 @@ export class RealClockProvider implements ClockProviderInterface {
 
   get t(): number {
     if (this.durationMs <= 0) {return 1;}
-    return UnitInterval.clamp((Date.now() - this.startedAtMs) / this.durationMs);
+    const result = UnitInterval.clamp((Date.now() - this.startedAtMs) / this.durationMs);
+    return result;
   }
 
   advance(_deltaMs: number): void {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
+import type { UploadedImage } from '~/composables/types/index.ts';
 import { buildUploadedImageCardModel } from './uploadedImage/buildUploadedImageCardModel.ts';
 
 /**
@@ -9,13 +9,13 @@ import { buildUploadedImageCardModel } from './uploadedImage/buildUploadedImageC
  * control here re-runs ONLY this image's Stage-1 extraction (via the `update`
  * emit), never any other uploaded image's.
  */
-const props = withDefaults(defineProps<{ image: UploadedImageInterfaceType; showHeader?: boolean }>(), {
+const props = withDefaults(defineProps<{ image: UploadedImage; showHeader?: boolean }>(), {
   showHeader: true
 });
 const emit = defineEmits<{
   'remove': [];
   'select-candidate': [label: string];
-  'update': [patch: UploadedImageInterfaceType];
+  'update': [patch: UploadedImage];
 }>();
 const cardModel = buildUploadedImageCardModel.build();
 </script>
@@ -24,7 +24,7 @@ const cardModel = buildUploadedImageCardModel.build();
   <div class="relative space-y-3">
     <UploadedImageHeader
       :name="image.name"
-      :src="image.src"
+      :src="image.source"
       :dominant-color-count="image.dominantColorRecords.length"
       :show-header="showHeader"
       @remove="emit('remove')"

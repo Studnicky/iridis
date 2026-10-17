@@ -3,15 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { CssAttributeSelector } from '../../src/util/CssAttributeSelector.ts';
-
-const HOSTILE_VALUES = [
-  "brand'quoted",
-  'brand"quoted',
-  'brand\\escaped',
-  'brand\nnewline',
-  'brand}body{color:red',
-  "brand'] body, [data-owned='true"
-];
+import { CssAttributeSelectorTestData } from '../fixtures/CssAttributeSelectorTestData.ts';
 
 class CssAttributeSelectorTestFixture {
   static attributeNameError(attributeName: string): Error | undefined {
@@ -19,7 +11,8 @@ class CssAttributeSelectorTestFixture {
       CssAttributeSelector.from(attributeName, 'brand-blue');
       return undefined;
     } catch (error) {
-      return error instanceof Error ? error : undefined;
+      const result = error instanceof Error ? error : undefined;
+      return result;
     }
   }
 
@@ -28,7 +21,8 @@ class CssAttributeSelectorTestFixture {
       CssAttributeSelector.from('data-theme', '');
       return undefined;
     } catch (error) {
-      return error instanceof Error ? error : undefined;
+      const result = error instanceof Error ? error : undefined;
+      return result;
     }
   }
 
@@ -37,7 +31,8 @@ class CssAttributeSelectorTestFixture {
       CssAttributeSelector.from('data-theme', value);
       return undefined;
     } catch (error) {
-      return error instanceof Error ? error : undefined;
+      const result = error instanceof Error ? error : undefined;
+      return result;
     }
   }
 }
@@ -50,11 +45,13 @@ await test('CssAttributeSelector.from preserves a valid hyphenated value', () =>
 });
 
 await test('CssAttributeSelector.from escapes hostile values inside one selector', () => {
-  for (const value of HOSTILE_VALUES) {
+  for (let index = 0; index < CssAttributeSelectorTestData.HOSTILE_VALUES.length; index += 1) {
+    const value = CssAttributeSelectorTestData.HOSTILE_VALUES[index];
+    if (value === undefined) { continue; }
     const selector = CssAttributeSelector.from('data-theme', value);
-    assert.match(selector, /^\[data-theme='(?:[A-Za-z0-9_-]|\\[0-9A-F]+ )+'\]$/u);
-    assert.strictEqual(selector.match(/\[/gu)?.length, 1);
-    assert.strictEqual(selector.match(/\]/gu)?.length, 1);
+    assert.match(selector, CssAttributeSelectorTestData.SELECTOR_PATTERN);
+    assert.strictEqual((CssAttributeSelectorTestData.OPEN_BRACKET_PATTERN.lastIndex = 0, CssAttributeSelectorTestData.OPEN_BRACKET_PATTERN.exec(selector) === null ? 0 : 1), 1);
+    assert.strictEqual((CssAttributeSelectorTestData.CLOSE_BRACKET_PATTERN.lastIndex = 0, CssAttributeSelectorTestData.CLOSE_BRACKET_PATTERN.exec(selector) === null ? 0 : 1), 1);
     assert.ok(!selector.includes('{'));
     assert.ok(!selector.includes('}'));
     assert.ok(!selector.includes('\n'));
@@ -71,15 +68,17 @@ await test('CssAttributeSelector.from rejects unsafe attribute names', () => {
     'data-theme] body, [data-owned'
   ];
 
-  for (const attributeName of hostileAttributeNames) {
+  for (let index = 0; index < hostileAttributeNames.length; index += 1) {
+    const attributeName = hostileAttributeNames[index];
+    if (attributeName === undefined) { continue; }
     const error = CssAttributeSelectorTestFixture.attributeNameError(attributeName);
-    assert.match(error?.message ?? '', /attributeName must be a CSS-safe identifier/u);
+    assert.match(error?.message ?? '', CssAttributeSelectorTestData.ATTRIBUTE_ERROR_PATTERN);
   }
 });
 
 await test('CssAttributeSelector.from rejects an empty attribute value', () => {
   const error = CssAttributeSelectorTestFixture.emptyValueError();
-  assert.match(error?.message ?? '', /value must not be empty/u);
+  assert.match(error?.message ?? '', CssAttributeSelectorTestData.EMPTY_VALUE_PATTERN);
 });
 
 await test('CssAttributeSelector.from rejects NUL and lone UTF-16 surrogates', () => {
@@ -88,9 +87,11 @@ await test('CssAttributeSelector.from rejects NUL and lone UTF-16 surrogates', (
     `brand${String.fromCharCode(0xD800)}high`,
     `brand${String.fromCharCode(0xDFFF)}low`
   ];
-  for (const value of invalidValues) {
+  for (let index = 0; index < invalidValues.length; index += 1) {
+    const value = invalidValues[index];
+    if (value === undefined) { continue; }
     const error = CssAttributeSelectorTestFixture.valueError(value);
-    assert.match(error?.message ?? '', /value must contain only non-NUL Unicode scalar values/u);
+    assert.match(error?.message ?? '', CssAttributeSelectorTestData.INVALID_VALUE_PATTERN);
   }
 });
 

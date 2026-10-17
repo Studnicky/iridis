@@ -21,7 +21,8 @@ export class VirtualClockProvider implements ClockProviderInterface {
 
   get t(): number {
     if (this.durationMs <= 0) {return 1;}
-    return UnitInterval.clamp(this.elapsedMs / this.durationMs);
+    const result = UnitInterval.clamp(this.elapsedMs / this.durationMs);
+    return result;
   }
 
   advance(deltaMs: number): void {

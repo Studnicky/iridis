@@ -80,10 +80,10 @@ class IridisVocab {
    * constrained to resolve within, independent of whether this particular run
    * actually clamped a seed into it (see `clampedFrom` for that).
    */
-  readonly 'lightnessRangeMin' = `${this.base}lightnessRangeMin`;
-  readonly 'lightnessRangeMax' = `${this.base}lightnessRangeMax`;
-  readonly 'chromaRangeMin'    = `${this.base}chromaRangeMin`;
-  readonly 'chromaRangeMax'    = `${this.base}chromaRangeMax`;
+  readonly 'leastPermittedLightness' = `${this.base}lightnessRangeMin`;
+  readonly 'greatestPermittedLightness' = `${this.base}lightnessRangeMax`;
+  readonly 'leastPermittedChroma'    = `${this.base}chromaRangeMin`;
+  readonly 'greatestPermittedChroma'    = `${this.base}chromaRangeMax`;
   /** Maximum degrees the resolved hue may rotate toward the schema's target `hue` (RoleDefinitionInterfaceType.hueClamp). */
   readonly 'hueClamp' = `${this.base}hueClamp`;
 

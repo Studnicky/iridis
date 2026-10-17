@@ -1,4 +1,6 @@
-import type { ValueBindingOptionsInterfaceType } from './types/index.ts';
+import type { ValueBindingOptionsInterfaceTypeEntity } from './entities/ValueBindingOptionsInterfaceTypeEntity.ts';
+
+import { UnitInterval } from './clock/UnitInterval.ts';
 
 /**
  * Maps a raw scalar (scroll position, gesture delta, sensor reading) into
@@ -8,21 +10,24 @@ import type { ValueBindingOptionsInterfaceType } from './types/index.ts';
 export class ValueBinding {
   private readonly minimum: number;
   private readonly maximum: number;
-  private readonly clamp: boolean;
+  private readonly mapRaw: (raw: number) => number;
 
-  protected constructor(minimum: number, maximum: number, clamp: boolean) {
+  protected constructor(minimum: number, maximum: number, mapRaw: (raw: number) => number) {
     this.minimum = minimum;
     this.maximum = maximum;
-    this.clamp = clamp;
+    this.mapRaw = mapRaw;
   }
 
-  static create(options: ValueBindingOptionsInterfaceType): ValueBinding {
-    return new ValueBinding(options.min, options.max, options.clamp ?? true);
+  static create(options: ValueBindingOptionsInterfaceTypeEntity.Type): ValueBinding {
+    const mapRaw: (raw: number) => number = options.clamp === false ? Number : UnitInterval.clamp;
+    const result = new ValueBinding(options.minimum, options.maximum, mapRaw);
+    return result;
   }
 
   mapToT(value: number): number {
     const span = this.maximum - this.minimum;
     const raw = span === 0 ? 0 : (value - this.minimum) / span;
-    return this.clamp ? Math.min(1, Math.max(0, raw)) : raw;
+    const result = this.mapRaw(raw);
+    return result;
   }
 }

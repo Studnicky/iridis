@@ -1,6 +1,8 @@
 import type {
-  PaletteStateInterface, PipelineContextInterface, TaskInterface, TaskManifestInterfaceType
-} from '@studnicky/iridis/types';
+  PaletteStateInterface, PipelineContextInterface, TaskInterface
+} from '@studnicky/iridis';
+
+import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
 
 import type { DerivationConfigType } from '../composables/types/colorDerivation.ts';
 
@@ -22,28 +24,34 @@ import { SEMANTIC_HUE_CLAMP } from './semanticHueClamp.ts';
 class DeriveSemanticHues implements TaskInterface {
   readonly 'name' = 'derive:semanticHues';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Writes absolute hue/hueClamp targets for success/warning/error/info onto metadata[\'core:hueTargetOverrides\'], skipped for any role with an explicit derivation relation, or entirely when metadata[\'derivation:semanticHuesEnabled\'] is false.',
     'name':        'derive:semanticHues',
-    'phase':       undefined,
     'reads':       ['input.roles', 'metadata'],
-    'requires':    undefined,
     'writes':      ['metadata']
-  };
+  });
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
-    if (state.input.roles === undefined) {return;}
+    const roleSchema = state.input.roles;
+    if (roleSchema === undefined) {return;}
     if (state.metadata['derivation:semanticHuesEnabled'] === false) {return;}
     const config = state.metadata['derivation:config'] as DerivationConfigType | undefined;
 
-    const overrides: Record<string, { 'hue': number; 'hueClamp': number }> = {};
-    for (const role of state.input.roles.roles) {
+    const overrides = new Map<string, { 'hue': number; 'hueClamp': number }>();
+    const roles = roleSchema.roles;
+    for (let index = 0; index < roles.length; index += 1) {
+      const role = roles[index];
+      if (role === undefined) {continue;}
       const targetHue = SEMANTIC_HUE[role.name];
       if (targetHue === undefined) {continue;}
       if (config?.relations[role.name] !== undefined) {continue;}
-      overrides[role.name] = { 'hue': targetHue, 'hueClamp': SEMANTIC_HUE_CLAMP };
+      overrides.set(role.name, { 'hue': targetHue, 'hueClamp': SEMANTIC_HUE_CLAMP });
     }
-    state.metadata['core:hueTargetOverrides'] = overrides;
+    const serializedOverrides: Record<string, { 'hue': number; 'hueClamp': number }> = {};
+    overrides.forEach((override, name) => {
+      Object.defineProperty(serializedOverrides, name, { 'configurable': true, 'enumerable': true, 'value': override, 'writable': true });
+    });
+    state.metadata['core:hueTargetOverrides'] = serializedOverrides;
   }
 }
 

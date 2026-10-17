@@ -1,38 +1,24 @@
-import type { RoleDefinitionInterfaceType } from '@studnicky/iridis/model';
+import type { RoleDefinitionInterfaceTypeEntity } from '@studnicky/iridis';
 
 import type { RoleMathAlgorithmInfoType } from './roleMathAlgorithmInfo.ts';
 import type { RoleMathCandidateType } from './roleMathCandidate.ts';
 import type { RoleMathClampType } from './roleMathClamp.ts';
+import type { RoleMathOrigin } from './roleMathOrigin.ts';
 
-/**
- * A schema role definition plus the optional derivation-geometry fields the
- * role-math detail card surfaces when a schema supplies them (they are absent
- * from the canonical role type, so they read as `undefined` for stock schemas).
- */
-declare namespace RoleMathDefType {
-  type Type = RoleDefinitionInterfaceType & {
-    'chromaClamp':     number | undefined;
-    'chromaTarget':    number | undefined;
-    'lightnessClamp':  number | undefined;
-    'lightnessTarget': number | undefined;
-  };
-}
-
-export declare class RoleMathEntryType {
+export declare class RoleMathEntry {
   'algorithmInfo': RoleMathAlgorithmInfoType | null;
   'c': number;
   'candidates': RoleMathCandidateType[];
   'clamp': RoleMathClampType | null;
   'compliance': string;
-  'def': RoleMathDefType.Type | undefined;
+  'def': RoleDefinitionInterfaceTypeEntity.Type | undefined;
   'h': number;
   'hex': string;
-  'isDerived': boolean;
-  'isPinned': boolean;
+  'origin': typeof RoleMathOrigin.Direct;
   'l': number;
   'name': string;
   'parentRole': string | undefined;
   'pinnedSeedHex': string | null;
   'ratio': number;
-  'synthesized': boolean;
+
 }

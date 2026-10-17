@@ -4,8 +4,10 @@ import { test } from 'node:test';
 import { Engine } from '../../src/engine/Engine.ts';
 import { ContrastPairInterfaceTypeEntity } from '../../src/entities/ContrastPairInterfaceTypeEntity.ts';
 import { ContrastReportEntryInterfaceTypeEntity } from '../../src/entities/ContrastReportEntryInterfaceTypeEntity.ts';
+import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
 import { PendingContrastEntryInterfaceTypeEntity } from '../../src/entities/PendingContrastEntryInterfaceTypeEntity.ts';
 import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
+import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
 import { RoleSchemaSchema } from '../../src/model/RoleSchemaSchema.ts';
 import { Validator } from '../../src/model/Validator.ts';
 
@@ -29,20 +31,49 @@ await test('contrast-pair bands require bounded ratios and a non-inverted range'
   assert.strictEqual(ContrastPairInterfaceTypeEntity.validate({
     'background': 'background',
     'foreground': 'accent',
-    'maxRatio': 4.5,
-    'minRatio': 3
+    'maximumContrastRatio': 4.5,
+    'minimumContrastRatio': 3
   }), true);
   assert.strictEqual(ContrastPairInterfaceTypeEntity.validate({
     'background': 'background',
     'foreground': 'accent',
-    'maxRatio': 2.99,
-    'minRatio': 3
+    'maximumContrastRatio': 2.99,
+    'minimumContrastRatio': 3
   }), false);
   assert.strictEqual(ContrastPairInterfaceTypeEntity.validate({
+    'algorithm': 'wcag21',
     'background': 'background',
     'foreground': 'accent',
-    'maxRatio': 21.01,
-    'minRatio': 3
+    'maximumContrastRatio': 21.01,
+    'minimumContrastRatio': 3
+  }), false);
+});
+
+await test('contrast-pair admission uses WCAG and APCA ratio domains', () => {
+  assert.strictEqual(ContrastPairInterfaceTypeEntity.validate({
+    'algorithm': 'apca',
+    'background': 'background',
+    'foreground': 'bodyText',
+    'minimumContrastRatio': 75
+  }), true);
+  assert.strictEqual(ContrastPairInterfaceTypeEntity.validate({
+    'algorithm': 'apca',
+    'background': 'background',
+    'foreground': 'bodyText',
+    'maximumContrastRatio': 108,
+    'minimumContrastRatio': 0
+  }), true);
+  assert.strictEqual(ContrastPairInterfaceTypeEntity.validate({
+    'algorithm': 'apca',
+    'background': 'background',
+    'foreground': 'bodyText',
+    'minimumContrastRatio': 108.01
+  }), false);
+  assert.strictEqual(ContrastPairInterfaceTypeEntity.validate({
+    'algorithm': 'wcag21',
+    'background': 'background',
+    'foreground': 'bodyText',
+    'minimumContrastRatio': 0
   }), false);
 });
 
@@ -52,8 +83,8 @@ await test('role schemas expose derivation controls and contrast bands at the in
     'contrastPairs': [{
       'background': 'background',
       'foreground': 'accent',
-      'maxRatio': 4.5,
-      'minRatio': 3
+      'maximumContrastRatio': 4.5,
+      'minimumContrastRatio': 3
     }],
     'name': 'contract',
     'roles': [{
@@ -70,8 +101,8 @@ await test('role schemas expose derivation controls and contrast bands at the in
     }]
   });
 
-  assert.strictEqual(valid.valid, true);
-  assert.strictEqual(invalid.valid, false);
+  assert.deepStrictEqual(valid.errors, []);
+  assert.ok(invalid.errors.length > 0);
 });
 
 await test('contrast reports and pending entries carry optional maximum-ratio data', () => {
@@ -81,8 +112,8 @@ await test('contrast reports and pending entries carry optional maximum-ratio da
     'algorithm': 'wcag21',
     'background': 'background',
     'foreground': 'accent',
-    'maxRatio': 4.5,
-    'minRatio': 3,
+    'maximumContrastRatio': 4.5,
+    'minimumContrastRatio': 3,
     'passed': true,
     'ratio': 3.5
   }), true);
@@ -90,42 +121,118 @@ await test('contrast reports and pending entries carry optional maximum-ratio da
     'adjusted': false,
     'adjustmentDisposition': 'not-needed',
     'algo': 'wcag21',
-    'maxRatio': 4.5,
-    'minRatio': 3,
+    'maximumContrastRatio': 4.5,
+    'minimumContrastRatio': 3,
     'pair': {
       'background': 'background',
       'foreground': 'accent',
-      'maxRatio': 4.5,
-      'minRatio': 3
+      'maximumContrastRatio': 4.5,
+      'minimumContrastRatio': 3
     }
   }), true);
+});
+
+await test('APCA reports and pending entries retain APCA Lc targets', () => {
+  assert.strictEqual(ContrastReportEntryInterfaceTypeEntity.validate({
+    'adjusted': false,
+    'adjustmentDisposition': 'not-needed',
+    'algorithm': 'apca',
+    'background': 'background',
+    'foreground': 'bodyText',
+    'minimumContrastRatio': 75,
+    'passed': true,
+    'ratio': 82
+  }), true);
+  assert.strictEqual(PendingContrastEntryInterfaceTypeEntity.validate({
+    'adjusted': false,
+    'adjustmentDisposition': 'not-needed',
+    'algo': 'apca',
+    'minimumContrastRatio': 60,
+    'pair': {
+      'algorithm': 'apca',
+      'background': 'background',
+      'foreground': 'headline',
+      'minimumContrastRatio': 60
+    }
+  }), true);
+});
+
+await test('Engine resolves omitted contrast-pair algorithms from the run default', () => {
+  const apcaInput = InputInterfaceTypeEntity.intake({
+    'colors': [],
+    'contrast': {
+      'algorithm': 'apca',
+      'extra': [{
+        'background': 'background',
+        'foreground': 'uiControl',
+        'minimumContrastRatio': 45
+      }]
+    },
+    'roles': {
+      'contrastPairs': [{
+        'background': 'background',
+        'foreground': 'bodyText',
+        'minimumContrastRatio': 75
+      }],
+      'name': 'apca-contract',
+      'roles': []
+    }
+  });
+
+  assert.doesNotThrow(() => { new Engine().run(apcaInput); });
+  assert.throws(
+    () => {
+      new Engine().run(InputInterfaceTypeEntity.intake({
+        'colors': [],
+        'roles': {
+          'contrastPairs': [{
+            'background': 'background',
+            'foreground': 'bodyText',
+            'minimumContrastRatio': 75
+          }],
+          'name': 'wcag-contract',
+          'roles': []
+        }
+      }));
+    },
+    { 'message': 'Validation failed at "input.roles": input.roles invalid: contrastPairs[0].minimumContrastRatio: must be between 1 and 21 for the effective contrast algorithm' }
+  );
+  assert.throws(
+    () => {
+      new Engine().run(InputInterfaceTypeEntity.intake({
+        'colors': [],
+        'contrast': {
+          'extra': [{
+            'background': 'background',
+            'foreground': 'bodyText',
+            'minimumContrastRatio': 75
+          }]
+        }
+      }));
+    },
+    { 'message': 'Validation failed at "input.contrast": input.contrast invalid: extra[0].minimumContrastRatio: must be between 1 and 21 for the effective contrast algorithm' }
+  );
 });
 
 await test('Engine rejects a contrast band whose maximum is below its minimum', () => {
   assert.throws(
     () => {
-      new Engine().run({
-        'bypass':    undefined,
-        'colors':    [],
-        'contrast':  undefined,
-        'emit':      undefined,
-        'maxColors': undefined,
-        'metadata':  undefined,
-        'roles': {
-          'contrastPairs': [{
-            'algorithm': undefined,
-            'background': 'background',
-            'foreground': 'accent',
-            'maxRatio': 3,
-            'minRatio': 4.5
-          }],
-          'description': undefined,
+      new Engine().run(InputInterfaceTypeEntity.intake({
+        'colors': [],
+        'roles': RoleSchemaInterfaceTypeEntity.intake({
+          'contrastPairs': [
+            ContrastPairInterfaceTypeEntity.intake({
+              'background': 'background',
+              'foreground': 'accent',
+              'maximumContrastRatio': 3,
+              'minimumContrastRatio': 4.5
+            })
+          ],
           'name': 'contract',
           'roles': []
-        },
-        'runtime': undefined
-      });
+        })
+      }));
     },
-    /input\.roles invalid: contrastPairs\[0\]\.maxRatio: must be greater than or equal to minRatio/
+    { 'message': 'Validation failed at "input.roles": input.roles invalid: contrastPairs[0].maximumContrastRatio: must be greater than or equal to minimumContrastRatio' }
   );
 });

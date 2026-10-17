@@ -20,13 +20,36 @@ namespace ProjectorTestData {
     'error': '#fb7367', 'info': '#048df1', 'muted': '#8a86a0',
     'success': '#00c35a', 'surface': '#141024', 'text': '#e8e6f0', 'text-strong': '#ffffff', 'text-subtle': '#b9b6c8', 'warning': '#dda818'
   };
-  // engine-produced tonal variants: shade → role → hex (distinct per shade)
-  export const scales: ScaleMapType = Object.fromEntries(Tokens.SHADE_KEYS.map((s, i) => {
-    const v = (10 + i * 10).toString(16).padStart(2, '0');
-    const perShade: RoleHexMapType = {};
-    for (const role of Object.keys(roles)) {perShade[role] = `#${v}${v}${v}`;}
-    return [s, perShade];
-  }));
+
+  export class ProjectorScaleFixture {
+    static create(hex: string): RoleHexMapType {
+      const result: RoleHexMapType = {
+        'accent-alt': hex, 'background': hex, 'bg-soft': hex, 'border': hex,
+        'border-strong': hex, 'brand': hex, 'divider': hex, 'error': hex,
+        'info': hex, 'muted': hex, 'success': hex, 'surface': hex,
+        'text': hex, 'text-strong': hex, 'text-subtle': hex, 'warning': hex
+      };
+      return result;
+    }
+
+    static repeat(scale: RoleHexMapType): ScaleMapType {
+      const result: ScaleMapType = {
+        '100': scale, '200': scale, '300': scale, '400': scale,
+        '50': scale, '500': scale, '600': scale, '700': scale,
+        '800': scale, '900': scale, '950': scale
+      };
+      return result;
+    }
+  }
+
+  export const scales: ScaleMapType = {
+    '100': ProjectorScaleFixture.create('#141414'), '200': ProjectorScaleFixture.create('#1e1e1e'),
+    '300': ProjectorScaleFixture.create('#282828'), '400': ProjectorScaleFixture.create('#323232'),
+    '50': ProjectorScaleFixture.create('#0a0a0a'), '500': ProjectorScaleFixture.create('#3c3c3c'),
+    '600': ProjectorScaleFixture.create('#464646'), '700': ProjectorScaleFixture.create('#505050'),
+    '800': ProjectorScaleFixture.create('#5a5a5a'), '900': ProjectorScaleFixture.create('#646464'),
+    '950': ProjectorScaleFixture.create('#6e6e6e')
+  };
 }
 
 await test('every alias scale reads 11 engine hexes', () => {
@@ -57,7 +80,7 @@ await test('shortcuts read the matching resolved roles', () => {
 
 await test('sparse tier falls back to another ENGINE role, never a computed color', () => {
   const sparse: RoleHexMapType = { 'background': '#0a0618', 'brand': '#7c3aed', 'muted': '#8a86a0', 'text': '#e8e6f0' };
-  const sparseScales: ScaleMapType = Object.fromEntries(Tokens.SHADE_KEYS.map((s) => {return [s, sparse];}));
+  const sparseScales = ProjectorTestData.ProjectorScaleFixture.repeat(sparse);
   const t = Tokens.mapFromEngine(sparse, sparseScales);
   // success has no role here → sourced from brand (an engine role), not invented
   assert.equal(t['--ui-color-success-500'], sparse.brand);

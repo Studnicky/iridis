@@ -1,38 +1,42 @@
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
-
-class ColorGraphCategoryVisibility {
-  public derived: boolean;
-  public direct: boolean;
-  public pinned: boolean;
-  public synthesized: boolean;
-
-  public constructor(derived: boolean, direct: boolean, pinned: boolean, synthesized: boolean) {
-    this.derived = derived;
-    this.direct = direct;
-    this.pinned = pinned;
-    this.synthesized = synthesized;
-  }
-}
+import { ColorGraphCategoryVisibility } from './ColorGraphCategoryVisibility.ts';
+import { ColorGraphNodeCategory } from './ColorGraphNodeCategory.ts';
 
 class ColorGraphLegendItem {
-  public readonly active: boolean;
+  public readonly category: ColorGraphNodeCategory;
   public readonly color: string;
-  public readonly key: string;
   public readonly label: string;
-  public readonly swatch: 'solid' | 'dashed' | 'square' | 'circle';
+  public readonly markClass: string;
+  private readonly categoryVisibility: ColorGraphCategoryVisibility;
 
   public constructor(
-    active: boolean,
+    category: ColorGraphNodeCategory,
+    categoryVisibility: ColorGraphCategoryVisibility,
     color: string,
-    key: string,
     label: string,
-    swatch: 'solid' | 'dashed' | 'square' | 'circle'
+    markClass: string
   ) {
-    this.active = active;
+    this.category = category;
+    this.categoryVisibility = categoryVisibility;
     this.color = color;
-    this.key = key;
     this.label = label;
-    this.swatch = swatch;
+    this.markClass = markClass;
+  }
+
+  public get active(): boolean {
+    const visible = this.categoryVisibility.isVisible(this.category);
+    return visible;
+  }
+
+  public get key(): string {
+    const identifier = this.category.identifier;
+    return identifier;
+  }
+
+  public get swatch(): 'solid' | 'dashed' | 'square' | 'circle' {
+    if (this.markClass === 'circle') {return 'circle';}
+    if (this.markClass === 'dashed') {return 'dashed';}
+    if (this.markClass === 'square') {return 'square';}
+    return 'solid';
   }
 }
 
@@ -61,64 +65,47 @@ export const buildColorGraphViewModel = class ColorGraphViewModelBuilder {
     roleCount: number,
     categoryVisible: ColorGraphCategoryVisibility
   ): readonly ColorGraphLegendSection[] {
+    const direct = ColorGraphNodeCategory.Direct;
+    const derived = ColorGraphNodeCategory.Derived;
+    const synthesized = ColorGraphNodeCategory.Synthesized;
+    const pinned = ColorGraphNodeCategory.Pinned;
     const entries = [
       new ColorGraphLegendItem(
-        categoryVisible.direct,
+        direct,
+        categoryVisible,
         'var(--ui-color-success-500)',
-        'direct',
         'Direct match',
-        'square'
+        'solid'
       ),
       new ColorGraphLegendItem(
-        categoryVisible.derived,
+        derived,
+        categoryVisible,
         'var(--ui-color-info-500)',
-        'derived',
         'Derived',
-        'square'
+        'solid'
       ),
       new ColorGraphLegendItem(
-        categoryVisible.synthesized,
+        synthesized,
+        categoryVisible,
         'var(--ui-color-warning-500)',
-        'synthesized',
         'Synthesized',
         'dashed'
       ),
       new ColorGraphLegendItem(
-        categoryVisible.pinned,
+        pinned,
+        categoryVisible,
         'var(--ui-primary)',
-        'pinned',
         'Pinned',
         'circle'
       )
     ];
-    return [new ColorGraphLegendSection(entries, 'resolution', `iridis-${roleCount}`)];
-  }
-
-  public static categoryOfRole(
-    role: RoleMathEntryType
-  ): 'pinned' | 'synthesized' | 'derived' | 'direct' {
-    if (role.isPinned) {return 'pinned';}
-    if (role.synthesized) {return 'synthesized';}
-    if (role.isDerived) {return 'derived';}
-    return 'direct';
+    const sections = [new ColorGraphLegendSection(entries, 'resolution', `iridis-${roleCount}`)];
+    return sections;
   }
 
   public static createCategoryVisibility(): ColorGraphCategoryVisibility {
-    return new ColorGraphCategoryVisibility(true, true, true, true);
+    const categoryVisibility = new ColorGraphCategoryVisibility();
+    return categoryVisibility;
   }
 
-  public static toggleCategoryVisibility(
-    categoryVisible: ColorGraphCategoryVisibility,
-    key: string
-  ): void {
-    if (key === 'derived') {
-      categoryVisible.derived = !categoryVisible.derived;
-    } else if (key === 'direct') {
-      categoryVisible.direct = !categoryVisible.direct;
-    } else if (key === 'pinned') {
-      categoryVisible.pinned = !categoryVisible.pinned;
-    } else if (key === 'synthesized') {
-      categoryVisible.synthesized = !categoryVisible.synthesized;
-    }
-  }
 };

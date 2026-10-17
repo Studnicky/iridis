@@ -26,18 +26,29 @@ export class ScenarioRunner<TInput, TOutput> {
     this.subject = subject;
   }
 
+  private scenarioTestFor(scenario: ScenarioInterface<TInput, TOutput>): () => Promise<void> {
+    const subject = this.subject;
+    return async function scenarioTest(): Promise<void> {
+      let output: TOutput | undefined;
+      let error:  Error | undefined;
+      try {
+        output = await subject(scenario.input);
+      } catch (thrown) {
+        error = thrown instanceof Error ? thrown : new Error(String(thrown));
+      }
+      await scenario.assert(output, error);
+    };
+  }
+
   async run(scenarios: readonly ScenarioInterface<TInput, TOutput>[]): Promise<void> {
-    for (const scenario of scenarios) {
-      await test(`${this.suite} :: ${scenario.kind} :: ${scenario.name}`, async () => {
-        let output: TOutput | undefined;
-        let error:  Error | undefined;
-        try {
-          output = await this.subject(scenario.input);
-        } catch (thrown) {
-          error = thrown instanceof Error ? thrown : new Error(String(thrown));
-        }
-        await scenario.assert(output, error);
-      });
+    const scenarioCount = scenarios.length;
+    for (let index = 0; index < scenarioCount; index += 1) {
+      const scenario = scenarios.at(index);
+      if (scenario === undefined) {
+        continue;
+      }
+      const name = `${this.suite} :: ${scenario.kind} :: ${scenario.name}`;
+      await test(name, this.scenarioTestFor(scenario));
     }
   }
 }

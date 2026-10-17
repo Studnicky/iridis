@@ -1,38 +1,28 @@
 import { colorRecordFactory } from '@studnicky/iridis';
 
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
-class ColorGraphCategoryVisibility {
-  public readonly derived: boolean;
-  public readonly direct: boolean;
-  public readonly pinned: boolean;
-  public readonly synthesized: boolean;
+import type { ColorGraphCategoryVisibility } from './ColorGraphCategoryVisibility.ts';
 
-  public constructor(derived: boolean, direct: boolean, pinned: boolean, synthesized: boolean) {
-    this.derived = derived;
-    this.direct = direct;
-    this.pinned = pinned;
-    this.synthesized = synthesized;
-  }
-}
+import { ColorGraphNodeCategory } from './ColorGraphNodeCategory.ts';
 
 class ColorGraphPointMeta {
   public readonly algorithm: string | null;
-  public readonly category: 'pinned' | 'synthesized' | 'derived' | 'direct';
-  public readonly clamped: boolean;
+  public readonly category: ColorGraphNodeCategory;
+  public readonly labelSuffix: string;
   public readonly hex: string;
   public readonly name: string;
 
   public constructor(
     algorithm: string | null,
-    category: 'pinned' | 'synthesized' | 'derived' | 'direct',
-    clamped: boolean,
+    category: ColorGraphNodeCategory,
+    labelSuffix: string,
     hex: string,
     name: string
   ) {
     this.algorithm = algorithm;
     this.category = category;
-    this.clamped = clamped;
+    this.labelSuffix = labelSuffix;
     this.hex = hex;
     this.name = name;
   }
@@ -60,6 +50,63 @@ class ColorGraphBuffers {
     this.meta = meta;
     this.positions = positions;
     this.sizes = sizes;
+  }
+}
+
+class ColorGraphRolePartition {
+  public readonly hubs: RoleMathEntry[];
+  public readonly leavesByParent: Map<string, RoleMathEntry[]>;
+
+  public constructor(hubs: RoleMathEntry[], leavesByParent: Map<string, RoleMathEntry[]>) {
+    this.hubs = hubs;
+    this.leavesByParent = leavesByParent;
+  }
+}
+
+class ColorGraphNodeGeometry {
+  public readonly indexByName: Map<string, number>;
+  public readonly meta: ColorGraphPointMeta[];
+  public readonly nodeCategoryIndexes: number[];
+  public readonly nodeRgb: number[];
+  public readonly positions: number[];
+  public readonly sizes: number[];
+
+  public constructor(
+    indexByName: Map<string, number>,
+    meta: ColorGraphPointMeta[],
+    nodeCategoryIndexes: number[],
+    nodeRgb: number[],
+    positions: number[],
+    sizes: number[]
+  ) {
+    this.indexByName = indexByName;
+    this.meta = meta;
+    this.nodeCategoryIndexes = nodeCategoryIndexes;
+    this.nodeRgb = nodeRgb;
+    this.positions = positions;
+    this.sizes = sizes;
+  }
+}
+
+class ColorGraphLinkGeometry {
+  public readonly categoriesA: number[];
+  public readonly categoriesB: number[];
+  public readonly baseAlphas: number[];
+  public readonly rgb: number[];
+  public readonly indexes: number[];
+
+  public constructor(
+    categoriesA: number[],
+    categoriesB: number[],
+    baseAlphas: number[],
+    rgb: number[],
+    indexes: number[]
+  ) {
+    this.categoriesA = categoriesA;
+    this.categoriesB = categoriesB;
+    this.baseAlphas = baseAlphas;
+    this.rgb = rgb;
+    this.indexes = indexes;
   }
 }
 
@@ -107,16 +154,6 @@ class CachedGraphGeometry {
 }
 
 export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
-  private static readonly categoryIndex: Readonly<Record<
-    'pinned' | 'synthesized' | 'derived' | 'direct',
-    number
-  >> = {
-    'derived': 2,
-    'direct': 3,
-    'pinned': 0,
-    'synthesized': 1
-  };
-
   private static readonly center = 4096 / 2;
   private static geometryCache: CachedGraphGeometry | null = null;
   private static readonly hubRadius = 900;
@@ -137,185 +174,259 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
    * instead of N isolated clusters.
    */
   public static build(
-    roles: readonly RoleMathEntryType[],
+    roles: readonly RoleMathEntry[],
     visible: ColorGraphCategoryVisibility
   ): ColorGraphBuffers {
-    const indexByName = new Map<string, number>();
-    const meta: ColorGraphPointMeta[] = [];
-    const positions: number[] = [];
     const colors: number[] = [];
-    const sizes: number[] = [];
-    const links: number[] = [];
     const linkColors: number[] = [];
     const signature = ColorGraphBuffersBuilder.colorSignatureForRoles(roles);
     const cached = ColorGraphBuffersBuilder.cacheMatch(roles, signature);
+    const geometry = cached ?? ColorGraphBuffersBuilder.buildGeometry(roles, signature);
+    ColorGraphBuffersBuilder.populateCachedColors(geometry, visible, colors, linkColors);
+    const buffers = new ColorGraphBuffers(
+      new Float32Array(colors),
+      new Float32Array(linkColors),
+      geometry.links,
+      geometry.meta,
+      geometry.positions,
+      geometry.sizes
+    );
+    return buffers;
+  }
 
-    if (cached !== null) {
-      ColorGraphBuffersBuilder.populateCachedColors(cached, visible, colors, linkColors);
-      return new ColorGraphBuffers(
-        new Float32Array(colors),
-        new Float32Array(linkColors),
-        cached.links,
-        cached.meta,
-        cached.positions,
-        cached.sizes
-      );
-    }
+  private static buildGeometry(
+    roles: readonly RoleMathEntry[],
+    signature: string
+  ): CachedGraphGeometry {
+    const partition = ColorGraphBuffersBuilder.partitionRoles(roles);
+    const positionsByName = ColorGraphBuffersBuilder.positionsByName(roles, partition);
+    const nodes = ColorGraphBuffersBuilder.buildNodes(roles, positionsByName);
+    const links = ColorGraphBuffersBuilder.buildLinks(roles, partition.hubs, nodes.indexByName);
+    const geometry = new CachedGraphGeometry(
+      Float32Array.from(links.baseAlphas),
+      Int8Array.from(links.categoriesA),
+      Int8Array.from(links.categoriesB),
+      Float32Array.from(links.rgb),
+      new Float32Array(links.indexes),
+      nodes.meta,
+      Int8Array.from(nodes.nodeCategoryIndexes),
+      Float32Array.from(nodes.nodeRgb),
+      new Float32Array(nodes.positions),
+      roles.length,
+      signature,
+      new Float32Array(nodes.sizes)
+    );
+    ColorGraphBuffersBuilder.geometryCache = geometry;
+    return geometry;
+  }
 
-    const hubs: RoleMathEntryType[] = [];
-    const leavesByParent = new Map<string, RoleMathEntryType[]>();
-    for (const role of roles) {
+  private static partitionRoles(
+    roles: readonly RoleMathEntry[]
+  ): ColorGraphRolePartition {
+    const hubs: RoleMathEntry[] = [];
+    const leavesByParent = new Map<string, RoleMathEntry[]>();
+    const rolesLength = roles.length;
+    for (let roleIndex = 0; roleIndex < rolesLength; roleIndex++) {
+      const role = roles[roleIndex];
+      if (role === undefined) {continue;}
       if (role.parentRole === undefined) {
         hubs.push(role);
-      } else {
-        const leaves = leavesByParent.get(role.parentRole) ?? [];
-        leaves.push(role);
-        leavesByParent.set(role.parentRole, leaves);
+        continue;
       }
+      const leaves = leavesByParent.get(role.parentRole) ?? [];
+      leaves.push(role);
+      leavesByParent.set(role.parentRole, leaves);
     }
+    const partition = new ColorGraphRolePartition(hubs, leavesByParent);
+    return partition;
+  }
 
-    const positionByName = new Map<string, [number, number]>();
+  private static positionsByName(
+    roles: readonly RoleMathEntry[],
+    partition: ColorGraphRolePartition
+  ): Map<string, [number, number]> {
+    const positionsByName = new Map<string, [number, number]>;
+    const hubs = partition.hubs;
     const hubCount = hubs.length;
     for (let hubIndex = 0; hubIndex < hubCount; hubIndex++) {
       const hub = hubs[hubIndex];
       if (hub === undefined) {continue;}
-      const angle = (hubIndex / Math.max(hubCount, 1)) * Math.PI * 2;
-      const x = ColorGraphBuffersBuilder.center
-        + Math.cos(angle) * ColorGraphBuffersBuilder.hubRadius;
-      const y = ColorGraphBuffersBuilder.center
-        + Math.sin(angle) * ColorGraphBuffersBuilder.hubRadius;
-      positionByName.set(hub.name, [x, y]);
-      const leaves = leavesByParent.get(hub.name) ?? [];
-      const leafCount = leaves.length;
-      for (let leafIndex = 0; leafIndex < leafCount; leafIndex++) {
-        const leaf = leaves[leafIndex];
-        if (leaf === undefined) {continue;}
-        const leafAngle = (leafIndex / Math.max(leafCount, 1)) * Math.PI * 2;
-        positionByName.set(leaf.name, [
-          x + Math.cos(leafAngle) * ColorGraphBuffersBuilder.leafRadius,
-          y + Math.sin(leafAngle) * ColorGraphBuffersBuilder.leafRadius
-        ]);
-      }
+      ColorGraphBuffersBuilder.addHubPositions(
+        hub,
+        hubIndex,
+        hubCount,
+        partition.leavesByParent,
+        positionsByName
+      );
     }
-
-    for (const role of roles) {
-      if (!positionByName.has(role.name)) {
-        positionByName.set(role.name, [
-          ColorGraphBuffersBuilder.center,
-          ColorGraphBuffersBuilder.center
-        ]);
-      }
+    const rolesLength = roles.length;
+    for (let roleIndex = 0; roleIndex < rolesLength; roleIndex++) {
+      const role = roles[roleIndex];
+      if (role === undefined || positionsByName.has(role.name)) {continue;}
+      positionsByName.set(role.name, [
+        ColorGraphBuffersBuilder.center,
+        ColorGraphBuffersBuilder.center
+      ]);
     }
+    return positionsByName;
+  }
 
-    const linkCategoryA: number[] = [];
-    const linkCategoryB: number[] = [];
-    const linkAlpha: number[] = [];
-    const linkRgb: number[] = [];
-    const nodeRgb: number[] = [];
+  private static addHubPositions(
+    hub: RoleMathEntry,
+    hubIndex: number,
+    hubCount: number,
+    leavesByParent: ReadonlyMap<string, readonly RoleMathEntry[]>,
+    positionsByName: Map<string, [number, number]>
+  ): void {
+    const angle = (hubIndex / Math.max(hubCount, 1)) * Math.PI * 2;
+    const x = ColorGraphBuffersBuilder.center
+      + Math.cos(angle) * ColorGraphBuffersBuilder.hubRadius;
+    const y = ColorGraphBuffersBuilder.center
+      + Math.sin(angle) * ColorGraphBuffersBuilder.hubRadius;
+    positionsByName.set(hub.name, [x, y]);
+    const leaves = leavesByParent.get(hub.name) ?? [];
+    const leafCount = leaves.length;
+    for (let leafIndex = 0; leafIndex < leafCount; leafIndex++) {
+      const leaf = leaves[leafIndex];
+      if (leaf === undefined) {continue;}
+      const leafAngle = (leafIndex / Math.max(leafCount, 1)) * Math.PI * 2;
+      positionsByName.set(leaf.name, [
+        x + Math.cos(leafAngle) * ColorGraphBuffersBuilder.leafRadius,
+        y + Math.sin(leafAngle) * ColorGraphBuffersBuilder.leafRadius
+      ]);
+    }
+  }
+
+  private static buildNodes(
+    roles: readonly RoleMathEntry[],
+    positionsByName: ReadonlyMap<string, readonly [number, number]>
+  ): ColorGraphNodeGeometry {
+    const indexByName = new Map<string, number>();
+    const meta: ColorGraphPointMeta[] = [];
     const nodeCategoryIndexes: number[] = [];
-
+    const nodeRgb: number[] = [];
+    const positions: number[] = [];
+    const sizes: number[] = [];
     const roleCount = roles.length;
     for (let roleIndex = 0; roleIndex < roleCount; roleIndex++) {
       const role = roles[roleIndex];
       if (role === undefined) {continue;}
       indexByName.set(role.name, roleIndex);
-      const category = ColorGraphBuffersBuilder.categoryOf(role);
-      const categoryIndex = ColorGraphBuffersBuilder.categoryIndex[category];
+      const category = ColorGraphNodeCategory.fromRole(role);
       meta.push(new ColorGraphPointMeta(
         role.algorithmInfo?.hueAlgorithm ?? null,
         category,
-        role.clamp !== null,
+        role.clamp === null ? '' : ' ⏚',
         role.hex,
         role.name
       ));
-      const position = positionByName.get(role.name);
+      const position = positionsByName.get(role.name);
       if (position === undefined) {continue;}
       positions.push(position[0], position[1]);
       const [red, green, blue] = ColorGraphBuffersBuilder.rgbOf(role.hex);
       nodeRgb.push(red, green, blue);
-      nodeCategoryIndexes.push(categoryIndex);
-      sizes.push(role.isDerived
+      nodeCategoryIndexes.push(category.index);
+      sizes.push(role.origin.isDerived()
         ? ColorGraphBuffersBuilder.leafSize
         : ColorGraphBuffersBuilder.hubSize);
     }
+    const nodes = new ColorGraphNodeGeometry(
+      indexByName,
+      meta,
+      nodeCategoryIndexes,
+      nodeRgb,
+      positions,
+      sizes
+    );
+    return nodes;
+  }
 
-    for (const role of roles) {
-      if (role.parentRole === undefined) {continue;}
+  private static buildLinks(
+    roles: readonly RoleMathEntry[],
+    hubs: readonly RoleMathEntry[],
+    indexByName: ReadonlyMap<string, number>
+  ): ColorGraphLinkGeometry {
+    const categoriesA: number[] = [];
+    const categoriesB: number[] = [];
+    const baseAlphas: number[] = [];
+    const rgb: number[] = [];
+    const indexes: number[] = [];
+    ColorGraphBuffersBuilder.addParentLinks(
+      roles,
+      indexByName,
+      categoriesA,
+      categoriesB,
+      baseAlphas,
+      rgb,
+      indexes
+    );
+    ColorGraphBuffersBuilder.addHubRingLinks(
+      hubs,
+      indexByName,
+      categoriesA,
+      categoriesB,
+      baseAlphas,
+      rgb,
+      indexes
+    );
+    const links = new ColorGraphLinkGeometry(categoriesA, categoriesB, baseAlphas, rgb, indexes);
+    return links;
+  }
+
+  private static addParentLinks(
+    roles: readonly RoleMathEntry[],
+    indexByName: ReadonlyMap<string, number>,
+    categoriesA: number[],
+    categoriesB: number[],
+    baseAlphas: number[],
+    rgb: number[],
+    indexes: number[]
+  ): void {
+    const rolesLength = roles.length;
+    for (let roleIndex = 0; roleIndex < rolesLength; roleIndex++) {
+      const role = roles[roleIndex];
+      if (role?.parentRole === undefined) {continue;}
       const childIndex = indexByName.get(role.name);
       const parentIndex = indexByName.get(role.parentRole);
       if (childIndex === undefined || parentIndex === undefined) {continue;}
-      links.push(childIndex, parentIndex);
+      indexes.push(childIndex, parentIndex);
       const [red, green, blue] = ColorGraphBuffersBuilder.rgbOf(role.hex);
-      const categoryIndex = ColorGraphBuffersBuilder.categoryIndex[
-        ColorGraphBuffersBuilder.categoryOf(role)
-      ];
-      linkCategoryA.push(categoryIndex);
-      linkCategoryB.push(-1);
-      linkAlpha.push(ColorGraphBuffersBuilder.linkAlphaDerivedVisible);
-      linkRgb.push(red, green, blue);
+      categoriesA.push(ColorGraphNodeCategory.fromRole(role).index);
+      categoriesB.push(-1);
+      baseAlphas.push(ColorGraphBuffersBuilder.linkAlphaDerivedVisible);
+      rgb.push(red, green, blue);
     }
+  }
 
-    if (hubCount > 1) {
-      for (let hubIndex = 0; hubIndex < hubCount; hubIndex++) {
-        const hub = hubs[hubIndex];
-        const next = hubs[(hubIndex + 1) % hubCount];
-        if (hub === undefined || next === undefined) {continue;}
-        const currentHubIndex = indexByName.get(hub.name);
-        const nextHubIndex = indexByName.get(next.name);
-        if (currentHubIndex === undefined || nextHubIndex === undefined) {continue;}
-        links.push(currentHubIndex, nextHubIndex);
-        const [red, green, blue] = ColorGraphBuffersBuilder.rgbOf(hub.hex);
-        linkCategoryA.push(ColorGraphBuffersBuilder.categoryIndex[
-          ColorGraphBuffersBuilder.categoryOf(hub)
-        ]);
-        linkCategoryB.push(ColorGraphBuffersBuilder.categoryIndex[
-          ColorGraphBuffersBuilder.categoryOf(next)
-        ]);
-        linkAlpha.push(ColorGraphBuffersBuilder.linkAlphaRingVisible);
-        linkRgb.push(red, green, blue);
-      }
+  private static addHubRingLinks(
+    hubs: readonly RoleMathEntry[],
+    indexByName: ReadonlyMap<string, number>,
+    categoriesA: number[],
+    categoriesB: number[],
+    baseAlphas: number[],
+    rgb: number[],
+    indexes: number[]
+  ): void {
+    const hubCount = hubs.length;
+    if (hubCount <= 1) {return;}
+    for (let hubIndex = 0; hubIndex < hubCount; hubIndex++) {
+      const hub = hubs[hubIndex];
+      const next = hubs[(hubIndex + 1) % hubCount];
+      if (hub === undefined || next === undefined) {continue;}
+      const currentHubIndex = indexByName.get(hub.name);
+      const nextHubIndex = indexByName.get(next.name);
+      if (currentHubIndex === undefined || nextHubIndex === undefined) {continue;}
+      indexes.push(currentHubIndex, nextHubIndex);
+      const [red, green, blue] = ColorGraphBuffersBuilder.rgbOf(hub.hex);
+      categoriesA.push(ColorGraphNodeCategory.fromRole(hub).index);
+      categoriesB.push(ColorGraphNodeCategory.fromRole(next).index);
+      baseAlphas.push(ColorGraphBuffersBuilder.linkAlphaRingVisible);
+      rgb.push(red, green, blue);
     }
-
-    ColorGraphBuffersBuilder.populateColors(
-      nodeCategoryIndexes,
-      nodeRgb,
-      linkCategoryA,
-      linkCategoryB,
-      linkAlpha,
-      linkRgb,
-      visible,
-      colors,
-      linkColors
-    );
-
-    const geometry = new CachedGraphGeometry(
-      Float32Array.from(linkAlpha),
-      Int8Array.from(linkCategoryA),
-      Int8Array.from(linkCategoryB),
-      Float32Array.from(linkRgb),
-      new Float32Array(links),
-      meta,
-      Int8Array.from(nodeCategoryIndexes),
-      Float32Array.from(nodeRgb),
-      new Float32Array(positions),
-      roleCount,
-      signature,
-      new Float32Array(sizes)
-    );
-    ColorGraphBuffersBuilder.geometryCache = geometry;
-
-    return new ColorGraphBuffers(
-      new Float32Array(colors),
-      new Float32Array(linkColors),
-      geometry.links,
-      meta,
-      geometry.positions,
-      geometry.sizes
-    );
   }
 
   private static cacheMatch(
-    roles: readonly RoleMathEntryType[],
+    roles: readonly RoleMathEntry[],
     signature: string
   ): CachedGraphGeometry | null {
     const geometryCache = ColorGraphBuffersBuilder.geometryCache;
@@ -333,18 +444,12 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
     return geometryCache;
   }
 
-  private static categoryOf(
-    role: RoleMathEntryType
-  ): 'pinned' | 'synthesized' | 'derived' | 'direct' {
-    if (role.isPinned) {return 'pinned';}
-    if (role.synthesized) {return 'synthesized';}
-    if (role.isDerived) {return 'derived';}
-    return 'direct';
-  }
-
-  private static colorSignatureForRoles(roles: readonly RoleMathEntryType[]): string {
+  private static colorSignatureForRoles(roles: readonly RoleMathEntry[]): string {
     const roleCount = roles.length;
-    if (roleCount === 0) {return '0';}
+    if (roleCount === 0) {
+      const emptySignature = '0';
+      return emptySignature;
+    }
     const roleSignatures: string[] = [];
     for (let index = 0; index < roleCount; index++) {
       const role = roles[index];
@@ -352,14 +457,15 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
       roleSignatures.push([
         role.name,
         role.parentRole ?? '',
-        role.isPinned ? 'p' : '',
-        role.synthesized ? 's' : '',
-        role.isDerived ? 'd' : '',
+        role.origin.isPinned() ? 'p' : '',
+        role.origin.isSynthesized() ? 's' : '',
+        role.origin.isDerived() ? 'd' : '',
         role.hex,
         role.algorithmInfo?.hueAlgorithm ?? ''
       ].join(':'));
     }
-    return roleSignatures.join('|');
+    const signature = roleSignatures.join('|');
+    return signature;
   }
 
   private static populateCachedColors(
@@ -368,12 +474,10 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
     colors: number[],
     linkColors: number[]
   ): void {
-    const visibleNode = [
-      visible.pinned,
-      visible.synthesized,
-      visible.derived,
-      visible.direct
-    ];
+    const isNodeVisible = (categoryIndex: number): boolean => {
+      const categoryVisible = visible.isIndexVisible(categoryIndex);
+      return categoryVisible;
+    };
     const nodeCount = cached.nodeCategoryIndexes.length;
     for (let index = 0; index < nodeCount; index++) {
       const categoryIndex = cached.nodeCategoryIndexes[index];
@@ -382,7 +486,7 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
       const blue = cached.nodeRgb[index * 3 + 2];
       if (categoryIndex === undefined || red === undefined
         || green === undefined || blue === undefined) {continue;}
-      const alpha = visibleNode[categoryIndex] === true
+      const alpha = isNodeVisible(categoryIndex)
         ? ColorGraphBuffersBuilder.nodeAlphaVisible
         : ColorGraphBuffersBuilder.nodeAlphaHidden;
       colors.push(red, green, blue, alpha);
@@ -403,7 +507,7 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
         firstCategory,
         secondCategory,
         baseAlpha,
-        visibleNode
+        visible
       );
       linkColors.push(red, green, blue, visibleAlpha);
     }
@@ -420,12 +524,10 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
     colors: number[],
     linkColors: number[]
   ): void {
-    const visibleNode = [
-      visible.pinned,
-      visible.synthesized,
-      visible.derived,
-      visible.direct
-    ];
+    const isNodeVisible = (categoryIndex: number): boolean => {
+      const categoryVisible = visible.isIndexVisible(categoryIndex);
+      return categoryVisible;
+    };
     const nodeCount = nodeCategoryIndexes.length;
     for (let index = 0; index < nodeCount; index++) {
       const categoryIndex = nodeCategoryIndexes[index];
@@ -434,7 +536,7 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
       const blue = nodeRgb[index * 3 + 2];
       if (categoryIndex === undefined || red === undefined
         || green === undefined || blue === undefined) {continue;}
-      const alpha = visibleNode[categoryIndex] === true
+      const alpha = isNodeVisible(categoryIndex)
         ? ColorGraphBuffersBuilder.nodeAlphaVisible
         : ColorGraphBuffersBuilder.nodeAlphaHidden;
       colors.push(red, green, blue, alpha);
@@ -455,7 +557,7 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
         firstCategory,
         secondCategory,
         baseAlpha,
-        visibleNode
+        visible
       );
       linkColors.push(red, green, blue, visibleAlpha);
     }
@@ -465,16 +567,17 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
     firstCategory: number,
     secondCategory: number,
     baseAlpha: number,
-    visibleNode: readonly boolean[]
+    visible: ColorGraphCategoryVisibility
   ): number {
+    const firstVisible = visible.isIndexVisible(firstCategory);
     if (secondCategory < 0) {
-      return visibleNode[firstCategory] === true
-        ? baseAlpha
-        : ColorGraphBuffersBuilder.linkAlphaHidden;
+      const alpha = firstVisible ? baseAlpha : ColorGraphBuffersBuilder.linkAlphaHidden;
+      return alpha;
     }
-    return visibleNode[firstCategory] === true && visibleNode[secondCategory] === true
+    const alpha = firstVisible && visible.isIndexVisible(secondCategory)
       ? baseAlpha
       : ColorGraphBuffersBuilder.linkAlphaHidden;
+    return alpha;
   }
 
   private static rgbOf(hex: string): [number, number, number] {

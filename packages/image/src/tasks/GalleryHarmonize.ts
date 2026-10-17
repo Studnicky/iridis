@@ -1,13 +1,15 @@
 import type {
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { deltaE2000, hueShift } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import {
+  deltaE2000,
+  hueShift,
+  TaskManifestInterfaceTypeEntity
+} from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 /**
  * `gallery:harmonize`
@@ -24,14 +26,12 @@ import { LOG_STATUS } from '@studnicky/logger/constants';
 class GalleryHarmonize implements TaskInterface {
   readonly 'name' = 'gallery:harmonize';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Shift accent hue by 30° when deltaE2000 vs frame is < 10',
     'name':        'gallery:harmonize',
-    'phase':       undefined,
     'reads':       ['roles', 'metadata.gallery'],
-    'requires':    undefined,
     'writes':      ['roles.accent', 'metadata.gallery:harmonized']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const accent = state.roles.accent;
@@ -39,13 +39,13 @@ class GalleryHarmonize implements TaskInterface {
 
     if (accent === undefined || frame === undefined) {
       context.logger.warn(
-        LogBody.create()
-          .component('GalleryHarmonize')
-          .operation('run')
-          .status(LOG_STATUS.SKIPPED)
-          .message('accent or frame role missing; skipping harmonize')
-          .context({})
-          .build()
+        LogBody.create({
+          'component': 'GalleryHarmonize',
+          'context': {},
+          'message': 'accent or frame role missing; skipping harmonize',
+          'operation': 'run',
+          'status': LOG_STATUS.SKIPPED
+        })
       );
       state.metadata['gallery:harmonized'] = false;
       return;
@@ -56,24 +56,24 @@ class GalleryHarmonize implements TaskInterface {
     const deltaE = deltaE2000.apply(accent, frame);
 
     context.logger.debug(
-      LogBody.create()
-        .component('GalleryHarmonize')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('deltaE2000 between accent and frame')
-        .context({ 'deltaE': deltaE, 'threshold': threshold })
-        .build()
+      LogBody.create({
+        'component': 'GalleryHarmonize',
+        'context': { 'deltaE': deltaE, 'threshold': threshold },
+        'message': 'deltaE2000 between accent and frame',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
 
     if (deltaE >= threshold) {
       context.logger.info(
-        LogBody.create()
-          .component('GalleryHarmonize')
-          .operation('run')
-          .status(LOG_STATUS.SKIPPED)
-          .message('accent hue is sufficiently distinct; no shift needed')
-          .context({ 'deltaE': deltaE })
-          .build()
+        LogBody.create({
+          'component': 'GalleryHarmonize',
+          'context': { 'deltaE': deltaE },
+          'message': 'accent hue is sufficiently distinct; no shift needed',
+          'operation': 'run',
+          'status': LOG_STATUS.SKIPPED
+        })
       );
       state.metadata['gallery:harmonized'] = false;
       return;
@@ -99,18 +99,18 @@ class GalleryHarmonize implements TaskInterface {
     };
 
     context.logger.info(
-      LogBody.create()
-        .component('GalleryHarmonize')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('accent hue shifted')
-        .context({
+      LogBody.create({
+        'component': 'GalleryHarmonize',
+        'context': {
           'after':   newAccent.hex,
           'before':  accent.hex,
           'deltaE':  deltaE,
           'shift':   shift
-        })
-        .build()
+        },
+        'message': 'accent hue shifted',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

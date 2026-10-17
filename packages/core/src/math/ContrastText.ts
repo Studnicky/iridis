@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
 
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { luminance }          from './Luminance.ts';
@@ -6,14 +6,16 @@ import { luminance }          from './Luminance.ts';
 class ContrastText {
   readonly 'name' = 'contrastText';
 
-  apply(background: ColorRecordInterfaceType, threshold = 0.179): ColorRecordInterfaceType {
+  apply(background: ColorRecordInterfaceTypeEntity.Type, threshold = 0.179): ColorRecordInterfaceTypeEntity.Type {
     const lum = luminance.apply(background);
 
     if (lum > threshold) {
-      return colorRecordFactory.fromHex('#000000');
+      const text = colorRecordFactory.fromHex('#000000');
+      return text;
     }
 
-    return colorRecordFactory.fromHex('#ffffff');
+    const text = colorRecordFactory.fromHex('#ffffff');
+    return text;
   }
 }
 

@@ -1,14 +1,14 @@
-import type { AliasColorType } from '~/theme/types/aliasColor.ts';
+import { AliasColorEntity } from '~/theme/entities/AliasColorEntity.ts';
 
 class DismissibleAlertItem {
-  public readonly color: AliasColorType.Type;
+  public readonly colorIndex: number;
   public readonly id: number;
   public readonly title: string;
 
-  public constructor(color: AliasColorType.Type, id: number) {
-    this.color = color;
+  public constructor(colorIndex: number, id: number) {
+    this.colorIndex = colorIndex;
     this.id = id;
-    this.title = `Dismissible ${color} alert`;
+    this.title = `Dismissible ${buildDismissibleAlertsModel.resolveColor(colorIndex)} alert`;
   }
 }
 
@@ -17,13 +17,18 @@ export const buildDismissibleAlertsModel = class DismissibleAlertsModel {
 
   public static append(
     alerts: readonly DismissibleAlertItem[],
-    colors: readonly AliasColorType.Type[],
     nextId: number
   ): readonly DismissibleAlertItem[] {
-    const color = colors.at(alerts.length % colors.length);
+    const colorIndex = alerts.length % AliasColorEntity.Values.length;
+    const result = [...alerts, new DismissibleAlertItem(colorIndex, nextId)];
+    return result;
+  }
+
+  public static resolveColor(colorIndex: number): AliasColorEntity.Type {
+    const color = AliasColorEntity.Values[colorIndex];
     if (color === undefined) {
-      throw new RangeError('Dismissible alerts require at least one color.');
+      throw new RangeError(`Unknown alias color index: ${colorIndex}`);
     }
-    return [...alerts, new DismissibleAlertItem(color, nextId)];
+    return color;
   }
 };

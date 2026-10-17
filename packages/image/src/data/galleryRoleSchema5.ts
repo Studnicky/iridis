@@ -1,4 +1,4 @@
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
 
 /**
  * Five-role schema for art-gallery chrome re-skinning.
@@ -14,25 +14,25 @@ import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
  * muted:  low-chroma non-neutral (caption background, secondary UI). C ≤ 0.08.
  * text:   derived: white or black depending on canvas lightness.
  */
-export const galleryRoleSchema5: RoleSchemaInterfaceType = {
+export const galleryRoleSchema5 = RoleSchemaInterfaceTypeEntity.create({
   'contrastPairs': [
     {
       'algorithm':  'wcag21',
       'background': 'canvas',
       'foreground': 'text',
-      'minRatio':   7.0
+      'minimumContrastRatio':   7.0
     },
     {
       'algorithm':  'wcag21',
       'background': 'frame',
       'foreground': 'text',
-      'minRatio':   4.5
+      'minimumContrastRatio':   4.5
     },
     {
       'algorithm':  'wcag21',
       'background': 'canvas',
       'foreground': 'accent',
-      'minRatio':   3.0
+      'minimumContrastRatio':   3.0
     }
   ],
   'description': 'Five-role palette for art-gallery web chrome re-skinning',
@@ -40,11 +40,7 @@ export const galleryRoleSchema5: RoleSchemaInterfaceType = {
   'roles': [
     {
       'chromaRange':    [0.0, 0.06],
-      'derivedFrom': undefined,
       'description':    'Darkest neutral, page and frame background',
-      'hue': undefined,
-      'hueClamp': undefined,
-      'hueOffset': undefined,
       'intent':         'background',
       'lightnessRange': [0.0, 0.40],
       'name':           'canvas',
@@ -52,11 +48,7 @@ export const galleryRoleSchema5: RoleSchemaInterfaceType = {
     },
     {
       'chromaRange':    [0.0, 0.10],
-      'derivedFrom': undefined,
       'description':    'Mid-luminance neutral, gallery moulding and borders',
-      'hue': undefined,
-      'hueClamp': undefined,
-      'hueOffset': undefined,
       'intent':         'muted',
       'lightnessRange': [0.30, 0.70],
       'name':           'frame',
@@ -64,11 +56,7 @@ export const galleryRoleSchema5: RoleSchemaInterfaceType = {
     },
     {
       'chromaRange':    [0.10, 0.40],
-      'derivedFrom': undefined,
       'description':    'Highest-chroma color, call-to-action and hover highlight',
-      'hue': undefined,
-      'hueClamp': undefined,
-      'hueOffset': undefined,
       'intent':         'accent',
       'lightnessRange': [0.30, 0.80],
       'name':           'accent',
@@ -76,11 +64,7 @@ export const galleryRoleSchema5: RoleSchemaInterfaceType = {
     },
     {
       'chromaRange':    [0.0, 0.08],
-      'derivedFrom': undefined,
       'description':    'Low-chroma non-neutral, caption background and secondary UI',
-      'hue': undefined,
-      'hueClamp': undefined,
-      'hueOffset': undefined,
       'intent':         'muted',
       'lightnessRange': [0.40, 0.85],
       'name':           'muted',
@@ -90,13 +74,10 @@ export const galleryRoleSchema5: RoleSchemaInterfaceType = {
       'chromaRange':    [0.0, 0.0],
       'derivedFrom':    'canvas',
       'description':    'Auto-derived: white when canvas is dark, black when canvas is light',
-      'hue': undefined,
-      'hueClamp': undefined,
-      'hueOffset': undefined,
       'intent':         'text',
       'lightnessRange': [0.0, 1.0],
       'name':           'text',
       'required':       true
     }
   ]
-};
+});

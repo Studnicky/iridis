@@ -6,10 +6,10 @@
       "algorithm": "wcag21",
       "cvdCorrect": true,
       "extra": [
-        { "foreground": "text",     "background": "canvas",  "minRatio": 75, "algorithm": "apca" },
-        { "foreground": "text",     "background": "surface", "minRatio": 75, "algorithm": "apca" },
-        { "foreground": "onAccent", "background": "accent",  "minRatio": 60, "algorithm": "apca" },
-        { "foreground": "border",   "background": "canvas",  "minRatio": 45, "algorithm": "apca" }
+        { "foreground": "text",     "background": "canvas",  "minimumContrastRatio": 75, "algorithm": "apca" },
+        { "foreground": "text",     "background": "surface", "minimumContrastRatio": 75, "algorithm": "apca" },
+        { "foreground": "onAccent", "background": "accent",  "minimumContrastRatio": 60, "algorithm": "apca" },
+        { "foreground": "border",   "background": "canvas",  "minimumContrastRatio": 45, "algorithm": "apca" }
       ]
     },
     "metadata": {
@@ -74,10 +74,10 @@
         }
       ],
       "contrastPairs": [
-        { "foreground": "text",     "background": "canvas",  "minRatio": 7.0, "algorithm": "wcag21" },
-        { "foreground": "text",     "background": "surface", "minRatio": 7.0, "algorithm": "wcag21" },
-        { "foreground": "onAccent", "background": "accent",  "minRatio": 7.0, "algorithm": "wcag21" },
-        { "foreground": "border",   "background": "canvas",  "minRatio": 3.0, "algorithm": "wcag21" }
+        { "foreground": "text",     "background": "canvas",  "minimumContrastRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "text",     "background": "surface", "minimumContrastRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "onAccent", "background": "accent",  "minimumContrastRatio": 7.0, "algorithm": "wcag21" },
+        { "foreground": "border",   "background": "canvas",  "minimumContrastRatio": 3.0, "algorithm": "wcag21" }
       ]
     }
   },

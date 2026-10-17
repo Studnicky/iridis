@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
 
 import { clamp01 } from './Clamp01.ts';
 import { hslToRgb } from './HslToRgb.ts';
@@ -12,12 +12,14 @@ class Hue {
     let diff = b - a;
     if (diff > 180) {diff -= 360;}
     if (diff < -180) {diff += 360;}
-    return ((a + diff * t) % 360 + 360) % 360;
+    const result = ((a + diff * t) % 360 + 360) % 360;
+    return result;
   }
 
   /** True when an HSL saturation is low enough that its paired hue is powerless (CSS Color 4 §12.2). */
   static isAchromatic(s: number): boolean {
-    return s < ACHROMATIC_SATURATION_EPSILON;
+    const result = s < ACHROMATIC_SATURATION_EPSILON;
+    return result;
   }
 
   static resolve(hslA: { 'h': number; 's': number }, hslB: { 'h': number; 's': number }, t: number): number {
@@ -33,14 +35,15 @@ class Hue {
     if (bAchromatic) {
       return hslA.h;
     }
-    return Hue.lerp(hslA.h, hslB.h, t);
+    const result = Hue.lerp(hslA.h, hslB.h, t);
+    return result;
   }
 }
 
 class MixHsl {
   readonly 'name' = 'mixHsl';
 
-  apply(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType, t: number): ColorRecordInterfaceType {
+  apply(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type, t: number): ColorRecordInterfaceTypeEntity.Type {
     const tc = clamp01.apply(t);
 
     const hslA = rgbToHsl.apply(a.rgb.r, a.rgb.g, a.rgb.b);
@@ -51,7 +54,8 @@ class MixHsl {
     const l = hslA.l + (hslB.l - hslA.l) * tc;
     const alpha = a.alpha + (b.alpha - a.alpha) * tc;
 
-    return hslToRgb.apply(h, s, l, alpha);
+    const mixed = hslToRgb.apply(h, s, l, alpha);
+    return mixed;
   }
 }
 

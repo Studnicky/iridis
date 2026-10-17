@@ -1,6 +1,6 @@
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 
-export const SUNRISE_STOPS: readonly PaletteInterfaceType[] = [
+export const SUNRISE_STOPS: readonly PaletteInterfaceTypeEntity.Type[] = [
   { 'accent': { 'c': 0.18, 'h': 30,  'l': 0.55 }, 'background': { 'c': 0.03, 'h': 30,  'l': 0.12 } },
   { 'accent': { 'c': 0.20, 'h': 70,  'l': 0.65 }, 'background': { 'c': 0.04, 'h': 70,  'l': 0.35 } },
   { 'accent': { 'c': 0.16, 'h': 140, 'l': 0.72 }, 'background': { 'c': 0.03, 'h': 140, 'l': 0.65 } },

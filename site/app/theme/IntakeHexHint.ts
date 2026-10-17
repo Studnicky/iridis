@@ -1,10 +1,10 @@
 import type {
-  PaletteStateInterface, PipelineContextInterface, TaskInterface, TaskManifestInterfaceType
-} from '@studnicky/iridis/types';
+  PaletteStateInterface, PipelineContextInterface, TaskInterface
+} from '@studnicky/iridis';
 
-import { colorRecordFactory } from '@studnicky/iridis';
+import { colorRecordFactory, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
 
-import type { SeedInputType } from './types/seedInput.ts';
+import { SeedInputEntity } from './types/SeedInputEntity.ts';
 
 /**
  * Superset of the engine's built-in `intake:hex`: accepts plain hex strings
@@ -16,21 +16,23 @@ import type { SeedInputType } from './types/seedInput.ts';
 class IntakeHexHint implements TaskInterface {
   readonly 'name' = 'intake:hexHint';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Parses hex strings or {hex, role} pin objects into ColorRecords, attaching hints.role when a role is pinned.',
     'name':        'intake:hexHint',
-    'phase':       undefined,
     'reads':       ['input.colors'],
-    'requires':    undefined,
     'writes':      ['colors']
-  };
+  });
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
-    for (const raw of state.input.colors as readonly SeedInputType.Type[]) {
-      const isPin = typeof raw === 'object' && raw !== null;
-      const hex = isPin ? raw.hex : raw;
-      const role = isPin ? raw.role : undefined;
-      state.colors.push(colorRecordFactory.fromHex(hex, role !== undefined ? { 'hints': { 'intent': undefined, 'role': role, 'weight': undefined } } : undefined));
+    for (let index = 0; index < state.input.colors.length; index += 1) {
+      const rawInput = state.input.colors[index];
+      if (rawInput === undefined) {continue;}
+      const input = SeedInputEntity.intake(rawInput);
+      if (typeof input === 'object') {
+        state.colors.push(colorRecordFactory.fromHex(input.hex, { 'hints': { 'intent': undefined, 'role': input.role, 'weight': undefined } }));
+        continue;
+      }
+      state.colors.push(colorRecordFactory.fromHex(input));
     }
   }
 }

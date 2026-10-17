@@ -76,10 +76,6 @@ const verifyManifests = (
   expectedPackageCount = EXPECTED_PACKAGE_COUNT
 ) => {
   assertVersion(expectedVersion);
-  const workspaceManifest = readJson(join(rootDirectory, 'package.json'));
-  if (workspaceManifest.version !== expectedVersion) {
-    fail(`workspace manifest mismatch: expected ${expectedVersion}`);
-  }
   const packageRecords = packagePipeline.releaseOrder(rootDirectory);
   if (packageRecords.length !== expectedPackageCount) {
     fail(`expected ${expectedPackageCount} public packages, found ${packageRecords.length}`);

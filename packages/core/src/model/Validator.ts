@@ -1,18 +1,11 @@
+import type { JsonSchemaObjectType } from '@studnicky/json-tology/types';
+import type { JSONSchema7Type } from 'json-schema';
+
 import { JsonTology } from '@studnicky/json-tology';
-import {
-  JsonObject,
-  type JsonObjectType,
-  JsonValue,
-  type JsonValueType
-} from '@studnicky/types';
+import { JsonObject, JsonValue } from '@studnicky/types/node';
 import { RE2JS } from 're2js';
 
-import type {
-  SchemaInterfaceType,
-  ValidationErrorInterfaceType,
-  ValidationResultInterfaceType
-} from '../types/index.ts';
-
+import { ValidationErrorInterfaceTypeEntity } from '../entities/ValidationErrorInterfaceTypeEntity.ts';
 import { CORE_ID_INDEX, CORE_SCHEMAS } from './constants/CoreSchemaRegistry.ts';
 import { JSON_POINTER_PATTERNS }       from './constants/JsonPointerPatterns.ts';
 import { JSON_SCHEMA_TYPE_NAMES }      from './constants/JsonSchemaTypeNames.ts';
@@ -23,21 +16,25 @@ import { UNSAFE_PATH_SEGMENTS }        from './constants/UnsafePathSegments.ts';
  * `PaletteStateSchema.properties.colors.items` → `ColorRecordSchema` resolve
  * regardless of which schema is validated first. Built once per process.
  */
+class CoreRegistryState {
+  'instance': ReturnType<typeof JsonTology.create<typeof CORE_SCHEMAS>> | undefined;
+}
+
 class CoreRegistry {
-  static #instance: ReturnType<typeof JsonTology.create<typeof CORE_SCHEMAS>> | undefined;
+  static readonly #state = new CoreRegistryState();
 
   static ensure(): ReturnType<typeof JsonTology.create<typeof CORE_SCHEMAS>> {
     // enableStrictGraph: false — these schemas predate json-tology and author
     // constraints inline (e.g. ColorRecordSchema's oklch/rgb/displayP3 triples)
     // rather than as extracted, $id'd shapes. Validator only needs runtime
     // validation, not canonical-graph shape dedup.
-    CoreRegistry.#instance ??= JsonTology.create({
+    CoreRegistry.#state.instance ??= JsonTology.create({
       'baseIri': 'https://studnicky.dev/iridis',
       'enableStrictGraph': false,
       'schemas': CORE_SCHEMAS
     });
 
-    return CoreRegistry.#instance;
+    return CoreRegistry.#state.instance;
   }
 }
 
@@ -47,22 +44,29 @@ class CoreRegistry {
  * plugin-contributed schemas. json-tology requires a `$id` to register a
  * schema; this keeps that requirement invisible to callers of `Validator`.
  */
+class SyntheticIdState {
+  'counter' = 0;
+  readonly 'ids': WeakMap<object, string> = new WeakMap();
+}
+
 class SyntheticId {
-  static #counter = 0;
-  static #ids: WeakMap<object, string> = new WeakMap();
+  static readonly #state = new SyntheticIdState();
 
-  static assign(schema: SchemaInterfaceType): SchemaInterfaceType & { '$id': string } {
+  static assign(schema: JsonSchemaObjectType): JsonSchemaObjectType & { '$id': string } {
     if (typeof schema.$id === 'string') {
-      return { ...schema, '$id': schema.$id };
+      const result = { ...schema, '$id': schema.$id };
+      return result;
     }
 
-    let id = SyntheticId.#ids.get(schema);
+    let id = SyntheticId.#state.ids.get(schema);
     if (id === undefined) {
-      id = `urn:iridis:validator:${SyntheticId.#counter++}`;
-      SyntheticId.#ids.set(schema, id);
+      id = `urn:iridis:validator:${SyntheticId.#state.counter}`;
+      SyntheticId.#state.counter += 1;
+      SyntheticId.#state.ids.set(schema, id);
     }
 
-    return { ...schema, '$id': id };
+    const result = { ...schema, '$id': id };
+    return result;
   }
 }
 
@@ -71,10 +75,17 @@ class JsonPointer {
     if (pointer === '') { return []; }
     if (!pointer.startsWith('/')) { return undefined; }
 
+    const encodedSegments = pointer.slice(1).split('/');
     const segments: string[] = [];
-    for (const encoded of pointer.slice(1).split('/')) {
+    for (let index = 0; index < encodedSegments.length; index += 1) {
+      const encoded = encodedSegments[index];
+      if (encoded === undefined) {
+        return undefined;
+      }
       const decoded = JsonPointer.#decodeSegment(encoded);
-      if (decoded === undefined) { return undefined; }
+      if (decoded === undefined) {
+        return undefined;
+      }
       segments.push(decoded);
     }
     return segments;
@@ -100,76 +111,115 @@ class JsonPointer {
   }
 }
 
+class JsonRecord {
+  static from(value: JSONSchema7Type): Record<string, JSONSchema7Type> {
+    if (JsonObject.is(value) && JsonValue.is(value)) {
+      return value;
+    }
+    return {};
+  }
+}
+
 class SchemaReference {
-  static resolve(
-    rootSchema: SchemaInterfaceType,
-    reference:  string
-  ): (JsonValueType & Readonly<JsonObjectType>) | undefined {
+  static resolve(rootSchema: JsonSchemaObjectType, reference: string): (JSONSchema7Type & Readonly<Record<string, JSONSchema7Type>>) | undefined {
     const hashIndex = reference.indexOf('#');
     const documentId = hashIndex === -1 ? reference : reference.slice(0, hashIndex);
     const sourceDocument = SchemaReference.#document(rootSchema, documentId);
-    if (sourceDocument === undefined) { return undefined; }
-    const document = JsonValue.from(sourceDocument);
-    if (!JsonObject.is(document)) { return undefined; }
-    if (hashIndex === -1 || hashIndex === reference.length - 1) { return document; }
+    const document = sourceDocument === undefined ? undefined : JsonValue.from(sourceDocument);
+    const pointer = SchemaReference.#pointer(reference, hashIndex);
+    const segments = pointer === undefined ? undefined : JsonPointer.segments(pointer);
+    let result: (JSONSchema7Type & Readonly<Record<string, JSONSchema7Type>>) | undefined;
+    if (JsonObject.is(document)) {
+      if (hashIndex === -1 || hashIndex === reference.length - 1) {
+        result = document;
+      } else if (segments !== undefined) {
+        result = SchemaReference.#walk(document, segments);
+      }
+    }
+    return result;
+  }
 
-    let pointer: string;
+  static #pointer(reference: string, hashIndex: number): string | undefined {
     try {
-      pointer = decodeURIComponent(reference.slice(hashIndex + 1));
+      const result = decodeURIComponent(reference.slice(hashIndex + 1));
+      return result;
     } catch {
       return undefined;
     }
-    const segments = JsonPointer.segments(pointer);
-    if (segments === undefined) { return undefined; }
-
-    let current: JsonValueType | undefined = document;
-    for (const segment of segments) {
-      // Guard against prototype-chain confusion: without this, a segment of
-      // "__proto__", "constructor", or "prototype" would resolve into
-      // Object.prototype (or a constructor function) instead of failing the
-      // walk, since a plain, non-null, non-array object satisfies `JsonObject.is`.
-      if (UNSAFE_PATH_SEGMENTS.has(segment)) { return undefined; }
-      if (Array.isArray(current)) {
-        if (!JSON_POINTER_PATTERNS.digitsOnly.test(segment)) { return undefined; }
-        const next: JsonValueType | undefined = current[Number(segment)];
-        current = next;
-      } else if (JsonObject.is(current)) {
-        const next: JsonValueType | undefined = current[segment];
-        current = next;
-      } else {
-        return undefined;
-      }
-    }
-    return JsonObject.is(current) ? current : undefined;
   }
 
-  static #document(
-    rootSchema: SchemaInterfaceType,
-    documentId: string
-  ): SchemaInterfaceType | undefined {
-    if (documentId === '' || documentId === rootSchema.$id) {
-      return rootSchema;
+  static #walk(document: Readonly<Record<string, JSONSchema7Type>>, segments: readonly string[]): (JSONSchema7Type & Readonly<Record<string, JSONSchema7Type>>) | undefined {
+    let current: JSONSchema7Type | undefined = document;
+    for (let index = 0; index < segments.length; index += 1) {
+      const segment = segments[index];
+      if (segment === undefined || UNSAFE_PATH_SEGMENTS.has(segment)) { return undefined; }
+      current = SchemaReference.#next(current, segment);
+      if (current === undefined) { return undefined; }
     }
-    return CORE_ID_INDEX.get(documentId);
+    const result = JsonObject.is(current) ? current : undefined;
+    return result;
+  }
+
+  static #next(current: JSONSchema7Type | undefined, segment: string): JSONSchema7Type | undefined {
+    if (Array.isArray(current)) {
+      if (!JSON_POINTER_PATTERNS.digitsOnly.test(segment)) { return undefined; }
+      const result = current[Number(segment)];
+      return result;
+    }
+    if (JsonObject.is(current)) {
+      const result = current[segment];
+      return result;
+    }
+    return undefined;
+  }
+
+  static #document(rootSchema: JsonSchemaObjectType, documentId: string): JsonSchemaObjectType | undefined {
+    const result = documentId === '' || documentId === rootSchema.$id ? rootSchema : CORE_ID_INDEX.get(documentId);
+    return result;
   }
 }
 
 class SchemaPathSegment {
-  readonly 'arrayIndex': boolean;
-  readonly 'value':      string;
+  readonly #append: (path: string, value: string) => string;
+  readonly 'value': string;
 
-  constructor(arrayIndex: boolean, value: string) {
-    this.arrayIndex = arrayIndex;
+  private constructor(value: string, append: (path: string, value: string) => string) {
+    this.#append = append;
     this.value = value;
+  }
+
+  static arrayIndex(value: string): SchemaPathSegment {
+    const result = new SchemaPathSegment(value, SchemaPathSegment.#appendArrayIndex);
+    return result;
+  }
+
+  static property(value: string): SchemaPathSegment {
+    const result = new SchemaPathSegment(value, SchemaPathSegment.#appendProperty);
+    return result;
+  }
+
+  appendTo(path: string): string {
+    const result = this.#append(path, this.value);
+    return result;
+  }
+
+  static #appendArrayIndex(path: string, value: string): string {
+    const result = `${path  }[${  value  }]`;
+    return result;
+  }
+
+  static #appendProperty(path: string, value: string): string {
+    const result = path === '' ? value : `${path  }.${  value}`;
+    return result;
   }
 }
 
 class SchemaTrace {
-  readonly 'node':     (JsonValueType & Readonly<JsonObjectType>) | undefined;
+  readonly 'node':     (JSONSchema7Type & Readonly<Record<string, JSONSchema7Type>>) | undefined;
   readonly 'segments': readonly SchemaPathSegment[];
 
   constructor(
-    node:     (JsonValueType & Readonly<JsonObjectType>) | undefined,
+    node:     (JSONSchema7Type & Readonly<Record<string, JSONSchema7Type>>) | undefined,
     segments: readonly SchemaPathSegment[]
   ) {
     this.node = node;
@@ -186,104 +236,161 @@ class SchemaTrace {
  * structured params). Canonical diagnostics therefore read the constraint
  * directly from the schema at the failing path.
  */
+class SchemaWalkStep {
+  readonly 'node': (JSONSchema7Type & Readonly<Record<string, JSONSchema7Type>>) | undefined;
+  readonly 'segment': SchemaPathSegment;
+
+  constructor(
+    node: (JSONSchema7Type & Readonly<Record<string, JSONSchema7Type>>) | undefined,
+    segment: SchemaPathSegment
+  ) {
+    this.node = node;
+    this.segment = segment;
+  }
+}
+
+/**
+ * Resolves a JSON-Pointer validation-error path back to its subschema node.
+ */
 class SchemaWalker {
-  static #deref(
-    rootSchema: SchemaInterfaceType,
-    schema:     JsonValueType | undefined,
-    references: ReadonlySet<string> = new Set()
-  ): (JsonValueType & Readonly<JsonObjectType>) | undefined {
-    if (!JsonObject.is(schema)) { return undefined; }
-    const reference = schema.$ref;
-    if (typeof reference !== 'string') { return schema; }
-    if (references.has(reference)) { return undefined; }
-    const target = SchemaReference.resolve(rootSchema, reference);
-    if (target === undefined) { return undefined; }
-    return SchemaWalker.#deref(rootSchema, target, new Set([...references, reference]));
+  static #deref(options: {
+    readonly 'rootSchema': JsonSchemaObjectType;
+    readonly 'schema': JSONSchema7Type | undefined;
+    readonly 'visitedReferences'?: ReadonlySet<string>;
+  }): (JSONSchema7Type & Readonly<Record<string, JSONSchema7Type>>) | undefined {
+    const visitedReferences = new Set(options.visitedReferences);
+    let result = options.schema;
+    while (JsonObject.is(result) && typeof result.$ref === 'string') {
+      const reference = result.$ref;
+      if (visitedReferences.has(reference)) { return undefined; }
+      visitedReferences.add(reference);
+      result = SchemaReference.resolve(options.rootSchema, reference);
+    }
+    const dereferenced = JsonObject.is(result) ? result : undefined;
+    return dereferenced;
   }
 
-  static trace(rootSchema: SchemaInterfaceType, path: string): SchemaTrace | undefined {
-    let current = SchemaWalker.#deref(rootSchema, JsonValue.from(rootSchema));
-    if (path === '') { return new SchemaTrace(current, []); }
-
+  static trace(rootSchema: JsonSchemaObjectType, path: string): SchemaTrace | undefined {
+    let current = SchemaWalker.#deref({ 'rootSchema': rootSchema, 'schema': JsonValue.from(rootSchema) });
+    if (path === '') {
+      const result = new SchemaTrace(current, []);
+      return result;
+    }
     const segments = JsonPointer.segments(path);
     if (segments === undefined) { return undefined; }
     const tracedSegments: SchemaPathSegment[] = [];
-
-    for (const segment of segments) {
-      if (current === undefined) { return undefined; }
-
-      const rawProperties = JsonValue.from(current.properties);
-      const properties = JsonObject.is(rawProperties) ? rawProperties : undefined;
-      const propertySchema = properties?.[segment];
-      if (propertySchema !== undefined) {
-        tracedSegments.push(new SchemaPathSegment(false, segment));
-        current = SchemaWalker.#deref(rootSchema, JsonValue.from(propertySchema));
-        continue;
-      }
-
-      const patternSchema = SchemaWalker.#patternProperty(JsonValue.from(current.patternProperties), segment);
-      if (patternSchema !== undefined) {
-        tracedSegments.push(new SchemaPathSegment(false, segment));
-        current = SchemaWalker.#deref(rootSchema, patternSchema);
-        continue;
-      }
-
-      if (JSON_POINTER_PATTERNS.digitsOnly.test(segment) && SchemaWalker.#isArraySchema(current)) {
-        const index = Number(segment);
-        const prefixItems = JsonValue.from(current.prefixItems);
-        const itemSchema = Array.isArray(prefixItems) && index < prefixItems.length
-          ? prefixItems[index]
-          : JsonValue.from(current.items);
-        tracedSegments.push(new SchemaPathSegment(true, segment));
-        current = SchemaWalker.#deref(rootSchema, itemSchema);
-        continue;
-      }
-
-      const additional = JsonValue.from(current.additionalProperties);
-      tracedSegments.push(new SchemaPathSegment(false, segment));
-      current = SchemaWalker.#deref(rootSchema, additional);
+    for (let index = 0; index < segments.length; index += 1) {
+      const segment = segments[index];
+      if (segment === undefined || current === undefined) { return undefined; }
+      const step = SchemaWalker.#nextStep(rootSchema, current, segment);
+      if (step === undefined) { return undefined; }
+      tracedSegments.push(step.segment);
+      current = step.node;
     }
-
-    return new SchemaTrace(current, tracedSegments);
+    const result = new SchemaTrace(current, tracedSegments);
+    return result;
   }
 
-  static #isArraySchema(schema: Readonly<JsonObjectType>): boolean {
+  static #nextStep(
+    rootSchema: JsonSchemaObjectType,
+    current: Readonly<Record<string, JSONSchema7Type>>,
+    segment: string
+  ): SchemaWalkStep | undefined {
+    const property = SchemaWalker.#propertyStep(rootSchema, current, segment);
+    if (property !== undefined) { return property; }
+    const pattern = SchemaWalker.#patternStep(rootSchema, current, segment);
+    if (pattern !== undefined) { return pattern; }
+    const item = SchemaWalker.#itemStep(rootSchema, current, segment);
+    if (item !== undefined) { return item; }
+    const additional = SchemaWalker.#additionalPropertyStep(rootSchema, current, segment);
+    return additional;
+  }
+
+  static #propertyStep(
+    rootSchema: JsonSchemaObjectType,
+    current: Readonly<Record<string, JSONSchema7Type>>,
+    segment: string
+  ): SchemaWalkStep | undefined {
+    const properties = JsonValue.from(current.properties);
+    if (!JsonObject.is(properties)) { return undefined; }
+    const schema = properties[segment];
+    if (schema === undefined) { return undefined; }
+    const node = SchemaWalker.#deref({ 'rootSchema': rootSchema, 'schema': JsonValue.from(schema) });
+    const result = new SchemaWalkStep(node, SchemaPathSegment.property(segment));
+    return result;
+  }
+
+  static #patternStep(
+    rootSchema: JsonSchemaObjectType,
+    current: Readonly<Record<string, JSONSchema7Type>>,
+    segment: string
+  ): SchemaWalkStep | undefined {
+    const schema = SchemaWalker.#patternProperty(JsonValue.from(current.patternProperties), segment);
+    if (schema === undefined) { return undefined; }
+    const node = SchemaWalker.#deref({ 'rootSchema': rootSchema, 'schema': schema });
+    const result = new SchemaWalkStep(node, SchemaPathSegment.property(segment));
+    return result;
+  }
+
+  static #itemStep(
+    rootSchema: JsonSchemaObjectType,
+    current: Readonly<Record<string, JSONSchema7Type>>,
+    segment: string
+  ): SchemaWalkStep | undefined {
+    if (!JSON_POINTER_PATTERNS.digitsOnly.test(segment) || !SchemaWalker.#isArraySchema(current)) {
+      return undefined;
+    }
+    const index = Number(segment);
+    const prefixItems = JsonValue.from(current.prefixItems);
+    const schema = Array.isArray(prefixItems) && index < prefixItems.length
+      ? prefixItems[index]
+      : JsonValue.from(current.items);
+    const node = SchemaWalker.#deref({ 'rootSchema': rootSchema, 'schema': schema });
+    const result = new SchemaWalkStep(node, SchemaPathSegment.arrayIndex(segment));
+    return result;
+  }
+
+  static #additionalPropertyStep(
+    rootSchema: JsonSchemaObjectType,
+    current: Readonly<Record<string, JSONSchema7Type>>,
+    segment: string
+  ): SchemaWalkStep {
+    const schema = JsonValue.from(current.additionalProperties);
+    const node = SchemaWalker.#deref({ 'rootSchema': rootSchema, 'schema': schema });
+    const result = new SchemaWalkStep(node, SchemaPathSegment.property(segment));
+    return result;
+  }
+
+  static #isArraySchema(schema: Readonly<Record<string, JSONSchema7Type>>): boolean {
     const schemaType = JsonValue.from(schema.type);
-    return schemaType === 'array'
+    const result = schemaType === 'array'
       || (Array.isArray(schemaType) && schemaType.includes('array'))
       || Object.hasOwn(schema, 'items')
       || Object.hasOwn(schema, 'prefixItems');
+    return result;
   }
 
-  static #patternProperty(patterns: JsonValueType, property: string): JsonValueType | undefined {
+  static #patternProperty(patterns: JSONSchema7Type, property: string): JSONSchema7Type | undefined {
     if (!JsonObject.is(patterns)) { return undefined; }
-    for (const [pattern, schema] of Object.entries(patterns)) {
+    const entries = Object.entries(patterns);
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry === undefined) { return undefined; }
+      const [pattern, schema] = entry;
       const matches = SchemaWalker.#matchesPattern(pattern, property);
       if (matches === undefined) { return undefined; }
-      if (matches) { return JsonValue.from(schema); }
+      if (matches) {
+        const result = JsonValue.from(schema);
+        return result;
+      }
     }
     return undefined;
   }
 
-  /**
-   * Reports whether `property` matches a `patternProperties` key, or
-   * `undefined` when the key is not a regular expression this engine accepts.
-   *
-   * `pattern` is a schema value, and `@studnicky/iridis` is a published
-   * library whose `model` subpath is part of its public surface, so a
-   * consumer or an adopted plugin can supply the schema. Evaluating that with
-   * the platform `RegExp` would put a caller-supplied pattern on a
-   * backtracking engine, where a crafted key stalls the thread. RE2 matches
-   * in time linear to the input and has no catastrophic-backtracking case, so
-   * the failure mode does not exist rather than being argued about.
-   *
-   * The tradeoff is that RE2 rejects backreferences and lookaround, which
-   * ECMA-262 allows. Such a key raises here and reads as "no opinion", the
-   * same as any other unparseable pattern.
-   */
   static #matchesPattern(pattern: string, property: string): boolean | undefined {
     try {
-      return RE2JS.compile(pattern).matcher(property).find();
+      const result = RE2JS.compile(pattern).matcher(property).find();
+      return result;
     } catch {
       return undefined;
     }
@@ -296,17 +403,16 @@ class SchemaWalker {
  * property names, including digit-only names, remain dot-joined.
  */
 class Segments {
-  static format(rootSchema: SchemaInterfaceType, path: string): string {
+  static format(rootSchema: JsonSchemaObjectType, path: string): string {
     if (path === '') { return ''; }
 
     const trace = SchemaWalker.trace(rootSchema, path);
     if (trace === undefined) { return path; }
     let result = '';
-    for (const segment of trace.segments) {
-      if (segment.arrayIndex) {
-        result += `[${segment.value}]`;
-      } else {
-        result += result === '' ? segment.value : `.${segment.value}`;
+    for (let index = 0; index < trace.segments.length; index += 1) {
+      const segment = trace.segments[index];
+      if (segment !== undefined) {
+        result = segment.appendTo(result);
       }
     }
     return result;
@@ -323,131 +429,171 @@ class Segments {
  */
 class PathNormaliser {
   static normalise(
-    rootSchema: SchemaInterfaceType,
+    rootSchema: JsonSchemaObjectType,
     path:       string,
     keyword:    string,
-    parameters: Readonly<JsonObjectType>
+    parameters: Readonly<Record<string, JSONSchema7Type>>
   ): string {
     if (keyword === 'required') {
       const missing = parameters.missingProperty;
       if (typeof missing === 'string') {
         const base = Segments.format(rootSchema, path);
-        return base.length > 0 ? `${base}.${missing}` : missing;
+        const result = base.length > 0 ? `${base  }.${  missing}` : missing;
+        return result;
       }
     }
 
-    return Segments.format(rootSchema, path);
+    const result = Segments.format(rootSchema, path);
+    return result;
   }
 }
 
 interface FormatterContextInterface {
-  readonly 'params':     Readonly<JsonObjectType>;
-  readonly 'path':        string;
-  readonly 'rootSchema': SchemaInterfaceType;
-  readonly 'value':       JsonValueType | undefined;
+  readonly 'parameters': Readonly<Record<string, JSONSchema7Type>>;
+  readonly 'path': string;
+  readonly 'rootSchema': JsonSchemaObjectType;
+  readonly 'value': JSONSchema7Type | undefined;
 }
 
-/**
- * Per-keyword error formatters for the Validator's public diagnostic format.
- *
- * Messages:
- *   type:                "expected {type}, got {actual}"
- *   required:            "required property \"{name}\" is missing"
- *   additionalProperties:"additional property \"{name}\" is not allowed"
- *   minItems:            "array length {n} is less than minItems {limit}"
- *   maxItems:            "array length {n} is greater than maxItems {limit}"
- *   minimum:             "{value} is less than minimum {limit}"
- *   maximum:             "{value} is greater than maximum {limit}"
- *   pattern:             "value \"{value}\" does not match pattern {pattern}"
- *   enum:                "expected one of [{values}], got {value}"
- */
-const MESSAGE_FORMATTERS: Record<string, (context: FormatterContextInterface) => string | undefined> = {
-  'additionalProperties': (context) => {
+class MessageFormatter {
+  static format(keyword: string, context: FormatterContextInterface): string | undefined {
+    const structural = MessageFormatter.#structural(keyword, context);
+    if (structural !== undefined) { return structural; }
+    const bounds = MessageFormatter.#bounds(keyword, context);
+    if (bounds !== undefined) { return bounds; }
+    const result = MessageFormatter.#pattern(keyword, context);
+    return result;
+  }
+
+  static #structural(keyword: string, context: FormatterContextInterface): string | undefined {
+    switch (keyword) {
+      case 'additionalProperties': return MessageFormatter.#additionalProperties(context);
+      case 'enum': return MessageFormatter.#enum(context);
+      case 'required': return MessageFormatter.#required(context);
+      case 'type': return MessageFormatter.#type(context);
+      default: return undefined;
+    }
+  }
+
+  static #bounds(keyword: string, context: FormatterContextInterface): string | undefined {
+    switch (keyword) {
+      case 'maximum': return MessageFormatter.#maximum(context);
+      case 'maxItems': return MessageFormatter.#maxItems(context);
+      case 'minimum': return MessageFormatter.#minimum(context);
+      case 'minItems': return MessageFormatter.#minItems(context);
+      default: return undefined;
+    }
+  }
+
+  static #pattern(keyword: string, context: FormatterContextInterface): string | undefined {
+    if (keyword !== 'pattern') { return undefined; }
+    const result = MessageFormatter.#patternMessage(context);
+    return result;
+  }
+
+  static #additionalProperties(context: FormatterContextInterface): string | undefined {
     const segments = JsonPointer.segments(context.path);
     const name = segments?.at(-1);
     if (name === undefined) { return undefined; }
-    return `additional property "${name}" is not allowed`;
-  },
-  'enum': (context) => {
+    const result = `additional property "${  name  }" is not allowed`;
+    return result;
+  }
+
+  static #enum(context: FormatterContextInterface): string | undefined {
     const node = SchemaWalker.trace(context.rootSchema, context.path)?.node;
     const allowed = JsonValue.from(node?.enum);
     if (!Array.isArray(allowed)) { return undefined; }
-    return `expected one of [${allowed.join(', ')}], got ${String(context.value)}`;
-  },
-  'maximum': (context) => {
-    const node = SchemaWalker.trace(context.rootSchema, context.path)?.node;
-    const limit = node?.maximum;
-    if (typeof limit !== 'number') { return undefined; }
-    return `${String(context.value)} is greater than maximum ${limit}`;
-  },
-  'maxItems': (context) => {
-    const node = SchemaWalker.trace(context.rootSchema, context.path)?.node;
-    const limit = node?.maxItems;
-    if (typeof limit !== 'number') { return undefined; }
-    const actual = Array.isArray(context.value) ? context.value.length : 0;
-    return `array length ${actual} is greater than maxItems ${limit}`;
-  },
-  'minimum': (context) => {
-    const node = SchemaWalker.trace(context.rootSchema, context.path)?.node;
-    const limit = node?.minimum;
-    if (typeof limit !== 'number') { return undefined; }
-    return `${String(context.value)} is less than minimum ${limit}`;
-  },
-  'minItems': (context) => {
-    const node = SchemaWalker.trace(context.rootSchema, context.path)?.node;
-    const limit = node?.minItems;
-    if (typeof limit !== 'number') { return undefined; }
-    const actual = Array.isArray(context.value) ? context.value.length : 0;
-    return `array length ${actual} is less than minItems ${limit}`;
-  },
-  'pattern': (context) => {
-    const node = SchemaWalker.trace(context.rootSchema, context.path)?.node;
-    const pattern = node?.pattern;
-    if (typeof pattern !== 'string') { return undefined; }
-    return `value "${String(context.value)}" does not match pattern ${pattern}`;
-  },
-  'required': (context) => {
-    const missing = context.params.missingProperty;
-    if (typeof missing !== 'string') { return undefined; }
-    const result = `required property "${missing}" is missing`;
+    const result = `expected one of [${  allowed.join(', ')  }], got ${  String(context.value)}`;
     return result;
-  },
-  'type': (context) => {
-    const expected = context.params.type;
-    if (
-      typeof expected !== 'string'
-      && !(Array.isArray(expected) && expected.every((entry) => { return typeof entry === 'string'; }))
-    ) {
+  }
+
+  static #maximum(context: FormatterContextInterface): string | undefined {
+    const limit = SchemaWalker.trace(context.rootSchema, context.path)?.node?.maximum;
+    if (typeof limit !== 'number') { return undefined; }
+    const result = `${String(context.value)  } is greater than maximum ${  limit}`;
+    return result;
+  }
+
+  static #maxItems(context: FormatterContextInterface): string | undefined {
+    const limit = SchemaWalker.trace(context.rootSchema, context.path)?.node?.maxItems;
+    if (typeof limit !== 'number') { return undefined; }
+    const actual = Array.isArray(context.value) ? context.value.length : 0;
+    const result = `array length ${  actual  } is greater than maxItems ${  limit}`;
+    return result;
+  }
+
+  static #minimum(context: FormatterContextInterface): string | undefined {
+    const limit = SchemaWalker.trace(context.rootSchema, context.path)?.node?.minimum;
+    if (typeof limit !== 'number') { return undefined; }
+    const result = `${String(context.value)  } is less than minimum ${  limit}`;
+    return result;
+  }
+
+  static #minItems(context: FormatterContextInterface): string | undefined {
+    const limit = SchemaWalker.trace(context.rootSchema, context.path)?.node?.minItems;
+    if (typeof limit !== 'number') { return undefined; }
+    const actual = Array.isArray(context.value) ? context.value.length : 0;
+    const result = `array length ${  actual  } is less than minItems ${  limit}`;
+    return result;
+  }
+
+  static #patternMessage(context: FormatterContextInterface): string | undefined {
+    const pattern = SchemaWalker.trace(context.rootSchema, context.path)?.node?.pattern;
+    if (typeof pattern !== 'string') { return undefined; }
+    const result = `value "${  String(context.value)  }" does not match pattern ${  pattern}`;
+    return result;
+  }
+
+  static #required(context: FormatterContextInterface): string | undefined {
+    const missing = context.parameters.missingProperty;
+    if (typeof missing !== 'string') { return undefined; }
+    const result = `required property "${  missing  }" is missing`;
+    return result;
+  }
+
+  static #type(context: FormatterContextInterface): string | undefined {
+    const expected = context.parameters.type;
+    if (typeof expected !== 'string' && !(Array.isArray(expected) && MessageFormatter.#typeNames(expected))) {
       return undefined;
     }
     const expectedString = Array.isArray(expected) ? expected.join(' | ') : expected;
-    let actual: string;
-    if (context.value === null) { actual = 'null'; }
-    else if (Array.isArray(context.value)) { actual = 'array'; }
-    else { actual = typeof context.value; }
-    return `expected ${expectedString}, got ${actual}`;
+    const actual = MessageFormatter.#valueType(context.value);
+    const result = `expected ${  expectedString  }, got ${  actual}`;
+    return result;
   }
-};
 
-/**
- * Normalise a json-tology validation error through the per-keyword
- * {@link MESSAGE_FORMATTERS} table.
- */
+  static #typeNames(values: readonly JSONSchema7Type[]): boolean {
+    for (let index = 0; index < values.length; index += 1) {
+      if (typeof values[index] !== 'string') { return false; }
+    }
+    return true;
+  }
+
+  static #valueType(value: JSONSchema7Type | undefined): string {
+    if (value === null) { return 'null'; }
+    if (Array.isArray(value)) { return 'array'; }
+    const result = typeof value;
+    return result;
+  }
+}
+
 class MessageNormaliser {
   static normalise(
-    keyword:    string,
-    parameters: Readonly<JsonObjectType>,
-    path:       string,
-    value:      JsonValueType | undefined,
-    message:    string,
-    rootSchema: SchemaInterfaceType
+    keyword: string,
+    parameters: Readonly<Record<string, JSONSchema7Type>>,
+    path: string,
+    value: JSONSchema7Type | undefined,
+    message: string,
+    rootSchema: JsonSchemaObjectType
   ): string {
-    const formatter = MESSAGE_FORMATTERS[keyword];
-    if (formatter !== undefined) {
-      const formatted = formatter({ 'params': parameters, 'path': path, 'rootSchema': rootSchema, 'value': value });
-      if (formatted !== undefined) { return formatted; }
-    }
-    return message;
+    const formatted = MessageFormatter.format(keyword, {
+      'parameters': parameters,
+      'path': path,
+      'rootSchema': rootSchema,
+      'value': value
+    });
+    const result = formatted ?? message;
+    return result;
   }
 }
 
@@ -456,28 +602,34 @@ class MessageNormaliser {
  * Used to produce messages that reference the actual value.
  */
 class Value {
-  static resolve(root: JsonValueType, path: string): JsonValueType | undefined {
-    if (path === '') { return root; }
+  static resolve(root: JSONSchema7Type, path: string): JSONSchema7Type | undefined {
     const segments = JsonPointer.segments(path);
-    if (segments === undefined) { return undefined; }
-    let current: JsonValueType | undefined = root;
-    for (const segment of segments) {
-      if (current === null || current === undefined) { return undefined; }
-      // See the matching guard in `SchemaReference.resolve` above: rejects
-      // "__proto__"/"constructor"/"prototype" before they can read through
-      // to the prototype chain.
-      if (UNSAFE_PATH_SEGMENTS.has(segment)) { return undefined; }
-      if (JsonObject.is(current)) {
-        const next: JsonValueType | undefined = current[segment];
-        current = next;
-      } else if (Array.isArray(current)) {
-        const next: JsonValueType | undefined = current[Number(segment)];
-        current = next;
-      } else {
-        return undefined;
+    let result: JSONSchema7Type | undefined = path === '' ? root : undefined;
+    if (segments !== undefined) {
+      result = root;
+      for (let index = 0; index < segments.length; index += 1) {
+        const segment = segments[index];
+        if (segment === undefined || UNSAFE_PATH_SEGMENTS.has(segment)) {
+          result = undefined;
+          break;
+        }
+        result = Value.#next(result, segment);
+        if (result === undefined) { break; }
       }
     }
-    return current;
+    return result;
+  }
+
+  static #next(current: JSONSchema7Type | undefined, segment: string): JSONSchema7Type | undefined {
+    if (JsonObject.is(current)) {
+      const result = current[segment];
+      return result;
+    }
+    if (Array.isArray(current)) {
+      const result = current[Number(segment)];
+      return result;
+    }
+    return undefined;
   }
 }
 
@@ -494,94 +646,148 @@ class Value {
  * without touching the caller's object.
  */
 class UndefinedPruner {
-  static prune<T>(value: T): JsonValueType {
+  static prune<T>(value: T): JSONSchema7Type {
+    let result: JSONSchema7Type;
     if (Array.isArray(value)) {
-      return value.map(UndefinedPruner.prune);
+      result = UndefinedPruner.#array(value);
+    } else if (JsonObject.is(value)) {
+      result = UndefinedPruner.#object(value);
+    } else {
+      result = JsonValue.from(value);
     }
+    return result;
+  }
 
-    if (JsonObject.is(value)) {
-      const entries = Object.entries(value);
-      const result: Record<string, JsonValueType> = {};
-      for (const [key, entryValue] of entries) {
-        if (entryValue !== undefined) {
-          result[key] = UndefinedPruner.prune(entryValue);
-        }
+  static #array(values: readonly JSONSchema7Type[]): JSONSchema7Type[] {
+    const result: JSONSchema7Type[] = [];
+    for (let index = 0; index < values.length; index += 1) {
+      const value = values[index];
+      if (value !== undefined) { result.push(UndefinedPruner.prune(value)); }
+    }
+    return result;
+  }
+
+  static #object(value: object): JSONSchema7Type {
+    const result: Record<string, JSONSchema7Type> = {};
+    const keys = Object.keys(value);
+    for (let index = 0; index < keys.length; index += 1) {
+      const key = keys[index];
+      if (key === undefined) { continue; }
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (descriptor?.value === undefined) { continue; }
+      if (JsonObject.is(descriptor.value)) {
+        Object.defineProperty(result, key, {
+          'configurable': true,
+          'enumerable': true,
+          'value': UndefinedPruner.#object(descriptor.value),
+          'writable': true
+        });
+        continue;
       }
-      return result;
+      if (!Array.isArray(descriptor.value) && !JsonValue.is(descriptor.value)) { continue; }
+      Object.defineProperty(result, key, {
+        'configurable': true,
+        'enumerable': true,
+        'value': UndefinedPruner.prune(descriptor.value),
+        'writable': true
+      });
     }
-
-    return JsonValue.from(value);
+    return result;
   }
 }
 
-/**
- * Recursively checks that every `type` keyword in a schema tree names a real
- * JSON Schema primitive.
- *
- * json-tology treats an unrecognised `type` value as an unconstrained schema.
- * `tryCompile` rejects malformed type keywords before registration instead.
- */
+class SchemaObject {
+  static is(value: JSONSchema7Type): value is JSONSchema7Type & JsonSchemaObjectType {
+    const result = JsonObject.is(value) && JsonValue.is(value);
+    return result;
+  }
+}
+
 class TypeKeywordChecker {
-  static readonly #arrayKeywords = ['allOf', 'anyOf', 'oneOf', 'prefixItems'];
-  static readonly #directKeywords = [
-    'additionalProperties', 'contains', 'contentSchema', 'else', 'if', 'items', 'not',
-    'propertyNames', 'then', 'unevaluatedItems', 'unevaluatedProperties'
-  ];
-  static readonly #mapKeywords = ['$defs', 'dependentSchemas', 'patternProperties', 'properties'];
-
-  static isValid(node: JsonValueType): boolean {
-    if (typeof node === 'boolean') { return true; }
+  static isValid(node: JSONSchema7Type): boolean {
+    if (typeof node === 'boolean') {
+      const result = true;
+      return result;
+    }
     if (Array.isArray(node)) {
-      return node.every((entry) => { const result = TypeKeywordChecker.isValid(entry); return result; });
+      const result = TypeKeywordChecker.#arrayValid(node);
+      return result;
     }
-
-    if (!JsonObject.is(node)) { return true; }
-
-    if (Object.hasOwn(node, 'type') && !TypeKeywordChecker.#validType(JsonValue.from(node.type))) {
-      return false;
+    if (!JsonObject.is(node)) {
+      const result = true;
+      return result;
     }
-
-    for (const keyword of TypeKeywordChecker.#directKeywords) {
-      if (!TypeKeywordChecker.isValid(JsonValue.from(node[keyword]))) { return false; }
-    }
-    for (const keyword of TypeKeywordChecker.#arrayKeywords) {
-      const children = node[keyword];
-      const jsonChildren = JsonValue.from(children);
-      if (Array.isArray(jsonChildren) && !jsonChildren.every(TypeKeywordChecker.isValid)) { return false; }
-    }
-    for (const keyword of TypeKeywordChecker.#mapKeywords) {
-      const children = JsonValue.from(node[keyword]);
-      if (
-        JsonObject.is(children)
-        && !TypeKeywordChecker.#mapChildrenValid(children)
-      ) {
-        return false;
-      }
-    }
-
-    return true;
+    const result = TypeKeywordChecker.#objectValid(node);
+    return result;
   }
 
-  static #mapChildrenValid(children: JsonObjectType): boolean {
-    for (const child of Object.values(children)) {
-      if (!TypeKeywordChecker.isValid(JsonValue.from(child))) { return false; }
+  static #arrayValid(nodes: readonly JSONSchema7Type[]): boolean {
+    for (let index = 0; index < nodes.length; index += 1) {
+      const node = nodes[index];
+      if (node === undefined || !TypeKeywordChecker.isValid(node)) { return false; }
     }
     return true;
   }
 
-  static #validType(value: JsonValueType): boolean {
-    if (typeof value === 'string') { return JSON_SCHEMA_TYPE_NAMES.has(value); }
+  static #objectValid(node: Readonly<Record<string, JSONSchema7Type>>): boolean {
+    if (Object.hasOwn(node, 'type') && !TypeKeywordChecker.#validType(JsonValue.from(node.type))) { return false; }
+    if (!TypeKeywordChecker.#directChildrenValid(node)) { return false; }
+    if (!TypeKeywordChecker.#arrayChildrenValid(node)) { return false; }
+    const result = TypeKeywordChecker.#mapChildrenValid(node);
+    return result;
+  }
+
+  static #directChildrenValid(node: Readonly<Record<string, JSONSchema7Type>>): boolean {
+    const values = [
+      node.additionalProperties, node.contains, node.contentSchema, node.else, node.if, node.items,
+      node.not, node.propertyNames, node.then, node.unevaluatedItems, node.unevaluatedProperties
+    ];
+    for (let index = 0; index < values.length; index += 1) {
+      if (!TypeKeywordChecker.#childValid(values[index])) { return false; }
+    }
+    return true;
+  }
+
+  static #childValid(value: JSONSchema7Type | undefined): boolean {
+    if (value === undefined) { return true; }
+    const result = TypeKeywordChecker.isValid(value);
+    return result;
+  }
+
+  static #arrayChildrenValid(node: Readonly<Record<string, JSONSchema7Type>>): boolean {
+    const values = [node.allOf, node.anyOf, node.oneOf, node.prefixItems];
+    for (let index = 0; index < values.length; index += 1) {
+      const value = JsonValue.from(values[index]);
+      if (Array.isArray(value) && !TypeKeywordChecker.#arrayValid(value)) { return false; }
+    }
+    return true;
+  }
+
+  static #mapChildrenValid(node: Readonly<Record<string, JSONSchema7Type>>): boolean {
+    const values = [node.$defs, node.dependentSchemas, node.patternProperties, node.properties];
+    for (let index = 0; index < values.length; index += 1) {
+      const value = JsonValue.from(values[index]);
+      if (JsonObject.is(value) && !TypeKeywordChecker.#mapValid(value)) { return false; }
+    }
+    return true;
+  }
+
+  static #mapValid(values: Readonly<Record<string, JSONSchema7Type>>): boolean {
+    const children = Object.values(values);
+    const result = TypeKeywordChecker.#arrayValid(children);
+    return result;
+  }
+
+  static #validType(value: JSONSchema7Type): boolean {
+    if (typeof value === 'string') {
+      const result = JSON_SCHEMA_TYPE_NAMES.has(value);
+      return result;
+    }
     if (!Array.isArray(value) || value.length === 0) { return false; }
-
     const names = new Set<string>();
-    for (const entry of value) {
-      if (
-        typeof entry !== 'string'
-        || !JSON_SCHEMA_TYPE_NAMES.has(entry)
-        || names.has(entry)
-      ) {
-        return false;
-      }
+    for (let index = 0; index < value.length; index += 1) {
+      const entry = value[index];
+      if (typeof entry !== 'string' || !JSON_SCHEMA_TYPE_NAMES.has(entry) || names.has(entry)) { return false; }
       names.add(entry);
     }
     return true;
@@ -608,38 +814,41 @@ class ValidatorClass {
     this.#jt = CoreRegistry.ensure();
   }
 
-  validate<T>(schema: SchemaInterfaceType, value: T): ValidationResultInterfaceType {
+  validate<T>(schema: JsonSchemaObjectType, value: T): { readonly 'errors': ValidationErrorInterfaceTypeEntity.Type[] } {
     const withId = SyntheticId.assign(schema);
     const pruned = value === undefined ? undefined : UndefinedPruner.prune(value);
 
     const errors = this.#jt.validate(withId, pruned);
 
     if (errors.length === 0) {
-      return { 'errors': [], 'valid': true };
+      return { 'errors': [] };
     }
 
-    const mapped: ValidationErrorInterfaceType[] = errors.items.map((error) => {
-      const normalisedPath = PathNormaliser.normalise(withId, error.path, error.keyword, error.params);
+    const mapped: ValidationErrorInterfaceTypeEntity.Type[] = errors.items.map((error) => {
+      const parameters = JsonRecord.from(JsonValue.from(error.params));
+      const normalisedPath = PathNormaliser.normalise(withId, error.path, error.keyword, parameters);
       const actual = pruned === undefined ? undefined : Value.resolve(pruned, error.path);
-      const message = MessageNormaliser.normalise(error.keyword, error.params, error.path, actual, error.message, withId);
-      return { 'message': message, 'path': normalisedPath };
+      const message = MessageNormaliser.normalise(error.keyword, parameters, error.path, actual, error.message, withId);
+      const result = ValidationErrorInterfaceTypeEntity.create({ 'message': message, 'path': normalisedPath });
+      return result;
     });
 
-    return { 'errors': mapped, 'valid': false };
+    return { 'errors': mapped };
   }
 
   /**
    * Attempt to compile a schema to verify it is well-formed.
    * Returns true if the schema compiles without error, false otherwise.
    */
-  tryCompile(schema: SchemaInterfaceType): boolean {
-    if (!TypeKeywordChecker.isValid(JsonValue.from(schema))) { return false; }
+  tryCompile(schema: JSONSchema7Type): schema is JSONSchema7Type & JsonSchemaObjectType {
+    if (!SchemaObject.is(schema) || !TypeKeywordChecker.isValid(schema)) { return false; }
 
     try {
       this.validate(schema, undefined);
       return true;
     } catch {
-      return false;
+      const result = false;
+      return result;
     }
   }
 }

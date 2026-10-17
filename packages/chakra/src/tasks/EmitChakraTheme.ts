@@ -1,18 +1,15 @@
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+import {
+  type ColorRecordInterfaceTypeEntity,
+  type PaletteStateInterface,
+  type PipelineContextInterface,
+  type TaskInterface,
+  TaskManifestInterfaceTypeEntity
 } from '@studnicky/iridis';
-
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ChakraOutputInterfaceType } from '../types/index.ts';
 
 import { FAMILY_ROLE_MAP } from './constants/FamilyRoleMap.ts';
-import { TIER_SOURCES } from './constants/TierSources.ts';
 
 /**
  * Picks the role name that actually resolves in `roles`: the primary
@@ -21,7 +18,7 @@ import { TIER_SOURCES } from './constants/TierSources.ts';
  */
 class EffectiveRole {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceType>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     role: string,
     fallback?: string
   ): string | undefined {
@@ -41,20 +38,20 @@ class EffectiveRole {
  */
 class Family {
   static build(
-    roles: Record<string, ColorRecordInterfaceType>,
-    variants: Record<string, Record<string, ColorRecordInterfaceType>>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    variants: Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>,
     effectiveRole: string
   ): Record<string, string> | undefined {
-    const family: Record<string, string> = {};
-
-    for (const { source, tier } of TIER_SOURCES) {
-      const roleColor = source === 'roles' ? roles[effectiveRole] : variants[source]?.[effectiveRole];
-      if (roleColor !== undefined) {
-        family[tier] = roleColor.hex;
-      }
-    }
-
-    return Object.keys(family).length > 0 ? family : undefined;
+    const light = variants.light?.[effectiveRole];
+    const base = roles[effectiveRole];
+    const dark = variants.dark?.[effectiveRole];
+    const result = {
+      ...(light === undefined ? {} : { '100': light.hex }),
+      ...(base === undefined ? {} : { '500': base.hex }),
+      ...(dark === undefined ? {} : { '900': dark.hex })
+    };
+    const output = Object.keys(result).length > 0 ? result : undefined;
+    return output;
   }
 }
 
@@ -63,17 +60,30 @@ class Family {
  * string, safe to embed in an `extendTheme({ colors: ... })` call.
  */
 class ColorsToJs {
-  static serialize(colors: Record<string, Record<string, string>>): string {
+  static serialize(colors: ReadonlyMap<string, Record<string, string>>): string {
     const lines: string[] = ['{'];
-    for (const [family, shades] of Object.entries(colors)) {
+    const families = Array.from(colors.entries());
+    for (let familyIndex = 0; familyIndex < families.length; familyIndex += 1) {
+      const entry = families[familyIndex];
+      if (entry === undefined) {
+        continue;
+      }
+      const [family, shades] = entry;
       lines.push(`  '${family}': {`);
-      for (const [shade, hex] of Object.entries(shades)) {
+      const shadeEntries = Object.entries(shades);
+      for (let shadeIndex = 0; shadeIndex < shadeEntries.length; shadeIndex += 1) {
+        const shadeEntry = shadeEntries[shadeIndex];
+        if (shadeEntry === undefined) {
+          continue;
+        }
+        const [shade, hex] = shadeEntry;
         lines.push(`    '${shade}': '${hex}',`);
       }
       lines.push('  },');
     }
     lines.push('}');
-    return lines.join('\n');
+    const result = lines.join('\n');
+    return result;
   }
 }
 
@@ -85,52 +95,75 @@ class ColorsToJs {
 export class EmitChakraTheme implements TaskInterface {
   readonly 'name' = 'emit:chakraTheme';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Emit a Chakra UI extendTheme() color-token scale (100/500/900 per family) from resolved roles and dark/light variants',
     'name':        'emit:chakraTheme',
-    'phase':       undefined,
     'reads':       ['roles', 'variants'],
-    'requires':    undefined,
     'writes':      ['outputs.chakra:theme']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    const colors: Record<string, Record<string, string>> = {};
-
-    for (const mapping of FAMILY_ROLE_MAP) {
+    const colors = new Map<string, Record<string, string>>();
+    for (let mappingIndex = 0; mappingIndex < FAMILY_ROLE_MAP.length; mappingIndex += 1) {
+      const mapping = FAMILY_ROLE_MAP[mappingIndex];
+      if (mapping === undefined) {
+        continue;
+      }
       const effectiveRole = EffectiveRole.resolve(state.roles, mapping.role, mapping.fallback);
-      if (effectiveRole === undefined) {continue;}
-
+      if (effectiveRole === undefined) {
+        continue;
+      }
       const family = Family.build(state.roles, state.variants, effectiveRole);
-      if (family === undefined) {continue;}
-
-      colors[mapping.family] = family;
+      if (family === undefined) {
+        continue;
+      }
+      colors.set(mapping.family, family);
     }
 
     const colorsJs = ColorsToJs.serialize(colors);
+    const indentedColors = colorsJs.split('\n').map((line, index) => {
+      const result = index === 0 ? line : `  ${line}`;
+      return result;
+    }).join('\n');
+    const brand = colors.get('brand');
+    const accent = colors.get('accent');
+    const success = colors.get('success');
+    const warning = colors.get('warning');
+    const error = colors.get('error');
+    const info = colors.get('info');
+    const neutral = colors.get('neutral');
+    const colorOutput: Record<string, Record<string, string>> = {
+      ...(brand === undefined ? {} : { 'brand': brand }),
+      ...(accent === undefined ? {} : { 'accent': accent }),
+      ...(success === undefined ? {} : { 'success': success }),
+      ...(warning === undefined ? {} : { 'warning': warning }),
+      ...(error === undefined ? {} : { 'error': error }),
+      ...(info === undefined ? {} : { 'info': info }),
+      ...(neutral === undefined ? {} : { 'neutral': neutral })
+    };
     const config = [
       'import { extendTheme } from \'@chakra-ui/react\';',
       '',
       'export default extendTheme({',
-      `  colors: ${colorsJs.split('\n').map((l, i) => {return i === 0 ? l : `  ${l}`;}).join('\n')},`,
+      `  colors: ${indentedColors},`,
       '});'
     ].join('\n');
 
     const output: ChakraOutputInterfaceType = {
-      'colors': colors,
+      'colors': colorOutput,
       'config': config
     };
 
     state.outputs['chakra:theme'] = output;
 
     context.logger.debug(
-      LogBody.create()
-        .component('EmitChakraTheme')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Emitted Chakra theme')
-        .context({ 'families': Object.keys(colors).length })
-        .build()
+      LogBody.create({
+        'component': 'EmitChakraTheme',
+        'context': { 'families': colors.size },
+        'message': 'Emitted Chakra theme',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

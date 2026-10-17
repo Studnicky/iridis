@@ -1,8 +1,9 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterfaceType,
   TaskInterface
 } from '@studnicky/iridis';
+
+import { PluginSchemaContributionInterfaceEntity } from '@studnicky/iridis';
 
 import { IMAGE_PLUGIN_SCHEMAS } from './constants/ImagePluginSchemas.ts';
 import { galleryAssignRoles }       from './tasks/GalleryAssignRoles.ts';
@@ -30,15 +31,15 @@ export class ImagePlugin implements PluginInterface {
     return [galleryHistogram, galleryExtract, galleryExtractCandidates, galleryAssignRoles, galleryHarmonize];
   }
 
-  schemas(): PluginSchemaContributionInterfaceType {
-    return {
+  schemas(): PluginSchemaContributionInterfaceEntity.Type {
+    const result = PluginSchemaContributionInterfaceEntity.create({
       'metadata': {
         'gallery:candidates':     IMAGE_PLUGIN_SCHEMAS.GALLERY_CANDIDATES,
         'gallery:dominantColors': IMAGE_PLUGIN_SCHEMAS.GALLERY_DOMINANT_COLORS,
         'gallery:harmonized':    IMAGE_PLUGIN_SCHEMAS.GALLERY_HARMONIZED,
         'gallery:histogram':     IMAGE_PLUGIN_SCHEMAS.GALLERY_HISTOGRAM
-      },
-      'outputs': undefined
-    };
+      }
+    });
+    return result;
   }
 }

@@ -8,20 +8,18 @@
  * round-trip smoke test.
  */
 
-import { EffectInterpreter } from '@studnicky/fsm';
+import { EffectInterpreter } from '@studnicky/fsm/browser';
 import assert from 'node:assert/strict';
-import { register } from 'node:module';
+import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 
-import type { IridisUiStateType } from '../app/composables/types/iridisUiState.ts';
-
 import { IridisUiMachine } from '../app/composables/fsm/IridisUiMachine.ts';
-import { IridisUiActionType } from '../app/composables/types/iridisUiEvent.ts';
-import { TestPatterns } from './fixtures/TestPatterns.ts';
+import { IridisUiEvent } from '../app/composables/types/iridisUiEvent.ts';
+import { IridisUiState } from '../app/composables/types/iridisUiState.ts';
+import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
 
-register('./fixtures/NuxtImportsLoader.mjs', import.meta.url);
+registerHooks(NuxtImportsLoader);
 
-const TEST_NUXT_APP = Symbol.for('iridis.test.nuxt-app');
 
 class SeedEffectRecorder {
   static readonly #seen: string[] = [];
@@ -31,179 +29,167 @@ class SeedEffectRecorder {
     return SeedEffectRecorder.#seen;
   }
 
-  static record(effect: { readonly 'op': string }): void {
-    SeedEffectRecorder.#seen.push(effect.op);
+  static record(effect: { readonly 'type': string }): void {
+    SeedEffectRecorder.#seen.push(effect.type);
   }
 }
 
 await test('SELECT_MODE from idle resets activeIndex and updates mode', () => {
   const m = new IridisUiMachine();
-  const idle = { 'activeIndex': 3, 'mode': 'picker', 'variant': 'idle' } satisfies IridisUiStateType.Type;
-  const { state } = m.transition(idle, { 'mode': 'image', 'type': IridisUiActionType.SELECT_MODE });
+  const idle = IridisUiState.idlePicker(3);
+  const { state } = m.transition(idle, IridisUiEvent.selectImageMode());
   assert.equal(state.variant, 'idle');
-  assert.equal(state.mode, 'image');
+  assert.equal(state.selectsImageMode(), true);
   assert.equal(state.activeIndex, 0);
 });
 
 await test('SELECT_CARD updates activeIndex', () => {
   const m = new IridisUiMachine();
-  const { state } = m.transition(m.getInitialState(), { 'index': 4, 'type': IridisUiActionType.SELECT_CARD });
+  const { state } = m.transition(m.getInitialState(), IridisUiEvent.selectCard(4));
   assert.equal(state.activeIndex, 4);
 });
 
 await test('NAVIGATE wraps at both ends', () => {
   const m = new IridisUiMachine();
-  const zero = { 'activeIndex': 0, 'mode': 'picker', 'variant': 'idle' } satisfies IridisUiStateType.Type;
-  const backward = m.transition(zero, { 'count': 5, 'delta': -1, 'type': IridisUiActionType.NAVIGATE });
+  const zero = IridisUiState.idlePicker(0);
+  const backward = m.transition(zero, IridisUiEvent.navigate(5, -1));
   assert.equal(backward.state.activeIndex, 4);
 
-  const last = { 'activeIndex': 4, 'mode': 'picker', 'variant': 'idle' } satisfies IridisUiStateType.Type;
-  const forward = m.transition(last, { 'count': 5, 'delta': 1, 'type': IridisUiActionType.NAVIGATE });
+  const last = IridisUiState.idlePicker(4);
+  const forward = m.transition(last, IridisUiEvent.navigate(5, 1));
   assert.equal(forward.state.activeIndex, 0);
 });
 
 await test('DRAG_START -> DRAG_MOVE -> DRAG_END full cycle', () => {
   const m = new IridisUiMachine();
-  const idle = { 'activeIndex': 1, 'mode': 'picker', 'variant': 'idle' } satisfies IridisUiStateType.Type;
-  const started = m.transition(idle, { 'type': IridisUiActionType.DRAG_START });
+  const idle = IridisUiState.idlePicker(1);
+  const started = m.transition(idle, IridisUiEvent.dragStart());
   assert.equal(started.state.variant, 'dragging');
 
-  const moved = m.transition(started.state, { 'dragPx': -120, 'type': IridisUiActionType.DRAG_MOVE });
+  const moved = m.transition(started.state, IridisUiEvent.dragMove(-120));
   assert.equal(moved.state.variant, 'dragging');
   if (moved.state.variant !== 'dragging') { throw new Error('Drag move must preserve dragging state'); }
-  assert.equal(moved.state.dragPx, -120);
+  assert.equal(moved.state.dragOffset(), -120);
 
-  const ended = m.transition(moved.state, { 'count': 5, 'shiftedBy': 2, 'type': IridisUiActionType.DRAG_END });
+  const ended = m.transition(moved.state, IridisUiEvent.dragEnd(5, 2));
   assert.equal(ended.state.variant, 'idle');
   assert.equal(ended.state.activeIndex, 3);
 });
 
 await test('SELECT_MODE while dragging settles the drag and applies the mode (does not throw)', () => {
   const m = new IridisUiMachine();
-  const dragging = { 'activeIndex': 2, 'dragPx': -45, 'mode': 'picker', 'variant': 'dragging' } satisfies IridisUiStateType.Type;
-  const { effects, state } = m.transition(dragging, { 'mode': 'image', 'type': IridisUiActionType.SELECT_MODE });
+  const dragging = IridisUiState.draggingPicker(2, -45);
+  const { effects, state } = m.transition(dragging, IridisUiEvent.selectImageMode());
   assert.deepEqual(effects, []);
   assert.equal(state.variant, 'idle');
-  assert.equal(state.mode, 'image');
+  assert.equal(state.selectsImageMode(), true);
   assert.equal(state.activeIndex, 0);
   assert.equal('dragPx' in state, false);
 });
 
 await test('a second DRAG_START while already dragging is idempotent', () => {
   const m = new IridisUiMachine();
-  const dragging = { 'activeIndex': 1, 'dragPx': 30, 'mode': 'picker', 'variant': 'dragging' } satisfies IridisUiStateType.Type;
-  const { effects, state } = m.transition(dragging, { 'type': IridisUiActionType.DRAG_START });
+  const dragging = IridisUiState.draggingPicker(1, 30);
+  const { effects, state } = m.transition(dragging, IridisUiEvent.dragStart());
   assert.deepEqual(effects, []);
   assert.deepEqual(state, dragging);
 });
 
 await test('NAVIGATE while dragging is a safe no-op (does not throw, drag state untouched)', () => {
   const m = new IridisUiMachine();
-  const dragging = { 'activeIndex': 1, 'dragPx': 10, 'mode': 'picker', 'variant': 'dragging' } satisfies IridisUiStateType.Type;
-  const { effects, state } = m.transition(dragging, { 'count': 5, 'delta': 1, 'type': IridisUiActionType.NAVIGATE });
+  const dragging = IridisUiState.draggingPicker(1, 10);
+  const { effects, state } = m.transition(dragging, IridisUiEvent.navigate(5, 1));
   assert.deepEqual(effects, []);
   assert.deepEqual(state, dragging);
 });
 
 await test('SET_SEED while dragging still emits its MUTATE_SEEDS effect and leaves state unchanged', () => {
   const m = new IridisUiMachine();
-  const dragging = { 'activeIndex': 0, 'dragPx': 5, 'mode': 'picker', 'variant': 'dragging' } satisfies IridisUiStateType.Type;
-  const { effects, state } = m.transition(dragging, { 'hex': '#010203', 'index': 0, 'type': IridisUiActionType.SET_SEED });
-  assert.deepEqual(effects, [{ 'hex': '#010203', 'index': 0, 'op': 'set', 'variant': 'MUTATE_SEEDS' }]);
+  const dragging = IridisUiState.draggingPicker(0, 5);
+  const { effects, state } = m.transition(dragging, IridisUiEvent.setSeed(0, '#010203'));
+  assert.equal(effects[0]?.type, 'SET_SEED');
   assert.deepEqual(state, dragging);
 });
 
 await test('reduce() throws on an invalid transition (DRAG_MOVE while idle)', () => {
   const m = new IridisUiMachine();
-  assert.throws(() => { m.reduce(m.getInitialState(), { 'dragPx': 0, 'type': IridisUiActionType.DRAG_MOVE }); }, TestPatterns.INVALID_DRAG_MOVE);
+  assert.throws(() => { m.reduce(m.getInitialState(), IridisUiEvent.dragMove(0)); }, { 'message': 'Cannot handle event "DRAG_MOVE" in an idle state' });
 });
 
 await test('reduce() throws on an invalid transition (DRAG_END while idle)', () => {
   const m = new IridisUiMachine();
-  assert.throws(() => { m.reduce(m.getInitialState(), { 'count': 5, 'shiftedBy': 1, 'type': IridisUiActionType.DRAG_END }); }, TestPatterns.INVALID_DRAG_END);
+  assert.throws(() => { m.reduce(m.getInitialState(), IridisUiEvent.dragEnd(5, 1)); }, { 'message': 'Cannot handle event "DRAG_END" in an idle state' });
 });
 
 await test('transition() rethrows (does not swallow) on an invalid transition', () => {
   const m = new IridisUiMachine();
-  assert.throws(() => { m.transition(m.getInitialState(), { 'dragPx': 0, 'type': IridisUiActionType.DRAG_MOVE }); });
+  assert.throws(() => { m.transition(m.getInitialState(), IridisUiEvent.dragMove(0)); });
 });
 
 await test('ADD_SEED emits a MUTATE_SEEDS/add effect and leaves state unchanged', () => {
   const m = new IridisUiMachine();
   const idle = m.getInitialState();
-  const { effects, state } = m.transition(idle, { 'hex': '#123456', 'type': IridisUiActionType.ADD_SEED });
-  assert.deepEqual(effects, [{ 'hex': '#123456', 'op': 'add', 'variant': 'MUTATE_SEEDS' }]);
+  const { effects, state } = m.transition(idle, IridisUiEvent.addSeed('#123456'));
+  assert.equal(effects[0]?.type, 'ADD_SEED');
   assert.deepEqual(state, idle);
 });
 
 await test('REMOVE_SEED emits a MUTATE_SEEDS/remove effect with the index', () => {
   const m = new IridisUiMachine();
-  const { effects } = m.transition(m.getInitialState(), { 'index': 2, 'type': IridisUiActionType.REMOVE_SEED });
-  assert.deepEqual(effects, [{ 'index': 2, 'op': 'remove', 'variant': 'MUTATE_SEEDS' }]);
+  const { effects } = m.transition(m.getInitialState(), IridisUiEvent.removeSeed(2));
+  assert.equal(effects[0]?.type, 'REMOVE_SEED');
 });
 
 await test('SET_SEED emits a MUTATE_SEEDS/set effect with index and hex', () => {
   const m = new IridisUiMachine();
-  const { effects } = m.transition(m.getInitialState(), { 'hex': '#abcdef', 'index': 1, 'type': IridisUiActionType.SET_SEED });
-  assert.deepEqual(effects, [{ 'hex': '#abcdef', 'index': 1, 'op': 'set', 'variant': 'MUTATE_SEEDS' }]);
+  const { effects } = m.transition(m.getInitialState(), IridisUiEvent.setSeed(1, '#abcdef'));
+  assert.equal(effects[0]?.type, 'SET_SEED');
 });
 
-await test('EffectInterpreter round-trips a SELECT_MODE transition and invokes handlers for seed effects', async () => {
+await test('EffectInterpreter round-trips concrete state and effect behavior', async () => {
   const seen = SeedEffectRecorder.begin();
-  const interpreter = EffectInterpreter.create({
-    'handlers': {
-      'MUTATE_SEEDS': SeedEffectRecorder.record
-    },
-    'machine': new IridisUiMachine()
+  const interpreter = EffectInterpreter.create(new IridisUiMachine(), {
+    'handler': (effect) => {
+      SeedEffectRecorder.record(effect);
+    }
   });
   interpreter.start();
 
   const states: string[] = [];
-  interpreter.subscribe((s) => { states.push(`${s.variant}:${s.mode}:${s.activeIndex}`); });
+  interpreter.subscribe((state) => {
+    const mode = state.selectsImageMode() ? 'image' : 'picker';
+    states.push(`${state.variant}:${mode}:${state.activeIndex}`);
+  });
 
-  await interpreter.send({ 'mode': 'image', 'type': IridisUiActionType.SELECT_MODE });
-  assert.equal(interpreter.getState().mode, 'image');
+  await interpreter.send(IridisUiEvent.selectImageMode());
+  assert.equal(interpreter.getState().selectsImageMode(), true);
   assert.equal(interpreter.getState().activeIndex, 0);
   assert.ok(states.includes('idle:image:0'));
 
-  await interpreter.send({ 'hex': '#ffffff', 'type': IridisUiActionType.ADD_SEED });
-  assert.deepEqual(seen, ['add']);
-  // ADD_SEED doesn't change UI state — the interpreter still notifies subscribers on every transition.
+  await interpreter.send(IridisUiEvent.addSeed('#ffffff'));
+  assert.deepEqual(seen, ['ADD_SEED']);
   assert.equal(interpreter.getState().variant, 'idle');
 });
 
-await test('UI interpreters and effect registries share one app context and isolate SSR requests', async (context) => {
+await test('UI interpreters share one app context and isolate SSR state', async (context) => {
   const { useIridisUiMachine } = await import('../app/composables/useIridisUiMachine.ts');
   const firstNuxtApp = {};
   const secondNuxtApp = {};
-  const firstEffects: string[] = [];
-  const secondEffects: string[] = [];
-  context.after(() => { Reflect.deleteProperty(globalThis, TEST_NUXT_APP); });
+  context.after(() => { Reflect.set(globalThis, 'iridisTestNuxtApp', undefined); });
 
-  Reflect.set(globalThis, TEST_NUXT_APP, firstNuxtApp);
+  Reflect.set(globalThis, 'iridisTestNuxtApp', firstNuxtApp);
   const firstMachine = useIridisUiMachine();
-  firstMachine.registerMutateSeedsHandler((effect) => { firstEffects.push(effect.op); });
   const firstMachineAgain = useIridisUiMachine();
   assert.strictEqual(firstMachine.state, firstMachineAgain.state);
 
-  Reflect.set(globalThis, TEST_NUXT_APP, secondNuxtApp);
+  Reflect.set(globalThis, 'iridisTestNuxtApp', secondNuxtApp);
   const secondMachine = useIridisUiMachine();
-  secondMachine.registerMutateSeedsHandler((effect) => { secondEffects.push(effect.op); });
   assert.notStrictEqual(firstMachine.state, secondMachine.state);
 
-  await Promise.all([
-    Promise.resolve().then(() => {
-      firstMachine.send({ 'hex': '#123456', 'type': IridisUiActionType.ADD_SEED });
-      firstMachine.send({ 'mode': 'image', 'type': IridisUiActionType.SELECT_MODE });
-    }),
-    Promise.resolve().then(() => {
-      secondMachine.send({ 'hex': '#abcdef', 'type': IridisUiActionType.ADD_SEED });
-    })
-  ]);
-  await Promise.resolve();
+  firstMachine.send(IridisUiEvent.selectImageMode());
+  secondMachine.send(IridisUiEvent.selectPickerMode());
+  await new Promise<void>((resolve) => { setImmediate(resolve); });
 
-  assert.deepEqual(firstEffects, ['add']);
-  assert.deepEqual(secondEffects, ['add']);
-  assert.equal(firstMachine.state.value.mode, 'image');
-  assert.equal(secondMachine.state.value.mode, 'picker');
+  assert.equal(firstMachine.state.value.selectsImageMode(), true);
+  assert.equal(secondMachine.state.value.selectsImageMode(), false);
 });

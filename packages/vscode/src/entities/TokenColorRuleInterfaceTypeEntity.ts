@@ -1,6 +1,6 @@
-import type { FromSchema, JsonValueType } from '@studnicky/types';
+import type { InferType } from '@studnicky/json-tology/types';
 
-import { Guard, JsonValue } from '@studnicky/types';
+import { EntityCompiler } from '@studnicky/entity/node';
 
 import { SemanticRuleEntryInterfaceTypeEntity } from './SemanticRuleEntryInterfaceTypeEntity.ts';
 
@@ -17,13 +17,9 @@ export namespace TokenColorRuleInterfaceTypeEntity {
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = InferType<typeof Schema>;
 
-  export const validate = (candidate: JsonValueType): candidate is Type => {
-    if (!Guard.isObject(candidate)) {return false;}
-    const nameValid  = typeof candidate.name === 'string';
-    const scopeValid = typeof candidate.scope === 'string' || Array.isArray(candidate.scope);
-    const settingsValid = SemanticRuleEntryInterfaceTypeEntity.validate(JsonValue.from(candidate.settings));
-    return nameValid && scopeValid && settingsValid;
-  };
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type>(Schema);
 }

@@ -1,20 +1,17 @@
 import type {
-  ColorRecordInterfaceType,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
-import type { RoleProvenanceMapInterfaceType } from '@studnicky/iridis/types';
 
-import { ModuleError } from '@studnicky/errors';
-import { EngineMetadata, FramingSurface, mixHsl } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { ModuleError } from '@studnicky/errors/node';
+import { FramingSurface, Metadata, mixHsl, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 
 class Role {
-  static get(roles: Readonly<Record<string, ColorRecordInterfaceType>>, name: string): ColorRecordInterfaceType {
+  static get(roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>, name: string): ColorRecordInterfaceTypeEntity.Type {
     const record = roles[name];
     if (record === undefined) {
       throw ModuleError.create(`EmitVscodeUiPalette: role '${name}' not found in state.roles`, {
@@ -29,14 +26,13 @@ class Role {
 class EmitVscodeUiPalette implements TaskInterface {
   readonly 'name' = 'emit:vscodeUiPalette';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Emits 129 VS Code workbench colors from the resolved 64-role VS Code vocabulary.',
     'name':        'emit:vscodeUiPalette',
-    'phase':       undefined,
     'reads':       ['roles', 'metadata.core:roleProvenance', 'runtime.framing', 'variants'],
     'requires':    ['vscode:deriveUiRoles'],
     'writes':      ['outputs.vscode:workbenchColors']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const roles = FramingSurface.resolve(state);
@@ -49,9 +45,10 @@ class EmitVscodeUiPalette implements TaskInterface {
       return `${record.hex}${suffix}`;
     };
 
-    const provenance: Readonly<RoleProvenanceMapInterfaceType> = EngineMetadata.get(state.metadata, 'core:roleProvenance') ?? {};
-    const bracketBackgroundRole = provenance.bracketMatch?.origin === 'stated' ? 'bracketMatch' : 'selection';
-    const bracketBorderRole = provenance.bracketMatch?.origin === 'stated' ? 'bracketMatch' : 'accent';
+    const provenance = Metadata.roleProvenance(state.metadata);
+    const bracketMatchProvenance = provenance.get('bracketMatch');
+    const bracketBackgroundRole = bracketMatchProvenance?.origin === 'stated' ? 'bracketMatch' : 'selection';
+    const bracketBorderRole = bracketMatchProvenance?.origin === 'stated' ? 'bracketMatch' : 'accent';
     const workbenchColors: Record<string, string> = {
       'activityBar.background':                        color('chromeInactive'),
       'activityBar.border':                            color('border'),
@@ -186,13 +183,13 @@ class EmitVscodeUiPalette implements TaskInterface {
 
     state.outputs['vscode:workbenchColors'] = workbenchColors;
     context.logger.debug(
-      LogBody.create()
-        .component('EmitVscodeUiPalette')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Emitted workbench colors')
-        .context({ 'count': Object.keys(workbenchColors).length })
-        .build()
+      LogBody.create({
+        'component': 'EmitVscodeUiPalette',
+        'context': { 'count': Object.keys(workbenchColors).length },
+        'message': 'Emitted workbench colors',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

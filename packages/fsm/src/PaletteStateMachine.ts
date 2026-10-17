@@ -1,5 +1,5 @@
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
-import type { CurveOptionsInterfaceType } from '@studnicky/iridis-anima';
+import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import type { CurveOptionsInterface } from '@studnicky/iridis-anima';
 
 import { evaluate } from '@studnicky/iridis-anima';
 
@@ -19,7 +19,7 @@ export abstract class PaletteStateMachine {
   #fromState:  string | undefined;
   #toState:    string | undefined;
   #t = 0;
-  #curveOptions:  CurveOptionsInterfaceType | undefined;
+  #curveOptions:  CurveOptionsInterface | undefined;
 
   protected constructor(
     states: PaletteStateSchemaType,
@@ -33,12 +33,14 @@ export abstract class PaletteStateMachine {
 
   /** The state the machine currently occupies (or is transitioning away from). */
   get currentState(): string {
-    return this.#currentState;
+    const result = this.#currentState;
+    return result;
   }
 
   /** True while a transition is in progress (`tick()` has not yet reached t=1). */
   get isTransitioning(): boolean {
-    return this.#toState !== undefined;
+    const result = this.#toState !== undefined;
+    return result;
   }
 
   /**
@@ -46,7 +48,7 @@ export abstract class PaletteStateMachine {
    * `onTransitionRejected`) if `toState` is not reachable from the current
    * state per the transition table, or if the machine is terminated.
    */
-  transition(toState: string, options?: CurveOptionsInterfaceType): boolean {
+  transition(toState: string, options?: CurveOptionsInterface): boolean {
     if (this.isTerminated()) {
       this.onTransitionRejected(this.#currentState, toState, 'terminated');
       return false;
@@ -63,7 +65,8 @@ export abstract class PaletteStateMachine {
     this.#t         = 0;
     this.#curveOptions = options;
     this.onTransition(this.#fromState, toState);
-    return true;
+    const result = true;
+    return result;
   }
 
   /**
@@ -79,7 +82,7 @@ export abstract class PaletteStateMachine {
 
     const fromPalette = this.#states[this.#fromState]!.palette;
     const toPalette    = this.#states[this.#toState]!.palette;
-    const palette: PaletteInterfaceType = evaluate(fromPalette, toPalette, this.#t, this.#curveOptions);
+    const palette: PaletteInterfaceTypeEntity.Type = evaluate(fromPalette, toPalette, this.#t, this.#curveOptions);
 
     this.onTick(palette, this.#t);
 
@@ -100,7 +103,8 @@ export abstract class PaletteStateMachine {
   /** True if the current state has no outgoing transitions in the transition table. */
   isTerminated(): boolean {
     const allowed = this.#transitions[this.#currentState];
-    return allowed === undefined || allowed.length === 0;
+    const result = allowed === undefined || allowed.length === 0;
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -111,7 +115,7 @@ export abstract class PaletteStateMachine {
   protected onTransition(_fromState: string, _toState: string): void {}
 
   /** Fires with each evaluated intermediate palette while a transition is in progress. */
-  protected onTick(_palette: PaletteInterfaceType, _t: number): void {}
+  protected onTick(_palette: PaletteInterfaceTypeEntity.Type, _t: number): void {}
 
   /** Fires when leaving a state, once its outbound transition completes (t=1). */
   protected onExitState(_state: string): void {}

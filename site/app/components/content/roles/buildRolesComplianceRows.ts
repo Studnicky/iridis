@@ -1,10 +1,8 @@
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis/model';
+import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
 
-import type { FramingType } from '~/composables/types/index.ts';
 import type { RoleSortableRowType } from '~/composables/types/roleSortableRow.ts';
 import type { RoleSortKeyType } from '~/composables/types/roleSortKey.ts';
 
-import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 class RoleComplianceRow implements RoleSortableRowType {
@@ -43,11 +41,13 @@ export const buildRolesComplianceRows = class RolesComplianceRows {
    * this read against the page background" intent in the first place.
    */
   private static structuralRole(
-    schema: RoleSchemaInterfaceType | undefined,
+    schema: RoleSchemaInterfaceTypeEntity.Type | undefined,
     roleName: string
   ): boolean {
-    for (const pair of schema?.contrastPairs ?? []) {
-      if (pair.foreground === roleName && pair.background === 'background') {
+    const contrastPairs = schema?.contrastPairs ?? [];
+    for (let index = 0; index < contrastPairs.length; index += 1) {
+      const pair = contrastPairs[index];
+      if (pair?.foreground === roleName && pair.background === 'background') {
         return false;
       }
     }
@@ -55,14 +55,16 @@ export const buildRolesComplianceRows = class RolesComplianceRows {
   }
 
   public static build(
-    framing: FramingType.Type,
-    schemaName: string,
+    schema: RoleSchemaInterfaceTypeEntity.Type | undefined,
     rows: readonly RoleComplianceRow[],
     roleSortKeys: readonly RoleSortKeyType[]
   ): RoleComplianceRow[] {
-    const schema = roleSchemaByName[schemaName]?.[framing];
     const labeled: RoleComplianceRow[] = [];
-    for (const row of rows) {
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+      if (row === undefined) {
+        continue;
+      }
       labeled.push(new RoleComplianceRow(
         row.c,
         RolesComplianceRows.structuralRole(schema, row.name) ? 'n/a' : row.compliance,
@@ -73,6 +75,7 @@ export const buildRolesComplianceRows = class RolesComplianceRows {
         row.ratio
       ));
     }
-    return sortRoleRows(labeled, roleSortKeys);
+    const result = sortRoleRows(labeled, roleSortKeys);
+    return result;
   }
 };

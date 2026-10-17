@@ -1,52 +1,51 @@
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
-
+import { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { enforceContrast, evaluateEnforced } from '../src/index.ts';
+import { EnforcedPaletteFixture } from './fixtures/EnforcedPaletteFixture.ts';
 
-// Deliberately low-contrast: light gray text on white background (~1.6:1),
-// well below the 4.5:1 WCAG AA threshold.
-const LOW_CONTRAST_FROM: PaletteInterfaceType = {
-  'background': { 'c': 0.01, 'h': 240, 'l': 0.98 },
-  'text':       { 'c': 0.01, 'h': 240, 'l': 0.85 }
-};
-const LOW_CONTRAST_TO: PaletteInterfaceType = {
-  'background': { 'c': 0.01, 'h': 240, 'l': 0.98 },
-  'text':       { 'c': 0.01, 'h': 240, 'l': 0.80 }
-};
-
-const CONTRAST_PAIRS = [
-  { 'algorithm': undefined, 'background': 'background', 'foreground': 'text', 'minRatio': 4.5 }
-];
+class PaletteRoleAssertions {
+  static require(palette: PaletteInterfaceTypeEntity.Type, roleName: string): PaletteInterfaceTypeEntity.Type[string] {
+    const role = palette[roleName];
+    if (role === undefined) {
+      throw new Error(`palette omits role ${roleName}`);
+    }
+    return role;
+  }
+}
 
 await test('enforceContrast: corrects a deliberately low-contrast frame in place', () => {
-  const corrected = enforceContrast(LOW_CONTRAST_FROM, CONTRAST_PAIRS, 'aa');
-  assert.notStrictEqual(corrected.text!.l, LOW_CONTRAST_FROM.text!.l, 'text lightness was adjusted');
-  assert.strictEqual(corrected.background!.l, LOW_CONTRAST_FROM.background!.l, 'background left untouched');
+  const corrected = enforceContrast(EnforcedPaletteFixture.from, EnforcedPaletteFixture.contrastPairs);
+  const correctedText = PaletteRoleAssertions.require(corrected, 'text');
+  const sourceText = PaletteRoleAssertions.require(EnforcedPaletteFixture.from, 'text');
+  const correctedBackground = PaletteRoleAssertions.require(corrected, 'background');
+  const sourceBackground = PaletteRoleAssertions.require(EnforcedPaletteFixture.from, 'background');
+  assert.notStrictEqual(correctedText.l, sourceText.l, 'text lightness was adjusted');
+  assert.strictEqual(correctedBackground.l, sourceBackground.l, 'background left untouched');
 });
 
 await test('enforceContrast: passes an already-passing frame through unchanged', () => {
-  const passing: PaletteInterfaceType = {
+  const passing = PaletteInterfaceTypeEntity.create({
     'background': { 'c': 0.01, 'h': 240, 'l': 0.98 },
     'text':       { 'c': 0.01, 'h': 240, 'l': 0.10 }
-  };
-  const corrected = enforceContrast(passing, CONTRAST_PAIRS, 'aa');
-  assert.ok(Math.abs(corrected.text!.l - passing.text!.l) < 1e-6, 'already-passing text left effectively unchanged');
+  });
+  const corrected = enforceContrast(passing, EnforcedPaletteFixture.contrastPairs);
+  const correctedText = PaletteRoleAssertions.require(corrected, 'text');
+  const sourceText = PaletteRoleAssertions.require(passing, 'text');
+  assert.ok(Math.abs(correctedText.l - sourceText.l) < 1e-6, 'already-passing text left effectively unchanged');
 });
 
 await test('enforceContrast: no-op when there are no contrast pairs', () => {
-  const result = enforceContrast(LOW_CONTRAST_FROM, [], 'aa');
-  assert.deepStrictEqual(result, LOW_CONTRAST_FROM);
+  const result = enforceContrast(EnforcedPaletteFixture.from, []);
+  assert.deepStrictEqual(result, EnforcedPaletteFixture.from);
 });
 
 await test('evaluateEnforced: evaluated frame is re-validated and corrected', () => {
-  const frame = evaluateEnforced(LOW_CONTRAST_FROM, LOW_CONTRAST_TO, 0.5, {
-    'chromaticDetourRoles': undefined,
-    'contrastPairs':        CONTRAST_PAIRS,
-    'easing':               undefined,
-    'hueDirection':         undefined,
-    'level':                'aa'
+  const frame = evaluateEnforced(EnforcedPaletteFixture.from, EnforcedPaletteFixture.to, 0.5, {
+    'contrastPairs': EnforcedPaletteFixture.contrastPairs
   });
-  assert.notStrictEqual(frame.text!.l, LOW_CONTRAST_FROM.text!.l, 'evaluated+enforced text differs from the raw low-contrast lerp');
+  const text = PaletteRoleAssertions.require(frame, 'text');
+  const sourceText = PaletteRoleAssertions.require(EnforcedPaletteFixture.from, 'text');
+  assert.notStrictEqual(text.l, sourceText.l, 'evaluated+enforced text differs from the raw low-contrast lerp');
 });

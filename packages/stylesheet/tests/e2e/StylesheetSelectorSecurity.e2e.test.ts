@@ -1,129 +1,92 @@
 import type {
-  InputInterface,
   PaletteStateInterface,
   PipelineContextInterface,
-  RoleSchemaInterfaceType,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
+import {
+  InputInterfaceTypeEntity,
+  RoleSchemaInterfaceTypeEntity,
+  TaskManifestInterfaceTypeEntity
+} from '@studnicky/iridis';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
+import { JsonValue } from '@studnicky/types/node';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { stylesheetPlugin } from '../../src/index.ts';
 import { CssVarsScenarioOutputEntity } from '../entities/CssVarsScenarioOutputEntity.ts';
 import { CssVarsScopedScenarioOutputEntity } from '../entities/CssVarsScopedScenarioOutputEntity.ts';
-
-const HOSTILE_VARIANT = "music'] } body { color: red } [data-owned='true";
-
-const ROLE_SCHEMA: RoleSchemaInterfaceType = {
-  'contrastPairs': undefined,
-  'description': undefined,
-  'name': 'selector-security',
-  'roles': [{
-    'chromaRange': undefined,
-    'derivedFrom': undefined,
-    'description': undefined,
-    'hue': undefined,
-    'hueClamp': undefined,
-    'hueOffset': undefined,
-    'intent': undefined,
-    'lightnessRange': undefined,
-    'name': 'primary',
-    'required': true
-  }]
-};
+import { StylesheetSelectorSecurityTestData } from '../fixtures/StylesheetSelectorSecurityTestData.ts';
 
 class HostileVariantTask implements TaskInterface {
   readonly name = 'test:addHostileVariant';
 
-  readonly manifest: TaskManifestInterfaceType = {
+  readonly manifest: TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Add a hostile variant name for selector-boundary testing',
     'name':        'test:addHostileVariant',
-    'phase':       undefined,
     'reads':       ['roles'],
-    'requires':    undefined,
     'writes':      ['variants']
-  };
+  });
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
-    state.variants[HOSTILE_VARIANT] = state.roles;
+    Object.defineProperty(state.variants, StylesheetSelectorSecurityTestData.HOSTILE_VARIANT, {
+      'configurable': true,
+      'enumerable':   true,
+      'value':        state.roles,
+      'writable':     true
+    });
   }
 }
 
 class StylesheetSelectorSecurityFixture {
-  static input(
-    metadata: InputInterface['metadata'],
-    colors: InputInterface['colors'] = ['#5b21b6']
-  ): InputInterface {
-    return {
-      'bypass':    undefined,
-      'colors':    colors,
-      'contrast':  undefined,
-      'emit':      undefined,
-      'maxColors': undefined,
-      'metadata':  metadata,
-      'roles':     ROLE_SCHEMA,
-      'runtime':   undefined
-    };
+  static runCssVars(metadata: InputInterfaceTypeEntity.Type['metadata']): CssVarsScenarioOutputEntity.Type['cssVars'] {
+    const result = StylesheetSelectorSecurityFixture.runCssVarsForPipeline(
+      metadata,
+      ['intake:hex', 'resolve:roles', 'emit:cssVars'],
+      ['#5b21b6']
+    );
+    return result;
   }
 
-  static runCssVars(
-    metadata: InputInterface['metadata'],
-    options?: {
-      readonly 'withVariant'?:   boolean;
-      readonly 'withWideGamut'?: boolean;
-    }
-  ): CssVarsScenarioOutputEntity.Type['cssVars'] {
-    const engine = StylesheetSelectorSecurityFixture.engine();
-    const withVariant = options?.withVariant === true;
-    const withWideGamut = options?.withWideGamut === true;
-    const intakeTask = withWideGamut ? 'intake:oklch' : 'intake:hex';
-    const pipeline = withVariant
-      ? [intakeTask, 'resolve:roles', 'derive:variant', 'emit:cssVars']
-      : [intakeTask, 'resolve:roles', 'emit:cssVars'];
-    engine.pipeline(pipeline);
-    const colors: InputInterface['colors'] = withWideGamut
-      ? [{ 'c': 0.4, 'h': 30, 'l': 0.7 }]
-      : ['#5b21b6'];
-    const state = engine.run(StylesheetSelectorSecurityFixture.input(metadata, colors));
-    const cssVars = state.outputs['stylesheet:cssVars'];
-    const output = { 'cssVars': cssVars };
-    if (!CssVarsScenarioOutputEntity.validate(output)) {
-      throw new Error('outputs.stylesheet:cssVars is invalid');
-    }
-    return output.cssVars;
+  static runCssVarsWithVariant(metadata: InputInterfaceTypeEntity.Type['metadata']): CssVarsScenarioOutputEntity.Type['cssVars'] {
+    const result = StylesheetSelectorSecurityFixture.runCssVarsForPipeline(
+      metadata,
+      ['intake:oklch', 'resolve:roles', 'derive:variant', 'emit:cssVars'],
+      [{ 'c': 0.4, 'h': 30, 'l': 0.7 }]
+    );
+    return result;
   }
 
-  static runCssVarsScoped(
-    metadata: InputInterface['metadata'],
-    options?: {
-      readonly 'withHostileVariant'?: boolean;
-      readonly 'withWideGamut'?:     boolean;
-    }
-  ): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
-    const engine = StylesheetSelectorSecurityFixture.engine();
-    const withHostileVariant = options?.withHostileVariant === true;
-    const withWideGamut = options?.withWideGamut === true;
-    const intakeTask = withWideGamut ? 'intake:oklch' : 'intake:hex';
-    if (withHostileVariant) {
-      engine.tasks.register(new HostileVariantTask());
-      engine.pipeline([intakeTask, 'resolve:roles', 'test:addHostileVariant', 'emit:cssVarsScoped']);
-    } else {
-      engine.pipeline([intakeTask, 'resolve:roles', 'emit:cssVarsScoped']);
-    }
-    const colors: InputInterface['colors'] = withWideGamut
-      ? [{ 'c': 0.4, 'h': 30, 'l': 0.7 }]
-      : ['#5b21b6'];
-    const state = engine.run(StylesheetSelectorSecurityFixture.input(metadata, colors));
-    const scoped = state.outputs['stylesheet:cssVarsScoped'];
-    const output = { 'scoped': scoped };
-    if (!CssVarsScopedScenarioOutputEntity.validate(output)) {
-      throw new Error('outputs.stylesheet:cssVarsScoped is invalid');
-    }
-    return output.scoped;
+  static runCssVarsScoped(metadata: InputInterfaceTypeEntity.Type['metadata']): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
+    const result = StylesheetSelectorSecurityFixture.runCssVarsScopedForPipeline(
+      metadata,
+      ['intake:hex', 'resolve:roles', 'emit:cssVarsScoped'],
+      {}
+    );
+    return result;
+  }
+
+  static runCssVarsScopedWithHostileVariant(metadata: InputInterfaceTypeEntity.Type['metadata']): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
+    const result = StylesheetSelectorSecurityFixture.runCssVarsScopedForPipeline(
+      metadata,
+      ['intake:hex', 'resolve:roles', 'test:addHostileVariant', 'emit:cssVarsScoped'],
+      { 'task': new HostileVariantTask() }
+    );
+    return result;
+  }
+
+  static runCssVarsScopedWithHostileWideGamutVariant(metadata: InputInterfaceTypeEntity.Type['metadata']): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
+    const result = StylesheetSelectorSecurityFixture.runCssVarsScopedForPipeline(
+      metadata,
+      ['intake:oklch', 'resolve:roles', 'test:addHostileVariant', 'emit:cssVarsScoped'],
+      {
+        'colors': [{ 'c': 0.4, 'h': 30, 'l': 0.7 }],
+        'task':   new HostileVariantTask()
+      }
+    );
+    return result;
   }
 
   static unsafeScopeAttrError(): Error | undefined {
@@ -134,7 +97,8 @@ class StylesheetSelectorSecurityFixture {
       });
       return undefined;
     } catch (error) {
-      return error instanceof Error ? error : undefined;
+      const result = error instanceof Error ? error : undefined;
+      return result;
     }
   }
 
@@ -145,7 +109,8 @@ class StylesheetSelectorSecurityFixture {
       });
       return undefined;
     } catch (error) {
-      return error instanceof Error ? error : undefined;
+      const result = error instanceof Error ? error : undefined;
+      return result;
     }
   }
 
@@ -156,7 +121,8 @@ class StylesheetSelectorSecurityFixture {
       });
       return undefined;
     } catch (error) {
-      return error instanceof Error ? error : undefined;
+      const result = error instanceof Error ? error : undefined;
+      return result;
     }
   }
 
@@ -167,28 +133,102 @@ class StylesheetSelectorSecurityFixture {
       });
       return undefined;
     } catch (error) {
-      return error instanceof Error ? error : undefined;
+      const result = error instanceof Error ? error : undefined;
+      return result;
     }
   }
 
   private static engine(): Engine {
     const engine = new Engine();
-    for (const task of coreTasks) {engine.tasks.register(task);}
+    const taskCount = coreTasks.length;
+    for (let taskIndex = 0; taskIndex < taskCount; taskIndex += 1) {
+      const task = coreTasks[taskIndex];
+      if (task !== undefined) {
+        engine.tasks.register(task);
+      }
+    }
     engine.adopt(stylesheetPlugin);
     return engine;
+  }
+
+  private static input(
+    metadata: InputInterfaceTypeEntity.Type['metadata'],
+    colors: InputInterfaceTypeEntity.Type['colors']
+  ): InputInterfaceTypeEntity.Type {
+    const result = InputInterfaceTypeEntity.create({
+      'colors': colors,
+      ...(metadata === undefined ? {} : { 'metadata': metadata }),
+      'roles': RoleSchemaInterfaceTypeEntity.intake(StylesheetSelectorSecurityTestData.RAW_ROLE_SCHEMA)
+    });
+    return result;
+  }
+
+  static matchCount(value: string, pattern: RegExp): number {
+    pattern.lastIndex = 0;
+    let count = 0;
+    while (pattern.exec(value) !== null) {
+      count += 1;
+    }
+    pattern.lastIndex = 0;
+    return count;
+  }
+
+  private static runCssVarsForPipeline(
+    metadata: InputInterfaceTypeEntity.Type['metadata'],
+    pipeline: readonly string[],
+    colors: InputInterfaceTypeEntity.Type['colors']
+  ): CssVarsScenarioOutputEntity.Type['cssVars'] {
+    const engine = StylesheetSelectorSecurityFixture.engine();
+    engine.pipeline(pipeline);
+    const state = engine.run(StylesheetSelectorSecurityFixture.input(metadata, colors));
+    const cssVars = state.outputs['stylesheet:cssVars'];
+    if (!JsonValue.is(cssVars)) {
+      throw new Error('outputs.stylesheet:cssVars is not JSON');
+    }
+    const output = { 'cssVars': cssVars };
+    if (!CssVarsScenarioOutputEntity.validate(output)) {
+      throw new Error('outputs.stylesheet:cssVars is invalid');
+    }
+    return output.cssVars;
+  }
+
+  private static runCssVarsScopedForPipeline(
+    metadata: InputInterfaceTypeEntity.Type['metadata'],
+    pipeline: readonly string[],
+    options: {
+      readonly 'colors'?: InputInterfaceTypeEntity.Type['colors'];
+      readonly 'task'?:   TaskInterface;
+    }
+  ): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
+    const engine = StylesheetSelectorSecurityFixture.engine();
+    if (options.task !== undefined) {
+      engine.tasks.register(options.task);
+    }
+    engine.pipeline(pipeline);
+    const colors = options.colors ?? ['#5b21b6'];
+    const state = engine.run(StylesheetSelectorSecurityFixture.input(metadata, colors));
+    const scoped = state.outputs['stylesheet:cssVarsScoped'];
+    if (!JsonValue.is(scoped)) {
+      throw new Error('outputs.stylesheet:cssVarsScoped is not JSON');
+    }
+    const output = { 'scoped': scoped };
+    if (!CssVarsScopedScenarioOutputEntity.validate(output)) {
+      throw new Error('outputs.stylesheet:cssVarsScoped is invalid');
+    }
+    return output.scoped;
   }
 }
 
 await test('emit:cssVars escapes a hostile themeName without creating another rule', () => {
   const output = StylesheetSelectorSecurityFixture.runCssVars({
     'scopeAttr': 'data-category',
-    'themeName': HOSTILE_VARIANT
+    'themeName': StylesheetSelectorSecurityTestData.HOSTILE_VARIANT
   });
 
-  assert.strictEqual(output.scopedBlock.match(/\{/gu)?.length, 1);
-  assert.strictEqual(output.scopedBlock.match(/\}/gu)?.length, 1);
+  assert.strictEqual(StylesheetSelectorSecurityFixture.matchCount(output.scopedBlock, StylesheetSelectorSecurityTestData.OPEN_BRACE_PATTERN), 1);
+  assert.strictEqual(StylesheetSelectorSecurityFixture.matchCount(output.scopedBlock, StylesheetSelectorSecurityTestData.CLOSE_BRACE_PATTERN), 1);
   assert.ok(!output.scopedBlock.includes('body {'));
-  assert.match(output.scopedBlock, /^\[data-category='(?:[A-Za-z0-9_-]|\\[0-9A-F]+ )+'\] \{/u);
+  assert.match(output.scopedBlock, StylesheetSelectorSecurityTestData.ATTRIBUTE_CATEGORY_SELECTOR_PATTERN);
 });
 
 await test('emit:cssVars preserves a valid hyphenated themeName', () => {
@@ -197,64 +237,56 @@ await test('emit:cssVars preserves a valid hyphenated themeName', () => {
     'themeName': 'brand-blue'
   });
 
-  assert.match(output.scopedBlock, /^\[data-app-theme='brand-blue'\] \{/u);
+  assert.match(output.scopedBlock, StylesheetSelectorSecurityTestData.BRAND_BLUE_SELECTOR_PATTERN);
 });
 
 await test('emit:cssVars rejects a scopeAttr that can terminate its selector', () => {
   const error = StylesheetSelectorSecurityFixture.unsafeScopeAttrError();
-  assert.match(error?.message ?? '', /attributeName must be a CSS-safe identifier/u);
+  assert.match(error?.message ?? '', StylesheetSelectorSecurityTestData.CSS_SAFE_IDENTIFIER_PATTERN);
 });
 
 await test('emit:cssVarsScoped rejects an unsafe scopePrefix', () => {
   const error = StylesheetSelectorSecurityFixture.unsafeScopePrefixError();
-  assert.match(error?.message ?? '', /attributeName must be a CSS-safe identifier/u);
+  assert.match(error?.message ?? '', StylesheetSelectorSecurityTestData.CSS_SAFE_IDENTIFIER_PATTERN);
 });
 
 await test('emit:cssVarsScoped escapes hostile variant names in scoped blocks', () => {
-  const output = StylesheetSelectorSecurityFixture.runCssVarsScoped({}, {
-    'withHostileVariant': true
-  });
-  const hostileBlock = output.blocks[HOSTILE_VARIANT];
+  const output = StylesheetSelectorSecurityFixture.runCssVarsScopedWithHostileVariant({});
+  const hostileBlock = output.blocks[StylesheetSelectorSecurityTestData.HOSTILE_VARIANT];
   if (hostileBlock === undefined) {
     throw new Error('hostile variant block is missing');
   }
-  assert.strictEqual(hostileBlock.match(/\{/gu)?.length, 1);
-  assert.strictEqual(hostileBlock.match(/\}/gu)?.length, 1);
+  assert.strictEqual(StylesheetSelectorSecurityFixture.matchCount(hostileBlock, StylesheetSelectorSecurityTestData.OPEN_BRACE_PATTERN), 1);
+  assert.strictEqual(StylesheetSelectorSecurityFixture.matchCount(hostileBlock, StylesheetSelectorSecurityTestData.CLOSE_BRACE_PATTERN), 1);
   assert.ok(!hostileBlock.includes('body {'));
-  assert.match(hostileBlock, /^\[data-theme='(?:[A-Za-z0-9_-]|\\[0-9A-F]+ )+'\] \{/u);
+  assert.match(hostileBlock, StylesheetSelectorSecurityTestData.THEME_SELECTOR_PATTERN);
 });
 
 await test('emit:cssVarsScoped escapes hostile variant names in wide-gamut blocks', () => {
-  const output = StylesheetSelectorSecurityFixture.runCssVarsScoped({}, {
-    'withHostileVariant': true,
-    'withWideGamut':      true
-  });
-  const hostileBlock = output.wideGamut[HOSTILE_VARIANT];
+  const output = StylesheetSelectorSecurityFixture.runCssVarsScopedWithHostileWideGamutVariant({});
+  const hostileBlock = output.wideGamut[StylesheetSelectorSecurityTestData.HOSTILE_VARIANT];
   if (hostileBlock === undefined) {
     throw new Error('hostile wide-gamut variant block is missing');
   }
-  assert.strictEqual(hostileBlock.match(/\{/gu)?.length, 2);
-  assert.strictEqual(hostileBlock.match(/\}/gu)?.length, 2);
+  assert.strictEqual(StylesheetSelectorSecurityFixture.matchCount(hostileBlock, StylesheetSelectorSecurityTestData.OPEN_BRACE_PATTERN), 2);
+  assert.strictEqual(StylesheetSelectorSecurityFixture.matchCount(hostileBlock, StylesheetSelectorSecurityTestData.CLOSE_BRACE_PATTERN), 2);
   assert.ok(!hostileBlock.includes('body {'));
-  assert.match(hostileBlock, /\[data-theme='(?:[A-Za-z0-9_-]|\\[0-9A-F]+ )+'\] \{/u);
+  assert.match(hostileBlock, StylesheetSelectorSecurityTestData.THEME_SELECTOR_PATTERN);
 });
 
 await test('emit:cssVars rejects a cssVarPrefix that can emit another rule', () => {
   const error = StylesheetSelectorSecurityFixture.unsafeCssVarsPrefixError();
-  assert.match(error?.message ?? '', /value must be a CSS custom-property prefix/u);
+  assert.match(error?.message ?? '', StylesheetSelectorSecurityTestData.CUSTOM_PROPERTY_PREFIX_PATTERN);
 });
 
 await test('emit:cssVarsScoped rejects a cssVarPrefix that can emit another rule', () => {
   const error = StylesheetSelectorSecurityFixture.unsafeScopedCssVarsPrefixError();
-  assert.match(error?.message ?? '', /value must be a CSS custom-property prefix/u);
+  assert.match(error?.message ?? '', StylesheetSelectorSecurityTestData.CUSTOM_PROPERTY_PREFIX_PATTERN);
 });
 
 await test('emit:cssVars uses a valid custom prefix across every declaration block', () => {
-  const output = StylesheetSelectorSecurityFixture.runCssVars({
+  const output = StylesheetSelectorSecurityFixture.runCssVarsWithVariant({
     'cssVarPrefix': '--brand-'
-  }, {
-    'withVariant':   true,
-    'withWideGamut': true
   });
   const blocks = [
     output.rootBlock,
@@ -275,11 +307,8 @@ await test('emit:cssVars uses a valid custom prefix across every declaration blo
 });
 
 await test('emit:cssVarsScoped uses a valid custom prefix in scoped and wide-gamut blocks', () => {
-  const output = StylesheetSelectorSecurityFixture.runCssVarsScoped({
+  const output = StylesheetSelectorSecurityFixture.runCssVarsScopedWithHostileWideGamutVariant({
     'cssVarPrefix': '--brand-'
-  }, {
-    'withHostileVariant': true,
-    'withWideGamut':      true
   });
   const blocks = [...Object.values(output.blocks), ...Object.values(output.wideGamut)];
   const blockCount = blocks.length;

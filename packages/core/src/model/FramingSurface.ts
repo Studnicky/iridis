@@ -3,7 +3,7 @@
  * single shared "is this light or dark" measure every plugin uses to
  * answer that question.
  *
- * `state.runtime.framing` is public API (see {@link RuntimeOptionsInterface})
+ * `state.runtime.framing` is public API (see {@link RuntimeOptionsInterfaceTypeEntity})
  * but does nothing on its own: `resolve:roles` always populates
  * `state.roles` from the intake seeds regardless of the requested
  * framing, and `derive:variant` only ever adds alternate surfaces to
@@ -29,10 +29,8 @@
  * matches the requested framing.
  */
 
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface
-} from '../types/index.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { PaletteStateInterface } from '../interfaces/PaletteStateInterface.ts';
 
 import { luminance } from '../math/Luminance.ts';
 
@@ -45,10 +43,11 @@ class FramingSurface {
    * light/dark threshold. Missing `background` reads as dark (false),
    * matching the pre-`framing` default across every emitter.
    */
-  static isLight(roles: Readonly<Record<string, ColorRecordInterfaceType>>): boolean {
+  static isLight(roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>): boolean {
     const background = roles.background;
     if (background === undefined) { return false; }
-    return luminance.apply(background) > LIGHT_LUMINANCE_THRESHOLD;
+    const result = luminance.apply(background) > LIGHT_LUMINANCE_THRESHOLD;
+    return result;
   }
 
   /**
@@ -64,15 +63,19 @@ class FramingSurface {
    *   `state.roles` when no variant matches (e.g. `derive:variant`
    *   did not run, or every configured variant shares one appearance).
    */
-  static resolve(state: PaletteStateInterface): Readonly<Record<string, ColorRecordInterfaceType>> {
+  static resolve(state: PaletteStateInterface): Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>> {
     const framing = state.runtime.framing;
     if (framing === undefined) { return state.roles; }
 
     const wantsLight = framing === 'light';
     if (FramingSurface.isLight(state.roles) === wantsLight) { return state.roles; }
 
-    for (const variantRoles of Object.values(state.variants)) {
-      if (FramingSurface.isLight(variantRoles) === wantsLight) { return variantRoles; }
+    const variantRoleSets = Object.values(state.variants);
+    for (let index = 0; index < variantRoleSets.length; index += 1) {
+      const variantRoles = variantRoleSets[index];
+      if (variantRoles !== undefined && FramingSurface.isLight(variantRoles) === wantsLight) {
+        return variantRoles;
+      }
     }
 
     return state.roles;
