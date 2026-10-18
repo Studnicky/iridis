@@ -37,8 +37,8 @@ export class RdfPluginAnnotateScenarioSuite {
         'assert': ({ 'error': error, 'output': output }): void => {
           assert.strictEqual(error, undefined, 'two-color annotation does not throw');
           assert.ok(output !== undefined, 'two-color annotation returns output');
-          assert.ok(output.graph.includes('https://studnicky.dev/iridis/role/primary'), 'graph contains primary role IRI');
-          assert.ok(output.graph.includes('https://studnicky.dev/iridis/role/background'), 'graph contains background role IRI');
+          assert.ok(output.graph.includes('<https://studnicky.dev/iridis/role/primary>'), 'graph contains primary role IRI');
+          assert.ok(output.graph.includes('<https://studnicky.dev/iridis/role/background>'), 'graph contains background role IRI');
           assert.ok(output.serialized !== undefined, 'serialize task writes Turtle');
           assert.strictEqual(output.serialized.split('wcag21Ratio').length - 1, 2, 'two roles emit both directed contrast pairs');
         },

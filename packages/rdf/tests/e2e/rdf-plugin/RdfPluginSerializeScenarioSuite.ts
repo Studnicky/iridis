@@ -22,7 +22,7 @@ export class RdfPluginSerializeScenarioSuite {
         'assert': ({ 'error': error, 'output': output }): void => {
           assert.strictEqual(error, undefined, 'default serialization does not throw');
           assert.ok(output !== undefined, 'default serialization returns output');
-          assert.ok(output.serialized.includes('https://studnicky.dev/iridis'), 'default serialization is Turtle-shaped');
+          assert.ok(output.serialized.includes('<https://studnicky.dev/iridis#Role>'), 'default serialization is Turtle-shaped');
         },
         'classification': ScenarioClassificationEntity.intake('happy'),
         'input': RdfPluginScenarioFixture.createInput(['#5b21b6', '#ffffff'], roles),
@@ -66,7 +66,7 @@ export class RdfPluginSerializeScenarioSuite {
         'assert': ({ 'error': error, 'output': output }): void => {
           assert.strictEqual(error, undefined, 'unknown format fallback does not throw');
           assert.ok(output !== undefined, 'unknown format fallback returns output');
-          assert.ok(output.serialized.includes('https://studnicky.dev/iridis'), 'unknown format falls back to Turtle');
+          assert.ok(output.serialized.includes('<https://studnicky.dev/iridis#Role>'), 'unknown format falls back to Turtle');
         },
         'classification': ScenarioClassificationEntity.intake('edge'),
         'input': RdfPluginScenarioFixture.createInput(['#5b21b6', '#ffffff'], roles, { 'rdf:format': 'INVALID_FORMAT_XYZ' }),
@@ -76,7 +76,7 @@ export class RdfPluginSerializeScenarioSuite {
         'assert': ({ 'error': error, 'output': output }): void => {
           assert.strictEqual(error, undefined, 'non-string format fallback does not throw');
           assert.ok(output !== undefined, 'non-string format fallback returns output');
-          assert.ok(output.serialized.includes('https://studnicky.dev/iridis'), 'non-string format falls back to Turtle');
+          assert.ok(output.serialized.includes('<https://studnicky.dev/iridis#Role>'), 'non-string format falls back to Turtle');
         },
         'classification': ScenarioClassificationEntity.intake('edge'),
         'input': RdfPluginScenarioFixture.createInput(['#5b21b6', '#ffffff'], roles, { 'rdf:format': 42 }),

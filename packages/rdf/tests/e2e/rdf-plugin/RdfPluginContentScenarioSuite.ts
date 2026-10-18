@@ -29,9 +29,9 @@ export class RdfPluginContentScenarioSuite {
         'assert': ({ 'error': error, 'output': output }): void => {
           assert.strictEqual(error, undefined, 'semantic content serialization does not throw');
           assert.ok(output !== undefined, 'semantic content serialization returns output');
-          assert.ok(output.serialized.includes('https://studnicky.dev/iridis/role/primary'), 'Turtle contains primary role IRI');
-          assert.ok(output.serialized.includes('https://studnicky.dev/iridis/role/background'), 'Turtle contains background role IRI');
-          assert.ok(output.serialized.includes('https://studnicky.dev/iridis/color/'), 'Turtle contains color IRI namespace');
+          assert.ok(output.serialized.includes('<https://studnicky.dev/iridis/role/primary>'), 'Turtle contains primary role IRI');
+          assert.ok(output.serialized.includes('<https://studnicky.dev/iridis/role/background>'), 'Turtle contains background role IRI');
+          assert.ok(output.serialized.includes('<https://studnicky.dev/iridis/color/5b21b6>'), 'Turtle contains the primary color IRI');
           assert.ok(output.serialized.includes('wcag21Ratio'), 'Turtle contains contrast literals');
         },
         'classification': ScenarioClassificationEntity.intake('happy'),
