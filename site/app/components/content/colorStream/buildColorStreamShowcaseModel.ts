@@ -19,8 +19,13 @@ export const buildColorStreamShowcaseModel = class ColorStreamShowcaseModel {
   /** Role display order for the seismograph stack, derived from decorativeAliases.ts's own alias/roleName pairing. */
   public static buildRoles(): readonly ColorStreamRoleSpec[] {
     const roles: ColorStreamRoleSpec[] = [];
-    for (const [alias, roleName] of Object.entries(DECORATIVE_ALIASES)) {
-      roles.push(new ColorStreamRoleSpec(alias, capitalize(alias), roleName));
+    const aliasEntries = Object.entries(DECORATIVE_ALIASES);
+    for (let index = 0; index < aliasEntries.length; index += 1) {
+      const aliasEntry = aliasEntries[index];
+      if (aliasEntry !== undefined) {
+        const [alias, roleName] = aliasEntry;
+        roles.push(new ColorStreamRoleSpec(alias, capitalize(alias), roleName));
+      }
     }
     return roles;
   }

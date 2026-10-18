@@ -279,6 +279,29 @@ await test('rejects unsafe elements, event attributes, and URL schemes as text',
   }
 });
 
+await test('rejects an unknown markup format before it can render', async () => {
+  const result = await TrustedMarkupRendererBrowserHarness.evaluate<RejectionResult>(String.raw`
+    (() => {
+      const renderer = TrustedMarkupModule.trustedMarkupRenderer;
+      const host = document.createElement('div');
+      const renderResult = renderer.render(
+        host,
+        '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+        'text'
+      );
+      return {
+        conditionCount: Number(!renderResult.accepted)
+          + Number(host.querySelector('svg, script') === null)
+          + Number(host.textContent?.startsWith('Unable to render markup:')),
+        message: host.textContent
+      };
+    })()
+  `);
+
+  assert.equal(result.conditionCount, 3);
+  assert.equal(result.message?.startsWith('Unable to render markup:'), true);
+});
+
 await test('preserves allowlisted highlighted HTML and Mermaid SVG structure', async () => {
   const result = await TrustedMarkupRendererBrowserHarness.evaluate<PreservationResult>(String.raw`
     (async () => {
@@ -322,7 +345,7 @@ await test('preserves allowlisted highlighted HTML and Mermaid SVG structure', a
     })()
   `);
 
-  assert.equal(result.conditionCount, 4);
+  assert.equal(result.conditionCount, 4, result.svgMessage ?? result.svgInventory);
   assert.equal(result.codeText, 'safe code');
   assert.equal(result.htmlColor, 'color: #fff');
   assert.equal(result.svgMessage, null, result.svgInventory);
@@ -413,13 +436,13 @@ await test('revalidates Mermaid modal clones without a secondary markup sink', a
         : { accepted: false, message: 'Clone is not an SVG element' };
       const expandControl = safeHost.querySelector('[aria-label="Expand fullscreen"]');
       expandControl?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const safeModal = document.querySelector('.dag-mermaid-modal');
       const safeClone = safeModal?.querySelector('svg') ?? null;
       const safeClonePresent = safeClone !== null;
       const safeCloneDistinct = safeClonePresent && safeClone !== safeSource;
       safeModal?.querySelector('[aria-label="Close (Esc)"]')?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       safeHost.remove();
 
       const unsafeHost = document.createElement('div');
@@ -429,7 +452,7 @@ await test('revalidates Mermaid modal clones without a secondary markup sink', a
       unsafeSource?.setAttribute('onload', 'alert(1)');
       explorer.enhance(unsafeHost, explorer.naturalFitOptions());
       unsafeHost.querySelector('[aria-label="Expand fullscreen"]')?.click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const unsafeModal = document.querySelector('.dag-mermaid-modal');
       const unsafeMarkupPresent = unsafeModal?.querySelector('[onload], script') !== null
         && unsafeModal?.querySelector('[onload], script') !== undefined;
@@ -443,7 +466,7 @@ await test('revalidates Mermaid modal clones without a secondary markup sink', a
     })()
   `);
 
-  assert.equal(result.conditionCount, 6, result.cloneBoundaryMessage ?? undefined);
+  assert.equal(result.conditionCount, 6, JSON.stringify(result));
 });
 
 await test('MermaidExplorer theme overrides drive the shared D-pad UI variables', async () => {

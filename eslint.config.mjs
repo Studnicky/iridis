@@ -477,6 +477,13 @@ export default [
         'import-x/no-default-export': 'off'
       }
     },
+    // Nuxt loads this application configuration through a default import.
+    {
+      'files': ['site/app/app.config.ts'],
+      'rules': {
+        '@studnicky/export-shape': 'off'
+      }
+    },
     // Vue SFC script blocks (Nuxt site) — default exports are the framework
     // contract (defineNuxtConfig, page/layout/component options).
     ...vue.configs['flat/recommended'],

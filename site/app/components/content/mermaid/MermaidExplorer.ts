@@ -368,14 +368,14 @@ export const MermaidExplorer = class MermaidExplorer {
       MermaidExplorer.#paint(this.#svg, this.#camera);
     }
 
-    public close(): void {
+    public readonly close = (): void => {
       if (this.#controller === null) {return;}
       this.#controller.close('programmatic');
-    }
+    };
 
-    public expand(): void {
+    public readonly expand = (): void => {
       MermaidExplorer.#modal(this.#svg, this.#options);
-    }
+    };
 
     public fit(): void {
       const natural = MermaidExplorer.#naturalSize(this.#svg);
@@ -1038,8 +1038,11 @@ export const MermaidExplorer = class MermaidExplorer {
     dpadWrap.appendChild(grid);
 
     // Backdrop click (overlay itself, not stage or buttons) closes the modal.
-    overlay.addEventListener('click', (e) => {
-      controller.onBackdropPress(e.target === overlay);
+    overlay.addEventListener('click', (event) => {
+      if (event.target !== event.currentTarget) {
+        return;
+      }
+      controller.onBackdropPress();
     });
   }
 

@@ -9,7 +9,7 @@ import { buildPipelineStageModel } from './pipeline/buildPipelineStageModel.ts';
 type PipelineStageType = {
   label: string;
   description: string;
-  optional: boolean;
+  optionalControl: object | undefined;
   reads: string[];
   value: string;
   writes: string[];
@@ -45,7 +45,7 @@ function updateCvdCorrect(cvdCorrect: boolean): void {
         />
       </AccordionTrigger>
       <UBadge
-        v-if="stage.optional"
+        v-if="stage.optionalControl !== undefined"
         :color="stageModel.isEnabled ? 'primary' : 'neutral'"
         :variant="stageModel.isEnabled ? 'soft' : 'subtle'"
         size="sm"

@@ -9,11 +9,20 @@ const props = withDefaults(defineProps<{
 }>(), {});
 
 const state = computed(() => {
-  if (props.dpadReady) return props.machine.state();
   const current = props.machine.state();
+  const controlsUnavailable = props.dpadReady !== true;
+  const items = current.items.map((item) => {
+    const action = item.action;
+    const disabled = controlsUnavailable || item.disabled;
+    const label = item.label;
+    const title = item.title;
+    return { action, disabled, label, title };
+  });
   return {
-    ...current,
-    items: current.items.map((item) => ({ ...item, disabled: true })),
+    'hint': current.hint,
+    items,
+    'zoomLevel': current.zoomLevel,
+    'zoomText': current.zoomText
   };
 });
 

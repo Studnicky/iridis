@@ -26,17 +26,17 @@ const strictnessModel = computed(() => buildContrastStrictnessModel.build(props.
 <template>
   <SectionIntro title="Compliance strictness">
     <template #body>
-      <strong class="text-highlighted">{{ strictnessModel.options.find((option) => option.active)?.label }}</strong>
+      <strong class="text-highlighted">{{ strictnessModel.selectedLabelText }}</strong>
       {{ ` ${strictnessModel.body.replace(/^[A-Z]+ /, '')}` }}
     </template>
     <div class="w-full space-y-2">
       <div class="flex w-full justify-between text-[11px] font-medium text-dimmed">
         <span
           v-for="option in strictnessModel.options"
-          :key="option.label"
-          :class="option.active ? 'text-primary' : 'cursor-pointer hover:text-muted'"
+          :key="option.labelText"
+          :class="option.interactionClass"
           @click="setStrictness(option.value)"
-        >{{ option.label }}</span>
+        >{{ option.labelText }}</span>
       </div>
       <USlider
         :model-value="props.strictness"

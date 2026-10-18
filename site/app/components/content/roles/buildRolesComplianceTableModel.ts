@@ -43,15 +43,18 @@ export const buildRolesComplianceTableModel = class RolesComplianceTableModel {
     naTooltip: string
   ): readonly RolesComplianceTableRow[] {
     const result: RolesComplianceTableRow[] = [];
-    for (const row of rows) {
-      result.push(new RolesComplianceTableRow(
-        `${row.name} ${row.hex}`,
-        row.compliance,
-        row.hex,
-        row.name,
-        row.ratio.toFixed(2),
-        row.compliance === 'n/a' ? naTooltip : undefined
-      ));
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+      if (row !== undefined) {
+        result.push(new RolesComplianceTableRow(
+          `${row.name} ${row.hex}`,
+          row.compliance,
+          row.hex,
+          row.name,
+          row.ratio.toFixed(2),
+          row.compliance === 'n/a' ? naTooltip : undefined
+        ));
+      }
     }
     return result;
   }

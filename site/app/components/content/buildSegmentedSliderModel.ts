@@ -17,6 +17,7 @@ export const buildSegmentedSliderModel = class SegmentedSliderModelBuilder {
     index: number,
     fallbackValue: TValue
   ): TValue {
-    return items[index]?.value ?? fallbackValue;
+    const value = items[index]?.value ?? fallbackValue;
+    return value;
   }
 };

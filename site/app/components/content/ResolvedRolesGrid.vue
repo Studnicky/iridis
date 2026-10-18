@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { buildResolvedRolesGridModel } from './buildResolvedRolesGridModel.ts';
 
-defineProps<{
+const props = defineProps<{
   rows: readonly {
     name: string;
     hex: string;
@@ -17,6 +18,16 @@ defineProps<{
     variant?: 'tile';
   };
 }>();
+
+const presentation = computed(() => {
+  if (props.layout.showTitleSlot) {
+    return buildResolvedRolesGridModel.titleSlotPresentation;
+  }
+  if (props.layout.variant === 'tile') {
+    return buildResolvedRolesGridModel.tilePresentation;
+  }
+  return buildResolvedRolesGridModel.standardPresentation;
+});
 </script>
 
 <template>
@@ -40,11 +51,11 @@ defineProps<{
       </template>
       <div :class="layout.showTitleSlot ? 'flex items-center gap-2' : 'min-w-0'">
         <MutedMono :class="layout.valueClass">
-          {{ buildResolvedRolesGridModel.build(row, layout).hexLabel }}
+          {{ buildResolvedRolesGridModel.build(row, presentation).hexLabel }}
         </MutedMono>
-        <div :class="buildResolvedRolesGridModel.build(row, layout).containerClass">
+        <div :class="buildResolvedRolesGridModel.build(row, presentation).containerClass">
           <span
-            v-for="metric in buildResolvedRolesGridModel.build(row, layout).metrics"
+            v-for="metric in buildResolvedRolesGridModel.build(row, presentation).metrics"
             :key="metric"
           >{{ metric }}</span>
         </div>

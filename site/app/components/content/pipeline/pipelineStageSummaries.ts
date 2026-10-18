@@ -9,8 +9,9 @@ export const pipelineStageSummaries = class PipelineStageSummaries {
     report: ApcaPairResultSetInterfaceTypeEntity.Type | WcagPairResultSetInterfaceTypeEntity.Type
   ): string {
     let passing = 0;
-    for (const pair of report.pairs) {
-      if (pair.pass) {
+    for (let index = 0; index < report.pairs.length; index += 1) {
+      const pair = report.pairs[index];
+      if (pair?.pass === true) {
         passing++;
       }
     }
@@ -20,7 +21,11 @@ export const pipelineStageSummaries = class PipelineStageSummaries {
   public static buildCvdCorrectionSummary(report: CvdResultSetInterfaceTypeEntity.Type): string {
     let autoCorrected = 0;
     let stillFailing = 0;
-    for (const correction of report.corrections) {
+    for (let index = 0; index < report.corrections.length; index += 1) {
+      const correction = report.corrections[index];
+      if (correction === undefined) {
+        continue;
+      }
       const hasRemainingCvdType = correction.cvdTypesRemaining.some(() => {
         return true;
       });

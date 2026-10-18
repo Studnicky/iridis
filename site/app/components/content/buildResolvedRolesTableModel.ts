@@ -23,8 +23,11 @@ export const buildResolvedRolesTableModel = class ResolvedRolesTableModelBuilder
     rows: readonly { readonly 'c': number; readonly 'h': number; readonly 'hex': string; readonly 'l': number; readonly 'name': string }[]
   ): readonly ResolvedRolesTableRowModel[] {
     const models: ResolvedRolesTableRowModel[] = [];
-    for (const row of rows) {
-      models.push(new ResolvedRolesTableRowModel(row));
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+      if (row !== undefined) {
+        models.push(new ResolvedRolesTableRowModel(row));
+      }
     }
     return models;
   }

@@ -63,8 +63,9 @@ const renderMermaid = async () => {
   } catch (e) {
     if (seq !== renderSeq) return;
     console.error('Mermaid render error:', e);
+    const message = e instanceof Error ? e.message : String(e);
     if (viewportRef.value !== null) {
-      trustedMarkupRenderer.renderError(viewportRef.value, e);
+      trustedMarkupRenderer.renderError(viewportRef.value, message);
     }
   }
 };
