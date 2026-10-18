@@ -1,4 +1,4 @@
-import type { RoleMathCandidateType } from '~/composables/types/roleMathCandidate.ts';
+import type { RoleMathCandidateType } from '~/composables/types/roleMathCandidateType.ts';
 import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
 abstract class RoleMathCandidatePresentation {
@@ -35,7 +35,7 @@ class RoleMathCandidateListItem {
   public constructor(candidate: RoleMathCandidateType) {
     this.distanceLabel = candidate.dist.toFixed(4);
     this.hex = candidate.hex.toLowerCase();
-    this.presentation = candidate.isWinner
+    this.presentation = candidate.presentation.isSelected()
       ? new RoleMathWinningCandidatePresentation()
       : new RoleMathNonWinningCandidatePresentation();
   }

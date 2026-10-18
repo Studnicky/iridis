@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ContrastPairingType } from '~/composables/types/contrastPairing.ts';
+import type { ContrastPairingType } from '~/composables/types/contrastPairingType.ts';
 import { complianceBadgeColor } from '~/utils/complianceBadgeColor.ts';
 import { buildPairingPreviewTableModel } from './buildPairingPreviewTableModel.ts';
 
@@ -29,7 +29,7 @@ const tableModel = computed(() => buildPairingPreviewTableModel.build(props.pair
     <tbody>
       <tr
         v-for="pairing in tableModel"
-        :key="pairing.key"
+        :key="pairing.id"
         class="border-b border-default last:border-b-0"
       >
         <td class="px-3 py-2">

@@ -4,8 +4,8 @@ import type {
 
 import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
 
-import type { DerivationConfigType } from '../composables/types/colorDerivation.ts';
-
+import { DerivationConfigInterfaceTypeEntity } from '../composables/entities/DerivationConfigInterfaceTypeEntity.ts';
+import { DerivationRelationInterfaceTypeEntity } from '../composables/entities/DerivationRelationInterfaceTypeEntity.ts';
 import { effectiveRelation } from '../utils/effectiveRelation.ts';
 import { resolveHueOffset } from '../utils/resolveHueOffset.ts';
 
@@ -36,16 +36,21 @@ class DeriveRoleRelations implements TaskInterface {
   });
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
-    const config = state.metadata['derivation:config'] as DerivationConfigType | undefined;
+    const configRaw = state.metadata['derivation:config'];
     const roleSchema = state.input.roles;
-    if (config === undefined || roleSchema === undefined) {return;}
+    if (roleSchema === undefined || !DerivationConfigInterfaceTypeEntity.validate(configRaw)) {return;}
+    const config = DerivationConfigInterfaceTypeEntity.intake(configRaw);
 
     const overrides = new Map<string, number>();
     const roles = roleSchema.roles;
     for (let index = 0; index < roles.length; index += 1) {
       const role = roles[index];
       if (role?.derivedFrom === undefined || role.derivedFrom === '') {continue;}
-      const relation = effectiveRelation(role.hueOffset, config.relations[role.name]);
+      const storedRelation = config.relations[role.name];
+      const authoredRelation = storedRelation === undefined
+        ? undefined
+        : DerivationRelationInterfaceTypeEntity.intake(storedRelation);
+      const relation = effectiveRelation({ 'relation': authoredRelation, 'schemaHueOffset': role.hueOffset });
       overrides.set(role.name, resolveHueOffset(relation));
     }
     const serializedOverrides: Record<string, number> = {};

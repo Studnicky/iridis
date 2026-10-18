@@ -1,5 +1,5 @@
-import type { DerivationConfigType } from './colorDerivation.ts';
-import type { RoleSortKeyType } from './roleSortKey.ts';
+import type { DerivationConfigInterfaceTypeEntity } from '../entities/DerivationConfigInterfaceTypeEntity.ts';
+import type { RoleSortKeyType } from './roleSortKeyType.ts';
 
 abstract class IridisUiEffectHandler {
   abstract addSeed(hex: string | undefined): void;
@@ -19,7 +19,7 @@ abstract class IridisUiEffectHandler {
   abstract setContrastStrictness(strictness: number): void;
   abstract disableCvdCorrection(): void;
   abstract enableCvdCorrection(): void;
-  abstract setDerivationConfig(config: DerivationConfigType): void;
+  abstract setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): void;
   abstract setDarkFraming(): void;
   abstract setLightFraming(): void;
   abstract setDeltaEImageAlgorithm(): void;
@@ -88,7 +88,7 @@ export abstract class IridisUiEffect {
   static cvdCorrectionDisabled(): CvdCorrectionSelection { return new CvdCorrectionDisabledSelection(); }
   static cvdCorrectionEnabled(): CvdCorrectionSelection { return new CvdCorrectionEnabledSelection(); }
   static setCvdCorrection(selection: CvdCorrectionSelection): IridisUiEffect { return new SetCvdCorrectionEffect(selection); }
-  static setDerivationConfig(config: DerivationConfigType): IridisUiEffect { return new SetDerivationConfigEffect(config); }
+  static setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): IridisUiEffect { return new SetDerivationConfigEffect(config); }
   static darkFraming(): FramingSelection { return new DarkFramingSelection(); }
   static lightFraming(): FramingSelection { return new LightFramingSelection(); }
   static setFraming(selection: FramingSelection): IridisUiEffect { return new SetFramingEffect(selection); }
@@ -179,8 +179,8 @@ class SetCvdCorrectionEffect extends IridisUiEffect {
   execute(handler: IridisUiEffectHandler): void { this.#selection.apply(handler); }
 }
 class SetDerivationConfigEffect extends IridisUiEffect {
-  readonly #config: DerivationConfigType; readonly type = 'SET_DERIVATION_CONFIG';
-  constructor(config: DerivationConfigType) { super(); this.#config = config; }
+  readonly #config: DerivationConfigInterfaceTypeEntity.Type; readonly type = 'SET_DERIVATION_CONFIG';
+  constructor(config: DerivationConfigInterfaceTypeEntity.Type) { super(); this.#config = config; }
   execute(handler: IridisUiEffectHandler): void { handler.setDerivationConfig(this.#config); }
 }
 class SetFramingEffect extends IridisUiEffect {

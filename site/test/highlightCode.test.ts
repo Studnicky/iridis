@@ -2,7 +2,9 @@ import type { ThemeRegistration } from 'shiki';
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import * as VueModule from 'vue';
 
+import { globalVscodeTheme } from '../app/composables/globalVscodeTheme.ts';
 import { highlightCode } from '../app/theme/highlightCode.ts';
 
 class HighlightCodeFixture {
@@ -54,6 +56,25 @@ await test('renders the nameless site theme shape and a named dark theme through
   assert.equal(HighlightCodeFixture.darkTheme.tokenColors.length, darkRuleCount);
 });
 
+await test('keeps the globally published VS Code theme cloneable for Shiki intake', async () => {
+  const previousTheme = globalVscodeTheme.value;
+  const emittedTheme = {
+    'colors': { 'editor.background': '#121212' },
+    'tokenColors': [{ 'scope': 'keyword', 'settings': { 'foreground': '#e88bd7' } }],
+    'type': 'dark'
+  };
+
+  try {
+    globalVscodeTheme.value = emittedTheme;
+    assert.equal(VueModule.isReactive(globalVscodeTheme.value), false);
+    assert.equal(globalVscodeTheme.value, emittedTheme);
+    const html = await highlightCode('if (answer) {}', 'javascript', globalVscodeTheme.value);
+    assert.equal(html.includes('background-color:#121212'), true);
+  } finally {
+    globalVscodeTheme.value = previousTheme;
+  }
+});
+
 await test('renders the empty initial SSR theme using Shiki defaults', async () => {
   const html = await highlightCode('const answer = 42;', 'javascript', {});
 
@@ -87,7 +108,7 @@ await test('rejects malformed VS Code themes before calling Shiki', async () => 
       'tokenColors': [{ 'scope': 'keyword', 'settings': { 'foreground': 42 } }],
       'type': 'dark'
     }),
-    { 'message': 'VS Code theme tokenColors must match the TextMate theme contract' }
+    { 'message': '/tokenColors/0/settings/foreground: must be string' }
   );
 });
 
@@ -97,6 +118,6 @@ await test('rejects a non-string theme name when the optional property is presen
       ...HighlightCodeFixture.darkTheme,
       'name': 42
     }),
-    { 'message': 'VS Code theme name must be a string when present' }
+    { 'message': '/name: must be string' }
   );
 });

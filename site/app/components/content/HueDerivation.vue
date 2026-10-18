@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { colorRecordFactory } from '@studnicky/iridis';
 import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { buildHueDerivationSpecimens } from './derivation/buildHueDerivationSpecimens.ts';
@@ -17,6 +18,11 @@ const roleNames = computed(() => buildHueDerivationSpecimens.buildRoleNames(role
 const selectedRole = ref<string>('brand');
 const spacing = ref<number>(30);
 
+const resolveHexAt = (hue: number): string => {
+  const result = colorRecordFactory.fromOklch(0.68, 0.15, hue).hex;
+  return result;
+};
+
 const baseHue = computed<number>(() => {
   return buildHueDerivationSpecimens.resolveBaseHue(roleViews.value, selectedRole.value);
 });
@@ -34,7 +40,7 @@ const derived = computed(() => {
 
       <div class="flex items-center gap-3">
         <SwatchSummaryRow
-          :hex="buildHueDerivationSpecimens.resolveHexAt(baseHue)"
+          :hex="resolveHexAt(baseHue)"
           aria-label="Selected seed hue"
           class="w-auto min-w-0"
         >
@@ -65,7 +71,7 @@ const derived = computed(() => {
           :description="a.description"
           :count-label="a.countLabel"
           :hues="a.hues"
-          :hex-at="buildHueDerivationSpecimens.resolveHexAt"
+          :hex-at="resolveHexAt"
         />
       </div>
 
@@ -77,9 +83,8 @@ const derived = computed(() => {
           Each algorithm above takes one seed hue and returns a fixed set of derived hues by angular offset —
           pure OKLCH hue math, no lightness or chroma involved. <code>Derivation Settings</code> (below the
           carousel) assigns one of these 8 algorithms to each of the 7 derivable roles
-          (primary/success/warning/error/info/neutral/accent); <code>selectHueAlgorithm()</code> in
-          <code>utils/selectHueAlgorithm.ts</code> is the single dispatch point every role's derivation goes
-          through.
+          (primary/success/warning/error/info/neutral/accent); <code>buildDerivationRelations.resolveHueAlgorithm()</code> is the resolution boundary that
+          selects the behavior each role’s derivation uses.
         </p>
         <p class="mt-2">
           The variation algorithms that turn one derived hue into a full tint/shade ramp — tints-shades,

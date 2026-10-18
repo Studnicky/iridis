@@ -25,6 +25,7 @@ export const CONTRAST_PLUGIN_SCHEMAS = Object.freeze({
       'corrections': { 'items': CVD_CORRECTION_SCHEMA, 'type': 'array' },
       'warnings': { 'items': CVD_WARNING_SCHEMA, 'type': 'array' }
     },
+    'required': ['corrections', 'warnings'],
     'type': 'object'
   }
 } as const);

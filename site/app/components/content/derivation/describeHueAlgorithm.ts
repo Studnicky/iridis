@@ -1,7 +1,5 @@
-import type { HueAlgorithmType } from '~/composables/types/colorDerivation.ts';
-
 export const describeHueAlgorithm = class HueAlgorithmDescription {
-  private static readonly labels: Record<HueAlgorithmType.Type, string> = {
+  private static readonly labels: Record<string, string> = {
     'analogous': 'Analogous — hues sit 30° on either side of the seed',
     'complementary': 'Complementary — hue sits 180° from the seed',
     'compound': 'Compound — analogous hues around both the seed and its complement',
@@ -12,10 +10,12 @@ export const describeHueAlgorithm = class HueAlgorithmDescription {
     'triadic': 'Triadic — hues spaced 120° apart around the wheel'
   };
 
-  public static describe(algorithm: HueAlgorithmType.Type | undefined): string {
+  public static describe(algorithm: string | undefined): string {
     if (algorithm === undefined) {
-      return HueAlgorithmDescription.labels.monochromatic;
+      const result = HueAlgorithmDescription.labels.monochromatic ?? 'Monochromatic — no hue shift';
+      return result;
     }
-    return HueAlgorithmDescription.labels[algorithm] ?? algorithm;
+    const result = HueAlgorithmDescription.labels[algorithm] ?? algorithm;
+    return result;
   }
 };

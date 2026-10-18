@@ -2,7 +2,8 @@
 class SampleIndexToXOperation {
   static run(index: number, sampleCount: number, canvasWidth: number): number {
     if (sampleCount <= 1) { return canvasWidth; }
-    return (index / (sampleCount - 1)) * canvasWidth;
+    const result = (index / (sampleCount - 1)) * canvasWidth;
+    return result;
   }
 }
 

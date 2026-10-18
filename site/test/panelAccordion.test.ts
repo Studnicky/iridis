@@ -76,21 +76,21 @@ await test('toggle opens a closed panel and closes an open one', () => {
 
 await test('defaultOpen seeds initial state on first construction only', () => {
   PanelAccordionTestModules.reset();
-  const a = PanelAccordionTestModules.use('a', { 'defaultOpen': true });
+  const a = PanelAccordionTestModules.use('a', true);
   assert.equal(a.isOpen.value, true);
 
   a.close();
   // re-invoking the composable for the same id must not re-seed it back open
-  const aAgain = PanelAccordionTestModules.use('a', { 'defaultOpen': true });
+  const aAgain = PanelAccordionTestModules.use('a', true);
   assert.equal(aAgain.isOpen.value, false);
 });
 
 await test('defaultOpen respects the max-3 rule when several panels seed at once', () => {
   PanelAccordionTestModules.reset();
-  const a = PanelAccordionTestModules.use('a', { 'defaultOpen': true });
-  const b = PanelAccordionTestModules.use('b', { 'defaultOpen': true });
-  const c = PanelAccordionTestModules.use('c', { 'defaultOpen': true });
-  const d = PanelAccordionTestModules.use('d', { 'defaultOpen': true });
+  const a = PanelAccordionTestModules.use('a', true);
+  const b = PanelAccordionTestModules.use('b', true);
+  const c = PanelAccordionTestModules.use('c', true);
+  const d = PanelAccordionTestModules.use('d', true);
   assert.equal(a.isOpen.value, false);
   assert.equal(b.isOpen.value, true);
   assert.equal(c.isOpen.value, true);

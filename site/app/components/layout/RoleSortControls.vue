@@ -3,9 +3,8 @@ import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { IridisUiEvent } from '~/composables/types/index.ts';
+import { RoleSortBehavior } from '~/utils/roleSortBehavior.ts';
 import { ROLE_SORT_FIELD_OPTIONS } from '~/utils/roleSortFieldOptions.ts';
-import { roleSortFieldLabel } from '~/utils/roleSortFieldLabel.ts';
-import type { RoleSortFieldType } from '~/composables/types/roleSortField.ts';
 
 /**
  * Shared multi-key sort control — every role listing (Roles table, Resolved
@@ -17,26 +16,36 @@ import type { RoleSortFieldType } from '~/composables/types/roleSortField.ts';
 const { roleSortKeys } = useIridis();
 const { send } = useIridisUiMachine();
 
-const addableOptions = computed(() => ROLE_SORT_FIELD_OPTIONS.filter((o) => !roleSortKeys.value.some((k) => k.field === o.value)));
-const newField = ref<RoleSortFieldType.Type | undefined>(undefined);
+const addableOptions = computed(() => ROLE_SORT_FIELD_OPTIONS.filter((option) => {
+  const selected = roleSortKeys.value.some((key) => {
+    const matches = key.behavior.matches(option.value);
+    return matches;
+  });
+  const addable = !selected;
+  return addable;
+}));
+const newField = ref<number | undefined>(undefined);
 
-function addKey(): void {
-  if (newField.value === undefined) return;
-  const field = newField.value;
+function addKey(optionIndex: number): void {
+  const option = addableOptions.value[optionIndex];
+  if (option === undefined) return;
+  const field = option.value;
   // Clear BEFORE dispatching: addableOptions is derived from roleSortKeys, so
   // the instant the FSM adds this field, it drops out of :items — if newField
   // still pointed at it when that happens, AppSelect has no matching item to
   // resolve an index from and falls back to rendering the placeholder
   // instead of a stale selection.
   newField.value = undefined;
-  send(IridisUiEvent.setRoleSort([...roleSortKeys.value, { 'desc': false, field }]));
+  const behavior = RoleSortBehavior.ascending(field);
+  send(IridisUiEvent.setRoleSort([...roleSortKeys.value, { behavior }]));
 }
 function removeKey(index: number): void {
   send(IridisUiEvent.setRoleSort(roleSortKeys.value.filter((_, keyIndex) => keyIndex !== index)));
 }
-function toggleKeyDesc(index: number): void {
+function toggleKeyDirection(index: number): void {
   const next = roleSortKeys.value.map((key, keyIndex) => {
-    const result = keyIndex === index ? { ...key, 'desc': !key.desc } : key;
+    const behavior = keyIndex === index ? key.behavior.toggleDirection() : key.behavior;
+    const result = { behavior };
     return result;
   });
   send(IridisUiEvent.setRoleSort(next));
@@ -47,26 +56,26 @@ function toggleKeyDesc(index: number): void {
   <div class="flex flex-wrap items-center gap-2">
     <UBadge
       v-for="(key, index) in roleSortKeys"
-      :key="key.field"
+      :key="key.behavior.label"
       color="neutral"
       variant="soft"
       class="flex items-center gap-1 py-1"
     >
-      <span>{{ index + 1 }}. {{ roleSortFieldLabel(key.field) }}</span>
+      <span>{{ index + 1 }}. {{ key.behavior.label }}</span>
       <button
         type="button"
         class="flex items-center"
-        :aria-label="`Toggle ${roleSortFieldLabel(key.field)} sort direction`"
-        :aria-pressed="key.desc"
-        @click="toggleKeyDesc(index)"
+        :aria-label="`Toggle ${key.behavior.label} sort direction`"
+        :aria-pressed="key.behavior.isDescending()"
+        @click="toggleKeyDirection(index)"
       >
-        <UIcon :name="key.desc ? 'i-material-symbols-arrow-downward-rounded' : 'i-material-symbols-arrow-upward-rounded'" />
+        <UIcon :name="key.behavior.isDescending() ? 'i-material-symbols-arrow-downward-rounded' : 'i-material-symbols-arrow-upward-rounded'" />
       </button>
       <button
         v-if="roleSortKeys.length > 1"
         type="button"
         class="ml-0.5 text-muted hover:text-highlighted"
-        :aria-label="`Remove ${roleSortFieldLabel(key.field)} sort key`"
+        :aria-label="`Remove ${key.behavior.label} sort key`"
         @click="removeKey(index)"
       >
         ×
@@ -76,7 +85,7 @@ function toggleKeyDesc(index: number): void {
     <AppSelect
       v-if="addableOptions.length > 0"
       v-model="newField"
-      :items="addableOptions"
+      :items="addableOptions.map((option, index) => ({ label: option.label, value: index }))"
       placeholder="+ Add sort key"
       class="w-40"
       size="xs"

@@ -1,4 +1,6 @@
 import { ContrastPlugin, contrastPlugin } from '@studnicky/iridis-contrast';
+import { Validator } from '@studnicky/iridis/model';
+import { JsonValue } from '@studnicky/types/node';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -19,6 +21,22 @@ export class PluginShapeScenarioSuite {
         return result;
       });
       assert.deepStrictEqual(names, ['enforce:apca', 'enforce:cvdSimulate', 'enforce:wcagAA', 'enforce:wcagAAA']);
+    });
+    await test('ContrastPlugin :: cell-1 :: plugin.schema :: CVD metadata requires its canonical result fields', () => {
+      const metadata = contrastPlugin.schemas().metadata;
+      assert.ok(metadata !== undefined, 'plugin contributes metadata schemas');
+      const cvdSchema = metadata['contrast:cvd'];
+      assert.ok(cvdSchema !== undefined, 'plugin contributes CVD metadata schema');
+      const validator = new Validator();
+      if (!JsonValue.is(cvdSchema)) {
+        assert.fail('plugin contributes a JSON CVD metadata schema');
+      }
+      if (!validator.tryCompile(cvdSchema)) {
+        assert.fail('plugin contributes a compilable CVD metadata schema');
+      }
+      assert.equal(validator.validate(cvdSchema, { 'corrections': [], 'warnings': [] }).errors.length, 0, 'canonical CVD result passes plugin schema');
+      assert.ok(validator.validate(cvdSchema, { 'corrections': [] }).errors.length > 0, 'warnings remains required at the plugin boundary');
+      assert.ok(validator.validate(cvdSchema, { 'warnings': [] }).errors.length > 0, 'corrections remains required at the plugin boundary');
     });
     await test('ContrastPlugin :: cell-1 :: plugin.shape :: task calls are stable', () => {
       const initial = contrastPlugin.tasks().map((task) => {

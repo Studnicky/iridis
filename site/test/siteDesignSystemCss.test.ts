@@ -18,6 +18,25 @@ class SiteDesignSystemCssHarness {
     }
     return tokens;
   }
+
+  static collectPresetTypefaces(styleSources: readonly (readonly [string, string])[]): Set<string> {
+    const typefaces = new Set<string>();
+    for (let sourceIndex = 0; sourceIndex < styleSources.length; sourceIndex += 1) {
+      const [, sourceCss] = styleSources[sourceIndex]!;
+      const lines = sourceCss.split('\n');
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+        const line = lines[lineIndex]!;
+        const propertyEnd = line.indexOf(':');
+        const openingQuote = line.indexOf('"');
+        const closingQuote = line.indexOf('"', openingQuote + 1);
+        if (propertyEnd === -1 || openingQuote === -1 || closingQuote === -1) {continue;}
+        const property = line.slice(0, propertyEnd).trim();
+        if (property !== '--font-display' && property !== '--font-sans' && property !== '--font-mono') {continue;}
+        typefaces.add(line.slice(openingQuote + 1, closingQuote));
+      }
+    }
+    return typefaces;
+  }
 }
 
 await test('all site CSS and Vue styles consume defined engine color tokens', () => {
@@ -61,4 +80,22 @@ await test('each modal shell disables its entrance animation for reduced motion'
     if (!sourcePath.endsWith('ModalShell.css')) {continue;}
     assert.match(sourceCss, TestPatterns.CSS_MODAL_REDUCED_MOTION, sourcePath);
   }
+});
+
+await test('every themed typeface is self-hosted', () => {
+  const mainCss = readFileSync(resolve(SITE_ROOT, 'app/assets/css/main.css'), 'utf8');
+  const fontCss = readFileSync(resolve(SITE_ROOT, 'app/assets/css/fonts.css'), 'utf8');
+  const presetSources = SiteDesignSystemCssSources.collect(resolve(SITE_ROOT, 'app/theme/presets'));
+  const typefaces = SiteDesignSystemCssHarness.collectPresetTypefaces(presetSources);
+
+  assert.ok(mainCss.includes('@import "./fonts.css";'));
+  assert.ok(fontCss.includes('@font-face'));
+  assert.ok(!fontCss.includes('http://') && !fontCss.includes('https://'));
+  assert.ok(!fontCss.includes('_fonts'));
+  typefaces.forEach((typeface) => {
+    assert.ok(
+      fontCss.includes(`font-family:${typeface};`) || fontCss.includes(`font-family:"${typeface}"`),
+      `Missing a local font-face for ${typeface}.`
+    );
+  });
 });

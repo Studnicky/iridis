@@ -4,8 +4,9 @@ import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 import { createRenderer, h } from 'vue';
 
-import type { OutputRowType } from '../app/composables/types/outputRow.ts';
+import type { OutputRowInterfaceTypeEntity } from '../app/composables/entities/OutputRowInterfaceTypeEntity.ts';
 
+import { SchemaNameInterfaceTypeEntity } from '../app/composables/entities/SchemaNameInterfaceTypeEntity.ts';
 import { OUTPUT_FORMAT_CARDS } from '../app/composables/outputFormatCards.ts';
 import { IridisUiEvent } from '../app/composables/types/iridisUiEvent.ts';
 import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
@@ -96,8 +97,8 @@ class HostOperations {
 
 class OutputHarness {
   static readonly state: {
-    'operation': (() => { readonly 'outputsByKey': { 'value': Record<string, OutputRowType | undefined> } }) | undefined;
-    'outputs': { 'value': Record<string, OutputRowType | undefined> } | undefined;
+    'operation': (() => { readonly 'outputsByKey': { 'value': Record<string, OutputRowInterfaceTypeEntity.Type | undefined> } }) | undefined;
+    'outputs': { 'value': Record<string, OutputRowInterfaceTypeEntity.Type | undefined> } | undefined;
   } = { 'operation': undefined, 'outputs': undefined };
 
   static render() {
@@ -126,7 +127,11 @@ await test('useMultiOutput uses the current framing for non-VS-Code outputs and 
   const { useIridis } = await import('../app/composables/useIridis.ts');
   const { useMultiOutput } = await import('../app/composables/useMultiOutput.ts');
   const iridis = useIridis();
-  iridis.schemaName.value = 'not-registered';
+  assert.throws(() => {
+    const schemaName = SchemaNameInterfaceTypeEntity.intake('not-registered');
+    return schemaName;
+  });
+  iridis.schemaName.value = SchemaNameInterfaceTypeEntity.defaultValue;
   iridis.send(IridisUiEvent.setLightFraming());
   assert.equal(iridis.framing.value, 'light');
 
@@ -152,10 +157,11 @@ await test('useMultiOutput uses the current framing for non-VS-Code outputs and 
   if (output === undefined) {throw new Error('Output ref was not registered during component setup');}
   const rows = output.value;
   const expectedKeys = ['androidThemeXml', 'capacitor', 'chakra', 'cssVars', 'cssVarsScoped', 'json', 'mui', 'panda', 'rdf', 'shadcn', 'tailwind', 'unocss'];
-  assert.deepEqual(Object.keys(rows).toSorted((left, right) => {
+  const sortedRowKeys = Object.keys(rows).toSorted((left, right) => {
     const comparison = left.localeCompare(right);
     return comparison;
-  }), expectedKeys);
+  });
+  assert.deepEqual(sortedRowKeys, expectedKeys);
   assert.equal(Object.values(rows).every(OutputAssertions.hasText), true);
   assert.equal(rows.vscode, undefined);
 });

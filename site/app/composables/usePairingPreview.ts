@@ -2,13 +2,14 @@ import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
 
 import { computed } from 'vue';
 
-import type { ContrastPairingType } from './types/contrastPairing.ts';
+import type { ContrastPairingType } from './types/contrastPairingType.ts';
 import type { RoleViewType } from './types/index.ts';
 
 import { contrastRatio } from '../theme/ContrastRatio.ts';
 import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
 import { complianceFor } from '../utils/complianceFor.ts';
 import { minimumRatioForRole } from '../utils/minimumRatioForRole.ts';
+import { roleSchemaFor } from './roleSchemaFor.ts';
 import { useIridis } from './useIridis.ts';
 
 /** Highest-contrast role in `candidates` against `bg`, by live WCAG ratio. */
@@ -49,14 +50,22 @@ class UsePairingPreviewOperation {
   static run() {
     const { 'framing': framing, 'roleViews': roleViews, 'schemaName': schemaName } = useIridis();
 
+    const schema = computed<RoleSchemaInterfaceTypeEntity.Type>(() => {
+      const pair = roleSchemaByName[schemaName.value];
+      if (pair === undefined) {
+        throw new RangeError(`No role schema is registered for ${schemaName.value}`);
+      }
+      const selected = framing.value === 'dark' ? pair.dark : pair.light;
+      const result = roleSchemaFor(selected);
+      return result;
+    });
+
     const pairings = computed<ContrastPairingType[]>(() => {
       const views = roleViews.value;
       if (views.length < 2) {
         const emptyPairings: ContrastPairingType[] = [];
         return emptyPairings;
       }
-
-      const schema = roleSchemaByName[schemaName.value]?.[framing.value];
 
       const byLightness = [...views].sort((left, right) => {
         const lightnessDifference = left.l - right.l;
@@ -99,17 +108,17 @@ class UsePairingPreviewOperation {
       const result: ContrastPairingType[] = [
         {
           'background': darkest,
-          'complianceLabel': labelFor(lightOnDark.ratio, schema, lightOnDark.view.name),
+          'complianceLabel': labelFor(lightOnDark.ratio, schema.value, lightOnDark.view.name),
           'foreground': lightOnDark.view,
-          'key': 'lightOnDark',
+          'id': 'lightOnDark',
           'label': 'Light on dark',
           'ratio': lightOnDark.ratio
         },
         {
           'background': lightest,
-          'complianceLabel': labelFor(darkOnLight.ratio, schema, darkOnLight.view.name),
+          'complianceLabel': labelFor(darkOnLight.ratio, schema.value, darkOnLight.view.name),
           'foreground': darkOnLight.view,
-          'key': 'darkOnLight',
+          'id': 'darkOnLight',
           'label': 'Dark on light',
           'ratio': darkOnLight.ratio
         }
@@ -117,9 +126,9 @@ class UsePairingPreviewOperation {
       if (low !== undefined) {
         result.push({
           'background': low.bg,
-          'complianceLabel': labelFor(low.ratio, schema, low.fg.name),
+          'complianceLabel': labelFor(low.ratio, schema.value, low.fg.name),
           'foreground': low.fg,
-          'key': 'lowContrast',
+          'id': 'lowContrast',
           'label': 'Lower contrast',
           'ratio': low.ratio
         });

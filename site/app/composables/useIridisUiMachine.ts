@@ -4,8 +4,9 @@ import * as VueModule from 'vue';
 
 import { useNuxtApp } from '#imports';
 
-import type { DerivationConfigType, IridisUiEffect, IridisUiEvent } from './types/index.ts';
-import type { RoleSortKeyType } from './types/roleSortKey.ts';
+import type { DerivationConfigInterfaceTypeEntity } from './entities/DerivationConfigInterfaceTypeEntity.ts';
+import type { IridisUiEffect, IridisUiEvent } from './types/index.ts';
+import type { RoleSortKeyType } from './types/roleSortKeyType.ts';
 
 import { IridisUiMachine } from './fsm/IridisUiMachine.ts';
 import { logger } from './logger.ts';
@@ -30,7 +31,7 @@ interface IridisUiEffectHandlersInterface {
   setContrastStrictness(strictness: number): void;
   setDarkFraming(): void;
   setDeltaEImageAlgorithm(): void;
-  setDerivationConfig(config: DerivationConfigType): void;
+  setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): void;
   setDisplayP3ColorSpace(): void;
   setImageChromaRange(range: [number, number][]): void;
   setImageDeltaECap(cap: number): void;

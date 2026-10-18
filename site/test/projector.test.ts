@@ -7,8 +7,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import type { RoleHexMapType } from '../app/composables/types/roleHexMap.ts';
-import type { ScaleMapType } from '../app/composables/types/scaleMap.ts';
+import type { RoleHexMapType } from '../app/composables/types/roleHexMapType.ts';
+import type { ScaleMapType } from '../app/composables/types/scaleMapType.ts';
 
 import { Tokens } from '../app/theme/Tokens.ts';
 import { TestPatterns } from './fixtures/TestPatterns.ts';

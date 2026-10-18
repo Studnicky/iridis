@@ -21,13 +21,11 @@ export namespace CvdResultSetInterfaceTypeEntity {
         'type': 'array'
       }
     },
-    'required': ['warnings'],
+    'required': ['corrections', 'warnings'],
     'type': 'object'
   } as const;
 
-  export type Type = InferType<typeof Schema> & {
-    'corrections': CvdCorrectionInterfaceTypeEntity.Type[];
-  };
+  export type Type = InferType<typeof Schema>;
 
   export const validate = (value: JSONSchema7Type): value is Type => {
     const result = new Validator().validate(Schema, value);

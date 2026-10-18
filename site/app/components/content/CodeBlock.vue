@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { highlightCode } from '~/theme/highlightCode.ts';
-import type { SupportedLangType } from '~/composables/types/supportedLang.ts';
+import type { SUPPORTED_LANGS } from '~/theme/supportedLangs.ts';
 import { buildCodeBlockViewModel } from './code/buildCodeBlockViewModel.ts';
 import { trustedMarkupRenderer } from './trustedMarkupRenderer.ts';
 
@@ -21,7 +21,7 @@ import { trustedMarkupRenderer } from './trustedMarkupRenderer.ts';
  * for long formats (JSON, RDF, Android XML) behind a "Show full file"
  * disclosure; Copy always copies the full `code`, regardless of preview state.
  */
-const props = defineProps<{ code: string; lang: SupportedLangType.Type; vscodeTheme: object; caption?: string; previewLines?: number }>();
+const props = defineProps<{ code: string; lang: typeof SUPPORTED_LANGS[number]; vscodeTheme: object; caption?: string; previewLines?: number }>();
 
 // Top-level await so SSR/prerender waits for the highlighted HTML before
 // serializing the page — a fire-and-forget watch() never resolves in time

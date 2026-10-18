@@ -24,7 +24,8 @@ class SnippetImporter {
           ? this.extractRegion(source, region, relativePath)
           : source.trim();
         const language = SNIPPET_IMPORTER_CONSTANTS.LANGUAGE_BY_EXTENSION[extname(relativePath).slice(1)] ?? 'text';
-        return `\`\`\`${language}\n${snippet}\n\`\`\``;
+        const formattedSnippet = `\`\`\`${language}\n${snippet}\n\`\`\``;
+        return formattedSnippet;
       }
     );
     return resolvedMarkdown;
@@ -47,31 +48,36 @@ class SnippetImporter {
       if (line.trim().length === 0) {return currentMinimum;}
       const indentationMatch = SNIPPET_IMPORTER_CONSTANTS.INDENTATION_PATTERN.exec(line);
       const indentationLength = indentationMatch?.[0].length ?? 0;
-      return Math.min(currentMinimum, indentationLength);
+      const nextMinimum = Math.min(currentMinimum, indentationLength);
+      return nextMinimum;
     }, Number.POSITIVE_INFINITY);
     const indentationLength = Number.isFinite(minimumIndent) ? minimumIndent : 0;
-    return lines.map((line) => {
+    const dedentedLines = lines.map((line) => {
       const dedentedLine = line.slice(indentationLength);
       return dedentedLine;
     });
+    return dedentedLines;
   }
 
   private extractRegion(source: string, region: string, relativePath: string): string {
     const lines = source.split('\n');
     const startIndex = lines.findIndex((line) => {
       const marker = SNIPPET_IMPORTER_CONSTANTS.REGION_PATTERN.exec(line);
-      return marker?.[1] === region;
+      const matchesRegion = marker?.[1] === region;
+      return matchesRegion;
     });
     const endIndex = lines.findIndex((line) => {
       const marker = SNIPPET_IMPORTER_CONSTANTS.ENDREGION_PATTERN.exec(line);
-      return marker?.[1] === region;
+      const matchesRegion = marker?.[1] === region;
+      return matchesRegion;
     });
 
     if (startIndex === -1 || endIndex === -1) {
       throw new Error(`SnippetImporter: region "${region}" not found in ${relativePath}`);
     }
 
-    return this.dedent(lines.slice(startIndex + 1, endIndex)).join('\n').trim();
+    const extractedRegion = this.dedent(lines.slice(startIndex + 1, endIndex)).join('\n').trim();
+    return extractedRegion;
   }
 
   private resolveSourcePath(repositoryRoot: string, relativePath: string): string {
@@ -98,7 +104,8 @@ class SnippetImporter {
     const canonicalRepositoryRoot = realpathSync(absoluteRepositoryRoot);
     const canonicalSourcePath = realpathSync(absoluteSourcePath);
     this.assertRepositoryDescendant(canonicalRepositoryRoot, canonicalSourcePath);
-    return canonicalSourcePath;
+    const resolvedSourcePath = canonicalSourcePath;
+    return resolvedSourcePath;
   }
 }
 

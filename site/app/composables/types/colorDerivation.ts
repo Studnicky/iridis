@@ -1,41 +1,16 @@
-export declare namespace HueAlgorithmType {
-  type Type = 'monochromatic' | 'complementary' | 'analogous' | 'triadic' | 'tetradic' | 'split-complementary' | 'compound' | 'freeform';
-}
+import type { HueAlgorithmBehaviorInterface } from '../interfaces/HueAlgorithmBehaviorInterface.ts';
 
-export declare namespace VariationAlgorithmType {
-  type Type = 'tints-shades' | 'saturation-gradient' | 'value-gradient';
-}
+/** Canonical derivation behavior and relation state admitted into the palette pipeline. */
+export namespace ColorDerivation {
+  export declare class RoleRelation {
+    'algorithm': HueAlgorithmBehaviorInterface;
+    'freeformOffset': number | undefined;
+    'hueVariantIndex': number;
+  }
 
-/**
- * One parent→child derivation edge's hue algorithm. Keyed by the CHILD
- * role's own name in `DerivationConfigType.relations` — every `derivedFrom`
- * role has exactly one parent, so its own name uniquely identifies the
- * edge (matching the schema's own derivedFrom graph 1:1, the same graph
- * ColorGraph.vue renders).
- */
-export declare class RoleRelationDerivationType {
-  /** Only read when hueAlgorithm === 'freeform' — a direct degree offset from the parent's hue. */
-  'freeformOffset': number | undefined;
-  'hueAlgorithm': HueAlgorithmType.Type;
-  /**
-   * Most algorithms produce more than one candidate hue offset from a
-   * shared base (e.g. analogous: 0°/-30°/+30°) — this picks which slot
-   * this specific relation uses. Ignored when hueAlgorithm is 'freeform'.
-   */
-  'hueVariantIndex': number;
-}
+  export declare class Config {
+    'relations': Record<string, RoleRelation>;
+  }
 
-/**
- * Sparse — only relations the user has explicitly customized. A relation
- * absent here still runs through the exact same resolution path (see
- * `effectiveRelation` in utils/effectiveRelation.ts and `resolveHueOffset`
- * in utils/resolveHueOffset.ts), defaulting to 'freeform' seeded with the
- * schema's own hueOffset — so
- * there is exactly one code path from picker to pipeline, never a second,
- * silent fallback that can drift out of sync with what's shown.
- */
-export declare class DerivationConfigType {
-  'relations': Record<string, RoleRelationDerivationType>;
+  export const defaultConfig: Config = { 'relations': {} };
 }
-
-export const DEFAULT_DERIVATION_CONFIG: DerivationConfigType = { 'relations': {} };

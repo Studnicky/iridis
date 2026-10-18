@@ -16,7 +16,9 @@ import { pinDerivedRoles } from '../theme/PinDerivedRoles.ts';
 class CreateColorEngineOperation {
   static run(): Engine {
     const engine = new Engine();
-    for (const t of coreTasks) {engine.tasks.register(t);}
+    for (let index = 0; index < coreTasks.length; index += 1) {
+      engine.tasks.register(coreTasks[index]!);
+    }
     engine.tasks.register(intakeHexHint);
     engine.tasks.register(deriveSemanticHues);
     engine.tasks.register(pinDerivedRoles);

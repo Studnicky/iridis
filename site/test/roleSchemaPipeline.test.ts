@@ -11,11 +11,11 @@ import type { PickerSeedType, SchemaPair } from '../app/composables/types/index.
 
 import { ContrastConfigFor } from '../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../app/composables/createColorEngine.ts';
+import { DerivationConfigInterfaceTypeEntity } from '../app/composables/entities/DerivationConfigInterfaceTypeEntity.ts';
 import { optionalContrastStages } from '../app/composables/optionalContrastStages.ts';
 import { pickerSeedInputs } from '../app/composables/pickerSeedInputs.ts';
 import { REQUIRED_COLOR_STAGES } from '../app/composables/requiredColorStages.ts';
 import { spliceOptionalStages } from '../app/composables/spliceOptionalStages.ts';
-import { DEFAULT_DERIVATION_CONFIG } from '../app/composables/types/index.ts';
 import { VARIANT_CONFIG } from '../app/composables/variantConfig.ts';
 import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
 import { Tokens } from '../app/theme/Tokens.ts';
@@ -81,7 +81,7 @@ class RoleSchemaPipelineFixture {
       'contrast': ContrastConfigFor.forStrictness(0, ContrastConfigFor.correctingCvd),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DEFAULT_DERIVATION_CONFIG),
+        'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
         'derivation:semanticHuesEnabled': true
       },
       'roles':   schema,

@@ -8,7 +8,7 @@ import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import type { RoleViewType } from '../app/composables/types/roleView.ts';
+import type { RoleViewType } from '../app/composables/types/roleViewType.ts';
 
 import { buildDecorativePalette } from '../app/composables/buildDecorativePalette.ts';
 import { createRingBuffer } from '../app/composables/createRingBuffer.ts';

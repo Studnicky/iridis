@@ -1,12 +1,12 @@
 import type { CSSProperties } from 'vue';
 
-import type { ContrastPairingType } from '~/composables/types/contrastPairing.ts';
+import type { ContrastPairingType } from '~/composables/types/contrastPairingType.ts';
 
 class PairingPreviewTableRowModel {
   public readonly backgroundHex: string;
   public readonly complianceLabel: string;
   public readonly foregroundHex: string;
-  public readonly key: ContrastPairingType['key'];
+  public readonly id: ContrastPairingType['id'];
   public readonly label: string;
   public readonly previewStyle: CSSProperties;
 
@@ -14,7 +14,7 @@ class PairingPreviewTableRowModel {
     this.backgroundHex = pairing.background.hex;
     this.complianceLabel = pairing.complianceLabel;
     this.foregroundHex = pairing.foreground.hex;
-    this.key = pairing.key;
+    this.id = pairing.id;
     this.label = pairing.label;
     this.previewStyle = {
       'backgroundColor': pairing.background.hex,
@@ -28,7 +28,9 @@ export const buildPairingPreviewTableModel = class PairingPreviewTableModelBuild
     pairings: readonly ContrastPairingType[]
   ): readonly PairingPreviewTableRowModel[] {
     const rows: PairingPreviewTableRowModel[] = [];
-    for (const pairing of pairings) {
+    for (let index = 0; index < pairings.length; index += 1) {
+      const pairing = pairings[index];
+      if (pairing === undefined) {continue;}
       rows.push(new PairingPreviewTableRowModel(pairing));
     }
     return rows;

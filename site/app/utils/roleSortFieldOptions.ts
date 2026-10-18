@@ -1,10 +1,76 @@
-import type { RoleSortFieldType } from '../composables/types/roleSortField.ts';
+import type { RoleSortableRowInterfaceTypeEntity } from '../composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import type { RoleSortFieldComparatorInterface } from './roleSortFieldComparatorInterface.ts';
 
-export const ROLE_SORT_FIELD_OPTIONS: { 'label': string; 'value': RoleSortFieldType.Type }[] = [
-  { 'label': 'Role name', 'value': 'name' },
-  { 'label': 'Lightness', 'value': 'l' },
-  { 'label': 'Chroma', 'value': 'c' },
-  { 'label': 'Hue', 'value': 'h' },
-  { 'label': 'Ratio', 'value': 'ratio' },
-  { 'label': 'Compliance', 'value': 'compliance' }
+class RoleNameSortBehavior implements RoleSortFieldComparatorInterface {
+  public readonly label = 'Role name';
+
+  public compare(left: RoleSortableRowInterfaceTypeEntity.Type, right: RoleSortableRowInterfaceTypeEntity.Type): number {
+    const comparison = left.name.localeCompare(right.name);
+    return comparison;
+  }
+}
+
+class LightnessSortBehavior implements RoleSortFieldComparatorInterface {
+  public readonly label = 'Lightness';
+
+  public compare(left: RoleSortableRowInterfaceTypeEntity.Type, right: RoleSortableRowInterfaceTypeEntity.Type): number {
+    const comparison = left.l - right.l;
+    return comparison;
+  }
+}
+
+class ChromaSortBehavior implements RoleSortFieldComparatorInterface {
+  public readonly label = 'Chroma';
+
+  public compare(left: RoleSortableRowInterfaceTypeEntity.Type, right: RoleSortableRowInterfaceTypeEntity.Type): number {
+    const comparison = left.c - right.c;
+    return comparison;
+  }
+}
+
+class HueSortBehavior implements RoleSortFieldComparatorInterface {
+  public readonly label = 'Hue';
+
+  public compare(left: RoleSortableRowInterfaceTypeEntity.Type, right: RoleSortableRowInterfaceTypeEntity.Type): number {
+    const comparison = left.h - right.h;
+    return comparison;
+  }
+}
+
+class RatioSortBehavior implements RoleSortFieldComparatorInterface {
+  public readonly label = 'Ratio';
+
+  public compare(left: RoleSortableRowInterfaceTypeEntity.Type, right: RoleSortableRowInterfaceTypeEntity.Type): number {
+    const comparison = left.ratio - right.ratio;
+    return comparison;
+  }
+}
+
+class ComplianceSortBehavior implements RoleSortFieldComparatorInterface {
+  public readonly label = 'Compliance';
+  private readonly rankByCompliance = new Map<string, number>([
+    ['AA', 1],
+    ['AAA', 2],
+    ['fail', 0],
+    ['n/a', -1]
+  ]);
+
+  public compare(left: RoleSortableRowInterfaceTypeEntity.Type, right: RoleSortableRowInterfaceTypeEntity.Type): number {
+    const leftRank = this.rankByCompliance.get(left.compliance) ?? 0;
+    const rightRank = this.rankByCompliance.get(right.compliance) ?? 0;
+    const comparison = leftRank - rightRank;
+    return comparison;
+  }
+}
+
+export const ROLE_SORT_FIELD_OPTIONS: readonly {
+  readonly 'label': string;
+  readonly 'value': RoleSortFieldComparatorInterface;
+}[] = [
+  { 'label': 'Role name', 'value': new RoleNameSortBehavior() },
+  { 'label': 'Lightness', 'value': new LightnessSortBehavior() },
+  { 'label': 'Chroma', 'value': new ChromaSortBehavior() },
+  { 'label': 'Hue', 'value': new HueSortBehavior() },
+  { 'label': 'Ratio', 'value': new RatioSortBehavior() },
+  { 'label': 'Compliance', 'value': new ComplianceSortBehavior() }
 ];

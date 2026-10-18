@@ -73,7 +73,7 @@ pnpm test
 pnpm run packages:verify
 ```
 
-`pnpm run build` emits 1,316 artifacts from 329 TypeScript sources.
+`pnpm run build` emits 1,436 artifacts from 359 TypeScript sources.
 
 The documentation source lives in [`site/`](site). `pnpm run site:debug` starts the local Nuxt documentation app.
 

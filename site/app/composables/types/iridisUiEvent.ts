@@ -1,7 +1,7 @@
 import type { FsmStepInterface } from '@studnicky/fsm/browser';
 
-import type { DerivationConfigType } from './colorDerivation.ts';
-import type { RoleSortKeyType } from './roleSortKey.ts';
+import type { DerivationConfigInterfaceTypeEntity } from '../entities/DerivationConfigInterfaceTypeEntity.ts';
+import type { RoleSortKeyType } from './roleSortKeyType.ts';
 
 import { IridisUiEffect } from './iridisUiEffect.ts';
 import { IridisUiState } from './iridisUiState.ts';
@@ -34,7 +34,7 @@ export abstract class IridisUiEvent {
   static setCvdCorrectionDisabled(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CVD_CORRECT', IridisUiEffect.setCvdCorrection(IridisUiEffect.cvdCorrectionDisabled())); }
   static setCvdCorrectionEnabled(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CVD_CORRECT', IridisUiEffect.setCvdCorrection(IridisUiEffect.cvdCorrectionEnabled())); }
   static setDarkFraming(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_FRAMING', IridisUiEffect.setFraming(IridisUiEffect.darkFraming())); }
-  static setDerivationConfig(config: DerivationConfigType): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_DERIVATION_CONFIG', IridisUiEffect.setDerivationConfig(config)); }
+  static setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_DERIVATION_CONFIG', IridisUiEffect.setDerivationConfig(config)); }
   static setDeltaEImageAlgorithm(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_ALGORITHM', IridisUiEffect.setImageAlgorithm(IridisUiEffect.deltaEImageAlgorithm())); }
   static setImageChromaRange(range: [number, number][]): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_CHROMA_RANGE', IridisUiEffect.setImageChromaRange(range)); }
   static setImageDeltaECap(cap: number): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_DELTA_E_CAP', IridisUiEffect.setImageDeltaECap(cap)); }

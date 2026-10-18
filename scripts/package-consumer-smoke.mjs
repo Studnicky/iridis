@@ -38,9 +38,9 @@ import { packagePipeline } from './package-pipeline.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const EXPECTED_PACKAGES = 18;
-const EXPECTED_SOURCES = 329;
-const EXPECTED_ARTIFACTS = 1316;
-const EXPECTED_EXPORTS = 42;
+const EXPECTED_SOURCES = 359;
+const EXPECTED_ARTIFACTS = 1436;
+const EXPECTED_EXPORTS = 40;
 const METADATA_FILES = ['README.md', 'LICENSE', 'CHANGELOG.md', 'package.json'];
 const DEPENDENCY_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies'];
 const WORKSPACE_RANGE = 'workspace:*';
@@ -805,6 +805,8 @@ const verifyCli = (nodeModulesDirectory, record, consumerDirectory) => {
 };
 
 const packArchive = (publishDirectory, archivesDirectory, cacheDirectory) => {
+  mkdirSync(archivesDirectory, { 'recursive': true });
+  mkdirSync(cacheDirectory, { 'recursive': true });
   const packOutput = runCommand(NPM_COMMAND, [
     'pack',
     publishDirectory,

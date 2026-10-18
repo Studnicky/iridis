@@ -5,11 +5,11 @@ import type { SchemaPair } from '../composables/types/index.ts';
 
 import { ContrastConfigFor } from '../composables/contrastConfigFor.ts';
 import { createColorEngine } from '../composables/createColorEngine.ts';
+import { DerivationConfigInterfaceTypeEntity } from '../composables/entities/DerivationConfigInterfaceTypeEntity.ts';
 import { optionalContrastStages } from '../composables/optionalContrastStages.ts';
 import { pickerSeedInputs } from '../composables/pickerSeedInputs.ts';
 import { REQUIRED_COLOR_STAGES } from '../composables/requiredColorStages.ts';
 import { spliceOptionalStages } from '../composables/spliceOptionalStages.ts';
-import { DEFAULT_DERIVATION_CONFIG } from '../composables/types/index.ts';
 import { VARIANT_CONFIG } from '../composables/variantConfig.ts';
 import { roleSchemaByName } from './RoleSchemaByName.ts';
 import { Tokens } from './Tokens.ts';
@@ -45,7 +45,7 @@ export class DefaultThemeCss {
       'contrast': ContrastConfigFor.forStrictness(2, ContrastConfigFor.correctingCvd),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DEFAULT_DERIVATION_CONFIG),
+        'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
         'derivation:semanticHuesEnabled': JsonValue.from(true)
       },
       'roles':   pair.dark,
@@ -66,7 +66,7 @@ export class DefaultThemeCss {
       'contrast': ContrastConfigFor.forStrictness(2, ContrastConfigFor.correctingCvd),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DEFAULT_DERIVATION_CONFIG),
+        'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
         'derivation:semanticHuesEnabled': JsonValue.from(true)
       },
       'roles':   pair.light,

@@ -14,23 +14,22 @@ import * as VueModule from 'vue';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { debounce } from '~/utils/debounce.ts';
 
-import type { OutputRowType } from './types/outputRow.ts';
-
 import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
 import { MultiOutputEntity } from './entities/MultiOutputEntity.ts';
 import { MultiOutputRequestEntity } from './entities/MultiOutputRequestEntity.ts';
+import { OutputRowInterfaceTypeEntity } from './entities/OutputRowInterfaceTypeEntity.ts';
 import { logger } from './logger.ts';
 import { optionalContrastStages } from './optionalContrastStages.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
+import { roleSchemaFor } from './roleSchemaFor.ts';
 import { spliceOptionalStages } from './spliceOptionalStages.ts';
-import { DEFAULT_SCHEMA_NAME } from './types/index.ts';
 import { useIridis } from './useIridis.ts';
 import { VARIANT_CONFIG } from './variantConfig.ts';
 
 /** One palette, every real output emitter: CSS, component libraries, mobile, RDF, and JSON. */
-const outputsByKey = VueModule.ref<Record<string, OutputRowType | undefined>>({});
+const outputsByKey = VueModule.ref<Record<string, OutputRowInterfaceTypeEntity.Type | undefined>>({});
 
 class ColorStages {
   static build(strictness: number): string[] {
@@ -40,7 +39,12 @@ class ColorStages {
 }
 
 class MainOutputs {
-  static build(request: MultiOutputRequestEntity.Type): Record<string, OutputRowType | undefined> {
+  static row(label: string, language: string, text: string): OutputRowInterfaceTypeEntity.Type {
+    const result = OutputRowInterfaceTypeEntity.create({ 'label': label, 'language': language, 'text': text });
+    return result;
+  }
+
+  static build(request: MultiOutputRequestEntity.Type): Record<string, OutputRowInterfaceTypeEntity.Type | undefined> {
     const engine = createColorEngine();
     engine.adopt(stylesheetPlugin);
     engine.adopt(tailwindPlugin);
@@ -60,32 +64,32 @@ class MainOutputs {
     const input = InputInterfaceTypeEntity.intake(request.input);
     const state = engine.run(input);
     const output = MultiOutputEntity.intake(state.outputs);
-    const rows: Record<string, OutputRowType | undefined> = {};
+    const rows: Record<string, OutputRowInterfaceTypeEntity.Type | undefined> = {};
     const cssVariables = output['stylesheet:cssVars'];
-    if (cssVariables !== undefined) {rows.cssVars = { 'label': 'CSS variables', 'lang': 'css', 'text': cssVariables.full };}
+    if (cssVariables !== undefined) {rows.cssVars = MainOutputs.row('CSS variables', 'css', cssVariables.full);}
     const scopedCssVariables = output['stylesheet:cssVarsScoped'];
-    if (scopedCssVariables !== undefined) {rows.cssVarsScoped = { 'label': 'CSS variables (scoped)', 'lang': 'css', 'text': scopedCssVariables.full };}
+    if (scopedCssVariables !== undefined) {rows.cssVarsScoped = MainOutputs.row('CSS variables (scoped)', 'css', scopedCssVariables.full);}
     const tailwindTheme = output['tailwind:theme'];
-    if (tailwindTheme !== undefined) {rows.tailwind = { 'label': 'Tailwind', 'lang': 'javascript', 'text': tailwindTheme.config };}
+    if (tailwindTheme !== undefined) {rows.tailwind = MainOutputs.row('Tailwind', 'javascript', tailwindTheme.config);}
     const shadcnTheme = output['shadcn:theme'];
-    if (shadcnTheme !== undefined) {rows.shadcn = { 'label': 'shadcn/ui', 'lang': 'css', 'text': shadcnTheme.cssVars };}
+    if (shadcnTheme !== undefined) {rows.shadcn = MainOutputs.row('shadcn/ui', 'css', shadcnTheme.cssVars);}
     const muiTheme = output['mui:theme'];
-    if (muiTheme !== undefined) {rows.mui = { 'label': 'MUI', 'lang': 'javascript', 'text': muiTheme.config };}
+    if (muiTheme !== undefined) {rows.mui = MainOutputs.row('MUI', 'javascript', muiTheme.config);}
     const chakraTheme = output['chakra:theme'];
-    if (chakraTheme !== undefined) {rows.chakra = { 'label': 'Chakra UI', 'lang': 'javascript', 'text': chakraTheme.config };}
+    if (chakraTheme !== undefined) {rows.chakra = MainOutputs.row('Chakra UI', 'javascript', chakraTheme.config);}
     const pandaTheme = output['panda:theme'];
     if (pandaTheme !== undefined) {
-      rows.panda = { 'label': 'Panda CSS', 'lang': 'javascript', 'text': pandaTheme.pandaConfig };
-      rows.unocss = { 'label': 'UnoCSS', 'lang': 'javascript', 'text': pandaTheme.unoConfig };
+      rows.panda = MainOutputs.row('Panda CSS', 'javascript', pandaTheme.pandaConfig);
+      rows.unocss = MainOutputs.row('UnoCSS', 'javascript', pandaTheme.unoConfig);
     }
     const capacitorTheme = output['capacitor:theme'];
-    if (capacitorTheme !== undefined) {rows.capacitor = { 'label': 'Capacitor', 'lang': 'javascript', 'text': JSON.stringify(capacitorTheme, null, 2) };}
+    if (capacitorTheme !== undefined) {rows.capacitor = MainOutputs.row('Capacitor', 'javascript', JSON.stringify(capacitorTheme, null, 2));}
     const androidThemeXml = output['capacitor:androidThemeXml'];
-    if (androidThemeXml !== undefined) {rows.androidThemeXml = { 'label': 'Android theme.xml', 'lang': 'xml', 'text': androidThemeXml };}
+    if (androidThemeXml !== undefined) {rows.androidThemeXml = MainOutputs.row('Android theme.xml', 'xml', androidThemeXml);}
     const jsonOutput = output['core:json'];
-    if (jsonOutput !== undefined) {rows.json = { 'label': 'JSON', 'lang': 'javascript', 'text': JSON.stringify(jsonOutput, null, 2) };}
+    if (jsonOutput !== undefined) {rows.json = MainOutputs.row('JSON', 'javascript', JSON.stringify(jsonOutput, null, 2));}
     const serializedRdf = output['rdf:serialized'];
-    if (serializedRdf !== undefined) {rows.rdf = { 'label': 'RDF (Turtle)', 'lang': 'turtle', 'text': serializedRdf };}
+    if (serializedRdf !== undefined) {rows.rdf = MainOutputs.row('RDF (Turtle)', 'turtle', serializedRdf);}
     return rows;
   }
 }
@@ -100,8 +104,12 @@ class ActivateOperation {
     const { activeSeeds, colorSpace, contrastStrictness, cvdCorrect, derivationConfig, framing, schemaName, semanticHuesEnabled } = useIridis();
     function generate(): void {
       try {
-        const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
-        if (pair === undefined) {throw new RangeError(`No role schema is registered for ${schemaName.value} or ${DEFAULT_SCHEMA_NAME}`);}
+        const pair = roleSchemaByName[schemaName.value];
+        if (pair === undefined) {
+          throw new RangeError(`No role schema is registered for ${schemaName.value}`);
+        }
+        const selected = framing.value === 'dark' ? pair.dark : pair.light;
+        const roles = roleSchemaFor(selected);
         const input = InputInterfaceTypeEntity.create({
           'colors':   pickerSeedInputs(activeSeeds.value),
           'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
@@ -110,8 +118,8 @@ class ActivateOperation {
             'derivation:config':               JsonValue.from(derivationConfig.value),
             'derivation:semanticHuesEnabled':  JsonValue.from(semanticHuesEnabled.value)
           },
-          'roles':   pair[framing.value],
-          'runtime': { 'colorSpace': colorSpace.value, 'framing': framing.value }
+          'roles':   roles,
+          'runtime': { 'colorSpace': colorSpace.value, 'framing': String(framing.value) }
         });
         const request = MultiOutputRequestEntity.create({ 'contrastStrictness': contrastStrictness.value, 'input': input });
         outputsByKey.value = MainOutputs.build(request);

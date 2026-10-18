@@ -1023,9 +1023,7 @@ class EnforceCvdSimulate implements TaskInterface {
     const results = correcting
       ? this.reportCorrected(pairs, originals, state, context)
       : this.reportAdvisory(pairs, originals, state, context);
-    const metadata = correcting
-      ? { 'corrections': results.corrections, 'warnings': results.warnings }
-      : { 'warnings': results.warnings };
+    const metadata = { 'corrections': results.corrections, 'warnings': results.warnings };
     state.metadata['contrast:cvd'] = metadata;
     context.logger.debug(LogBody.create({ 'component': 'EnforceCvdSimulate', 'context': { 'correctionCount': results.corrections.length, 'cvdMeta': metadata, 'warningCount': results.warnings.length }, 'message': 'CVD simulation complete', 'operation': 'run', 'status': LOG_STATUS.SUCCESS }));
   }

@@ -4,8 +4,7 @@ import type {
 
 import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
 
-import type { DerivationConfigType } from '../composables/types/colorDerivation.ts';
-
+import { DerivationConfigInterfaceTypeEntity } from '../composables/entities/DerivationConfigInterfaceTypeEntity.ts';
 import { SEMANTIC_HUE } from './semanticHue.ts';
 import { SEMANTIC_HUE_CLAMP } from './semanticHueClamp.ts';
 
@@ -35,7 +34,10 @@ class DeriveSemanticHues implements TaskInterface {
     const roleSchema = state.input.roles;
     if (roleSchema === undefined) {return;}
     if (state.metadata['derivation:semanticHuesEnabled'] === false) {return;}
-    const config = state.metadata['derivation:config'] as DerivationConfigType | undefined;
+    const configRaw = state.metadata['derivation:config'];
+    const config = DerivationConfigInterfaceTypeEntity.validate(configRaw)
+      ? DerivationConfigInterfaceTypeEntity.intake(configRaw)
+      : undefined;
 
     const overrides = new Map<string, { 'hue': number; 'hueClamp': number }>();
     const roles = roleSchema.roles;

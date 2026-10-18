@@ -28,12 +28,10 @@ import * as VueModule from 'vue';
 
 import { useNuxtApp, useRuntimeConfig } from '#imports';
 
-import type {
-  DerivationConfigType, FramingType, ModeType, PickerSeedType, RoleHexMapType, RoleRelationDerivationType, RoleViewType, ScaleMapType
-  , UploadedImage } from './types/index.ts';
-import type { RoleMathClampType } from './types/roleMathClamp.ts';
-import type { RoleSortableRowType } from './types/roleSortableRow.ts';
-import type { RoleSortKeyType } from './types/roleSortKey.ts';
+import type { DerivationRelationInterfaceTypeEntity } from './entities/DerivationRelationInterfaceTypeEntity.ts';
+import type { PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType, UploadedImage } from './types/index.ts';
+import type { RoleMathClampType } from './types/roleMathClampType.ts';
+import type { RoleSortKeyType } from './types/roleSortKeyType.ts';
 
 import { contrastRatio } from '../theme/ContrastRatio.ts';
 import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
@@ -44,16 +42,24 @@ import { debounce } from '../utils/debounce.ts';
 import { isValidHex } from '../utils/isValidHex.ts';
 import { keyedDebounce } from '../utils/keyedDebounce.ts';
 import { minimumRatioForRole } from '../utils/minimumRatioForRole.ts';
+import { RoleSortBehavior } from '../utils/roleSortBehavior.ts';
+import { ROLE_SORT_FIELD_OPTIONS } from '../utils/roleSortFieldOptions.ts';
 import { sortRoleRows } from '../utils/sortRoleRows.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
 import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
+import { DerivationConfigInterfaceTypeEntity } from './entities/DerivationConfigInterfaceTypeEntity.ts';
+import { FramingInterfaceTypeEntity } from './entities/FramingInterfaceTypeEntity.ts';
+import { ModeInterfaceTypeEntity } from './entities/ModeInterfaceTypeEntity.ts';
+import { RoleSortableRowInterfaceTypeEntity } from './entities/RoleSortableRowInterfaceTypeEntity.ts';
+import { SchemaNameInterfaceTypeEntity } from './entities/SchemaNameInterfaceTypeEntity.ts';
 import { optionalContrastStages } from './optionalContrastStages.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
+import { roleSchemaFor } from './roleSchemaFor.ts';
 import { schemaRoleCount } from './schemaRoleCount.ts';
 import { spliceOptionalStages } from './spliceOptionalStages.ts';
-import { DEFAULT_DERIVATION_CONFIG, DEFAULT_SCHEMA_NAME, IridisUiEvent } from './types/index.ts';
+import { IridisUiEvent } from './types/index.ts';
 import { useIridisUiMachine } from './useIridisUiMachine.ts';
 import { useNavigationTargets } from './useNavigationTargets.ts';
 import { VARIANT_CONFIG } from './variantConfig.ts';
@@ -317,9 +323,9 @@ class IridisContextFactory {
       }
     }
 
-    const mode = VueModule.computed<ModeType.Type>({
+    const mode = VueModule.computed<ModeInterfaceTypeEntity.Type>({
       'get': () => {
-        const result: ModeType.Type = uiState.value.selectsImageMode() ? 'image' : 'picker';
+        const result = ModeInterfaceTypeEntity.intake(uiState.value.selectsImageMode() ? 'image' : 'picker');
         return result;
       },
       'set': ModeSetOperation.run
@@ -381,7 +387,7 @@ class IridisContextFactory {
 
     const hydratePaletteSeeds = HydratePaletteSeedsOperation.run;
 
-    const framing = VueModule.ref<FramingType.Type>('dark');
+    const framing = VueModule.ref<FramingInterfaceTypeEntity.Type>(FramingInterfaceTypeEntity.intake('dark'));
     class ApplyCurrentFramingTokensOperation {
       static run(tokens: RoleHexMapType): void {
         if (framing.value === 'dark') {
@@ -394,7 +400,7 @@ class IridisContextFactory {
 
     const applyCurrentFramingTokens = ApplyCurrentFramingTokensOperation.run;
 
-    const schemaName = VueModule.ref<string>(DEFAULT_SCHEMA_NAME);
+    const schemaName = VueModule.ref<SchemaNameInterfaceTypeEntity.Type>(SchemaNameInterfaceTypeEntity.defaultValue);
     const contrastStrictness = VueModule.ref<number>(2);
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
     /**
@@ -412,12 +418,12 @@ class IridisContextFactory {
  * whole pipeline via the FSM's schedule(), the same as any other palette
  * parameter — never recomputed and reapplied client-side.
  */
-    const derivationConfig = VueModule.ref<DerivationConfigType>(DEFAULT_DERIVATION_CONFIG);
+    const derivationConfig = VueModule.ref<DerivationConfigInterfaceTypeEntity.Type>(DerivationConfigInterfaceTypeEntity.defaultValue);
 
     /** Merges a single relation's config into `derivationConfig` and re-runs the pipeline — the ONLY way a relation changes; the resolved hue is always recomputed by derive:roleRelations, never written directly here. */
     class RelationUpdateOperation {
-      static run(roleName: string, relation: RoleRelationDerivationType): void {
-        const patch: Record<string, RoleRelationDerivationType> = {};
+      static run(roleName: string, relation: DerivationRelationInterfaceTypeEntity.Type): void {
+        const patch: Record<string, DerivationRelationInterfaceTypeEntity.Type> = {};
         Object.defineProperty(patch, roleName, { 'configurable': true, 'enumerable': true, 'value': relation, 'writable': true });
         relationsUpdate(patch);
       }
@@ -435,8 +441,8 @@ class IridisContextFactory {
  * One dispatch carrying every changed relation sidesteps the race entirely.
  */
     class RelationsUpdateOperation {
-      static run(newRelations: Record<string, RoleRelationDerivationType>): void {
-        const updated: DerivationConfigType = { 'relations': { ...derivationConfig.value.relations, ...newRelations } };
+      static run(newRelations: Record<string, DerivationRelationInterfaceTypeEntity.Type>): void {
+        const updated = DerivationConfigInterfaceTypeEntity.create({ 'relations': { ...derivationConfig.value.relations, ...newRelations } });
         sendUiEvent(IridisUiEvent.setDerivationConfig(updated));
       }
     }
@@ -533,24 +539,46 @@ class IridisContextFactory {
  * everywhere else showing the palette. Default matches the compliance-first
  * ordering Roles table already shipped with.
  */
-    const roleSortKeys = VueModule.ref<RoleSortKeyType[]>([{ 'desc': true, 'field': 'compliance' }, { 'desc': true, 'field': 'ratio' }]);
+    const complianceField = ROLE_SORT_FIELD_OPTIONS.find((option) => {
+      const matches = option.label === 'Compliance';
+      return matches;
+    });
+    const ratioField = ROLE_SORT_FIELD_OPTIONS.find((option) => {
+      const matches = option.label === 'Ratio';
+      return matches;
+    });
+    if (complianceField === undefined || ratioField === undefined) {
+      throw new Error('Role sort field registry is missing a required default field');
+    }
+    const roleSortKeys = VueModule.ref<RoleSortKeyType[]>([
+      { 'behavior': RoleSortBehavior.descending(complianceField.value) },
+      { 'behavior': RoleSortBehavior.descending(ratioField.value) }
+    ]);
 
-    const roleContrastRows = VueModule.computed<(RoleSortableRowType & { 'hex': string })[]>(() => {
+    const roleContrastRows = VueModule.computed<RoleSortableRowInterfaceTypeEntity.Type[]>(() => {
       // 'background' is a required role in every schema tier (RoleSchemaByName.ts),
       // and run() resolves it synchronously before any component can read this —
       // never a hardcoded placeholder.
       const bg = roles.value.background;
       if (bg === undefined) {throw new Error('Resolved palette is missing the required background role');}
-      const schema = roleSchemaByName[schemaName.value]?.[framing.value];
+      const schema = (() => {
+        const pair = roleSchemaByName[schemaName.value];
+        if (pair === undefined) {
+          throw new RangeError(`No role schema is registered for ${schemaName.value}`);
+        }
+        const selected = framing.value === 'dark' ? pair.dark : pair.light;
+        const result = roleSchemaFor(selected);
+        return result;
+      })();
       const result = roleViews.value.map((role) => {
         const ratio = contrastRatio(role.hex, bg);
-        const row = { 'c': role.c, 'compliance': complianceFor(ratio, minimumRatioForRole(schema, role.name)), 'h': role.h, 'hex': role.hex, 'l': role.l, 'name': role.name, 'ratio': ratio };
+        const row = RoleSortableRowInterfaceTypeEntity.create({ 'c': role.c, 'compliance': complianceFor(ratio, minimumRatioForRole(schema, role.name)), 'h': role.h, 'hex': role.hex, 'l': role.l, 'name': role.name, 'ratio': ratio });
         return row;
       });
       return result;
     });
 
-    const sortedRoleContrastRows = VueModule.computed(() => { const result = sortRoleRows(roleContrastRows.value, roleSortKeys.value); return result; });
+    const sortedRoleContrastRows = VueModule.computed(() => { const result = sortRoleRows(roleContrastRows.value, roleSortKeys.value.map((key) => { return key.behavior; })); return result; });
     const error = VueModule.ref<string | null>(null);
 
     /** Raw contrast-check metadata from the last run, keyed by algorithm rather than the `contrast:*` metadata prefix. */
@@ -598,7 +626,7 @@ class IridisContextFactory {
  * whenever it changes (from either the Schema & Compliance control or the
  * mirrored control in the Image card).
  */
-    VueModule.watch(schemaName, (v) => { imgK.value = schemaRoleCount(v); }, { 'immediate': true });
+    VueModule.watch(schemaName, (v) => { imgK.value = schemaRoleCount(String(v)); }, { 'immediate': true });
 
     /** Whichever seed list is live for the current mode — imageSeeds and pickerSeeds share one shape now, so this is a plain switch, not a reshape. */
     const activeSeeds = VueModule.computed<PickerSeedType[]>(() => {
@@ -617,9 +645,15 @@ class IridisContextFactory {
  * overrides ExpandFamily's hue-rotation for whichever role a seed is pinned to.
  */
     const pinnableRoles = VueModule.computed<string[]>(() => {
-      const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
-      const schema = pair?.[framing.value];
-      if (schema === undefined) {return [];}
+      const schema = (() => {
+        const pair = roleSchemaByName[schemaName.value];
+        if (pair === undefined) {
+          throw new RangeError(`No role schema is registered for ${schemaName.value}`);
+        }
+        const selected = framing.value === 'dark' ? pair.dark : pair.light;
+        const result = roleSchemaFor(selected);
+        return result;
+      })();
       const result = schema.roles.reduce<string[]>((names, role) => {
         if (IRIDIS_CONSTANTS.USED_ROLE_NAMES.has(role.name)) { names.push(role.name); }
         return names;
@@ -687,12 +721,11 @@ class IridisContextFactory {
  * in the same tick instead of the class flipping instantly while the old
  * colors linger for a debounce window.
  */
-    let pendingFraming: FramingType.Type | undefined;
+    let pendingFraming: FramingInterfaceTypeEntity.Type | undefined;
     class RunOperation {
       static run(): void {
         const targetFraming = pendingFraming ?? framing.value;
-        const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
-        if (pair === undefined) {return;}
+
         // Neither pickerSeeds nor imageSeeds has a seed yet on the very first pass
         // (in-browser sample-image extraction hasn't resolved, and can't even run
         // during SSR — no canvas there) — feed the engine one bootstrap seed so it
@@ -704,13 +737,21 @@ class IridisContextFactory {
         error.value = null;
         try {
           engine.pipeline(pipelineBuild(REQUIRED_COLOR_STAGES));
-          const targetRoles = pair[targetFraming];
+          const targetRoles = (() => {
+            const pair = roleSchemaByName[schemaName.value];
+            if (pair === undefined) {
+              throw new RangeError(`No role schema is registered for ${schemaName.value}`);
+            }
+            const selected = targetFraming === 'dark' ? pair.dark : pair.light;
+            const result = roleSchemaFor(selected);
+            return result;
+          })();
           const state = engine.run(InputInterfaceTypeEntity.create({
             'colors':   pickerSeedInputs(seeds),
             'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
             'metadata': { 'core:variantConfig': JsonValue.from(VARIANT_CONFIG), 'derivation:config': JsonValue.from(derivationConfig.value), 'derivation:semanticHuesEnabled': JsonValue.from(semanticHuesEnabled.value) },
             'roles':    targetRoles,
-            'runtime':  { 'colorSpace': colorSpace.value, 'framing': targetFraming }
+            'runtime':  { 'colorSpace': colorSpace.value, 'framing': String(targetFraming) }
           }));
           if (pendingFraming !== undefined) {
             framing.value = pendingFraming;
@@ -1012,9 +1053,15 @@ class IridisContextFactory {
         beginOperation();
         error.value = null;
         try {
-          const pair = roleSchemaByName[schemaName.value] ?? roleSchemaByName[DEFAULT_SCHEMA_NAME];
-          if (pair === undefined) { return; }
-          const activeRoles = pair[framing.value];
+          const activeRoles = (() => {
+            const pair = roleSchemaByName[schemaName.value];
+            if (pair === undefined) {
+              throw new RangeError(`No role schema is registered for ${schemaName.value}`);
+            }
+            const selected = framing.value === 'dark' ? pair.dark : pair.light;
+            const result = roleSchemaFor(selected);
+            return result;
+          })();
           engine.pipeline(pipelineBuild(IRIDIS_CONSTANTS.REQUIRED_IMAGE_STAGES));
           const state = engine.run(InputInterfaceTypeEntity.create({
             'colors':   combinedHexes,
@@ -1026,7 +1073,7 @@ class IridisContextFactory {
               'gallery': JsonValue.from(GalleryMetadata.build(defaultEntrySettings()))
             },
             'roles':    activeRoles,
-            'runtime':  { 'colorSpace': colorSpace.value, 'framing': framing.value }
+            'runtime':  { 'colorSpace': colorSpace.value, 'framing': String(framing.value) }
           }));
           const hist = GalleryMetadataSlotEntity.GalleryMetadataSlot.histogram(state.metadata);
           const sortedHistogram = [...hist].sort((left, right) => {
@@ -1248,9 +1295,9 @@ class IridisContextFactory {
       static enableCvdCorrection(): void { cvdCorrect.value = true; schedule(); }
       static enableSemanticHues(): void { semanticHuesEnabled.value = true; schedule(); }
       static setContrastStrictness(strictness: number): void { contrastStrictness.value = strictness; schedule(); }
-      static setDarkFraming(): void { pendingFraming = 'dark'; run(); }
+      static setDarkFraming(): void { pendingFraming = FramingInterfaceTypeEntity.intake('dark'); run(); }
       static setDeltaEImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('delta-e'); scheduleCombine(); }
-      static setDerivationConfig(config: DerivationConfigType): void { derivationConfig.value = config; schedule(); }
+      static setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): void { derivationConfig.value = config; schedule(); }
       static setDisplayP3ColorSpace(): void { colorSpace.value = 'displayP3'; schedule(); }
       static setImageChromaRange(range: [number, number][]): void { imgChromaRange.value = range; scheduleCombine(); }
       static setImageDeltaECap(cap: number): void { imgDeltaECap.value = cap; scheduleCombine(); }
@@ -1259,10 +1306,10 @@ class IridisContextFactory {
       static setImageK(k: number): void { imgK.value = k; scheduleCombine(); }
       static setImageLightnessRange(range: [number, number][]): void { imgLightnessRange.value = range; scheduleCombine(); }
       static setKMeansImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('k-means'); scheduleCombine(); }
-      static setLightFraming(): void { pendingFraming = 'light'; run(); }
+      static setLightFraming(): void { pendingFraming = FramingInterfaceTypeEntity.intake('light'); run(); }
       static setMedianCutImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('median-cut'); scheduleCombine(); }
       static setRoleSort(keys: RoleSortKeyType[]): void { roleSortKeys.value = keys; }
-      static setSchema(nextSchemaName: string): void { schemaName.value = nextSchemaName; schedule(); scheduleCombine(); }
+      static setSchema(nextSchemaName: string): void { schemaName.value = SchemaNameInterfaceTypeEntity.intake(nextSchemaName); schedule(); scheduleCombine(); }
       static setSrgbColorSpace(): void { colorSpace.value = 'srgb'; schedule(); }
       static setWuQuantizeImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('wu-quantize'); scheduleCombine(); }
     }

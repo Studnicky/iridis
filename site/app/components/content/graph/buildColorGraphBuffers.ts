@@ -4,6 +4,7 @@ import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
 import type { ColorGraphCategoryVisibility } from './ColorGraphCategoryVisibility.ts';
 
+import { buildDerivationRelations } from '../derivation/buildDerivationRelations.ts';
 import { ColorGraphNodeCategory } from './ColorGraphNodeCategory.ts';
 
 class ColorGraphPointMeta {
@@ -314,7 +315,7 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
       indexByName.set(role.name, roleIndex);
       const category = ColorGraphNodeCategory.fromRole(role);
       meta.push(new ColorGraphPointMeta(
-        role.algorithmInfo?.hueAlgorithm ?? null,
+        role.algorithmInfo === null ? null : buildDerivationRelations.serializeHueAlgorithm(role.algorithmInfo.algorithm),
         category,
         role.clamp === null ? '' : ' ⏚',
         role.hex,
@@ -461,7 +462,7 @@ export const buildColorGraphBuffers = class ColorGraphBuffersBuilder {
         role.origin.isSynthesized() ? 's' : '',
         role.origin.isDerived() ? 'd' : '',
         role.hex,
-        role.algorithmInfo?.hueAlgorithm ?? ''
+        role.algorithmInfo?.algorithm ?? ''
       ].join(':'));
     }
     const signature = roleSignatures.join('|');

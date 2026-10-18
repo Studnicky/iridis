@@ -23,10 +23,14 @@ export class CvdProbeScenarioSuite {
 
   private static advisory(): void {
     const logger = new RecordingLogger();
-    ContrastTestPort.runObservedCvd({
+    const state = ContrastTestPort.runObservedCvd({
       'background': colorRecordFactory.fromHex('#008000'),
       'text': colorRecordFactory.fromHex('#d00000')
     }, [CvdProbeScenarioSuite.pair('text', 'background')], logger);
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(cvd !== undefined, '[cvd-advisory-metadata] canonical metadata present');
+    assert.strictEqual(cvd.corrections.length, 0, '[cvd-advisory-metadata] no corrections recorded');
+    assert.ok(cvd.warnings.length > 0, '[cvd-advisory-metadata] warnings retained');
     assert.ok(logger.warnings.includes('CVD advisory: pair fails perceptual-stability threshold'), '[cvd-advisory-log] advisory diagnostics remain present');
     assert.ok(!logger.warnings.includes('CVD correction could not clear every failing type'), '[cvd-advisory-log] advisory mode has no correction failure');
   }

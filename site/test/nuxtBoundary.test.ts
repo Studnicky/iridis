@@ -429,6 +429,24 @@ await test('built Nuxt app SSRs and hydrates the rendered navigation order', { '
   const page = await browser.newPage({ 'reducedMotion': 'reduce' });
   await page.goto(origin, { 'waitUntil': 'networkidle' });
 
+  const schemaTree = page.locator('[data-cyl-key="schema"]');
+  const schemaExpansion = await schemaTree.locator('[role="treeitem"][aria-level="1"]').evaluateAll((tierNodes) => {
+    const result = tierNodes.map((tierNode) => {
+      return {
+        'expanded': tierNode.getAttribute('aria-expanded'),
+        'label': tierNode.textContent?.trim()
+      };
+    });
+    return result;
+  });
+  assert.deepEqual(schemaExpansion, [
+    { 'expanded': 'false', 'label': 'iridis-4' },
+    { 'expanded': 'false', 'label': 'iridis-8' },
+    { 'expanded': 'false', 'label': 'iridis-12' },
+    { 'expanded': 'false', 'label': 'iridis-16' },
+    { 'expanded': 'true', 'label': 'iridis-32' }
+  ]);
+
   await page.locator('#combine').waitFor({ 'state': 'attached', 'timeout': 60_000 });
   const navigationTargetIdentifiers = [
     ...TestPatterns.DOCUMENT_IDENTIFIERS,

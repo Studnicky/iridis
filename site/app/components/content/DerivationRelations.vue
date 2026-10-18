@@ -41,7 +41,7 @@ function onFreeformOffsetChange(role: RoleMathEntry, offsetDeg: number): void {
 }
 
 const algorithmOptions = buildDerivationRelations.hueAlgorithmOptions.map((option) => {
-  const result = { 'label': option.label, 'value': option.algorithm.serialize() };
+  const result = { 'label': option.label, 'value': option.value };
   return result;
 });
 
@@ -128,7 +128,7 @@ function applyToGroup(
       v-for="group in groups"
       :key="group.parentName"
       :group="group"
-      :bulk-algorithm="bulkAlgorithmFor(group).serialize()"
+      :bulk-algorithm="buildDerivationRelations.serializeHueAlgorithm(bulkAlgorithmFor(group))"
       :algorithm-options="algorithmOptions"
       :variant-options="variantOptionsFor"
       @bulk-algorithm-change="onBulkAlgorithmChange(group, $event)"

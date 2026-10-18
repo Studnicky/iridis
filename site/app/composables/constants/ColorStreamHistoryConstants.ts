@@ -1,4 +1,4 @@
-import type { ColorSampleType } from '../types/colorSample.ts';
+import type { ColorSampleType } from '../types/colorSampleType.ts';
 
 export namespace COLOR_STREAM_HISTORY {
   /** Number of recent samples retained per decorative alias for the history stream. */

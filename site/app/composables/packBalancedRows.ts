@@ -53,7 +53,8 @@ class BalancedRowPackingOperation {
         const movedItemIndex = donorRow[donorRow.length - 1]!;
         const movedItemWidth = widths[movedItemIndex]!;
         const receivingRowWidth = receivingRow.reduce((sum, itemIndex) => {
-          return sum + widths[itemIndex]! + gap;
+          const result = sum + widths[itemIndex]! + gap;
+          return result;
         }, -gap);
         const nextReceivingRowWidth = receivingRow.length > 0 ? receivingRowWidth + gap + movedItemWidth : movedItemWidth;
         if (nextReceivingRowWidth > containerWidth) {

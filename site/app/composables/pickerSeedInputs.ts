@@ -1,4 +1,4 @@
-import type { PickerSeedType } from './types/pickerSeed.ts';
+import type { PickerSeedType } from './types/pickerSeedType.ts';
 
 import { SeedInputEntity } from '../theme/types/SeedInputEntity.ts';
 

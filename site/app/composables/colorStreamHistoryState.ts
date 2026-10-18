@@ -3,7 +3,7 @@ import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 import { reactive } from 'vue';
 
 import type { RingBuffer } from './RingBuffer.ts';
-import type { ColorSampleType } from './types/colorSample.ts';
+import type { ColorSampleType } from './types/colorSampleType.ts';
 
 import { oklchToHex } from '../utils/oklchToHex.ts';
 import { COLOR_STREAM_HISTORY } from './constants/ColorStreamHistoryConstants.ts';

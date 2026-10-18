@@ -43,7 +43,7 @@ const rendersTable = computed(() => dataLayout.value.select(false, false, false,
     >
       <PairingCard
         v-for="p in pairings"
-        :key="p.key"
+        :key="p.id"
         :background-hex="p.background.hex"
         :background-name="p.background.name"
         :compliance-label="p.complianceLabel"
