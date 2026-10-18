@@ -81,4 +81,25 @@ repo=$(make_repo)
 rm -rf "$repo"
 pass_count=$((pass_count + 1))
 
+repo=$(make_repo)
+(
+  cd "$repo" || exit 1
+  mkdir -p site/long
+  for index in $(seq 1 4096); do
+    printf -v path 'site/long/%05d-%080d.md' "$index" "$index"
+    : > "$path"
+  done
+  git add -A
+  git commit -q -m "long site path list"
+  stderr_file=$(mktemp)
+  set -o pipefail
+  classify_changes "HEAD~1..HEAD" 2>"$stderr_file"
+  assert_eq "long list docs" "true" "$CHANGED_DOCS"
+  assert_eq "long list source" "false" "$CHANGED_SOURCE"
+  [ ! -s "$stderr_file" ] || fail "long list diagnostics" "$(cat "$stderr_file")"
+  rm -f "$stderr_file"
+)
+rm -rf "$repo"
+pass_count=$((pass_count + 1))
+
 test_main

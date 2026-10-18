@@ -52,16 +52,36 @@ classify_changes() {
     CHANGED_AUDIT=false
     CHANGED_ANALYSIS=false
 
-    echo "$changed" | grep -qE '^(site/.*|README\.md)$' && CHANGED_DOCS=true
-    echo "$changed" | grep -qE '^packages/' && CHANGED_PACKAGES=true
-    echo "$changed" | grep -qE '^scripts/' && CHANGED_SCRIPTS=true
-    echo "$changed" | grep -qE '^(packages/.+/tests/|\.githooks/tests/|scripts/.+\.test\.(mjs|ts|js)$)' && CHANGED_TESTS=true
-    echo "$changed" | grep -qE '^(\.github/|\.githooks/|tsconfig(\..+)?\.json$|eslint\..+|lint-staged\.config\.js$|package\.json$|pnpm-workspace\.yaml$)' && CHANGED_CONFIG=true
-    echo "$changed" | grep -qE '^\.github/(workflows|actions)/' && CHANGED_WORKFLOWS=true
-    echo "$changed" | grep -qE '^\.githooks/' && CHANGED_HOOKS=true
-    echo "$changed" | grep -qE '^(\.github/(workflows/(audit|codeql|dependency-review|gitleaks|security|security-audit|semgrep)\.yml|ci-secrets\.(json|schema\.json)$|scripts/check-ci-secrets\.mjs$)|\.gitleaks\.toml$|\.semgrepignore$)' && CHANGED_SECURITY_CONFIG=true
-    echo "$changed" | grep -qE '(^|/)(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)$' && CHANGED_LOCKFILES=true
-    echo "$changed" | grep -qE '^(\.changeset/|package\.json$|packages/.+/package\.json$|packages/.+/CHANGELOG\.md$)' && CHANGED_RELEASE=true
+    if grep -qE '^(site/.*|README\.md)$' <<< "$changed"; then
+        CHANGED_DOCS=true
+    fi
+    if grep -qE '^packages/' <<< "$changed"; then
+        CHANGED_PACKAGES=true
+    fi
+    if grep -qE '^scripts/' <<< "$changed"; then
+        CHANGED_SCRIPTS=true
+    fi
+    if grep -qE '^(packages/.+/tests/|\.githooks/tests/|scripts/.+\.test\.(mjs|ts|js)$)' <<< "$changed"; then
+        CHANGED_TESTS=true
+    fi
+    if grep -qE '^(\.github/|\.githooks/|tsconfig(\..+)?\.json$|eslint\..+|lint-staged\.config\.js$|package\.json$|pnpm-workspace\.yaml$)' <<< "$changed"; then
+        CHANGED_CONFIG=true
+    fi
+    if grep -qE '^\.github/(workflows|actions)/' <<< "$changed"; then
+        CHANGED_WORKFLOWS=true
+    fi
+    if grep -qE '^\.githooks/' <<< "$changed"; then
+        CHANGED_HOOKS=true
+    fi
+    if grep -qE '^(\.github/(workflows/(audit|codeql|dependency-review|gitleaks|security|security-audit|semgrep)\.yml|ci-secrets\.(json|schema\.json)$|scripts/check-ci-secrets\.mjs$)|\.gitleaks\.toml$|\.semgrepignore$)' <<< "$changed"; then
+        CHANGED_SECURITY_CONFIG=true
+    fi
+    if grep -qE '(^|/)(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml)$' <<< "$changed"; then
+        CHANGED_LOCKFILES=true
+    fi
+    if grep -qE '^(\.changeset/|package\.json$|packages/.+/package\.json$|packages/.+/CHANGELOG\.md$)' <<< "$changed"; then
+        CHANGED_RELEASE=true
+    fi
 
     if [ "$CHANGED_PACKAGES" = true ] || [ "$CHANGED_SCRIPTS" = true ] || [ "$CHANGED_TESTS" = true ] || [ "$CHANGED_LOCKFILES" = true ]; then
         CHANGED_SOURCE=true
