@@ -1,5 +1,5 @@
-import type { ColorSampleType } from '~/composables/types/colorSample.ts';
-import type { RoleViewType } from '~/composables/types/index.ts';
+import type { ColorSampleType } from '~/composables/types/colorSampleType.ts';
+import type { RoleViewType } from '~/composables/types/roleViewType.ts';
 
 import { colorStreamComparison } from '~/composables/colorStreamComparison.ts';
 import { sampleIndexToX } from '~/composables/sampleIndexToX.ts';
@@ -17,7 +17,8 @@ export const drawColorStream = class ColorStreamDrawing {
   private static readonly comparisonSampleCount = 48;
 
   public static resolveCanvasElement(element: unknown): HTMLCanvasElement | null {
-    return element instanceof HTMLCanvasElement ? element : null;
+    const result = element instanceof HTMLCanvasElement ? element : null;
+    return result;
   }
 
   private static drawComparisonBand(canvas: HTMLCanvasElement, colors: readonly string[]): void {
@@ -45,7 +46,9 @@ export const drawColorStream = class ColorStreamDrawing {
     engineCanvases: readonly (HTMLCanvasElement | null)[]
   ): void {
     const viewsByName = new Map<string, RoleViewType>();
-    for (const view of views) {
+    for (let index = 0; index < views.length; index += 1) {
+      const view = views[index];
+      if (view === undefined) {continue;}
       viewsByName.set(view.name, view);
     }
     const roleCount = roles.length;
@@ -91,7 +94,9 @@ export const drawColorStream = class ColorStreamDrawing {
 
     let minimumChroma = Number.POSITIVE_INFINITY;
     let maximumChroma = Number.NEGATIVE_INFINITY;
-    for (const sample of samples) {
+    for (let index = 0; index < samples.length; index += 1) {
+      const sample = samples[index];
+      if (sample === undefined) {continue;}
       if (sample.chroma < minimumChroma) {minimumChroma = sample.chroma;}
       if (sample.chroma > maximumChroma) {maximumChroma = sample.chroma;}
     }

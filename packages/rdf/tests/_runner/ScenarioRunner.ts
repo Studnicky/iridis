@@ -1,20 +1,7 @@
-/**
- * Scenario-matrix test runner.
- *
- * Drives a single subject-under-test through a table of scenarios and
- * emits one `node:test` test per row. Each scenario is classified by
- * `kind` (`happy` | `edge` | `unhappy`) and carries its own `assert`
- * callback so a single suite can hold the full coverage matrix for one
- * subject — happy paths, edges, illegal inputs — in one place.
- *
- * Yamete-style cell discipline applies: every test file defines one
- * subject, one runner, and one flat scenario table. Boilerplate (mocks,
- * fixture factories) sits above the table; the table itself is the
- * coverage map. Coordinate-tagged failure messages
- * (`[subject=X, kind=Y, scenario=Z]`) make any failure self-locating.
- */
+/** Scenario-matrix test runner. */
 import { test } from 'node:test';
 
+import type { ScenarioAssertionOptionsInterface } from './ScenarioAssertionOptionsInterface.ts';
 import type { ScenarioInterface } from './ScenarioInterface.ts';
 
 export class ScenarioRunner<TInput, TOutput> {
@@ -26,18 +13,33 @@ export class ScenarioRunner<TInput, TOutput> {
     this.subject = subject;
   }
 
+  private static async execute<TInput, TOutput>(
+    subject: (input: TInput) => Promise<TOutput> | TOutput,
+    scenario: ScenarioInterface<TInput, TOutput>
+  ): Promise<void> {
+    let output: TOutput | undefined;
+    let error: Error | undefined;
+    try {
+      output = await subject(scenario.input);
+    } catch (thrown) {
+      error = thrown instanceof Error ? thrown : new Error(String(thrown));
+    }
+    const options: ScenarioAssertionOptionsInterface<TOutput> = { 'error': error, 'output': output };
+    await scenario.assert(options);
+  }
+
   async run(scenarios: readonly ScenarioInterface<TInput, TOutput>[]): Promise<void> {
-    for (const scenario of scenarios) {
-      await test(`${this.suite} :: ${scenario.kind} :: ${scenario.name}`, async () => {
-        let output: TOutput | undefined;
-        let error:  Error | undefined;
-        try {
-          output = await this.subject(scenario.input);
-        } catch (thrown) {
-          error = thrown instanceof Error ? thrown : new Error(String(thrown));
-        }
-        await scenario.assert(output, error);
-      });
+    const subject = this.subject;
+    for (let index = 0; index < scenarios.length; index += 1) {
+      const scenario = scenarios.at(index);
+      if (scenario === undefined) {
+        continue;
+      }
+      const selectedScenario = scenario;
+      async function registerScenario(): Promise<void> {
+        await ScenarioRunner.execute(subject, selectedScenario);
+      }
+      await test(`${this.suite} :: ${selectedScenario.classification} :: ${selectedScenario.name}`, registerScenario);
     }
   }
 }

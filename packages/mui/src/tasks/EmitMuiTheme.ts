@@ -1,18 +1,17 @@
 import type {
-  ColorRecordInterfaceType,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
-import type { JsonValueType } from '@studnicky/types';
+import type { JSONSchema7Type } from 'json-schema';
 
-import { darken, lighten } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { darken, lighten, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
+import { JsonValue } from '@studnicky/types/node';
 
 import type { MuiPaletteColorEntity } from '../entities/MuiPaletteColorEntity.ts';
-import type { MuiOutputInterfaceType } from '../types/index.ts';
+import type { MuiOutputInterface } from '../interfaces/MuiOutputInterface.ts';
 
 import { DERIVED_SHADE_OFFSETS } from './constants/DerivedShadeOffsets.ts';
 
@@ -29,8 +28,8 @@ import { DERIVED_SHADE_OFFSETS } from './constants/DerivedShadeOffsets.ts';
  */
 class PaletteFamily {
   static build(
-    roles:    Record<string, ColorRecordInterfaceType>,
-    variants: Record<string, Record<string, ColorRecordInterfaceType>>,
+    roles:    Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    variants: Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>,
     role:     string
   ): MuiPaletteColorEntity.Type | undefined {
     const base = roles[role];
@@ -52,10 +51,14 @@ class PaletteFamily {
  * import into `createTheme({ palette })`.
  */
 class PaletteToJs {
-  static serialize(palette: Record<string, JsonValueType>, indent = 2): string {
+  static serialize(palette: Record<string, JSONSchema7Type>, indent = 2): string {
     const pad = ' '.repeat(indent);
     const lines: string[] = ['{'];
-    for (const [key, value] of Object.entries(palette)) {
+    const entries = Object.entries(palette);
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry === undefined) {continue;}
+      const [key, value] = entry;
       if (typeof value === 'string') {
         lines.push(`${pad}'${key}': '${value}',`);
       } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
@@ -64,7 +67,8 @@ class PaletteToJs {
       }
     }
     lines.push(`${' '.repeat(indent - 2)}}`);
-    return lines.join('\n');
+    const result = lines.join('\n');
+    return result;
   }
 }
 
@@ -75,19 +79,17 @@ class PaletteToJs {
 export class EmitMuiTheme implements TaskInterface {
   readonly 'name' = 'emit:muiTheme';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Emit an MUI createTheme() palette object from resolved roles and shade variants',
     'name':        'emit:muiTheme',
-    'phase':       undefined,
     'reads':       ['roles', 'variants', 'runtime'],
-    'requires':    undefined,
     'writes':      ['outputs.mui:theme']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const { roles, variants } = state;
 
-    const palette: Record<string, JsonValueType> = {};
+    const palette: Record<string, JSONSchema7Type> = {};
 
     const primary = PaletteFamily.build(roles, variants, 'brand');
     if (primary !== undefined) {palette.primary = primary;}
@@ -131,21 +133,21 @@ export class EmitMuiTheme implements TaskInterface {
       '};'
     ].join('\n');
 
-    const output: MuiOutputInterfaceType = {
+    const output: MuiOutputInterface = {
       'config':  config,
       'palette': palette
     };
 
-    state.outputs['mui:theme'] = output;
+    state.outputs['mui:theme'] = JsonValue.from(output);
 
     context.logger.debug(
-      LogBody.create()
-        .component('EmitMuiTheme')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Emitted MUI theme palette')
-        .context({ 'families': Object.keys(palette).length })
-        .build()
+      LogBody.create({
+        'component': 'EmitMuiTheme',
+        'context': { 'families': Object.keys(palette).length },
+        'message': 'Emitted MUI theme palette',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

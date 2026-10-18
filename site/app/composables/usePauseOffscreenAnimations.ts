@@ -27,7 +27,8 @@ class UsePauseOffscreenAnimationsOperation {
 
     function applyIntersectionEntries(entries: IntersectionObserverEntry[]): void {
       if (!active) {return;}
-      for (const entry of entries) {
+      for (let index = 0; index < entries.length; index += 1) {
+        const entry = entries[index]!;
         entry.target.classList.toggle('anim-offscreen', !entry.isIntersecting);
       }
     }

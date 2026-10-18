@@ -11,13 +11,13 @@
 
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
+import { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 import { evaluate } from '@studnicky/iridis-anima';
 import { ClockBinding } from '@studnicky/iridis-pulse';
 import { onScopeDispose } from 'vue';
 
 import { Tokens } from '../theme/Tokens.ts';
 import { buildDecorativePalette } from './buildDecorativePalette.ts';
-import { ColorStreamHistoryState } from './colorStreamHistoryState.ts';
 import { LIVING_BACKGROUND } from './constants/LivingBackgroundConstants.ts';
 import { driftTarget } from './driftTarget.ts';
 import { resolveFromPalette } from './resolveFromPalette.ts';
@@ -28,18 +28,17 @@ class ViteModule {
   static readonly metadata: ImportMeta & { readonly 'hot'?: ViteHotContext } = import.meta;
 }
 
-declare class UseLivingBackgroundOptionsType {
-  /** Record per-alias samples into `ColorStreamHistoryState` while this caller is mounted. */
-  readonly recordStream: boolean;
+declare class FrameRecorderInterface {
+  record(frame: PaletteInterfaceTypeEntity.Type): void;
 }
 
 declare class LivingBackgroundInvocationOptions {
-  readonly recordStream?: boolean;
+  readonly recorder?: FrameRecorderInterface;
 }
 
 let booted = false;
 let activeConsumers = 0;
-let streamConsumers = 0;
+const frameRecorders = new Set<FrameRecorderInterface>();
 /** Pending interval handle for the running loop, or null when stopped. */
 let tickInterval: number | null = null;
 let isPaused = false;
@@ -66,26 +65,31 @@ class Loop {
 
     const { 'framing': framing, 'roleViews': roleViews } = useIridis();
 
-    let from = buildDecorativePalette(roleViews.value);
-    let to = driftTarget(from);
+    let from = PaletteInterfaceTypeEntity.intake(buildDecorativePalette(roleViews.value));
+    let to = PaletteInterfaceTypeEntity.intake(driftTarget(from));
     let clock = ClockBinding.create({ 'durationMs': LIVING_BACKGROUND.CYCLE_MS, 'mode': 'real' });
 
     const tick = (): void => {
       if (isPaused || activeConsumers <= 0) { return; }
-      from = resolveFromPalette(from, roleViews.value);
+      from = PaletteInterfaceTypeEntity.intake(resolveFromPalette(from, roleViews.value));
       if (Object.keys(from).length > 0) {
         if (Object.keys(to).length === 0) {
-          to = driftTarget(from);
+          to = PaletteInterfaceTypeEntity.intake(driftTarget(from));
         }
         const t = clock.t;
-        const frame = evaluate(from, to, t);
-        Tokens.apply(tokensForFrame(frame), framing.value);
-        if (streamConsumers > 0) {
-          ColorStreamHistoryState.record(frame);
+        const frame = PaletteInterfaceTypeEntity.intake(evaluate(from, to, t));
+        const tokens = tokensForFrame(frame);
+        if (framing.value === 'dark') {
+          Tokens.applyDark(tokens);
+        } else {
+          Tokens.applyLight(tokens);
         }
+        frameRecorders.forEach((recorder) => {
+          recorder.record(frame);
+        });
         if (t >= 1) {
-          from = buildDecorativePalette(roleViews.value);
-          to = driftTarget(from);
+          from = PaletteInterfaceTypeEntity.intake(buildDecorativePalette(roleViews.value));
+          to = PaletteInterfaceTypeEntity.intake(driftTarget(from));
           clock = ClockBinding.create({ 'durationMs': LIVING_BACKGROUND.CYCLE_MS, 'mode': 'real' });
         }
       }
@@ -167,13 +171,13 @@ const stopIfUnused = StopIfUnusedOperation.run;
 
 /** Boots the ambient color-drift loop once per active consumer. */
 class UseLivingBackgroundCoreOperation {
-  static run(options: UseLivingBackgroundOptionsType): void {
+  static run(options: LivingBackgroundInvocationOptions): void {
     if (typeof window === 'undefined') { return; }
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { return; }
 
     activeConsumers += 1;
-    if (options.recordStream) {
-      streamConsumers += 1;
+    if (options.recorder !== undefined) {
+      frameRecorders.add(options.recorder);
     }
 
     if (activeConsumers === 1) {
@@ -182,8 +186,8 @@ class UseLivingBackgroundCoreOperation {
 
     onScopeDispose(() => {
       activeConsumers = Math.max(0, activeConsumers - 1);
-      if (options.recordStream) {
-        streamConsumers = Math.max(0, streamConsumers - 1);
+      if (options.recorder !== undefined) {
+        frameRecorders.delete(options.recorder);
       }
       stopIfUnused();
     });
@@ -195,7 +199,7 @@ const useLivingBackgroundCore = UseLivingBackgroundCoreOperation.run;
 /** Boots the ambient color-drift loop once (module-level singleton — safe to call from multiple components). SSR- and reduced-motion-safe. */
 class UseLivingBackgroundOperation {
   static run(options: LivingBackgroundInvocationOptions = {}): void {
-    useLivingBackgroundCore({ 'recordStream': options.recordStream ?? true });
+    useLivingBackgroundCore(options);
   }
 }
 
@@ -206,6 +210,6 @@ export const useLivingBackground = UseLivingBackgroundOperation.run;
 // top of the old one.
 ViteModule.metadata.hot?.dispose(() => {
   activeConsumers = 0;
-  streamConsumers = 0;
+  frameRecorders.clear();
   Loop.stop();
 });

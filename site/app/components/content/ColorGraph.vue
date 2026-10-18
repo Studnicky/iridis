@@ -38,8 +38,8 @@ const { mathList } = useRoleMathList();
 
 const categoryVisible = ref(buildColorGraphViewModel.createCategoryVisibility());
 
-function onCategoryToggle(key: string): void {
-  buildColorGraphViewModel.toggleCategoryVisibility(categoryVisible.value, key);
+function onCategoryToggle(identifier: string): void {
+  categoryVisible.value.toggleIdentifier(identifier);
 }
 
 const legendMachine = new LegendMachine({
@@ -82,28 +82,7 @@ const fitZoomLevel = ref<number | null>(null);
 const fullscreen = ref(false);
 
 const graph = shallowRef<Graph | null>(null);
-class PointMeta {
-  public readonly algorithm: string | null;
-  public readonly category: 'pinned' | 'synthesized' | 'derived' | 'direct';
-  public readonly clamped: boolean;
-  public readonly hex: string;
-  public readonly name: string;
-
-  public constructor(
-    algorithm: string | null,
-    category: 'pinned' | 'synthesized' | 'derived' | 'direct',
-    clamped: boolean,
-    hex: string,
-    name: string
-  ) {
-    this.algorithm = algorithm;
-    this.category = category;
-    this.clamped = clamped;
-    this.hex = hex;
-    this.name = name;
-  }
-}
-let labelMeta: PointMeta[] = [];
+let labelMeta: ReturnType<typeof buildColorGraphBuffers.build>['meta'] = [];
 let labelRaf: number | null = null;
 let paintRaf: number | null = null;
 let resizeObserver: ResizeObserver | null = null;

@@ -6,4 +6,4 @@ export { MuiPlugin };
 export { EmitMuiTheme };
 export const muiPlugin    = new MuiPlugin();
 export const emitMuiTheme = new EmitMuiTheme();
-export type { MuiOutputInterfaceType } from './types/index.ts';
+export type { MuiOutputInterface } from './interfaces/MuiOutputInterface.ts';

@@ -1,8 +1,9 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterfaceType,
   TaskInterface
 } from '@studnicky/iridis';
+
+import { PluginSchemaContributionInterfaceEntity } from '@studnicky/iridis';
 
 import { EmitPandaTheme } from './tasks/EmitPandaTheme.ts';
 
@@ -25,10 +26,10 @@ export class PandaPlugin implements PluginInterface {
     return [new EmitPandaTheme()];
   }
 
-  schemas(): PluginSchemaContributionInterfaceType {
-    return {
-      'metadata': undefined,
-      'outputs':  { 'panda:theme': pandaOutputSchema }
-    };
+  schemas(): PluginSchemaContributionInterfaceEntity.Type {
+    const result = PluginSchemaContributionInterfaceEntity.create({
+      'outputs': { 'panda:theme': pandaOutputSchema }
+    });
+    return result;
   }
 }

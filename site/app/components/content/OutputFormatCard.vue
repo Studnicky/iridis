@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useMultiOutput } from '~/composables/useMultiOutput.ts';
 import { globalVscodeTheme } from '~/composables/globalVscodeTheme.ts';
 import { buildOutputFormatCardModel } from './buildOutputFormatCardModel.ts';
+import { resolveSupportedCodeLang } from './code/resolveSupportedCodeLang.ts';
 
 /**
  * One Stylesheets-stage carousel card per output format — `formatKey` is one of
@@ -22,7 +23,7 @@ const cardModel = computed(() => buildOutputFormatCardModel.build(
     <SectionIntro :body="cardModel.instruction" />
     <CodeBlock
       :code="cardModel.code"
-      :lang="cardModel.lang"
+      :lang="resolveSupportedCodeLang.resolve(cardModel.language)"
       :vscode-theme="globalVscodeTheme"
       :caption="cardModel.filename"
       :preview-lines="cardModel.previewLines"

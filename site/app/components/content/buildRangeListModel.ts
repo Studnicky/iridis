@@ -3,8 +3,11 @@ export const buildRangeListModel = class RangeListModelBuilder {
     ranges: readonly (readonly [number, number])[]
   ): [number, number][] {
     const clonedRanges: [number, number][] = [];
-    for (const range of ranges) {
-      clonedRanges.push([range[0], range[1]]);
+    for (let index = 0; index < ranges.length; index += 1) {
+      const range = ranges[index];
+      if (range !== undefined) {
+        clonedRanges.push([range[0], range[1]]);
+      }
     }
     return clonedRanges;
   }
@@ -13,7 +16,8 @@ export const buildRangeListModel = class RangeListModelBuilder {
     ranges: readonly (readonly [number, number])[],
     defaultRange: [number, number]
   ): [number, number][] {
-    return [...RangeListModelBuilder.clone(ranges), defaultRange];
+    const next = [...RangeListModelBuilder.clone(ranges), defaultRange];
+    return next;
   }
 
   public static remove(
@@ -22,9 +26,11 @@ export const buildRangeListModel = class RangeListModelBuilder {
     defaultRange: [number, number]
   ): [number, number][] {
     const next = RangeListModelBuilder.clone(ranges).filter((_, entryIndex) => {
-      return entryIndex !== index;
+      const retained = entryIndex !== index;
+      return retained;
     });
-    return next.length > 0 ? next : [defaultRange];
+    const result = next.length > 0 ? next : [defaultRange];
+    return result;
   }
 
   public static update(

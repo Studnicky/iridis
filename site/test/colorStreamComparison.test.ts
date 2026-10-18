@@ -43,7 +43,8 @@ await test('buildComparisonBands: the naive RGB lerp dips visibly further toward
     const b = parseInt(hex.slice(5, 7), 16);
     const maximum = Math.max(r, g, b);
     const minimum = Math.min(r, g, b);
-    return maximum === 0 ? 0 : (maximum - minimum) / maximum;
+    const saturation = maximum === 0 ? 0 : (maximum - minimum) / maximum;
+    return saturation;
   }
 
   const naiveSat = saturation(bands.naive[mid]!);

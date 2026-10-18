@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { AliasColorType } from '~/theme/types/aliasColor.ts';
+import type { AliasColorEntity } from '~/theme/entities/AliasColorEntity.ts';
 
 defineProps<{
-  checkedColors: readonly AliasColorType.Type[];
+  checkedColors: readonly AliasColorEntity.Type[];
 }>();
 </script>
 

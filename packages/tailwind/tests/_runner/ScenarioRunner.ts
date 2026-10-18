@@ -2,16 +2,15 @@
  * Scenario-matrix test runner.
  *
  * Drives a single subject-under-test through a table of scenarios and
- * emits one `node:test` test per row. Each scenario is classified by
- * `kind` (`happy` | `edge` | `unhappy`) and carries its own `assert`
+ * emits one `node:test` test per row. Each scenario carries its own `assert`
  * callback so a single suite can hold the full coverage matrix for one
- * subject — happy paths, edges, illegal inputs — in one place.
+ * subject in one place.
  *
  * Yamete-style cell discipline applies: every test file defines one
  * subject, one runner, and one flat scenario table. Boilerplate (mocks,
  * fixture factories) sits above the table; the table itself is the
  * coverage map. Coordinate-tagged failure messages
- * (`[subject=X, kind=Y, scenario=Z]`) make any failure self-locating.
+ * (`[subject=X, scenario=Z]`) make any failure self-locating.
  */
 import { test } from 'node:test';
 
@@ -26,18 +25,28 @@ export class ScenarioRunner<TInput, TOutput> {
     this.subject = subject;
   }
 
+  private scenarioTestFor(scenario: ScenarioInterface<TInput, TOutput>): () => Promise<void> {
+    const subject = this.subject;
+    return async function scenarioTest(): Promise<void> {
+      let output: TOutput | undefined;
+      let error: Error | undefined;
+      try {
+        output = await subject(scenario.input);
+      } catch (thrown) {
+        error = thrown instanceof Error ? thrown : new Error(String(thrown));
+      }
+      await scenario.assert({ 'error': error, 'output': output });
+    };
+  }
+
   run(scenarios: readonly ScenarioInterface<TInput, TOutput>[]): void {
-    for (const sc of scenarios) {
-      void test(`${this.suite} :: ${sc.kind} :: ${sc.name}`, async () => {
-        let output: TOutput | undefined;
-        let error:  Error | undefined;
-        try {
-          output = await this.subject(sc.input);
-        } catch (thrown) {
-          error = thrown instanceof Error ? thrown : new Error(String(thrown));
-        }
-        await sc.assert(output, error);
-      });
+    for (let index = 0; index < scenarios.length; index += 1) {
+      const scenario = scenarios.at(index);
+      if (scenario === undefined) {
+        continue;
+      }
+      const name = `${this.suite} :: ${scenario.name}`;
+      void test(name, this.scenarioTestFor(scenario));
     }
   }
 }

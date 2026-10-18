@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { buildContentPresentationModel } from './buildContentPresentationModel.ts';
 
 const props = withDefaults(defineProps<{
@@ -8,11 +9,16 @@ const props = withDefaults(defineProps<{
   align: 'center',
   class: undefined
 });
+
+const rowClass = computed(() => props.align === 'center'
+  ? buildContentPresentationModel.splitHeaderCenteredRowClass
+  : buildContentPresentationModel.splitHeaderStartRowClass
+);
 </script>
 
 <template>
   <div
-    :class="[buildContentPresentationModel.splitHeaderRowClass(props.align), $props.class]"
+    :class="[rowClass, $props.class]"
   >
     <div class="min-w-0 flex-1">
       <slot />

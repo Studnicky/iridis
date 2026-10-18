@@ -1,19 +1,15 @@
-import { colorRecordFactory } from '@studnicky/iridis';
-
-import type { HueAlgorithmType } from '~/composables/types/colorDerivation.ts';
-
 import { getAnalogousHues } from '~/utils/getAnalogousHues.ts';
 import { getCompoundHues } from '~/utils/getCompoundHues.ts';
 import { getSplitComplementaryHues } from '~/utils/getSplitComplementaryHues.ts';
-import { normalizeHue } from '~/utils/normalizeHue.ts';
-import { selectHueAlgorithm } from '~/utils/selectHueAlgorithm.ts';
+
+import { buildDerivationRelations } from './buildDerivationRelations.ts';
 
 class HueDerivationAlgorithm {
   public readonly description: string;
-  public readonly key: HueAlgorithmType.Type;
+  public readonly key: string;
   public readonly label: string;
 
-  public constructor(description: string, key: HueAlgorithmType.Type, label: string) {
+  public constructor(description: string, key: string, label: string) {
     this.description = description;
     this.key = key;
     this.label = label;
@@ -24,7 +20,7 @@ class HueDerivationSpecimen {
   public readonly countLabel: string;
   public readonly description: string;
   public readonly hues: number[];
-  public readonly key: HueAlgorithmType.Type;
+  public readonly key: string;
   public readonly label: string;
 
   public constructor(algorithm: HueDerivationAlgorithm, hues: number[]) {
@@ -62,13 +58,23 @@ export const buildHueDerivationSpecimens = class HueDerivationSpecimensBuilder {
 
   public static buildSpecimens(baseHue: number, spacing: number): readonly HueDerivationSpecimen[] {
     const result = this.algorithms.map((algorithm) => {
-      return new HueDerivationSpecimen(algorithm, this.deriveHues(algorithm.key, baseHue, spacing));
+      let hues: readonly number[];
+      if (algorithm.key === 'analogous') {
+        hues = getAnalogousHues(baseHue, spacing);
+      } else if (algorithm.key === 'split-complementary') {
+        hues = getSplitComplementaryHues(baseHue, spacing);
+      } else if (algorithm.key === 'compound') {
+        hues = getCompoundHues(baseHue, spacing);
+      } else if (algorithm.key === 'freeform') {
+        hues = buildDerivationRelations.resolveHueAlgorithm(algorithm.key).apply(baseHue, {
+          'freeformOffsets': this.freeformIllustrativeOffsets
+        });
+      } else {
+        hues = buildDerivationRelations.resolveHueAlgorithm(algorithm.key).apply(baseHue);
+      }
+      const specimen = new HueDerivationSpecimen(algorithm, [...hues]);
+      return specimen;
     });
-    return result;
-  }
-
-  public static resolveHexAt(hue: number): string {
-    const result = colorRecordFactory.fromOklch(0.68, 0.15, hue).hex;
     return result;
   }
 
@@ -77,34 +83,14 @@ export const buildHueDerivationSpecimens = class HueDerivationSpecimensBuilder {
     selectedRole: string
   ): number {
     const role = roleViews.find((view) => {
-      return view.name === selectedRole;
+      const result = view.name === selectedRole;
+      return result;
     }) ?? roleViews.find((view) => {
-      return view.name === 'brand';
+      const result = view.name === 'brand';
+      return result;
     }) ?? roleViews[0];
-    return role?.h ?? 0;
+    const result = role?.h ?? 0;
+    return result;
   }
 
-  private static deriveHues(
-    algorithm: HueAlgorithmType.Type,
-    baseHue: number,
-    spacing: number
-  ): number[] {
-    if (algorithm === 'analogous') {
-      return getAnalogousHues(baseHue, spacing);
-    }
-    if (algorithm === 'split-complementary') {
-      return getSplitComplementaryHues(baseHue, spacing);
-    }
-    if (algorithm === 'compound') {
-      return getCompoundHues(baseHue, spacing);
-    }
-    if (algorithm === 'freeform') {
-      const freeformHues = this.freeformIllustrativeOffsets.map((offset) => {
-        const result = normalizeHue(baseHue + offset);
-        return result;
-      });
-      return selectHueAlgorithm('freeform', baseHue, freeformHues);
-    }
-    return selectHueAlgorithm(algorithm, baseHue);
-  }
 };

@@ -23,7 +23,8 @@ class ColorStreamComparison {
     const r = from.r + (to.r - from.r) * t;
     const g = from.g + (to.g - from.g) * t;
     const b = from.b + (to.b - from.b) * t;
-    return rgbToHex.apply(r, g, b);
+    const result = rgbToHex.apply(r, g, b);
+    return result;
   }
 
   /** Linearly interpolates l/c/h directly in OKLCH space — the engine's interpolation space (evaluated statically, without evaluate()'s easing). */
@@ -31,7 +32,8 @@ class ColorStreamComparison {
     const l = fromL + (toL - fromL) * t;
     const c = fromC + (toC - fromC) * t;
     const h = fromH + (toH - fromH) * t;
-    return oklchToHex(l, c, h);
+    const result = oklchToHex(l, c, h);
+    return result;
   }
 
   /** Builds both comparison bands between an OKLCH `from` and `to` endpoint, for direct side-by-side rendering. */

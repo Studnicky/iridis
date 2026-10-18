@@ -1,6 +1,6 @@
-import type { FromSchema, JsonValueType } from '@studnicky/types';
+import type { InferType } from '@studnicky/json-tology/types';
 
-import { JsonTology } from '@studnicky/json-tology';
+import { EntityCompiler } from '@studnicky/entity/node';
 
 /**
  * Construction options for {@link import('../ValueBinding.ts').ValueBinding.create}.
@@ -12,18 +12,17 @@ export namespace ValueBindingOptionsInterfaceTypeEntity {
     '$id':                 'https://studnicky.dev/iridis-pulse/ValueBindingOptions',
     'additionalProperties': false,
     'properties': {
-      'clamp': { 'type': 'boolean' },
-      'max':   { 'type': 'number' },
-      'min':   { 'type': 'number' }
+      'clamp':   { 'type': 'boolean' },
+      'maximum': { 'type': 'number' },
+      'minimum': { 'type': 'number' }
     },
-    'required': ['max', 'min'],
+    'required': ['maximum', 'minimum'],
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = InferType<typeof Schema>;
 
-  export const validate = (value: JsonValueType): value is Type => {
-    const result = JsonTology.is(Schema, value);
-    return result;
-  };
+  export const validate: ReturnType<typeof EntityCompiler.compile<Type>> = EntityCompiler.compile<Type>(Schema);
+  export const intake: ReturnType<typeof EntityCompiler.compileIntake<Type>> = EntityCompiler.compileIntake<Type>(Schema);
+  export const create: ReturnType<typeof EntityCompiler.compileCreate<Type>> = EntityCompiler.compileCreate<Type>(Schema);
 }

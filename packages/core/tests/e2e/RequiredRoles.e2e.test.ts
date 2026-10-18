@@ -1,444 +1,158 @@
-/**
- * RequiredRoles.e2e — scenario-matrix suite.
- *
- * Subject: required-role enforcement in `resolve:roles`.
- *
- * resolve:roles must guarantee that every required role is populated AND that
- * the assigned color satisfies the role's declared lightnessRange, chromaRange,
- * and hueOffset constraints — even when no input color falls inside those
- * constraints. The engine nudges the closest candidate into range; when no
- * input colors exist at all it synthesizes from the constraints' centers.
- *
- * Cells:
- *   1. lightnessRange   — dark input nudged up, light input nudged down
- *   2. chromaRange      — vivid input desaturated into neutral range
- *   3. hueOffset        — hue forced to absolute target
- *   4. combined         — all dimensions clamped simultaneously
- *   5. synthesis        — zero input → synthesized from constraint centers
- *   6. optional-roles   — non-required with input nudged; zero input not synthesized
- */
+/** Required-role resolution behavior. */
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
 
-import type { InputInterface, RoleSchemaInterfaceType } from '@studnicky/iridis';
+import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
+import { Metadata } from '../../src/types/metadata.ts';
+import { RequiredRolesHarness } from './required-roles/RequiredRolesHarness.ts';
 
-import { Engine }                   from '@studnicky/iridis';
-import { coreTasks }                from '@studnicky/iridis/tasks';
-import assert                       from 'node:assert/strict';
+await test('required role nudges a dark input into a high-lightness range', () => {
+  const state = RequiredRolesHarness.runHex(
+    ['#000000'],
+    RoleDefinitionInterfaceTypeEntity.intake({ 'lightnessRange': [0.92, 1], 'name': 'canvas', 'required': true })
+  );
+  const role = state.roles.canvas;
+  assert.ok(role !== undefined);
+  assert.ok(role.oklch.l >= 0.92 && role.oklch.l <= 1);
+});
 
-import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
+await test('required role nudges a light input into a low-lightness range', () => {
+  const state = RequiredRolesHarness.runHex(
+    ['#ffffff'],
+    RoleDefinitionInterfaceTypeEntity.intake({ 'lightnessRange': [0.05, 0.15], 'name': 'text', 'required': true })
+  );
+  const role = state.roles.text;
+  assert.ok(role !== undefined);
+  assert.ok(role.oklch.l >= 0.05 && role.oklch.l <= 0.15);
+});
 
-import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
-import { EngineMetadata } from '../../src/types/metadata.ts';
+await test('required role retains a mid-grey input within its declared lightness range', () => {
+  const state = RequiredRolesHarness.runHex(
+    ['#808080'],
+    RoleDefinitionInterfaceTypeEntity.intake({ 'lightnessRange': [0.4, 0.6], 'name': 'mid', 'required': true })
+  );
+  const role = state.roles.mid;
+  assert.ok(role !== undefined);
+  assert.ok(role.oklch.l >= 0.4 && role.oklch.l <= 0.6);
+});
 
-// ---------------------------------------------------------------------------
-// Test helpers
-// ---------------------------------------------------------------------------
+await test('required role desaturates a vivid input into a neutral chroma range', () => {
+  const state = RequiredRolesHarness.runHex(
+    ['#ff0000'],
+    RoleDefinitionInterfaceTypeEntity.intake({ 'chromaRange': [0, 0.02], 'name': 'neutral', 'required': true })
+  );
+  const role = state.roles.neutral;
+  assert.ok(role !== undefined);
+  assert.ok(role.oklch.c >= 0 && role.oklch.c <= 0.02);
+});
 
-class EngineFixture {
-  static createFresh(): Engine {
-    const engine = new Engine();
-    for (const task of coreTasks) { engine.tasks.register(task); }
-    return engine;
-  }
-}
+await test('required role keeps an achromatic input within a neutral chroma range', () => {
+  const state = RequiredRolesHarness.runHex(
+    ['#808080'],
+    RoleDefinitionInterfaceTypeEntity.intake({ 'chromaRange': [0, 0.02], 'name': 'neutral', 'required': true })
+  );
+  const role = state.roles.neutral;
+  assert.ok(role !== undefined);
+  assert.ok(role.oklch.c >= 0 && role.oklch.c <= 0.02);
+});
 
-// ---------------------------------------------------------------------------
-// Cell 1 — lightnessRange: input nudged into declared range
-//
-// A dark input assigned to a role requiring high lightness must be adjusted
-// upward. A light input assigned to a role requiring low lightness must be
-// adjusted downward.
-// ---------------------------------------------------------------------------
+await test('required role applies a positive hue offset with wraparound', () => {
+  const state = RequiredRolesHarness.runAny(
+    [{ 'c': 0.1, 'h': 350, 'l': 0.5 }],
+    RoleDefinitionInterfaceTypeEntity.intake({ 'hueOffset': 20, 'name': 'anchor', 'required': true })
+  );
+  const role = state.roles.anchor;
+  assert.ok(role !== undefined);
+  assert.ok(Math.abs(role.oklch.h - 10) < 0.01);
+});
 
-type LightnessRangeInput = {
-  readonly 'colors':  string[];
-  readonly 'range':   [number, number];
-  readonly 'roleName': string;
-};
-const lightnessRangeScenarios: readonly ScenarioInterface<LightnessRangeInput, { readonly 'l': number; readonly 'roleAssigned': boolean }>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,           '[cell=1, scenario=nudge-up] no throw');
-      assert.strictEqual(output!.roleAssigned, true,  '[cell=1, scenario=nudge-up] canvas role assigned');
-      assert.ok(
-        output!.l >= 0.92 && output!.l <= 1.0,
-        `[cell=1, scenario=nudge-up] canvas.l must be in [0.92, 1.0]; got ${output!.l}`
-      );
-    },
-    'input': { 'colors': ['#000000'], 'range': [0.92, 1.0], 'roleName': 'canvas' },
-    'kind': 'happy',
-    'name': 'dark input (#000000) nudged up into [0.92, 1.0]'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,           '[cell=1, scenario=nudge-down] no throw');
-      assert.strictEqual(output!.roleAssigned, true,  '[cell=1, scenario=nudge-down] text role assigned');
-      assert.ok(
-        output!.l >= 0.05 && output!.l <= 0.15,
-        `[cell=1, scenario=nudge-down] text.l must be in [0.05, 0.15]; got ${output!.l}`
-      );
-    },
-    'input': { 'colors': ['#ffffff'], 'range': [0.05, 0.15], 'roleName': 'text' },
-    'kind': 'happy',
-    'name': 'light input (#ffffff) nudged down into [0.05, 0.15]'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,           '[cell=1, scenario=mid-grey] no throw');
-      assert.strictEqual(output!.roleAssigned, true,  '[cell=1, scenario=mid-grey] mid role assigned');
-      assert.ok(
-        output!.l >= 0.4 && output!.l <= 0.6,
-        `[cell=1, scenario=mid-grey] mid.l must be in [0.4, 0.6]; got ${output!.l}`
-      );
-    },
-    'input': { 'colors': ['#808080'], 'range': [0.4, 0.6], 'roleName': 'mid' },
-    'kind': 'edge',
-    'name': 'mid-grey input nudged into [0.4, 0.6]'
-  }
-];
+await test('required role applies a negative hue offset', () => {
+  const state = RequiredRolesHarness.runAny(
+    [{ 'c': 0.1, 'h': 200, 'l': 0.5 }],
+    RoleDefinitionInterfaceTypeEntity.intake({ 'hueOffset': -30, 'name': 'anchor', 'required': true })
+  );
+  const role = state.roles.anchor;
+  assert.ok(role !== undefined);
+  assert.ok(Math.abs(role.oklch.h - 170) < 0.5);
+});
 
-new ScenarioRunner<LightnessRangeInput, { readonly 'l': number; readonly 'roleAssigned': boolean }>(
-  'RequiredRoles :: cell-1 :: lightnessRange',
-  (input) => {
-    const schema: RoleSchemaInterfaceType = {
-      'contrastPairs': undefined,
-      'description': undefined, 'name': 'lr-schema', 'roles': [{ 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': input.range, 'name': input.roleName, 'required': true }]
-    };
-    const engine = EngineFixture.createFresh();
-    engine.pipeline(['intake:hex', 'resolve:roles']);
-    const state = engine.run({ 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': schema, 'runtime': undefined });
-    const role  = state.roles[input.roleName];
-    return { 'l': role?.oklch.l ?? -1, 'roleAssigned': role !== undefined };
-  }
-).run(lightnessRangeScenarios);
+await test('required role applies lightness and chroma constraints together', () => {
+  const state = RequiredRolesHarness.runHex(
+    ['#000000', '#ffffff', '#ff00ff', '#00ff00'],
+    RoleDefinitionInterfaceTypeEntity.intake({
+      'chromaRange': [0.05, 0.1],
+      'lightnessRange': [0.4, 0.5],
+      'name': 'tight',
+      'required': true
+    })
+  );
+  const role = state.roles.tight;
+  assert.ok(role !== undefined);
+  assert.ok(role.oklch.l >= 0.4 && role.oklch.l <= 0.5);
+  assert.ok(role.oklch.c >= 0.05 && role.oklch.c <= 0.1);
+});
 
-// ---------------------------------------------------------------------------
-// Cell 2 — chromaRange: vivid input desaturated into neutral range
-//
-// A highly saturated input (#ff0000) assigned to a role with chromaRange
-// [0, 0.02] must be desaturated until chroma falls within the range.
-// ---------------------------------------------------------------------------
+await test('required role synthesizes a constrained color and records provenance', () => {
+  const state = RequiredRolesHarness.runHex(
+    [],
+    RoleDefinitionInterfaceTypeEntity.intake({
+      'chromaRange': [0.1, 0.15],
+      'hueOffset': 200,
+      'lightnessRange': [0.6, 0.8],
+      'name': 'synth',
+      'required': true
+    })
+  );
+  const role = state.roles.synth;
+  const provenance = Metadata.roleProvenance(state.metadata).get('synth');
+  assert.ok(role !== undefined);
+  assert.ok(role.oklch.l >= 0.6 && role.oklch.l <= 0.8);
+  assert.ok(role.oklch.c >= 0.1 && role.oklch.c <= 0.15);
+  assert.ok(Math.abs(role.oklch.h - 200) < 0.01);
+  assert.strictEqual(provenance?.origin, 'synthesized');
+  assert.match(role.hex, RequiredRolesHarness.hexPattern);
+  assert.ok(role.rgb.r >= 0 && role.rgb.r <= 1);
+});
 
-type ChromaRangeInput = {
-  readonly 'colors': string[];
-  readonly 'range':  [number, number];
-};
-const chromaRangeScenarios: readonly ScenarioInterface<ChromaRangeInput, { readonly 'c': number; readonly 'roleAssigned': boolean }>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,            '[cell=2, scenario=vivid-neutral] no throw');
-      assert.strictEqual(output!.roleAssigned, true,   '[cell=2, scenario=vivid-neutral] neutral role assigned');
-      assert.ok(
-        output!.c >= 0 && output!.c <= 0.02,
-        `[cell=2, scenario=vivid-neutral] neutral.c must be in [0, 0.02]; got ${output!.c}`
-      );
-    },
-    'input': { 'colors': ['#ff0000'], 'range': [0, 0.02] },
-    'kind': 'happy',
-    'name': 'vivid #ff0000 nudged into neutral chromaRange [0, 0.02]'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,            '[cell=2, scenario=achromatic] no throw');
-      assert.strictEqual(output!.roleAssigned, true,   '[cell=2, scenario=achromatic] neutral role assigned');
-      assert.ok(
-        output!.c >= 0 && output!.c <= 0.02,
-        `[cell=2, scenario=achromatic] neutral.c already in [0, 0.02]; got ${output!.c}`
-      );
-    },
-    'input': { 'colors': ['#808080'], 'range': [0, 0.02] },
-    'kind': 'edge',
-    'name': 'achromatic #808080 still in [0, 0.02] range (no nudge needed)'
-  }
-];
+await test('required role synthesizes an achromatic point-range color', () => {
+  const state = RequiredRolesHarness.runHex(
+    [],
+    RoleDefinitionInterfaceTypeEntity.intake({
+      'chromaRange': [0, 0],
+      'hueOffset': 0,
+      'lightnessRange': [0.5, 0.5],
+      'name': 'synth',
+      'required': true
+    })
+  );
+  const role = state.roles.synth;
+  assert.ok(role !== undefined);
+  assert.match(role.hex, RequiredRolesHarness.hexPattern);
+  assert.ok(role.rgb.r >= 0 && role.rgb.r <= 1);
+});
 
-new ScenarioRunner<ChromaRangeInput, { readonly 'c': number; readonly 'roleAssigned': boolean }>(
-  'RequiredRoles :: cell-2 :: chromaRange',
-  (input) => {
-    const schema: RoleSchemaInterfaceType = {
-      'contrastPairs': undefined,
-      'description': undefined, 'name': 'cr-schema', 'roles': [{ 'chromaRange': input.range, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': undefined, 'name': 'neutral', 'required': true }]
-    };
-    const engine = EngineFixture.createFresh();
-    engine.pipeline(['intake:hex', 'resolve:roles']);
-    const state = engine.run({ 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': schema, 'runtime': undefined });
-    const role  = state.roles.neutral;
-    return { 'c': role?.oklch.c ?? -1, 'roleAssigned': role !== undefined };
-  }
-).run(chromaRangeScenarios);
+await test('optional role resolves when an input color exists', () => {
+  const state = RequiredRolesHarness.runHex(
+    ['#000000'],
+    RoleDefinitionInterfaceTypeEntity.intake({ 'lightnessRange': [0.85, 1], 'name': 'maybe', 'required': false })
+  );
+  const role = state.roles.maybe;
+  assert.ok(role !== undefined);
+  assert.ok(role.oklch.l >= 0.85 && role.oklch.l <= 1);
+});
 
-// ---------------------------------------------------------------------------
-// Cell 3 — hueOffset: assigned hue shifted by a signed relative delta
-//
-// hueOffset is treated as a signed delta from the assigned input hue. The
-// resulting hue wraps into [0, 360) and equals the shifted input hue within
-// floating-point tolerance.
-// ---------------------------------------------------------------------------
+await test('optional role remains absent with no input colors', () => {
+  const state = RequiredRolesHarness.runHex(
+    [],
+    RoleDefinitionInterfaceTypeEntity.intake({ 'lightnessRange': [0.85, 1], 'name': 'maybe', 'required': false })
+  );
+  assert.strictEqual(state.roles.maybe, undefined);
+});
 
-interface HueOffsetInputInterface { readonly 'colors': InputInterface['colors']; readonly 'hueOffset': number }
-
-const hueOffsetScenarios: readonly ScenarioInterface<HueOffsetInputInterface, { readonly 'h': number; readonly 'roleAssigned': boolean }>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,           '[cell=3, scenario=forward-wrap] no throw');
-      assert.strictEqual(output!.roleAssigned, true,  '[cell=3, scenario=forward-wrap] anchor assigned');
-      assert.ok(
-        Math.abs(output!.h - 10) < 0.01,
-        `[cell=3, scenario=forward-wrap] anchor.h must equal 10; got ${output!.h}`
-      );
-    },
-    'input': { 'colors': [{ 'c': 0.1, 'h': 350, 'l': 0.5 }], 'hueOffset': 20 },
-    'kind': 'happy',
-    'name': 'input hue 350 shifted by +20 wraps to 10'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,           '[cell=3, scenario=backward-shift] no throw');
-      assert.strictEqual(output!.roleAssigned, true,  '[cell=3, scenario=backward-shift] role assigned');
-      assert.ok(
-        Math.abs(output!.h - 170) < 0.5,
-        `[cell=3, scenario=backward-shift] anchor.h ≈ 170; got ${output!.h}`
-      );
-    },
-    'input': { 'colors': [{ 'c': 0.1, 'h': 200, 'l': 0.5 }], 'hueOffset': -30 },
-    'kind': 'edge',
-    'name': 'input hue 200 shifted by -30 equals 170'
-  }
-];
-
-new ScenarioRunner<HueOffsetInputInterface, { readonly 'h': number; readonly 'roleAssigned': boolean }>(
-  'RequiredRoles :: cell-3 :: hueOffset',
-  (input) => {
-    const schema: RoleSchemaInterfaceType = {
-      'contrastPairs': undefined,
-      'description': undefined, 'name': 'ho-schema', 'roles': [{ 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': input.hueOffset, 'intent': undefined, 'lightnessRange': undefined, 'name': 'anchor', 'required': true }]
-    };
-    const engine = EngineFixture.createFresh();
-    engine.pipeline(['intake:any', 'resolve:roles']);
-    const state = engine.run({ 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': schema, 'runtime': undefined });
-    const role  = state.roles.anchor;
-    return { 'h': role?.oklch.h ?? -1, 'roleAssigned': role !== undefined };
-  }
-).run(hueOffsetScenarios);
-
-// ---------------------------------------------------------------------------
-// Cell 4 — combined constraints: all three dimensions clamped simultaneously
-//
-// A role with lightnessRange, chromaRange applied together must land inside
-// both ranges simultaneously.
-// ---------------------------------------------------------------------------
-
-type CombinedInput = {
-  readonly 'colors': string[];
-  readonly 'cRange': [number, number];
-  readonly 'lRange': [number, number];
-};
-const combinedScenarios: readonly ScenarioInterface<CombinedInput, { readonly 'c': number; readonly 'l': number; readonly 'roleAssigned': boolean }>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,            '[cell=4, scenario=four-colors] no throw');
-      assert.strictEqual(output!.roleAssigned, true,   '[cell=4, scenario=four-colors] tight role assigned');
-      assert.ok(
-        output!.l >= 0.40 && output!.l <= 0.50,
-        `[cell=4, scenario=four-colors] l in [0.40, 0.50]; got ${output!.l}`
-      );
-      assert.ok(
-        output!.c >= 0.05 && output!.c <= 0.10,
-        `[cell=4, scenario=four-colors] c in [0.05, 0.10]; got ${output!.c}`
-      );
-    },
-    'input': {
-      'colors': ['#000000', '#ffffff', '#ff00ff', '#00ff00'],
-      'cRange': [0.05, 0.10],
-      'lRange': [0.40, 0.50]
-    },
-    'kind': 'happy',
-    'name': 'four diverse colors clamped into tight [0.40-0.50, 0.05-0.10]'
-  }
-];
-
-new ScenarioRunner<CombinedInput, { readonly 'c': number; readonly 'l': number; readonly 'roleAssigned': boolean }>(
-  'RequiredRoles :: cell-4 :: combined-constraints',
-  (input) => {
-    const schema: RoleSchemaInterfaceType = {
-      'contrastPairs': undefined,
-      'description': undefined, 'name': 'cc-schema', 'roles': [{
-        'chromaRange':    input.cRange,
-        'derivedFrom': undefined,
-        'description': undefined,
-        'hue': undefined,
-        'hueClamp': undefined,
-        'hueOffset': undefined,
-        'intent': undefined,
-        'lightnessRange': input.lRange,
-        'name':           'tight',
-        'required':       true
-      }]
-    };
-    const engine = EngineFixture.createFresh();
-    engine.pipeline(['intake:hex', 'resolve:roles']);
-    const state = engine.run({ 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': schema, 'runtime': undefined });
-    const role  = state.roles.tight;
-    return { 'c': role?.oklch.c ?? -1, 'l': role?.oklch.l ?? -1, 'roleAssigned': role !== undefined };
-  }
-).run(combinedScenarios);
-
-// ---------------------------------------------------------------------------
-// Cell 5 — synthesis from constraint centers when no input colors
-//
-// When the input colors array is empty a required role with all three
-// constraints must be synthesized to their center values. The synthesized
-// role provenance records origin: 'synthesized'. A required role
-// with no constraints still produces a synthesized record. A second role with
-// a point range (l=0.5, c=0) round-trips its hex correctly.
-// ---------------------------------------------------------------------------
-
-const synthesisScenarios: readonly ScenarioInterface<
-  { readonly 'cRange': [number, number]; readonly 'hueOffset': number; readonly 'lRange': [number, number] },
-  {
-    readonly 'c':            number;
-    readonly 'h':            number;
-    readonly 'hasSynthesizedProvenance': boolean;
-    readonly 'hexIsValid':   boolean;
-    readonly 'l':            number;
-    readonly 'rgbRInRange':  boolean;
-    readonly 'roleAssigned': boolean;
-  }
->[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,            '[cell=5, scenario=full-synthesis] no throw');
-      assert.strictEqual(output!.roleAssigned, true,   '[cell=5, scenario=full-synthesis] synth role assigned');
-      assert.ok(output!.l >= 0.6 && output!.l <= 0.8,         `[cell=5, scenario=full-synthesis] l in range; got ${output!.l}`);
-      assert.ok(output!.c >= 0.10 && output!.c <= 0.15,       `[cell=5, scenario=full-synthesis] c in range; got ${output!.c}`);
-      assert.ok(Math.abs(output!.h - 200) < 0.01,             `[cell=5, scenario=full-synthesis] h = 200; got ${output!.h}`);
-      assert.strictEqual(output!.hasSynthesizedProvenance, true, '[cell=5, scenario=full-synthesis] provenance marks synth as synthesized');
-      assert.strictEqual(output!.hexIsValid,  true,           '[cell=5, scenario=full-synthesis] hex is valid 6-digit lowercase');
-      assert.strictEqual(output!.rgbRInRange, true,           '[cell=5, scenario=full-synthesis] rgb.r in [0..1]');
-    },
-    'input': { 'cRange': [0.10, 0.15], 'hueOffset': 200, 'lRange': [0.6, 0.8] },
-    'kind': 'happy',
-    'name': 'full constraints satisfied from centers with zero input colors'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,            '[cell=5, scenario=point-synthesis] no throw');
-      assert.strictEqual(output!.roleAssigned, true,   '[cell=5, scenario=point-synthesis] role synthesized');
-      assert.strictEqual(output!.hexIsValid,   true,  '[cell=5, scenario=point-synthesis] hex is valid 6-digit lowercase');
-      assert.strictEqual(output!.rgbRInRange,  true,  '[cell=5, scenario=point-synthesis] rgb.r in [0..1]');
-    },
-    'input': { 'cRange': [0, 0], 'hueOffset': 0, 'lRange': [0.5, 0.5] },
-    'kind': 'edge',
-    'name': 'achromatic point (l=0.5, c=0) synthesized with valid hex round-trip'
-  }
-];
-
-new ScenarioRunner<
-  { readonly 'cRange': [number, number]; readonly 'hueOffset': number; readonly 'lRange': [number, number] },
-  {
-    readonly 'c':            number;
-    readonly 'h':            number;
-    readonly 'hasSynthesizedProvenance': boolean;
-    readonly 'hexIsValid':   boolean;
-    readonly 'l':            number;
-    readonly 'rgbRInRange':  boolean;
-    readonly 'roleAssigned': boolean;
-  }
->(
-  'RequiredRoles :: cell-5 :: synthesis',
-  (input) => {
-    const schema: RoleSchemaInterfaceType = {
-      'contrastPairs': undefined,
-      'description': undefined, 'name': 'synth-schema', 'roles': [{
-        'chromaRange':    input.cRange,
-        'derivedFrom': undefined,
-        'description': undefined,
-        'hue': undefined,
-        'hueClamp': undefined,
-        'hueOffset':      input.hueOffset,
-        'intent': undefined,
-        'lightnessRange': input.lRange,
-        'name':           'synth',
-        'required':       true
-      }]
-    };
-    const engine = EngineFixture.createFresh();
-    engine.pipeline(['intake:hex', 'resolve:roles']);
-    const state = engine.run({ 'bypass': undefined, 'colors': [], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': schema, 'runtime': undefined });
-    const role       = state.roles.synth;
-    const synthProvenance = EngineMetadata.get(state.metadata, 'core:roleProvenance')?.synth;
-    return {
-      'c':            role?.oklch.c ?? -1,
-      'h':            role?.oklch.h ?? -1,
-      'hasSynthesizedProvenance': synthProvenance?.origin === 'synthesized',
-      'hexIsValid':   typeof role?.hex === 'string' && /^#[0-9a-f]{6}$/.test(role.hex),
-      'l':            role?.oklch.l ?? -1,
-      'rgbRInRange':  role !== undefined && role.rgb.r >= 0 && role.rgb.r <= 1,
-      'roleAssigned': role !== undefined
-    };
-  }
-).run(synthesisScenarios);
-
-// ---------------------------------------------------------------------------
-// Cell 6 — optional roles
-//
-// An optional role with colors present gets the closest candidate nudged into
-// its range. An optional role with zero input colors must NOT be synthesized
-// (synthesis is only for required roles).
-// ---------------------------------------------------------------------------
-
-type OptionalRoleInput = {
-  readonly 'colors':  string[];
-  readonly 'range':   [number, number];
-};
-const optionalRoleScenarios: readonly ScenarioInterface<OptionalRoleInput, { readonly 'l': number; readonly 'roleAssigned': boolean }>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,            '[cell=6, scenario=optional-with-input] no throw');
-      assert.strictEqual(output!.roleAssigned, true,   '[cell=6, scenario=optional-with-input] optional role assigned');
-      assert.ok(
-        output!.l >= 0.85 && output!.l <= 1.0,
-        `[cell=6, scenario=optional-with-input] l in [0.85, 1.0]; got ${output!.l}`
-      );
-    },
-    'input': { 'colors': ['#000000'], 'range': [0.85, 1.0] },
-    'kind': 'happy',
-    'name': 'optional role with input assigned and nudged into range'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,             '[cell=6, scenario=optional-no-input] no throw');
-      assert.strictEqual(output!.roleAssigned, false,   '[cell=6, scenario=optional-no-input] optional role remains unassigned');
-    },
-    'input': { 'colors': [], 'range': [0.85, 1.0] },
-    'kind': 'edge',
-    'name': 'optional role with zero input is NOT synthesized'
-  },
-  {
-    'assert': function(output, error) {
-      // No throw expected; unhappy here means "the non-synthesis is the
-      // expected non-happy outcome for an optional role without colors".
-      assert.strictEqual(error, undefined,             '[cell=6, scenario=optional-unconstrained] no throw');
-      assert.strictEqual(output!.roleAssigned, false,   '[cell=6, scenario=optional-unconstrained] not synthesized without input');
-    },
-    // Structurally: optional + zero input → no synthesis. This verifies the
-    // required-only synthesis guarantee holds even with no constraints.
-    'input': { 'colors': [], 'range': [0.5, 0.7] },
-    'kind': 'unhappy',
-    'name': 'optional role with empty range list still not synthesized on zero input'
-  }
-];
-
-new ScenarioRunner<OptionalRoleInput, { readonly 'l': number; readonly 'roleAssigned': boolean }>(
-  'RequiredRoles :: cell-6 :: optional-roles',
-  (input) => {
-    const schema: RoleSchemaInterfaceType = {
-      'contrastPairs': undefined,
-      'description': undefined, 'name': 'opt-schema', 'roles': [{ 'chromaRange': undefined, 'derivedFrom': undefined, 'description': undefined, 'hue': undefined, 'hueClamp': undefined, 'hueOffset': undefined, 'intent': undefined, 'lightnessRange': input.range, 'name': 'maybe', 'required': false }]
-    };
-    const engine = EngineFixture.createFresh();
-    engine.pipeline(['intake:hex', 'resolve:roles']);
-    const state = engine.run({ 'bypass': undefined, 'colors': input.colors, 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': schema, 'runtime': undefined });
-    const role  = state.roles.maybe;
-    return { 'l': role?.oklch.l ?? -1, 'roleAssigned': role !== undefined };
-  }
-).run(optionalRoleScenarios);
+await test('unconstrained optional role remains absent with no input colors', () => {
+  const state = RequiredRolesHarness.runHex(
+    [],
+    RoleDefinitionInterfaceTypeEntity.intake({ 'lightnessRange': [0.5, 0.7], 'name': 'maybe', 'required': false })
+  );
+  assert.strictEqual(state.roles.maybe, undefined);
+});

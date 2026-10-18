@@ -1,11 +1,13 @@
-import type { FromSchema, JsonValueType } from '@studnicky/types';
+import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
-import { Validator } from '../model/Validator.ts';
+import { EntityCompiler } from '@studnicky/entity/node';
+
 import { ContrastPairInterfaceTypeEntity } from './ContrastPairInterfaceTypeEntity.ts';
 
 /** `InputInterface.contrast`: run-level contrast enforcement options. */
 export namespace ContrastOptionsInterfaceTypeEntity {
   export const Schema = {
+    '$id': 'https://iridis.dev/schema/core/contrast-options',
     'additionalProperties': false,
     'properties': {
       'algorithm':  { 'enum': ['wcag21', 'apca'] },
@@ -17,10 +19,9 @@ export namespace ContrastOptionsInterfaceTypeEntity {
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = NominalSchemaType<typeof Schema>;
 
-  export const validate = (value: JsonValueType): value is Type => {
-    const result = new Validator().validate(Schema, value);
-    return result.valid;
-  };
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
 }

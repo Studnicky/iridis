@@ -1,37 +1,49 @@
 import type {
-  ApcaPairResultSetInterfaceType,
-  CvdResultSetInterfaceType,
-  WcagPairResultSetInterfaceType
+  ApcaPairResultSetInterfaceTypeEntity,
+  CvdResultSetInterfaceTypeEntity,
+  WcagPairResultSetInterfaceTypeEntity
 } from '@studnicky/iridis-contrast';
 
 import { pipelineStageSummaries } from './pipelineStageSummaries.ts';
 
 class PipelineContrastReport {
-  public readonly aa?: WcagPairResultSetInterfaceType;
-  public readonly aaa?: WcagPairResultSetInterfaceType;
-  public readonly apca?: ApcaPairResultSetInterfaceType;
-  public readonly cvd?: CvdResultSetInterfaceType;
+  public readonly aa?: WcagPairResultSetInterfaceTypeEntity.Type;
+  public readonly aaa?: WcagPairResultSetInterfaceTypeEntity.Type;
+  public readonly apca?: ApcaPairResultSetInterfaceTypeEntity.Type;
+  public readonly cvd?: CvdResultSetInterfaceTypeEntity.Type;
 }
 
 class PipelineStageModel {
   public readonly contrastSummary: string | undefined;
   public readonly cvdCorrectionText: string | undefined;
   public readonly cvdWarningCount: number | undefined;
-  public readonly isCvdStage: boolean;
-  public readonly isEnabled: boolean;
+  readonly #enabledOptionalStages: ReadonlySet<string>;
+  readonly #stageValue: string;
 
   public constructor(
-    contrastSummary: string | undefined,
-    cvdCorrectionText: string | undefined,
-    cvdWarningCount: number | undefined,
-    isCvdStage: boolean,
-    isEnabled: boolean
+    stageValue: string,
+    enabledOptionalStages: ReadonlySet<string>,
+    details: Readonly<{
+      'contrastSummary': string | undefined;
+      'cvdCorrectionText': string | undefined;
+      'cvdWarningCount': number | undefined;
+    }>
   ) {
-    this.contrastSummary = contrastSummary;
-    this.cvdCorrectionText = cvdCorrectionText;
-    this.cvdWarningCount = cvdWarningCount;
-    this.isCvdStage = isCvdStage;
-    this.isEnabled = isEnabled;
+    this.contrastSummary = details.contrastSummary;
+    this.cvdCorrectionText = details.cvdCorrectionText;
+    this.cvdWarningCount = details.cvdWarningCount;
+    this.#enabledOptionalStages = enabledOptionalStages;
+    this.#stageValue = stageValue;
+  }
+
+  public get isEnabled(): boolean {
+    const result = this.#enabledOptionalStages.has(this.#stageValue);
+    return result;
+  }
+
+  public get isCvdStage(): boolean {
+    const result = this.#stageValue === 'enforce:cvdSimulate' && this.isEnabled;
+    return result;
   }
 }
 
@@ -59,12 +71,11 @@ export const buildPipelineStageModel = class PipelineStageModelBuilder {
     const cvdCorrectionText = contrastReport.cvd === undefined
       ? undefined
       : pipelineStageSummaries.buildCvdCorrectionSummary(contrastReport.cvd);
-    return new PipelineStageModel(
-      contrastSummary,
-      cvdCorrectionText,
-      cvdWarningCount,
-      isCvdStage,
-      isEnabled
-    );
+    const result = new PipelineStageModel(stageValue, enabledOptionalStages, {
+      'contrastSummary': contrastSummary,
+      'cvdCorrectionText': cvdCorrectionText,
+      'cvdWarningCount': cvdWarningCount
+    });
+    return result;
   }
 };

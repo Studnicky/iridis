@@ -1,37 +1,155 @@
-import { vscodeSeedRoleData } from '@studnicky/iridis-vscode';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { runVscodeTheme } from '../app/composables/runVscodeTheme.ts';
 
 class VscodeThemeFixture {
-  private static readonly 'darkColors' = ['#101820', '#f5f7fa', '#7c3aed', '#ef4444', '#06b6d4', '#f59e0b', '#10b981', '#ec4899'];
-  private static readonly 'lightColors' = ['#f7f4ed', '#17212b', '#5b21b6', '#b91c1c', '#0e7490', '#b45309', '#047857', '#be185d'];
   private static readonly 'hexCharacters' = '0123456789abcdefABCDEF';
 
-  static palette(tier: 4 | 8 | 16 | 64, framing: 'dark' | 'light') {
-    const tierData = vscodeSeedRoleData.roleTiers.find((entry) => { return entry.tier === tier; });
-    if (tierData === undefined) { throw new RangeError(`Unsupported test tier ${tier}`); }
-    const colors = framing === 'dark' ? VscodeThemeFixture.darkColors : VscodeThemeFixture.lightColors;
-    const roles: Record<string, string> = {};
-    for (const [index, role] of tierData.roleNames.entries()) {
-      roles[role] = colors[index % colors.length]!;
-    }
-    return { 'framing': framing, 'roles': roles, 'tier': tier };
+  static compareNames(left: string, right: string): number {
+    const comparison = left.localeCompare(right);
+    return comparison;
+  }
+
+  static darkTierFour() {
+    const result = {
+      'framing': 'dark',
+      'roles': {
+        'background': '#101820',
+        'error': '#ef4444',
+        'foreground': '#f5f7fa',
+        'keyword': '#7c3aed'
+      },
+      'tier': 4
+    };
+    return result;
+  }
+
+  static lightTierFour() {
+    const result = {
+      'framing': 'light',
+      'roles': {
+        'background': '#f7f4ed',
+        'error': '#b91c1c',
+        'foreground': '#17212b',
+        'keyword': '#5b21b6'
+      },
+      'tier': 4
+    };
+    return result;
+  }
+
+  static darkTierSixteen() {
+    const result = {
+      'framing': 'dark',
+      'roles': {
+        'background': '#101820',
+        'comment': '#ef4444',
+        'constant': '#7c3aed',
+        'error': '#06b6d4',
+        'foreground': '#f5f7fa',
+        'function': '#10b981',
+        'info': '#10b981',
+        'keyword': '#06b6d4',
+        'muted': '#ef4444',
+        'number': '#f5f7fa',
+        'string': '#101820',
+        'success': '#ec4899',
+        'surface': '#7c3aed',
+        'type': '#f59e0b',
+        'variable': '#ec4899',
+        'warning': '#f59e0b'
+      },
+      'tier': 16
+    };
+    return result;
+  }
+
+  static lightTierSixtyFour() {
+    const result = {
+      'framing': 'light',
+      'roles': {
+        'accent': '#f7f4ed',
+        'accentHover': '#5b21b6',
+        'ansiBlack': '#17212b',
+        'ansiBlue': '#b45309',
+        'ansiBrightBlack': '#17212b',
+        'ansiBrightBlue': '#b45309',
+        'ansiBrightCyan': '#be185d',
+        'ansiBrightGreen': '#b91c1c',
+        'ansiBrightMagenta': '#047857',
+        'ansiBrightRed': '#5b21b6',
+        'ansiBrightWhite': '#f7f4ed',
+        'ansiBrightYellow': '#0e7490',
+        'ansiCyan': '#be185d',
+        'ansiGreen': '#b91c1c',
+        'ansiMagenta': '#047857',
+        'ansiRed': '#5b21b6',
+        'ansiWhite': '#f7f4ed',
+        'ansiYellow': '#0e7490',
+        'background': '#f7f4ed',
+        'border': '#5b21b6',
+        'bracketLevel1': '#f7f4ed',
+        'bracketLevel2': '#17212b',
+        'bracketLevel3': '#5b21b6',
+        'bracketLevel4': '#b91c1c',
+        'bracketLevel5': '#0e7490',
+        'bracketLevel6': '#b45309',
+        'bracketMatch': '#f7f4ed',
+        'buttonSecondary': '#047857',
+        'chrome': '#b45309',
+        'chromeForeground': '#be185d',
+        'chromeInactive': '#047857',
+        'comment': '#b91c1c',
+        'constant': '#5b21b6',
+        'diffInserted': '#047857',
+        'diffRemoved': '#be185d',
+        'error': '#0e7490',
+        'findMatch': '#be185d',
+        'foreground': '#17212b',
+        'function': '#047857',
+        'gitAdded': '#17212b',
+        'gitConflicting': '#b45309',
+        'gitDeleted': '#b91c1c',
+        'gitModified': '#5b21b6',
+        'gitUntracked': '#0e7490',
+        'guide': '#b91c1c',
+        'guideActive': '#0e7490',
+        'hover': '#17212b',
+        'info': '#047857',
+        'inputBackground': '#f7f4ed',
+        'keyword': '#0e7490',
+        'link': '#b91c1c',
+        'muted': '#b91c1c',
+        'number': '#17212b',
+        'onAccent': '#17212b',
+        'selection': '#0e7490',
+        'selectionList': '#b45309',
+        'string': '#f7f4ed',
+        'success': '#be185d',
+        'surface': '#5b21b6',
+        'type': '#b45309',
+        'variable': '#be185d',
+        'warning': '#b45309',
+        'widgetBackground': '#047857',
+        'widgetBorder': '#be185d'
+      },
+      'tier': 64
+    };
+    return result;
   }
 
   static isSrgb(color: string): boolean {
     if ((color.length !== 7 && color.length !== 9) || color[0] !== '#') { return false; }
-    for (const character of color.slice(1)) {
-      if (!VscodeThemeFixture.hexCharacters.includes(character)) { return false; }
+    for (let index = 1; index < color.length; index += 1) {
+      if (!VscodeThemeFixture.hexCharacters.includes(color[index]!)) { return false; }
     }
     return true;
   }
 }
-
 await test('runVscodeTheme emits canonical dark and light VS Code theme data', () => {
-  const dark = runVscodeTheme(VscodeThemeFixture.palette(4, 'dark'));
-  const light = runVscodeTheme(VscodeThemeFixture.palette(4, 'light'));
+  const dark = runVscodeTheme(VscodeThemeFixture.darkTierFour());
+  const light = runVscodeTheme(VscodeThemeFixture.lightTierFour());
 
   assert.equal(dark.palette.framing, 'dark');
   assert.equal(light.palette.framing, 'light');
@@ -45,19 +163,19 @@ await test('runVscodeTheme emits canonical dark and light VS Code theme data', (
 
 await test('runVscodeTheme preserves exact custom structured seed roles and reports pinned provenance', () => {
   const palette = {
-    'framing': 'dark',
+    'framing': 'dark' as const,
     'roles': {
       'background': '#14202b',
       'error': '#d83a4e',
       'foreground': '#f1f5f9',
       'keyword': '#7856ff'
     },
-    'tier': 4
+    'tier': 4 as const
   };
   const result = runVscodeTheme(palette);
 
   assert.deepEqual(result.palette.roles, palette.roles);
-  assert.deepEqual(result.provenance.pinnedRoles.toSorted(), Object.keys(palette.roles).toSorted());
+  assert.deepEqual(result.provenance.pinnedRoles.toSorted(VscodeThemeFixture.compareNames), Object.keys(palette.roles).toSorted(VscodeThemeFixture.compareNames));
   const keyword = result.roles.keyword;
   if (keyword === undefined) { assert.fail('resolved keyword role is absent'); }
   assert.equal(keyword.length, 7);
@@ -65,13 +183,14 @@ await test('runVscodeTheme preserves exact custom structured seed roles and repo
 });
 
 await test('runVscodeTheme pins every tier-specific supplied role and returns complete contrast data', () => {
-  const result = runVscodeTheme(VscodeThemeFixture.palette(16, 'dark'));
+  const result = runVscodeTheme(VscodeThemeFixture.darkTierSixteen());
   const suppliedRoles = Object.keys(result.palette.roles);
 
-  assert.deepEqual(result.provenance.pinnedRoles.toSorted(), suppliedRoles.toSorted());
+  assert.deepEqual(result.provenance.pinnedRoles.toSorted(VscodeThemeFixture.compareNames), suppliedRoles.toSorted(VscodeThemeFixture.compareNames));
   assert.equal(result.provenance.derivedRoles.includes('accent'), true);
   assert.equal(result.contrast.length > 0, true);
-  for (const entry of result.contrast) {
+  for (let index = 0; index < result.contrast.length; index += 1) {
+    const entry = result.contrast[index]!;
     assert.equal(entry.background.length > 0, true);
     assert.equal(entry.foreground.length > 0, true);
     assert.equal(Number.isFinite(entry.ratio), true);
@@ -80,7 +199,7 @@ await test('runVscodeTheme pins every tier-specific supplied role and returns co
 });
 
 await test('runVscodeTheme emits only sRGB hex workbench colors', () => {
-  const result = runVscodeTheme(VscodeThemeFixture.palette(64, 'light'));
+  const result = runVscodeTheme(VscodeThemeFixture.lightTierSixtyFour());
 
   assert.equal(Object.values(result.workbenchColors).every(VscodeThemeFixture.isSrgb), true);
   assert.equal(JSON.stringify(result.theme.json).includes('display-p3'), false);

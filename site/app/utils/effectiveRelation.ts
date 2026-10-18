@@ -1,4 +1,4 @@
-import type { RoleRelationDerivationType } from '../composables/types/colorDerivation.ts';
+import { DerivationRelationInterfaceTypeEntity } from '../composables/entities/DerivationRelationInterfaceTypeEntity.ts';
 
 /**
  * Every relation this codebase resolves goes through this function, whether
@@ -9,9 +9,17 @@ import type { RoleRelationDerivationType } from '../composables/types/colorDeriv
  * exactly until the user changes it.
  */
 class EffectiveRelationOperation {
-  static run(schemaHueOffset: number | undefined, relation: RoleRelationDerivationType | undefined): RoleRelationDerivationType {
+  static run({ relation, schemaHueOffset }: {
+    readonly 'relation': DerivationRelationInterfaceTypeEntity.Type | undefined;
+    readonly 'schemaHueOffset': number | undefined;
+  }): DerivationRelationInterfaceTypeEntity.Type {
     if (relation !== undefined) {return relation;}
-    return { 'freeformOffset': schemaHueOffset ?? 0, 'hueAlgorithm': 'freeform', 'hueVariantIndex': 0 };
+    const freeformRelation = DerivationRelationInterfaceTypeEntity.create({
+      'algorithm': 'freeform',
+      'freeformOffset': schemaHueOffset ?? 0,
+      'hueVariantIndex': 0
+    });
+    return freeformRelation;
   }
 }
 

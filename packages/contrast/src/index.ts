@@ -1,19 +1,23 @@
-import './types/augmentation.ts';
 import { ContrastPlugin } from './ContrastPlugin.ts';
 
 export { ContrastPlugin } from './ContrastPlugin.ts';
 export const contrastPlugin = new ContrastPlugin();
-export { cvdMatrices }        from './data/cvdMatrices.ts';
-export { CVD_THRESHOLDS }     from './data/cvdThresholds.ts';
+export { cvdMatrices }         from './data/cvdMatrices.ts';
+export { CVD_THRESHOLDS }      from './data/cvdThresholds.ts';
+export { ApcaPairResultInterfaceTypeEntity } from './entities/ApcaPairResultInterfaceTypeEntity.ts';
+export { ApcaPairResultSetInterfaceTypeEntity } from './entities/ApcaPairResultSetInterfaceTypeEntity.ts';
+export { CorrectionCandidateInterfaceTypeEntity } from './entities/CorrectionCandidateInterfaceTypeEntity.ts';
+export { CvdCorrectionInterfaceTypeEntity } from './entities/CvdCorrectionInterfaceTypeEntity.ts';
+export { CvdEvalInterfaceTypeEntity } from './entities/CvdEvalInterfaceTypeEntity.ts';
+export { CvdMatrixInterfaceTypeEntity } from './entities/CvdMatrixInterfaceTypeEntity.ts';
+export { CvdPairWarningInterfaceTypeEntity } from './entities/CvdPairWarningInterfaceTypeEntity.ts';
+export { CvdResultSetInterfaceTypeEntity } from './entities/CvdResultSetInterfaceTypeEntity.ts';
+export { CvdThresholdInterfaceTypeEntity } from './entities/CvdThresholdInterfaceTypeEntity.ts';
+export { WcagPairResultInterfaceTypeEntity } from './entities/WcagPairResultInterfaceTypeEntity.ts';
+export { WcagPairResultSetInterfaceTypeEntity } from './entities/WcagPairResultSetInterfaceTypeEntity.ts';
 export { getContrastMetadata } from './getContrastMetadata.ts';
-export { enforceApca }        from './tasks/EnforceApca.ts';
-export { enforceCvdSimulate } from './tasks/EnforceCvdSimulate.ts';
-export { enforceWcagAa }      from './tasks/EnforceWcagAa.ts';
-export { enforceWcagAaa }     from './tasks/EnforceWcagAaa.ts';
-export type {
-  ApcaPairResultSetInterfaceType,
-  CvdResultSetInterfaceType,
-  WcagMetaSlotInterfaceType,
-  WcagPairResultSetInterfaceType
-} from './types/augmentation.ts';
-export type { CvdMatrixInterfaceType } from './types/index.ts';
+export { enforceApca }         from './tasks/EnforceApca.ts';
+export { enforceCvdSimulate }  from './tasks/EnforceCvdSimulate.ts';
+export { enforceWcagAa }       from './tasks/EnforceWcagAa.ts';
+export { enforceWcagAaa }      from './tasks/EnforceWcagAaa.ts';
+export type * from './types/index.ts';

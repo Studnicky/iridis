@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 import { describeHueAlgorithm } from './derivation/describeHueAlgorithm.ts';
+import { buildDerivationRelations } from './derivation/buildDerivationRelations.ts';
 
 defineProps<{
-  role: RoleMathEntryType;
+  role: RoleMathEntry;
   isOpen: boolean;
 }>();
 
@@ -41,7 +42,7 @@ const emit = defineEmits<{ toggle: [] }>();
     >
       <RoleMathDetailsPanel
         :role="role"
-        :algorithm-label="describeHueAlgorithm.describe(role.algorithmInfo?.hueAlgorithm)"
+        :algorithm-label="describeHueAlgorithm.describe(role.algorithmInfo === null || role.algorithmInfo === undefined ? undefined : buildDerivationRelations.serializeHueAlgorithm(role.algorithmInfo.algorithm))"
       />
     </div>
   </div>

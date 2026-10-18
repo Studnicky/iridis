@@ -18,6 +18,7 @@ const previewModel = computed(() => buildPairingPreviewModel.build(
   dataLayout.value,
   pairings.value.length
 ));
+const rendersTable = computed(() => dataLayout.value.select(false, false, false, true));
 </script>
 
 <template>
@@ -42,11 +43,11 @@ const previewModel = computed(() => buildPairingPreviewModel.build(
     >
       <PairingCard
         v-for="p in pairings"
-        :key="p.key"
+        :key="p.id"
         :background-hex="p.background.hex"
         :background-name="p.background.name"
         :compliance-label="p.complianceLabel"
-        :compact="previewModel.activeCardLayout.compact"
+        :presentation="previewModel.activeCardLayout.presentation"
         :foreground-hex="p.foreground.hex"
         :foreground-name="p.foreground.name"
         :label="p.label"
@@ -54,7 +55,7 @@ const previewModel = computed(() => buildPairingPreviewModel.build(
     </div>
 
     <PairingPreviewTable
-      v-show="dataLayout === 'table'"
+      v-show="rendersTable"
       :pairings="pairings"
     />
   </UCard>

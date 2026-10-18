@@ -27,6 +27,8 @@ import { CameraControls } from '../viz/CameraControls.ts';
 import { ModalController } from '../viz/ModalController.ts';
 import { ViewportStatus } from '../viz/ViewportStatus.ts';
 
+const MERMAID_PAN_STEP = 80;
+
 /** Theme overrides written to the canonical variables consumed by Dpad.css. */
 class MermaidExplorerThemeOptions {
   /** Overrides the D-pad accent and hover colour (`--ui-primary`). */
@@ -37,36 +39,34 @@ class MermaidExplorerThemeOptions {
   public readonly surface?: string;
 }
 
-/**
- * Options for `MermaidExplorer.install` and `MermaidExplorer.enhance`.
- *
- * All fields are optional; the explorer supplies canonical defaults.
- */
+/** Selected policy for initial and post-layout camera fitting. */
+abstract class MermaidFitPolicy {
+  public abstract needsFit(): boolean;
+}
+
+class MermaidContainFitPolicy extends MermaidFitPolicy {
+  public needsFit(): boolean { return true; }
+}
+
+class MermaidNaturalFitPolicy extends MermaidFitPolicy {
+  public needsFit(): boolean { return false; }
+}
+
+/** Options resolved at the Mermaid boundary into concrete policies. */
 class MermaidExplorerOptionsInput {
-  /**
-   * Whether to render the D-pad navigation control.
-   * Default: `true`.
-   */
-  public readonly controls?: boolean;
-  /**
-   * Whether to enable the fullscreen expand modal.
-   * Default: `true`.
-   */
-  public readonly expand?: boolean;
-  /**
-   * How to fit the diagram on mount.
-   * `'contain'` — scale to fit while never upscaling past 1×.
-   * `'none'` — use natural scale.
-   * Default: `'contain'`.
-   */
-  public readonly fit?: 'contain' | 'none';
-  /**
-   * CSS selector that identifies Mermaid diagram wrapper elements.
-   * Default: `'.vp-doc div.mermaid, .vp-doc .dagonizer-mermaid'`.
-   */
-  public readonly selector?: string;
-  /** Override the control chrome colour palette. */
-  public readonly theme?: MermaidExplorerThemeOptions;
+  public readonly fitPolicy: MermaidFitPolicy | undefined;
+  public readonly selector: string | undefined;
+  public readonly theme: MermaidExplorerThemeOptions | undefined;
+
+  public constructor(options: {
+    'fitPolicy'?: MermaidFitPolicy;
+    'selector'?: string;
+    'theme'?: MermaidExplorerThemeOptions;
+  } = {}) {
+    this.fitPolicy = options.fitPolicy;
+    this.selector = options.selector;
+    this.theme = options.theme;
+  }
 }
 
 class MermaidExplorerTheme {
@@ -74,34 +74,24 @@ class MermaidExplorerTheme {
   public readonly stroke: string | undefined;
   public readonly surface: string | undefined;
 
-  public constructor(
-    accent: string | undefined,
-    stroke: string | undefined,
-    surface: string | undefined
-  ) {
-    this.accent = accent;
-    this.stroke = stroke;
-    this.surface = surface;
+  public constructor(options: MermaidExplorerThemeOptions | undefined) {
+    this.accent = options?.accent;
+    this.stroke = options?.stroke;
+    this.surface = options?.surface;
   }
 }
 
 class MermaidExplorerOptions {
-  public readonly controls: boolean;
-  public readonly expand: boolean;
-  public readonly fit: 'contain' | 'none';
+  public readonly fitPolicy: MermaidFitPolicy;
   public readonly selector: string;
   public readonly theme: MermaidExplorerTheme;
 
   public constructor(
-    controls: boolean,
-    expand: boolean,
-    fit: 'contain' | 'none',
+    fitPolicy: MermaidFitPolicy,
     selector: string,
     theme: MermaidExplorerTheme
   ) {
-    this.controls = controls;
-    this.expand = expand;
-    this.fit = fit;
+    this.fitPolicy = fitPolicy;
     this.selector = selector;
     this.theme = theme;
   }
@@ -192,6 +182,120 @@ class MermaidModalHooks {
   };
 }
 
+class MermaidDpadPressHandler implements EventListenerObject {
+  readonly #item: ReturnType<InstanceType<typeof DpadMachine>['state']>['items'][number];
+  readonly #machine: InstanceType<typeof DpadMachine>;
+
+  public constructor(
+    machine: InstanceType<typeof DpadMachine>,
+    item: ReturnType<InstanceType<typeof DpadMachine>['state']>['items'][number]
+  ) {
+    this.#item = item;
+    this.#machine = machine;
+  }
+
+  public handleEvent(event: Event): void {
+    event.stopPropagation();
+    if (this.#item.disabled) {return;}
+    void this.#machine.press(this.#item.action);
+  }
+}
+
+class MermaidNodeSelectionHandler implements EventListenerObject {
+  readonly #node: SVGElement;
+  readonly #svg: SVGSVGElement;
+
+  public constructor(node: SVGElement, svg: SVGSVGElement) {
+    this.#node = node;
+    this.#svg = svg;
+  }
+
+  public handleEvent(event: Event): void {
+    event.stopPropagation();
+    MermaidSelection.clear(this.#svg);
+    this.#node.classList.add('dag-mermaid-selected');
+  }
+}
+
+class MermaidSelection {
+  public static clear(svg: SVGSVGElement): void {
+    const selected = svg.querySelectorAll<SVGElement>('.dag-mermaid-selected');
+    const selectedCount = selected.length;
+    for (let index = 0; index < selectedCount; index += 1) {
+      const node = selected[index];
+      if (node !== undefined) {node.classList.remove('dag-mermaid-selected');}
+    }
+  }
+}
+
+class MermaidDpadCommand {
+  static readonly #commands = new Map<string, MermaidDpadCommand>([
+    ['close', new MermaidDpadCommand(MermaidDpadCommand.#controllerAvailable)]
+  ]);
+  readonly #availability: (
+    options: MermaidExplorerOptions,
+    controller: InstanceType<typeof ModalController> | null
+  ) => boolean;
+
+  private constructor(availability: (
+    options: MermaidExplorerOptions,
+    controller: InstanceType<typeof ModalController> | null
+  ) => boolean) {
+    this.#availability = availability;
+  }
+
+  public static resolve(command: string): MermaidDpadCommand | undefined {
+    const resolved = MermaidDpadCommand.#commands.get(command);
+    return resolved;
+  }
+
+  public canRun(
+    options: MermaidExplorerOptions,
+    controller: InstanceType<typeof ModalController> | null
+  ): boolean {
+    const available = this.#availability(options, controller);
+    return available;
+  }
+
+  static #controllerAvailable(
+    _options: MermaidExplorerOptions,
+    controller: InstanceType<typeof ModalController> | null
+  ): boolean {
+    const available = controller !== null;
+    return available;
+  }
+
+}
+
+class MermaidPanCommand {
+  static readonly #commands = new Map<string, MermaidPanCommand>([
+    ['down', new MermaidPanCommand(MermaidPanCommand.#moveDown)],
+    ['left', new MermaidPanCommand(MermaidPanCommand.#moveLeft)],
+    ['right', new MermaidPanCommand(MermaidPanCommand.#moveRight)],
+    ['up', new MermaidPanCommand(MermaidPanCommand.#moveUp)]
+  ]);
+  readonly #move: (camera: CameraState) => void;
+
+  private constructor(move: (camera: CameraState) => void) {
+    this.#move = move;
+  }
+
+  public static resolve(direction: string): MermaidPanCommand {
+    const resolved = MermaidPanCommand.#commands.get(direction);
+    if (resolved === undefined) {throw new Error(`Unknown Mermaid pan direction: ${direction}`);}
+    return resolved;
+  }
+
+  public moveCamera(camera: CameraState): void {
+    this.#move(camera);
+  }
+
+  static #moveDown(camera: CameraState): void { camera.ty -= MERMAID_PAN_STEP; }
+  static #moveLeft(camera: CameraState): void { camera.tx += MERMAID_PAN_STEP; }
+  static #moveRight(camera: CameraState): void { camera.tx -= MERMAID_PAN_STEP; }
+  static #moveUp(camera: CameraState): void { camera.ty += MERMAID_PAN_STEP; }
+}
+
 // ---------------------------------------------------------------------------
 // MermaidExplorer
 // ---------------------------------------------------------------------------
@@ -211,22 +315,17 @@ class MermaidModalHooks {
  */
 export const MermaidExplorer = class MermaidExplorer {
   static readonly #defaultSelector = '.vp-doc div.mermaid, .vp-doc .dagonizer-mermaid';
-  static readonly #enhancedKey = 'dagExplorer';
-  static readonly #enhancedRenderKey = 'dagExplorerRender';
   static readonly #fitMargin = 0.92;
   static readonly #maximumPollTicks = 24;
   static readonly #maximumZoom = 8;
   static readonly #minimumZoom = 0.05;
-  static readonly #panStep = 80;
   static readonly #pollIntervalMilliseconds = 250;
   static readonly #svgBoundsPadding = 24;
   static readonly #zoomStep = 1.25;
   static readonly #defaults = new MermaidExplorerOptions(
-    true,
-    true,
-    'contain',
+    new MermaidContainFitPolicy(),
     MermaidExplorer.#defaultSelector,
-    new MermaidExplorerTheme(undefined, undefined, undefined)
+    new MermaidExplorerTheme(undefined)
   );
   static readonly #cameraControlsClass = class MermaidCameraControls {
     readonly #camera: CameraState;
@@ -249,10 +348,14 @@ export const MermaidExplorer = class MermaidExplorer {
       this.#svg = svg;
     }
 
-    public can(action: Parameters<InstanceType<typeof DpadMachine>['press']>[0]): boolean {
-      if (action === 'expand') {return this.#options.expand;}
-      if (action === 'close') {return this.#controller !== null;}
-      return true;
+    public can(command: string): boolean {
+      const resolved = MermaidDpadCommand.resolve(command);
+      if (resolved === undefined) {
+        const available = true;
+        return available;
+      }
+      const available = resolved.canRun(this.#options, this.#controller);
+      return available;
     }
 
     public centre(): void {
@@ -265,36 +368,23 @@ export const MermaidExplorer = class MermaidExplorer {
       MermaidExplorer.#paint(this.#svg, this.#camera);
     }
 
-    public close(): void {
+    public readonly close = (): void => {
       if (this.#controller === null) {return;}
       this.#controller.close('programmatic');
-    }
+    };
 
-    public expand(): void {
-      if (!this.#options.expand) {return;}
+    public readonly expand = (): void => {
       MermaidExplorer.#modal(this.#svg, this.#options);
-    }
+    };
 
     public fit(): void {
       const natural = MermaidExplorer.#naturalSize(this.#svg);
       MermaidExplorer.#fitContain(this.#frame, this.#svg, this.#camera, natural);
     }
 
-    public pan(direction: 'up' | 'down' | 'left' | 'right'): void {
-      switch (direction) {
-        case 'down':
-          this.#camera.ty -= MermaidExplorer.#panStep;
-          break;
-        case 'left':
-          this.#camera.tx += MermaidExplorer.#panStep;
-          break;
-        case 'right':
-          this.#camera.tx -= MermaidExplorer.#panStep;
-          break;
-        case 'up':
-          this.#camera.ty += MermaidExplorer.#panStep;
-          break;
-      }
+    public pan(direction: string): void {
+      const command = MermaidPanCommand.resolve(direction);
+      command.moveCamera(this.#camera);
       MermaidExplorer.#paint(this.#svg, this.#camera);
     }
 
@@ -319,6 +409,21 @@ export const MermaidExplorer = class MermaidExplorer {
   };
 
   private constructor() { /* static class — no instances */ }
+
+  public static naturalFitOptions(): MermaidExplorerOptionsInput {
+    const options = new MermaidExplorerOptionsInput({
+      'fitPolicy': new MermaidNaturalFitPolicy()
+    });
+    return options;
+  }
+
+  public static naturalFitTheme(theme: MermaidExplorerThemeOptions): MermaidExplorerOptionsInput {
+    const options = new MermaidExplorerOptionsInput({
+      'fitPolicy': new MermaidNaturalFitPolicy(),
+      'theme': theme
+    });
+    return options;
+  }
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -380,16 +485,16 @@ export const MermaidExplorer = class MermaidExplorer {
     // framework renderers can replace the SVG inside an already-enhanced frame.
     MermaidExplorer.#sizeToIntrinsic(svg);
 
-    const renderId = frame.dataset[MermaidExplorer.#enhancedRenderKey];
-    if (frame.dataset[MermaidExplorer.#enhancedKey] === '1'
-      && frame.dataset[`${MermaidExplorer.#enhancedRenderKey}Applied`] === renderId
+    const renderId = frame.dataset.dagExplorerRender;
+    if (frame.dataset.dagExplorer === '1'
+      && frame.dataset.dagExplorerRenderApplied === renderId
       && renderId !== undefined) {
       MermaidExplorer.#refreshBounds(svg);
       return;
     }
 
-    frame.dataset[MermaidExplorer.#enhancedKey] = '1';
-    frame.dataset[`${MermaidExplorer.#enhancedRenderKey}Applied`] = renderId ?? '';
+    frame.dataset.dagExplorer = '1';
+    frame.dataset.dagExplorerRenderApplied = renderId ?? '';
     frame.classList.add('dag-mermaid-frame');
 
     const resolved = MermaidExplorer.#resolvedOptions(options);
@@ -404,14 +509,14 @@ export const MermaidExplorer = class MermaidExplorer {
     MermaidExplorer.#paint(svg, camera);
 
     // Fit on first paint.
-    if (resolved.fit === 'contain') {
+    if (resolved.fitPolicy.needsFit()) {
       requestAnimationFrame(() => {
         MermaidExplorer.#fitContain(frame, svg, camera, natural);
       });
     }
 
     MermaidExplorer.#refreshBounds(svg, () => {
-      if (resolved.fit === 'contain') {
+      if (resolved.fitPolicy.needsFit()) {
         const refreshed = MermaidExplorer.#naturalSize(svg);
         MermaidExplorer.#fitContain(frame, svg, camera, refreshed);
       }
@@ -423,10 +528,8 @@ export const MermaidExplorer = class MermaidExplorer {
     MermaidExplorer.#bindSelection(frame, svg);
 
     // D-pad control overlay.
-    if (resolved.controls) {
-      const dpad = MermaidExplorer.#dpad(frame, svg, camera, resolved);
-      frame.appendChild(dpad);
-    }
+    const dpad = MermaidExplorer.#dpad(frame, svg, camera, resolved);
+    frame.appendChild(dpad);
   }
 
   // ── Private: option resolution ─────────────────────────────────────────────
@@ -434,18 +537,13 @@ export const MermaidExplorer = class MermaidExplorer {
   static #resolvedOptions(
     options: MermaidExplorerOptionsInput
   ): MermaidExplorerOptions {
-    const theme = new MermaidExplorerTheme(
-      options.theme?.accent,
-      options.theme?.stroke,
-      options.theme?.surface
-    );
-    return new MermaidExplorerOptions(
-      options.controls ?? MermaidExplorer.#defaults.controls,
-      options.expand ?? MermaidExplorer.#defaults.expand,
-      options.fit ?? MermaidExplorer.#defaults.fit,
+    const theme = new MermaidExplorerTheme(options.theme);
+    const resolved = new MermaidExplorerOptions(
+      options.fitPolicy ?? MermaidExplorer.#defaults.fitPolicy,
       options.selector ?? MermaidExplorer.#defaults.selector,
       theme
     );
+    return resolved;
   }
 
   // ── Private: bulk enhance ──────────────────────────────────────────────────
@@ -742,8 +840,8 @@ export const MermaidExplorer = class MermaidExplorer {
    * which calls `cy.panBy({ x: 80, y: 0 })` where positive x reveals
    * content to the left of the viewport.
    *
-   * The expand slot opens the fullscreen modal when `options.expand` is true;
-   * otherwise a disabled placeholder preserves the 3×3 grid shape.
+   * The expand slot opens the fullscreen modal; the modal replaces that slot
+   * with a close control while preserving the 3×3 grid shape.
    */
   static #dpad(
     frame:   HTMLElement,
@@ -766,35 +864,32 @@ export const MermaidExplorer = class MermaidExplorer {
 
   /** Produce a single D-pad button with `aria-label`, `title`, and click handler. */
   static #btn(
-    label:   string,
-    title:   string,
-    disabled: boolean,
-    handler: () => void
+    item: ReturnType<InstanceType<typeof DpadMachine>['state']>['items'][number],
+    pressHandler: MermaidDpadPressHandler
   ): HTMLButtonElement {
     const btn = document.createElement('button');
-    btn.className   = disabled
+    btn.className = item.disabled
       ? 'dagonizer-dpad-btn dagonizer-dpad-btn--disabled'
       : 'dagonizer-dpad-btn';
-    btn.type        = 'button';
-    btn.title       = title;
-    btn.disabled    = disabled;
-    btn.textContent = label;
-    btn.setAttribute('aria-label', title);
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (disabled) {return;}
-      handler();
-    });
+    btn.type = 'button';
+    btn.title = item.title;
+    btn.disabled = item.disabled;
+    btn.textContent = item.label;
+    btn.setAttribute('aria-label', item.title);
+    btn.addEventListener('click', pressHandler);
     return btn;
   }
 
   static #renderDpad(machine: InstanceType<typeof DpadMachine>): HTMLDivElement {
     const grid = document.createElement('div');
     grid.className = 'dag-mermaid-dpad dagonizer-dpad';
-    for (const item of machine.state().items) {
-      grid.appendChild(MermaidExplorer.#btn(item.label, item.title, item.disabled, () => {
-        void machine.press(item.action);
-      }));
+    const items = machine.state().items;
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
+      if (item !== undefined) {
+        const pressHandler = new MermaidDpadPressHandler(machine, item);
+        grid.appendChild(MermaidExplorer.#btn(item, pressHandler));
+      }
     }
     return grid;
   }
@@ -943,8 +1038,11 @@ export const MermaidExplorer = class MermaidExplorer {
     dpadWrap.appendChild(grid);
 
     // Backdrop click (overlay itself, not stage or buttons) closes the modal.
-    overlay.addEventListener('click', (e) => {
-      controller.onBackdropPress(e.target === overlay);
+    overlay.addEventListener('click', (event) => {
+      if (event.target !== event.currentTarget) {
+        return;
+      }
+      controller.onBackdropPress();
     });
   }
 
@@ -958,26 +1056,15 @@ export const MermaidExplorer = class MermaidExplorer {
       const node = nodes[i];
       if (node === undefined) {continue;}
       node.classList.remove('dag-mermaid-selected');
-      node.addEventListener('click', (e) => {
-        e.stopPropagation();
-        MermaidExplorer.#clearSelection(svg);
-        node.classList.add('dag-mermaid-selected');
-      });
+      const selectionHandler = new MermaidNodeSelectionHandler(node, svg);
+      node.addEventListener('click', selectionHandler);
     }
 
     stage.addEventListener('click', (e) => {
       if (e.target === stage || e.target === svg) {
-        MermaidExplorer.#clearSelection(svg);
+        MermaidSelection.clear(svg);
       }
     });
   }
 
-  static #clearSelection(svg: SVGSVGElement): void {
-    const selected = svg.querySelectorAll<SVGElement>('.dag-mermaid-selected');
-    const selectedCount = selected.length;
-    for (let i = 0; i < selectedCount; i++) {
-      const node = selected[i];
-      if (node !== undefined) {node.classList.remove('dag-mermaid-selected');}
-    }
-  }
 };

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 import { computed } from 'vue';
 import { buildRoleMathClampFlowModel } from './roleMath/buildRoleMathClampFlowModel.ts';
 
 const props = defineProps<{
-  role: RoleMathEntryType;
+  role: RoleMathEntry;
 }>();
 
 const clampFlowModel = computed(() => buildRoleMathClampFlowModel.build(props.role));
@@ -21,7 +21,7 @@ const clampFlowModel = computed(() => buildRoleMathClampFlowModel.build(props.ro
     />
     <SwatchInfoCard
       :hex="clampFlowModel.seedCard.hex"
-      :label="clampFlowModel.seedCard.label"
+      :label="clampFlowModel.seedCard.presentation.label()"
       :aria-label="clampFlowModel.seedCard.ariaLabel"
       swatch-class="h-6 w-6 rounded border border-default shadow-inner flex-none"
     >
@@ -40,7 +40,7 @@ const clampFlowModel = computed(() => buildRoleMathClampFlowModel.build(props.ro
     </div>
     <SwatchInfoCard
       :hex="clampFlowModel.resolvedCard.hex"
-      :label="clampFlowModel.resolvedCard.label"
+      :label="clampFlowModel.resolvedCard.presentation.label()"
       :aria-label="clampFlowModel.resolvedCard.ariaLabel"
       swatch-class="h-6 w-6 rounded border border-default shadow-inner flex-none"
     >

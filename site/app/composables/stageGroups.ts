@@ -1,4 +1,4 @@
-import type { StageGroupType } from './types/stageGroup.ts';
+import type { StageGroupType } from './types/stageGroupType.ts';
 
 import { OUTPUT_FORMAT_CARDS } from './outputFormatCards.ts';
 

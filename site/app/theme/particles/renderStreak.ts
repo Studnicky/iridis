@@ -1,5 +1,5 @@
-import type { ParticleElementType } from './types/particleElement.ts';
-import type { ParticleRendererType } from './types/particleRenderer.ts';
+import type { ParticleElementInterface } from './interfaces/particleElementInterface.ts';
+import type { ParticleRendererInterface } from './interfaces/particleRendererInterface.ts';
 
 import { randomDelay } from './randomDelay.ts';
 import { randomPlacement } from './randomPlacement.ts';
@@ -12,8 +12,8 @@ import { randomPlacement } from './randomPlacement.ts';
  * override supplies the direction/style/sway.
  */
 class RenderStreakOperation {
-  static readonly run: ParticleRendererType.Type = ({ colorVar, count, sizePx }) => {
-    const elements: ParticleElementType.Type[] = [];
+  static readonly render: ParticleRendererInterface['render'] = ({ colorVar, count, sizePx }) => {
+    const elements: ParticleElementInterface[] = [];
     for (let i = 0; i < count; i += 1) {
       const { x, y } = randomPlacement();
       elements.push({
@@ -29,8 +29,8 @@ class RenderStreakOperation {
         }
       });
     }
-    return { 'elements': elements, 'kind': 'elements' };
+    return { 'rendering': { 'elements': elements, 'surface': 'elements' } };
   };
 }
 
-export const renderStreak: ParticleRendererType.Type = RenderStreakOperation.run;
+export const renderStreak: ParticleRendererInterface = { 'render': RenderStreakOperation.render };

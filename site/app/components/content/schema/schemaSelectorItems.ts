@@ -1,10 +1,8 @@
-import type { SchemaNameType } from '~/composables/types/schemaName.ts';
-
 class SchemaSelectorItem {
   public readonly label: string;
-  public readonly value: SchemaNameType.Type;
+  public readonly value: string;
 
-  public constructor(label: string, value: SchemaNameType.Type) {
+  public constructor(label: string, value: string) {
     this.label = label;
     this.value = value;
   }
@@ -21,8 +19,9 @@ export const schemaSelectorItems = class SchemaSelectorItems {
 
   public static build(): readonly SchemaSelectorItem[] {
     const items: SchemaSelectorItem[] = [];
-    for (const item of SchemaSelectorItems.items) {
-      items.push(new SchemaSelectorItem(item.label, item.value));
+    for (let index = 0; index < SchemaSelectorItems.items.length; index += 1) {
+      const item = SchemaSelectorItems.items[index];
+      if (item !== undefined) { items.push(new SchemaSelectorItem(item.label, item.value)); }
     }
     return items;
   }

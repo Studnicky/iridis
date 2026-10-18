@@ -1,4 +1,4 @@
-import type { SchemaInterfaceType } from '../../types/index.ts';
+import type { JsonSchemaObjectType } from '@studnicky/json-tology/types';
 
 import { ColorRecordSchema }  from '../ColorRecordSchema.ts';
 import { InputSchema }        from '../InputSchema.ts';
@@ -21,6 +21,6 @@ export const CORE_SCHEMAS = [
   TaskManifestSchema
 ] as const;
 
-export const CORE_ID_INDEX = new Map<string, SchemaInterfaceType>(
+export const CORE_ID_INDEX = new Map<string, JsonSchemaObjectType>(
   CORE_SCHEMAS.map((schema) => { return [schema.$id, schema]; })
 );

@@ -1,12 +1,6 @@
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '@studnicky/iridis';
+import type { ColorRecordInterfaceTypeEntity, PaletteStateInterface, PipelineContextInterface, TaskInterface } from '@studnicky/iridis';
 
-import { ModuleError } from '@studnicky/errors';
+import { ModuleError } from '@studnicky/errors/node';
 import {
   darken,
   desaturate,
@@ -15,139 +9,137 @@ import {
   hueShift,
   lighten,
   mixHsl,
-  saturate
+  saturate,
+  TaskManifestInterfaceTypeEntity
 } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
+import { JsonObject } from '@studnicky/types/node';
 
 import { VscodeTokenData } from '../data/VscodeTokenData.ts';
+import { DerivationParametersInterfaceTypeEntity } from '../entities/DerivationParametersInterfaceTypeEntity.ts';
 
-class ExpandTokens implements TaskInterface {
-  readonly 'name' = 'vscode:expandTokens';
+class TokenDerivation {
+  static readonly #familyByToken = new Map(Object.entries(VscodeTokenData.TOKEN_FAMILY));
+  static readonly #parametersByToken = new Map(Object.entries(VscodeTokenData.DERIVATION_PARAMETERS));
 
-  readonly 'manifest': TaskManifestInterfaceType = {
-    'description': 'Derives 27 VS Code base token colours from the 16 palette roles using DERIVATION_PARAMS.',
-    'name':        'vscode:expandTokens',
-    'phase':       undefined,
-    'reads':       ['roles', 'runtime.framing', 'variants'],
-    'requires':    undefined,
-    'writes':      ['metadata.vscode:baseTokens']
-  };
+  static apply(color: ColorRecordInterfaceTypeEntity.Type, parameters: DerivationParametersInterfaceTypeEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+    const hueShifted = parameters.hue === undefined || parameters.hue === 0 ? color : hueShift.apply(color, parameters.hue);
+    const saturationAdjusted = TokenDerivation.#saturation(hueShifted, parameters.sat);
+    const result = TokenDerivation.#lightness(saturationAdjusted, parameters.light);
+    return result;
+  }
 
-  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+  static family(tokenType: string): string | undefined {
+    const result = TokenDerivation.#familyByToken.get(tokenType);
+    return result;
+  }
 
-    // `state.runtime.framing` selects state.roles or a state.variants
-    // entry (see FramingSurface); every role lookup below reads from
-    // that resolved surface, not state.roles directly, so base tokens
-    // follow the requested framing end-to-end.
-    const roles = FramingSurface.resolve(state);
+  static parameters(tokenType: string): DerivationParametersInterfaceTypeEntity.Type {
+    const result = TokenDerivation.#parametersByToken.get(tokenType) ?? DerivationParametersInterfaceTypeEntity.create({});
+    return result;
+  }
 
-    // Math primitives operate on ColorRecord; keep the records on the
-    // role lookups so we don't reconvert at every invoke.
-    const backgroundRecord = roles.background;
-    const mutedRecord = roles.muted;
-    const foregroundRecord = roles.foreground;
-    if (backgroundRecord === undefined || mutedRecord === undefined || foregroundRecord === undefined) {
-      const missingRoles = [
-        backgroundRecord === undefined ? 'background' : undefined,
-        mutedRecord === undefined      ? 'muted'      : undefined,
-        foregroundRecord === undefined ? 'foreground' : undefined
-      ].filter((role): role is string => { return role !== undefined; });
+  static requiredRoles(roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): {
+    readonly 'background': ColorRecordInterfaceTypeEntity.Type;
+    readonly 'foreground': ColorRecordInterfaceTypeEntity.Type;
+    readonly 'muted': ColorRecordInterfaceTypeEntity.Type;
+  } {
+    const background = roles.get('background');
+    const muted = roles.get('muted');
+    const foreground = roles.get('foreground');
+    if (background === undefined || muted === undefined || foreground === undefined) {
+      const missingRoles: string[] = [];
+      if (background === undefined) { missingRoles.push('background'); }
+      if (muted === undefined) { missingRoles.push('muted'); }
+      if (foreground === undefined) { missingRoles.push('foreground'); }
       throw ModuleError.create('ExpandTokens: requires roles background, muted, foreground', {
         'context':  { 'missingRoles': missingRoles, 'task': 'ExpandTokens' },
         'scenario': 'NOT_FOUND'
       });
     }
+    const result = { 'background': background, 'foreground': foreground, 'muted': muted };
+    return result;
+  }
 
-    const baseTokens: Record<string, ColorRecordInterfaceType> = {};
-
-    const tokenTypeCount = VscodeTokenData.TOKEN_TYPES.length;
-    for (let i = 0; i < tokenTypeCount; i++) {
-      const tokenType = VscodeTokenData.TOKEN_TYPES[i];
-      if (tokenType === undefined) {continue;}
-
-      const familyRole = VscodeTokenData.TOKEN_FAMILY[tokenType];
-      if (familyRole === undefined) {
-        context.logger.warn(
-          LogBody.create()
-            .component('ExpandTokens')
-            .operation('run')
-            .status(LOG_STATUS.NOT_FOUND)
-            .message('No family role for token type')
-            .context({ 'tokenType': tokenType })
-            .build()
-        );
-        continue;
-      }
-
-      const parameters = VscodeTokenData.DERIVATION_PARAMS[tokenType] ?? {
-        'hue': undefined,
-        'light': undefined,
-        'sat': undefined
-      };
-
-      // operator is special: mix muted + foreground
-      if (tokenType === 'operator') {
-        const mixed = mixHsl.apply(mutedRecord, foregroundRecord, 0.4);
-        const contrasted = ensureContrast.apply(mixed, backgroundRecord, 3.5);
-        baseTokens.operator = contrasted;
-        continue;
-      }
-
-      const familyRec = roles[familyRole];
-      if (familyRec === undefined) {
-        context.logger.warn(
-          LogBody.create()
-            .component('ExpandTokens')
-            .operation('run')
-            .status(LOG_STATUS.NOT_FOUND)
-            .message('No role record for family')
-            .context({ 'familyRole': familyRole, 'tokenType': tokenType })
-            .build()
-        );
-        continue;
-      }
-      let color: ColorRecordInterfaceType = familyRec;
-
-      if (parameters.hue !== undefined && parameters.hue !== 0) {
-        color = hueShift.apply(color, parameters.hue);
-      }
-      if (parameters.sat !== undefined && parameters.sat !== 0) {
-        // DERIVATION_PARAMS.sat is a percentage point (e.g. -5 = 5%); the
-        // saturate/desaturate primitives take a raw 0-0.5 chroma delta.
-        const chromaDelta = Math.abs(parameters.sat) / 100;
-        if (parameters.sat > 0) {
-          color = saturate.apply(color, chromaDelta);
-        } else {
-          color = desaturate.apply(color, chromaDelta);
-        }
-      }
-      if (parameters.light !== undefined && parameters.light !== 0) {
-        // DERIVATION_PARAMS.light is a percentage point; lighten/darken
-        // take a raw 0-1 OKLCH lightness delta.
-        const lightnessDelta = Math.abs(parameters.light) / 100;
-        if (parameters.light > 0) {
-          color = lighten.apply(color, lightnessDelta);
-        } else {
-          color = darken.apply(color, lightnessDelta);
-        }
-      }
-
-      // comment gets relaxed contrast (3.0), everything else 4.5
-      const minimumContrast = tokenType === 'comment' ? 3.0 : 4.5;
-      const contrasted = ensureContrast.apply(color, backgroundRecord, minimumContrast);
-      baseTokens[tokenType] = contrasted;
+  static #lightness(color: ColorRecordInterfaceTypeEntity.Type, lightness: number | undefined): ColorRecordInterfaceTypeEntity.Type {
+    if (lightness === undefined || lightness === 0) {
+      return color;
     }
+    const magnitude = Math.abs(lightness) / 100;
+    const result = lightness > 0 ? lighten.apply(color, magnitude) : darken.apply(color, magnitude);
+    return result;
+  }
 
-    state.metadata['vscode:baseTokens'] = baseTokens;
+  static #saturation(color: ColorRecordInterfaceTypeEntity.Type, saturation: number | undefined): ColorRecordInterfaceTypeEntity.Type {
+    if (saturation === undefined || saturation === 0) {
+      return color;
+    }
+    const magnitude = Math.abs(saturation) / 100;
+    const result = saturation > 0 ? saturate.apply(color, magnitude) : desaturate.apply(color, magnitude);
+    return result;
+  }
+}
+
+class ExpandTokens implements TaskInterface {
+  readonly 'name' = 'vscode:expandTokens';
+
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+    'description': 'Derives 27 VS Code base token colours from the 16 palette roles using derivation parameters.',
+    'name':        'vscode:expandTokens',
+    'reads':       ['roles', 'runtime.framing', 'variants'],
+    'writes':      ['metadata.vscode:baseTokens']
+  });
+
+  run(state: PaletteStateInterface, context: PipelineContextInterface): void {
+    const roleRecords = new Map(Object.entries(FramingSurface.resolve(state)));
+    const requiredRoles = TokenDerivation.requiredRoles(roleRecords);
+    const baseTokens = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+    const tokenTypes = VscodeTokenData.TOKEN_TYPES;
+    for (let index = 0; index < tokenTypes.length; index += 1) {
+      const tokenType = tokenTypes.at(index);
+      if (tokenType === undefined) {
+        continue;
+      }
+      const familyRole = TokenDerivation.family(tokenType);
+      if (familyRole === undefined) {
+        ExpandTokens.warn(context, 'No family role for token type', { 'tokenType': tokenType });
+        continue;
+      }
+      if (tokenType === 'operator') {
+        const mixed = mixHsl.apply(requiredRoles.muted, requiredRoles.foreground, 0.4);
+        baseTokens.set(tokenType, ensureContrast.apply(mixed, requiredRoles.background, 3.5));
+        continue;
+      }
+      const familyRecord = roleRecords.get(familyRole);
+      if (familyRecord === undefined) {
+        ExpandTokens.warn(context, 'No role record for family', { 'familyRole': familyRole, 'tokenType': tokenType });
+        continue;
+      }
+      const derived = TokenDerivation.apply(familyRecord, TokenDerivation.parameters(tokenType));
+      const minimumContrast = tokenType === 'comment' ? 3.0 : 4.5;
+      baseTokens.set(tokenType, ensureContrast.apply(derived, requiredRoles.background, minimumContrast));
+    }
+    state.metadata['vscode:baseTokens'] = JsonObject.fromEntries(baseTokens);
     context.logger.debug(
-      LogBody.create()
-        .component('ExpandTokens')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Derived base token colours')
-        .context({ 'count': Object.keys(baseTokens).length })
-        .build()
+      LogBody.create({
+        'component': 'ExpandTokens',
+        'context': { 'count': baseTokens.size },
+        'message': 'Derived base token colours',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
+    );
+  }
+
+  static warn(context: PipelineContextInterface, message: string, details: Record<string, string>): void {
+    context.logger.warn(
+      LogBody.create({
+        'component': 'ExpandTokens',
+        'context': details,
+        'message': message,
+        'operation': 'run',
+        'status': LOG_STATUS.NOT_FOUND
+      })
     );
   }
 }

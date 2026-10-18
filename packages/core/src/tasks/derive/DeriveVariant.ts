@@ -1,54 +1,117 @@
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
+import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
 import type {
-  ColorRecordInterfaceType,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType,
-  VariantConfigInterfaceType
+  TaskInterface
 } from '../../types/index.ts';
 
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { VariantConfigInterfaceTypeEntity } from '../../entities/VariantConfigInterfaceTypeEntity.ts';
+import { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
-const DEFAULT_VARIANTS: readonly VariantConfigInterfaceType[] = [
-  { 'invertLightness': true,  'lightnessOffset': undefined, 'lightnessTarget': undefined, 'name': 'dark'  },
-  { 'invertLightness': false, 'lightnessOffset': undefined, 'lightnessTarget': undefined, 'name': 'light' }
+const DEFAULT_VARIANTS: readonly VariantConfigInterfaceTypeEntity.Type[] = [
+  VariantConfigInterfaceTypeEntity.create({ 'invertLightness': true, 'name': 'dark' }),
+  VariantConfigInterfaceTypeEntity.create({ 'invertLightness': false, 'name': 'light' })
 ];
 
 class VariantLightness {
-  static invert(color: ColorRecordInterfaceType): ColorRecordInterfaceType {
+  static invert(color: ColorRecordInterfaceTypeEntity.Type): ColorRecordInterfaceTypeEntity.Type {
     const { c, h, l } = color.oklch;
     const inverted = 1 - l;
-    return colorRecordFactory.fromOklch(
+    const result = colorRecordFactory.fromOklch(
       clamp01.apply(inverted),
       clamp.apply(0, 0.5, c),
       h,
       { 'alpha': color.alpha }
     );
+    return result;
   }
 
-  static offset(color: ColorRecordInterfaceType, offset: number): ColorRecordInterfaceType {
+  static offset(color: ColorRecordInterfaceTypeEntity.Type, offset: number): ColorRecordInterfaceTypeEntity.Type {
     const { c, h, l } = color.oklch;
-    return colorRecordFactory.fromOklch(
+    const result = colorRecordFactory.fromOklch(
       clamp01.apply(l + offset),
       clamp.apply(0, 0.5, c),
       h,
       { 'alpha': color.alpha }
     );
+    return result;
   }
 
-  static target(color: ColorRecordInterfaceType, target: number): ColorRecordInterfaceType {
+  static target(color: ColorRecordInterfaceTypeEntity.Type, target: number): ColorRecordInterfaceTypeEntity.Type {
     const { c, h } = color.oklch;
-    return colorRecordFactory.fromOklch(
+    const result = colorRecordFactory.fromOklch(
       clamp01.apply(target),
       clamp.apply(0, 0.5, c),
       h,
       { 'alpha': color.alpha }
     );
+    return result;
+  }
+
+  static apply(
+    color: ColorRecordInterfaceTypeEntity.Type,
+    config: VariantConfigInterfaceTypeEntity.Type
+  ): ColorRecordInterfaceTypeEntity.Type {
+    if (config.invertLightness) {
+      const result = VariantLightness.invert(color);
+      return result;
+    }
+    if (config.lightnessTarget !== undefined) {
+      const result = VariantLightness.target(color, config.lightnessTarget);
+      return result;
+    }
+    if (config.lightnessOffset !== undefined) {
+      const result = VariantLightness.offset(color, config.lightnessOffset);
+      return result;
+    }
+    return color;
+  }
+}
+
+class VariantRecord {
+  static fromEntries(entries: Iterable<readonly [string, ColorRecordInterfaceTypeEntity.Type]>): Record<string, ColorRecordInterfaceTypeEntity.Type> {
+    const result: Record<string, ColorRecordInterfaceTypeEntity.Type> = {};
+    for (const [name, color] of entries) {
+      Object.defineProperty(result, name, { 'configurable': true, 'enumerable': true, 'value': color, 'writable': true });
+    }
+    return result;
+  }
+
+  static fromRoleNames(
+    roleNames: readonly string[],
+    source: PaletteRoleState,
+    config: VariantConfigInterfaceTypeEntity.Type
+  ): Map<string, ColorRecordInterfaceTypeEntity.Type> {
+    const result = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames.at(index);
+      if (roleName !== undefined) {
+        const color = source.get(roleName);
+        if (color !== undefined) {
+          result.set(roleName, VariantLightness.apply(color, config));
+        }
+      }
+    }
+    return result;
+  }
+
+  static write(
+    target: Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    name: string,
+    roles: Map<string, ColorRecordInterfaceTypeEntity.Type>
+  ): void {
+    Object.defineProperty(target, name, {
+      'configurable': true,
+      'enumerable':   true,
+      'value':        VariantRecord.fromEntries(roles),
+      'writable':     true
+    });
   }
 }
 
@@ -66,66 +129,54 @@ class VariantLightness {
 class DeriveVariant implements TaskInterface {
   readonly 'name' = 'derive:variant';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Produces light/dark variants by transforming all roles. Reads variantConfig from metadata or uses light/dark defaults.',
     'name':        'derive:variant',
-    'phase':       undefined,
     'reads':       ['roles', 'metadata[\'core:variantConfig\']'],
-    'requires':    undefined,
     'writes':      ['variants']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const configRaw = state.metadata['core:variantConfig'];
-    const configs: readonly VariantConfigInterfaceType[] = Array.isArray(configRaw)
-      ? configRaw
+    const configs: readonly VariantConfigInterfaceTypeEntity.Type[] = Array.isArray(configRaw)
+      && configRaw.every(VariantConfigInterfaceTypeEntity.validate)
+      ? configRaw.map(VariantConfigInterfaceTypeEntity.intake)
       : DEFAULT_VARIANTS;
 
     const roleNames = Object.keys(state.roles);
 
     if (roleNames.length === 0) {
       context.logger.debug(
-        LogBody.create()
-          .component('DeriveVariant')
-          .operation('run')
-          .status(LOG_STATUS.SKIPPED)
-          .message('No roles assigned; skipping variant derivation')
-          .context({})
-          .build()
+        LogBody.create({
+          'component': 'DeriveVariant',
+          'context': {},
+          'message': 'No roles assigned; skipping variant derivation',
+          'operation': 'run',
+          'status': LOG_STATUS.SKIPPED
+        })
       );
       return;
     }
 
-    for (const config of configs) {
-      const variantRoles: Record<string, ColorRecordInterfaceType> = {};
-
-      for (const roleName of roleNames) {
-        const color = state.roles[roleName];
-        if (color === undefined) {continue;}
-
-        if (config.invertLightness) {
-          variantRoles[roleName] = VariantLightness.invert(color);
-        } else if (config.lightnessTarget !== undefined) {
-          variantRoles[roleName] = VariantLightness.target(color, config.lightnessTarget);
-        } else if (config.lightnessOffset !== undefined) {
-          variantRoles[roleName] = VariantLightness.offset(color, config.lightnessOffset);
-        } else {
-          variantRoles[roleName] = color;
-        }
+    const paletteRoles = PaletteRoleState.admit(state.roles);
+    for (let configIndex = 0; configIndex < configs.length; configIndex += 1) {
+      const config = configs.at(configIndex);
+      if (config === undefined) {
+        continue;
       }
-
-      state.variants[config.name] = variantRoles;
+      const variantRoles = VariantRecord.fromRoleNames(roleNames, paletteRoles, config);
+      VariantRecord.write(state.variants, config.name, variantRoles);
       context.logger.debug(
-        LogBody.create()
-          .component('DeriveVariant')
-          .operation('run')
-          .status(LOG_STATUS.SUCCESS)
-          .message('Derived variant')
-          .context({
+        LogBody.create({
+          'component': 'DeriveVariant',
+          'context': {
             'roleCount': roleNames.length,
             'variant':   config.name
-          })
-          .build()
+          },
+          'message': 'Derived variant',
+          'operation': 'run',
+          'status': LOG_STATUS.SUCCESS
+        })
       );
     }
   }

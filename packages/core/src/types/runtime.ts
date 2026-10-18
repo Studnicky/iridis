@@ -1,1 +1,1 @@
-export type FramingType = 'dark' | 'light';
+export {};

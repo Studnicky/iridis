@@ -1,6 +1,6 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterfaceType,
+  PluginSchemaContributionInterfaceEntity,
   TaskInterface
 } from '@studnicky/iridis';
 
@@ -24,10 +24,9 @@ export class ShadcnPlugin implements PluginInterface {
     return [new EmitShadcnTheme()];
   }
 
-  schemas(): PluginSchemaContributionInterfaceType {
+  schemas(): PluginSchemaContributionInterfaceEntity.Type {
     return {
-      'metadata': undefined,
-      'outputs':  { 'shadcn:theme': shadcnOutputSchema }
+      'outputs': { 'shadcn:theme': shadcnOutputSchema }
     };
   }
 }

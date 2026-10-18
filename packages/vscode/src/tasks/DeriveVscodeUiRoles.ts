@@ -1,27 +1,26 @@
 import type {
-  ColorRecordInterfaceType,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  RoleProvenanceInterfaceTypeEntity,
+  TaskInterface
 } from '@studnicky/iridis';
-import type { RoleProvenanceMapInterfaceType } from '@studnicky/iridis/types';
 
-import { ModuleError } from '@studnicky/errors';
+import { ModuleError } from '@studnicky/errors/node';
 import {
   contrastText,
   darken,
-  EngineMetadata,
   ensureContrast,
   FramingSurface,
   lighten,
-  mixHsl
+  Metadata,
+  mixHsl,
+  TaskManifestInterfaceTypeEntity
 } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 class Role {
-  static get(roles: Readonly<Record<string, ColorRecordInterfaceType>>, name: string): ColorRecordInterfaceType {
+  static get(roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>, name: string): ColorRecordInterfaceTypeEntity.Type {
     const record = roles[name];
     if (record === undefined) {
       throw ModuleError.create(`DeriveVscodeUiRoles: role '${name}' not found in state.roles`, {
@@ -33,13 +32,13 @@ class Role {
   }
 
   static assign(
-    roles: Record<string, ColorRecordInterfaceType>,
-    provenance: Readonly<RoleProvenanceMapInterfaceType>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    provenance: ReadonlyMap<string, RoleProvenanceInterfaceTypeEntity.Type>,
     name: string,
-    record: ColorRecordInterfaceType
+    record: ColorRecordInterfaceTypeEntity.Type
   ): void {
-    if (provenance[name]?.origin !== 'stated') {
-      roles[name] = record;
+    if (provenance.get(name)?.origin !== 'stated') {
+      Object.defineProperty(roles, name, { 'configurable': true, 'enumerable': true, 'value': record, 'writable': true });
     }
   }
 }
@@ -47,18 +46,17 @@ class Role {
 class DeriveVscodeUiRoles implements TaskInterface {
   readonly 'name' = 'vscode:deriveUiRoles';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Derives the 48 VS Code UI extension roles from resolved base roles while preserving caller-stated role values.',
     'name':        'vscode:deriveUiRoles',
-    'phase':       undefined,
     'reads':       ['roles', 'metadata.core:roleProvenance'],
     'requires':    ['expand:family'],
     'writes':      ['roles']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const roles = state.roles;
-    const provenance: Readonly<RoleProvenanceMapInterfaceType> = EngineMetadata.get(state.metadata, 'core:roleProvenance') ?? {};
+    const provenance = Metadata.roleProvenance(state.metadata);
     const background = Role.get(roles, 'background');
     const foreground = Role.get(roles, 'foreground');
     const muted = Role.get(roles, 'muted');
@@ -132,13 +130,13 @@ class DeriveVscodeUiRoles implements TaskInterface {
     Role.assign(roles, provenance, 'widgetBorder', border);
 
     context.logger.debug(
-      LogBody.create()
-        .component('DeriveVscodeUiRoles')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Derived VS Code UI extension roles')
-        .context({ 'count': 48 })
-        .build()
+      LogBody.create({
+        'component': 'DeriveVscodeUiRoles',
+        'context': { 'count': 48 },
+        'message': 'Derived VS Code UI extension roles',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

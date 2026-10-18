@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { GalleryAlgorithmType } from '@studnicky/iridis-image/types';
+import type { ClusterStrategyInterface } from '@studnicky/iridis-image';
 
 defineProps<{
   running: boolean;
   combineLocked: boolean;
   schemaName: string;
-  algorithm: GalleryAlgorithmType;
+  strategy: ClusterStrategyInterface;
   deltaECap: number;
   histogramBits: number;
   harmonizeThreshold: number;
@@ -22,7 +22,7 @@ const emit = defineEmits<{
   rerun: [];
   'update:combineLocked': [value: boolean];
   'update:schemaName': [value: string];
-  'update:algorithm': [value: GalleryAlgorithmType];
+  'update:strategy': [value: ClusterStrategyInterface];
   'update:deltaECap': [value: number];
   'update:histogramBits': [value: number];
   'update:harmonizeThreshold': [value: number];
@@ -84,7 +84,7 @@ const emit = defineEmits<{
     </UFormField>
 
     <AdvancedMergeSettings
-      :algorithm="algorithm"
+      :strategy="strategy"
       :delta-e-cap="deltaECap"
       :histogram-bits="histogramBits"
       :harmonize-threshold="harmonizeThreshold"
@@ -95,7 +95,7 @@ const emit = defineEmits<{
       :harmonize-help="harmonizeHelp"
       :lightness-help="lightnessHelp"
       :chroma-help="chromaHelp"
-      @update:algorithm="emit('update:algorithm', $event)"
+      @update:strategy="emit('update:strategy', $event)"
       @update:delta-e-cap="emit('update:deltaECap', $event)"
       @update:histogram-bits="emit('update:histogramBits', $event)"
       @update:harmonize-threshold="emit('update:harmonizeThreshold', $event)"

@@ -1,4 +1,4 @@
-import type { CarouselCardType } from './types/carouselCard.ts';
+import type { CarouselCardType } from './types/carouselCardType.ts';
 
 /**
  * Stable keys for every output format the engine has a real emit plugin for —

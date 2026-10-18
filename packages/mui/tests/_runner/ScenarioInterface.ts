@@ -1,4 +1,4 @@
-import type { ScenarioKindType } from './ScenarioKindType.ts';
+import type { ScenarioAssertionOptionsInterface } from './interfaces/ScenarioAssertionOptionsInterface.ts';
 
 /**
  * One row of a scenario-matrix table driven by `ScenarioRunner`. Each
@@ -6,8 +6,7 @@ import type { ScenarioKindType } from './ScenarioKindType.ts';
  * and a `kind` classification (`happy` | `edge` | `unhappy`).
  */
 export interface ScenarioInterface<TInput, TOutput> {
-  assert(output: TOutput | undefined, error: Error | undefined): void | Promise<void>;
-  readonly 'input': TInput;
-  readonly 'kind':  ScenarioKindType;
-  readonly 'name':  string;
+  assert(output: TOutput | undefined, options: ScenarioAssertionOptionsInterface): void | Promise<void>;
+  readonly 'input':          TInput;
+  readonly 'name':           string;
 }

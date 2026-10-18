@@ -1,22 +1,31 @@
 class LegendItem {
-  public readonly active: boolean | undefined;
+  public readonly activeResolver?: () => boolean | undefined;
   public readonly color: string;
   public readonly key: string;
   public readonly label: string;
-  public readonly swatch: 'solid' | 'dashed' | 'square' | 'circle';
+  public readonly swatch: string;
 
   public constructor(
-    active: boolean | undefined,
+    active: () => boolean | undefined,
     color: string,
     key: string,
     label: string,
-    swatch: 'solid' | 'dashed' | 'square' | 'circle'
+    swatch: string
   ) {
-    this.active = active;
+    this.activeResolver = active;
     this.color = color;
     this.key = key;
     this.label = label;
     this.swatch = swatch;
+  }
+
+  public get active(): boolean | undefined {
+    const resolveActive = this.activeResolver;
+    if (resolveActive === undefined) {
+      return undefined;
+    }
+    const result = resolveActive();
+    return result;
   }
 }
 
@@ -53,11 +62,13 @@ export const LegendMachine = class LegendMachine {
   }
 
   public state(): LegendState {
-    return new LegendState(this.#hooks.getSections());
+    const result = new LegendState(this.#hooks.getSections());
+    return result;
   }
 
   public isToggleable(item: LegendItem): boolean {
-    return item.active !== undefined && this.#hooks.toggle !== undefined;
+    const result = item.active !== undefined && this.#hooks.toggle !== undefined;
+    return result;
   }
 
   public toggle(key: string): void {

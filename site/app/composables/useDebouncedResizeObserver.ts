@@ -25,7 +25,10 @@ class UseDebouncedResizeObserverOperation {
     function observe(el: Element): void {
       if (typeof ResizeObserver === 'undefined') {return;}
       observer ??= new ResizeObserver((entries) => {
-        for (const entry of entries) {pending.set(entry.target, entry);}
+        for (let index = 0; index < entries.length; index += 1) {
+          const entry = entries[index]!;
+          pending.set(entry.target, entry);
+        }
         if (timer !== null) {clearTimeout(timer);}
         timer = setTimeout(flush, delayMs);
       });

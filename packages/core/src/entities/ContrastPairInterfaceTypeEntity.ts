@@ -1,40 +1,62 @@
-import {
-  type FromSchema,
-  JsonObject,
-  type JsonValueType
-} from '@studnicky/types';
+import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
+import type { JSONSchema7Type } from 'json-schema';
 
-import { Validator } from '../model/Validator.ts';
+import { EntityCompiler } from '@studnicky/entity/node';
+
+import { ContrastRatioSchema } from '../model/ContrastRatioSchema.ts';
+import { ContrastAlgorithmTypeEntity } from './ContrastAlgorithmTypeEntity.ts';
 
 /** One foreground/background contrast requirement, with an optional algorithm override. */
 export namespace ContrastPairInterfaceTypeEntity {
   export const Schema = {
+    '$id': 'https://iridis.dev/schema/core/contrast-pair',
     'additionalProperties': false,
+    'allOf': [{
+      'else': {
+        'properties': {
+          'maximumContrastRatio': ContrastRatioSchema.apca,
+          'minimumContrastRatio': ContrastRatioSchema.apca
+        }
+      },
+      'if': {
+        'properties': {
+          'algorithm': { 'const': 'wcag21' }
+        },
+        'required': ['algorithm']
+      },
+      'then': {
+        'properties': {
+          'maximumContrastRatio': ContrastRatioSchema.wcag21,
+          'minimumContrastRatio': ContrastRatioSchema.wcag21
+        }
+      }
+    }],
     'properties': {
-      'algorithm': { 'enum': ['wcag21', 'apca'] },
+      'algorithm': ContrastAlgorithmTypeEntity.Schema,
       'background': { 'type': 'string' },
       'foreground': { 'type': 'string' },
-      'maxRatio': { 'maximum': 21, 'minimum': 1, 'type': 'number' },
-      'minRatio': { 'maximum': 21, 'minimum': 1, 'type': 'number' }
+      'maximumContrastRatio': ContrastRatioSchema.permissive,
+      'minimumContrastRatio': ContrastRatioSchema.permissive
     },
-    'required': ['background', 'foreground', 'minRatio'],
+    'required': ['background', 'foreground'],
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = NominalSchemaType<typeof Schema>;
 
-  export const validate = (value: JsonValueType): value is Type => {
-    const result = new Validator().validate(Schema, value);
-    if (!result.valid || !JsonObject.is(value)) {
+  const schemaValidate = EntityCompiler.compile<Type>(Schema);
+
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
+
+  export const validate = (value: JSONSchema7Type): value is Type => {
+    if (!schemaValidate(value)) {
       return false;
     }
 
-    const maximumContrastRatio = value.maxRatio;
-    const minimumContrastRatio = value.minRatio;
-    return (
-      typeof maximumContrastRatio !== 'number' ||
-      (typeof minimumContrastRatio === 'number' &&
-        maximumContrastRatio >= minimumContrastRatio)
-    );
+    const maximumContrastRatio = value.maximumContrastRatio;
+    const minimumContrastRatio = value.minimumContrastRatio;
+    const result = maximumContrastRatio === undefined || minimumContrastRatio === undefined || maximumContrastRatio >= minimumContrastRatio;
+    return result;
   };
 }

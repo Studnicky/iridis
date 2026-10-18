@@ -5,7 +5,8 @@ class ContrastRatioOperation {
   static run(fg: string, bg: string): number {
     const fgRecord = colorRecordFactory.fromHex(fg);
     const bgRecord = colorRecordFactory.fromHex(bg);
-    return contrastWcag21.apply(fgRecord, bgRecord);
+    const ratio = contrastWcag21.apply(fgRecord, bgRecord);
+    return ratio;
   }
 }
 

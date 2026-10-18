@@ -1,40 +1,37 @@
 import type {
-  ColorRecordInterfaceType,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { PaletteMetadataSlot } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { PaletteMetadataSlot, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { SplashScreenOutputInterfaceType } from '../types/index.ts';
+import { CapacitorOutputsEntity } from '../entities/CapacitorOutputsEntity.ts';
 
 class SplashColor {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceType>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     splashRole: string | undefined
-  ): ColorRecordInterfaceType | undefined {
+  ): ColorRecordInterfaceTypeEntity.Type | undefined {
     if (splashRole !== undefined) {
       return roles[splashRole];
     }
-    return roles.surface ?? roles.background ?? roles.base ?? Object.values(roles)[0];
+    const fallback = roles.surface ?? roles.background ?? roles.base ?? Object.values(roles)[0];
+    return fallback;
   }
 }
 
 class EmitCapacitorSplashScreen implements TaskInterface {
   readonly 'name' = 'emit:capacitorSplashScreen';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Emit Capacitor splash screen configuration from surface or input-specified splashRole.',
     'name':        'emit:capacitorSplashScreen',
-    'phase':       undefined,
     'reads':       ['roles', 'metadata.capacitor.splashRole', 'metadata.capacitor.androidSplashResourceName'],
-    'requires':    undefined,
     'writes':      ['outputs.capacitor:splashScreen']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const capacitorMeta = PaletteMetadataSlot.getOrCreate(state, 'capacitor');
@@ -44,13 +41,13 @@ class EmitCapacitorSplashScreen implements TaskInterface {
 
     if (splashColor === undefined) {
       context.logger.warn(
-        LogBody.create()
-          .component('EmitCapacitorSplashScreen')
-          .operation('run')
-          .status(LOG_STATUS.SKIPPED)
-          .message('No suitable role found for splash screen background; skipping.')
-          .context({})
-          .build()
+        LogBody.create({
+          'component': 'EmitCapacitorSplashScreen',
+          'context': {},
+          'message': 'No suitable role found for splash screen background; skipping.',
+          'operation': 'run',
+          'status': LOG_STATUS.SKIPPED
+        })
       );
       return;
     }
@@ -59,28 +56,28 @@ class EmitCapacitorSplashScreen implements TaskInterface {
       ? capacitorMeta.androidSplashResourceName
       : undefined;
 
-    const output: SplashScreenOutputInterfaceType = androidSplashResourceName !== undefined
+    const splashScreen = androidSplashResourceName !== undefined
       ? {
         'androidSplashResourceName': androidSplashResourceName,
         'backgroundColor':           splashColor.hex
       }
       : {
-        'androidSplashResourceName': undefined,
-        'backgroundColor':           splashColor.hex
+        'backgroundColor': splashColor.hex
       };
+    CapacitorOutputsEntity.intake({ 'splashScreen': splashScreen });
 
-    state.outputs['capacitor:splashScreen'] = output;
+    state.outputs['capacitor:splashScreen'] = splashScreen;
 
     context.logger.debug(
-      LogBody.create()
-        .component('EmitCapacitorSplashScreen')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('SplashScreen emitted')
-        .context({
-          'backgroundColor': output.backgroundColor
-        })
-        .build()
+      LogBody.create({
+        'component': 'EmitCapacitorSplashScreen',
+        'context': {
+          'backgroundColor': splashScreen.backgroundColor
+        },
+        'message': 'SplashScreen emitted',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

@@ -1,6 +1,6 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterfaceType,
+  PluginSchemaContributionInterfaceEntity,
   TaskInterface
 } from '@studnicky/iridis';
 
@@ -17,9 +17,8 @@ class StylesheetPlugin implements PluginInterface {
     return [emitCssVars, emitCssVarsScoped];
   }
 
-  schemas(): PluginSchemaContributionInterfaceType {
+  schemas(): PluginSchemaContributionInterfaceEntity.Type {
     return {
-      'metadata': undefined,
       'outputs': {
         'stylesheet:cssVars':       CSS_VARS_OUTPUT_SCHEMAS.CSS_VARS,
         'stylesheet:cssVarsScoped': CSS_VARS_OUTPUT_SCHEMAS.CSS_VARS_SCOPED

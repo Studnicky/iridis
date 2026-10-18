@@ -13,33 +13,35 @@
  *
  * Cells:
  *   1. state-flow    — colors, roles, outputs, metadata propagate correctly
- *   2. context       — PipelineContextInterface.engine is the same Engine instance
+ *   2. context       — PipelineContext supplies a usable logger and run timestamp
  *   3. edge-inputs   — empty colors, single color, many colors
  *   4. error-paths   — task that throws propagates to run() caller
  */
 
-import type {
-  EngineInterface,
-  InputInterface,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  PluginInterface,
-  TaskInterface
-} from '@studnicky/iridis';
-
-import { Engine } from '@studnicky/iridis/engine';
+import { LogBodyConfigEntity } from '@studnicky/logger/entities';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
+import { JsonObject } from '@studnicky/types/node';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 
-import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
-import type { ContextInputEntity } from './entities/ContextInputEntity.ts';
-import type { ContextOutputEntity } from './entities/ContextOutputEntity.ts';
+import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../src/interfaces/PipelineContextInterface.ts';
+import type { PluginInterface } from '../../src/interfaces/PluginInterface.ts';
+import type { TaskInterface } from '../../src/interfaces/TaskInterface.ts';
 import type { EdgeInputsInputEntity } from './entities/EdgeInputsInputEntity.ts';
-import type { EdgeInputsOutputEntity } from './entities/EdgeInputsOutputEntity.ts';
 import type { ErrorPathInputEntity } from './entities/ErrorPathInputEntity.ts';
-import type { ErrorPathOutputEntity } from './entities/ErrorPathOutputEntity.ts';
-import type { StateFlowOutputEntity } from './entities/StateFlowOutputEntity.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
+import { Engine } from '../../src/engine/Engine.ts';
+import { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
+import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { PaletteRoleState } from '../../src/interfaces/PaletteStateInterface.ts';
+import { ContextOutputEntity } from './entities/ContextOutputEntity.ts';
+import { EdgeInputsOutputEntity } from './entities/EdgeInputsOutputEntity.ts';
+import { ErrorPathOutputEntity } from './entities/ErrorPathOutputEntity.ts';
+import { StateFlowOutputEntity } from './entities/StateFlowOutputEntity.ts';
+import { PipelineIntegrationScenarios } from './pipeline/PipelineIntegrationScenarios.ts';
 
 // ---------------------------------------------------------------------------
 // Stub task factories — reused across cells 1 and 3.
@@ -47,17 +49,16 @@ import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 
 class StubTasks {
   static intakeRun(state: PaletteStateInterface, _pipelineContext: PipelineContextInterface): void {
-    for (const raw of state.input.colors) {
+    for (let index = 0; index < state.input.colors.length; index += 1) {
+      const raw = state.input.colors[index];
       const hex = typeof raw === 'string' ? raw : '#000000';
-      state.colors.push({
-        'alpha':        1,
-        'displayP3':    undefined,
-        'hex':          hex,
-        'hints':        undefined,
-        'oklch':        { 'c': 0.1, 'h': 0, 'l': 0.5 },
-        'rgb':          { 'b': 0.502, 'g': 0.502, 'r': 0.502 },
+      state.colors.push(ColorRecordInterfaceTypeEntity.create({
+        'alpha': 1,
+        'hex': hex,
+        'oklch': { 'c': 0.1, 'h': 0, 'l': 0.5 },
+        'rgb': { 'b': 0.502, 'g': 0.502, 'r': 0.502 },
         'sourceFormat': 'hex'
-      });
+      }));
     }
   }
 
@@ -67,20 +68,30 @@ class StubTasks {
   }
 
   static emitRun(state: PaletteStateInterface, _pipelineContext: PipelineContextInterface): void {
-    const varMap: Record<string, string> = {};
-    for (const [role, record] of Object.entries(state.roles)) {
-      varMap[`--color-${role}`] = record.hex;
+    const roleEntries = Object.entries(state.roles);
+    const variableOutput: Record<string, string> = {};
+    for (let index = 0; index < roleEntries.length; index += 1) {
+      const entry = roleEntries[index];
+      if (entry !== undefined) {
+        const [role, record] = entry;
+        Object.defineProperty(variableOutput, `--color-${role}`, {
+          'configurable': true,
+          'enumerable': true,
+          'value': record.hex,
+          'writable': true
+        });
+      }
     }
-    state.outputs.stub = varMap;
+    state.outputs.stub = variableOutput;
   }
 
   static intakeTask(): TaskInterface {
     return {
-      'manifest': {
-        'description': undefined,
-        'name':   'stub:intake',
-        'phase': undefined, 'reads':  ['input.colors'], 'requires': undefined, 'writes': ['colors']
-      },
+      'manifest': TaskManifestInterfaceTypeEntity.create({
+        'name': 'stub:intake',
+        'reads': ['input.colors'],
+        'writes': ['colors']
+      }),
       'name': 'stub:intake',
       'run': StubTasks.intakeRun
     };
@@ -88,11 +99,11 @@ class StubTasks {
 
   static transformTask(): TaskInterface {
     return {
-      'manifest': {
-        'description': undefined,
-        'name':   'stub:transform',
-        'phase': undefined, 'reads':  ['colors'], 'requires': undefined, 'writes': ['roles']
-      },
+      'manifest': TaskManifestInterfaceTypeEntity.create({
+        'name': 'stub:transform',
+        'reads': ['colors'],
+        'writes': ['roles']
+      }),
       'name': 'stub:transform',
       'run': StubTasks.transformRun
     };
@@ -100,11 +111,11 @@ class StubTasks {
 
   static emitTask(): TaskInterface {
     return {
-      'manifest': {
-        'description': undefined,
-        'name':   'stub:emit',
-        'phase': undefined, 'reads':  ['roles'], 'requires': undefined, 'writes': ['outputs.stub']
-      },
+      'manifest': TaskManifestInterfaceTypeEntity.create({
+        'name': 'stub:emit',
+        'reads': ['roles'],
+        'writes': ['outputs.stub']
+      }),
       'name': 'stub:emit',
       'run': StubTasks.emitRun
     };
@@ -133,119 +144,97 @@ class StubTasks {
 //   - pass input.metadata through to state.metadata unchanged
 // ---------------------------------------------------------------------------
 
-type StateFlowInput = {
-  readonly 'colors':    string[];
-  readonly 'metadata'?: Record<string, string | number>;
-};
-
-const stateFlowScenarios: readonly ScenarioInterface<StateFlowInput, StateFlowOutputEntity.Type>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,                         '[cell=1, scenario=single-seed] no throw');
-      assert.strictEqual(output!.colorsLength,   1,                '[cell=1, scenario=single-seed] one color in state');
-      assert.strictEqual(output!.firstColorHex,  '#8B5CF6',       '[cell=1, scenario=single-seed] color hex preserved');
-      assert.strictEqual(output!.hasPrimary,     true,            '[cell=1, scenario=single-seed] primary role derived');
-      assert.strictEqual(output!.primaryHex,     '#8B5CF6',       '[cell=1, scenario=single-seed] primary hex matches seed');
-      assert.strictEqual(output!.stubVarValue,   '#8B5CF6',       '[cell=1, scenario=single-seed] stub output CSS var correct');
-    },
-    'input': { 'colors': ['#8B5CF6'], 'metadata': { 'source': 'integration-test' } },
-    'kind': 'happy',
-    'name': 'single seed flows end-to-end: colors, roles, output, metadata'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error, undefined,            '[cell=1, scenario=metadata] no throw');
-      assert.strictEqual(output!.metaCategory, 'music', '[cell=1, scenario=metadata] category preserved');
-      assert.strictEqual(output!.metaVersion,  2,       '[cell=1, scenario=metadata] version preserved');
-    },
-    'input': { 'colors': ['#ffffff'], 'metadata': { 'category': 'music', 'version': 2 } },
-    'kind': 'happy',
-    'name': 'metadata flows through unchanged'
-  }
-];
-
-new ScenarioRunner<StateFlowInput, StateFlowOutputEntity.Type>(
+new ScenarioRunner<InputInterfaceTypeEntity.Type, StateFlowOutputEntity.Type>(
   'Pipeline.integration :: cell-1 :: state-flow',
   (input) => {
     const engine = new Engine();
     engine.adopt(StubTasks.plugin());
     engine.pipeline(['stub:intake', 'stub:transform', 'stub:emit']);
-    const runInput: InputInterface = {
-      'bypass':    undefined,
-      'colors':    input.colors,
-      'contrast':  undefined,
-      'emit':      undefined,
-      'maxColors': undefined,
-      'metadata':  input.metadata,
-      'roles':     undefined,
-      'runtime':   undefined
-    };
-    const state = engine.run(runInput);
-    const stub = state.outputs.stub as Record<string, string> | undefined;
+    const state = engine.run(input);
+    const stubOutput = state.outputs.stub;
+    const stubValue = JsonObject.is(stubOutput) ? stubOutput['--color-primary'] : undefined;
+    const metadataCategory = state.metadata.category;
+    const metadataVersion = state.metadata.version;
     const firstColorHex = state.colors[0]?.hex ?? '';
-    const stubVarValue  = stub?.['--color-primary'] ?? '';
-    const metaCategory  = state.metadata.category as string | undefined;
-    const metaVersion   = state.metadata.version  as number | undefined;
-    return {
-      'colorsLength':  state.colors.length,
+    const stubVarValue = typeof stubValue === 'string' ? stubValue : '';
+    const metaCategory = typeof metadataCategory === 'string' ? metadataCategory : undefined;
+    const metaVersion = typeof metadataVersion === 'number' ? metadataVersion : undefined;
+    const result = StateFlowOutputEntity.create({
+      'colorsLength': state.colors.length,
       'firstColorHex': firstColorHex,
-      'hasPrimary':    'primary' in state.roles,
-      ...(metaCategory !== undefined ? { 'metaCategory': metaCategory } : {}),
-      ...(metaVersion !== undefined ? { 'metaVersion': metaVersion } : {}),
-      'primaryHex':    state.roles.primary?.hex ?? '',
-      'stubVarValue':  stubVarValue
-    };
-  }
-).run(stateFlowScenarios);
-
-// ---------------------------------------------------------------------------
-// Cell 2 — context: PipelineContextInterface.engine is the same Engine instance
-//
-// Every task receives a ctx with ctx.engine referencing the same Engine that
-// ran the pipeline. This must be the exact same object reference.
-// ---------------------------------------------------------------------------
-
-const contextScenarios: readonly ScenarioInterface<ContextInputEntity.Type, ContextOutputEntity.Type>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error,                  undefined, '[cell=2, scenario=ctx-engine] no throw');
-      assert.strictEqual(output!.engineIsExact,  true,      '[cell=2, scenario=ctx-engine] ctx.engine is same reference');
-    },
-    'input': {},
-    'kind': 'happy',
-    'name': 'ctx.engine is the same Engine instance that called run()'
-  }
-];
-
-new ScenarioRunner<ContextInputEntity.Type, ContextOutputEntity.Type>(
-  'Pipeline.integration :: cell-2 :: context',
-  (_input) => {
-    const engine = new Engine();
-    let capturedEngine: EngineInterface | undefined;
-
-    function inspectRun(_state: PaletteStateInterface, pipelineContext: PipelineContextInterface): void {
-      capturedEngine = pipelineContext.engine;
-    }
-
-    const inspector: TaskInterface = {
-      'manifest': { 'description': undefined, 'name': 'inspect:ctx', 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
-      'name': 'inspect:ctx',
-      'run': inspectRun
-    };
-
-    function inspectorTasks(): readonly TaskInterface[] { return [inspector]; }
-
-    engine.adopt({
-      'name': 'inspect-plugin',
-      'tasks': inspectorTasks,
-      'version': '0.0.1'
+      'hasPrimary': 'primary' in state.roles,
+      ...(metaCategory === undefined ? {} : { 'metaCategory': metaCategory }),
+      ...(metaVersion === undefined ? {} : { 'metaVersion': metaVersion }),
+      'primaryHex': state.roles.primary?.hex ?? '',
+      'stubVarValue': stubVarValue
     });
-    engine.pipeline(['inspect:ctx']);
-    engine.run({ 'bypass': undefined, 'colors': [], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
-
-    return { 'engineIsExact': capturedEngine === engine };
+    return result;
   }
-).run(contextScenarios);
+).run(PipelineIntegrationScenarios.stateFlow);
+
+// ---------------------------------------------------------------------------
+// Cell 2 — context: logger and startedAt are stable for one pipeline run
+//
+// Every task receives one context with a usable logger and a timestamp created
+// during the enclosing Engine.run call. The same context serves each task.
+// ---------------------------------------------------------------------------
+
+void test('Pipeline.integration :: cell-2 :: context :: tasks receive one context with a usable logger and run timestamp', () => {
+  const engine = new Engine();
+  const contexts: PipelineContextInterface[] = [];
+
+  function inspectLoggerRun(_state: PaletteStateInterface, pipelineContext: PipelineContextInterface): void {
+    pipelineContext.logger.debug(LogBody.create(LogBodyConfigEntity.intake({
+      'component': 'Pipeline.integration',
+      'context': {},
+      'message': 'pipeline context logger is usable from a task',
+      'operation': 'inspect-context',
+      'status': LOG_STATUS.SUCCESS
+    })));
+    contexts.push(pipelineContext);
+  }
+
+  function inspectTimestampRun(_state: PaletteStateInterface, pipelineContext: PipelineContextInterface): void {
+    contexts.push(pipelineContext);
+  }
+
+  const loggerInspector: TaskInterface = {
+    'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'inspect:logger' }),
+    'name': 'inspect:logger',
+    'run': inspectLoggerRun
+  };
+  const timestampInspector: TaskInterface = {
+    'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'inspect:timestamp' }),
+    'name': 'inspect:timestamp',
+    'run': inspectTimestampRun
+  };
+
+  function inspectorTasks(): readonly TaskInterface[] { return [loggerInspector, timestampInspector]; }
+
+  engine.adopt({
+    'name': 'inspect-plugin',
+    'tasks': inspectorTasks,
+    'version': '0.0.1'
+  });
+  engine.pipeline(['inspect:logger', 'inspect:timestamp']);
+  const input = InputInterfaceTypeEntity.intake({ 'colors': [] });
+  const runStartedAt = Date.now();
+  engine.run(input);
+  const runCompletedAt = Date.now();
+  const firstContext = contexts[0];
+  const secondContext = contexts[1];
+  const result = ContextOutputEntity.create({
+    'loggerAcceptedDebug': firstContext !== undefined,
+    'sharedAcrossTasks': firstContext === secondContext,
+    'startedAtDuringRun': firstContext !== undefined
+      && firstContext.startedAt >= runStartedAt
+      && firstContext.startedAt <= runCompletedAt
+  });
+
+  assert.strictEqual(result.loggerAcceptedDebug, true, '[cell=2, scenario=run-context] logger accepts a task debug record');
+  assert.strictEqual(result.startedAtDuringRun, true, '[cell=2, scenario=run-context] startedAt is generated during run');
+  assert.strictEqual(result.sharedAcrossTasks, true, '[cell=2, scenario=run-context] one context reaches all pipeline tasks');
+});
 
 // ---------------------------------------------------------------------------
 // Cell 3 — edge inputs: empty colors, single color, three colors with index roles
@@ -254,31 +243,6 @@ new ScenarioRunner<ContextInputEntity.Type, ContextOutputEntity.Type>(
 // colors must each get their own role when the transform maps by index.
 // ---------------------------------------------------------------------------
 
-const edgeInputsScenarios: readonly ScenarioInterface<EdgeInputsInputEntity.Type, EdgeInputsOutputEntity.Type>[] = [
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error,              undefined, '[cell=3, scenario=empty] no throw');
-      assert.strictEqual(output!.colorsLength, 0,       '[cell=3, scenario=empty] no colors');
-      assert.strictEqual(output!.rolesCount,   0,       '[cell=3, scenario=empty] no roles');
-      assert.strictEqual(output!.stubKeyCount, 0,       '[cell=3, scenario=empty] empty stub output');
-    },
-    'input': { 'mode': 'empty' },
-    'kind': 'edge',
-    'name': 'empty colors produces zero colors, zero roles, empty stub output'
-  },
-  {
-    'assert': function(output, error) {
-      assert.strictEqual(error,              undefined, '[cell=3, scenario=multi-index] no throw');
-      assert.strictEqual(output!.colorsLength, 3,       '[cell=3, scenario=multi-index] three colors');
-      assert.strictEqual(output!.rolesCount,   3,       '[cell=3, scenario=multi-index] three roles by index');
-      assert.strictEqual(output!.stubKeyCount, 3,       '[cell=3, scenario=multi-index] three CSS vars in stub output');
-    },
-    'input': { 'mode': 'multi-index' },
-    'kind': 'happy',
-    'name': 'three colors with index-based transform produce three roles'
-  }
-];
-
 new ScenarioRunner<EdgeInputsInputEntity.Type, EdgeInputsOutputEntity.Type>(
   'Pipeline.integration :: cell-3 :: edge-inputs',
   (input) => {
@@ -286,21 +250,30 @@ new ScenarioRunner<EdgeInputsInputEntity.Type, EdgeInputsOutputEntity.Type>(
       const engine = new Engine();
       engine.adopt(StubTasks.plugin());
       engine.pipeline(['stub:intake', 'stub:transform', 'stub:emit']);
-      const state = engine.run({ 'bypass': undefined, 'colors': [], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
-      const stub  = state.outputs.stub as Record<string, string> | undefined;
-      return {
+      const runInput = InputInterfaceTypeEntity.intake({ 'colors': [] });
+      const state = engine.run(runInput);
+      const stub = state.outputs.stub;
+      const result = EdgeInputsOutputEntity.create({
         'colorsLength': state.colors.length,
-        'rolesCount':   Object.keys(state.roles).length,
-        'stubKeyCount': stub !== undefined ? Object.keys(stub).length : 0
-      };
+        'rolesCount': Object.keys(state.roles).length,
+        'stubKeyCount': JsonObject.is(stub) ? Object.keys(stub).length : 0
+      });
+      return result;
     }
 
     // multi-index: custom transform maps each color to a named role
     function multiTransformRun(state: PaletteStateInterface): void {
-      state.colors.forEach((record, index) => { state.roles[`color-${index}`] = record; });
+      const roleState = PaletteRoleState.admit(state.roles);
+      for (let index = 0; index < state.colors.length; index += 1) {
+        const color = state.colors[index];
+        if (color !== undefined) {
+          roleState.set(`color-${index}`, color);
+        }
+      }
+      roleState.commit();
     }
     const multiTransform: TaskInterface = {
-      'manifest': { 'description': undefined, 'name': 'stub:transform', 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
+      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'stub:transform' }),
       'name': 'stub:transform',
       'run': multiTransformRun
     };
@@ -313,15 +286,17 @@ new ScenarioRunner<EdgeInputsInputEntity.Type, EdgeInputsOutputEntity.Type>(
     const engine = new Engine();
     engine.adopt(plugin);
     engine.pipeline(['stub:intake', 'stub:transform', 'stub:emit']);
-    const state = engine.run({ 'bypass': undefined, 'colors': ['#ff0000', '#00ff00', '#0000ff'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
-    const stub  = state.outputs.stub as Record<string, string> | undefined;
-    return {
+    const multiColorInput = InputInterfaceTypeEntity.intake({ 'colors': ['#ff0000', '#00ff00', '#0000ff'] });
+    const state = engine.run(multiColorInput);
+    const stub = state.outputs.stub;
+    const result = EdgeInputsOutputEntity.create({
       'colorsLength': state.colors.length,
-      'rolesCount':   Object.keys(state.roles).length,
-      'stubKeyCount': stub !== undefined ? Object.keys(stub).length : 0
-    };
+      'rolesCount': Object.keys(state.roles).length,
+      'stubKeyCount': JsonObject.is(stub) ? Object.keys(stub).length : 0
+    });
+    return result;
   }
-).run(edgeInputsScenarios);
+).run(PipelineIntegrationScenarios.edgeInputs);
 
 // ---------------------------------------------------------------------------
 // Cell 4 — error paths: task that throws propagates to run() caller
@@ -330,40 +305,13 @@ new ScenarioRunner<EdgeInputsInputEntity.Type, EdgeInputsOutputEntity.Type>(
 // from engine.run(). The original error message must be preserved.
 // ---------------------------------------------------------------------------
 
-const errorPathScenarios: readonly ScenarioInterface<ErrorPathInputEntity.Type, ErrorPathOutputEntity.Type>[] = [
-  {
-    'assert': function(_output, error) {
-      assert.ok(error instanceof Error,                                              '[cell=4, scenario=task-throws] expected Error');
-      assert.ok(
-        (error).message.includes('intentional pipeline failure'),
-        `[cell=4, scenario=task-throws] original message preserved; got: ${(error).message}`
-      );
-    },
-    'input': { 'message': 'intentional pipeline failure' },
-    'kind': 'unhappy',
-    'name': 'task throw propagates with original message to run() caller'
-  },
-  {
-    'assert': function(_output, error) {
-      assert.ok(error instanceof Error, '[cell=4, scenario=special-chars] expected Error');
-      assert.ok(
-        (error).message.includes('failure: [code=404]'),
-        `[cell=4, scenario=special-chars] message preserved; got: ${(error).message}`
-      );
-    },
-    'input': { 'message': 'failure: [code=404] "resource" not found' },
-    'kind': 'unhappy',
-    'name': 'task throws with nested message containing special characters'
-  }
-];
-
 new ScenarioRunner<ErrorPathInputEntity.Type, ErrorPathOutputEntity.Type>(
   'Pipeline.integration :: cell-4 :: error-paths',
   (input) => {
     const engine = new Engine();
     function errorTaskRun(): void { throw new Error(input.message); }
     const errorTask: TaskInterface = {
-      'manifest': { 'description': undefined, 'name': 'task:throws', 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined },
+      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'task:throws' }),
       'name': 'task:throws',
       'run': errorTaskRun
     };
@@ -374,7 +322,9 @@ new ScenarioRunner<ErrorPathInputEntity.Type, ErrorPathOutputEntity.Type>(
       'version': '0.0.1'
     });
     engine.pipeline(['task:throws']);
-    engine.run({ 'bypass': undefined, 'colors': ['#000'], 'contrast': undefined, 'emit': undefined, 'maxColors': undefined, 'metadata': undefined, 'roles': undefined, 'runtime': undefined });
-    return {};
+    const runInput = InputInterfaceTypeEntity.intake({ 'colors': ['#000'] });
+    engine.run(runInput);
+    const result = ErrorPathOutputEntity.create({});
+    return result;
   }
-).run(errorPathScenarios);
+).run(PipelineIntegrationScenarios.errorPaths);

@@ -32,7 +32,7 @@ let lastSampleVersion = -1;
  * reactive write out to every subscriber 60x/sec.
  */
 function drawAllStrips(): void {
-  const latestSampleVersion = ColorStreamHistoryState.sampleVersionStamp();
+  const latestSampleVersion = ColorStreamHistoryState.sampleVersion.value;
   if (latestSampleVersion === lastSampleVersion) {
     return;
   }
@@ -84,7 +84,7 @@ function engineRefAt(index: number): (el: unknown) => void {
 }
 
 onMounted(() => {
-  useLivingBackground({ 'recordStream': true });
+  useLivingBackground({ 'recorder': ColorStreamHistoryState });
   reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const { roleViews } = useIridis();
   watch(roleViews, (views) => { drawColorStream.drawComparisonBands(ROLES, views, naiveCanvasRefs, engineCanvasRefs); }, { 'immediate': true });

@@ -4,7 +4,8 @@ import { Hue } from './Hue.ts';
 class WrapHueDelta {
   static of(delta: number): number {
     const wrapped = Hue.normalize(delta + 180) - 180;
-    return wrapped === -180 ? 180 : wrapped;
+    const normalizedDelta = wrapped === -180 ? 180 : wrapped;
+    return normalizedDelta;
   }
 }
 

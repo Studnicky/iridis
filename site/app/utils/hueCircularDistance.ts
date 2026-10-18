@@ -4,7 +4,8 @@ import { normalizeHue } from './normalizeHue.ts';
 class HueCircularDistanceOperation {
   static run(a: number, b: number): number {
     const diff = Math.abs(normalizeHue(a) - normalizeHue(b));
-    return Math.min(diff, 360 - diff);
+    const distance = Math.min(diff, 360 - diff);
+    return distance;
   }
 }
 

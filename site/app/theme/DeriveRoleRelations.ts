@@ -1,9 +1,11 @@
 import type {
-  PaletteStateInterface, PipelineContextInterface, TaskInterface, TaskManifestInterfaceType
-} from '@studnicky/iridis/types';
+  PaletteStateInterface, PipelineContextInterface, TaskInterface
+} from '@studnicky/iridis';
 
-import type { DerivationConfigType } from '../composables/types/colorDerivation.ts';
+import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
 
+import { DerivationConfigInterfaceTypeEntity } from '../composables/entities/DerivationConfigInterfaceTypeEntity.ts';
+import { DerivationRelationInterfaceTypeEntity } from '../composables/entities/DerivationRelationInterfaceTypeEntity.ts';
 import { effectiveRelation } from '../utils/effectiveRelation.ts';
 import { resolveHueOffset } from '../utils/resolveHueOffset.ts';
 
@@ -26,26 +28,36 @@ import { resolveHueOffset } from '../utils/resolveHueOffset.ts';
 class DeriveRoleRelations implements TaskInterface {
   readonly 'name' = 'derive:roleRelations';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Computes each derivedFrom role\'s effective hueOffset from the user-selected per-relation hue algorithm, writing overrides for expand:family to apply.',
     'name':        'derive:roleRelations',
-    'phase':       undefined,
     'reads':       ['input.roles', 'metadata'],
-    'requires':    undefined,
     'writes':      ['metadata']
-  };
+  });
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
-    const config = state.metadata['derivation:config'] as DerivationConfigType | undefined;
-    if (config === undefined || state.input.roles === undefined) {return;}
+    const configRaw = state.metadata['derivation:config'];
+    const roleSchema = state.input.roles;
+    if (roleSchema === undefined || !DerivationConfigInterfaceTypeEntity.validate(configRaw)) {return;}
+    const config = DerivationConfigInterfaceTypeEntity.intake(configRaw);
 
-    const overrides: Record<string, number> = {};
-    for (const role of state.input.roles.roles) {
-      if (role.derivedFrom === undefined || role.derivedFrom === '') {continue;}
-      const relation = effectiveRelation(role.hueOffset, config.relations[role.name]);
-      overrides[role.name] = resolveHueOffset(relation);
+    const overrides = new Map<string, number>();
+    const roles = roleSchema.roles;
+    for (let index = 0; index < roles.length; index += 1) {
+      const role = roles[index];
+      if (role?.derivedFrom === undefined || role.derivedFrom === '') {continue;}
+      const storedRelation = config.relations[role.name];
+      const authoredRelation = storedRelation === undefined
+        ? undefined
+        : DerivationRelationInterfaceTypeEntity.intake(storedRelation);
+      const relation = effectiveRelation({ 'relation': authoredRelation, 'schemaHueOffset': role.hueOffset });
+      overrides.set(role.name, resolveHueOffset(relation));
     }
-    state.metadata['core:hueOffsetOverrides'] = overrides;
+    const serializedOverrides: Record<string, number> = {};
+    overrides.forEach((offset, name) => {
+      Object.defineProperty(serializedOverrides, name, { 'configurable': true, 'enumerable': true, 'value': offset, 'writable': true });
+    });
+    state.metadata['core:hueOffsetOverrides'] = serializedOverrides;
   }
 }
 

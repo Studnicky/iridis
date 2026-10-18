@@ -1,48 +1,66 @@
-interface ViewportStatusOptionsInterface {
-  readonly 'canFit'?: boolean;
-  readonly 'canPan'?: boolean;
-  readonly 'formatZoom'?: (zoomLevel: number | null) => string | null;
-  readonly 'hint'?: string | null;
-  readonly 'mode': 'inline' | 'modal';
-  readonly 'zoomLevel': number | null;
+import { ViewportStatusOptionsInterfaceTypeEntity } from './ViewportStatusOptionsInterfaceTypeEntity.ts';
+
+interface ViewportStatusFormattingInterface {
+  formatZoom?(zoomLevel: number | null): string | null;
 }
 
 class ViewportStatusModel {
-  public readonly canFit: boolean;
-  public readonly canPan: boolean;
-  public readonly hint: string | null;
-  public readonly mode: 'inline' | 'modal';
-  public readonly zoomLevel: number | null;
-  public readonly zoomText: string | null;
+  readonly #options: ViewportStatusOptionsInterfaceTypeEntity.Type;
+  readonly #zoomText: string | null;
 
   public constructor(
-    canFit: boolean,
-    canPan: boolean,
-    hint: string | null,
-    mode: 'inline' | 'modal',
-    zoomLevel: number | null,
+    options: ViewportStatusOptionsInterfaceTypeEntity.Type,
     zoomText: string | null
   ) {
-    this.canFit = canFit;
-    this.canPan = canPan;
-    this.hint = hint;
-    this.mode = mode;
-    this.zoomLevel = zoomLevel;
-    this.zoomText = zoomText;
+    this.#options = options;
+    this.#zoomText = zoomText;
+  }
+
+  public get canFit(): boolean {
+    const result = this.#options.canFit ?? true;
+    return result;
+  }
+
+  public get canPan(): boolean {
+    const result = this.#options.canPan ?? true;
+    return result;
+  }
+
+  public get hint(): string | null {
+    const result = this.#options.hint === undefined ? 'drag · wheel' : this.#options.hint;
+    return result;
+  }
+
+  public get mode(): ViewportStatusOptionsInterfaceTypeEntity.Type['mode'] {
+    const result = this.#options.mode;
+    return result;
+  }
+
+  public get zoomLevel(): number | null {
+    const result = this.#options.zoomLevel;
+    return result;
+  }
+
+  public get zoomText(): string | null {
+    const result = this.#zoomText;
+    return result;
   }
 }
 
 export const ViewportStatus = class ViewportStatus {
-  public static create(options: ViewportStatusOptionsInterface): ViewportStatusModel {
-    const zoomText = options.formatZoom?.(options.zoomLevel)
-      ?? (options.zoomLevel === null ? null : `${options.zoomLevel.toFixed(2)}×`);
-    return new ViewportStatusModel(
-      options.canFit ?? true,
-      options.canPan ?? true,
-      options.hint ?? 'drag · wheel',
-      options.mode,
-      options.zoomLevel,
-      zoomText
-    );
+  public static create(
+    options: ViewportStatusFormattingInterface & ViewportStatusOptionsInterfaceTypeEntity.Type
+  ): ViewportStatusModel {
+    const normalized = ViewportStatusOptionsInterfaceTypeEntity.intake({
+      'canFit': options.canFit ?? true,
+      'canPan': options.canPan ?? true,
+      'hint': options.hint === undefined ? 'drag · wheel' : options.hint,
+      'mode': options.mode,
+      'zoomLevel': options.zoomLevel
+    });
+    const zoomText = options.formatZoom?.(normalized.zoomLevel)
+      ?? (normalized.zoomLevel === null ? null : `${normalized.zoomLevel.toFixed(2)}×`);
+    const result = new ViewportStatusModel(normalized, zoomText);
+    return result;
   }
 };

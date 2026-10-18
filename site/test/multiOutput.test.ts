@@ -1,14 +1,17 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { register } from 'node:module';
+import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 import { createRenderer, h } from 'vue';
 
-import type { OutputRowType } from '../app/composables/types/outputRow.ts';
+import type { OutputRowInterfaceTypeEntity } from '../app/composables/entities/OutputRowInterfaceTypeEntity.ts';
 
+import { SchemaNameInterfaceTypeEntity } from '../app/composables/entities/SchemaNameInterfaceTypeEntity.ts';
 import { OUTPUT_FORMAT_CARDS } from '../app/composables/outputFormatCards.ts';
+import { IridisUiEvent } from '../app/composables/types/iridisUiEvent.ts';
+import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
 
-register('./fixtures/NuxtImportsLoader.mjs', import.meta.url);
+registerHooks(NuxtImportsLoader);
 
 await test('OUTPUT_FORMAT_CARDS matches useMultiOutput non-VS-Code rows in pipeline order', () => {
   assert.deepEqual(
@@ -69,7 +72,8 @@ class HostOperations {
   static nextSibling(node: HostNode): HostNode | null {
     if (node.parent === null) {return null;}
     const index = node.parent.children.indexOf(node);
-    return node.parent.children.at(index + 1) ?? null;
+    const sibling = node.parent.children.at(index + 1) ?? null;
+    return sibling;
   }
 
   static parentNode(node: HostNode): HostElement | null {
@@ -92,25 +96,30 @@ class HostOperations {
 }
 
 class OutputHarness {
-  static operation: (() => { readonly 'outputsByKey': { 'value': Record<string, OutputRowType | undefined> } }) | undefined;
-  static outputs: { 'value': Record<string, OutputRowType | undefined> } | undefined;
+  static readonly state: {
+    'operation': (() => { readonly 'outputsByKey': { 'value': Record<string, OutputRowInterfaceTypeEntity.Type | undefined> } }) | undefined;
+    'outputs': { 'value': Record<string, OutputRowInterfaceTypeEntity.Type | undefined> } | undefined;
+  } = { 'operation': undefined, 'outputs': undefined };
 
   static render() {
     const properties = { 'data-test': 'multi-output-harness' };
-    return h('div', properties);
+    const node = h('div', properties);
+    return node;
   }
 
   static setup(): typeof OutputHarness.render {
-    const operation = OutputHarness.operation;
+    const operation = OutputHarness.state.operation;
     if (operation === undefined) {throw new Error('Output operation is not registered');}
-    OutputHarness.outputs = operation().outputsByKey;
-    return OutputHarness.render;
+    OutputHarness.state.outputs = operation().outputsByKey;
+    const render = OutputHarness.render;
+    return render;
   }
 }
 
 class OutputAssertions {
   static hasText(row: { readonly 'text': string } | undefined): boolean {
-    return row !== undefined && row.text.length > 0;
+    const hasText = row !== undefined && row.text.length > 0;
+    return hasText;
   }
 }
 
@@ -118,8 +127,12 @@ await test('useMultiOutput uses the current framing for non-VS-Code outputs and 
   const { useIridis } = await import('../app/composables/useIridis.ts');
   const { useMultiOutput } = await import('../app/composables/useMultiOutput.ts');
   const iridis = useIridis();
-  iridis.schemaName.value = 'not-registered';
-  iridis.run('light');
+  assert.throws(() => {
+    const schemaName = SchemaNameInterfaceTypeEntity.intake('not-registered');
+    return schemaName;
+  });
+  iridis.schemaName.value = SchemaNameInterfaceTypeEntity.defaultValue;
+  iridis.send(IridisUiEvent.setLightFraming());
   assert.equal(iridis.framing.value, 'light');
 
   const renderer = createRenderer<HostNode, HostElement>({
@@ -136,14 +149,19 @@ await test('useMultiOutput uses the current framing for non-VS-Code outputs and 
     'setScopeId':          HostOperations.setScopeId,
     'setText':             HostOperations.setText
   });
-  OutputHarness.operation = useMultiOutput;
+  OutputHarness.state.operation = useMultiOutput;
   const app = renderer.createApp({ 'setup': OutputHarness.setup });
   app.mount(new HostElement('root'));
 
-  if (OutputHarness.outputs === undefined) {throw new Error('Output ref was not registered during component setup');}
-  const rows = OutputHarness.outputs.value;
+  const output = OutputHarness.state.outputs;
+  if (output === undefined) {throw new Error('Output ref was not registered during component setup');}
+  const rows = output.value;
   const expectedKeys = ['androidThemeXml', 'capacitor', 'chakra', 'cssVars', 'cssVarsScoped', 'json', 'mui', 'panda', 'rdf', 'shadcn', 'tailwind', 'unocss'];
-  assert.deepEqual(Object.keys(rows).toSorted(), expectedKeys);
+  const sortedRowKeys = Object.keys(rows).toSorted((left, right) => {
+    const comparison = left.localeCompare(right);
+    return comparison;
+  });
+  assert.deepEqual(sortedRowKeys, expectedKeys);
   assert.equal(Object.values(rows).every(OutputAssertions.hasText), true);
   assert.equal(rows.vscode, undefined);
 });

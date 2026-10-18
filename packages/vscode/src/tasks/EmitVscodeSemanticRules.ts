@@ -1,76 +1,74 @@
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '@studnicky/iridis';
+import type { PaletteStateInterface, PipelineContextInterface, TaskInterface } from '@studnicky/iridis';
 
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
-
-import type { SemanticRuleEntryInterfaceType } from '../types/augmentation.ts';
+import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
+import { JsonObject } from '@studnicky/types/node';
 
 import { VSCODE_SCOPE_MAPPINGS } from '../constants/VscodeScopeMappings.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
+import { SemanticRuleEntryInterfaceTypeEntity } from '../entities/SemanticRuleEntryInterfaceTypeEntity.ts';
+import { VscodeMetadata } from '../VscodeMetadata.ts';
 
 class SemanticRuleStyle {
   static defaultFontStyle(selector: string): string | undefined {
-    // selector may be 'variable' or 'variable.readonly'
     const baseType = selector.includes('.') ? selector.split('.')[0] : selector;
-    return baseType !== undefined && baseType.length > 0 ? (FONT_STYLES[baseType] ?? undefined) : undefined;
+    const result = baseType === undefined || baseType.length === 0 ? undefined : FONT_STYLES[baseType];
+    return result;
+  }
+
+  static entry(selector: string, rule: SemanticRuleEntryInterfaceTypeEntity.Type): SemanticRuleEntryInterfaceTypeEntity.Type {
+    const foreground = typeof rule.foreground === 'string' && rule.foreground.length > 0 ? rule.foreground : undefined;
+    const candidateFontStyle = typeof rule.fontStyle === 'string' ? rule.fontStyle : SemanticRuleStyle.defaultFontStyle(selector);
+    const fontStyle = candidateFontStyle !== undefined && candidateFontStyle.length > 0 ? candidateFontStyle : undefined;
+    const candidate = {
+      ...(fontStyle === undefined ? {} : { 'fontStyle': fontStyle }),
+      ...(foreground === undefined ? {} : { 'foreground': foreground })
+    };
+    const result = SemanticRuleEntryInterfaceTypeEntity.create(candidate);
+    return result;
   }
 }
 
 class EmitVscodeSemanticRules implements TaskInterface {
   readonly 'name' = 'emit:vscodeSemanticRules';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Shapes the semantic token rule map for VS Code editor.semanticTokenColorCustomizations.rules using SCOPE_MAPPINGS and FONT_STYLES.',
     'name':        'emit:vscodeSemanticRules',
-    'phase':       undefined,
     'reads':       ['metadata.vscode:semanticTokenRules', 'metadata.vscode:baseTokens'],
     'requires':    ['vscode:applyModifiers'],
     'writes':      ['outputs.vscode:semanticTokenRules']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    const semanticRules = (state.metadata['vscode:semanticTokenRules'] ?? {}) as Record<string, SemanticRuleEntryInterfaceType>;
-    const result: Record<string, SemanticRuleEntryInterfaceType> = {};
-
-    for (const [selector, rule] of Object.entries(semanticRules)) {
-      const foreground = rule.foreground !== undefined && rule.foreground.length > 0 ? rule.foreground : undefined;
-      // Apply font style: modifier transform style takes precedence,
-      // then fall back to FONT_STYLES for the base token type part of the selector.
-      const rawFontStyle = rule.fontStyle ?? SemanticRuleStyle.defaultFontStyle(selector);
-      const fontStyle = rawFontStyle !== undefined && rawFontStyle.length > 0 ? rawFontStyle : undefined;
-      const entry: SemanticRuleEntryInterfaceType = { 'fontStyle': fontStyle, 'foreground': foreground };
-      result[selector] = entry;
+    const semanticRules = VscodeMetadata.semanticTokenRules(state.metadata);
+    const emittedRules = new Map<string, SemanticRuleEntryInterfaceTypeEntity.Type>();
+    for (const [selector, rule] of semanticRules) {
+      emittedRules.set(selector, SemanticRuleStyle.entry(selector, rule));
     }
-
-    state.outputs['vscode:semanticTokenRules'] = result;
+    state.outputs['vscode:semanticTokenRules'] = JsonObject.fromEntries(emittedRules);
     context.logger.debug(
-      LogBody.create()
-        .component('EmitVscodeSemanticRules')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Emitted semantic token rules')
-        .context({ 'count': Object.keys(result).length })
-        .build()
+      LogBody.create({
+        'component': 'EmitVscodeSemanticRules',
+        'context': { 'count': emittedRules.size },
+        'message': 'Emitted semantic token rules',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
-
-    // Validate scope coverage: log any SCOPE_MAPPINGS keys with no colour
-    const baseTokens = (state.metadata['vscode:baseTokens'] ?? {}) as Record<string, ColorRecordInterfaceType>;
-    for (const key of Object.keys(VSCODE_SCOPE_MAPPINGS.mappings)) {
-      if (!(key in baseTokens) && !(key in result)) {
+    const baseTokens = VscodeMetadata.baseTokens(state.metadata);
+    const scopeNames = Object.keys(VSCODE_SCOPE_MAPPINGS.mappings);
+    for (let index = 0; index < scopeNames.length; index += 1) {
+      const scopeName = scopeNames.at(index);
+      if (scopeName !== undefined && !baseTokens.has(scopeName) && !emittedRules.has(scopeName)) {
         context.logger.debug(
-          LogBody.create()
-            .component('EmitVscodeSemanticRules')
-            .operation('run')
-            .status(LOG_STATUS.SKIPPED)
-            .message('No colour assigned for scope group')
-            .context({ 'scope': key })
-            .build()
+          LogBody.create({
+            'component': 'EmitVscodeSemanticRules',
+            'context': { 'scope': scopeName },
+            'message': 'No colour assigned for scope group',
+            'operation': 'run',
+            'status': LOG_STATUS.SKIPPED
+          })
         );
       }
     }

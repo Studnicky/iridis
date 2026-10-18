@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { GalleryAlgorithmType } from '@studnicky/iridis-image/types';
+import type { ClusterStrategyInterface } from '@studnicky/iridis-image';
 
 defineProps<{
-  algorithm: GalleryAlgorithmType;
+  strategy: ClusterStrategyInterface;
   deltaECap: number;
   histogramBits: number;
   harmonizeThreshold: number;
@@ -17,7 +17,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'update:algorithm': [algorithm: GalleryAlgorithmType];
+  'update:strategy': [strategy: ClusterStrategyInterface];
   'update:delta-e-cap': [cap: number];
   'update:histogram-bits': [bits: number];
   'update:harmonize-threshold': [threshold: number];
@@ -46,7 +46,7 @@ const open = ref(false);
         class="mt-3"
       >
         <ImageTuningFields
-          :algorithm="algorithm"
+          :strategy="strategy"
           :delta-e-cap="deltaECap"
           :histogram-bits="histogramBits"
           :harmonize-threshold="harmonizeThreshold"
@@ -58,7 +58,7 @@ const open = ref(false);
           :lightness-help="lightnessHelp"
           :chroma-help="chromaHelp"
           :show-algorithm-help="true"
-          @update:algorithm="emit('update:algorithm', $event)"
+          @update:strategy="emit('update:strategy', $event)"
           @update:delta-e-cap="emit('update:delta-e-cap', $event)"
           @update:histogram-bits="emit('update:histogram-bits', $event)"
           @update:harmonize-threshold="emit('update:harmonize-threshold', $event)"

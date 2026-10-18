@@ -15,14 +15,16 @@ class RoleGeometry {
 
   /** Midpoint of a declared `[min, max]` range. */
   static rangeCenter(range: readonly [number, number]): number {
-    return (range[0] + range[1]) / 2;
+    const result = (range[0] + range[1]) / 2;
+    return result;
   }
 
   /** Rotate `source` toward `target` along the shortest arc, by at most `maximumDegrees` degrees. */
   static hueTowards(source: number, target: number, maximumDegrees: number): number {
     const delta = ((target - source + 540) % 360) - 180;
     const clamped = Math.max(-maximumDegrees, Math.min(maximumDegrees, delta));
-    return (((source + clamped) % 360) + 360) % 360;
+    const result = (((source + clamped) % 360) + 360) % 360;
+    return result;
   }
 }
 

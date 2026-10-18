@@ -1,21 +1,22 @@
 import type {
-  ColorRecordInterfaceType,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { colorRecordFactory } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import {
+  colorRecordFactory,
+  TaskManifestInterfaceTypeEntity
+} from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 /**
  * `gallery:histogram`
  *
  * Bucket every record in `state.colors` into a 5-bit-per-channel sRGB
  * histogram (32 768 bins). Replaces `state.colors` with one weighted
- * `ColorRecordInterfaceType` per non-empty bin: the centroid is the
+ * `ColorRecordInterfaceTypeEntity.Type` per non-empty bin: the centroid is the
  * weighted-mean RGB of the bin's contributors, and `hints.weight` is
  * the count. Downstream clustering tasks (median-cut, deltaE-merge)
  * read `hints.weight` and proportionally cluster by pixel density.
@@ -49,11 +50,17 @@ class RangeList {
   static to(
     range: readonly [number, number] | readonly (readonly [number, number])[]
   ): readonly (readonly [number, number])[] {
-    return typeof range[0] === 'number' ? [range as readonly [number, number]] : range as readonly (readonly [number, number])[];
+    const result = typeof range[0] === 'number' ? [range as readonly [number, number]] : range as readonly (readonly [number, number])[];
+    return result;
   }
 
   static contains(ranges: readonly (readonly [number, number])[], value: number): boolean {
-    for (const [lowerBound, upperBound] of ranges) {
+    for (let index = 0; index < ranges.length; index += 1) {
+      const range = ranges[index];
+      if (range === undefined) {
+        continue;
+      }
+      const [lowerBound, upperBound] = range;
       if (value >= lowerBound && value <= upperBound) {return true;}
     }
     return false;
@@ -67,32 +74,41 @@ class HistogramMath {
     const redIndex = Math.min(levels - 1, Math.floor((red * 255) / denominator));
     const greenIndex = Math.min(levels - 1, Math.floor((green * 255) / denominator));
     const blueIndex = Math.min(levels - 1, Math.floor((blue * 255) / denominator));
-    return (redIndex << (2 * bits)) | (greenIndex << bits) | blueIndex;
+    const result = (redIndex << (2 * bits)) | (greenIndex << bits) | blueIndex;
+    return result;
+  }
+}
+
+class ColorList {
+  static at(colors: readonly ColorRecordInterfaceTypeEntity.Type[], index: number): ColorRecordInterfaceTypeEntity.Type {
+    const color = colors[index];
+    if (color === undefined) {
+      throw new RangeError(`Color index ${index} is outside the color list`);
+    }
+    return color;
   }
 }
 
 class GalleryHistogram implements TaskInterface {
   readonly 'name' = 'gallery:histogram';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Quantise pixels into a 5-bit-per-channel histogram; emits weighted records keyed by bin centroid.',
     'name':        'gallery:histogram',
-    'phase':       undefined,
     'reads':       ['colors'],
-    'requires':    undefined,
     'writes':      ['colors', 'metadata.gallery:histogram']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     if (state.colors.length === 0) {
       context.logger.warn(
-        LogBody.create()
-          .component('GalleryHistogram')
-          .operation('run')
-          .status(LOG_STATUS.INVALID)
-          .message('state.colors is empty; nothing to histogram')
-          .context({})
-          .build()
+        LogBody.create({
+          'component': 'GalleryHistogram',
+          'context': {},
+          'message': 'state.colors is empty; nothing to histogram',
+          'operation': 'run',
+          'status': LOG_STATUS.INVALID
+        })
       );
       return;
     }
@@ -113,7 +129,8 @@ class GalleryHistogram implements TaskInterface {
     let totalPixels = 0;
     let droppedFiltered = 0;
 
-    for (const c of state.colors) {
+    for (let colorIndex = 0; colorIndex < state.colors.length; colorIndex += 1) {
+      const c = ColorList.at(state.colors, colorIndex);
       if (c.alpha === 0) {continue;}
       // Range filters skip pixels outside the requested OKLCH lightness
       // or chroma envelope(s). Useful for ignoring black bars (low L) or
@@ -121,10 +138,8 @@ class GalleryHistogram implements TaskInterface {
       // toward the colors the user actually cares about. Each envelope is a
       // UNION of ranges — e.g. two disjoint lightness bands can both be kept
       // at once without also keeping the midtones between them.
-      const lightnessInRange = RangeList.contains(lRanges, c.oklch.l);
-      if (!lightnessInRange) { droppedFiltered++; continue; }
-      const chromaInRange = RangeList.contains(cRanges, c.oklch.c);
-      if (!chromaInRange) { droppedFiltered++; continue; }
+      const inRange = RangeList.contains(lRanges, c.oklch.l) && RangeList.contains(cRanges, c.oklch.c);
+      if (!inRange) { droppedFiltered++; continue; }
       const w = (typeof c.hints?.weight === 'number' && c.hints.weight > 0) ? c.hints.weight : 1;
       const key = HistogramMath.packBin(c.rgb.r, c.rgb.g, c.rgb.b, bits);
       const existing = bins.get(key);
@@ -146,19 +161,22 @@ class GalleryHistogram implements TaskInterface {
       totalPixels += w;
     }
 
-    const records: ColorRecordInterfaceType[] = [];
+    const records: ColorRecordInterfaceTypeEntity.Type[] = [];
     const binSummary: { 'hex': string; 'weight': number }[] = [];
     for (const acc of bins.values()) {
       const r = acc.rSum / acc.weight;
       const g = acc.gSum / acc.weight;
       const b = acc.bSum / acc.weight;
       const a = acc.aSum / acc.weight;
-      const record = colorRecordFactory.fromRgb(r, g, b, { 'alpha': a, 'hints': { 'intent': undefined, 'role': undefined, 'weight': acc.weight }, 'sourceFormat': 'imagePixel' });
+      const record = colorRecordFactory.fromRgb(r, g, b, { 'alpha': a, 'hints': { 'weight': acc.weight }, 'sourceFormat': 'imagePixel' });
       records.push(record);
       binSummary.push({ 'hex': record.hex, 'weight': acc.weight });
     }
 
-    binSummary.sort((x, y) => {return y.weight - x.weight;});
+    binSummary.sort((x, y) => {
+      const result = y.weight - x.weight;
+      return result;
+    });
 
     state.metadata['gallery:histogram'] = {
       'binCount':    binSummary.length,
@@ -169,18 +187,18 @@ class GalleryHistogram implements TaskInterface {
     state.colors.splice(0, state.colors.length, ...records);
 
     context.logger.info(
-      LogBody.create()
-        .component('GalleryHistogram')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('histogram built')
-        .context({
+      LogBody.create({
+        'component': 'GalleryHistogram',
+        'context': {
           'bins':            binSummary.length,
           'bitsPerChannel':  bits,
           'droppedFiltered': droppedFiltered,
           'inputPixels':     totalPixels
-        })
-        .build()
+        },
+        'message': 'histogram built',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

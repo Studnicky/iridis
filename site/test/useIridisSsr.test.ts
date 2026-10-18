@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
-import { register } from 'node:module';
+import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 
-import { IridisUiActionType } from '../app/composables/types/iridisUiEvent.ts';
+import { IridisUiEvent } from '../app/composables/types/iridisUiEvent.ts';
+import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
 
-register('./fixtures/NuxtImportsLoader.mjs', import.meta.url);
-
-const TEST_NUXT_APP = Symbol.for('iridis.test.nuxt-app');
+registerHooks(NuxtImportsLoader);
 
 await test('useIridis boots a resolved palette during SSR without starting browser image work', async () => {
   const { useIridis } = await import('../app/composables/useIridis.ts');
@@ -19,9 +18,9 @@ await test('useIridis boots a resolved palette during SSR without starting brows
   assert.equal(typeof state.roles.value.brand, 'string');
   assert.ok(state.sortedRoleContrastRows.value.length > 0);
 
-  state.send({ 'cvdType': 'protanopia', 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW });
+  state.send(IridisUiEvent.toggleCvdPreview('protanopia'));
   assert.equal(state.cvdPreviewTypes.value.has('protanopia'), true);
-  state.send({ 'cvdType': 'unsupported-preview', 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW });
+  state.send(IridisUiEvent.toggleCvdPreview('unsupported-preview'));
   assert.deepEqual([...state.cvdPreviewTypes.value], ['protanopia']);
 });
 
@@ -29,14 +28,14 @@ await test('useIridis shares one client context and isolates concurrent SSR requ
   const { useIridis } = await import('../app/composables/useIridis.ts');
   const firstNuxtApp = {};
   const secondNuxtApp = {};
-  context.after(() => { Reflect.deleteProperty(globalThis, TEST_NUXT_APP); });
+  context.after(() => { Reflect.set(globalThis, 'iridisTestNuxtApp', undefined); });
 
-  Reflect.set(globalThis, TEST_NUXT_APP, firstNuxtApp);
+  Reflect.set(globalThis, 'iridisTestNuxtApp', firstNuxtApp);
   const firstState = useIridis();
   const firstStateAgain = useIridis();
   assert.strictEqual(firstState.pickerSeeds, firstStateAgain.pickerSeeds);
 
-  Reflect.set(globalThis, TEST_NUXT_APP, secondNuxtApp);
+  Reflect.set(globalThis, 'iridisTestNuxtApp', secondNuxtApp);
   const secondState = useIridis();
   assert.notStrictEqual(firstState.pickerSeeds, secondState.pickerSeeds);
   assert.notStrictEqual(firstState.roles, secondState.roles);
@@ -47,10 +46,10 @@ await test('useIridis shares one client context and isolates concurrent SSR requ
   ];
   await Promise.all([
     Promise.resolve().then(() => {
-      firstState.send({ 'mode': 'image', 'type': IridisUiActionType.SELECT_MODE });
+      firstState.send(IridisUiEvent.selectImageMode());
     }),
     Promise.resolve().then(() => {
-      secondState.send({ 'mode': 'picker', 'type': IridisUiActionType.SELECT_MODE });
+      secondState.send(IridisUiEvent.selectPickerMode());
     })
   ]);
 

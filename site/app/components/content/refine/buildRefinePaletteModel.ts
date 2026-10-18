@@ -9,22 +9,38 @@ export const buildRefinePaletteModel = class RefinePaletteModelBuilder {
     'syntax-keyword', 'syntax-string', 'syntax-number', 'syntax-function', 'syntax-type',
     'syntax-comment', 'syntax-attribute', 'syntax-punctuation'
   ];
+  private static readonly roleGroupIndices = RefinePaletteModelBuilder.buildRoleGroupIndices();
 
   public static sortPinnableRoles(roles: readonly string[]): string[] {
     const result = [...roles].sort((left, right) => {
-      const leftIndex = this.roleGroupOrder.indexOf(left);
-      const rightIndex = this.roleGroupOrder.indexOf(right);
-      if (leftIndex === -1 && rightIndex === -1) {
-        return left.localeCompare(right);
+      const leftIndex = this.roleGroupIndices.get(left);
+      const rightIndex = this.roleGroupIndices.get(right);
+      if (leftIndex === undefined && rightIndex === undefined) {
+        const alphabeticalOrder = left.localeCompare(right);
+        return alphabeticalOrder;
       }
-      if (leftIndex === -1) {
-        return 1;
+      if (leftIndex === undefined) {
+        const afterKnownRole = 1;
+        return afterKnownRole;
       }
-      if (rightIndex === -1) {
-        return -1;
+      if (rightIndex === undefined) {
+        const beforeUnknownRole = -1;
+        return beforeUnknownRole;
       }
-      return leftIndex - rightIndex;
+      const groupOrder = leftIndex - rightIndex;
+      return groupOrder;
     });
     return result;
+  }
+
+  private static buildRoleGroupIndices(): ReadonlyMap<string, number> {
+    const indices = new Map<string, number>();
+    for (let index = 0; index < this.roleGroupOrder.length; index += 1) {
+      const roleName = this.roleGroupOrder[index];
+      if (roleName !== undefined) {
+        indices.set(roleName, index);
+      }
+    }
+    return indices;
   }
 };

@@ -1,23 +1,46 @@
-import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
+import type { GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
 
 import { ALGORITHM_LABELS } from '~/composables/algorithmLabels.ts';
 
+abstract class PaletteCandidateSelection {
+  public abstract isCurrent(): boolean;
+
+  public static resolve(candidateLabel: string, selectedLabel: string | null): PaletteCandidateSelection {
+    const result = candidateLabel === selectedLabel
+      ? new SelectedPaletteCandidateSelection()
+      : new UnselectedPaletteCandidateSelection();
+    return result;
+  }
+}
+
+class SelectedPaletteCandidateSelection extends PaletteCandidateSelection {
+  public isCurrent(): boolean {
+    return true;
+  }
+}
+
+class UnselectedPaletteCandidateSelection extends PaletteCandidateSelection {
+  public isCurrent(): boolean {
+    return false;
+  }
+}
+
 class PaletteCandidateModel {
-  public readonly candidate: GalleryCandidateInterfaceType;
+  public readonly candidate: GalleryCandidateOutputEntity.Type;
   public readonly humanLabel: string;
-  public readonly isSelected: boolean;
+  public readonly selection: PaletteCandidateSelection;
   public readonly swatchAriaLabelPrefix: string;
   public readonly swatches: string[];
 
   public constructor(
-    candidate: GalleryCandidateInterfaceType,
+    candidate: GalleryCandidateOutputEntity.Type,
     humanLabel: string,
-    isSelected: boolean,
+    selection: PaletteCandidateSelection,
     swatches: string[]
   ) {
     this.candidate = candidate;
     this.humanLabel = humanLabel;
-    this.isSelected = isSelected;
+    this.selection = selection;
     this.swatchAriaLabelPrefix = `Candidate ${humanLabel} color`;
     this.swatches = swatches;
   }
@@ -25,7 +48,7 @@ class PaletteCandidateModel {
 
 export const buildPaletteCandidateModel = class PaletteCandidateModelBuilder {
   public static build(
-    candidates: readonly GalleryCandidateInterfaceType[],
+    candidates: readonly GalleryCandidateOutputEntity.Type[],
     selectedLabel: string | null
   ): readonly PaletteCandidateModel[] {
     const result = candidates.map((candidate) => {
@@ -37,7 +60,7 @@ export const buildPaletteCandidateModel = class PaletteCandidateModelBuilder {
       return new PaletteCandidateModel(
         candidate,
         humanLabel,
-        selectedLabel === candidate.label,
+        PaletteCandidateSelection.resolve(candidate.label, selectedLabel),
         swatches
       );
     });

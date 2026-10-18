@@ -45,7 +45,7 @@ export const CodeSampleChrome = class CodeSampleChromeInstaller {
 
   private static languageLabel(language: string): string {
     if (language.length === 0) {return 'Code';}
-    return language
+    const label = language
       .split(CODE_SAMPLE_CHROME_CONSTANTS.languagePartsPattern)
       .reduce<string[]>((parts, part) => {
         if (part.length > 0) {
@@ -54,6 +54,7 @@ export const CodeSampleChrome = class CodeSampleChromeInstaller {
         return parts;
       }, [])
       .join(' ');
+    return label;
   }
 
   private static upgradeCodeBlock(block: HTMLElement): void {

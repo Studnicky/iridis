@@ -1,35 +1,34 @@
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
-
 import { evaluate } from '@studnicky/iridis-anima';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { ValueBinding } from '../src/ValueBinding.ts';
-
-const FROM: PaletteInterfaceType = {
-  'accent':     { 'c': 0.15, 'h': 10, 'l': 0.55 },
-  'background': { 'c': 0.02, 'h': 240, 'l': 0.98 }
-};
-
-const TO: PaletteInterfaceType = {
-  'accent':     { 'c': 0.15, 'h': 240, 'l': 0.55 },
-  'background': { 'c': 0.02, 'h': 240, 'l': 0.10 }
-};
+import { ValueBindingPaletteFixture } from './fixtures/ValueBindingPaletteFixture.ts';
 
 void test('scroll position drives a real anima palette evaluation via ValueBinding', () => {
-  const scroll = ValueBinding.create({ 'clamp': undefined, 'max': 500, 'min': 0 });
+  const scroll = ValueBinding.create({ 'maximum': 500, 'minimum': 0 });
 
   let scrollY = 0;
-  const startPalette = evaluate(FROM, TO, scroll.mapToT(scrollY));
-  assert.strictEqual(startPalette.background!.l, FROM.background!.l);
-  assert.strictEqual(startPalette.accent!.h, FROM.accent!.h);
+  const startPalette = evaluate(ValueBindingPaletteFixture.from, ValueBindingPaletteFixture.to, scroll.mapToT(scrollY));
+  const startBackground = startPalette.background;
+  const startAccent = startPalette.accent;
+  assert.ok(startBackground !== undefined);
+  assert.ok(startAccent !== undefined);
+  assert.strictEqual(startBackground.l, ValueBindingPaletteFixture.from.background.l);
+  assert.strictEqual(startAccent.h, ValueBindingPaletteFixture.from.accent.h);
 
   scrollY = 250;
-  const midPalette = evaluate(FROM, TO, scroll.mapToT(scrollY));
-  assert.ok(Math.abs(midPalette.background!.l - 0.54) < 1e-6, `midpoint L, got ${midPalette.background!.l}`);
+  const midPalette = evaluate(ValueBindingPaletteFixture.from, ValueBindingPaletteFixture.to, scroll.mapToT(scrollY));
+  const midBackground = midPalette.background;
+  assert.ok(midBackground !== undefined);
+  assert.ok(Math.abs(midBackground.l - 0.54) < 1e-6, 'midpoint L must be 0.54');
 
   scrollY = 500;
-  const endPalette = evaluate(FROM, TO, scroll.mapToT(scrollY));
-  assert.ok(Math.abs(endPalette.background!.l - TO.background!.l) < 1e-9);
-  assert.strictEqual(endPalette.accent!.h, TO.accent!.h);
+  const endPalette = evaluate(ValueBindingPaletteFixture.from, ValueBindingPaletteFixture.to, scroll.mapToT(scrollY));
+  const endBackground = endPalette.background;
+  const endAccent = endPalette.accent;
+  assert.ok(endBackground !== undefined);
+  assert.ok(endAccent !== undefined);
+  assert.ok(Math.abs(endBackground.l - ValueBindingPaletteFixture.to.background.l) < 1e-9);
+  assert.strictEqual(endAccent.h, ValueBindingPaletteFixture.to.accent.h);
 });

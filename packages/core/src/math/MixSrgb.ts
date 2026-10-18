@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
 
 import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
@@ -6,13 +6,14 @@ import { colorRecordFactory } from './ColorRecordFactory.ts';
 class MixSrgb {
   readonly 'name' = 'mixSrgb';
 
-  apply(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType, t: number): ColorRecordInterfaceType {
+  apply(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type, t: number): ColorRecordInterfaceTypeEntity.Type {
     const tc = clamp01.apply(t);
     const r = a.rgb.r + (b.rgb.r - a.rgb.r) * tc;
     const g = a.rgb.g + (b.rgb.g - a.rgb.g) * tc;
     const bv = a.rgb.b + (b.rgb.b - a.rgb.b) * tc;
     const alpha = a.alpha + (b.alpha - a.alpha) * tc;
-    return colorRecordFactory.fromRgb(r, g, bv, { 'alpha': alpha });
+    const mixed = colorRecordFactory.fromRgb(r, g, bv, { 'alpha': alpha });
+    return mixed;
   }
 }
 

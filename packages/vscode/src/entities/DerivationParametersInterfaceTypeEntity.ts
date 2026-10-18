@@ -1,6 +1,6 @@
-import type { FromSchema, JsonValueType } from '@studnicky/types';
+import type { InferType } from '@studnicky/json-tology/types';
 
-import { Guard } from '@studnicky/types';
+import { EntityCompiler } from '@studnicky/entity/node';
 
 import { DerivationParametersSchema } from '../DerivationParametersSchema.ts';
 
@@ -8,13 +8,9 @@ import { DerivationParametersSchema } from '../DerivationParametersSchema.ts';
 export namespace DerivationParametersInterfaceTypeEntity {
   export const Schema = { ...DerivationParametersSchema, 'required': [] } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = InferType<typeof Schema>;
 
-  export const validate = (candidate: JsonValueType): candidate is Type => {
-    if (!Guard.isObject(candidate)) {return false;}
-    const hueValid   = candidate.hue === undefined || typeof candidate.hue === 'number';
-    const lightValid = candidate.light === undefined || typeof candidate.light === 'number';
-    const satValid   = candidate.sat === undefined || typeof candidate.sat === 'number';
-    return hueValid && lightValid && satValid;
-  };
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type>(Schema);
 }

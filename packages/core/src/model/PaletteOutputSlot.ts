@@ -5,12 +5,14 @@
  * the slot object on first access and returns it so subsequent emit
  * tasks in the same plugin family share the same reference.
  *
- * The returned type is `JsonObjectType`; plugin tasks narrow it to their
+ * The returned JSON record is safe for plugin tasks to narrow to their
  * concrete slot shape after retrieval. Invalid runtime values are replaced
  * with a fresh object so callers always receive an object-shaped slot.
  */
 
-import { JsonObject, type JsonObjectType } from '@studnicky/types';
+import type { JSONSchema7Type } from 'json-schema';
+
+import { JsonObject, JsonValue } from '@studnicky/types/node';
 
 import type { PaletteStateInterface } from '../types/index.ts';
 
@@ -18,13 +20,18 @@ class PaletteOutputSlot {
   static getOrCreate(
     state: PaletteStateInterface,
     key:   string
-  ): JsonObjectType {
-    const existing = state.outputs[key];
-    if (JsonObject.is(existing)) {
-      return existing;
+  ): Record<string, JSONSchema7Type> {
+    const descriptor = Object.getOwnPropertyDescriptor(state.outputs, key);
+    if (descriptor !== undefined && JsonObject.is(descriptor.value) && JsonValue.is(descriptor.value)) {
+      return descriptor.value;
     }
-    const fresh: JsonObjectType = {};
-    state.outputs[key] = fresh;
+    const fresh: Record<string, JSONSchema7Type> = {};
+    Object.defineProperty(state.outputs, key, {
+      'configurable': true,
+      'enumerable': true,
+      'value': fresh,
+      'writable': true
+    });
     return fresh;
   }
 }

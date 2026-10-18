@@ -1,7 +1,8 @@
-import type { ColorRecordInterfaceType, InputInterface, PaletteStateInterface, PipelineContextInterface } from '@studnicky/iridis';
+import type { ColorRecordInterfaceTypeEntity, PaletteStateInterface, PipelineContextInterface } from '@studnicky/iridis';
 
+import { InputInterfaceTypeEntity, Metadata, RoleProvenanceInterfaceTypeEntity, RuntimeOptionsInterfaceTypeEntity } from '@studnicky/iridis';
 import { emitVscodeUiPalette } from '@studnicky/iridis-vscode';
-import { consoleLogger, Engine } from '@studnicky/iridis/engine';
+import { consoleLogger } from '@studnicky/iridis/engine';
 import { colorRecordFactory, mixHsl } from '@studnicky/iridis/math';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -61,47 +62,48 @@ const EXTENSION_OWNERSHIP: Readonly<Record<string, readonly string[]>> = {
 
 class Vscode64Fixture {
   static context(): PipelineContextInterface {
-    const engine = new Engine();
-    return { 'engine': engine, 'logger': consoleLogger, 'startedAt': Date.now(), 'tasks': engine.tasks };
+    return { 'logger': consoleLogger, 'startedAt': Date.now() };
   }
 
+  static statedProvenance(roleNames: readonly string[]): Map<string, RoleProvenanceInterfaceTypeEntity.Type> {
+    const provenance = new Map<string, RoleProvenanceInterfaceTypeEntity.Type>();
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const name = roleNames.at(index);
+      if (name !== undefined) {
+        provenance.set(name, RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': [], 'origin': 'stated' }));
+      }
+    }
+    return provenance;
+  }
 
   static state(stated = true): PaletteStateInterface {
     const schema = VSCODE_ROLE_SCHEMAS_64.dark;
     const roleNames: string[] = [];
     const roleCount = schema.roles.length;
-    const roles: Record<string, ColorRecordInterfaceType> = {};
+    const roles: Record<string, ColorRecordInterfaceTypeEntity.Type> = {};
     for (let index = 0; index < roleCount; index += 1) {
       const name = schema.roles[index]?.name;
       if (name === undefined) {
         throw new TypeError(`Missing role definition at ${index}`);
       }
       roleNames.push(name);
-      roles[name] = colorRecordFactory.fromOklch(0.35 + ((index % 6) * 0.08), 0.08 + ((index % 3) * 0.03), (index * 37) % 360, {
-        'hints': { 'intent': undefined, 'role': name, 'weight': undefined },
+      const color = colorRecordFactory.fromOklch(0.35 + ((index % 6) * 0.08), 0.08 + ((index % 3) * 0.03), (index * 37) % 360, {
+        'hints': { 'role': name },
         'sourceFormat': 'oklch'
       });
+      Object.defineProperty(roles, name, { 'configurable': true, 'enumerable': true, 'value': color, 'writable': true });
     }
-    const roleProvenance = Object.fromEntries(roleNames.map((name) => {
-      return [name, { 'adjustments': [], 'origin': 'stated' }];
-    }));
-    const input: InputInterface = {
-      'bypass':    undefined,
-      'colors':    [],
-      'contrast':  undefined,
-      'emit':      undefined,
-      'maxColors': undefined,
-      'metadata':  undefined,
-      'roles':     schema,
-      'runtime':   undefined
-    };
+    const metadata = {};
+    if (stated) {
+      Metadata.writeRoleProvenance(metadata, Vscode64Fixture.statedProvenance(roleNames));
+    }
     return {
-      'colors':   [],
-      'input':    input,
-      'metadata': { 'core:roleProvenance': stated ? roleProvenance : {} },
-      'outputs':  {},
-      'roles':    roles,
-      'runtime':  { 'colorSpace': undefined, 'extra': undefined, 'framing': undefined },
+      'colors': [],
+      'input': InputInterfaceTypeEntity.create({ 'colors': [], 'roles': schema }),
+      'metadata': metadata,
+      'outputs': {},
+      'roles': roles,
+      'runtime': RuntimeOptionsInterfaceTypeEntity.create({}),
       'variants': {}
     };
   }
@@ -120,47 +122,103 @@ class Vscode64Fixture {
       throw new TypeError('Expected vscode:workbenchColors object output');
     }
     const colors: Record<string, string> = {};
-    for (const [key, value] of Object.entries(output)) {
+    const entries = Object.entries(output);
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries.at(index);
+      if (entry === undefined) {
+        continue;
+      }
+      const [key, value] = entry;
       if (typeof value !== 'string') {
         throw new TypeError(`Expected string workbench color for ${key}`);
       }
-      colors[key] = value;
+      Object.defineProperty(colors, key, { 'configurable': true, 'enumerable': true, 'value': value, 'writable': true });
     }
     return colors;
+  }
+
+  static colorOf(colors: Record<string, string>, key: string): string {
+    const value = Reflect.get(colors, key);
+    if (typeof value !== 'string') {
+      throw new TypeError(`Missing workbench color for ${key}`);
+    }
+    return value;
+  }
+
+
+  static compareNames(left: string, right: string): number {
+    const result = left.localeCompare(right);
+    return result;
+  }
+
+  static compareProvenance(
+    left: readonly [string, RoleProvenanceInterfaceTypeEntity.Type],
+    right: readonly [string, RoleProvenanceInterfaceTypeEntity.Type]
+  ): number {
+    const result = Vscode64Fixture.compareNames(left[0], right[0]);
+    return result;
+  }
+
+  static hasPortableSrgbHex(value: string): boolean {
+    const hexadecimal = Number.parseInt(value.slice(1), 16);
+    const result = value.startsWith('#') && (value.length === 7 || value.length === 9) && Number.isFinite(hexadecimal);
+    return result;
+  }
+
+  static hasChangedOwnedColor(changed: Record<string, string>, baseline: Record<string, string>, keys: readonly string[]): boolean {
+    for (let index = 0; index < keys.length; index += 1) {
+      const key = keys.at(index);
+      if (key !== undefined && Vscode64Fixture.colorOf(changed, key) !== Vscode64Fixture.colorOf(baseline, key)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
 await test('Vscode64RoleEmission :: all 64 caller-stated roles emit the canonical 129-key sRGB registry surface', () => {
   const state = Vscode64Fixture.run();
-  const expectedRoles = Object.keys(Vscode64Fixture.state().roles).sort();
-  const actualRoles = Object.keys(state.roles).sort();
+  const expectedRoles = Object.keys(Vscode64Fixture.state().roles).sort(Vscode64Fixture.compareNames);
+  const actualRoles = Object.keys(state.roles).sort(Vscode64Fixture.compareNames);
   const colors = Vscode64Fixture.colors(state);
+  const expectedMetadata = {};
+  Metadata.writeRoleProvenance(expectedMetadata, Vscode64Fixture.statedProvenance(expectedRoles));
 
   assert.deepStrictEqual(actualRoles, expectedRoles, 'all 64 supplied role names remain present');
-  assert.deepStrictEqual(
-    state.metadata['core:roleProvenance'],
-    Object.fromEntries(expectedRoles.map((role) => { return [role, { 'adjustments': [], 'origin': 'stated' }]; })),
-    'all 64 supplied role names record caller-stated provenance'
-  );
-  for (const role of expectedRoles) {
-    assert.strictEqual(state.roles[role]?.hints?.role, role, `${role} remains caller-stated through derivation`);
+  const actualProvenance = Array.from(Metadata.roleProvenance(state.metadata).entries()).sort(Vscode64Fixture.compareProvenance);
+  const expectedProvenance = Array.from(Metadata.roleProvenance(expectedMetadata).entries()).sort(Vscode64Fixture.compareProvenance);
+  assert.deepStrictEqual(actualProvenance, expectedProvenance, 'all 64 supplied role names record caller-stated provenance');
+  for (let index = 0; index < expectedRoles.length; index += 1) {
+    const role = expectedRoles.at(index);
+    if (role !== undefined) {
+      assert.strictEqual(Reflect.get(state.roles, role).hints?.role, role, `${role} remains caller-stated through derivation`);
+    }
   }
   assert.strictEqual(Object.keys(colors).length, 129, 'all and only the canonical registry-backed workbench keys emit');
   assert.ok(!Object.hasOwn(colors, 'warningForeground'), 'inert warningForeground is absent');
-  for (const [key, value] of Object.entries(colors)) {
-    assert.match(value, /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/, `${key} emits portable sRGB hex`);
+  const colorEntries = Object.entries(colors);
+  for (let index = 0; index < colorEntries.length; index += 1) {
+    const entry = colorEntries.at(index);
+    if (entry !== undefined) {
+      const [key, value] = entry;
+      assert.ok(Vscode64Fixture.hasPortableSrgbHex(value), `${key} emits portable sRGB hex`);
+    }
   }
 });
 
 await test('Vscode64RoleEmission :: each extension role controls an owned workbench group', () => {
   const baseline = Vscode64Fixture.colors(Vscode64Fixture.run());
+  const ownershipEntries = Object.entries(EXTENSION_OWNERSHIP);
 
-  for (const [role, keys] of Object.entries(EXTENSION_OWNERSHIP)) {
+  for (let index = 0; index < ownershipEntries.length; index += 1) {
+    const entry = ownershipEntries.at(index);
+    if (entry === undefined) {
+      continue;
+    }
+    const [role, keys] = entry;
     const state = Vscode64Fixture.run();
-    state.roles[role] = colorRecordFactory.fromHex('#ff00ff', {
-      'hints': { 'intent': undefined, 'role': role, 'weight': undefined },
-      'sourceFormat': 'hex'
-    });
+    const color = colorRecordFactory.fromHex('#ff00ff', { 'hints': { 'role': role }, 'sourceFormat': 'hex' });
+    Object.defineProperty(state.roles, role, { 'configurable': true, 'enumerable': true, 'value': color, 'writable': true });
     emitVscodeUiPalette.run(state, Vscode64Fixture.context());
     const changed = Vscode64Fixture.colors(state);
     if (role === 'bracketMatch') {
@@ -168,7 +226,7 @@ await test('Vscode64RoleEmission :: each extension role controls an owned workbe
       assert.notStrictEqual(changed['editorBracketMatch.border'], baseline['editorBracketMatch.border'], 'bracketMatch changes the bracket border');
       continue;
     }
-    assert.ok(keys.some((key) => { return changed[key] !== baseline[key]; }), `${role} changes an owned output key`);
+    assert.ok(Vscode64Fixture.hasChangedOwnedColor(changed, baseline, keys), `${role} changes an owned output key`);
   }
 });
 

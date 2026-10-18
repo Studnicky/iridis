@@ -1,6 +1,6 @@
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
 
-import type { CurveOptionsInterfaceType } from './types/index.ts';
+import type { CurveOptionsInterface } from './interfaces/CurveOptionsInterface.ts';
 
 import { evaluate } from './Evaluate.ts';
 
@@ -12,10 +12,10 @@ import { evaluate } from './Evaluate.ts';
  */
 class EvaluateStops {
   static apply(
-    stops: readonly PaletteInterfaceType[],
+    stops: readonly PaletteInterfaceTypeEntity.Type[],
     t: number,
-    options?: CurveOptionsInterfaceType
-  ): PaletteInterfaceType {
+    options?: CurveOptionsInterface
+  ): PaletteInterfaceTypeEntity.Type {
     if (stops.length === 0) {throw new Error('evaluateStops() requires at least one stop');}
     if (stops.length === 1) {return stops[0]!;}
 
@@ -27,7 +27,8 @@ class EvaluateStops {
 
     const from = stops[segmentIndex]!;
     const to   = stops[segmentIndex + 1]!;
-    return evaluate(from, to, localT, options);
+    const result = evaluate(from, to, localT, options);
+    return result;
   }
 }
 

@@ -26,12 +26,22 @@ class ViteModule {
 
 /** Persisted, SSR-safe active theme key. Module-level so every consumer shares one instance. */
 const activeThemeKey = VueModule.ref<string>(THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY);
+const initialTheme = THEMES.get(THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY);
+if (initialTheme === undefined) {
+  throw new TypeError('Theme registry must contain the default theme');
+}
+const defaultTheme: ThemeDefinitionInterfaceType = initialTheme;
 
 /** Reactive ambient config AmbientBackground.vue reads — kept as its own ref so the component only re-renders on ambient changes, not on unrelated theme fields. */
-const activeAmbient = VueModule.ref<ThemeDefinitionInterfaceType['ambient']>(THEMES[THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY]!.ambient);
+const activeAmbient = VueModule.ref<ThemeDefinitionInterfaceType['ambient']>(defaultTheme.ambient);
 
 /** DOM writer — SSR-guarded. Sets the theme data attribute (its own adapter stylesheet cascades in font/radius/border-style) and updates the reactive ambient config. */
 class ThemePreset {
+  static resolve(key: string): ThemeDefinitionInterfaceType {
+    const result = THEMES.get(key) ?? defaultTheme;
+    return result;
+  }
+
   /**
    * `<html>` sits outside the Vue-managed tree Nuxt hydrates (that starts at
    * `#__nuxt`), so writing its data attribute is invisible to hydration
@@ -43,12 +53,12 @@ class ThemePreset {
    */
   static writeDomAttribute(key: string): void {
     if (typeof document === 'undefined') { return; }
-    const theme = THEMES[key] ?? THEMES[THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY]!;
+    const theme = ThemePreset.resolve(key);
     document.documentElement.dataset.iridisTheme = theme.key;
   }
 
   static apply(key: string): void {
-    const theme = THEMES[key] ?? THEMES[THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY]!;
+    const theme = ThemePreset.resolve(key);
     activeAmbient.value = theme.ambient;
     ThemePreset.writeDomAttribute(key);
   }
@@ -56,7 +66,7 @@ class ThemePreset {
   static readPersistedKey(): string {
     if (typeof window === 'undefined') { return THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY; }
     const stored = window.localStorage.getItem(THEME_PRESET_CONSTANTS.STORAGE_KEY);
-    if (stored !== null && THEMES[stored] !== undefined) { return stored; }
+    if (stored !== null && THEMES.has(stored)) { return stored; }
     return THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY;
   }
 }
@@ -71,7 +81,7 @@ class UseThemePresetOperation {
     'activeAmbient': typeof activeAmbient;
     'activeThemeKey': typeof activeThemeKey;
     'applyThemePreset': (key: string) => void;
-    'THEMES': Record<string, ThemeDefinitionInterfaceType>;
+    'THEMES': ReadonlyMap<string, ThemeDefinitionInterfaceType>;
   } {
     if (!booted) {
       booted = true;

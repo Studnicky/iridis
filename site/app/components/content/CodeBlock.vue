@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { highlightCode } from '~/theme/highlightCode.ts';
-import type { SupportedLangType } from '~/composables/types/supportedLang.ts';
+import type { SUPPORTED_LANGS } from '~/theme/supportedLangs.ts';
 import { buildCodeBlockViewModel } from './code/buildCodeBlockViewModel.ts';
 import { trustedMarkupRenderer } from './trustedMarkupRenderer.ts';
 
@@ -21,7 +21,7 @@ import { trustedMarkupRenderer } from './trustedMarkupRenderer.ts';
  * for long formats (JSON, RDF, Android XML) behind a "Show full file"
  * disclosure; Copy always copies the full `code`, regardless of preview state.
  */
-const props = defineProps<{ code: string; lang: SupportedLangType.Type; vscodeTheme: object; caption?: string; previewLines?: number }>();
+const props = defineProps<{ code: string; lang: typeof SUPPORTED_LANGS[number]; vscodeTheme: object; caption?: string; previewLines?: number }>();
 
 // Top-level await so SSR/prerender waits for the highlighted HTML before
 // serializing the page — a fire-and-forget watch() never resolves in time
@@ -72,7 +72,7 @@ const previewState = computed(() => buildCodeBlockViewModel.previewState(
   props.code,
   props.previewLines
 ));
-const expanded = ref(previewState.value.expandedByDefault);
+const expanded = ref(previewState.value.initialHeightClass === previewState.value.expandedHeightClass);
 </script>
 
 <template>
@@ -100,16 +100,16 @@ const expanded = ref(previewState.value.expandedByDefault);
     <div
       ref="codeMarkupRef"
       class="code-block overflow-auto text-xs leading-relaxed [&_pre]:rounded-none [&_pre]:p-3"
-      :class="previewState.isLong && !expanded ? 'max-h-40' : 'max-h-[28rem]'"
+      :class="expanded ? previewState.expandedHeightClass : previewState.collapsedHeightClass"
     />
     <button
-      v-if="previewState.isLong"
+      v-if="previewState.disclosureLabel"
       type="button"
       class="code-block-expander"
       :aria-expanded="expanded"
       @click="expanded = !expanded"
     >
-      <span>{{ expanded ? 'Show less' : `Show full file (${previewState.totalLines} lines)` }}</span>
+      <span>{{ expanded ? 'Show less' : previewState.disclosureLabel }}</span>
       <UIcon
         name="i-material-symbols-keyboard-arrow-down-rounded"
         class="size-4 transition-transform duration-200"

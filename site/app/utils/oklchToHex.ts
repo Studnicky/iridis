@@ -4,7 +4,8 @@ import { oklchToRgb, rgbToHex } from '@studnicky/iridis/math';
 class OklchToHexOperation {
   static run(l: number, c: number, h: number): string {
     const rgb = oklchToRgb.apply(l, c, h).rgb;
-    return rgbToHex.apply(rgb.r, rgb.g, rgb.b);
+    const hex = rgbToHex.apply(rgb.r, rgb.g, rgb.b);
+    return hex;
   }
 }
 

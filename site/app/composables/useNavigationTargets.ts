@@ -2,39 +2,37 @@ import * as VueModule from 'vue';
 
 import { useNuxtApp } from '#imports';
 
-import type { NavigationTargetInterfaceType } from './types/navigationTarget.ts';
-
 import { documentPanelId } from './documentPanelId.ts';
 import { PanelAccordionState } from './panelAccordionState.ts';
 import { sanitizeDocumentAnchorId } from './sanitizeDocumentAnchorId.ts';
 import { STAGE_GROUPS } from './stageGroups.ts';
+import { NavigationTargetInterfaceType } from './types/navigationTargetInterfaceType.ts';
 
 const cardTargets: readonly NavigationTargetInterfaceType[] = STAGE_GROUPS.flatMap((group) => {
   const result = group.items.map((item) => {
-    return {
-      'id': item.key, 'kind': 'card', 'label': item.label, 'panelId': undefined, 'stage': group.name
-    } satisfies NavigationTargetInterfaceType;
+    const result = NavigationTargetInterfaceType.card(item.key, item.label, group.name);
+    return result;
   });
   return result;
 });
 
 const stageTargets: readonly NavigationTargetInterfaceType[] = STAGE_GROUPS.map((group) => {
-  return {
-    'id': group.name,
-    'kind': 'stage',
-    'label': group.label,
-    'panelId': undefined,
-    'stage': undefined
-  } satisfies NavigationTargetInterfaceType;
+  const result = NavigationTargetInterfaceType.stage(group.name, group.label);
+  return result;
 });
 
 class CardIndexOperation {
   static run(id: string): number {
-    for (const group of STAGE_GROUPS) {
-      const index = group.items.findIndex((item) => { return item.key === id; });
-      if (index !== -1) { return index; }
+    let result = -1;
+    for (let groupIndex = 0; groupIndex < STAGE_GROUPS.length; groupIndex += 1) {
+      const group = STAGE_GROUPS[groupIndex]!;
+      result = group.items.findIndex((item) => {
+        const matchesId = item.key === id;
+        return matchesId;
+      });
+      if (result !== -1) { break; }
     }
-    return -1;
+    return result;
   }
 }
 
@@ -44,7 +42,8 @@ class NavigationTargetsContext {
   readonly #documentTargets = VueModule.shallowRef<readonly NavigationTargetInterfaceType[]>([]);
   readonly #stageIndexSetters = new Map<string, (index: number) => void>();
   readonly #targets = VueModule.computed<readonly NavigationTargetInterfaceType[]>(() => {
-    return [...cardTargets, ...stageTargets, ...this.#documentTargets.value];
+    const result = [...cardTargets, ...stageTargets, ...this.#documentTargets.value];
+    return result;
   });
 
   #documentCommitScheduled = false;
@@ -60,17 +59,20 @@ class NavigationTargetsContext {
   }
 
   readonly activateTarget = (id: string): void => {
-    const target = this.#targets.value.find((candidate) => { return candidate.id === id; });
+    const target = this.#targets.value.find((candidate) => {
+      const result = candidate.id === id;
+      return result;
+    });
     if (target === undefined) { return; }
 
     const requestIdentifier = this.#beginNavigation();
-    if (target.kind === 'card' && target.stage !== undefined) {
+    if (target.isCard() && target.stage !== undefined) {
       this.#stageIndexSetters.get(target.stage)?.(CardIndexOperation.run(target.id));
       this.#scrollToId(target.stage);
       return;
     }
 
-    if (target.kind === 'doc' && target.panelId !== undefined) {
+    if (target.isDocument() && target.panelId !== undefined) {
       if (
         this.#lastActivatedDocumentPanelId !== undefined
         && this.#lastActivatedDocumentPanelId !== target.panelId
@@ -97,13 +99,12 @@ class NavigationTargetsContext {
     documents: readonly { readonly 'path': string; readonly 'title'?: string }[]
   ): void => {
     this.#documentTargets.value = documents.map((documentEntry) => {
-      return {
-        'id': sanitizeDocumentAnchorId(documentEntry.path),
-        'kind': 'doc',
-        'label': documentEntry.title ?? documentEntry.path,
-        'panelId': documentPanelId(documentEntry.path),
-        'stage': undefined
-      };
+      const result = NavigationTargetInterfaceType.document(
+        sanitizeDocumentAnchorId(documentEntry.path),
+        documentEntry.title ?? documentEntry.path,
+        documentPanelId(documentEntry.path)
+      );
+      return result;
     });
   };
 
@@ -112,18 +113,20 @@ class NavigationTargetsContext {
   };
 
   use() {
-    return {
+    const result = {
       'activateTarget': this.activateTarget,
       'cardTargets': cardTargets,
       'registerDocumentTargets': this.registerDocumentTargets,
       'registerStageIndexSetter': this.registerStageIndexSetter,
       'stageTargets': stageTargets
     };
+    return result;
   }
 
   #beginNavigation(): number {
     this.cancelPendingNavigation();
-    return this.#navigationRequestIdentifier;
+    const result = this.#navigationRequestIdentifier;
+    return result;
   }
 
   #cancelDocumentScrollFrame(): void {
@@ -202,7 +205,8 @@ class UseNavigationTargetsOperation {
     if (VueModule.getCurrentScope() !== undefined) {
       VueModule.onScopeDispose(context.cancelPendingNavigation);
     }
-    return context.use();
+    const result = context.use();
+    return result;
   }
 }
 

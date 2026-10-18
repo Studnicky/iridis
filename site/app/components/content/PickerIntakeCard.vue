@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
-import { useModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
+import { UseModeGuardedSend } from '~/composables/useModeGuardedSend.ts';
 import { buildPickerSeedModel } from './picker/buildPickerSeedModel.ts';
 
 /**
@@ -18,7 +18,7 @@ const { pickerSeeds, mode } = useIridis();
 const { send } = useIridisUiMachine();
 
 /** Palette hue edits imply the engine should theme from picker seeds, not an extracted image. */
-const sendPickerAction = useModeGuardedSend(mode, send, 'picker');
+const sendPickerAction = UseModeGuardedSend.picker(send);
 
 /**
  * The hex text next to the swatch used to be a plain read-only label — the
@@ -36,18 +36,18 @@ function commitHexText(index: number, event: Event): void {
   const input = event.target;
   const result = buildPickerSeedModel.buildHexCommitResult(input.value, pickerSeeds.value[index]?.hex ?? '');
   if (result.acceptedHex !== null) {
-    sendPickerAction({ hex: result.acceptedHex, index, type: IridisUiActionType.SET_SEED });
+    sendPickerAction(IridisUiEvent.setSeed(index, result.acceptedHex));
     return;
   }
   input.value = result.inputValue;
 }
 
 function removeSeed(index: number): void {
-  sendPickerAction({ index, 'type': IridisUiActionType.REMOVE_SEED });
+  sendPickerAction(IridisUiEvent.removeSeed(index));
 }
 
 function setSeedColor(index: number, hex: string): void {
-  sendPickerAction({ hex, index, 'type': IridisUiActionType.SET_SEED });
+  sendPickerAction(IridisUiEvent.setSeed(index, hex));
 }
 </script>
 
@@ -59,7 +59,7 @@ function setSeedColor(index: number, hex: string): void {
       :picker-seeds="pickerSeeds"
       :can-add="pickerSeeds.length < 32"
       :can-remove="pickerSeeds.length > 1"
-      @add="sendPickerAction({ 'hex': undefined, 'type': IridisUiActionType.ADD_SEED })"
+      @add="sendPickerAction(IridisUiEvent.addSeed(undefined))"
       @remove="removeSeed"
       @commit-hex="commitHexText"
       @pick-color="setSeedColor"

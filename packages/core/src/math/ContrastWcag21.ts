@@ -1,16 +1,17 @@
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
 
 import { luminance } from './Luminance.ts';
 
 class ContrastWcag21 {
   readonly 'name' = 'contrastWcag21';
 
-  apply(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType): number {
+  apply(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type): number {
     const l1 = luminance.apply(a);
     const l2 = luminance.apply(b);
     const lighter = Math.max(l1, l2);
     const darker  = Math.min(l1, l2);
-    return (lighter + 0.05) / (darker + 0.05);
+    const contrast = (lighter + 0.05) / (darker + 0.05);
+    return contrast;
   }
 }
 

@@ -53,9 +53,9 @@
     }
   ],
   "contrastPairs": [
-    { "foreground": "text",     "background": "canvas",  "minRatio": 7.0, "algorithm": "wcag21" },
-    { "foreground": "text",     "background": "surface", "minRatio": 7.0, "algorithm": "wcag21" },
-    { "foreground": "onAccent", "background": "accent",  "minRatio": 7.0, "algorithm": "wcag21" },
-    { "foreground": "border",   "background": "canvas",  "minRatio": 3.0, "algorithm": "wcag21" }
+    { "foreground": "text",     "background": "canvas",  "minimumContrastRatio": 7.0, "algorithm": "wcag21" },
+    { "foreground": "text",     "background": "surface", "minimumContrastRatio": 7.0, "algorithm": "wcag21" },
+    { "foreground": "onAccent", "background": "accent",  "minimumContrastRatio": 7.0, "algorithm": "wcag21" },
+    { "foreground": "border",   "background": "canvas",  "minimumContrastRatio": 3.0, "algorithm": "wcag21" }
   ]
 }

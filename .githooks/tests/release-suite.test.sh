@@ -127,7 +127,99 @@ assert_release_suite_backmerge_rejects_pending_changeset_delta() {
   pass_count=$((pass_count + 1))
 }
 
+assert_release_suite_changeset_status_accepts_already_versioned_release() {
+  local repo base_sha
+
+  repo=$(make_repo)
+  (
+    cd "$repo" || exit 1
+    mkdir -p .changeset packages/a packages/b node_modules/semver
+    printf '%s\n' '{"name":"repo","version":"1.0.0"}' > package.json
+    printf '%s\n' '{"name":"a","version":"1.0.0"}' > packages/a/package.json
+    printf '%s\n' '{"name":"b","version":"1.0.0"}' > packages/b/package.json
+    printf '%s\n' '# a' > packages/a/CHANGELOG.md
+    printf '%s\n' '# b' > packages/b/CHANGELOG.md
+    git add -A
+    git commit -q -m "chore: establish release base"
+    base_sha=$(git rev-parse HEAD)
+
+    printf '%s\n' '{"name":"repo","version":"1.1.0"}' > package.json
+    printf '%s\n' '{"name":"a","version":"1.1.0"}' > packages/a/package.json
+    printf '%s\n' '{"name":"b","version":"1.1.0"}' > packages/b/package.json
+    printf '%s\n' '# a\n\n## 1.1.0' > packages/a/CHANGELOG.md
+    printf '%s\n' '# b\n\n## 1.1.0' > packages/b/CHANGELOG.md
+    git add -A
+    git commit -q -m "chore(release): version public packages"
+    printf '%s\n' 'exports.valid = (version) => /^[0-9]+\.[0-9]+\.[0-9]+$/.test(version) ? version : null; exports.gt = (current, base) => { const currentParts = current.split(".").map(Number); const baseParts = base.split(".").map(Number); for (let index = 0; index < currentParts.length; index += 1) { if (currentParts[index] !== baseParts[index]) return currentParts[index] > baseParts[index]; } return false; };' > node_modules/semver/index.js
+    stub_cmd "$repo" pnpm 'printf "%s\n" "Some packages have been changed but no changesets were found. Run changeset add to resolve this error." >&2; printf "%s\n" "If this change doesn'\''t need a release, run changeset add --empty." >&2; exit 1'
+
+    PATH="$repo/bin:$PATH" /bin/bash "$RELEASE_SUITE" changeset-status "$base_sha"
+  )
+  rm -rf "$repo"
+  pass_count=$((pass_count + 1))
+}
+
+assert_release_suite_changeset_status_rejects_incomplete_versioned_release() {
+  local repo base_sha output
+
+  repo=$(make_repo)
+  (
+    cd "$repo" || exit 1
+    mkdir -p .changeset packages/a packages/b node_modules/semver
+    printf '%s\n' '{"name":"repo","version":"1.0.0"}' > package.json
+    printf '%s\n' '{"name":"a","version":"1.0.0"}' > packages/a/package.json
+    printf '%s\n' '{"name":"b","version":"1.0.0"}' > packages/b/package.json
+    printf '%s\n' '# a' > packages/a/CHANGELOG.md
+    printf '%s\n' '# b' > packages/b/CHANGELOG.md
+    git add -A
+    git commit -q -m "chore: establish release base"
+    base_sha=$(git rev-parse HEAD)
+
+    printf '%s\n' '{"name":"repo","version":"1.1.0"}' > package.json
+    printf '%s\n' '{"name":"a","version":"1.1.0"}' > packages/a/package.json
+    printf '%s\n' '{"name":"b","version":"1.1.0"}' > packages/b/package.json
+    printf '%s\n' '# a\n\n## 1.1.0' > packages/a/CHANGELOG.md
+    git add -A
+    git commit -q -m "chore(release): omit public changelog"
+    printf '%s\n' 'exports.valid = (version) => /^[0-9]+\.[0-9]+\.[0-9]+$/.test(version) ? version : null; exports.gt = (current, base) => { const currentParts = current.split(".").map(Number); const baseParts = base.split(".").map(Number); for (let index = 0; index < currentParts.length; index += 1) { if (currentParts[index] !== baseParts[index]) return currentParts[index] > baseParts[index]; } return false; };' > node_modules/semver/index.js
+    stub_cmd "$repo" pnpm 'printf "%s\n" "Some packages have been changed but no changesets were found. Run changeset add to resolve this error." >&2; printf "%s\n" "If this change doesn'\''t need a release, run changeset add --empty." >&2; exit 1'
+
+    if output=$(PATH="$repo/bin:$PATH" /bin/bash "$RELEASE_SUITE" changeset-status "$base_sha" 2>&1); then
+      fail "incomplete versioned release" "expected omitted changelog to fail"
+    fi
+    assert_contains "incomplete versioned release" "b: CHANGELOG.md" "$output"
+  )
+  rm -rf "$repo"
+  pass_count=$((pass_count + 1))
+}
+
+assert_release_suite_changeset_status_rejects_other_changeset_errors() {
+  local repo base_sha output
+
+  repo=$(make_repo)
+  (
+    cd "$repo" || exit 1
+    mkdir -p .changeset packages/a
+    printf '%s\n' '{"name":"repo","version":"1.0.0"}' > package.json
+    printf '%s\n' '{"name":"a","version":"1.0.0"}' > packages/a/package.json
+    git add -A
+    git commit -q -m "chore: establish release base"
+    base_sha=$(git rev-parse HEAD)
+    stub_cmd "$repo" pnpm 'printf "%s\n" "changeset status cannot resolve the base reference" >&2; exit 1'
+
+    if output=$(PATH="$repo/bin:$PATH" /bin/bash "$RELEASE_SUITE" changeset-status "$base_sha" 2>&1); then
+      fail "other changeset error" "expected unrelated changeset failure to remain a failure"
+    fi
+    assert_contains "other changeset error" "cannot resolve the base reference" "$output"
+  )
+  rm -rf "$repo"
+  pass_count=$((pass_count + 1))
+}
+
 assert_release_suite_dispatches_shared_gates
+assert_release_suite_changeset_status_accepts_already_versioned_release
+assert_release_suite_changeset_status_rejects_incomplete_versioned_release
+assert_release_suite_changeset_status_rejects_other_changeset_errors
 assert_release_suite_backmerge_accepts_release_changeset_delta
 assert_release_suite_backmerge_accepts_omitted_approved_delta
 assert_release_suite_backmerge_rejects_pending_changeset_delta

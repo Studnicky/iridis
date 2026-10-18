@@ -1,3 +1,3 @@
 import * as VueModule from 'vue';
 
-export const globalVscodeTheme = VueModule.ref<object>({});
+export const globalVscodeTheme = VueModule.shallowRef<object>({});

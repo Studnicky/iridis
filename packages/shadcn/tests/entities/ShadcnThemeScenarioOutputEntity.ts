@@ -1,18 +1,7 @@
-import type { FromSchema, JsonObjectType } from '@studnicky/types';
+import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
-import { Validator } from '@studnicky/iridis/model';
+import { EntityCompiler } from '@studnicky/entity/node';
 
-/**
- * Mirrors the private `shadcnOutputSchema` declared in
- * `../../src/ShadcnPlugin.ts` (not exported — the schema shape is the
- * public output contract via `outputs['shadcn:theme']`, so this test
- * entity re-declares the same shape rather than reaching into src).
- * `colors.additionalProperties` is narrowed from the production schema's
- * lenient `true` to `{ 'type': 'string' }` so `FromSchema` derives the
- * real runtime shape (`Record<string, string>`, matching
- * `ShadcnOutputInterfaceType.colors`) instead of an untyped object —
- * strictly stronger validation that never rejects valid production output.
- */
 export namespace ShadcnThemeScenarioOutputEntity {
   export const Schema = {
     '$id': 'https://studnicky.dev/iridis-shadcn/tests/ShadcnThemeScenarioOutput',
@@ -25,10 +14,9 @@ export namespace ShadcnThemeScenarioOutputEntity {
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = NominalSchemaType<typeof Schema>;
 
-  export const validate = (value: JsonObjectType[string]): value is Type => {
-    const result = new Validator().validate(Schema, value);
-    return result.valid;
-  };
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
 }

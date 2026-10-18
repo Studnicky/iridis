@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 import { computed } from 'vue';
 import { buildRoleMathDerivedDetailsModel } from './roleMath/buildRoleMathDerivedDetailsModel.ts';
 
 const props = defineProps<{
   algorithmLabel: string;
-  role: RoleMathEntryType;
+  role: RoleMathEntry;
 }>();
 
 const detailsModel = computed(() => buildRoleMathDerivedDetailsModel.build(props.role));
 </script>
 
 <template>
-  <div v-if="props.role.isDerived">
+  <div v-if="props.role.origin.isDerived()">
     <StatusNote class="space-y-2">
       <div>This role is derived from <strong class="text-highlighted uppercase">{{ props.role.parentRole }}</strong>. Its color is computed by offsetting the parent's OKLCH values according to the schema below.</div>
     </StatusNote>

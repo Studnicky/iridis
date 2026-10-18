@@ -1,15 +1,13 @@
 import type {
-  ColorRecordInterfaceType,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
-
-import type { GalleryAlgorithmType } from '../types/augmentation.ts';
+import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
+import { JsonValue } from '@studnicky/types/node';
 
 import { ClusterDispatcher } from './ClusterDispatcher.ts';
 
@@ -62,13 +60,13 @@ class TrimLogger {
     cap: number
   ): void {
     this.context.logger.debug(
-      LogBody.create()
-        .component('GalleryExtract')
-        .operation('run')
-        .status(LOG_STATUS.PARTIAL)
-        .message('trimmed delta-E input by weight')
-        .context({ 'after': after, 'before': before, 'cap': cap })
-        .build()
+      LogBody.create({
+        'component': 'GalleryExtract',
+        'context': { 'after': after, 'before': before, 'cap': cap },
+        'message': 'trimmed delta-E input by weight',
+        'operation': 'run',
+        'status': LOG_STATUS.PARTIAL
+      })
     );
   }
 }
@@ -76,74 +74,77 @@ class TrimLogger {
 class GalleryExtract implements TaskInterface {
   readonly 'name' = 'gallery:extract';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Reduce input records to K dominant colors via median-cut (weighted) or deltaE-merge clustering',
     'name':        'gallery:extract',
-    'phase':       undefined,
     'reads':       ['colors', 'metadata.gallery'],
-    'requires':    undefined,
     'writes':      ['colors', 'metadata.gallery:dominantColors']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const galleryConfig = state.metadata.gallery as
-      | { 'algorithm'?: GalleryAlgorithmType; 'deltaECap'?: number; 'k'?: number; }
+      | { 'algorithm'?: string; 'deltaECap'?: number; 'k'?: number; }
       | undefined;
     const k = galleryConfig?.k ?? 5;
-    const algorithm: GalleryAlgorithmType = galleryConfig?.algorithm ?? 'median-cut';
+    const algorithm = galleryConfig?.algorithm ?? 'median-cut';
 
     context.logger.debug(
-      LogBody.create()
-        .component('GalleryExtract')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('extracting dominant colors')
-        .context({
+      LogBody.create({
+        'component': 'GalleryExtract',
+        'context': {
           'algorithm':  algorithm,
           'inputCount': state.colors.length,
           'k':          k
-        })
-        .build()
+        },
+        'message': 'extracting dominant colors',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
 
     if (state.colors.length === 0) {
       context.logger.warn(
-        LogBody.create()
-          .component('GalleryExtract')
-          .operation('run')
-          .status(LOG_STATUS.INVALID)
-          .message('state.colors is empty; nothing to extract')
-          .context({})
-          .build()
+        LogBody.create({
+          'component': 'GalleryExtract',
+          'context': {},
+          'message': 'state.colors is empty; nothing to extract',
+          'operation': 'run',
+          'status': LOG_STATUS.INVALID
+        })
       );
       return;
     }
 
-    const dominant: ColorRecordInterfaceType[] = ClusterDispatcher.run(
-      state.colors,
-      algorithm,
-      k,
-      {
-        'deltaECap': galleryConfig?.deltaECap,
-        'onTrim':    new TrimLogger(context)
-      }
-    );
+    const deltaEOptions = {
+      'deltaECap': galleryConfig?.deltaECap,
+      'onTrim':    new TrimLogger(context)
+    };
+    let dominant: ColorRecordInterfaceTypeEntity.Type[];
+    if (algorithm === 'delta-e') {
+      dominant = ClusterDispatcher.deltaE(state.colors, k, deltaEOptions);
+    } else if (algorithm === 'k-means') {
+      dominant = ClusterDispatcher.kMeans(state.colors, k);
+    } else if (algorithm === 'wu-quantize') {
+      dominant = ClusterDispatcher.wuQuantize(state.colors, k);
+    } else {
+      dominant = ClusterDispatcher.medianCut(state.colors, k);
+    }
 
-    state.metadata['gallery:dominantColors'] = dominant;
+    state.metadata['gallery:dominantColors'] = JsonValue.from(dominant);
 
     state.colors.splice(0, state.colors.length, ...dominant);
 
     context.logger.info(
-      LogBody.create()
-        .component('GalleryExtract')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('extraction complete')
-        .context({
+      LogBody.create({
+        'component': 'GalleryExtract',
+        'context': {
           'algorithm':     algorithm,
           'dominantCount': dominant.length
-        })
-        .build()
+        },
+        'message': 'extraction complete',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

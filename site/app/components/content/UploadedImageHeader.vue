@@ -13,17 +13,15 @@ const emit = defineEmits<{
   remove: [];
 }>();
 
-const headerModel = computed(() => buildUploadedImageHeaderModel.build(
-  props.name,
-  props.dominantColorCount,
-  props.showHeader
-));
+const headerModel = computed(() => props.showHeader
+  ? buildUploadedImageHeaderModel.inline(props.name, props.dominantColorCount)
+  : buildUploadedImageHeaderModel.overlay(props.name, props.dominantColorCount)
+);
 </script>
 
 <template>
   <div
-    v-if="headerModel.showInlineHeader"
-    class="flex items-center gap-3"
+    :class="[headerModel.inlineHeaderVisibilityClass, 'flex items-center gap-3']"
   >
     <img
       :src="props.src"
@@ -48,12 +46,11 @@ const headerModel = computed(() => buildUploadedImageHeaderModel.build(
     />
   </div>
   <UButton
-    v-else
     icon="i-material-symbols-close-rounded"
     color="error"
     variant="ghost"
     size="xs"
-    class="absolute top-2 right-2 z-10"
+    :class="[headerModel.overlayButtonVisibilityClass, 'absolute top-2 right-2 z-10']"
     :aria-label="headerModel.removeAriaLabel"
     @click="emit('remove')"
   />

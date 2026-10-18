@@ -9,10 +9,37 @@ trustPolicy: no-downgrade
 # release has time to be caught and unpublished before it reaches a build.
 minimumReleaseAge: 10080
 
-# Rollup ships one optional package per target platform and republishes the
-# whole set on every release, so their latest versions are almost always
-# inside the window above. They are transitive, platform-gated, and pinned by
-# the lockfile, so holding them back stalls resolution without reducing risk.
+# Rollup 4.64.7 is a transitive dependency of @studnicky/context@15.2.1.
+# These selectors match only its current package set and require review by
+# 2026-11-15. pnpm has no native TTL setting; future Rollup releases remain
+# subject to the age gate.
+# dompurify@3.4.17 is a Mermaid transitive dependency used only by the
+# GitHub Pages site. This narrowly scoped review exception expires 2026-11-16.
 minimumReleaseAgeExclude:
-  - '@rollup/*'
-
+  - 'dompurify@3.4.17'
+  - 'rollup@4.64.7'
+  - '@rollup/rollup-android-arm-eabi@4.64.7'
+  - '@rollup/rollup-android-arm64@4.64.7'
+  - '@rollup/rollup-darwin-arm64@4.64.7'
+  - '@rollup/rollup-darwin-x64@4.64.7'
+  - '@rollup/rollup-freebsd-arm64@4.64.7'
+  - '@rollup/rollup-freebsd-x64@4.64.7'
+  - '@rollup/rollup-linux-arm-gnueabihf@4.64.7'
+  - '@rollup/rollup-linux-arm-musleabihf@4.64.7'
+  - '@rollup/rollup-linux-arm64-gnu@4.64.7'
+  - '@rollup/rollup-linux-arm64-musl@4.64.7'
+  - '@rollup/rollup-linux-loong64-gnu@4.64.7'
+  - '@rollup/rollup-linux-loong64-musl@4.64.7'
+  - '@rollup/rollup-linux-ppc64-gnu@4.64.7'
+  - '@rollup/rollup-linux-ppc64-musl@4.64.7'
+  - '@rollup/rollup-linux-riscv64-gnu@4.64.7'
+  - '@rollup/rollup-linux-riscv64-musl@4.64.7'
+  - '@rollup/rollup-linux-s390x-gnu@4.64.7'
+  - '@rollup/rollup-linux-x64-gnu@4.64.7'
+  - '@rollup/rollup-linux-x64-musl@4.64.7'
+  - '@rollup/rollup-openbsd-x64@4.64.7'
+  - '@rollup/rollup-openharmony-arm64@4.64.7'
+  - '@rollup/rollup-win32-arm64-msvc@4.64.7'
+  - '@rollup/rollup-win32-ia32-msvc@4.64.7'
+  - '@rollup/rollup-win32-x64-gnu@4.64.7'
+  - '@rollup/rollup-win32-x64-msvc@4.64.7'

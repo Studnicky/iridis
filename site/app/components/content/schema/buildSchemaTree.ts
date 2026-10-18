@@ -1,17 +1,18 @@
-import type { FramingType, RoleHexMapType } from '~/composables/types/index.ts';
-import type { RoleSortableRowType } from '~/composables/types/roleSortableRow.ts';
-import type { RoleSortKeyType } from '~/composables/types/roleSortKey.ts';
-import type { SchemaNameType } from '~/composables/types/schemaName.ts';
+import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
 
-import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
+import type { RoleHexMapType } from '~/composables/types/index.ts';
+import type { RoleSortKeyType } from '~/composables/types/roleSortKeyType.ts';
+import type { RoleSortFieldBehaviorInterface } from '~/utils/roleSortFieldBehaviorInterface.ts';
+
+import { RoleSortableRowInterfaceTypeEntity } from '~/composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
-class SchemaTreeLeaf implements RoleSortableRowType {
+class SchemaTreeLeaf {
   public readonly c: number;
   public readonly compliance: string;
   public readonly derivedFrom: string | undefined;
   public readonly h: number;
-  public readonly hex: string | undefined;
+  public readonly hex: string;
   public readonly l: number;
   public readonly label: string;
   public readonly name: string;
@@ -19,83 +20,110 @@ class SchemaTreeLeaf implements RoleSortableRowType {
   public readonly value: string;
 
   public constructor(
-    derivedFrom: string | undefined,
-    hex: string | undefined,
-    name: string,
-    row: RoleSortableRowType | undefined,
-    tierName: SchemaNameType.Type
+    row: RoleSortableRowInterfaceTypeEntity.Type,
+    tierLabel: string,
+    options: { readonly 'derivedFrom': string | undefined }
   ) {
-    this.c = row?.c ?? 0;
-    this.compliance = row?.compliance ?? 'fail';
-    this.derivedFrom = derivedFrom;
-    this.h = row?.h ?? 0;
-    this.hex = hex;
-    this.l = row?.l ?? 0;
-    this.label = name;
-    this.name = name;
-    this.ratio = row?.ratio ?? 1;
-    this.value = `${tierName}:${name}`;
+    this.c = row.c;
+    this.compliance = row.compliance;
+    this.derivedFrom = options.derivedFrom;
+    this.h = row.h;
+    this.hex = row.hex;
+    this.l = row.l;
+    this.label = row.name;
+    this.name = row.name;
+    this.ratio = row.ratio;
+    this.value = [tierLabel, row.name].join(':');
   }
 }
 
 class SchemaTreeTier {
   public readonly children: SchemaTreeLeaf[];
-  public readonly defaultExpanded: boolean;
   public readonly label: string;
   public readonly value: string;
 
-  public constructor(children: SchemaTreeLeaf[], defaultExpanded: boolean, tierName: SchemaNameType.Type) {
+  public constructor(children: SchemaTreeLeaf[], label: string) {
     this.children = children;
-    this.defaultExpanded = defaultExpanded;
-    this.label = tierName;
-    this.value = tierName;
+    this.label = label;
+    this.value = label;
   }
 }
 
 export const buildSchemaTree = class SchemaTreeBuilder {
-  private static readonly tierOrder: readonly SchemaNameType.Type[] = [
-    'iridis-4',
-    'iridis-8',
-    'iridis-12',
-    'iridis-16',
-    'iridis-32'
-  ];
+  private static createTier(
+    schema: RoleSchemaInterfaceTypeEntity.Type,
+    label: string,
+    seen: Set<string>,
+    options: {
+      readonly 'contrastRowsByName': ReadonlyMap<string, RoleSortableRowInterfaceTypeEntity.Type>;
+      readonly 'roles': RoleHexMapType;
+      readonly 'sortBehaviors': readonly RoleSortFieldBehaviorInterface[];
+    }
+  ): SchemaTreeTier {
+    const leafRows = new Map<string, SchemaTreeLeaf>();
+    const sortableRows: RoleSortableRowInterfaceTypeEntity.Type[] = [];
+    for (let roleIndex = 0; roleIndex < schema.roles.length; roleIndex += 1) {
+      const role = schema.roles[roleIndex];
+      if (role === undefined || seen.has(role.name)) {
+        continue;
+      }
+      seen.add(role.name);
+      const row = options.contrastRowsByName.get(role.name);
+      const sortableRow = RoleSortableRowInterfaceTypeEntity.create({
+        'c': row?.c ?? 0,
+        'compliance': row?.compliance ?? 'fail',
+        'h': row?.h ?? 0,
+        'hex': options.roles[role.name] ?? options.roles.background,
+        'l': row?.l ?? 0,
+        'name': role.name,
+        'ratio': row?.ratio ?? 1
+      });
+      const leaf = new SchemaTreeLeaf(sortableRow, label, { 'derivedFrom': role.derivedFrom });
+      leafRows.set(role.name, leaf);
+      sortableRows.push(sortableRow);
+    }
+    const children: SchemaTreeLeaf[] = [];
+    const sortedRows = sortRoleRows(sortableRows, options.sortBehaviors);
+    for (let rowIndex = 0; rowIndex < sortedRows.length; rowIndex += 1) {
+      const sortedRow = sortedRows[rowIndex];
+      const leaf = sortedRow === undefined ? undefined : leafRows.get(sortedRow.name);
+      if (leaf !== undefined) {
+        children.push(leaf);
+      }
+    }
+    const result = new SchemaTreeTier(children, label);
+    return result;
+  }
 
   public static build(
-    framing: FramingType.Type,
-    schemaName: string,
+    schemaSources: readonly {
+      readonly 'label': string;
+      readonly 'schema': RoleSchemaInterfaceTypeEntity.Type;
+    }[],
     roles: RoleHexMapType,
     roleSortKeys: readonly RoleSortKeyType[],
-    contrastRowsByName: ReadonlyMap<string, RoleSortableRowType>
+    contrastRowsByName: ReadonlyMap<string, RoleSortableRowInterfaceTypeEntity.Type>
   ): SchemaTreeTier[] {
     const seen = new Set<string>();
     const tiers: SchemaTreeTier[] = [];
-    for (const tierName of SchemaTreeBuilder.tierOrder) {
-      const schema = roleSchemaByName[tierName]?.[framing];
-      const leafRows: SchemaTreeLeaf[] = [];
-      for (const role of schema?.roles ?? []) {
-        if (seen.has(role.name)) {
-          continue;
-        }
-        seen.add(role.name);
-        leafRows.push(new SchemaTreeLeaf(
-          role.derivedFrom,
-          roles[role.name] ?? roles.background,
-          role.name,
-          contrastRowsByName.get(role.name),
-          tierName
-        ));
+    const sortBehaviors = roleSortKeys.map((roleSortKey) => { return roleSortKey.behavior; });
+    for (let sourceIndex = 0; sourceIndex < schemaSources.length; sourceIndex += 1) {
+      const source = schemaSources[sourceIndex];
+      if (source === undefined) {
+        continue;
       }
-      tiers.push(new SchemaTreeTier(
-        sortRoleRows(leafRows, roleSortKeys),
-        tierName === schemaName,
-        tierName
-      ));
+      const tier = SchemaTreeBuilder.createTier(source.schema, source.label, seen, {
+        'contrastRowsByName': contrastRowsByName,
+        'roles': roles,
+        'sortBehaviors': sortBehaviors
+      });
+      tiers.push(tier);
     }
     return tiers;
   }
 
   public static isLeaf(item: SchemaTreeLeaf | SchemaTreeTier): item is SchemaTreeLeaf {
-    return 'hex' in item;
+    const result = 'hex' in item;
+    return result;
   }
 };

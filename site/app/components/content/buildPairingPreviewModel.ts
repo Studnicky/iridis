@@ -1,14 +1,15 @@
-import type { ThemeDefinitionInterfaceType } from '~/theme/ThemeDefinitionInterfaceType.ts';
+import type { DataLayoutStrategy } from '~/theme/DataLayoutStrategy.ts';
 
+import { PairingCardPresentation } from './PairingCardPresentation.ts';
 import { selectDataCardLayout } from './selectDataCardLayout.ts';
 
 class PairingCardLayout {
   public readonly class: string;
-  public readonly compact: boolean;
+  public readonly presentation: PairingCardPresentation;
 
-  public constructor(className: string, compact: boolean) {
+  public constructor(className: string, presentation: PairingCardPresentation) {
     this.class = className;
-    this.compact = compact;
+    this.presentation = presentation;
   }
 }
 
@@ -24,18 +25,20 @@ class PairingPreviewModel {
 
 export const buildPairingPreviewModel = class PairingPreviewModelBuilder {
   private static readonly cardLayouts = {
-    'grid': new PairingCardLayout('grid grid-cols-1 gap-3 sm:grid-cols-3', false),
-    'list': new PairingCardLayout('grid grid-cols-1 gap-3', false),
-    'pixel': new PairingCardLayout('grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6', true)
-  } satisfies Record<Exclude<ThemeDefinitionInterfaceType['dataLayout'], 'table'>, PairingCardLayout>;
+    'grid': new PairingCardLayout('grid grid-cols-1 gap-3 sm:grid-cols-3', PairingCardPresentation.expanded),
+    'list': new PairingCardLayout('grid grid-cols-1 gap-3', PairingCardPresentation.expanded),
+    'pixel': new PairingCardLayout('grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6', PairingCardPresentation.compact)
+  };
 
   public static build(
-    dataLayout: ThemeDefinitionInterfaceType['dataLayout'],
+    dataLayout: DataLayoutStrategy,
     pairingCount: number
   ): PairingPreviewModel {
     const activeCardLayout = selectDataCardLayout.select(
       dataLayout,
-      PairingPreviewModelBuilder.cardLayouts
+      PairingPreviewModelBuilder.cardLayouts.grid,
+      PairingPreviewModelBuilder.cardLayouts.list,
+      PairingPreviewModelBuilder.cardLayouts.pixel
     );
     return new PairingPreviewModel(
       activeCardLayout,

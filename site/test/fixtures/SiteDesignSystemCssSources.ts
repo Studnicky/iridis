@@ -1,17 +1,21 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 
+import { SiteDesignSystemCssPatterns } from './SiteDesignSystemCssPatterns.ts';
+
 export class SiteDesignSystemCssSources {
-  static readonly ENGINE_COLOR_TOKEN_FALLBACK = /var\(--ui-[-a-zA-Z0-9]+\s*,/u;
-  static readonly CSS_COMMENT = /\/\*[\s\S]*?\*\//gu;
-  static readonly FORBIDDEN_APP_CONFIG_COLOR_FALLBACK = /\b(?:white|gray-\d+)\b/u;
-  static readonly PRIMARY_CONTRAST_CLASS = /text-\[var\(--ui-primary-contrast\)\]/u;
-  static readonly RAW_COLOR_MIX_ENDPOINT = /color-mix\([^;]*(?:\bwhite\b|\bblack\b)/iu;
-  static readonly VUE_STYLE_BLOCK = /<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gu;
+  static readonly CSS_COMMENT = SiteDesignSystemCssPatterns.CSS_COMMENT;
+  static readonly ENGINE_COLOR_TOKEN_FALLBACK = SiteDesignSystemCssPatterns.ENGINE_COLOR_TOKEN_FALLBACK;
+  static readonly FORBIDDEN_APP_CONFIG_COLOR_FALLBACK = SiteDesignSystemCssPatterns.FORBIDDEN_APP_CONFIG_COLOR_FALLBACK;
+  static readonly PRIMARY_CONTRAST_CLASS = SiteDesignSystemCssPatterns.PRIMARY_CONTRAST_CLASS;
+  static readonly RAW_COLOR_MIX_ENDPOINT = SiteDesignSystemCssPatterns.RAW_COLOR_MIX_ENDPOINT;
+  static readonly VUE_STYLE_BLOCK = SiteDesignSystemCssPatterns.VUE_STYLE_BLOCK;
 
   static collect(directory: string, root = directory): readonly (readonly [string, string])[] {
     const sources: (readonly [string, string])[] = [];
-    for (const entry of readdirSync(directory, { 'withFileTypes': true })) {
+    const entries = readdirSync(directory, { 'withFileTypes': true });
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index]!;
       const path = resolve(directory, entry.name);
       if (entry.isDirectory()) {
         sources.push(...SiteDesignSystemCssSources.collect(path, root));
@@ -30,8 +34,10 @@ export class SiteDesignSystemCssSources {
         sources.push([relative(root, path), css]);
       }
     }
-    sources.sort();
+    sources.sort((left, right) => {
+      const comparison = left[0].localeCompare(right[0]);
+      return comparison;
+    });
     return sources;
-
   }
 }

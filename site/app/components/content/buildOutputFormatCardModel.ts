@@ -1,5 +1,4 @@
-import type { OutputRowType } from '~/composables/types/outputRow.ts';
-import type { SupportedLangType } from '~/composables/types/supportedLang.ts';
+import type { OutputRowInterfaceTypeEntity } from '~/composables/entities/OutputRowInterfaceTypeEntity.ts';
 
 import { OUTPUT_FORMAT_INFO } from './outputFormatInfo.ts';
 
@@ -7,21 +6,23 @@ class OutputFormatCardModel {
   public readonly code: string;
   public readonly filename: string | undefined;
   public readonly instruction: string;
-  public readonly lang: SupportedLangType.Type;
+  public readonly language: string;
   public readonly previewLines: number | undefined;
 
   public constructor(
     code: string,
-    filename: string | undefined,
     instruction: string,
-    lang: SupportedLangType.Type,
-    previewLines: number | undefined
+    language: string,
+    options: {
+      readonly 'filename': string | undefined;
+      readonly 'previewLines': number | undefined;
+    }
   ) {
     this.code = code;
-    this.filename = filename;
+    this.filename = options.filename;
     this.instruction = instruction;
-    this.lang = lang;
-    this.previewLines = previewLines;
+    this.language = language;
+    this.previewLines = options.previewLines;
   }
 }
 
@@ -31,15 +32,18 @@ export const buildOutputFormatCardModel = class OutputFormatCardModelBuilder {
 
   public static build(
     formatKey: string,
-    row: OutputRowType | undefined
+    row: OutputRowInterfaceTypeEntity.Type | undefined
   ): OutputFormatCardModel {
     const info = OUTPUT_FORMAT_INFO[formatKey];
-    return new OutputFormatCardModel(
+    const result = new OutputFormatCardModel(
       row?.text ?? '',
-      info?.filename,
       info?.instruction ?? OutputFormatCardModelBuilder.defaultInstruction,
-      row?.lang ?? 'json',
-      info?.previewLines
+      row?.language ?? 'json',
+      {
+        'filename': info?.filename,
+        'previewLines': info?.previewLines
+      }
     );
+    return result;
   }
 };

@@ -1,69 +1,95 @@
-import { colorRecordFactory } from '@studnicky/iridis';
+import { colorRecordFactory, RoleDefinitionInterfaceTypeEntity } from '@studnicky/iridis';
 import { computed } from 'vue';
 
-import type { RoleMathAlgorithmInfoType } from '~/composables/types/roleMathAlgorithmInfo.ts';
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathAlgorithmInfoType } from '~/composables/types/roleMathAlgorithmInfoType.ts';
+import type { RoleMathCandidateType } from '~/composables/types/roleMathCandidateType.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
+import { buildDerivationRelations } from '~/components/content/derivation/buildDerivationRelations.ts';
+import { RoleSortableRowInterfaceTypeEntity } from '~/composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import { roleSchemaFor } from '~/composables/roleSchemaFor.ts';
+import { RoleMathCandidatePresentation } from '~/composables/types/RoleMathCandidatePresentation.ts';
+import { RoleMathOrigin } from '~/composables/types/roleMathOrigin.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { contrastRatio } from '~/theme/ContrastRatio.ts';
 import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { complianceFor } from '~/utils/complianceFor.ts';
 import { effectiveRelation } from '~/utils/effectiveRelation.ts';
 import { minimumRatioForRole } from '~/utils/minimumRatioForRole.ts';
-import { normalizeHue } from '~/utils/normalizeHue.ts';
 import { resolveHueOffset } from '~/utils/resolveHueOffset.ts';
-import { selectHueAlgorithm } from '~/utils/selectHueAlgorithm.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 class UseRoleMathListOperation {
   static run() {
     const { derivationConfig, framing, roleClamps, roleDistances, roles, rolesDerived, roleSortKeys, rolesPinned, rolesSynthesized, schemaName } = useIridis();
 
-    const allMathList = computed<RoleMathEntryType[]>(() => {
-      const schema = roleSchemaByName[schemaName.value]?.[framing.value];
-      const roleDefs = schema?.roles ?? [];
+    const allMathList = computed<RoleMathEntry[]>(() => {
+      const pair = roleSchemaByName[schemaName.value];
+      if (pair === undefined) {
+        throw new RangeError(`No role schema is registered for ${schemaName.value}`);
+      }
+      const selected = framing.value === 'dark' ? pair.dark : pair.light;
+      const schema = roleSchemaFor(selected);
+      const roleDefs = schema.roles ?? [];
 
       // 'background' is required in every schema tier and resolved synchronously
       // before any component reads this — never a hardcoded placeholder.
       const bg = roles.value.background!;
 
+      const roleDefinitionsByName = new Map<string, typeof roleDefs[number]>();
+      for (let index = 0; index < roleDefs.length; index += 1) {
+        const definition = roleDefs[index];
+        if (definition === undefined) {
+          throw new RangeError(`Role schema is missing definition ${index}`);
+        }
+        roleDefinitionsByName.set(definition.name, definition);
+      }
+      const synthesizedRoleNames = new Set(rolesSynthesized.value);
+      const pinnedRoleNames = new Set(rolesPinned.value);
+      const derivedRoleNames = new Set(rolesDerived.value);
       const entries = Object.keys(roles.value).map(roleName => {
-        const clamp = roleClamps.value[roleName];
-        const distances = roleDistances.value[roleName] ?? {};
-        const synthesized = rolesSynthesized.value.includes(roleName);
-        const isPinned = rolesPinned.value.includes(roleName);
-        const isDerived = rolesDerived.value.includes(roleName);
+        const clamp = roleClamps.value.get(roleName);
+        const distances = roleDistances.value.get(roleName) ?? new Map<string, number>();
+        const synthesized = synthesizedRoleNames.has(roleName);
+        const isPinned = pinnedRoleNames.has(roleName);
+        const isDerived = derivedRoleNames.has(roleName);
 
-        const candidates = Object.entries(distances).map(([hex, dist]) => {return {
-          'dist': dist,
-          'hex': hex,
-          'isWinner': false
-        };}).sort((a, b) => {return a.dist - b.dist;});
+        const candidates: RoleMathCandidateType[] = [...distances].map(([hex, dist]) => {
+          const candidate: RoleMathCandidateType = {
+            'dist': dist,
+            'hex': hex,
+            'presentation': RoleMathCandidatePresentation.unselected()
+          };
+          return candidate;
+        }).sort((left, right) => {
+          const result = left.dist - right.dist;
+          return result;
+        });
 
         const hasCandidates = candidates.length > 0;
         if (!synthesized && !isPinned && !isDerived && hasCandidates) {
-          candidates[0]!.isWinner = true;
+          candidates[0]!.presentation = RoleMathCandidatePresentation.selected();
         }
 
-        const def = roleDefs.find(r => {return r.name === roleName;});
+        const def = roleDefinitionsByName.get(roleName);
 
         const parentHex = def?.derivedFrom !== undefined && def.derivedFrom !== '' ? roles.value[def.derivedFrom] : undefined;
         let algorithmInfo: RoleMathAlgorithmInfoType | null = null;
         if (isDerived && def?.derivedFrom !== undefined && def.derivedFrom !== '' && parentHex !== undefined && parentHex !== '') {
-          const relation = effectiveRelation(def.hueOffset, derivationConfig.value.relations[roleName]);
+          const relation = effectiveRelation({
+            'relation': derivationConfig.value.relations[roleName],
+            'schemaHueOffset': def.hueOffset
+          });
           const baseHue = colorRecordFactory.fromHex(parentHex).oklch.h ?? 0;
-          // Freeform stores a relative offset (added to the parent's hue by the
-          // engine), while every other algorithm already returns absolute hues
-          // — so freeform is resolved to an absolute hue here too, keeping
-          // computedHues in one coordinate system across all algorithms.
-          const computedHues = relation.hueAlgorithm === 'freeform'
-            ? [normalizeHue(baseHue + (relation.freeformOffset ?? 0))]
-            : selectHueAlgorithm(relation.hueAlgorithm, baseHue);
+          const algorithm = buildDerivationRelations.resolveHueAlgorithm(relation.algorithm);
+          const computedHues = algorithm.apply(baseHue, {
+            'freeformOffsets': [relation.freeformOffset ?? 0]
+          });
           algorithmInfo = {
+            'algorithm': algorithm,
             'baseHue': baseHue,
             'computedHues': computedHues,
             'freeformOffset': relation.freeformOffset,
-            'hueAlgorithm': relation.hueAlgorithm,
             'hueVariantIndex': relation.hueVariantIndex,
             'offsetDeg': resolveHueOffset(relation)
           };
@@ -75,36 +101,55 @@ class UseRoleMathListOperation {
         const oklch = colorRecordFactory.fromHex(hex).oklch;
         const ratio = contrastRatio(hex, bg);
 
+        const origin = RoleMathOrigin.resolve(
+          roleName,
+          pinnedRoleNames,
+          synthesizedRoleNames,
+          derivedRoleNames
+        );
+
         return {
           'algorithmInfo': algorithmInfo,
           'c': oklch.c,
           'candidates': candidates,
           'clamp': clamp ?? null,
           'compliance': complianceFor(ratio, minimumRatioForRole(schema, roleName)),
-          // RoleMathDefType layers derivation-geometry fields (chromaClamp/
-          // chromaTarget/lightnessClamp/lightnessTarget) onto the canonical
-          // RoleDefinitionInterfaceType that a custom JSON-tology overlay may
-          // supply at runtime but the canonical type never declares — absent on
-          // a stock schema's role, where reading them yields `undefined`
-          // exactly as their `| undefined` type promises.
-          'def': def as RoleMathEntryType['def'],
+          'def': def === undefined ? undefined : RoleDefinitionInterfaceTypeEntity.intake(def),
           'h': oklch.h,
           'hex': hex,
-          'isDerived': isDerived,
-          'isPinned': isPinned,
           'l': oklch.l,
           'name': roleName,
+          'origin': origin,
           'parentRole': def?.derivedFrom,
-          'pinnedSeedHex': isPinned ? (clamp?.seedHex.toLowerCase() ?? null) : null,
-          'ratio': ratio,
-          'synthesized': synthesized
+          'pinnedSeedHex': origin.isPinned() ? (clamp?.seedHex.toLowerCase() ?? null) : null,
+          'ratio': ratio
         };
       });
 
-      return sortRoleRows(entries, roleSortKeys.value);
+      const entriesByName = new Map(entries.map((entry) => { return [entry.name, entry]; }));
+      const sortableRows = entries.map((entry) => {
+        const result = RoleSortableRowInterfaceTypeEntity.create({
+          'c': entry.c,
+          'compliance': entry.compliance,
+          'h': entry.h,
+          'hex': entry.hex,
+          'l': entry.l,
+          'name': entry.name,
+          'ratio': entry.ratio
+        });
+        return result;
+      });
+      const sortedRows = sortRoleRows(sortableRows, roleSortKeys.value.map((key) => { return key.behavior; }));
+      const result = sortedRows.map((row) => {
+        const entry = entriesByName.get(row.name);
+        if (entry === undefined) {throw new RangeError(`Missing role math entry for ${row.name}`);}
+        return entry;
+      });
+      return result;
     });
 
-    return { 'mathList': allMathList };
+    const result = { 'mathList': allMathList };
+    return result;
   }
 }
 

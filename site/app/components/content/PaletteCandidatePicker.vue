@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
+import type { GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
 import { buildPaletteCandidateModel } from './picker/buildPaletteCandidateModel.ts';
 
 /**
@@ -13,12 +13,12 @@ import { buildPaletteCandidateModel } from './picker/buildPaletteCandidateModel.
  * is still active (no candidate chosen yet).
  */
 const props = defineProps<{
-  candidates: readonly GalleryCandidateInterfaceType[];
+  candidates: readonly GalleryCandidateOutputEntity.Type[];
   selectedLabel: string | null;
 }>();
 
 const emit = defineEmits<{
-  select: [candidate: GalleryCandidateInterfaceType];
+  select: [candidate: GalleryCandidateOutputEntity.Type];
 }>();
 
 const candidateModels = computed(() => buildPaletteCandidateModel.build(props.candidates, props.selectedLabel));
@@ -34,14 +34,14 @@ const candidateModels = computed(() => buildPaletteCandidateModel.build(props.ca
       <UButton
         v-for="candidateModel in candidateModels"
         :key="candidateModel.candidate.label"
-        :color="candidateModel.isSelected ? 'primary' : 'neutral'"
-        :variant="candidateModel.isSelected ? 'solid' : 'soft'"
-        :aria-pressed="candidateModel.isSelected"
+        :color="candidateModel.selection.isCurrent() ? 'primary' : 'neutral'"
+        :variant="candidateModel.selection.isCurrent() ? 'solid' : 'soft'"
+        :aria-pressed="candidateModel.selection.isCurrent()"
         class="w-full flex-col items-start gap-2 h-auto p-2.5"
         @click="emit('select', candidateModel.candidate)"
       >
         <span class="text-xs font-medium">
-          {{ candidateModel.humanLabel }}{{ candidateModel.isSelected ? ' ✓' : '' }}
+          {{ candidateModel.humanLabel }}{{ candidateModel.selection.isCurrent() ? ' ✓' : '' }}
         </span>
         <SwatchList
           :swatches="candidateModel.swatches"

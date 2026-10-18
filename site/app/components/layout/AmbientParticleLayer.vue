@@ -1,32 +1,32 @@
 <script setup lang="ts">
-import type { ParticleRenderOutputType } from '~/theme/particles/index.ts';
+import type { ParticleRenderOutputInterface } from '~/theme/particles/index.ts';
 
 /**
- * One starfield layer, rendering whichever `ParticleRenderOutputType.Type` its
- * shape's adapter (site/app/theme/particles/*.ts) produced — a `boxShadow`
- * string (the 'dot' shape's cheap hundreds-in-one-paint trick) or real
- * positioned `elements` (every other shape, since a box-shadow always takes
- * its casting element's own shape). `layerClass` selects this instance's own
+ * One starfield layer, rendering the selected particle renderer's exclusive
+ * surface — a `boxShadow` string (the dot renderer's cheap
+ * hundreds-in-one-paint technique) or real positioned `elements` (every
+ * other renderer, since a box-shadow always takes its casting element's own
+ * shape). `layerClass` selects this instance's own
  * twinkle/rotate animation timing (below) — this component (not
  * AmbientBackground.vue) owns that CSS because Vue's `scoped` styles only
  * bind to elements the OWNING SFC renders; since this wrapper div is now
  * rendered here, its styling must live here too.
  */
-defineProps<{ 'layerClass': string; 'layer': ParticleRenderOutputType.Type }>();
+defineProps<{ 'layerClass': string; 'layer': ParticleRenderOutputInterface }>();
 </script>
 
 <template>
   <div
-    v-if="layer.kind === 'boxShadow'"
+    v-if="layer.rendering.surface === 'box-shadow'"
     :class="layerClass"
-    :style="{ boxShadow: layer.boxShadow }"
+    :style="{ boxShadow: layer.rendering.boxShadow }"
   />
   <div
     v-else
     :class="layerClass"
   >
     <span
-      v-for="p in layer.elements"
+      v-for="p in layer.rendering.elements"
       :key="p.id"
       class="particle"
       :class="p.glyph ? 'particle-glyph' : 'particle-shape'"

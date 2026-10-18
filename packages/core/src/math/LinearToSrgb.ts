@@ -1,23 +1,26 @@
-import type { RgbInterfaceType } from '../types/index.ts';
+import { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
 
 class GammaEncode {
   static channel(v: number): number {
     if (v <= 0.0031308) {
-      return 12.92 * v;
+      const result = 12.92 * v;
+      return result;
     }
-    return 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+    const result = 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+    return result;
   }
 }
 
 class LinearToSrgb {
   readonly 'name' = 'linearToSrgb';
 
-  apply(r: number, g: number, b: number): RgbInterfaceType {
-    return {
+  apply(r: number, g: number, b: number): RgbInterfaceTypeEntity.Type {
+    const result = RgbInterfaceTypeEntity.create({
       'b': GammaEncode.channel(b),
       'g': GammaEncode.channel(g),
       'r': GammaEncode.channel(r)
-    };
+    });
+    return result;
   }
 }
 

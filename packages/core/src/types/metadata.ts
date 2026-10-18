@@ -1,81 +1,115 @@
-import type { JsonObjectType } from '@studnicky/types';
+import type { JSONSchema7Type } from 'json-schema';
 
-import type { EngineMetadataInterfaceTypeEntity } from '../entities/EngineMetadataInterfaceTypeEntity.ts';
 import type { HueTargetOverrideInterfaceTypeEntity } from '../entities/HueTargetOverrideInterfaceTypeEntity.ts';
-import type { RoleProvenanceInterfaceTypeEntity } from '../entities/RoleProvenanceInterfaceTypeEntity.ts';
 
-/** metadata core role distance map: per-role OKLCH distance to each candidate color hex, keyed by role name. */
-export type RoleDistanceMapInterfaceType = Record<string, Record<string, number>>;
+import { EngineMetadataInterfaceTypeEntity } from '../entities/EngineMetadataInterfaceTypeEntity.ts';
+import { RoleProvenanceInterfaceTypeEntity } from '../entities/RoleProvenanceInterfaceTypeEntity.ts';
 
-/** Canonical origin and ordered adjustment evidence for one role. */
-export type RoleProvenanceInterfaceType = RoleProvenanceInterfaceTypeEntity.Type;
-
-/**
- * Canonical per-role resolution evidence. origin states whether the result is
- * caller-stated, derived, or synthesized; adjustments records every
- * transformation in resolution order.
- */
-export type RoleProvenanceMapInterfaceType = Record<string, RoleProvenanceInterfaceType>;
-
-/**
- * `metadata['core:hueOffsetOverrides']`: per-role `hueOffset` override,
- * keyed by role name, consulted by `expand:family` in place of the
- * schema's own `hueOffset` for that role. `state.input` stays immutable —
- * any task (site-specific or otherwise) that needs to compute a role's
- * derivation hue writes here instead of mutating the schema, keeping the
- * override visible to and produced by the registered pipeline rather than
- * pre-processing the schema outside it.
- */
-export type HueOffsetOverrideMapInterfaceType = Record<string, number>;
-
-type HueTargetOverrideSchemaShapeType = HueTargetOverrideInterfaceTypeEntity.Type;
-
-/**
- * One role's absolute-hue-target override — see `core:hueTargetOverrides`.
- * `hueClamp` is widened from an optional key to a required key holding
- * `T | undefined`, matching this codebase's monomorphic-shape convention —
- * `FromSchema` marks a non-`required` field optional (`field?: T`), not
- * present-but-`undefined`, and JSON Schema has no way to express the
- * latter, so the widening happens here at the consumption site instead of
- * inside the entity (where the lint-mandated `Type = FromSchema<typeof
- * Schema>` shape must stay verbatim).
- */
-export type HueTargetOverrideInterfaceType = { [K in keyof HueTargetOverrideSchemaShapeType]-?: {} extends Pick<HueTargetOverrideSchemaShapeType, K> ? HueTargetOverrideSchemaShapeType[K] | undefined : HueTargetOverrideSchemaShapeType[K] };
-
-/**
- * `metadata['core:hueTargetOverrides']`: per-role absolute `hue`/`hueClamp`
- * override, keyed by role name, consulted by both `resolve:roles` (for a
- * directly-resolved role) and `expand:family` (for a derived role) in place
- * of the schema's own `hue`/`hueClamp` for that role. Same rationale as
- * `core:hueOffsetOverrides` — a task computes it, `state.input` stays
- * immutable.
- */
-export type HueTargetOverrideMapInterfaceType = Record<string, HueTargetOverrideInterfaceType>;
-
-type EngineMetadataSchemaShapeType = EngineMetadataInterfaceTypeEntity.Type;
-
-/**
- * Known `state.metadata` keys written by core tasks, and their runtime
- * shapes. Every field is widened from an optional key to a required key
- * holding `T | undefined` (see {@link HueTargetOverrideInterfaceType}).
- * `core:hueTargetOverrides` is additionally pinned to a map of
- * {@link HueTargetOverrideInterfaceType} — nesting another entity's
- * `Schema` object literal makes `FromSchema` re-derive that nested shape
- * from scratch, losing its own optional-field widening.
- */
-export type EngineMetadataInterfaceType = {
-  [K in keyof EngineMetadataSchemaShapeType]-?: K extends 'core:hueTargetOverrides'
-    ? Record<string, HueTargetOverrideInterfaceType> | undefined
-    : {} extends Pick<EngineMetadataSchemaShapeType, K> ? EngineMetadataSchemaShapeType[K] | undefined : EngineMetadataSchemaShapeType[K];
-};
-
-/** Type-safe accessor for a known `state.metadata` key, returning `undefined` when unset. */
-export class EngineMetadata {
-  static get<K extends keyof EngineMetadataInterfaceType>(
-    metadata: JsonObjectType,
-    key: K
-  ): EngineMetadataInterfaceType[K] {
-    const result = metadata[key] as EngineMetadataInterfaceType[K];
+/** Validates known metadata slots at intake and serializes dynamic runtime Maps at the metadata boundary. */
+export class Metadata {
+  static #recordFromEntries<ValueType>(entries: Iterable<readonly [string, ValueType]>): Record<string, ValueType> {
+    const result: Record<string, ValueType> = {};
+    for (const [name, value] of entries) {
+      Object.defineProperty(result, name, { 'configurable': true, 'enumerable': true, 'value': value, 'writable': true });
+    }
     return result;
+  }
+
+  static hueOffsetOverrides(metadataRecord: Record<string, JSONSchema7Type>): Record<string, number> | undefined {
+    const value = metadataRecord['core:hueOffsetOverrides'];
+    if (value === undefined) {
+      return undefined;
+    }
+    const normalized = EngineMetadataInterfaceTypeEntity.intake({ 'core:hueOffsetOverrides': value });
+    return normalized['core:hueOffsetOverrides'];
+  }
+
+  static hueTargetOverrides(
+    metadataRecord: Record<string, JSONSchema7Type>
+  ): Record<string, HueTargetOverrideInterfaceTypeEntity.Type> | undefined {
+    const value = metadataRecord['core:hueTargetOverrides'];
+    if (value === undefined) {
+      return undefined;
+    }
+    const normalized = EngineMetadataInterfaceTypeEntity.intake({ 'core:hueTargetOverrides': value });
+    return normalized['core:hueTargetOverrides'];
+  }
+
+  static roleDistances(metadataRecord: Record<string, JSONSchema7Type>): Map<string, Map<string, number>> {
+    const value = metadataRecord['core:roleDistances'];
+    if (value === undefined) {
+      return new Map();
+    }
+    const normalized = EngineMetadataInterfaceTypeEntity.intake({ 'core:roleDistances': value });
+    const source = normalized['core:roleDistances'];
+    const result = new Map<string, Map<string, number>>();
+    if (source === undefined) {
+      return result;
+    }
+    const entries = Object.entries(source);
+    for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
+      const entry = entries.at(entryIndex);
+      if (entry === undefined) {
+        continue;
+      }
+      const [roleName, candidates] = entry;
+      result.set(roleName, new Map(Object.entries(candidates)));
+    }
+    return result;
+  }
+
+  static roleProvenance(
+    metadataRecord: Record<string, JSONSchema7Type>
+  ): Map<string, RoleProvenanceInterfaceTypeEntity.Type> {
+    const value = metadataRecord['core:roleProvenance'];
+    if (value === undefined) {
+      return new Map();
+    }
+    const normalized = EngineMetadataInterfaceTypeEntity.intake({ 'core:roleProvenance': value });
+    const source = normalized['core:roleProvenance'];
+    const result = new Map<string, RoleProvenanceInterfaceTypeEntity.Type>();
+    if (source === undefined) {
+      return result;
+    }
+    const entries = Object.entries(source);
+    for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
+      const entry = entries.at(entryIndex);
+      if (entry === undefined) {
+        continue;
+      }
+      const [roleName, provenance] = entry;
+      result.set(roleName, RoleProvenanceInterfaceTypeEntity.intake(provenance));
+    }
+    return result;
+  }
+
+  static writeRoleDistances(
+    metadataRecord: Record<string, JSONSchema7Type>,
+    distances: Map<string, Map<string, number>>
+  ): void {
+    const serializedEntries = new Map<string, Record<string, number>>();
+    for (const [roleName, candidates] of distances) {
+      serializedEntries.set(roleName, Metadata.#recordFromEntries(candidates));
+    }
+    const normalized = EngineMetadataInterfaceTypeEntity.create({
+      'core:roleDistances': Metadata.#recordFromEntries(serializedEntries)
+    });
+    const value = normalized['core:roleDistances'];
+    if (value !== undefined) {
+      metadataRecord['core:roleDistances'] = value;
+    }
+  }
+
+  static writeRoleProvenance(
+    metadataRecord: Record<string, JSONSchema7Type>,
+    provenance: Map<string, RoleProvenanceInterfaceTypeEntity.Type>
+  ): void {
+    const normalized = EngineMetadataInterfaceTypeEntity.create({
+      'core:roleProvenance': Metadata.#recordFromEntries(provenance)
+    });
+    const value = normalized['core:roleProvenance'];
+    if (value !== undefined) {
+      metadataRecord['core:roleProvenance'] = value;
+    }
   }
 }

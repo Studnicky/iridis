@@ -2,10 +2,6 @@ import { computed } from 'vue';
 
 import { PanelAccordionState } from './panelAccordionState.ts';
 
-declare class PanelAccordionOptionsInterfaceType {
-  defaultOpen: boolean | undefined;
-}
-
 class PanelController {
   readonly isOpen;
 
@@ -31,9 +27,9 @@ class PanelController {
 
 /** One panel's open/close state within the shared accordion coordination — see panelAccordionState.ts. */
 class UsePanelAccordionOperation {
-  static run(panelId: string, options?: PanelAccordionOptionsInterfaceType) {
+  static run(panelId: string, initiallyOpen = false) {
     const state = PanelAccordionState.current();
-    if (options?.defaultOpen === true && !state.seededPanelIds.has(panelId)) {
+    if (initiallyOpen && !state.seededPanelIds.has(panelId)) {
       state.seededPanelIds.add(panelId);
       state.open(panelId);
     }

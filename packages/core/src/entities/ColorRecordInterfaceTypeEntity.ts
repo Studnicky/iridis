@@ -1,6 +1,7 @@
-import type { FromSchema, JsonValueType } from '@studnicky/types';
+import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
-import { Validator } from '../model/Validator.ts';
+import { EntityCompiler } from '@studnicky/entity/node';
+
 import { ColorHintsInterfaceTypeEntity } from './ColorHintsInterfaceTypeEntity.ts';
 import { OklchInterfaceTypeEntity } from './OklchInterfaceTypeEntity.ts';
 import { RgbInterfaceTypeEntity } from './RgbInterfaceTypeEntity.ts';
@@ -8,6 +9,7 @@ import { RgbInterfaceTypeEntity } from './RgbInterfaceTypeEntity.ts';
 /** Canonical color record: OKLCH, sRGB, hex, alpha, source format, wide-gamut, and hint metadata. */
 export namespace ColorRecordInterfaceTypeEntity {
   export const Schema = {
+    '$id': 'https://iridis.dev/schema/core/color-record',
     'additionalProperties': false,
     'properties': {
       'alpha':        { 'type': 'number' },
@@ -33,10 +35,9 @@ export namespace ColorRecordInterfaceTypeEntity {
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = NominalSchemaType<typeof Schema>;
 
-  export const validate = (value: JsonValueType): value is Type => {
-    const result = new Validator().validate(Schema, value);
-    return result.valid;
-  };
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
 }

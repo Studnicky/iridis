@@ -1,118 +1,139 @@
 import type {
-  ColorRecordInterfaceType,
-  InputInterface,
+  ColorRecordInterfaceTypeEntity,
+  ContrastPairInterfaceTypeEntity,
   PaletteStateInterface,
-  PipelineContextInterface
+  PipelineContextInterface,
+  TaskInterface
 } from '@studnicky/iridis';
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
 
-import { colorRecordFactory, consoleLogger, Engine } from '@studnicky/iridis';
-import { enforceWcagAa, enforceWcagAaa } from '@studnicky/iridis-contrast';
+import {
+  colorRecordFactory,
+  consoleLogger,
+  InputInterfaceTypeEntity,
+  PaletteRoleState,
+  RoleSchemaInterfaceTypeEntity,
+  RuntimeOptionsInterfaceTypeEntity
+} from '@studnicky/iridis';
+import { OklchInterfaceTypeEntity, PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import { enforceWcagAa } from '@studnicky/iridis-contrast';
 
-import type { ContrastPairInputInterfaceType, EnforceLevelType } from './types/index.ts';
-
-const enforceTaskByLevel = { 'aa': enforceWcagAa, 'aaa': enforceWcagAaa } as const;
-
-/**
- * Shared placeholder engine for `ctx.engine`/`ctx.tasks`. The enforce tasks
- * invoked below only read `ctx.logger`, never engine state, so one instance
- * is safe to reuse across every call instead of allocating a fresh
- * `TaskRegistry` + json-tology-backed `Validator` on every animation frame.
- */
-const engine = new Engine();
-
-/** Builds a {@link PaletteStateInterface} pipeline frame for the enforce tasks below. */
-class State {
+class AnimationContrastState {
   static build(
-    palette: PaletteInterfaceType,
-    pairs: readonly ContrastPairInputInterfaceType[]
+    palette: PaletteInterfaceTypeEntity.Type,
+    pairs: readonly ContrastPairInterfaceTypeEntity.Type[]
   ): PaletteStateInterface {
-    const roles: Record<string, ColorRecordInterfaceType> = {};
-    for (const [role, oklch] of Object.entries(palette)) {
-      roles[role] = colorRecordFactory.fromOklch(oklch.l, oklch.c, oklch.h);
-    }
-
+    const roleRecords = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
     const roleNames = new Set<string>();
-    for (const pair of pairs) {
-      roleNames.add(pair.foreground);
-      roleNames.add(pair.background);
+    const paletteEntries = Object.entries(palette);
+
+    for (let index = 0; index < paletteEntries.length; index += 1) {
+      const entry = paletteEntries[index];
+      if (entry === undefined) {
+        continue;
+      }
+      const [roleName, oklch] = entry;
+      roleNames.add(roleName);
+      roleRecords.set(roleName, colorRecordFactory.fromOklch(oklch.l, oklch.c, oklch.h));
     }
 
-    const input: InputInterface = {
-      'bypass':    undefined,
-      'colors':    [],
-      'contrast':  undefined,
-      'emit':      undefined,
-      'maxColors': undefined,
-      'metadata':  undefined,
-      'roles': {
-        'contrastPairs': pairs.map((pair) => {return {
-          'algorithm':  pair.algorithm ?? 'wcag21',
-          'background': pair.background,
-          'foreground': pair.foreground,
-          'minRatio':   pair.minRatio ?? 4.5
-        };}),
-        'description': undefined,
-        'name':  'anima:frame',
-        'roles': [...roleNames].map((name) => {return {
-          'chromaRange':    undefined,
-          'derivedFrom':    undefined,
-          'description':    undefined,
-          'hue':            undefined,
-          'hueClamp':       undefined,
-          'hueOffset':      undefined,
-          'intent':         undefined,
-          'lightnessRange': undefined,
-          'name':           name,
-          'required':       true
-        };})
-      },
-      'runtime':   undefined
-    };
+    for (let index = 0; index < pairs.length; index += 1) {
+      const pair = pairs[index];
+      if (pair !== undefined) {
+        roleNames.add(pair.foreground);
+        roleNames.add(pair.background);
+      }
+    }
 
-    return {
+    const roleNamesList = Array.from(roleNames);
+    const roleDefinitions = new Array<{ 'name': string }>(roleNamesList.length);
+    for (let index = 0; index < roleNamesList.length; index += 1) {
+      const roleName = roleNamesList[index];
+      if (roleName !== undefined) {
+        roleDefinitions[index] = { 'name': roleName };
+      }
+    }
+
+    const roles: Record<string, ColorRecordInterfaceTypeEntity.Type> = {};
+    const roleEntries = Array.from(roleRecords);
+    for (let index = 0; index < roleEntries.length; index += 1) {
+      const entry = roleEntries[index];
+      if (entry !== undefined) {
+        const [roleName, record] = entry;
+        Object.defineProperty(roles, roleName, {
+          'configurable': true,
+          'enumerable':   true,
+          'value':        record,
+          'writable':     true
+        });
+      }
+    }
+    const contrastPairs = pairs.slice();
+    const schema = RoleSchemaInterfaceTypeEntity.create({
+      'contrastPairs': contrastPairs,
+      'name':          'anima:frame',
+      'roles':         roleDefinitions
+    });
+    const input = InputInterfaceTypeEntity.create({ 'colors': [], 'roles': schema });
+    const runtime = RuntimeOptionsInterfaceTypeEntity.create({});
+    const result: PaletteStateInterface = {
       'colors':   [],
       'input':    input,
       'metadata': {},
       'outputs':  {},
       'roles':    roles,
-      'runtime':  { 'colorSpace': undefined, 'extra': undefined, 'framing': undefined },
+      'runtime':  runtime,
       'variants': {}
     };
+    return result;
   }
 }
 
-/**
- * Re-validates one evaluated palette frame against WCAG contrast pairs by
- * calling the real `@studnicky/iridis-contrast` enforce task (which both
- * checks and corrects in place), rather than reimplementing contrast
- * correction math. Roles not named in any pair pass through unchanged.
- */
 class EnforceContrast {
   static apply(
-    palette: PaletteInterfaceType,
-    pairs: readonly ContrastPairInputInterfaceType[],
-    level: EnforceLevelType = 'aa'
-  ): PaletteInterfaceType {
-    if (pairs.length === 0) {return palette;}
-
-    const state = State.build(palette, pairs);
-    const context: PipelineContextInterface = {
-      'engine':    engine,
-      'logger':    consoleLogger,
-      'startedAt': Date.now(),
-      'tasks':     engine.tasks
-    };
-
-    enforceTaskByLevel[level].run(state, context);
-
-    const result: PaletteInterfaceType = { ...palette };
-    for (const role of Object.keys(palette)) {
-      const record = state.roles[role];
-      if (record === undefined) {continue;}
-      result[role] = { 'c': record.oklch.c, 'h': record.oklch.h, 'l': record.oklch.l };
+    palette: PaletteInterfaceTypeEntity.Type,
+    pairs: readonly ContrastPairInterfaceTypeEntity.Type[],
+    enforcer: TaskInterface = enforceWcagAa
+  ): PaletteInterfaceTypeEntity.Type {
+    if (pairs.length === 0) {
+      return palette;
     }
-    return result;
+
+    const state = AnimationContrastState.build(palette, pairs);
+    const context: PipelineContextInterface = {
+      'logger':    consoleLogger,
+      'startedAt': Date.now()
+    };
+    enforcer.run(state, context);
+
+    const result = new Map<string, PaletteInterfaceTypeEntity.Type[string]>();
+    const roleState = PaletteRoleState.admit(state.roles);
+    const roleNames = Object.keys(palette);
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      if (roleName === undefined) {
+        continue;
+      }
+      const record = roleState.get(roleName);
+      if (record !== undefined) {
+        result.set(roleName, { 'c': record.oklch.c, 'h': record.oklch.h, 'l': record.oklch.l });
+      }
+    }
+    const enforcedPalette: PaletteInterfaceTypeEntity.Type = {};
+    const enforcedEntries = Array.from(result);
+    for (let index = 0; index < enforcedEntries.length; index += 1) {
+      const entry = enforcedEntries[index];
+      if (entry !== undefined) {
+        const [roleName, oklch] = entry;
+        Object.defineProperty(enforcedPalette, roleName, {
+          'configurable': true,
+          'enumerable':   true,
+          'value':        OklchInterfaceTypeEntity.create(oklch),
+          'writable':     true
+        });
+      }
+    }
+    const validatedPalette = PaletteInterfaceTypeEntity.create(enforcedPalette);
+    return validatedPalette;
   }
 }
 

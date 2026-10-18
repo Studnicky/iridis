@@ -2,12 +2,16 @@
 class ScaleChromaToYOperation {
   static run(value: number, minimum: number, maximum: number, canvasHeight: number): number {
     const range = maximum - minimum;
-    if (range <= 0) { return canvasHeight / 2; }
+    if (range <= 0) {
+      const result = canvasHeight / 2;
+      return result;
+    }
     const padding = range * 0.15;
     const paddedMinimum = minimum - padding;
     const paddedMaximum = maximum + padding;
     const t = (value - paddedMinimum) / (paddedMaximum - paddedMinimum);
-    return canvasHeight - t * canvasHeight;
+    const result = canvasHeight - t * canvasHeight;
+    return result;
   }
 }
 

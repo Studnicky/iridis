@@ -3,13 +3,61 @@ set -eu
 
 . "$(dirname "$0")/../.githooks/lib/release-gates.sh"
 
-release_suite_changeset_status() {
-  default_ref="${1:-origin/develop}"
-  if [ -d .changeset ]; then
-    env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_PREFIX pnpm changeset status --since="$default_ref"
+release_suite_is_versioned_release() {
+  base_ref="$1"
+  root_version=$(release_root_version)
+  base_root_version=$(git show "${base_ref}:package.json" | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")
+
+  if ! node -e "const semver = require('semver'); process.exit(semver.valid(process.argv[1]) && semver.valid(process.argv[2]) && semver.gt(process.argv[1], process.argv[2]) ? 0 : 1)" "$root_version" "$base_root_version"; then
+    echo "::error::Root package version (${root_version}) must be a strict semver increase from ${base_ref} (${base_root_version}) to accept an already-versioned release." >&2
+    return 1
+  fi
+
+  assert_workspace_lockstep_version "$root_version"
+
+  missing_release_artifacts=''
+  for pkg_json in packages/*/package.json; do
+    pkg_private=$(node -p "require('./${pkg_json}').private || false")
+    [ "$pkg_private" = "true" ] && continue
+
+    pkg_directory=$(dirname "$pkg_json")
+    pkg_name=$(node -p "require('./${pkg_json}').name")
+    if ! git diff --quiet "$base_ref" -- "$pkg_json"; then
+      :
+    else
+      missing_release_artifacts="${missing_release_artifacts}${pkg_name}: package.json\n"
+    fi
+    if [ ! -f "$pkg_directory/CHANGELOG.md" ] || git diff --quiet "$base_ref" -- "$pkg_directory/CHANGELOG.md"; then
+      missing_release_artifacts="${missing_release_artifacts}${pkg_name}: CHANGELOG.md\n"
+    fi
+  done
+
+  if [ -n "$missing_release_artifacts" ]; then
+    echo "::error::Every public package must change package.json and CHANGELOG.md from ${base_ref} for an already-versioned release:" >&2
+    printf '%b' "$missing_release_artifacts" >&2
+    return 1
   fi
 }
 
+release_suite_changeset_status() {
+  default_ref="${1:-origin/develop}"
+  [ -d .changeset ] || return 0
+
+  changeset_status_output=''
+  if changeset_status_output=$(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_PREFIX pnpm changeset status --since="$default_ref" 2>&1); then
+    printf '%s\n' "$changeset_status_output"
+    return 0
+  else
+    changeset_status_code=$?
+  fi
+
+  if [ "$changeset_status_code" -ne 1 ] || ! printf '%s\n' "$changeset_status_output" | grep -F -q 'Some packages have been changed but no changesets were found. Run changeset add to resolve this error.' || ! printf '%s\n' "$changeset_status_output" | grep -F -q 'If this change doesn'\''t need a release, run changeset add --empty.'; then
+    printf '%s\n' "$changeset_status_output" >&2
+    return 1
+  fi
+
+  release_suite_is_versioned_release "$default_ref"
+}
 release_suite_verify_lockstep() {
   expected_version="$1"
   assert_workspace_lockstep_version "$expected_version"

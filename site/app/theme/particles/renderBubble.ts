@@ -1,5 +1,5 @@
-import type { ParticleElementType } from './types/particleElement.ts';
-import type { ParticleRendererType } from './types/particleRenderer.ts';
+import type { ParticleElementInterface } from './interfaces/particleElementInterface.ts';
+import type { ParticleRendererInterface } from './interfaces/particleRendererInterface.ts';
 
 import { randomDelay } from './randomDelay.ts';
 import { randomPlacement } from './randomPlacement.ts';
@@ -11,8 +11,8 @@ import { randomPlacement } from './randomPlacement.ts';
  * override — this renderer only places, sizes, and desyncs the particles.
  */
 class RenderBubbleOperation {
-  static readonly run: ParticleRendererType.Type = ({ colorVar, count, sizePx }) => {
-    const elements: ParticleElementType.Type[] = [];
+  static readonly render: ParticleRendererInterface['render'] = ({ colorVar, count, sizePx }) => {
+    const elements: ParticleElementInterface[] = [];
     for (let i = 0; i < count; i += 1) {
       const { x, y } = randomPlacement();
       elements.push({
@@ -29,8 +29,8 @@ class RenderBubbleOperation {
         }
       });
     }
-    return { 'elements': elements, 'kind': 'elements' };
+    return { 'rendering': { 'elements': elements, 'surface': 'elements' } };
   };
 }
 
-export const renderBubble: ParticleRendererType.Type = RenderBubbleOperation.run;
+export const renderBubble: ParticleRendererInterface = { 'render': RenderBubbleOperation.render };

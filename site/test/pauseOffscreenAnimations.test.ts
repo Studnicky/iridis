@@ -44,7 +44,8 @@ class HostOperations {
   static nextSibling(node: HostNode): HostNode | null {
     if (node.parent === null) {return null;}
     const index = node.parent.children.indexOf(node);
-    return node.parent.children.at(index + 1) ?? null;
+    const sibling = node.parent.children.at(index + 1) ?? null;
+    return sibling;
   }
 
   static parentNode(node: HostNode): HostElement | null {
@@ -86,12 +87,21 @@ class AnimationClassList {
 
   contains(name: string): boolean {
     if (name.length === 0) {throw new TypeError('Class names must be non-empty');}
-    return this.#names.has(name);
+    const containsName = this.#names.has(name);
+    return containsName;
   }
-  remove(...names: string[]): void {for (const name of names) {this.#names.delete(name);}}
 
-  toggle(name: string, enabled?: boolean): boolean {
-    const next = enabled ?? !this.#names.has(name);
+  remove(...names: string[]): void {
+    for (let index = 0; index < names.length; index += 1) {
+      const name = names[index];
+      if (name !== undefined) {this.#names.delete(name);}
+    }
+  }
+
+  toggle(name: string, ...requestedStates: unknown[]): boolean {
+    const requestedState = requestedStates.at(0);
+    if (requestedState !== undefined && typeof requestedState !== 'boolean') {throw new TypeError('Class state must be boolean');}
+    const next = requestedState ?? !this.#names.has(name);
     if (next) {this.#names.add(name);} else {this.#names.delete(name);}
     return next;
   }
@@ -145,7 +155,8 @@ class AnimationFrameQueue {
     const [frameId, callback] = nextEntry.value;
     this.#callbacks.delete(frameId);
     callback(0);
-    return frameId;
+    const completedFrameId = frameId;
+    return completedFrameId;
   }
 
   pendingCount(): number {return this.#callbacks.size;}
@@ -168,66 +179,119 @@ class AnimationWindow {
   cancelAnimationFrame(frameId: number): void {this.#frames.cancel(frameId);}
   requestAnimationFrame(callback: FrameRequestCallback): number {
     if (typeof callback !== 'function') {throw new TypeError('Animation frame callbacks must be functions');}
-    return this.#frames.request(callback);
+    const frameId = this.#frames.request(callback);
+    return frameId;
   }
 }
 
 class AnimationIntersectionEntry {
-  readonly isIntersecting: boolean;
+  readonly #isIntersecting: () => boolean;
   readonly target: AnimationElement;
 
-  constructor(target: AnimationElement, isIntersecting: boolean) {
-    this.isIntersecting = isIntersecting;
+  private constructor(target: AnimationElement, isIntersecting: () => boolean) {
+    this.#isIntersecting = isIntersecting;
     this.target = target;
   }
+
+  static offscreen(target: AnimationElement): AnimationIntersectionEntry {
+    const entry = new AnimationIntersectionEntry(target, () => {return false;});
+    return entry;
+  }
+
+  static onscreen(target: AnimationElement): AnimationIntersectionEntry {
+    const entry = new AnimationIntersectionEntry(target, () => {return true;});
+    return entry;
+  }
+
+  get isIntersecting(): boolean {
+    const isIntersecting = this.#isIntersecting();
+    return isIntersecting;
+  }
+
 }
 
 class IntersectionObserverRecorder {
-  static readonly instances: IntersectionObserverRecorder[] = [];
+  static readonly state: { readonly 'instances': IntersectionObserverRecorder[] } = { 'instances': [] };
   readonly observedHosts: AnimationElement[] = [];
   readonly options: { readonly 'rootMargin'?: string };
   readonly #callback: (entries: AnimationIntersectionEntry[]) => void;
   disconnected = false;
 
-  constructor(callback: (entries: AnimationIntersectionEntry[]) => void, options: { readonly 'rootMargin'?: string } = {}) {
+  private constructor(callback: (entries: AnimationIntersectionEntry[]) => void, options: { readonly 'rootMargin'?: string } = {}) {
     this.#callback = callback;
     this.options = options;
-    IntersectionObserverRecorder.instances.push(this);
   }
 
-  disconnect(): void {this.disconnected = true;}
-  emit(target: AnimationElement, isIntersecting: boolean): void {this.#callback([new AnimationIntersectionEntry(target, isIntersecting)]);}
-  observe(target: AnimationElement): void {this.observedHosts.push(target);}
+  static create(callback: (entries: AnimationIntersectionEntry[]) => void, options: { readonly 'rootMargin'?: string } = {}): IntersectionObserverRecorder {
+    const observer = new IntersectionObserverRecorder(callback, options);
+    IntersectionObserverRecorder.state.instances.push(observer);
+    return observer;
+  }
 
-  static reset(): void {IntersectionObserverRecorder.instances.length = 0;}
+  static reset(): void {IntersectionObserverRecorder.state.instances.length = 0;}
+
+  disconnect(): void {this.disconnected = true;}
+
+  emitOffscreen(target: AnimationElement): void {
+    const entry = AnimationIntersectionEntry.offscreen(target);
+    this.#callback([entry]);
+  }
+
+  emitOnscreen(target: AnimationElement): void {
+    const entry = AnimationIntersectionEntry.onscreen(target);
+    this.#callback([entry]);
+  }
+
+  observe(target: AnimationElement): void {this.observedHosts.push(target);}
+}
+
+class IntersectionObserverConstructor {
+  constructor(callback: (entries: AnimationIntersectionEntry[]) => void, options: { readonly 'rootMargin'?: string } = {}) {
+    if (typeof callback !== 'function') {throw new TypeError('Intersection observer callback must be a function');}
+    const rootMargin = options.rootMargin;
+    const normalizedOptions = rootMargin === undefined ? {} : { 'rootMargin': rootMargin };
+    const observer = IntersectionObserverRecorder.create(callback, normalizedOptions);
+    return observer;
+  }
 }
 
 class MutationObserverRecorder {
-  static readonly instances: MutationObserverRecorder[] = [];
+  static readonly state: { readonly 'instances': MutationObserverRecorder[] } = { 'instances': [] };
   readonly #callback: () => void;
   disconnected = false;
-  observedOptions: { readonly 'childList'?: boolean; readonly 'subtree'?: boolean } | null = null;
+  observedOptions: MutationObserverInit | undefined;
   observedTarget: AnimationElement | null = null;
 
-  constructor(callback: () => void) {
-    this.#callback = callback;
-    MutationObserverRecorder.instances.push(this);
+  private constructor(callback: () => void) {this.#callback = callback;}
+
+  static create(callback: () => void): MutationObserverRecorder {
+    const observer = new MutationObserverRecorder(callback);
+    MutationObserverRecorder.state.instances.push(observer);
+    return observer;
   }
+
+  static reset(): void {MutationObserverRecorder.state.instances.length = 0;}
 
   disconnect(): void {this.disconnected = true;}
 
-  observe(target: AnimationElement, options: { readonly 'childList'?: boolean; readonly 'subtree'?: boolean }): void {
+  observe(target: AnimationElement, options: MutationObserverInit): void {
     this.observedOptions = options;
     this.observedTarget = target;
   }
 
   trigger(): void {this.#callback();}
+}
 
-  static reset(): void {MutationObserverRecorder.instances.length = 0;}
+class MutationObserverConstructor {
+  constructor(callback: () => void) {
+    if (typeof callback !== 'function') {throw new TypeError('Mutation observer callback must be a function');}
+    const observer = MutationObserverRecorder.create(callback);
+    return observer;
+  }
 }
 
 class LifecycleHarness {
-  static operation: (() => void) | null = null;
+  static readonly state: { 'operation': (() => void) | undefined } = { 'operation': undefined };
 
   static mount() {
     const app = renderer.createApp({ 'render': LifecycleHarness.render, 'setup': LifecycleHarness.setup });
@@ -237,12 +301,14 @@ class LifecycleHarness {
 
   static render() {
     const properties = { 'data-test': 'pause-offscreen-animations-harness' };
-    return h('div', properties);
+    const node = h('div', properties);
+    return node;
   }
 
   static setup(): void {
-    if (LifecycleHarness.operation === null) {throw new Error('Lifecycle operation is not registered');}
-    LifecycleHarness.operation();
+    const operation = LifecycleHarness.state.operation;
+    if (operation === undefined) {throw new Error('Lifecycle operation is not registered');}
+    operation();
   }
 }
 
@@ -256,8 +322,8 @@ class BrowserFixture {
     MutationObserverRecorder.reset();
     Reflect.set(globalThis, 'document', this.document);
     Reflect.set(globalThis, 'window', this.window);
-    Reflect.set(globalThis, 'IntersectionObserver', IntersectionObserverRecorder);
-    Reflect.set(globalThis, 'MutationObserver', MutationObserverRecorder);
+    Reflect.set(globalThis, 'IntersectionObserver', IntersectionObserverConstructor);
+    Reflect.set(globalThis, 'MutationObserver', MutationObserverConstructor);
   }
 
   installWithoutObservers(): void {
@@ -270,8 +336,9 @@ class BrowserFixture {
   }
 
   mount() {
-    LifecycleHarness.operation = usePauseOffscreenAnimations;
-    return LifecycleHarness.mount();
+    LifecycleHarness.state.operation = usePauseOffscreenAnimations;
+    const app = LifecycleHarness.mount();
+    return app;
   }
 }
 
@@ -287,8 +354,8 @@ await test('usePauseOffscreenAnimations performs no browser work during SSR', as
   });
 
   assert.equal(await renderToString(app), '<div data-test="pause-offscreen-animations-harness"></div>');
-  assert.equal(IntersectionObserverRecorder.instances.length, 0);
-  assert.equal(MutationObserverRecorder.instances.length, 0);
+  assert.equal(IntersectionObserverRecorder.state.instances.length, 0);
+  assert.equal(MutationObserverRecorder.state.instances.length, 0);
 });
 
 await test('mount synchronizes visibility and observes offscreen animation hosts', () => {
@@ -310,19 +377,19 @@ await test('mount synchronizes visibility and observes offscreen animation hosts
   fixture.frames.flushNext();
 
   assert.equal(fixture.document.lastSelector, '.toc-scroll-target, .pulse, .orbit-rig, .sonar-ring, .radar-sweep, .chroma-cycle');
-  assert.equal(IntersectionObserverRecorder.instances.length, 1);
-  assert.equal(MutationObserverRecorder.instances.length, 1);
-  const intersectionObserver = IntersectionObserverRecorder.instances[0];
-  const mutationObserver = MutationObserverRecorder.instances[0];
+  assert.equal(IntersectionObserverRecorder.state.instances.length, 1);
+  assert.equal(MutationObserverRecorder.state.instances.length, 1);
+  const intersectionObserver = IntersectionObserverRecorder.state.instances[0];
+  const mutationObserver = MutationObserverRecorder.state.instances[0];
   if (intersectionObserver === undefined || mutationObserver === undefined) {throw new Error('Observers did not start');}
   assert.equal(intersectionObserver.options.rootMargin, '300px');
   assert.deepEqual(intersectionObserver.observedHosts, [firstHost, secondHost]);
   assert.equal(mutationObserver.observedTarget, fixture.document.body);
   assert.deepEqual(mutationObserver.observedOptions, { 'childList': true, 'subtree': true });
 
-  intersectionObserver.emit(firstHost, false);
+  intersectionObserver.emitOffscreen(firstHost);
   assert.equal(firstHost.classList.contains('anim-offscreen'), true);
-  intersectionObserver.emit(firstHost, true);
+  intersectionObserver.emitOnscreen(firstHost);
   assert.equal(firstHost.classList.contains('anim-offscreen'), false);
   app.unmount();
 });
@@ -335,8 +402,8 @@ await test('mutation bursts coalesce into one frame and observe each new host on
   const app = fixture.mount();
   fixture.frames.flushNext();
 
-  const intersectionObserver = IntersectionObserverRecorder.instances[0];
-  const mutationObserver = MutationObserverRecorder.instances[0];
+  const intersectionObserver = IntersectionObserverRecorder.state.instances[0];
+  const mutationObserver = MutationObserverRecorder.state.instances[0];
   if (intersectionObserver === undefined || mutationObserver === undefined) {throw new Error('Observers did not start');}
   const addedHost = new AnimationElement();
   fixture.document.hosts.push(addedHost);
@@ -361,8 +428,8 @@ await test('missing observer APIs preserve visibility pausing', () => {
   assert.equal(fixture.document.documentElement.classList.contains('anims-paused'), true);
   assert.equal(fixture.document.listenerCount(), 1);
   assert.equal(fixture.frames.pendingCount(), 0);
-  assert.equal(IntersectionObserverRecorder.instances.length, 0);
-  assert.equal(MutationObserverRecorder.instances.length, 0);
+  assert.equal(IntersectionObserverRecorder.state.instances.length, 0);
+  assert.equal(MutationObserverRecorder.state.instances.length, 0);
 
   app.unmount();
   assert.equal(fixture.document.listenerCount(), 0);
@@ -377,10 +444,10 @@ await test('unmount disconnects observers, cancels frames, clears classes, and d
   const app = fixture.mount();
   fixture.frames.flushNext();
 
-  const intersectionObserver = IntersectionObserverRecorder.instances[0];
-  const mutationObserver = MutationObserverRecorder.instances[0];
+  const intersectionObserver = IntersectionObserverRecorder.state.instances[0];
+  const mutationObserver = MutationObserverRecorder.state.instances[0];
   if (intersectionObserver === undefined || mutationObserver === undefined) {throw new Error('Observers did not start');}
-  intersectionObserver.emit(host, false);
+  intersectionObserver.emitOffscreen(host);
   fixture.document.hidden = true;
   fixture.document.dispatchVisibilityChange();
   mutationObserver.trigger();
