@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { CliExitError } from '@studnicky/errors';
+import { CliExitError } from '@studnicky/errors/node';
 
 import { Cli } from './Cli.ts';
 

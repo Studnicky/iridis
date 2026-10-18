@@ -2,17 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { CssCustomPropertyPrefix } from '../../src/util/CssCustomPropertyPrefix.ts';
-
-const INVALID_PREFIXES = [
-  '--safe-} body {',
-  '--safe-;',
-  '--safe:',
-  '--safe prefix-',
-  '--safe-\n',
-  '--safe-/*comment*/',
-  'brand-',
-  ''
-];
+import { CssCustomPropertyPrefixTestData } from '../fixtures/CssCustomPropertyPrefixTestData.ts';
 
 class CssCustomPropertyPrefixTestFixture {
   static errorFor(prefix: string): Error | undefined {
@@ -20,7 +10,8 @@ class CssCustomPropertyPrefixTestFixture {
       CssCustomPropertyPrefix.from(prefix);
       return undefined;
     } catch (error) {
-      return error instanceof Error ? error : undefined;
+      const result = error instanceof Error ? error : undefined;
+      return result;
     }
   }
 }
@@ -34,8 +25,10 @@ await test('CssCustomPropertyPrefix.from preserves a valid custom prefix', () =>
 });
 
 await test('CssCustomPropertyPrefix.from rejects declaration and rule injection text', () => {
-  for (const prefix of INVALID_PREFIXES) {
+  for (let index = 0; index < CssCustomPropertyPrefixTestData.INVALID_PREFIXES.length; index += 1) {
+    const prefix = CssCustomPropertyPrefixTestData.INVALID_PREFIXES[index];
+    if (prefix === undefined) { continue; }
     const error = CssCustomPropertyPrefixTestFixture.errorFor(prefix);
-    assert.match(error?.message ?? '', /value must be a CSS custom-property prefix/u);
+    assert.match(error?.message ?? '', CssCustomPropertyPrefixTestData.ERROR_PATTERN);
   }
 });

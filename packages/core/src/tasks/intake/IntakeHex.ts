@@ -1,50 +1,35 @@
-import type { JsonValueType } from '@studnicky/types';
+import { ValidationError } from '@studnicky/errors/node';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import { ValidationError } from '@studnicky/errors';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
+import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '../../types/index.ts';
-
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { HEX_PATTERNS }       from './constants/HexPatterns.ts';
 import { IsImagePixelInput }  from './IsImagePixelInput.ts';
 
 class Hex {
   static normalize(raw: string): string {
-    const s = raw.trim();
-    const cleaned = s.startsWith('#') ? s.slice(1) : s;
+    const trimmed = raw.trim();
+    const cleaned = trimmed.startsWith('#') ? trimmed.slice(1) : trimmed;
+    let result = '';
 
-    if (HEX_PATTERNS.DIGITS_3.test(cleaned)) {
+    if (HEX_PATTERNS.DIGITS_3.test(cleaned) || HEX_PATTERNS.DIGITS_4.test(cleaned)) {
       const r = cleaned[0]!;
       const g = cleaned[1]!;
       const b = cleaned[2]!;
-      return `${r}${r}${g}${g}${b}${b}`;
+      result = `${r}${r}${g}${g}${b}${b}`;
+    } else if (HEX_PATTERNS.DIGITS_6.test(cleaned)) {
+      result = cleaned;
+    } else if (HEX_PATTERNS.DIGITS_8.test(cleaned)) {
+      result = cleaned.slice(0, 6);
     }
 
-    if (HEX_PATTERNS.DIGITS_4.test(cleaned)) {
-      const r = cleaned[0]!;
-      const g = cleaned[1]!;
-      const b = cleaned[2]!;
-      return `${r}${r}${g}${g}${b}${b}`;
-    }
-
-    if (HEX_PATTERNS.DIGITS_6.test(cleaned)) {
-      return cleaned;
-    }
-
-    if (HEX_PATTERNS.DIGITS_8.test(cleaned)) {
-      return cleaned.slice(0, 6);
-    }
-
-    return '';
+    return result;
   }
 }
 
@@ -62,20 +47,18 @@ class Hex {
 class IntakeHex implements TaskInterface {
   readonly 'name' = 'intake:hex';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Parses #RRGGBB, #RGB, #RGBA, and #RRGGBBAA hex strings into ColorRecord entries. Throws on non-hex input.',
     'name':        'intake:hex',
-    'phase':       undefined,
     'reads':       ['input.colors'],
-    'requires':    undefined,
     'writes':      ['colors']
-  };
+  });
 
   /**
    * Parses a single value as a hex color. Throws when the input is not a
    * valid hex string. Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
+  parse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type {
     if (typeof raw !== 'string') {
       throw ValidationError.create({
         'message': 'intake:hex — expected a string input',
@@ -119,7 +102,8 @@ class IntakeHex implements TaskInterface {
       const a = cleaned[3]!;
       alpha = parseInt(`${a}${a}`, 16) / 255;
     }
-    return colorRecordFactory.fromHex(`#${hex6}`, { 'alphaOverride': alpha });
+    const result = colorRecordFactory.fromHex(`#${hex6}`, { 'alphaOverride': alpha });
+    return result;
   }
 
   /**
@@ -127,28 +111,41 @@ class IntakeHex implements TaskInterface {
    * {@link IntakeHex.run} does not carry a try/catch in its body (V8
    * de-optimises try/catch inside hot loops).
    */
-  #tryParse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType | undefined {
+  #tryParse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type | undefined {
     try {
-      return this.parse(raw);
+      const result = this.parse(raw);
+      return result;
     } catch {
       return undefined;
     }
   }
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    for (const [i, raw] of state.input.colors.entries()) {
+    for (let i = 0; i < state.input.colors.length; i += 1) {
+      const raw = state.input.colors[i];
+      if (raw === undefined) {
+        throw ValidationError.create({
+          'message': `intake:hex — entry at index ${i} is not a hex color`,
+          'path':    `input.colors[${i}]`,
+          'violations': [{
+            'details': { 'index': i },
+            'message': 'entry is absent',
+            'path':    `input.colors[${i}]`
+          }]
+        });
+      }
       // ImageData entries are silently skipped: they are handled by intake:imagePixels.
       // All other non-hex entries (including objects like {r,g,b}) throw with position
       // info so callers using intake:hex standalone get strict format enforcement.
       if (IsImagePixelInput.check(raw)) {
         context.logger.trace(
-          LogBody.create()
-            .component('IntakeHex')
-            .operation('run')
-            .status(LOG_STATUS.SKIPPED)
-            .message('Skipping ImageData entry (handled by intake:imagePixels)')
-            .context({ 'index': i })
-            .build()
+          LogBody.create({
+            'component': 'IntakeHex',
+            'context': { 'index': i },
+            'message': 'Skipping ImageData entry (handled by intake:imagePixels)',
+            'operation': 'run',
+            'status': LOG_STATUS.SKIPPED
+          })
         );
         continue;
       }
@@ -170,13 +167,13 @@ class IntakeHex implements TaskInterface {
       }
       state.colors.push(record);
       context.logger.debug(
-        LogBody.create()
-          .component('IntakeHex')
-          .operation('run')
-          .status(LOG_STATUS.SUCCESS)
-          .message('Parsed hex value')
-          .context({ 'hex': record.hex, 'raw': raw })
-          .build()
+        LogBody.create({
+          'component': 'IntakeHex',
+          'context': { 'hex': record.hex, 'raw': raw },
+          'message': 'Parsed hex value',
+          'operation': 'run',
+          'status': LOG_STATUS.SUCCESS
+        })
       );
     }
   }

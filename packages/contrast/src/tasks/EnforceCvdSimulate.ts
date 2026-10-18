@@ -1,40 +1,35 @@
 import type {
-  ColorHintsInterfaceType,
-  ColorRecordInterfaceType,
+  ColorHintsInterfaceTypeEntity,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  RgbInterfaceType,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { clamp01, colorRecordFactory, contrastWcag21, gamutMapSrgb, linearToSrgb, oklchToRgbRaw, rgbToHex, srgbToLinear } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { clamp01, colorRecordFactory, contrastWcag21, gamutMapSrgb, linearToSrgb, oklchToRgbRaw, rgbToHex, srgbToLinear, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { CvdCorrectionInterfaceType, CvdPairWarningInterfaceType } from '../types/augmentation.ts';
-import type {
-  CorrectionCandidateInterfaceType,
-  CvdEvalInterfaceType,
-  CvdMatrixInterfaceType
-} from '../types/index.ts';
+import type { CvdCorrectionInterfaceTypeEntity } from '../entities/CvdCorrectionInterfaceTypeEntity.ts';
+import type { CvdEvalInterfaceTypeEntity } from '../entities/CvdEvalInterfaceTypeEntity.ts';
+import type { CvdMatrixInterfaceTypeEntity } from '../entities/CvdMatrixInterfaceTypeEntity.ts';
+import type { CvdPairWarningInterfaceTypeEntity } from '../entities/CvdPairWarningInterfaceTypeEntity.ts';
 
 import { cvdMatrices } from '../data/cvdMatrices.ts';
 import { CVD_THRESHOLDS } from '../data/cvdThresholds.ts';
 
 class CvdPairConstraint {
-  readonly background: ColorRecordInterfaceType;
+  readonly background: ColorRecordInterfaceTypeEntity.Type;
   readonly backgroundLuminance: number;
   readonly backgroundName: string;
   readonly baseline: number;
-  readonly originalFailureTypes: ReadonlySet<CvdEvalInterfaceType['cvdType']>;
+  readonly originalFailureTypes: ReadonlySet<CvdEvalInterfaceTypeEntity.Type['cvdType']>;
   readonly simulatedBackgroundLuminances: readonly number[];
 
   constructor(
     backgroundName: string,
-    background: ColorRecordInterfaceType,
+    background: ColorRecordInterfaceTypeEntity.Type,
     baseline: number,
-    originalFailureTypes: ReadonlySet<CvdEvalInterfaceType['cvdType']>
+    originalFailureTypes: ReadonlySet<CvdEvalInterfaceTypeEntity.Type['cvdType']>
   ) {
     this.background = background;
     this.backgroundLuminance = CvdSimulation.luminance(background.rgb);
@@ -42,8 +37,11 @@ class CvdPairConstraint {
     this.baseline = baseline;
     this.originalFailureTypes = originalFailureTypes;
     const simulatedBackgroundLuminances: number[] = [];
-    for (const cvd of cvdMatrices) {
-      simulatedBackgroundLuminances.push(CvdSimulation.luminance(CvdSimulation.color(background.rgb, cvd)));
+    for (let cvdIndex = 0; cvdIndex < cvdMatrices.length; cvdIndex += 1) {
+      const cvd = cvdMatrices[cvdIndex];
+      if (cvd !== undefined) {
+        simulatedBackgroundLuminances.push(CvdSimulation.luminance(CvdSimulation.color(background.rgb, cvd)));
+      }
     }
     this.simulatedBackgroundLuminances = simulatedBackgroundLuminances;
   }
@@ -52,15 +50,15 @@ class CvdPairConstraint {
 class CvdForegroundGroup {
   readonly constraints: CvdPairConstraint[];
   readonly foreground: string;
-  readonly original: ColorRecordInterfaceType;
+  readonly original: ColorRecordInterfaceTypeEntity.Type;
 
-  constructor(foreground: string, original: ColorRecordInterfaceType) {
+  constructor(foreground: string, original: ColorRecordInterfaceTypeEntity.Type) {
     this.constraints = [];
     this.foreground = foreground;
     this.original = original;
   }
 
-  add(backgroundName: string, background: ColorRecordInterfaceType): void {
+  add(backgroundName: string, background: ColorRecordInterfaceTypeEntity.Type): void {
     this.constraints.push(new CvdPairConstraint(
       backgroundName,
       background,
@@ -70,17 +68,22 @@ class CvdForegroundGroup {
   }
 
   dependsOn(foreground: string): boolean {
-    for (const constraint of this.constraints) {
-      if (constraint.backgroundName === foreground) {
+    for (let constraintIndex = 0; constraintIndex < this.constraints.length; constraintIndex += 1) {
+      const constraint = this.constraints[constraintIndex];
+      if (constraint?.backgroundName === foreground) {
         return true;
       }
     }
     return false;
   }
 
-  resolve(roles: ReadonlyMap<string, ColorRecordInterfaceType>): CvdPairConstraint[] {
+  resolve(roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): CvdPairConstraint[] {
     const resolved: CvdPairConstraint[] = [];
-    for (const constraint of this.constraints) {
+    for (let constraintIndex = 0; constraintIndex < this.constraints.length; constraintIndex += 1) {
+      const constraint = this.constraints[constraintIndex];
+      if (constraint === undefined) {
+        continue;
+      }
       const background = roles.get(constraint.backgroundName) ?? constraint.background;
       resolved.push(new CvdPairConstraint(
         constraint.backgroundName,
@@ -93,23 +96,46 @@ class CvdForegroundGroup {
   }
 }
 
-abstract class CvdCorrectionCandidate implements CorrectionCandidateInterfaceType {
-  abstract readonly 'allClear': boolean;
-  abstract readonly 'baselineValid': boolean;
-  abstract readonly 'c': number;
-  abstract readonly 'failureCount': number;
-  abstract readonly 'failureSetValid': boolean;
-  abstract readonly 'l': number;
-  abstract readonly 'rgb': RgbInterfaceType;
-  abstract readonly 'searchC': number;
-  abstract readonly 'searchL': number;
-  abstract readonly 'trichromatContrast': number;
-  abstract readonly 'worstSim': number;
+class CvdCorrectionCandidate {
+  readonly c: number;
+  readonly failureCount: number;
+  readonly l: number;
+  readonly novelFailureCount: number;
+  readonly rgb: ColorRecordInterfaceTypeEntity.Type['rgb'];
+  readonly searchC: number;
+  readonly searchL: number;
+  readonly trichromatBaselineDeficitCount: number;
+  readonly trichromatContrast: number;
+  readonly worstSim: number;
+
+  constructor(
+    c: number,
+    failureCount: number,
+    l: number,
+    novelFailureCount: number,
+    rgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
+    searchC: number,
+    searchL: number,
+    trichromatBaselineDeficitCount: number,
+    trichromatContrast: number,
+    worstSim: number
+  ) {
+    this.c = c;
+    this.failureCount = failureCount;
+    this.l = l;
+    this.novelFailureCount = novelFailureCount;
+    this.rgb = rgb;
+    this.searchC = searchC;
+    this.searchL = searchL;
+    this.trichromatBaselineDeficitCount = trichromatBaselineDeficitCount;
+    this.trichromatContrast = trichromatContrast;
+    this.worstSim = worstSim;
+  }
 }
 
 class Matrix {
   static apply(
-    cvd: CvdMatrixInterfaceType,
+    cvd: CvdMatrixInterfaceTypeEntity.Type,
     r: number,
     g: number,
     b: number
@@ -128,13 +154,13 @@ class Matrix {
 }
 
 class CvdEmittedColorCache {
-  private readonly records: Map<string, ColorRecordInterfaceType>;
+  private readonly records: Map<string, ColorRecordInterfaceTypeEntity.Type>;
 
   constructor() {
     this.records = new Map();
   }
 
-  fromRgb(rgb: RgbInterfaceType): ColorRecordInterfaceType {
+  fromRgb(rgb: ColorRecordInterfaceTypeEntity.Type['rgb']): ColorRecordInterfaceTypeEntity.Type {
     const hex = rgbToHex.apply(rgb.r, rgb.g, rgb.b);
     const cached = this.records.get(hex);
     if (cached !== undefined) {
@@ -147,7 +173,7 @@ class CvdEmittedColorCache {
 }
 
 class CvdSearchColor {
-  readonly emitted: ColorRecordInterfaceType;
+  readonly emitted: ColorRecordInterfaceTypeEntity.Type;
   readonly searchC: number;
   readonly searchL: number;
 
@@ -165,6 +191,23 @@ class CvdSearchColor {
   }
 }
 
+abstract class CvdGridSearchPlan {
+  abstract shouldScore(selection: CvdCandidateSelection, candidate: CvdSearchColor): boolean;
+}
+
+class CvdUnprunedGridSearchPlan extends CvdGridSearchPlan {
+  shouldScore(_selection: CvdCandidateSelection, _candidate: CvdSearchColor): boolean {
+    return true;
+  }
+}
+
+class CvdDistancePrunedGridSearchPlan extends CvdGridSearchPlan {
+  shouldScore(selection: CvdCandidateSelection, candidate: CvdSearchColor): boolean {
+    const result = selection.couldImprove(candidate.emitted.oklch.l, candidate.emitted.oklch.c);
+    return result;
+  }
+}
+
 class CvdSimulation {
   private static readonly searchCoarseChromaPartitions = 40;
   private static readonly searchCoarseLightnessPartitions = 80;
@@ -174,9 +217,9 @@ class CvdSimulation {
   private static readonly searchRefinementRadius = 4;
 
   static color(
-    rgb: RgbInterfaceType,
-    cvd: CvdMatrixInterfaceType
-  ): { readonly 'b': number; readonly 'g': number; readonly 'r': number; } {
+    rgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
+    cvd: CvdMatrixInterfaceTypeEntity.Type
+  ): ColorRecordInterfaceTypeEntity.Type['rgb'] {
   // Convert gamma-encoded sRGB → linear sRGB
     const lin = srgbToLinear.apply(rgb.r, rgb.g, rgb.b);
 
@@ -185,12 +228,14 @@ class CvdSimulation {
 
     // Convert back to gamma-encoded sRGB
     const encoded = linearToSrgb.apply(rp, gp, bp);
-    return { 'b': encoded.b, 'g': encoded.g, 'r': encoded.r };
+    const result = { 'b': encoded.b, 'g': encoded.g, 'r': encoded.r };
+    return result;
   }
 
   static luminance(simulated: { readonly 'b': number; readonly 'g': number; readonly 'r': number; }): number {
     const linear = srgbToLinear.apply(simulated.r, simulated.g, simulated.b);
-    return 0.2126 * linear.r + 0.7152 * linear.g + 0.0722 * linear.b;
+    const result = 0.2126 * linear.r + 0.7152 * linear.g + 0.0722 * linear.b;
+    return result;
   }
 
   /** WCAG-21 style contrast ratio between two gamma-encoded sRGB triples.
@@ -203,34 +248,40 @@ class CvdSimulation {
   ): number {
     const l1 = CvdSimulation.luminance(fg);
     const l2 = CvdSimulation.luminance(bg);
-    return CvdSimulation.contrastFromLuminances(l1, l2);
+    const result = CvdSimulation.contrastFromLuminances(l1, l2);
+    return result;
   }
 
   private static contrastFromLuminances(l1: number, l2: number): number {
     const lighter = Math.max(l1, l2);
     const darker  = Math.min(l1, l2);
-    return (lighter + 0.05) / (darker + 0.05);
+    const result = (lighter + 0.05) / (darker + 0.05);
+    return result;
   }
 
   /** Evaluates a foreground/background rgb pair against every CVD matrix.
  *  Pure — no metadata writes, no logging. Shared by the initial
  *  detection pass and the post-correction final pass. */
   static evaluate(
-    fgRgb: RgbInterfaceType,
-    bgRgb: RgbInterfaceType,
+    fgRgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
+    bgRgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
     originalContrast: number
-  ): CvdEvalInterfaceType[] {
+  ): CvdEvalInterfaceTypeEntity.Type[] {
     const EPS = 1e-12;
-    const evals: CvdEvalInterfaceType[] = [];
-    for (const cvd of cvdMatrices) {
-      const threshold   = CVD_THRESHOLDS[cvd.name];
+    const evals: CvdEvalInterfaceTypeEntity.Type[] = [];
+    for (let cvdIndex = 0; cvdIndex < cvdMatrices.length; cvdIndex += 1) {
+      const cvd = cvdMatrices[cvdIndex];
+      if (cvd === undefined) {
+        continue;
+      }
+      const threshold = CvdSimulation.thresholdFor(cvd);
       const simulatedForeground = CvdSimulation.color(fgRgb, cvd);
       const simulatedBackground = CvdSimulation.color(bgRgb, cvd);
       const simContrast = CvdSimulation.contrast(simulatedForeground, simulatedBackground);
       const drop        = originalContrast - simContrast;
 
       const exceedsDrop = Math.abs(drop) > threshold.dropMagnitude + EPS;
-      const belowFloor   = simContrast < threshold.minSimulatedContrast - EPS;
+      const belowFloor   = simContrast < threshold.minimumSimulatedContrast - EPS;
 
       evals.push({
         'belowFloor':       belowFloor,
@@ -246,14 +297,15 @@ class CvdSimulation {
   }
 
   static failureTypes(
-    foreground: ColorRecordInterfaceType,
-    background: ColorRecordInterfaceType
-  ): ReadonlySet<CvdEvalInterfaceType['cvdType']> {
+    foreground: ColorRecordInterfaceTypeEntity.Type,
+    background: ColorRecordInterfaceTypeEntity.Type
+  ): ReadonlySet<CvdEvalInterfaceTypeEntity.Type['cvdType']> {
     const contrast = contrastWcag21.apply(foreground, background);
     const evaluations = CvdSimulation.evaluate(foreground.rgb, background.rgb, contrast);
-    const failureTypes = new Set<CvdEvalInterfaceType['cvdType']>();
-    for (const evaluation of evaluations) {
-      if (evaluation.fail) {
+    const failureTypes = new Set<CvdEvalInterfaceTypeEntity.Type['cvdType']>();
+    for (let evaluationIndex = 0; evaluationIndex < evaluations.length; evaluationIndex += 1) {
+      const evaluation = evaluations[evaluationIndex];
+      if (evaluation?.fail === true) {
         failureTypes.add(evaluation.cvdType);
       }
     }
@@ -266,92 +318,167 @@ class CvdSimulation {
     candidate: CvdSearchColor,
     constraints: readonly CvdPairConstraint[]
   ): CvdCorrectionCandidate {
-    const EPS = 1e-12;
+    const epsilon = 1e-12;
     const emitted = candidate.emitted;
-    const rgb = emitted.rgb;
-    const foregroundLuminance = CvdSimulation.luminance(rgb);
+    const foregroundLuminance = CvdSimulation.luminance(emitted.rgb);
+    const baseline = CvdSimulation.measureBaselines(foregroundLuminance, constraints, epsilon);
+    if (baseline.deficitCount > 0) {
+      return new CvdCorrectionCandidate(
+        emitted.oklch.c,
+        0,
+        emitted.oklch.l,
+        0,
+        emitted.rgb,
+        candidate.searchC,
+        candidate.searchL,
+        baseline.deficitCount,
+        baseline.minimumContrast,
+        0
+      );
+    }
+    const simulations = CvdSimulation.measureSimulations(
+      foregroundLuminance,
+      emitted.rgb,
+      constraints,
+      epsilon
+    );
+    return new CvdCorrectionCandidate(
+      emitted.oklch.c,
+      simulations.failureCount,
+      emitted.oklch.l,
+      simulations.novelFailureCount,
+      emitted.rgb,
+      candidate.searchC,
+      candidate.searchL,
+      baseline.deficitCount,
+      baseline.minimumContrast,
+      simulations.worstContrast
+    );
+  }
 
-    let trichromatContrast = Infinity;
-    let worstSim = Infinity;
-    let allClear  = true;
-    for (const constraint of constraints) {
-      const pairContrast = CvdSimulation.contrastFromLuminances(foregroundLuminance, constraint.backgroundLuminance);
-      if (pairContrast < trichromatContrast) {
-        trichromatContrast = pairContrast;
+  private static measureBaselines(
+    foregroundLuminance: number,
+    constraints: readonly CvdPairConstraint[],
+    epsilon: number
+  ): { readonly 'deficitCount': number; readonly 'minimumContrast': number; } {
+    let deficitCount = 0;
+    let minimumContrast = Infinity;
+    for (let constraintIndex = 0; constraintIndex < constraints.length; constraintIndex += 1) {
+      const constraint = constraints[constraintIndex];
+      if (constraint === undefined) {
+        continue;
       }
-      if (pairContrast + EPS < constraint.baseline) {
-        allClear = false;
+      const contrast = CvdSimulation.contrastFromLuminances(foregroundLuminance, constraint.backgroundLuminance);
+      if (contrast < minimumContrast) {
+        minimumContrast = contrast;
+      }
+      if (contrast + epsilon < constraint.baseline) {
+        deficitCount += 1;
       }
     }
+    return { 'deficitCount': deficitCount, 'minimumContrast': minimumContrast };
+  }
 
-    if (!allClear) {
-      return {
-        'allClear': false,
-        'baselineValid': false,
-        'c': emitted.oklch.c,
-        'failureCount': Number.POSITIVE_INFINITY,
-        'failureSetValid': false,
-        'l': emitted.oklch.l,
-        'rgb': rgb,
-        'searchC': candidate.searchC,
-        'searchL': candidate.searchL,
-        'trichromatContrast': trichromatContrast,
-        'worstSim': 0
-      };
-    }
-
-    const simulatedForegroundLuminances: number[] = [];
-    for (const cvd of cvdMatrices) {
-      simulatedForegroundLuminances.push(CvdSimulation.luminance(CvdSimulation.color(rgb, cvd)));
-    }
-
-    const cvdCount = cvdMatrices.length;
+  private static measureSimulations(
+    foregroundLuminance: number,
+    rgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
+    constraints: readonly CvdPairConstraint[],
+    epsilon: number
+  ): { readonly 'failureCount': number; readonly 'novelFailureCount': number; readonly 'worstContrast': number; } {
+    const foregroundLuminances = CvdSimulation.simulatedLuminances(rgb);
     let failureCount = 0;
-    let failureSetValid = true;
-    for (const constraint of constraints) {
-      for (let cvdIndex = 0; cvdIndex < cvdCount; cvdIndex++) {
-        const cvd = cvdMatrices.at(cvdIndex);
-        const simulatedForegroundLuminance = simulatedForegroundLuminances.at(cvdIndex);
-        const simulatedBackgroundLuminance = constraint.simulatedBackgroundLuminances.at(cvdIndex);
-        if (cvd === undefined || simulatedForegroundLuminance === undefined || simulatedBackgroundLuminance === undefined) {
-          allClear = false;
-          failureCount++;
-          failureSetValid = false;
-          continue;
-        }
-        const threshold = CVD_THRESHOLDS[cvd.name];
-        const simContrast = CvdSimulation.contrastFromLuminances(simulatedForegroundLuminance, simulatedBackgroundLuminance);
-        const pairContrast = CvdSimulation.contrastFromLuminances(foregroundLuminance, constraint.backgroundLuminance);
-        const drop = pairContrast - simContrast;
-        const exceedsDrop = Math.abs(drop) > threshold.dropMagnitude + EPS;
-        const belowFloor = simContrast < threshold.minSimulatedContrast - EPS;
-
-        if (exceedsDrop || belowFloor) {
-          allClear = false;
-          failureCount++;
-          if (!constraint.originalFailureTypes.has(cvd.name)) {
-            failureSetValid = false;
-          }
-        }
-        if (simContrast < worstSim) {
-          worstSim = simContrast;
-        }
+    let novelFailureCount = 0;
+    let worstContrast = Infinity;
+    for (let constraintIndex = 0; constraintIndex < constraints.length; constraintIndex += 1) {
+      const constraint = constraints[constraintIndex];
+      if (constraint === undefined) {
+        continue;
+      }
+      const measurements = CvdSimulation.measureConstraintSimulations(
+        constraint,
+        foregroundLuminance,
+        foregroundLuminances,
+        epsilon
+      );
+      failureCount += measurements.failureCount;
+      novelFailureCount += measurements.novelFailureCount;
+      if (measurements.worstContrast < worstContrast) {
+        worstContrast = measurements.worstContrast;
       }
     }
+    return { 'failureCount': failureCount, 'novelFailureCount': novelFailureCount, 'worstContrast': worstContrast };
+  }
 
-    return {
-      'allClear': allClear,
-      'baselineValid': true,
-      'c': emitted.oklch.c,
-      'failureCount': failureCount,
-      'failureSetValid': failureSetValid,
-      'l': emitted.oklch.l,
-      'rgb': rgb,
-      'searchC': candidate.searchC,
-      'searchL': candidate.searchL,
-      'trichromatContrast': trichromatContrast,
-      'worstSim': worstSim
-    };
+  private static measureConstraintSimulations(
+    constraint: CvdPairConstraint,
+    foregroundLuminance: number,
+    foregroundLuminances: readonly number[],
+    epsilon: number
+  ): { readonly 'failureCount': number; readonly 'novelFailureCount': number; readonly 'worstContrast': number; } {
+    let failureCount = 0;
+    let novelFailureCount = 0;
+    let worstContrast = Infinity;
+    for (let cvdIndex = 0; cvdIndex < cvdMatrices.length; cvdIndex += 1) {
+      const measurement = CvdSimulation.measureSimulationAt(cvdIndex, constraint, foregroundLuminance, foregroundLuminances, epsilon);
+      failureCount += measurement.failureCount;
+      novelFailureCount += measurement.novelFailureCount;
+      if (measurement.simulatedContrast < worstContrast) {
+        worstContrast = measurement.simulatedContrast;
+      }
+    }
+    return { 'failureCount': failureCount, 'novelFailureCount': novelFailureCount, 'worstContrast': worstContrast };
+  }
+
+  private static measureSimulationAt(
+    cvdIndex: number,
+    constraint: CvdPairConstraint,
+    foregroundLuminance: number,
+    foregroundLuminances: readonly number[],
+    epsilon: number
+  ): { readonly 'failureCount': number; readonly 'novelFailureCount': number; readonly 'simulatedContrast': number; } {
+    const cvd = cvdMatrices[cvdIndex];
+    const simulatedForegroundLuminance = foregroundLuminances[cvdIndex];
+    const simulatedBackgroundLuminance = constraint.simulatedBackgroundLuminances[cvdIndex];
+    if (cvd === undefined || simulatedForegroundLuminance === undefined || simulatedBackgroundLuminance === undefined) {
+      throw new TypeError('CVD simulation matrices and luminance measurements are misaligned');
+    }
+    const threshold = CvdSimulation.thresholdFor(cvd);
+    const simulatedContrast = CvdSimulation.contrastFromLuminances(simulatedForegroundLuminance, simulatedBackgroundLuminance);
+    const contrast = CvdSimulation.contrastFromLuminances(foregroundLuminance, constraint.backgroundLuminance);
+    const failed = Math.abs(contrast - simulatedContrast) > threshold.dropMagnitude + epsilon
+      || simulatedContrast < threshold.minimumSimulatedContrast - epsilon;
+    const failureCount = failed ? 1 : 0;
+    const novelFailureCount = failed && !constraint.originalFailureTypes.has(cvd.name) ? 1 : 0;
+    return { 'failureCount': failureCount, 'novelFailureCount': novelFailureCount, 'simulatedContrast': simulatedContrast };
+  }
+
+  private static simulatedLuminances(rgb: ColorRecordInterfaceTypeEntity.Type['rgb']): number[] {
+    const luminances: number[] = [];
+    for (let cvdIndex = 0; cvdIndex < cvdMatrices.length; cvdIndex += 1) {
+      const cvd = cvdMatrices[cvdIndex];
+      if (cvd === undefined) {
+        throw new TypeError('CVD simulation matrix is missing');
+      }
+      luminances.push(CvdSimulation.luminance(CvdSimulation.color(rgb, cvd)));
+    }
+    return luminances;
+  }
+
+  private static thresholdFor(cvd: CvdMatrixInterfaceTypeEntity.Type): { readonly 'dropMagnitude': number; readonly 'minimumSimulatedContrast': number; } {
+    if (cvd.name === 'achromatopsia') {
+      const result = CVD_THRESHOLDS.achromatopsia;
+      return result;
+    }
+    if (cvd.name === 'deuteranopia') {
+      const result = CVD_THRESHOLDS.deuteranopia;
+      return result;
+    }
+    if (cvd.name === 'protanopia') {
+      const result = CVD_THRESHOLDS.protanopia;
+      return result;
+    }
+    const result = CVD_THRESHOLDS.tritanopia;
+    return result;
   }
 
   private static searchGrid(
@@ -361,15 +488,15 @@ class CvdSimulation {
     constraints: readonly CvdPairConstraint[],
     lightnessPartitions: number,
     chromaPartitions: number,
-    pruneByDistance: boolean,
+    searchPlan: CvdGridSearchPlan,
     emittedColors: CvdEmittedColorCache
   ): void {
-    for (let lightnessIndex = 0; lightnessIndex <= lightnessPartitions; lightnessIndex++) {
+    for (let lightnessIndex = 0; lightnessIndex <= lightnessPartitions; lightnessIndex += 1) {
       const candidateL = lightnessIndex / lightnessPartitions;
-      for (let chromaIndex = 0; chromaIndex <= chromaPartitions; chromaIndex++) {
+      for (let chromaIndex = 0; chromaIndex <= chromaPartitions; chromaIndex += 1) {
         const candidateC = chromaPartitions === 0 ? 0 : originalC * chromaIndex / chromaPartitions;
         const candidate = new CvdSearchColor(candidateL, candidateC, h, emittedColors);
-        if (pruneByDistance && !selection.couldImprove(candidate.emitted.oklch.l, candidate.emitted.oklch.c)) {
+        if (!searchPlan.shouldScore(selection, candidate)) {
           continue;
         }
         selection.consider(CvdSimulation.scoreCandidate(candidate, constraints));
@@ -394,13 +521,13 @@ class CvdSimulation {
     group: CvdForegroundGroup,
     constraints: readonly CvdPairConstraint[],
     emittedColors: CvdEmittedColorCache
-  ): ColorRecordInterfaceType {
+  ): ColorRecordInterfaceTypeEntity.Type {
     const fgRecord = group.original;
     const fgL   = fgRecord.oklch.l;
     const c     = fgRecord.oklch.c;
     const h     = fgRecord.oklch.h;
     const alpha = fgRecord.alpha;
-    const hints: ColorHintsInterfaceType | undefined = fgRecord.hints;
+    const hints: ColorHintsInterfaceTypeEntity.Type | undefined = fgRecord.hints;
     const sourceFormat = fgRecord.sourceFormat;
     const coarseChromaPartitions = c === 0 ? 0 : CvdSimulation.searchCoarseChromaPartitions;
     const fineChromaPartitions = c === 0 ? 0 : CvdSimulation.searchFineChromaPartitions;
@@ -410,80 +537,72 @@ class CvdSimulation {
     );
     const selection = new CvdCandidateSelection(fgRecord, CvdSimulation.originalFailureCount(constraints));
 
-    if (originalCandidate.allClear) {
+    if (CvdCandidateSelection.clearsAll(originalCandidate)) {
       return fgRecord;
     }
-    CvdSimulation.searchGrid(
-      selection,
-      c,
-      h,
-      constraints,
-      CvdSimulation.searchCoarseLightnessPartitions,
-      coarseChromaPartitions,
-      false,
-      emittedColors
-    );
-    CvdSimulation.searchGrid(
-      selection,
-      c,
-      h,
-      constraints,
-      CvdSimulation.searchFineLightnessPartitions,
-      fineChromaPartitions,
-      true,
-      emittedColors
-    );
+    CvdSimulation.searchInitialGrids(selection, c, h, constraints, coarseChromaPartitions, fineChromaPartitions, emittedColors);
 
     let best = selection.result();
     if (best === undefined) {
       return fgRecord;
     }
 
-    let lightnessStep = 1 / CvdSimulation.searchFineLightnessPartitions;
-    let chromaStep = fineChromaPartitions === 0 ? 0 : c / fineChromaPartitions;
-    for (let level = 0; level < CvdSimulation.searchRefinementLevels; level++) {
-      const centerL = best.searchL;
-      const centerC = best.searchC;
-      lightnessStep = lightnessStep / CvdSimulation.searchRefinementRadius;
-      chromaStep = chromaStep / CvdSimulation.searchRefinementRadius;
-
-      for (let lightnessOffset = -CvdSimulation.searchRefinementRadius; lightnessOffset <= CvdSimulation.searchRefinementRadius; lightnessOffset++) {
-        const candidateL = clamp01.apply(centerL + lightnessOffset * lightnessStep);
-        if (chromaStep === 0) {
-          selection.consider(CvdSimulation.scoreCandidate(
-            new CvdSearchColor(candidateL, 0, h, emittedColors),
-            constraints
-          ));
-          continue;
-        }
-        for (let chromaOffset = -CvdSimulation.searchRefinementRadius; chromaOffset <= CvdSimulation.searchRefinementRadius; chromaOffset++) {
-          const candidateC = Math.max(0, Math.min(c, centerC + chromaOffset * chromaStep));
-          selection.consider(CvdSimulation.scoreCandidate(
-            new CvdSearchColor(candidateL, candidateC, h, emittedColors),
-            constraints
-          ));
-        }
-      }
-      best = selection.result();
-      if (best === undefined) {
-        return fgRecord;
-      }
+    best = CvdSimulation.refine(selection, best, c, h, fineChromaPartitions, constraints, emittedColors);
+    if (best === undefined) {
+      return fgRecord;
     }
 
-    return colorRecordFactory.fromHex(rgbToHex.apply(best.rgb.r, best.rgb.g, best.rgb.b), {
+    const result = colorRecordFactory.fromHex(rgbToHex.apply(best.rgb.r, best.rgb.g, best.rgb.b), {
       'alphaOverride': alpha,
       'hints':         hints,
       'sourceFormat':  sourceFormat
     });
+    return result;
+  }
+
+  private static refine(selection: CvdCandidateSelection, initial: CvdCorrectionCandidate, c: number, h: number, fineChromaPartitions: number, constraints: readonly CvdPairConstraint[], emittedColors: CvdEmittedColorCache): CvdCorrectionCandidate | undefined {
+    let best: CvdCorrectionCandidate | undefined = initial;
+    let lightnessStep = 1 / CvdSimulation.searchFineLightnessPartitions;
+    let chromaStep = fineChromaPartitions === 0 ? 0 : c / fineChromaPartitions;
+    for (let level = 0; level < CvdSimulation.searchRefinementLevels; level += 1) {
+      if (best === undefined) {return undefined;}
+      lightnessStep /= CvdSimulation.searchRefinementRadius;
+      chromaStep /= CvdSimulation.searchRefinementRadius;
+      CvdSimulation.refineAt(selection, best, lightnessStep, chromaStep, c, h, constraints, emittedColors);
+      best = selection.result();
+    }
+    return best;
+  }
+
+  private static refineAt(selection: CvdCandidateSelection, best: CvdCorrectionCandidate, lightnessStep: number, chromaStep: number, c: number, h: number, constraints: readonly CvdPairConstraint[], emittedColors: CvdEmittedColorCache): void {
+    for (let lightnessOffset = -CvdSimulation.searchRefinementRadius; lightnessOffset <= CvdSimulation.searchRefinementRadius; lightnessOffset += 1) {
+      const lightness = clamp01.apply(best.searchL + lightnessOffset * lightnessStep);
+      CvdSimulation.refineChroma(selection, lightness, best.searchC, chromaStep, c, h, constraints, emittedColors);
+    }
+  }
+
+  private static refineChroma(selection: CvdCandidateSelection, lightness: number, centerC: number, chromaStep: number, c: number, h: number, constraints: readonly CvdPairConstraint[], emittedColors: CvdEmittedColorCache): void {
+    const start = chromaStep === 0 ? 0 : -CvdSimulation.searchRefinementRadius;
+    const end = chromaStep === 0 ? 0 : CvdSimulation.searchRefinementRadius;
+    for (let chromaOffset = start; chromaOffset <= end; chromaOffset += 1) {
+      const chroma = chromaStep === 0 ? 0 : Math.max(0, Math.min(c, centerC + chromaOffset * chromaStep));
+      selection.consider(CvdSimulation.scoreCandidate(new CvdSearchColor(lightness, chroma, h, emittedColors), constraints));
+    }
+  }
+
+  private static searchInitialGrids(selection: CvdCandidateSelection, c: number, h: number, constraints: readonly CvdPairConstraint[], coarseChromaPartitions: number, fineChromaPartitions: number, emittedColors: CvdEmittedColorCache): void {
+    CvdSimulation.searchGrid(selection, c, h, constraints, CvdSimulation.searchCoarseLightnessPartitions, coarseChromaPartitions, new CvdUnprunedGridSearchPlan(), emittedColors);
+    CvdSimulation.searchGrid(selection, c, h, constraints, CvdSimulation.searchFineLightnessPartitions, fineChromaPartitions, new CvdDistancePrunedGridSearchPlan(), emittedColors);
   }
 
   static preservesBaselines(
-    foreground: ColorRecordInterfaceType,
+    foreground: ColorRecordInterfaceTypeEntity.Type,
     constraints: readonly CvdPairConstraint[]
   ): boolean {
     const EPS = 1e-12;
-    for (const constraint of constraints) {
-      if (contrastWcag21.apply(foreground, constraint.background) + EPS < constraint.baseline) {
+    for (let constraintIndex = 0; constraintIndex < constraints.length; constraintIndex += 1) {
+      const constraint = constraints[constraintIndex];
+      if (constraint !== undefined && contrastWcag21.apply(foreground, constraint.background) + EPS < constraint.baseline) {
         return false;
       }
     }
@@ -491,19 +610,24 @@ class CvdSimulation {
   }
 
   static improves(
-    foreground: ColorRecordInterfaceType,
+    foreground: ColorRecordInterfaceTypeEntity.Type,
     constraints: readonly CvdPairConstraint[]
   ): boolean {
-    return CvdSimulation.preservesBaselines(foreground, constraints)
+    const result = CvdSimulation.preservesBaselines(foreground, constraints)
       && CvdSimulation.preservesFailureSets(foreground, constraints)
       && CvdSimulation.failureCount(foreground, constraints) < CvdSimulation.originalFailureCount(constraints);
+    return result;
   }
 
   static preservesFailureSets(
-    foreground: ColorRecordInterfaceType,
+    foreground: ColorRecordInterfaceTypeEntity.Type,
     constraints: readonly CvdPairConstraint[]
   ): boolean {
-    for (const constraint of constraints) {
+    for (let constraintIndex = 0; constraintIndex < constraints.length; constraintIndex += 1) {
+      const constraint = constraints[constraintIndex];
+      if (constraint === undefined) {
+        continue;
+      }
       const failureTypes = CvdSimulation.failureTypes(foreground, constraint.background);
       for (const failureType of failureTypes) {
         if (!constraint.originalFailureTypes.has(failureType)) {
@@ -516,21 +640,32 @@ class CvdSimulation {
 
   private static originalFailureCount(constraints: readonly CvdPairConstraint[]): number {
     let failureCount = 0;
-    for (const constraint of constraints) {
-      failureCount += constraint.originalFailureTypes.size;
+    for (let constraintIndex = 0; constraintIndex < constraints.length; constraintIndex += 1) {
+      const constraint = constraints[constraintIndex];
+      if (constraint !== undefined) {
+        failureCount += constraint.originalFailureTypes.size;
+      }
     }
     return failureCount;
   }
 
   private static failureCount(
-    foreground: ColorRecordInterfaceType,
+    foreground: ColorRecordInterfaceTypeEntity.Type,
     constraints: readonly CvdPairConstraint[]
   ): number {
     let failureCount = 0;
-    for (const constraint of constraints) {
+    for (let constraintIndex = 0; constraintIndex < constraints.length; constraintIndex += 1) {
+      const constraint = constraints[constraintIndex];
+      if (constraint === undefined) {
+        continue;
+      }
       const contrast = contrastWcag21.apply(foreground, constraint.background);
       const evaluations = CvdSimulation.evaluate(foreground.rgb, constraint.background.rgb, contrast);
-      for (const evaluation of evaluations) {
+      for (let evaluationIndex = 0; evaluationIndex < evaluations.length; evaluationIndex += 1) {
+        const evaluation = evaluations[evaluationIndex];
+        if (evaluation === undefined) {
+          continue;
+        }
         if (evaluation.fail) {
           failureCount++;
         }
@@ -544,21 +679,28 @@ class CvdCandidateSelection {
   private bestAny: CvdCorrectionCandidate | undefined;
   private bestNonExtreme: CvdCorrectionCandidate | undefined;
   private readonly originalFailureCount: number;
-  private readonly originalIsExtreme: boolean;
   private readonly originalC: number;
   private readonly originalL: number;
+  private readonly originalRgb: ColorRecordInterfaceTypeEntity.Type['rgb'];
 
-  constructor(original: ColorRecordInterfaceType, originalFailureCount: number) {
+  constructor(original: ColorRecordInterfaceTypeEntity.Type, originalFailureCount: number) {
     this.bestAny = undefined;
     this.bestNonExtreme = undefined;
     this.originalFailureCount = originalFailureCount;
-    this.originalIsExtreme = CvdCandidateSelection.isExtreme(original.rgb);
     this.originalC = original.oklch.c;
     this.originalL = original.oklch.l;
+    this.originalRgb = original.rgb;
+  }
+
+  static clearsAll(candidate: CvdCorrectionCandidate): boolean {
+    const result = candidate.trichromatBaselineDeficitCount === 0
+      && candidate.failureCount === 0
+      && candidate.novelFailureCount === 0;
+    return result;
   }
 
   consider(candidate: CvdCorrectionCandidate): void {
-    if (!candidate.baselineValid || !candidate.failureSetValid || candidate.failureCount >= this.originalFailureCount) {
+    if (!this.isEligible(candidate)) {
       return;
     }
     if (this.prefer(candidate, this.bestAny)) {
@@ -574,17 +716,32 @@ class CvdCandidateSelection {
     if (current === undefined) {
       return true;
     }
-    const EPS = 1e-12;
+    const epsilon = 1e-12;
     const candidateLowerBound = Math.hypot(candidateL - this.originalL, candidateC - this.originalC);
     const currentDistance = Math.hypot(current.l - this.originalL, current.c - this.originalC);
-    return !current.allClear || candidateLowerBound <= currentDistance + EPS;
+    const result = !CvdCandidateSelection.clearsAll(current) || candidateLowerBound <= currentDistance + epsilon;
+    return result;
+  }
+
+  result(): CvdCorrectionCandidate | undefined {
+    const result = !CvdCandidateSelection.isExtreme(this.originalRgb) && this.bestNonExtreme !== undefined
+      ? this.bestNonExtreme
+      : this.bestAny;
+    return result;
+  }
+
+  private isEligible(candidate: CvdCorrectionCandidate): boolean {
+    const result = candidate.trichromatBaselineDeficitCount === 0
+      && candidate.novelFailureCount === 0
+      && candidate.failureCount < this.originalFailureCount;
+    return result;
   }
 
   private prefer(candidate: CvdCorrectionCandidate, current: CvdCorrectionCandidate | undefined): boolean {
     if (current === undefined) {
       return true;
     }
-    const EPS = 1e-12;
+    const epsilon = 1e-12;
     if (candidate.failureCount < current.failureCount) {
       return true;
     }
@@ -593,98 +750,94 @@ class CvdCandidateSelection {
     }
     const candidateDistance = Math.hypot(candidate.l - this.originalL, candidate.c - this.originalC);
     const currentDistance = Math.hypot(current.l - this.originalL, current.c - this.originalC);
-    if (candidateDistance < currentDistance - EPS) {
+    if (candidateDistance < currentDistance - epsilon) {
       return true;
     }
-    if (Math.abs(candidateDistance - currentDistance) <= EPS && candidate.c > current.c + EPS) {
-      return true;
-    }
-    return false;
+    const result = Math.abs(candidateDistance - currentDistance) <= epsilon && candidate.c > current.c + epsilon;
+    return result;
   }
 
-  private static isExtreme(rgb: RgbInterfaceType): boolean {
-    const HEX_ROUNDING_BOUNDARY = 0.5 / 255;
-    const black = rgb.r < HEX_ROUNDING_BOUNDARY && rgb.g < HEX_ROUNDING_BOUNDARY && rgb.b < HEX_ROUNDING_BOUNDARY;
-    const white = rgb.r >= 1 - HEX_ROUNDING_BOUNDARY && rgb.g >= 1 - HEX_ROUNDING_BOUNDARY && rgb.b >= 1 - HEX_ROUNDING_BOUNDARY;
-    return black || white;
-  }
-
-  result(): CvdCorrectionCandidate | undefined {
-    return !this.originalIsExtreme && this.bestNonExtreme !== undefined
-      ? this.bestNonExtreme
-      : this.bestAny;
+  private static isExtreme(rgb: ColorRecordInterfaceTypeEntity.Type['rgb']): boolean {
+    const hexRoundingBoundary = 0.5 / 255;
+    const result = (rgb.r < hexRoundingBoundary && rgb.g < hexRoundingBoundary && rgb.b < hexRoundingBoundary)
+      || (rgb.r >= 1 - hexRoundingBoundary && rgb.g >= 1 - hexRoundingBoundary && rgb.b >= 1 - hexRoundingBoundary);
+    return result;
   }
 }
 
 class CvdDependencyPlanner {
-  private readonly components: CvdForegroundGroup[][];
-  private currentIndex: number;
-  private readonly indices: Map<string, number>;
-  private readonly lowLinks: Map<string, number>;
-  private readonly onStack: Set<string>;
-  private readonly stack: CvdForegroundGroup[];
-
-  constructor() {
-    this.components = [];
-    this.currentIndex = 0;
-    this.indices = new Map();
-    this.lowLinks = new Map();
-    this.onStack = new Set();
-    this.stack = [];
-  }
+  private readonly components: CvdForegroundGroup[][] = [];
+  private currentIndex = 0;
+  private readonly indices = new Map<string, number>();
+  private readonly lowLinks = new Map<string, number>();
+  private readonly onStack = new Set<string>();
+  private readonly stack: CvdForegroundGroup[] = [];
 
   plan(groups: ReadonlyMap<string, CvdForegroundGroup>): CvdForegroundGroup[][] {
-    for (const group of groups.values()) {
-      if (this.indices.get(group.foreground) === undefined) {
+    const values = Array.from(groups.values());
+    for (let index = 0; index < values.length; index += 1) {
+      const group = values[index];
+      if (group !== undefined && this.indices.get(group.foreground) === undefined) {
         this.connect(group, groups);
       }
     }
-    return this.components;
+    const result = this.components;
+    return result;
   }
 
   private connect(group: CvdForegroundGroup, groups: ReadonlyMap<string, CvdForegroundGroup>): void {
-    const index = this.currentIndex;
-    this.currentIndex++;
-    this.indices.set(group.foreground, index);
-    this.lowLinks.set(group.foreground, index);
+    this.enter(group);
+    this.connectDependencies(group, groups);
+    this.completeComponent(group);
+  }
+
+  private enter(group: CvdForegroundGroup): void {
+    this.indices.set(group.foreground, this.currentIndex);
+    this.lowLinks.set(group.foreground, this.currentIndex);
+    this.currentIndex += 1;
     this.stack.push(group);
     this.onStack.add(group.foreground);
+  }
 
-    for (const constraint of group.constraints) {
-      const dependency = groups.get(constraint.backgroundName);
-      if (dependency === undefined) {
-        continue;
-      }
-      const dependencyIndex = this.indices.get(dependency.foreground);
-      if (dependencyIndex === undefined) {
-        this.connect(dependency, groups);
-        const dependencyLowLink = this.lowLinks.get(dependency.foreground);
-        const groupLowLink = this.lowLinks.get(group.foreground);
-        if (dependencyLowLink !== undefined && groupLowLink !== undefined) {
-          this.lowLinks.set(group.foreground, Math.min(groupLowLink, dependencyLowLink));
-        }
-      } else if (this.onStack.has(dependency.foreground)) {
-        const groupLowLink = this.lowLinks.get(group.foreground);
-        if (groupLowLink !== undefined) {
-          this.lowLinks.set(group.foreground, Math.min(groupLowLink, dependencyIndex));
-        }
+  private connectDependencies(group: CvdForegroundGroup, groups: ReadonlyMap<string, CvdForegroundGroup>): void {
+    for (let index = 0; index < group.constraints.length; index += 1) {
+      const constraint = group.constraints[index];
+      if (constraint !== undefined) {
+        this.connectDependency(group, constraint, groups);
       }
     }
+  }
 
-    if (this.lowLinks.get(group.foreground) !== this.indices.get(group.foreground)) {
+  private connectDependency(group: CvdForegroundGroup, constraint: CvdPairConstraint, groups: ReadonlyMap<string, CvdForegroundGroup>): void {
+    const dependency = groups.get(constraint.backgroundName);
+    if (dependency === undefined) {return;}
+    const dependencyIndex = this.indices.get(dependency.foreground);
+    if (dependencyIndex === undefined) {
+      this.connect(dependency, groups);
+      this.updateLowLink(group.foreground, this.lowLinks.get(dependency.foreground));
       return;
     }
+    if (this.onStack.has(dependency.foreground)) {
+      this.updateLowLink(group.foreground, dependencyIndex);
+    }
+  }
+
+  private updateLowLink(foreground: string, candidate: number | undefined): void {
+    const current = this.lowLinks.get(foreground);
+    if (current !== undefined && candidate !== undefined) {
+      this.lowLinks.set(foreground, Math.min(current, candidate));
+    }
+  }
+
+  private completeComponent(group: CvdForegroundGroup): void {
+    if (this.lowLinks.get(group.foreground) !== this.indices.get(group.foreground)) {return;}
     const component: CvdForegroundGroup[] = [];
     while (this.stack.length > 0) {
       const member = this.stack.pop();
-      if (member === undefined) {
-        break;
-      }
+      if (member === undefined) {break;}
       this.onStack.delete(member.foreground);
       component.push(member);
-      if (member.foreground === group.foreground) {
-        break;
-      }
+      if (member.foreground === group.foreground) {break;}
     }
     this.components.push(component);
   }
@@ -693,115 +846,131 @@ class CvdDependencyPlanner {
 class CvdCorrectionCoordinator {
   private static readonly cycleIterations = 12;
 
-  static resolve(
-    groups: ReadonlyMap<string, CvdForegroundGroup>,
-    originalRoles: ReadonlyMap<string, ColorRecordInterfaceType>
-  ): Map<string, ColorRecordInterfaceType> {
+  static resolve(groups: ReadonlyMap<string, CvdForegroundGroup>, originalRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): Map<string, ColorRecordInterfaceTypeEntity.Type> {
     const resolvedRoles = new Map(originalRoles);
     const components = new CvdDependencyPlanner().plan(groups);
     const emittedColors = new CvdEmittedColorCache();
-    for (const component of components) {
-      const onlyGroup = component.length === 1 ? component.at(0) : undefined;
-      if (onlyGroup !== undefined && !onlyGroup.dependsOn(onlyGroup.foreground)) {
-        const constraints = onlyGroup.resolve(resolvedRoles);
-        resolvedRoles.set(onlyGroup.foreground, CvdSimulation.correctForeground(onlyGroup, constraints, emittedColors));
-        continue;
-      }
-      CvdCorrectionCoordinator.resolveCycle(component, resolvedRoles, emittedColors);
+    for (let index = 0; index < components.length; index += 1) {
+      const component = components[index];
+      if (component !== undefined) {CvdCorrectionCoordinator.resolveComponent(component, resolvedRoles, emittedColors);}
     }
-
-    return CvdCorrectionCoordinator.audit(groups, resolvedRoles, originalRoles);
+    const result = CvdCorrectionCoordinator.audit(groups, resolvedRoles, originalRoles);
+    return result;
   }
 
-  private static audit(
-    groups: ReadonlyMap<string, CvdForegroundGroup>,
-    resolvedRoles: Map<string, ColorRecordInterfaceType>,
-    originalRoles: ReadonlyMap<string, ColorRecordInterfaceType>
-  ): Map<string, ColorRecordInterfaceType> {
-    for (let pass = 0; pass <= groups.size; pass++) {
-      const invalid: CvdForegroundGroup[] = [];
-      for (const group of groups.values()) {
-        const foreground = resolvedRoles.get(group.foreground);
-        if (foreground !== undefined && !CvdCorrectionCoordinator.isValid(group, foreground, resolvedRoles)) {
-          invalid.push(group);
-        }
-      }
-      if (invalid.length === 0) {
-        return resolvedRoles;
-      }
-
-      let restored = false;
-      for (const group of invalid) {
-        const foreground = resolvedRoles.get(group.foreground);
-        if (foreground !== undefined && foreground !== group.original) {
-          resolvedRoles.set(group.foreground, group.original);
-          restored = true;
-          continue;
-        }
-        for (const constraint of group.constraints) {
-          const dependency = groups.get(constraint.backgroundName);
-          if (dependency !== undefined && resolvedRoles.get(dependency.foreground) !== dependency.original) {
-            resolvedRoles.set(dependency.foreground, dependency.original);
-            restored = true;
-          }
-        }
-      }
-      if (!restored) {
-        break;
-      }
+  private static resolveComponent(component: readonly CvdForegroundGroup[], resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>, emittedColors: CvdEmittedColorCache): void {
+    const group = component.length === 1 ? component[0] : undefined;
+    if (group !== undefined && !group.dependsOn(group.foreground)) {
+      const constraints = group.resolve(resolvedRoles);
+      resolvedRoles.set(group.foreground, CvdSimulation.correctForeground(group, constraints, emittedColors));
+      return;
     }
-    return new Map(originalRoles);
+    CvdCorrectionCoordinator.resolveCycle(component, resolvedRoles, emittedColors);
   }
 
-  private static isValid(
-    group: CvdForegroundGroup,
-    foreground: ColorRecordInterfaceType,
-    resolvedRoles: ReadonlyMap<string, ColorRecordInterfaceType>
-  ): boolean {
+  private static audit(groups: ReadonlyMap<string, CvdForegroundGroup>, resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>, originalRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): Map<string, ColorRecordInterfaceTypeEntity.Type> {
+    for (let pass = 0; pass <= groups.size; pass += 1) {
+      const invalid = CvdCorrectionCoordinator.invalidGroups(groups, resolvedRoles);
+      if (invalid.length === 0) {return resolvedRoles;}
+      if (!CvdCorrectionCoordinator.restoreInvalidGroups(invalid, groups, resolvedRoles)) {break;}
+    }
+    const result = new Map(originalRoles);
+    return result;
+  }
+
+  private static invalidGroups(groups: ReadonlyMap<string, CvdForegroundGroup>, resolvedRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): CvdForegroundGroup[] {
+    const invalid: CvdForegroundGroup[] = [];
+    const values = Array.from(groups.values());
+    for (let index = 0; index < values.length; index += 1) {
+      const group = values[index];
+      if (group !== undefined && !CvdCorrectionCoordinator.isResolvedGroupValid(group, resolvedRoles)) {invalid.push(group);}
+    }
+    return invalid;
+  }
+
+  private static isResolvedGroupValid(group: CvdForegroundGroup, resolvedRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): boolean {
+    const foreground = resolvedRoles.get(group.foreground);
+    const result = foreground !== undefined && CvdCorrectionCoordinator.isValid(group, foreground, resolvedRoles);
+    return result;
+  }
+
+  private static restoreInvalidGroups(invalid: readonly CvdForegroundGroup[], groups: ReadonlyMap<string, CvdForegroundGroup>, resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>): boolean {
+    let restoredCount = 0;
+    for (let index = 0; index < invalid.length; index += 1) {
+      const group = invalid[index];
+      if (group !== undefined) {restoredCount += CvdCorrectionCoordinator.restoreGroup(group, groups, resolvedRoles);}
+    }
+    const result = restoredCount > 0;
+    return result;
+  }
+
+  private static restoreGroup(group: CvdForegroundGroup, groups: ReadonlyMap<string, CvdForegroundGroup>, resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>): number {
+    const foreground = resolvedRoles.get(group.foreground);
+    if (foreground !== undefined && foreground !== group.original) {
+      resolvedRoles.set(group.foreground, group.original);
+      return 1;
+    }
+    let restoredCount = 0;
+    for (let index = 0; index < group.constraints.length; index += 1) {
+      const constraint = group.constraints[index];
+      const dependency = constraint === undefined ? undefined : groups.get(constraint.backgroundName);
+      if (dependency !== undefined && resolvedRoles.get(dependency.foreground) !== dependency.original) {
+        resolvedRoles.set(dependency.foreground, dependency.original);
+        restoredCount += 1;
+      }
+    }
+    return restoredCount;
+  }
+
+  private static isValid(group: CvdForegroundGroup, foreground: ColorRecordInterfaceTypeEntity.Type, resolvedRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): boolean {
     const constraints = group.resolve(resolvedRoles);
-    return CvdSimulation.preservesBaselines(foreground, constraints)
+    const result = CvdSimulation.preservesBaselines(foreground, constraints)
       && CvdSimulation.preservesFailureSets(foreground, constraints)
       && (foreground === group.original || CvdSimulation.improves(foreground, constraints));
+    return result;
   }
 
-  private static resolveCycle(
-    component: readonly CvdForegroundGroup[],
-    resolvedRoles: Map<string, ColorRecordInterfaceType>,
-    emittedColors: CvdEmittedColorCache
-  ): void {
-    for (let iteration = 0; iteration < CvdCorrectionCoordinator.cycleIterations; iteration++) {
-      const snapshot = new Map(resolvedRoles);
-      let stable = true;
-      for (const group of component) {
-        const constraints = group.resolve(snapshot);
-        const corrected = CvdSimulation.correctForeground(group, constraints, emittedColors);
-        const current = snapshot.get(group.foreground);
-        if (current === undefined || !CvdCorrectionCoordinator.sameColor(current, corrected)) {
-          stable = false;
-        }
-        resolvedRoles.set(group.foreground, corrected);
-      }
-      if (stable) {
-        return;
-      }
+  private static resolveCycle(component: readonly CvdForegroundGroup[], resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>, emittedColors: CvdEmittedColorCache): void {
+    for (let iteration = 0; iteration < CvdCorrectionCoordinator.cycleIterations; iteration += 1) {
+      if (CvdCorrectionCoordinator.applyCycle(component, resolvedRoles, emittedColors)) {return;}
     }
+    if (!CvdCorrectionCoordinator.allValid(component, resolvedRoles)) {CvdCorrectionCoordinator.restoreComponent(component, resolvedRoles);}
+  }
 
-    for (const group of component) {
-      const foreground = resolvedRoles.get(group.foreground);
-      if (foreground === undefined || !CvdCorrectionCoordinator.isValid(group, foreground, resolvedRoles)) {
-        for (const member of component) {
-          resolvedRoles.set(member.foreground, member.original);
-        }
-        return;
-      }
+  private static applyCycle(component: readonly CvdForegroundGroup[], resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>, emittedColors: CvdEmittedColorCache): boolean {
+    const snapshot = new Map(resolvedRoles);
+    let unchangedCount = 0;
+    for (let index = 0; index < component.length; index += 1) {
+      const group = component[index];
+      if (group === undefined) {continue;}
+      const corrected = CvdSimulation.correctForeground(group, group.resolve(snapshot), emittedColors);
+      const current = snapshot.get(group.foreground);
+      if (current !== undefined && CvdCorrectionCoordinator.sameColor(current, corrected)) {unchangedCount += 1;}
+      resolvedRoles.set(group.foreground, corrected);
+    }
+    const result = unchangedCount === component.length;
+    return result;
+  }
+
+  private static allValid(component: readonly CvdForegroundGroup[], resolvedRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): boolean {
+    for (let index = 0; index < component.length; index += 1) {
+      const group = component[index];
+      if (group !== undefined && !CvdCorrectionCoordinator.isResolvedGroupValid(group, resolvedRoles)) {return false;}
+    }
+    return true;
+  }
+
+  private static restoreComponent(component: readonly CvdForegroundGroup[], resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>): void {
+    for (let index = 0; index < component.length; index += 1) {
+      const group = component[index];
+      if (group !== undefined) {resolvedRoles.set(group.foreground, group.original);}
     }
   }
 
-  private static sameColor(a: ColorRecordInterfaceType, b: ColorRecordInterfaceType): boolean {
-    const EPS = 1e-12;
-    return Math.abs(a.rgb.r - b.rgb.r) <= EPS
-      && Math.abs(a.rgb.g - b.rgb.g) <= EPS
-      && Math.abs(a.rgb.b - b.rgb.b) <= EPS;
+  private static sameColor(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type): boolean {
+    const epsilon = 1e-12;
+    const result = Math.abs(a.rgb.r - b.rgb.r) <= epsilon && Math.abs(a.rgb.g - b.rgb.g) <= epsilon && Math.abs(a.rgb.b - b.rgb.b) <= epsilon;
+    return result;
   }
 }
 
@@ -815,7 +984,7 @@ class CvdCorrectionCoordinator {
  *    drop must not exceed `dropMagnitude` (perceptible-difference
  *    boundary per [CIE76] / [SWD05] mapped to WCAG ratio space).
  *  - The post-simulation WCAG-21 contrast must stay ≥
- *    `minSimulatedContrast` ([WCAG21] SC 1.4.11 non-text floor).
+ *    `minimumSimulatedContrast` ([WCAG21] SC 1.4.11 non-text floor).
  *
  * Advisory only by default. When `state.input.contrast.cvdCorrect` is
  * `true`, a pair with one or more failing CVD types is additionally
@@ -834,150 +1003,171 @@ class CvdCorrectionCoordinator {
 class EnforceCvdSimulate implements TaskInterface {
   readonly 'name' = 'enforce:cvdSimulate';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'CVD simulation against published thresholds: protanopia, deuteranopia, tritanopia, achromatopsia. Advisory by default; when input.contrast.cvdCorrect is true, also auto-corrects failing pairs and writes roles.',
     'name':        'enforce:cvdSimulate',
-    'phase':       undefined,
     'reads':       ['input.roles.contrastPairs', 'input.contrast.cvdCorrect', 'roles'],
-    'requires':    undefined,
     'writes':      ['roles', 'metadata[\'contrast:cvd\']']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const pairs = state.input.roles?.contrastPairs ?? [];
     if (pairs.length === 0) {
       return;
     }
+    const originals = this.snapshotRoles(state);
+    const correcting = state.input.contrast?.cvdCorrect === true;
+    if (correcting) {
+      this.correctRoles(pairs, originals, state);
+    }
+    const results = correcting
+      ? this.reportCorrected(pairs, originals, state, context)
+      : this.reportAdvisory(pairs, originals, state, context);
+    const metadata = { 'corrections': results.corrections, 'warnings': results.warnings };
+    state.metadata['contrast:cvd'] = metadata;
+    context.logger.debug(LogBody.create({ 'component': 'EnforceCvdSimulate', 'context': { 'correctionCount': results.corrections.length, 'cvdMeta': metadata, 'warningCount': results.warnings.length }, 'message': 'CVD simulation complete', 'operation': 'run', 'status': LOG_STATUS.SUCCESS }));
+  }
 
-    const cvdCorrect = state.input.contrast?.cvdCorrect === true;
-    const warnings: CvdPairWarningInterfaceType[] = [];
-    const corrections: CvdCorrectionInterfaceType[] = [];
-    const emittedOriginalRoles = new Map<string, ColorRecordInterfaceType>();
-    for (const roleName of Object.keys(state.roles)) {
-      const role = state.roles[roleName];
-      if (role !== undefined) {
-        emittedOriginalRoles.set(roleName, colorRecordFactory.fromHex(role.hex, {
-          'alphaOverride': role.alpha,
-          'hints':         role.hints,
-          'sourceFormat':  role.sourceFormat
-        }));
+  private snapshotRoles(state: PaletteStateInterface): Map<string, ColorRecordInterfaceTypeEntity.Type> {
+    const originals = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+    const entries = Object.entries(state.roles);
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry === undefined) {continue;}
+      const [name, role] = entry;
+      originals.set(name, colorRecordFactory.fromHex(role.hex, { 'alphaOverride': role.alpha, 'hints': role.hints, 'sourceFormat': role.sourceFormat }));
+    }
+    return originals;
+  }
+
+  private correctRoles(pairs: readonly { readonly 'background': string; readonly 'foreground': string; }[], originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>, state: PaletteStateInterface): void {
+    const groups = this.groupsFor(pairs, originals);
+    const resolved = CvdCorrectionCoordinator.resolve(groups, originals);
+    const values = Array.from(groups.values());
+    for (let index = 0; index < values.length; index += 1) {
+      const group = values[index];
+      if (group === undefined) {continue;}
+      const corrected = resolved.get(group.foreground);
+      if (corrected !== undefined && corrected !== group.original) {
+        Object.defineProperty(state.roles, group.foreground, { 'configurable': true, 'enumerable': true, 'value': corrected, 'writable': true });
       }
     }
+  }
 
-    if (cvdCorrect) {
-      const groups = new Map<string, CvdForegroundGroup>();
-      for (const pair of pairs) {
-        const foreground = emittedOriginalRoles.get(pair.foreground);
-        const background = emittedOriginalRoles.get(pair.background);
-        if (foreground === undefined || background === undefined) {
-          continue;
-        }
-        let group = groups.get(pair.foreground);
-        if (group === undefined) {
-          group = new CvdForegroundGroup(pair.foreground, foreground);
-          groups.set(pair.foreground, group);
-        }
-        group.add(pair.background, background);
+  private groupsFor(pairs: readonly { readonly 'background': string; readonly 'foreground': string; }[], originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): Map<string, CvdForegroundGroup> {
+    const groups = new Map<string, CvdForegroundGroup>();
+    for (let index = 0; index < pairs.length; index += 1) {
+      const pair = pairs[index];
+      if (pair === undefined) {continue;}
+      const foreground = originals.get(pair.foreground);
+      const background = originals.get(pair.background);
+      if (foreground === undefined || background === undefined) {continue;}
+      let group = groups.get(pair.foreground);
+      if (group === undefined) {
+        group = new CvdForegroundGroup(pair.foreground, foreground);
+        groups.set(pair.foreground, group);
       }
+      group.add(pair.background, background);
+    }
+    return groups;
+  }
 
-      const resolvedRoles = CvdCorrectionCoordinator.resolve(groups, emittedOriginalRoles);
-      for (const group of groups.values()) {
-        const corrected = resolvedRoles.get(group.foreground);
-        if (corrected !== undefined && corrected !== group.original) {
-          state.roles[group.foreground] = corrected;
-        }
+  private reportCorrected(pairs: readonly { readonly 'background': string; readonly 'foreground': string; }[], originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>, state: PaletteStateInterface, context: PipelineContextInterface): { readonly 'corrections': CvdCorrectionInterfaceTypeEntity.Type[]; readonly 'warnings': CvdPairWarningInterfaceTypeEntity.Type[]; } {
+    const corrections: CvdCorrectionInterfaceTypeEntity.Type[] = [];
+    const warnings = this.reportPairs(pairs, originals, state, context, corrections);
+    return { 'corrections': corrections, 'warnings': warnings };
+  }
+
+  private reportAdvisory(pairs: readonly { readonly 'background': string; readonly 'foreground': string; }[], originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>, state: PaletteStateInterface, context: PipelineContextInterface): { readonly 'corrections': CvdCorrectionInterfaceTypeEntity.Type[]; readonly 'warnings': CvdPairWarningInterfaceTypeEntity.Type[]; } {
+    const warnings = this.reportPairs(pairs, originals, state, context);
+    return { 'corrections': [], 'warnings': warnings };
+  }
+
+  private reportPairs(pairs: readonly { readonly 'background': string; readonly 'foreground': string; }[], originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>, state: PaletteStateInterface, context: PipelineContextInterface, corrections?: CvdCorrectionInterfaceTypeEntity.Type[]): CvdPairWarningInterfaceTypeEntity.Type[] {
+    const warnings: CvdPairWarningInterfaceTypeEntity.Type[] = [];
+    for (let index = 0; index < pairs.length; index += 1) {
+      const pair = pairs[index];
+      if (pair !== undefined) {
+        this.reportPair(pair, originals, state, context, warnings, corrections);
       }
     }
+    return warnings;
+  }
 
-    for (const pair of pairs) {
-      const storedForeground = state.roles[pair.foreground];
-      const storedBackground = state.roles[pair.background];
-      if (storedForeground === undefined || storedBackground === undefined) {
-        continue;
-      }
-      const finalForeground = colorRecordFactory.fromHex(storedForeground.hex);
-      const finalBackground = colorRecordFactory.fromHex(storedBackground.hex);
-      const finalOriginalContrast = contrastWcag21.apply(finalForeground, finalBackground);
-      const finalEvaluations = CvdSimulation.evaluate(finalForeground.rgb, finalBackground.rgb, finalOriginalContrast);
-      const finalFailing: CvdEvalInterfaceType[] = [];
-      for (const evaluation of finalEvaluations) {
-        if (evaluation.fail) {
-          finalFailing.push(evaluation);
-        }
-      }
-
-      for (const evaluation of finalFailing) {
-        warnings.push(CvdWarning.create(pair.foreground, pair.background, evaluation, context));
-      }
-
-      if (cvdCorrect && finalFailing.length > 0) {
-        context.logger.warn(
-          LogBody.create()
-            .component('EnforceCvdSimulate')
-            .operation('run')
-            .status(LOG_STATUS.PARTIAL)
-            .message('CVD correction could not clear every failing type')
-            .context({
-              'background':          pair.background,
-              'foreground':          pair.foreground,
-              'remainingCvdTypes':   finalFailing.map((evaluation) => {const result = evaluation.cvdType;
-                return result;})
-            })
-            .build()
-        );
-      }
-
-      const originalForeground = emittedOriginalRoles.get(pair.foreground);
-      const originalBackground = emittedOriginalRoles.get(pair.background);
-      if (cvdCorrect && originalForeground !== undefined && originalBackground !== undefined && finalForeground.hex !== originalForeground.hex) {
-        const initialContrast = contrastWcag21.apply(originalForeground, originalBackground);
-        const initialEvaluations = CvdSimulation.evaluate(originalForeground.rgb, originalBackground.rgb, initialContrast);
-        const initialFailingNames: CvdEvalInterfaceType['cvdType'][] = [];
-        for (const evaluation of initialEvaluations) {
-          if (evaluation.fail) {
-            initialFailingNames.push(evaluation.cvdType);
-          }
-        }
-        const remainingNames: CvdEvalInterfaceType['cvdType'][] = [];
-        for (const evaluation of finalFailing) {
-          remainingNames.push(evaluation.cvdType);
-        }
-        const remainingNameSet = new Set(remainingNames);
-        const fixedNames: CvdEvalInterfaceType['cvdType'][] = [];
-        for (const name of initialFailingNames) {
-          if (!remainingNameSet.has(name)) {
-            fixedNames.push(name);
-          }
-        }
-        if (fixedNames.length > 0) {
-          corrections.push({
-            'background':        pair.background,
-            'cvdTypesFixed':     fixedNames,
-            'cvdTypesRemaining': remainingNames,
-            'foreground':        pair.foreground
-          });
-        }
-      }
+  private reportPair(pair: { readonly 'background': string; readonly 'foreground': string; }, originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>, state: PaletteStateInterface, context: PipelineContextInterface, warnings: CvdPairWarningInterfaceTypeEntity.Type[], corrections: CvdCorrectionInterfaceTypeEntity.Type[] | undefined): void {
+    const finalForeground = state.roles[pair.foreground];
+    const finalBackground = state.roles[pair.background];
+    if (finalForeground === undefined || finalBackground === undefined) {
+      return;
     }
+    const foreground = colorRecordFactory.fromHex(finalForeground.hex);
+    const background = colorRecordFactory.fromHex(finalBackground.hex);
+    const evaluations = CvdSimulation.evaluate(foreground.rgb, background.rgb, contrastWcag21.apply(foreground, background));
+    const failures = this.failing(evaluations);
+    this.addWarnings(pair, failures, warnings, context);
+    if (corrections !== undefined) {
+      if (failures.length > 0) {
+        this.logRemaining(pair, failures, context);
+      }
+      this.addCorrection(pair, originals, foreground, background, failures, corrections);
+    }
+  }
 
-    const cvdMetadata = cvdCorrect
-      ? { 'corrections': corrections, 'warnings': warnings }
-      : { 'warnings': warnings };
-    state.metadata['contrast:cvd'] = cvdMetadata;
+  private failing(evaluations: readonly CvdEvalInterfaceTypeEntity.Type[]): CvdEvalInterfaceTypeEntity.Type[] {
+    const failures: CvdEvalInterfaceTypeEntity.Type[] = [];
+    for (let index = 0; index < evaluations.length; index += 1) {
+      const evaluation = evaluations[index];
+      if (evaluation?.fail === true) {failures.push(evaluation);}
+    }
+    return failures;
+  }
 
-    context.logger.debug(
-      LogBody.create()
-        .component('EnforceCvdSimulate')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('CVD simulation complete')
-        .context({
-          'correctionCount': corrections.length,
-          'cvdMeta':         cvdMetadata,
-          'warningCount':    warnings.length
-        })
-        .build()
-    );
+  private addWarnings(pair: { readonly 'background': string; readonly 'foreground': string; }, failures: readonly CvdEvalInterfaceTypeEntity.Type[], warnings: CvdPairWarningInterfaceTypeEntity.Type[], context: PipelineContextInterface): void {
+    for (let index = 0; index < failures.length; index += 1) {
+      const failure = failures[index];
+      if (failure !== undefined) {warnings.push(CvdWarning.create(pair.foreground, pair.background, failure, context));}
+    }
+  }
+
+  private logRemaining(pair: { readonly 'background': string; readonly 'foreground': string; }, failures: readonly CvdEvalInterfaceTypeEntity.Type[], context: PipelineContextInterface): void {
+    const types: CvdEvalInterfaceTypeEntity.Type['cvdType'][] = [];
+    for (let index = 0; index < failures.length; index += 1) {
+      const failure = failures[index];
+      if (failure !== undefined) {types.push(failure.cvdType);}
+    }
+    context.logger.warn(LogBody.create({ 'component': 'EnforceCvdSimulate', 'context': { 'background': pair.background, 'foreground': pair.foreground, 'remainingCvdTypes': types }, 'message': 'CVD correction could not clear every failing type', 'operation': 'run', 'status': LOG_STATUS.PARTIAL }));
+  }
+
+  private addCorrection(pair: { readonly 'background': string; readonly 'foreground': string; }, originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>, foreground: ColorRecordInterfaceTypeEntity.Type, background: ColorRecordInterfaceTypeEntity.Type, failures: readonly CvdEvalInterfaceTypeEntity.Type[], corrections: CvdCorrectionInterfaceTypeEntity.Type[]): void {
+    const originalForeground = originals.get(pair.foreground);
+    const originalBackground = originals.get(pair.background);
+    if (originalForeground === undefined || originalBackground === undefined || foreground.hex === originalForeground.hex) {
+      return;
+    }
+    const initial = CvdSimulation.evaluate(originalForeground.rgb, originalBackground.rgb, contrastWcag21.apply(originalForeground, originalBackground));
+    const fixed = this.fixedTypes(initial, failures);
+    if (fixed.length > 0) {
+      corrections.push({ 'background': pair.background, 'cvdTypesFixed': fixed, 'cvdTypesRemaining': this.typesFor(failures), 'foreground': pair.foreground });
+    }
+  }
+
+  private fixedTypes(initial: readonly CvdEvalInterfaceTypeEntity.Type[], failures: readonly CvdEvalInterfaceTypeEntity.Type[]): CvdEvalInterfaceTypeEntity.Type['cvdType'][] {
+    const remaining = new Set(this.typesFor(failures));
+    const fixed: CvdEvalInterfaceTypeEntity.Type['cvdType'][] = [];
+    for (let index = 0; index < initial.length; index += 1) {
+      const evaluation = initial[index];
+      if (evaluation?.fail === true && !remaining.has(evaluation.cvdType)) {fixed.push(evaluation.cvdType);}
+    }
+    return fixed;
+  }
+
+  private typesFor(evaluations: readonly CvdEvalInterfaceTypeEntity.Type[]): CvdEvalInterfaceTypeEntity.Type['cvdType'][] {
+    const types: CvdEvalInterfaceTypeEntity.Type['cvdType'][] = [];
+    for (let index = 0; index < evaluations.length; index += 1) {
+      const evaluation = evaluations[index];
+      if (evaluation !== undefined) {types.push(evaluation.cvdType);}
+    }
+    return types;
   }
 }
 
@@ -988,46 +1178,45 @@ class CvdWarning {
   static create(
     foreground: string,
     background: string,
-    evaluation: CvdEvalInterfaceType,
+    evaluation: CvdEvalInterfaceTypeEntity.Type,
     context: PipelineContextInterface
-  ): CvdPairWarningInterfaceType {
-    const threshold = CVD_THRESHOLDS[evaluation.cvdType];
+  ): CvdPairWarningInterfaceTypeEntity.Type {
+    const threshold = CvdWarning.thresholdFor(evaluation);
     const simulatedContrastRatio = evaluation.originalContrast === 0 ? 0 : evaluation.simContrast / evaluation.originalContrast;
     const simulatedContrastDropRatio = evaluation.originalContrast === 0 ? 0 : evaluation.drop / evaluation.originalContrast;
-    const warning: CvdPairWarningInterfaceType = {
+    const warning: CvdPairWarningInterfaceTypeEntity.Type = {
       'background':                  background,
       'cvdType':                     evaluation.cvdType,
       'drop':                        evaluation.drop,
       'dropThreshold':               threshold.dropMagnitude,
       'foreground':                  foreground,
-      'minSimulatedContrast':        threshold.minSimulatedContrast,
+      'minimumSimulatedContrast':        threshold.minimumSimulatedContrast,
       'originalLuminanceContrast':   evaluation.originalContrast,
       'simulatedContrastDropRatio':  simulatedContrastDropRatio,
       'simulatedContrastRatio':      simulatedContrastRatio,
       'simulatedLuminanceContrast':  evaluation.simContrast
     };
     context.logger.warn(
-      LogBody.create()
-        .component('EnforceCvdSimulate')
-        .operation('run')
-        .status(LOG_STATUS.PARTIAL)
-        .message('CVD advisory: pair fails perceptual-stability threshold')
-        .context({
-          'background':            background,
-          'cvdType':               evaluation.cvdType,
-          'drop':                  evaluation.drop,
-          'dropThreshold':         threshold.dropMagnitude,
-          'foreground':            foreground,
-          'minSimulatedContrast':  threshold.minSimulatedContrast,
-          'originalContrast':      evaluation.originalContrast,
-          'reason':                evaluation.exceedsDrop ? 'drop' : 'floor',
-          'simulatedContrast':     evaluation.simContrast,
-          'simulatedContrastDropRatio': simulatedContrastDropRatio,
-          'simulatedContrastRatio': simulatedContrastRatio
-        })
-        .build()
+      LogBody.create({ 'component': 'EnforceCvdSimulate', 'context': { 'background': background, 'cvdType': evaluation.cvdType, 'drop': evaluation.drop, 'dropThreshold': threshold.dropMagnitude, 'foreground': foreground, 'minimumSimulatedContrast': threshold.minimumSimulatedContrast, 'originalContrast': evaluation.originalContrast, 'reason': evaluation.exceedsDrop ? 'drop' : 'floor', 'simulatedContrast': evaluation.simContrast, 'simulatedContrastDropRatio': simulatedContrastDropRatio, 'simulatedContrastRatio': simulatedContrastRatio }, 'message': 'CVD advisory: pair fails perceptual-stability threshold', 'operation': 'run', 'status': LOG_STATUS.PARTIAL })
     );
     return warning;
+  }
+
+  private static thresholdFor(evaluation: CvdEvalInterfaceTypeEntity.Type): { readonly 'dropMagnitude': number; readonly 'minimumSimulatedContrast': number; } {
+    if (evaluation.cvdType === 'achromatopsia') {
+      const result = CVD_THRESHOLDS.achromatopsia;
+      return result;
+    }
+    if (evaluation.cvdType === 'deuteranopia') {
+      const result = CVD_THRESHOLDS.deuteranopia;
+      return result;
+    }
+    if (evaluation.cvdType === 'protanopia') {
+      const result = CVD_THRESHOLDS.protanopia;
+      return result;
+    }
+    const result = CVD_THRESHOLDS.tritanopia;
+    return result;
   }
 }
 

@@ -1,5 +1,8 @@
 import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
 
+import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
+import { renderDot } from '../particles/renderDot.ts';
+
 /**
  * Executive/business. A boardroom doesn't have rotating or flashing
  * particles drifting through it — no starfield, no blobs, no motion at all.
@@ -8,13 +11,13 @@ import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceTy
 export const formal: ThemeDefinitionInterfaceType = {
   'ambient': {
     'blobCount':       0,
-    'gooEnabled':      false,
-    'gridEnabled':     false,
+    'gooFilter':       'none',
+    'gridDisplay':     'none',
     'particleCounts':  [0, 0, 0, 0, 0],
-    'particleShape':   'dot',
+    'particleRenderer': renderDot,
     'speedMultiplier': 2.75
   },
-  'dataLayout': 'table',
+  'dataLayout': DataLayoutStrategy.table,
   'key':   'formal',
   'label': 'Formal'
 };

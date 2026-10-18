@@ -1,6 +1,6 @@
 import type { PaletteStateInterface } from '@studnicky/iridis/model';
 
-import { ModuleError } from '@studnicky/errors';
+import { ModuleError } from '@studnicky/errors/node';
 import { mkdir, writeFile } from 'fs/promises';
 import { dirname, isAbsolute, relative, resolve, win32 } from 'path';
 
@@ -22,13 +22,16 @@ export class OutputWriter {
     const directory = resolve(configuredDirectory);
     const written: string[] = [];
 
-    for (const [key, filename] of Object.entries(config.output.files)) {
-      // User-supplied config keys are arbitrary strings mapping to plugin output slots.
-      // Cast is safe: missing slots produce undefined → serialized as "undefined".
-      const outputs = state.outputs;
-      const value   = outputs[key];
+    const outputEntries = Object.entries(config.output.files);
+    for (let entryIndex = 0; entryIndex < outputEntries.length; entryIndex += 1) {
+      const entry = outputEntries[entryIndex];
+      if (entry === undefined) {
+        continue;
+      }
+      const [key, filename] = entry;
+      const value = state.outputs[key];
       const content = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
-      const target  = OutputWriter.assertContainedTarget(directory, filename, key);
+      const target = OutputWriter.assertContainedTarget(directory, filename, key);
 
       await mkdir(dirname(target), { 'recursive': true });
       await writeFile(target, content, 'utf-8');
@@ -82,10 +85,11 @@ export class OutputWriter {
 
   private static isContained(parent: string, child: string): boolean {
     const pathFromParent = relative(parent, child);
-    return pathFromParent !== '..'
+    const isContained = pathFromParent !== '..'
       && !pathFromParent.startsWith('../')
       && !pathFromParent.startsWith('..\\')
       && !isAbsolute(pathFromParent)
       && !win32.isAbsolute(pathFromParent);
+    return isContained;
   }
 }

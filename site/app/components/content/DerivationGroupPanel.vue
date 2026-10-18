@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
-import type { HueAlgorithmType } from '~/composables/types/colorDerivation.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
+import { buildDerivationRelations } from './derivation/buildDerivationRelations.ts';
 import { capitalize } from '~/utils/capitalize.ts';
 import { hueVariantLabel } from '~/utils/hueVariantLabel.ts';
 
@@ -8,22 +8,22 @@ defineProps<{
   group: {
     readonly parentName: string;
     readonly parentHex: string;
-    readonly children: readonly RoleMathEntryType[];
+    readonly children: readonly RoleMathEntry[];
   };
-  bulkAlgorithm: HueAlgorithmType.Type;
-  algorithmOptions: readonly { label: string; value: HueAlgorithmType.Type }[];
-  variantOptions: (algorithm: HueAlgorithmType.Type) => readonly { label: string; value: number }[];
+  bulkAlgorithm: string;
+  algorithmOptions: readonly { label: string; value: string }[];
+  variantOptions: (algorithm: string) => readonly { label: string; value: number }[];
 }>();
 
 const emit = defineEmits<{
   'apply-all': [];
-  'bulk-algorithm-change': [algorithm: HueAlgorithmType.Type];
-  'algorithm-change': [role: RoleMathEntryType, algorithm: HueAlgorithmType.Type];
-  'variant-change': [role: RoleMathEntryType, hueVariantIndex: number];
-  'freeform-offset-change': [role: RoleMathEntryType, offsetDeg: number];
+  'bulk-algorithm-change': [algorithm: string];
+  'algorithm-change': [role: RoleMathEntry, algorithm: string];
+  'variant-change': [role: RoleMathEntry, hueVariantIndex: number];
+  'freeform-offset-change': [role: RoleMathEntry, offsetDeg: number];
 }>();
 
-function updateBulkAlgorithm(algorithm: HueAlgorithmType.Type): void {
+function updateBulkAlgorithm(algorithm: string): void {
   emit('bulk-algorithm-change', algorithm);
 }
 </script>
@@ -67,7 +67,7 @@ function updateBulkAlgorithm(algorithm: HueAlgorithmType.Type): void {
         :key="role.name"
         :role="role"
         :algorithm-options="algorithmOptions"
-        :variant-items="role.algorithmInfo ? variantOptions(role.algorithmInfo.hueAlgorithm) : []"
+        :variant-items="role.algorithmInfo ? variantOptions(buildDerivationRelations.serializeHueAlgorithm(role.algorithmInfo.algorithm)) : []"
         :variant-label="role.algorithmInfo ? hueVariantLabel(role.algorithmInfo.offsetDeg) : ''"
         @algorithm-change="$emit('algorithm-change', role, $event)"
         @variant-change="$emit('variant-change', role, $event)"

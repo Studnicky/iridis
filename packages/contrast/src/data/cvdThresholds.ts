@@ -3,7 +3,7 @@
  *
  * Each threshold has two signals: `dropMagnitude` (the absolute WCAG-21
  * luminance-contrast drop between trichromat perception and CVD-simulated
- * perception) and `minSimulatedContrast` (the minimum WCAG-21 contrast
+ * perception) and `minimumSimulatedContrast` (the minimum WCAG-21 contrast
  * the CVD-simulated pair must still meet). A warning fires when EITHER
  * signal is violated. Two signals are required because the achromatopsia
  * model preserves luminance contrast exactly (the BT.709 grayscale
@@ -12,7 +12,7 @@
  * for achromatopsia is whether the original pair's luminance contrast
  * is sufficient to distinguish the colours when chrominance is removed.
  * For the dichromacies (P/D/T), `dropMagnitude` captures the perceived
- * change in contrast and `minSimulatedContrast` catches pairs that look
+ * change in contrast and `minimumSimulatedContrast` catches pairs that look
  * legible to a trichromat but collapse to indistinguishable tones in
  * simulation.
  *
@@ -31,7 +31,7 @@
  * luminance projection preserves luminance) so the threshold for that
  * type is **0**, never the firing signal.
  *
- * ### `minSimulatedContrast`: post-simulation legibility floor
+ * ### `minimumSimulatedContrast`: post-simulation legibility floor
  *
  * [WCAG21] SC 1.4.11 ("Non-text Contrast", Level AA) requires a 3:1
  * contrast ratio for "User Interface Components and Graphical Objects".
@@ -72,47 +72,49 @@
  *                protanomaly + protanopia).
  */
 
-import type { CvdType } from '@studnicky/iridis';
-
-import type { CvdThresholdInterfaceType } from '../types/index.ts';
+import type { CvdEvalInterfaceTypeEntity } from '../entities/CvdEvalInterfaceTypeEntity.ts';
+import type { CvdThresholdInterfaceTypeEntity } from '../entities/CvdThresholdInterfaceTypeEntity.ts';
 
 /**
  * `dropMagnitude`: maximum allowed |WCAG-21 contrast drop| between
  * trichromat and CVD-simulated perception. A pair exceeding this
  * magnitude raises a warning. Achromatopsia uses 0 because the BT.709
  * projection preserves luminance exactly, so the drop signal is
- * meaningless for that type; the `minSimulatedContrast` signal carries
+ * meaningless for that type; the `minimumSimulatedContrast` signal carries
  * the weight.
  *
- * `minSimulatedContrast`: minimum WCAG-21 luminance contrast the
+ * `minimumSimulatedContrast`: minimum WCAG-21 luminance contrast the
  * CVD-simulated pair must still meet. [WCAG21] SC 1.4.11 cites 3:1 as
  * the non-text legibility floor; a CVD-simulated pair dropping below
  * this has lost the affordance regardless of how close it stayed to
  * trichromat perception.
  */
-export const CVD_THRESHOLDS: Readonly<Record<CvdType, CvdThresholdInterfaceType>> = {
+export const CVD_THRESHOLDS: Readonly<Record<
+  CvdEvalInterfaceTypeEntity.Type['cvdType'],
+  CvdThresholdInterfaceTypeEntity.Type
+>> = {
   /* Achromatopsia: rod monochromacy preserves luminance contrast
      exactly, so the drop signal is identically 0 [WS82]. We never want
      this signal to fire on its own, hence threshold 0 (any non-zero
      numerical noise from gamma round-trip should not trigger).
-     `minSimulatedContrast` is the only meaningful signal: a pair that
+     `minimumSimulatedContrast` is the only meaningful signal: a pair that
      looks legible only because of chromatic difference fails when
      reduced to grayscale. 3.0 is the [WCAG21] SC-1.4.11 non-text
      minimum. */
-  'achromatopsia': { 'dropMagnitude': 0,   'minSimulatedContrast': 3.0 },
+  'achromatopsia': { 'dropMagnitude': 0,   'minimumSimulatedContrast': 3.0 },
 
   /* Deuteranopia: same red/green confusion family as protanopia, same
      prevalence (~1 % of males [WONG11]). The 0.5 drop tolerance is the
      empirical project calibration used for each dichromacy matrix. */
-  'deuteranopia':  { 'dropMagnitude': 0.5, 'minSimulatedContrast': 3.0 },
+  'deuteranopia':  { 'dropMagnitude': 0.5, 'minimumSimulatedContrast': 3.0 },
 
   /* Protanopia: red/green confusion is the most prevalent CVD class
      (~1 % of males [WONG11]). The 0.5 drop tolerance is an empirical
      project calibration, not a published perceptual threshold. */
-  'protanopia':    { 'dropMagnitude': 0.5, 'minSimulatedContrast': 3.0 },
+  'protanopia':    { 'dropMagnitude': 0.5, 'minimumSimulatedContrast': 3.0 },
 
   /* Tritanopia: blue/yellow confusion, rarer (~0.01 % [WONG11]). The
      same empirical 0.5 project tolerance applies to the [MOF09]
      severity-1.0 matrix. */
-  'tritanopia':    { 'dropMagnitude': 0.5, 'minSimulatedContrast': 3.0 }
+  'tritanopia':    { 'dropMagnitude': 0.5, 'minimumSimulatedContrast': 3.0 }
 } as const;

@@ -1,101 +1,117 @@
+import { ViewerActionIdentifierInterfaceTypeEntity } from './ViewerActionIdentifierInterfaceTypeEntity.ts';
+import { ViewerActionOverridesInterfaceTypeEntity } from './ViewerActionOverridesInterfaceTypeEntity.ts';
+
 class ViewerActionDefinition {
-  public readonly ariaLabel: string | undefined;
+  readonly #overrides: ViewerActionOverridesInterfaceTypeEntity.Type;
   public readonly label: string;
-  public readonly shortcut: string | undefined;
   public readonly title: string;
-  public readonly tone: 'default' | 'danger' | undefined;
 
   public constructor(
     label: string,
     title: string,
-    ariaLabel: string | undefined,
-    shortcut: string | undefined,
-    tone: 'default' | 'danger' | undefined
+    overrides: ViewerActionOverridesInterfaceTypeEntity.Type
   ) {
-    this.ariaLabel = ariaLabel;
+    this.#overrides = overrides;
     this.label = label;
-    this.shortcut = shortcut;
     this.title = title;
-    this.tone = tone;
+  }
+
+
+  public get ariaLabel(): string | undefined {
+    const result = this.#overrides.ariaLabel;
+    return result;
+  }
+
+  public get shortcut(): string | undefined {
+    const result = this.#overrides.shortcut;
+    return result;
+  }
+
+  public get tone(): ViewerActionOverridesInterfaceTypeEntity.Type['tone'] {
+    const result = this.#overrides.tone;
+    return result;
   }
 }
 
 class ViewerAction {
-  public readonly ariaLabel: string | undefined;
-  public readonly disabled: boolean | undefined;
-  public readonly id:
-    | 'zoom-in'
-    | 'zoom-out'
-    | 'centre'
-    | 'fit'
-    | 'close'
-    | 'expand'
-    | 'fullscreen'
-    | 'clear';
-  public readonly label: string;
-  public readonly pressed: boolean | undefined;
-  public readonly shortcut: string | undefined;
-  public readonly title: string;
-  public readonly tone: 'default' | 'danger' | undefined;
+  readonly #definition: ViewerActionDefinition;
+  readonly #overrides: ViewerActionOverridesInterfaceTypeEntity.Type;
+  readonly #id: string;
 
   public constructor(
-    id: ViewerAction['id'],
-    label: string,
-    title: string,
-    ariaLabel: string | undefined,
-    disabled: boolean | undefined,
-    pressed: boolean | undefined,
-    shortcut: string | undefined,
-    tone: 'default' | 'danger' | undefined
+    definition: ViewerActionDefinition,
+    id: string,
+    overrides: ViewerActionOverridesInterfaceTypeEntity.Type
   ) {
-    this.ariaLabel = ariaLabel;
-    this.disabled = disabled;
-    this.id = id;
-    this.label = label;
-    this.pressed = pressed;
-    this.shortcut = shortcut;
-    this.title = title;
-    this.tone = tone;
+    this.#definition = definition;
+    this.#overrides = overrides;
+    this.#id = id;
+  }
+
+  public get ariaLabel(): string | undefined {
+    const result = this.#overrides.ariaLabel ?? this.#definition.ariaLabel;
+    return result;
+  }
+
+  public get disabled(): boolean | undefined {
+    const result = this.#overrides.disabled;
+    return result;
+  }
+
+  public get id(): ViewerActionIdentifierInterfaceTypeEntity.Type {
+    const result = ViewerActionIdentifierInterfaceTypeEntity.intake(this.#id);
+    return result;
+  }
+
+  public get label(): string {
+    const result = this.#overrides.label ?? this.#definition.label;
+    return result;
+  }
+
+  public get pressed(): boolean | undefined {
+    const result = this.#overrides.pressed;
+    return result;
+  }
+
+  public get shortcut(): string | undefined {
+    const result = this.#overrides.shortcut ?? this.#definition.shortcut;
+    return result;
+  }
+
+  public get title(): string {
+    const result = this.#overrides.title ?? this.#definition.title;
+    return result;
+  }
+
+  public get tone(): ViewerActionOverridesInterfaceTypeEntity.Type['tone'] {
+    const result = this.#overrides.tone ?? this.#definition.tone;
+    return result;
   }
 }
 
 export const viewerActionsModel = class ViewerActionsModel {
-  static readonly #definitions = new Map<ViewerAction['id'], ViewerActionDefinition>([
-    ['centre', new ViewerActionDefinition('⊙', 'Centre view', undefined, undefined, undefined)],
-    ['clear', new ViewerActionDefinition('🗑 clear', 'Clear', undefined, undefined, 'danger')],
-    ['close', new ViewerActionDefinition('✕', 'Close', undefined, 'Esc', undefined)],
-    ['expand', new ViewerActionDefinition('⤢', 'Expand', undefined, undefined, undefined)],
-    ['fit', new ViewerActionDefinition('⤢', 'Fit to view', undefined, undefined, undefined)],
-    ['fullscreen', new ViewerActionDefinition('⛶', 'Fullscreen', undefined, undefined, undefined)],
-    ['zoom-in', new ViewerActionDefinition('＋', 'Zoom in', undefined, undefined, undefined)],
-    ['zoom-out', new ViewerActionDefinition('－', 'Zoom out', undefined, undefined, undefined)]
+  static readonly #definitions = new Map<string, ViewerActionDefinition>([
+    ['centre', new ViewerActionDefinition('⊙', 'Centre view', ViewerActionOverridesInterfaceTypeEntity.create({}))],
+    ['clear', new ViewerActionDefinition('🗑 clear', 'Clear', ViewerActionOverridesInterfaceTypeEntity.create({ 'tone': 'danger' }))],
+    ['close', new ViewerActionDefinition('✕', 'Close', ViewerActionOverridesInterfaceTypeEntity.create({ 'shortcut': 'Esc' }))],
+    ['expand', new ViewerActionDefinition('⤢', 'Expand', ViewerActionOverridesInterfaceTypeEntity.create({}))],
+    ['fit', new ViewerActionDefinition('⤢', 'Fit to view', ViewerActionOverridesInterfaceTypeEntity.create({}))],
+    ['fullscreen', new ViewerActionDefinition('⛶', 'Fullscreen', ViewerActionOverridesInterfaceTypeEntity.create({}))],
+    ['zoom-in', new ViewerActionDefinition('＋', 'Zoom in', ViewerActionOverridesInterfaceTypeEntity.create({}))],
+    ['zoom-out', new ViewerActionDefinition('－', 'Zoom out', ViewerActionOverridesInterfaceTypeEntity.create({}))]
   ]);
 
   public static create(
-    id: ViewerAction['id'],
-    overrides: {
-      readonly 'ariaLabel'?: string;
-      readonly 'disabled'?: boolean;
-      readonly 'label'?: string;
-      readonly 'pressed'?: boolean;
-      readonly 'shortcut'?: string;
-      readonly 'title'?: string;
-      readonly 'tone'?: 'default' | 'danger';
-    } = {}
+    id: string,
+    overrides: ViewerActionOverridesInterfaceTypeEntity.Type = ViewerActionOverridesInterfaceTypeEntity.create({})
   ): ViewerAction {
-    const definition = viewerActionsModel.#definitions.get(id);
+    const resolvedIdentifier = ViewerActionIdentifierInterfaceTypeEntity.intake(id);
+    const definition = viewerActionsModel.#definitions.get(resolvedIdentifier);
     if (definition === undefined) {
       throw new Error(`Unknown viewer action: ${id}`);
     }
-    return new ViewerAction(
-      id,
-      overrides.label ?? definition.label,
-      overrides.title ?? definition.title,
-      overrides.ariaLabel ?? definition.ariaLabel,
-      overrides.disabled,
-      overrides.pressed,
-      overrides.shortcut ?? definition.shortcut,
-      overrides.tone ?? definition.tone
-    );
+    const normalized = ViewerActionOverridesInterfaceTypeEntity.intake(overrides);
+    const result = new ViewerAction(definition, resolvedIdentifier, normalized);
+    return result;
   }
 };

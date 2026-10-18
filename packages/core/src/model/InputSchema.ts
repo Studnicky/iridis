@@ -2,7 +2,6 @@ export const InputSchema = {
   '$id':                'https://studnicky.dev/iridis/Input',
   'additionalProperties': false,
   'properties': {
-    'bypass':    { 'type': 'boolean' },
     'colors':     { 'type': 'array' },
     'contrast': {
       'additionalProperties': false,
@@ -18,7 +17,7 @@ export const InputSchema = {
       'items': { 'type': 'string' },
       'type':  'array'
     },
-    'maxColors': { 'minimum': 1, 'type': 'number' },
+    'maximumColorCount': { 'minimum': 1, 'type': 'integer' },
     'metadata': {
       'additionalProperties': true,
       'type':                 'object'

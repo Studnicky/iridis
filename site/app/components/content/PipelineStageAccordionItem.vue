@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { AccordionContent, AccordionHeader, AccordionItem, AccordionTrigger } from 'reka-ui';
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { buildPipelineStageModel } from './pipeline/buildPipelineStageModel.ts';
@@ -9,7 +9,7 @@ import { buildPipelineStageModel } from './pipeline/buildPipelineStageModel.ts';
 type PipelineStageType = {
   label: string;
   description: string;
-  optional: boolean;
+  optionalControl: object | undefined;
   reads: string[];
   value: string;
   writes: string[];
@@ -27,7 +27,7 @@ const stageModel = computed(() => buildPipelineStageModel.build(
 ));
 
 function updateCvdCorrect(cvdCorrect: boolean): void {
-  send({ type: IridisUiActionType.SET_CVD_CORRECT, cvdCorrect });
+  send(cvdCorrect ? IridisUiEvent.setCvdCorrectionEnabled() : IridisUiEvent.setCvdCorrectionDisabled());
 }
 </script>
 
@@ -45,7 +45,7 @@ function updateCvdCorrect(cvdCorrect: boolean): void {
         />
       </AccordionTrigger>
       <UBadge
-        v-if="stage.optional"
+        v-if="stage.optionalControl !== undefined"
         :color="stageModel.isEnabled ? 'primary' : 'neutral'"
         :variant="stageModel.isEnabled ? 'soft' : 'subtle'"
         size="sm"

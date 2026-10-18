@@ -1,13 +1,7 @@
-import type { ScenarioKindType } from './ScenarioKindType.ts';
-
-/**
- * One row of a scenario-matrix table driven by `ScenarioRunner`. Each
- * scenario carries its own input, an expected-outcome `assert` callback,
- * and a `kind` classification (`happy` | `edge` | `unhappy`).
- */
+/** One row of a scenario matrix driven by `ScenarioRunner`. */
 export interface ScenarioInterface<TInput, TOutput> {
-  assert(output: TOutput | undefined, error: Error | undefined): void | Promise<void>;
+  assert(...result: [output: TOutput | undefined, error: Error | undefined]): void | Promise<void>;
   readonly 'input': TInput;
-  readonly 'kind':  ScenarioKindType;
+  readonly 'kind':  string;
   readonly 'name':  string;
 }

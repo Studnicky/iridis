@@ -1,21 +1,33 @@
 <script setup lang="ts">
-import type { HueAlgorithmType } from '~/composables/types/colorDerivation.ts';
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
+import { buildDerivationRelations } from './derivation/buildDerivationRelations.ts';
 
 defineProps<{
-  algorithmOptions: readonly { label: string; value: HueAlgorithmType.Type }[];
-  role: RoleMathEntryType;
+  algorithmOptions: readonly { label: string; value: string }[];
+  role: RoleMathEntry;
   variantItems: readonly { label: string; value: number }[];
   variantLabel: string;
 }>();
 
 const emit = defineEmits<{
-  'algorithm-change': [algorithm: HueAlgorithmType.Type];
+  'algorithm-change': [algorithm: string];
   'freeform-offset-change': [offset: number];
   'variant-change': [variantIndex: number];
 }>();
 
-function updateAlgorithm(algorithm: HueAlgorithmType.Type): void {
+function serializedAlgorithm(role: RoleMathEntry): string {
+  const result = role.algorithmInfo === null || role.algorithmInfo === undefined
+    ? 'monochromatic'
+    : buildDerivationRelations.serializeHueAlgorithm(role.algorithmInfo.algorithm);
+  return result;
+}
+
+function isFreeform(role: RoleMathEntry): boolean {
+  const result = role.algorithmInfo?.algorithm.isFreeform() ?? false;
+  return result;
+}
+
+function updateAlgorithm(algorithm: string): void {
   emit('algorithm-change', algorithm);
 }
 
@@ -36,14 +48,14 @@ function updateVariant(variantIndex: number): void {
     />
     <span class="w-24 flex-none truncate text-xs font-medium text-highlighted">{{ role.name }}</span>
     <AppSelect
-      :model-value="role.algorithmInfo?.hueAlgorithm ?? 'monochromatic'"
+      :model-value="serializedAlgorithm(role)"
       :items="algorithmOptions"
       size="xs"
       class="w-32 flex-none"
       @update:model-value="updateAlgorithm"
     />
     <AppSelect
-      v-if="role.algorithmInfo && role.algorithmInfo.hueAlgorithm !== 'freeform'"
+      v-if="role.algorithmInfo && !isFreeform(role)"
       :model-value="role.algorithmInfo.hueVariantIndex"
       :items="variantItems"
       size="xs"

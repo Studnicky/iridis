@@ -1,11 +1,11 @@
 import type { PaletteStateInterface } from '@studnicky/iridis/model';
 
-import { CliExitError } from '@studnicky/errors';
+import { CliExitError } from '@studnicky/errors/node';
 import { Engine }       from '@studnicky/iridis/engine';
 import { coreTasks }    from '@studnicky/iridis/tasks';
 
-import { ConfigLoader }  from './ConfigLoader.ts';
-import { OutputWriter }  from './OutputWriter.ts';
+import { ConfigLoader }   from './ConfigLoader.ts';
+import { OutputWriter }   from './OutputWriter.ts';
 import { PluginResolver } from './PluginResolver.ts';
 
 /**
@@ -18,10 +18,16 @@ import { PluginResolver } from './PluginResolver.ts';
 class WrittenSlotCollector {
   static collect(engine: Engine, pipeline: readonly string[]): Set<string> {
     const slots = new Set<string>();
-    for (const name of pipeline) {
+    for (let pipelineIndex = 0; pipelineIndex < pipeline.length; pipelineIndex += 1) {
+      const name = pipeline[pipelineIndex];
+      if (name === undefined) {
+        continue;
+      }
       const task = engine.tasks.resolve(name);
-      for (const entry of task.manifest?.writes ?? []) {
-        if (entry.startsWith('outputs.')) {
+      const writes = task.manifest?.writes ?? [];
+      for (let writeIndex = 0; writeIndex < writes.length; writeIndex += 1) {
+        const entry = writes[writeIndex];
+        if (entry?.startsWith('outputs.') === true) {
           slots.add(entry.slice('outputs.'.length));
         }
       }
@@ -41,11 +47,17 @@ export class Cli {
 
     const engine = new Engine();
 
-    for (const task of coreTasks) {
-      engine.tasks.register(task);
+    for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
+      const task = coreTasks[taskIndex];
+      if (task !== undefined) {
+        engine.tasks.register(task);
+      }
     }
-    for (const plugin of plugins) {
-      engine.adopt(plugin);
+    for (let pluginIndex = 0; pluginIndex < plugins.length; pluginIndex += 1) {
+      const plugin = plugins[pluginIndex];
+      if (plugin !== undefined) {
+        engine.adopt(plugin);
+      }
     }
 
     engine.pipeline(config.pipeline);
@@ -53,7 +65,10 @@ export class Cli {
     const declaredFileKeys = Object.keys(config.output.files);
     if (declaredFileKeys.length > 0) {
       const writtenSlots  = WrittenSlotCollector.collect(engine, config.pipeline);
-      const unwrittenKeys = declaredFileKeys.filter((k) => {return !writtenSlots.has(k);});
+      const unwrittenKeys = declaredFileKeys.filter((key) => {
+        const isUnwritten = !writtenSlots.has(key);
+        return isUnwritten;
+      });
 
       if (unwrittenKeys.length > 0) {
         const produced = writtenSlots.size > 0
@@ -67,7 +82,7 @@ export class Cli {
 
     const state          = engine.run(config.input);
     const outputsWritten = await writer.write(state, config);
-
-    return { 'outputsWritten': outputsWritten, 'state': state };
+    const result = { 'outputsWritten': outputsWritten, 'state': state };
+    return result;
   }
 }

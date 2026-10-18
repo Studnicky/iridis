@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
+import { roleSchemaFor } from '~/composables/roleSchemaFor.ts';
+import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { buildSchemaTree } from './schema/buildSchemaTree.ts';
 
 /**
@@ -16,14 +18,34 @@ const { roles, framing, schemaName, roleSortKeys, sortedRoleContrastRows } = use
 /** Looks up each leaf's l/c/h/ratio/compliance from the SAME sortedRoleContrastRows every other role listing reads, instead of recomputing OKLCH from hex a second time for a value the engine already resolved. */
 const contrastRowByName = computed(() => new Map(sortedRoleContrastRows.value.map((r) => [r.name, r])));
 
+/** Resolves the active framing at the component boundary before presentation data reaches the tree builder. */
+const schemaSources = computed(() => {
+  const selectedFraming = framing.value;
+  const selectedSchemaName = schemaName.value;
+  const result = [
+    { 'defaultExpanded': selectedSchemaName === 'iridis-4', 'label': 'iridis-4', 'schema': roleSchemaFor(roleSchemaByName['iridis-4']?.[selectedFraming]) },
+    { 'defaultExpanded': selectedSchemaName === 'iridis-8', 'label': 'iridis-8', 'schema': roleSchemaFor(roleSchemaByName['iridis-8']?.[selectedFraming]) },
+    { 'defaultExpanded': selectedSchemaName === 'iridis-12', 'label': 'iridis-12', 'schema': roleSchemaFor(roleSchemaByName['iridis-12']?.[selectedFraming]) },
+    { 'defaultExpanded': selectedSchemaName === 'iridis-16', 'label': 'iridis-16', 'schema': roleSchemaFor(roleSchemaByName['iridis-16']?.[selectedFraming]) },
+    { 'defaultExpanded': selectedSchemaName === 'iridis-32', 'label': 'iridis-32', 'schema': roleSchemaFor(roleSchemaByName['iridis-32']?.[selectedFraming]) }
+  ];
+  return result;
+});
+
 /** Each tier ("folder") sorts its own leaves by the SAME shared roleSortKeys every other role listing uses — the sort here is per-tier (a tier never reorders another tier's leaves into it), matching how the tree is a hierarchy of independent groups. */
-const tree = computed(() => buildSchemaTree.build(
-  framing.value,
-  schemaName.value,
-  roles.value,
-  roleSortKeys.value,
-  contrastRowByName.value
-));
+const tree = computed(() => {
+  const builtTree = buildSchemaTree.build(
+    schemaSources.value,
+    roles.value,
+    roleSortKeys.value,
+    contrastRowByName.value
+  );
+  const result = builtTree.map((tier, index) => {
+    const source = schemaSources.value[index];
+    return { ...tier, 'defaultExpanded': source?.defaultExpanded === true };
+  });
+  return result;
+});
 </script>
 
 <template>

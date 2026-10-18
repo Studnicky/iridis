@@ -1,6 +1,6 @@
 import type { PluginInterface } from '@studnicky/iridis';
 
-import { CliExitError } from '@studnicky/errors';
+import { CliExitError } from '@studnicky/errors/node';
 
 import type { FlagKeyEntity } from './entities/FlagKeyEntity.ts';
 
@@ -57,13 +57,15 @@ export class PluginResolver {
   async resolve(config: Partial<Record<FlagKeyEntity.Type, boolean | undefined>>): Promise<readonly PluginInterface[]> {
     const plugins: PluginInterface[] = [];
 
-    for (const flag of PLUGIN_PACKAGE_CONSTANTS.PLUGIN_FLAGS) {
-      if (config[flag] !== true) {
+    const flags = PLUGIN_PACKAGE_CONSTANTS.PLUGIN_FLAGS;
+    for (let flagIndex = 0; flagIndex < flags.length; flagIndex += 1) {
+      const flag = flags[flagIndex];
+      if (flag === undefined || config[flag] !== true) {
         continue;
       }
 
-      const packageName  = PLUGIN_PACKAGE_CONSTANTS.PACKAGES[flag];
-      const exportName   = PLUGIN_PACKAGE_CONSTANTS.EXPORT_NAMES[flag];
+      const packageName = PLUGIN_PACKAGE_CONSTANTS.PACKAGES[flag];
+      const exportName = PLUGIN_PACKAGE_CONSTANTS.EXPORT_NAMES[flag];
       const plugin = await PLUGIN_IMPORTERS[flag]();
 
       if (plugin === undefined || plugin === null || typeof plugin.tasks !== 'function') {

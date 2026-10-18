@@ -1,5 +1,4 @@
-import type { JsonValueType } from '@studnicky/types';
-
+import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
 import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 
 /**
@@ -9,11 +8,12 @@ import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixel
  * agrees on the exact same detection rule.
  */
 export class IsImagePixelInput {
-  static check(value: JsonValueType | RawImagePixelInputInterface): value is RawImagePixelInputInterface {
+  static check(value: ColorInputEntity.Type | RawImagePixelInputInterface): value is RawImagePixelInputInterface {
     if (typeof value !== 'object' || value === null || Array.isArray(value)) {return false;}
     if (!('data' in value) || !('width' in value) || !('height' in value)) {return false;}
-    return value.data instanceof Uint8ClampedArray
+    const result = value.data instanceof Uint8ClampedArray
       && typeof value.width === 'number'
       && typeof value.height === 'number';
+    return result;
   }
 }

@@ -49,7 +49,11 @@ export const buildScaleCardModel = class ScaleCardModel {
     const adjacentRatios: ScaleCardAdjacentRatio[] = [];
     let previousHex: string | undefined;
     let previousShade: number | undefined;
-    for (const shade of ScaleCardModel.shadeValues) {
+    for (let index = 0; index < ScaleCardModel.shadeValues.length; index += 1) {
+      const shade = ScaleCardModel.shadeValues[index];
+      if (shade === undefined) {
+        continue;
+      }
       const hex = Tokens.resolveAliasShadeHex(roles, scales, aliasKey, shade);
       if (previousHex !== undefined && previousShade !== undefined && hex !== undefined) {
         adjacentRatios.push(new ScaleCardAdjacentRatio(

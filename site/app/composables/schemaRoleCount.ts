@@ -5,7 +5,8 @@
 class SchemaRoleCountOperation {
   static run(name: string): number {
     const parsed = parseInt(name.replace('iridis-', ''), 10);
-    return Number.isNaN(parsed) ? 32 : parsed;
+    const result = Number.isNaN(parsed) ? 32 : parsed;
+    return result;
   }
 }
 

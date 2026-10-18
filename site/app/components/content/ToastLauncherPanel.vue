@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useToast } from '#imports';
-import { ALIAS_COLOR_NAMES } from '~/theme/aliasColorNames.ts';
-import type { AliasColorType } from '~/theme/types/aliasColor.ts';
+
+import { AliasColorEntity } from '~/theme/entities/AliasColorEntity.ts';
 import { capitalize } from '~/utils/capitalize.ts';
 
 const toast = useToast();
-const colors = ALIAS_COLOR_NAMES;
-function fireToast(color: AliasColorType.Type): void {
+const colors = AliasColorEntity.Values;
+function fireToast(color: AliasColorEntity.Type): void {
   toast.add({
     'color': color,
     'description': `A live UToast in the ${color} color — engine-themed, not a mockup.`,

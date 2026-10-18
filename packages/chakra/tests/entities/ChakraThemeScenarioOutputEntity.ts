@@ -1,6 +1,6 @@
-import type { FromSchema, JsonObjectType } from '@studnicky/types';
+import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
-import { Validator } from '@studnicky/iridis/model';
+import { EntityCompiler } from '@studnicky/entity/node';
 
 // Mirrors the real `chakraOutputSchema` shape declared in
 // `ChakraPlugin.ts` (`{ colors: object, config: string }`,
@@ -33,10 +33,9 @@ export namespace ChakraThemeScenarioOutputEntity {
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = NominalSchemaType<typeof Schema>;
 
-  export const validate = (value: JsonObjectType[string]): value is Type => {
-    const result = new Validator().validate(Schema, value);
-    return result.valid;
-  };
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
 }

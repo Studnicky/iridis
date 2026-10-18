@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { CvdType } from '@studnicky/iridis';
+import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 import { buildCvdVisionModel } from './cvd/buildCvdVisionModel.ts';
 
 /**
@@ -21,11 +21,11 @@ const cvdReport = computed(() => {
 });
 
 function updateCvdCorrect(cvdCorrect: boolean): void {
-  send({ cvdCorrect, 'type': IridisUiActionType.SET_CVD_CORRECT });
+  send(cvdCorrect ? IridisUiEvent.setCvdCorrectionEnabled() : IridisUiEvent.setCvdCorrectionDisabled());
 }
 
-function toggleCvdPreview(cvdType: CvdType): void {
-  send({ cvdType, 'type': IridisUiActionType.CVD_TOGGLE_PREVIEW });
+function toggleCvdPreview(cvdType: CvdMatrixInterfaceTypeEntity.Type['name']): void {
+  send(IridisUiEvent.toggleCvdPreview(cvdType));
 }
 </script>
 
@@ -63,7 +63,7 @@ function toggleCvdPreview(cvdType: CvdType): void {
             color="neutral"
             variant="ghost"
             size="xs"
-            @click="send({ 'type': IridisUiActionType.CVD_CLEAR_PREVIEWS })"
+            @click="send(IridisUiEvent.clearCvdPreviews())"
           />
         </template>
       </SplitHeader>

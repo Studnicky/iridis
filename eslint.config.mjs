@@ -1,8 +1,21 @@
-import { entitySuite, HexagonalSuite, hygieneSuite, plugin, v8Plugin, v8Suite } from '@studnicky/eslint-config';
+import {
+  classMechanicsSuite,
+  diagnosticsSuite,
+  entityModelSuite,
+  LayerBoundarySuite,
+  moduleDesignSuite,
+  plugin,
+  v8CollectionTraversalSuite,
+  v8ObjectShapeSuite,
+  v8Plugin,
+  v8RepeatedWorkSuite,
+  VocabularySuite
+} from '@studnicky/eslint-config/node';
 import stylistic from '@stylistic/eslint-plugin';
 import importX from 'eslint-plugin-import-x';
 import perfectionistPlugin from 'eslint-plugin-perfectionist';
 import regexp from 'eslint-plugin-regexp';
+import sonarjs from 'eslint-plugin-sonarjs';
 import unusedImports from 'eslint-plugin-unused-imports';
 import vue from 'eslint-plugin-vue';
 import fs from 'node:fs';
@@ -272,7 +285,7 @@ export default [
       'languageOptions': {
         'parser': tseslint.parser,
         'parserOptions': {
-          'projectService': true,
+          'project': './tsconfig.json',
           'tsconfigRootDir': import.meta.dirname
         }
       },
@@ -286,23 +299,29 @@ export default [
         'import-x': importX,
         'perfectionist': perfectionistPlugin,
         'regexp': regexp,
+        'sonarjs': sonarjs,
         'unused-imports': unusedImports,
         '@typescript-eslint': tseslint.plugin
       },
       'rules': {
-        // @studnicky — full rule surface at maximum: entity/hygiene/v8 suites
-        // plus the hexagonal-architecture rules (adapter-only-import,
-        // domain-purity, known-types-outside-adapters, layer-import-boundary)
-        // configured against this monorepo's real package dependency graph
-        // (verified via grep of every packages/*/src cross-package import;
-        // see IRIDIS_LAYERS below). No rule is disabled, weakened, or exempted.
-        ...entitySuite.rules,
-        ...hygieneSuite.rules,
-        ...v8Suite.rules,
-        ...HexagonalSuite.create({
+        // @studnicky — current entity, module, diagnostics, vocabulary, V8, and layer-boundary suites.
+        // The layer graph reflects every package dependency and admits no exemptions.
+        ...sonarjs.configs.recommended.rules,
+        ...entityModelSuite.rules,
+        ...diagnosticsSuite.rules,
+        ...moduleDesignSuite.rules,
+        ...classMechanicsSuite.rules,
+        ...v8CollectionTraversalSuite.rules,
+        ...v8ObjectShapeSuite.rules,
+        ...v8RepeatedWorkSuite.rules,
+        ...VocabularySuite.create({ 'sourceRoot': 'packages' }).rules,
+        ...LayerBoundarySuite.create({
           'layers':      IRIDIS_LAYERS,
           'sourceRoot':  'packages',
-          'aliasPrefixes': IRIDIS_ALIAS_PREFIXES,
+          'bindings': [
+            ...IRIDIS_LAYERS.map((layer) => ({ 'layer': layer, 'pattern': layer, 'unit': 'package' })),
+            ...Object.entries(IRIDIS_ALIAS_PREFIXES).map(([pattern, layer]) => ({ 'layer': layer, 'pattern': pattern, 'unit': 'module' }))
+          ],
           'allowedImports': IRIDIS_ALLOWED_IMPORTS,
           'domainPurity': {
             'domainLayerName':  'core',
@@ -437,6 +456,17 @@ export default [
         'unused-imports/no-unused-imports': 'error'
       }
     },
+    // Site TypeScript uses Nuxt's project graph; package source uses the workspace source graph above.
+    {
+      'files': ['site/app/**/*.ts', 'site/test/**/*.ts'],
+      'languageOptions': {
+        'parserOptions': {
+          'project': false,
+          'projectService': true,
+          'tsconfigRootDir': import.meta.dirname
+        }
+      }
+    },
     // Config-file overrides — allow default exports in JS/TS config files.
     // Restricted to executable config extensions so JSON/YAML data files named
     // `*.config.json` are not pulled in and parsed as JavaScript.
@@ -445,6 +475,13 @@ export default [
       'rules': {
         '@studnicky/single-export': 'off',
         'import-x/no-default-export': 'off'
+      }
+    },
+    // Nuxt loads this application configuration through a default import.
+    {
+      'files': ['site/app/app.config.ts'],
+      'rules': {
+        '@studnicky/export-shape': 'off'
       }
     },
     // Vue SFC script blocks (Nuxt site) — default exports are the framework
@@ -547,11 +584,7 @@ export default [
       }
     },
     // CSS import ban — no package under packages/*/src may import a
-    // stylesheet. layer-import-boundary (HexagonalSuite, above) already
-    // bans cross-layer/adapter imports; this closes the one gap it doesn't
-    // cover, adapted from schema-forms' core/ports/projections CSS ban
-    // (its adapter half is redundant here — layer-import-boundary already
-    // owns that).
+    // stylesheet. Layer-import-boundary enforces package boundaries; this closes its CSS-import gap.
     {
       'files': ['packages/*/src/**/*.ts'],
       'rules': {

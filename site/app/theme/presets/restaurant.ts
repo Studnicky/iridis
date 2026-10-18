@@ -1,5 +1,8 @@
 import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
 
+import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
+import { renderDot } from '../particles/renderDot.ts';
+
 /**
  * Warm hospitality/dining. A dining room doesn't have rotating or flashing
  * particles drifting through it — no starfield, no lava blobs. The ambient
@@ -9,13 +12,13 @@ import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceTy
 export const restaurant: ThemeDefinitionInterfaceType = {
   'ambient': {
     'blobCount':       0,
-    'gooEnabled':      false,
-    'gridEnabled':     false,
+    'gooFilter':       'none',
+    'gridDisplay':     'none',
     'particleCounts':  [0, 0, 0, 0, 0],
-    'particleShape':   'dot',
+    'particleRenderer': renderDot,
     'speedMultiplier': 1.75
   },
-  'dataLayout': 'list',
+  'dataLayout': DataLayoutStrategy.list,
   'key':   'restaurant',
   'label': 'Restaurant'
 };

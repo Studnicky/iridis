@@ -1,36 +1,23 @@
-import type { RoleSortableRowType } from '../composables/types/roleSortableRow.ts';
-import type { RoleSortFieldType } from '../composables/types/roleSortField.ts';
-import type { RoleSortKeyType } from '../composables/types/roleSortKey.ts';
+import type { RoleSortableRowInterfaceTypeEntity } from '../composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import type { RoleSortFieldBehaviorInterface } from './roleSortFieldBehaviorInterface.ts';
 
-/** 'n/a' (structural roles the table can't meaningfully grade) ranks below
- * 'fail' so it never intermixes with genuine compliance grades in either
- * sort direction — real problems stay the most visible extreme, structural
- * rows consistently sink to the other end. */
-const COMPLIANCE_RANK: Record<string, number> = { 'AA': 1, 'AAA': 2, 'fail': 0, 'n/a': -1 };
-
-class CompareRoleFieldOperation {
-  static run(a: RoleSortableRowType, b: RoleSortableRowType, field: RoleSortFieldType.Type): number {
-    if (field === 'compliance') {return (COMPLIANCE_RANK[a.compliance] ?? 0) - (COMPLIANCE_RANK[b.compliance] ?? 0);}
-    const av = a[field];
-    const bv = b[field];
-    if (typeof av === 'string' && typeof bv === 'string') {return av.localeCompare(bv);}
-    return (av as number) - (bv as number);
-  }
-}
-
-const compareRoleField = CompareRoleFieldOperation.run;
-
-/** Applies an ordered list of sort keys — first key wins, ties fall through to the next. */
+/** Applies the selected role-sort behaviors in priority order, falling through on ties. */
 class SortRoleRowsOperation {
-  static run<T extends RoleSortableRowType>(rows: readonly T[], keys: readonly RoleSortKeyType[]): T[] {
-    const result = [...rows].sort((a, b) => {
-      for (const key of keys) {
-        const cmp = compareRoleField(a, b, key.field) * (key.desc ? -1 : 1);
-        if (cmp !== 0) {return cmp;}
+  static run<T extends RoleSortableRowInterfaceTypeEntity.Type>(
+    rows: readonly T[],
+    behaviors: readonly RoleSortFieldBehaviorInterface[]
+  ): T[] {
+    const sortedRows = [...rows].sort((left, right) => {
+      for (let behaviorIndex = 0; behaviorIndex < behaviors.length; behaviorIndex += 1) {
+        const behavior = behaviors[behaviorIndex];
+        if (behavior === undefined) {continue;}
+        const comparison = behavior.compare(left, right);
+        if (comparison !== 0) {return comparison;}
       }
-      return 0;
+      const tied = 0;
+      return tied;
     });
-    return result;
+    return sortedRows;
   }
 }
 

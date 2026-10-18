@@ -7,5 +7,6 @@ export const P3_PATTERNS = {
    *
    * Captures: `[1] r`, `[2] g`, `[3] b`, `[4] alpha?` (the slash-prefixed group).
    */
-  'DISPLAY_P3': /^color\(\s*display-p3\s+(-?\d*\.?\d+)\s+(-?\d*\.?\d+)\s+(-?\d*\.?\d+)(?:\s*\/\s*(-?\d*\.?\d+))?\s*\)$/i
+  'DISPLAY_P3': /^color\(display-p3 ([^ ]+) ([^ ]+) ([^ )]+)(?: \/ ([^ )]+))?\)$/i,
+  'WHITESPACE': /\s+/g
 } as const;

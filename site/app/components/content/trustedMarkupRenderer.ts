@@ -1,5 +1,6 @@
 import type { DefaultTreeAdapterTypes } from 'parse5';
-import type { Root, Rule } from 'postcss';
+import type { Declaration, Root, Rule } from 'postcss';
+import type { Node } from 'postcss-value-parser';
 
 import { parseFragment } from 'parse5';
 import { parse } from 'postcss';
@@ -7,23 +8,129 @@ import parseCssValue from 'postcss-value-parser';
 
 import { TRUSTED_MARKUP_RENDERER_PATTERNS } from './constants/TrustedMarkupRendererPatterns.ts';
 
-class TrustedMarkupRenderResult {
-  public readonly accepted: boolean;
-  public readonly changed: boolean;
+abstract class TrustedMarkupRenderOutcome {
+  public abstract get accepted(): boolean;
+  public abstract get changed(): boolean;
+}
 
-  public constructor(accepted: boolean, changed: boolean) {
-    this.accepted = accepted;
-    this.changed = changed;
+class TrustedMarkupAcceptedChangedOutcome extends TrustedMarkupRenderOutcome {
+  public get accepted(): boolean {
+    const result = true;
+    return result;
+  }
+
+  public get changed(): boolean {
+    const result = true;
+    return result;
+  }
+}
+
+class TrustedMarkupAcceptedUnchangedOutcome extends TrustedMarkupRenderOutcome {
+  public get accepted(): boolean {
+    const result = true;
+    return result;
+  }
+
+  public get changed(): boolean {
+    const result = false;
+    return result;
+  }
+}
+
+class TrustedMarkupRejectedChangedOutcome extends TrustedMarkupRenderOutcome {
+  public get accepted(): boolean {
+    const result = false;
+    return result;
+  }
+
+  public get changed(): boolean {
+    const result = true;
+    return result;
+  }
+}
+
+class TrustedMarkupRejectedUnchangedOutcome extends TrustedMarkupRenderOutcome {
+  public get accepted(): boolean {
+    const result = false;
+    return result;
+  }
+
+  public get changed(): boolean {
+    const result = false;
+    return result;
+  }
+}
+
+abstract class TrustedMarkupFormat {
+  public abstract cacheKey(): string;
+
+  public abstract validateRoot(
+    nodes: readonly DefaultTreeAdapterTypes.ChildNode[],
+    validateSvgRoot: (nodes: readonly DefaultTreeAdapterTypes.ChildNode[]) => void
+  ): void;
+}
+
+class TrustedMarkupHtmlFormat extends TrustedMarkupFormat {
+  public cacheKey(): string {
+    const result = 'html';
+    return result;
+  }
+
+  public validateRoot(
+    _nodes: readonly DefaultTreeAdapterTypes.ChildNode[],
+    _validateSvgRoot: (nodes: readonly DefaultTreeAdapterTypes.ChildNode[]) => void
+  ): void {}
+}
+
+class TrustedMarkupSvgFormat extends TrustedMarkupFormat {
+  public cacheKey(): string {
+    const result = 'svg';
+    return result;
+  }
+
+  public validateRoot(
+    nodes: readonly DefaultTreeAdapterTypes.ChildNode[],
+    validateSvgRoot: (nodes: readonly DefaultTreeAdapterTypes.ChildNode[]) => void
+  ): void {
+    validateSvgRoot(nodes);
+  }
+}
+
+namespace TrustedMarkupFormatEntity {
+  export class Format {
+    static readonly #html = new TrustedMarkupHtmlFormat();
+    static readonly #svg = new TrustedMarkupSvgFormat();
+
+    public static intake(value: unknown): TrustedMarkupFormat {
+      if (value === 'html') {
+        const result = TrustedMarkupFormatEntity.Format.#html;
+        return result;
+      }
+      if (value === 'svg') {
+        const result = TrustedMarkupFormatEntity.Format.#svg;
+        return result;
+      }
+      throw new TrustedMarkupValidationError('Markup format must be html or svg');
+    }
   }
 }
 
 class TrustedMarkupRenderRecord {
-  public readonly accepted: boolean;
+  public readonly outcome: TrustedMarkupRenderOutcome;
   public readonly signature: string;
 
-  public constructor(accepted: boolean, signature: string) {
-    this.accepted = accepted;
+  public constructor(outcome: TrustedMarkupRenderOutcome, signature: string) {
+    this.outcome = outcome;
     this.signature = signature;
+  }
+}
+
+namespace TrustedMarkupErrorEntity {
+  export class ErrorMessage {
+    public static intake(value: unknown): string {
+      const result = value instanceof Error ? value.message : String(value);
+      return result;
+    }
   }
 }
 
@@ -32,6 +139,10 @@ class TrustedMarkupValidationError extends Error {}
 export const trustedMarkupRenderer = class TrustedMarkupRenderer {
   static readonly #htmlNamespace = 'http://www.w3.org/1999/xhtml';
   static readonly #svgNamespace = 'http://www.w3.org/2000/svg';
+  static readonly #acceptedChangedOutcome = new TrustedMarkupAcceptedChangedOutcome();
+  static readonly #acceptedUnchangedOutcome = new TrustedMarkupAcceptedUnchangedOutcome();
+  static readonly #rejectedChangedOutcome = new TrustedMarkupRejectedChangedOutcome();
+  static readonly #rejectedUnchangedOutcome = new TrustedMarkupRejectedUnchangedOutcome();
 
   static readonly #htmlElements = new Set([
     'a',
@@ -121,6 +232,7 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
     'patterntransform',
     'patternunits',
     'points',
+    'position',
     'preserveaspectratio',
     'r',
     'refx',
@@ -164,6 +276,8 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
 
   static readonly #cssProperties = new Set([
     'alignment-baseline',
+    'animation',
+    'background',
     'background-color',
     'border',
     'border-color',
@@ -172,10 +286,12 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
     'border-width',
     'box-sizing',
     'color',
+    'cursor',
     'display',
     'dominant-baseline',
     'fill',
     'fill-opacity',
+    'filter',
     'font-family',
     'font-size',
     'font-style',
@@ -198,8 +314,11 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
     'padding-left',
     'padding-right',
     'padding-top',
+    'pointer-events',
+    'position',
     'stroke',
     'stroke-dasharray',
+    'stroke-dashoffset',
     'stroke-linecap',
     'stroke-linejoin',
     'stroke-width',
@@ -208,8 +327,10 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
     'text-decoration',
     'transform',
     'transform-origin',
+    'vertical-align',
     'white-space',
-    'width'
+    'width',
+    'z-index'
   ]);
 
   static readonly #urlAttributes = new Set(['href', 'xlink:href']);
@@ -230,68 +351,84 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
   public static render(
     host: HTMLElement,
     markup: string,
-    format: 'html' | 'svg'
-  ): TrustedMarkupRenderResult {
-    const requireSvgRoot = format === 'svg';
-    const signature = `${format}\u0000${markup}`;
-    const current = TrustedMarkupRenderer.#rendered.get(host);
-    if (current?.signature === signature) {
-      return new TrustedMarkupRenderResult(current.accepted, false);
-    }
-
+    formatInput: unknown
+  ): TrustedMarkupRenderOutcome {
+    let signature = `invalid\u0000${markup}`;
     try {
+      const format = TrustedMarkupFormatEntity.Format.intake(formatInput);
+      signature = `${format.cacheKey()}\u0000${markup}`;
+      const current = TrustedMarkupRenderer.#rendered.get(host);
+      if (current?.signature === signature) {
+        const result = current.outcome.accepted
+          ? TrustedMarkupRenderer.#acceptedUnchangedOutcome
+          : TrustedMarkupRenderer.#rejectedUnchangedOutcome;
+        return result;
+      }
+
       const parsed = parseFragment(markup);
       const fragment = TrustedMarkupRenderer.#buildFragment(
         host.ownerDocument,
         parsed,
-        requireSvgRoot
+        format
       );
       host.replaceChildren(fragment);
       TrustedMarkupRenderer.#rendered.set(
         host,
-        new TrustedMarkupRenderRecord(true, signature)
+        new TrustedMarkupRenderRecord(TrustedMarkupRenderer.#acceptedChangedOutcome, signature)
       );
-      return new TrustedMarkupRenderResult(true, true);
+      const result = TrustedMarkupRenderer.#acceptedChangedOutcome;
+      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Markup validation failed';
-      return TrustedMarkupRenderer.#reject(host, signature, message);
+      const result = TrustedMarkupRenderer.#reject(host, signature, message);
+      return result;
     }
   }
 
-  public static renderError(host: HTMLElement, error: unknown): TrustedMarkupRenderResult {
-    const message = error instanceof Error ? error.message : String(error);
-    return TrustedMarkupRenderer.#reject(host, `error\u0000${message}`, message);
+  public static renderError(host: HTMLElement, error: string): TrustedMarkupRenderOutcome {
+    const result = TrustedMarkupRenderer.#reject(host, `error\u0000${error}`, error);
+    return result;
+  }
+
+  public static renderUnknownError(host: HTMLElement, error: unknown): TrustedMarkupRenderOutcome {
+    const message = TrustedMarkupErrorEntity.ErrorMessage.intake(error);
+    const result = TrustedMarkupRenderer.renderError(host, message);
+    return result;
   }
 
   static #reject(
     host: HTMLElement,
     signature: string,
     message: string
-  ): TrustedMarkupRenderResult {
+  ): TrustedMarkupRenderOutcome {
     const current = TrustedMarkupRenderer.#rendered.get(host);
-    if (current?.signature === signature && !current.accepted) {
-      return new TrustedMarkupRenderResult(false, false);
+    if (current?.signature === signature && !current.outcome.accepted) {
+      const result = TrustedMarkupRenderer.#rejectedUnchangedOutcome;
+      return result;
     }
     host.textContent = `Unable to render markup: ${message}`;
     TrustedMarkupRenderer.#rendered.set(
       host,
-      new TrustedMarkupRenderRecord(false, signature)
+      new TrustedMarkupRenderRecord(TrustedMarkupRenderer.#rejectedChangedOutcome, signature)
     );
-    return new TrustedMarkupRenderResult(false, true);
+    const result = TrustedMarkupRenderer.#rejectedChangedOutcome;
+    return result;
   }
 
   static #buildFragment(
     document: Document,
     parsed: DefaultTreeAdapterTypes.DocumentFragment,
-    requireSvgRoot: boolean
+    format: TrustedMarkupFormat
   ): DocumentFragment {
-    if (requireSvgRoot) {
-      TrustedMarkupRenderer.#validateSvgRoot(parsed.childNodes);
-    }
+    format.validateRoot(parsed.childNodes, TrustedMarkupRenderer.#validateSvgRoot);
 
     const fragment = document.createDocumentFragment();
     const stylesheets: string[] = [];
-    for (const child of parsed.childNodes) {
+    for (let childIndex = 0; childIndex < parsed.childNodes.length; childIndex += 1) {
+      const child = parsed.childNodes[childIndex];
+      if (child === undefined) {
+        throw new TrustedMarkupValidationError('Markup contains an invalid child node');
+      }
       const node = TrustedMarkupRenderer.#buildNode(document, child, stylesheets);
       if (node !== null) {
         fragment.appendChild(node);
@@ -309,7 +446,11 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
 
   static #validateSvgRoot(nodes: readonly DefaultTreeAdapterTypes.ChildNode[]): void {
     let rootCount = 0;
-    for (const node of nodes) {
+    for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
+      const node = nodes[nodeIndex];
+      if (node === undefined) {
+        throw new TrustedMarkupValidationError('SVG markup contains an invalid child node');
+      }
       if (TrustedMarkupRenderer.#isText(node)) {
         if (node.value.trim().length > 0) {
           throw new TrustedMarkupValidationError('SVG markup must contain one SVG root');
@@ -335,17 +476,20 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
     document: Document,
     node: DefaultTreeAdapterTypes.ChildNode,
     stylesheets: string[]
-  ): Node | null {
+  ): globalThis.Node | null {
     if (TrustedMarkupRenderer.#isText(node)) {
-      return document.createTextNode(node.value);
+      const result = document.createTextNode(node.value);
+      return result;
     }
     if (TrustedMarkupRenderer.#isComment(node)) {
-      return document.createComment(node.data);
+      const result = document.createComment(node.data);
+      return result;
     }
     if (!TrustedMarkupRenderer.#isElement(node)) {
       throw new TrustedMarkupValidationError('Document type nodes are not allowed');
     }
-    return TrustedMarkupRenderer.#buildElement(document, node, stylesheets);
+    const result = TrustedMarkupRenderer.#buildElement(document, node, stylesheets);
+    return result;
   }
 
   static #buildElement(
@@ -358,14 +502,16 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
 
     if (source.namespaceURI === TrustedMarkupRenderer.#svgNamespace && tagName === 'style') {
       stylesheets.push(TrustedMarkupRenderer.#readStyleText(source.childNodes));
-      return null;
+      const result = null;
+      return result;
     }
 
     const element = source.namespaceURI === TrustedMarkupRenderer.#htmlNamespace
       ? document.createElement(source.tagName)
       : document.createElementNS(TrustedMarkupRenderer.#svgNamespace, source.tagName);
 
-    for (const attribute of source.attrs) {
+    for (let attributeIndex = 0; attributeIndex < source.attrs.length; attributeIndex += 1) {
+      const attribute = TrustedMarkupRenderer.#required(source.attrs[attributeIndex], 'Markup contains an invalid attribute');
       const qualifiedName = attribute.prefix === undefined || attribute.prefix.length === 0
         ? attribute.name
         : `${attribute.prefix}:${attribute.name}`;
@@ -382,13 +528,22 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
       }
     }
 
-    for (const child of source.childNodes) {
+    for (let childIndex = 0; childIndex < source.childNodes.length; childIndex += 1) {
+      const child = TrustedMarkupRenderer.#required(source.childNodes[childIndex], 'Markup contains an invalid child node');
       const childNode = TrustedMarkupRenderer.#buildNode(document, child, stylesheets);
       if (childNode !== null) {
         element.appendChild(childNode);
       }
     }
     return element;
+  }
+
+  static #required<Value>(value: Value | undefined, message: string): Value {
+    if (value === undefined) {
+      throw new TrustedMarkupValidationError(message);
+    }
+    const result = value;
+    return result;
   }
 
   static #validateElement(namespace: string, tagName: string): void {
@@ -413,7 +568,8 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
       throw new TrustedMarkupValidationError(`Attribute ${name} is not allowed`);
     }
     if (name === 'style') {
-      return TrustedMarkupRenderer.#validateInlineStyle(rawValue);
+      const result = TrustedMarkupRenderer.#validateInlineStyle(rawValue);
+      return result;
     }
     if (TrustedMarkupRenderer.#urlAttributes.has(name)) {
       if (namespace === TrustedMarkupRenderer.#svgNamespace) {
@@ -425,7 +581,8 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
     if (TrustedMarkupRenderer.#fragmentUrlAttributes.has(name)) {
       TrustedMarkupRenderer.#validateFragmentUrl(rawValue);
     }
-    return rawValue;
+    const result = rawValue;
+    return result;
   }
 
   static #validateInlineStyle(style: string): string {
@@ -437,24 +594,27 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
       throw new TrustedMarkupValidationError('Malformed inline style');
     }
     const declarations: string[] = [];
-    for (const node of rule.nodes) {
-      if (node.type === 'comment') {
+    for (let nodeIndex = 0; nodeIndex < rule.nodes.length; nodeIndex += 1) {
+      const node = rule.nodes[nodeIndex];
+      if (node?.type === 'comment') {
         continue;
       }
-      if (node.type !== 'decl') {
+      if (!TrustedMarkupRenderer.#isCssDeclaration(node)) {
         throw new TrustedMarkupValidationError('Malformed inline style');
       }
       const property = TrustedMarkupRenderer.#validateCssDeclaration(node.prop, node.value);
-      const priority = node.important ? ' !important' : '';
+      const priority = node.important === true ? ' !important' : '';
       declarations.push(`${property}: ${node.value}${priority}`);
     }
-    return declarations.join('; ');
+    const result = declarations.join('; ');
+    return result;
   }
 
   static #readStyleText(nodes: readonly DefaultTreeAdapterTypes.ChildNode[]): string {
     let css = '';
-    for (const node of nodes) {
-      if (!TrustedMarkupRenderer.#isText(node)) {
+    for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex += 1) {
+      const node = nodes[nodeIndex];
+      if (node === undefined || !TrustedMarkupRenderer.#isText(node)) {
         throw new TrustedMarkupValidationError('SVG style elements may only contain text');
       }
       css += node.value;
@@ -464,14 +624,20 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
 
   static #applySvgStyles(svg: SVGSVGElement, stylesheets: readonly string[]): void {
     const originalProperties = new WeakMap<Element, ReadonlySet<string>>();
-    for (const stylesheet of stylesheets) {
+    for (let stylesheetIndex = 0; stylesheetIndex < stylesheets.length; stylesheetIndex += 1) {
+      const stylesheet = stylesheets[stylesheetIndex];
+      if (stylesheet === undefined) {
+        throw new TrustedMarkupValidationError('SVG stylesheet is malformed');
+      }
       const root = TrustedMarkupRenderer.#parseStylesheet(stylesheet);
-      for (const node of root.nodes) {
-        if (node.type === 'atrule' || node.type === 'comment') {
+      for (let nodeIndex = 0; nodeIndex < root.nodes.length; nodeIndex += 1) {
+        const node = root.nodes[nodeIndex];
+        if (node?.type === 'atrule' || node?.type === 'comment') {
           continue;
         }
-        if (node.type !== 'rule') {
-          throw new TrustedMarkupValidationError(`CSS ${node.type} rules are not allowed`);
+        if (!TrustedMarkupRenderer.#isCssRule(node)) {
+          const ruleType = node?.type ?? 'unknown';
+          throw new TrustedMarkupValidationError(`CSS ${ruleType} rules are not allowed`);
         }
         TrustedMarkupRenderer.#applySvgStyleRule(svg, node, originalProperties);
       }
@@ -480,7 +646,8 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
 
   static #parseStylesheet(stylesheet: string): Root {
     try {
-      return parse(stylesheet, { 'from': undefined });
+      const result = parse(stylesheet, { 'from': undefined });
+      return result;
     } catch {
       throw new TrustedMarkupValidationError('SVG stylesheet is malformed');
     }
@@ -491,51 +658,82 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
     rule: Rule,
     originalProperties: WeakMap<Element, ReadonlySet<string>>
   ): void {
+    const selector = rule.selector;
+    const targets = TrustedMarkupRenderer.#styleTargets(svg, selector);
+    for (let nodeIndex = 0; nodeIndex < rule.nodes.length; nodeIndex += 1) {
+      const node = rule.nodes[nodeIndex];
+      if (node?.type === 'comment') {
+        continue;
+      }
+      if (!TrustedMarkupRenderer.#isCssDeclaration(node)) {
+        throw new TrustedMarkupValidationError('Nested CSS rules are not allowed');
+      }
+      const property = TrustedMarkupRenderer.#validateCssDeclaration(node.prop, node.value);
+      TrustedMarkupRenderer.#applySvgStyleProperty(
+        targets,
+        property,
+        originalProperties,
+        (style: CSSStyleDeclaration): void => {
+          style.setProperty(property, node.value, node.important === true ? 'important' : '');
+        }
+      );
+    }
+  }
+
+  static #applySvgStyleProperty(
+    targets: readonly Element[],
+    property: string,
+    originalProperties: WeakMap<Element, ReadonlySet<string>>,
+    writeStyle: (style: CSSStyleDeclaration) => void
+  ): void {
+    for (let targetIndex = 0; targetIndex < targets.length; targetIndex += 1) {
+      const target = targets[targetIndex];
+      if (target === undefined) {
+        continue;
+      }
+      const style = target instanceof HTMLElement || target instanceof SVGElement
+        ? target.style
+        : null;
+      if (style !== null
+        && !TrustedMarkupRenderer.#originalProperties(target, style, originalProperties)
+          .has(property)) {
+        writeStyle(style);
+      }
+    }
+  }
+
+  static #isCssDeclaration(node: Root['nodes'][number] | undefined): node is Declaration {
+    const result = node?.type === 'decl';
+    return result;
+  }
+
+  static #isCssRule(node: Root['nodes'][number] | undefined): node is Rule {
+    const result = node?.type === 'rule';
+    return result;
+  }
+
+  static #styleTargets(svg: SVGSVGElement, selector: string): Element[] {
     const targets: Element[] = [];
     try {
-      if (svg.matches(rule.selector)) {
+      if (svg.matches(selector)) {
         targets.push(svg);
       }
-      const descendants = svg.querySelectorAll(rule.selector);
-      for (const descendant of descendants) {
+      const descendants = svg.querySelectorAll(selector);
+      for (let descendantIndex = 0; descendantIndex < descendants.length; descendantIndex += 1) {
+        const descendant = descendants.item(descendantIndex);
         targets.push(descendant);
       }
     } catch {
       throw new TrustedMarkupValidationError('SVG stylesheet contains an invalid selector');
     }
-    if (targets.length === 0) {
-      return;
-    }
-
-    for (const node of rule.nodes) {
-      if (node.type === 'comment') {
-        continue;
-      }
-      if (node.type !== 'decl') {
-        throw new TrustedMarkupValidationError('Nested CSS rules are not allowed');
-      }
-      const property = TrustedMarkupRenderer.#validateCssDeclaration(node.prop, node.value);
-      for (const target of targets) {
-        const style = TrustedMarkupRenderer.#elementStyle(target);
-        if (style !== null
-          && !TrustedMarkupRenderer.#originalProperties(target, style, originalProperties)
-            .has(property)) {
-          style.setProperty(property, node.value, node.important ? 'important' : '');
-        }
-      }
-    }
-  }
-
-  static #elementStyle(element: Element): CSSStyleDeclaration | null {
-    if (element instanceof HTMLElement || element instanceof SVGElement) {
-      return element.style;
-    }
-    return null;
+    const result = targets;
+    return result;
   }
 
   static #validateCssDeclaration(rawProperty: string, value: string): string {
     const property = rawProperty.trim().toLowerCase();
-    if (!TrustedMarkupRenderer.#cssProperties.has(property)) {
+    if (!TrustedMarkupRenderer.#cssProperties.has(property)
+      && !property.startsWith('--mermaid-')) {
       throw new TrustedMarkupValidationError(`CSS property ${property} is not allowed`);
     }
     TrustedMarkupRenderer.#validateCssValue(value);
@@ -549,7 +747,8 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
   ): ReadonlySet<string> {
     const existing = originalProperties.get(element);
     if (existing !== undefined) {
-      return existing;
+      const result = existing;
+      return result;
     }
     const properties = new Set<string>();
     const propertyCount = style.length;
@@ -560,7 +759,8 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
       }
     }
     originalProperties.set(element, properties);
-    return properties;
+    const result = properties;
+    return result;
   }
 
   static #validateCssValue(value: string): void {
@@ -568,36 +768,39 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
       throw new TrustedMarkupValidationError('CSS escapes are not allowed');
     }
     const parsed = parseCssValue(value);
-    parsed.walk((node) => {
-      if ('unclosed' in node && node.unclosed === true) {
-        throw new TrustedMarkupValidationError('CSS value is malformed');
-      }
-      if (node.type !== 'function') {
-        return;
-      }
-      const functionName = node.value.toLowerCase();
-      if (functionName === 'url') {
-        if (node.nodes.length !== 1) {
-          throw new TrustedMarkupValidationError('CSS URL is malformed');
-        }
-        const resource = node.nodes[0];
-        if (resource === undefined
-          || (resource.type !== 'string' && resource.type !== 'word')) {
-          throw new TrustedMarkupValidationError('CSS URL is malformed');
-        }
-        TrustedMarkupRenderer.#validateLocalFragment(resource.value);
-        return;
-      }
-      if (functionName === 'attr'
-        || functionName === 'element'
-        || functionName === 'env'
-        || functionName === 'image'
-        || functionName === 'image-set'
-        || functionName === 'src'
-        || functionName === 'var') {
+    parsed.walk(TrustedMarkupRenderer.#validateNode);
+  }
+
+  static #validateNode(node: Node): void {
+    if ('unclosed' in node && node.unclosed === true) {
+      throw new TrustedMarkupValidationError('CSS value is malformed');
+    }
+    if (node.type === 'function') {
+      TrustedMarkupRenderer.#validateCssFunction(node);
+    }
+  }
+
+  static #validateCssFunction(node: Node & { readonly 'type': 'function' }): void {
+    const functionName = node.value.toLowerCase();
+    if (functionName === 'url') {
+      TrustedMarkupRenderer.#validateCssUrlFunction(node);
+    } else {
+      const forbiddenFunctions = new Set(['attr', 'element', 'env', 'image', 'image-set', 'src', 'var']);
+      if (forbiddenFunctions.has(functionName)) {
         throw new TrustedMarkupValidationError(`CSS function ${functionName} is not allowed`);
       }
-    });
+    }
+  }
+
+  static #validateCssUrlFunction(node: Node & { readonly 'type': 'function' }): void {
+    if (node.nodes.length !== 1) {
+      throw new TrustedMarkupValidationError('CSS URL is malformed');
+    }
+    const resource = node.nodes[0];
+    if (resource === undefined || (resource.type !== 'string' && resource.type !== 'word')) {
+      throw new TrustedMarkupValidationError('CSS URL is malformed');
+    }
+    TrustedMarkupRenderer.#validateLocalFragment(resource.value);
   }
 
   static #validateUrl(value: string): void {
@@ -630,18 +833,21 @@ export const trustedMarkupRenderer = class TrustedMarkupRenderer {
   static #isElement(
     node: DefaultTreeAdapterTypes.ChildNode
   ): node is DefaultTreeAdapterTypes.Element {
-    return 'tagName' in node;
+    const result = 'tagName' in node;
+    return result;
   }
 
   static #isText(
     node: DefaultTreeAdapterTypes.ChildNode
   ): node is DefaultTreeAdapterTypes.TextNode {
-    return node.nodeName === '#text' && 'value' in node;
+    const result = node.nodeName === '#text' && 'value' in node;
+    return result;
   }
 
   static #isComment(
     node: DefaultTreeAdapterTypes.ChildNode
   ): node is DefaultTreeAdapterTypes.CommentNode {
-    return node.nodeName === '#comment' && 'data' in node;
+    const result = node.nodeName === '#comment' && 'data' in node;
+    return result;
   }
 };

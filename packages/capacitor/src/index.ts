@@ -2,6 +2,7 @@ import './types/augmentation.ts';
 import { CapacitorPlugin } from './CapacitorPlugin.ts';
 
 export { CapacitorPlugin };
+export { CapacitorOutputsEntity } from './entities/CapacitorOutputsEntity.ts';
 export const capacitorPlugin = new CapacitorPlugin();
 
 export { emitAndroidThemeXml }       from './tasks/EmitAndroidThemeXml.ts';

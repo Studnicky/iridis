@@ -1,6 +1,6 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterfaceType,
+  PluginSchemaContributionInterfaceEntity,
   TaskInterface
 } from '@studnicky/iridis';
 
@@ -24,10 +24,9 @@ export class MuiPlugin implements PluginInterface {
     return [new EmitMuiTheme()];
   }
 
-  schemas(): PluginSchemaContributionInterfaceType {
+  schemas(): PluginSchemaContributionInterfaceEntity.Type {
     return {
-      'metadata': undefined,
-      'outputs':  { 'mui:theme': muiOutputSchema }
+      'outputs': { 'mui:theme': muiOutputSchema }
     };
   }
 }

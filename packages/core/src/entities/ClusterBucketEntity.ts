@@ -1,26 +1,24 @@
-import type { FromSchema, JsonValueType } from '@studnicky/types';
+import type { InferType } from '@studnicky/json-tology/types';
 
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import { EntityCompiler } from '@studnicky/entity/node';
 
-import { Validator } from '../model/Validator.ts';
+import { ColorRecordInterfaceTypeEntity } from './ColorRecordInterfaceTypeEntity.ts';
 
-/** An unweighted median-cut bucket: a list of color records to be split or
- *  averaged. `colors` is an array of full {@link ColorRecordInterfaceType}
- *  records and is not re-derived as a JSON Schema here (doing so would
- *  duplicate that entity's own schema); `Type` widens the compile-time
- *  shape via intersection. */
+/** An unweighted median-cut bucket containing canonical color records. */
 export namespace ClusterBucketEntity {
   export const Schema = {
+    '$id': 'https://iridis.dev/schema/core/cluster-bucket',
     'additionalProperties': false,
-    'properties': {},
-    'required': [],
+    'properties': {
+      'colors': { 'items': ColorRecordInterfaceTypeEntity.Schema, 'type': 'array' }
+    },
+    'required': ['colors'],
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema> & { 'colors': ColorRecordInterfaceType[] };
+  export type Type = InferType<typeof Schema>;
 
-  export function validate(candidate: JsonValueType | Type): candidate is Type {
-    const result = new Validator().validate(Schema, candidate);
-    return result.valid;
-  }
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, InferType<typeof Schema>>(Schema);
 }

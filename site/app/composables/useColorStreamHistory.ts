@@ -1,6 +1,6 @@
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
-import type { ColorSampleType } from './types/colorSample.ts';
+import type { ColorSampleType } from './types/colorSampleType.ts';
 
 import { ColorStreamHistoryState } from './colorStreamHistoryState.ts';
 

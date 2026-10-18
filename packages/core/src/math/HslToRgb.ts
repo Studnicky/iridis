@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
 
 import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
@@ -9,34 +9,33 @@ class HslComponents {
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
     const m = l - c / 2;
 
-    let r = 0;
-    let g = 0;
-    let b = 0;
-
+    let components: [number, number, number];
     if (h < 60) {
-      r = c; g = x; b = 0;
+      components = [c, x, 0];
     } else if (h < 120) {
-      r = x; g = c; b = 0;
+      components = [x, c, 0];
     } else if (h < 180) {
-      r = 0; g = c; b = x;
+      components = [0, c, x];
     } else if (h < 240) {
-      r = 0; g = x; b = c;
+      components = [0, x, c];
     } else if (h < 300) {
-      r = x; g = 0; b = c;
+      components = [x, 0, c];
     } else {
-      r = c; g = 0; b = x;
+      components = [c, 0, x];
     }
-
-    return [r + m, g + m, b + m];
+    const [r, g, b] = components;
+    const result: [number, number, number] = [r + m, g + m, b + m];
+    return result;
   }
 }
 
 class HslToRgb {
   readonly 'name' = 'hslToRgb';
 
-  apply(h: number, s: number, l: number, alpha = 1): ColorRecordInterfaceType {
+  apply(h: number, s: number, l: number, alpha = 1): ColorRecordInterfaceTypeEntity.Type {
     const [r, g, b] = HslComponents.compute(((h % 360) + 360) % 360, clamp01.apply(s), clamp01.apply(l));
-    return colorRecordFactory.fromRgb(r, g, b, { 'alpha': alpha });
+    const result = colorRecordFactory.fromRgb(r, g, b, { 'alpha': alpha });
+    return result;
   }
 }
 

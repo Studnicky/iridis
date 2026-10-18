@@ -1,4 +1,4 @@
-import { ConsoleTransport, Logger } from '@studnicky/logger';
+import { ConsoleTransport, Logger } from '@studnicky/logger/node';
 
 /**
  * Process-wide default `LoggerInterface` implementation, used by

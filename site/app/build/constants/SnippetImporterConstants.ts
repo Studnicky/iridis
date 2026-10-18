@@ -1,5 +1,5 @@
 export const SNIPPET_IMPORTER_CONSTANTS = Object.freeze({
-  'DIRECTIVE_PATTERN': /^<<<\s*@\/(\S+?)(?:#(\S+))?\s*$/gm,
+  'DIRECTIVE_PATTERN': /^<<<\s*@\/([^#\s]+)(?:#([^\s]+))?\s*$/gm,
   /**
    * Captures the name of a `// #endregion <name>` marker. Hardcoded rather
    * than interpolating the requested region into a pattern, so a region name

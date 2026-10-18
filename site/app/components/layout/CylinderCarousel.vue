@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
 
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
@@ -65,8 +65,8 @@ const isLocal = computed(() => props.modelValue !== undefined);
 
 const localDragPx = ref(0);
 const isLocalDragging = ref(false);
-const dragging = computed(() => (isLocal.value ? isLocalDragging.value : state.value.variant === 'dragging'));
-const dragPx = computed(() => (isLocal.value ? localDragPx.value : (state.value.variant === 'dragging' ? state.value.dragPx : 0)));
+const dragging = computed(() => (isLocal.value ? isLocalDragging.value : state.value.isDragging()));
+const dragPx = computed(() => (isLocal.value ? localDragPx.value : state.value.dragOffset()));
 
 function onDown(e: PointerEvent): void {
   // Never hijack the pointer when it lands on the live front card's content —
@@ -78,7 +78,7 @@ function onDown(e: PointerEvent): void {
     isLocalDragging.value = true;
     localDragPx.value = 0;
   } else {
-    send({ 'type': IridisUiActionType.DRAG_START });
+    send(IridisUiEvent.dragStart());
   }
   startX = e.clientX;
   window.addEventListener('pointermove', onMove);
@@ -90,8 +90,8 @@ function onMove(e: PointerEvent): void {
     localDragPx.value = e.clientX - startX;
     return;
   }
-  if (state.value.variant !== 'dragging') return;
-  send({ 'dragPx': e.clientX - startX, 'type': IridisUiActionType.DRAG_MOVE });
+  if (!state.value.isDragging()) return;
+  send(IridisUiEvent.dragMove(e.clientX - startX));
 }
 function onUp(): void {
   window.removeEventListener('pointermove', onMove);
@@ -105,18 +105,18 @@ function onUp(): void {
     if (shiftedBy !== 0) emit('update:modelValue', wrap(active.value + shiftedBy, n.value));
     return;
   }
-  if (state.value.variant !== 'dragging') return;
+  if (!state.value.isDragging()) return;
   const step = cardW.value * 0.55;
   const shiftedBy = Math.round(-dragPx.value / step);
-  send({ 'count': n.value, 'shiftedBy': shiftedBy, 'type': IridisUiActionType.DRAG_END });
+  send(IridisUiEvent.dragEnd(n.value, shiftedBy));
 }
 function go(d: number): void {
   if (isLocal.value) { emit('update:modelValue', wrap(active.value + d, n.value)); return; }
-  send({ 'count': n.value, 'delta': d, 'type': IridisUiActionType.NAVIGATE });
+  send(IridisUiEvent.navigate(n.value, d));
 }
 function select(i: number): void {
   if (isLocal.value) { emit('update:modelValue', i); return; }
-  send({ 'index': i, 'type': IridisUiActionType.SELECT_CARD });
+  send(IridisUiEvent.selectCard(i));
 }
 function isActive(i: number): boolean { return i === active.value; }
 

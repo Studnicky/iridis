@@ -2,8 +2,7 @@
 import { computed, ref } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useRoleMathList } from '~/composables/useRoleMathList.ts';
-import type { RoleMathEntryType } from '~/composables/types/roleMathEntry.ts';
-import type { HueAlgorithmType, RoleRelationDerivationType } from '~/composables/types/colorDerivation.ts';
+import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 import { SEMANTIC_HUE_CLAMP } from '~/theme/semanticHueClamp.ts';
 import { buildDerivationRelations } from './derivation/buildDerivationRelations.ts';
 
@@ -28,24 +27,49 @@ const groups = computed(() => {
   return buildDerivationRelations.buildRelationGroups(mathList.value);
 });
 
-function onAlgorithmChange(role: RoleMathEntryType, algorithm: HueAlgorithmType.Type): void {
+function onAlgorithmChange(role: RoleMathEntry, serializedAlgorithm: unknown): void {
+  const algorithm = buildDerivationRelations.resolveHueAlgorithm(serializedAlgorithm);
   updateRelation(role.name, buildDerivationRelations.buildAlgorithmRelationUpdate(role, algorithm));
 }
 
-function onVariantChange(role: RoleMathEntryType, hueVariantIndex: number): void {
+function onVariantChange(role: RoleMathEntry, hueVariantIndex: number): void {
   updateRelation(role.name, buildDerivationRelations.buildVariantRelationUpdate(role, hueVariantIndex));
 }
 
-function onFreeformOffsetChange(role: RoleMathEntryType, offsetDeg: number): void {
+function onFreeformOffsetChange(role: RoleMathEntry, offsetDeg: number): void {
   updateRelation(role.name, buildDerivationRelations.buildFreeformRelationUpdate(offsetDeg));
 }
 
+const algorithmOptions = buildDerivationRelations.hueAlgorithmOptions.map((option) => {
+  const result = { 'label': option.label, 'value': option.value };
+  return result;
+});
+
 /** One algorithm per group, defaulting to the first child's current algorithm so re-opening a group doesn't reset your last bulk pick. */
-const bulkAlgorithm = ref<Record<string, HueAlgorithmType.Type>>({});
+const bulkAlgorithm = ref<Map<string, ReturnType<typeof buildDerivationRelations.resolveHueAlgorithm>>>(new Map());
 function bulkAlgorithmFor(
   group: ReturnType<typeof buildDerivationRelations.buildRelationGroups>[number]
-): HueAlgorithmType.Type {
-  return bulkAlgorithm.value[group.parentName] ?? buildDerivationRelations.resolveDefaultBulkAlgorithm(group);
+): ReturnType<typeof buildDerivationRelations.resolveHueAlgorithm> {
+  const result = bulkAlgorithm.value.get(group.parentName) ?? buildDerivationRelations.resolveDefaultBulkAlgorithm(group);
+  return result;
+}
+
+function onBulkAlgorithmChange(
+  group: ReturnType<typeof buildDerivationRelations.buildRelationGroups>[number],
+  serializedAlgorithm: unknown
+): void {
+  const algorithm = buildDerivationRelations.resolveHueAlgorithm(serializedAlgorithm);
+  bulkAlgorithm.value = buildDerivationRelations.buildBulkAlgorithmState(
+    bulkAlgorithm.value,
+    group.parentName,
+    algorithm
+  );
+}
+
+function variantOptionsFor(serializedAlgorithm: unknown) {
+  const algorithm = buildDerivationRelations.resolveHueAlgorithm(serializedAlgorithm);
+  const result = buildDerivationRelations.buildVariantOptions(algorithm);
+  return result;
 }
 
 /**
@@ -62,14 +86,14 @@ function bulkAlgorithmFor(
  */
 function applyToGroup(
   group: ReturnType<typeof buildDerivationRelations.buildRelationGroups>[number],
-  algorithm: HueAlgorithmType.Type
+  algorithm: ReturnType<typeof buildDerivationRelations.resolveHueAlgorithm>
 ): void {
   bulkAlgorithm.value = buildDerivationRelations.buildBulkAlgorithmState(
     bulkAlgorithm.value,
     group.parentName,
     algorithm
   );
-  if (algorithm === 'freeform') {return;}
+  if (algorithm.isFreeform()) {return;}
   // Batched into one updateRelations() call — dispatching one updateRelation()
   // per child here would fire the FSM's async EffectInterpreter.send() once
   // per child in a tight synchronous loop, which races (only the first lands
@@ -104,10 +128,10 @@ function applyToGroup(
       v-for="group in groups"
       :key="group.parentName"
       :group="group"
-      :bulk-algorithm="bulkAlgorithmFor(group)"
-      :algorithm-options="buildDerivationRelations.hueAlgorithmOptions"
-      :variant-options="buildDerivationRelations.buildVariantOptions"
-      @bulk-algorithm-change="(algorithm: HueAlgorithmType.Type) => bulkAlgorithm = buildDerivationRelations.buildBulkAlgorithmState(bulkAlgorithm, group.parentName, algorithm)"
+      :bulk-algorithm="buildDerivationRelations.serializeHueAlgorithm(bulkAlgorithmFor(group))"
+      :algorithm-options="algorithmOptions"
+      :variant-options="variantOptionsFor"
+      @bulk-algorithm-change="onBulkAlgorithmChange(group, $event)"
       @apply-all="applyToGroup(group, bulkAlgorithmFor(group))"
       @algorithm-change="onAlgorithmChange"
       @variant-change="onVariantChange"

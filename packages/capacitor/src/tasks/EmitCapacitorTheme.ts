@@ -1,22 +1,26 @@
 import type {
-  ColorIntentType,
-  ColorRecordInterfaceType,
+  ColorHintsInterfaceTypeEntity,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { CapacitorThemeOutputInterfaceType } from '../types/index.ts';
+import { CapacitorOutputsEntity } from '../entities/CapacitorOutputsEntity.ts';
 
 class IntentMapBuilder {
-  static build(roles: Record<string, ColorRecordInterfaceType>): ReadonlyMap<ColorIntentType, string> {
-    const map = new Map<ColorIntentType, string>();
+  static build(roles: Record<string, ColorRecordInterfaceTypeEntity.Type>): ReadonlyMap<NonNullable<ColorHintsInterfaceTypeEntity.Type['intent']>, string> {
+    const map = new Map<NonNullable<ColorHintsInterfaceTypeEntity.Type['intent']>, string>();
     // Keep the first match per intent; role name takes precedence in Hex.resolve below.
-    for (const record of Object.values(roles)) {
+    const records = Object.values(roles);
+    for (let index = 0; index < records.length; index += 1) {
+      const record = records[index];
+      if (record === undefined) {
+        continue;
+      }
       const intent = record.hints?.intent;
       if (intent !== undefined && !map.has(intent)) {
         map.set(intent, record.hex);
@@ -28,29 +32,25 @@ class IntentMapBuilder {
 
 class Hex {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceType>,
-    intentMap: ReadonlyMap<ColorIntentType, string>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
     primaryName: string,
-    fallbackIntent: ColorIntentType,
-    ultimateFallback: string
+    fallback: string
   ): string {
-    return (
-      roles[primaryName]?.hex ??
-      intentMap.get(fallbackIntent) ??
-      ultimateFallback
-    );
+    const value = roles[primaryName]?.hex ?? fallback;
+    return value;
   }
 }
 
 class VariantHex {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceType>,
-    variants: Record<string, Record<string, ColorRecordInterfaceType>>,
+    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    variants: Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>,
     roleName: string,
     variantName: string,
     fallback: string
   ): string {
-    return variants[roleName]?.[variantName]?.hex ?? roles[roleName]?.hex ?? fallback;
+    const value = variants[roleName]?.[variantName]?.hex ?? roles[roleName]?.hex ?? fallback;
+    return value;
   }
 }
 
@@ -75,14 +75,12 @@ class VariantHex {
 class EmitCapacitorTheme implements TaskInterface {
   readonly 'name' = 'emit:capacitorTheme';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Emit flat Capacitor theme map from resolved roles for native preference storage.',
     'name':        'emit:capacitorTheme',
-    'phase':       undefined,
     'reads':       ['roles', 'variants'],
-    'requires':    undefined,
     'writes':      ['outputs.capacitor:theme']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const roles    = state.roles;
@@ -91,21 +89,22 @@ class EmitCapacitorTheme implements TaskInterface {
 
     const FALLBACK = '#000000';
 
-    const primary     = Hex.resolve(roles, intentMap, 'primary', 'background', FALLBACK);
+    const primaryFallback = intentMap.get('background') ?? FALLBACK;
+    const primary     = Hex.resolve(roles, 'primary', primaryFallback);
     const primaryDark = VariantHex.resolve(roles, variants, 'primary', 'dark',  primary);
     const primaryLight = VariantHex.resolve(roles, variants, 'primary', 'light', primary);
-    const accent      = Hex.resolve(roles, intentMap, 'accent',  'accent',     primary);
-    const background  = Hex.resolve(roles, intentMap, 'background', 'background', '#ffffff');
-    const surface     = Hex.resolve(roles, intentMap, 'surface', 'background', background);
-    const error       = Hex.resolve(roles, intentMap, 'error',   'critical',   '#b00020');
-    const warning     = Hex.resolve(roles, intentMap, 'warning', 'muted',      '#f59e0b');
-    const success     = Hex.resolve(roles, intentMap, 'success', 'positive',   '#10b981');
-    const info        = Hex.resolve(roles, intentMap, 'info',    'accent',     '#3b82f6');
-    const text        = Hex.resolve(roles, intentMap, 'text',    'text',       '#1f2937');
-    const textOnPrimary = Hex.resolve(roles, intentMap, 'textOnPrimary', 'text', '#ffffff');
-    const textOnAccent  = Hex.resolve(roles, intentMap, 'textOnAccent',  'text', '#ffffff');
+    const accent      = Hex.resolve(roles, 'accent', intentMap.get('accent') ?? primary);
+    const background  = Hex.resolve(roles, 'background', intentMap.get('background') ?? '#ffffff');
+    const surface     = Hex.resolve(roles, 'surface', intentMap.get('background') ?? background);
+    const error       = Hex.resolve(roles, 'error', intentMap.get('critical') ?? '#b00020');
+    const warning     = Hex.resolve(roles, 'warning', intentMap.get('muted') ?? '#f59e0b');
+    const success     = Hex.resolve(roles, 'success', intentMap.get('positive') ?? '#10b981');
+    const info        = Hex.resolve(roles, 'info', intentMap.get('accent') ?? '#3b82f6');
+    const text        = Hex.resolve(roles, 'text', intentMap.get('text') ?? '#1f2937');
+    const textOnPrimary = Hex.resolve(roles, 'textOnPrimary', intentMap.get('text') ?? '#ffffff');
+    const textOnAccent  = Hex.resolve(roles, 'textOnAccent', intentMap.get('text') ?? '#ffffff');
 
-    const output: CapacitorThemeOutputInterfaceType = {
+    const output = {
       'accent':        accent,
       'background':    background,
       'error':         error,
@@ -120,19 +119,20 @@ class EmitCapacitorTheme implements TaskInterface {
       'textOnPrimary': textOnPrimary,
       'warning':       warning
     };
+    CapacitorOutputsEntity.intake({ 'theme': output });
 
     state.outputs['capacitor:theme'] = output;
 
     context.logger.debug(
-      LogBody.create()
-        .component('EmitCapacitorTheme')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Theme emitted')
-        .context({
+      LogBody.create({
+        'component': 'EmitCapacitorTheme',
+        'context': {
           'keyCount': Object.keys(output).length
-        })
-        .build()
+        },
+        'message': 'Theme emitted',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

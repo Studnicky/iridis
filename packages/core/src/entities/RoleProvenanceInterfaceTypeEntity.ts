@@ -1,10 +1,11 @@
-import type { FromSchema, JsonValueType } from '@studnicky/types';
+import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
-import { Validator } from '../model/Validator.ts';
+import { EntityCompiler } from '@studnicky/entity/node';
 
 /** Canonical provenance for one resolved role, including every color adjustment in resolution order. */
 export namespace RoleProvenanceInterfaceTypeEntity {
   export const Schema = {
+    '$id': 'https://iridis.dev/schema/core/role-provenance',
     'additionalProperties': false,
     'allOf': [{
       'if': {
@@ -38,10 +39,9 @@ export namespace RoleProvenanceInterfaceTypeEntity {
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema>;
+  export type Type = NominalSchemaType<typeof Schema>;
 
-  export const validate = (value: JsonValueType): value is Type => {
-    const result = new Validator().validate(Schema, value);
-    return result.valid;
-  };
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
 }

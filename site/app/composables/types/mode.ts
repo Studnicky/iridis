@@ -1,3 +1,1 @@
-export declare namespace ModeType {
-  type Type = 'picker' | 'image';
-}
+/** Legacy module retained while consumers migrate to ModeInterfaceTypeEntity. */

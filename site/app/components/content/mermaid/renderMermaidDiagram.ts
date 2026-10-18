@@ -10,7 +10,8 @@ export const renderMermaidDiagram = class MermaidDiagramRenderer {
     try {
       const bounds = svg.getBBox();
       if (bounds.width > 0 && bounds.height > 0) {
-        return bounds;
+        const contentBounds = bounds;
+        return contentBounds;
       }
     } catch {
       // Mermaid can transiently expose an SVG before layout settles.
@@ -21,7 +22,8 @@ export const renderMermaidDiagram = class MermaidDiagramRenderer {
   private static getComputedColor(variableName: string): string {
     const computedStyles = getComputedStyle(document.documentElement);
     const propertyValue = computedStyles.getPropertyValue(variableName);
-    return propertyValue.trim();
+    const color = propertyValue.trim();
+    return color;
   }
 
   private static naturalSize(svg: SVGSVGElement): { 'height': number; 'width': number } {
@@ -81,7 +83,8 @@ export const renderMermaidDiagram = class MermaidDiagramRenderer {
     }
 
     const { svg } = await mermaid.render(renderId, code);
-    return svg;
+    const renderedSvg = svg;
+    return renderedSvg;
   }
 
   private static showOverflow(svg: SVGSVGElement): void {
@@ -103,7 +106,8 @@ export const renderMermaidDiagram = class MermaidDiagramRenderer {
       MermaidDiagramRenderer.getComputedColor('--ui-primary'),
       MermaidDiagramRenderer.getComputedColor('--ui-bg')
     ];
-    return themeColors.join('|');
+    const signature = themeColors.join('|');
+    return signature;
   }
 
   private static themeVariables() {

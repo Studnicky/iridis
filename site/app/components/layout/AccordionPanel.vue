@@ -10,7 +10,7 @@ const props = withDefaults(defineProps<{
   defaultOpen: false
 });
 
-const accordion = usePanelAccordion(props.panelId, { defaultOpen: props.defaultOpen });
+const accordion = usePanelAccordion(props.panelId, props.defaultOpen);
 </script>
 
 <template>

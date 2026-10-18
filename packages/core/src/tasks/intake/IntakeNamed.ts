@@ -1,18 +1,13 @@
-import type { JsonValueType } from '@studnicky/types';
+import { ValidationError } from '@studnicky/errors/node';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import { ValidationError } from '@studnicky/errors';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
+import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '../../types/index.ts';
-
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 const CSS_NAMED_COLORS: Readonly<Record<string, string>> = {
@@ -175,21 +170,19 @@ const CSS_NAMED_COLORS: Readonly<Record<string, string>> = {
 class IntakeNamed implements TaskInterface {
   readonly 'name' = 'intake:named';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Parses CSS named color strings (e.g. "rebeccapurple") into ColorRecord entries. Throws on unrecognised input.',
     'name':        'intake:named',
-    'phase':       undefined,
     'reads':       ['input.colors'],
-    'requires':    undefined,
     'writes':      ['colors']
-  };
+  });
 
   /**
    * Parses a single value as a CSS named color. Throws when the input is not
    * a recognized CSS named color string.
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
+  parse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type {
     if (typeof raw !== 'string') {
       throw ValidationError.create({
         'message': 'intake:named — expected a string input',
@@ -214,7 +207,8 @@ class IntakeNamed implements TaskInterface {
         }]
       });
     }
-    return colorRecordFactory.fromHex(hex, { 'sourceFormat': 'named' });
+    const result = colorRecordFactory.fromHex(hex, { 'sourceFormat': 'named' });
+    return result;
   }
 
   /**
@@ -222,9 +216,10 @@ class IntakeNamed implements TaskInterface {
    * Extracted from {@link IntakeNamed.run} so the loop body contains only
    * a function call, not a try-catch, per V8 optimization guidance.
    */
-  private parseEntry(raw: JsonValueType | RawImagePixelInputInterface, index: number): ColorRecordInterfaceType {
+  private parseEntry(raw: ColorInputEntity.Type, index: number): ColorRecordInterfaceTypeEntity.Type {
     try {
-      return this.parse(raw);
+      const result = this.parse(raw);
+      return result;
     } catch {
       throw ValidationError.create({
         'message': `intake:named — entry at index ${index} is not a CSS named color`,
@@ -243,17 +238,29 @@ class IntakeNamed implements TaskInterface {
   }
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    for (const [i, raw] of state.input.colors.entries()) {
+    for (let i = 0; i < state.input.colors.length; i += 1) {
+      const raw = state.input.colors[i];
+      if (raw === undefined) {
+        throw ValidationError.create({
+          'message': `intake:named — entry at index ${i} is not a CSS named color`,
+          'path':    `input.colors[${i}]`,
+          'violations': [{
+            'details': { 'index': i },
+            'message': 'entry is absent',
+            'path':    `input.colors[${i}]`
+          }]
+        });
+      }
       const record = this.parseEntry(raw, i);
       state.colors.push(record);
       context.logger.debug(
-        LogBody.create()
-          .component('IntakeNamed')
-          .operation('run')
-          .status(LOG_STATUS.SUCCESS)
-          .message('Parsed named color')
-          .context({ 'hex': record.hex, 'name': raw })
-          .build()
+        LogBody.create({
+          'component': 'IntakeNamed',
+          'context': { 'hex': record.hex, 'name': raw },
+          'message': 'Parsed named color',
+          'operation': 'run',
+          'status': LOG_STATUS.SUCCESS
+        })
       );
     }
   }

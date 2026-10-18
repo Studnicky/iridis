@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-contrast",
   "description": "WCAG 2.1 AA/AAA, APCA, and color-vision-deficiency enforcement — checks, corrects, and (for CVD) simulates against a resolved palette.",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "type": "module",
   "exports": {
     ".": {
@@ -33,8 +33,12 @@
     "clean": "rm -rf .publish dist"
   },
   "dependencies": {
-    "@studnicky/logger": "^4.0.0",
-    "@studnicky/types": "^4.0.0"
+    "@studnicky/entity": "^15.2.1",
+    "@studnicky/json-tology": "0.27.1",
+    "@studnicky/logger": "^15.2.1",
+    "@studnicky/types": "^15.2.1",
+    "@types/json-schema": "^7.0.15",
+    "json-schema": "0.4.0"
   },
   "peerDependencies": {
     "@studnicky/iridis": "workspace:*"
@@ -47,5 +51,6 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
     "access": "public"
-  }
+  },
+  "devDependencies": {}
 }

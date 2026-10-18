@@ -1,7 +1,8 @@
 /** Index `i` of `count` evenly-spaced steps, expressed as a 0..1 progress value. */
 class SampleTOperation {
   static run(i: number, count: number): number {
-    return count <= 1 ? 0 : i / (count - 1);
+    const progress = count <= 1 ? 0 : i / (count - 1);
+    return progress;
   }
 }
 

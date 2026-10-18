@@ -1,4 +1,4 @@
-import type { GamutMapResultInterfaceType } from '../types/index.ts';
+import { GamutMapResultEntity } from '../entities/GamutMapResultEntity.ts';
 
 /**
  * CSS Color Module Level 4 §13.2.2 gamut-mapping algorithm: reduces
@@ -27,15 +27,18 @@ import type { GamutMapResultInterfaceType } from '../types/index.ts';
 class GamutMapSrgb {
   readonly 'name' = 'gamutMapSrgb';
 
-  apply(l: number, c: number, h: number): GamutMapResultInterfaceType {
+  apply(l: number, c: number, h: number): GamutMapResultEntity.Type {
     if (SrgbGamutCheck.contains(l, c, h)) {
-      return { 'c': c, 'h': h, 'inGamut': true, 'l': l };
+      const result = GamutMapResultEntity.create({ 'c': c, 'h': h, 'inGamut': true, 'l': l });
+      return result;
     }
     if (l <= 0) {
-      return { 'c': 0, 'h': h, 'inGamut': false, 'l': 0 };
+      const result = GamutMapResultEntity.create({ 'c': 0, 'h': h, 'inGamut': false, 'l': 0 });
+      return result;
     }
     if (l >= 1) {
-      return { 'c': 0, 'h': h, 'inGamut': false, 'l': 1 };
+      const result = GamutMapResultEntity.create({ 'c': 0, 'h': h, 'inGamut': false, 'l': 1 });
+      return result;
     }
 
     // Binary search chroma in [0, c]. Invariant: `lo` always in-gamut,
@@ -52,7 +55,8 @@ class GamutMapSrgb {
         hi = mid;
       }
     }
-    return { 'c': lo, 'h': h, 'inGamut': false, 'l': l };
+    const result = GamutMapResultEntity.create({ 'c': lo, 'h': h, 'inGamut': false, 'l': l });
+    return result;
   }
 }
 
@@ -82,11 +86,12 @@ class SrgbGamutCheck {
     // Allow a tiny epsilon; floating-point error shouldn't kick a barely
     // in-gamut color out into the binary-search branch.
     const eps = 1e-6;
-    return (
+    const result = (
       rLin >= -eps && rLin <= 1 + eps &&
       gLin >= -eps && gLin <= 1 + eps &&
       bLin >= -eps && bLin <= 1 + eps
     );
+    return result;
   }
 }
 

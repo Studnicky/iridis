@@ -6,10 +6,12 @@ import { OPTIONAL_STAGE_NAMES } from '~/composables/optionalStageNames.ts';
 import { intakeHexHint } from '~/theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '~/theme/PinDerivedRoles.ts';
 
+class OptionalPipelineStageControl {}
+
 class PipelineStage {
   public readonly description: string;
   public readonly label: string;
-  public readonly optional: boolean;
+  public readonly optionalControl: OptionalPipelineStageControl | undefined;
   public readonly reads: string[];
   public readonly value: string;
   public readonly writes: string[];
@@ -17,14 +19,14 @@ class PipelineStage {
   public constructor(
     description: string,
     label: string,
-    optional: boolean,
+    optionalControl: OptionalPipelineStageControl | undefined,
     reads: string[],
     value: string,
     writes: string[]
   ) {
     this.description = description;
     this.label = label;
-    this.optional = optional;
+    this.optionalControl = optionalControl;
     this.reads = reads;
     this.value = value;
     this.writes = writes;
@@ -52,6 +54,7 @@ class PipelinePhaseDefinition {
 }
 
 export const buildPipelinePhaseGroups = class PipelinePhaseGroupsBuilder {
+  private static readonly optionalStageControl = new OptionalPipelineStageControl();
   private static readonly phaseDefinitions: readonly PipelinePhaseDefinition[] = [
     new PipelinePhaseDefinition('Intake', ['intake']),
     new PipelinePhaseDefinition('Resolve', ['derive', 'resolve', 'pin', 'expand']),
@@ -75,9 +78,18 @@ export const buildPipelinePhaseGroups = class PipelinePhaseGroupsBuilder {
     }));
     const namesByPrefix = this.buildStageNamesByPrefix(stages);
     const groups: PipelinePhaseGroup[] = [];
-    for (const definition of this.phaseDefinitions) {
+    for (let definitionIndex = 0; definitionIndex < this.phaseDefinitions.length; definitionIndex += 1) {
+      const definition = this.phaseDefinitions[definitionIndex];
+      if (definition === undefined) {
+        continue;
+      }
       const phaseStages: PipelineStage[] = [];
-      for (const name of this.resolveStageNames(namesByPrefix, definition.prefixes)) {
+      const stageNames = this.resolveStageNames(namesByPrefix, definition.prefixes);
+      for (let stageIndex = 0; stageIndex < stageNames.length; stageIndex += 1) {
+        const name = stageNames[stageIndex];
+        if (name === undefined) {
+          continue;
+        }
         const stage = stagesByValue.get(name);
         if (stage !== undefined) {
           phaseStages.push(stage);
@@ -92,10 +104,13 @@ export const buildPipelinePhaseGroups = class PipelinePhaseGroupsBuilder {
 
   private static buildStage(name: string, index: number): PipelineStage {
     const task = this.tasksByName.get(name);
+    const optionalControl = OPTIONAL_STAGE_NAMES.includes(name)
+      ? PipelinePhaseGroupsBuilder.optionalStageControl
+      : undefined;
     return new PipelineStage(
       task?.manifest?.description ?? '(task not registered)',
       `${index + 1}. ${name}`,
-      OPTIONAL_STAGE_NAMES.includes(name),
+      optionalControl,
       task?.manifest?.reads ?? [],
       name,
       task?.manifest?.writes ?? []
@@ -104,7 +119,11 @@ export const buildPipelinePhaseGroups = class PipelinePhaseGroupsBuilder {
 
   private static buildStageNamesByPrefix(stages: readonly PipelineStage[]): Map<string, string[]> {
     const byPrefix = new Map<string, string[]>();
-    for (const stage of stages) {
+    for (let stageIndex = 0; stageIndex < stages.length; stageIndex += 1) {
+      const stage = stages[stageIndex];
+      if (stage === undefined) {
+        continue;
+      }
       const prefix = stage.value.split(':')[0] ?? stage.value;
       const names = byPrefix.get(prefix) ?? [];
       names.push(stage.value);
@@ -118,8 +137,11 @@ export const buildPipelinePhaseGroups = class PipelinePhaseGroupsBuilder {
     prefixes: readonly string[]
   ): string[] {
     const names: string[] = [];
-    for (const prefix of prefixes) {
-      names.push(...(namesByPrefix.get(prefix) ?? []));
+    for (let prefixIndex = 0; prefixIndex < prefixes.length; prefixIndex += 1) {
+      const prefix = prefixes[prefixIndex];
+      if (prefix !== undefined) {
+        names.push(...(namesByPrefix.get(prefix) ?? []));
+      }
     }
     return names;
   }

@@ -1,4 +1,4 @@
-import type { PaletteInterfaceType } from './types/index.ts';
+import type { PaletteInterfaceTypeEntity } from './entities/PaletteInterfaceTypeEntity.ts';
 
 import { WrapHueDelta } from './WrapHueDelta.ts';
 
@@ -11,9 +11,11 @@ const HUE_NORMALIZATION_FACTOR = 180;
  * full l or c swing (comparable to l ∈ [0,1] and c ∈ [0,0.5]).
  */
 class DefaultPaletteDistance {
-  static of(a: PaletteInterfaceType, b: PaletteInterfaceType): number {
+  static measure(a: PaletteInterfaceTypeEntity.Type, b: PaletteInterfaceTypeEntity.Type): number {
     let total = 0;
-    for (const role of Object.keys(a)) {
+    const roles = Object.keys(a);
+    for (let index = 0; index < roles.length; index += 1) {
+      const role = roles[index]!;
       const roleA = a[role];
       const roleB = b[role];
       if (roleA === undefined || roleB === undefined) {continue;}

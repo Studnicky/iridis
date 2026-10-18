@@ -16,16 +16,14 @@ import { computed } from 'vue';
 
 import { useLivingBackground } from '~/composables/useLivingBackground.ts';
 import { useThemePreset } from '~/composables/useThemePreset.ts';
-import { PARTICLE_RENDERERS } from '~/theme/particles/index.ts';
 import { randomPlacement } from '~/theme/particles/randomPlacement.ts';
 
-useLivingBackground({ 'recordStream': false });
+useLivingBackground();
 
 /**
  * Ambient params come from the active theme's `ambient` config
- * (useThemePreset()). The particle SHAPE is dispatched to its own renderer
- * module via PARTICLE_RENDERERS — a lookup map, not a branch — so adding a
- * new shape never touches this component.
+ * (useThemePreset()). Each theme supplies its selected particle renderer,
+ * so this component renders that implementation without resolving a shape token.
  */
 const { 'activeAmbient': activeAmbient } = useThemePreset();
 const particleCounts = computed(() => activeAmbient.value.particleCounts);
@@ -83,9 +81,9 @@ const cappedBlobCount = computed(() => Math.min(activeAmbient.value.blobCount, M
 const HERO_TEXT_EXCLUSION = { 'xMax': 88, 'xMin': 12, 'yMax': 36, 'yMin': 0 };
 
 function renderLayer(count: number, colorVar: string, sizePx: number, blur: string) {
-  const renderer = PARTICLE_RENDERERS[activeAmbient.value.particleShape] ?? PARTICLE_RENDERERS['dot']!;
+  const renderer = activeAmbient.value.particleRenderer;
   randomPlacement.setExclusion(HERO_TEXT_EXCLUSION);
-  const layer = renderer({ 'blur': blur, 'colorVar': colorVar, 'count': count, 'sizePx': sizePx });
+  const layer = renderer.render({ 'blur': blur, 'colorVar': colorVar, 'count': count, 'sizePx': sizePx });
   randomPlacement.setExclusion(null);
   return layer;
 }
@@ -143,8 +141,8 @@ function lavaBlobs(count: number, speedMultiplier: number): LavaBlobType[] {
 }
 
 const lavaBlobField = computed(() => lavaBlobs(cappedBlobCount.value, activeAmbient.value.speedMultiplier));
-const gooEnabled = computed(() => activeAmbient.value.gooEnabled);
-const gridEnabled = computed(() => activeAmbient.value.gridEnabled);
+const gridStyle = computed(() => ({ 'display': activeAmbient.value.gridDisplay }));
+const lavaStyle = computed(() => ({ 'filter': activeAmbient.value.gooFilter }));
 /** Inherited by every ambient child via CSS custom property inheritance — grid/star/lava keyframe durations divide by this so 1 reproduces today's exact speeds. */
 const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAmbient.value.speedMultiplier) }));
 </script>
@@ -156,16 +154,14 @@ const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAm
     :style="ambientStyle"
   >
     <!--
-      The grid is base/shared markup — every theme gets the same node;
-      `gridEnabled` (a per-theme knob) only toggles its visibility. `v-show`
-      keeps DOM shape identical between server and client (it only ever
-      flips `display`), so a persisted theme that disagrees with the
-      prerendered default never produces a hydration node mismatch — the
-      visibility just updates reactively once the real theme is known.
+      The grid is base/shared markup — every theme gets the same node. Its
+      selected display implementation keeps the DOM shape identical between
+      server and client, so a persisted theme can update visibility after
+      hydration without a node mismatch.
     -->
     <div
-      v-show="gridEnabled"
       class="ambient-grid"
+      :style="gridStyle"
     />
 
     <!-- gooey lava-lamp wash: a GPU-composited CSS blur softens and merges
@@ -175,7 +171,7 @@ const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAm
     <ClientOnly>
       <div
         class="ambient-lava"
-        :style="{ filter: gooEnabled ? 'blur(28px)' : 'none' }"
+        :style="lavaStyle"
       >
         <div
           v-for="b in lavaBlobField"
@@ -239,7 +235,7 @@ const ambientStyle = computed(() => ({ '--iridis-ambient-speed': String(activeAm
   animation: ambient-grid-pan calc(18s / var(--iridis-ambient-speed)) linear infinite;
 }
 
-/* ─── gooey lava-lamp wash (CSS blur applied inline so gooEnabled can toggle it) ───
+/* ─── lava-lamp wash (the selected theme filter applies inline) ───
    GPU-composited: the browser blurs this layer on its own compositor thread,
    so the cost stays flat while the blob children animate underneath it. */
 .ambient-lava {

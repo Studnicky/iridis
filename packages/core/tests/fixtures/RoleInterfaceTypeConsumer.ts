@@ -1,52 +1,24 @@
-import type { ColorHintsInterfaceType } from '../../src/types/color.ts';
-import type { TaskManifestInterfaceType } from '../../src/types/pipeline.ts';
-import type { PluginSchemaContributionInterfaceType } from '../../src/types/plugin.ts';
-import type {
-  ContrastPairInterfaceType,
-  RoleDefinitionInterfaceType
-} from '../../src/types/role.ts';
-import type { ContrastOptionsInterfaceType } from '../../src/types/state.ts';
+import type { ColorHintsInterfaceTypeEntity } from '../../src/entities/ColorHintsInterfaceTypeEntity.ts';
+import type { PluginSchemaContributionInterfaceEntity } from '../../src/entities/PluginSchemaContributionInterfaceEntity.ts';
+
+import { ContrastOptionsInterfaceTypeEntity } from '../../src/entities/ContrastOptionsInterfaceTypeEntity.ts';
+import { ContrastPairInterfaceTypeEntity } from '../../src/entities/ContrastPairInterfaceTypeEntity.ts';
+import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
+import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
 
 export const roleInterfaceTypeConsumer = {
-  'colorHints': {
-    'intent': undefined,
-    'role':   undefined,
-    'weight': undefined
-  } satisfies ColorHintsInterfaceType,
-  'contrastOptions': {
-    'algorithm':  undefined,
-    'cvdCorrect': undefined,
-    'extra':      undefined,
-    'level':      undefined
-  } satisfies ContrastOptionsInterfaceType,
-  'pair': {
-    'algorithm':  undefined,
+  'colorHints': {} satisfies ColorHintsInterfaceTypeEntity.Type,
+  'contrastOptions': ContrastOptionsInterfaceTypeEntity.create({}),
+  'pair': ContrastPairInterfaceTypeEntity.create({
     'background': 'surface',
-    'foreground': 'text',
-    'minRatio':   4.5
-  } satisfies ContrastPairInterfaceType,
-  'pluginSchema': {
-    'metadata': undefined,
-    'outputs':  undefined
-  } satisfies PluginSchemaContributionInterfaceType,
-  'role': {
-    'chromaRange':    undefined,
-    'derivedFrom':    undefined,
-    'description':    undefined,
-    'hue':            undefined,
-    'hueClamp':       undefined,
-    'hueOffset':      undefined,
-    'intent':         undefined,
-    'lightnessRange': undefined,
-    'name':           'surface',
-    'required':       undefined
-  } satisfies RoleDefinitionInterfaceType,
-  'taskManifest': {
-    'description': undefined,
-    'name':        'emit:test',
-    'phase':       undefined,
-    'reads':       undefined,
-    'requires':    undefined,
-    'writes':      undefined
-  } satisfies TaskManifestInterfaceType
+    'foreground':           'text',
+    'minimumContrastRatio': 4.5
+  }),
+  'pluginSchema': {} satisfies PluginSchemaContributionInterfaceEntity.Type,
+  'role': RoleDefinitionInterfaceTypeEntity.create({
+    'name': 'surface'
+  }),
+  'taskManifest': TaskManifestInterfaceTypeEntity.create({
+    'name': 'emit:test'
+  })
 };

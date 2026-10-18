@@ -17,7 +17,16 @@ const props = withDefaults(defineProps<{
   swatchClass: undefined,
   variant: 'row'
 });
-const cardModel = computed(() => buildSwatchInfoCardModel.build(props.variant, props.surface));
+const cardModel = computed(() => {
+  if (props.variant === 'tile') {
+    return props.surface === 'elevated'
+      ? buildSwatchInfoCardModel.elevatedTile
+      : buildSwatchInfoCardModel.plainTile;
+  }
+  return props.surface === 'elevated'
+    ? buildSwatchInfoCardModel.elevatedRow
+    : buildSwatchInfoCardModel.plainRow;
+});
 </script>
 
 <template>

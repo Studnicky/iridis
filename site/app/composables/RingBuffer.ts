@@ -45,7 +45,8 @@ export class RingBuffer<T> {
       this.rebuildSnapshot();
       this.snapshotDirty = false;
     }
-    return this.snapshotCache.slice();
+    const result = this.snapshotCache.slice();
+    return result;
   }
 
   public snapshot(): readonly T[] {

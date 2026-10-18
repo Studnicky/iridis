@@ -1,28 +1,25 @@
-import type { FromSchema, JsonValueType } from '@studnicky/types';
+import type { InferType } from '@studnicky/json-tology/types';
 
-import type { ColorRecordInterfaceType } from '../types/index.ts';
+import { EntityCompiler } from '@studnicky/entity/node';
 
-import { Validator } from '../model/Validator.ts';
+import { ColorRecordInterfaceTypeEntity } from './ColorRecordInterfaceTypeEntity.ts';
 
-/** A cluster merge candidate: a centroid color record plus its accumulated weight.
- *  `centroid` is a full nested {@link ColorRecordInterfaceType} and is not re-derived
- *  as a JSON Schema here (doing so would duplicate that entity's own schema); the
- *  `Schema`/`validate` pair below cover only `weight`, and `Type` widens the
- *  compile-time shape via intersection. */
+/** A cluster merge candidate: a canonical centroid color and its accumulated weight. */
 export namespace ClusterMergeEntity {
   export const Schema = {
+    '$id': 'https://iridis.dev/schema/core/cluster-merge',
     'additionalProperties': false,
     'properties': {
-      'weight': { 'type': 'number' }
+      'centroid': ColorRecordInterfaceTypeEntity.Schema,
+      'weight':   { 'type': 'number' }
     },
-    'required': ['weight'],
+    'required': ['centroid', 'weight'],
     'type': 'object'
   } as const;
 
-  export type Type = FromSchema<typeof Schema> & { 'centroid': ColorRecordInterfaceType };
+  export type Type = InferType<typeof Schema>;
 
-  export function validate(candidate: JsonValueType | Type): candidate is Type {
-    const result = new Validator().validate(Schema, candidate);
-    return result.valid;
-  }
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, InferType<typeof Schema>>(Schema);
 }

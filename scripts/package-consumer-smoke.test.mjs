@@ -83,15 +83,16 @@ const writeStage = (directory, name = '@fixture/archive') => {
   }, null, 2)}\n`);
 };
 
-test('offline npm pack and positive archive extraction preserve validated stage bytes', async () => {
+test('direct offline npm pack creates absent archive and cache directories', async () => {
   await packageConsumerSmoke.withTemporaryDirectory('iridis-positive-test-', async (root) => {
     const stage = join(root, 'stage');
     const archives = join(root, 'archives');
     const cache = join(root, 'cache');
     const extracted = join(root, 'extracted');
-    mkdirSync(archives);
     writeStage(stage);
     const archive = packageConsumerSmoke.packArchive(stage, archives, cache);
+    assert.equal(existsSync(archives), true);
+    assert.equal(existsSync(cache), true);
     assert.equal(existsSync(archive), true);
     await packageConsumerSmoke.extractArchive(archive, extracted, stage, root);
     assert.equal(

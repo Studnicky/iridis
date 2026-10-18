@@ -1,3 +1,1 @@
-export declare namespace FramingType {
-  type Type = 'dark' | 'light';
-}
+/** Legacy module retained while consumers migrate to FramingInterfaceTypeEntity. */

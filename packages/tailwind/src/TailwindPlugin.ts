@@ -1,6 +1,6 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterfaceType,
+  PluginSchemaContributionInterfaceEntity,
   TaskInterface
 } from '@studnicky/iridis';
 
@@ -25,9 +25,8 @@ export class TailwindPlugin implements PluginInterface {
     return [emitTailwindTheme];
   }
 
-  schemas(): PluginSchemaContributionInterfaceType {
+  schemas(): PluginSchemaContributionInterfaceEntity.Type {
     return {
-      'metadata': undefined,
       'outputs':  { 'tailwind:theme': tailwindOutputSchema }
     };
   }

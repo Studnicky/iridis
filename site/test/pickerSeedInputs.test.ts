@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { pickerSeedInputs } from '../app/composables/pickerSeedInputs.ts';
+import { SeedInputEntity } from '../app/theme/types/SeedInputEntity.ts';
 
 await test('pickerSeedInputs emits unpinned seeds as JSON-safe hex strings', () => {
   assert.deepEqual(
@@ -18,4 +19,13 @@ await test('pickerSeedInputs preserves pinned role hints without undefined field
     ]),
     ['#123456', { 'hex': '#abcdef', 'role': 'brand' }]
   );
+});
+
+await test('SeedInputEntity rejects null and incomplete role pins at the intake boundary', () => {
+  assert.throws(() => {
+    SeedInputEntity.intake(null);
+  });
+  assert.throws(() => {
+    SeedInputEntity.intake({ 'hex': '#abcdef' });
+  });
 });

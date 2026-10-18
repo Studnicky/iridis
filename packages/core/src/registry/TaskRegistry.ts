@@ -1,11 +1,9 @@
-import { ModuleError, ValidationError } from '@studnicky/errors';
+import { ModuleError, ValidationError } from '@studnicky/errors/node';
 
-import type {
-  LifecyclePhaseType,
-  TaskInterface,
-  TaskManifestInterfaceType,
-  TaskRegistryInterface
-} from '../types/index.ts';
+import type { TaskInterface } from '../interfaces/TaskInterface.ts';
+import type { TaskRegistryInterface } from '../interfaces/TaskRegistryInterface.ts';
+
+import { TaskManifestInterfaceTypeEntity } from '../entities/TaskManifestInterfaceTypeEntity.ts';
 
 /**
  * Holds the mutable set of pipeline tasks an `Engine` will run. Tasks
@@ -40,24 +38,17 @@ export class TaskRegistry implements TaskRegistryInterface {
     this.mutations++;
   }
 
-  hook(phase: LifecyclePhaseType, task: TaskInterface): void {
-    if (task.name === '') {
-      throw ValidationError.create({ 'message': 'task.name is required', 'path': 'TaskRegistry.hook' });
-    }
-    this.entries.set(task.name, task);
-    // A task hooked under a name already present in either phase queue is a
-    // deliberate re-adopt/override (see class docstring); drop the prior
-    // instance from both queues first so it doesn't keep firing alongside
-    // (or instead of, if the phase changed) the new one.
-    this.removeFromPhase(this.onRunStart, task.name);
-    this.removeFromPhase(this.onRunEnd, task.name);
-    this.mutations++;
+  hook(task: TaskInterface): void {
+    const phase = task.manifest?.phase;
     if (phase === 'onRunStart') {
-      this.onRunStart.push(task);
-
+      this.addHook(this.onRunStart, task);
       return;
     }
-    this.onRunEnd.push(task);
+    if (phase === 'onRunEnd') {
+      this.addHook(this.onRunEnd, task);
+      return;
+    }
+    throw ValidationError.create({ 'message': 'task.manifest.phase is required', 'path': 'TaskRegistry.hook' });
   }
 
   resolve(name: string): TaskInterface {
@@ -78,18 +69,22 @@ export class TaskRegistry implements TaskRegistryInterface {
     return result;
   }
 
-  list(): readonly TaskManifestInterfaceType[] {
-    const out: TaskManifestInterfaceType[] = [];
+  list(): readonly TaskManifestInterfaceTypeEntity.Type[] {
+    const out: TaskManifestInterfaceTypeEntity.Type[] = [];
 
     for (const task of this.entries.values()) {
-      out.push(task.manifest ?? { 'description': undefined, 'name': task.name, 'phase': undefined, 'reads': undefined, 'requires': undefined, 'writes': undefined });
+      out.push(task.manifest ?? TaskManifestInterfaceTypeEntity.create({ 'name': task.name }));
     }
 
     return out;
   }
 
-  hooks(phase: LifecyclePhaseType): readonly TaskInterface[] {
-    return phase === 'onRunStart' ? this.onRunStart : this.onRunEnd;
+  onRunStartTasks(): readonly TaskInterface[] {
+    return this.onRunStart;
+  }
+
+  onRunEndTasks(): readonly TaskInterface[] {
+    return this.onRunEnd;
   }
 
   /**
@@ -99,6 +94,17 @@ export class TaskRegistry implements TaskRegistryInterface {
    */
   version(): number {
     return this.mutations;
+  }
+
+  private addHook(queue: TaskInterface[], task: TaskInterface): void {
+    if (task.name === '') {
+      throw ValidationError.create({ 'message': 'task.name is required', 'path': 'TaskRegistry.hook' });
+    }
+    this.entries.set(task.name, task);
+    this.removeFromPhase(this.onRunStart, task.name);
+    this.removeFromPhase(this.onRunEnd, task.name);
+    this.mutations++;
+    queue.push(task);
   }
 
   /** Removes the first task named `name` from `queue`, if present. */

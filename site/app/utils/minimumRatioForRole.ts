@@ -1,4 +1,4 @@
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis/model';
+import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
 
 /** WCAG AA body-text ratio — the fallback for any role with no declared
  * contrast pair in the active schema (undeclared roles, Nuxt UI aliases,
@@ -6,7 +6,7 @@ import type { RoleSchemaInterfaceType } from '@studnicky/iridis/model';
 const DEFAULT_MINIMUM_RATIO = 4.5;
 
 /**
- * Resolves the minRatio a role's own contrast pair declares in the active
+ * Resolves the minimumContrastRatio a role's own contrast pair declares in the active
  * schema, so `complianceFor()` scores a role against the target the
  * pipeline actually enforced — e.g. divider/syntax-comment/syntax-punctuation
  * at 3.0 — rather than always the flat WCAG-AA body-text default. Every
@@ -22,9 +22,14 @@ const DEFAULT_MINIMUM_RATIO = 4.5;
  * non-table caller that also resolves through this function.
  */
 class MinimumRatioForRoleOperation {
-  static run(schema: RoleSchemaInterfaceType | undefined, roleName: string): number {
-    const pair = schema?.contrastPairs?.find((p) => {return p.foreground === roleName;});
-    return pair?.minRatio ?? DEFAULT_MINIMUM_RATIO;
+  static run(schema: RoleSchemaInterfaceTypeEntity.Type | undefined, roleName: string): number {
+    const pair = schema?.contrastPairs?.find((contrastPair) => {
+      const isForeground = contrastPair.foreground === roleName;
+      return isForeground;
+    });
+    const minimumContrastRatio = pair?.minimumContrastRatio;
+    const result = typeof minimumContrastRatio === 'number' ? minimumContrastRatio : DEFAULT_MINIMUM_RATIO;
+    return result;
   }
 }
 

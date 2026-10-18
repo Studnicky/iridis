@@ -18,7 +18,8 @@ class ApcaLc {
    *  larger, not by which coefficient set produced it. */
   luminance(r: number, g: number, b: number): number {
     const lin = srgbToLinear.apply(r, g, b);
-    return 0.2126729 * lin.r + 0.7151522 * lin.g + 0.0721750 * lin.b;
+    const luminance = 0.2126729 * lin.r + 0.7151522 * lin.g + 0.0721750 * lin.b;
+    return luminance;
   }
 
   /** Signed APCA Lc*100 between a text luminance `Ytxt` and a
@@ -46,7 +47,8 @@ class ApcaLc {
       Lc = Lc + APCA_COEFFICIENTS.SA98G_OFFSET;
     }
 
-    return Lc * 100;
+    const result = Lc * 100;
+    return result;
   }
 }
 

@@ -1,6 +1,6 @@
-import type { ColorIntentType } from '@studnicky/iridis';
+import type { ColorHintsInterfaceTypeEntity } from '@studnicky/iridis';
 
-const TEXT_FOREGROUND_BY_INTENT: Readonly<Record<ColorIntentType, boolean>> = {
+const TEXT_FOREGROUND_BY_INTENT: Readonly<Record<NonNullable<ColorHintsInterfaceTypeEntity.Type['intent']>, boolean>> = {
   'accent':     false,
   'background': false,
   'button':     false,
@@ -14,8 +14,10 @@ const TEXT_FOREGROUND_BY_INTENT: Readonly<Record<ColorIntentType, boolean>> = {
 };
 
 export class TextForegroundIntent {
-  static matches(intent: ColorIntentType | undefined): boolean {
+  static matches(hints: ColorHintsInterfaceTypeEntity.Type | undefined): boolean {
+    const intent = hints?.intent;
     if (intent === undefined) {return false;}
-    return TEXT_FOREGROUND_BY_INTENT[intent];
+    const result = TEXT_FOREGROUND_BY_INTENT[intent] === true;
+    return result;
   }
 }

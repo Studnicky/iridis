@@ -1,70 +1,54 @@
 import type {
-  ColorRecordInterfaceType,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { ShadcnOutputInterfaceType } from '../types/index.ts';
+import { ShadcnOutputEntity } from '../entities/ShadcnOutputEntity.ts';
 
-/**
- * shadcn/ui (Tailwind v4 convention) variable → resolved-role candidate
- * chain. Each variable takes the first role present in its chain; the
- * fallback ordering follows the same defensive pattern used by the
- * site's `Tokens.ts` `ALIAS_SOURCE` map and by `EmitTailwindTheme` for
- * roles that may not exist in every palette.
- */
-const VAR_ROLE_CANDIDATES: Record<string, readonly string[]> = {
-  '--accent':                 ['accent-alt', 'brand'],
-  '--accent-foreground':      ['text'],
-  '--background':             ['background'],
-  '--border':                 ['border', 'divider', 'muted'],
-  '--card':                   ['surface', 'background'],
-  '--card-foreground':        ['text'],
-  '--destructive':            ['error'],
-  '--destructive-foreground': ['text'],
-  '--foreground':             ['text'],
-  '--input':                  ['border', 'divider', 'muted'],
-  '--muted':                  ['bg-soft', 'background'],
-  '--muted-foreground':       ['text-subtle', 'muted', 'text'],
-  '--popover':                ['surface', 'background'],
-  '--popover-foreground':     ['text'],
-  '--primary':                ['brand'],
-  '--primary-foreground':     ['on-brand', 'text'],
-  '--ring':                   ['focus-ring', 'brand'],
-  '--secondary':              ['accent-alt', 'brand'],
-  '--secondary-foreground':   ['text']
-};
+const VAR_ROLE_CANDIDATES = [
+  { 'candidates': ['accent-alt', 'brand'], 'name': '--accent' },
+  { 'candidates': ['text'], 'name': '--accent-foreground' },
+  { 'candidates': ['background'], 'name': '--background' },
+  { 'candidates': ['border', 'divider', 'muted'], 'name': '--border' },
+  { 'candidates': ['surface', 'background'], 'name': '--card' },
+  { 'candidates': ['text'], 'name': '--card-foreground' },
+  { 'candidates': ['error'], 'name': '--destructive' },
+  { 'candidates': ['text'], 'name': '--destructive-foreground' },
+  { 'candidates': ['text'], 'name': '--foreground' },
+  { 'candidates': ['border', 'divider', 'muted'], 'name': '--input' },
+  { 'candidates': ['bg-soft', 'background'], 'name': '--muted' },
+  { 'candidates': ['text-subtle', 'muted', 'text'], 'name': '--muted-foreground' },
+  { 'candidates': ['surface', 'background'], 'name': '--popover' },
+  { 'candidates': ['text'], 'name': '--popover-foreground' },
+  { 'candidates': ['brand'], 'name': '--primary' },
+  { 'candidates': ['on-brand', 'text'], 'name': '--primary-foreground' },
+  { 'candidates': ['focus-ring', 'brand'], 'name': '--ring' },
+  { 'candidates': ['accent-alt', 'brand'], 'name': '--secondary' },
+  { 'candidates': ['text'], 'name': '--secondary-foreground' }
+] as const;
 
-/**
- * Resolves the first present role in a candidate chain, or `undefined`
- * when none of the chain's roles exist in the resolved palette.
- */
 class RoleResolver {
   static resolve(
-    roles:      Record<string, ColorRecordInterfaceType>,
+    roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
     candidates: readonly string[]
-  ): ColorRecordInterfaceType | undefined {
-    for (const role of candidates) {
-      const record = roles[role];
+  ): ColorRecordInterfaceTypeEntity.Type | undefined {
+    for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex += 1) {
+      const candidate = candidates[candidateIndex];
+      if (candidate === undefined) {continue;}
+      const record = roles.get(candidate);
       if (record !== undefined) {return record;}
     }
     return undefined;
   }
 }
 
-/**
- * Formats an OKLCH triple as shadcn's Tailwind v4 `:root` convention:
- * a bare space-separated `L C H` triple (no `oklch(...)` wrapper, no
- * unit on hue) since shadcn's own utilities wrap the variable at the
- * usage site via `oklch(var(--x))`.
- */
 class OklchTriple {
-  static format(oklch: ColorRecordInterfaceType['oklch']): string {
+  static format(oklch: ColorRecordInterfaceTypeEntity.Type['oklch']): string {
     const l = oklch.l.toFixed(4);
     const c = oklch.c.toFixed(4);
     const h = oklch.h.toFixed(2);
@@ -72,61 +56,104 @@ class OklchTriple {
   }
 }
 
-/**
- * Builds the shadcn/ui `:root` CSS custom-property block and the
- * companion flat hex color map, skipping any variable whose entire
- * candidate chain is absent from the resolved palette rather than
- * throwing.
- */
-class ShadcnTheme {
-  static build(roles: Record<string, ColorRecordInterfaceType>): ShadcnOutputInterfaceType {
-    const colors: Record<string, string> = {};
-    const decls:  string[]               = [];
+class ShadcnColors {
+  static primary(colors: ReadonlyMap<string, string>): Record<string, string> {
+    const accent = colors.get('--accent');
+    const accentForeground = colors.get('--accent-foreground');
+    const background = colors.get('--background');
+    const border = colors.get('--border');
+    const card = colors.get('--card');
+    const cardForeground = colors.get('--card-foreground');
+    const destructive = colors.get('--destructive');
+    const destructiveForeground = colors.get('--destructive-foreground');
+    const foreground = colors.get('--foreground');
+    const input = colors.get('--input');
+    return {
+      ...(accent === undefined ? {} : { '--accent': accent }),
+      ...(accentForeground === undefined ? {} : { '--accent-foreground': accentForeground }),
+      ...(background === undefined ? {} : { '--background': background }),
+      ...(border === undefined ? {} : { '--border': border }),
+      ...(card === undefined ? {} : { '--card': card }),
+      ...(cardForeground === undefined ? {} : { '--card-foreground': cardForeground }),
+      ...(destructive === undefined ? {} : { '--destructive': destructive }),
+      ...(destructiveForeground === undefined ? {} : { '--destructive-foreground': destructiveForeground }),
+      ...(foreground === undefined ? {} : { '--foreground': foreground }),
+      ...(input === undefined ? {} : { '--input': input })
+    };
+  }
 
-    for (const [varName, candidates] of Object.entries(VAR_ROLE_CANDIDATES)) {
-      const record = RoleResolver.resolve(roles, candidates);
-      if (record === undefined) {continue;}
+  static secondary(colors: ReadonlyMap<string, string>): Record<string, string> {
+    const muted = colors.get('--muted');
+    const mutedForeground = colors.get('--muted-foreground');
+    const popover = colors.get('--popover');
+    const popoverForeground = colors.get('--popover-foreground');
+    const primary = colors.get('--primary');
+    const primaryForeground = colors.get('--primary-foreground');
+    const ring = colors.get('--ring');
+    const secondary = colors.get('--secondary');
+    const secondaryForeground = colors.get('--secondary-foreground');
+    return {
+      ...(muted === undefined ? {} : { '--muted': muted }),
+      ...(mutedForeground === undefined ? {} : { '--muted-foreground': mutedForeground }),
+      ...(popover === undefined ? {} : { '--popover': popover }),
+      ...(popoverForeground === undefined ? {} : { '--popover-foreground': popoverForeground }),
+      ...(primary === undefined ? {} : { '--primary': primary }),
+      ...(primaryForeground === undefined ? {} : { '--primary-foreground': primaryForeground }),
+      ...(ring === undefined ? {} : { '--ring': ring }),
+      ...(secondary === undefined ? {} : { '--secondary': secondary }),
+      ...(secondaryForeground === undefined ? {} : { '--secondary-foreground': secondaryForeground })
+    };
+  }
 
-      colors[varName] = record.hex;
-      decls.push(`  ${varName}: ${OklchTriple.format(record.oklch)};`);
-    }
-
-    const cssVars = `:root {\n${decls.join('\n')}\n}`;
-
-    return { 'colors': colors, 'cssVars': cssVars };
+  static record(colors: ReadonlyMap<string, string>): Record<string, string> {
+    const primary = ShadcnColors.primary(colors);
+    const secondary = ShadcnColors.secondary(colors);
+    return { ...primary, ...secondary };
   }
 }
 
-/**
- * Emit a shadcn/ui-compatible CSS custom-property theme (OKLCH, Tailwind
- * v4 convention) from resolved roles. Registered as the
- * `emit:shadcnTheme` pipeline task.
- */
+class ShadcnTheme {
+  static build(roles: Record<string, ColorRecordInterfaceTypeEntity.Type>): ShadcnOutputEntity.Type {
+    const roleMap = new Map(Object.entries(roles));
+    const colors = new Map<string, string>();
+    const declarations: string[] = [];
+    for (let candidateIndex = 0; candidateIndex < VAR_ROLE_CANDIDATES.length; candidateIndex += 1) {
+      const candidate = VAR_ROLE_CANDIDATES[candidateIndex];
+      if (candidate === undefined) {continue;}
+      const record = RoleResolver.resolve(roleMap, candidate.candidates);
+      if (record === undefined) {continue;}
+      colors.set(candidate.name, record.hex);
+      declarations.push(`  ${candidate.name}: ${OklchTriple.format(record.oklch)};`);
+    }
+    const cssVars = `:root {\n${declarations.join('\n')}\n}`;
+    const output = ShadcnOutputEntity.create({
+      'colors': ShadcnColors.record(colors),
+      'cssVars': cssVars
+    });
+    return output;
+  }
+}
+
+/** Emit a shadcn/ui-compatible CSS custom-property theme from resolved roles. */
 export class EmitShadcnTheme implements TaskInterface {
   readonly 'name' = 'emit:shadcnTheme';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Emit a shadcn/ui-compatible CSS custom-property theme (OKLCH, Tailwind v4 convention) from resolved roles',
     'name':        'emit:shadcnTheme',
-    'phase':       undefined,
     'reads':       ['roles'],
-    'requires':    undefined,
     'writes':      ['outputs.shadcn:theme']
-  };
+  });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const output = ShadcnTheme.build(state.roles);
-
     state.outputs['shadcn:theme'] = output;
-
-    context.logger.debug(
-      LogBody.create()
-        .component('EmitShadcnTheme')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Emitted shadcn/ui theme')
-        .context({ 'variables': Object.keys(output.colors).length })
-        .build()
-    );
+    context.logger.debug(LogBody.create({
+      'component': 'EmitShadcnTheme',
+      'context': { 'variables': Object.keys(output.colors).length },
+      'message': 'Emitted shadcn/ui theme',
+      'operation': 'run',
+      'status': LOG_STATUS.SUCCESS
+    }));
   }
 }

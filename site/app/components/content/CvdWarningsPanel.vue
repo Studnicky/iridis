@@ -1,20 +1,29 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import type { CvdPairWarningInterfaceType } from '@studnicky/iridis-contrast/types';
+import type { CvdPairWarningInterfaceTypeEntity } from '@studnicky/iridis-contrast/types';
 import { buildCvdWarningsPanelModel } from './cvd/buildCvdWarningsPanelModel.ts';
 
 const props = defineProps<{
   report?: {
     corrected: number;
-    list: CvdPairWarningInterfaceType[];
+    list: CvdPairWarningInterfaceTypeEntity.Type[];
     stillFailing: number;
     warnings: number;
   };
-  cvdTypeLabel: (cvdType: CvdPairWarningInterfaceType['cvdType']) => string;
+  cvdTypeLabel: (cvdType: CvdPairWarningInterfaceTypeEntity.Type['cvdType']) => string;
 }>();
 
 const showDetails = ref(false);
-const panelModel = computed(() => props.report ? buildCvdWarningsPanelModel.build(props.report, showDetails.value) : null);
+const panelModel = computed(() => {
+  const report = props.report;
+  if (report === undefined) {
+    return null;
+  }
+  if (showDetails.value) {
+    return buildCvdWarningsPanelModel.buildWithShownDetails(report);
+  }
+  return buildCvdWarningsPanelModel.buildWithHiddenDetails(report);
+});
 </script>
 
 <template>

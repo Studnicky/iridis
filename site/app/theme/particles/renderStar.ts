@@ -1,5 +1,5 @@
-import type { ParticleElementType } from './types/particleElement.ts';
-import type { ParticleRendererType } from './types/particleRenderer.ts';
+import type { ParticleElementInterface } from './interfaces/particleElementInterface.ts';
+import type { ParticleRendererInterface } from './interfaces/particleRendererInterface.ts';
 
 import { randomDelay } from './randomDelay.ts';
 import { randomPlacement } from './randomPlacement.ts';
@@ -11,8 +11,8 @@ import { randomPlacement } from './randomPlacement.ts';
  * renderer only places and desyncs the particles.
  */
 class RenderStarOperation {
-  static readonly run: ParticleRendererType.Type = ({ colorVar, count, sizePx }) => {
-    const elements: ParticleElementType.Type[] = [];
+  static readonly render: ParticleRendererInterface['render'] = ({ colorVar, count, sizePx }) => {
+    const elements: ParticleElementInterface[] = [];
     for (let i = 0; i < count; i += 1) {
       const { x, y } = randomPlacement();
       elements.push({
@@ -21,8 +21,8 @@ class RenderStarOperation {
         'style': { 'animationDelay': randomDelay(3), 'color': colorVar, 'fontSize': `${sizePx}px`, 'left': `${x}vw`, 'top': `${y}vh` }
       });
     }
-    return { 'elements': elements, 'kind': 'elements' };
+    return { 'rendering': { 'elements': elements, 'surface': 'elements' } };
   };
 }
 
-export const renderStar: ParticleRendererType.Type = RenderStarOperation.run;
+export const renderStar: ParticleRendererInterface = { 'render': RenderStarOperation.render };

@@ -1,66 +1,35 @@
-import type { JsonValueType } from '@studnicky/types';
+import { ValidationError } from '@studnicky/errors/node';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import { ValidationError } from '@studnicky/errors';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
-
-import type { RgbInputEntity } from '../../entities/RgbInputEntity.ts';
+import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '../../types/index.ts';
+import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
+import { RgbInputEntity } from '../../entities/RgbInputEntity.ts';
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
-/**
- * A channel above this value cannot plausibly be a 0..1 float (even
- * accounting for out-of-gamut overshoot); below it, marginal overshoot
- * past 1.0 is treated as float data and left for downstream clamping
- * rather than misclassified as 0..255 byte data.
- */
 const RGB_BYTE_SCALE_THRESHOLD = 2;
 
-class RgbInputGuard {
-  static check(value: JsonValueType | RawImagePixelInputInterface): value is RgbInputEntity.Type {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) {return false;}
-    if (!('r' in value) || !('g' in value) || !('b' in value)) {return false;}
-    return typeof value.r === 'number' && Number.isFinite(value.r)
-      && typeof value.g === 'number' && Number.isFinite(value.g)
-      && typeof value.b === 'number' && Number.isFinite(value.b);
-  }
-}
-
-/**
- * Intake task that converts `{r, g, b, a?}` objects into `ColorRecord`s.
- * Auto-detects whether components are 0..1 or 0..255 by checking the
- * maximum value, so callers can pass either CSS-style bytes or float
- * literals without flagging the unit. Entries that carry `h`, `l`, or
- * `c` keys are not RGB objects and cause a throw when used with the
- * strict `intake:rgb` task. Use `intake:any` for tolerant dispatch.
- */
+/** Strict intake task for {r,g,b,a?} float or byte RGB literals. */
 class IntakeRgb implements TaskInterface {
   readonly 'name' = 'intake:rgb';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Parses {r,g,b,a?} in 0..1 or 0..255 (auto-detected by max value) into ColorRecord entries. Throws on non-RGB input.',
     'name':        'intake:rgb',
-    'phase':       undefined,
     'reads':       ['input.colors'],
-    'requires':    undefined,
     'writes':      ['colors']
-  };
+  });
 
-  /**
-   * Parses a single value as an RGB object. Throws when the input is not a
-   * valid `{r,g,b}` object or carries keys from a different format (h/l/c).
-   * Used by IntakeAny for format dispatch (via try/catch).
-   */
-  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
-    if (!RgbInputGuard.check(raw)) {
+  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type {
+    let input: RgbInputEntity.Type;
+    try {
+      input = RgbInputEntity.intake(raw);
+    } catch {
       throw ValidationError.create({
         'message': 'intake:rgb — expected an {r,g,b} object',
         'path':    'raw',
@@ -71,83 +40,64 @@ class IntakeRgb implements TaskInterface {
         }]
       });
     }
-    if (
-      ('h' in raw && typeof raw.h === 'number')
-      || ('l' in raw && typeof raw.l === 'number')
-      || ('c' in raw && typeof raw.c === 'number')
-    ) {
-      throw ValidationError.create({
-        'message': 'intake:rgb — object has conflicting format keys',
-        'path':    'raw',
-        'violations': [{
-          'details': { 'conflictingKeys': ['h', 'l', 'c'], 'reason': 'h/l/c indicate a different format (hsl/oklch/lab)' },
-          'message': 'object carries keys from a different color format',
-          'path':    'raw'
-        }]
-      });
-    }
 
-    let { b, g, r } = raw;
-    const a = typeof raw.a === 'number' ? raw.a : 1;
-
-    // Byte-scale (0..255) detection requires a channel meaningfully out of
-    // the 0..1 float range — a marginal overshoot (out-of-gamut math, HDR
-    // reduction, float rounding) stays a float and is clamped downstream by
-    // colorRecordFactory instead of being divided by 255 into near-black.
+    let { b, g, r } = input;
     if (r > RGB_BYTE_SCALE_THRESHOLD || g > RGB_BYTE_SCALE_THRESHOLD || b > RGB_BYTE_SCALE_THRESHOLD) {
-      r = r / 255;
-      g = g / 255;
-      b = b / 255;
+      r /= 255;
+      g /= 255;
+      b /= 255;
     }
 
-    const alpha = a > 1 ? a / 255 : a;
-    return colorRecordFactory.fromRgb(r, g, b, { 'alpha': alpha });
+    const alpha = (input.a ?? 1) > 1 ? (input.a ?? 1) / 255 : (input.a ?? 1);
+    const result = colorRecordFactory.fromRgb(r, g, b, { 'alpha': alpha });
+    return result;
   }
 
-  /**
-   * Wraps {@link IntakeRgb.parse} so the dispatch loop in
-   * {@link IntakeRgb.run} does not carry a try/catch in its body (V8
-   * de-optimises try/catch inside hot loops).
-   */
-  #tryParse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType | undefined {
+  #tryParse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type | undefined {
     try {
-      return this.parse(raw);
+      const result = this.parse(raw);
+      return result;
     } catch {
       return undefined;
     }
   }
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    for (const [i, raw] of state.input.colors.entries()) {
+    const inputColors = state.input.colors;
+    for (let index = 0; index < inputColors.length; index += 1) {
+      const raw = inputColors[index];
+      if (raw === undefined) {
+        continue;
+      }
       const record = this.#tryParse(raw);
       if (record === undefined) {
         throw ValidationError.create({
-          'message': `intake:rgb — entry at index ${i} is not an RGB object`,
-          'path':    `input.colors[${i}]`,
+          'message': `intake:rgb — entry at index ${index} is not an RGB object`,
+          'path':    `input.colors[${index}]`,
           'violations': [{
             'details': {
               'expectedShape': '{r: 0..1 or 0..255, g: 0..1 or 0..255, b: 0..1 or 0..255, a?: number}',
-              'index':         i,
+              'index':         index,
               'received':      JSON.stringify(raw) ?? 'undefined'
             },
             'message': 'entry does not match the RGB object shape',
-            'path':    `input.colors[${i}]`
+            'path':    `input.colors[${index}]`
           }]
         });
       }
       state.colors.push(record);
       context.logger.debug(
-        LogBody.create()
-          .component('IntakeRgb')
-          .operation('run')
-          .status(LOG_STATUS.SUCCESS)
-          .message('Parsed rgb value')
-          .context({ 'b': record.rgb.b, 'g': record.rgb.g, 'hex': record.hex, 'r': record.rgb.r })
-          .build()
+        LogBody.create({
+          'component': 'IntakeRgb',
+          'context': { 'b': record.rgb.b, 'g': record.rgb.g, 'hex': record.hex, 'r': record.rgb.r },
+          'message': 'Parsed rgb value',
+          'operation': 'run',
+          'status': LOG_STATUS.SUCCESS
+        })
       );
     }
   }
 }
 
-/** Singleton instance registered as the `intake:rgb` pipeline task. */
+/** Singleton instance registered as the intake:rgb pipeline task. */
 export const intakeRgb = new IntakeRgb();

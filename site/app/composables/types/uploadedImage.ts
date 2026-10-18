@@ -1,4 +1,5 @@
-import type { GalleryAlgorithmType, GalleryCandidateInterfaceType, GalleryHistogramSlotInterfaceType } from '@studnicky/iridis-image/types';
+import type { ClusterStrategyInterface, GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
+import type { GalleryHistogramSlotInterfaceType } from '@studnicky/iridis-image/types';
 
 /**
  * One uploaded image's own extraction state — decoded and reduced to
@@ -8,9 +9,9 @@ import type { GalleryAlgorithmType, GalleryCandidateInterfaceType, GalleryHistog
  * gallery:extract run against ONLY this image's pixels); the combine stage
  * concatenates every entry's `dominantColorRecords` into the final palette.
  */
-export declare class UploadedImageInterfaceType {
-  'algorithm': GalleryAlgorithmType;
-  'candidates': GalleryCandidateInterfaceType[];
+export declare class UploadedImage {
+  'candidates': GalleryCandidateOutputEntity.Type[];
+  'strategy': ClusterStrategyInterface;
   'chromaRange': [number, number][];
   'deltaECap': number;
   /** Each color plus its cluster weight (pixel-count share), preserved from gallery:extract's ColorRecord.hints.weight so the combine stage can build a genuinely cumulative, pixel-weighted merge instead of treating every representative color as equally significant. */
@@ -23,5 +24,5 @@ export declare class UploadedImageInterfaceType {
   'lightnessRange': [number, number][];
   'name': string;
   'selectedCandidateLabel': string | null;
-  'src': string;
+  'source': string;
 }

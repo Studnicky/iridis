@@ -1,9 +1,58 @@
-/**
- * Display state for TableOfContentsBar's sticky nav — 'top' before scroll
- * passes `#toc-hero-sentinel` (non-sticky, full document flow), 'expanded'
- * once sticky, and 'compact' while the user is actively scrolling down to
- * read (collapsed to a single row). `variant` (not `mode`) is the field name
- * because `StateMachine<TState, ...>` requires `TState extends { readonly
- * 'variant': string }` — the same discriminant key IridisUiStateType uses.
- */
-export declare class TocBarStateType { 'variant': 'compact' | 'expanded' | 'top'; }
+/** Resolved TableOfContentsBar presentation state. */
+export abstract class TocBarState {
+  abstract readonly variant: string;
+
+  static compact(): TocBarState {
+    const result = new CompactTocBarState();
+    return result;
+  }
+
+  static expanded(): TocBarState {
+    const result = new ExpandedTocBarState();
+    return result;
+  }
+
+  static top(): TocBarState {
+    const result = new TopTocBarState();
+    return result;
+  }
+
+  abstract isCompact(): boolean;
+  abstract isPastHero(): boolean;
+}
+
+class CompactTocBarState extends TocBarState {
+  readonly variant: string = 'compact';
+
+  isCompact(): boolean {
+    return true;
+  }
+
+  isPastHero(): boolean {
+    return true;
+  }
+}
+
+class ExpandedTocBarState extends TocBarState {
+  readonly variant: string = 'expanded';
+
+  isCompact(): boolean {
+    return false;
+  }
+
+  isPastHero(): boolean {
+    return true;
+  }
+}
+
+class TopTocBarState extends TocBarState {
+  readonly variant: string = 'top';
+
+  isCompact(): boolean {
+    return false;
+  }
+
+  isPastHero(): boolean {
+    return false;
+  }
+}

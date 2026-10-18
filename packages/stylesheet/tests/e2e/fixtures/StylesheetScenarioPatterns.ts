@@ -1,0 +1,1 @@
+export const StylesheetScenarioPatterns = Object.freeze({ 'CSS_VARIABLE_PATTERN': /--c-[a-z-]+:\s+#[0-9a-f]{6};/u, 'FORCED_COLORS_PATTERN': /@media \(forced-colors: active\)/u, 'P3_SUPPORTS_PATTERN': /@supports \(color: color\(display-p3 0 0 0\)\)/u });

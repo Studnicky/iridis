@@ -15,16 +15,18 @@ export const buildHistogramBars = class HistogramBarsBuilder {
     bins: readonly GalleryHistogramSlotInterfaceType['bins'][number][]
   ): readonly HistogramBar[] {
     const sortedBins = [...bins].sort((left, right) => {
-      return this.resolveHue(left.hex) - this.resolveHue(right.hex);
+      const hueDifference = this.resolveHue(left.hex) - this.resolveHue(right.hex);
+      return hueDifference;
     });
     const greatestWeight = Math.max(1, ...sortedBins.map((bin) => {
       const result = bin.weight;
       return result;
     }));
-    return sortedBins.map((bin) => {
+    const bars = sortedBins.map((bin) => {
       const height = Math.max(6, Math.round((bin.weight / greatestWeight) * 100));
       return new HistogramBar(height, bin.hex);
     });
+    return bars;
   }
 
   private static resolveHue(hex: string): number {
@@ -46,6 +48,7 @@ export const buildHistogramBars = class HistogramBarsBuilder {
       value = (red - green) / delta + 4;
     }
     value *= 60;
-    return value < 0 ? value + 360 : value;
+    const hue = value < 0 ? value + 360 : value;
+    return hue;
   }
 };

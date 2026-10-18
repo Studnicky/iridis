@@ -1,5 +1,8 @@
 import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
 
+import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
+import { renderDot } from '../particles/renderDot.ts';
+
 /**
  * Workday/spreadsheet default. An office backdrop keeps only the subtle
  * grid-pan texture (a calm static pattern, not motion) — no twinkling
@@ -9,13 +12,13 @@ import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceTy
 export const dayAtWork: ThemeDefinitionInterfaceType = {
   'ambient': {
     'blobCount':       0,
-    'gooEnabled':      false,
-    'gridEnabled':     true,
+    'gooFilter':       'none',
+    'gridDisplay':     'block',
     'particleCounts':  [0, 0, 0, 0, 0],
-    'particleShape':   'dot',
+    'particleRenderer': renderDot,
     'speedMultiplier': 1.8
   },
-  'dataLayout': 'table',
+  'dataLayout': DataLayoutStrategy.table,
   'key':   'day-at-work',
   'label': 'Day-at-Work'
 };

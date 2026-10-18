@@ -1,81 +1,31 @@
-const wcagPairResultSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'after': { 'type': 'number' },
-    'algorithm': { 'enum': ['wcag21', 'apca'], 'type': 'string' },
-    'background': { 'type': 'string' },
-    'before': { 'type': 'number' },
-    'foreground': { 'type': 'string' },
-    'pass': { 'type': 'boolean' },
-    'required': { 'type': 'number' }
-  },
-  'type': 'object'
-} as const;
-
-const apcaPairResultSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'afterLc': { 'type': 'number' },
-    'algorithm': { 'enum': ['apca'], 'type': 'string' },
-    'background': { 'type': 'string' },
-    'beforeLc': { 'type': 'number' },
-    'foreground': { 'type': 'string' },
-    'pass': { 'type': 'boolean' },
-    'requiredLc': { 'type': 'number' }
-  },
-  'type': 'object'
-} as const;
-
-const cvdWarningSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'background': { 'type': 'string' },
-    'cvdType': { 'type': 'string' },
-    'drop': { 'type': 'number' },
-    'dropThreshold': { 'type': 'number' },
-    'foreground': { 'type': 'string' },
-    'minSimulatedContrast': { 'type': 'number' },
-    'originalLuminanceContrast': { 'type': 'number' },
-    'simulatedContrastDropRatio': { 'type': 'number' },
-    'simulatedContrastRatio': { 'type': 'number' },
-    'simulatedLuminanceContrast': { 'type': 'number' }
-  },
-  'type': 'object'
-} as const;
-
-const cvdCorrectionSchema = {
-  'additionalProperties': false,
-  'properties': {
-    'background': { 'type': 'string' },
-    'cvdTypesFixed': { 'items': { 'type': 'string' }, 'type': 'array' },
-    'cvdTypesRemaining': { 'items': { 'type': 'string' }, 'type': 'array' },
-    'foreground': { 'type': 'string' }
-  },
-  'type': 'object'
-} as const;
+import { APCA_PAIR_RESULT_SCHEMA } from './ApcaPairResultSchema.ts';
+import { CVD_CORRECTION_SCHEMA } from './CvdCorrectionSchema.ts';
+import { CVD_WARNING_SCHEMA } from './CvdWarningSchema.ts';
+import { WCAG_PAIR_RESULT_SCHEMA } from './WcagPairResultSchema.ts';
 
 export const CONTRAST_PLUGIN_SCHEMAS = Object.freeze({
   'aa': {
     'additionalProperties': false,
-    'properties': { 'pairs': { 'items': wcagPairResultSchema, 'type': 'array' } },
+    'properties': { 'pairs': { 'items': WCAG_PAIR_RESULT_SCHEMA, 'type': 'array' } },
     'type': 'object'
   },
   'aaa': {
     'additionalProperties': false,
-    'properties': { 'pairs': { 'items': wcagPairResultSchema, 'type': 'array' } },
+    'properties': { 'pairs': { 'items': WCAG_PAIR_RESULT_SCHEMA, 'type': 'array' } },
     'type': 'object'
   },
   'apca': {
     'additionalProperties': false,
-    'properties': { 'pairs': { 'items': apcaPairResultSchema, 'type': 'array' } },
+    'properties': { 'pairs': { 'items': APCA_PAIR_RESULT_SCHEMA, 'type': 'array' } },
     'type': 'object'
   },
   'cvd': {
     'additionalProperties': false,
     'properties': {
-      'corrections': { 'items': cvdCorrectionSchema, 'type': 'array' },
-      'warnings': { 'items': cvdWarningSchema, 'type': 'array' }
+      'corrections': { 'items': CVD_CORRECTION_SCHEMA, 'type': 'array' },
+      'warnings': { 'items': CVD_WARNING_SCHEMA, 'type': 'array' }
     },
+    'required': ['corrections', 'warnings'],
     'type': 'object'
   }
 } as const);

@@ -1,10 +1,9 @@
-import type { GalleryCandidateInterfaceType } from '@studnicky/iridis-image/types';
+import type { GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
 
-import type { UploadedImageInterfaceType } from '~/composables/types/index.ts';
-import type { IridisUiEventType } from '~/composables/types/iridisUiEvent.ts';
+import type { UploadedImage } from '~/composables/types/index.ts';
 
 import { ALGORITHM_LABELS } from '~/composables/algorithmLabels.ts';
-import { IridisUiActionType } from '~/composables/types/index.ts';
+import { IridisUiEvent } from '~/composables/types/index.ts';
 
 class SelectedPalette {
   public readonly algorithmLabel: string;
@@ -42,17 +41,6 @@ class CombineStageHelpText {
   }
 }
 
-class CombineCandidateSelectionEvent {
-  public readonly hexes: string[];
-  public readonly label: string;
-  public readonly type = IridisUiActionType.SELECT_IMAGE_CANDIDATE;
-
-  public constructor(hexes: string[], label: string) {
-    this.hexes = hexes;
-    this.label = label;
-  }
-}
-
 export const buildCombineStageModel = class CombineStageModel {
   public static readonly helpText = new CombineStageHelpText(
     'Only pixels whose OKLCH chroma (saturation) falls in one of these bands are considered — raise the floor to ignore a near-neutral background so the cluster budget goes toward colors the image actually cares about. Also a union of ranges.',
@@ -63,12 +51,16 @@ export const buildCombineStageModel = class CombineStageModel {
   );
 
   public static buildSelectedPalettes(
-    uploadedImages: readonly UploadedImageInterfaceType[],
-    effectiveHexesFor: (image: UploadedImageInterfaceType) => readonly string[]
+    uploadedImages: readonly UploadedImage[],
+    effectiveHexesFor: (image: UploadedImage) => readonly string[]
   ): SelectedPalette[] {
     const palettes: SelectedPalette[] = [];
-    for (const entry of uploadedImages) {
-      const algorithmKey = entry.selectedCandidateLabel ?? entry.algorithm;
+    for (let index = 0; index < uploadedImages.length; index += 1) {
+      const entry = uploadedImages[index];
+      if (entry === undefined) {
+        throw new RangeError(`Uploaded image list is missing entry ${index}`);
+      }
+      const algorithmKey = entry.selectedCandidateLabel ?? entry.strategy.serializeAlgorithm();
       const algorithmLabel = ALGORITHM_LABELS[algorithmKey] ?? algorithmKey;
       palettes.push(new SelectedPalette(
         algorithmLabel,
@@ -81,20 +73,29 @@ export const buildCombineStageModel = class CombineStageModel {
   }
 
   public static buildCandidateSelectionEvent(
-    candidate: GalleryCandidateInterfaceType
-  ): Extract<IridisUiEventType.Type, { 'type': IridisUiActionType.SELECT_IMAGE_CANDIDATE }> {
+    candidate: GalleryCandidateOutputEntity.Type
+  ): IridisUiEvent {
     const hexes: string[] = [];
-    for (const color of candidate.colors) {
+    for (let index = 0; index < candidate.colors.length; index += 1) {
+      const color = candidate.colors[index];
+      if (color === undefined) {
+        throw new RangeError(`Candidate color list is missing entry ${index}`);
+      }
       hexes.push(color.hex);
     }
-    return new CombineCandidateSelectionEvent(hexes, candidate.label);
+    const result = IridisUiEvent.selectImageCandidate(hexes, candidate.label);
+    return result;
   }
 
   public static buildImageSeedHexes(
     imageSeeds: readonly { readonly 'hex': string }[]
   ): readonly string[] {
     const hexes: string[] = [];
-    for (const seed of imageSeeds) {
+    for (let index = 0; index < imageSeeds.length; index += 1) {
+      const seed = imageSeeds[index];
+      if (seed === undefined) {
+        throw new RangeError(`Image seed list is missing entry ${index}`);
+      }
       hexes.push(seed.hex);
     }
     return hexes;

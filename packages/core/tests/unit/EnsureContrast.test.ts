@@ -24,6 +24,15 @@ void test('ensureContrast preserves a bounded maximum ratio while reducing exces
   assert.ok(result.oklch.l > black.oklch.l, 'the bounded candidate lightens the initial black foreground');
 });
 
+void test('ensureContrast normalizes an omitted maximum ratio to Infinity', () => {
+  const foreground = colorRecordFactory.fromHex('#000000');
+  const background = colorRecordFactory.fromHex('#ffffff');
+  const omitted = ensureContrast.apply(foreground, background, 4.5, { 'algorithm': 'wcag21' });
+  const unbounded = ensureContrast.apply(foreground, background, 4.5, { 'algorithm': 'wcag21', 'maximumRatio': Infinity });
+
+  assert.deepStrictEqual(omitted, unbounded, 'omitting the programmatic maximum has the same unbounded behavior as Infinity');
+});
+
 void test('ensureContrast refines to the exact lower contrast boundary', () => {
   const background = colorRecordFactory.fromHex('#89c1d6');
   const foreground = colorRecordFactory.fromHex('#dc855d');

@@ -1,6 +1,6 @@
 import type {
   PluginInterface,
-  PluginSchemaContributionInterfaceType,
+  PluginSchemaContributionInterfaceEntity,
   TaskInterface
 } from '@studnicky/iridis';
 
@@ -24,9 +24,8 @@ export class CapacitorPlugin implements PluginInterface {
     ];
   }
 
-  schemas(): PluginSchemaContributionInterfaceType {
+  schemas(): PluginSchemaContributionInterfaceEntity.Type {
     return {
-      'metadata': undefined,
       'outputs': {
         'capacitor:androidThemeXml': CAPACITOR_OUTPUT_SCHEMAS.androidThemeXml,
         'capacitor:splashScreen':    CAPACITOR_OUTPUT_SCHEMAS.splashScreen,

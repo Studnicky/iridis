@@ -1,4 +1,4 @@
-import type { HueSaturationType } from '../composables/types/hueSaturation.ts';
+import type { HueSaturationType } from '../composables/types/hueSaturationType.ts';
 
 import { lerpSteps } from './lerpSteps.ts';
 
@@ -7,8 +7,12 @@ class ApplySaturationGradientOperation {
     const result: HueSaturationType[] = [];
     if (count <= 0) {return result;}
     const saturationValues = lerpSteps(0, 100, count, 100);
-    for (const hue of hues) {
-      for (const saturation of saturationValues) {
+    for (let hueIndex = 0; hueIndex < hues.length; hueIndex += 1) {
+      const hue = hues[hueIndex];
+      if (hue === undefined) {continue;}
+      for (let saturationIndex = 0; saturationIndex < saturationValues.length; saturationIndex += 1) {
+        const saturation = saturationValues[saturationIndex];
+        if (saturation === undefined) {continue;}
         result.push({ 'hue': hue, 'saturation': saturation });
       }
     }

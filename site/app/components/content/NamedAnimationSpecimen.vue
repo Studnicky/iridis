@@ -1,11 +1,17 @@
 <script setup lang="ts">
 defineProps<{
   animation: {
-    kind: 'dot' | 'orbit' | 'sonar' | 'radar' | 'chroma';
     class?: string;
     duration: string;
     label: string;
     note: string;
+    preview: {
+      isChroma(): boolean;
+      isDot(): boolean;
+      isOrbit(): boolean;
+      isRadar(): boolean;
+      isSonar(): boolean;
+    };
   };
 }>();
 </script>
@@ -19,7 +25,7 @@ defineProps<{
     <template #default>
       <div class="relative flex h-14 w-14 items-center justify-center">
         <div
-          v-if="animation.kind === 'dot'"
+          v-if="animation.preview.isDot()"
           class="glass flex h-12 w-12 items-center justify-center rounded-full"
           :class="animation.class !== 'glass' ? animation.class : ''"
         >
@@ -29,7 +35,7 @@ defineProps<{
           />
         </div>
         <div
-          v-else-if="animation.kind === 'orbit'"
+          v-else-if="animation.preview.isOrbit()"
           class="orbit-rig"
         >
           <div class="orbit-ring r1">
@@ -42,7 +48,7 @@ defineProps<{
             <span class="orbit-orb" />
           </div>
         </div>
-        <template v-else-if="animation.kind === 'sonar'">
+        <template v-else-if="animation.preview.isSonar()">
           <span class="sonar-ring" />
           <span class="sonar-dot n" />
           <span class="sonar-dot e" />
@@ -50,13 +56,13 @@ defineProps<{
           <span class="sonar-dot w" />
         </template>
         <div
-          v-else-if="animation.kind === 'radar'"
+          v-else-if="animation.preview.isRadar()"
           class="glass h-12 w-12 rounded-full"
         >
           <span class="radar-sweep" />
         </div>
         <div
-          v-else-if="animation.kind === 'chroma'"
+          v-else-if="animation.preview.isChroma()"
           class="chroma-cycle"
         />
       </div>

@@ -1,54 +1,36 @@
-import type { JsonValueType } from '@studnicky/types';
+import { ValidationError } from '@studnicky/errors/node';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import { ValidationError } from '@studnicky/errors';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
-
+import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
+import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
+import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
-import type {
-  ColorRecordInterfaceType,
-  PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
-} from '../../types/index.ts';
+import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
+import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
-import { IsImagePixelInput }  from './IsImagePixelInput.ts';
+import { IsImagePixelInput } from './IsImagePixelInput.ts';
 
 /**
- * Intake task for `ImageData`-shaped inputs (`{data: Uint8ClampedArray,
- * width, height}`, the canvas API's pixel buffer). Pushes one
- * `ColorRecord` per fully or partially opaque pixel; transparent
- * pixels are dropped so an alpha-channel mask doesn't bias clustering.
- *
- * Image inputs typically blow past `clamp:count`'s 64-color default;
- * pair this intake with `clamp:count` (or a smaller `maxColors`) so
- * downstream tasks aren't dragged down by tens of thousands of pixels.
- *
- * Non-ImageData input throws when using the strict `intake:imagePixels`
- * task. Use `intake:any` for tolerant dispatch.
+ * Intake task for ImageData-shaped inputs. It pushes one ColorRecord per fully
+ * or partially opaque pixel and drops transparent pixels before clustering.
  */
 class IntakeImagePixels implements TaskInterface {
   readonly 'name' = 'intake:imagePixels';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
     'description': 'Parses ImageData or {data: Uint8ClampedArray, width, height} and pushes non-transparent pixels. Throws on non-image input.',
     'name':        'intake:imagePixels',
-    'phase':       undefined,
     'reads':       ['input.colors'],
-    'requires':    undefined,
     'writes':      ['colors']
-  };
+  });
 
   /**
-   * Parses a single value as an ImageData-shaped input, returning the first
-   * non-transparent pixel as a format-match sentinel. Throws when the input
-   * is not an `{data, width, height}` object or contains no opaque pixels.
-   * Used by IntakeAny for format dispatch (via try/catch).
-   * The full pixel set is pushed separately via {@link pushAllPixels}.
+   * Parses an ImageData entry and returns its first non-transparent pixel as a
+   * format-match sentinel for IntakeAny.
    */
-  parse(raw: JsonValueType | RawImagePixelInputInterface): ColorRecordInterfaceType {
+  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type {
     if (!IsImagePixelInput.check(raw)) {
       throw ValidationError.create({
         'message': 'intake:imagePixels — expected an ImageData-shaped object',
@@ -62,18 +44,18 @@ class IntakeImagePixels implements TaskInterface {
     }
     const { data } = raw;
     const pixelCount = raw.width * raw.height;
-    for (let i = 0; i < pixelCount; i++) {
-      const offset = i * 4;
+    for (let index = 0; index < pixelCount; index += 1) {
+      const offset = index * 4;
       const alpha = data[offset + 3];
       if (alpha === undefined || alpha === 0) {
         continue;
       }
-      const r = (data[offset] ?? 0) / 255;
-      const g = (data[offset + 1] ?? 0) / 255;
-      const b = (data[offset + 2] ?? 0) / 255;
-      return colorRecordFactory.fromRgb(r, g, b, { 'alpha': alpha / 255, 'sourceFormat': 'imagePixel' });
+      const red = (data[offset] ?? 0) / 255;
+      const green = (data[offset + 1] ?? 0) / 255;
+      const blue = (data[offset + 2] ?? 0) / 255;
+      const result = colorRecordFactory.fromRgb(red, green, blue, { 'alpha': alpha / 255, 'sourceFormat': 'imagePixel' });
+      return result;
     }
-    // All pixels transparent — no opaque pixels to parse.
     throw ValidationError.create({
       'message': 'intake:imagePixels — image has no non-transparent pixels',
       'path':    'raw',
@@ -85,15 +67,8 @@ class IntakeImagePixels implements TaskInterface {
     });
   }
 
-  /**
-   * Pushes all non-transparent pixels from an ImageData entry into `colors`.
-   * Called by `IntakeAny` after `isImagePixelInput` confirms the entry is an image.
-   */
-  pushAllPixels(
-    raw: JsonValueType | RawImagePixelInputInterface,
-    state: PaletteStateInterface,
-    context: PipelineContextInterface
-  ): void {
+  /** Pushes every non-transparent pixel from an ImageData entry into colors. */
+  pushAllPixels(raw: ColorInputEntity.Type | RawImagePixelInputInterface, state: PaletteStateInterface, context: PipelineContextInterface): void {
     if (!IsImagePixelInput.check(raw)) {
       return;
     }
@@ -101,48 +76,47 @@ class IntakeImagePixels implements TaskInterface {
     const pixelCount = width * height;
     let pushed = 0;
 
-    for (let i = 0; i < pixelCount; i++) {
-      const offset = i * 4;
+    for (let index = 0; index < pixelCount; index += 1) {
+      const offset = index * 4;
       const alpha = data[offset + 3];
       if (alpha === undefined || alpha === 0) {
         continue;
       }
-      const r = (data[offset] ?? 0) / 255;
-      const g = (data[offset + 1] ?? 0) / 255;
-      const b = (data[offset + 2] ?? 0) / 255;
-      state.colors.push(colorRecordFactory.fromRgb(r, g, b, { 'alpha': alpha / 255, 'sourceFormat': 'imagePixel' }));
-      pushed++;
+      const red = (data[offset] ?? 0) / 255;
+      const green = (data[offset + 1] ?? 0) / 255;
+      const blue = (data[offset + 2] ?? 0) / 255;
+      state.colors.push(colorRecordFactory.fromRgb(red, green, blue, { 'alpha': alpha / 255, 'sourceFormat': 'imagePixel' }));
+      pushed += 1;
     }
 
     context.logger.debug(
-      LogBody.create()
-        .component('IntakeImagePixels')
-        .operation('pushAllPixels')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Pushed pixels from image')
-        .context({
+      LogBody.create({
+        'component': 'IntakeImagePixels',
+        'context': {
           'height': height,
           'pushed': pushed,
           'width':  width
-        })
-        .build()
+        },
+        'message': 'Pushed pixels from image',
+        'operation': 'pushAllPixels',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    for (const [i, raw] of state.input.colors.entries()) {
-      if (!IsImagePixelInput.check(raw)) {
-        // Non-image entries are skipped so that intake:imagePixels can
-        // coexist in a pipeline with intake:hex / intake:any for mixed inputs.
-        // Strict single-format validation is the caller's responsibility.
+    const inputColors = state.input.colors;
+    for (let index = 0; index < inputColors.length; index += 1) {
+      const raw = inputColors[index];
+      if (raw === undefined || !IsImagePixelInput.check(raw)) {
         context.logger.trace(
-          LogBody.create()
-            .component('IntakeImagePixels')
-            .operation('run')
-            .status(LOG_STATUS.SKIPPED)
-            .message('Skipping non-image entry')
-            .context({ 'index': i })
-            .build()
+          LogBody.create({
+            'component': 'IntakeImagePixels',
+            'context': { 'index': index },
+            'message': 'Skipping non-image entry',
+            'operation': 'run',
+            'status': LOG_STATUS.SKIPPED
+          })
         );
         continue;
       }
@@ -151,5 +125,5 @@ class IntakeImagePixels implements TaskInterface {
   }
 }
 
-/** Singleton instance registered as the `intake:imagePixels` pipeline task. */
+/** Singleton instance registered as the intake:imagePixels pipeline task. */
 export const intakeImagePixels = new IntakeImagePixels();

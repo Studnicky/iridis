@@ -1,23 +1,21 @@
-import type { CvdMatrixInterfaceType } from '@studnicky/iridis-contrast';
-import type {
-  ColorIntentType,
-  ColorRecordInterfaceType,
-  ContrastAlgorithmType,
-  ContrastPairInterfaceType,
-  InputInterface,
-  PaletteStateInterface,
-  RgbInterfaceType
-} from '@studnicky/iridis/types';
-import type { JsonObjectType } from '@studnicky/types';
+import type { ColorRecordInterfaceTypeEntity } from '@studnicky/iridis';
+import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast/types';
+import type { PaletteStateInterface } from '@studnicky/iridis/types';
+import type { JSONSchema7Object } from 'json-schema';
 
 import {
   clamp01,
   colorRecordFactory,
+  ContrastAlgorithmTypeEntity,
   contrastApca,
+  ContrastPairInterfaceTypeEntity,
   contrastWcag21,
   coreTasks,
   Engine,
+  InputInterfaceTypeEntity,
   linearToSrgb,
+  RoleDefinitionInterfaceTypeEntity,
+  RoleSchemaInterfaceTypeEntity,
   srgbToLinear
 } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
@@ -28,7 +26,7 @@ import {
   getContrastMetadata
 } from '@studnicky/iridis-contrast';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
-import { JsonObject } from '@studnicky/types';
+import { JsonObject, JsonValue } from '@studnicky/types/browser';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
@@ -38,114 +36,116 @@ import { categoryW3cRoleSchema } from '../app/examples/vueCapacitor/categoryW3cR
 import { CATEGORY_COLOR_SERVICE_CONSTANTS } from '../app/examples/vueCapacitor/constants/CategoryColorServiceConstants.ts';
 
 class RecipeConfigFixture {
-  static input(config: JsonObjectType): InputInterface {
+  static input(config: JSONSchema7Object): InputInterfaceTypeEntity.Type {
     const input = RecipeConfigFixture.objectMember(config, 'input');
     const contrast = RecipeConfigFixture.objectMember(input, 'contrast');
     const metadata = RecipeConfigFixture.objectMember(input, 'metadata');
-    return {
-      'bypass': undefined,
+    const result = InputInterfaceTypeEntity.create({
       'colors': RecipeConfigFixture.stringArray(input.colors, 'input.colors'),
       'contrast': {
-        'algorithm': RecipeConfigFixture.algorithm(contrast.algorithm),
+        'algorithm': ContrastAlgorithmTypeEntity.intake(contrast.algorithm),
         'cvdCorrect': RecipeConfigFixture.boolean(contrast.cvdCorrect, 'input.contrast.cvdCorrect'),
         'extra': RecipeConfigFixture.contrastPairs(contrast.extra),
         'level': RecipeConfigFixture.string(contrast.level, 'input.contrast.level')
       },
-      'emit': undefined,
-      'maxColors': undefined,
       'metadata': metadata,
-      'roles': categoryW3cRoleSchema,
-      'runtime': undefined
-    };
+      'roles': categoryW3cRoleSchema
+    });
+    return result;
   }
 
-  static async json(relativePath: string): Promise<JsonObjectType> {
-    const parsed: unknown = JSON.parse(
+  static async json(relativePath: string): Promise<JSONSchema7Object> {
+    const parsed = JsonValue.from(JSON.parse(
       await readFile(new URL(relativePath, import.meta.url), 'utf8')
-    );
+    ));
     if (!JsonObject.is(parsed)) {
       throw new TypeError(`${relativePath} must contain a JSON object.`);
     }
-    return parsed;
+    const result = parsed;
+    return result;
   }
 
-  static objectMember(parent: JsonObjectType, key: string): JsonObjectType {
+  static objectMember(parent: JSONSchema7Object, key: string): JSONSchema7Object {
     const value = parent[key];
     if (!JsonObject.is(value)) {
       throw new TypeError(`${key} must be an object.`);
     }
-    return value;
+    const result = value;
+    return result;
   }
 
-  static run(config: JsonObjectType): PaletteStateInterface {
+  static run(config: JSONSchema7Object): PaletteStateInterface {
     const engine = new Engine();
-    for (const task of coreTasks) {
+    for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
+      const task = coreTasks[taskIndex];
+      if (task === undefined) {
+        throw new Error(`Core task ${taskIndex} is missing.`);
+      }
       engine.tasks.register(task);
     }
     engine.adopt(contrastPlugin);
     engine.adopt(stylesheetPlugin);
     engine.adopt(capacitorPlugin);
     engine.pipeline(RecipeConfigFixture.stringArray(config.pipeline, 'pipeline'));
-    return engine.run(RecipeConfigFixture.input(config));
+    const result = engine.run(RecipeConfigFixture.input(config));
+    return result;
   }
 
-  static string(value: unknown, path: string): string {
+  static string(value: JSONSchema7Object[string] | undefined, path: string): string {
     if (typeof value !== 'string') {
       throw new TypeError(`${path} must be a string.`);
     }
-    return value;
+    const result = value;
+    return result;
   }
 
-  static stringArray(value: unknown, path: string): string[] {
+  static stringArray(value: JSONSchema7Object[string] | undefined, path: string): string[] {
     if (!Array.isArray(value)) {
       throw new TypeError(`${path} must be an array.`);
     }
     const strings: string[] = [];
-    for (const [index, member] of value.entries()) {
+    for (let index = 0; index < value.length; index += 1) {
+      const member = value[index];
+      if (member === undefined) {
+        throw new TypeError(`${path}[${index}] is missing.`);
+      }
       strings.push(RecipeConfigFixture.string(member, `${path}[${index}]`));
     }
     return strings;
   }
 
-  private static algorithm(value: unknown): ContrastAlgorithmType {
-    if (value !== 'wcag21' && value !== 'apca') {
-      throw new TypeError('input.contrast.algorithm must be wcag21 or apca.');
-    }
-    return value;
-  }
-
-  private static boolean(value: unknown, path: string): boolean {
+  private static boolean(value: JSONSchema7Object[string] | undefined, path: string): boolean {
     if (typeof value !== 'boolean') {
       throw new TypeError(`${path} must be a boolean.`);
     }
-    return value;
+    const result = value;
+    return result;
   }
 
-  private static contrastPairs(value: unknown): ContrastPairInterfaceType[] {
+  private static contrastPairs(value: JSONSchema7Object[string] | undefined): ContrastPairInterfaceTypeEntity.Type[] {
     if (!Array.isArray(value)) {
       throw new TypeError('input.contrast.extra must be an array.');
     }
-    const pairs: ContrastPairInterfaceType[] = [];
-    for (const [index, member] of value.entries()) {
-      if (!JsonObject.is(member)) {
+    const pairs: ContrastPairInterfaceTypeEntity.Type[] = [];
+    for (let index = 0; index < value.length; index += 1) {
+      const member = value[index];
+      if (member === undefined || !JsonObject.is(member)) {
         throw new TypeError(`input.contrast.extra[${index}] must be an object.`);
       }
-      const minimumRatio = member.minRatio;
-      if (typeof minimumRatio !== 'number') {
-        throw new TypeError(`input.contrast.extra[${index}].minRatio must be a number.`);
+      const minimumContrastRatio = member.minimumContrastRatio;
+      if (typeof minimumContrastRatio !== 'number') {
+        throw new TypeError(`input.contrast.extra[${index}].minimumContrastRatio must be a number.`);
       }
-      pairs.push({
-        'algorithm': RecipeConfigFixture.algorithm(member.algorithm),
+      pairs.push(ContrastPairInterfaceTypeEntity.create({
+        'algorithm': ContrastAlgorithmTypeEntity.intake(member.algorithm),
         'background': RecipeConfigFixture.string(member.background, `input.contrast.extra[${index}].background`),
         'foreground': RecipeConfigFixture.string(member.foreground, `input.contrast.extra[${index}].foreground`),
-        'minRatio': minimumRatio
-      });
+        'minimumContrastRatio': minimumContrastRatio
+      }));
     }
     return pairs;
   }
-
 }
-
 class FakeStyleElement {
   id = '';
   textContent: string | null = null;
@@ -156,7 +156,8 @@ class FakeHead {
 
   appendChild(element: FakeStyleElement): FakeStyleElement {
     this.children.push(element);
-    return element;
+    const result = element;
+    return result;
   }
 }
 
@@ -167,26 +168,32 @@ class FakeDocument {
     if (tagName !== 'style') {
       throw new TypeError(`Unexpected element request: ${tagName}`);
     }
-    return new FakeStyleElement();
+    const result = new FakeStyleElement();
+    return result;
   }
 
   getElementById(identifier: string): FakeStyleElement | null {
     if (identifier.length === 0) {
       throw new TypeError('Element identifiers must be non-empty.');
     }
-    for (const child of this.head.children) {
-      if (child.id === identifier) {
+    for (let index = 0; index < this.head.children.length; index += 1) {
+      const child = this.head.children[index];
+      if (child?.id === identifier) {
         return child;
       }
     }
     return null;
   }
 }
-
 class CssFixture {
   static declarations(css: string): Map<string, string> {
     const declarations = new Map<string, string>();
-    for (const line of css.split('\n')) {
+    const lines = css.split('\n');
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (line === undefined) {
+        throw new Error(`CSS line ${index} is missing.`);
+      }
       const match = CATEGORY_COLOR_SERVICE_CONSTANTS.cssCustomPropertyDeclarationPattern.exec(line);
       if (match?.[1] !== undefined && match[2] !== undefined) {
         declarations.set(match[1], match[2]);
@@ -200,27 +207,66 @@ class CssFixture {
     if (value === undefined) {
       throw new Error(`CSS property ${property} is missing.`);
     }
-    return value;
+    const result = value;
+    return result;
   }
 }
 
+class RoleSchemaFixture {
+  static assertCompleteShapes(): void {
+    for (let roleIndex = 0; roleIndex < categoryW3cRoleSchema.roles.length; roleIndex += 1) {
+      const role = categoryW3cRoleSchema.roles[roleIndex];
+      if (role === undefined) {
+        throw new Error(`Role ${roleIndex} is missing.`);
+      }
+      assert.equal(RoleDefinitionInterfaceTypeEntity.validate(role), true, `${role.name} is canonical`);
+      assert.equal(Object.hasOwn(role, 'name'), true, `${role.name}.name is present`);
+      const keys = Object.keys(role);
+      for (let keyIndex = 0; keyIndex < keys.length; keyIndex += 1) {
+        const key = keys[keyIndex];
+        if (key === undefined) {
+          throw new Error(`Role key ${keyIndex} is missing.`);
+        }
+        assert.notEqual(Reflect.get(role, key), undefined, `${role.name}.${key} is defined`);
+      }
+    }
+  }
+}
 class AccessibilityFixture {
-  static apcaPairs(): ContrastPairInterfaceType[] {
-    return [
-      { 'algorithm': 'apca', 'background': 'canvas', 'foreground': 'text', 'minRatio': 75 },
-      { 'algorithm': 'apca', 'background': 'surface', 'foreground': 'text', 'minRatio': 75 },
-      { 'algorithm': 'apca', 'background': 'accent', 'foreground': 'onAccent', 'minRatio': 60 },
-      { 'algorithm': 'apca', 'background': 'canvas', 'foreground': 'border', 'minRatio': 45 }
+  static apcaPairs(): ContrastPairInterfaceTypeEntity.Type[] {
+    const result = [
+      ContrastPairInterfaceTypeEntity.create({ 'algorithm': 'apca', 'background': 'canvas', 'foreground': 'text', 'minimumContrastRatio': 75 }),
+      ContrastPairInterfaceTypeEntity.create({ 'algorithm': 'apca', 'background': 'surface', 'foreground': 'text', 'minimumContrastRatio': 75 }),
+      ContrastPairInterfaceTypeEntity.create({ 'algorithm': 'apca', 'background': 'accent', 'foreground': 'onAccent', 'minimumContrastRatio': 60 }),
+      ContrastPairInterfaceTypeEntity.create({ 'algorithm': 'apca', 'background': 'canvas', 'foreground': 'border', 'minimumContrastRatio': 45 })
     ];
+    return result;
   }
 
-  static assertCvd(roles: Record<string, ColorRecordInterfaceType>): void {
+  static requiredRatio(minimumContrastRatio: number | undefined, context: string): number {
+    if (minimumContrastRatio === undefined) {
+      throw new Error(`${context} must declare minimumContrastRatio.`);
+    }
+    const result = minimumContrastRatio;
+    return result;
+  }
+
+  static assertCvd(roles: Map<string, ColorRecordInterfaceTypeEntity.Type>): void {
     const epsilon = 1e-12;
-    for (const pair of categoryW3cRoleSchema.contrastPairs ?? []) {
+    const pairs = categoryW3cRoleSchema.contrastPairs ?? [];
+    for (let pairIndex = 0; pairIndex < pairs.length; pairIndex += 1) {
+      const pair = pairs[pairIndex];
+      if (pair === undefined) {
+        throw new Error(`Contrast pair ${pairIndex} is missing.`);
+      }
       const foreground = AccessibilityFixture.role(roles, pair.foreground);
       const background = AccessibilityFixture.role(roles, pair.background);
       const originalContrast = contrastWcag21.apply(foreground, background);
-      for (const matrix of cvdMatrices) {
+      for (let matrixIndex = 0; matrixIndex < cvdMatrices.length; matrixIndex += 1) {
+        const matrix = cvdMatrices[matrixIndex];
+        if (matrix === undefined) {
+          throw new Error(`CVD matrix ${matrixIndex} is missing.`);
+        }
         const simulatedContrast = AccessibilityFixture.rgbContrast(
           AccessibilityFixture.simulate(foreground.rgb, matrix),
           AccessibilityFixture.simulate(background.rgb, matrix)
@@ -232,7 +278,7 @@ class AccessibilityFixture {
           `${pair.foreground}/${pair.background} ${matrix.name} drop`
         );
         assert.equal(
-          simulatedContrast >= threshold.minSimulatedContrast - epsilon,
+          simulatedContrast >= threshold.minimumSimulatedContrast - epsilon,
           true,
           `${pair.foreground}/${pair.background} ${matrix.name} floor`
         );
@@ -241,126 +287,117 @@ class AccessibilityFixture {
   }
 
   static apcaRequiredLc(
-    foregroundIntent: ColorIntentType | undefined,
-    backgroundIntent: ColorIntentType
+    foregroundRole: RoleDefinitionInterfaceTypeEntity.Type,
+    backgroundRole: RoleDefinitionInterfaceTypeEntity.Type
   ): number {
     const engine = new Engine();
-    for (const task of coreTasks) {
+    for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
+      const task = coreTasks[taskIndex];
+      if (task === undefined) {
+        throw new Error(`Core task ${taskIndex} is missing.`);
+      }
       engine.tasks.register(task);
     }
     engine.adopt(contrastPlugin);
     engine.pipeline(['intake:any', 'resolve:roles', 'enforce:apca']);
-    const state = engine.run({
-      'bypass': undefined,
-      'colors': ['#000000', '#ffffff'],
-      'contrast': undefined,
-      'emit': undefined,
-      'maxColors': undefined,
-      'metadata': undefined,
-      'roles': {
-        'contrastPairs': [
-          { 'algorithm': 'apca', 'background': 'background', 'foreground': 'foreground', 'minRatio': 1 }
-        ],
-        'description': undefined,
-        'name': 'semantic-apca-target',
-        'roles': [
-          {
-            'chromaRange': [0, 0.05],
-            'derivedFrom': undefined,
-            'description': undefined,
-            'hue': undefined,
-            'hueClamp': undefined,
-            'hueOffset': undefined,
-            'intent': foregroundIntent,
-            'lightnessRange': [0, 0.3],
-            'name': 'foreground',
-            'required': true
-          },
-          {
-            'chromaRange': [0, 0.05],
-            'derivedFrom': undefined,
-            'description': undefined,
-            'hue': undefined,
-            'hueClamp': undefined,
-            'hueOffset': undefined,
-            'intent': backgroundIntent,
-            'lightnessRange': [0.85, 1],
-            'name': 'background',
-            'required': true
-          }
-        ]
-      },
-      'runtime': undefined
+    const roles = RoleSchemaInterfaceTypeEntity.create({
+      'contrastPairs': [
+        { 'algorithm': 'apca', 'background': 'background', 'foreground': 'foreground', 'minimumContrastRatio': 1 }
+      ],
+      'name': 'semantic-apca-target',
+      'roles': [
+        { ...foregroundRole, 'name': 'foreground' },
+        { ...backgroundRole, 'name': 'background' }
+      ]
     });
-    const pair = getContrastMetadata(state.metadata, 'contrast:apca')?.pairs[0];
-    if (pair === undefined) {
+    const state = engine.run(InputInterfaceTypeEntity.create({
+      'colors': ['#000000', '#ffffff'],
+      'roles': roles
+    }));
+    const metadata = getContrastMetadata(state.metadata, 'contrast:apca');
+    if (metadata === undefined || !('pairs' in metadata)) {
       throw new Error('APCA enforcement did not report the semantic intent pair.');
     }
-    return pair.requiredLc;
+    const pair = metadata.pairs[0];
+    if (pair === undefined || !('requiredLc' in pair)) {
+      throw new Error('APCA enforcement did not report the semantic intent pair.');
+    }
+    const result = pair.requiredLc;
+    return result;
   }
 
   static cvdDrop(
-    foreground: ColorRecordInterfaceType,
-    background: ColorRecordInterfaceType,
-    matrix: CvdMatrixInterfaceType
+    foreground: ColorRecordInterfaceTypeEntity.Type,
+    background: ColorRecordInterfaceTypeEntity.Type,
+    matrix: CvdMatrixInterfaceTypeEntity.Type
   ): number {
-    return contrastWcag21.apply(foreground, background) - AccessibilityFixture.rgbContrast(
+    const result = contrastWcag21.apply(foreground, background) - AccessibilityFixture.rgbContrast(
       AccessibilityFixture.simulate(foreground.rgb, matrix),
       AccessibilityFixture.simulate(background.rgb, matrix)
     );
+    return result;
   }
 
   static emittedRoles(
     declarations: Map<string, string>,
     variableMap: Record<string, string>
-  ): Record<string, ColorRecordInterfaceType> {
-    const roles: Record<string, ColorRecordInterfaceType> = {};
-    for (const role of categoryW3cRoleSchema.roles) {
-      const property = variableMap[role.name];
+  ): Map<string, ColorRecordInterfaceTypeEntity.Type> {
+    const roles = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+    const variables = new Map(Object.entries(variableMap));
+    for (let roleIndex = 0; roleIndex < categoryW3cRoleSchema.roles.length; roleIndex += 1) {
+      const role = categoryW3cRoleSchema.roles[roleIndex];
+      if (role === undefined) {
+        throw new Error(`Role ${roleIndex} is missing.`);
+      }
+      const property = variables.get(role.name);
       if (property === undefined) {
         throw new Error(`CSS variable mapping is missing for ${role.name}.`);
       }
-      roles[role.name] = colorRecordFactory.fromHex(
+      roles.set(role.name, colorRecordFactory.fromHex(
         CssFixture.requireValue(declarations, property)
-      );
+      ));
     }
     return roles;
   }
 
   static role(
-    roles: Record<string, ColorRecordInterfaceType>,
+    roles: Map<string, ColorRecordInterfaceTypeEntity.Type>,
     roleName: string
-  ): ColorRecordInterfaceType {
-    const role = roles[roleName];
+  ): ColorRecordInterfaceTypeEntity.Type {
+    const role = roles.get(roleName);
     if (role === undefined) {
       throw new Error(`Role ${roleName} is missing.`);
     }
-    return role;
+    const result = role;
+    return result;
   }
 
-  private static luminance(rgb: RgbInterfaceType): number {
+  private static luminance(rgb: ReturnType<typeof colorRecordFactory.fromHex>['rgb']): number {
     const linear = srgbToLinear.apply(rgb.r, rgb.g, rgb.b);
-    return 0.2126 * linear.r + 0.7152 * linear.g + 0.0722 * linear.b;
+    const result = 0.2126 * linear.r + 0.7152 * linear.g + 0.0722 * linear.b;
+    return result;
   }
 
-  private static rgbContrast(foreground: RgbInterfaceType, background: RgbInterfaceType): number {
+  private static rgbContrast(foreground: ReturnType<typeof colorRecordFactory.fromHex>['rgb'], background: ReturnType<typeof colorRecordFactory.fromHex>['rgb']): number {
     const foregroundLuminance = AccessibilityFixture.luminance(foreground);
     const backgroundLuminance = AccessibilityFixture.luminance(background);
-    return (
+    const result = (
       Math.max(foregroundLuminance, backgroundLuminance) + 0.05
     ) / (
       Math.min(foregroundLuminance, backgroundLuminance) + 0.05
     );
+    return result;
   }
 
-  private static simulate(rgb: RgbInterfaceType, cvd: CvdMatrixInterfaceType): RgbInterfaceType {
+  private static simulate(rgb: ReturnType<typeof colorRecordFactory.fromHex>['rgb'], cvd: CvdMatrixInterfaceTypeEntity.Type): ReturnType<typeof colorRecordFactory.fromHex>['rgb'] {
     const linear = srgbToLinear.apply(rgb.r, rgb.g, rgb.b);
     const matrix = cvd.matrix;
-    return linearToSrgb.apply(
+    const result = linearToSrgb.apply(
       clamp01.apply(matrix[0] * linear.r + matrix[1] * linear.g + matrix[2] * linear.b),
       clamp01.apply(matrix[3] * linear.r + matrix[4] * linear.g + matrix[5] * linear.b),
       clamp01.apply(matrix[6] * linear.r + matrix[7] * linear.g + matrix[8] * linear.b)
     );
+    return result;
   }
 }
 
@@ -404,40 +441,43 @@ await test('Vue Capacitor CVD audit clamps matrix channels before gamma encoding
 });
 
 await test('Vue Capacitor APCA evidence covers every canonical foreground intent', () => {
-  const actualTargets: Readonly<Record<ColorIntentType, number>> = {
-    'accent':     AccessibilityFixture.apcaRequiredLc('accent', 'background'),
-    'background': AccessibilityFixture.apcaRequiredLc('background', 'background'),
-    'button':     AccessibilityFixture.apcaRequiredLc('button', 'background'),
-    'critical':   AccessibilityFixture.apcaRequiredLc('critical', 'background'),
-    'link':       AccessibilityFixture.apcaRequiredLc('link', 'background'),
-    'muted':      AccessibilityFixture.apcaRequiredLc('muted', 'background'),
-    'onAccent':   AccessibilityFixture.apcaRequiredLc('onAccent', 'accent'),
-    'onButton':   AccessibilityFixture.apcaRequiredLc('onButton', 'button'),
-    'positive':   AccessibilityFixture.apcaRequiredLc('positive', 'background'),
-    'text':       AccessibilityFixture.apcaRequiredLc('text', 'background')
-  };
-  const expectedTargets: Readonly<Record<ColorIntentType, number>> = {
-    'accent': 45,
-    'background': 45,
-    'button': 45,
-    'critical': 45,
-    'link': 60,
-    'muted': 60,
-    'onAccent': 60,
-    'onButton': 60,
-    'positive': 45,
-    'text': 75
-  };
+  const backgroundRole = RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'background', 'name': 'background' });
+  const accentRole = RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'accent', 'name': 'accent' });
+  const buttonRole = RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'button', 'name': 'button' });
+  const actualTargets = new Map([
+    ['accent', AccessibilityFixture.apcaRequiredLc(accentRole, backgroundRole)],
+    ['background', AccessibilityFixture.apcaRequiredLc(backgroundRole, backgroundRole)],
+    ['button', AccessibilityFixture.apcaRequiredLc(buttonRole, backgroundRole)],
+    ['critical', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'critical', 'name': 'critical' }), backgroundRole)],
+    ['link', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'link', 'name': 'link' }), backgroundRole)],
+    ['muted', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'muted', 'name': 'muted' }), backgroundRole)],
+    ['onAccent', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'onAccent', 'name': 'onAccent' }), accentRole)],
+    ['onButton', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'onButton', 'name': 'onButton' }), buttonRole)],
+    ['positive', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'positive', 'name': 'positive' }), backgroundRole)],
+    ['text', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'text', 'name': 'text' }), backgroundRole)]
+  ]);
+  const expectedTargets = new Map([
+    ['accent', 45],
+    ['background', 45],
+    ['button', 45],
+    ['critical', 45],
+    ['link', 60],
+    ['muted', 60],
+    ['onAccent', 60],
+    ['onButton', 60],
+    ['positive', 45],
+    ['text', 75]
+  ]);
 
   assert.deepEqual(actualTargets, expectedTargets);
-  assert.equal(AccessibilityFixture.apcaRequiredLc(undefined, 'background'), 45);
+  const unconstrainedForeground = RoleDefinitionInterfaceTypeEntity.create({ 'name': 'foreground' });
+  assert.equal(AccessibilityFixture.apcaRequiredLc(unconstrainedForeground, backgroundRole), 45);
 });
-
 await test('Vue Capacitor JSON artifacts align with the TypeScript schema and execute the real config', async () => {
   const config = await RecipeConfigFixture.json('../app/examples/vueCapacitor/category-w3c.config.json');
   const schemaJson = await RecipeConfigFixture.json('../app/examples/vueCapacitor/categoryW3cRoleSchema.json');
   const input = RecipeConfigFixture.input(config);
-  const serializedTypeScriptSchema: unknown = JSON.parse(JSON.stringify(categoryW3cRoleSchema));
+  const serializedTypeScriptSchema = JsonValue.from(JSON.parse(JSON.stringify(categoryW3cRoleSchema)));
   assert.deepEqual(schemaJson, serializedTypeScriptSchema);
   assert.deepEqual(
     RecipeConfigFixture.objectMember(RecipeConfigFixture.objectMember(config, 'input'), 'roles'),
@@ -463,15 +503,27 @@ await test('Vue Capacitor JSON artifacts align with the TypeScript schema and ex
   ]);
 
   const state = RecipeConfigFixture.run(config);
-  assert.equal(getContrastMetadata(state.metadata, 'contrast:aa')?.pairs.length, 4);
-  assert.equal(getContrastMetadata(state.metadata, 'contrast:aaa')?.pairs.length, 4);
-  assert.equal(getContrastMetadata(state.metadata, 'contrast:apca')?.pairs.length, 4);
+  const wcagAa = getContrastMetadata(state.metadata, 'contrast:aa');
+  const wcagAaa = getContrastMetadata(state.metadata, 'contrast:aaa');
+  const apca = getContrastMetadata(state.metadata, 'contrast:apca');
   const cvd = getContrastMetadata(state.metadata, 'contrast:cvd');
-  assert.ok(cvd !== undefined);
+  if (
+    wcagAa === undefined || !('pairs' in wcagAa)
+    || wcagAaa === undefined || !('pairs' in wcagAaa)
+    || apca === undefined || !('pairs' in apca)
+    || cvd === undefined || !('warnings' in cvd) || !('corrections' in cvd)
+  ) {
+    throw new Error('The canonical recipe config must emit all contrast evidence.');
+  }
+  assert.equal(wcagAa.pairs.length, 4);
+  assert.equal(wcagAaa.pairs.length, 4);
+  assert.equal(apca.pairs.length, 4);
   assert.equal(cvd.warnings.length, 0);
-  assert.equal(cvd.corrections?.every((correction) => {
-    return correction.cvdTypesRemaining.length === 0;
-  }), true);
+  const everyCorrectionCleared = cvd.corrections?.every((correction) => {
+    const result = correction.cvdTypesRemaining.length === 0;
+    return result;
+  });
+  assert.equal(everyCorrectionCleared, true);
 });
 
 await test('Vue Capacitor schema exposes complete role shapes and produces validated outputs', () => {
@@ -481,42 +533,25 @@ await test('Vue Capacitor schema exposes complete role shapes and produces valid
 
   assert.equal(categoryW3cRoleSchema.name, 'category-w3c');
   assert.equal(categoryW3cRoleSchema.roles.length, 7);
-  const onAccentRole = categoryW3cRoleSchema.roles.find((role) => {return role.name === 'onAccent';});
+  const onAccentRole = categoryW3cRoleSchema.roles.find((role) => {
+    const result = role.name === 'onAccent';
+    return result;
+  });
   assert.equal(onAccentRole?.intent, 'onAccent');
-  const borderRole = categoryW3cRoleSchema.roles.find((role) => {return role.name === 'border';});
+  const borderRole = categoryW3cRoleSchema.roles.find((role) => {
+    const result = role.name === 'border';
+    return result;
+  });
   assert.equal(borderRole?.intent, undefined);
-  const mutedRole = categoryW3cRoleSchema.roles.find((role) => {return role.name === 'muted';});
+  const mutedRole = categoryW3cRoleSchema.roles.find((role) => {
+    const result = role.name === 'muted';
+    return result;
+  });
   assert.equal(mutedRole?.intent, 'muted');
-  const roleKeys = [
-    'chromaRange',
-    'derivedFrom',
-    'description',
-    'hue',
-    'hueClamp',
-    'hueOffset',
-    'intent',
-    'lightnessRange',
-    'name',
-    'required'
-  ];
-  const roleCount = categoryW3cRoleSchema.roles.length;
-  const roleKeyCount = roleKeys.length;
-  for (let roleIndex = 0; roleIndex < roleCount; roleIndex += 1) {
-    const role = categoryW3cRoleSchema.roles[roleIndex];
-    if (role === undefined) {
-      throw new Error(`Role ${roleIndex} is missing.`);
-    }
-    for (let keyIndex = 0; keyIndex < roleKeyCount; keyIndex += 1) {
-      const key = roleKeys[keyIndex];
-      if (key === undefined) {
-        throw new Error(`Role key ${keyIndex} is missing.`);
-      }
-      assert.equal(Object.hasOwn(role, key), true, `${role.name}.${key} is present`);
-    }
-  }
+  RoleSchemaFixture.assertCompleteShapes();
 
   const output = categoryColorService.apply('music', '#8B5CF6');
-  assert.ok(Object.keys(output.cssVars.map).length > 0);
+  assert.equal(Object.keys(output.cssVars.map).length > 0, true);
   assert.equal(output.cssVars.full.includes(':root'), true);
   assert.equal(output.cssVars.forcedColors.includes('--c-on-accent: HighlightText;'), true);
   assert.equal(output.cssVars.forcedColors.includes('--c-on-accent: CanvasText;'), false);
@@ -527,15 +562,21 @@ await test('Vue Capacitor schema exposes complete role shapes and produces valid
   assert.equal(typeof output.statusBar.overlay, 'boolean');
   assert.equal(output.statusBar.style === 'DARK' || output.statusBar.style === 'LIGHT', true);
   assert.equal(output.wcagAa.pairs.length, categoryW3cRoleSchema.contrastPairs?.length);
-  assert.equal(output.wcagAa.pairs.every((pair) => {
-    return pair.pass && pair.after >= pair.required;
-  }), true);
-  assert.equal(output.wcagAaa.pairs.every((pair) => {
-    return pair.pass && pair.after >= pair.required;
-  }), true);
-  assert.equal(output.apca.pairs.every((pair) => {
-    return pair.pass && pair.afterLc >= pair.requiredLc;
-  }), true);
+  const wcagAaPasses = output.wcagAa.pairs.every((pair) => {
+    const result = pair.pass && pair.after >= pair.required;
+    return result;
+  });
+  assert.equal(wcagAaPasses, true);
+  const wcagAaaPasses = output.wcagAaa.pairs.every((pair) => {
+    const result = pair.pass && pair.after >= pair.required;
+    return result;
+  });
+  assert.equal(wcagAaaPasses, true);
+  const apcaPasses = output.apca.pairs.every((pair) => {
+    const result = pair.pass && pair.afterLc >= pair.requiredLc;
+    return result;
+  });
+  assert.equal(apcaPasses, true);
   const requiredLcByPair = new Map(output.apca.pairs.map((pair) => {
     return [`${pair.foreground}\u0000${pair.background}`, pair.requiredLc];
   }));
@@ -544,9 +585,11 @@ await test('Vue Capacitor schema exposes complete role shapes and produces valid
   assert.equal(requiredLcByPair.get('onAccent\u0000accent'), 60);
   assert.equal(requiredLcByPair.get('border\u0000canvas'), 45);
   assert.equal(output.cvd.warnings.length, 0);
-  assert.equal(output.cvd.corrections?.every((correction) => {
-    return correction.cvdTypesRemaining.length === 0;
-  }), true);
+  const correctionsCleared = output.cvd.corrections?.every((correction) => {
+    const result = correction.cvdTypesRemaining.length === 0;
+    return result;
+  });
+  assert.equal(correctionsCleared, true);
   assert.equal(documentFixture.head.children.length, 1);
   assert.equal(output.cssVars.scopedBlock.startsWith("[data-category='music'] {\n"), true);
   assert.equal(documentFixture.head.children[0]?.textContent, output.cssVars.scopedBlock);
@@ -563,23 +606,39 @@ await test('Vue Capacitor schema exposes complete role shapes and produces valid
   ]);
   assert.deepEqual(declarations, documentedRoleHex);
   const emittedRoles = AccessibilityFixture.emittedRoles(declarations, output.cssVars.map);
-  for (const pair of categoryW3cRoleSchema.contrastPairs ?? []) {
+  const schemaPairs = categoryW3cRoleSchema.contrastPairs ?? [];
+  for (let pairIndex = 0; pairIndex < schemaPairs.length; pairIndex += 1) {
+    const pair = schemaPairs[pairIndex];
+    if (pair === undefined) {
+      throw new Error(`Schema contrast pair ${pairIndex} is missing.`);
+    }
     const ratio = contrastWcag21.apply(
       AccessibilityFixture.role(emittedRoles, pair.foreground),
       AccessibilityFixture.role(emittedRoles, pair.background)
     );
-    assert.equal(ratio >= pair.minRatio, true, `${pair.foreground}/${pair.background}: ${ratio}`);
+    const minimumContrastRatio = AccessibilityFixture.requiredRatio(pair.minimumContrastRatio, `Schema contrast pair ${pairIndex}`);
+    assert.equal(ratio >= minimumContrastRatio, true, `${pair.foreground}/${pair.background}: ${ratio}`);
   }
   const apcaEvidence = new Map<string, number>();
-  for (const result of output.apca.pairs) {
+  for (let resultIndex = 0; resultIndex < output.apca.pairs.length; resultIndex += 1) {
+    const result = output.apca.pairs[resultIndex];
+    if (result === undefined) {
+      throw new Error(`APCA result ${resultIndex} is missing.`);
+    }
     apcaEvidence.set(`${result.foreground}\u0000${result.background}`, result.afterLc);
   }
-  for (const pair of AccessibilityFixture.apcaPairs()) {
+  const apcaPairs = AccessibilityFixture.apcaPairs();
+  for (let pairIndex = 0; pairIndex < apcaPairs.length; pairIndex += 1) {
+    const pair = apcaPairs[pairIndex];
+    if (pair === undefined) {
+      throw new Error(`APCA pair ${pairIndex} is missing.`);
+    }
     const actualLc = Math.abs(contrastApca.apply(
       AccessibilityFixture.role(emittedRoles, pair.foreground),
       AccessibilityFixture.role(emittedRoles, pair.background)
     ));
-    assert.equal(actualLc >= pair.minRatio, true, `${pair.foreground}/${pair.background}: ${actualLc}`);
+    const minimumContrastRatio = AccessibilityFixture.requiredRatio(pair.minimumContrastRatio, `APCA pair ${pairIndex}`);
+    assert.equal(actualLc >= minimumContrastRatio, true, `${pair.foreground}/${pair.background}: ${actualLc}`);
     assert.equal(apcaEvidence.get(`${pair.foreground}\u0000${pair.background}`), actualLc);
   }
   AccessibilityFixture.assertCvd(emittedRoles);

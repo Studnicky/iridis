@@ -1,21 +1,55 @@
-import type { ApcaPairResultSetInterfaceType, WcagPairResultSetInterfaceType } from '@studnicky/iridis-contrast';
+import type { ApcaPairResultSetInterfaceTypeEntity, WcagPairResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+
+class SchemaContrastReports {
+  public readonly aa: WcagPairResultSetInterfaceTypeEntity.Type | undefined;
+  public readonly aaa: WcagPairResultSetInterfaceTypeEntity.Type | undefined;
+  public readonly apca: ApcaPairResultSetInterfaceTypeEntity.Type | undefined;
+}
+
+abstract class SchemaComplianceStatus {
+  public abstract get color(): 'success' | 'warning';
+
+  public static resolve(passing: number, total: number): SchemaComplianceStatus {
+    const result = passing === total ? new SchemaComplianceSuccessStatus() : new SchemaComplianceWarningStatus();
+    return result;
+  }
+}
+
+class SchemaComplianceSuccessStatus extends SchemaComplianceStatus {
+  public get color(): 'success' {
+    const result = 'success';
+    return result;
+  }
+}
+
+class SchemaComplianceWarningStatus extends SchemaComplianceStatus {
+  public get color(): 'warning' {
+    const result = 'warning';
+    return result;
+  }
+}
 
 class SchemaStageSummary {
-  public readonly color: 'success' | 'warning';
+  readonly #status: SchemaComplianceStatus;
   public readonly key: string;
   public readonly label: string;
   public readonly text: string;
 
   public constructor(
-    color: 'success' | 'warning',
+    status: SchemaComplianceStatus,
     key: string,
     label: string,
     text: string
   ) {
-    this.color = color;
+    this.#status = status;
     this.key = key;
     this.label = label;
     this.text = text;
+  }
+
+  public get color(): 'success' | 'warning' {
+    const result = this.#status.color;
+    return result;
   }
 }
 
@@ -23,7 +57,7 @@ export const buildSchemaComplianceSummaries = class SchemaComplianceSummariesBui
   private static buildSummary(
     key: string,
     label: string,
-    report: ApcaPairResultSetInterfaceType | WcagPairResultSetInterfaceType
+    report: ApcaPairResultSetInterfaceTypeEntity.Type | WcagPairResultSetInterfaceTypeEntity.Type
   ): SchemaStageSummary {
     let passing = 0;
     for (const pair of report.pairs) {
@@ -31,29 +65,28 @@ export const buildSchemaComplianceSummaries = class SchemaComplianceSummariesBui
         passing += 1;
       }
     }
-    return new SchemaStageSummary(
-      passing === report.pairs.length ? 'success' : 'warning',
+    const result = new SchemaStageSummary(
+      SchemaComplianceStatus.resolve(passing, report.pairs.length),
       key,
       label,
       `${passing}/${report.pairs.length} pairs passing`
     );
+    return result;
   }
 
   public static build(
     enabledStageNames: ReadonlySet<string>,
-    aa: WcagPairResultSetInterfaceType | undefined,
-    aaa: WcagPairResultSetInterfaceType | undefined,
-    apca: ApcaPairResultSetInterfaceType | undefined
+    reports: SchemaContrastReports
   ): SchemaStageSummary[] {
     const summaries: SchemaStageSummary[] = [];
-    if (enabledStageNames.has('enforce:wcagAA') && aa !== undefined) {
-      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('aa', 'WCAG AA', aa));
+    if (enabledStageNames.has('enforce:wcagAA') && reports.aa !== undefined) {
+      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('aa', 'WCAG AA', reports.aa));
     }
-    if (enabledStageNames.has('enforce:wcagAAA') && aaa !== undefined) {
-      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('aaa', 'WCAG AAA', aaa));
+    if (enabledStageNames.has('enforce:wcagAAA') && reports.aaa !== undefined) {
+      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('aaa', 'WCAG AAA', reports.aaa));
     }
-    if (enabledStageNames.has('enforce:apca') && apca !== undefined) {
-      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('apca', 'APCA', apca));
+    if (enabledStageNames.has('enforce:apca') && reports.apca !== undefined) {
+      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('apca', 'APCA', reports.apca));
     }
     return summaries;
   }

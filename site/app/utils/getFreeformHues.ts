@@ -1,7 +1,7 @@
 class GetFreeformHuesOperation {
   static run(offsets: number[]): number[] {
-    const result = offsets;
-    return result;
+    const hues = offsets.slice();
+    return hues;
   }
 }
 

@@ -1,18 +1,16 @@
 import type {
-  ColorRecordInterfaceType,
+  ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
   PipelineContextInterface,
-  TaskInterface,
-  TaskManifestInterfaceType
+  TaskInterface
 } from '@studnicky/iridis';
 
-import { CssVarName } from '@studnicky/iridis';
-import { LogBody } from '@studnicky/logger/builders';
-import { LOG_STATUS } from '@studnicky/logger/constants';
+import { CssVarName, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { ColorsShapeRecordEntity } from '../entities/ColorsShapeRecordEntity.ts';
-import type { TailwindOutputInterfaceType } from '../types/index.ts';
+import type { TailwindOutputInterface } from '../interfaces/TailwindOutputInterface.ts';
 
+import { ColorsShapeRecordEntity } from '../entities/ColorsShapeRecordEntity.ts';
 import { EMIT_TAILWIND_THEME_CONSTANTS } from './constants/EmitTailwindThemeConstants.ts';
 
 /**
@@ -26,7 +24,7 @@ import { EMIT_TAILWIND_THEME_CONSTANTS } from './constants/EmitTailwindThemeCons
  * dep graph between themselves).
  */
 class P3 {
-  static serialize(p3: ColorRecordInterfaceType['displayP3']): string {
+  static serialize(p3: ColorRecordInterfaceTypeEntity.Type['displayP3']): string {
     if (p3 === undefined) {return '';}
     const r = p3.r.toFixed(4);
     const g = p3.g.toFixed(4);
@@ -42,41 +40,48 @@ class P3 {
  * (kept flat) to avoid single-key nested objects.
  */
 class ColorsShape {
-  static build(roles: Record<string, ColorRecordInterfaceType>): ColorsShapeRecordEntity.Type {
-    // Collect candidate groups: root → { shade → hex }
-    const groups: Record<string, Record<string, string>> = {};
-    const flat:   Record<string, string>                 = {};
+  static build(roles: Record<string, ColorRecordInterfaceTypeEntity.Type>): ColorsShapeRecordEntity.Type {
+    const groups = new Map<string, Map<string, string>>();
+    const flat = new Map<string, string>();
+    const roleEntries = Object.entries(roles);
 
-    for (const [role, record] of Object.entries(roles)) {
+    for (let index = 0; index < roleEntries.length; index += 1) {
+      const [role, record] = roleEntries[index]!;
       const match = EMIT_TAILWIND_THEME_CONSTANTS.shadeRolePattern.exec(role);
-      if (match !== null && EMIT_TAILWIND_THEME_CONSTANTS.tailwindShades.has(match[2] ?? '')) {
-        const root  = match[1]!;
-        const shade = match[2]!;
-        groups[root] ??= {};
-        (groups[root])[shade] = record.hex;
+      const root = match?.[1];
+      const shade = match?.[2];
+      if (root !== undefined && shade !== undefined && EMIT_TAILWIND_THEME_CONSTANTS.tailwindShades.has(shade)) {
+        const shades = groups.get(root) ?? new Map<string, string>();
+        shades.set(shade, record.hex);
+        groups.set(root, shades);
       } else {
-        flat[role] = record.hex;
+        flat.set(role, record.hex);
       }
     }
 
-    const colors: ColorsShapeRecordEntity.Type = {};
-
-    // Flat roles first
-    for (const [role, hex] of Object.entries(flat)) {
-      colors[role] = hex;
+    const colors = ColorsShapeRecordEntity.create({});
+    const flatEntries = Array.from(flat.entries());
+    for (let index = 0; index < flatEntries.length; index += 1) {
+      const [role, hex] = flatEntries[index]!;
+      Object.defineProperty(colors, role, { 'configurable': true, 'enumerable': true, 'value': hex, 'writable': true });
     }
 
-    // Grouped shade scales
-    for (const [root, shades] of Object.entries(groups)) {
-      if (Object.keys(shades).length === 1) {
-        // Single member: fold into flat
-        const [[shade, hex]] = Object.entries(shades) as [[string, string]];
-        colors[`${root}-${shade}`] = hex;
+    const groupEntries = Array.from(groups.entries());
+    for (let index = 0; index < groupEntries.length; index += 1) {
+      const [root, shades] = groupEntries[index]!;
+      const shadeEntries = Array.from(shades.entries());
+      if (shadeEntries.length === 1) {
+        const [shade, hex] = shadeEntries[0]!;
+        Object.defineProperty(colors, `${root}-${shade}`, { 'configurable': true, 'enumerable': true, 'value': hex, 'writable': true });
       } else {
-        colors[root] = shades;
+        const shadeScale: Record<string, string> = {};
+        for (let shadeIndex = 0; shadeIndex < shadeEntries.length; shadeIndex += 1) {
+          const [shade, hex] = shadeEntries[shadeIndex]!;
+          Object.defineProperty(shadeScale, shade, { 'configurable': true, 'enumerable': true, 'value': hex, 'writable': true });
+        }
+        Object.defineProperty(colors, root, { 'configurable': true, 'enumerable': true, 'value': shadeScale, 'writable': true });
       }
     }
-
     return colors;
   }
 }
@@ -86,21 +91,31 @@ class ColorsShape {
  * which is safe to embed in a tailwind.config.js export default.
  */
 class ColorsToJs {
+  static indentConfigLine(line: string, index: number): string {
+    const result = index === 0 ? line : `      ${  line}`;
+    return result;
+  }
+
   static serialize(colors: ColorsShapeRecordEntity.Type): string {
     const lines: string[] = ['{'];
-    for (const [key, value] of Object.entries(colors)) {
+    const colorEntries = Object.entries(colors);
+    for (let index = 0; index < colorEntries.length; index += 1) {
+      const [key, value] = colorEntries[index]!;
       if (typeof value === 'string') {
         lines.push(`  '${key}': '${value}',`);
       } else {
         lines.push(`  '${key}': {`);
-        for (const [shade, hex] of Object.entries(value)) {
+        const shadeEntries = Object.entries(value);
+        for (let shadeIndex = 0; shadeIndex < shadeEntries.length; shadeIndex += 1) {
+          const [shade, hex] = shadeEntries[shadeIndex]!;
           lines.push(`    '${shade}': '${hex}',`);
         }
         lines.push('  },');
       }
     }
     lines.push('}');
-    return lines.join('\n');
+    const result = lines.join('\n');
+    return result;
   }
 }
 
@@ -122,8 +137,13 @@ class ColorsToJs {
  * `output.colors` (always hex, always sRGB-safe).
  */
 class CssVarsSheet {
+  static indent(declaration: string): string {
+    const result = `  ${  declaration}`;
+    return result;
+  }
+
   static build(
-    roles:  Record<string, ColorRecordInterfaceType>,
+    roles:  Record<string, ColorRecordInterfaceTypeEntity.Type>,
     prefix: string
   ): string {
     const decls = Object.entries(roles).map(([role, record]) => {
@@ -133,7 +153,9 @@ class CssVarsSheet {
     const sRgbBlock = `:root {\n${decls.join('\n')}\n}`;
 
     const p3Decls: string[] = [];
-    for (const [role, record] of Object.entries(roles)) {
+    const roleEntries = Object.entries(roles);
+    for (let index = 0; index < roleEntries.length; index += 1) {
+      const [role, record] = roleEntries[index]!;
       if (record.displayP3 !== undefined) {
         const varName = CssVarName.from(role, prefix);
         p3Decls.push(`  ${varName}: ${P3.serialize(record.displayP3)};`);
@@ -143,8 +165,10 @@ class CssVarsSheet {
       return sRgbBlock;
     }
 
-    const p3Block = `@supports (color: color(display-p3 0 0 0)) {\n  :root {\n${p3Decls.map((d) => { const result = `  ${d}`; return result; }).join('\n')}\n  }\n}`;
-    return `${sRgbBlock}\n\n${p3Block}`;
+    const indentedP3Declarations = p3Decls.map(CssVarsSheet.indent).join('\n');
+    const p3Block = `@supports (color: color(display-p3 0 0 0)) {\n  :root {\n${indentedP3Declarations}\n  }\n}`;
+    const result = `${sRgbBlock}\n\n${p3Block}`;
+    return result;
   }
 }
 
@@ -155,14 +179,11 @@ class CssVarsSheet {
 export class EmitTailwindTheme implements TaskInterface {
   readonly 'name' = 'emit:tailwindTheme';
 
-  readonly 'manifest': TaskManifestInterfaceType = {
+  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Emit Tailwind theme.colors object and config module from resolved roles',
     'name':        'emit:tailwindTheme',
-    'phase':       undefined,
     'reads':       ['roles', 'metadata'],
-    'requires':    undefined,
-    'writes':      ['outputs.tailwind:theme']
-  };
+    'writes':      ['outputs.tailwind:theme']});
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const prefixRaw = state.metadata.cssVarPrefix;
@@ -172,17 +193,19 @@ export class EmitTailwindTheme implements TaskInterface {
     const cssVars = CssVarsSheet.build(state.roles, prefix);
 
     const colorsJs = ColorsToJs.serialize(colors);
-    const config   = [
+    const colorLines = colorsJs.split('\n');
+    const indentedColorLines = colorLines.map(ColorsToJs.indentConfigLine).join('\n');
+    const config = [
       'export default {',
       '  theme: {',
       '    extend: {',
-      `      colors: ${colorsJs.split('\n').map((l, i) => {return i === 0 ? l : `      ${l}`;}).join('\n')},`,
+      `      colors: ${indentedColorLines},`,
       '    },',
       '  },',
       '};'
     ].join('\n');
 
-    const output: TailwindOutputInterfaceType = {
+    const output: TailwindOutputInterface = {
       'colors':  colors,
       'config':  config,
       'cssVars': cssVars
@@ -191,13 +214,13 @@ export class EmitTailwindTheme implements TaskInterface {
     state.outputs['tailwind:theme'] = output;
 
     context.logger.debug(
-      LogBody.create()
-        .component('EmitTailwindTheme')
-        .operation('run')
-        .status(LOG_STATUS.SUCCESS)
-        .message('Emitted Tailwind theme')
-        .context({ 'colorGroups': Object.keys(colors).length })
-        .build()
+      LogBody.create({
+        'component': 'EmitTailwindTheme',
+        'context': { 'colorGroups': Object.keys(colors).length },
+        'message': 'Emitted Tailwind theme',
+        'operation': 'run',
+        'status': LOG_STATUS.SUCCESS
+      })
     );
   }
 }

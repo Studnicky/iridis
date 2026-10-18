@@ -609,11 +609,32 @@ await test('prefers a package-owned CHANGELOG over the root fallback', () => {
   }
 });
 
-await test('requires lockstep versions and consistent GitHub release metadata', () => {
-  assertFixtureFails(
-    { 'manifest': { 'version': '1.0.1' } },
-    /package version mismatch.*expected 1\.0\.0/u
-  );
+await test('requires public package lockstep and consistent GitHub release metadata', () => {
+  const privateRootVersion = createFixture();
+  try {
+    writeFixtureFile(privateRootVersion, 'package.json', `${JSON.stringify({
+      'name': '@fixture/workspace',
+      'private': true,
+      'version': '9.9.9',
+      'workspaces': ['packages/*']
+    }, null, 2)}\n`);
+    packagePipeline.prepare(['core'], privateRootVersion);
+    assert.equal(existsSync(join(privateRootVersion, 'packages/core/.publish')), true);
+  } finally {
+    removeFixture(privateRootVersion);
+  }
+
+  const incoherentRoot = createFixture();
+  try {
+    createPackage(incoherentRoot, 'extra', { 'manifest': { 'version': '1.0.1' } });
+    assert.throws(
+      () => packagePipeline.prepare(['core'], incoherentRoot),
+      /package version mismatch.*expected 1\.0\.0/u
+    );
+  } finally {
+    removeFixture(incoherentRoot);
+  }
+
   assertFixtureFails(
     { 'manifest': { 'publishConfig': undefined } },
     /invalid GitHub Packages publishConfig/u
@@ -631,9 +652,9 @@ await test('requires lockstep versions and consistent GitHub release metadata', 
     /invalid repository metadata/u
   );
 
-  const inconsistentRoot = createFixture();
+  const inconsistentRepositoryRoot = createFixture();
   try {
-    createPackage(inconsistentRoot, 'extra', {
+    createPackage(inconsistentRepositoryRoot, 'extra', {
       'manifest': {
         'repository': {
           'type': 'git',
@@ -643,11 +664,11 @@ await test('requires lockstep versions and consistent GitHub release metadata', 
       }
     });
     assert.throws(
-      () => packagePipeline.prepare(['core'], inconsistentRoot),
+      () => packagePipeline.prepare(['core'], inconsistentRepositoryRoot),
       /inconsistent repository URL/u
     );
   } finally {
-    removeFixture(inconsistentRoot);
+    removeFixture(inconsistentRepositoryRoot);
   }
 });
 
