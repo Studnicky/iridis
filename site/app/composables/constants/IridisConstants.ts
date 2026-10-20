@@ -13,11 +13,8 @@ export namespace IRIDIS_CONSTANTS {
   /** Every role name actually consumed somewhere on the page (Tokens.ts + CodeBlock.vue) — the ground truth for pinnable roles. */
   export const USED_ROLE_NAMES = new Set([...Tokens.candidateRoleNames(), ...CODE_BLOCK_ROLES]);
 
-  /** The COMBINE stage pipeline over the already-per-image-reduced color list. */
-  export const REQUIRED_IMAGE_STAGES = [
-    'intake:any', 'gallery:histogram', 'gallery:extractCandidates', 'gallery:extract', 'gallery:harmonize',
-    'derive:semanticHues', 'resolve:roles', 'derive:roleRelations', 'expand:family', 'enforce:contrast', 'enforce:cvdSimulate', 'derive:variant'
-  ];
+  /** The COMBINE stage pipeline over the already-per-image-reduced color list: histogram, candidates, dominant colors, harmonize. Role resolution belongs to the color pipeline that consumes the resulting seeds. */
+  export const COMBINE_EXTRACTION_STAGES = ['intake:any', 'gallery:histogram', 'gallery:extractCandidates', 'gallery:extract', 'gallery:harmonize'];
 
   /** Stage 1 reduces one image's pixels to its dominant colors and per-algorithm candidates. */
   export const IMAGE_ENTRY_STAGES = ['intake:any', 'gallery:histogram', 'gallery:extractCandidates', 'gallery:extract'];
