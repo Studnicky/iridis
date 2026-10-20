@@ -57,7 +57,8 @@ export class CvdProbeScenarioSuite {
       'B': colorRecordFactory.fromHex('#008000')
     };
     const pairs = [CvdProbeScenarioSuite.pair('A', 'B'), CvdProbeScenarioSuite.pair('B', 'A')];
-    const first = ContrastTestPort.runCorrectedCvd(originalRoles, pairs, new RecordingLogger());
+    const logger = new RecordingLogger();
+    const first = ContrastTestPort.runCorrectedCvd(originalRoles, pairs, logger);
     const second = ContrastTestPort.runCorrectedCvd(originalRoles, pairs, new RecordingLogger());
     assert.strictEqual(first.roles.A?.hex, second.roles.A?.hex, '[cvd-cycle] deterministic A');
     assert.strictEqual(first.roles.B?.hex, second.roles.B?.hex, '[cvd-cycle] deterministic B');
@@ -71,6 +72,7 @@ export class CvdProbeScenarioSuite {
     assert.ok(cvd !== undefined, '[cvd-cycle] metadata present');
     assert.strictEqual(cvd.warnings.length, 8, '[cvd-cycle] every unresolved pair/type reported');
     assert.strictEqual(cvd.corrections.length, 0, '[cvd-cycle] no phantom correction');
+    assert.deepStrictEqual(logger.warnings, ['CVD correction could not clear every failing type'], '[cvd-cycle-log] terminal metadata warnings emit one aggregate correction diagnostic');
   }
 
   private static dependencyJoint(): void {
