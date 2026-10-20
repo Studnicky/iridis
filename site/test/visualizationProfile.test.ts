@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { isAbsolute, join, relative, sep } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { test } from 'node:test';
 
 import { VisualizationProfileStaticFile } from '../visualization-profile.mjs';
@@ -67,4 +67,31 @@ await test('profile static files reject traversal, dot segments, escaped paths, 
     () => { VisualizationProfileStaticFile.resolve(publicRoot, '/linked-secret.txt'); },
     TypeError
   );
+});
+
+await test('profile mounts generated assets beneath the declared Nuxt base path', (context) => {
+  const publicRoot = mkdtempSync(join(tmpdir(), 'iridis-profile-public-'));
+  context.after(() => { rmSync(publicRoot, { 'force': true, 'recursive': true }); });
+  writeFileSync(join(publicRoot, 'index.html'), '<script type="importmap">{"imports":{"#entry":"/iridis/_nuxt/app.js"}}</script>');
+
+  const basePath = VisualizationProfileStaticFile.basePath(publicRoot);
+  assert.equal(basePath, '/iridis/');
+  assert.equal(VisualizationProfileStaticFile.mountedRequestPath(basePath, '/iridis/'), '/');
+  assert.equal(VisualizationProfileStaticFile.mountedRequestPath(basePath, '/iridis/_nuxt/app.js?cache=1'), '/_nuxt/app.js');
+  assert.equal(VisualizationProfileStaticFile.mountedRequestPath(basePath, '/outside/app.js'), undefined);
+});
+
+await test('profile samples the owned visual targets after graph teardown and drives real D-pad buttons', () => {
+  const profileSource = readFileSync(resolve(import.meta.dirname, '../visualization-profile.mjs'), 'utf8');
+  const graphTarget = "const graphSurface = '.cg-cosmos canvas';";
+  const mermaidTarget = "const mermaidSurface = '.dag-mermaid-frame svg';";
+  const graphTeardown = 'await deactivateGraph(page);';
+  const realDpadActivation = 'await clickVisibleButton(scope, name);';
+
+  assert.equal(profileSource.includes(graphTarget), true);
+  assert.equal(profileSource.includes(mermaidTarget), true);
+  assert.equal(profileSource.indexOf(graphTeardown) < profileSource.indexOf(mermaidTarget), true);
+  assert.equal(profileSource.includes(realDpadActivation), true);
+  assert.equal(profileSource.includes("['graph', '.cg-wrap']"), false);
+  assert.equal(profileSource.includes("['mermaid', '.dag-mermaid-frame']"), false);
 });

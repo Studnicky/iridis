@@ -7,9 +7,8 @@ const SHADE_L: Record<number, number> = {
 };
 
 /**
- * The s50…s950 tonal-ramp config passed as `metadata['core:variantConfig']` —
- * shared by the live palette pipeline (useIridis) and the export pipeline
- * (useMultiOutput) so both derive:variant passes produce the identical ramp.
+ * The s50…s950 tonal-ramp configuration supplied to the engine as
+ * `metadata['core:variantConfig']` by the PaletteSession resolution adapter.
  */
 export const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((shade) => {
   const lightnessTarget = SHADE_L[shade]!;

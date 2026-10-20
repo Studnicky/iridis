@@ -1,9 +1,7 @@
 /**
- * Which optional contrast-standard stage(s) (enforce:wcagAA/AAA/apca) the
- * given strictness enables — index matches contrastStrictness's three UI
- * tiers (0=AA, 1=AAA, 2=APCA/Lc); any other value enables none. Shared by
- * useIridis's live pipeline (both the reactive `enabledOptionalStages` it
- * exposes and its own pipeline builder) and useMultiOutput's export pipeline.
+ * Maps a contrast strictness value to optional engine stages. The PaletteSession
+ * adapter uses this mapping while constructing the pipeline for an admitted
+ * intent; unsupported values select no optional standard.
  */
 class OptionalContrastStagesOperation {
   static run(strictness: number): Set<string> {

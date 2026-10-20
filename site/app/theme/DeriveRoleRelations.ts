@@ -10,20 +10,10 @@ import { effectiveRelation } from '../utils/effectiveRelation.ts';
 import { resolveHueOffset } from '../utils/resolveHueOffset.ts';
 
 /**
- * Computes each `derivedFrom` role's effective hueOffset from the user's
- * per-relation hue-algorithm choice (monochromatic/complementary/analogous/
- * .../freeform — set via the Derivation Relations card), writing it to
- * `metadata['core:hueOffsetOverrides']` for `expand:family` (core) to apply
- * in place of the schema's own hueOffset.
- *
- * Writes to metadata rather than mutating `state.input.roles` directly —
- * `state.input` stays the pristine original schema throughout the pipeline,
- * exactly as every other task expects it to.
- *
- * A relation the user hasn't touched resolves to 'freeform' seeded with the
- * schema's own hueOffset (see effectiveRelation()), reproducing today's
- * fixed output exactly until customized — there is exactly one resolution
- * path from picker to pipeline, never a second, silent fallback.
+ * Computes each derived role's effective hue offset from its admitted
+ * derivation relation and writes `metadata['core:hueOffsetOverrides']` for
+ * family expansion. The task preserves the immutable input role schema and
+ * applies the schema offset when no relation overrides it.
  */
 class DeriveRoleRelations implements TaskInterface {
   readonly 'name' = 'derive:roleRelations';
@@ -61,5 +51,5 @@ class DeriveRoleRelations implements TaskInterface {
   }
 }
 
-/** Singleton instance registered wherever the color pipeline runs (useIridis.ts). */
+/** Singleton task registered by the PaletteSession resolution adapter. */
 export const deriveRoleRelations = new DeriveRoleRelations();

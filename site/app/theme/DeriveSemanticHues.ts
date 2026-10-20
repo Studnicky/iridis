@@ -9,16 +9,10 @@ import { SEMANTIC_HUE } from './semanticHue.ts';
 import { SEMANTIC_HUE_CLAMP } from './semanticHueClamp.ts';
 
 /**
- * Writes `hue`/`hueClamp` overrides for success/warning/error/info onto
- * `metadata['core:hueTargetOverrides']`, for `resolve:roles` (a direct role)
- * or `expand:family` (a derived one) to apply in place of the schema's own
- * values — skipped for any role the user has explicitly assigned a
- * derivation relation to via the Derivation Relations card, so an explicit
- * per-relation choice wins over this built-in semantic nudge rather than
- * being silently overridden by it.
- *
- * Writes to metadata rather than mutating `state.input.roles` directly —
- * `state.input` stays the pristine original schema throughout the pipeline.
+ * Writes hue targets for semantic status roles to
+ * `metadata['core:hueTargetOverrides']`. Explicit admitted derivation
+ * relations take precedence, while the immutable input role schema remains
+ * unchanged.
  */
 class DeriveSemanticHues implements TaskInterface {
   readonly 'name' = 'derive:semanticHues';
@@ -57,5 +51,5 @@ class DeriveSemanticHues implements TaskInterface {
   }
 }
 
-/** Singleton instance registered wherever the color pipeline runs (useIridis.ts). */
+/** Singleton task registered by the PaletteSession resolution adapter. */
 export const deriveSemanticHues = new DeriveSemanticHues();

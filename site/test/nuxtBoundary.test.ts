@@ -402,6 +402,64 @@ await test('canonical VS Code tier demo keeps its controls, output, feedback, an
   );
   await mobile.close();
 });
+
+await test('carousel mounts only its active face and neighbours while the active face owns the scene height', { 'timeout': 180_000 }, async (context) => {
+  assert.ok(existsSync(NITRO_SERVER));
+  const { 'child': nitro, 'origin': origin } = await NuxtBoundaryHarness.startNitro();
+  context.after(async () => {await NuxtBoundaryHarness.stopNitro(nitro);});
+  await NuxtBoundaryHarness.waitForSsr(origin);
+
+  const browser = await chromium.launch({ 'headless': true });
+  context.after(async () => {await browser.close();});
+  const page = await browser.newPage({ 'reducedMotion': 'reduce', 'viewport': { 'height': 900, 'width': 1280 } });
+  await page.goto(origin, { 'waitUntil': 'networkidle' });
+
+  const explore = page.locator('#explore');
+  await explore.scrollIntoViewIfNeeded();
+  const initialFaces = await explore.evaluate((section) => {
+    const scene = section.querySelector<HTMLElement>('.cyl-scene');
+    if (scene === null) {throw new Error('Explore carousel scene is missing.');}
+    return {
+      'placeholders': section.querySelectorAll('.cyl-placeholder').length,
+      'richFaces': section.querySelectorAll('.cyl-card').length,
+      'sceneHeight': Number.parseFloat(scene.style.height)
+    };
+  });
+  assert.equal(initialFaces.richFaces, 3);
+  assert.equal(initialFaces.placeholders, 6);
+  assert.ok(Number.isFinite(initialFaces.sceneHeight));
+
+  const expandedHeight = await explore.evaluate(async (section) => {
+    const scene = section.querySelector<HTMLElement>('.cyl-scene');
+    const content = section.querySelector<HTMLElement>('.cyl-face.active .cyl-card-content');
+    if (scene === null || content === null) {throw new Error('Active carousel content is missing.');}
+    const initialHeight = Number.parseFloat(scene.style.height);
+    const expansion = document.createElement('div');
+    expansion.style.height = '320px';
+    content.append(expansion);
+    await new Promise<void>((resolveFrame) => {window.requestAnimationFrame(() => {resolveFrame();});});
+    await new Promise<void>((resolveFrame) => {window.requestAnimationFrame(() => {resolveFrame();});});
+    return { 'initialHeight': initialHeight, 'nextHeight': Number.parseFloat(scene.style.height) };
+  });
+  assert.ok(expandedHeight.nextHeight >= expandedHeight.initialHeight + 300, JSON.stringify(expandedHeight));
+
+  await explore.getByRole('button', { 'exact': true, 'name': 'Color graph' }).click();
+  await page.waitForFunction(() => {
+    const card = document.querySelector<HTMLElement>('#explore .cyl-card[data-cyl-key="colorGraph"]');
+    const result = card?.closest('.cyl-face')?.classList.contains('active') === true;
+    return result;
+  });
+  const promotedFaces = await explore.evaluate((section) => {
+    const cardKeys = Array.from(section.querySelectorAll<HTMLElement>('.cyl-card')).map((card) => {return card.dataset.cylKey;});
+    const placeholderKeys = Array.from(section.querySelectorAll<HTMLElement>('.cyl-placeholder')).map((card) => {return card.dataset.cylKey;});
+    const result = { 'cardKeys': cardKeys, 'placeholderKeys': placeholderKeys };
+    return result;
+  });
+  assert.equal(promotedFaces.cardKeys.length, 3);
+  assert.ok(promotedFaces.cardKeys.includes('colorGraph'));
+  assert.ok(promotedFaces.placeholderKeys.includes('rolesTable'));
+});
+
 await test('built Nuxt app SSRs and hydrates the rendered navigation order', { 'timeout': 240_000 }, async (context) => {
   // The production build is produced once by site's `pretest` script, not
   // here. Nuxt takes a lockfile for the duration of a build, and `node --test`

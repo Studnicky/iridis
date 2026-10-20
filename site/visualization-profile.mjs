@@ -1,6 +1,6 @@
 import { chromium } from '@playwright/test';
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, realpathSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,136 +17,214 @@ const isDebug = new Set(cliArgs).has('--headful') || new Set(cliArgs).has('--hea
 const PROFILE_MS = Number(cliValue('--duration', process.env.IRIDIS_VIZ_PROFILE_MS ?? '14000'));
 const DEBUG_WAIT_MS = Number(cliValue('--wait-ms', process.env.IRIDIS_VIZ_WAIT_MS ?? '0'));
 
-async function runTarget(page, { name, selector, extraDelayMs = 400, scroll = false, durationMs = PROFILE_MS }) {
-  const result = await page.evaluate(async ({ selector, durationMs, extraDelayMs, scroll }) => {
-    const target = document.querySelector(selector);
-    if (!target) {
-      return { ok: false, reason: `selector not found: ${selector}` };
+const TARGET_SETTLE_MS = 900;
+
+async function clickVisibleButton(scope, name) {
+  const buttons = scope.getByRole('button', { 'exact': true, name });
+  const buttonCount = await buttons.count();
+  for (let index = 0; index < buttonCount; index += 1) {
+    const button = buttons.nth(index);
+    const canReceivePointer = await button.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return false;
+      const target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return target === element || element.contains(target);
+    });
+    if (canReceivePointer) {
+      await button.click();
+      return;
+    }
+  }
+  throw new Error(`No active visible button named ${name}`);
+}
+
+async function pressDpadButtons(scope) {
+  await scope.hover();
+  for (const name of ['Zoom in', 'Pan left', 'Pan right', 'Fit to view']) {
+    await clickVisibleButton(scope, name);
+  }
+}
+
+async function selectCarouselFace(carousel, label) {
+  const candidates = carousel.getByRole('button', { 'exact': true, 'name': label });
+  const count = await candidates.count();
+  if (count === 0) throw new Error(`Carousel face control is missing: ${label}`);
+  await candidates.nth(count - 1).click({ 'force': true });
+}
+
+async function establishCommittedPalette(page) {
+  const upload = page.locator('#upload');
+  const removeSample = upload.getByRole('button', { 'exact': true, 'name': 'Remove Sample' });
+  await upload.scrollIntoViewIfNeeded();
+  if (await removeSample.isVisible()) {
+    await clickVisibleButton(upload, 'Remove Sample');
+  }
+  await clickVisibleButton(upload, 'Try a sample');
+  await page.locator('#combine').waitFor({ 'state': 'attached', 'timeout': 60000 });
+  await removeSample.waitFor({ 'state': 'visible', 'timeout': 60000 });
+}
+
+async function activateReadyGraph(page) {
+  const explore = page.locator('#explore');
+  const carousel = explore.locator('.cyl');
+  await carousel.scrollIntoViewIfNeeded();
+  await selectCarouselFace(carousel, 'Color graph');
+  const graph = explore.locator('.cg-wrap');
+  await graph.waitFor({ 'state': 'visible', 'timeout': 60000 });
+  await graph.locator('.cg-overlay').waitFor({ 'state': 'detached', 'timeout': 60000 });
+  await graph.locator('.cg-cosmos canvas').waitFor({ 'state': 'visible', 'timeout': 60000 });
+}
+
+async function deactivateGraph(page) {
+  const explore = page.locator('#explore');
+  const carousel = explore.locator('.cyl');
+  await selectCarouselFace(carousel, 'Roles table');
+  await page.waitForFunction(() => document.querySelector('.cg-cosmos canvas') === null, undefined, { 'timeout': 60000 });
+  await page.evaluate(() => new Promise((resolveFrame) => {
+    requestAnimationFrame(() => { requestAnimationFrame(resolveFrame); });
+  }));
+}
+
+async function waitForSettledTarget(page, selector) {
+  const target = page.locator(selector).first();
+  await target.waitFor({ 'state': 'visible', 'timeout': 60000 });
+  await target.scrollIntoViewIfNeeded();
+  await page.evaluate((targetSelector) => {
+    const element = document.querySelector(targetSelector);
+    if (element === null) throw new Error(`Profile target disappeared: ${targetSelector}`);
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      throw new Error(`Profile target has no rendered area: ${targetSelector}`);
+    }
+    return new Promise((resolveFrame) => {
+      requestAnimationFrame(() => { requestAnimationFrame(resolveFrame); });
+    });
+  }, selector);
+  await page.waitForTimeout(TARGET_SETTLE_MS);
+}
+
+async function driveSurface(page, selector) {
+  const target = page.locator(selector).first();
+  const bounds = await target.boundingBox();
+  if (bounds === null) throw new Error(`No bounds for active interaction target: ${selector}`);
+  const x = bounds.x + bounds.width / 2;
+  const y = bounds.y + bounds.height / 2;
+  await page.mouse.move(x, y);
+  for (let index = 0; index < 8; index += 1) {
+    await page.mouse.wheel(0, -120);
+    await page.mouse.wheel(0, 120);
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 24, y + 12, { 'steps': 2 });
+    await page.mouse.up();
+  }
+}
+
+async function startTargetProfile(page, selector, sessionId) {
+  return page.evaluate(({ selector: targetSelector, sessionId: profileSessionId }) => {
+    const target = document.querySelector(targetSelector);
+    if (target === null) {
+      return { 'ok': false, 'reason': `selector not found: ${targetSelector}` };
     }
 
-    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     const profile = {
-      frames: [],
-      longTasks: [],
-      mem: [],
-      start: performance.now(),
+      'frames': [],
+      'longTasks': [],
+      'mem': [],
+      'start': performance.now(),
     };
-
-    if (scroll && target.scrollIntoView) {
-      target.scrollIntoView({ block: 'center', behavior: 'instant' });
-    }
-
-    target.dispatchEvent(new Event('mouseenter', { bubbles: true }));
-
-    let prev = performance.now();
-    const tick = (ts) => {
-      profile.frames.push(ts - prev);
-      prev = ts;
-      if (performance.now() - profile.start < durationMs) {
-        requestAnimationFrame(tick);
-      }
+    let active = true;
+    let frameHandle = 0;
+    let previous = profile.start;
+    const tick = (timestamp) => {
+      profile.frames.push(timestamp - previous);
+      previous = timestamp;
+      if (active) frameHandle = requestAnimationFrame(tick);
     };
-    requestAnimationFrame(tick);
+    frameHandle = requestAnimationFrame(tick);
 
     let observer;
     if ('PerformanceObserver' in window) {
       try {
         observer = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            profile.longTasks.push({ duration: entry.duration, startTime: entry.startTime, name: entry.name });
+            profile.longTasks.push({ 'duration': entry.duration, 'name': entry.name, 'startTime': entry.startTime });
           }
         });
-        observer.observe({ type: 'longtask', buffered: true });
+        observer.observe({ 'type': 'longtask' });
       } catch {
-        // ignore
+        // The profile remains valid in engines that do not expose long tasks.
       }
     }
 
-    const memTimer = setInterval(() => {
+    const memoryTimer = setInterval(() => {
       if (performance.memory) {
         profile.mem.push({
-          used: performance.memory.usedJSHeapSize,
-          total: performance.memory.totalJSHeapSize,
-          js: performance.memory.jsHeapSizeLimit,
+          'js': performance.memory.jsHeapSizeLimit,
+          'total': performance.memory.totalJSHeapSize,
+          'used': performance.memory.usedJSHeapSize,
         });
       }
     }, 200);
 
-    const dispatchWheel = (deltaY) => {
-      const rect = target.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
-      target.dispatchEvent(new WheelEvent('wheel', {
-        bubbles: true,
-        cancelable: true,
-        deltaY,
-        clientX: x,
-        clientY: y,
-      }));
-    };
-
-    const dispatchDrag = async () => {
-      const rect = target.getBoundingClientRect();
-      const startX = rect.left + rect.width / 2;
-      const startY = rect.top + rect.height / 2;
-      const moveX = startX + 24;
-      const moveY = startY + 12;
-      const base = {
-        bubbles: true,
-        cancelable: true,
-        pointerId: 1,
-        pointerType: 'mouse',
-        button: 0,
+    window[profileSessionId] = () => {
+      active = false;
+      cancelAnimationFrame(frameHandle);
+      clearInterval(memoryTimer);
+      observer?.disconnect();
+      const frames = profile.frames;
+      const sorted = [...frames].sort((a, b) => a - b);
+      const total = frames.reduce((accumulator, value) => accumulator + value, 0);
+      const average = frames.length === 0 ? 0 : total / frames.length;
+      const targetRoot = target.closest('.cg-wrap') ?? target.closest('.dag-mermaid-frame') ?? target;
+      const memorySamples = profile.mem;
+      const result = {
+        'avgMs': average,
+        'frameCount': frames.length,
+        'jsPeakMB': memorySamples.reduce((accumulator, item) => Math.max(accumulator, item.js), 0) / 1048576,
+        'long10MsOrMore': profile.longTasks.filter((item) => item.duration >= 10).length,
+        'longCount': profile.longTasks.length,
+        'longTotalMs': profile.longTasks.reduce((accumulator, item) => accumulator + item.duration, 0),
+        'maxMs': sorted.at(-1) ?? 0,
+        'memEndMB': memorySamples.at(-1) ? memorySamples.at(-1).used / 1048576 : 0,
+        'memPeakMB': memorySamples.reduce((accumulator, item) => Math.max(accumulator, item.total), 0) / 1048576,
+        'memSamples': memorySamples.length,
+        'memStartMB': memorySamples[0] ? memorySamples[0].used / 1048576 : 0,
+        'ok': true,
+        'overlayText': targetRoot.querySelector('.cg-overlay')?.textContent?.trim() || null,
+        'p50Ms': sorted[Math.floor(frames.length * 0.5)] ?? 0,
+        'p90Ms': sorted[Math.floor(frames.length * 0.9)] ?? 0,
+        'p95Ms': sorted[Math.floor(frames.length * 0.95)] ?? 0,
+        'p99Ms': sorted[Math.floor(frames.length * 0.99)] ?? 0,
       };
-
-      target.dispatchEvent(new PointerEvent('pointerdown', { ...base, clientX: startX, clientY: startY }));
-      target.dispatchEvent(new PointerEvent('pointermove', { ...base, clientX: moveX, clientY: moveY }));
-      target.dispatchEvent(new PointerEvent('pointerup', { ...base, clientX: moveX, clientY: moveY }));
+      delete window[profileSessionId];
+      return result;
     };
+    return { 'ok': true };
+  }, { 'selector': selector, sessionId });
+}
 
-    for (let i = 0; i < 12; i += 1) {
-      dispatchWheel(-120);
-      dispatchWheel(120);
-      await dispatchDrag();
-      await wait(32);
+async function stopTargetProfile(page, sessionId) {
+  return page.evaluate((profileSessionId) => {
+    const finish = window[profileSessionId];
+    if (typeof finish !== 'function') {
+      return { 'ok': false, 'reason': 'profile session unavailable' };
     }
+    return finish();
+  }, sessionId);
+}
 
-    const remainingProfileTime = Math.max(0, durationMs - (performance.now() - profile.start));
-    await wait(remainingProfileTime + extraDelayMs);
-    clearInterval(memTimer);
-    observer?.disconnect();
+async function runTarget(page, { interaction, name, selector, durationMs = PROFILE_MS }) {
+  await waitForSettledTarget(page, selector);
+  const sessionId = `__iridisVisualizationProfile${Date.now()}${Math.random()}`;
+  const started = await startTargetProfile(page, selector, sessionId);
+  if (!started.ok) return { name, selector, ...started };
 
-    const frames = profile.frames;
-    const sorted = [...frames].sort((a, b) => a - b);
-    const total = frames.reduce((acc, value) => acc + value, 0);
-    const avg = frames.length ? total / frames.length : 0;
-
-    return {
-      ok: true,
-      overlayText: target.querySelector('.cg-overlay')?.textContent?.trim() || null,
-      frameCount: frames.length,
-      avgMs: avg,
-      maxMs: sorted.at(-1) ?? 0,
-      p50Ms: sorted[Math.floor(frames.length * 0.5)] ?? 0,
-      p90Ms: sorted[Math.floor(frames.length * 0.9)] ?? 0,
-      p95Ms: sorted[Math.floor(frames.length * 0.95)] ?? 0,
-      p99Ms: sorted[Math.floor(frames.length * 0.99)] ?? 0,
-      longCount: profile.longTasks.length,
-      longTotalMs: profile.longTasks.reduce((acc, item) => acc + item.duration, 0),
-      long10MsOrMore: profile.longTasks.filter((x) => x.duration >= 10).length,
-      memSamples: profile.mem.length,
-      memStartMB: profile.mem[0] ? profile.mem[0].used / 1048576 : 0,
-      memEndMB: profile.mem.at(-1) ? profile.mem.at(-1).used / 1048576 : 0,
-      memPeakMB: profile.mem.reduce((acc, item) => Math.max(acc, item.total), 0) / 1048576,
-      jsPeakMB: profile.mem.reduce((acc, item) => Math.max(acc, item.js), 0) / 1048576,
-    };
-  }, {
-    selector,
-    durationMs,
-    extraDelayMs,
-    scroll,
-  });
-
+  const startTime = Date.now();
+  await interaction();
+  const remainingDuration = Math.max(0, durationMs - (Date.now() - startTime));
+  if (remainingDuration > 0) await page.waitForTimeout(remainingDuration);
+  const result = await stopTargetProfile(page, sessionId);
   return { name, selector, ...result };
 }
 
@@ -171,6 +249,27 @@ const MIME = {
 };
 
 export class VisualizationProfileStaticFile {
+  static basePath(publicRoot) {
+    const index = this.resolve(publicRoot, '/');
+    if (index.filePath === undefined) {
+      throw new Error('Generated static app has no index.html');
+    }
+    const html = readFileSync(index.filePath, 'utf8');
+    const basePath = /["'](\/(?:[^"'?#/]+\/)*)_nuxt\//u.exec(html)?.[1];
+    if (basePath === undefined) {
+      throw new Error('Could not derive the generated Nuxt base path');
+    }
+    return basePath;
+  }
+
+  static mountedRequestPath(basePath, requestUrl) {
+    const rawPath = (requestUrl ?? '/').split(/[?#]/u)[0] ?? '/';
+    const baseRoot = basePath.length === 1 ? basePath : basePath.slice(0, -1);
+    if (rawPath === baseRoot) return '/';
+    if (!rawPath.startsWith(basePath)) return undefined;
+    return `/${rawPath.slice(basePath.length)}`;
+  }
+
   static resolve(publicRoot, requestUrl) {
     const canonicalRoot = realpathSync(publicRoot);
     const rawPath = (requestUrl ?? '/').split(/[?#]/u)[0] ?? '/';
@@ -243,11 +342,18 @@ class VisualizationProfileOperation {
       throw new Error(`Static build not found at ${root}. Run: npm run generate`);
     }
 
+    const basePath = VisualizationProfileStaticFile.basePath(root);
     const browser = await chromium.launch({ 'headless': !isDebug });
     const server = createServer((request, response) => {
+      const mountedRequestPath = VisualizationProfileStaticFile.mountedRequestPath(basePath, request.url);
+      if (mountedRequestPath === undefined) {
+        response.statusCode = 404;
+        response.end('not found');
+        return;
+      }
       let staticFile;
       try {
-        staticFile = VisualizationProfileStaticFile.resolve(root, request.url);
+        staticFile = VisualizationProfileStaticFile.resolve(root, mountedRequestPath);
       } catch {
         response.statusCode = 400;
         response.end('invalid request path');
@@ -276,17 +382,37 @@ class VisualizationProfileOperation {
       }
 
       const page = await browser.newPage({ 'viewport': { 'height': 1100, 'width': 1680 } });
-      await page.goto(`http://127.0.0.1:${address.port}/`, { 'timeout': 60000, 'waitUntil': 'domcontentloaded' });
-      await page.waitForTimeout(3000);
+      await page.goto(`http://127.0.0.1:${address.port}${basePath}`, { 'timeout': 60000, 'waitUntil': 'domcontentloaded' });
+      await establishCommittedPalette(page);
+      await activateReadyGraph(page);
 
-      for (const [name, selector] of [
-        ['graph', '.cg-wrap'],
-        ['mermaid', '.dag-mermaid-frame'],
-        ['graphDpad', '.dagonizer-dpad-wrap'],
-        ['mermaidDpad', '.dag-mermaid-dpad-wrap'],
-      ]) {
-        report.push(await runTarget(page, { 'extraDelayMs': 2500, name, 'scroll': true, selector }));
-      }
+      const graphSurface = '.cg-cosmos canvas';
+      const graphDpad = '.cg-wrap .dagonizer-dpad-wrap';
+      report.push(await runTarget(page, {
+        'interaction': () => driveSurface(page, graphSurface),
+        'name': 'graph',
+        'selector': graphSurface,
+      }));
+      report.push(await runTarget(page, {
+        'interaction': () => pressDpadButtons(page.locator(graphDpad)),
+        'name': 'graphDpad',
+        'selector': graphDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
+      }));
+
+      await deactivateGraph(page);
+
+      const mermaidSurface = '.dag-mermaid-frame svg';
+      const mermaidDpad = '.dag-mermaid-frame .dag-mermaid-dpad-wrap';
+      report.push(await runTarget(page, {
+        'interaction': () => driveSurface(page, mermaidSurface),
+        'name': 'mermaid',
+        'selector': mermaidSurface,
+      }));
+      report.push(await runTarget(page, {
+        'interaction': () => pressDpadButtons(page.locator(mermaidDpad)),
+        'name': 'mermaidDpad',
+        'selector': mermaidDpad + ' .dagonizer-dpad-btn[aria-label="Zoom in"]',
+      }));
 
       if (isDebug && DEBUG_WAIT_MS > 0) {
         await page.waitForTimeout(DEBUG_WAIT_MS);
@@ -299,6 +425,7 @@ class VisualizationProfileOperation {
       }
     }
 
+    const missingTargets = report.filter((item) => !item.ok);
     for (const item of report) {
       if (!item.ok) {
         console.log(`target=${item.name} ok=false reason=${item.reason}`);
@@ -309,6 +436,9 @@ class VisualizationProfileOperation {
       console.log(
         `target=${item.name} frameCount=${item.frameCount} avgMs=${item.avgMs.toFixed(2)} fps=${fps.toFixed(1)} max=${item.maxMs.toFixed(2)} p90=${item.p90Ms.toFixed(2)} p95=${item.p95Ms.toFixed(2)} p99=${item.p99Ms.toFixed(2)} long=${item.longCount}/${item.long10MsOrMore} mem=${item.memStartMB.toFixed(1)}=>${item.memEndMB.toFixed(1)} peak=${item.memPeakMB.toFixed(1)} jsPeak=${item.jsPeakMB.toFixed(1)} overlay=${item.overlayText ?? 'n/a'}`,
       );
+    }
+    if (missingTargets.length > 0) {
+      throw new Error(`Visualization profile targets missing: ${missingTargets.map((item) => item.name).join(', ')}`);
     }
   }
 }

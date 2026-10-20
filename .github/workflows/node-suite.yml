@@ -74,7 +74,7 @@ jobs:
               append_entry '{"name":"audit","command":"bash scripts/ci-suite.sh audit"}'
               ;;
             site)
-              append_entry '{"name":"site-generate","command":"bash scripts/ci-suite.sh site-generate"}'
+              append_entry '{"name":"site-validate","command":"bash scripts/ci-suite.sh site-validate"}'
               ;;
             '')
               if [ "$RUN_STAMP_VERSION_CHECK" = 'true' ]; then

@@ -55,6 +55,9 @@ classify_changes() {
     if grep -qE '^(site/.*|README\.md)$' <<< "$changed"; then
         CHANGED_DOCS=true
     fi
+    if grep -qE '^site/app/' <<< "$changed"; then
+        CHANGED_SOURCE=true
+    fi
     if grep -qE '^packages/' <<< "$changed"; then
         CHANGED_PACKAGES=true
     fi

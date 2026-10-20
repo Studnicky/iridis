@@ -91,6 +91,8 @@ let GraphCtor: typeof import('@cosmos.gl/graph').Graph | null = null;
 let graphRuntimeArmed = false;
 let graphBooting = false;
 const fitTimers: ReturnType<typeof setTimeout>[] = [];
+let captureFitZoomOnEnd = false;
+let startSimulationAfterFit = false;
 const LABEL_PAINT_BUDGET_MS = 1000 / 30;
 const GRAPH_VISIBILITY_POLL_MS = 750;
 // Caps how many times initCosmos() is allowed to retry a failing
@@ -296,7 +298,19 @@ function initCosmos(container: HTMLDivElement): void {
         const g = graph.value;
         const floor = fitZoomLevel.value;
         if (g !== null && floor !== null) {
-          try { if (g.getZoomLevel() < floor) g.setZoomLevel(floor); } catch { /* ignore */ }
+          try { if (g.getZoomLevel() < floor) g.setZoomLevel(floor, 0, false); } catch { /* ignore */ }
+        }
+      },
+      'onZoomEnd': () => {
+        if (!captureFitZoomOnEnd) return;
+        captureFitZoomOnEnd = false;
+        const shouldStartSimulation = startSimulationAfterFit;
+        startSimulationAfterFit = false;
+        const handle = graph.value;
+        if (handle === null) return;
+        try { fitZoomLevel.value = handle.getZoomLevel(); } catch { /* ignore */ }
+        if (shouldStartSimulation) {
+          try { handle.start(1); } catch { /* ignore */ }
         }
       }
     });
@@ -334,7 +348,7 @@ function pollZoom(): void {
 function zoomIn(): void {
   const g = graph.value; if (g === null) return;
   try {
-    g.setZoomLevel(g.getZoomLevel() * buildColorGraphViewModel.zoomStep);
+    g.setZoomLevel(g.getZoomLevel() * buildColorGraphViewModel.zoomStep, 0, false);
     pollZoom();
   } catch { /* ignore */ }
 }
@@ -342,7 +356,7 @@ function zoomOut(): void {
   const g = graph.value; if (g === null) return;
   try {
     const next = g.getZoomLevel() / buildColorGraphViewModel.zoomStep;
-    g.setZoomLevel(Math.max(next, fitZoomLevel.value ?? 0));
+    g.setZoomLevel(Math.max(next, fitZoomLevel.value ?? 0), 0, false);
     pollZoom();
   } catch { /* ignore */ }
 }
@@ -390,10 +404,12 @@ function centre(): void {
   try { g.setPointPositions(next, true); g.start(0.3); scheduleLabelPaint(); } catch { /* ignore */ }
 }
 
-function armFitSequence(): void {
+function armFitSequence(armInitialSimulation = false): void {
   const handle = graph.value;
   if (handle === null) return;
   for (const t of fitTimers.splice(0)) clearTimeout(t);
+  const finalDelayMs = buildColorGraphViewModel.fitDelaysMs.at(-1);
+  if (finalDelayMs === undefined) return;
   // The seeded hub/leaf layout keeps relaxing under the live simulation
   // (link spring, repulsion, gravity) for a bit after paint() hands it off —
   // an extra, later fit (1200ms) beyond the original 0/250/500/750ms sweep
@@ -401,15 +417,14 @@ function armFitSequence(): void {
   // snapshot as if it were final.
   for (const delayMs of buildColorGraphViewModel.fitDelaysMs) {
     fitTimers.push(setTimeout(() => {
-      handle.fitView(200, buildColorGraphViewModel.fitPadding);
+      if (graph.value !== handle) return;
+      if (delayMs === finalDelayMs) {
+        captureFitZoomOnEnd = true;
+        startSimulationAfterFit ||= armInitialSimulation;
+      }
+      handle.fitView(200, buildColorGraphViewModel.fitPadding, false);
     }, delayMs));
   }
-  fitTimers.push(setTimeout(() => {
-    try {
-      const level = graph.value?.getZoomLevel() ?? null;
-      if (level !== null) fitZoomLevel.value = level;
-    } catch { /* ignore */ }
-  }, buildColorGraphViewModel.captureFitZoomDelayMs));
 }
 function fit(): void { armFitSequence(); }
 function expand(): void { fullscreen.value = !fullscreen.value; }
@@ -495,6 +510,7 @@ function paint(): void {
   handle.setPointPositions(positions);
   handle.setPointColors(colors);
   handle.setPointSizes(sizes);
+  handle.trackPointPositionsByIndices(meta.map((_, index) => index));
   handle.setLinks(links);
   handle.setLinkColors(linkColors);
   // buildBuffers' hub-and-spoke layout only seeds the starting positions.
@@ -506,7 +522,7 @@ function paint(): void {
   handle.render(1);
   if (positions.length === 0) { scheduleLabelPaint(); return; }
   if (paintNeedsReframe) {
-    armFitSequence();
+    armFitSequence(true);
     paintNeedsReframe = false;
   }
   scheduleLabelPaint();

@@ -353,54 +353,56 @@ function onDocsClick(e: MouseEvent): void {
           :model-value="stageIndex[group.name]"
           @update:model-value="stageIndex[group.name] = $event"
         >
-          <template #default="{ item, active }">
-            <UploadIntakeCard v-if="item.key === 'upload'" />
-            <UploadedImageCard
-              v-else-if="item.key.startsWith(UPLOADED_IMAGE_KEY_PREFIX)"
-              :image="uploadedImageFor(item.key)"
-              @remove="removeUploadedImage(uploadedImageFor(item.key).id)"
-              @update="updateUploadedImageSetting(uploadedImageFor(item.key).id, $event)"
-              @select-candidate="selectEntryCandidate(uploadedImageFor(item.key).id, $event)"
-            />
-            <CombineCard v-else-if="item.key === 'combine'" />
-            <PickerIntakeCard v-else-if="item.key === 'picker'" />
-            <RefinePaletteCard v-else-if="item.key === 'palette'" />
-            <CvdVision v-else-if="item.key === 'cvd'" />
-            <SchemaComplianceCard v-else-if="item.key === 'schemaCompliance'" />
-            <DerivationRelations v-else-if="item.key === 'derivationRelations'" />
-            <RolesTable v-else-if="item.key === 'rolesTable'" />
-            <ResolvedRoles v-else-if="item.key === 'roles'" />
-            <PairingPreview v-else-if="item.key === 'pairingPreview'" />
-            <div
-              v-else-if="item.key === 'spectrum'"
-              class="space-y-3"
-            >
-              <p class="text-sm text-muted">
-                The full 50→950 ramp per alias.
-              </p>
-              <PaletteCarousel />
-            </div>
-            <div
-              v-else-if="item.key === 'colorGraph'"
-              class="space-y-3"
-            >
-              <p class="text-sm text-muted">
-                The resolved role graph, live — every node is that role's own <code class="font-mono">engine.run()</code> color, edges are derivation lineage settling under a force simulation. Pinned/synthesized/direct-match roles toggle via the legend.
-              </p>
-              <ColorGraph :enabled="active" />
-            </div>
-            <OutputFormatCard
-              v-else-if="item.key.startsWith('output-')"
-              :format-key="outputFormatKey(item.key)"
-            />
-            <PipelineExplainer v-else-if="item.key === 'pipeline'" />
-            <SchemaTree v-else-if="item.key === 'schema'" />
-            <HueDerivation v-else-if="item.key === 'hueDerivation'" />
-            <RoleClamps v-else-if="item.key === 'clamps'" />
-            <LiveComponents v-else-if="item.key === 'components'" />
-            <InteractablesShowcase v-else-if="item.key === 'interactables'" />
-            <MotionShowcase v-else-if="item.key === 'motion'" />
-            <ColorStreamCard v-else-if="item.key === 'colorStream'" />
+          <template #default="{ item, active, mounted }">
+            <template v-if="mounted">
+              <UploadIntakeCard v-if="item.key === 'upload'" />
+              <UploadedImageCard
+                v-else-if="item.key.startsWith(UPLOADED_IMAGE_KEY_PREFIX)"
+                :image="uploadedImageFor(item.key)"
+                @remove="removeUploadedImage(uploadedImageFor(item.key).id)"
+                @update="updateUploadedImageSetting(uploadedImageFor(item.key).id, $event)"
+                @select-candidate="selectEntryCandidate(uploadedImageFor(item.key).id, $event)"
+              />
+              <CombineCard v-else-if="item.key === 'combine'" />
+              <PickerIntakeCard v-else-if="item.key === 'picker'" />
+              <RefinePaletteCard v-else-if="item.key === 'palette'" />
+              <CvdVision v-else-if="item.key === 'cvd'" />
+              <SchemaComplianceCard v-else-if="item.key === 'schemaCompliance'" />
+              <DerivationRelations v-else-if="item.key === 'derivationRelations'" />
+              <RolesTable v-else-if="item.key === 'rolesTable'" />
+              <ResolvedRoles v-else-if="item.key === 'roles'" />
+              <PairingPreview v-else-if="item.key === 'pairingPreview'" />
+              <div
+                v-else-if="item.key === 'spectrum'"
+                class="space-y-3"
+              >
+                <p class="text-sm text-muted">
+                  The full 50→950 ramp per alias.
+                </p>
+                <PaletteCarousel />
+              </div>
+              <div
+                v-else-if="item.key === 'colorGraph'"
+                class="space-y-3"
+              >
+                <p class="text-sm text-muted">
+                  The resolved role graph, live — every node is that role's own <code class="font-mono">engine.run()</code> color, edges are derivation lineage settling under a force simulation. Pinned/synthesized/direct-match roles toggle via the legend.
+                </p>
+                <ColorGraph :enabled="active" />
+              </div>
+              <OutputFormatCard
+                v-else-if="item.key.startsWith('output-')"
+                :format-key="outputFormatKey(item.key)"
+              />
+              <PipelineExplainer v-else-if="item.key === 'pipeline'" />
+              <SchemaTree v-else-if="item.key === 'schema'" />
+              <HueDerivation v-else-if="item.key === 'hueDerivation'" />
+              <RoleClamps v-else-if="item.key === 'clamps'" />
+              <LiveComponents v-else-if="item.key === 'components'" />
+              <InteractablesShowcase v-else-if="item.key === 'interactables'" />
+              <MotionShowcase v-else-if="item.key === 'motion'" />
+              <ColorStreamCard v-else-if="item.key === 'colorStream'" />
+            </template>
           </template>
         </CylinderCarousel>
       </section>

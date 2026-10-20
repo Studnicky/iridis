@@ -1,8 +1,8 @@
 /**
- * Active theme's role/palette DATA layout — read by RolesTable.vue,
- * ResolvedRoles.vue, PairingPreview.vue, and PaletteCarousel.vue to select
- * their container implementation. The rows each component renders come from
- * the exact same `useIridis()`/`usePairingPreview()` sort/derive logic.
+ * Selects the active theme's presentation layout for components that render
+ * committed PaletteSession read models. Palette resolution and presentation
+ * publication remain owned by the PaletteSession and PresentationCommitter;
+ * this composable selects only the container strategy.
  */
 import * as VueModule from 'vue';
 
