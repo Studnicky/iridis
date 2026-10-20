@@ -1028,6 +1028,18 @@ class EnforceCvdSimulate implements TaskInterface {
     context.logger.debug(LogBody.create({ 'component': 'EnforceCvdSimulate', 'context': { 'correctionCount': results.corrections.length, 'cvdMeta': metadata, 'warningCount': results.warnings.length }, 'message': 'CVD simulation complete', 'operation': 'run', 'status': LOG_STATUS.SUCCESS }));
   }
 
+  private reportSummary(warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[], message: string, context: PipelineContextInterface): void {
+    if (warnings.length === 0) {
+      return;
+    }
+    const cvdTypes = new Set<string>();
+    for (let index = 0; index < warnings.length; index += 1) {
+      const warning = warnings[index];
+      if (warning !== undefined) {cvdTypes.add(warning.cvdType);}
+    }
+    context.logger.warn(LogBody.create({ 'component': 'EnforceCvdSimulate', 'context': { 'cvdTypes': Array.from(cvdTypes), 'warningCount': warnings.length }, 'message': message, 'operation': 'reportSummary', 'status': LOG_STATUS.PARTIAL }));
+  }
+
   private snapshotRoles(state: PaletteStateInterface): Map<string, ColorRecordInterfaceTypeEntity.Type> {
     const originals = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
     const entries = Object.entries(state.roles);
@@ -1075,11 +1087,13 @@ class EnforceCvdSimulate implements TaskInterface {
   private reportCorrected(pairs: readonly { readonly 'background': string; readonly 'foreground': string; }[], originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>, state: PaletteStateInterface, context: PipelineContextInterface): { readonly 'corrections': CvdCorrectionInterfaceTypeEntity.Type[]; readonly 'warnings': CvdPairWarningInterfaceTypeEntity.Type[]; } {
     const corrections: CvdCorrectionInterfaceTypeEntity.Type[] = [];
     const warnings = this.reportPairs(pairs, originals, state, context, corrections);
+    this.reportSummary(warnings, 'CVD correction could not clear every failing type', context);
     return { 'corrections': corrections, 'warnings': warnings };
   }
 
   private reportAdvisory(pairs: readonly { readonly 'background': string; readonly 'foreground': string; }[], originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>, state: PaletteStateInterface, context: PipelineContextInterface): { readonly 'corrections': CvdCorrectionInterfaceTypeEntity.Type[]; readonly 'warnings': CvdPairWarningInterfaceTypeEntity.Type[]; } {
     const warnings = this.reportPairs(pairs, originals, state, context);
+    this.reportSummary(warnings, 'CVD advisory: pairs fail perceptual-stability threshold', context);
     return { 'corrections': [], 'warnings': warnings };
   }
 
@@ -1135,7 +1149,7 @@ class EnforceCvdSimulate implements TaskInterface {
       const failure = failures[index];
       if (failure !== undefined) {types.push(failure.cvdType);}
     }
-    context.logger.warn(LogBody.create({ 'component': 'EnforceCvdSimulate', 'context': { 'background': pair.background, 'foreground': pair.foreground, 'remainingCvdTypes': types }, 'message': 'CVD correction could not clear every failing type', 'operation': 'run', 'status': LOG_STATUS.PARTIAL }));
+    context.logger.debug(LogBody.create({ 'component': 'EnforceCvdSimulate', 'context': { 'background': pair.background, 'foreground': pair.foreground, 'remainingCvdTypes': types }, 'message': 'CVD correction could not clear every failing type', 'operation': 'run', 'status': LOG_STATUS.PARTIAL }));
   }
 
   private addCorrection(pair: { readonly 'background': string; readonly 'foreground': string; }, originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>, foreground: ColorRecordInterfaceTypeEntity.Type, background: ColorRecordInterfaceTypeEntity.Type, failures: readonly CvdEvalInterfaceTypeEntity.Type[], corrections: CvdCorrectionInterfaceTypeEntity.Type[]): void {
@@ -1196,7 +1210,7 @@ class CvdWarning {
       'simulatedContrastRatio':      simulatedContrastRatio,
       'simulatedLuminanceContrast':  evaluation.simContrast
     };
-    context.logger.warn(
+    context.logger.debug(
       LogBody.create({ 'component': 'EnforceCvdSimulate', 'context': { 'background': background, 'cvdType': evaluation.cvdType, 'drop': evaluation.drop, 'dropThreshold': threshold.dropMagnitude, 'foreground': foreground, 'minimumSimulatedContrast': threshold.minimumSimulatedContrast, 'originalContrast': evaluation.originalContrast, 'reason': evaluation.exceedsDrop ? 'drop' : 'floor', 'simulatedContrast': evaluation.simContrast, 'simulatedContrastDropRatio': simulatedContrastDropRatio, 'simulatedContrastRatio': simulatedContrastRatio }, 'message': 'CVD advisory: pair fails perceptual-stability threshold', 'operation': 'run', 'status': LOG_STATUS.PARTIAL })
     );
     return warning;

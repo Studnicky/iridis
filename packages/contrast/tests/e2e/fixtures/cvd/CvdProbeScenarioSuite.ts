@@ -31,7 +31,7 @@ export class CvdProbeScenarioSuite {
     assert.ok(cvd !== undefined, '[cvd-advisory-metadata] canonical metadata present');
     assert.strictEqual(cvd.corrections.length, 0, '[cvd-advisory-metadata] no corrections recorded');
     assert.ok(cvd.warnings.length > 0, '[cvd-advisory-metadata] warnings retained');
-    assert.ok(logger.warnings.includes('CVD advisory: pair fails perceptual-stability threshold'), '[cvd-advisory-log] advisory diagnostics remain present');
+    assert.deepEqual(logger.warnings, ['CVD advisory: pairs fail perceptual-stability threshold'], '[cvd-advisory-log] one aggregate advisory per run');
     assert.ok(!logger.warnings.includes('CVD correction could not clear every failing type'), '[cvd-advisory-log] advisory mode has no correction failure');
   }
 
