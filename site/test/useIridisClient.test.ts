@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
-import 'vue';
+import { watch } from 'vue';
 
 import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
 
@@ -107,4 +107,42 @@ await test('useIridis client boot applies tokens and extracts the sample image o
   useIridis();
   await setTimeout(20);
   assert.equal(state.uploadedImages.value.length, 1);
+});
+
+
+await test('combine schedules one eventual role resolution after its seed update', async () => {
+  const cssVariables = new Map<string, string>();
+  const classNames = new Set<string>();
+  Reflect.set(globalThis, 'iridisTestNuxtApp', {});
+  Reflect.set(globalThis, 'window', {});
+  Reflect.set(globalThis, 'document', new FakeDocument(cssVariables, classNames));
+  Reflect.set(globalThis, 'Image', FakeImage);
+
+  const { useIridis } = await import('../app/composables/useIridis.ts');
+  const state = useIridis();
+  const initialDeadline = Date.now() + 4_000;
+  while (state.uploadedImages.value.length === 0 && state.error.value === null && Date.now() < initialDeadline) {
+    await setTimeout(10);
+  }
+  assert.equal(state.error.value, null);
+  assert.equal(state.uploadedImages.value.length, 1);
+  await setTimeout(250);
+
+  let resolutionCount = 0;
+  const stopWatchingRoles = watch(state.roles, () => { resolutionCount += 1; }, { 'flush': 'sync' });
+  try {
+    await state.addUploadedImages(['/second-sample.png'], ['Second sample']);
+    assert.equal(state.uploadedImages.value.length, 2);
+    assert.equal(resolutionCount, 0);
+
+    const resolutionDeadline = Date.now() + 4_000;
+    while (resolutionCount === 0 && state.error.value === null && Date.now() < resolutionDeadline) {
+      await setTimeout(10);
+    }
+
+    assert.equal(state.error.value, null);
+    assert.equal(resolutionCount, 1);
+  } finally {
+    stopWatchingRoles();
+  }
 });
