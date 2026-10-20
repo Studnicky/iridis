@@ -400,6 +400,44 @@ await test('ClusterDeltaEMerge behavior', () => {
   ClusterDeltaEMergeScenarios.runCell3();
 });
 
+await test('ClusterDeltaEMerge preserves first-pair order for equal-distance merges', () => {
+  const clusters = clusterDeltaEMerge.apply([
+    TestClusterFixture.hex('#ff0000', 2),
+    TestClusterFixture.hex('#ff0000', 3),
+    TestClusterFixture.hex('#0000ff', 5),
+    TestClusterFixture.hex('#0000ff', 7)
+  ], 2);
+
+  assert.deepStrictEqual(
+    clusters.map((cluster) => {return {
+      'hex': cluster.hex,
+      'oklch': cluster.oklch,
+      'weight': cluster.hints?.weight
+    };}),
+    [
+      {
+        'hex': '#ff0000',
+        'oklch': {
+          'c': 0.2576833077361567,
+          'h': 29.233885192342655,
+          'l': 0.6279553606145516
+        },
+        'weight': 5
+      },
+      {
+        'hex': '#0000ff',
+        'oklch': {
+          'c': 0.31321437166460114,
+          'h': 264.05202063805496,
+          'l': 0.45201371838534293
+        },
+        'weight': 12
+      }
+    ],
+    'equal deltaE pairs merge in scan order with fixed weighted centroids'
+  );
+});
+
 class ClusterDeltaEMergeScaleFixture {
   static colors(count: number): ColorRecordInterfaceTypeEntity.Type[] {
     let seed = 20260920;
