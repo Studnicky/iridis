@@ -110,9 +110,29 @@ await test('useIridis client boot applies tokens and extracts the sample image o
 });
 
 
-await test('combine schedules one eventual role resolution after its seed update', async () => {
+class VirtualTimeDrain {
+  static readonly microtaskTurnLimit = 5_000;
+  static readonly debounceWindowMs = 200;
+  static readonly quietRounds = 4;
+
+  static async microtasks(isReady: () => boolean): Promise<void> {
+    for (let turn = 0; turn < VirtualTimeDrain.microtaskTurnLimit && !isReady(); turn += 1) {
+      await new Promise<void>((resolveTurn) => { queueMicrotask(resolveTurn); });
+    }
+  }
+
+  static async settle(context: { readonly 'mock': { readonly 'timers': { tick(milliseconds: number): void } } }): Promise<void> {
+    for (let round = 0; round < VirtualTimeDrain.quietRounds; round += 1) {
+      context.mock.timers.tick(VirtualTimeDrain.debounceWindowMs);
+      await VirtualTimeDrain.microtasks(() => {return false;});
+    }
+  }
+}
+
+await test('combine schedules one eventual role resolution after its seed update', async (context) => {
   const cssVariables = new Map<string, string>();
   const classNames = new Set<string>();
+  context.mock.timers.enable({ 'apis': ['setTimeout'] });
   Reflect.set(globalThis, 'iridisTestNuxtApp', {});
   Reflect.set(globalThis, 'window', {});
   Reflect.set(globalThis, 'document', new FakeDocument(cssVariables, classNames));
@@ -120,28 +140,31 @@ await test('combine schedules one eventual role resolution after its seed update
 
   const { useIridis } = await import('../app/composables/useIridis.ts');
   const state = useIridis();
-  const initialDeadline = Date.now() + 4_000;
-  while (state.uploadedImages.value.length === 0 && state.error.value === null && Date.now() < initialDeadline) {
-    await setTimeout(10);
-  }
+  const sampleReady = (): boolean => {
+    const ready = state.uploadedImages.value.length === 1 || state.error.value !== null;
+    return ready;
+  };
+  await VirtualTimeDrain.microtasks(sampleReady);
+  await VirtualTimeDrain.settle(context);
   assert.equal(state.error.value, null);
   assert.equal(state.uploadedImages.value.length, 1);
-  await setTimeout(250);
 
   let resolutionCount = 0;
   const stopWatchingRoles = watch(state.roles, () => { resolutionCount += 1; }, { 'flush': 'sync' });
   try {
     await state.addUploadedImages(['/second-sample.png'], ['Second sample']);
+    const secondReady = (): boolean => {
+      const ready = state.uploadedImages.value.length === 2 || state.error.value !== null;
+      return ready;
+    };
+    await VirtualTimeDrain.microtasks(secondReady);
     assert.equal(state.uploadedImages.value.length, 2);
-    assert.equal(resolutionCount, 0);
+    assert.equal(resolutionCount, 0, 'combine itself must not resolve roles');
 
-    const resolutionDeadline = Date.now() + 4_000;
-    while (resolutionCount === 0 && state.error.value === null && Date.now() < resolutionDeadline) {
-      await setTimeout(10);
-    }
+    await VirtualTimeDrain.settle(context);
 
     assert.equal(state.error.value, null);
-    assert.equal(resolutionCount, 1);
+    assert.equal(resolutionCount, 1, 'the seed watcher resolves roles exactly once');
   } finally {
     stopWatchingRoles();
   }
