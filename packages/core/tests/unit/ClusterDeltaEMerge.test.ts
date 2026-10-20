@@ -399,3 +399,44 @@ await test('ClusterDeltaEMerge behavior', () => {
   ClusterDeltaEMergeScenarios.runCell2();
   ClusterDeltaEMergeScenarios.runCell3();
 });
+
+class ClusterDeltaEMergeScaleFixture {
+  static colors(count: number): ColorRecordInterfaceTypeEntity.Type[] {
+    let seed = 20260920;
+    const next = (): number => {
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      const unit = seed / 4294967296;
+      return unit;
+    };
+    const result = new Array<ColorRecordInterfaceTypeEntity.Type>(count);
+    for (let index = 0; index < count; index++) {
+      result[index] = colorRecordFactory.fromOklch(0.2 + next() * 0.7, next() * 0.3, next() * 360, {
+        'alpha': 1,
+        'hints': { 'weight': 1 + Math.floor(next() * 20) },
+        'sourceFormat': 'oklch'
+      });
+    }
+    return result;
+  }
+
+  static weight(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): number {
+    let total = 0;
+    for (let index = 0; index < colors.length; index++) {
+      total += colors[index]?.hints?.weight ?? 1;
+    }
+    return total;
+  }
+}
+
+await test('ClusterDeltaEMerge reduces a histogram-sized input to k weight-preserving clusters deterministically and quickly', () => {
+  const colors = ClusterDeltaEMergeScaleFixture.colors(300);
+  const startedAt = performance.now();
+  const first = clusterDeltaEMerge.apply(colors, 8);
+  const elapsedMs = performance.now() - startedAt;
+  const second = clusterDeltaEMerge.apply(colors, 8);
+
+  assert.equal(first.length, 8);
+  assert.equal(ClusterDeltaEMergeScaleFixture.weight(first), ClusterDeltaEMergeScaleFixture.weight(colors));
+  assert.deepEqual(second, first);
+  assert.ok(elapsedMs < 10_000, `300-colour clustering took ${elapsedMs.toFixed(0)}ms; each pair must be measured once, not once per merge`);
+});
