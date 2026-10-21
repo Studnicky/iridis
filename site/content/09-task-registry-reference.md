@@ -50,7 +50,7 @@ Every task registered by the core engine and by each official plugin, grouped by
 | Task | Reads | Writes | Requires | Description |
 |---|---|---|---|---|
 | `vscode:seedRoles` | `input.colors`, `runtime.framing` | `colors` | — | Validates exactly one `{ tier, framing, roles }` palette body, requires matching framing, and creates named seed records for the exact 4/8/16/64 tier key set. |
-| `vscode:deriveUiRoles` | `roles`, `metadata.core:rolesPinned` | `roles` | `expand:family` | Derives missing UI extension roles from the resolved vocabulary and leaves supplied pinned roles unchanged. |
+| `vscode:deriveUiRoles` | `roles`, `metadata.core:roleProvenance` | `roles` | `expand:family` | Derives missing UI extension roles from the resolved vocabulary and preserves caller-stated role values. |
 | `vscode:expandTokens` | `roles`, `runtime.framing`, `variants` | `metadata.vscode:baseTokens` | — | Derives 27 syntax and TextMate base tokens from the resolved framing surface. |
 | `vscode:applyModifiers` | `metadata.vscode:baseTokens`, `roles`, `runtime.framing`, `variants` | `metadata.vscode:semanticTokenRules` | `vscode:expandTokens` | Creates semantic-token rules and applies background contrast enforcement. |
 | `emit:vscodeSemanticRules` | `metadata.vscode:semanticTokenRules`, `metadata.vscode:baseTokens` | `outputs.vscode:semanticTokenRules` | `vscode:applyModifiers` | Shapes semantic rules for VS Code’s semantic-token customisation map. |
