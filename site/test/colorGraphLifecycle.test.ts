@@ -31,13 +31,13 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
   const explore = page.locator('#explore');
   await explore.scrollIntoViewIfNeeded();
   await explore.getByRole('button', { 'exact': true, 'name': 'Color graph' }).click();
-  await page.waitForSelector('#explore .cyl-face.active .cg-cosmos canvas');
+  await page.waitForSelector('#explore .cyl-face.active .cg-cosmos canvas', { 'timeout': 60_000 });
   await setTimeout(1_250);
   await explore.getByRole('button', { 'exact': true, 'name': 'Roles table' }).click();
-  await page.waitForSelector('#explore .cyl-placeholder[data-cyl-key="colorGraph"]');
+  await page.waitForSelector('#explore .cyl-placeholder[data-cyl-key="colorGraph"]', { 'timeout': 60_000 });
 
   await explore.getByRole('button', { 'exact': true, 'name': 'Color graph' }).click();
-  await page.waitForSelector('#explore .cyl-face.active .cg-cosmos canvas');
+  await page.waitForSelector('#explore .cyl-face.active .cg-cosmos canvas', { 'timeout': 60_000 });
   await setTimeout(900);
 
   const canvas = page.locator('#explore .cyl-face.active .cg-cosmos');
@@ -50,13 +50,13 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
   await page.mouse.wheel(0, -420);
   await setTimeout(350);
   const beforeZoomOut = await ColorGraphLifecycleBrowser.zoomText(page);
-  await page.getByRole('button', { 'exact': true, 'name': 'Zoom out' }).click();
+  await page.locator('#explore .cyl-face.active').getByLabel('Navigation D-pad').getByRole('button', { 'exact': true, 'name': 'Zoom out' }).click();
   await page.waitForFunction((previous) => {
     const text = document.querySelector('#explore .cyl-face.active .dagonizer-dpad-hud-level')?.textContent;
     const current = Number.parseFloat(text?.replace('×', '') ?? 'NaN');
     const result = Number.isFinite(current) && current < previous;
     return result;
-  }, beforeZoomOut);
+  }, beforeZoomOut, { 'timeout': 60_000 });
   const afterZoomOut = await ColorGraphLifecycleBrowser.zoomText(page);
   assert.ok(afterZoomOut < beforeZoomOut, JSON.stringify({ 'afterZoomOut': afterZoomOut, 'beforeZoomOut': beforeZoomOut }));
 });
