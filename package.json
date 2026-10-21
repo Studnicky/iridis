@@ -121,5 +121,5 @@
     "@studnicky/types": "^15.2.1",
     "@studnicky/virtual-fs": "^15.2.1"
   },
-  "version": "0.13.1"
+  "version": "0.13.2"
 }

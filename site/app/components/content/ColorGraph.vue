@@ -18,9 +18,12 @@
  * import on mount keeps it out of the main bundle for visitors who never
  * scroll this far.
  */
+import { EffectInterpreter } from '@studnicky/fsm/browser';
+import { LOG_STATUS, LogBody } from '@studnicky/logger/browser';
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 
 import type { Graph } from '@cosmos.gl/graph';
+import { logger } from '~/composables/logger.ts';
 import { useIridis } from '~/composables/useIridis.ts';
 import { useRoleMathList } from '~/composables/useRoleMathList.ts';
 import { buildColorGraphBuffers } from './graph/buildColorGraphBuffers.ts';
@@ -28,6 +31,8 @@ import { buildColorGraphViewModel } from './graph/buildColorGraphViewModel.ts';
 import { buildColorGraphViewportModel } from './graph/buildColorGraphViewportModel.ts';
 import { colorGraphLabelPainter } from './graph/colorGraphLabelPainter.ts';
 import { CameraControls } from './viz/CameraControls.ts';
+import { ColorGraphLifecycleEvent } from './viz/ColorGraphLifecycleEvent.ts';
+import { ColorGraphLifecycleMachine } from './viz/ColorGraphLifecycleMachine.ts';
 import { LegendMachine } from './viz/LegendMachine.ts';
 import { ViewportStatus } from './viz/ViewportStatus.ts';
 
@@ -82,6 +87,27 @@ const fitZoomLevel = ref<number | null>(null);
 const fullscreen = ref(false);
 
 const graph = shallowRef<Graph | null>(null);
+
+const lifecycle = EffectInterpreter.create(ColorGraphLifecycleMachine.create());
+lifecycle.start();
+const lifecycleState = shallowRef(lifecycle.getState());
+lifecycle.subscribe((next) => { lifecycleState.value = next; });
+
+// The transition and its notification run before the interpreter's first await.
+function signal(event: ColorGraphLifecycleEvent): void {
+  lifecycle.send(event).catch(() => {
+    logger.error(
+      LogBody.create({
+        'component': 'ColorGraph',
+        'context': {},
+        'message': 'Color graph lifecycle FSM rejected an event',
+        'operation': 'signal',
+        'status': LOG_STATUS.FAILED
+      })
+    );
+  });
+}
+
 let labelMeta: ReturnType<typeof buildColorGraphBuffers.build>['meta'] = [];
 let labelRaf: number | null = null;
 let paintRaf: number | null = null;
@@ -259,6 +285,7 @@ function teardownGraphRuntime(): void {
   }
   graph.value?.destroy();
   graph.value = null;
+  signal(ColorGraphLifecycleEvent.destroyed());
   isGraphVisible = true;
   initAttempts = 0;
   initFailed = false;
@@ -306,6 +333,7 @@ function initCosmos(container: HTMLDivElement): void {
       'simulationRepulsionFromMouse': 3,
       'onSimulationTick': () => { scheduleLabelPaint(); },
       'onZoom': () => {
+        signal(ColorGraphLifecycleEvent.zoomed());
         scheduleLabelPaint();
         pollZoom();
         const g = graph.value;
@@ -315,18 +343,30 @@ function initCosmos(container: HTMLDivElement): void {
         }
       },
       'onZoomEnd': () => {
-        if (!captureFitZoomOnEnd) return;
+        if (!captureFitZoomOnEnd) {
+          signal(ColorGraphLifecycleEvent.zoomEnded());
+          return;
+        }
         captureFitZoomOnEnd = false;
         const shouldStartSimulation = startSimulationAfterFit;
         startSimulationAfterFit = false;
         const handle = graph.value;
         if (handle === null) return;
         try { fitZoomLevel.value = handle.getZoomLevel(); } catch { /* ignore */ }
+        signal(ColorGraphLifecycleEvent.fitSettled());
         if (shouldStartSimulation) {
           try { handle.start(1); } catch { /* ignore */ }
         }
       }
     });
+    const handle = graph.value;
+    signal(ColorGraphLifecycleEvent.constructed());
+    // Cosmos rejects point updates until its device initializes; the first paint follows that event.
+    handle.ready.then(() => {
+      if (graph.value !== handle) return;
+      signal(ColorGraphLifecycleEvent.deviceReady());
+      schedulePaint();
+    }).catch(() => { /* cosmos logs device initialization failures itself */ });
     resizeLabelCanvas();
     schedulePaint();
     pollZoom();
@@ -347,6 +387,7 @@ function initCosmos(container: HTMLDivElement): void {
     // context on top of an orphaned one.
     try { graph.value?.destroy(); } catch { /* ignore */ }
     graph.value = null;
+    signal(ColorGraphLifecycleEvent.destroyed());
     container.replaceChildren();
     if (initFailed) {
       stopVisibilityPoll();
@@ -427,6 +468,7 @@ function armFitSequence(armInitialSimulation = false): void {
   if (handle === null) return;
   const finalDelayMs = buildColorGraphViewModel.fitDelaysMs.at(-1);
   if (finalDelayMs === undefined) return;
+  signal(ColorGraphLifecycleEvent.fitArmed());
   // The seeded hub/leaf layout keeps relaxing under the live simulation
   // (link spring, repulsion, gravity) for a bit after paint() hands it off —
   // an extra, later fit (1200ms) beyond the original 0/250/500/750ms sweep
@@ -520,11 +562,7 @@ watch(framing, () => {
 function paint(): void {
   const handle = graph.value;
   if (handle === null) return;
-  if (!handle.isReady) {
-    // Cosmos rejects point updates until its device initializes.
-    handle.ready.then(() => { if (graph.value === handle) schedulePaint(); }).catch(() => { pendingPaint = true; });
-    return;
-  }
+  if (!lifecycleState.value.isDeviceReady()) return;
   const buffers = buildColorGraphBuffers.build(mathList.value, categoryVisible.value);
   const { positions, colors, sizes, links, linkColors, meta } = buffers;
   const shouldReframe = buildColorGraphBuffers.requiresStructuralApply(
@@ -628,6 +666,7 @@ function paintLabels(): void {
     v-model:container-ref="containerRef"
     v-model:labels-ref="labelsRef"
     :fullscreen="fullscreen"
+    :lifecycle="lifecycleState.variant"
     :loading="loading"
     :load-error="loadError"
     :legend-machine="legendMachine"
