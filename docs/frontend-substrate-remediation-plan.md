@@ -2,9 +2,15 @@
 
 ## Purpose
 
-The GitHub Pages demo exposes a palette-resolution workflow. This plan will make that workflow a request-scoped, schema-admitted system whose components communicate through a single session event bus. The resulting boundary will support deterministic browser interactions, SSR isolation, static deployment, and future AI-assisted control without allowing an AI client to call Vue components or mutate reactive state directly.
+The GitHub Pages demo exposes a palette-resolution workflow. This plan defines a request-scoped, schema-admitted target architecture in which components communicate through one session event bus. That boundary supports deterministic browser interactions, SSR isolation, static deployment, and AI-assisted control without allowing an AI client to call Vue components or mutate reactive state directly.
 
-The implementation target is the `site` application. The migration will preserve the existing iridis engine contracts and output emitters while changing how the frontend admits interactions, schedules work, and exposes read models.
+The implementation target is the `site` application. The migration preserves the existing iridis engine contracts and output emitters while changing how the frontend admits interactions, schedules work, and exposes read models.
+
+## Status
+
+This is a future-architecture plan. `PaletteSession`, `PaletteSessionStore`, `PaletteSessionMachine`, and their bus topics are not current site modules.
+
+The current 0.13.1 site separates image extraction from role resolution: the combine path ends after intake, histogram, candidate extraction, extraction, and harmonisation; the seed watcher performs the one role, contrast, and CVD resolution pass. The colour graph retains layout geometry across palette-only revisions and applies structural buffers only when its structure key changes. The visualization profile gate detects a frozen or severely delayed graph, carousel, or Mermaid viewport under its headless environment.
 
 ## Current Architecture Evidence and Risks
 
@@ -25,7 +31,7 @@ That split creates the following risks:
 
 | Risk | Consequence | Target control |
 | --- | --- | --- |
-| Several watchers drive overlapping work | Repeated engine construction and redundant resolution after one interaction | One session command path and one resolution scheduler |
+| Independent watchers coordinate engine work and projections | A view can consume a result through a separate reactive path | One session command path and one resolution scheduler |
 | Independent reactive refs represent related state | A view can render a different revision than the generated output | Monotonic session revision carried through facts and read models |
 | Effects call capability handlers directly | An interaction has no transport-neutral audit boundary | Schema-admitted intent envelopes on a session bus |
 | Independent output and VS Code computations | The demo can show results derived by different pipelines | One engine session produces canonical resolution facts; projections derive all views |
