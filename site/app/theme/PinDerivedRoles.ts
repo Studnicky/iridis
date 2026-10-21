@@ -34,17 +34,9 @@ class NudgeKeepingHueOperation {
 const nudgeKeepingHue = NudgeKeepingHueOperation.run;
 
 /**
- * ResolveRoles skips every role with `derivedFrom` set (the FIRST check in its
- * loop, before it ever looks at hints), so a seed pinned to a schema-derived
- * role like `warning`/`success`/`info`/`accent-alt` — which is exactly what
- * this site's own demo showcases as Nuxt UI's colored buttons/badges/spectrum
- * cards — never got resolved from that hint at all. ExpandFamily then always
- * derives it from `brand` by hue rotation, silently discarding the pin.
- *
- * This task runs between resolve:roles and expand:family and does what
- * ResolveRoles would have done for a hint match, for derived roles only.
- * ExpandFamily's own rule — "already-assigned roles are left alone; explicit
- * input wins over family derivation" — then protects this assignment.
+ * Assigns an admitted hint to an unassigned derived role before family
+ * expansion. The explicit role value remains assigned, so family derivation
+ * preserves the requested pin rather than replacing it.
  */
 class PinDerivedRoles implements TaskInterface {
   readonly 'name' = 'pin:derivedRoles';
@@ -80,5 +72,5 @@ class PinDerivedRoles implements TaskInterface {
   }
 }
 
-/** Singleton instance registered wherever the color pipeline runs (useIridis.ts, MultiOutput.vue). */
+/** Singleton task registered by createColorEngine. */
 export const pinDerivedRoles = new PinDerivedRoles();

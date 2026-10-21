@@ -1008,7 +1008,8 @@ class IridisContextFactory {
  * Stage 2 — gathers every uploaded image's own weighted contribution
  * (`weightedHexesFor`, respecting per-image candidate selection) and expands
  * it into a cumulative, pixel-weighted hex multiset (`expandWeighted`), then
- * runs that through the combine pipeline (IRIDIS_CONSTANTS.REQUIRED_IMAGE_STAGES). The
+ * runs that through the combine extraction pipeline (IRIDIS_CONSTANTS.COMBINE_EXTRACTION_STAGES). The
+ * extracted seeds feed the color pipeline, which resolves roles once. The
  * resulting histogram genuinely reflects the merged pixel density across
  * every uploaded image, not an equal-weight-per-representative-color
  * approximation. The combine-stage settings are the existing shared
@@ -1062,7 +1063,7 @@ class IridisContextFactory {
             const result = roleSchemaFor(selected);
             return result;
           })();
-          engine.pipeline(pipelineBuild(IRIDIS_CONSTANTS.REQUIRED_IMAGE_STAGES));
+          engine.pipeline([...IRIDIS_CONSTANTS.COMBINE_EXTRACTION_STAGES]);
           const state = engine.run(InputInterfaceTypeEntity.create({
             'colors':   combinedHexes,
             'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
@@ -1093,7 +1094,6 @@ class IridisContextFactory {
           candidates.value = GalleryMetadataSlotEntity.GalleryMetadataSlot.candidates(state.metadata);
           selectedCandidateLabel.value = null;
           sendUiEvent(IridisUiEvent.populatePickerFromImage(extracted));
-          ingest(state);
         } catch (e) {
           error.value = e instanceof Error ? e.message : String(e);
         } finally {

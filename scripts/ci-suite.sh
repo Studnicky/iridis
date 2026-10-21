@@ -77,13 +77,17 @@ for check in "$@"; do
     diagram-check | diagram-blast-radius)
       echo "ci-suite: dependency diagram not applicable to iridis; skipping" >&2
       ;;
-    site-generate)
-      # The site consumes the packages through their published exports, the
-      # same way any downstream consumer does, so it resolves to dist and
-      # genuinely needs the build. Package typechecking and package tests do
-      # not: they read src via tsconfig paths.
+    site-validate)
+      # This validates the application as the published Pages artifact: typed
+      # source, linted source, production SSR/hydration behavior, then the
+      # generated browser application mounted at its deployed base path.
       prepare_dist \
-        && NUXT_APP_BASE_URL=/iridis/ NUXT_PUBLIC_BASE_URL=/iridis/ pnpm --filter site run generate
+        && prepare_browsers \
+        && pnpm --filter site run typecheck \
+        && pnpm --filter site exec eslint app test nuxt.config.ts content.config.ts visualization-profile.mjs \
+        && pnpm --filter site run test \
+        && NUXT_APP_BASE_URL=/iridis/ NUXT_PUBLIC_BASE_URL=/iridis/ pnpm --filter site run generate \
+        && node site/visualization-profile.mjs --duration=1000
       ;;
     audit) run_audit_check ;;
     verify-dist) prepare_dist && verify_dist ;;

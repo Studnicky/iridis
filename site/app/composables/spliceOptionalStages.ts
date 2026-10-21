@@ -1,10 +1,9 @@
 import { OPTIONAL_STAGE_NAMES } from './optionalStageNames.ts';
 
 /**
- * Slots whichever OPTIONAL_STAGE_NAMES are in `enabled` into `required` right
- * after enforce:contrast, preserving OPTIONAL_STAGE_NAMES' own order — shared
- * by useIridis's live pipeline (both the color and image stage lists) and
- * useMultiOutput's export pipeline.
+ * Inserts admitted optional contrast stages immediately after enforce:contrast
+ * while retaining their declared order. useIridis and useMultiOutput supply the
+ * resulting canonical stage sequence to the engine.
  */
 class SpliceOptionalStagesOperation {
   static run(required: readonly string[], enabled: ReadonlySet<string>): string[] {

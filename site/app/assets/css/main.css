@@ -96,6 +96,9 @@ html {
      from the very first byte of HTML, so this never needs a fallback. */
   --glow: var(--ui-primary);
   --glow-2: var(--ui-color-info-500);
+  /* Opaque base keeps the rich ambient behind the content layer, preventing each
+     ordinary card from sampling and re-rasterizing the moving backdrop. */
+  --iridis-surface-solid: color-mix(in oklch, var(--ui-bg-elevated) 94%, var(--ui-bg));
   /* one shared window every color animates over, in unison — kept under
      300ms so a framing/palette swap reads as instant-but-smooth, not a
      visible fade. */
@@ -103,26 +106,36 @@ html {
   --iridis-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* When the engine orchestrates a dark/light swap, force ALL elements to use the same
-   transition duration regardless of their local Tailwind utility classes, preventing
-   the chaotic staggered fading of different components. */
-html.is-switching-theme *,
-html.is-switching-theme *::before,
-html.is-switching-theme *::after {
-  transition-duration: var(--iridis-tune) !important;
-  transition-timing-function: var(--iridis-ease) !important;
-}
-
-/* Every element re-tones over the SAME window when the engine rewrites its
-   --ui-* tokens, so the whole page transitions in unison rather than snapping.
-   Only color-family properties animate; transforms/opacity stay per-component. */
-*, *::before, *::after {
+/* Palette changes animate as one short, cohesive frame for the content a visitor can
+   actually see. Inactive carousel faces and off-screen sections are deliberately excluded:
+   their colors are already resolved when they enter view, without allocating transition work
+   to content that cannot contribute to the present frame. */
+#_nuxt :not(.anim-offscreen, .anim-offscreen *, .cyl-face:not(.active), .cyl-face:not(.active) *),
+#_nuxt :not(.anim-offscreen, .anim-offscreen *, .cyl-face:not(.active), .cyl-face:not(.active) *)::before,
+#_nuxt :not(.anim-offscreen, .anim-offscreen *, .cyl-face:not(.active), .cyl-face:not(.active) *)::after,
+[data-reka-popper-content-wrapper],
+[data-reka-popper-content-wrapper]::before,
+[data-reka-popper-content-wrapper]::after {
   transition-property: background-color, border-color, color, fill, stroke, box-shadow, outline-color, text-shadow;
   transition-duration: var(--iridis-tune);
   transition-timing-function: var(--iridis-ease);
 }
+html.is-switching-theme #_nuxt :not(.anim-offscreen, .anim-offscreen *, .cyl-face:not(.active), .cyl-face:not(.active) *),
+html.is-switching-theme #_nuxt :not(.anim-offscreen, .anim-offscreen *, .cyl-face:not(.active), .cyl-face:not(.active) *)::before,
+html.is-switching-theme #_nuxt :not(.anim-offscreen, .anim-offscreen *, .cyl-face:not(.active), .cyl-face:not(.active) *)::after,
+html.is-switching-theme [data-reka-popper-content-wrapper],
+html.is-switching-theme [data-reka-popper-content-wrapper]::before,
+html.is-switching-theme [data-reka-popper-content-wrapper]::after {
+  transition-duration: var(--iridis-tune) !important;
+  transition-timing-function: var(--iridis-ease) !important;
+}
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0ms; }
+  #_nuxt :not(.anim-offscreen, .anim-offscreen *, .cyl-face:not(.active), .cyl-face:not(.active) *),
+#_nuxt :not(.anim-offscreen, .anim-offscreen *, .cyl-face:not(.active), .cyl-face:not(.active) *)::before,
+#_nuxt :not(.anim-offscreen, .anim-offscreen *, .cyl-face:not(.active), .cyl-face:not(.active) *)::after,
+[data-reka-popper-content-wrapper],
+[data-reka-popper-content-wrapper]::before,
+[data-reka-popper-content-wrapper]::after { transition-duration: 0ms; }
 }
 
 /* Disable transitions during page load to prevent "bouncing" */
@@ -199,10 +212,7 @@ body {
 /* ─── Glass panels with an engine-colored holo edge ─── */
 .glass {
   position: relative;
-  background: color-mix(in oklch, var(--ui-bg-elevated) 93%, transparent);
-  /* 4px (was 8px+saturate): a smaller backdrop-blur kernel is far cheaper to
-     re-rasterize over the animated ambient behind every glass surface. */
-  backdrop-filter: blur(4px);
+  background: var(--iridis-surface-solid);
   border: 1px var(--iridis-border-style) color-mix(in oklch, var(--glow) calc(35% * var(--iridis-glow-strength)), transparent);
   border-radius: var(--iridis-radius-lg);
   box-shadow:
@@ -246,10 +256,7 @@ body {
 /* Engine-lit glass card (applied to every UCard via app.config). */
 .iridis-card {
   position: relative;
-  background: color-mix(in oklch, var(--ui-bg-elevated) 94%, transparent);
-  /* 4px (was 8px+saturate): a smaller backdrop-blur kernel is far cheaper to
-     re-rasterize over the animated ambient behind every glass surface. */
-  backdrop-filter: blur(4px);
+  background: var(--iridis-surface-solid);
   border: 1px var(--iridis-border-style) color-mix(in oklch, var(--glow) calc(22% * var(--iridis-glow-strength)), transparent);
   border-radius: var(--iridis-radius-lg);
   box-shadow:

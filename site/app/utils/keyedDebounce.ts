@@ -1,8 +1,7 @@
 /**
- * Same debounce as `debounce.ts`, keyed — a separate pending timer per key, so
- * scheduling for key A never cancels a pending call for key B. Used where
- * multiple independent entities (e.g. one per uploaded image) each need their
- * own debounce window, per useIridis.ts's `scheduleEntryReextract`.
+ * Maintains one trailing-edge timer per key, so scheduling one entity never
+ * cancels another entity's pending callback. Browser-only scheduling preserves
+ * SSR safety.
  */
 class KeyedDebounceController<K> {
   readonly #callback: (key: K) => void;

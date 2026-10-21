@@ -60,7 +60,7 @@ The body contains only `tier`, `framing`, and `roles`. `input.runtime.framing` i
 | 16 | The complete base syntax vocabulary: `background`, `foreground`, `surface`, `muted`, `keyword`, `type`, `function`, `variable`, `string`, `number`, `constant`, `comment`, `error`, `warning`, `info`, `success` |
 | 64 | All 16 base roles plus the extension roles in `VSCODE_ROLE_SCHEMAS_64` |
 
-Every supplied role is pinned by name. The pipeline derives absent roles from schema definitions and preserves pinned values. The resulting metadata records pinned role names at `core:rolesPinned` and the declared contrast results at `core:contrastReport`.
+Every supplied role is preserved by name. The pipeline derives absent roles from schema definitions. `core:roleProvenance` records each role's stated, derived, or synthesized origin and any resolution or contrast adjustment; `core:contrastReport` records the declared contrast results.
 
 ## Run the pipeline
 

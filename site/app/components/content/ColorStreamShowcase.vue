@@ -1,10 +1,8 @@
 <script setup lang="ts">
 defineProps<{
+  canvasRef: (element: unknown) => void;
   reducedMotion: boolean;
   roles: readonly { alias: string; label: string }[];
-  liveRefAt: (index: number) => (el: unknown) => void;
-  naiveRefAt: (index: number) => (el: unknown) => void;
-  engineRefAt: (index: number) => (el: unknown) => void;
 }>();
 </script>
 
@@ -30,16 +28,25 @@ defineProps<{
         math and curve-evaluation packages behind the drift you're watching.
       </p>
 
-      <div class="space-y-4">
+      <div
+        id="color-stream-role-legend"
+        class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
+        role="list"
+      >
         <ColorStreamRoleBand
-          v-for="(role, index) in roles"
+          v-for="role in roles"
           :key="role.alias"
           :label="role.label"
-          :live-ref="liveRefAt(index)"
-          :naive-ref="naiveRefAt(index)"
-          :engine-ref="engineRefAt(index)"
         />
       </div>
+
+      <canvas
+        :ref="canvasRef"
+        aria-describedby="color-stream-role-legend"
+        aria-label="Live chroma drift and naive RGB versus OKLCH interpolation comparison for six decorative palette roles"
+        class="w-full rounded border border-default bg-default"
+        role="img"
+      />
     </div>
   </UCard>
 </template>

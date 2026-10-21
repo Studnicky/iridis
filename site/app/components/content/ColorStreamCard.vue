@@ -2,48 +2,52 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { ColorStreamHistoryState } from '../../composables/colorStreamHistoryState.ts';
+import type { ColorSampleType } from '../../composables/types/colorSampleType.ts';
+import type { RoleViewType } from '../../composables/types/roleViewType.ts';
 import { useIridis } from '../../composables/useIridis.ts';
 import { useLivingBackground } from '../../composables/useLivingBackground.ts';
 import { buildColorStreamShowcaseModel } from './colorStream/buildColorStreamShowcaseModel.ts';
 import { drawColorStream } from './colorStream/drawColorStream.ts';
 
 const ROLES = buildColorStreamShowcaseModel.buildRoles();
+const LIVE_FPS = 20;
+const FRAME_BUDGET_MS = 1000 / LIVE_FPS;
 
 const reducedMotion = ref<boolean>(false);
 const cardRef = ref<HTMLElement | null>(null);
-/** Plain (non-reactive) DOM handle arrays — read imperatively by the draw loop, never rendered, so they don't need to be Vue refs. */
-const canvasRefs: (HTMLCanvasElement | null)[] = [];
-const naiveCanvasRefs: (HTMLCanvasElement | null)[] = [];
-const engineCanvasRefs: (HTMLCanvasElement | null)[] = [];
+let canvas: HTMLCanvasElement | null = null;
 let drawRaf: ReturnType<typeof requestAnimationFrame> | null = null;
-let visibilityUnsubscribe: (() => void) | null = null;
+let resizeObserver: ResizeObserver | null = null;
+let intersectionObserver: IntersectionObserver | null = null;
 let inViewport = true;
-const LIVE_FPS = 20;
-const FRAME_BUDGET_MS = 1000 / LIVE_FPS;
 let isPageVisible = true;
 let lastDrawAt = 0;
 let lastSampleVersion = -1;
+let views: readonly RoleViewType[] = [];
+let onVisibility: (() => void) | null = null;
 
-/**
- * Reads each alias's ring buffer directly (a plain, non-reactive snapshot)
- * rather than subscribing to ColorStreamHistoryState's reactive `histories`
- * object — this runs on this component's own interval draw loop, so pulling fresh
- * samples at draw time is both frame-accurate and avoids fanning a Vue
- * reactive write out to every subscriber 60x/sec.
- */
-function drawAllStrips(): void {
+function canvasRef(element: unknown): void {
+  canvas = drawColorStream.resolveCanvasElement(element);
+}
+
+function drawStream(force: boolean = false): void {
+  if (canvas === null) {
+    return;
+  }
   const latestSampleVersion = ColorStreamHistoryState.sampleVersion.value;
-  if (latestSampleVersion === lastSampleVersion) {
+  if (!force && latestSampleVersion === lastSampleVersion) {
     return;
   }
   lastSampleVersion = latestSampleVersion;
 
-  for (let index = 0; index < ROLES.length; index++) {
-    const alias = ROLES[index]!.alias;
-    const canvas = canvasRefs[index];
-    if (!canvas) { continue; }
-    drawColorStream.drawStrip(canvas, ColorStreamHistoryState.sampleArray(alias));
+  const samplesByAlias = new Map<string, readonly ColorSampleType[]>();
+  for (let index = 0; index < ROLES.length; index += 1) {
+    const role = ROLES[index];
+    if (role !== undefined) {
+      samplesByAlias.set(role.alias, ColorStreamHistoryState.sampleArray(role.alias));
+    }
   }
+  drawColorStream.drawAll(canvas, ROLES, samplesByAlias, views);
 }
 
 function stopLoop(): void {
@@ -54,8 +58,10 @@ function stopLoop(): void {
 }
 
 function startLoop(): void {
-  if (reducedMotion.value || drawRaf !== null || !isPageVisible || !inViewport) { return; }
-  drawAllStrips();
+  if (reducedMotion.value || drawRaf !== null || !isPageVisible || !inViewport) {
+    return;
+  }
+  drawStream();
   const tick = (): void => {
     if (!isPageVisible || !inViewport) {
       stopLoop();
@@ -63,7 +69,7 @@ function startLoop(): void {
     }
     const now = performance.now();
     if (now - lastDrawAt >= FRAME_BUDGET_MS) {
-      drawAllStrips();
+      drawStream();
       lastDrawAt = now;
     }
     drawRaf = requestAnimationFrame(tick);
@@ -71,32 +77,26 @@ function startLoop(): void {
   drawRaf = requestAnimationFrame(tick);
 }
 
-function liveRefAt(index: number): (el: unknown) => void {
-  return buildColorStreamShowcaseModel.buildCanvasReferenceSetter(canvasRefs, index);
-}
-
-function naiveRefAt(index: number): (el: unknown) => void {
-  return buildColorStreamShowcaseModel.buildCanvasReferenceSetter(naiveCanvasRefs, index);
-}
-
-function engineRefAt(index: number): (el: unknown) => void {
-  return buildColorStreamShowcaseModel.buildCanvasReferenceSetter(engineCanvasRefs, index);
-}
-
 onMounted(() => {
   useLivingBackground({ 'recorder': ColorStreamHistoryState });
   reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const { roleViews } = useIridis();
-  watch(roleViews, (views) => { drawColorStream.drawComparisonBands(ROLES, views, naiveCanvasRefs, engineCanvasRefs); }, { 'immediate': true });
-  if (reducedMotion.value) {
-    drawAllStrips();
-    return;
-  }
-  startLoop();
+  watch(roleViews, (nextViews) => {
+    views = nextViews;
+    drawStream(true);
+  }, { 'immediate': true });
 
-  const onVisibility = (): void => {
+  resizeObserver = new ResizeObserver(() => {
+    drawStream(true);
+  });
+  if (canvas !== null) {
+    resizeObserver.observe(canvas);
+  }
+
+  onVisibility = (): void => {
     isPageVisible = document.visibilityState === 'visible';
     if (isPageVisible) {
+      drawStream(true);
       startLoop();
     } else {
       stopLoop();
@@ -104,36 +104,31 @@ onMounted(() => {
   };
   document.addEventListener('visibilitychange', onVisibility);
 
-  visibilityUnsubscribe = () => {
-    document.removeEventListener('visibilitychange', onVisibility);
-  };
-
-  if (typeof window !== 'undefined' && 'IntersectionObserver' in window && cardRef.value !== null) {
-    const observer = new IntersectionObserver((entries) => {
+  if ('IntersectionObserver' in window && cardRef.value !== null) {
+    intersectionObserver = new IntersectionObserver((entries) => {
       const visibleEntry = entries.find((entry) => entry.isIntersecting === true);
       inViewport = visibleEntry !== undefined;
       if (inViewport) {
+        drawStream(true);
         startLoop();
       } else {
         stopLoop();
       }
     }, { 'threshold': 0.1 });
-
-    observer.observe(cardRef.value);
-    visibilityUnsubscribe = () => {
-      observer.disconnect();
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  } else {
-    inViewport = true;
+    intersectionObserver.observe(cardRef.value);
   }
+
+  drawStream(true);
+  startLoop();
+
 });
 
 onUnmounted(() => {
   stopLoop();
-  if (visibilityUnsubscribe !== null) {
-    visibilityUnsubscribe();
-    visibilityUnsubscribe = null;
+  resizeObserver?.disconnect();
+  intersectionObserver?.disconnect();
+  if (onVisibility !== null) {
+    document.removeEventListener('visibilitychange', onVisibility);
   }
 });
 </script>
@@ -141,11 +136,9 @@ onUnmounted(() => {
 <template>
   <div ref="cardRef">
     <ColorStreamShowcase
+      :canvas-ref="canvasRef"
       :reduced-motion="reducedMotion"
       :roles="ROLES"
-      :live-ref-at="liveRefAt"
-      :naive-ref-at="naiveRefAt"
-      :engine-ref-at="engineRefAt"
     />
   </div>
 </template>

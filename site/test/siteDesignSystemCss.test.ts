@@ -99,3 +99,17 @@ await test('every themed typeface is self-hosted', () => {
     );
   });
 });
+
+await test('shared body surfaces are opaque and palette transitions exclude inactive content', () => {
+  const mainCss = readFileSync(resolve(SITE_ROOT, 'app/assets/css/main.css'), 'utf8');
+
+  assert.match(mainCss, TestPatterns.CSS_SHARED_SURFACE_TOKEN);
+  assert.match(mainCss, TestPatterns.CSS_GLASS_SOLID_SURFACE);
+  assert.match(mainCss, TestPatterns.CSS_IRIDIS_CARD_SOLID_SURFACE);
+  assert.doesNotMatch(mainCss, TestPatterns.CSS_GLASS_BACKDROP_FILTER);
+  assert.doesNotMatch(mainCss, TestPatterns.CSS_IRIDIS_CARD_BACKDROP_FILTER);
+  assert.match(mainCss, TestPatterns.CSS_SHARED_SURFACE_TEXTURE);
+  assert.doesNotMatch(mainCss, TestPatterns.CSS_UNSCOPED_THEME_TRANSITION);
+  assert.ok(mainCss.includes('.cyl-face:not(.active) *'));
+  assert.ok(mainCss.includes('.anim-offscreen *'));
+});

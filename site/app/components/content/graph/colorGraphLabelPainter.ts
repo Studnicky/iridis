@@ -71,8 +71,8 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
     const labelCount = labelMeta.length;
     if (labelCount === 0) {return;}
 
-    const positions = ColorGraphLabelPainter.pointPositions(handle);
-    if (positions === null || positions.length === 0) {return;}
+    const positions = ColorGraphLabelPainter.trackedPointPositions(handle);
+    if (positions.size === 0) {return;}
 
     const monoToken = getComputedStyle(document.body).getPropertyValue('--font-mono').trim();
     const mono = monoToken.length === 0 ? 'ui-monospace, monospace' : monoToken;
@@ -108,13 +108,13 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
     meta: ColorGraphPointMeta,
     padX: number,
     padY: number,
-    positions: readonly number[],
+    positions: ReadonlyMap<number, readonly [number, number]>,
     width: number
   ): void {
     if (!categoryVisible.isVisible(meta.category)) {return;}
-    const worldX = positions[index * 2];
-    const worldY = positions[index * 2 + 1];
-    if (worldX === undefined || worldY === undefined) {return;}
+    const point = positions.get(index);
+    if (point === undefined) {return;}
+    const [worldX, worldY] = point;
     const screenPosition = ColorGraphLabelPainter.screenPosition(handle, worldX, worldY);
     if (screenPosition === null) {return;}
     const [screenX, screenY] = screenPosition;
@@ -133,12 +133,13 @@ export const colorGraphLabelPainter = class ColorGraphLabelPainter {
     context.fillText(text, x + padX, y + pillHeight / 2);
   }
 
-  private static pointPositions(handle: Graph): readonly number[] | null {
+  private static trackedPointPositions(handle: Graph): ReadonlyMap<number, readonly [number, number]> {
     try {
-      const positions = handle.getPointPositions();
+      const positions = handle.getTrackedPointPositionsMap();
       return positions;
     } catch {
-      return null;
+      const positions = new Map<number, readonly [number, number]>();
+      return positions;
     }
   }
 
