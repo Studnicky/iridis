@@ -31,12 +31,14 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
   const explore = page.locator('#explore');
   await explore.scrollIntoViewIfNeeded();
   await explore.getByRole('button', { 'exact': true, 'name': 'Color graph' }).click();
+  await page.locator('#explore .cyl-face.active .cyl-card[data-cyl-key="colorGraph"]').scrollIntoViewIfNeeded();
   await page.waitForSelector('#explore .cyl-face.active .cg-cosmos canvas', { 'timeout': 60_000 });
   await setTimeout(1_250);
   await explore.getByRole('button', { 'exact': true, 'name': 'Roles table' }).click();
   await page.waitForSelector('#explore .cyl-placeholder[data-cyl-key="colorGraph"]', { 'timeout': 60_000 });
 
   await explore.getByRole('button', { 'exact': true, 'name': 'Color graph' }).click();
+  await page.locator('#explore .cyl-face.active .cyl-card[data-cyl-key="colorGraph"]').scrollIntoViewIfNeeded();
   await page.waitForSelector('#explore .cyl-face.active .cg-cosmos canvas', { 'timeout': 60_000 });
   await setTimeout(900);
 
