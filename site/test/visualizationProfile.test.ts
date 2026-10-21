@@ -72,7 +72,7 @@ await test('profile static files reject traversal, dot segments, escaped paths, 
 await test('profile mounts generated assets beneath the declared Nuxt base path', (context) => {
   const publicRoot = mkdtempSync(join(tmpdir(), 'iridis-profile-public-'));
   context.after(() => { rmSync(publicRoot, { 'force': true, 'recursive': true }); });
-  writeFileSync(join(publicRoot, 'index.html'), '<script type="importmap">{"imports":{"#entry":"/iridis/_nuxt/app.js"}}</script>');
+  writeFileSync(join(publicRoot, 'index.html'), '<a href="/iridis/_nuxt/app.js">entry</a>');
 
   const basePath = VisualizationProfileStaticFile.basePath(publicRoot);
   assert.equal(basePath, '/iridis/');
