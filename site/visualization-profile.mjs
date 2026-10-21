@@ -216,7 +216,7 @@ async function stopTargetProfile(page, sessionId) {
 
 async function runTarget(page, { interaction, name, selector, durationMs = PROFILE_MS }) {
   await waitForSettledTarget(page, selector);
-  const sessionId = `__iridisVisualizationProfile${Date.now()}${Math.random()}`;
+  const sessionId = `__iridisVisualizationProfile${globalThis.crypto.randomUUID()}`;
   const started = await startTargetProfile(page, selector, sessionId);
   if (!started.ok) return { name, selector, ...started };
 
