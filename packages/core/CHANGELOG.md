@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.2
+
+### Patch Changes
+
+- The GitHub Pages build authenticates to GitHub Packages through `actions/setup-node` `registry-url`, and ESLint skips generated Enginseer validation state.
+
 ## 0.13.1
 
 ### Patch Changes
