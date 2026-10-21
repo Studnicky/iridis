@@ -2,9 +2,9 @@
 
 ## Purpose
 
-The GitHub Pages demo exposes a palette-resolution workflow. This plan makes that workflow a request-scoped, schema-admitted system whose components communicate through a single session event bus. The resulting boundary supports deterministic browser interactions, SSR isolation, static deployment, and future AI-assisted control without allowing an AI client to call Vue components or mutate reactive state directly.
+The GitHub Pages demo exposes a palette-resolution workflow. This plan will make that workflow a request-scoped, schema-admitted system whose components communicate through a single session event bus. The resulting boundary will support deterministic browser interactions, SSR isolation, static deployment, and future AI-assisted control without allowing an AI client to call Vue components or mutate reactive state directly.
 
-The implementation target is the `site` application. It preserves the existing iridis engine contracts and output emitters; it changes how the frontend admits interactions, schedules work, and exposes read models.
+The implementation target is the `site` application. The migration will preserve the existing iridis engine contracts and output emitters while changing how the frontend admits interactions, schedules work, and exposes read models.
 
 ## Current Architecture Evidence and Risks
 
@@ -48,9 +48,9 @@ The inventory is based on `site/package.json` and `pnpm-lock.yaml`. “Direct”
 
 The lockfile also contains older transitive 14.0.0 records for several substrate packages. The session boundary uses one explicit 15.2.1 direct dependency set before any new imports are added. It does not mix direct 15.2.1 APIs with a direct 14.0.0 timing API.
 
-## Target Architecture
+## Planned Target Architecture
 
-Each Nuxt application or SSR request owns exactly one `PaletteSession`. Its store, event bus, FSM interpreter, engine capability, scheduler, subscriptions, and disposal lifecycle share that scope.
+This section specifies the future architecture; `PaletteSession`, `PaletteSessionStore`, `PaletteSessionMachine`, and their topics are not current site modules. After Phases 0–7 land, each Nuxt application or SSR request will own exactly one `PaletteSession`. Its store, event bus, FSM interpreter, engine capability, scheduler, subscriptions, and disposal lifecycle will share that scope.
 
 ```text
 Vue component / AI tool
@@ -71,20 +71,20 @@ Vue component / AI tool
                     Vue presentation components
 ```
 
-### Session Store
+### Planned Session Store
 
-`PaletteSessionStore` is the application-facing port. It exposes only:
+`PaletteSessionStore` will be the application-facing port. It will expose only:
 
 - `publishIntent(envelope)` for validated interaction envelopes;
 - selector subscriptions for versioned read models;
 - request-scoped lifecycle disposal;
 - query accessors that return immutable read-model snapshots.
 
-It does not expose raw Vue refs, engine instances, interpreter instances, or component callbacks. A Nuxt-app `WeakMap` registry creates and disposes one store per app/request, matching the existing SSR isolation model.
+It will not expose raw Vue refs, engine instances, interpreter instances, or component callbacks. A Nuxt-app `WeakMap` registry will create and dispose one store per app/request, matching the existing SSR isolation model.
 
-### Bus and Topic Classes
+### Planned Bus and Topic Classes
 
-The bus distinguishes transport intent from observed fact and derived presentation state. A topic carries an entity type, an owning publisher, and delivery semantics.
+The planned bus will distinguish transport intent from observed fact and derived presentation state. Each topic will carry an entity type, an owning publisher, and delivery semantics.
 
 | Topic class | Name pattern | Sole publisher | Consumers | Delivery policy |
 | --- | --- | --- | --- | --- |
@@ -94,21 +94,21 @@ The bus distinguishes transport intent from observed fact and derived presentati
 | Lifecycle | `palette.session.lifecycle` | Session owner | Scheduler and resource adapters | `created`, `hydrated`, `disposed` only |
 | Read model | `palette.session.read-model.<name>` | Projectors | Selector adapters and components | Latest value; new subscribers receive current snapshot |
 
-Required read models are `input`, `resolution`, `outputs`, `vscode-preview`, `interaction-status`, and `diagnostics`. The output and VS Code projections consume the same resolution fact; neither recreates a palette engine.
+Required read models will be `input`, `resolution`, `outputs`, `vscode-preview`, `interaction-status`, and `diagnostics`. The output and VS Code projections will consume the same resolution fact; neither will recreate a palette engine.
 
-### Component Rule
+### Planned Component Rule
 
-A component publishes an already schema-admitted interaction envelope through `PaletteSessionStore.publishIntent` and subscribes through a named read-model selector. It does not call another component, call an engine, invoke a composable that mutates session state, construct an FSM event, or retain a component callback as a workflow capability.
+A migrated component will publish a schema-admitted interaction envelope through `PaletteSessionStore.publishIntent` and subscribe through a named read-model selector. It will not call another component, call an engine, invoke a composable that mutates session state, construct an FSM event, or retain a component callback as a workflow capability.
 
-Presentation-local state remains local when it has no workflow meaning: focus, tooltip visibility, temporary pointer coordinates, and animation frame state do not enter the session bus. A local state transition becomes an intent only when it changes palette input, selected output, persistent view mode, engine work, or an AI-observable result.
+Presentation-local state will remain local when it has no workflow meaning: focus, tooltip visibility, temporary pointer coordinates, and animation frame state will not enter the session bus. A local state transition will become an intent only when it changes palette input, selected output, persistent view mode, engine work, or an AI-observable result.
 
-## Schema-Backed Interaction Contract
+## Planned Schema-Backed Interaction Contract
 
-All bus messages are canonical entities created at admission. Input validation occurs once at the store boundary. Downstream handlers only receive entity instances and do not parse raw DOM, AI-tool, query-string, or image payloads.
+All planned bus messages will be canonical entities created at admission. Input validation will occur once at the store boundary. Downstream handlers will receive only entity instances and will not parse raw DOM, AI-tool, query-string, or image payloads.
 
 ### Common Envelope
 
-`PaletteInteractionEnvelopeEntity` contains:
+`PaletteInteractionEnvelopeEntity` will contain:
 
 | Field | Contract |
 | --- | --- |
@@ -123,11 +123,11 @@ All bus messages are canonical entities created at admission. Input validation o
 | `payload` | Interaction-specific canonical payload entity. |
 | `issuedAt` | Admission timestamp for diagnostics and ordering, not a source of business state. |
 
-A fact envelope has the same tracing fields plus `fact`, `payload`, and the input fingerprint used to produce it. An error envelope has the same tracing fields plus a `PaletteSessionErrorEntity`.
+A fact envelope will have the same tracing fields plus `fact`, `payload`, and the input fingerprint used to produce it. An error envelope will have the same tracing fields plus a `PaletteSessionErrorEntity`.
 
 ### Payload Entities
 
-The registry supplies one closed entity for each interaction. Examples include:
+The planned registry will supply one closed entity for each interaction. Examples include:
 
 | Interaction | Payload entity | Required fields |
 | --- | --- | --- |
@@ -145,17 +145,17 @@ The registry supplies one closed entity for each interaction. Examples include:
 | `palette.vscode.configure` | `ConfigureVscodeTierPayloadEntity` | supported tier, palette identifier, and role edits |
 | `palette.diagram.command` | `DiagramCommandPayloadEntity` | registered pan, zoom, fit, reset, or expansion command |
 
-Image intake normalizes externally supplied files at the image boundary. The session persists only the derived candidate colors, an asset identifier or fingerprint when needed for UI correlation, and error metadata. Raw images and pixel buffers remain transient in the image adapter and are released after extraction.
+The image boundary will normalize externally supplied files. The session will persist only the derived candidate colors, an asset identifier or fingerprint when needed for UI correlation, and error metadata. Raw images and pixel buffers will remain transient in the image adapter and will be released after extraction.
 
 ### Result and Error Entities
 
-`PaletteResolutionResultEntity` contains the canonical input fingerprint, revision, resolved roles, contrast/provenance reports, emitter outputs, and deterministic diagnostics already emitted by iridis. `PaletteSessionErrorEntity` contains a stable `code`, human-readable `message`, `fieldPaths`, `correlationId`, `revision`, and `retryable` boolean. It never transports an untyped thrown object.
+`PaletteResolutionResultEntity` will contain the canonical input fingerprint, revision, resolved roles, contrast/provenance reports, emitter outputs, and deterministic diagnostics emitted by iridis. `PaletteSessionErrorEntity` will contain a stable `code`, human-readable `message`, `fieldPaths`, `correlationId`, `revision`, and `retryable` boolean. It will never transport an untyped thrown object.
 
-A read-model snapshot contains `revision`, `status`, `value`, and any current error entity. A selector ignores snapshots older than the revision it already rendered.
+A read-model snapshot will contain `revision`, `status`, `value`, and any current error entity. A selector will ignore snapshots older than the revision it has rendered.
 
-## FSM: Single Transition Authority
+## Planned FSM: Single Transition Authority
 
-`PaletteSessionMachine` replaces multiple independent workflow watchers. It is the only authority that turns an admitted intent into effects. The existing carousel drag state becomes a nested `ready.dragging` mode in this machine rather than a separate mutation path.
+`PaletteSessionMachine` will replace multiple independent workflow watchers. It will be the only authority that turns an admitted intent into effects. The existing carousel drag state will become a nested `ready.dragging` mode in this machine rather than a separate mutation path.
 
 | State | Accepted event | Transition | Effects |
 | --- | --- | --- | --- |
@@ -170,34 +170,34 @@ A read-model snapshot contains `revision`, `status`, `value`, and any current er
 | any live state | `session.dispose` | `disposed` | unsubscribe, cancel queued work, release transient image data |
 | `disposed` | any event | `disposed` | reject with typed lifecycle error |
 
-The engine effect receives a fully normalized input snapshot and returns a result or typed error for the same revision. A stale completion is recorded only as an optional diagnostic; it never overwrites a newer read model.
+The engine effect will receive a fully normalized input snapshot and return a result or typed error for the same revision. A stale completion will be recorded only as an optional diagnostic; it will never overwrite a newer read model.
 
-## Lifecycle, Backpressure, and SSR
+## Planned Lifecycle, Backpressure, and SSR
 
-- The Nuxt-app request key owns the bus, store, machine, and engine capability. Module-level singleton state is prohibited for any session data.
-- Server rendering creates a request-scoped session and resolves only the SSR-safe bootstrap input. Client hydration adopts the serialized canonical snapshot, then starts browser-only image and observer work after mount.
-- GitHub Pages remains static: the architecture needs no server process, shared memory, websocket, or cross-visitor queue.
-- The scheduler preserves ordered accepted intents but coalesces pending engine work to the newest revision. At most one engine run is active per session. Completion applies only if its revision equals the store's active revision.
-- Read-model topics are latest-value topics with bounded subscriber work. Expensive projections run after the canonical resolution fact and are skipped for stale revisions.
-- Derived memoization keys include the canonical input fingerprint, output set, and engine configuration. Cache entries are bounded; raw uploads and pixel data are never cache values.
-- Consumers subscribe before publishing the request that requires a response. This keeps tool and worker-like protocols deterministic and prevents a fast fact from being missed.
+- The Nuxt-app request key will own the bus, store, machine, and engine capability. Module-level singleton state will be prohibited for session data.
+- Server rendering will create a request-scoped session and resolve only the SSR-safe bootstrap input. Client hydration will adopt the serialized canonical snapshot, then start browser-only image and observer work after mount.
+- GitHub Pages will remain static: the architecture will need no server process, shared memory, websocket, or cross-visitor queue.
+- The scheduler will preserve ordered accepted intents but coalesce pending engine work to the newest revision. At most one engine run will be active per session. Completion will apply only if its revision equals the store's active revision.
+- Read-model topics will be latest-value topics with bounded subscriber work. Expensive projections will run after the canonical resolution fact and will be skipped for stale revisions.
+- Derived memoization keys will include the canonical input fingerprint, output set, and engine configuration. Cache entries will be bounded; raw uploads and pixel data will never be cache values.
+- Consumers will subscribe before publishing the request that requires a response. This will keep tool and worker-like protocols deterministic and prevent a fast fact from being missed.
 
-## AI-Assisted Demo Contract
+## Planned AI-Assisted Demo Contract
 
-The demo adopts Leadography's relevant boundary patterns: typed ingress and facts, pure reducers with effect descriptors, validated tool schemas mapped to events, correlation metadata, and subscribe-before-send sequencing. It improves the boundary by maintaining separate intent, fact, error, lifecycle, and read-model topic classes.
+The planned demo will adopt Leadography's relevant boundary patterns: typed ingress and facts, pure reducers with effect descriptors, validated tool schemas mapped to events, correlation metadata, and subscribe-before-send sequencing. It will maintain separate intent, fact, error, lifecycle, and read-model topic classes.
 
-The AI surface has two ports:
+The planned AI surface will have two ports:
 
 | Port | Examples | Rules |
 | --- | --- | --- |
 | Command tools | `set_palette_seed`, `select_schema`, `configure_vscode_tier`, `select_image_candidate`, `retry_resolution` | Tool arguments validate through the entity registry, become intent envelopes, and enter `palette.session.intent`. Tools cannot import Vue components, call composables, or mutate the store directly. |
 | Query tools | `get_palette_session`, `get_resolution`, `get_output`, `explain_diagnostics` | Dedicated query handlers read immutable named read models. They do not send commands, run the engine, or access component instances. |
 
-Every command response returns the accepted `eventId`, `correlationId`, assigned `revision`, and an acknowledgement. A tool that needs a final result subscribes to the relevant fact or read-model topic before publishing its command, then returns only the result whose correlation and revision match. The LLM may narrate deterministic resolution facts and diagnostics; it does not decide palette resolution or invent output values.
+Every command response will return the accepted `eventId`, `correlationId`, assigned `revision`, and an acknowledgement. A tool that needs a final result will subscribe to the relevant fact or read-model topic before publishing its command, then return only the result whose correlation and revision match. The LLM may narrate deterministic resolution facts and diagnostics; it will not decide palette resolution or invent output values.
 
 ## Phased Remediation
 
-Each phase lands with its tests before dependent work begins. Ownership boundaries prevent components from bypassing the new session port.
+Each phase will land with its tests before dependent work begins. Ownership boundaries will prevent components from bypassing the new session port.
 
 | Phase | Owned modules/files | Deliverable | Acceptance evidence |
 | --- | --- | --- | --- |
@@ -245,10 +245,10 @@ Before Phase 7 is complete, establish a baseline in the repository and enforce t
 
 | Decision | Status | Rationale |
 | --- | --- | --- |
-| One request-scoped `PaletteSessionStore` and event bus | Adopt | It retains the site's SSR isolation pattern while creating one interaction boundary. |
-| `@studnicky/fsm` remains the sole transition authority | Adopt | The site already has pure UI-machine transitions and an effect interpreter. |
-| Separate intent, fact, error, lifecycle, and read-model topics | Adopt | Transport semantics and subscription behavior remain explicit rather than overloading one event stream. |
-| Revision is assigned at session admission | Adopt | Engine work, outputs, diagnostics, and UI can reject stale results consistently. |
-| Outputs and VS Code preview project from canonical resolution facts | Adopt | It removes independent engine construction while preserving existing emitters. |
-| Add direct substrate dependencies only at 15.2.1 | Adopt | The lockfile has 15.2.1 implementations; timing remains 14.0.0-only and is excluded. |
-| AI commands use the same entities and intent topic as human input | Adopt | Human and AI interaction receive identical validation, correlation, and state-machine behavior. |
+| One request-scoped `PaletteSessionStore` and event bus | Planned | It retains the site's SSR isolation pattern while creating one interaction boundary. |
+| `@studnicky/fsm` remains the sole transition authority | Planned | The site already has pure UI-machine transitions and an effect interpreter. |
+| Separate intent, fact, error, lifecycle, and read-model topics | Planned | Transport semantics and subscription behavior remain explicit rather than overloading one event stream. |
+| Revision is assigned at session admission | Planned | Engine work, outputs, diagnostics, and UI can reject stale results consistently. |
+| Outputs and VS Code preview project from canonical resolution facts | Planned | It removes independent engine construction while preserving existing emitters. |
+| Add direct substrate dependencies only at 15.2.1 | Planned | The lockfile has 15.2.1 implementations; timing remains 14.0.0-only and is excluded. |
+| AI commands use the same entities and intent topic as human input | Planned | Human and AI interaction receive identical validation, correlation, and state-machine behavior. |

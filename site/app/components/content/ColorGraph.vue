@@ -111,7 +111,7 @@ let pendingLabelPaint = false;
 let graphVisibilityPoll: number | null = null;
 let isGraphVisible = true;
 let onVisibilityChange: (() => void) | null = null;
-let paintNeedsReframe = true;
+let appliedStructureKey: string | null = null;
 
 function syncGraphVisibility(): void {
   const target = containerRef.value;
@@ -139,8 +139,15 @@ function stopVisibilityPoll(): void {
   }
 }
 
+function cancelFitSequence(): void {
+  for (const timer of fitTimers.splice(0)) clearTimeout(timer);
+  captureFitZoomOnEnd = false;
+  startSimulationAfterFit = false;
+}
+
 async function bootGraphRuntime(): Promise<void> {
   if (graphRuntimeArmed || graphBooting || !(props.enabled ?? true) || typeof window === 'undefined') return;
+  cancelFitSequence();
   graphBooting = true;
   loading.value = true;
   loadError.value = null;
@@ -241,7 +248,7 @@ function teardownGraphRuntime(): void {
     onVisibilityChange = null;
   }
   window.removeEventListener('keydown', onKeydown);
-  for (const t of fitTimers.splice(0)) clearTimeout(t);
+  cancelFitSequence();
   if (labelRaf !== null) {
     cancelAnimationFrame(labelRaf);
     labelRaf = null;
@@ -257,7 +264,7 @@ function teardownGraphRuntime(): void {
   initFailed = false;
   pendingPaint = false;
   pendingLabelPaint = false;
-  paintNeedsReframe = true;
+  appliedStructureKey = null;
   fitZoomLevel.value = null;
   lastLabelPaintAt = 0;
   graphRuntimeArmed = false;
@@ -267,6 +274,12 @@ function initCosmos(container: HTMLDivElement): void {
   if (GraphCtor === null || graph.value !== null || initFailed) return;
   initAttempts += 1;
   try {
+    // Cosmos creates its luma device internally. luma enables WebGL context
+    // instrumentation outside production unless this setting is explicit.
+    // The graph never uses debugger instrumentation, so keep it disabled for
+    // every runtime mode before Cosmos constructs the device.
+    globalThis.luma.log.set('debug', false);
+    globalThis.luma.log.set('debug-webgl', false);
     graph.value = new GraphCtor(container, {
       // cosmos's own dark-gray default ignores the site's light/dark
       // framing outright, so the WebGL canvas never matches the page around
@@ -317,7 +330,7 @@ function initCosmos(container: HTMLDivElement): void {
     resizeLabelCanvas();
     schedulePaint();
     pollZoom();
-    paintNeedsReframe = true;
+    appliedStructureKey = null;
     void nextTick(() => {
       isGraphVisible = true;
       syncGraphVisibility();
@@ -405,9 +418,13 @@ function centre(): void {
 }
 
 function armFitSequence(armInitialSimulation = false): void {
+  // A user fit can supersede the initial fit before its final zoom event.
+  // Preserve that initial simulation request across the replacement sequence.
+  const shouldStartSimulation = startSimulationAfterFit || armInitialSimulation;
+  cancelFitSequence();
+  startSimulationAfterFit = shouldStartSimulation;
   const handle = graph.value;
   if (handle === null) return;
-  for (const t of fitTimers.splice(0)) clearTimeout(t);
   const finalDelayMs = buildColorGraphViewModel.fitDelaysMs.at(-1);
   if (finalDelayMs === undefined) return;
   // The seeded hub/leaf layout keeps relaxing under the live simulation
@@ -442,7 +459,7 @@ function onKeydown(e: KeyboardEvent): void {
 // enables) has actually landed.
 watch(fullscreen, () => {
   void nextTick(() => {
-    for (const t of fitTimers.splice(0)) clearTimeout(t);
+    cancelFitSequence();
     resizeLabelCanvas();
     const schedule = (delayMs: number): void => {
       fitTimers.push(setTimeout(() => {
@@ -479,8 +496,7 @@ onBeforeUnmount(() => {
   teardownGraphRuntime();
 });
 
-watch(mathList, (next, previous) => {
-  paintNeedsReframe = previous === undefined || previous.length !== next.length;
+watch(mathList, () => {
   schedulePaint();
 });
 watch(categoryVisible, () => {
@@ -497,33 +513,36 @@ watch(framing, () => {
     g.setConfigPartial({
       'backgroundColor': colorGraphLabelPainter.backgroundColorFromTheme()
     });
-    g.render(1);
+    g.render();
   } catch { /* ignore */ }
 });
 
 function paint(): void {
   const handle = graph.value;
   if (handle === null) return;
-  const { positions, colors, sizes, links, linkColors, meta }
-    = buildColorGraphBuffers.build(mathList.value, categoryVisible.value);
+  const buffers = buildColorGraphBuffers.build(mathList.value, categoryVisible.value);
+  const { positions, colors, sizes, links, linkColors, meta } = buffers;
+  const shouldReframe = buildColorGraphBuffers.requiresStructuralApply(
+    appliedStructureKey,
+    buffers
+  );
   labelMeta = meta;
-  handle.setPointPositions(positions);
+  if (shouldReframe) {
+    handle.setPointPositions(positions);
+    handle.trackPointPositionsByIndices(meta.map((_, index) => index));
+    handle.setLinks(links);
+  }
   handle.setPointColors(colors);
   handle.setPointSizes(sizes);
-  handle.trackPointPositionsByIndices(meta.map((_, index) => index));
-  handle.setLinks(links);
   handle.setLinkColors(linkColors);
-  // buildBuffers' hub-and-spoke layout only seeds the starting positions.
-  // render() (not start() — start() only flips the simulation-running flag,
-  // it doesn't kick off cosmos.gl's own rAF render loop) hands them to the
-  // live force simulation (link spring, repulsion, gravity, collision,
-  // configured in initCosmos()), which keeps running and settling in real
-  // time rather than freezing on one static frame.
-  handle.render(1);
+  // Seed positions, topology, and simulation alpha change together only for
+  // a structural graph revision. Palette revisions preserve the live layout
+  // and its current simulation progress while applying new colours.
+  handle.render(shouldReframe ? 1 : undefined);
   if (positions.length === 0) { scheduleLabelPaint(); return; }
-  if (paintNeedsReframe) {
+  if (shouldReframe) {
     armFitSequence(true);
-    paintNeedsReframe = false;
+    appliedStructureKey = buffers.structureKey;
   }
   scheduleLabelPaint();
 }

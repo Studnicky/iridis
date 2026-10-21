@@ -72,5 +72,5 @@ class PinDerivedRoles implements TaskInterface {
   }
 }
 
-/** Singleton task registered by the PaletteSession resolution adapter. */
+/** Singleton task registered by createColorEngine. */
 export const pinDerivedRoles = new PinDerivedRoles();

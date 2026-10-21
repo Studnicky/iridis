@@ -2,7 +2,7 @@ import { OPTIONAL_STAGE_NAMES } from './optionalStageNames.ts';
 
 /**
  * Inserts admitted optional contrast stages immediately after enforce:contrast
- * while retaining their declared order. The PaletteSession adapter supplies the
+ * while retaining their declared order. useIridis and useMultiOutput supply the
  * resulting canonical stage sequence to the engine.
  */
 class SpliceOptionalStagesOperation {

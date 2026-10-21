@@ -2,9 +2,9 @@ import { COLOR_PIPELINE } from './colorPipeline.ts';
 import { OPTIONAL_STAGE_NAMES } from './optionalStageNames.ts';
 
 /**
- * The non-toggleable stages in the canonical color pipeline. The session
- * adapter composes these with selected contrast stages for each admitted
- * palette intent; CVD simulation remains required.
+ * The non-toggleable stages in the canonical color pipeline. useIridis and
+ * useMultiOutput compose these with selected contrast stages; CVD simulation
+ * remains required.
  */
 const OPTIONAL_STAGE_NAME_SET = new Set(OPTIONAL_STAGE_NAMES);
 

@@ -8,7 +8,7 @@ const SHADE_L: Record<number, number> = {
 
 /**
  * The s50…s950 tonal-ramp configuration supplied to the engine as
- * `metadata['core:variantConfig']` by the PaletteSession resolution adapter.
+ * `metadata['core:variantConfig']` by palette-resolution callers.
  */
 export const VARIANT_CONFIG = Tokens.SHADE_KEYS.map((shade) => {
   const lightnessTarget = SHADE_L[shade]!;

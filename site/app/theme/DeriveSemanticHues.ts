@@ -51,5 +51,5 @@ class DeriveSemanticHues implements TaskInterface {
   }
 }
 
-/** Singleton task registered by the PaletteSession resolution adapter. */
+/** Singleton task registered by createColorEngine. */
 export const deriveSemanticHues = new DeriveSemanticHues();

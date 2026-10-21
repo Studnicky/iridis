@@ -1,7 +1,6 @@
 /**
  * Selects the active theme's presentation layout for components that render
- * committed PaletteSession read models. Palette resolution and presentation
- * publication remain owned by the PaletteSession and PresentationCommitter;
+ * palette data. useIridis and useMultiOutput resolve and publish that data;
  * this composable selects only the container strategy.
  */
 import * as VueModule from 'vue';

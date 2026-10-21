@@ -336,7 +336,43 @@ export class VisualizationProfileStaticFile {
   }
 }
 
-class VisualizationProfileOperation {
+export class VisualizationProfileBudget {
+  static #minimumFrameCount = 5;
+  static #minimumFramesPerSecond = 2;
+  static #maximumAverageFrameMs = 600;
+  static #maximumFrameMs = 2000;
+  static #maximumP90FrameMs = 800;
+
+  static failures(report) {
+    const failures = [];
+    for (const item of report) {
+      if (!item.ok) continue;
+      const framesPerSecond = item.avgMs > 0 ? 1000 / item.avgMs : 0;
+      const checks = [
+        ['frameCount', item.frameCount, this.#minimumFrameCount, 'at least'],
+        ['fps', framesPerSecond, this.#minimumFramesPerSecond, 'at least'],
+        ['avgMs', item.avgMs, this.#maximumAverageFrameMs, 'at most'],
+        ['maxMs', item.maxMs, this.#maximumFrameMs, 'at most'],
+        ['p90Ms', item.p90Ms, this.#maximumP90FrameMs, 'at most'],
+      ];
+      for (const [metric, value, limit, direction] of checks) {
+        const passes = Number.isFinite(value) && (direction === 'at least' ? value >= limit : value <= limit);
+        if (!passes) {
+          failures.push('target=' + item.name + ' ' + metric + '=' + value + ' must be ' + direction + ' ' + limit);
+        }
+      }
+    }
+    return failures;
+  }
+}
+
+export class VisualizationProfileOperation {
+  static isEntrypoint(argv, moduleUrl) {
+    const entryPath = argv[1];
+    return entryPath !== undefined && existsSync(entryPath)
+      && realpathSync(entryPath) === realpathSync(fileURLToPath(moduleUrl));
+  }
+
   static async run() {
     if (!existsSync(root) || !statSync(root).isDirectory()) {
       throw new Error(`Static build not found at ${root}. Run: npm run generate`);
@@ -440,9 +476,13 @@ class VisualizationProfileOperation {
     if (missingTargets.length > 0) {
       throw new Error(`Visualization profile targets missing: ${missingTargets.map((item) => item.name).join(', ')}`);
     }
+    const budgetFailures = VisualizationProfileBudget.failures(report);
+    if (budgetFailures.length > 0) {
+      throw new Error(`Visualization profile budget exceeded:\n${budgetFailures.join('\n')}`);
+    }
   }
 }
 
-if (import.meta.main) {
+if (VisualizationProfileOperation.isEntrypoint(process.argv, import.meta.url)) {
   await VisualizationProfileOperation.run();
 }
