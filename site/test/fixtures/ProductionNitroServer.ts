@@ -63,7 +63,7 @@ export class ProductionNitroServer {
     }
   }
 
-  static async start(): Promise<{ readonly 'child': ChildProcess; readonly 'origin': string }> {
+  static async start(entrypoint: string = NITRO_SERVER): Promise<{ readonly 'child': ChildProcess; readonly 'origin': string }> {
     const requestedPort = await new Promise<number>((resolvePort, rejectPort) => {
       const server = createServer();
       server.once('error', rejectPort);
@@ -97,7 +97,7 @@ export class ProductionNitroServer {
         return Reflect.apply(originalListen, server, argumentsList);
       };
 
-      await import(${JSON.stringify(pathToFileURL(NITRO_SERVER).href)});
+      await import(${JSON.stringify(pathToFileURL(entrypoint).href)});
     `], {
       'cwd': SITE_ROOT,
       'env': { ...process.env, 'HOST': '127.0.0.1', 'NITRO_PORT': String(requestedPort), 'NODE_ENV': 'production', 'PORT': String(requestedPort) },
@@ -116,6 +116,7 @@ export class ProductionNitroServer {
           globalThis.clearTimeout(timer);
           child.off('error', onError);
           child.off('exit', onExit);
+          child.off('message', onMessage);
         };
         const fail = (message: string, cause?: unknown): void => {
           cleanup();
@@ -125,14 +126,19 @@ export class ProductionNitroServer {
         };
         const onError = (error: Error): void => {fail('Nitro child failed to start.', error);};
         const onExit = (): void => {fail('Nitro child exited before listening.');};
+        const onMessage = (message: unknown): void => {
+          try {
+            const listening = NitroListeningMessageEntity.intake(message);
+            cleanup();
+            resolvePort(listening.port);
+          } catch (error) {
+            fail('Nitro child sent an invalid listening message.', error);
+          }
+        };
         const timer = globalThis.setTimeout(() => {fail('Nitro child did not report its bound port within 15 seconds.');}, 15_000);
         child.once('error', onError);
         child.once('exit', onExit);
-        child.once('message', (message) => {
-          const listening = NitroListeningMessageEntity.intake(message);
-          cleanup();
-          resolvePort(listening.port);
-        });
+        child.once('message', onMessage);
       });
       const result = { 'child': child, 'origin': `http://127.0.0.1:${port}` };
       return result;
