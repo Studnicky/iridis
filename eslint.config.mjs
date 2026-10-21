@@ -275,7 +275,7 @@ const plainTextParser = {
 };
 
 export default [
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/*.d.ts', 'site/.nuxt/**', 'site/.output/**'] },
+  { ignores: ['**/dist/**', '**/node_modules/**', '**/*.d.ts', 'site/.nuxt/**', 'site/.output/**', '**/.enginseer/'] },
   ...tseslint.config(
     {
       'files': [
