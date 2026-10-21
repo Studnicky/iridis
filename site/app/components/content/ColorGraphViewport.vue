@@ -4,6 +4,7 @@ import { LegendMachine } from './viz/LegendMachine.ts';
 
 const props = defineProps<{
   fullscreen: boolean;
+  lifecycle: string;
   loading: boolean;
   loadError: string | null;
   zoomLevel: number;
@@ -36,6 +37,7 @@ const labelsRef = defineModel<HTMLCanvasElement | null>('labelsRef', { default: 
     <div
       class="cg-wrap"
       :class="{ 'cg-wrap--fullscreen': fullscreen }"
+      :data-graph-state="lifecycle"
     >
       <div class="cg-canvas">
         <div

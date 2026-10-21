@@ -31,7 +31,9 @@ class HighlightCodeOperation {
     const highlighter = await Highlighter.get();
     const html = highlighter.codeToHtml(code, {
       'lang': language,
-      'theme': registration
+      'theme': registration,
+      // A zero limit keeps cold regex compilation on a slow machine from truncating tokens.
+      'tokenizeTimeLimit': 0
     });
     return html;
   }
