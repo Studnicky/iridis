@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.1
+
+### Patch Changes
+
+- `clusterDeltaEMerge` measures each color pair once and re-measures only the merged cluster, so clustering a few hundred histogram bins completes in milliseconds with identical output. `enforce:cvdSimulate` emits one aggregate warning per run carrying the warning count and affected deficiency types; per-pair detail logs at debug level and every warning remains in `metadata['contrast:cvd']`.
+
 ## 0.13.0
 
 ### Minor Changes

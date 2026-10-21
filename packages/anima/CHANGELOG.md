@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @studnicky/iridis@0.13.1
+  - @studnicky/iridis-contrast@0.13.1
+  - @studnicky/iridis-algebra@0.13.1
+
 ## 0.13.0
 
 ### Patch Changes
