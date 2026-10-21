@@ -56,6 +56,18 @@ await test('renders the nameless site theme shape and a named dark theme through
   assert.equal(HighlightCodeFixture.darkTheme.tokenColors.length, darkRuleCount);
 });
 
+await test('colors keywords however long the tokenizer takes', async (context) => {
+  let clock = 0;
+  context.mock.method(Date, 'now', () => {
+    clock += 1_000;
+    return clock;
+  });
+
+  const html = await highlightCode('if (answer) {}', 'javascript', HighlightCodeFixture.lightTheme);
+
+  assert.equal(html.includes('color:#9C2A80'), true);
+});
+
 await test('keeps the globally published VS Code theme cloneable for Shiki intake', async () => {
   const previousTheme = globalVscodeTheme.value;
   const emittedTheme = {
