@@ -520,6 +520,11 @@ watch(framing, () => {
 function paint(): void {
   const handle = graph.value;
   if (handle === null) return;
+  if (!handle.isReady) {
+    // Cosmos rejects point updates until its device initializes.
+    handle.ready.then(() => { if (graph.value === handle) schedulePaint(); }).catch(() => { pendingPaint = true; });
+    return;
+  }
   const buffers = buildColorGraphBuffers.build(mathList.value, categoryVisible.value);
   const { positions, colors, sizes, links, linkColors, meta } = buffers;
   const shouldReframe = buildColorGraphBuffers.requiresStructuralApply(
