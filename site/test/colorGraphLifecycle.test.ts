@@ -12,6 +12,17 @@ class ColorGraphLifecycleBrowser {
     assert.ok(Number.isFinite(result), `Expected a finite zoom text, received ${text}.`);
     return result;
   }
+
+  // Cosmos creates its canvas before its device is ready, so early wheel events can be dropped.
+  static async zoomInUntilAbove(page: Page, baseline: number, attemptsLeft: number): Promise<number> {
+    await page.mouse.wheel(0, -420);
+    await setTimeout(500);
+    const level = await ColorGraphLifecycleBrowser.zoomText(page);
+    if (level > baseline) {return level;}
+    assert.ok(attemptsLeft > 0, `The graph never accepted a wheel zoom above ${baseline}.`);
+    const result = await ColorGraphLifecycleBrowser.zoomInUntilAbove(page, baseline, attemptsLeft - 1);
+    return result;
+  }
 }
 
 await test('tearing down during a final fit cannot impose a zoom floor on a replacement graph', { 'timeout': 180_000 }, async (context) => {
@@ -49,9 +60,8 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
     return;
   }
   await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-  await page.mouse.wheel(0, -420);
-  await setTimeout(350);
-  const beforeZoomOut = await ColorGraphLifecycleBrowser.zoomText(page);
+  const fitZoom = await ColorGraphLifecycleBrowser.zoomText(page);
+  const beforeZoomOut = await ColorGraphLifecycleBrowser.zoomInUntilAbove(page, fitZoom, 40);
   await page.locator('#explore .cyl-face.active').getByLabel('Navigation D-pad').getByRole('button', { 'exact': true, 'name': 'Zoom out' }).click();
   await page.waitForFunction((previous) => {
     const text = document.querySelector('#explore .cyl-face.active .dagonizer-dpad-hud-level')?.textContent;
