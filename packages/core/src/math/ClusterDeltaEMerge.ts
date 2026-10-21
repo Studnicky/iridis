@@ -61,26 +61,6 @@ class ClusterRecords {
     return result;
   }
 
-  static withMergedPair(
-    clusters: readonly ClusterMergeEntity.Type[],
-    merged: ClusterMergeEntity.Type,
-    pair: { 'firstIndex': number; 'secondIndex': number }
-  ): ClusterMergeEntity.Type[] {
-    const result = new Array<ClusterMergeEntity.Type>(clusters.length - 1);
-    let resultIndex = 0;
-    const clusterCount = clusters.length;
-    for (let clusterIndex = 0; clusterIndex < clusterCount; clusterIndex++) {
-      if (clusterIndex === pair.firstIndex) {
-        result[resultIndex] = merged;
-        resultIndex += 1;
-      } else if (clusterIndex !== pair.secondIndex) {
-        result[resultIndex] = clusters[clusterIndex]!;
-        resultIndex += 1;
-      }
-    }
-    return result;
-  }
-
   static withWeights(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): ColorRecordInterfaceTypeEntity.Type[] {
     const result = new Array<ColorRecordInterfaceTypeEntity.Type>(colors.length);
     const colorCount = colors.length;
@@ -99,23 +79,60 @@ class ClusterRecords {
   }
 }
 
-class ClosestPair {
-  static of(clusters: readonly ClusterMergeEntity.Type[]): { 'firstIndex': number; 'secondIndex': number } {
+/**
+ * Pairwise deltaE2000 distances between live clusters, computed once per
+ * pair and updated only for the merged cluster. Slot ids are the original
+ * input indices; live slots stay in ascending order, so slot order equals
+ * cluster order and ties resolve to the first minimum in row-major scan.
+ */
+class ClusterDistanceMatrix {
+  readonly #active: number[];
+  readonly #clusters: ClusterMergeEntity.Type[];
+  readonly #distances: Float64Array;
+  readonly #records: ColorRecordInterfaceTypeEntity.Type[];
+  readonly #size: number;
+
+  private constructor(clusters: readonly ClusterMergeEntity.Type[]) {
+    this.#size = clusters.length;
+    this.#clusters = [...clusters];
+    this.#active = new Array<number>(this.#size);
+    this.#records = new Array<ColorRecordInterfaceTypeEntity.Type>(this.#size);
+    for (let slot = 0; slot < this.#size; slot++) {
+      this.#active[slot] = slot;
+      this.#records[slot] = ColorRecordInterfaceTypeEntity.intake(clusters[slot]!.centroid);
+    }
+    this.#distances = new Float64Array(this.#size * this.#size);
+    for (let first = 0; first < this.#size; first++) {
+      for (let second = first + 1; second < this.#size; second++) {
+        this.#distances[first * this.#size + second] = this.#measure(first, second);
+      }
+    }
+  }
+
+  static of(clusters: readonly ClusterMergeEntity.Type[]): ClusterDistanceMatrix {
+    const result = new ClusterDistanceMatrix(clusters);
+    return result;
+  }
+
+  get count(): number {
+    const result = this.#active.length;
+    return result;
+  }
+
+  clusters(): ClusterMergeEntity.Type[] {
+    const result = this.#active.map((slot) => {return this.#clusters[slot]!;});
+    return result;
+  }
+
+  closestPair(): { 'firstIndex': number; 'secondIndex': number } {
     let firstIndex = 0;
     let secondIndex = 1;
     let minimumDistance = Infinity;
-    const clusterCount = clusters.length;
-    for (let outerIndex = 0; outerIndex < clusterCount; outerIndex++) {
-      const first = clusters[outerIndex];
-      if (first === undefined) {continue;}
-      for (let innerIndex = outerIndex + 1; innerIndex < clusterCount; innerIndex++) {
-        const second = clusters[innerIndex];
-        if (second === undefined) {continue;}
-        const rawDistance = deltaE2000.apply(
-          ColorRecordInterfaceTypeEntity.intake(first.centroid),
-          ColorRecordInterfaceTypeEntity.intake(second.centroid)
-        );
-        const distance = Number.isFinite(rawDistance) ? rawDistance : Infinity;
+    const activeCount = this.#active.length;
+    for (let outerIndex = 0; outerIndex < activeCount; outerIndex++) {
+      const row = this.#active[outerIndex]! * this.#size;
+      for (let innerIndex = outerIndex + 1; innerIndex < activeCount; innerIndex++) {
+        const distance = this.#distances[row + this.#active[innerIndex]!]!;
         if (distance < minimumDistance) {
           minimumDistance = distance;
           firstIndex = outerIndex;
@@ -124,6 +141,30 @@ class ClosestPair {
       }
     }
     const result = { 'firstIndex': firstIndex, 'secondIndex': secondIndex };
+    return result;
+  }
+
+  merge(pair: { 'firstIndex': number; 'secondIndex': number }): void {
+    const keptSlot = this.#active[pair.firstIndex]!;
+    const absorbedSlot = this.#active[pair.secondIndex]!;
+    const merged = Centroids.merge(this.#clusters[keptSlot]!, this.#clusters[absorbedSlot]!);
+    this.#clusters[keptSlot] = merged;
+    this.#records[keptSlot] = ColorRecordInterfaceTypeEntity.intake(merged.centroid);
+    this.#active.splice(pair.secondIndex, 1);
+    const activeCount = this.#active.length;
+    for (let activeIndex = 0; activeIndex < activeCount; activeIndex++) {
+      const slot = this.#active[activeIndex]!;
+      if (slot < keptSlot) {
+        this.#distances[slot * this.#size + keptSlot] = this.#measure(slot, keptSlot);
+      } else if (slot > keptSlot) {
+        this.#distances[keptSlot * this.#size + slot] = this.#measure(keptSlot, slot);
+      }
+    }
+  }
+
+  #measure(earlierSlot: number, laterSlot: number): number {
+    const rawDistance = deltaE2000.apply(this.#records[earlierSlot]!, this.#records[laterSlot]!);
+    const result = Number.isFinite(rawDistance) ? rawDistance : Infinity;
     return result;
   }
 }
@@ -138,7 +179,8 @@ class ClosestPair {
  * weight (sum of input weights). The cluster that absorbed the most
  * pixels comes out heaviest, irrespective of merge order.
  *
- * Complexity is O(N² log N) due to repeated nearest-pair scans;
+ * Complexity is O(N²) deltaE evaluations (each pair measured once, only
+ * the merged cluster re-measured per merge) plus an O(N³) float scan;
  * intended for ≤ a few hundred input bins (i.e., post-histogram).
  * Calling against raw pixel arrays will be slow; feed it the output
  * of `gallery:histogram` instead.
@@ -168,15 +210,11 @@ class ClusterDeltaEMerge {
       return result;
     }
 
-    let clusters = ClusterRecords.asClusters(colors);
-    while (clusters.length > targetCount) {
-      const pair = ClosestPair.of(clusters);
-      const first = clusters[pair.firstIndex];
-      const second = clusters[pair.secondIndex];
-      if (first === undefined || second === undefined) {break;}
-      const merged = Centroids.merge(first, second);
-      clusters = ClusterRecords.withMergedPair(clusters, merged, pair);
+    const matrix = ClusterDistanceMatrix.of(ClusterRecords.asClusters(colors));
+    while (matrix.count > targetCount) {
+      matrix.merge(matrix.closestPair());
     }
+    const clusters = matrix.clusters();
 
     const result = new Array<ColorRecordInterfaceTypeEntity.Type>(clusters.length);
     const clusterCount = clusters.length;

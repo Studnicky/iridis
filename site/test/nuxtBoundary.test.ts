@@ -1,155 +1,13 @@
-import type { InferType } from '@studnicky/json-tology/types';
-
 import { chromium, type Page } from '@playwright/test';
-import { EntityCompiler } from '@studnicky/entity/node';
 import assert from 'node:assert/strict';
-import { type ChildProcess, spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { createServer } from 'node:net';
-import { resolve } from 'node:path';
 import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
-import { pathToFileURL } from 'node:url';
 
 import { THEMES } from '../app/theme/presets/index.ts';
+import { ProductionNitroServer } from './fixtures/ProductionNitroServer.ts';
 import { TestPatterns } from './fixtures/TestPatterns.ts';
 
-const SITE_ROOT = resolve(import.meta.dirname, '..');
-const NITRO_SERVER = resolve(SITE_ROOT, '.output/server/index.mjs');
-namespace NitroListeningMessageEntity {
-  export const Schema = {
-    'additionalProperties': false,
-    'properties': {
-      'port': { 'minimum': 1, 'type': 'integer' },
-      'type': { 'const': 'nitro-listening', 'type': 'string' }
-    },
-    'required': ['port', 'type'],
-    'type': 'object'
-  } as const;
-
-  export type Type = InferType<typeof Schema>;
-
-  export const intake: ReturnType<typeof EntityCompiler.compileIntake<Type>> = EntityCompiler.compileIntake<Type>(Schema);
-  export const create: ReturnType<typeof EntityCompiler.compileCreate<Type>> = EntityCompiler.compileCreate<Type>(Schema);
-  export const validate: ReturnType<typeof EntityCompiler.compile<Type>> = EntityCompiler.compile<Type>(Schema);
-}
-
 class NuxtBoundaryHarness {
-  static hasExited(child: ChildProcess): boolean {
-    const result = child.exitCode !== null || child.signalCode !== null;
-    return result;
-  }
-
-  static async waitForExit(child: ChildProcess, timeoutMs: number): Promise<boolean> {
-    if (NuxtBoundaryHarness.hasExited(child)) {return true;}
-    return await new Promise<boolean>((resolveExit) => {
-      const onExit = (): void => {
-        globalThis.clearTimeout(timer);
-        resolveExit(true);
-      };
-      const timer = globalThis.setTimeout(() => {
-        child.off('exit', onExit);
-        resolveExit(NuxtBoundaryHarness.hasExited(child));
-      }, timeoutMs);
-      child.once('exit', onExit);
-    });
-  }
-
-  static async stopNitro(child: ChildProcess): Promise<void> {
-    if (NuxtBoundaryHarness.hasExited(child)) {return;}
-    child.kill('SIGTERM');
-    if (await NuxtBoundaryHarness.waitForExit(child, 5_000)) {return;}
-    child.kill('SIGKILL');
-    if (!await NuxtBoundaryHarness.waitForExit(child, 5_000)) {
-      throw new Error(`Nitro child ${child.pid ?? 'unknown'} did not exit after SIGKILL`);
-    }
-  }
-
-  static async startNitro(): Promise<{ readonly 'child': ChildProcess; readonly 'origin': string }> {
-    const requestedPort = await new Promise<number>((resolvePort, rejectPort) => {
-      const server = createServer();
-      server.once('error', rejectPort);
-      server.once('listening', () => {
-        const address = server.address();
-        if (address === null || typeof address === 'string') {
-          server.close();
-          rejectPort(new Error('Ephemeral port allocation did not return a TCP address'));
-          return;
-        }
-        const port = address.port;
-        server.close((error) => {
-          if (error !== undefined) {rejectPort(error); return;}
-          resolvePort(port);
-        });
-      });
-      server.listen(0, '127.0.0.1');
-    });
-    const child = spawn(process.execPath, ['--input-type=module', '--eval', `
-      import { Server } from 'node:net';
-
-      const originalListen = Server.prototype.listen;
-      Server.prototype.listen = function (...argumentsList) {
-        const server = this;
-        server.once('listening', () => {
-          const address = server.address();
-          if (address !== null && typeof address !== 'string' && typeof process.send === 'function') {
-            process.send({ port: address.port, type: 'nitro-listening' });
-          }
-        });
-        return Reflect.apply(originalListen, server, argumentsList);
-      };
-
-      await import(${JSON.stringify(pathToFileURL(NITRO_SERVER).href)});
-    `], {
-      'cwd': SITE_ROOT,
-      'env': { ...process.env, 'HOST': '127.0.0.1', 'NITRO_PORT': String(requestedPort), 'NODE_ENV': 'production', 'PORT': String(requestedPort) },
-      'stdio': ['ignore', 'pipe', 'pipe', 'ipc']
-    });
-    let standardOutput = '';
-    let standardError = '';
-    child.stdout?.setEncoding('utf8');
-    child.stderr?.setEncoding('utf8');
-    child.stdout?.on('data', (chunk: string) => {standardOutput += chunk;});
-    child.stderr?.on('data', (chunk: string) => {standardError += chunk;});
-
-    try {
-      const port = await new Promise<number>((resolvePort, rejectPort) => {
-        const cleanup = (): void => {
-          globalThis.clearTimeout(timer);
-          child.off('error', onError);
-          child.off('exit', onExit);
-          child.off('message', onMessage);
-        };
-        const fail = (message: string, cause?: unknown): void => {
-          cleanup();
-          const output = `${standardOutput}\n${standardError}`.trim();
-          const outputSuffix = output.length > 0 ? `\n${  output}` : '';
-          rejectPort(new Error(message + outputSuffix, { 'cause': cause }));
-        };
-        const onError = (error: Error): void => {fail('Nitro child failed to start', error);};
-        const onExit = (code: number | null, signal: string | null): void => {
-          fail(`Nitro child exited before listening (code ${String(code)}, signal ${String(signal)})`);
-        };
-        const onMessage = (message: NitroListeningMessageEntity.Type): void => {
-          cleanup();
-          resolvePort(message.port);
-        };
-        const timer = globalThis.setTimeout(() => {
-          fail('Nitro child did not report its bound port within 15 seconds');
-        }, 15_000);
-        child.once('error', onError);
-        child.once('exit', onExit);
-        child.on('message', (message) => {
-          onMessage(NitroListeningMessageEntity.intake(message));
-        });
-      });
-      return { 'child': child, 'origin': `http://127.0.0.1:${port}` };
-    } catch (error) {
-      await NuxtBoundaryHarness.stopNitro(child);
-      throw error;
-    }
-  }
-
   static async requestSsr(url: string): Promise<{ 'error': Error | undefined; 'html': string | undefined }> {
     try {
       const response = await fetch(url);
@@ -258,12 +116,12 @@ class NuxtBoundaryHarness {
 
 await test('canonical VS Code tier demo keeps its controls, output, feedback, and framing coherent', { 'timeout': 180_000 }, async (context) => {
   assert.ok(
-    existsSync(NITRO_SERVER),
-    `Nitro entrypoint missing at ${NITRO_SERVER}. Run the suite through 'pnpm --filter site run test', whose pretest builds it.`
+    ProductionNitroServer.isBuilt(),
+    'The production Nitro entrypoint is required; run through the site test script.'
   );
 
-  const { 'child': nitro, 'origin': origin } = await NuxtBoundaryHarness.startNitro();
-  context.after(async () => {await NuxtBoundaryHarness.stopNitro(nitro);});
+  const { 'child': nitro, 'origin': origin } = await ProductionNitroServer.start();
+  context.after(async () => {await ProductionNitroServer.stop(nitro);});
   await NuxtBoundaryHarness.waitForSsr(origin);
 
   const browser = await chromium.launch({ 'headless': true });
@@ -402,6 +260,64 @@ await test('canonical VS Code tier demo keeps its controls, output, feedback, an
   );
   await mobile.close();
 });
+
+await test('carousel mounts only its active face and neighbours while the active face owns the scene height', { 'timeout': 180_000 }, async (context) => {
+  assert.ok(ProductionNitroServer.isBuilt());
+  const { 'child': nitro, 'origin': origin } = await ProductionNitroServer.start();
+  context.after(async () => {await ProductionNitroServer.stop(nitro);});
+  await NuxtBoundaryHarness.waitForSsr(origin);
+
+  const browser = await chromium.launch({ 'headless': true });
+  context.after(async () => {await browser.close();});
+  const page = await browser.newPage({ 'reducedMotion': 'reduce', 'viewport': { 'height': 900, 'width': 1280 } });
+  await page.goto(origin, { 'waitUntil': 'networkidle' });
+
+  const explore = page.locator('#explore');
+  await explore.scrollIntoViewIfNeeded();
+  const initialFaces = await explore.evaluate((section) => {
+    const scene = section.querySelector<HTMLElement>('.cyl-scene');
+    if (scene === null) {throw new Error('Explore carousel scene is missing.');}
+    return {
+      'placeholders': section.querySelectorAll('.cyl-placeholder').length,
+      'richFaces': section.querySelectorAll('.cyl-card').length,
+      'sceneHeight': Number.parseFloat(scene.style.height)
+    };
+  });
+  assert.equal(initialFaces.richFaces, 3);
+  assert.equal(initialFaces.placeholders, 6);
+  assert.ok(Number.isFinite(initialFaces.sceneHeight));
+
+  const expandedHeight = await explore.evaluate(async (section) => {
+    const scene = section.querySelector<HTMLElement>('.cyl-scene');
+    const content = section.querySelector<HTMLElement>('.cyl-face.active .cyl-card-content');
+    if (scene === null || content === null) {throw new Error('Active carousel content is missing.');}
+    const initialHeight = Number.parseFloat(scene.style.height);
+    const expansion = document.createElement('div');
+    expansion.style.height = '320px';
+    content.append(expansion);
+    await new Promise<void>((resolveFrame) => {window.requestAnimationFrame(() => {resolveFrame();});});
+    await new Promise<void>((resolveFrame) => {window.requestAnimationFrame(() => {resolveFrame();});});
+    return { 'initialHeight': initialHeight, 'nextHeight': Number.parseFloat(scene.style.height) };
+  });
+  assert.ok(expandedHeight.nextHeight >= expandedHeight.initialHeight + 300, JSON.stringify(expandedHeight));
+
+  await explore.getByRole('button', { 'exact': true, 'name': 'Color graph' }).click();
+  await page.waitForFunction(() => {
+    const card = document.querySelector<HTMLElement>('#explore .cyl-card[data-cyl-key="colorGraph"]');
+    const result = card?.closest('.cyl-face')?.classList.contains('active') === true;
+    return result;
+  });
+  const promotedFaces = await explore.evaluate((section) => {
+    const cardKeys = Array.from(section.querySelectorAll<HTMLElement>('.cyl-card')).map((card) => {return card.dataset.cylKey;});
+    const placeholderKeys = Array.from(section.querySelectorAll<HTMLElement>('.cyl-placeholder')).map((card) => {return card.dataset.cylKey;});
+    const result = { 'cardKeys': cardKeys, 'placeholderKeys': placeholderKeys };
+    return result;
+  });
+  assert.equal(promotedFaces.cardKeys.length, 3);
+  assert.ok(promotedFaces.cardKeys.includes('colorGraph'));
+  assert.ok(promotedFaces.placeholderKeys.includes('rolesTable'));
+});
+
 await test('built Nuxt app SSRs and hydrates the rendered navigation order', { 'timeout': 240_000 }, async (context) => {
   // The production build is produced once by site's `pretest` script, not
   // here. Nuxt takes a lockfile for the duration of a build, and `node --test`
@@ -410,12 +326,12 @@ await test('built Nuxt app SSRs and hydrates the rendered navigation order', { '
   // build is already running". Building once up front also keeps that ~40s
   // out of this test's own budget.
   assert.ok(
-    existsSync(NITRO_SERVER),
-    `Nitro entrypoint missing at ${NITRO_SERVER}. Run the suite through 'pnpm --filter site run test', whose pretest builds it.`
+    ProductionNitroServer.isBuilt(),
+    'The production Nitro entrypoint is required; run through the site test script.'
   );
 
-  const { 'child': nitro, 'origin': origin } = await NuxtBoundaryHarness.startNitro();
-  context.after(async () => {await NuxtBoundaryHarness.stopNitro(nitro);});
+  const { 'child': nitro, 'origin': origin } = await ProductionNitroServer.start();
+  context.after(async () => {await ProductionNitroServer.stop(nitro);});
 
   const html = await NuxtBoundaryHarness.waitForSsr(origin);
   assert.match(html, TestPatterns.SSR_NUXT_ROOT);

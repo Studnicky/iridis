@@ -1,9 +1,6 @@
 /**
- * SSR-guarded "cancel the pending call, schedule a new one" debounce — the
- * single-timer shape repeated across useIridis.ts (scheduleCombine, the
- * bottom-of-file `schedule`) and useMultiOutput.ts's own `schedule` before
- * this was extracted. Returns a trigger function; call it as often as you
- * like, only the last call within `delayMs` actually runs `fn`.
+ * SSR-safe trailing-edge debounce. The returned trigger replaces any pending
+ * timer, so only the final trigger within `delayMs` runs the callback.
  */
 class DebounceOperation {
   static run(callback: () => void, delayMs: number): () => void {

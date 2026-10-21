@@ -38,6 +38,21 @@ pass_count=$((pass_count + 1))
 repo=$(make_repo)
 (
   cd "$repo" || exit 1
+  mkdir -p site/app
+  echo "x" > site/app/app.vue
+  git add -A
+  git commit -q -m "site application source"
+  classify_changes "HEAD~1..HEAD"
+  assert_eq "docs (site application)" "true" "$CHANGED_DOCS"
+  assert_eq "source (site application)" "true" "$CHANGED_SOURCE"
+  assert_eq "ci (site application)" "true" "$CHANGED_CI"
+)
+rm -rf "$repo"
+pass_count=$((pass_count + 1))
+
+repo=$(make_repo)
+(
+  cd "$repo" || exit 1
   mkdir -p site/app packages/foo
   echo "x" > site/app/app.vue
   printf '%s\n' '{"name":"@test/foo","version":"1.0.0"}' > packages/foo/package.json

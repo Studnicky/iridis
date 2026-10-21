@@ -28,14 +28,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # The site consumes the packages through their published exports, the
-      # same way any downstream consumer does, so it resolves to dist and
-      # genuinely needs the build.
-      - run: pnpm run build
-      - run: pnpm --filter site run generate
-        env:
-          NUXT_APP_BASE_URL: /iridis/
-          NUXT_PUBLIC_BASE_URL: /iridis/
+      - run: bash scripts/ci-suite.sh site-validate
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
         with: { path: site/.output/public }
