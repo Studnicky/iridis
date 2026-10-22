@@ -4,6 +4,7 @@ import type { JSONSchema7Type } from 'json-schema';
 import { EntityCompiler } from '@studnicky/entity/node';
 import { Validator } from '@studnicky/iridis/model';
 
+import { CvdBlockedPairInterfaceTypeEntity } from './CvdBlockedPairInterfaceTypeEntity.ts';
 import { CvdCorrectionInterfaceTypeEntity } from './CvdCorrectionInterfaceTypeEntity.ts';
 import { CvdPairWarningInterfaceTypeEntity } from './CvdPairWarningInterfaceTypeEntity.ts';
 
@@ -12,6 +13,10 @@ export namespace CvdResultSetInterfaceTypeEntity {
     '$id': 'https://studnicky.dev/iridis-contrast/CvdResultSet',
     'additionalProperties': false,
     'properties': {
+      'blocked': {
+        'items': CvdBlockedPairInterfaceTypeEntity.Schema,
+        'type': 'array'
+      },
       'corrections': {
         'items': CvdCorrectionInterfaceTypeEntity.Schema,
         'type': 'array'
@@ -21,7 +26,7 @@ export namespace CvdResultSetInterfaceTypeEntity {
         'type': 'array'
       }
     },
-    'required': ['corrections', 'warnings'],
+    'required': ['blocked', 'corrections', 'warnings'],
     'type': 'object'
   } as const;
 
@@ -32,6 +37,6 @@ export namespace CvdResultSetInterfaceTypeEntity {
     const isValid = result.errors.length === 0;
     return isValid;
   };
-  export const intake = EntityCompiler.compileIntake<Type>(Schema);
-  export const create = EntityCompiler.compileCreate<Type>(Schema);
+  export const intake: ReturnType<typeof EntityCompiler.compileIntake<Type>> = EntityCompiler.compileIntake<Type>(Schema);
+  export const create: ReturnType<typeof EntityCompiler.compileCreate<Type>> = EntityCompiler.compileCreate<Type>(Schema);
 }

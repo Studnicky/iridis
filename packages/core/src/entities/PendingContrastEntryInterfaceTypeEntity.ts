@@ -1,4 +1,7 @@
-import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
+import type {
+  CanonicalShapeType,
+  NominalSchemaType
+} from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/node';
 
@@ -10,35 +13,54 @@ export namespace PendingContrastEntryInterfaceTypeEntity {
   export const Schema = {
     '$id': 'https://iridis.dev/schema/core/pending-contrast-entry',
     'additionalProperties': false,
-    'allOf': [{
-      'else': {
-        'properties': {
-          'maximumContrastRatio': ContrastRatioSchema.apca,
-          'minimumContrastRatio': ContrastRatioSchema.apca
-        }
-      },
-      'if': {
-        'properties': {
-          'algo': { 'const': 'wcag21' }
+    'allOf': [
+      {
+        'else': {
+          'properties': {
+            'maximumContrastRatio': ContrastRatioSchema.apca,
+            'minimumContrastRatio': ContrastRatioSchema.apca
+          }
         },
-        'required': ['algo']
-      },
-      'then': {
-        'properties': {
-          'maximumContrastRatio': ContrastRatioSchema.wcag21,
-          'minimumContrastRatio': ContrastRatioSchema.wcag21
+        'if': {
+          'properties': {
+            'algo': { 'const': 'wcag21' }
+          },
+          'required': ['algo']
+        },
+        'then': {
+          'properties': {
+            'maximumContrastRatio': ContrastRatioSchema.wcag21,
+            'minimumContrastRatio': ContrastRatioSchema.wcag21
+          }
         }
       }
-    }],
+    ],
     'properties': {
-      'adjusted':              { 'type': 'boolean' },
-      'adjustmentDisposition': { 'enum': ['not-needed', 'applied', 'preserved-stated', 'unresolved'] },
-      'algo':                  { 'enum': ['wcag21', 'apca'] },
+      'adjusted': { 'type': 'boolean' },
+      'adjustedRole': { 'type': 'string' },
+      'adjustmentDisposition': {
+        'enum': [
+          'not-needed',
+          'applied',
+          'preserved-stated',
+          'unresolved',
+          'blocked-stated-both'
+        ]
+      },
+      'algo': { 'enum': ['wcag21', 'apca'] },
       'maximumContrastRatio': ContrastRatioSchema.permissive,
       'minimumContrastRatio': ContrastRatioSchema.permissive,
-      'pair':                 ContrastPairInterfaceTypeEntity.Schema
+      'pair': ContrastPairInterfaceTypeEntity.Schema,
+      'target': { 'type': 'string' }
     },
-    'required': ['adjusted', 'adjustmentDisposition', 'algo', 'minimumContrastRatio', 'pair'],
+    'required': [
+      'adjusted',
+      'adjustmentDisposition',
+      'algo',
+      'minimumContrastRatio',
+      'pair',
+      'target'
+    ],
     'type': 'object'
   } as const;
 
@@ -46,5 +68,8 @@ export namespace PendingContrastEntryInterfaceTypeEntity {
 
   export const validate = EntityCompiler.compile<Type>(Schema);
   export const intake = EntityCompiler.compileIntake<Type>(Schema);
-  export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
+  export const create = EntityCompiler.compileCreate<
+    Type,
+    CanonicalShapeType<typeof Schema>
+  >(Schema);
 }

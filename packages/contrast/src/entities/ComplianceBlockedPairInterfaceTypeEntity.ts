@@ -4,14 +4,19 @@ import type { JSONSchema7Type } from 'json-schema';
 import { EntityCompiler } from '@studnicky/entity/node';
 import { Validator } from '@studnicky/iridis/model';
 
-import { WcagPairResultInterfaceTypeEntity } from './WcagPairResultInterfaceTypeEntity.ts';
-
-/** A WCAG 2.1 metadata slot: the full set of pair-enforcement results for one level (AA or AAA). */
-export namespace WcagPairResultSetInterfaceTypeEntity {
+/** Terminally unsatisfied semantic pair with its deterministic compliance blocker. */
+export namespace ComplianceBlockedPairInterfaceTypeEntity {
   export const Schema = {
     'additionalProperties': false,
-    'properties': { 'pairs': { 'items': WcagPairResultInterfaceTypeEntity.Schema, 'type': 'array' } },
-    'required': ['pairs'],
+    'properties': {
+      'actualTrichromat': { 'type': 'number' },
+      'background': { 'type': 'string' },
+      'foreground': { 'type': 'string' },
+      'reason': { 'enum': ['stated-both', 'solver-exhausted', 'relation-tolerance'], 'type': 'string' },
+      'requiredTrichromat': { 'type': 'number' },
+      'target': { 'type': 'string' }
+    },
+    'required': ['actualTrichromat', 'background', 'foreground', 'reason', 'requiredTrichromat', 'target'],
     'type': 'object'
   } as const;
 
