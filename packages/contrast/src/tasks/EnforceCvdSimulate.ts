@@ -1,11 +1,10 @@
 import type {
   ColorRecordInterfaceTypeEntity,
   PaletteStateInterface,
-  PipelineContextInterface,
-  TaskInterface
+  PipelineContextInterface
 } from '@studnicky/iridis';
 
-import { clamp01, colorRecordFactory, ContrastPolicy, contrastWcag21, gamutMapSrgb, linearToSrgb, Metadata, oklchToRgbRaw, PaletteRoleState, rgbToHex, srgbToLinear, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { clamp01, colorRecordFactory, ContrastPolicy, contrastWcag21, gamutMapSrgb, linearToSrgb, Metadata, oklchToRgbRaw, PaletteRoleState, rgbToHex, srgbToLinear } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { CvdEvalInterfaceTypeEntity } from '../entities/CvdEvalInterfaceTypeEntity.ts';
@@ -1404,18 +1403,9 @@ class CvdCorrectionCoordinator {
  * only those final values. If no valid candidate exists, the selected movable
  * role remains unchanged and its unresolved warnings remain advisory.
  */
-class EnforceCvdSimulate implements TaskInterface {
+class EnforceCvdSimulate {
   private lastTestingSearchBudgetUsage: { readonly 'candidateScores': number; readonly 'weightedUnits': number; } | undefined;
   private testingSearchBudget: { readonly 'maximumCandidateScores': number; readonly 'maximumWeightedUnits': number; } | undefined;
-
-  readonly 'name' = 'enforce:cvdSimulate';
-
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
-    'description': 'CVD simulation against published thresholds: protanopia, deuteranopia, tritanopia, achromatopsia. Advisory by default; when input.contrast.cvdCorrect is true, also auto-corrects failing pairs and writes roles.',
-    'name':        'enforce:cvdSimulate',
-    'reads':       ['input.roles.contrastPairs', 'input.contrast.cvdCorrect', 'metadata[\'core:roleProvenance\']', 'roles'],
-    'writes':      ['roles', 'metadata[\'contrast:cvd\']']
-  });
 
   configureSearchBudgetForTesting(maximumCandidateScores: number, maximumWeightedUnits: number): void {
     if (!Number.isSafeInteger(maximumCandidateScores) || maximumCandidateScores < 0) {
