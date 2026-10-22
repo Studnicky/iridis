@@ -2,8 +2,13 @@ import type { ComplianceReportEntity } from '@studnicky/iridis-contrast';
 
 import { AccessibilityBlockers } from '~/composables/accessibilityBlockers.ts';
 
+interface ContrastSelectionInterface {
+  readonly 'cvdMode': string;
+  readonly 'nonMandatoryLevel': string;
+}
+
 abstract class SchemaComplianceStatus {
-  public abstract get color(): 'success' | 'warning';
+  public abstract get color(): 'neutral' | 'success' | 'warning';
 
   public static resolve(passing: number, total: number): SchemaComplianceStatus {
     const result = passing === total ? new SchemaComplianceSuccessStatus() : new SchemaComplianceWarningStatus();
@@ -14,6 +19,13 @@ abstract class SchemaComplianceStatus {
 class SchemaComplianceSuccessStatus extends SchemaComplianceStatus {
   public get color(): 'success' {
     const result = 'success';
+    return result;
+  }
+}
+
+class SchemaComplianceNeutralStatus extends SchemaComplianceStatus {
+  public get color(): 'neutral' {
+    const result = 'neutral';
     return result;
   }
 }
@@ -43,14 +55,14 @@ class SchemaStageSummary {
     this.text = text;
   }
 
-  public get color(): 'success' | 'warning' {
+  public get color(): 'neutral' | 'success' | 'warning' {
     const result = this.#status.color;
     return result;
   }
 }
 
 export const buildSchemaComplianceSummaries = class SchemaComplianceSummariesBuilder {
-  public static build(report: ComplianceReportEntity.Type | undefined): SchemaStageSummary[] {
+  public static build(report: ComplianceReportEntity.Type | undefined, selection: ContrastSelectionInterface): SchemaStageSummary[] {
     const summaries: SchemaStageSummary[] = [];
     if (report !== undefined) {
       const passing = report.pairs.length - report.blockedPairs.length;
@@ -61,6 +73,9 @@ export const buildSchemaComplianceSummaries = class SchemaComplianceSummariesBui
         `${passing}/${report.pairs.length} pairs passing`
       ));
     }
+    const neutral = new SchemaComplianceNeutralStatus();
+    summaries.push(new SchemaStageSummary(neutral, 'cvdMode', 'CVD mode', selection.cvdMode));
+    summaries.push(new SchemaStageSummary(neutral, 'nonMandatoryLevel', 'Non-mandatory level', selection.nonMandatoryLevel));
     return summaries;
   }
 };

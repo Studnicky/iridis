@@ -9,6 +9,7 @@ import type { PinRequest } from './PinRequest.ts';
 import { COLOR_PIPELINE } from '../../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../../app/composables/createColorEngine.ts';
+import { ContrastConfigOptionsEntity } from '../../app/composables/entities/ContrastConfigOptionsEntity.ts';
 import { DerivationConfigEntity } from '../../app/composables/entities/DerivationConfigEntity.ts';
 import { VARIANT_CONFIG } from '../../app/composables/variantConfig.ts';
 import { SeedInputEntity } from '../../app/theme/types/SeedInputEntity.ts';
@@ -50,7 +51,7 @@ export class PinRun {
     const started = performance.now();
     const state = engine.run(InputEntity.create({
       'colors': colors,
-      'contrast': ContrastConfigFor.forStrictness(request.strictness),
+      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': request.strictness })),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),

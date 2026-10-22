@@ -17,6 +17,8 @@ abstract class IridisUiEffectHandler {
   abstract setDisplayP3ColorSpace(): void;
   abstract setSrgbColorSpace(): void;
   abstract setContrastStrictness(strictness: number): void;
+  abstract setCvdMode(cvdMode: string): void;
+  abstract setNonMandatoryLevel(nonMandatoryLevel: string): void;
   abstract setDerivationConfig(config: DerivationConfigEntity.Type): void;
   abstract setDarkFraming(): void;
   abstract setLightFraming(): void;
@@ -80,6 +82,8 @@ export abstract class IridisUiEffect {
   static srgbColorSpace(): ColorSpaceSelection { return new SrgbColorSpaceSelection(); }
   static setColorSpace(selection: ColorSpaceSelection): IridisUiEffect { return new SetColorSpaceEffect(selection); }
   static setContrastStrictness(strictness: number): IridisUiEffect { return new SetContrastStrictnessEffect(strictness); }
+  static setCvdMode(cvdMode: string): IridisUiEffect { return new SetCvdModeEffect(cvdMode); }
+  static setNonMandatoryLevel(nonMandatoryLevel: string): IridisUiEffect { return new SetNonMandatoryLevelEffect(nonMandatoryLevel); }
   static setDerivationConfig(config: DerivationConfigEntity.Type): IridisUiEffect { return new SetDerivationConfigEffect(config); }
   static darkFraming(): FramingSelection { return new DarkFramingSelection(); }
   static lightFraming(): FramingSelection { return new LightFramingSelection(); }
@@ -164,6 +168,16 @@ class SetContrastStrictnessEffect extends IridisUiEffect {
   readonly #strictness: number; readonly type = 'SET_CONTRAST_STRICTNESS';
   constructor(strictness: number) { super(); this.#strictness = strictness; }
   execute(handler: IridisUiEffectHandler): void { handler.setContrastStrictness(this.#strictness); }
+}
+class SetCvdModeEffect extends IridisUiEffect {
+  readonly #cvdMode: string; readonly type = 'SET_CVD_MODE';
+  constructor(cvdMode: string) { super(); this.#cvdMode = cvdMode; }
+  execute(handler: IridisUiEffectHandler): void { handler.setCvdMode(this.#cvdMode); }
+}
+class SetNonMandatoryLevelEffect extends IridisUiEffect {
+  readonly #nonMandatoryLevel: string; readonly type = 'SET_NON_MANDATORY_LEVEL';
+  constructor(nonMandatoryLevel: string) { super(); this.#nonMandatoryLevel = nonMandatoryLevel; }
+  execute(handler: IridisUiEffectHandler): void { handler.setNonMandatoryLevel(this.#nonMandatoryLevel); }
 }
 class SetDerivationConfigEffect extends IridisUiEffect {
   readonly #config: DerivationConfigEntity.Type; readonly type = 'SET_DERIVATION_CONFIG';

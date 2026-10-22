@@ -27,6 +27,7 @@ interface IridisUiEffectHandlersInterface {
   resetDiagram(): void;
   selectImageCandidate(hexes: string[], label: string): void;
   setContrastStrictness(strictness: number): void;
+  setCvdMode(cvdMode: string): void;
   setDarkFraming(): void;
   setDeltaEImageAlgorithm(): void;
   setDerivationConfig(config: DerivationConfigEntity.Type): void;
@@ -40,6 +41,7 @@ interface IridisUiEffectHandlersInterface {
   setKMeansImageAlgorithm(): void;
   setLightFraming(): void;
   setMedianCutImageAlgorithm(): void;
+  setNonMandatoryLevel(nonMandatoryLevel: string): void;
   setRoleSort(keys: RoleSortKeyType[]): void;
   setSchema(schemaName: string): void;
   setSeed(index: number, hex: string): void;

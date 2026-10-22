@@ -12,6 +12,7 @@ import type { PickerSeedType, SchemaPair } from '../app/composables/types/index.
 import { COLOR_PIPELINE } from '../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../app/composables/createColorEngine.ts';
+import { ContrastConfigOptionsEntity } from '../app/composables/entities/ContrastConfigOptionsEntity.ts';
 import { DerivationConfigEntity } from '../app/composables/entities/DerivationConfigEntity.ts';
 import { pickerSeedInputs } from '../app/composables/pickerSeedInputs.ts';
 import { VARIANT_CONFIG } from '../app/composables/variantConfig.ts';
@@ -80,7 +81,7 @@ class RoleSchemaPipelineFixture {
     engine.pipeline(COLOR_PIPELINE);
     const state = engine.run(InputEntity.create({
       'colors':   pickerSeedInputs(RoleSchemaPipelineFixture.seeds),
-      'contrast': ContrastConfigFor.forStrictness(0),
+      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': 0 })),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
@@ -112,7 +113,7 @@ await test('pinned derived roles remain byte-exact while unpinned roles resolve 
       { 'hex': '#7c3aed', 'role': 'brand' },
       { 'hex': '#b55bc7', 'role': 'success' }
     ]),
-    'contrast': ContrastConfigFor.forStrictness(0),
+    'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': 0 })),
     'metadata': {
       'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
       'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),

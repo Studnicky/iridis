@@ -14,6 +14,7 @@ import { isValidHex } from '../utils/isValidHex.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
 import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
+import { ContrastConfigOptionsEntity } from './entities/ContrastConfigOptionsEntity.ts';
 import { ImageCombineResultEntity } from './entities/ImageCombineResultEntity.ts';
 import { ImageExtractionResultEntity } from './entities/ImageExtractionResultEntity.ts';
 import { GalleryMetadataSlot } from './galleryMetadataSlot.ts';
@@ -32,7 +33,11 @@ export class ImageExtract {
     engine.pipeline([...IRIDIS_CONSTANTS.COMBINE_EXTRACTION_STAGES]);
     const state = engine.run(InputEntity.create({
       'colors': message.hexes,
-      'contrast': ContrastConfigFor.forStrictness(message.strictness),
+      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({
+        'cvdMode': message.cvdMode,
+        'nonMandatoryLevel': message.nonMandatoryLevel,
+        'strictness': message.strictness
+      })),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(message.derivationConfig),

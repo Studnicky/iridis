@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import { COLOR_PIPELINE } from '../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../app/composables/createColorEngine.ts';
+import { ContrastConfigOptionsEntity } from '../app/composables/entities/ContrastConfigOptionsEntity.ts';
 import { DerivationConfigEntity } from '../app/composables/entities/DerivationConfigEntity.ts';
 import { VARIANT_CONFIG } from '../app/composables/variantConfig.ts';
 import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
@@ -91,7 +92,7 @@ class RoleSchemaFeasibility {
     engine.pipeline(COLOR_PIPELINE);
     const result = engine.run(InputEntity.create({
       'colors': [SeedInputEntity.intake('#000000'), SeedInputEntity.intake('#ffffff')],
-      'contrast': ContrastConfigFor.forStrictness(strictness),
+      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': strictness })),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),

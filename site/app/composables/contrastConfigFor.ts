@@ -1,15 +1,18 @@
 import { ContrastOptionsEntity } from '@studnicky/iridis';
 
+import type { ContrastConfigOptionsEntity } from './entities/ContrastConfigOptionsEntity.ts';
+
 abstract class ContrastStandardBehavior {
-  public abstract serialize(): ContrastOptionsEntity.Type;
+  public abstract serialize(options: ContrastConfigOptionsEntity.Type): ContrastOptionsEntity.Type;
 }
 
 class ApcaContrastStandardBehavior extends ContrastStandardBehavior {
-  public serialize(): ContrastOptionsEntity.Type {
+  public serialize(options: ContrastConfigOptionsEntity.Type): ContrastOptionsEntity.Type {
     const result = ContrastOptionsEntity.create({
       'algorithm': 'apca',
-      'cvdMode': 'nudge',
-      'level': 'Lc'
+      'cvdMode': options.cvdMode,
+      'level': 'Lc',
+      'nonMandatoryLevel': options.nonMandatoryLevel
     });
 
     return result;
@@ -17,11 +20,12 @@ class ApcaContrastStandardBehavior extends ContrastStandardBehavior {
 }
 
 class WcagAaaContrastStandardBehavior extends ContrastStandardBehavior {
-  public serialize(): ContrastOptionsEntity.Type {
+  public serialize(options: ContrastConfigOptionsEntity.Type): ContrastOptionsEntity.Type {
     const result = ContrastOptionsEntity.create({
       'algorithm': 'wcag21',
-      'cvdMode': 'nudge',
-      'level': 'AAA'
+      'cvdMode': options.cvdMode,
+      'level': 'AAA',
+      'nonMandatoryLevel': options.nonMandatoryLevel
     });
 
     return result;
@@ -29,18 +33,19 @@ class WcagAaaContrastStandardBehavior extends ContrastStandardBehavior {
 }
 
 class WcagAaContrastStandardBehavior extends ContrastStandardBehavior {
-  public serialize(): ContrastOptionsEntity.Type {
+  public serialize(options: ContrastConfigOptionsEntity.Type): ContrastOptionsEntity.Type {
     const result = ContrastOptionsEntity.create({
       'algorithm': 'wcag21',
-      'cvdMode': 'nudge',
-      'level': 'AA'
+      'cvdMode': options.cvdMode,
+      'level': 'AA',
+      'nonMandatoryLevel': options.nonMandatoryLevel
     });
 
     return result;
   }
 }
 
-/** Resolves UI controls into executable contrast behavior at the engine-input boundary. CVD correction is always on. */
+/** Resolves UI controls into executable contrast behavior at the engine-input boundary. */
 export class ContrastConfigFor {
   private static readonly wcagAa = new WcagAaContrastStandardBehavior();
 
@@ -48,18 +53,18 @@ export class ContrastConfigFor {
 
   private static readonly apca = new ApcaContrastStandardBehavior();
 
-  public static forStrictness(strictness: number): ContrastOptionsEntity.Type {
-    if (strictness === 0) {
-      const result = ContrastConfigFor.wcagAa.serialize();
+  public static forOptions(options: ContrastConfigOptionsEntity.Type): ContrastOptionsEntity.Type {
+    if (options.strictness === 0) {
+      const result = ContrastConfigFor.wcagAa.serialize(options);
 
       return result;
     }
-    if (strictness === 1) {
-      const result = ContrastConfigFor.wcagAaa.serialize();
+    if (options.strictness === 1) {
+      const result = ContrastConfigFor.wcagAaa.serialize(options);
 
       return result;
     }
-    const result = ContrastConfigFor.apca.serialize();
+    const result = ContrastConfigFor.apca.serialize(options);
 
     return result;
   }

@@ -4,8 +4,10 @@ import type {
 
 import { EntityCompiler } from '@studnicky/entity/browser';
 
+import { CvdModeEntity } from './CvdModeEntity.ts';
 import { DerivationConfigEntity } from './DerivationConfigEntity.ts';
 import { FramingEntity } from './FramingEntity.ts';
+import { NonMandatoryLevelEntity } from './NonMandatoryLevelEntity.ts';
 import { SchemaNameEntity } from './SchemaNameEntity.ts';
 
 const seedSchema = {
@@ -31,8 +33,10 @@ export namespace PaletteResolveRequestEntity {
         ],
         'type': 'string'
       },
+      'cvdMode': CvdModeEntity.Schema,
       'derivationConfig': DerivationConfigEntity.Schema,
       'framing': FramingEntity.Schema,
+      'nonMandatoryLevel': NonMandatoryLevelEntity.Schema,
       'schemaName': SchemaNameEntity.Schema,
       'seeds': {
         'items': seedSchema,
@@ -43,8 +47,10 @@ export namespace PaletteResolveRequestEntity {
     },
     'required': [
       'colorSpace',
+      'cvdMode',
       'derivationConfig',
       'framing',
+      'nonMandatoryLevel',
       'schemaName',
       'seeds',
       'semanticHuesEnabled',

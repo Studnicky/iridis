@@ -2,6 +2,7 @@ export class PaletteResolveFixture {
   public static request() {
     const result = ({
       'colorSpace': 'srgb',
+      'cvdMode': 'nudge',
       'derivationConfig': ({
         'relations': ({
           'success': ({
@@ -11,6 +12,7 @@ export class PaletteResolveFixture {
         })
       }),
       'framing': 'dark',
+      'nonMandatoryLevel': 'AA',
       'schemaName': 'iridis-8',
       'seeds': ([
         ({

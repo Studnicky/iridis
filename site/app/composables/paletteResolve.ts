@@ -12,6 +12,7 @@ import { Tokens } from '../theme/Tokens.ts';
 import { COLOR_PIPELINE } from './colorPipeline.ts';
 import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
+import { ContrastConfigOptionsEntity } from './entities/ContrastConfigOptionsEntity.ts';
 import { PaletteSnapshotEntity } from './entities/PaletteSnapshotEntity.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
@@ -86,7 +87,11 @@ export class PaletteResolve {
     });
     const result = InputEntity.create({
       'colors': pickerSeedInputs(seeds),
-      'contrast': ContrastConfigFor.forStrictness(request.strictness),
+      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({
+        'cvdMode': request.cvdMode,
+        'nonMandatoryLevel': request.nonMandatoryLevel,
+        'strictness': request.strictness
+      })),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(request.derivationConfig),

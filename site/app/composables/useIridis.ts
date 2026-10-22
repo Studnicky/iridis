@@ -38,10 +38,12 @@ import { sortRoleRows } from '../utils/sortRoleRows.ts';
 import { AccessibilityBlockers } from './accessibilityBlockers.ts';
 import { BrowserWorkerPort } from './browserWorkerPort.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
+import { CvdModeEntity } from './entities/CvdModeEntity.ts';
 import { DerivationConfigEntity } from './entities/DerivationConfigEntity.ts';
 import { ExtractionSettingsEntity } from './entities/ExtractionSettingsEntity.ts';
 import { FramingEntity } from './entities/FramingEntity.ts';
 import { ModeEntity } from './entities/ModeEntity.ts';
+import { NonMandatoryLevelEntity } from './entities/NonMandatoryLevelEntity.ts';
 import { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEntity.ts';
 import { RoleSortableRowEntity } from './entities/RoleSortableRowEntity.ts';
 import { SchemaNameEntity } from './entities/SchemaNameEntity.ts';
@@ -168,6 +170,8 @@ class IridisContextFactory {
 
     const schemaName = VueModule.ref<SchemaNameEntity.Type>(SchemaNameEntity.defaultValue);
     const contrastStrictness = VueModule.ref<number>(2);
+    const cvdMode = VueModule.ref<CvdModeEntity.Type>(CvdModeEntity.defaultValue);
+    const nonMandatoryLevel = VueModule.ref<NonMandatoryLevelEntity.Type>(NonMandatoryLevelEntity.defaultValue);
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
 
     /**
@@ -537,8 +541,10 @@ class IridisContextFactory {
         const seeds = activeSeeds.value.length > 0 ? activeSeeds.value : BOOTSTRAP_SEEDS;
         const result = PaletteResolveRequestEntity.create({
           'colorSpace': colorSpace.value,
+          'cvdMode': cvdMode.value,
           'derivationConfig': VueModule.toRaw(derivationConfig.value),
           'framing': pendingFraming ?? framing.value,
+          'nonMandatoryLevel': nonMandatoryLevel.value,
           'schemaName': schemaName.value,
           'seeds': PaletteResolve.seeds(seeds),
           'semanticHuesEnabled': semanticHuesEnabled.value,
@@ -932,10 +938,12 @@ class IridisContextFactory {
         error.value = null;
         void CombineNowRunOperation.send(WorkerMessageEntity.create({
           'colorSpace': colorSpace.value,
+          'cvdMode': cvdMode.value,
           'derivationConfig': VueModule.toRaw(derivationConfig.value),
           'framing': framing.value,
           'hexes': combinedHexes,
           'kind': 'combine',
+          'nonMandatoryLevel': nonMandatoryLevel.value,
           'schemaName': schemaName.value,
           'semanticHuesEnabled': semanticHuesEnabled.value,
           'settings': ExtractionSettingsOperation.from(defaultEntrySettings()),
@@ -1173,6 +1181,8 @@ class IridisContextFactory {
       static disableSemanticHues(): void { semanticHuesEnabled.value = false; schedule(); }
       static enableSemanticHues(): void { semanticHuesEnabled.value = true; schedule(); }
       static setContrastStrictness(strictness: number): void { contrastStrictness.value = strictness; schedule(); }
+      static setCvdMode(nextCvdMode: string): void { cvdMode.value = CvdModeEntity.intake(nextCvdMode); schedule(); }
+      static setNonMandatoryLevel(nextLevel: string): void { nonMandatoryLevel.value = NonMandatoryLevelEntity.intake(nextLevel); schedule(); }
       static setDarkFraming(): void { pendingFraming = FramingEntity.intake('dark'); run(); }
       static setDeltaEImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('delta-e'); scheduleCombine(); }
       static setDerivationConfig(config: DerivationConfigEntity.Type): void { derivationConfig.value = config; schedule(); }
@@ -1286,6 +1296,7 @@ class IridisContextFactory {
       'resetDiagram': DiagramViewOperation.reset,
       'selectImageCandidate': SelectImageCandidateOperation.run,
       'setContrastStrictness': PaletteParameterOperation.setContrastStrictness,
+      'setCvdMode': PaletteParameterOperation.setCvdMode,
       'setDarkFraming': PaletteParameterOperation.setDarkFraming,
       'setDeltaEImageAlgorithm': PaletteParameterOperation.setDeltaEImageAlgorithm,
       'setDerivationConfig': PaletteParameterOperation.setDerivationConfig,
@@ -1299,6 +1310,7 @@ class IridisContextFactory {
       'setKMeansImageAlgorithm': PaletteParameterOperation.setKMeansImageAlgorithm,
       'setLightFraming': PaletteParameterOperation.setLightFraming,
       'setMedianCutImageAlgorithm': PaletteParameterOperation.setMedianCutImageAlgorithm,
+      'setNonMandatoryLevel': PaletteParameterOperation.setNonMandatoryLevel,
       'setRoleSort': PaletteParameterOperation.setRoleSort,
       'setSchema': PaletteParameterOperation.setSchema,
       'setSeed': SeedMutationOperation.set,
@@ -1367,7 +1379,7 @@ class IridisContextFactory {
         void addUploadedImages([logoUrl()], ['Sample']);
         // framing is intentionally absent here — its swap is dispatched directly by
         // the framing setters via run(), not through this debounce.
-        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
+        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, nonMandatoryLevel, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
         stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
       }
     }
@@ -1380,12 +1392,12 @@ class IridisContextFactory {
         }
         ConsumerLifecycleOperation.register();
         const result = {
-          'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
+          'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdMode': cvdMode,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
           'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
           'effectiveHexesFor': effectiveHexesFor, 'error': error, 'framing': framing,
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
-          'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'paletteRevision': paletteRevision, 'pickerSeeds': pickerSeeds,
+          'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'nonMandatoryLevel': nonMandatoryLevel, 'paletteRevision': paletteRevision, 'pickerSeeds': pickerSeeds,
           'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
           'roles': roles, 'rolesDerived': rolesDerived,
           'roleSortKeys': roleSortKeys, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,

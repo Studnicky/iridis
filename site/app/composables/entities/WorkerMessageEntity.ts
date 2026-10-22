@@ -2,9 +2,11 @@ import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tolo
 
 import { EntityCompiler } from '@studnicky/entity/browser';
 
+import { CvdModeEntity } from './CvdModeEntity.ts';
 import { DerivationConfigEntity } from './DerivationConfigEntity.ts';
 import { ExtractionSettingsEntity } from './ExtractionSettingsEntity.ts';
 import { FramingEntity } from './FramingEntity.ts';
+import { NonMandatoryLevelEntity } from './NonMandatoryLevelEntity.ts';
 import { PaletteResolveRequestEntity } from './PaletteResolveRequestEntity.ts';
 import { SchemaNameEntity } from './SchemaNameEntity.ts';
 
@@ -36,10 +38,12 @@ export namespace WorkerMessageEntity {
         'additionalProperties': false,
         'properties': {
           'colorSpace': { 'enum': ['srgb', 'displayP3'], 'type': 'string' },
+          'cvdMode': CvdModeEntity.Schema,
           'derivationConfig': DerivationConfigEntity.Schema,
           'framing': FramingEntity.Schema,
           'hexes': { 'items': { 'type': 'string' }, 'type': 'array' },
           'kind': { 'const': 'combine', 'type': 'string' },
+          'nonMandatoryLevel': NonMandatoryLevelEntity.Schema,
           'schemaName': SchemaNameEntity.Schema,
           'semanticHuesEnabled': { 'type': 'boolean' },
           'settings': ExtractionSettingsEntity.Schema,
@@ -47,10 +51,12 @@ export namespace WorkerMessageEntity {
         },
         'required': [
           'colorSpace',
+          'cvdMode',
           'derivationConfig',
           'framing',
           'hexes',
           'kind',
+          'nonMandatoryLevel',
           'schemaName',
           'semanticHuesEnabled',
           'settings',
