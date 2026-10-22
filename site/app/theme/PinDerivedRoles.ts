@@ -2,36 +2,7 @@ import type {
   PaletteStateInterface, PipelineContextInterface, TaskInterface
 } from '@studnicky/iridis';
 
-import { colorRecordFactory, RoleDefinitionInterfaceTypeEntity, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
-
-class ClampToRangeOperation {
-  static run(value: number, range: readonly [number, number]): number {
-    if (value < range[0]) {return range[0];}
-    if (value > range[1]) {return range[1];}
-    return value;
-  }
-}
-
-const clampToRange = ClampToRangeOperation.run;
-
-/**
- * Nudges a pinned candidate's lightness/chroma into the role's declared range
- * (so a pin stays legible against contrast checks) but keeps the candidate's
- * OWN hue — unlike ExpandFamily's derivation, pinning is the user overriding
- * the schema's hue-rotation on purpose, so the hue is exactly what they picked.
- */
-class NudgeKeepingHueOperation {
-  static run(hex: string, role: RoleDefinitionInterfaceTypeEntity.Type): ReturnType<typeof colorRecordFactory.fromHex> {
-    const candidate = colorRecordFactory.fromHex(hex);
-    const { c, h, l } = candidate.oklch;
-    const targetL = role.lightnessRange !== undefined ? clampToRange(l, role.lightnessRange) : l;
-    const targetC = role.chromaRange !== undefined ? clampToRange(c, role.chromaRange) : c;
-    const result = colorRecordFactory.fromOklch(targetL, targetC, h, { 'alpha': candidate.alpha });
-    return result;
-  }
-}
-
-const nudgeKeepingHue = NudgeKeepingHueOperation.run;
+import { Metadata, RoleProvenanceInterfaceTypeEntity, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
 
 /**
  * Assigns an admitted hint to an unassigned derived role before family
@@ -44,8 +15,8 @@ class PinDerivedRoles implements TaskInterface {
   readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
     'description': 'Assigns hint-pinned colors onto derivedFrom roles that ResolveRoles skipped, so a pin overrides hue-rotation instead of being silently discarded by ExpandFamily.',
     'name':        'pin:derivedRoles',
-    'reads':       ['colors', 'input.roles', 'roles'],
-    'writes':      ['roles']
+    'reads':       ['colors', 'input.roles', 'metadata', 'roles'],
+    'writes':      ['metadata', 'roles']
   });
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
@@ -59,6 +30,7 @@ class PinDerivedRoles implements TaskInterface {
       const roleName = color?.hints?.role;
       if (color !== undefined && roleName !== undefined) {colorsByRole.set(roleName, color);}
     }
+    const provenance = Metadata.roleProvenance(state.metadata);
     const roles = roleSchema.roles;
     for (let roleIndex = 0; roleIndex < roles.length; roleIndex += 1) {
       const role = roles[roleIndex];
@@ -66,9 +38,11 @@ class PinDerivedRoles implements TaskInterface {
       if (Object.hasOwn(state.roles, role.name)) {continue;}
       const hintMatch = colorsByRole.get(role.name);
       if (hintMatch === undefined) {continue;}
-      const resolvedRole = nudgeKeepingHue(hintMatch.hex, RoleDefinitionInterfaceTypeEntity.intake(role));
+      const resolvedRole = hintMatch;
       Object.defineProperty(state.roles, role.name, { 'configurable': true, 'enumerable': true, 'value': resolvedRole, 'writable': true });
+      provenance.set(role.name, RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': [], 'origin': 'stated' }));
     }
+    Metadata.writeRoleProvenance(state.metadata, provenance);
   }
 }
 

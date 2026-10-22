@@ -1,7 +1,7 @@
 import type { PaletteStateInterface } from '@studnicky/iridis';
 import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
 
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputInterfaceTypeEntity, Metadata } from '@studnicky/iridis';
 import { getContrastMetadata } from '@studnicky/iridis-contrast';
 import { JsonValue } from '@studnicky/types/node';
 import assert from 'node:assert/strict';
@@ -34,7 +34,7 @@ class RoleSchemaPipelineFixture {
     return comparison;
   }
 
-  private static schemaPair(name: string): SchemaPair {
+  static schemaPair(name: string): SchemaPair {
     const entries = Object.entries(roleSchemaByName);
     for (let index = 0; index < entries.length; index += 1) {
       const [registeredName, pair] = entries[index]!;
@@ -98,3 +98,28 @@ for (let index = 0; index < RoleSchemaPipelineFixture.names.length; index += 1) 
     return result;
   });
 }
+
+await test('pinned derived roles remain byte-exact while unpinned roles resolve around them', () => {
+  const schema = RoleSchemaPipelineFixture.schemaPair('iridis-32').dark;
+  const engine = createColorEngine();
+  engine.pipeline(spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(0)));
+  const state = engine.run(InputInterfaceTypeEntity.create({
+    'colors': pickerSeedInputs([
+      { 'hex': '#101820', 'role': 'background' },
+      { 'hex': '#f5f7fa', 'role': 'text' },
+      { 'hex': '#7c3aed', 'role': 'brand' },
+      { 'hex': '#b55bc7', 'role': 'success' }
+    ]),
+    'contrast': ContrastConfigFor.forStrictness(0, ContrastConfigFor.correctingCvd),
+    'metadata': {
+      'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
+      'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
+      'derivation:semanticHuesEnabled': true
+    },
+    'roles': schema,
+    'runtime': { 'colorSpace': 'srgb', 'framing': 'dark' }
+  }));
+  assert.equal(state.roles.success?.hex, '#b55bc7');
+  const provenance = Metadata.roleProvenance(state.metadata).get('success');
+  assert.deepEqual(provenance, { 'adjustments': [], 'origin': 'stated' });
+});
