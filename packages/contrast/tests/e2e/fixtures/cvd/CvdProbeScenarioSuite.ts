@@ -20,6 +20,7 @@ export class CvdProbeScenarioSuite {
       await test('CVD refinement records only pairs with an actually fixed CVD type', CvdProbeScenarioSuite.correctionMetadata);
       await test('CVD refinement resolves cyclic role constraints deterministically', CvdProbeScenarioSuite.cycle);
       await test('CVD refinement advisory mode does not claim correction failure', CvdProbeScenarioSuite.advisory);
+      await test('CVD observation identifies every deficiency matrix', CvdProbeScenarioSuite.deficiencyMatrices);
       await test('CVD refinement moves a derived background when the foreground is stated', CvdProbeScenarioSuite.statedForeground);
       await test('CVD refinement moves a derived foreground when the background is stated', CvdProbeScenarioSuite.statedBackground);
       await test('CVD refinement blocks a pair when both semantic endpoints are stated', CvdProbeScenarioSuite.statedBoth);
@@ -36,6 +37,32 @@ export class CvdProbeScenarioSuite {
     await test('CVD refinement keeps production stress work bounded for 100 unresolved movable pairs', CvdProbeScenarioSuite.productionStress);
     await test('CVD refinement shares one bounded budget across a cyclic component', CvdProbeScenarioSuite.budgetedCycle);
     await test('canonical compliance remains deterministic for 100 declared roles', CvdProbeScenarioSuite.compliancePerformance);
+  }
+
+  private static deficiencyMatrices(): void {
+    const scenarios = [
+      { 'background': '#008000', 'cvdType': 'deuteranopia', 'foreground': '#d00000' },
+      { 'background': '#00cc00', 'cvdType': 'protanopia', 'foreground': '#ff0000' },
+      { 'background': '#ffff00', 'cvdType': 'tritanopia', 'foreground': '#0000ff' },
+      { 'background': '#00d800', 'cvdType': 'achromatopsia', 'foreground': '#ff0000' }
+    ];
+    for (let index = 0; index < scenarios.length; index += 1) {
+      const scenario = scenarios[index];
+      if (scenario === undefined) {
+        continue;
+      }
+      const state = ContrastTestPort.runObservedCvd({
+        'background': colorRecordFactory.fromHex(scenario.background),
+        'text': colorRecordFactory.fromHex(scenario.foreground)
+      }, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+      const cvd = ContrastMetadataAssertionPort.cvd(state);
+      assert.ok(cvd !== undefined, `[cvd-deficiency-${scenario.cvdType}] metadata present`);
+      const isReported = cvd.warnings.some((warning) => {
+        const result = warning.cvdType === scenario.cvdType;
+        return result;
+      });
+      assert.ok(isReported, `[cvd-deficiency-${scenario.cvdType}] named deficiency is reported`);
+    }
   }
 
   private static advisory(): void {

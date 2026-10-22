@@ -1479,6 +1479,11 @@ class EnforceCvdSimulate implements TaskInterface {
     return grouped.blocked;
   }
 
+  private cvdMinimum(pair: ContrastPolicy.RequirementInterface): number {
+    const result = pair.algorithm === 'wcag21' ? pair.minimumContrastRatio : 0;
+    return result;
+  }
+
   private createSearchBudget(): CvdSearchBudget {
     const configured = this.testingSearchBudget;
     if (configured === undefined) {
@@ -1503,9 +1508,10 @@ class EnforceCvdSimulate implements TaskInterface {
       const foreground = originals.get(pair.foreground);
       const background = originals.get(pair.background);
       if (foreground === undefined || background === undefined) {continue;}
+      const cvdMinimum = this.cvdMinimum(pair);
       const mover = CvdMover.select(pair.foreground, pair.background, provenance);
       if (mover === undefined) {
-        const cvdTypes = Array.from(CvdSimulation.failureTypes(foreground, background, pair.minimumContrastRatio));
+        const cvdTypes = Array.from(CvdSimulation.failureTypes(foreground, background, cvdMinimum));
         if (cvdTypes.length > 0) {
           blocked.push(CvdBlockedPairInterfaceTypeEntity.create({
             'background': pair.background,
@@ -1524,7 +1530,7 @@ class EnforceCvdSimulate implements TaskInterface {
         group = new CvdMoverGroup(mover.roleName, moverRecord);
         groups.set(mover.roleName, group);
       }
-      group.add(mover.counterpartName, counterpart, pair.minimumContrastRatio);
+      group.add(mover.counterpartName, counterpart, cvdMinimum);
     }
     return new CvdGroups(groups, blocked);
   }
@@ -1562,14 +1568,15 @@ class EnforceCvdSimulate implements TaskInterface {
     }
     const foreground = colorRecordFactory.fromHex(finalForeground.hex);
     const background = colorRecordFactory.fromHex(finalBackground.hex);
+    const cvdMinimum = this.cvdMinimum(pair);
     const evaluations = CvdSimulation.evaluate(
       foreground.rgb,
       background.rgb,
       contrastWcag21.apply(foreground, background),
-      pair.minimumContrastRatio
+      cvdMinimum
     );
     const failures = this.failing(evaluations);
-    this.addWarnings(pair, failures, warnings, context, pair.minimumContrastRatio);
+    this.addWarnings(pair, failures, warnings, context, cvdMinimum);
     if (corrections !== undefined) {
       if (failures.length > 0) {
         this.logRemaining(pair, failures, context);
@@ -1635,7 +1642,7 @@ class EnforceCvdSimulate implements TaskInterface {
       originalForeground.rgb,
       originalBackground.rgb,
       contrastWcag21.apply(originalForeground, originalBackground),
-      pair.minimumContrastRatio
+      this.cvdMinimum(pair)
     );
     const fixed = this.fixedTypes(initial, failures);
     if (fixed.length > 0) {
