@@ -100,11 +100,13 @@ export class CvdScenarioFixture {
     ]
   });
 
-  static input(colors: InputInterfaceTypeEntity.Type['colors'], roles: RoleSchemaInterfaceTypeEntity.Type, cvdCorrect = false): InputInterfaceTypeEntity.Type {
-    const contrast = cvdCorrect ? { 'cvdCorrect': true } : undefined;
+  static input(
+    colors: InputInterfaceTypeEntity.Type['colors'],
+    roles: RoleSchemaInterfaceTypeEntity.Type
+  ): InputInterfaceTypeEntity.Type {
     const result = InputInterfaceTypeEntity.intake({
       'colors': colors,
-      ...(contrast === undefined ? {} : { 'contrast': contrast }),
+      'contrast': { 'cvdMode': 'warn' },
       'roles': roles
     });
     return result;

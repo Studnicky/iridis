@@ -100,7 +100,7 @@ await test('canonical compliance emits an admissible zero-pair report', () => {
   const state = engine.run(
     InputInterfaceTypeEntity.intake({
       'colors': ['#000000', '#ffffff'],
-      'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': true, 'level': 'AA' },
+      'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'enforce', 'level': 'AA' },
       'roles': {
         'contrastPairs': [],
         'name': 'zero-pair-e2e',
@@ -164,7 +164,7 @@ await test('canonical compliance records an already compliant pair as not-needed
   const state = engine.run(
     InputInterfaceTypeEntity.intake({
       'colors': ['#000000', '#ffffff'],
-      'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': true, 'level': 'AA' },
+      'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'enforce', 'level': 'AA' },
       'roles': {
         'contrastPairs': [
           {
@@ -218,7 +218,7 @@ await test('canonical compliance records an already compliant pair as not-needed
 await test('canonical compliance corrects a failing AAA pair to seven to one', () => {
   const input = InputInterfaceTypeEntity.intake({
     'colors': ['#777777', '#ffffff'],
-    'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': true, 'level': 'AAA' },
+    'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'enforce', 'level': 'AAA' },
     'roles': {
       'contrastPairs': [
         {
@@ -287,7 +287,7 @@ await test('canonical compliance solves a non-background APCA pair at Lc sixty',
   const state = engine.run(
     InputInterfaceTypeEntity.intake({
       'colors': ['#777777', '#ffffff'],
-      'contrast': { 'algorithm': 'apca', 'cvdCorrect': true, 'level': 'Lc' },
+      'contrast': { 'algorithm': 'apca', 'cvdMode': 'enforce', 'level': 'Lc' },
       'roles': {
         'contrastPairs': [
           {
@@ -350,7 +350,7 @@ await test('canonical compliance preserves its terminal report through variant d
   const state = engine.run(
     InputInterfaceTypeEntity.intake({
       'colors': ['#aaaaaa', '#ffffff'],
-      'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': true, 'level': 'AA' },
+      'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'enforce', 'level': 'AA' },
       'roles': {
         'contrastPairs': [
           {
@@ -441,7 +441,7 @@ await test('canonical compliance applies AAA and APCA targets to every declared 
         'colors': ['#000000', '#ffffff'],
         'contrast': {
           'algorithm': selection.algorithm,
-          'cvdCorrect': true,
+          'cvdMode': 'enforce',
           'level': selection.level
         },
         'roles': {

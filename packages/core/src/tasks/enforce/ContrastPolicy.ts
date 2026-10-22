@@ -7,6 +7,7 @@ import { ContrastPairInterfaceTypeEntity } from '../../entities/ContrastPairInte
 interface WcagMinimumOptionsInterface {
   readonly 'declaredMinimum': number | undefined;
   readonly 'level': string | undefined;
+  readonly 'nonMandatoryLevel': string | undefined;
 }
 
 class ContrastStandard {
@@ -21,15 +22,25 @@ class ContrastStandard {
 
   static wcagMinimum(options: WcagMinimumOptionsInterface): number {
     const declaredMinimum = options.declaredMinimum;
-    if (options.level !== 'AAA') {
-      const result = declaredMinimum ?? 4.5;
+    let result: number;
+    if (declaredMinimum === undefined) {
+      result = options.level === 'AAA' ? 7 : 4.5;
+    } else if (declaredMinimum < 4.5) {
+      result = options.nonMandatoryLevel === 'AAA' ? 4.5 : declaredMinimum;
+    } else if (options.level !== 'AAA' || declaredMinimum >= 7) {
+      result = declaredMinimum;
+    } else {
+      result = 7;
+    }
+    return result;
+  }
+
+  static wcagTarget(options: WcagMinimumOptionsInterface): string {
+    if (options.declaredMinimum !== undefined && options.declaredMinimum < 4.5) {
+      const result = options.nonMandatoryLevel === 'AAA' ? 'AAA' : 'AA';
       return result;
     }
-    if (declaredMinimum === undefined || declaredMinimum >= 7) {
-      const result = declaredMinimum ?? 7;
-      return result;
-    }
-    const result = declaredMinimum >= 4.5 ? 7 : 4.5;
+    const result = options.level === 'AAA' ? 'AAA' : 'AA';
     return result;
   }
 
@@ -53,7 +64,8 @@ class ApcaTarget {
   static readonly MEANINGFUL_TEXT = 60;
   static forPair(
     requirement: ContrastPairInterfaceTypeEntity.Type,
-    roles: PaletteRoleState
+    roles: PaletteRoleState,
+    nonMandatoryLevel: string | undefined
   ): number {
     const foreground = roles.get(requirement.foreground);
     const background = roles.get(requirement.background);
@@ -63,7 +75,10 @@ class ApcaTarget {
     ) {
       return ApcaTarget.#BODY_READING;
     }
-    return ApcaTarget.MEANINGFUL_TEXT;
+    const result = nonMandatoryLevel === 'AAA'
+      ? ApcaTarget.#BODY_READING
+      : ApcaTarget.MEANINGFUL_TEXT;
+    return result;
   }
 }
 
@@ -96,16 +111,21 @@ export class ContrastPolicy {
         continue;
       }
       const pair = ContrastPairInterfaceTypeEntity.intake(sourcePair);
+      const nonMandatoryLevel = input.contrast?.nonMandatoryLevel;
+      const wcagOptions: WcagMinimumOptionsInterface = {
+        'declaredMinimum': pair.minimumContrastRatio,
+        'level': input.contrast?.level,
+        'nonMandatoryLevel': nonMandatoryLevel
+      };
       const minimumContrastRatio = algorithm === 'apca'
-        ? ApcaTarget.forPair(pair, roles)
-        : ContrastStandard.wcagMinimum({
-          'declaredMinimum': pair.minimumContrastRatio,
-          'level': input.contrast?.level
-        });
+        ? ApcaTarget.forPair(pair, roles, nonMandatoryLevel)
+        : ContrastStandard.wcagMinimum(wcagOptions);
       const cvdMinimumContrastRatio = ContrastStandard.wcagMinimum({
         'declaredMinimum': pair.minimumContrastRatio,
-        'level': algorithm === 'apca' ? 'AA' : input.contrast?.level
+        'level': algorithm === 'apca' ? 'AA' : input.contrast?.level,
+        'nonMandatoryLevel': nonMandatoryLevel
       });
+      const wcagTarget = ContrastStandard.wcagTarget(wcagOptions);
       const maximumContrastRatio = pair.maximumContrastRatio;
       requirements.push({
         'algorithm': algorithm,
@@ -119,7 +139,7 @@ export class ContrastPolicy {
         'target':
           algorithm === 'apca'
             ? `${targetPrefix}-${minimumContrastRatio}`
-            : targetPrefix
+            : wcagTarget
       });
     }
     return requirements;

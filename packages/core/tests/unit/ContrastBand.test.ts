@@ -763,6 +763,17 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     }),
     roles
   );
+  const aaaNonMandatory = ContrastPolicy.normalize(
+    InputInterfaceTypeEntity.intake({
+      ...base,
+      'contrast': {
+        'algorithm': 'wcag21',
+        'level': 'AAA',
+        'nonMandatoryLevel': 'AAA'
+      }
+    }),
+    roles
+  );
   const aaaText = ContrastPolicy.normalize(
     InputInterfaceTypeEntity.intake({
       'colors': [],
@@ -776,6 +787,41 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
           }
         ],
         'name': 'aaa-text-policy',
+        'roles': []
+      }
+    }),
+    roles
+  );
+  const aaaAlreadyStrict = ContrastPolicy.normalize(
+    InputInterfaceTypeEntity.intake({
+      'colors': [],
+      'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' },
+      'roles': {
+        'contrastPairs': [
+          {
+            'background': 'background',
+            'foreground': 'text',
+            'minimumContrastRatio': 7
+          }
+        ],
+        'name': 'aaa-already-strict-policy',
+        'roles': []
+      }
+    }),
+    roles
+  );
+  const aaaMissing = ContrastPolicy.normalize(
+    InputInterfaceTypeEntity.intake({
+      'colors': [],
+      'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' },
+      'roles': {
+        'contrastPairs': [
+          {
+            'background': 'background',
+            'foreground': 'text'
+          }
+        ],
+        'name': 'aaa-missing-policy',
         'roles': []
       }
     }),
@@ -800,6 +846,17 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     }),
     roles
   );
+  const apcaNonMandatory = ContrastPolicy.normalize(
+    InputInterfaceTypeEntity.intake({
+      ...base,
+      'contrast': {
+        'algorithm': 'apca',
+        'level': 'Lc',
+        'nonMandatoryLevel': 'AAA'
+      }
+    }),
+    roles
+  );
   const apca = ContrastPolicy.normalize(
     InputInterfaceTypeEntity.intake({
       ...base,
@@ -816,34 +873,63 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     aa.map((requirement) => {return [
       requirement.algorithm,
       requirement.foreground,
+      requirement.cvdMinimumContrastRatio,
       requirement.minimumContrastRatio
     ];}),
     [
-      ['wcag21', 'divider', 3],
-      ['wcag21', 'control', 3]
+      ['wcag21', 'divider', 3, 3],
+      ['wcag21', 'control', 3, 3]
     ],
-    'AA retains each declared pair minimum, including a divider band'
+    'AA retains each declared pair minimum for terminal and CVD policy'
   );
   assert.deepStrictEqual(
     aaa.map((requirement) => {return [
       requirement.algorithm,
+      requirement.cvdMinimumContrastRatio,
       requirement.minimumContrastRatio
     ];}),
-    [['wcag21', 4.5]],
-    'AAA maps a declared divider ratio of 3 to 4.5'
+    [['wcag21', 3, 3]],
+    'AAA preserves an authored non-text ratio of 3 for terminal and CVD policy'
   );
   assert.deepStrictEqual(
-    aaaText.map((requirement) => {return requirement.minimumContrastRatio;}),
-    [7],
-    'AAA maps a declared text ratio of 4.5 to 7'
+    aaaNonMandatory.map((requirement) => {
+      return [
+        requirement.cvdMinimumContrastRatio,
+        requirement.minimumContrastRatio,
+        requirement.target
+      ];
+    }),
+    [[4.5, 4.5, 'AAA']],
+    'AAA non-mandatory selection lifts a declared 3 ratio to 4.5 for terminal and CVD policy'
+  );
+  assert.deepStrictEqual(
+    aaaText.map((requirement) => {
+      return [requirement.cvdMinimumContrastRatio, requirement.minimumContrastRatio];
+    }),
+    [[7, 7]],
+    'AAA maps a declared text ratio of 4.5 to 7 for terminal and CVD policy'
   );
   assert.deepStrictEqual(
     aaaBounded.map((requirement) => {return [
       requirement.minimumContrastRatio,
       requirement.maximumContrastRatio
     ];}),
-    [[4.5, 4.5]],
-    'AAA retains an authored maximum while mapping a divider ratio to 4.5'
+    [[3, 4.5]],
+    'AAA retains an authored maximum while preserving a non-text divider minimum'
+  );
+  assert.deepStrictEqual(
+    aaaAlreadyStrict.map((requirement) => {
+      return [requirement.cvdMinimumContrastRatio, requirement.minimumContrastRatio];
+    }),
+    [[7, 7]],
+    'AAA preserves an authored 7 ratio for terminal and CVD policy'
+  );
+  assert.deepStrictEqual(
+    aaaMissing.map((requirement) => {
+      return [requirement.cvdMinimumContrastRatio, requirement.minimumContrastRatio];
+    }),
+    [[7, 7]],
+    'AAA defaults an undeclared pair to 7 for terminal and CVD policy'
   );
   assert.deepStrictEqual(
     apca.map((requirement) => {return [
@@ -856,6 +942,13 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
       ['apca', 'control', 60]
     ],
     'APCA applies its Lc targets independently of WCAG pair minima'
+  );
+  assert.deepStrictEqual(
+    apcaNonMandatory.map((requirement) => {
+      return [requirement.minimumContrastRatio, requirement.target];
+    }),
+    [[75, 'APCA-Lc-75']],
+    'APCA applies the configured AAA fallback to every currently indistinguishable Lc60 pair'
   );
   const apcaIgnoringWcagMinimum = ContrastPolicy.normalize(
     InputInterfaceTypeEntity.intake({
@@ -881,5 +974,25 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     }),
     [75],
     'APCA ignores an inherited WCAG ratio in favor of its selected Lc target'
+  );
+});
+
+void test('contrast options admit canonical CVD modes and default downstream to warn', () => {
+  const omitted = ContrastOptionsInterfaceTypeEntity.create({});
+  const warn = ContrastOptionsInterfaceTypeEntity.create({ 'cvdMode': 'warn' });
+  const nudge = ContrastOptionsInterfaceTypeEntity.create({ 'cvdMode': 'nudge' });
+  const enforce = ContrastOptionsInterfaceTypeEntity.create({ 'cvdMode': 'enforce' });
+
+  assert.strictEqual(
+    omitted.cvdMode,
+    undefined,
+    'omitting CVD mode leaves the downstream warn default to policy intake'
+  );
+  assert.strictEqual(warn.cvdMode, 'warn', 'the closed input admits warning evidence mode');
+  assert.strictEqual(nudge.cvdMode, 'nudge', 'the closed input admits corrective nudging');
+  assert.strictEqual(enforce.cvdMode, 'enforce', 'the closed input admits blocking enforcement');
+  assert.throws(
+    () => { ContrastOptionsInterfaceTypeEntity.intake({ 'cvdMode': 'advisory' }); },
+    'the retired CVD mode is rejected by closed schema intake'
   );
 });
