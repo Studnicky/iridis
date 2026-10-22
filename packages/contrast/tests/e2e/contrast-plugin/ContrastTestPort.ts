@@ -46,6 +46,39 @@ export class ContrastTestPort {
     return state;
   }
 
+  static configureCvdSearchBudgetForTesting(
+    maximumCandidateScores: number,
+    maximumWeightedUnits: number
+  ): void {
+    enforceCvdSimulate.configureSearchBudgetForTesting(maximumCandidateScores, maximumWeightedUnits);
+  }
+
+  static clearCvdSearchBudgetForTesting(): void {
+    enforceCvdSimulate.clearSearchBudgetForTesting();
+  }
+
+  static runComplianceWithCvdSearchBudgetForTesting(
+    roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    contrastPairs: readonly JSONSchema7Type[],
+    logger: LoggerInterface,
+    maximumCandidateScores: number,
+    maximumWeightedUnits: number,
+    statedRoleNames: readonly string[] = []
+  ): { readonly 'state': PaletteStateInterface; readonly 'usage': { readonly 'candidateScores': number; readonly 'weightedUnits': number; }; } {
+    ContrastTestPort.configureCvdSearchBudgetForTesting(maximumCandidateScores, maximumWeightedUnits);
+    try {
+      const state = ContrastTestPort.runCompliance(roles, contrastPairs, logger, statedRoleNames);
+      const usage = enforceCvdSimulate.searchBudgetUsageForTesting();
+      if (usage === undefined) {
+        throw new TypeError('CVD test search budget did not report usage');
+      }
+      const result = { 'state': state, 'usage': usage };
+      return result;
+    } finally {
+      ContrastTestPort.clearCvdSearchBudgetForTesting();
+    }
+  }
+
   private static directState(
     roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>,
     contrastPairs: readonly JSONSchema7Type[],

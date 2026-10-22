@@ -11,23 +11,58 @@ import { RecordingLogger } from '../../contrast-plugin/RecordingLogger.ts';
 /** Independent direct probes for CVD correction integrity, determinism, and workload behavior. */
 export class CvdProbeScenarioSuite {
   static async run(): Promise<void> {
-    await test('CVD refinement validates and stores the exact emitted hex colors', CvdProbeScenarioSuite.emittedHex);
-    await test('CVD refinement resolves dependency chains against terminal backgrounds', CvdProbeScenarioSuite.dependencyRollback);
-    await test('CVD refinement finds a jointly valid dependency-chain correction', CvdProbeScenarioSuite.dependencyJoint);
-    await test('CVD refinement never swaps original pair failures for new CVD types', CvdProbeScenarioSuite.failureSet);
-    await test('CVD refinement records only pairs with an actually fixed CVD type', CvdProbeScenarioSuite.correctionMetadata);
-    await test('CVD refinement resolves cyclic role constraints deterministically', CvdProbeScenarioSuite.cycle);
-    await test('CVD refinement advisory mode does not claim correction failure', CvdProbeScenarioSuite.advisory);
-    await test('CVD refinement moves a derived background when the foreground is stated', CvdProbeScenarioSuite.statedForeground);
-    await test('CVD refinement moves a derived foreground when the background is stated', CvdProbeScenarioSuite.statedBackground);
-    await test('CVD refinement blocks a pair when both semantic endpoints are stated', CvdProbeScenarioSuite.statedBoth);
-    await test('CVD terminal compliance reports a CVD-only stated-both block', CvdProbeScenarioSuite.terminalStatedBoth);
-    await test('CVD terminal compliance reports a movable solver-exhausted block', CvdProbeScenarioSuite.terminalSolverExhausted);
-    await test('CVD terminal compliance retains a surviving correction', CvdProbeScenarioSuite.terminalCorrection);
-    await test('CVD refinement preserves a selected policy floor above the original contrast', CvdProbeScenarioSuite.selectedPolicyFloor);
-    await test('CVD refinement moves both derived endpoints around a stated chain middle', CvdProbeScenarioSuite.statedMiddleChain);
-    await test('CVD refinement keeps a realistic 32-pair correction budget', CvdProbeScenarioSuite.performance);
+    ContrastTestPort.configureCvdSearchBudgetForTesting(500_000, 3_000_000);
+    try {
+      await test('CVD refinement validates and stores the exact emitted hex colors', CvdProbeScenarioSuite.emittedHex);
+      await test('CVD refinement resolves dependency chains against terminal backgrounds', CvdProbeScenarioSuite.dependencyRollback);
+      await test('CVD refinement finds a jointly valid dependency-chain correction', CvdProbeScenarioSuite.dependencyJoint);
+      await test('CVD refinement never swaps original pair failures for new CVD types', CvdProbeScenarioSuite.failureSet);
+      await test('CVD refinement records only pairs with an actually fixed CVD type', CvdProbeScenarioSuite.correctionMetadata);
+      await test('CVD refinement resolves cyclic role constraints deterministically', CvdProbeScenarioSuite.cycle);
+      await test('CVD refinement advisory mode does not claim correction failure', CvdProbeScenarioSuite.advisory);
+      await test('CVD observation identifies every deficiency matrix', CvdProbeScenarioSuite.deficiencyMatrices);
+      await test('CVD refinement moves a derived background when the foreground is stated', CvdProbeScenarioSuite.statedForeground);
+      await test('CVD refinement moves a derived foreground when the background is stated', CvdProbeScenarioSuite.statedBackground);
+      await test('CVD refinement blocks a pair when both semantic endpoints are stated', CvdProbeScenarioSuite.statedBoth);
+      await test('CVD terminal compliance reports a CVD-only stated-both block', CvdProbeScenarioSuite.terminalStatedBoth);
+      await test('CVD terminal compliance reports a movable solver-exhausted block', CvdProbeScenarioSuite.terminalSolverExhausted);
+      await test('CVD terminal compliance retains a surviving correction', CvdProbeScenarioSuite.terminalCorrection);
+      await test('CVD refinement preserves a selected policy floor above the original contrast', CvdProbeScenarioSuite.selectedPolicyFloor);
+      await test('CVD refinement moves both derived endpoints around a stated chain middle', CvdProbeScenarioSuite.statedMiddleChain);
+      await test('CVD refinement keeps a realistic 32-pair correction budget', CvdProbeScenarioSuite.performance);
+    } finally {
+      ContrastTestPort.clearCvdSearchBudgetForTesting();
+    }
+    await test('CVD refinement bounds 100 unresolved movable pairs deterministically', CvdProbeScenarioSuite.budgetedStress);
+    await test('CVD refinement keeps production stress work bounded for 100 unresolved movable pairs', CvdProbeScenarioSuite.productionStress);
+    await test('CVD refinement shares one bounded budget across a cyclic component', CvdProbeScenarioSuite.budgetedCycle);
     await test('canonical compliance remains deterministic for 100 declared roles', CvdProbeScenarioSuite.compliancePerformance);
+  }
+
+  private static deficiencyMatrices(): void {
+    const scenarios = [
+      { 'background': '#008000', 'cvdType': 'deuteranopia', 'foreground': '#d00000' },
+      { 'background': '#00cc00', 'cvdType': 'protanopia', 'foreground': '#ff0000' },
+      { 'background': '#ffff00', 'cvdType': 'tritanopia', 'foreground': '#0000ff' },
+      { 'background': '#00d800', 'cvdType': 'achromatopsia', 'foreground': '#ff0000' }
+    ];
+    for (let index = 0; index < scenarios.length; index += 1) {
+      const scenario = scenarios[index];
+      if (scenario === undefined) {
+        continue;
+      }
+      const state = ContrastTestPort.runObservedCvd({
+        'background': colorRecordFactory.fromHex(scenario.background),
+        'text': colorRecordFactory.fromHex(scenario.foreground)
+      }, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+      const cvd = ContrastMetadataAssertionPort.cvd(state);
+      assert.ok(cvd !== undefined, `[cvd-deficiency-${scenario.cvdType}] metadata present`);
+      const isReported = cvd.warnings.some((warning) => {
+        const result = warning.cvdType === scenario.cvdType;
+        return result;
+      });
+      assert.ok(isReported, `[cvd-deficiency-${scenario.cvdType}] named deficiency is reported`);
+    }
   }
 
   private static advisory(): void {
@@ -410,6 +445,97 @@ export class CvdProbeScenarioSuite {
   private static pairAtMinimum(foreground: string, background: string, minimumContrastRatio: number): JSONSchema7Type {
     const result = ContrastPairInterfaceTypeEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'foreground': foreground, 'minimumContrastRatio': minimumContrastRatio });
     return result;
+  }
+
+  private static budgetedStress(): void {
+    const maximumCandidateScores = 1;
+    const maximumWeightedUnits = 6;
+    const roles: Record<string, ReturnType<typeof colorRecordFactory.fromHex>> = {
+      'background': colorRecordFactory.fromHex('#008000')
+    };
+    const pairs: JSONSchema7Type[] = [];
+    for (let index = 0; index < 99; index += 1) {
+      const foreground = `text${index}`;
+      Object.defineProperty(roles, foreground, {
+        'configurable': true,
+        'enumerable': true,
+        'value': colorRecordFactory.fromHex('#d00000'),
+        'writable': true
+      });
+      pairs.push(CvdProbeScenarioSuite.pair(foreground, 'background'));
+    }
+    const firstResult = ContrastTestPort.runComplianceWithCvdSearchBudgetForTesting(
+      roles, pairs, new RecordingLogger(), maximumCandidateScores, maximumWeightedUnits
+    );
+    const secondResult = ContrastTestPort.runComplianceWithCvdSearchBudgetForTesting(
+      roles, pairs, new RecordingLogger(), maximumCandidateScores, maximumWeightedUnits
+    );
+    const firstReport = ContrastMetadataAssertionPort.compliance(firstResult.state);
+    const secondReport = ContrastMetadataAssertionPort.compliance(secondResult.state);
+    assert.ok(firstReport !== undefined && secondReport !== undefined, '[cvd-budget-stress] terminal reports present');
+    assert.ok(firstResult.usage.candidateScores <= maximumCandidateScores, '[cvd-budget-stress] global score count never exceeds the injected candidate cap');
+    assert.ok(firstResult.usage.weightedUnits <= maximumWeightedUnits, '[cvd-budget-stress] global weighted work never exceeds the injected work cap');
+    assert.deepStrictEqual(secondResult.usage, firstResult.usage, '[cvd-budget-stress] deterministic score budget usage');
+    assert.strictEqual(firstReport.compliant, false, '[cvd-budget-stress] exhausted movable pairs make the terminal report noncompliant');
+    assert.strictEqual(firstReport.blockedPairs.length, 99, '[cvd-budget-stress] every unresolved pair receives one canonical blocker');
+    for (let index = 0; index < firstReport.blockedPairs.length; index += 1) {
+      const reason: string | undefined = firstReport.blockedPairs.at(index)?.reason;
+      assert.strictEqual(reason, 'solver-exhausted', `[cvd-budget-stress] unresolved pair ${index} reports deterministic exhaustion`);
+    }
+    assert.deepStrictEqual(
+      Object.entries(secondResult.state.roles).map(([name, role]) => { return [name, role.hex]; }),
+      Object.entries(firstResult.state.roles).map(([name, role]) => { return [name, role.hex]; }),
+      '[cvd-budget-stress] bounded resolution is deterministic'
+    );
+  }
+
+  private static productionStress(): void {
+    const roles: Record<string, ReturnType<typeof colorRecordFactory.fromHex>> = {
+      'background': colorRecordFactory.fromHex('#008000')
+    };
+    const pairs: JSONSchema7Type[] = [];
+    for (let index = 0; index < 99; index += 1) {
+      const foreground = `text${index}`;
+      Object.defineProperty(roles, foreground, {
+        'configurable': true,
+        'enumerable': true,
+        'value': colorRecordFactory.fromHex('#d00000'),
+        'writable': true
+      });
+      pairs.push(CvdProbeScenarioSuite.pair(foreground, 'background'));
+    }
+    const startedAt = performance.now();
+    const state = ContrastTestPort.runCompliance(roles, pairs, new RecordingLogger());
+    const elapsedMs = performance.now() - startedAt;
+    const report = ContrastMetadataAssertionPort.compliance(state);
+    assert.ok(report !== undefined, '[cvd-production-stress] terminal report present');
+    assert.strictEqual(report.compliant, true, '[cvd-production-stress] shared score and group-result caches retain a valid correction for each repeated failing pair');
+    assert.strictEqual(report.blockedPairs.length, 0, '[cvd-production-stress] corrected pairs need no terminal blocker');
+    const localCeilingMs = 900;
+    assert.ok(elapsedMs <= localCeilingMs, `[cvd-production-stress] bounded CVD search took ${elapsedMs.toFixed(2)} ms against the local ${localCeilingMs} ms ceiling`);
+  }
+
+  private static budgetedCycle(): void {
+    const maximumCandidateScores = 1;
+    const maximumWeightedUnits = 6;
+    const roles = {
+      'A': colorRecordFactory.fromHex('#d00000'),
+      'B': colorRecordFactory.fromHex('#008000')
+    };
+    const pairs = [CvdProbeScenarioSuite.pair('A', 'B'), CvdProbeScenarioSuite.pair('B', 'A')];
+    const result = ContrastTestPort.runComplianceWithCvdSearchBudgetForTesting(
+      roles, pairs, new RecordingLogger(), maximumCandidateScores, maximumWeightedUnits
+    );
+    const report = ContrastMetadataAssertionPort.compliance(result.state);
+    assert.ok(report !== undefined, '[cvd-budget-cycle] terminal report present');
+    assert.ok(result.usage.candidateScores <= maximumCandidateScores, '[cvd-budget-cycle] one shared score cap covers every cycle pass');
+    assert.ok(result.usage.weightedUnits <= maximumWeightedUnits, '[cvd-budget-cycle] one shared weighted-work cap covers every cycle pass');
+    assert.strictEqual(report.compliant, false, '[cvd-budget-cycle] exhausted cycle is noncompliant');
+    assert.deepStrictEqual(
+      report.blockedPairs.map((blocked) => { return blocked.reason; }),
+      ['solver-exhausted', 'solver-exhausted'],
+      '[cvd-budget-cycle] the shared cycle budget blocks each unresolved pair exactly once'
+    );
   }
 
   private static compliancePerformance(): void {
