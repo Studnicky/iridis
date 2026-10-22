@@ -1,8 +1,19 @@
 const nuxtImportsUrl = `data:text/javascript,${encodeURIComponent(`
 const fallbackNuxtApp = {};
+const stateByApp = new WeakMap();
 
 export function useRuntimeConfig() {
   return { app: { baseURL: '/' } };
+}
+
+export function useState(key, init) {
+  const nuxtApp = useNuxtApp();
+  const states = stateByApp.get(nuxtApp) ?? new Map();
+  stateByApp.set(nuxtApp, states);
+  if (!states.has(key)) {
+    states.set(key, { value: init() });
+  }
+  return states.get(key);
 }
 
 export function useNuxtApp() {

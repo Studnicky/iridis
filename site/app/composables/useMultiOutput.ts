@@ -8,23 +8,19 @@ import { shadcnPlugin } from '@studnicky/iridis-shadcn';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
 import { tailwindPlugin } from '@studnicky/iridis-tailwind';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/browser';
-import { JsonValue } from '@studnicky/types/browser';
 import * as VueModule from 'vue';
 
-import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { debounce } from '~/utils/debounce.ts';
 
 import { COLOR_PIPELINE } from './colorPipeline.ts';
-import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
 import { MultiOutputEntity } from './entities/MultiOutputEntity.ts';
 import { MultiOutputRequestEntity } from './entities/MultiOutputRequestEntity.ts';
 import { OutputRowInterfaceTypeEntity } from './entities/OutputRowInterfaceTypeEntity.ts';
+import { PaletteResolveRequestInterfaceTypeEntity } from './entities/PaletteResolveRequestInterfaceTypeEntity.ts';
 import { logger } from './logger.ts';
-import { pickerSeedInputs } from './pickerSeedInputs.ts';
-import { roleSchemaFor } from './roleSchemaFor.ts';
+import { PaletteResolve } from './paletteResolve.ts';
 import { useIridis } from './useIridis.ts';
-import { VARIANT_CONFIG } from './variantConfig.ts';
 
 /** One palette, every real output emitter: CSS, component libraries, mobile, RDF, and JSON. */
 const outputsByKey = VueModule.ref<Record<string, OutputRowInterfaceTypeEntity.Type | undefined>>({});
@@ -95,20 +91,15 @@ class ActivateOperation {
     const { activeSeeds, colorSpace, contrastStrictness, derivationConfig, framing, schemaName, semanticHuesEnabled } = useIridis();
     function generate(): void {
       try {
-        const pair = roleSchemaByName[schemaName.value];
-        const selected = framing.value === 'dark' ? pair.dark : pair.light;
-        const roles = roleSchemaFor(selected);
-        const input = InputInterfaceTypeEntity.create({
-          'colors':   pickerSeedInputs(activeSeeds.value),
-          'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value),
-          'metadata': {
-            'core:variantConfig':              JsonValue.from(VARIANT_CONFIG),
-            'derivation:config':               JsonValue.from(derivationConfig.value),
-            'derivation:semanticHuesEnabled':  JsonValue.from(semanticHuesEnabled.value)
-          },
-          'roles':   roles,
-          'runtime': { 'colorSpace': colorSpace.value, 'framing': String(framing.value) }
-        });
+        const input = PaletteResolve.input(PaletteResolveRequestInterfaceTypeEntity.create({
+          'colorSpace': colorSpace.value,
+          'derivationConfig': VueModule.toRaw(derivationConfig.value),
+          'framing': framing.value,
+          'schemaName': schemaName.value,
+          'seeds': PaletteResolve.seeds(activeSeeds.value),
+          'semanticHuesEnabled': semanticHuesEnabled.value,
+          'strictness': contrastStrictness.value
+        }));
         const request = MultiOutputRequestEntity.create({ 'input': input });
         outputsByKey.value = MainOutputs.build(request);
       } catch (error) {

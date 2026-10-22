@@ -188,6 +188,17 @@ export class Tokens {
   static readonly SHADE_KEYS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
 
   /** Flattens an engine state into the role and tonal-scale maps consumed by the site. */
+  /** Flattens resolved role views to a role→hex record. */
+  static hexRecord(views: readonly { readonly 'hex': string; readonly 'name': string }[]): RoleHexMapType {
+    const hexes = new Map<string, string>();
+    for (let index = 0; index < views.length; index += 1) {
+      const view = views[index];
+      if (view !== undefined) {hexes.set(view.name, view.hex);}
+    }
+    const result = RoleHexMapOperation.toRecord(hexes);
+    return result;
+  }
+
   static extractEngineMaps(state: PaletteStateInterface): { 'roles': RoleHexMapType; 'scales': ScaleMapType } {
     const roles = new Map<string, string>();
     const roleEntries = Object.entries(state.roles);

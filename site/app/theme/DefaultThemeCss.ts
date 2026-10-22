@@ -1,84 +1,38 @@
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
-import { JsonValue } from '@studnicky/types/browser';
-
-import type { SchemaPair } from '../composables/types/index.ts';
-
-import { COLOR_PIPELINE } from '../composables/colorPipeline.ts';
-import { ContrastConfigFor } from '../composables/contrastConfigFor.ts';
-import { createColorEngine } from '../composables/createColorEngine.ts';
 import { DerivationConfigInterfaceTypeEntity } from '../composables/entities/DerivationConfigInterfaceTypeEntity.ts';
-import { pickerSeedInputs } from '../composables/pickerSeedInputs.ts';
-import { VARIANT_CONFIG } from '../composables/variantConfig.ts';
-import { roleSchemaByName } from './RoleSchemaByName.ts';
+import { PaletteResolveRequestInterfaceTypeEntity } from '../composables/entities/PaletteResolveRequestInterfaceTypeEntity.ts';
+import { SchemaNameInterfaceTypeEntity } from '../composables/entities/SchemaNameInterfaceTypeEntity.ts';
+import { PaletteResolve } from '../composables/paletteResolve.ts';
 import { Tokens } from './Tokens.ts';
 
 /** Produces the optional static snapshot of the site's default engine-resolved theme. */
 export class DefaultThemeCss {
   private static readonly baseSelector = 'html:root, html:root.dark, html:root:not(.dark)';
   private static readonly seeds = [
-    { 'hex': '#7c3aed', 'role': undefined },
-    { 'hex': '#06b6d4', 'role': undefined },
-    { 'hex': '#f59e0b', 'role': undefined },
-    { 'hex': '#ec4899', 'role': undefined }
+    { 'hex': '#7c3aed' },
+    { 'hex': '#06b6d4' },
+    { 'hex': '#f59e0b' },
+    { 'hex': '#ec4899' }
   ];
 
-  private static schemaPair(): SchemaPair {
-    const entries = Object.entries(roleSchemaByName);
-    for (let index = 0; index < entries.length; index += 1) {
-      const entry = entries[index];
-      if (entry?.[0] === 'iridis-32') {
-        const pair = entry[1];
-        return pair;
-      }
-    }
-    throw new RangeError('No role schema is registered for iridis-32');
-  }
+  private static readonly parameters = {
+    'colorSpace': 'srgb',
+    'derivationConfig': DerivationConfigInterfaceTypeEntity.defaultValue,
+    'schemaName': SchemaNameInterfaceTypeEntity.defaultValue,
+    'seeds': DefaultThemeCss.seeds,
+    'semanticHuesEnabled': true,
+    'strictness': 2
+  } as const;
 
-  private static generateDarkFrame(): string {
-    const engine = createColorEngine();
-    engine.pipeline(COLOR_PIPELINE);
-    const pair = DefaultThemeCss.schemaPair();
-    const state = engine.run(InputInterfaceTypeEntity.create({
-      'colors':   pickerSeedInputs(DefaultThemeCss.seeds),
-      'contrast': ContrastConfigFor.forStrictness(2),
-      'metadata': {
-        'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
-        'derivation:semanticHuesEnabled': JsonValue.from(true)
-      },
-      'roles':   pair.dark,
-      'runtime': { 'colorSpace': 'srgb', 'framing': 'dark' }
-    }));
-    const maps = Tokens.extractEngineMaps(state);
-    const css = Tokens.toCssText(Tokens.mapFromEngine(maps.roles, maps.scales));
-    const themedCss = css.replace(DefaultThemeCss.baseSelector, 'html:root.dark');
-    return themedCss;
-  }
-
-  private static generateLightFrame(): string {
-    const engine = createColorEngine();
-    engine.pipeline(COLOR_PIPELINE);
-    const pair = DefaultThemeCss.schemaPair();
-    const state = engine.run(InputInterfaceTypeEntity.create({
-      'colors':   pickerSeedInputs(DefaultThemeCss.seeds),
-      'contrast': ContrastConfigFor.forStrictness(2),
-      'metadata': {
-        'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
-        'derivation:semanticHuesEnabled': JsonValue.from(true)
-      },
-      'roles':   pair.light,
-      'runtime': { 'colorSpace': 'srgb', 'framing': 'light' }
-    }));
-    const maps = Tokens.extractEngineMaps(state);
-    const css = Tokens.toCssText(Tokens.mapFromEngine(maps.roles, maps.scales));
-    const themedCss = css.replace(DefaultThemeCss.baseSelector, 'html:root, html:root:not(.dark)');
+  private static generateFrame(request: PaletteResolveRequestInterfaceTypeEntity.Type, selector: string): string {
+    const snapshot = PaletteResolve.run(request);
+    const css = Tokens.toCssText(Tokens.mapFromEngine(Tokens.hexRecord(snapshot.roles), snapshot.scales));
+    const themedCss = css.replace(DefaultThemeCss.baseSelector, selector);
     return themedCss;
   }
 
   static generate(): string {
-    const light = DefaultThemeCss.generateLightFrame();
-    const dark = DefaultThemeCss.generateDarkFrame();
+    const light = DefaultThemeCss.generateFrame(PaletteResolveRequestInterfaceTypeEntity.create({ ...DefaultThemeCss.parameters, 'framing': 'light' }), 'html:root, html:root:not(.dark)');
+    const dark = DefaultThemeCss.generateFrame(PaletteResolveRequestInterfaceTypeEntity.create({ ...DefaultThemeCss.parameters, 'framing': 'dark' }), 'html:root.dark');
     const themeCss = `${light  }\n${  dark}`;
     return themeCss;
   }

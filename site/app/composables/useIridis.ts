@@ -7,24 +7,25 @@
  */
 
 import type {
-  ColorRecordInterfaceTypeEntity, PaletteStateInterface, RoleProvenanceInterfaceTypeEntity
+  ColorRecordInterfaceTypeEntity, PaletteStateInterface
 } from '@studnicky/iridis';
-import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { CvdMatrixInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 import type { ClusterStrategyInterface } from '@studnicky/iridis-image';
 import type {
   GalleryDominantColorsSlotType, GalleryHistogramSlotInterfaceType
 } from '@studnicky/iridis-image/types';
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
-import { colorRecordFactory, InputInterfaceTypeEntity, Metadata } from '@studnicky/iridis';
-import { CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import { InputInterfaceTypeEntity } from '@studnicky/iridis';
 import { ClusterDispatcher, GalleryCandidateOutputEntity, imagePlugin } from '@studnicky/iridis-image';
 import { JsonValue } from '@studnicky/types/browser';
 import * as VueModule from 'vue';
 
-import { useNuxtApp, useRuntimeConfig } from '#imports';
+import { useNuxtApp, useRuntimeConfig, useState } from '#imports';
 
+import type { ComplianceReportViewInterfaceTypeEntity } from './entities/ComplianceReportViewInterfaceTypeEntity.ts';
 import type { DerivationRelationInterfaceTypeEntity } from './entities/DerivationRelationInterfaceTypeEntity.ts';
+import type { PaletteSnapshotInterfaceTypeEntity } from './entities/PaletteSnapshotInterfaceTypeEntity.ts';
 import type { PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType, UploadedImage } from './types/index.ts';
 import type { RoleMathClampType } from './types/roleMathClampType.ts';
 import type { RoleSortKeyType } from './types/roleSortKeyType.ts';
@@ -42,18 +43,19 @@ import { RoleSortBehavior } from '../utils/roleSortBehavior.ts';
 import { ROLE_SORT_FIELD_OPTIONS } from '../utils/roleSortFieldOptions.ts';
 import { sortRoleRows } from '../utils/sortRoleRows.ts';
 import { AccessibilityBlockers } from './accessibilityBlockers.ts';
-import { COLOR_PIPELINE } from './colorPipeline.ts';
+import { BrowserPaletteResolvePort } from './browserPaletteResolvePort.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
 import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
-import { ComplianceReportViewInterfaceTypeEntity } from './entities/ComplianceReportViewInterfaceTypeEntity.ts';
 import { DerivationConfigInterfaceTypeEntity } from './entities/DerivationConfigInterfaceTypeEntity.ts';
 import { FramingInterfaceTypeEntity } from './entities/FramingInterfaceTypeEntity.ts';
 import { ModeInterfaceTypeEntity } from './entities/ModeInterfaceTypeEntity.ts';
+import { PaletteResolveRequestInterfaceTypeEntity } from './entities/PaletteResolveRequestInterfaceTypeEntity.ts';
 import { RoleSortableRowInterfaceTypeEntity } from './entities/RoleSortableRowInterfaceTypeEntity.ts';
 import { SchemaNameInterfaceTypeEntity } from './entities/SchemaNameInterfaceTypeEntity.ts';
 import { PaletteAdmission } from './paletteAdmission.ts';
-import { pickerSeedInputs } from './pickerSeedInputs.ts';
+import { PaletteResolve } from './paletteResolve.ts';
+import { PaletteResolveClient } from './paletteResolveClient.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
 import { schemaRoleCount } from './schemaRoleCount.ts';
 import { IridisUiEvent } from './types/index.ts';
@@ -202,64 +204,6 @@ namespace GalleryMetadataSlotEntity {
   }
 
 }
-class ContrastMetadataSlot {
-  static compliance(metadata: PaletteStateInterface['metadata']): ComplianceReportViewInterfaceTypeEntity.Type | undefined {
-    const value = metadata['contrast:complianceReport'];
-    const result = ComplianceReportViewInterfaceTypeEntity.validate(value) ? value : undefined;
-    return result;
-  }
-
-  static cvd(metadata: PaletteStateInterface['metadata']): CvdResultSetInterfaceTypeEntity.Type | undefined {
-    const value = metadata['contrast:cvd'];
-    if (value === undefined) {
-      const result = undefined;
-      return result;
-    }
-    const result = CvdResultSetInterfaceTypeEntity.intake(value);
-    return result;
-  }
-}
-
-class RoleClampReadModel {
-  private static rangeAdjustment(value: RoleProvenanceInterfaceTypeEntity.Type['adjustments'][number]): { readonly 'afterHex': string; readonly 'beforeHex': string } | undefined {
-    if (value.operation !== 'role-range') {
-      const result = undefined;
-      return result;
-    }
-    const result = { 'afterHex': value.afterHex, 'beforeHex': value.beforeHex };
-    return result;
-  }
-
-  static fromProvenance(provenance: ReadonlyMap<string, RoleProvenanceInterfaceTypeEntity.Type>): Map<string, RoleMathClampType> {
-    const clamps = new Map<string, RoleMathClampType>();
-    for (const [roleName, evidence] of provenance) {
-      let rangeAdjustment: { readonly 'afterHex': string; readonly 'beforeHex': string } | undefined;
-      for (let adjustmentIndex = 0; adjustmentIndex < evidence.adjustments.length; adjustmentIndex += 1) {
-        const adjustment = evidence.adjustments[adjustmentIndex];
-        if (adjustment === undefined) {
-          throw new RangeError(`Role provenance for ${roleName} is missing adjustment ${adjustmentIndex}`);
-        }
-        const candidate = RoleClampReadModel.rangeAdjustment(adjustment);
-        if (candidate !== undefined) {
-          rangeAdjustment = candidate;
-          break;
-        }
-      }
-      if (rangeAdjustment === undefined) {continue;}
-      const resolvedOklch = colorRecordFactory.fromHex(rangeAdjustment.afterHex).oklch;
-      const seedOklch = colorRecordFactory.fromHex(rangeAdjustment.beforeHex).oklch;
-      clamps.set(roleName, {
-        'resolvedHex': rangeAdjustment.afterHex.toLowerCase(),
-        'roleOklch': `L ${resolvedOklch.l.toFixed(2)} · C ${resolvedOklch.c.toFixed(2)} · H ${Math.round(resolvedOklch.h)}`,
-        'seedHex': rangeAdjustment.beforeHex.toLowerCase(),
-        'seedOklch': `L ${seedOklch.l.toFixed(2)} · C ${seedOklch.c.toFixed(2)} · H ${Math.round(seedOklch.h)}`
-      });
-    }
-    const result = clamps;
-    return result;
-  }
-}
-
 class IridisContextFactory {
   static create() {
     const engine = createColorEngine();
@@ -528,8 +472,15 @@ class IridisContextFactory {
     const error = VueModule.ref<string | null>(null);
 
     /** Compliance blockers from the latest run; the empty set when the run is compliant. */
-    const accessibilityBlockers = VueModule.shallowRef(AccessibilityBlockers.fromMetadata({}));
+    const accessibilityBlockers = VueModule.shallowRef(AccessibilityBlockers.fromReport(undefined));
     const paletteAdmission = new PaletteAdmission();
+    /** True while a palette request is in flight in the resolve worker. */
+    const resolving = VueModule.ref<boolean>(false);
+    /** The palette resolved during SSR; the client renders it before any worker exists. */
+    const serverSnapshot = useState<PaletteSnapshotInterfaceTypeEntity.Type | null>('iridis-palette-snapshot', () => {
+      const initial = null;
+      return initial;
+    });
 
     /** Compliance and CVD reports from the last run. */
     const contrastReport = VueModule.ref<{
@@ -607,44 +558,36 @@ class IridisContextFactory {
     });
 
     class IngestOperation {
-      static run(state: PaletteStateInterface): void {
-        const engineMaps = Tokens.extractEngineMaps(state);
-        const views: RoleViewType[] = [];
-        const roleNames = Object.keys(state.roles);
-        for (let index = 0; index < roleNames.length; index += 1) {
-          const name = roleNames[index];
-          if (name === undefined) {
-            throw new RangeError(`Resolved role list is missing entry ${index}`);
+      static run(snapshot: PaletteSnapshotInterfaceTypeEntity.Type): void {
+        const clamps = new Map<string, RoleMathClampType>();
+        for (let index = 0; index < snapshot.clamps.length; index += 1) {
+          const clamp = snapshot.clamps[index];
+          if (clamp !== undefined) {
+            clamps.set(clamp.roleName, { 'resolvedHex': clamp.resolvedHex, 'roleOklch': clamp.roleOklch, 'seedHex': clamp.seedHex, 'seedOklch': clamp.seedOklch });
           }
-          const role = state.roles[name];
-          if (role === undefined) {
-            throw new RangeError(`Resolved role ${name} is missing its color record`);
+        }
+        const distances = new Map<string, ReadonlyMap<string, number>>();
+        const distanceEntries = Object.entries(snapshot.distances);
+        for (let index = 0; index < distanceEntries.length; index += 1) {
+          const entry = distanceEntries[index];
+          if (entry !== undefined) {
+            distances.set(entry[0], new Map(Object.entries(entry[1])));
           }
-          views.push({ 'c': role.oklch.c, 'displayP3': role.displayP3, 'h': role.oklch.h, 'hex': role.hex, 'l': role.oklch.l, 'name': name });
         }
-        roles.value = engineMaps.roles;
-        roleViews.value = views;
-        const provenance = Metadata.roleProvenance(state.metadata);
-        roleClamps.value = RoleClampReadModel.fromProvenance(provenance);
-        roleDistances.value = Metadata.roleDistances(state.metadata);
-        const derivedRoles: string[] = [];
-        const statedRoles: string[] = [];
-        const synthesizedRoles: string[] = [];
-        for (const [roleName, evidence] of provenance) {
-          if (evidence.origin === 'derived') {derivedRoles.push(roleName);}
-          if (evidence.origin === 'stated') {statedRoles.push(roleName);}
-          if (evidence.origin === 'synthesized') {synthesizedRoles.push(roleName);}
-        }
-        rolesSynthesized.value = synthesizedRoles;
-        rolesPinned.value = statedRoles;
-        rolesDerived.value = derivedRoles;
-        scales.value = engineMaps.scales;
-        contrastReport.value = {
-          'compliance': ContrastMetadataSlot.compliance(state.metadata),
-          'cvd':        ContrastMetadataSlot.cvd(state.metadata)
-        };
+        roles.value = Tokens.hexRecord(snapshot.roles);
+        roleViews.value = snapshot.roles.map((role) => {
+          const view = { 'c': role.c, 'displayP3': role.displayP3, 'h': role.h, 'hex': role.hex, 'l': role.l, 'name': role.name };
+          return view;
+        });
+        roleClamps.value = clamps;
+        roleDistances.value = distances;
+        rolesSynthesized.value = snapshot.provenance.synthesized;
+        rolesPinned.value = snapshot.provenance.pinned;
+        rolesDerived.value = snapshot.provenance.derived;
+        scales.value = snapshot.scales;
+        contrastReport.value = { 'compliance': snapshot.compliance, 'cvd': snapshot.cvd };
         if (typeof document !== 'undefined') {
-          applyCurrentFramingTokens(Tokens.mapFromEngine(engineMaps.roles, engineMaps.scales));
+          applyCurrentFramingTokens(Tokens.mapFromEngine(roles.value, scales.value));
         }
       }
     }
@@ -668,77 +611,125 @@ class IridisContextFactory {
     const BOOTSTRAP_SEEDS: PickerSeedType[] = defaultPaletteSeeds();
 
     /**
- * `framingOverride`, when given, is the target framing of an in-flight
- * dark/light swap: the engine resolves the FULL new token set against it
- * BEFORE `framing.value` (and therefore `<html class="dark">`, read
- * directly off that ref in app.vue) ever changes. Only once the new state
- * is ready do we commit `framing.value` and call `ingest()` — one
- * synchronous block, so the class toggle and the actual color repaint land
- * in the same tick instead of the class flipping instantly while the old
- * colors linger for a debounce window.
+ * `pendingFraming` is the target framing of an in-flight dark/light swap: the
+ * worker resolves the FULL new token set against it BEFORE `framing.value`
+ * (and therefore `<html class="dark">`) changes. Once the snapshot arrives,
+ * the framing commit and the repaint land in one synchronous block.
  */
     let pendingFraming: FramingInterfaceTypeEntity.Type | undefined;
+    let transitionEpoch = 0;
+    /** Opens the shared color-transition window; the newest window closes the class. */
+    class ThemeTransitionOperation {
+      static begin(): void {
+        if (typeof document !== 'undefined') {
+          transitionEpoch += 1;
+          const epoch = transitionEpoch;
+          document.documentElement.classList.add('is-switching-theme');
+          setTimeout(() => {
+            if (epoch === transitionEpoch) {
+              document.documentElement.classList.remove('is-switching-theme');
+            }
+          }, 180); // slightly longer than --iridis-tune (150ms)
+        }
+      }
+    }
+
     class FramingSwapOperation {
-      static run(): void {
-        if (pendingFraming !== undefined) {
-          framing.value = pendingFraming;
+      static run(request: PaletteResolveRequestInterfaceTypeEntity.Type): void {
+        if (request.framing !== framing.value) {
+          framing.value = request.framing;
           if (typeof document !== 'undefined') {
-            document.documentElement.classList.add('is-switching-theme');
-            if (pendingFraming === 'dark') {
+            if (request.framing === 'dark') {
               document.documentElement.classList.add('dark');
             } else {
               document.documentElement.classList.remove('dark');
             }
-            setTimeout(() => {
-              document.documentElement.classList.remove('is-switching-theme');
-            }, 180); // slightly longer than --iridis-tune (150ms)
           }
         }
       }
     }
 
-    class RunOperation {
-      static run(): void {
-        const targetFraming = pendingFraming ?? framing.value;
+    /** Admits a resolved snapshot and commits framing, palette state, and tokens as one unit. */
+    class CommitSnapshotOperation {
+      static run(snapshot: PaletteSnapshotInterfaceTypeEntity.Type, request: PaletteResolveRequestInterfaceTypeEntity.Type): void {
+        const blockers = AccessibilityBlockers.fromReport(snapshot.compliance);
+        accessibilityBlockers.value = blockers;
+        if (paletteAdmission.admit(blockers)) {
+          FramingSwapOperation.run(request);
+          ingest(snapshot);
+        }
+        pendingFraming = undefined;
+      }
+    }
 
+    class ResolveRequestOperation {
+      static build(): PaletteResolveRequestInterfaceTypeEntity.Type {
         // Neither pickerSeeds nor imageSeeds has a seed yet on the very first pass
-        // (in-browser sample-image extraction hasn't resolved, and can't even run
-        // during SSR — no canvas there) — feed the engine one bootstrap seed so it
-        // resolves a real role set from tick one instead of leaving roles.value
-        // empty, WITHOUT writing that seed into either user-visible seed list (the
-        // Manual card must only ever show what the user actually entered).
+        // (in-browser sample-image extraction hasn't resolved) — feed the engine one
+        // bootstrap seed so it resolves a real role set from tick one, WITHOUT writing
+        // that seed into either user-visible seed list.
         const seeds = activeSeeds.value.length > 0 ? activeSeeds.value : BOOTSTRAP_SEEDS;
-        beginOperation();
-        error.value = null;
+        const result = PaletteResolveRequestInterfaceTypeEntity.create({
+          'colorSpace': colorSpace.value,
+          'derivationConfig': VueModule.toRaw(derivationConfig.value),
+          'framing': pendingFraming ?? framing.value,
+          'schemaName': schemaName.value,
+          'seeds': PaletteResolve.seeds(seeds),
+          'semanticHuesEnabled': semanticHuesEnabled.value,
+          'strictness': contrastStrictness.value
+        });
+        return result;
+      }
+    }
+
+    /** Receives worker outcomes: the newest snapshot commits inside one theme transition. */
+    class ClientHandlersOperation {
+      static accept(snapshot: PaletteSnapshotInterfaceTypeEntity.Type, request: PaletteResolveRequestInterfaceTypeEntity.Type): void {
         try {
-          engine.pipeline(COLOR_PIPELINE);
-          const targetRoles = (() => {
-            const pair = roleSchemaByName[schemaName.value];
-            const selected = targetFraming === 'dark' ? pair.dark : pair.light;
-            const result = roleSchemaFor(selected);
-            return result;
-          })();
-          const state = engine.run(InputInterfaceTypeEntity.create({
-            'colors':   pickerSeedInputs(seeds),
-            'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value),
-            'metadata': { 'core:variantConfig': JsonValue.from(VARIANT_CONFIG), 'derivation:config': JsonValue.from(derivationConfig.value), 'derivation:semanticHuesEnabled': JsonValue.from(semanticHuesEnabled.value) },
-            'roles':    targetRoles,
-            'runtime':  { 'colorSpace': colorSpace.value, 'framing': String(targetFraming) }
-          }));
-          const blockers = AccessibilityBlockers.fromMetadata(state.metadata);
-          accessibilityBlockers.value = blockers;
-          if (paletteAdmission.admit(blockers)) {
-            FramingSwapOperation.run();
-            ingest(state);
-            if (typeof document !== 'undefined') {
-              applyCurrentFramingTokens(Tokens.mapFromEngine(roles.value, scales.value));
-            }
-          }
-          pendingFraming = undefined;
+          ThemeTransitionOperation.begin();
+          CommitSnapshotOperation.run(snapshot, request);
         } catch (e) {
           error.value = e instanceof Error ? e.message : String(e);
-        } finally {
-          endOperation();
+        }
+      }
+
+      static reject(message: string): void {
+        error.value = message;
+      }
+
+      static busy(): void {
+        resolving.value = true;
+      }
+
+      static idle(): void {
+        resolving.value = false;
+      }
+    }
+
+    let client: PaletteResolveClient | undefined;
+    let mountedConsumers = 0;
+    /** Set when a resolve is requested before any consumer has mounted; the first mount runs it. */
+    let awaitingMount = false;
+
+    class RunOperation {
+      static run(): void {
+        error.value = null;
+        const request = ResolveRequestOperation.build();
+        if (client !== undefined) {
+          client.request(request);
+        } else if (typeof window === 'undefined') {
+          beginOperation();
+          try {
+            const snapshot = PaletteResolve.run(request);
+            serverSnapshot.value = snapshot;
+            CommitSnapshotOperation.run(snapshot, request);
+          } catch (e) {
+            error.value = e instanceof Error ? e.message : String(e);
+          } finally {
+            endOperation();
+          }
+        } else {
+          awaitingMount = true;
         }
       }
     }
@@ -1394,23 +1385,70 @@ class IridisContextFactory {
     let stopWatches: (() => void)[] = [];
     const schedule = debounce(() => { run(); }, 120);
 
+    /** Opens the resolve worker with the first mounted consumer and closes it with the last. */
+    class ConsumerLifecycleOperation {
+      static mounted(): void {
+        mountedConsumers += 1;
+        if (client === undefined) {
+          client = new PaletteResolveClient(BrowserPaletteResolvePort.open(), ClientHandlersOperation);
+          if (awaitingMount) {
+            awaitingMount = false;
+            run();
+          }
+        }
+      }
+
+      static register(): void {
+        if (typeof window !== 'undefined') {
+          if (VueModule.getCurrentInstance() === null) {
+            ConsumerLifecycleOperation.mounted();
+          } else {
+            VueModule.onMounted(ConsumerLifecycleOperation.mounted);
+            VueModule.onUnmounted(ConsumerLifecycleOperation.unmounted);
+          }
+        }
+      }
+
+      static unmounted(): void {
+        mountedConsumers -= 1;
+        if (mountedConsumers === 0) {
+          client?.dispose();
+          client = undefined;
+        }
+      }
+    }
+
+    class BootOperation {
+      static run(): void {
+        // The server resolves synchronously and hands its snapshot to the client through the Nuxt payload,
+        // so hydration starts from the server palette and no engine work happens before a consumer mounts.
+        if (typeof window === 'undefined') {
+          run();
+          return;
+        }
+        const snapshot = serverSnapshot.value;
+        if (snapshot === null) {
+          awaitingMount = true;
+        } else {
+          serverSnapshot.value = null;
+          CommitSnapshotOperation.run(snapshot, ResolveRequestOperation.build());
+        }
+        // Load default sample palette on page init
+        void addUploadedImages([logoUrl()], ['Sample']);
+        // framing is intentionally absent here — its swap is dispatched directly by
+        // the framing setters via run(), not through this debounce.
+        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
+        stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
+      }
+    }
+
     class UseIridisContextOperation {
       static run() {
         if (!booted) {
           booted = true;
-          // Runs on the server too: engine.run() is pure computation.
-          // This makes the SSR-rendered palette identical to the client's,
-          // so hydration never has to re-theme the page.
-          run();
-          if (typeof window !== 'undefined') {
-            // Load default sample palette on page init
-            void addUploadedImages([logoUrl()], ['Sample']);
-            // framing is intentionally absent here — its swap is dispatched synchronously
-            // by paletteParamSet() via run(effect.value), not through this debounce.
-            stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
-            stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
-          }
+          BootOperation.run();
         }
+        ConsumerLifecycleOperation.register();
         const result = {
           'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
           'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
@@ -1418,7 +1456,7 @@ class IridisContextFactory {
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
           'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'pickerSeeds': pickerSeeds,
-          'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
+          'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
           'roles': roles, 'rolesDerived': rolesDerived,
           'roleSortKeys': roleSortKeys, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,
           'roleViews': roleViews,
@@ -1442,6 +1480,10 @@ class IridisContextFactory {
         stopWatch();
       }
       stopWatches = [];
+      client?.dispose();
+      client = undefined;
+      mountedConsumers = 0;
+      awaitingMount = false;
       booted = false;
     };
 

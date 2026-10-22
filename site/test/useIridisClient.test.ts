@@ -4,9 +4,45 @@ import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
 import { watch } from 'vue';
 
+import { PaletteResolveEnvelopeInterfaceTypeEntity } from '../app/composables/entities/PaletteResolveEnvelopeInterfaceTypeEntity.ts';
+import { PaletteResolveReplyInterfaceTypeEntity } from '../app/composables/entities/PaletteResolveReplyInterfaceTypeEntity.ts';
+import { PaletteResolve } from '../app/composables/paletteResolve.ts';
 import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
 
 registerHooks(NuxtImportsLoader);
+
+class FakeWorker {
+  static readonly instances = new Set<number>();
+  terminated = false;
+  readonly #messageListeners: ((event: { readonly 'data': unknown }) => void)[] = [];
+
+  constructor() {FakeWorker.instances.add(FakeWorker.instances.size);}
+
+  static reply(data: unknown): PaletteResolveReplyInterfaceTypeEntity.Type {
+    const envelope = PaletteResolveEnvelopeInterfaceTypeEntity.intake(data);
+    try {
+      const result = PaletteResolveReplyInterfaceTypeEntity.create({ 'id': envelope.id, 'snapshot': PaletteResolve.run(envelope.request) });
+      return result;
+    } catch (error) {
+      const result = PaletteResolveReplyInterfaceTypeEntity.create({ 'failure': error instanceof Error ? error.message : String(error), 'id': envelope.id });
+      return result;
+    }
+  }
+
+  addEventListener(type: string, listener: (event: { readonly 'data': unknown }) => void): void {
+    if (type === 'message') {this.#messageListeners.push(listener);}
+  }
+
+  postMessage(data: unknown): void {
+    const message = structuredClone(data);
+    queueMicrotask(() => {
+      const reply = structuredClone(FakeWorker.reply(message));
+      this.#messageListeners.forEach((listener) => {listener({ 'data': reply });});
+    });
+  }
+
+  terminate(): void {this.terminated = true;}
+}
 
 class FakeImage {
   crossOrigin = '';
@@ -89,11 +125,12 @@ await test('useIridis client boot applies tokens and extracts the sample image o
   Reflect.set(globalThis, 'window', {});
   Reflect.set(globalThis, 'document', new FakeDocument(cssVariables, classNames));
   Reflect.set(globalThis, 'Image', FakeImage);
+  Reflect.set(globalThis, 'Worker', FakeWorker);
 
   const { useIridis } = await import('../app/composables/useIridis.ts');
   const state = useIridis();
   const deadline = Date.now() + 4_000;
-  while (state.uploadedImages.value.length === 0 && state.error.value === null && Date.now() < deadline) {
+  while ((state.uploadedImages.value.length === 0 || state.roles.value.background === undefined) && state.error.value === null && Date.now() < deadline) {
     await setTimeout(10);
   }
 
@@ -101,6 +138,9 @@ await test('useIridis client boot applies tokens and extracts the sample image o
   assert.equal(state.uploadedImages.value.length, 1);
   assert.equal(state.uploadedImages.value[0]?.name, 'Sample');
   assert.equal(state.running.value, false);
+  assert.equal(state.resolving.value, false);
+  assert.equal(FakeWorker.instances.size, 1);
+  assert.equal(typeof state.roles.value.background, 'string');
   assert.ok(cssVariables.size > 0);
   assert.equal(classNames.has('dark'), true);
 
@@ -137,11 +177,12 @@ await test('combine schedules one eventual role resolution after its seed update
   Reflect.set(globalThis, 'window', {});
   Reflect.set(globalThis, 'document', new FakeDocument(cssVariables, classNames));
   Reflect.set(globalThis, 'Image', FakeImage);
+  Reflect.set(globalThis, 'Worker', FakeWorker);
 
   const { useIridis } = await import('../app/composables/useIridis.ts');
   const state = useIridis();
   const sampleReady = (): boolean => {
-    const ready = state.uploadedImages.value.length === 1 || state.error.value !== null;
+    const ready = (state.uploadedImages.value.length === 1 && state.roles.value.background !== undefined) || state.error.value !== null;
     return ready;
   };
   await VirtualTimeDrain.microtasks(sampleReady);

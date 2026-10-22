@@ -1,7 +1,5 @@
 import { ComplianceReportViewInterfaceTypeEntity } from './entities/ComplianceReportViewInterfaceTypeEntity.ts';
 
-const REPORT_KEY = 'contrast:complianceReport';
-
 class BlockedPairView {
   public readonly actual: number;
   public readonly background: string;
@@ -49,7 +47,7 @@ interface AccessibilityToastMessageInterface {
   readonly 'title': string;
 }
 
-/** Reads the engine compliance report from pipeline metadata into a toast-ready blocker set. */
+/** Reads the engine compliance report into a toast-ready blocker set. */
 export class AccessibilityBlockers {
   private static readonly standardLabels: ReadonlyMap<string, string> = new Map([
     ['apca:Lc', 'APCA Lc'],
@@ -62,8 +60,7 @@ export class AccessibilityBlockers {
     return result;
   }
 
-  public static fromMetadata(metadata: Readonly<Record<string, unknown>>): AccessibilityBlockerSet {
-    const report: unknown = metadata[REPORT_KEY];
+  public static fromReport(report: ComplianceReportViewInterfaceTypeEntity.Type | undefined): AccessibilityBlockerSet {
     let result = new AccessibilityBlockerSet([], '');
     if (ComplianceReportViewInterfaceTypeEntity.validate(report)) {
       const { algorithm, level } = report.selected;
