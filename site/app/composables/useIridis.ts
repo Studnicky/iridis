@@ -475,6 +475,8 @@ class IridisContextFactory {
     const paletteAdmission = new PaletteAdmission();
     /** True while a palette request is in flight in the resolve worker. */
     const resolving = VueModule.ref<boolean>(false);
+    /** Counts admitted palettes; consumers wait on it instead of timers. */
+    const paletteRevision = VueModule.ref<number>(0);
     /** The palette resolved during SSR; the client renders it before any worker exists. */
     const serverSnapshot = useState<PaletteSnapshotInterfaceTypeEntity.Type | null>('iridis-palette-snapshot', () => {
       const initial = null;
@@ -656,6 +658,7 @@ class IridisContextFactory {
         if (paletteAdmission.admit(blockers)) {
           FramingSwapOperation.run(request);
           ingest(snapshot);
+          paletteRevision.value += 1;
         }
         pendingFraming = undefined;
       }
@@ -1454,7 +1457,7 @@ class IridisContextFactory {
           'effectiveHexesFor': effectiveHexesFor, 'error': error, 'framing': framing,
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
-          'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'pickerSeeds': pickerSeeds,
+          'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'paletteRevision': paletteRevision, 'pickerSeeds': pickerSeeds,
           'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
           'roles': roles, 'rolesDerived': rolesDerived,
           'roleSortKeys': roleSortKeys, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,
