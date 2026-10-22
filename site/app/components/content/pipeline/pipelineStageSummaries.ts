@@ -1,9 +1,7 @@
-import type { CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
-
-import type { ComplianceReportViewInterfaceTypeEntity } from '~/composables/entities/ComplianceReportViewInterfaceTypeEntity.ts';
+import type { ComplianceReportInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 
 export const pipelineStageSummaries = class PipelineStageSummaries {
-  public static buildPairSummary(report: ComplianceReportViewInterfaceTypeEntity.Type): string {
+  public static buildPairSummary(report: ComplianceReportInterfaceTypeEntity.Type): string {
     const passing = report.pairs.length - report.blockedPairs.length;
     return `${passing}/${report.pairs.length} pairs passing`;
   }

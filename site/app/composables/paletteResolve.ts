@@ -1,7 +1,7 @@
 import type { PaletteStateInterface, RoleProvenanceInterfaceTypeEntity } from '@studnicky/iridis';
 
 import { colorRecordFactory, InputInterfaceTypeEntity, Metadata } from '@studnicky/iridis';
-import { CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import { ComplianceReportInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 import { JsonValue } from '@studnicky/types/browser';
 
 import type { PaletteResolveRequestInterfaceTypeEntity } from './entities/PaletteResolveRequestInterfaceTypeEntity.ts';
@@ -12,16 +12,15 @@ import { Tokens } from '../theme/Tokens.ts';
 import { COLOR_PIPELINE } from './colorPipeline.ts';
 import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
-import { ComplianceReportViewInterfaceTypeEntity } from './entities/ComplianceReportViewInterfaceTypeEntity.ts';
 import { PaletteSnapshotInterfaceTypeEntity } from './entities/PaletteSnapshotInterfaceTypeEntity.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
 import { VARIANT_CONFIG } from './variantConfig.ts';
 
 class ContrastMetadataSlot {
-  static compliance(metadata: PaletteStateInterface['metadata']): ComplianceReportViewInterfaceTypeEntity.Type | undefined {
+  static compliance(metadata: PaletteStateInterface['metadata']): ComplianceReportInterfaceTypeEntity.Type | undefined {
     const value = metadata['contrast:complianceReport'];
-    const result = ComplianceReportViewInterfaceTypeEntity.validate(value) ? value : undefined;
+    const result = value !== undefined && ComplianceReportInterfaceTypeEntity.validate(value) ? value : undefined;
     return result;
   }
 

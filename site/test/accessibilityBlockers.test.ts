@@ -1,17 +1,19 @@
+import type { JSONSchema7Type } from 'json-schema';
+
+import { ComplianceReportInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { AccessibilityBlockers } from '../app/composables/accessibilityBlockers.ts';
-import { ComplianceReportViewInterfaceTypeEntity } from '../app/composables/entities/ComplianceReportViewInterfaceTypeEntity.ts';
 import { ComplianceReportFixture } from './fixtures/ComplianceReportFixture.ts';
 
 class ReportMetadata {
-  public static build(blockedPairs: readonly object[], algorithm: string, level: string): ComplianceReportViewInterfaceTypeEntity.Type {
-    const result = ComplianceReportViewInterfaceTypeEntity.intake({
+  public static build(blockedPairs: readonly object[], algorithm: string, level: string): ComplianceReportInterfaceTypeEntity.Type {
+    const result = ComplianceReportInterfaceTypeEntity.intake({
       'blockedPairs': blockedPairs,
       'compliant': blockedPairs.length === 0,
       'cvdCompliant': true,
-      'pairs': blockedPairs,
+      'pairs': [],
       'selected': { 'algorithm': algorithm, 'level': level }
     });
     return result;
@@ -32,7 +34,7 @@ await test('blocked report yields a sorted deterministic key and toast text', ()
   assert.equal(set.key, 'WCAG AA|accent/surface|text/surface');
   const message = AccessibilityBlockers.toastMessage(set);
   assert.equal(message.title, 'Pinned roles cannot meet WCAG AA');
-  assert.equal(message.description, 'text on surface needs 4.50, reaches 1.09; accent on surface needs 3.00, reaches 2.50');
+  assert.equal(message.description, 'text on surface needs 4.50, reaches 1.09 (both pinned); accent on surface needs 3.00, reaches 2.50 (search exhausted)');
 });
 
 await test('pair order does not change the key', () => {
@@ -55,7 +57,7 @@ await test('stated-pair and cvd-type blockers are both reported', () => {
 });
 
 await test('missing or malformed reports are compliant with no pairs', () => {
-  const malformed: readonly unknown[] = [
+  const malformed: readonly (JSONSchema7Type | undefined)[] = [
     void 0,
     null,
     'nope',
@@ -64,7 +66,7 @@ await test('missing or malformed reports are compliant with no pairs', () => {
   ];
   for (let index = 0; index < malformed.length; index += 1) {
     const candidate = malformed[index];
-    const set = AccessibilityBlockers.fromReport(ComplianceReportViewInterfaceTypeEntity.validate(candidate) ? candidate : void 0);
+    const set = AccessibilityBlockers.fromReport(candidate);
     assert.equal(set.compliant, true);
     assert.equal(set.key, '');
     assert.deepEqual(set.pairs, []);

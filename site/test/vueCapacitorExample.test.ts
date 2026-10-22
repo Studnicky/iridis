@@ -17,10 +17,11 @@ import {
 } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
 import {
+  ComplianceReportInterfaceTypeEntity,
   contrastPlugin,
   CVD_THRESHOLDS,
   cvdMatrices,
-  getContrastMetadata
+  CvdResultSetInterfaceTypeEntity
 } from '@studnicky/iridis-contrast';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
 import { JsonObject, JsonValue } from '@studnicky/types/browser';
@@ -28,7 +29,6 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
-import { ComplianceReportViewInterfaceTypeEntity } from '../app/composables/entities/ComplianceReportViewInterfaceTypeEntity.ts';
 import { categoryColorService } from '../app/examples/vueCapacitor/categoryColorService.ts';
 import { categoryW3cRoleSchema } from '../app/examples/vueCapacitor/categoryW3cRoleSchema.ts';
 import { CATEGORY_COLOR_SERVICE_CONSTANTS } from '../app/examples/vueCapacitor/constants/CategoryColorServiceConstants.ts';
@@ -391,16 +391,13 @@ await test('Vue Capacitor JSON artifacts align with the TypeScript schema and ex
   ]);
 
   const state = RecipeConfigFixture.run(config);
-  const compliance = ComplianceReportViewInterfaceTypeEntity.intake(state.metadata['contrast:complianceReport']);
-  const cvd = getContrastMetadata(state.metadata, 'contrast:cvd');
-  if (cvd === undefined || !('warnings' in cvd) || !('corrections' in cvd)) {
-    throw new Error('The canonical recipe config must emit CVD evidence.');
-  }
+  const compliance = ComplianceReportInterfaceTypeEntity.intake(state.metadata['contrast:complianceReport']);
+  const cvd = CvdResultSetInterfaceTypeEntity.intake(state.metadata['contrast:cvd']);
   assert.equal(compliance.compliant, true);
   assert.equal(compliance.cvdCompliant, true);
   assert.equal(compliance.pairs.length > 0, true);
   assert.equal(cvd.warnings.length, 0);
-  const everyCorrectionCleared = cvd.corrections?.every((correction) => {
+  const everyCorrectionCleared = cvd.corrections.every((correction) => {
     const result = correction.cvdTypesRemaining.length === 0;
     return result;
   });
@@ -451,7 +448,7 @@ await test('Vue Capacitor schema exposes complete role shapes and produces valid
   });
   assert.equal(wcagPasses, true);
   assert.equal(output.cvd.warnings.length, 0);
-  const correctionsCleared = output.cvd.corrections?.every((correction) => {
+  const correctionsCleared = output.cvd.corrections.every((correction) => {
     const result = correction.cvdTypesRemaining.length === 0;
     return result;
   });
@@ -463,7 +460,7 @@ await test('Vue Capacitor schema exposes complete role shapes and produces valid
   const declarations = CssFixture.declarations(output.cssVars.scopedBlock);
   const documentedRoleHex = new Map([
     ['--c-accent', '#5b4894'],
-    ['--c-border', '#8b5cf6'],
+    ['--c-border', '#6f40cf'],
     ['--c-canvas', '#e5e0fe'],
     ['--c-muted', '#8b5cf6'],
     ['--c-on-accent', '#fcfcfc'],

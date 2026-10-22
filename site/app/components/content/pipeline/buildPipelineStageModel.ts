@@ -1,11 +1,9 @@
-import type { CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
-
-import type { ComplianceReportViewInterfaceTypeEntity } from '~/composables/entities/ComplianceReportViewInterfaceTypeEntity.ts';
+import type { ComplianceReportInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 
 import { pipelineStageSummaries } from './pipelineStageSummaries.ts';
 
 class PipelineContrastReport {
-  public readonly compliance?: ComplianceReportViewInterfaceTypeEntity.Type;
+  public readonly compliance?: ComplianceReportInterfaceTypeEntity.Type;
   public readonly cvd?: CvdResultSetInterfaceTypeEntity.Type;
 }
 

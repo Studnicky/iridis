@@ -1,4 +1,4 @@
-import type { ComplianceReportViewInterfaceTypeEntity } from '~/composables/entities/ComplianceReportViewInterfaceTypeEntity.ts';
+import type { ComplianceReportInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 
 import { AccessibilityBlockers } from '~/composables/accessibilityBlockers.ts';
 
@@ -50,7 +50,7 @@ class SchemaStageSummary {
 }
 
 export const buildSchemaComplianceSummaries = class SchemaComplianceSummariesBuilder {
-  public static build(report: ComplianceReportViewInterfaceTypeEntity.Type | undefined): SchemaStageSummary[] {
+  public static build(report: ComplianceReportInterfaceTypeEntity.Type | undefined): SchemaStageSummary[] {
     const summaries: SchemaStageSummary[] = [];
     if (report !== undefined) {
       const passing = report.pairs.length - report.blockedPairs.length;

@@ -21,6 +21,7 @@ import {
 } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
 import {
+  ComplianceReportInterfaceTypeEntity,
   contrastPlugin,
   CVD_THRESHOLDS,
   cvdMatrices,
@@ -28,7 +29,6 @@ import {
 } from '@studnicky/iridis-contrast';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
 
-import { ComplianceReportViewInterfaceTypeEntity } from '../../composables/entities/ComplianceReportViewInterfaceTypeEntity.ts';
 import { categoryW3cRoleSchema } from './categoryW3cRoleSchema.ts';
 import { CATEGORY_COLOR_SERVICE_CONSTANTS } from './constants/CategoryColorServiceConstants.ts';
 
@@ -79,7 +79,7 @@ class CategoryColorService {
 
   // #region apply
   apply(category: string, seed: string): {
-    readonly 'compliance': ComplianceReportViewInterfaceTypeEntity.Type;
+    readonly 'compliance': ComplianceReportInterfaceTypeEntity.Type;
     readonly 'cssVars': CssVarsOutputInterface;
     readonly 'cvd': CvdResultSetInterfaceTypeEntity.Type;
     readonly 'statusBar': StatusBarOutputInterfaceType;
@@ -220,13 +220,13 @@ class CategoryColorService {
     state: PaletteStateInterface,
     cssVars: CssVarsOutputInterface
   ): {
-    readonly 'compliance': ComplianceReportViewInterfaceTypeEntity.Type;
+    readonly 'compliance': ComplianceReportInterfaceTypeEntity.Type;
     readonly 'cvd': CvdResultSetInterfaceTypeEntity.Type;
     readonly 'wcagPairs': readonly CategoryWcagPairInterface[];
   } {
     const complianceValue = state.metadata['contrast:complianceReport'];
     const cvdValue = state.metadata['contrast:cvd'];
-    if (cvdValue === undefined || !ComplianceReportViewInterfaceTypeEntity.validate(complianceValue)) {
+    if (cvdValue === undefined || complianceValue === undefined || !ComplianceReportInterfaceTypeEntity.validate(complianceValue)) {
       throw new TypeError('The contrast plugin did not return complete compliance metadata.');
     }
     const cvd = CvdResultSetInterfaceTypeEntity.intake(cvdValue);

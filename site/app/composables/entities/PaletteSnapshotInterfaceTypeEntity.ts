@@ -1,11 +1,9 @@
 import type {
-  CanonicalShapeType, NominalSchemaType
+  CanonicalShapeType, InferType
 } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/browser';
-import { CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
-
-import { ComplianceReportViewInterfaceTypeEntity } from './ComplianceReportViewInterfaceTypeEntity.ts';
+import { ComplianceReportInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 
 const hexMapSchema = {
   'additionalProperties': { 'type': 'string' },
@@ -100,7 +98,7 @@ export namespace PaletteSnapshotInterfaceTypeEntity {
         'items': clampSchema,
         'type': 'array'
       },
-      'compliance': ComplianceReportViewInterfaceTypeEntity.Schema,
+      'compliance': ComplianceReportInterfaceTypeEntity.Schema,
       'cvd': CvdResultSetInterfaceTypeEntity.Schema,
       'distances': {
         'additionalProperties': {
@@ -129,7 +127,7 @@ export namespace PaletteSnapshotInterfaceTypeEntity {
     'type': 'object'
   } as const;
 
-  export type Type = NominalSchemaType<typeof Schema> & { 'compliance'?: ComplianceReportViewInterfaceTypeEntity.Type };
+  export type Type = InferType<typeof Schema>;
 
   export const validate = EntityCompiler.compile<Type>(Schema);
   export const intake = EntityCompiler.compileIntake<Type>(Schema);

@@ -193,7 +193,7 @@ await test('runVscodeTheme pins every tier-specific supplied role and returns co
     const entry = result.contrast[index]!;
     assert.equal(entry.background.length > 0, true);
     assert.equal(entry.foreground.length > 0, true);
-    assert.equal(Number.isFinite(entry.ratio), true);
+    assert.equal(Number.isFinite(entry.actual), true);
     assert.equal(typeof entry.passed, 'boolean');
   }
 });

@@ -74,7 +74,7 @@ import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
 import { Engine, coreTasks } from '@studnicky/iridis';
 import {
   contrastPlugin,
-  getContrastMetadata,
+  CvdResultSetInterfaceTypeEntity,
 } from '@studnicky/iridis-contrast';
 
 export function generateAccessiblePalette(roleSchema: RoleSchemaInterfaceType) {
@@ -113,9 +113,9 @@ export function generateAccessiblePalette(roleSchema: RoleSchemaInterfaceType) {
   // report?.blockedPairs  // { foreground, background, requiredTrichromat, actualTrichromat, target, reason }
   // report?.cvdCompliant  // true when CVD validation passes
 
-  const cvd = getContrastMetadata(state.metadata, 'contrast:cvd');
-  // cvd?.corrections // { foreground, background, adjustedRoles, cvdTypesFixed, cvdTypesRemaining }
-  // cvd?.blocked     // pairs whose both endpoints are stated
+  const cvd = CvdResultSetInterfaceTypeEntity.intake(state.metadata['contrast:cvd']);
+  // cvd.corrections // { foreground, background, adjustedRoles, cvdTypesFixed, cvdTypesRemaining }
+  // cvd.blocked     // pairs whose both endpoints are stated
 
   return { report, cvd, state };
 }

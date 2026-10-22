@@ -2,7 +2,7 @@ import type { PaletteStateInterface } from '@studnicky/iridis';
 import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
 
 import { InputInterfaceTypeEntity, Metadata } from '@studnicky/iridis';
-import { getContrastMetadata } from '@studnicky/iridis-contrast';
+import { ComplianceReportInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 import { JsonValue } from '@studnicky/types/node';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -57,8 +57,12 @@ class RoleSchemaPipelineFixture {
 
     assert.deepEqual(resolvedRoleNames, expectedRoleNames);
     assert.equal(state.runtime.framing, 'dark');
-    assert.equal(state.metadata['contrast:complianceReport'] === undefined, false);
-    assert.equal(getContrastMetadata(state.metadata, 'contrast:cvd') === undefined, false);
+    assert.doesNotThrow(() => {
+      ComplianceReportInterfaceTypeEntity.intake(state.metadata['contrast:complianceReport']);
+    });
+    assert.doesNotThrow(() => {
+      CvdResultSetInterfaceTypeEntity.intake(state.metadata['contrast:cvd']);
+    });
 
     for (let index = 0; index < Tokens.SHADE_KEYS.length; index += 1) {
       const shade = Tokens.SHADE_KEYS[index]!;
@@ -100,7 +104,7 @@ for (let index = 0; index < RoleSchemaPipelineFixture.names.length; index += 1) 
 await test('pinned derived roles remain byte-exact while unpinned roles resolve around them', () => {
   const schema = RoleSchemaPipelineFixture.schemaPair('iridis-32').dark;
   const engine = createColorEngine();
-  engine.pipeline(spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(0)));
+  engine.pipeline(COLOR_PIPELINE);
   const state = engine.run(InputInterfaceTypeEntity.create({
     'colors': pickerSeedInputs([
       { 'hex': '#101820', 'role': 'background' },
@@ -108,7 +112,7 @@ await test('pinned derived roles remain byte-exact while unpinned roles resolve 
       { 'hex': '#7c3aed', 'role': 'brand' },
       { 'hex': '#b55bc7', 'role': 'success' }
     ]),
-    'contrast': ContrastConfigFor.forStrictness(0, ContrastConfigFor.correctingCvd),
+    'contrast': ContrastConfigFor.forStrictness(0),
     'metadata': {
       'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
       'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),

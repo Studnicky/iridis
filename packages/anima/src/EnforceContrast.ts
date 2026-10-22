@@ -15,7 +15,7 @@ import {
   RuntimeOptionsInterfaceTypeEntity
 } from '@studnicky/iridis';
 import { OklchInterfaceTypeEntity, PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
-import { enforceWcagAa } from '@studnicky/iridis-contrast';
+import { enforceCompliance } from '@studnicky/iridis-contrast';
 
 class AnimationContrastState {
   static build(
@@ -92,7 +92,7 @@ class EnforceContrast {
   static apply(
     palette: PaletteInterfaceTypeEntity.Type,
     pairs: readonly ContrastPairInterfaceTypeEntity.Type[],
-    enforcer: TaskInterface = enforceWcagAa
+    enforcer: TaskInterface = enforceCompliance
   ): PaletteInterfaceTypeEntity.Type {
     if (pairs.length === 0) {
       return palette;

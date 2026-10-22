@@ -1,4 +1,4 @@
 export const ComplianceReportFixture = Object.freeze({
-  'ACCENT_ON_SURFACE': Object.freeze({ 'actual': 2.5, 'background': 'surface', 'cvdTypes': Object.freeze(['deuteranopia']), 'disposition': 'blocked-cvd', 'foreground': 'accent', 'required': 3 }),
-  'TEXT_ON_SURFACE': Object.freeze({ 'actual': 1.0912, 'background': 'surface', 'disposition': 'blocked', 'foreground': 'text', 'required': 4.5 })
+  'ACCENT_ON_SURFACE': Object.freeze({ 'actualTrichromat': 2.5, 'background': 'surface', 'foreground': 'accent', 'reason': 'solver-exhausted', 'requiredTrichromat': 3, 'target': 'accent' }),
+  'TEXT_ON_SURFACE': Object.freeze({ 'actualTrichromat': 1.0912, 'background': 'surface', 'foreground': 'text', 'reason': 'stated-both', 'requiredTrichromat': 4.5, 'target': 'text' })
 });

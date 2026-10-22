@@ -9,7 +9,7 @@
 import type {
   ColorRecordInterfaceTypeEntity, PaletteStateInterface
 } from '@studnicky/iridis';
-import type { CvdMatrixInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { ComplianceReportInterfaceTypeEntity, CvdMatrixInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 import type { ClusterStrategyInterface } from '@studnicky/iridis-image';
 import type {
   GalleryDominantColorsSlotType, GalleryHistogramSlotInterfaceType
@@ -23,7 +23,6 @@ import * as VueModule from 'vue';
 
 import { useNuxtApp, useRuntimeConfig, useState } from '#imports';
 
-import type { ComplianceReportViewInterfaceTypeEntity } from './entities/ComplianceReportViewInterfaceTypeEntity.ts';
 import type { DerivationRelationInterfaceTypeEntity } from './entities/DerivationRelationInterfaceTypeEntity.ts';
 import type { PaletteSnapshotInterfaceTypeEntity } from './entities/PaletteSnapshotInterfaceTypeEntity.ts';
 import type { PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType, UploadedImage } from './types/index.ts';
@@ -483,8 +482,8 @@ class IridisContextFactory {
     });
 
     /** Compliance and CVD reports from the last run. */
-    const contrastReport = VueModule.ref<{
-      'compliance'?: ComplianceReportViewInterfaceTypeEntity.Type;
+    const contrastReport = VueModule.shallowRef<{
+      'compliance'?: ComplianceReportInterfaceTypeEntity.Type;
       'cvd'?:        CvdResultSetInterfaceTypeEntity.Type;
     }>({});
 

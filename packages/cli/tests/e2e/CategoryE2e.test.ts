@@ -30,7 +30,7 @@ class CategoryE2eFixture {
       'intake:any',
       'resolve:roles',
       'expand:family',
-      'enforce:wcagAA',
+      'enforce:compliance',
       'derive:variant',
       'emit:cssVars',
       'emit:capacitorStatusBar',

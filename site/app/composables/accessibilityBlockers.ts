@@ -1,16 +1,27 @@
-import { ComplianceReportViewInterfaceTypeEntity } from './entities/ComplianceReportViewInterfaceTypeEntity.ts';
+import type { ComplianceBlockedPairInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { JSONSchema7Type } from 'json-schema';
+
+import { ComplianceReportInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 
 class BlockedPairView {
+  private static readonly reasonSuffixes: ReadonlyMap<ComplianceBlockedPairInterfaceTypeEntity.Type['reason'], string> = new Map([
+    ['relation-tolerance', ' (relation tolerance)'],
+    ['solver-exhausted', ' (search exhausted)'],
+    ['stated-both', ' (both pinned)']
+  ]);
+
   public readonly actual: number;
   public readonly background: string;
   public readonly foreground: string;
   public readonly required: number;
+  public readonly suffix: string;
 
-  public constructor(actual: number, background: string, foreground: string, required: number) {
-    this.actual = actual;
-    this.background = background;
-    this.foreground = foreground;
-    this.required = required;
+  public constructor(pair: ComplianceBlockedPairInterfaceTypeEntity.Type) {
+    this.actual = pair.actualTrichromat;
+    this.background = pair.background;
+    this.foreground = pair.foreground;
+    this.required = pair.requiredTrichromat;
+    this.suffix = BlockedPairView.reasonSuffixes.get(pair.reason) ?? '';
   }
 
   public get id(): string {
@@ -60,13 +71,13 @@ export class AccessibilityBlockers {
     return result;
   }
 
-  public static fromReport(report: ComplianceReportViewInterfaceTypeEntity.Type | undefined): AccessibilityBlockerSet {
+  public static fromReport(report: JSONSchema7Type | undefined): AccessibilityBlockerSet {
     let result = new AccessibilityBlockerSet([], '');
-    if (ComplianceReportViewInterfaceTypeEntity.validate(report)) {
+    if (report !== undefined && ComplianceReportInterfaceTypeEntity.validate(report)) {
       const { algorithm, level } = report.selected;
       const label = AccessibilityBlockers.standardLabel(algorithm, level);
       const pairs = report.blockedPairs.map((pair) => {
-        return new BlockedPairView(pair.actual, pair.background, pair.foreground, pair.required);
+        return new BlockedPairView(pair);
       });
       result = new AccessibilityBlockerSet(pairs, label);
     }
@@ -75,7 +86,7 @@ export class AccessibilityBlockers {
 
   public static toastMessage(set: AccessibilityBlockerSet): AccessibilityToastMessageInterface {
     const lines = set.pairs.map((pair) => {
-      return `${pair.foreground} on ${pair.background} needs ${pair.required.toFixed(2)}, reaches ${pair.actual.toFixed(2)}`;
+      return `${pair.foreground} on ${pair.background} needs ${pair.required.toFixed(2)}, reaches ${pair.actual.toFixed(2)}${pair.suffix}`;
     });
     const result: AccessibilityToastMessageInterface = {
       'description': lines.join('; '),

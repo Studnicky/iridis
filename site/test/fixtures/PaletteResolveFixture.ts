@@ -36,12 +36,12 @@ export class PaletteResolveFixture {
       })]),
       'compliance': ({
         'blockedPairs': ([({
-          'actual': 2.5,
+          'actualTrichromat': 2.5,
           'background': 'surface',
-          'cvdTypes': (['deuteranopia']),
-          'disposition': 'blocked-cvd',
           'foreground': 'accent',
-          'required': 3
+          'reason': 'solver-exhausted',
+          'requiredTrichromat': 3,
+          'target': 'accent'
         })]),
         'compliant': false,
         'cvdCompliant': false,
@@ -52,6 +52,7 @@ export class PaletteResolveFixture {
         })
       }),
       'cvd': ({
+        'blocked': ([]),
         'corrections': ([]),
         'warnings': ([])
       }),

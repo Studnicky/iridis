@@ -1,9 +1,9 @@
 import { type ColorRecordInterfaceTypeEntity, CssVarName, type PaletteStateInterface } from '@studnicky/iridis';
 import { CapacitorOutputsEntity } from '@studnicky/iridis-capacitor';
 import { Cli, ConfigLoader } from '@studnicky/iridis-cli';
-import { getContrastMetadata } from '@studnicky/iridis-contrast';
+import { ComplianceReportInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 import { Engine } from '@studnicky/iridis/engine';
-import { contrastApca, contrastWcag21 } from '@studnicky/iridis/math';
+import { contrastWcag21 } from '@studnicky/iridis/math';
 import { coreTasks } from '@studnicky/iridis/tasks';
 import { JsonObject, JsonValue } from '@studnicky/types/node';
 import assert from 'node:assert/strict';
@@ -81,26 +81,16 @@ await test('Vue Capacitor example admits canonical configuration and contrast me
   const config = await new ConfigLoader().load(VueCapacitorTestFixture.configurationPath());
   const roles = config.input.roles;
   const wcagPairs = roles?.contrastPairs;
-  const pairs = config.input.contrast?.extra;
-  if (wcagPairs === undefined || pairs === undefined) {
-    throw new Error('The Vue Capacitor configuration must declare role and APCA contrast pairs.');
+  if (wcagPairs === undefined) {
+    throw new Error('The Vue Capacitor configuration must declare role contrast pairs.');
   }
   assert.equal(wcagPairs.length, 4);
-  assert.equal(pairs.length, 4);
   const state = await VueCapacitorTestFixture.runPipeline();
-  const aa = getContrastMetadata(state.metadata, 'contrast:aa');
-  const aaa = getContrastMetadata(state.metadata, 'contrast:aaa');
-  const apca = getContrastMetadata(state.metadata, 'contrast:apca');
-  const cvd = getContrastMetadata(state.metadata, 'contrast:cvd');
-  if (aa === undefined || !('pairs' in aa)
-    || aaa === undefined || !('pairs' in aaa)
-    || apca === undefined || !('pairs' in apca)
-    || cvd === undefined || !('warnings' in cvd)) {
-    throw new Error('The canonical pipeline must emit admitted contrast metadata.');
-  }
-  assert.equal(aa.pairs.length, 4);
-  assert.equal(aaa.pairs.length, 4);
-  assert.equal(apca.pairs.length, 4);
+  const compliance = ComplianceReportInterfaceTypeEntity.intake(state.metadata['contrast:complianceReport']);
+  const cvd = CvdResultSetInterfaceTypeEntity.intake(state.metadata['contrast:cvd']);
+  assert.equal(compliance.compliant, true);
+  assert.equal(compliance.cvdCompliant, true);
+  assert.equal(compliance.pairs.length > 0, true);
   assert.equal(cvd.warnings.length, 0);
   const correctionsAreComplete = cvd.corrections.every((correction) => {
     const isComplete = correction.cvdTypesRemaining.length === 0;
@@ -117,17 +107,6 @@ await test('Vue Capacitor example admits canonical configuration and contrast me
       VueCapacitorTestFixture.requireRole(state, pair.background)
     );
     assert.ok(ratio >= pair.minimumContrastRatio);
-  }
-  for (let index = 0; index < pairs.length; index += 1) {
-    const pair = pairs[index];
-    if (pair?.minimumContrastRatio === undefined) {
-      throw new Error('Every APCA pair must declare a minimum contrast ratio.');
-    }
-    const contrast = Math.abs(contrastApca.apply(
-      VueCapacitorTestFixture.requireRole(state, pair.foreground),
-      VueCapacitorTestFixture.requireRole(state, pair.background)
-    ));
-    assert.ok(contrast >= pair.minimumContrastRatio);
   }
 });
 
