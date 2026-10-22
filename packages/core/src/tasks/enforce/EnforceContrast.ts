@@ -1,5 +1,3 @@
-import type { CanonicalShapeType } from '@studnicky/json-tology/types';
-
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
@@ -9,14 +7,19 @@ import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 import { ContrastAlgorithmTypeEntity } from '../../entities/ContrastAlgorithmTypeEntity.ts';
 import { ContrastPairInterfaceTypeEntity } from '../../entities/ContrastPairInterfaceTypeEntity.ts';
 import { ContrastReportEntryInterfaceTypeEntity } from '../../entities/ContrastReportEntryInterfaceTypeEntity.ts';
+import { ContrastReportInterfaceTypeEntity } from '../../entities/ContrastReportInterfaceTypeEntity.ts';
 import { PendingContrastEntryInterfaceTypeEntity } from '../../entities/PendingContrastEntryInterfaceTypeEntity.ts';
 import { RoleProvenanceInterfaceTypeEntity } from '../../entities/RoleProvenanceInterfaceTypeEntity.ts';
 import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
-import { PaletteRoleState, type PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
-import { contrastApca }   from '../../math/ContrastApca.ts';
+import {
+  PaletteRoleState,
+  type PaletteStateInterface
+} from '../../interfaces/PaletteStateInterface.ts';
+import { contrastApca } from '../../math/ContrastApca.ts';
 import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
 import { Metadata } from '../../types/metadata.ts';
+import { ContrastPolicy } from './ContrastPolicy.ts';
 
 class ContrastMeasurement {
   static measure(
@@ -32,71 +35,110 @@ class ContrastMeasurement {
     return result;
   }
 
-  static levelFloor(level: string | undefined): number {
-    let result = 1;
-    if (level === 'AAA') {
-      result = 7;
-    } else if (level === 'AA') {
-      result = 4.5;
-    }
-    return result;
-  }
-
-  static sameRecord(left: ColorRecordInterfaceTypeEntity.Type, right: ColorRecordInterfaceTypeEntity.Type): boolean {
+  static sameRecord(
+    left: ColorRecordInterfaceTypeEntity.Type,
+    right: ColorRecordInterfaceTypeEntity.Type
+  ): boolean {
     const leftP3 = left.displayP3;
     const rightP3 = right.displayP3;
     const leftHints = left.hints;
     const rightHints = right.hints;
-    const sameP3 = leftP3?.r === rightP3?.r
-      && leftP3?.g === rightP3?.g
-      && leftP3?.b === rightP3?.b
-      && (leftP3 === undefined) === (rightP3 === undefined);
-    const sameHints = leftHints?.intent === rightHints?.intent
-      && leftHints?.role === rightHints?.role
-      && leftHints?.weight === rightHints?.weight
-      && (leftHints === undefined) === (rightHints === undefined);
-    const result = left === right || (
-      left.alpha === right.alpha
-      && left.hex === right.hex
-      && left.oklch.l === right.oklch.l
-      && left.oklch.c === right.oklch.c
-      && left.oklch.h === right.oklch.h
-      && left.rgb.r === right.rgb.r
-      && left.rgb.g === right.rgb.g
-      && left.rgb.b === right.rgb.b
-      && left.sourceFormat === right.sourceFormat
-      && sameP3
-      && sameHints
-    );
+    const sameP3 =
+      leftP3?.r === rightP3?.r &&
+      leftP3?.g === rightP3?.g &&
+      leftP3?.b === rightP3?.b &&
+      (leftP3 === undefined) === (rightP3 === undefined);
+    const sameHints =
+      leftHints?.intent === rightHints?.intent &&
+      leftHints?.role === rightHints?.role &&
+      leftHints?.weight === rightHints?.weight &&
+      (leftHints === undefined) === (rightHints === undefined);
+    const result =
+      left === right ||
+      (left.alpha === right.alpha &&
+        left.hex === right.hex &&
+        left.oklch.l === right.oklch.l &&
+        left.oklch.c === right.oklch.c &&
+        left.oklch.h === right.oklch.h &&
+        left.rgb.r === right.rgb.r &&
+        left.rgb.g === right.rgb.g &&
+        left.rgb.b === right.rgb.b &&
+        left.sourceFormat === right.sourceFormat &&
+        sameP3 &&
+        sameHints);
+    return result;
+  }
+}
+
+class ContrastBand {
+  static passes(ratio: number, minimum: number, maximum: number | undefined): boolean {
+    const result = ratio >= minimum && (maximum === undefined || ratio <= maximum);
     return result;
   }
 }
 
 class ContrastAdjustment {
-  static notNeeded(): readonly [boolean, PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']] {
-    const result: readonly [boolean, PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']] = [false, 'not-needed'];
+  static notNeeded(): readonly [
+    boolean,
+    PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+  ] {
+    const result: readonly [
+      boolean,
+      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    ] = [false, 'not-needed'];
     return result;
   }
 
-  static preservedStated(): readonly [boolean, PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']] {
-    const result: readonly [boolean, PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']] = [false, 'preserved-stated'];
+  static preservedStated(): readonly [
+    boolean,
+    PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+  ] {
+    const result: readonly [
+      boolean,
+      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    ] = [false, 'preserved-stated'];
     return result;
   }
 
-  static unresolved(): readonly [boolean, PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']] {
-    const result: readonly [boolean, PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']] = [false, 'unresolved'];
+  static unresolved(): readonly [
+    boolean,
+    PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+  ] {
+    const result: readonly [
+      boolean,
+      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    ] = [false, 'unresolved'];
     return result;
   }
 
-  static applied(): readonly [boolean, PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']] {
-    const result: readonly [boolean, PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']] = [true, 'applied'];
+  static blockedStatedBoth(): readonly [
+    boolean,
+    PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+  ] {
+    const result: readonly [
+      boolean,
+      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    ] = [false, 'blocked-stated-both'];
+    return result;
+  }
+
+  static applied(): readonly [
+    boolean,
+    PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+  ] {
+    const result: readonly [
+      boolean,
+      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    ] = [true, 'applied'];
     return result;
   }
 }
 
 class ContrastProvenance {
   static isStated(state: PaletteStateInterface, roleName: string): boolean {
-    const result = Metadata.roleProvenance(state.metadata).get(roleName)?.origin === 'stated';
+    const result =
+      Metadata.roleProvenance(state.metadata).get(roleName)?.origin ===
+      'stated';
     return result;
   }
 
@@ -107,70 +149,154 @@ class ContrastProvenance {
     afterHex: string
   ): void {
     const provenance = Metadata.roleProvenance(state.metadata);
-    const role = provenance.get(roleName) ?? RoleProvenanceInterfaceTypeEntity.create({
-      'adjustments': [],
-      'origin':      'derived'
-    });
+    const role =
+      provenance.get(roleName) ??
+      RoleProvenanceInterfaceTypeEntity.create({
+        'adjustments': [],
+        'origin': 'derived'
+      });
     const nextRole = RoleProvenanceInterfaceTypeEntity.create({
-      'adjustments': [...role.adjustments, { 'afterHex': afterHex, 'beforeHex': beforeHex, 'operation': 'contrast' }],
-      'origin':      role.origin
+      'adjustments': [
+        ...role.adjustments,
+        { 'afterHex': afterHex, 'beforeHex': beforeHex, 'operation': 'contrast' }
+      ],
+      'origin': role.origin
     });
     provenance.set(roleName, nextRole);
     Metadata.writeRoleProvenance(state.metadata, provenance);
   }
 }
 
+class ContrastMover {
+  readonly 'counterpart': ColorRecordInterfaceTypeEntity.Type;
+  readonly 'record': ColorRecordInterfaceTypeEntity.Type;
+  readonly 'roleName': string;
+
+  private constructor(
+    roleName: string,
+    record: ColorRecordInterfaceTypeEntity.Type,
+    counterpart: ColorRecordInterfaceTypeEntity.Type
+  ) {
+    this.roleName = roleName;
+    this.record = record;
+    this.counterpart = counterpart;
+  }
+
+  static select(
+    state: PaletteStateInterface,
+    pair: ContrastPolicy.RequirementInterface,
+    foreground: ColorRecordInterfaceTypeEntity.Type,
+    background: ColorRecordInterfaceTypeEntity.Type
+  ): ContrastMover | undefined {
+    if (!ContrastProvenance.isStated(state, pair.foreground)) {
+      return new ContrastMover(pair.foreground, foreground, background);
+    }
+    if (!ContrastProvenance.isStated(state, pair.background)) {
+      return new ContrastMover(pair.background, background, foreground);
+    }
+    return undefined;
+  }
+}
+
+interface ContrastPendingOptionsInterface {
+  readonly 'adjustedRole'?: string;
+  readonly 'maximumRatio'?: number;
+}
+
 class ContrastExecution {
-  static normalizePairs(
-    schemaPairs: readonly CanonicalShapeType<typeof ContrastPairInterfaceTypeEntity.Schema>[],
-    extraPairs: readonly CanonicalShapeType<typeof ContrastPairInterfaceTypeEntity.Schema>[]
-  ): readonly ContrastPairInterfaceTypeEntity.Type[] {
-    const sourcePairs = [...schemaPairs, ...extraPairs];
-    const result: ContrastPairInterfaceTypeEntity.Type[] = [];
-    for (let index = 0; index < sourcePairs.length; index += 1) {
-      const candidate = sourcePairs[index];
-      if (candidate !== undefined) {
-        result.push(ContrastPairInterfaceTypeEntity.intake(candidate));
+  static queue(
+    roles: PaletteRoleState,
+    state: PaletteStateInterface,
+    context: PipelineContextInterface,
+    requirements: readonly ContrastPolicy.RequirementInterface[]
+  ): PendingContrastEntryInterfaceTypeEntity.Type[] {
+    const entries: (PendingContrastEntryInterfaceTypeEntity.Type | undefined)[] = [];
+    const maximumPasses = Math.max(1, requirements.length * 2);
+    for (let pass = 0; pass < maximumPasses; pass += 1) {
+      let adjusted = false;
+      for (let index = 0; index < requirements.length; index += 1) {
+        const requirement = requirements[index];
+        if (requirement === undefined) {
+          continue;
+        }
+        const current = ContrastExecution.processPair(
+          roles,
+          state,
+          context,
+          requirement
+        );
+        if (current === undefined) {
+          continue;
+        }
+        const previous = entries[index];
+        const entry = ContrastExecution.mergeEntry(previous, current);
+        entries[index] = entry;
+        adjusted = adjusted || current.adjustmentDisposition === 'applied';
+      }
+      if (!adjusted) {
+        break;
+      }
+    }
+    const result: PendingContrastEntryInterfaceTypeEntity.Type[] = [];
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry !== undefined) {
+        result.push(entry);
       }
     }
     return result;
   }
 
-  static queue(
-    roles: PaletteRoleState,
-    state: PaletteStateInterface,
-    context: PipelineContextInterface,
-    pairs: readonly ContrastPairInterfaceTypeEntity.Type[],
-    defaultAlgorithm: ContrastAlgorithmTypeEntity.Type,
-    minimumFloor: number
-  ): PendingContrastEntryInterfaceTypeEntity.Type[] {
-    const result: PendingContrastEntryInterfaceTypeEntity.Type[] = [];
-    for (let index = 0; index < pairs.length; index += 1) {
-      const pair = pairs[index];
-      if (pair !== undefined) {
-        const entry = ContrastExecution.processPair(roles, state, context, pair, defaultAlgorithm, minimumFloor);
-        if (entry !== undefined) {
-          result.push(entry);
-        }
-      }
-    }
+  private static mergeEntry(
+    previous: PendingContrastEntryInterfaceTypeEntity.Type | undefined,
+    current: PendingContrastEntryInterfaceTypeEntity.Type
+  ): PendingContrastEntryInterfaceTypeEntity.Type {
+    const adjusted = current.adjusted || previous?.adjusted === true;
+    const adjustmentDisposition =
+      adjusted && current.adjustmentDisposition === 'not-needed'
+        ? 'applied'
+        : current.adjustmentDisposition;
+    const adjustedRole = current.adjustedRole ?? previous?.adjustedRole;
+    const result = PendingContrastEntryInterfaceTypeEntity.create({
+      'adjusted': adjusted,
+      ...(adjustedRole === undefined ? {} : { 'adjustedRole': adjustedRole }),
+      'adjustmentDisposition': adjustmentDisposition,
+      'algo': current.algo,
+      ...(current.maximumContrastRatio === undefined
+        ? {}
+        : { 'maximumContrastRatio': current.maximumContrastRatio }),
+      'minimumContrastRatio': current.minimumContrastRatio,
+      'pair': current.pair,
+      'target': current.target
+    });
     return result;
   }
 
   static report(
     roles: PaletteRoleState,
     pending: readonly PendingContrastEntryInterfaceTypeEntity.Type[]
-  ): ContrastReportEntryInterfaceTypeEntity.Type[] {
-    const result: ContrastReportEntryInterfaceTypeEntity.Type[] = [];
+  ): ContrastReportInterfaceTypeEntity.Type {
+    const pairs: ContrastReportEntryInterfaceTypeEntity.Type[] = [];
+    let selectedAlgorithm = ContrastAlgorithmTypeEntity.intake('wcag21');
+    let target = 'AA';
     for (let index = 0; index < pending.length; index += 1) {
       const entry = pending[index];
-      if (entry !== undefined) {
-        const reportEntry = ContrastExecution.reportEntry(roles, entry);
-        if (reportEntry !== undefined) {
-          result.push(reportEntry);
-        }
+      if (entry === undefined) {
+        continue;
+      }
+      selectedAlgorithm = ContrastAlgorithmTypeEntity.intake(entry.algo);
+      target = entry.target;
+      const pair = ContrastExecution.reportEntry(roles, entry);
+      if (pair !== undefined) {
+        pairs.push(pair);
       }
     }
+    const result = ContrastReportInterfaceTypeEntity.create({
+      'compliant': pairs.every((pair) => {return pair.passed;}),
+      'pairs': pairs,
+      'selectedAlgorithm': selectedAlgorithm,
+      'target': target
+    });
     return result;
   }
 
@@ -178,112 +304,194 @@ class ContrastExecution {
     roles: PaletteRoleState,
     state: PaletteStateInterface,
     context: PipelineContextInterface,
-    pair: ContrastPairInterfaceTypeEntity.Type,
-    defaultAlgorithm: ContrastAlgorithmTypeEntity.Type,
-    minimumFloor: number
+    requirement: ContrastPolicy.RequirementInterface
   ): PendingContrastEntryInterfaceTypeEntity.Type | undefined {
-    const foreground = roles.get(pair.foreground);
-    const background = roles.get(pair.background);
+    const foreground = roles.get(requirement.foreground);
+    const background = roles.get(requirement.background);
     if (foreground === undefined || background === undefined) {
-      ContrastExecution.logMissingPair(context, pair);
+      ContrastExecution.logMissingPair(context, requirement);
       return undefined;
     }
 
-    const algorithm = ContrastAlgorithmTypeEntity.intake(pair.algorithm ?? defaultAlgorithm);
-    const minimumRatio = pair.minimumContrastRatio === undefined
-      ? minimumFloor
-      : Math.max(pair.minimumContrastRatio, minimumFloor);
-    const maximumRatio = pair.maximumContrastRatio;
-    const ratio = ContrastMeasurement.measure(algorithm, foreground, background);
-    const passed = ratio >= minimumRatio && (maximumRatio === undefined || ratio <= maximumRatio);
+    const algorithm = requirement.algorithm;
+    const minimumRatio = requirement.minimumContrastRatio;
+    const maximumRatio = requirement.maximumContrastRatio;
+    const ratio = ContrastMeasurement.measure(
+      algorithm,
+      foreground,
+      background
+    );
+    const passed = ContrastBand.passes(ratio, minimumRatio, maximumRatio);
     if (passed) {
-      const result = ContrastExecution.pendingEntry(pair, algorithm, minimumRatio, maximumRatio, ContrastAdjustment.notNeeded);
+      const result = ContrastExecution.pendingEntry(
+        requirement,
+        algorithm,
+        minimumRatio,
+        ContrastAdjustment.notNeeded,
+        ...(maximumRatio === undefined ? [] : [{ 'maximumRatio': maximumRatio }])
+      );
       return result;
     }
 
-    const stated = ContrastProvenance.isStated(state, pair.foreground);
-    const message = stated
-      ? 'Pair outside contrast band; preserving stated foreground'
-      : 'Pair outside contrast band; nudging';
-    ContrastExecution.logViolation(context, pair, message, minimumRatio, maximumRatio, ratio);
-    if (stated) {
-      const result = ContrastExecution.pendingEntry(pair, algorithm, minimumRatio, maximumRatio, ContrastAdjustment.preservedStated);
+    const mover = ContrastMover.select(
+      state,
+      requirement,
+      foreground,
+      background
+    );
+    const message =
+      mover === undefined
+        ? 'Pair outside contrast band; preserving stated roles'
+        : 'Pair outside contrast band; nudging derived role';
+    ContrastExecution.logViolation(
+      context,
+      requirement,
+      message,
+      minimumRatio,
+      maximumRatio,
+      ratio
+    );
+    if (mover === undefined) {
+      const result = ContrastExecution.pendingEntry(
+        requirement,
+        algorithm,
+        minimumRatio,
+        ContrastAdjustment.blockedStatedBoth,
+        ...(maximumRatio === undefined ? [] : [{ 'maximumRatio': maximumRatio }])
+      );
       return result;
     }
 
-    const resolved = ensureContrast.apply(foreground, background, minimumRatio, {
-      'algorithm': algorithm,
-      ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio })
-    });
-    const resolvedRatio = ContrastMeasurement.measure(algorithm, resolved, background);
-    const resolvedPassed = resolvedRatio >= minimumRatio
-      && (maximumRatio === undefined || resolvedRatio <= maximumRatio);
-    if (!resolvedPassed || ContrastMeasurement.sameRecord(resolved, foreground)) {
-      const result = ContrastExecution.pendingEntry(pair, algorithm, minimumRatio, maximumRatio, ContrastAdjustment.unresolved);
+    const resolved = ensureContrast.apply(
+      mover.record,
+      mover.counterpart,
+      minimumRatio,
+      {
+        'algorithm': algorithm,
+        ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio })
+      }
+    );
+    const resolvedForeground =
+      mover.roleName === requirement.foreground ? resolved : foreground;
+    const resolvedBackground =
+      mover.roleName === requirement.background ? resolved : background;
+    const resolvedRatio = ContrastMeasurement.measure(
+      algorithm,
+      resolvedForeground,
+      resolvedBackground
+    );
+    const resolvedPassed = ContrastBand.passes(
+      resolvedRatio,
+      minimumRatio,
+      maximumRatio
+    );
+    if (
+      !resolvedPassed ||
+      ContrastMeasurement.sameRecord(resolved, mover.record)
+    ) {
+      const result = ContrastExecution.pendingEntry(
+        requirement,
+        algorithm,
+        minimumRatio,
+        ContrastAdjustment.unresolved,
+        ...(maximumRatio === undefined ? [] : [{ 'maximumRatio': maximumRatio }])
+      );
       return result;
     }
-    roles.set(pair.foreground, resolved);
-    ContrastProvenance.recordAdjustment(state, pair.foreground, foreground.hex, resolved.hex);
-    const result = ContrastExecution.pendingEntry(pair, algorithm, minimumRatio, maximumRatio, ContrastAdjustment.applied);
+    roles.set(mover.roleName, resolved);
+    ContrastProvenance.recordAdjustment(
+      state,
+      mover.roleName,
+      mover.record.hex,
+      resolved.hex
+    );
+    const result = ContrastExecution.pendingEntry(
+      requirement,
+      algorithm,
+      minimumRatio,
+      ContrastAdjustment.applied,
+      { 'adjustedRole': mover.roleName, ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio }) }
+    );
     return result;
   }
 
   private static pendingEntry(
-    pair: ContrastPairInterfaceTypeEntity.Type,
+    requirement: ContrastPolicy.RequirementInterface,
     algorithm: ContrastAlgorithmTypeEntity.Type,
     minimumRatio: number,
-    maximumRatio: number | undefined,
-    resolveAdjustment: () => readonly [boolean, PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']]
+    resolveAdjustment: () => readonly [
+      boolean,
+      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    ],
+    options: ContrastPendingOptionsInterface = {}
   ): PendingContrastEntryInterfaceTypeEntity.Type {
     const [adjusted, adjustmentDisposition] = resolveAdjustment();
+    const adjustedRole = options.adjustedRole;
+    const maximumRatio = options.maximumRatio;
     const result = PendingContrastEntryInterfaceTypeEntity.create({
-      'adjusted':              adjusted,
+      'adjusted': adjusted,
+      ...(adjustedRole === undefined ? {} : { 'adjustedRole': adjustedRole }),
       'adjustmentDisposition': adjustmentDisposition,
-      'algo':                  algorithm,
-      ...(maximumRatio === undefined ? {} : { 'maximumContrastRatio': maximumRatio }),
+      'algo': algorithm,
+      ...(maximumRatio === undefined
+        ? {}
+        : { 'maximumContrastRatio': maximumRatio }),
       'minimumContrastRatio': minimumRatio,
-      'pair':     pair
+      'pair': ContrastPairInterfaceTypeEntity.create({
+        'algorithm': requirement.algorithm,
+        'background': requirement.background,
+        'foreground': requirement.foreground,
+        ...(requirement.maximumContrastRatio === undefined
+          ? {}
+          : { 'maximumContrastRatio': requirement.maximumContrastRatio }),
+        'minimumContrastRatio': requirement.minimumContrastRatio
+      }),
+      'target': requirement.target
     });
     return result;
   }
 
   private static logMissingPair(
     context: PipelineContextInterface,
-    pair: ContrastPairInterfaceTypeEntity.Type
+    requirement: ContrastPolicy.RequirementInterface
   ): void {
-    context.logger.warn(LogBody.create({
-      'component': 'EnforceContrast',
-      'context': {
-        'background': pair.background,
-        'foreground': pair.foreground
-      },
-      'message': 'Contrast pair has missing role(s)',
-      'operation': 'run',
-      'status': LOG_STATUS.INVALID
-    }));
+    context.logger.warn(
+      LogBody.create({
+        'component': 'EnforceContrast',
+        'context': {
+          'background': requirement.background,
+          'foreground': requirement.foreground
+        },
+        'message': 'Contrast pair has missing role(s)',
+        'operation': 'run',
+        'status': LOG_STATUS.INVALID
+      })
+    );
   }
 
   private static logViolation(
     context: PipelineContextInterface,
-    pair: ContrastPairInterfaceTypeEntity.Type,
+    requirement: ContrastPolicy.RequirementInterface,
     message: string,
     minimumRatio: number,
     maximumRatio: number | undefined,
     ratio: number
   ): void {
-    context.logger.info(LogBody.create({
-      'component': 'EnforceContrast',
-      'context': {
-        'background': pair.background,
-        'foreground': pair.foreground,
-        'maximumContrastRatio': maximumRatio,
-        'minimumContrastRatio': minimumRatio,
-        'ratio':      ratio
-      },
-      'message': message,
-      'operation': 'run',
-      'status': LOG_STATUS.PARTIAL
-    }));
+    context.logger.info(
+      LogBody.create({
+        'component': 'EnforceContrast',
+        'context': {
+          'background': requirement.background,
+          'foreground': requirement.foreground,
+          'maximumContrastRatio': maximumRatio,
+          'minimumContrastRatio': minimumRatio,
+          'ratio': ratio
+        },
+        'message': message,
+        'operation': 'run',
+        'status': LOG_STATUS.PARTIAL
+      })
+    );
   }
 
   private static reportEntry(
@@ -295,18 +503,39 @@ class ContrastExecution {
     if (foreground === undefined || background === undefined) {
       return undefined;
     }
-    const algorithm = ContrastAlgorithmTypeEntity.intake(entry.algo);
-    const ratio = ContrastMeasurement.measure(algorithm, foreground, background);
+    const actual = ContrastMeasurement.measure(
+      ContrastAlgorithmTypeEntity.intake(entry.algo),
+      foreground,
+      background
+    );
+    const passed = ContrastBand.passes(
+      actual,
+      entry.minimumContrastRatio,
+      entry.maximumContrastRatio
+    );
+    let disposition: ContrastReportEntryInterfaceTypeEntity.Type['disposition'] = 'unresolved';
+    if (entry.adjustmentDisposition === 'not-needed') {
+      disposition = 'not-needed';
+    } else if (entry.adjustmentDisposition === 'applied') {
+      disposition = entry.adjustedRole === entry.pair.foreground
+        ? 'adjusted-foreground'
+        : 'adjusted-background';
+    } else if (
+      entry.adjustmentDisposition === 'preserved-stated' ||
+      entry.adjustmentDisposition === 'blocked-stated-both'
+    ) {
+      disposition = 'blocked-stated';
+    }
     const result = ContrastReportEntryInterfaceTypeEntity.create({
-      'adjusted':              entry.adjusted,
-      'adjustmentDisposition': entry.adjustmentDisposition,
-      'algorithm':             entry.algo,
+      'actual': actual,
+      ...(entry.adjustedRole === undefined
+        ? {}
+        : { 'adjustedRole': entry.adjustedRole }),
       'background': entry.pair.background,
+      'disposition': disposition,
       'foreground': entry.pair.foreground,
-      'minimumContrastRatio': entry.minimumContrastRatio,
-      ...(entry.maximumContrastRatio === undefined ? {} : { 'maximumContrastRatio': entry.maximumContrastRatio }),
-      'passed':               ratio >= entry.minimumContrastRatio && (entry.maximumContrastRatio === undefined || ratio <= entry.maximumContrastRatio),
-      'ratio':      ratio
+      'passed': passed,
+      'required': entry.minimumContrastRatio
     });
     return result;
   }
@@ -315,28 +544,40 @@ class ContrastExecution {
 class EnforceContrast implements TaskInterface {
   readonly 'name' = 'enforce:contrast';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
-    'description': 'Checks foreground role colors against each contrast-pair ratio band, preserving caller-stated colors and recording adjustments to derived colors.',
-    'name':        'enforce:contrast',
-    'reads':       ['roles', 'input.roles', 'input.contrast', 'metadata[\'core:roleProvenance\']'],
-    'requires':    ['contrastWcag21', 'contrastApca', 'ensureContrast'],
-    'writes':      ['roles', 'metadata[\'core:contrastReport\']', 'metadata[\'core:roleProvenance\']']
-  });
+  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type =
+    TaskManifestInterfaceTypeEntity.create({
+      'description':
+        'Checks foreground role colors against each contrast-pair ratio band, preserving caller-stated colors and recording adjustments to derived colors.',
+      'name': 'enforce:contrast',
+      'reads': [
+        'roles',
+        'input.roles',
+        'input.contrast',
+        "metadata['core:roleProvenance']"
+      ],
+      'requires': ['contrastWcag21', 'contrastApca', 'ensureContrast'],
+      'writes': [
+        'roles',
+        "metadata['core:contrastReport']",
+        "metadata['core:roleProvenance']"
+      ]
+    });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    const schemaPairs = state.input.roles?.contrastPairs ?? [];
-    const extraPairs = state.input.contrast?.extra ?? [];
-    const pairs = ContrastExecution.normalizePairs(schemaPairs, extraPairs);
-    if (pairs.length === 0) {
+    const roles = PaletteRoleState.admit(state.roles);
+    const requirements = ContrastPolicy.normalize(state.input, roles);
+    if (requirements.length === 0) {
       return;
     }
-    const roles = PaletteRoleState.admit(state.roles);
-    const defaultAlgorithm = ContrastAlgorithmTypeEntity.intake(state.input.contrast?.algorithm ?? 'wcag21');
-    const minimumFloor = ContrastMeasurement.levelFloor(state.input.contrast?.level);
-    const pending = ContrastExecution.queue(roles, state, context, pairs, defaultAlgorithm, minimumFloor);
+    const pending = ContrastExecution.queue(
+      roles,
+      state,
+      context,
+      requirements
+    );
     const report = ContrastExecution.report(roles, pending);
     roles.commit();
-    state.metadata['core:contrastReport'] = report;
+    Metadata.writeContrastReport(state.metadata, report);
   }
 }
 
