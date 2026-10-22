@@ -675,7 +675,7 @@ void test('enforce:contrast reports an incompatible selected AAA band as termina
     'background': 'background',
     'foreground': 'text',
     'maximumContrastRatio': 4.5,
-    'minimumContrastRatio': 3
+    'minimumContrastRatio': 4.5
   });
   const state = ContrastBandFixture.runPairs(
     [pair],
@@ -716,6 +716,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     'control': colorRecordFactory.fromHex('#6d28d9', {
       'hints': ColorHintsInterfaceTypeEntity.intake({ 'intent': 'accent' })
     }),
+    'divider': colorRecordFactory.fromHex('#64748b'),
     'text': colorRecordFactory.fromHex('#eeeeff', {
       'hints': ColorHintsInterfaceTypeEntity.intake({ 'intent': 'text' })
     })
@@ -726,7 +727,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
       'contrastPairs': [
         {
           'background': 'background',
-          'foreground': 'text',
+          'foreground': 'divider',
           'minimumContrastRatio': 3
         }
       ],
@@ -755,6 +756,24 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     InputInterfaceTypeEntity.intake({
       ...base,
       'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' }
+    }),
+    roles
+  );
+  const aaaText = ContrastPolicy.normalize(
+    InputInterfaceTypeEntity.intake({
+      'colors': [],
+      'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' },
+      'roles': {
+        'contrastPairs': [
+          {
+            'background': 'background',
+            'foreground': 'text',
+            'minimumContrastRatio': 4.5
+          }
+        ],
+        'name': 'aaa-text-policy',
+        'roles': []
+      }
     }),
     roles
   );
@@ -796,26 +815,31 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
       requirement.minimumContrastRatio
     ];}),
     [
-      ['wcag21', 'text', 4.5],
-      ['wcag21', 'control', 4.5]
+      ['wcag21', 'divider', 3],
+      ['wcag21', 'control', 3]
     ],
-    'AA applies its selected floor to schema and extra pairs'
+    'AA retains each declared pair minimum, including a divider band'
   );
   assert.deepStrictEqual(
     aaa.map((requirement) => {return [
       requirement.algorithm,
       requirement.minimumContrastRatio
     ];}),
-    [['wcag21', 7]],
-    "AAA supersedes the schema's lower minimum"
+    [['wcag21', 4.5]],
+    'AAA maps a declared divider ratio of 3 to 4.5'
+  );
+  assert.deepStrictEqual(
+    aaaText.map((requirement) => {return requirement.minimumContrastRatio;}),
+    [7],
+    'AAA maps a declared text ratio of 4.5 to 7'
   );
   assert.deepStrictEqual(
     aaaBounded.map((requirement) => {return [
       requirement.minimumContrastRatio,
       requirement.maximumContrastRatio
     ];}),
-    [[7, 4.5]],
-    'AAA retains an incompatible matching maximum so enforcement reports terminal noncompliance'
+    [[4.5, 4.5]],
+    'AAA retains an authored maximum while mapping a divider ratio to 4.5'
   );
   assert.deepStrictEqual(
     apca.map((requirement) => {return [
@@ -824,9 +848,34 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
       requirement.minimumContrastRatio
     ];}),
     [
-      ['apca', 'text', 75],
+      ['apca', 'divider', 60],
       ['apca', 'control', 60]
     ],
-    'APCA applies its Lc targets even when schema pairs declare WCAG minima'
+    'APCA applies its Lc targets independently of WCAG pair minima'
+  );
+  const apcaIgnoringWcagMinimum = ContrastPolicy.normalize(
+    InputInterfaceTypeEntity.intake({
+      'colors': [],
+      'contrast': { 'algorithm': 'apca', 'level': 'Lc' },
+      'roles': {
+        'contrastPairs': [
+          {
+            'background': 'background',
+            'foreground': 'text',
+            'minimumContrastRatio': 108
+          }
+        ],
+        'name': 'apca-selected-standard-policy',
+        'roles': []
+      }
+    }),
+    roles
+  );
+  assert.deepStrictEqual(
+    apcaIgnoringWcagMinimum.map((requirement) => {
+      return requirement.minimumContrastRatio;
+    }),
+    [75],
+    'APCA ignores an inherited WCAG ratio in favor of its selected Lc target'
   );
 });

@@ -4,6 +4,11 @@ import type { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts
 import { ContrastAlgorithmTypeEntity } from '../../entities/ContrastAlgorithmTypeEntity.ts';
 import { ContrastPairInterfaceTypeEntity } from '../../entities/ContrastPairInterfaceTypeEntity.ts';
 
+interface WcagMinimumOptionsInterface {
+  readonly 'declaredMinimum': number | undefined;
+  readonly 'level': string | undefined;
+}
+
 class ContrastStandard {
   static algorithm(
     input: InputInterfaceTypeEntity.Type
@@ -14,14 +19,18 @@ class ContrastStandard {
     return result;
   }
 
-  static wcagFloor(level: string | undefined): number {
-    if (level === 'AAA') {
-      return 7;
+  static wcagMinimum(options: WcagMinimumOptionsInterface): number {
+    const declaredMinimum = options.declaredMinimum;
+    if (options.level !== 'AAA') {
+      const result = declaredMinimum ?? 4.5;
+      return result;
     }
-    if (level === 'AA') {
-      return 4.5;
+    if (declaredMinimum === undefined || declaredMinimum >= 7) {
+      const result = declaredMinimum ?? 7;
+      return result;
     }
-    return 1;
+    const result = declaredMinimum >= 4.5 ? 7 : 4.5;
+    return result;
   }
 
   static targetPrefix(
@@ -54,16 +63,6 @@ class ApcaTarget {
     ) {
       return ApcaTarget.#BODY_READING;
     }
-    const foregroundIntent = foreground?.hints?.intent;
-    if (
-      foregroundIntent === 'link' ||
-      foregroundIntent === 'muted' ||
-      foregroundIntent === 'onAccent' ||
-      foregroundIntent === 'onButton' ||
-      foregroundIntent === 'text'
-    ) {
-      return ApcaTarget.#MEANINGFUL_TEXT;
-    }
     return ApcaTarget.#MEANINGFUL_TEXT;
   }
 }
@@ -86,14 +85,12 @@ export class ContrastPolicy {
         continue;
       }
       const pair = ContrastPairInterfaceTypeEntity.intake(sourcePair);
-      const pairMinimum = pair.minimumContrastRatio ?? 0;
-      const minimumContrastRatio =
-        algorithm === 'apca'
-          ? Math.max(ApcaTarget.forPair(pair, roles), pairMinimum)
-          : Math.max(
-            ContrastStandard.wcagFloor(input.contrast?.level),
-            pairMinimum
-          );
+      const minimumContrastRatio = algorithm === 'apca'
+        ? ApcaTarget.forPair(pair, roles)
+        : ContrastStandard.wcagMinimum({
+          'declaredMinimum': pair.minimumContrastRatio,
+          'level': input.contrast?.level
+        });
       const maximumContrastRatio = pair.maximumContrastRatio;
       requirements.push({
         'algorithm': algorithm,
