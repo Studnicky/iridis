@@ -33,6 +33,30 @@ export class PinAssertions {
     }
   }
 
+  public static staysWithinRoleRanges(run: PinRun): void {
+    for (let index = 0; index < run.request.roles.roles.length; index += 1) {
+      const definition = run.request.roles.roles[index];
+      if (definition === undefined) {
+        continue;
+      }
+      const role = run.state.roles[definition.name];
+      assert.notEqual(role, undefined, `${definition.name} resolves`);
+      if (role === undefined || run.request.pins.has(definition.name)) {
+        continue;
+      }
+      if (definition.lightnessRange !== undefined) {
+        const [minimumLightness, maximumLightness] = definition.lightnessRange;
+        assert.equal(role.oklch.l + RATIO_TOLERANCE >= minimumLightness, true, `${definition.name} remains above its minimum lightness`);
+        assert.equal(role.oklch.l - RATIO_TOLERANCE <= maximumLightness, true, `${definition.name} remains below its maximum lightness`);
+      }
+      if (definition.chromaRange !== undefined) {
+        const [minimumChroma, maximumChroma] = definition.chromaRange;
+        assert.equal(role.oklch.c + RATIO_TOLERANCE >= minimumChroma, true, `${definition.name} remains above its minimum chroma`);
+        assert.equal(role.oklch.c - RATIO_TOLERANCE <= maximumChroma, true, `${definition.name} remains below its maximum chroma`);
+      }
+    }
+  }
+
   public static blocked(run: PinRun): void {
     assert.equal(run.report.compliant, false);
     assert.equal(run.report.blockedPairs.length > 0, true);
