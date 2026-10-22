@@ -66,8 +66,9 @@ The config is validated against `CliConfigSchema`. Required top-level keys:
     "intake:any",
     "resolve:roles",
     "expand:family",
-    "enforce:wcagAA",
+    "enforce:compliance",
     "derive:variant",
+    "report:compliance",
     "emit:cssVars"
   ],
   "output": {
