@@ -23,8 +23,9 @@ target and the pair's declared minimum; a declared maximum stays a hard limit.
 Targets:
 
 - WCAG AA: 4.5:1. WCAG AAA: 7:1.
-- APCA: Lc 75 for body text pairs, Lc 60 for other meaningful text roles,
-  Lc 45 for large or heavy display text, Lc 30 for solid non-text.
+- APCA: Lc 75 for body text pairs (text intent on background intent) and Lc 60
+  for every other pair. Role definitions carry no class for large display text
+  or solid non-text, so the lower Lc 45 and Lc 30 targets are not applied.
 
 CVD correction performs a bounded, coarse-to-fine OKLCH lightness/chroma
 search over the four CVD types (`protanopia`, `deuteranopia`, `tritanopia`,
