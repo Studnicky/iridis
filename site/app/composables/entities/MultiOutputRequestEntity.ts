@@ -9,10 +9,9 @@ export namespace MultiOutputRequestEntity {
     '$id': 'https://iridis.dev/site/multi-output-request',
     'additionalProperties': false,
     'properties': {
-      'contrastStrictness': { 'enum': [0, 1, 2], 'type': 'number' },
-      'input':              InputInterfaceTypeEntity.Schema
+      'input': InputInterfaceTypeEntity.Schema
     },
-    'required': ['contrastStrictness', 'input'],
+    'required': ['input'],
     'type': 'object'
   } as const;
 

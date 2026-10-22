@@ -7,7 +7,6 @@ import { buildPipelineStageModel } from './pipeline/buildPipelineStageModel.ts';
 type PipelineStageType = {
   label: string;
   description: string;
-  optionalControl: object | undefined;
   reads: string[];
   value: string;
   writes: string[];
@@ -15,11 +14,10 @@ type PipelineStageType = {
 
 const props = defineProps<{ stage: PipelineStageType }>();
 
-const { enabledOptionalStages, contrastReport } = useIridis();
+const { contrastReport } = useIridis();
 
 const stageModel = computed(() => buildPipelineStageModel.build(
   props.stage.value,
-  enabledOptionalStages.value,
   contrastReport.value
 ));
 </script>
@@ -37,22 +35,6 @@ const stageModel = computed(() => buildPipelineStageModel.build(
           class="ml-auto size-4 transition-transform data-[state=open]:rotate-180"
         />
       </AccordionTrigger>
-      <UBadge
-        v-if="stage.optionalControl !== undefined"
-        :color="stageModel.isEnabled ? 'primary' : 'neutral'"
-        :variant="stageModel.isEnabled ? 'soft' : 'subtle'"
-        size="sm"
-      >
-        {{ stageModel.isEnabled ? 'enabled' : 'disabled' }}
-      </UBadge>
-      <UBadge
-        v-else
-        color="neutral"
-        variant="subtle"
-        size="sm"
-      >
-        required
-      </UBadge>
     </AccordionHeader>
     <AccordionContent class="pb-4">
       <p class="mb-2 text-sm text-muted">
@@ -88,7 +70,7 @@ const stageModel = computed(() => buildPipelineStageModel.build(
       </div>
 
       <p
-        v-if="stageModel.isCvdStage"
+        v-if="stage.value === 'enforce:compliance'"
         class="mt-3 text-xs text-muted"
       >
         Failing pairs are always auto-corrected: the correction adjusts the palette itself.

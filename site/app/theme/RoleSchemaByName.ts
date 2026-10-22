@@ -19,7 +19,7 @@
  * Derivations use derivedFrom + hueOffset so a single brand seed produces
  * the full syntax family in iridis-16. The engine's expand:family task
  * synthesizes derived roles; resolve:roles nudges seeds into their
- * lightness/chroma envelopes; enforce:contrast lifts pairs to threshold.
+ * lightness/chroma envelopes; enforce:compliance lifts pairs to threshold.
  */
 
 import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';

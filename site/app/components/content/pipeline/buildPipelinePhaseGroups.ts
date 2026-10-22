@@ -2,16 +2,14 @@ import { coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 
 import { COLOR_PIPELINE } from '~/composables/colorPipeline.ts';
-import { OPTIONAL_STAGE_NAMES } from '~/composables/optionalStageNames.ts';
+import { deriveRoleRelations } from '~/theme/DeriveRoleRelations.ts';
+import { deriveSemanticHues } from '~/theme/DeriveSemanticHues.ts';
 import { intakeHexHint } from '~/theme/IntakeHexHint.ts';
 import { pinDerivedRoles } from '~/theme/PinDerivedRoles.ts';
-
-class OptionalPipelineStageControl {}
 
 class PipelineStage {
   public readonly description: string;
   public readonly label: string;
-  public readonly optionalControl: OptionalPipelineStageControl | undefined;
   public readonly reads: string[];
   public readonly value: string;
   public readonly writes: string[];
@@ -19,14 +17,12 @@ class PipelineStage {
   public constructor(
     description: string,
     label: string,
-    optionalControl: OptionalPipelineStageControl | undefined,
     reads: string[],
     value: string,
     writes: string[]
   ) {
     this.description = description;
     this.label = label;
-    this.optionalControl = optionalControl;
     this.reads = reads;
     this.value = value;
     this.writes = writes;
@@ -54,16 +50,15 @@ class PipelinePhaseDefinition {
 }
 
 export const buildPipelinePhaseGroups = class PipelinePhaseGroupsBuilder {
-  private static readonly optionalStageControl = new OptionalPipelineStageControl();
   private static readonly phaseDefinitions: readonly PipelinePhaseDefinition[] = [
     new PipelinePhaseDefinition('Intake', ['intake']),
     new PipelinePhaseDefinition('Resolve', ['derive', 'resolve', 'pin', 'expand']),
-    new PipelinePhaseDefinition('Enforce', ['enforce']),
+    new PipelinePhaseDefinition('Enforce', ['enforce', 'report']),
     new PipelinePhaseDefinition('Emit', ['emit'])
   ];
 
   private static readonly tasksByName = new Map(
-    [...coreTasks, intakeHexHint, pinDerivedRoles, ...contrastPlugin.tasks()].map((task) => {
+    [...coreTasks, intakeHexHint, deriveSemanticHues, pinDerivedRoles, deriveRoleRelations, ...contrastPlugin.tasks()].map((task) => {
       return [task.name, task];
     })
   );
@@ -104,13 +99,9 @@ export const buildPipelinePhaseGroups = class PipelinePhaseGroupsBuilder {
 
   private static buildStage(name: string, index: number): PipelineStage {
     const task = this.tasksByName.get(name);
-    const optionalControl = OPTIONAL_STAGE_NAMES.includes(name)
-      ? PipelinePhaseGroupsBuilder.optionalStageControl
-      : undefined;
     return new PipelineStage(
       task?.manifest?.description ?? '(task not registered)',
       `${index + 1}. ${name}`,
-      optionalControl,
       task?.manifest?.reads ?? [],
       name,
       task?.manifest?.writes ?? []

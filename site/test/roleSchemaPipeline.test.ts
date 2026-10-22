@@ -9,13 +9,11 @@ import { test } from 'node:test';
 
 import type { PickerSeedType, SchemaPair } from '../app/composables/types/index.ts';
 
+import { COLOR_PIPELINE } from '../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../app/composables/createColorEngine.ts';
 import { DerivationConfigInterfaceTypeEntity } from '../app/composables/entities/DerivationConfigInterfaceTypeEntity.ts';
-import { optionalContrastStages } from '../app/composables/optionalContrastStages.ts';
 import { pickerSeedInputs } from '../app/composables/pickerSeedInputs.ts';
-import { REQUIRED_COLOR_STAGES } from '../app/composables/requiredColorStages.ts';
-import { spliceOptionalStages } from '../app/composables/spliceOptionalStages.ts';
 import { VARIANT_CONFIG } from '../app/composables/variantConfig.ts';
 import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
 import { Tokens } from '../app/theme/Tokens.ts';
@@ -59,7 +57,7 @@ class RoleSchemaPipelineFixture {
 
     assert.deepEqual(resolvedRoleNames, expectedRoleNames);
     assert.equal(state.runtime.framing, 'dark');
-    assert.equal(getContrastMetadata(state.metadata, 'contrast:aa') === undefined, false);
+    assert.equal(state.metadata['contrast:complianceReport'] === undefined, false);
     assert.equal(getContrastMetadata(state.metadata, 'contrast:cvd') === undefined, false);
 
     for (let index = 0; index < Tokens.SHADE_KEYS.length; index += 1) {
@@ -75,7 +73,7 @@ class RoleSchemaPipelineFixture {
   static run(name: string): { 'schema': RoleSchemaInterfaceTypeEntity.Type; 'state': PaletteStateInterface } {
     const schema = RoleSchemaPipelineFixture.schemaPair(name).dark;
     const engine = createColorEngine();
-    engine.pipeline(spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(0)));
+    engine.pipeline(COLOR_PIPELINE);
     const state = engine.run(InputInterfaceTypeEntity.create({
       'colors':   pickerSeedInputs(RoleSchemaPipelineFixture.seeds),
       'contrast': ContrastConfigFor.forStrictness(0),

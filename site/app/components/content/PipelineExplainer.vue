@@ -10,7 +10,7 @@ import { buildPipelinePhaseGroups } from './pipeline/buildPipelinePhaseGroups.ts
  * this stays truthful if a task's manifest ever changes.
  */
 /**
- * The 12 accordion stages, grouped under the four conceptual phases the docs
+ * The 9 accordion stages, grouped under the four conceptual phases the docs
  * describe (see "The Four Stages" below) — Resolve absorbs every
  * derive/resolve/pin/expand prefix, since role derivation, pinning, and
  * relation-building all serve that one conceptual step. A group with no
@@ -24,7 +24,7 @@ const PHASE_GROUPS = computed(() => buildPipelinePhaseGroups.build());
 <template>
   <UCard>
     <!-- The 4-stage plain-language framing, moved above the accordion as the
-         opening line (NARR-7) — the mental model before the 12-item detail. -->
+         opening line (NARR-7) — the mental model before the 9-item detail. -->
     <p class="mb-3 text-sm text-toned">
       Every useful iridis pipeline passes through four conceptual stages &mdash;
       <span class="font-mono text-xs">intake &rarr; resolve &rarr; enforce &rarr; emit</span> &mdash; even though the
@@ -32,11 +32,11 @@ const PHASE_GROUPS = computed(() => buildPipelinePhaseGroups.build());
       <DocAnchorLink href="#02-the-four-stages">
         The Four Stages
       </DocAnchorLink> for the data flow,
-      the registry, and how plugins contribute optional stages.
+      the registry, and how plugins contribute stages.
     </p>
     <p class="mb-3 text-sm text-muted">
       Expand a stage — the description underneath is that task's own manifest, not marketing copy.
-      Optional stages are automatically switched on or off depending on the compliance strictness setting.
+      The compliance strictness setting selects the contrast standard that <span class="font-mono text-xs">enforce:compliance</span> applies.
     </p>
 
     <div

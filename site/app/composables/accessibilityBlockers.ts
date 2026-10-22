@@ -57,12 +57,17 @@ export class AccessibilityBlockers {
     ['wcag21:AAA', 'WCAG AAA']
   ]);
 
+  public static standardLabel(algorithm: string, level: string): string {
+    const result = AccessibilityBlockers.standardLabels.get(`${algorithm}:${level}`) ?? `${algorithm} ${level}`;
+    return result;
+  }
+
   public static fromMetadata(metadata: Readonly<Record<string, unknown>>): AccessibilityBlockerSet {
     const report: unknown = metadata[REPORT_KEY];
     let result = new AccessibilityBlockerSet([], '');
     if (ComplianceReportViewInterfaceTypeEntity.validate(report)) {
       const { algorithm, level } = report.selected;
-      const label = AccessibilityBlockers.standardLabels.get(`${algorithm}:${level}`) ?? `${algorithm} ${level}`;
+      const label = AccessibilityBlockers.standardLabel(algorithm, level);
       const pairs = report.blockedPairs.map((pair) => {
         return new BlockedPairView(pair.actual, pair.background, pair.foreground, pair.required);
       });

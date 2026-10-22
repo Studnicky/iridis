@@ -17,19 +17,14 @@ import SchemaSelector from './SchemaSelector.vue';
  */
 const {
   schemaName, contrastStrictness, colorSpace,
-  contrastReport, enabledOptionalStages
+  contrastReport
 } = useIridis();
 const { send } = useIridisUiMachine();
 const { activateTarget } = useNavigationTargets();
 
-/** Compact pass/fail summary badges for whichever optional stages are currently enabled. */
+/** Pass/fail summary badge for the selected contrast standard. */
 const stageSummaries = computed(() => {
-  const reports = {
-    'aa': contrastReport.value.aa,
-    'aaa': contrastReport.value.aaa,
-    'apca': contrastReport.value.apca
-  };
-  const result = buildSchemaComplianceSummaries.build(enabledOptionalStages.value, reports);
+  const result = buildSchemaComplianceSummaries.build(contrastReport.value.compliance);
   return result;
 });
 

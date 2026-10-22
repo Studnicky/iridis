@@ -1,10 +1,6 @@
-import type { ApcaPairResultSetInterfaceTypeEntity, WcagPairResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { ComplianceReportViewInterfaceTypeEntity } from '~/composables/entities/ComplianceReportViewInterfaceTypeEntity.ts';
 
-class SchemaContrastReports {
-  public readonly aa: WcagPairResultSetInterfaceTypeEntity.Type | undefined;
-  public readonly aaa: WcagPairResultSetInterfaceTypeEntity.Type | undefined;
-  public readonly apca: ApcaPairResultSetInterfaceTypeEntity.Type | undefined;
-}
+import { AccessibilityBlockers } from '~/composables/accessibilityBlockers.ts';
 
 abstract class SchemaComplianceStatus {
   public abstract get color(): 'success' | 'warning';
@@ -54,39 +50,16 @@ class SchemaStageSummary {
 }
 
 export const buildSchemaComplianceSummaries = class SchemaComplianceSummariesBuilder {
-  private static buildSummary(
-    key: string,
-    label: string,
-    report: ApcaPairResultSetInterfaceTypeEntity.Type | WcagPairResultSetInterfaceTypeEntity.Type
-  ): SchemaStageSummary {
-    let passing = 0;
-    for (const pair of report.pairs) {
-      if (pair.pass) {
-        passing += 1;
-      }
-    }
-    const result = new SchemaStageSummary(
-      SchemaComplianceStatus.resolve(passing, report.pairs.length),
-      key,
-      label,
-      `${passing}/${report.pairs.length} pairs passing`
-    );
-    return result;
-  }
-
-  public static build(
-    enabledStageNames: ReadonlySet<string>,
-    reports: SchemaContrastReports
-  ): SchemaStageSummary[] {
+  public static build(report: ComplianceReportViewInterfaceTypeEntity.Type | undefined): SchemaStageSummary[] {
     const summaries: SchemaStageSummary[] = [];
-    if (enabledStageNames.has('enforce:wcagAA') && reports.aa !== undefined) {
-      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('aa', 'WCAG AA', reports.aa));
-    }
-    if (enabledStageNames.has('enforce:wcagAAA') && reports.aaa !== undefined) {
-      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('aaa', 'WCAG AAA', reports.aaa));
-    }
-    if (enabledStageNames.has('enforce:apca') && reports.apca !== undefined) {
-      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('apca', 'APCA', reports.apca));
+    if (report !== undefined) {
+      const passing = report.pairs.length - report.blockedPairs.length;
+      summaries.push(new SchemaStageSummary(
+        SchemaComplianceStatus.resolve(passing, report.pairs.length),
+        'compliance',
+        AccessibilityBlockers.standardLabel(report.selected.algorithm, report.selected.level),
+        `${passing}/${report.pairs.length} pairs passing`
+      ));
     }
     return summaries;
   }

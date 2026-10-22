@@ -3,7 +3,7 @@
  * Visual CVD preview: a real SVG filter that recolors the whole app the way
  * a person with the selected color-vision deficiency would see it. This is
  * distinct from the always-on CVD correction (packages/contrast
- * enforce:cvdSimulate), which adjusts the palette's own colors so a
+ * enforce:compliance), which adjusts the palette's own colors so a
  * CVD-affected viewer can still distinguish them. This overlay never touches
  * the palette, it only changes what THIS viewer sees, so a non-affected user
  * can observe the corrected palette through simulated eyes.

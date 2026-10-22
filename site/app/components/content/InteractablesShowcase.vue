@@ -27,22 +27,17 @@ const checkedColors = ref<AliasColorEntity.Type[]>(buildInteractablesShowcaseMod
  * table / Resolved roles / Clamps if complianceFor()'s thresholds ever
  * change. Under APCA (strictness 2) the WCAG-derived `compliance` field
  * on those rows doesn't reflect the enforced APCA Lc target at all, so this
- * reads contrastReport.apca.pairs instead — the same APCA result set
+ * reads the compliance report's pairs instead — the same report
  * SchemaComplianceCard and PipelineExplainer render as "X/Y pairs passing" —
  * so the label 'APCA' next to this number always matches the metric behind it. */
 const showcaseModel = computed(() => {
-  const apcaPairs = contrastReport.value.apca?.pairs ?? [];
-  let apcaPassingPairCount = 0;
-  for (let index = 0; index < apcaPairs.length; index++) {
-    const pair = apcaPairs[index];
-    if (pair?.pass === true) {
-      apcaPassingPairCount++;
-    }
-  }
+  const compliance = contrastReport.value.compliance;
+  const apcaPairCount = compliance?.pairs.length ?? 0;
+  const apcaPassingPairCount = apcaPairCount - (compliance?.blockedPairs.length ?? 0);
   const result = buildInteractablesShowcaseModel.build(
     contrastStrictness.value,
     sortedRoleContrastRows.value,
-    apcaPairs.length,
+    apcaPairCount,
     apcaPassingPairCount,
     roleViews.value.length,
     roles.value['background']!

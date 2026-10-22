@@ -14,7 +14,7 @@
  * up as text (dimmed/muted/toned/text/highlighted, across both framings)
  * against the resolved `--ui-bg`, and nudges any that fall short of WCAG AA
  * via the engine's own `ensureContrast` primitive — the same math
- * `enforce:contrast` uses on a role's base hex, applied here to the slice of
+ * `enforce:compliance` uses on a role's base hex, applied here to the slice of
  * the tonal scale Nuxt UI actually renders as chrome text. This holds
  * regardless of which contrast-standard strictness (AA/AAA/APCA) the
  * pipeline itself is configured to enforce, so the front-end's own WCAG

@@ -17,11 +17,7 @@ import type {
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
 import { colorRecordFactory, InputInterfaceTypeEntity, Metadata } from '@studnicky/iridis';
-import {
-  ApcaPairResultSetInterfaceTypeEntity,
-  CvdResultSetInterfaceTypeEntity,
-  WcagPairResultSetInterfaceTypeEntity
-} from '@studnicky/iridis-contrast';
+import { CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
 import { ClusterDispatcher, GalleryCandidateOutputEntity, imagePlugin } from '@studnicky/iridis-image';
 import { JsonValue } from '@studnicky/types/browser';
 import * as VueModule from 'vue';
@@ -46,21 +42,20 @@ import { RoleSortBehavior } from '../utils/roleSortBehavior.ts';
 import { ROLE_SORT_FIELD_OPTIONS } from '../utils/roleSortFieldOptions.ts';
 import { sortRoleRows } from '../utils/sortRoleRows.ts';
 import { AccessibilityBlockers } from './accessibilityBlockers.ts';
+import { COLOR_PIPELINE } from './colorPipeline.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
 import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
+import { ComplianceReportViewInterfaceTypeEntity } from './entities/ComplianceReportViewInterfaceTypeEntity.ts';
 import { DerivationConfigInterfaceTypeEntity } from './entities/DerivationConfigInterfaceTypeEntity.ts';
 import { FramingInterfaceTypeEntity } from './entities/FramingInterfaceTypeEntity.ts';
 import { ModeInterfaceTypeEntity } from './entities/ModeInterfaceTypeEntity.ts';
 import { RoleSortableRowInterfaceTypeEntity } from './entities/RoleSortableRowInterfaceTypeEntity.ts';
 import { SchemaNameInterfaceTypeEntity } from './entities/SchemaNameInterfaceTypeEntity.ts';
-import { optionalContrastStages } from './optionalContrastStages.ts';
 import { PaletteAdmission } from './paletteAdmission.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
-import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
 import { schemaRoleCount } from './schemaRoleCount.ts';
-import { spliceOptionalStages } from './spliceOptionalStages.ts';
 import { IridisUiEvent } from './types/index.ts';
 import { useIridisUiMachine } from './useIridisUiMachine.ts';
 import { useNavigationTargets } from './useNavigationTargets.ts';
@@ -208,13 +203,9 @@ namespace GalleryMetadataSlotEntity {
 
 }
 class ContrastMetadataSlot {
-  static apca(metadata: PaletteStateInterface['metadata']): ApcaPairResultSetInterfaceTypeEntity.Type | undefined {
-    const value = metadata['contrast:apca'];
-    if (value === undefined) {
-      const result = undefined;
-      return result;
-    }
-    const result = ApcaPairResultSetInterfaceTypeEntity.intake(value);
+  static compliance(metadata: PaletteStateInterface['metadata']): ComplianceReportViewInterfaceTypeEntity.Type | undefined {
+    const value = metadata['contrast:complianceReport'];
+    const result = ComplianceReportViewInterfaceTypeEntity.validate(value) ? value : undefined;
     return result;
   }
 
@@ -225,26 +216,6 @@ class ContrastMetadataSlot {
       return result;
     }
     const result = CvdResultSetInterfaceTypeEntity.intake(value);
-    return result;
-  }
-
-  static wcagAa(metadata: PaletteStateInterface['metadata']): WcagPairResultSetInterfaceTypeEntity.Type | undefined {
-    const value = metadata['contrast:aa'];
-    if (value === undefined) {
-      const result = undefined;
-      return result;
-    }
-    const result = WcagPairResultSetInterfaceTypeEntity.intake(value);
-    return result;
-  }
-
-  static wcagAaa(metadata: PaletteStateInterface['metadata']): WcagPairResultSetInterfaceTypeEntity.Type | undefined {
-    const value = metadata['contrast:aaa'];
-    if (value === undefined) {
-      const result = undefined;
-      return result;
-    }
-    const result = WcagPairResultSetInterfaceTypeEntity.intake(value);
     return result;
   }
 }
@@ -291,20 +262,6 @@ class RoleClampReadModel {
 
 class IridisContextFactory {
   static create() {
-    /** Which optional stages currently run based on strictness. */
-    const enabledOptionalStages = VueModule.computed<Set<string>>(() => {const result = optionalContrastStages(contrastStrictness.value);
-      return result;});
-
-    /** Slots the currently-enabled optional stages into `required` right after enforce:contrast. */
-    class PipelineBuildOperation {
-      static run(required: readonly string[]): string[] {
-        const result = spliceOptionalStages(required, enabledOptionalStages.value);
-        return result;
-      }
-    }
-
-    const pipelineBuild = PipelineBuildOperation.run;
-
     const engine = createColorEngine();
     engine.adopt(imagePlugin);
 
@@ -574,12 +531,10 @@ class IridisContextFactory {
     const accessibilityBlockers = VueModule.shallowRef(AccessibilityBlockers.fromMetadata({}));
     const paletteAdmission = new PaletteAdmission();
 
-    /** Raw contrast-check metadata from the last run, keyed by algorithm rather than the `contrast:*` metadata prefix. */
+    /** Compliance and CVD reports from the last run. */
     const contrastReport = VueModule.ref<{
-      'aa'?:   WcagPairResultSetInterfaceTypeEntity.Type;
-      'aaa'?:  WcagPairResultSetInterfaceTypeEntity.Type;
-      'apca'?: ApcaPairResultSetInterfaceTypeEntity.Type;
-      'cvd'?:  CvdResultSetInterfaceTypeEntity.Type;
+      'compliance'?: ComplianceReportViewInterfaceTypeEntity.Type;
+      'cvd'?:        CvdResultSetInterfaceTypeEntity.Type;
     }>({});
 
     /* Image-extraction controls (mirror the engine's gallery config knobs). */
@@ -685,10 +640,8 @@ class IridisContextFactory {
         rolesDerived.value = derivedRoles;
         scales.value = engineMaps.scales;
         contrastReport.value = {
-          'aa':   ContrastMetadataSlot.wcagAa(state.metadata),
-          'aaa':  ContrastMetadataSlot.wcagAaa(state.metadata),
-          'apca': ContrastMetadataSlot.apca(state.metadata),
-          'cvd':  ContrastMetadataSlot.cvd(state.metadata)
+          'compliance': ContrastMetadataSlot.compliance(state.metadata),
+          'cvd':        ContrastMetadataSlot.cvd(state.metadata)
         };
         if (typeof document !== 'undefined') {
           applyCurrentFramingTokens(Tokens.mapFromEngine(engineMaps.roles, engineMaps.scales));
@@ -758,7 +711,7 @@ class IridisContextFactory {
         beginOperation();
         error.value = null;
         try {
-          engine.pipeline(pipelineBuild(REQUIRED_COLOR_STAGES));
+          engine.pipeline(COLOR_PIPELINE);
           const targetRoles = (() => {
             const pair = roleSchemaByName[schemaName.value];
             const selected = targetFraming === 'dark' ? pair.dark : pair.light;
@@ -1454,14 +1407,14 @@ class IridisContextFactory {
             void addUploadedImages([logoUrl()], ['Sample']);
             // framing is intentionally absent here — its swap is dispatched synchronously
             // by paletteParamSet() via run(effect.value), not through this debounce.
-            stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
+            stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
             stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
           }
         }
         const result = {
           'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
           'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
-          'effectiveHexesFor': effectiveHexesFor, 'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing,
+          'effectiveHexesFor': effectiveHexesFor, 'error': error, 'framing': framing,
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
           'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'pickerSeeds': pickerSeeds,

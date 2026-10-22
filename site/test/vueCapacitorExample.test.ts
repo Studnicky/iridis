@@ -7,15 +7,12 @@ import {
   clamp01,
   colorRecordFactory,
   ContrastAlgorithmTypeEntity,
-  contrastApca,
-  ContrastPairInterfaceTypeEntity,
   contrastWcag21,
   coreTasks,
   Engine,
   InputInterfaceTypeEntity,
   linearToSrgb,
   RoleDefinitionInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity,
   srgbToLinear
 } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
@@ -31,6 +28,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
+import { ComplianceReportViewInterfaceTypeEntity } from '../app/composables/entities/ComplianceReportViewInterfaceTypeEntity.ts';
 import { categoryColorService } from '../app/examples/vueCapacitor/categoryColorService.ts';
 import { categoryW3cRoleSchema } from '../app/examples/vueCapacitor/categoryW3cRoleSchema.ts';
 import { CATEGORY_COLOR_SERVICE_CONSTANTS } from '../app/examples/vueCapacitor/constants/CategoryColorServiceConstants.ts';
@@ -45,7 +43,6 @@ class RecipeConfigFixture {
       'contrast': {
         'algorithm': ContrastAlgorithmTypeEntity.intake(contrast.algorithm),
         'cvdCorrect': RecipeConfigFixture.boolean(contrast.cvdCorrect, 'input.contrast.cvdCorrect'),
-        'extra': RecipeConfigFixture.contrastPairs(contrast.extra),
         'level': RecipeConfigFixture.string(contrast.level, 'input.contrast.level')
       },
       'metadata': metadata,
@@ -122,29 +119,6 @@ class RecipeConfigFixture {
     return result;
   }
 
-  private static contrastPairs(value: JSONSchema7Object[string] | undefined): ContrastPairInterfaceTypeEntity.Type[] {
-    if (!Array.isArray(value)) {
-      throw new TypeError('input.contrast.extra must be an array.');
-    }
-    const pairs: ContrastPairInterfaceTypeEntity.Type[] = [];
-    for (let index = 0; index < value.length; index += 1) {
-      const member = value[index];
-      if (member === undefined || !JsonObject.is(member)) {
-        throw new TypeError(`input.contrast.extra[${index}] must be an object.`);
-      }
-      const minimumContrastRatio = member.minimumContrastRatio;
-      if (typeof minimumContrastRatio !== 'number') {
-        throw new TypeError(`input.contrast.extra[${index}].minimumContrastRatio must be a number.`);
-      }
-      pairs.push(ContrastPairInterfaceTypeEntity.create({
-        'algorithm': ContrastAlgorithmTypeEntity.intake(member.algorithm),
-        'background': RecipeConfigFixture.string(member.background, `input.contrast.extra[${index}].background`),
-        'foreground': RecipeConfigFixture.string(member.foreground, `input.contrast.extra[${index}].foreground`),
-        'minimumContrastRatio': minimumContrastRatio
-      }));
-    }
-    return pairs;
-  }
 }
 class FakeStyleElement {
   id = '';
@@ -233,16 +207,6 @@ class RoleSchemaFixture {
   }
 }
 class AccessibilityFixture {
-  static apcaPairs(): ContrastPairInterfaceTypeEntity.Type[] {
-    const result = [
-      ContrastPairInterfaceTypeEntity.create({ 'algorithm': 'apca', 'background': 'canvas', 'foreground': 'text', 'minimumContrastRatio': 75 }),
-      ContrastPairInterfaceTypeEntity.create({ 'algorithm': 'apca', 'background': 'surface', 'foreground': 'text', 'minimumContrastRatio': 75 }),
-      ContrastPairInterfaceTypeEntity.create({ 'algorithm': 'apca', 'background': 'accent', 'foreground': 'onAccent', 'minimumContrastRatio': 60 }),
-      ContrastPairInterfaceTypeEntity.create({ 'algorithm': 'apca', 'background': 'canvas', 'foreground': 'border', 'minimumContrastRatio': 45 })
-    ];
-    return result;
-  }
-
   static requiredRatio(minimumContrastRatio: number | undefined, context: string): number {
     if (minimumContrastRatio === undefined) {
       throw new Error(`${context} must declare minimumContrastRatio.`);
@@ -284,46 +248,6 @@ class AccessibilityFixture {
         );
       }
     }
-  }
-
-  static apcaRequiredLc(
-    foregroundRole: RoleDefinitionInterfaceTypeEntity.Type,
-    backgroundRole: RoleDefinitionInterfaceTypeEntity.Type
-  ): number {
-    const engine = new Engine();
-    for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
-      const task = coreTasks[taskIndex];
-      if (task === undefined) {
-        throw new Error(`Core task ${taskIndex} is missing.`);
-      }
-      engine.tasks.register(task);
-    }
-    engine.adopt(contrastPlugin);
-    engine.pipeline(['intake:any', 'resolve:roles', 'enforce:apca']);
-    const roles = RoleSchemaInterfaceTypeEntity.create({
-      'contrastPairs': [
-        { 'algorithm': 'apca', 'background': 'background', 'foreground': 'foreground', 'minimumContrastRatio': 1 }
-      ],
-      'name': 'semantic-apca-target',
-      'roles': [
-        { ...foregroundRole, 'name': 'foreground' },
-        { ...backgroundRole, 'name': 'background' }
-      ]
-    });
-    const state = engine.run(InputInterfaceTypeEntity.create({
-      'colors': ['#000000', '#ffffff'],
-      'roles': roles
-    }));
-    const metadata = getContrastMetadata(state.metadata, 'contrast:apca');
-    if (metadata === undefined || !('pairs' in metadata)) {
-      throw new Error('APCA enforcement did not report the semantic intent pair.');
-    }
-    const pair = metadata.pairs[0];
-    if (pair === undefined || !('requiredLc' in pair)) {
-      throw new Error('APCA enforcement did not report the semantic intent pair.');
-    }
-    const result = pair.requiredLc;
-    return result;
   }
 
   static cvdDrop(
@@ -440,39 +364,6 @@ await test('Vue Capacitor CVD audit clamps matrix channels before gamma encoding
   assert.equal(drop > CVD_THRESHOLDS.protanopia.dropMagnitude, true);
 });
 
-await test('Vue Capacitor APCA evidence covers every canonical foreground intent', () => {
-  const backgroundRole = RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'background', 'name': 'background' });
-  const accentRole = RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'accent', 'name': 'accent' });
-  const buttonRole = RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'button', 'name': 'button' });
-  const actualTargets = new Map([
-    ['accent', AccessibilityFixture.apcaRequiredLc(accentRole, backgroundRole)],
-    ['background', AccessibilityFixture.apcaRequiredLc(backgroundRole, backgroundRole)],
-    ['button', AccessibilityFixture.apcaRequiredLc(buttonRole, backgroundRole)],
-    ['critical', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'critical', 'name': 'critical' }), backgroundRole)],
-    ['link', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'link', 'name': 'link' }), backgroundRole)],
-    ['muted', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'muted', 'name': 'muted' }), backgroundRole)],
-    ['onAccent', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'onAccent', 'name': 'onAccent' }), accentRole)],
-    ['onButton', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'onButton', 'name': 'onButton' }), buttonRole)],
-    ['positive', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'positive', 'name': 'positive' }), backgroundRole)],
-    ['text', AccessibilityFixture.apcaRequiredLc(RoleDefinitionInterfaceTypeEntity.create({ 'intent': 'text', 'name': 'text' }), backgroundRole)]
-  ]);
-  const expectedTargets = new Map([
-    ['accent', 45],
-    ['background', 45],
-    ['button', 45],
-    ['critical', 45],
-    ['link', 60],
-    ['muted', 60],
-    ['onAccent', 60],
-    ['onButton', 60],
-    ['positive', 45],
-    ['text', 75]
-  ]);
-
-  assert.deepEqual(actualTargets, expectedTargets);
-  const unconstrainedForeground = RoleDefinitionInterfaceTypeEntity.create({ 'name': 'foreground' });
-  assert.equal(AccessibilityFixture.apcaRequiredLc(unconstrainedForeground, backgroundRole), 45);
-});
 await test('Vue Capacitor JSON artifacts align with the TypeScript schema and execute the real config', async () => {
   const config = await RecipeConfigFixture.json('../app/examples/vueCapacitor/category-w3c.config.json');
   const schemaJson = await RecipeConfigFixture.json('../app/examples/vueCapacitor/categoryW3cRoleSchema.json');
@@ -487,37 +378,27 @@ await test('Vue Capacitor JSON artifacts align with the TypeScript schema and ex
   if (input.contrast === undefined) {
     throw new Error('The canonical recipe config must declare contrast options.');
   }
-  assert.deepEqual(input.contrast.extra, AccessibilityFixture.apcaPairs());
   assert.deepEqual(RecipeConfigFixture.stringArray(config.pipeline, 'pipeline'), [
     'intake:any',
     'resolve:roles',
     'expand:family',
-    'enforce:wcagAA',
-    'enforce:wcagAAA',
-    'enforce:apca',
-    'enforce:cvdSimulate',
+    'enforce:compliance',
     'derive:variant',
+    'report:compliance',
     'emit:cssVars',
     'emit:capacitorStatusBar',
     'emit:capacitorTheme'
   ]);
 
   const state = RecipeConfigFixture.run(config);
-  const wcagAa = getContrastMetadata(state.metadata, 'contrast:aa');
-  const wcagAaa = getContrastMetadata(state.metadata, 'contrast:aaa');
-  const apca = getContrastMetadata(state.metadata, 'contrast:apca');
+  const compliance = ComplianceReportViewInterfaceTypeEntity.intake(state.metadata['contrast:complianceReport']);
   const cvd = getContrastMetadata(state.metadata, 'contrast:cvd');
-  if (
-    wcagAa === undefined || !('pairs' in wcagAa)
-    || wcagAaa === undefined || !('pairs' in wcagAaa)
-    || apca === undefined || !('pairs' in apca)
-    || cvd === undefined || !('warnings' in cvd) || !('corrections' in cvd)
-  ) {
-    throw new Error('The canonical recipe config must emit all contrast evidence.');
+  if (cvd === undefined || !('warnings' in cvd) || !('corrections' in cvd)) {
+    throw new Error('The canonical recipe config must emit CVD evidence.');
   }
-  assert.equal(wcagAa.pairs.length, 4);
-  assert.equal(wcagAaa.pairs.length, 4);
-  assert.equal(apca.pairs.length, 4);
+  assert.equal(compliance.compliant, true);
+  assert.equal(compliance.cvdCompliant, true);
+  assert.equal(compliance.pairs.length > 0, true);
   assert.equal(cvd.warnings.length, 0);
   const everyCorrectionCleared = cvd.corrections?.every((correction) => {
     const result = correction.cvdTypesRemaining.length === 0;
@@ -561,29 +442,14 @@ await test('Vue Capacitor schema exposes complete role shapes and produces valid
   assert.equal(output.statusBar.backgroundColor.length, 7);
   assert.equal(typeof output.statusBar.overlay, 'boolean');
   assert.equal(output.statusBar.style === 'DARK' || output.statusBar.style === 'LIGHT', true);
-  assert.equal(output.wcagAa.pairs.length, categoryW3cRoleSchema.contrastPairs?.length);
-  const wcagAaPasses = output.wcagAa.pairs.every((pair) => {
-    const result = pair.pass && pair.after >= pair.required;
+  assert.equal(output.compliance.compliant, true);
+  assert.equal(output.compliance.cvdCompliant, true);
+  assert.equal(output.wcagPairs.length, categoryW3cRoleSchema.contrastPairs?.length);
+  const wcagPasses = output.wcagPairs.every((pair) => {
+    const result = pair.actual >= pair.required;
     return result;
   });
-  assert.equal(wcagAaPasses, true);
-  const wcagAaaPasses = output.wcagAaa.pairs.every((pair) => {
-    const result = pair.pass && pair.after >= pair.required;
-    return result;
-  });
-  assert.equal(wcagAaaPasses, true);
-  const apcaPasses = output.apca.pairs.every((pair) => {
-    const result = pair.pass && pair.afterLc >= pair.requiredLc;
-    return result;
-  });
-  assert.equal(apcaPasses, true);
-  const requiredLcByPair = new Map(output.apca.pairs.map((pair) => {
-    return [`${pair.foreground}\u0000${pair.background}`, pair.requiredLc];
-  }));
-  assert.equal(requiredLcByPair.get('text\u0000canvas'), 75);
-  assert.equal(requiredLcByPair.get('text\u0000surface'), 75);
-  assert.equal(requiredLcByPair.get('onAccent\u0000accent'), 60);
-  assert.equal(requiredLcByPair.get('border\u0000canvas'), 45);
+  assert.equal(wcagPasses, true);
   assert.equal(output.cvd.warnings.length, 0);
   const correctionsCleared = output.cvd.corrections?.every((correction) => {
     const result = correction.cvdTypesRemaining.length === 0;
@@ -618,28 +484,6 @@ await test('Vue Capacitor schema exposes complete role shapes and produces valid
     );
     const minimumContrastRatio = AccessibilityFixture.requiredRatio(pair.minimumContrastRatio, `Schema contrast pair ${pairIndex}`);
     assert.equal(ratio >= minimumContrastRatio, true, `${pair.foreground}/${pair.background}: ${ratio}`);
-  }
-  const apcaEvidence = new Map<string, number>();
-  for (let resultIndex = 0; resultIndex < output.apca.pairs.length; resultIndex += 1) {
-    const result = output.apca.pairs[resultIndex];
-    if (result === undefined) {
-      throw new Error(`APCA result ${resultIndex} is missing.`);
-    }
-    apcaEvidence.set(`${result.foreground}\u0000${result.background}`, result.afterLc);
-  }
-  const apcaPairs = AccessibilityFixture.apcaPairs();
-  for (let pairIndex = 0; pairIndex < apcaPairs.length; pairIndex += 1) {
-    const pair = apcaPairs[pairIndex];
-    if (pair === undefined) {
-      throw new Error(`APCA pair ${pairIndex} is missing.`);
-    }
-    const actualLc = Math.abs(contrastApca.apply(
-      AccessibilityFixture.role(emittedRoles, pair.foreground),
-      AccessibilityFixture.role(emittedRoles, pair.background)
-    ));
-    const minimumContrastRatio = AccessibilityFixture.requiredRatio(pair.minimumContrastRatio, `APCA pair ${pairIndex}`);
-    assert.equal(actualLc >= minimumContrastRatio, true, `${pair.foreground}/${pair.background}: ${actualLc}`);
-    assert.equal(apcaEvidence.get(`${pair.foreground}\u0000${pair.background}`), actualLc);
   }
   AccessibilityFixture.assertCvd(emittedRoles);
 });
@@ -681,7 +525,7 @@ await test('Vue Capacitor service applies no partial style when a palette fails 
   assert.equal(existingSheet.textContent, 'existing conformant palette');
 });
 
-await test('Vue Capacitor service rejects malformed output and stale APCA metadata', async () => {
+await test('Vue Capacitor service rejects malformed output and stale compliance metadata', async () => {
   const documentFixture = new FakeDocument();
   Reflect.set(globalThis, 'document', documentFixture);
   Reflect.set(globalThis, 'HTMLStyleElement', FakeStyleElement);
@@ -714,8 +558,8 @@ await test('Vue Capacitor service rejects malformed output and stale APCA metada
   if (!scopedBlock.includes('#201042')) {
     throw new Error('The canonical terminal text color is missing from scoped CSS.');
   }
-  cssVars.scopedBlock = scopedBlock.replace('#201042', '#250d4f');
-  state.roles.text = colorRecordFactory.fromHex('#250d4f');
+  cssVars.scopedBlock = scopedBlock.replace('#201042', '#8b5cf6');
+  state.roles.text = colorRecordFactory.fromHex('#8b5cf6');
 
   Reflect.set(categoryColorService, 'engine', new StaticPaletteEngine(state));
 
@@ -729,6 +573,6 @@ await test('Vue Capacitor service rejects malformed output and stale APCA metada
   }
 
   assert.ok(staleFailure instanceof RangeError);
-  assert.equal(staleFailure.message.includes('does not meet APCA Lc 75'), true);
+  assert.equal(staleFailure.message.includes('WCAG contrast'), true);
   assert.equal(documentFixture.head.children.length, 0);
 });

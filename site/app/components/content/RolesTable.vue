@@ -117,7 +117,7 @@ const rendersTable = computed(() => dataLayout.value.select(false, false, false,
       see <DocAnchorLink href="#10-math-primitives-reference">
         Math Primitives Reference
       </DocAnchorLink>
-      for the WCAG/APCA math and how `enforce:contrast` corrects a failing pair.
+      for the WCAG/APCA math and how `enforce:compliance` corrects a failing pair.
     </FootnoteText>
   </UCard>
 </template>

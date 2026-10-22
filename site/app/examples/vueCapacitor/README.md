@@ -6,13 +6,13 @@ Demonstrates the iridis pipeline producing a W3C-conformant palette from a singl
 
 ```
 seed hex (#8B5CF6)
-  -> Engine.run({ colors, roles: categoryW3cRoleSchema, contrast: AAA + APCA + CVD correction })
+  -> Engine.run({ colors, roles: categoryW3cRoleSchema, contrast: WCAG AAA + CVD correction })
        |
-    enforce:wcagAA           (validates contrast pairs and reports any partial result)
+    enforce:compliance       (enforces the selected standard and corrects CVD instability)
        |
-    enforce:wcagAAA / enforce:apca
+    derive:variant
        |
-    enforce:cvdSimulate      (corrects CVD instability and reports unresolved warnings)
+    report:compliance        (writes state.metadata['contrast:complianceReport'])
        |
     emit:cssVars             (writes state.outputs['stylesheet:cssVars'])
        |
@@ -23,7 +23,7 @@ seed hex (#8B5CF6)
 
 ## Role schema (`categoryW3cRoleSchema`)
 
-Seven roles with declared WCAG thresholds evaluated by the maximal contrast pipeline:
+Seven roles with declared WCAG thresholds enforced by `enforce:compliance`:
 
 | Role       | Intent     | Contrast requirement                       |
 |------------|------------|--------------------------------------------|
@@ -59,7 +59,7 @@ Properties are scoped to `[data-category='music']`:
 </MusicCategoryView>
 ```
 
-`MusicCategoryView` calls `categoryColorService.apply('music', '#8B5CF6')` on mount. The AAA-strength schema resolves the accent to `#5b4894` and `onAccent` to `#fcfcfc`, producing approximately 7.31:1. The terminal `#201042` text reaches approximately 13.53:1 on canvas and 11.11:1 on surface. Final APCA magnitudes are Lc 86.50, 75.50, 83.71, and 50.58 for the four configured relations. The service reparses the emitted hex values and independently re-audits WCAG, APCA, and every CVD simulation, clamping each simulated linear channel before gamma encoding, before writing CSS. The returned `statusBar` value is ready for the Capacitor StatusBar API; `wcagAa`, `wcagAaa`, `apca`, and `cvd` expose terminal enforcement evidence.
+`MusicCategoryView` calls `categoryColorService.apply('music', '#8B5CF6')` on mount. The AAA-strength schema resolves the accent to `#5b4894` and `onAccent` to `#fcfcfc`, producing approximately 7.31:1. The terminal `#201042` text reaches approximately 13.53:1 on canvas and 11.11:1 on surface. The service reparses the emitted hex values and independently re-audits WCAG and every CVD simulation, clamping each simulated linear channel before gamma encoding, before writing CSS. The returned `statusBar` value is ready for the Capacitor StatusBar API; `compliance`, `wcagPairs`, and `cvd` expose terminal enforcement evidence.
 
 Category names must be lowercase kebab-case identifiers. Invalid names and palettes that cannot meet every declared contrast threshold throw before a style element is created or updated.
 
@@ -67,7 +67,7 @@ Category names must be lowercase kebab-case identifiers. Invalid names and palet
 
 `categoryColorService.ts` adopts three first-party plugins:
 
-- `@studnicky/iridis-contrast` (`enforce:wcagAA`, `enforce:wcagAAA`, `enforce:apca`, and corrective `enforce:cvdSimulate`)
+- `@studnicky/iridis-contrast` (`enforce:compliance` and `report:compliance`)
 - `@studnicky/iridis-stylesheet` (`emit:cssVars`)
 - `@studnicky/iridis-capacitor` (`emit:capacitorStatusBar`, `emit:capacitorTheme`)
 

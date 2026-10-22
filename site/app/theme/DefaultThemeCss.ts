@@ -3,13 +3,11 @@ import { JsonValue } from '@studnicky/types/browser';
 
 import type { SchemaPair } from '../composables/types/index.ts';
 
+import { COLOR_PIPELINE } from '../composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../composables/contrastConfigFor.ts';
 import { createColorEngine } from '../composables/createColorEngine.ts';
 import { DerivationConfigInterfaceTypeEntity } from '../composables/entities/DerivationConfigInterfaceTypeEntity.ts';
-import { optionalContrastStages } from '../composables/optionalContrastStages.ts';
 import { pickerSeedInputs } from '../composables/pickerSeedInputs.ts';
-import { REQUIRED_COLOR_STAGES } from '../composables/requiredColorStages.ts';
-import { spliceOptionalStages } from '../composables/spliceOptionalStages.ts';
 import { VARIANT_CONFIG } from '../composables/variantConfig.ts';
 import { roleSchemaByName } from './RoleSchemaByName.ts';
 import { Tokens } from './Tokens.ts';
@@ -38,7 +36,7 @@ export class DefaultThemeCss {
 
   private static generateDarkFrame(): string {
     const engine = createColorEngine();
-    engine.pipeline(spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(2)));
+    engine.pipeline(COLOR_PIPELINE);
     const pair = DefaultThemeCss.schemaPair();
     const state = engine.run(InputInterfaceTypeEntity.create({
       'colors':   pickerSeedInputs(DefaultThemeCss.seeds),
@@ -59,7 +57,7 @@ export class DefaultThemeCss {
 
   private static generateLightFrame(): string {
     const engine = createColorEngine();
-    engine.pipeline(spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(2)));
+    engine.pipeline(COLOR_PIPELINE);
     const pair = DefaultThemeCss.schemaPair();
     const state = engine.run(InputInterfaceTypeEntity.create({
       'colors':   pickerSeedInputs(DefaultThemeCss.seeds),

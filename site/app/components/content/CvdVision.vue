@@ -11,8 +11,7 @@ import { buildCvdVisionModel } from './cvd/buildCvdVisionModel.ts';
  * it looks like under each condition (a real SVG filter, see
  * CvdPreviewOverlay.vue — display-only, never touches the palette), what each
  * condition actually is, and the resulting warnings report. Always usable, no
- * enable step — enforce:cvdSimulate itself runs unconditionally (see
- * useIridis.ts's REQUIRED_COLOR_STAGES).
+ * enable step — CVD correction runs inside enforce:compliance on every palette.
  */
 const { cvdPreviewTypes, contrastReport, send } = useIridis();
 
@@ -31,7 +30,7 @@ function toggleCvdPreview(cvdType: CvdMatrixInterfaceTypeEntity.Type['name']): v
       <SectionIntro>
         <template #body>
           Color vision deficiency (CVD) checking runs on every palette, always — see
-          <code class="font-mono text-xs">enforce:cvdSimulate</code> in the Pipeline card. Failing
+          <code class="font-mono text-xs">enforce:compliance</code> in the Pipeline card. Failing
           pairs are always auto-corrected: the correction adjusts the palette itself. The preview
           toggles below only change how this page looks to you — they never touch the palette.
         </template>

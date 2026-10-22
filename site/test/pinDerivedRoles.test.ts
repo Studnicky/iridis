@@ -7,13 +7,11 @@ import { test } from 'node:test';
 
 import type { PickerSeedType } from '../app/composables/types/index.ts';
 
+import { COLOR_PIPELINE } from '../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../app/composables/createColorEngine.ts';
 import { DerivationConfigInterfaceTypeEntity } from '../app/composables/entities/DerivationConfigInterfaceTypeEntity.ts';
-import { optionalContrastStages } from '../app/composables/optionalContrastStages.ts';
 import { pickerSeedInputs } from '../app/composables/pickerSeedInputs.ts';
-import { REQUIRED_COLOR_STAGES } from '../app/composables/requiredColorStages.ts';
-import { spliceOptionalStages } from '../app/composables/spliceOptionalStages.ts';
 import { VARIANT_CONFIG } from '../app/composables/variantConfig.ts';
 import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
 
@@ -25,7 +23,7 @@ class PinnedPaletteRun {
       { 'hex': pinHex, 'role': pinRole }
     ];
     const engine = createColorEngine();
-    engine.pipeline(spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(2)));
+    engine.pipeline(COLOR_PIPELINE);
     const result = engine.run(InputInterfaceTypeEntity.create({
       'colors':   pickerSeedInputs(seeds),
       'contrast': ContrastConfigFor.forStrictness(2),
