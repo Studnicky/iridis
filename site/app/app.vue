@@ -52,6 +52,7 @@ onMounted(() => {
   <UApp>
     <AmbientBackground />
     <NuxtRouteAnnouncer />
+    <AccessibilityToast />
     <CvdPreviewOverlay>
       <NuxtPage />
     </CvdPreviewOverlay>

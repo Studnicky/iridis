@@ -45,6 +45,7 @@ import { minimumRatioForRole } from '../utils/minimumRatioForRole.ts';
 import { RoleSortBehavior } from '../utils/roleSortBehavior.ts';
 import { ROLE_SORT_FIELD_OPTIONS } from '../utils/roleSortFieldOptions.ts';
 import { sortRoleRows } from '../utils/sortRoleRows.ts';
+import { AccessibilityBlockers } from './accessibilityBlockers.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
 import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
@@ -54,6 +55,7 @@ import { ModeInterfaceTypeEntity } from './entities/ModeInterfaceTypeEntity.ts';
 import { RoleSortableRowInterfaceTypeEntity } from './entities/RoleSortableRowInterfaceTypeEntity.ts';
 import { SchemaNameInterfaceTypeEntity } from './entities/SchemaNameInterfaceTypeEntity.ts';
 import { optionalContrastStages } from './optionalContrastStages.ts';
+import { PaletteAdmission } from './paletteAdmission.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
@@ -568,6 +570,10 @@ class IridisContextFactory {
     const sortedRoleContrastRows = VueModule.computed(() => { const result = sortRoleRows(roleContrastRows.value, roleSortKeys.value.map((key) => { return key.behavior; })); return result; });
     const error = VueModule.ref<string | null>(null);
 
+    /** Compliance blockers from the latest run; the empty set when the run is compliant. */
+    const accessibilityBlockers = VueModule.shallowRef(AccessibilityBlockers.fromMetadata({}));
+    const paletteAdmission = new PaletteAdmission();
+
     /** Raw contrast-check metadata from the last run, keyed by algorithm rather than the `contrast:*` metadata prefix. */
     const contrastReport = VueModule.ref<{
       'aa'?:   WcagPairResultSetInterfaceTypeEntity.Type;
@@ -692,6 +698,19 @@ class IridisContextFactory {
 
     const ingest = IngestOperation.run;
 
+    /** Pinned roles named by a blocked pair; the picker marks them pending. */
+    const rejectedPinRoles = VueModule.computed<readonly string[]>(() => {
+      const blockedNames = new Set<string>(accessibilityBlockers.value.pairs.flatMap((pair) => {
+        const names = [pair.foreground, pair.background];
+        return names;
+      }));
+      const result = activeSeeds.value.flatMap((seed) => {
+        const pinned = seed.role !== undefined && blockedNames.has(seed.role) ? [seed.role] : [];
+        return pinned;
+      });
+      return result;
+    });
+
     /** run()'s engine input whenever neither seed list has anything yet (see run() below) — never surfaced as pickerSeeds/imageSeeds, so it never appears as a phantom entry in Manual or the per-image cards. */
     const BOOTSTRAP_SEEDS: PickerSeedType[] = defaultPaletteSeeds();
 
@@ -706,6 +725,25 @@ class IridisContextFactory {
  * colors linger for a debounce window.
  */
     let pendingFraming: FramingInterfaceTypeEntity.Type | undefined;
+    class FramingSwapOperation {
+      static run(): void {
+        if (pendingFraming !== undefined) {
+          framing.value = pendingFraming;
+          if (typeof document !== 'undefined') {
+            document.documentElement.classList.add('is-switching-theme');
+            if (pendingFraming === 'dark') {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+            setTimeout(() => {
+              document.documentElement.classList.remove('is-switching-theme');
+            }, 180); // slightly longer than --iridis-tune (150ms)
+          }
+        }
+      }
+    }
+
     class RunOperation {
       static run(): void {
         const targetFraming = pendingFraming ?? framing.value;
@@ -734,25 +772,16 @@ class IridisContextFactory {
             'roles':    targetRoles,
             'runtime':  { 'colorSpace': colorSpace.value, 'framing': String(targetFraming) }
           }));
-          if (pendingFraming !== undefined) {
-            framing.value = pendingFraming;
+          const blockers = AccessibilityBlockers.fromMetadata(state.metadata);
+          accessibilityBlockers.value = blockers;
+          if (paletteAdmission.admit(blockers)) {
+            FramingSwapOperation.run();
+            ingest(state);
             if (typeof document !== 'undefined') {
-              document.documentElement.classList.add('is-switching-theme');
-              if (pendingFraming === 'dark') {
-                document.documentElement.classList.add('dark');
-              } else {
-                document.documentElement.classList.remove('dark');
-              }
-              setTimeout(() => {
-                document.documentElement.classList.remove('is-switching-theme');
-              }, 180); // slightly longer than --iridis-tune (150ms)
+              applyCurrentFramingTokens(Tokens.mapFromEngine(roles.value, scales.value));
             }
           }
-          ingest(state);
           pendingFraming = undefined;
-          if (typeof document !== 'undefined') {
-            applyCurrentFramingTokens(Tokens.mapFromEngine(roles.value, scales.value));
-          }
         } catch (e) {
           error.value = e instanceof Error ? e.message : String(e);
         } finally {
@@ -1430,13 +1459,13 @@ class IridisContextFactory {
           }
         }
         const result = {
-          'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
+          'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
           'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
           'effectiveHexesFor': effectiveHexesFor, 'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing,
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
           'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'pickerSeeds': pickerSeeds,
-          'pinnableRoles': pinnableRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
+          'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
           'roles': roles, 'rolesDerived': rolesDerived,
           'roleSortKeys': roleSortKeys, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,
           'roleViews': roleViews,

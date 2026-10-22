@@ -24,7 +24,7 @@ import { buildRefinePaletteModel } from './refine/buildRefinePaletteModel.ts';
  * overrides that; see PinDerivedRoles.ts). pinnableRoles is restricted to
  * USED_ROLE_NAMES so a pin can never silently do nothing.
  */
-const { activeSeeds, pinnableRoles, mode } = useIridis();
+const { accessibilityBlockers, activeSeeds, pinnableRoles, mode, rejectedPinRoles } = useIridis();
 const { send } = useIridisUiMachine();
 
 const sortedPinnableRoles = computed(() => buildRefinePaletteModel.sortPinnableRoles(pinnableRoles.value));
@@ -40,7 +40,9 @@ function pinRole(index: number, role: string | undefined): void {
 
     <RefinePaletteSeedGrid
       :active-seeds="activeSeeds"
+      :rejected-pin-roles="rejectedPinRoles"
       :sorted-pinnable-roles="sortedPinnableRoles"
+      :standard-label="accessibilityBlockers.standardLabel"
       @pin="pinRole"
     />
   </div>

@@ -2,6 +2,7 @@
 const props = defineProps<{
   currentRole: string | undefined;
   index: number;
+  pendingTitle?: string | undefined;
   roles: readonly string[];
   seedRoles: readonly (string | undefined)[];
 }>();
@@ -24,7 +25,9 @@ function isTaken(role: string): boolean {
       :label="currentRole ?? 'Unpinned'"
       trailing-icon="i-material-symbols-keyboard-arrow-down-rounded"
       size="xs"
-      :color="currentRole ? 'primary' : 'neutral'"
+      :color="pendingTitle ? 'warning' : (currentRole ? 'primary' : 'neutral')"
+      :title="pendingTitle"
+      :leading-icon="pendingTitle ? 'i-material-symbols-warning-rounded' : undefined"
       variant="soft"
       class="w-full justify-between rounded-full"
     />
