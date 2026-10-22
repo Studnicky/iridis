@@ -107,15 +107,12 @@ await test('role schemas expose derivation controls and contrast bands at the in
 
 await test('contrast reports and pending entries carry optional maximum-ratio data', () => {
   assert.strictEqual(ContrastReportEntryInterfaceTypeEntity.validate({
-    'adjusted': false,
-    'adjustmentDisposition': 'not-needed',
-    'algorithm': 'wcag21',
+    'actual': 3.5,
     'background': 'background',
+    'disposition': 'not-needed',
     'foreground': 'accent',
-    'maximumContrastRatio': 4.5,
-    'minimumContrastRatio': 3,
     'passed': true,
-    'ratio': 3.5
+    'required': 3
   }), true);
   assert.strictEqual(PendingContrastEntryInterfaceTypeEntity.validate({
     'adjusted': false,
@@ -128,20 +125,19 @@ await test('contrast reports and pending entries carry optional maximum-ratio da
       'foreground': 'accent',
       'maximumContrastRatio': 4.5,
       'minimumContrastRatio': 3
-    }
+    },
+    'target': 'AA'
   }), true);
 });
 
 await test('APCA reports and pending entries retain APCA Lc targets', () => {
   assert.strictEqual(ContrastReportEntryInterfaceTypeEntity.validate({
-    'adjusted': false,
-    'adjustmentDisposition': 'not-needed',
-    'algorithm': 'apca',
+    'actual': 82,
     'background': 'background',
+    'disposition': 'not-needed',
     'foreground': 'bodyText',
-    'minimumContrastRatio': 75,
     'passed': true,
-    'ratio': 82
+    'required': 75
   }), true);
   assert.strictEqual(PendingContrastEntryInterfaceTypeEntity.validate({
     'adjusted': false,
@@ -153,7 +149,8 @@ await test('APCA reports and pending entries retain APCA Lc targets', () => {
       'background': 'background',
       'foreground': 'headline',
       'minimumContrastRatio': 60
-    }
+    },
+    'target': 'APCA-Lc-60'
   }), true);
 });
 

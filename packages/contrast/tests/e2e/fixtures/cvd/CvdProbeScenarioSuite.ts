@@ -21,6 +21,11 @@ export class CvdProbeScenarioSuite {
       await test('CVD refinement resolves cyclic role constraints deterministically', CvdProbeScenarioSuite.cycle);
       await test('CVD refinement advisory mode does not claim correction failure', CvdProbeScenarioSuite.advisory);
       await test('CVD observation identifies every deficiency matrix', CvdProbeScenarioSuite.deficiencyMatrices);
+      await test('CVD refinement finds interior corrections for zero and near-zero chroma', CvdProbeScenarioSuite.achromaticCorrection);
+      await test('CVD refinement avoids extreme colors for a non-extreme correction', CvdProbeScenarioSuite.nonExtremeCorrection);
+      await test('CVD refinement preserves an exact baseline boundary when no safe correction exists', CvdProbeScenarioSuite.baselineBoundary);
+      await test('CVD refinement resolves a shared foreground against every declared background', CvdProbeScenarioSuite.sharedForeground);
+      await test('CVD refinement records exact fixed and remaining deficiency sets for a partial correction', CvdProbeScenarioSuite.partialCorrection);
       await test('CVD refinement moves a derived background when the foreground is stated', CvdProbeScenarioSuite.statedForeground);
       await test('CVD refinement moves a derived foreground when the background is stated', CvdProbeScenarioSuite.statedBackground);
       await test('CVD refinement blocks a pair when both semantic endpoints are stated', CvdProbeScenarioSuite.statedBoth);
@@ -37,6 +42,104 @@ export class CvdProbeScenarioSuite {
     await test('CVD refinement keeps production stress work bounded for 100 unresolved movable pairs', CvdProbeScenarioSuite.productionStress);
     await test('CVD refinement shares one bounded budget across a cyclic component', CvdProbeScenarioSuite.budgetedCycle);
     await test('canonical compliance remains deterministic for 100 declared roles', CvdProbeScenarioSuite.compliancePerformance);
+  }
+
+  private static achromaticCorrection(): void {
+    const scenarios = [
+      {
+        'background': colorRecordFactory.fromOklch(0.65, 0, 0),
+        'chroma': function(value: number): boolean { const result = value < 0.000_000_1; return result; },
+        'name': 'zero',
+        'text': colorRecordFactory.fromOklch(0.5, 0, 0)
+      },
+      {
+        'background': colorRecordFactory.fromOklch(0.65, 0.000_000_01, 300),
+        'chroma': function(value: number): boolean { const result = value > 0 && value < 0.000_001; return result; },
+        'name': 'near-zero',
+        'text': colorRecordFactory.fromOklch(0.5, 0.000_000_01, 123)
+      }
+    ];
+    for (let index = 0; index < scenarios.length; index += 1) {
+      const scenario = scenarios[index];
+      if (scenario === undefined) {
+        continue;
+      }
+      const state = ContrastTestPort.runCorrectedCvd({ 'background': scenario.background, 'text': scenario.text }, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+      const text = state.roles.text;
+      const cvd = ContrastMetadataAssertionPort.cvd(state);
+      assert.ok(text !== undefined && cvd !== undefined, `[cvd-achromatic-${scenario.name}] terminal data present`);
+      assert.ok(scenario.chroma(text.oklch.c), `[cvd-achromatic-${scenario.name}] correction preserves achromatic search space`);
+      assert.ok(text.oklch.l > 0 && text.oklch.l < 1, `[cvd-achromatic-${scenario.name}] correction remains interior`);
+      assert.strictEqual(cvd.warnings.length, 0, `[cvd-achromatic-${scenario.name}] correction clears every CVD failure`);
+      assert.strictEqual(cvd.corrections.length, 1, `[cvd-achromatic-${scenario.name}] correction recorded`);
+    }
+  }
+
+  private static nonExtremeCorrection(): void {
+    const originalRoles = {
+      'background': colorRecordFactory.fromOklch(0.12004924674202846, 0.015276054573075558, 252.51270656713),
+      'text': colorRecordFactory.fromOklch(0.665, 0.11, 206.1)
+    };
+    const state = ContrastTestPort.runCorrectedCvd(originalRoles, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+    const text = state.roles.text;
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(text !== undefined && cvd !== undefined, '[cvd-non-extreme] terminal data present');
+    assert.notStrictEqual(text.hex, originalRoles.text.hex, '[cvd-non-extreme] correction moves the failing foreground');
+    assert.notStrictEqual(text.hex, '#000000', '[cvd-non-extreme] correction does not collapse to black');
+    assert.notStrictEqual(text.hex, '#ffffff', '[cvd-non-extreme] correction does not collapse to white');
+    assert.ok(text.oklch.l > 0 && text.oklch.l < 1, '[cvd-non-extreme] correction remains interior');
+    assert.strictEqual(cvd.warnings.length, 0, '[cvd-non-extreme] correction clears every CVD failure');
+    assert.strictEqual(cvd.corrections.length, 1, '[cvd-non-extreme] correction recorded');
+  }
+
+  private static baselineBoundary(): void {
+    const originalRoles = {
+      'background': colorRecordFactory.fromOklch(0.665, 0.11, 206.1),
+      'text': colorRecordFactory.fromOklch(0.12004924674202846, 0.015276054573075558, 252.51270656713)
+    };
+    const state = ContrastTestPort.runCorrectedCvd(originalRoles, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+    const text = state.roles.text;
+    const background = state.roles.background;
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(text !== undefined && background !== undefined && cvd !== undefined, '[cvd-baseline-boundary] terminal data present');
+    assert.ok(contrastWcag21.apply(text, background) + 1e-12 >= contrastWcag21.apply(originalRoles.text, originalRoles.background), '[cvd-baseline-boundary] correction never weakens the exact trichromat baseline');
+    assert.ok(cvd.warnings.length > 0 || cvd.corrections.length > 0, '[cvd-baseline-boundary] terminal CVD outcome remains explicit');
+  }
+
+  private static sharedForeground(): void {
+    const originalRoles = {
+      'backgroundHigh': colorRecordFactory.fromHex('#00a000'),
+      'backgroundLow': colorRecordFactory.fromHex('#008000'),
+      'text': colorRecordFactory.fromHex('#d00000')
+    };
+    const pairs = [CvdProbeScenarioSuite.pair('text', 'backgroundLow'), CvdProbeScenarioSuite.pair('text', 'backgroundHigh')];
+    const state = ContrastTestPort.runCorrectedCvd(originalRoles, pairs, new RecordingLogger());
+    const text = state.roles.text;
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(text !== undefined && cvd !== undefined, '[cvd-shared-foreground] terminal data present');
+    assert.notStrictEqual(text.hex, originalRoles.text.hex, '[cvd-shared-foreground] shared foreground moves once for its constraints');
+    assert.strictEqual(cvd.warnings.length, 0, '[cvd-shared-foreground] both declared backgrounds clear');
+    const backgrounds = new Set(cvd.corrections.map((correction) => { return correction.background; }));
+    assert.deepStrictEqual(backgrounds, new Set(['backgroundHigh', 'backgroundLow']), '[cvd-shared-foreground] diagnostics retain both semantic constraints');
+  }
+
+  private static partialCorrection(): void {
+    const originalRoles = {
+      'background': colorRecordFactory.fromOklch(0.441858619148843, 0.2611666344795376, 45.69293302483857),
+      'text': colorRecordFactory.fromOklch(0.6787660075817258, 0.1514103825194761, 255.34034740179777)
+    };
+    const state = ContrastTestPort.runCorrectedCvd(originalRoles, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(cvd !== undefined, '[cvd-partial-correction] metadata present');
+    const correction = cvd.corrections.find((entry) => { const result = entry.foreground === 'text' && entry.background === 'background'; return result; });
+    assert.ok(correction !== undefined, '[cvd-partial-correction] partial correction recorded');
+    const warningTypes = CvdProbeScenarioSuite.cvdTypesFor(cvd.warnings, 'text', 'background');
+    assert.ok(correction.cvdTypesFixed.length > 0, '[cvd-partial-correction] at least one deficiency improves');
+    assert.deepStrictEqual(new Set(correction.cvdTypesRemaining), warningTypes, '[cvd-partial-correction] remaining correction diagnostics equal terminal warnings');
+    for (let index = 0; index < correction.cvdTypesFixed.length; index += 1) {
+      const fixed = correction.cvdTypesFixed[index];
+      assert.ok(fixed !== undefined && !warningTypes.has(fixed), '[cvd-partial-correction] fixed deficiencies are absent from terminal warnings');
+    }
   }
 
   private static deficiencyMatrices(): void {
