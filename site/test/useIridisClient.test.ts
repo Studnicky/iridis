@@ -4,41 +4,58 @@ import { test } from 'node:test';
 import { setTimeout } from 'node:timers/promises';
 import { watch } from 'vue';
 
-import { PaletteResolveEnvelopeInterfaceTypeEntity } from '../app/composables/entities/PaletteResolveEnvelopeInterfaceTypeEntity.ts';
-import { PaletteResolveReplyInterfaceTypeEntity } from '../app/composables/entities/PaletteResolveReplyInterfaceTypeEntity.ts';
-import { PaletteResolve } from '../app/composables/paletteResolve.ts';
+import type { WorkerReplyEntity } from '../app/composables/entities/WorkerReplyEntity.ts';
+import type { EngineWorkerScopeInterface } from '../app/composables/interfaces/EngineWorkerScopeInterface.ts';
+
+import { EngineWorkerHost } from '../app/workers/EngineWorkerHost.ts';
 import * as NuxtImportsLoader from './fixtures/NuxtImportsLoader.mjs';
 
 registerHooks(NuxtImportsLoader);
 
+class FakeScope implements EngineWorkerScopeInterface {
+  readonly #listeners: ((event: MessageEvent<unknown>) => void)[] = [];
+  readonly #replyTo: (reply: WorkerReplyEntity.Type) => void;
+
+  constructor(replyTo: (reply: WorkerReplyEntity.Type) => void) {this.#replyTo = replyTo;}
+
+  addEventListener(_type: 'message', listener: (event: MessageEvent<unknown>) => void): void {
+    this.#listeners.push(listener);
+  }
+
+  deliver(data: unknown): void {
+    const event = new MessageEvent('message', { 'data': data, 'origin': '' });
+    this.#listeners.forEach((listener) => {listener(event);});
+  }
+
+  postMessage(reply: WorkerReplyEntity.Type): void {
+    this.#replyTo(reply);
+  }
+}
+
 class FakeWorker {
   static readonly instances = new Set<number>();
+  static readonly transferred: ArrayBuffer[] = [];
   terminated = false;
   readonly #messageListeners: ((event: { readonly 'data': unknown }) => void)[] = [];
+  readonly #scope: FakeScope;
 
-  constructor() {FakeWorker.instances.add(FakeWorker.instances.size);}
-
-  static reply(data: unknown): PaletteResolveReplyInterfaceTypeEntity.Type {
-    const envelope = PaletteResolveEnvelopeInterfaceTypeEntity.intake(data);
-    try {
-      const result = PaletteResolveReplyInterfaceTypeEntity.create({ 'id': envelope.id, 'snapshot': PaletteResolve.run(envelope.request) });
-      return result;
-    } catch (error) {
-      const result = PaletteResolveReplyInterfaceTypeEntity.create({ 'failure': error instanceof Error ? error.message : String(error), 'id': envelope.id });
-      return result;
-    }
+  constructor() {
+    FakeWorker.instances.add(FakeWorker.instances.size);
+    this.#scope = new FakeScope((reply) => {
+      const cloned = structuredClone(reply);
+      queueMicrotask(() => {this.#messageListeners.forEach((listener) => {listener({ 'data': cloned });});});
+    });
+    EngineWorkerHost.start(this.#scope);
   }
 
   addEventListener(type: string, listener: (event: { readonly 'data': unknown }) => void): void {
     if (type === 'message') {this.#messageListeners.push(listener);}
   }
 
-  postMessage(data: unknown): void {
-    const message = structuredClone(data);
-    queueMicrotask(() => {
-      const reply = structuredClone(FakeWorker.reply(message));
-      this.#messageListeners.forEach((listener) => {listener({ 'data': reply });});
-    });
+  postMessage(data: unknown, transfer: Transferable[] = []): void {
+    const message = structuredClone(data, { 'transfer': transfer });
+    if (message instanceof ArrayBuffer) {FakeWorker.transferred.push(message);}
+    queueMicrotask(() => {this.#scope.deliver(message);});
   }
 
   terminate(): void {this.terminated = true;}
@@ -140,6 +157,10 @@ await test('useIridis client boot applies tokens and extracts the sample image o
   assert.equal(state.running.value, false);
   assert.equal(state.resolving.value, false);
   assert.equal(FakeWorker.instances.size, 1);
+  assert.equal(FakeWorker.transferred.length, 1, 'the decoded pixel buffer is transferred to the worker once');
+  assert.ok((state.uploadedImages.value[0]?.dominantColorRecords.length ?? 0) > 0, 'the worker extraction result lands on the entry');
+  assert.ok(state.histogram.value.length > 0, 'the worker combine result lands on the shared histogram');
+  assert.ok(state.candidates.value.length > 0, 'the worker combine candidates land on the shared candidates');
   assert.equal(typeof state.roles.value.background, 'string');
   assert.ok(cssVariables.size > 0);
   assert.equal(classNames.has('dark'), true);

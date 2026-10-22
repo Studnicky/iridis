@@ -1,0 +1,95 @@
+import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
+
+import { EntityCompiler } from '@studnicky/entity/browser';
+
+import { DerivationConfigInterfaceTypeEntity } from './DerivationConfigInterfaceTypeEntity.ts';
+import { ExtractionSettingsEntity } from './ExtractionSettingsEntity.ts';
+import { FramingInterfaceTypeEntity } from './FramingInterfaceTypeEntity.ts';
+import { PaletteResolveRequestInterfaceTypeEntity } from './PaletteResolveRequestInterfaceTypeEntity.ts';
+import { SchemaNameInterfaceTypeEntity } from './SchemaNameInterfaceTypeEntity.ts';
+
+/** Discriminated union of the messages the main thread posts to the engine worker; `palette`, `extract`, and `combine` are request lanes, `pixels` and `release` are lane-less commands. */
+export namespace WorkerMessageEntity {
+  export const Schema = {
+    '$id': 'https://iridis.dev/site/worker-message',
+    'oneOf': [
+      {
+        'additionalProperties': false,
+        'properties': {
+          'kind': { 'const': 'palette', 'type': 'string' },
+          'request': PaletteResolveRequestInterfaceTypeEntity.Schema
+        },
+        'required': ['kind', 'request'],
+        'type': 'object'
+      },
+      {
+        'additionalProperties': false,
+        'properties': {
+          'imageId': { 'type': 'string' },
+          'kind': { 'const': 'extract', 'type': 'string' },
+          'settings': ExtractionSettingsEntity.Schema
+        },
+        'required': ['imageId', 'kind', 'settings'],
+        'type': 'object'
+      },
+      {
+        'additionalProperties': false,
+        'properties': {
+          'colorSpace': { 'enum': ['srgb', 'displayP3'], 'type': 'string' },
+          'derivationConfig': DerivationConfigInterfaceTypeEntity.Schema,
+          'framing': FramingInterfaceTypeEntity.Schema,
+          'hexes': { 'items': { 'type': 'string' }, 'type': 'array' },
+          'kind': { 'const': 'combine', 'type': 'string' },
+          'schemaName': SchemaNameInterfaceTypeEntity.Schema,
+          'semanticHuesEnabled': { 'type': 'boolean' },
+          'settings': ExtractionSettingsEntity.Schema,
+          'strictness': { 'type': 'integer' }
+        },
+        'required': [
+          'colorSpace',
+          'derivationConfig',
+          'framing',
+          'hexes',
+          'kind',
+          'schemaName',
+          'semanticHuesEnabled',
+          'settings',
+          'strictness'
+        ],
+        'type': 'object'
+      },
+      {
+        'additionalProperties': false,
+        'properties': {
+          'height': { 'type': 'integer' },
+          'imageId': { 'type': 'string' },
+          'kind': { 'const': 'pixels', 'type': 'string' },
+          'width': { 'type': 'integer' }
+        },
+        'required': ['height', 'imageId', 'kind', 'width'],
+        'type': 'object'
+      },
+      {
+        'additionalProperties': false,
+        'properties': {
+          'imageId': { 'type': 'string' },
+          'kind': { 'const': 'release', 'type': 'string' }
+        },
+        'required': ['imageId', 'kind'],
+        'type': 'object'
+      }
+    ]
+  } as const;
+
+  export type Type = NominalSchemaType<typeof Schema> & (
+    | { 'derivationConfig': DerivationConfigInterfaceTypeEntity.Type; 'kind': 'combine'; 'settings': ExtractionSettingsEntity.Type }
+    | { 'kind': 'extract'; 'settings': ExtractionSettingsEntity.Type }
+    | { 'kind': 'palette'; 'request': PaletteResolveRequestInterfaceTypeEntity.Type }
+    | { 'kind': 'pixels' }
+    | { 'kind': 'release' }
+  );
+
+  export const validate = EntityCompiler.compile<Type>(Schema);
+  export const intake = EntityCompiler.compileIntake<Type>(Schema);
+  export const create = EntityCompiler.compileCreate<Type, CanonicalShapeType<typeof Schema>>(Schema);
+}
