@@ -171,13 +171,9 @@ await test('VscodeSeedRoles :: reports every declared contrast pair across tiers
         continue;
       }
       const state = VscodeSeedRolesFixture.run(VscodeSeedRolesFixture.body(VscodeSeedPaletteBodyInterfaceTypeEntity.create({ 'framing': framing, 'roles': {}, 'tier': tier })));
-      const report = state.metadata['core:contrastReport'];
-      assert.ok(Array.isArray(report), `${framing} tier ${tier} writes a contrast report`);
-      assert.strictEqual(report.length, schema.contrastPairs?.length, `${framing} tier ${tier} reports every declared pair`);
-      for (let reportIndex = 0; reportIndex < report.length; reportIndex += 1) {
-        const entry = report.at(reportIndex);
-        assert.ok(entry !== null && typeof entry === 'object' && !Array.isArray(entry), `${framing} tier ${tier} report entries are objects`);
-      }
+      const report = Metadata.contrastReport(state.metadata);
+      assert.ok(report !== undefined, `${framing} tier ${tier} writes a contrast report`);
+      assert.strictEqual(report.pairs.length, schema.contrastPairs?.length, `${framing} tier ${tier} reports every declared pair`);
     }
   }
 });
