@@ -350,6 +350,8 @@ export class CvdProbeScenarioSuite {
     const cvd = ContrastMetadataAssertionPort.cvd(state);
     const compliance = ContrastMetadataAssertionPort.compliance(state);
     assert.ok(cvd !== undefined && compliance !== undefined, '[cvd-terminal-stated-both] terminal metadata present');
+    assert.strictEqual(cvd.corrections.length, 0, '[cvd-terminal-stated-both] standard blockers skip CVD refinement');
+    assert.ok(cvd.warnings.length > 0, '[cvd-terminal-stated-both] observation warnings remain evidence');
     assert.strictEqual(compliance.compliant, false, '[cvd-terminal-stated-both] CVD-only failure makes terminal report noncompliant');
     assert.strictEqual(compliance.cvdCompliant, false, '[cvd-terminal-stated-both] terminal CVD status fails');
     assert.deepStrictEqual(compliance.blockedPairs, [{
