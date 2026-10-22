@@ -68,6 +68,10 @@ class EnforceCompliance implements TaskInterface {
     enforceContrast.run(state, context);
     const requirements = ContrastPolicy.normalize(state.input, PaletteRoleState.admit(state.roles));
     const standardRoles = ComplianceRoles.capture(state);
+    if (Metadata.contrastReport(state.metadata)?.compliant !== true) {
+      enforceCvdSimulate.observe(state, context, requirements, standardRoles);
+      return;
+    }
     enforceCvdSimulate.refine(state, context, requirements);
     enforceContrast.run(state, context);
     if (Metadata.contrastReport(state.metadata)?.compliant !== true) {
