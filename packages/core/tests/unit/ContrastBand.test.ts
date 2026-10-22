@@ -763,6 +763,17 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     }),
     roles
   );
+  const aaaNonMandatory = ContrastPolicy.normalize(
+    InputInterfaceTypeEntity.intake({
+      ...base,
+      'contrast': {
+        'algorithm': 'wcag21',
+        'level': 'AAA',
+        'nonMandatoryLevel': 'AAA'
+      }
+    }),
+    roles
+  );
   const aaaText = ContrastPolicy.normalize(
     InputInterfaceTypeEntity.intake({
       'colors': [],
@@ -835,6 +846,17 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     }),
     roles
   );
+  const apcaNonMandatory = ContrastPolicy.normalize(
+    InputInterfaceTypeEntity.intake({
+      ...base,
+      'contrast': {
+        'algorithm': 'apca',
+        'level': 'Lc',
+        'nonMandatoryLevel': 'AAA'
+      }
+    }),
+    roles
+  );
   const apca = ContrastPolicy.normalize(
     InputInterfaceTypeEntity.intake({
       ...base,
@@ -868,6 +890,17 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     ];}),
     [['wcag21', 3, 3]],
     'AAA preserves an authored non-text ratio of 3 for terminal and CVD policy'
+  );
+  assert.deepStrictEqual(
+    aaaNonMandatory.map((requirement) => {
+      return [
+        requirement.cvdMinimumContrastRatio,
+        requirement.minimumContrastRatio,
+        requirement.target
+      ];
+    }),
+    [[4.5, 4.5, 'AAA']],
+    'AAA non-mandatory selection lifts a declared 3 ratio to 4.5 for terminal and CVD policy'
   );
   assert.deepStrictEqual(
     aaaText.map((requirement) => {
@@ -910,6 +943,13 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     ],
     'APCA applies its Lc targets independently of WCAG pair minima'
   );
+  assert.deepStrictEqual(
+    apcaNonMandatory.map((requirement) => {
+      return [requirement.minimumContrastRatio, requirement.target];
+    }),
+    [[75, 'APCA-Lc-75']],
+    'APCA applies the configured AAA fallback to every currently indistinguishable Lc60 pair'
+  );
   const apcaIgnoringWcagMinimum = ContrastPolicy.normalize(
     InputInterfaceTypeEntity.intake({
       'colors': [],
@@ -937,20 +977,22 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
   );
 });
 
-void test('contrast options retain advisory CVD drops by default and admit explicit enforcement', () => {
-  const advisory = ContrastOptionsInterfaceTypeEntity.create({});
-  const enforce = ContrastOptionsInterfaceTypeEntity.create({
-    'cvdDropMode': 'enforce'
-  });
+void test('contrast options admit canonical CVD modes and default downstream to warn', () => {
+  const omitted = ContrastOptionsInterfaceTypeEntity.create({});
+  const warn = ContrastOptionsInterfaceTypeEntity.create({ 'cvdMode': 'warn' });
+  const nudge = ContrastOptionsInterfaceTypeEntity.create({ 'cvdMode': 'nudge' });
+  const enforce = ContrastOptionsInterfaceTypeEntity.create({ 'cvdMode': 'enforce' });
 
   assert.strictEqual(
-    advisory.cvdDropMode,
+    omitted.cvdMode,
     undefined,
-    'omitting CVD drop mode leaves the canonical advisory default for policy intake'
+    'omitting CVD mode leaves the downstream warn default to policy intake'
   );
-  assert.strictEqual(
-    enforce.cvdDropMode,
-    'enforce',
-    'the closed contrast input admits explicit CVD drop enforcement'
+  assert.strictEqual(warn.cvdMode, 'warn', 'the closed input admits warning evidence mode');
+  assert.strictEqual(nudge.cvdMode, 'nudge', 'the closed input admits corrective nudging');
+  assert.strictEqual(enforce.cvdMode, 'enforce', 'the closed input admits blocking enforcement');
+  assert.throws(
+    () => { ContrastOptionsInterfaceTypeEntity.intake({ 'cvdMode': 'advisory' }); },
+    'the retired CVD mode is rejected by closed schema intake'
   );
 });
