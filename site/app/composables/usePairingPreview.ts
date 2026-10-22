@@ -52,9 +52,6 @@ class UsePairingPreviewOperation {
 
     const schema = computed<RoleSchemaInterfaceTypeEntity.Type>(() => {
       const pair = roleSchemaByName[schemaName.value];
-      if (pair === undefined) {
-        throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-      }
       const selected = framing.value === 'dark' ? pair.dark : pair.light;
       const result = roleSchemaFor(selected);
       return result;

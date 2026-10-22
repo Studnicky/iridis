@@ -31,8 +31,6 @@ export abstract class IridisUiEvent {
   static selectImageMode(): IridisUiEvent { return new SelectImageModeIridisUiEvent(); }
   static selectPickerMode(): IridisUiEvent { return new SelectPickerModeIridisUiEvent(); }
   static setContrastStrictness(strictness: number): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CONTRAST_STRICTNESS', IridisUiEffect.setContrastStrictness(strictness)); }
-  static setCvdCorrectionDisabled(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CVD_CORRECT', IridisUiEffect.setCvdCorrection(IridisUiEffect.cvdCorrectionDisabled())); }
-  static setCvdCorrectionEnabled(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CVD_CORRECT', IridisUiEffect.setCvdCorrection(IridisUiEffect.cvdCorrectionEnabled())); }
   static setDarkFraming(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_FRAMING', IridisUiEffect.setFraming(IridisUiEffect.darkFraming())); }
   static setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_DERIVATION_CONFIG', IridisUiEffect.setDerivationConfig(config)); }
   static setDeltaEImageAlgorithm(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_IMAGE_ALGORITHM', IridisUiEffect.setImageAlgorithm(IridisUiEffect.deltaEImageAlgorithm())); }

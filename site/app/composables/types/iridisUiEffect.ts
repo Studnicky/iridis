@@ -17,8 +17,6 @@ abstract class IridisUiEffectHandler {
   abstract setDisplayP3ColorSpace(): void;
   abstract setSrgbColorSpace(): void;
   abstract setContrastStrictness(strictness: number): void;
-  abstract disableCvdCorrection(): void;
-  abstract enableCvdCorrection(): void;
   abstract setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): void;
   abstract setDarkFraming(): void;
   abstract setLightFraming(): void;
@@ -45,9 +43,6 @@ abstract class IridisUiEffectHandler {
 abstract class ColorSpaceSelection { abstract apply(handler: IridisUiEffectHandler): void; }
 class DisplayP3ColorSpaceSelection extends ColorSpaceSelection { apply(handler: IridisUiEffectHandler): void { handler.setDisplayP3ColorSpace(); } }
 class SrgbColorSpaceSelection extends ColorSpaceSelection { apply(handler: IridisUiEffectHandler): void { handler.setSrgbColorSpace(); } }
-abstract class CvdCorrectionSelection { abstract apply(handler: IridisUiEffectHandler): void; }
-class CvdCorrectionDisabledSelection extends CvdCorrectionSelection { apply(handler: IridisUiEffectHandler): void { handler.disableCvdCorrection(); } }
-class CvdCorrectionEnabledSelection extends CvdCorrectionSelection { apply(handler: IridisUiEffectHandler): void { handler.enableCvdCorrection(); } }
 abstract class FramingSelection { abstract apply(handler: IridisUiEffectHandler): void; }
 class DarkFramingSelection extends FramingSelection { apply(handler: IridisUiEffectHandler): void { handler.setDarkFraming(); } }
 class LightFramingSelection extends FramingSelection { apply(handler: IridisUiEffectHandler): void { handler.setLightFraming(); } }
@@ -85,9 +80,6 @@ export abstract class IridisUiEffect {
   static srgbColorSpace(): ColorSpaceSelection { return new SrgbColorSpaceSelection(); }
   static setColorSpace(selection: ColorSpaceSelection): IridisUiEffect { return new SetColorSpaceEffect(selection); }
   static setContrastStrictness(strictness: number): IridisUiEffect { return new SetContrastStrictnessEffect(strictness); }
-  static cvdCorrectionDisabled(): CvdCorrectionSelection { return new CvdCorrectionDisabledSelection(); }
-  static cvdCorrectionEnabled(): CvdCorrectionSelection { return new CvdCorrectionEnabledSelection(); }
-  static setCvdCorrection(selection: CvdCorrectionSelection): IridisUiEffect { return new SetCvdCorrectionEffect(selection); }
   static setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): IridisUiEffect { return new SetDerivationConfigEffect(config); }
   static darkFraming(): FramingSelection { return new DarkFramingSelection(); }
   static lightFraming(): FramingSelection { return new LightFramingSelection(); }
@@ -172,11 +164,6 @@ class SetContrastStrictnessEffect extends IridisUiEffect {
   readonly #strictness: number; readonly type = 'SET_CONTRAST_STRICTNESS';
   constructor(strictness: number) { super(); this.#strictness = strictness; }
   execute(handler: IridisUiEffectHandler): void { handler.setContrastStrictness(this.#strictness); }
-}
-class SetCvdCorrectionEffect extends IridisUiEffect {
-  readonly #selection: CvdCorrectionSelection; readonly type = 'SET_CVD_CORRECT';
-  constructor(selection: CvdCorrectionSelection) { super(); this.#selection = selection; }
-  execute(handler: IridisUiEffectHandler): void { this.#selection.apply(handler); }
 }
 class SetDerivationConfigEffect extends IridisUiEffect {
   readonly #config: DerivationConfigInterfaceTypeEntity.Type; readonly type = 'SET_DERIVATION_CONFIG';

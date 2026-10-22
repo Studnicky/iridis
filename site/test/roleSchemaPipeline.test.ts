@@ -78,7 +78,7 @@ class RoleSchemaPipelineFixture {
     engine.pipeline(spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(0)));
     const state = engine.run(InputInterfaceTypeEntity.create({
       'colors':   pickerSeedInputs(RoleSchemaPipelineFixture.seeds),
-      'contrast': ContrastConfigFor.forStrictness(0, ContrastConfigFor.correctingCvd),
+      'contrast': ContrastConfigFor.forStrictness(0),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),

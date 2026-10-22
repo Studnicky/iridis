@@ -24,6 +24,7 @@
 
 import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
 
+import type { SchemaNameInterfaceTypeEntity } from '../composables/entities/SchemaNameInterfaceTypeEntity.ts';
 import type { SchemaPair } from '../composables/types/index.ts';
 
 /* ─── iridis-4 ─────────────────────────────────────────────────────── */
@@ -276,7 +277,7 @@ namespace RoleSchemas {
 
   /* ─── Public registry ─────────────────────────────────────────────── */
 
-  export const byName: Record<string, SchemaPair> = {
+  export const byName: Record<SchemaNameInterfaceTypeEntity.Type, SchemaPair> = {
     'iridis-12': { 'dark': iridis12Dark, 'light': iridis12Light },
     'iridis-16': { 'dark': iridis16Dark, 'light': iridis16Light },
     'iridis-32': { 'dark': iridis32Dark, 'light': iridis32Light },

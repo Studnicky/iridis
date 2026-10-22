@@ -25,9 +25,6 @@ class UseRoleMathListOperation {
 
     const allMathList = computed<RoleMathEntry[]>(() => {
       const pair = roleSchemaByName[schemaName.value];
-      if (pair === undefined) {
-        throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-      }
       const selected = framing.value === 'dark' ? pair.dark : pair.light;
       const schema = roleSchemaFor(selected);
       const roleDefs = schema.roles ?? [];

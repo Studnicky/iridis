@@ -14,9 +14,7 @@ import { logger } from './logger.ts';
 interface IridisUiEffectHandlersInterface {
   addSeed(hex: string | undefined): void;
   clearCvdPreviews(): void;
-  disableCvdCorrection(): void;
   disableSemanticHues(): void;
-  enableCvdCorrection(): void;
   enableSemanticHues(): void;
   extractImageFiles(files: File | File[]): void;
   extractSampleImage(): void;

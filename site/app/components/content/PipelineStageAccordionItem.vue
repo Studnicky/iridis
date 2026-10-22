@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { AccordionContent, AccordionHeader, AccordionItem, AccordionTrigger } from 'reka-ui';
-import { IridisUiEvent } from '~/composables/types/index.ts';
 import { useIridis } from '~/composables/useIridis.ts';
-import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { buildPipelineStageModel } from './pipeline/buildPipelineStageModel.ts';
 
 type PipelineStageType = {
@@ -17,18 +15,13 @@ type PipelineStageType = {
 
 const props = defineProps<{ stage: PipelineStageType }>();
 
-const { enabledOptionalStages, cvdCorrect, contrastReport } = useIridis();
-const { send } = useIridisUiMachine();
+const { enabledOptionalStages, contrastReport } = useIridis();
 
 const stageModel = computed(() => buildPipelineStageModel.build(
   props.stage.value,
   enabledOptionalStages.value,
   contrastReport.value
 ));
-
-function updateCvdCorrect(cvdCorrect: boolean): void {
-  send(cvdCorrect ? IridisUiEvent.setCvdCorrectionEnabled() : IridisUiEvent.setCvdCorrectionDisabled());
-}
 </script>
 
 <template>
@@ -94,16 +87,12 @@ function updateCvdCorrect(cvdCorrect: boolean): void {
         </div>
       </div>
 
-      <ControlStrip
+      <p
         v-if="stageModel.isCvdStage"
-        class="mt-3"
-        title="Auto-correct failing pairs"
+        class="mt-3 text-xs text-muted"
       >
-        <USwitch
-          :model-value="cvdCorrect"
-          @update:model-value="updateCvdCorrect"
-        />
-      </ControlStrip>
+        Failing pairs are always auto-corrected: the correction adjusts the palette itself.
+      </p>
 
       <div
         v-if="stageModel.contrastSummary !== undefined"

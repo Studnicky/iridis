@@ -101,18 +101,15 @@ class ActivateOperation {
   static run(): void {
     if (activated) {return;}
     activated = true;
-    const { activeSeeds, colorSpace, contrastStrictness, cvdCorrect, derivationConfig, framing, schemaName, semanticHuesEnabled } = useIridis();
+    const { activeSeeds, colorSpace, contrastStrictness, derivationConfig, framing, schemaName, semanticHuesEnabled } = useIridis();
     function generate(): void {
       try {
         const pair = roleSchemaByName[schemaName.value];
-        if (pair === undefined) {
-          throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-        }
         const selected = framing.value === 'dark' ? pair.dark : pair.light;
         const roles = roleSchemaFor(selected);
         const input = InputInterfaceTypeEntity.create({
           'colors':   pickerSeedInputs(activeSeeds.value),
-          'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
+          'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value),
           'metadata': {
             'core:variantConfig':              JsonValue.from(VARIANT_CONFIG),
             'derivation:config':               JsonValue.from(derivationConfig.value),
@@ -136,7 +133,7 @@ class ActivateOperation {
     }
     const schedule = debounce(generate, 120);
     generate();
-    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, derivationConfig, semanticHuesEnabled, cvdCorrect, colorSpace], schedule, { 'deep': true });
+    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, derivationConfig, semanticHuesEnabled, colorSpace], schedule, { 'deep': true });
   }
 }
 

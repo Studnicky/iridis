@@ -403,12 +403,6 @@ class IridisContextFactory {
     const schemaName = VueModule.ref<SchemaNameInterfaceTypeEntity.Type>(SchemaNameInterfaceTypeEntity.defaultValue);
     const contrastStrictness = VueModule.ref<number>(2);
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
-    /**
- * CVD "correct" mode flag, threaded through as `input.contrast.cvdCorrect` —
- * when true, enforce:cvdSimulate (packages/contrast) auto-corrects failing
- * pairs instead of only warning. Off by default.
- */
-    const cvdCorrect = VueModule.ref<boolean>(false);
 
     /**
  * Color derivation configuration — one hue-algorithm choice per derivedFrom
@@ -475,13 +469,9 @@ class IridisContextFactory {
 
     /**
  * Visual CVD preview — purely a display-time filter over whatever the engine
- * already resolved, genuinely independent of `cvdCorrect`. This is the "see
- * it as an afflicted person would" toggle; `cvdCorrect` is the "fix the
- * colors so everyone can distinguish them" toggle. Neither implies the
- * other: a user can correct without previewing (never sees simulated
- * vision, just sees their palette get more distinguishable), preview
- * without correcting (sees the CURRENT palette through a CVD filter,
- * unmodified), or both. A `Set` because real CVD isn't always a single
+ * already resolved, independent of the always-on CVD correction. This is the
+ * "see it as an afflicted person would" toggle: the previewed palette is the
+ * corrected one. A `Set` because real CVD isn't always a single
  * condition — combined/comorbid deficiencies exist, so more than one type
  * can be active at once (CvdPreviewOverlay.vue chains their filters).
  * Empty = preview off. Consumed by a display-layer component, not by the
@@ -563,9 +553,6 @@ class IridisContextFactory {
       if (bg === undefined) {throw new Error('Resolved palette is missing the required background role');}
       const schema = (() => {
         const pair = roleSchemaByName[schemaName.value];
-        if (pair === undefined) {
-          throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-        }
         const selected = framing.value === 'dark' ? pair.dark : pair.light;
         const result = roleSchemaFor(selected);
         return result;
@@ -647,9 +634,6 @@ class IridisContextFactory {
     const pinnableRoles = VueModule.computed<string[]>(() => {
       const schema = (() => {
         const pair = roleSchemaByName[schemaName.value];
-        if (pair === undefined) {
-          throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-        }
         const selected = framing.value === 'dark' ? pair.dark : pair.light;
         const result = roleSchemaFor(selected);
         return result;
@@ -739,16 +723,13 @@ class IridisContextFactory {
           engine.pipeline(pipelineBuild(REQUIRED_COLOR_STAGES));
           const targetRoles = (() => {
             const pair = roleSchemaByName[schemaName.value];
-            if (pair === undefined) {
-              throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-            }
             const selected = targetFraming === 'dark' ? pair.dark : pair.light;
             const result = roleSchemaFor(selected);
             return result;
           })();
           const state = engine.run(InputInterfaceTypeEntity.create({
             'colors':   pickerSeedInputs(seeds),
-            'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
+            'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value),
             'metadata': { 'core:variantConfig': JsonValue.from(VARIANT_CONFIG), 'derivation:config': JsonValue.from(derivationConfig.value), 'derivation:semanticHuesEnabled': JsonValue.from(semanticHuesEnabled.value) },
             'roles':    targetRoles,
             'runtime':  { 'colorSpace': colorSpace.value, 'framing': String(targetFraming) }
@@ -1056,9 +1037,6 @@ class IridisContextFactory {
         try {
           const activeRoles = (() => {
             const pair = roleSchemaByName[schemaName.value];
-            if (pair === undefined) {
-              throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-            }
             const selected = framing.value === 'dark' ? pair.dark : pair.light;
             const result = roleSchemaFor(selected);
             return result;
@@ -1066,7 +1044,7 @@ class IridisContextFactory {
           engine.pipeline([...IRIDIS_CONSTANTS.COMBINE_EXTRACTION_STAGES]);
           const state = engine.run(InputInterfaceTypeEntity.create({
             'colors':   combinedHexes,
-            'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
+            'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value),
             'metadata': {
               'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
               'derivation:config': JsonValue.from(derivationConfig.value),
@@ -1290,9 +1268,7 @@ class IridisContextFactory {
     }
 
     class PaletteParameterOperation {
-      static disableCvdCorrection(): void { cvdCorrect.value = false; schedule(); }
       static disableSemanticHues(): void { semanticHuesEnabled.value = false; schedule(); }
-      static enableCvdCorrection(): void { cvdCorrect.value = true; schedule(); }
       static enableSemanticHues(): void { semanticHuesEnabled.value = true; schedule(); }
       static setContrastStrictness(strictness: number): void { contrastStrictness.value = strictness; schedule(); }
       static setDarkFraming(): void { pendingFraming = FramingInterfaceTypeEntity.intake('dark'); run(); }
@@ -1395,9 +1371,7 @@ class IridisContextFactory {
     registerEffectHandlers({
       'addSeed': SeedMutationOperation.add,
       'clearCvdPreviews': CvdPreviewOperation.clear,
-      'disableCvdCorrection': PaletteParameterOperation.disableCvdCorrection,
       'disableSemanticHues': PaletteParameterOperation.disableSemanticHues,
-      'enableCvdCorrection': PaletteParameterOperation.enableCvdCorrection,
       'enableSemanticHues': PaletteParameterOperation.enableSemanticHues,
       'extractImageFiles': ImageEffectExtractionOperation.files,
       'extractSampleImage': ImageEffectExtractionOperation.sample,
@@ -1451,13 +1425,12 @@ class IridisContextFactory {
             void addUploadedImages([logoUrl()], ['Sample']);
             // framing is intentionally absent here — its swap is dispatched synchronously
             // by paletteParamSet() via run(effect.value), not through this debounce.
-            stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
+            stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
             stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
           }
         }
         const result = {
-          'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdCorrect': cvdCorrect,
-          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
+          'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
           'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
           'effectiveHexesFor': effectiveHexesFor, 'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing,
           'histogram': histogram,

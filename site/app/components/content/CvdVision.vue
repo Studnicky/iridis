@@ -7,22 +7,18 @@ import { buildCvdVisionModel } from './cvd/buildCvdVisionModel.ts';
 
 /**
  * The CVD home — everything color-vision-deficiency-related lives here, not
- * split across cards: auto-correcting the palette itself, previewing what it
- * looks like under each condition (a real SVG filter, see
+ * split across cards: the always-on palette auto-correction, previewing what
+ * it looks like under each condition (a real SVG filter, see
  * CvdPreviewOverlay.vue — display-only, never touches the palette), what each
  * condition actually is, and the resulting warnings report. Always usable, no
  * enable step — enforce:cvdSimulate itself runs unconditionally (see
  * useIridis.ts's REQUIRED_COLOR_STAGES).
  */
-const { cvdCorrect, cvdPreviewTypes, contrastReport, send } = useIridis();
+const { cvdPreviewTypes, contrastReport, send } = useIridis();
 
 const cvdReport = computed(() => {
   return buildCvdVisionModel.buildReport(contrastReport.value.cvd);
 });
-
-function updateCvdCorrect(cvdCorrect: boolean): void {
-  send(cvdCorrect ? IridisUiEvent.setCvdCorrectionEnabled() : IridisUiEvent.setCvdCorrectionDisabled());
-}
 
 function toggleCvdPreview(cvdType: CvdMatrixInterfaceTypeEntity.Type['name']): void {
   send(IridisUiEvent.toggleCvdPreview(cvdType));
@@ -35,21 +31,11 @@ function toggleCvdPreview(cvdType: CvdMatrixInterfaceTypeEntity.Type['name']): v
       <SectionIntro>
         <template #body>
           Color vision deficiency (CVD) checking runs on every palette, always — see
-          <code class="font-mono text-xs">enforce:cvdSimulate</code> in the Pipeline card. Auto-correct
-          below adjusts the palette itself; the preview toggles further down only change how this
-          page looks to you — they never touch the palette.
+          <code class="font-mono text-xs">enforce:cvdSimulate</code> in the Pipeline card. Failing
+          pairs are always auto-corrected: the correction adjusts the palette itself. The preview
+          toggles below only change how this page looks to you — they never touch the palette.
         </template>
       </SectionIntro>
-
-      <ControlStrip
-        title="Auto-correct CVD failures"
-        description="Always-on — adjusts the palette itself, not just a preview."
-      >
-        <USwitch
-          :model-value="cvdCorrect"
-          @update:model-value="updateCvdCorrect"
-        />
-      </ControlStrip>
 
       <SplitHeader>
         <PanelHeading

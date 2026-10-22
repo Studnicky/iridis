@@ -42,7 +42,7 @@ export class DefaultThemeCss {
     const pair = DefaultThemeCss.schemaPair();
     const state = engine.run(InputInterfaceTypeEntity.create({
       'colors':   pickerSeedInputs(DefaultThemeCss.seeds),
-      'contrast': ContrastConfigFor.forStrictness(2, ContrastConfigFor.correctingCvd),
+      'contrast': ContrastConfigFor.forStrictness(2),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
@@ -63,7 +63,7 @@ export class DefaultThemeCss {
     const pair = DefaultThemeCss.schemaPair();
     const state = engine.run(InputInterfaceTypeEntity.create({
       'colors':   pickerSeedInputs(DefaultThemeCss.seeds),
-      'contrast': ContrastConfigFor.forStrictness(2, ContrastConfigFor.correctingCvd),
+      'contrast': ContrastConfigFor.forStrictness(2),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
