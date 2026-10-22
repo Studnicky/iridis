@@ -4,20 +4,26 @@ import type { JSONSchema7Type } from 'json-schema';
 import { EntityCompiler } from '@studnicky/entity/node';
 import { Validator } from '@studnicky/iridis/model';
 
-/** One WCAG 2.1 contrast-pair enforcement result: before/after ratios against the required minimum. */
-export namespace WcagPairResultInterfaceTypeEntity {
+import { CvdEvalInterfaceTypeEntity } from './CvdEvalInterfaceTypeEntity.ts';
+
+/** Terminal selected-standard measurement for one semantic contrast pair. */
+export namespace CompliancePairInterfaceTypeEntity {
   export const Schema = {
     'additionalProperties': false,
     'properties': {
-      'after':      { 'type': 'number' },
-      'algorithm':  { 'enum': ['wcag21', 'apca'], 'type': 'string' },
+      'actualTrichromat': { 'type': 'number' },
+      'adjustedRole': { 'type': 'string' },
       'background': { 'type': 'string' },
-      'before':     { 'type': 'number' },
+      'cvd': {
+        'items': CvdEvalInterfaceTypeEntity.Schema,
+        'type': 'array'
+      },
+      'disposition': { 'enum': ['not-needed', 'adjusted-foreground', 'adjusted-background', 'blocked-stated', 'unresolved'], 'type': 'string' },
       'foreground': { 'type': 'string' },
-      'pass':       { 'type': 'boolean' },
-      'required':   { 'type': 'number' }
+      'passed': { 'type': 'boolean' },
+      'requiredTrichromat': { 'type': 'number' }
     },
-    'required': ['after', 'algorithm', 'background', 'before', 'foreground', 'pass', 'required'],
+    'required': ['actualTrichromat', 'background', 'cvd', 'disposition', 'foreground', 'passed', 'requiredTrichromat'],
     'type': 'object'
   } as const;
 

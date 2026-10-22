@@ -1,11 +1,10 @@
-export type { ApcaPairResultInterfaceTypeEntity } from '../entities/ApcaPairResultInterfaceTypeEntity.ts';
-export type { ApcaPairResultSetInterfaceTypeEntity } from '../entities/ApcaPairResultSetInterfaceTypeEntity.ts';
-export type { CorrectionCandidateInterfaceTypeEntity } from '../entities/CorrectionCandidateInterfaceTypeEntity.ts';
+export type { ComplianceBlockedPairInterfaceTypeEntity } from '../entities/ComplianceBlockedPairInterfaceTypeEntity.ts';
+export type { CompliancePairInterfaceTypeEntity } from '../entities/CompliancePairInterfaceTypeEntity.ts';
+export type { ComplianceReportInterfaceTypeEntity } from '../entities/ComplianceReportInterfaceTypeEntity.ts';
+export type { CvdBlockedPairInterfaceTypeEntity } from '../entities/CvdBlockedPairInterfaceTypeEntity.ts';
 export type { CvdCorrectionInterfaceTypeEntity } from '../entities/CvdCorrectionInterfaceTypeEntity.ts';
 export type { CvdEvalInterfaceTypeEntity } from '../entities/CvdEvalInterfaceTypeEntity.ts';
 export type { CvdMatrixInterfaceTypeEntity } from '../entities/CvdMatrixInterfaceTypeEntity.ts';
 export type { CvdPairWarningInterfaceTypeEntity } from '../entities/CvdPairWarningInterfaceTypeEntity.ts';
 export type { CvdResultSetInterfaceTypeEntity } from '../entities/CvdResultSetInterfaceTypeEntity.ts';
 export type { CvdThresholdInterfaceTypeEntity } from '../entities/CvdThresholdInterfaceTypeEntity.ts';
-export type { WcagPairResultInterfaceTypeEntity } from '../entities/WcagPairResultInterfaceTypeEntity.ts';
-export type { WcagPairResultSetInterfaceTypeEntity } from '../entities/WcagPairResultSetInterfaceTypeEntity.ts';
