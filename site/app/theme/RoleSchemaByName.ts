@@ -78,7 +78,7 @@ namespace RoleSchemas {
       ...iridis4Dark.roles,
       { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.08, 0.18], 'name': 'surface', 'required': true },
       { 'chromaRange': [0.00, 0.08], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.10, 0.22], 'name': 'bg-soft' },
-      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'background', 'intent': 'muted', 'lightnessRange': [0.18, 0.77], 'name': 'divider' },
+      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'background', 'intent': 'muted', 'lightnessRange': [0.18, 0.70], 'name': 'divider' },
       { 'chromaRange': [0.00, 0.02], 'derivedFrom': 'brand', 'intent': 'text', 'lightnessRange': [0.04, 0.14], 'name': 'on-brand', 'required': true }
     ]
   });
@@ -226,12 +226,12 @@ namespace RoleSchemas {
       /* Secondary accent: pairs with brand for two-color emphasis. */
       { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 150, 'intent': 'accent', 'lightnessRange': [0.58, 0.77], 'name': 'accent-alt' },
       /* Extended syntax: comment / tag / attribute / operator / class / punctuation. */
-      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'muted', 'intent': 'muted', 'lightnessRange': [0.48, 0.77], 'name': 'syntax-comment' },
+      { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'muted', 'intent': 'muted', 'lightnessRange': [0.48, 0.70], 'name': 'syntax-comment' },
       { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 240, 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-tag' },
       { 'chromaRange': [0.12, 0.24], 'derivedFrom': 'brand', 'hueOffset': 270, 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-attribute' },
       { 'chromaRange': [0.10, 0.22], 'derivedFrom': 'brand', 'hueOffset': 300, 'intent': 'accent', 'lightnessRange': [0.70, 0.84], 'name': 'syntax-operator' },
       { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 30, 'intent': 'accent', 'lightnessRange': [0.70, 0.84], 'name': 'syntax-class' },
-      { 'chromaRange': [0.00, 0.08], 'derivedFrom': 'muted', 'intent': 'muted', 'lightnessRange': [0.58, 0.77], 'name': 'syntax-punctuation' }
+      { 'chromaRange': [0.00, 0.08], 'derivedFrom': 'muted', 'intent': 'muted', 'lightnessRange': [0.58, 0.72], 'name': 'syntax-punctuation' }
     ]
   });
 
