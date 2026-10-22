@@ -363,14 +363,12 @@ class ContrastExecution {
       return result;
     }
 
-    const resolved = ensureContrast.apply(
-      mover.record,
-      mover.counterpart,
+    const resolved = ContrastExecution.resolveMover(
+      mover,
+      state,
+      algorithm,
       minimumRatio,
-      {
-        'algorithm': algorithm,
-        ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio })
-      }
+      maximumRatio
     );
     const resolvedForeground =
       mover.roleName === requirement.foreground ? resolved : foreground;
@@ -388,6 +386,7 @@ class ContrastExecution {
     );
     if (
       !resolvedPassed ||
+      !ContrastPolicy.allowsRoleRecord(state.input, mover.roleName, resolved) ||
       ContrastMeasurement.sameRecord(resolved, mover.record)
     ) {
       const result = ContrastExecution.pendingEntry(
@@ -412,6 +411,29 @@ class ContrastExecution {
       minimumRatio,
       ContrastAdjustment.applied,
       { 'adjustedRole': mover.roleName, ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio }) }
+    );
+    return result;
+  }
+
+  private static resolveMover(
+    mover: ContrastMover,
+    state: PaletteStateInterface,
+    algorithm: ContrastAlgorithmTypeEntity.Type,
+    minimumRatio: number,
+    maximumRatio: number | undefined
+  ): ColorRecordEntity.Type {
+    const roleRange = ContrastPolicy.roleRange(state.input, mover.roleName);
+    const result = ensureContrast.apply(
+      mover.record,
+      mover.counterpart,
+      minimumRatio,
+      {
+        'algorithm': algorithm,
+        ...(roleRange.lightnessRange === undefined
+          ? {}
+          : { 'lightnessRange': roleRange.lightnessRange }),
+        ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio })
+      }
     );
     return result;
   }

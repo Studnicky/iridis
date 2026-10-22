@@ -95,7 +95,11 @@ class ContrastBandRoleSeedTask implements TaskInterface {
 }
 
 interface ContrastRunOptionsInterface { readonly 'backgroundRole'?: string; readonly 'foregroundRole'?: string; }
-interface ContrastPairsOptionsInterface { readonly 'contrast'?: ContrastOptionsEntity.Type; readonly 'statedRoleNames'?: readonly string[]; }
+interface ContrastPairsOptionsInterface {
+  readonly 'contrast'?: ContrastOptionsEntity.Type;
+  readonly 'roleDefinitions'?: readonly RoleDefinitionEntity.Type[];
+  readonly 'statedRoleNames'?: readonly string[];
+}
 
 class ContrastBandFixture {
   static run(
@@ -200,7 +204,7 @@ class ContrastBandFixture {
       InputEntity.intake({
         'colors': [],
         ...(contrast === undefined ? {} : { 'contrast': contrast }),
-        'roles': ContrastBandFixture.schema(pairs)
+        'roles': ContrastBandFixture.schema(pairs, options.roleDefinitions)
       })
     );
     return result;
@@ -221,8 +225,16 @@ class ContrastBandFixture {
   }
 
   private static schema(
-    pairs: readonly ContrastPairEntity.Type[]
+    pairs: readonly ContrastPairEntity.Type[],
+    roleDefinitions: readonly RoleDefinitionEntity.Type[] = []
   ): RoleSchemaEntity.Type {
+    const definitionsByName = new Map<string, RoleDefinitionEntity.Type>();
+    for (let definitionIndex = 0; definitionIndex < roleDefinitions.length; definitionIndex += 1) {
+      const definition = roleDefinitions[definitionIndex];
+      if (definition !== undefined) {
+        definitionsByName.set(definition.name, definition);
+      }
+    }
     const roleNames = new Set<string>();
     for (let pairIndex = 0; pairIndex < pairs.length; pairIndex += 1) {
       const pair = pairs[pairIndex];
@@ -236,7 +248,8 @@ class ContrastBandFixture {
       'contrastPairs': [...pairs],
       'name': 'contrast-band',
       'roles': [...roleNames].map((name) => {
-        const result = RoleDefinitionEntity.create({
+        const declared = definitionsByName.get(name);
+        const result = declared ?? RoleDefinitionEntity.create({
           'name': name,
           'required': true
         });
@@ -447,6 +460,38 @@ void test('enforce:contrast moves the derived foreground around a stated backgro
     true,
     'terminal report passes after moving the derived endpoint'
   );
+});
+
+void test('enforce:contrast preserves a derived mover when its role range cannot meet the selected floor', () => {
+  const pair = ContrastPairEntity.intake({
+    'background': 'background',
+    'foreground': 'text',
+    'minimumContrastRatio': 4.5
+  });
+  const state = ContrastBandFixture.runPairs(
+    [pair],
+    { 'background': '#ffffff', 'text': '#f59e0b' },
+    {
+      'roleDefinitions': [
+        RoleDefinitionEntity.create({
+          'chromaRange': [0, 0.04],
+          'lightnessRange': [0.94, 0.99],
+          'name': 'background',
+          'required': true
+        }),
+        RoleDefinitionEntity.create({ 'name': 'text', 'required': true })
+      ],
+      'statedRoleNames': ['text']
+    }
+  );
+  const [report] = ContrastBandFixture.reports(state);
+  const background = state.roles.background;
+
+  assert.ok(report !== undefined, 'the constrained pair produces a report');
+  assert.ok(background !== undefined, 'the derived background remains available');
+  assert.strictEqual(background.hex, '#ffffff', 'the range-constrained mover remains unchanged');
+  assert.strictEqual(report.disposition, 'unresolved', 'the impossible ranged adjustment is unresolved');
+  assert.strictEqual(report.passed, false, 'the impossible ranged adjustment stays noncompliant');
 });
 
 void test('enforce:contrast reports an infeasible pair when both roles are stated', () => {

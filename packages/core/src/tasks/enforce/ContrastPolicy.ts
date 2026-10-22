@@ -1,3 +1,4 @@
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { InputEntity } from '../../entities/InputEntity.ts';
 import type { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 
@@ -84,6 +85,40 @@ class ApcaTarget {
 
 /** Canonical selected-standard requirements for every schema and run-level contrast pair. */
 export class ContrastPolicy {
+  static allowsRoleRecord(
+    input: InputEntity.Type,
+    roleName: string,
+    record: ColorRecordEntity.Type
+  ): boolean {
+    const range = ContrastPolicy.roleRange(input, roleName);
+    const { c, l } = record.oklch;
+    const result =
+      (range.chromaRange === undefined ||
+        (c >= range.chromaRange[0] && c <= range.chromaRange[1])) &&
+      (range.lightnessRange === undefined ||
+        (l >= range.lightnessRange[0] && l <= range.lightnessRange[1]));
+    return result;
+  }
+
+  static roleRange(
+    input: InputEntity.Type,
+    roleName: string
+  ): ContrastPolicy.RoleRangeInterface {
+    const definition = input.roles?.roles.find((role): boolean => {
+      const result = role.name === roleName;
+      return result;
+    });
+    const result: ContrastPolicy.RoleRangeInterface = {
+      ...(definition?.chromaRange === undefined
+        ? {}
+        : { 'chromaRange': definition.chromaRange }),
+      ...(definition?.lightnessRange === undefined
+        ? {}
+        : { 'lightnessRange': definition.lightnessRange })
+    };
+    return result;
+  }
+
   static selection(
     input: InputEntity.Type
   ): ContrastPolicy.SelectionInterface {
@@ -147,6 +182,11 @@ export class ContrastPolicy {
 }
 
 export namespace ContrastPolicy {
+  export interface RoleRangeInterface {
+    readonly 'chromaRange'?: readonly [number, number];
+    readonly 'lightnessRange'?: readonly [number, number];
+  }
+
   export interface SelectionInterface {
     readonly 'algorithm': ContrastAlgorithmTypeEntity.Type;
     readonly 'target': string;

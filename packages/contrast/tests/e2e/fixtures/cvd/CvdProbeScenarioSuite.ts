@@ -1,6 +1,6 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-import { colorRecordFactory, ContrastPairEntity, ContrastPolicy, contrastWcag21, InputEntity, PaletteRoleState } from '@studnicky/iridis';
+import { colorRecordFactory, ContrastPairEntity, ContrastPolicy, contrastWcag21, InputEntity, PaletteRoleState, RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -29,6 +29,7 @@ export class CvdProbeScenarioSuite {
       await test('CVD refinement resolves a shared foreground against every declared background', CvdProbeScenarioSuite.sharedForeground);
       await test('CVD refinement records exact fixed and remaining deficiency sets for a partial correction', CvdProbeScenarioSuite.partialCorrection);
       await test('CVD refinement moves a derived background when the foreground is stated', CvdProbeScenarioSuite.statedForeground);
+      await test('CVD refinement does not move a derived endpoint outside its role range', CvdProbeScenarioSuite.rangeBoundedMover);
       await test('CVD refinement moves a derived foreground when the background is stated', CvdProbeScenarioSuite.statedBackground);
       await test('CVD refinement blocks a pair when both semantic endpoints are stated', CvdProbeScenarioSuite.statedBoth);
       await test('CVD terminal compliance reports a CVD-only stated-both block', CvdProbeScenarioSuite.terminalStatedBoth);
@@ -428,6 +429,48 @@ export class CvdProbeScenarioSuite {
       'disposition': 'adjusted-background',
       'foreground': 'text'
     }], '[cvd-stated-foreground] correction records the moved background');
+  }
+
+  private static rangeBoundedMover(): void {
+    const originalRoles = CvdProbeScenarioSuite.statedPairRoles();
+    const background = originalRoles.background;
+    const roleSchema = RoleSchemaEntity.intake({
+      'contrastPairs': [CvdProbeScenarioSuite.pair('text', 'background')],
+      'name': 'cvd-range-bounded-mover',
+      'roles': [
+        {
+          'chromaRange': [background.oklch.c, background.oklch.c],
+          'lightnessRange': [background.oklch.l, background.oklch.l],
+          'name': 'background',
+          'required': true
+        },
+        { 'name': 'text', 'required': true }
+      ]
+    });
+    const state = ContrastTestPort.runCorrectedCvdWithRoleSchema(
+      originalRoles,
+      roleSchema,
+      new RecordingLogger(),
+      ['text']
+    );
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+
+    assert.ok(cvd !== undefined, '[cvd-range-bounded] metadata present');
+    assert.strictEqual(
+      state.roles.background?.hex,
+      originalRoles.background.hex,
+      '[cvd-range-bounded] correction never writes an out-of-range background'
+    );
+    assert.deepStrictEqual(
+      cvd.blocked,
+      [{
+        'background': 'background',
+        'cvdTypes': ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'],
+        'foreground': 'text',
+        'reason': 'solver-exhausted'
+      }],
+      '[cvd-range-bounded] enforce reports the constrained unresolved pair'
+    );
   }
 
   private static statedBackground(): void {

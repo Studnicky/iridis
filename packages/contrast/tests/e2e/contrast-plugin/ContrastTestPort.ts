@@ -1,4 +1,4 @@
-import type { ColorRecordEntity, PaletteStateInterface } from '@studnicky/iridis';
+import type { ColorRecordEntity, PaletteStateInterface, RoleSchemaEntity } from '@studnicky/iridis';
 import type { LoggerInterface } from '@studnicky/logger/interfaces';
 import type { JSONSchema7Type } from 'json-schema';
 
@@ -27,6 +27,22 @@ export class ContrastTestPort {
 
   static runCorrectedCvd(roles: Readonly<Record<string, ColorRecordEntity.Type>>, contrastPairs: readonly JSONSchema7Type[], logger: LoggerInterface, statedRoleNames: readonly string[] = []): PaletteStateInterface {
     const state = ContrastTestPort.directState(roles, contrastPairs, statedRoleNames);
+    enforceCvdSimulate.run(state, { 'logger': logger, 'startedAt': Date.now() });
+    return state;
+  }
+
+  static runCorrectedCvdWithRoleSchema(
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
+    roleSchema: RoleSchemaEntity.Type,
+    logger: LoggerInterface,
+    statedRoleNames: readonly string[] = []
+  ): PaletteStateInterface {
+    const input = InputEntity.intake({
+      'colors': [],
+      'contrast': { 'cvdMode': 'enforce' },
+      'roles': roleSchema
+    });
+    const state = ContrastTestPort.stateFor(input, roles, statedRoleNames);
     enforceCvdSimulate.run(state, { 'logger': logger, 'startedAt': Date.now() });
     return state;
   }

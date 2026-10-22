@@ -94,14 +94,21 @@ class ContrastMeasure {
 
 class EnsureContrastOptions {
   readonly 'algorithm'?: string;
+  readonly 'lightnessRange'?: readonly [number, number];
   readonly 'maximumRatio'?: number;
 }
 
 class ContrastPolicy {
+  readonly 'lightnessRange': readonly [number, number];
   readonly 'maximumRatio': number;
   readonly 'measure': ContrastMeasure;
 
-  private constructor(measure: ContrastMeasure, maximumRatio: number) {
+  private constructor(
+    measure: ContrastMeasure,
+    maximumRatio: number,
+    lightnessRange: readonly [number, number]
+  ) {
+    this.lightnessRange = lightnessRange;
     this.measure = measure;
     this.maximumRatio = maximumRatio;
   }
@@ -112,7 +119,19 @@ class ContrastPolicy {
     if (typeof input !== 'string' && input.maximumRatio !== undefined) {
       maximumRatio = input.maximumRatio;
     }
-    const result = new ContrastPolicy(ContrastMeasure.resolve(name), maximumRatio);
+    const lightnessRange = typeof input === 'string' || input.lightnessRange === undefined
+      ? [0, 1] as const
+      : input.lightnessRange;
+    const result = new ContrastPolicy(
+      ContrastMeasure.resolve(name),
+      maximumRatio,
+      lightnessRange
+    );
+    return result;
+  }
+
+  constrainLightness(lightness: number): number {
+    const result = Math.max(this.lightnessRange[0], Math.min(this.lightnessRange[1], lightness));
     return result;
   }
 }
@@ -201,11 +220,13 @@ class ContrastRecordBuilder {
 class ContrastSearch {
   readonly #backgroundLuminance: number;
   readonly #measure: ContrastMeasure;
+  readonly #policy: ContrastPolicy;
   readonly #records: ContrastRecordBuilder;
 
-  constructor(measure: ContrastMeasure, backgroundLuminance: number, records: ContrastRecordBuilder) {
+  constructor(policy: ContrastPolicy, backgroundLuminance: number, records: ContrastRecordBuilder) {
     this.#backgroundLuminance = backgroundLuminance;
-    this.#measure = measure;
+    this.#measure = policy.measure;
+    this.#policy = policy;
     this.#records = records;
   }
 
@@ -217,8 +238,10 @@ class ContrastSearch {
     minimumRatio: number,
     maximumRatio: number
   ): ContrastSearchResult {
-    const endpointLightness = direction > 0 ? 1 : 0;
-    const endpoint = this.#candidateAt(endpointLightness, chroma, hue);
+    const endpointLightness = direction > 0
+      ? this.#policy.lightnessRange[1]
+      : this.#policy.lightnessRange[0];
+    const endpoint = this.candidateAt(endpointLightness, chroma, hue);
     if (this.#isWithinBand(initial, minimumRatio, maximumRatio)) {
       const result = new ContrastSearchResult(initial, endpoint);
       return result;
@@ -227,7 +250,7 @@ class ContrastSearch {
     let previous = initial;
     for (let segment = 1; segment <= 256; segment++) {
       const lightness = initial.l + (endpointLightness - initial.l) * (segment / 256);
-      const current = this.#candidateAt(lightness, chroma, hue);
+      const current = this.candidateAt(lightness, chroma, hue);
       const selected = this.#selectSegmentCandidate(previous, current, chroma, hue, minimumRatio, maximumRatio);
       if (selected !== undefined) {
         const result = new ContrastSearchResult(selected, endpoint);
@@ -240,7 +263,7 @@ class ContrastSearch {
     return result;
   }
 
-  #candidateAt(lightness: number, chroma: number, hue: number): ContrastCandidate {
+  candidateAt(lightness: number, chroma: number, hue: number): ContrastCandidate {
     const record = this.#records.create(lightness, chroma, hue);
     const ratio = this.#measure.contrast(RgbEntity.create(record.rgb), this.#backgroundLuminance);
     const result = new ContrastCandidate(lightness, ratio, record);
@@ -318,7 +341,7 @@ class ContrastSearch {
       if (middleLightness === currentOutside.l || middleLightness === currentInside.l) {
         break;
       }
-      const middle = this.#candidateAt(middleLightness, chroma, hue);
+      const middle = this.candidateAt(middleLightness, chroma, hue);
       if (includes(middle.ratio, threshold)) {
         currentInside = middle;
       } else {
@@ -370,26 +393,35 @@ class EnsureContrast {
     const backgroundLuminance = policy.measure.backgroundLuminance(backgroundRgb);
     const foregroundRgb = RgbEntity.create(foreground.rgb);
     const initialContrast = policy.measure.contrast(foregroundRgb, backgroundLuminance);
-    if (initialContrast >= minimumRatio && initialContrast <= policy.maximumRatio) {
+    const initialLightness = policy.constrainLightness(foreground.oklch.l);
+    if (
+      initialLightness === foreground.oklch.l &&
+      initialContrast >= minimumRatio &&
+      initialContrast <= policy.maximumRatio
+    ) {
       return foreground;
     }
 
-    const initial = new ContrastCandidate(foreground.oklch.l, initialContrast, foreground);
     const search = new ContrastSearch(
-      policy.measure,
+      policy,
       backgroundLuminance,
       ContrastRecordBuilder.resolve(foreground)
+    );
+    const initial = search.candidateAt(
+      initialLightness,
+      foreground.oklch.c,
+      foreground.oklch.h
     );
     const direction = EnsureContrast.#preferredDirection(
       foreground,
       background,
-      initialContrast,
+      initial.ratio,
       policy.maximumRatio,
       backgroundLuminance
     );
     const primary = search.searchDirection(initial, foreground.oklch.c, foreground.oklch.h, direction, minimumRatio, policy.maximumRatio);
     const opposite = search.searchDirection(initial, foreground.oklch.c, foreground.oklch.h, -direction, minimumRatio, policy.maximumRatio);
-    const selected = EnsureContrast.#selectCandidate(primary, opposite, foreground.oklch.l);
+    const selected = EnsureContrast.#selectCandidate(primary, opposite, initial.l);
     const result = selected.record;
     return result;
   }
