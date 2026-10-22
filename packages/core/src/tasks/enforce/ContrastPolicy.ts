@@ -42,8 +42,6 @@ class ContrastStandard {
 class ApcaTarget {
   static readonly #BODY_READING = 75;
   static readonly #MEANINGFUL_TEXT = 60;
-  static readonly #DISPLAY_OR_PICTOGRAM = 45;
-  static readonly #SOLID_NON_TEXT = 30;
   static forPair(
     requirement: ContrastPairInterfaceTypeEntity.Type,
     roles: PaletteRoleState
