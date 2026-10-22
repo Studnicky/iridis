@@ -20,7 +20,7 @@ the `@studnicky` scope before installing:
 ```
 
 ```bash
-npm install @studnicky/iridis @studnicky/iridis-mui
+npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-mui
 ```
 
 ## Usage
@@ -29,18 +29,20 @@ npm install @studnicky/iridis @studnicky/iridis-mui
 import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
 
 import { Engine, coreTasks }          from '@studnicky/iridis';
+import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { muiPlugin, type MuiOutputInterface } from '@studnicky/iridis-mui';
 
 export function generateMuiTheme(roleSchema: RoleSchemaInterfaceType): MuiOutputInterface {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(muiPlugin);
+  engine.adopt(contrastPlugin);
 
   engine.pipeline([
     'intake:any',
     'resolve:roles',
     'expand:family',
-    'enforce:contrast',
+    'enforce:compliance',
     'derive:variant',
     'emit:muiTheme',
   ]);
@@ -50,7 +52,7 @@ export function generateMuiTheme(roleSchema: RoleSchemaInterfaceType): MuiOutput
     'colors':   ['#8B5CF6'],
     'contrast': {
       'algorithm':  'wcag21',
-      'cvdCorrect': undefined,
+      'cvdCorrect': true,
       'extra':      undefined,
       'level':      'AA',
     },

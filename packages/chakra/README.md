@@ -21,7 +21,7 @@ the `@studnicky` scope before installing:
 ```
 
 ```bash
-npm install @studnicky/iridis @studnicky/iridis-chakra
+npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-chakra
 ```
 
 ## Usage
@@ -30,18 +30,20 @@ npm install @studnicky/iridis @studnicky/iridis-chakra
 import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
+import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { chakraPlugin }      from '@studnicky/iridis-chakra';
 
 export function generateChakraTheme(roleSchema: RoleSchemaInterfaceType) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(chakraPlugin);
+  engine.adopt(contrastPlugin);
 
   engine.pipeline([
     'intake:any',
     'resolve:roles',
     'expand:family',
-    'enforce:contrast',
+    'enforce:compliance',
     'derive:variant',
     'emit:chakraTheme',
   ]);
@@ -51,7 +53,7 @@ export function generateChakraTheme(roleSchema: RoleSchemaInterfaceType) {
     'colors':   ['#8B5CF6'],
     'contrast': {
       'algorithm':  'wcag21',
-      'cvdCorrect': undefined,
+      'cvdCorrect': true,
       'extra':      undefined,
       'level':      'AA',
     },

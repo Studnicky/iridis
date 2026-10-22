@@ -27,7 +27,7 @@ the `@studnicky` scope before installing:
 ```
 
 ```bash
-npm install @studnicky/iridis @studnicky/iridis-capacitor
+npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-capacitor
 ```
 
 ## Usage
@@ -36,18 +36,20 @@ npm install @studnicky/iridis @studnicky/iridis-capacitor
 import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
+import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { capacitorPlugin }   from '@studnicky/iridis-capacitor';
 
 export function generateCapacitorTheme(roleSchema: RoleSchemaInterfaceType) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(capacitorPlugin);
+  engine.adopt(contrastPlugin);
 
   engine.pipeline([
     'intake:any',
     'resolve:roles',
     'expand:family',
-    'enforce:contrast',
+    'enforce:compliance',
     'derive:variant',
     'emit:capacitorStatusBar',
     'emit:capacitorTheme',
@@ -60,7 +62,7 @@ export function generateCapacitorTheme(roleSchema: RoleSchemaInterfaceType) {
     'colors':   ['#8B5CF6'],
     'contrast': {
       'algorithm':  'wcag21',
-      'cvdCorrect': undefined,
+      'cvdCorrect': true,
       'extra':      undefined,
       'level':      'AA',
     },

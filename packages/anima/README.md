@@ -3,9 +3,9 @@
 Living-color animation engine. Evaluates a palette curve at a progress value
 `t in [0, 1]`, shaping `t` through an easing function and interpolating every
 role's OKLCH triple via `@studnicky/iridis-algebra`'s `lerp`. Optionally
-re-validates WCAG contrast on every evaluated frame, not just at the curve's
-endpoints, by calling straight into `@studnicky/iridis-contrast`'s real
-enforce tasks.
+re-validates declared contrast pairs on every evaluated frame, not just at
+the curve's endpoints, by running `@studnicky/iridis-contrast`'s
+`enforce:compliance` task.
 
 ## Install
 
@@ -26,7 +26,7 @@ npm install @studnicky/iridis @studnicky/iridis-anima
 
 `@studnicky/iridis` is a peer dependency: `enforceContrast` (and therefore
 `evaluateEnforced` / `evaluateStopsEnforced`) builds a pipeline state and runs
-the core engine's contrast-enforcement tasks directly.
+the `enforce:compliance` task from `@studnicky/iridis-contrast` directly.
 
 ## Usage
 
@@ -56,7 +56,6 @@ export function frameAt(t: number): PaletteInterfaceType {
   return evaluate(day, night, t, {
     chromaticDetourRoles: ['accent'],
     easing:               easeInOut,
-    hueDirection:         'shortestArc',
   });
 }
 ```
@@ -76,9 +75,9 @@ const enforcedFrame = evaluateStopsEnforced(stops, 0.5, {
   contrastPairs: [
     { algorithm: 'wcag21', background: 'background', foreground: 'accent', minRatio: 4.5 },
   ],
-  easing:       undefined,
-  hueDirection: undefined,
-  level:        'aa',
+  easing:           undefined,
+  enforcer:         undefined,
+  hueInterpolation: undefined,
 });
 ```
 
@@ -88,9 +87,9 @@ const enforcedFrame = evaluateStopsEnforced(stops, 0.5, {
 |---|---|---|
 | `evaluate` | `(from, to, t, options?) => PaletteInterfaceType` | Two-stop curve. Eases `t`, then delegates to `iridis-algebra`'s `lerp`. Roles named in `options.chromaticDetourRoles` route their hue through the chromatic detour path instead of the direct lerp. |
 | `evaluateStops` | `(stops, t, options?) => PaletteInterfaceType` | Multi-stop curve. Divides `[0, 1]` evenly across `stops.length - 1` segments, maps `t` onto its segment, and delegates to `evaluate` for that segment's local progress. |
-| `evaluateEnforced` | `(from, to, t, options) => PaletteInterfaceType` | `evaluate`, then re-validates `options.contrastPairs` against the resulting frame via `@studnicky/iridis-contrast`'s AA/AAA enforce tasks (`options.level`, default `'aa'`). |
+| `evaluateEnforced` | `(from, to, t, options) => PaletteInterfaceType` | `evaluate`, then re-validates `options.contrastPairs` against the resulting frame by running `options.enforcer` (default `enforce:compliance` from `@studnicky/iridis-contrast`). |
 | `evaluateStopsEnforced` | `(stops, t, options) => PaletteInterfaceType` | `evaluateStops`, then the same per-frame contrast re-validation as `evaluateEnforced`. |
-| `enforceContrast` | `(palette, pairs, level?) => PaletteInterfaceType` | The re-validation step `evaluateEnforced`/`evaluateStopsEnforced` call internally, exported standalone for callers who evaluate a frame some other way and still want it contrast-checked. |
+| `enforceContrast` | `(palette, pairs, enforcer?) => PaletteInterfaceType` | The re-validation step `evaluateEnforced`/`evaluateStopsEnforced` call internally, exported standalone for callers who evaluate a frame some other way and still want it contrast-checked. |
 
 ## Easings
 
