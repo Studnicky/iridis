@@ -102,10 +102,15 @@ export class ContrastPolicy {
           'declaredMinimum': pair.minimumContrastRatio,
           'level': input.contrast?.level
         });
+      const cvdMinimumContrastRatio = ContrastStandard.wcagMinimum({
+        'declaredMinimum': pair.minimumContrastRatio,
+        'level': algorithm === 'apca' ? 'AA' : input.contrast?.level
+      });
       const maximumContrastRatio = pair.maximumContrastRatio;
       requirements.push({
         'algorithm': algorithm,
         'background': pair.background,
+        'cvdMinimumContrastRatio': cvdMinimumContrastRatio,
         'foreground': pair.foreground,
         ...(maximumContrastRatio === undefined
           ? {}
@@ -130,6 +135,8 @@ export namespace ContrastPolicy {
   export interface RequirementInterface {
     readonly 'algorithm': ContrastAlgorithmTypeEntity.Type;
     readonly 'background': string;
+    /** WCAG ratio floor used by CVD simulation regardless of selected standard units. */
+    readonly 'cvdMinimumContrastRatio': number;
     readonly 'foreground': string;
     readonly 'maximumContrastRatio'?: number;
     readonly 'minimumContrastRatio': number;
