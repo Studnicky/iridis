@@ -13,6 +13,7 @@ import {
   TaskManifestInterfaceTypeEntity
 } from '@studnicky/iridis';
 
+import { CvdFailurePolicy } from '../CvdFailurePolicy.ts';
 import { enforceCvdSimulate } from './EnforceCvdSimulate.ts';
 
 class ComplianceRoles {
@@ -66,9 +67,17 @@ class EnforceCompliance implements TaskInterface {
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     enforceContrast.run(state, context);
-    const requirements = ContrastPolicy.normalize(state.input, PaletteRoleState.admit(state.roles));
+    const requirements = ContrastPolicy.normalize(
+      state.input,
+      PaletteRoleState.admit(state.roles)
+    );
     const standardRoles = ComplianceRoles.capture(state);
     if (Metadata.contrastReport(state.metadata)?.compliant !== true) {
+      enforceCvdSimulate.observe(state, context, requirements, standardRoles);
+      return;
+    }
+    const failurePolicy = CvdFailurePolicy.resolve(state.input.contrast);
+    if (!failurePolicy.mutatesRoles()) {
       enforceCvdSimulate.observe(state, context, requirements, standardRoles);
       return;
     }
@@ -78,7 +87,7 @@ class EnforceCompliance implements TaskInterface {
       ComplianceRoles.restore(state, standardRoles);
       enforceContrast.run(state, context);
     }
-    enforceCvdSimulate.observe(state, context, requirements, standardRoles);
+    enforceCvdSimulate.reconcile(state, context, requirements, standardRoles);
   }
 }
 

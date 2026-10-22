@@ -6,8 +6,8 @@ compliance, validates and refines the result under color vision deficiency
 and reports the final state. The plugin registers two tasks:
 `enforce:compliance` and `report:compliance`.
 
-The selected standard is input, not a stage:
-`input.contrast` is `{ algorithm: 'wcag21' | 'apca', level: 'AA' | 'AAA' | 'Lc', cvdCorrect: true }`.
+The selected standard and CVD behavior are input, not stages:
+`input.contrast` is `{ algorithm: 'wcag21' | 'apca', level: 'AA' | 'AAA' | 'Lc', nonMandatoryLevel?: 'AA' | 'AAA', cvdMode?: 'warn' | 'nudge' | 'enforce' }`. `cvdMode` defaults to `warn`; `nonMandatoryLevel` defaults to `AA`.
 
 `enforce:compliance` is one bounded, deterministic resolver. It applies the
 selected standard to every declared contrast pair, schema pairs and extra
@@ -22,16 +22,23 @@ target and the pair's declared minimum; a declared maximum stays a hard limit.
 
 Targets:
 
-- WCAG AA: 4.5:1. WCAG AAA: 7:1.
-- APCA: Lc 75 for body text pairs (text intent on background intent) and Lc 60
-  for every other pair. Role definitions carry no class for large display text
-  or solid non-text, so the lower Lc 45 and Lc 30 targets are not applied.
+- WCAG AA uses each declared pair minimum. WCAG AAA maps a declared 4.5:1 text
+  minimum to 7:1, retains a declared 7:1 minimum, and keeps a declared
+  non-text/UI minimum below 4.5:1 at its AA value unless
+  `nonMandatoryLevel: 'AAA'` is selected; that selection maps 3:1 to 4.5:1.
+  Missing pair minima use 4.5:1 at AA and 7:1 at AAA.
+- APCA uses Lc 75 for body text pairs (text intent on background intent) and
+  Lc 60 for every other pair. Until schemas author a non-text class,
+  `nonMandatoryLevel: 'AAA'` applies Lc 75 to every Lc 60 pair; its AA value
+  preserves Lc 60.
 
-CVD correction performs a bounded, coarse-to-fine OKLCH lightness/chroma
-search over the four CVD types (`protanopia`, `deuteranopia`, `tritanopia`,
-`achromatopsia`), then coordinates shared and cyclic foreground/background
-dependencies before applying corrected roles. `input.contrast.cvdCorrect` is
-`true`.
+CVD evaluates all four CVD types (`protanopia`, `deuteranopia`,
+`tritanopia`, `achromatopsia`) with a bounded OKLCH lightness/chroma search
+for corrective modes. `warn` observes `belowFloor` and `exceedsDrop`
+evidence without changing roles or blocking admission. `nudge` corrects
+unstated roles for either signal, while unresolved evidence remains advisory.
+`enforce` uses the same correction and emits canonical blockers for unresolved
+evidence.
 
 `report:compliance` runs last, after `derive:variant`. It measures the final
 roles and writes `state.metadata['contrast:complianceReport']`:
@@ -45,9 +52,12 @@ or `unresolved`. Each blocked pair carries `foreground`, `background`,
 `stated-both`, `solver-exhausted`, or `relation-tolerance`. Consumers admit a
 palette only when `compliant` is `true`.
 
-The CVD record lands in `state.metadata['contrast:cvd']`; `corrections[].adjustedRoles`
-lists the roles CVD correction moved, and `blocked` lists pairs whose both
-endpoints are stated.
+The CVD record lands in `state.metadata['contrast:cvd']`.
+`warnings` retain `belowFloor` and `exceedsDrop` evidence for every mode;
+`corrections[].adjustedRoles` lists roles changed by `nudge` or `enforce`;
+and `blocked` is populated only by unresolved `enforce` constraints. Each
+per-pair CVD evaluation carries `belowFloor`, `exceedsDrop`, and `fail`;
+`fail` is true only for unresolved `enforce` evidence.
 
 ## Install
 
@@ -95,10 +105,11 @@ export function generateAccessiblePalette(roleSchema: RoleSchemaInterfaceType) {
     'bypass':   undefined,
     'colors':   ['#8B5CF6'],
     'contrast': {
-      'algorithm':  'wcag21',
-      'cvdCorrect': true,
-      'extra':      undefined,
-      'level':      'AA',
+      'algorithm':          'wcag21',
+      'cvdMode':            'enforce',
+      'extra':              undefined,
+      'level':              'AA',
+      'nonMandatoryLevel': 'AA',
     },
     'emit':      undefined,
     'maxColors': undefined,

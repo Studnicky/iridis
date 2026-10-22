@@ -14,6 +14,7 @@ import {
 
 import type { CvdPairWarningInterfaceTypeEntity } from '../entities/CvdPairWarningInterfaceTypeEntity.ts';
 
+import { CvdFailurePolicy } from '../CvdFailurePolicy.ts';
 import { ComplianceBlockedPairInterfaceTypeEntity } from '../entities/ComplianceBlockedPairInterfaceTypeEntity.ts';
 import { CompliancePairInterfaceTypeEntity } from '../entities/CompliancePairInterfaceTypeEntity.ts';
 import { ComplianceReportInterfaceTypeEntity } from '../entities/ComplianceReportInterfaceTypeEntity.ts';
@@ -68,13 +69,14 @@ class ComplianceSerialization {
 
   static pair(
     pair: ContrastReportEntryInterfaceTypeEntity.Type,
-    warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[]
+    warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[],
+    failurePolicy: CvdFailurePolicy
   ): CompliancePairInterfaceTypeEntity.Type {
     const result = CompliancePairInterfaceTypeEntity.intake({
       'actualTrichromat': pair.actual,
       ...(pair.adjustedRole === undefined ? {} : { 'adjustedRole': pair.adjustedRole }),
       'background': pair.background,
-      'cvd': ComplianceSerialization.outcomes(pair, warnings),
+      'cvd': ComplianceSerialization.outcomes(pair, warnings, failurePolicy),
       'disposition': pair.disposition,
       'foreground': pair.foreground,
       'passed': pair.passed,
@@ -93,9 +95,51 @@ class ComplianceSerialization {
       'corrections': [],
       'warnings': []
     });
-    const pairs: CompliancePairInterfaceTypeEntity.Type[] = [];
-    const diagnostics = new Map<string, ContrastReportEntryInterfaceTypeEntity.Type>();
+    const failurePolicy = CvdFailurePolicy.resolve(state.input.contrast);
     const blockedPairs = new Map<string, ComplianceBlockedPairInterfaceTypeEntity.Type>();
+    const serialization = ComplianceSerialization.pairs(
+      diagnostic,
+      cvd.warnings,
+      failurePolicy,
+      blockedPairs
+    );
+    ComplianceSerialization.applyCvdBlockers(
+      cvd.blocked,
+      serialization.diagnostics,
+      diagnostic.target,
+      blockedPairs
+    );
+    const cvdCompliant = serialization.cvdFailureCount === 0;
+    const compliant = diagnostic.compliant && cvdCompliant && blockedPairs.size === 0;
+    if (!compliant && blockedPairs.size === 0) {
+      throw new TypeError('Terminal compliance failure has no blocked pair');
+    }
+    const result = ComplianceReportInterfaceTypeEntity.intake({
+      'blockedPairs': Array.from(blockedPairs.values()),
+      'compliant': compliant,
+      'cvdCompliant': cvdCompliant,
+      'pairs': serialization.pairs,
+      'selected': {
+        'algorithm': diagnostic.selectedAlgorithm,
+        'level': diagnostic.target
+      }
+    });
+    return result;
+  }
+
+  private static pairs(
+    diagnostic: NonNullable<ReturnType<typeof Metadata.contrastReport>>,
+    warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[],
+    failurePolicy: CvdFailurePolicy,
+    blockedPairs: Map<string, ComplianceBlockedPairInterfaceTypeEntity.Type>
+  ): {
+    readonly 'cvdFailureCount': number;
+    readonly 'diagnostics': ReadonlyMap<string, ContrastReportEntryInterfaceTypeEntity.Type>;
+    readonly 'pairs': readonly CompliancePairInterfaceTypeEntity.Type[];
+  } {
+    const diagnostics = new Map<string, ContrastReportEntryInterfaceTypeEntity.Type>();
+    const pairs: CompliancePairInterfaceTypeEntity.Type[] = [];
+    let cvdFailureCount = 0;
     for (let index = 0; index < diagnostic.pairs.length; index += 1) {
       const diagnosticPair = diagnostic.pairs[index];
       if (diagnosticPair === undefined) {
@@ -104,14 +148,26 @@ class ComplianceSerialization {
       const pair = ContrastReportEntryInterfaceTypeEntity.intake(diagnosticPair);
       const key = ComplianceSerialization.key(pair.foreground, pair.background);
       diagnostics.set(key, pair);
-      pairs.push(ComplianceSerialization.pair(pair, cvd.warnings));
+      const serialized = ComplianceSerialization.pair(pair, warnings, failurePolicy);
+      pairs.push(serialized);
+      cvdFailureCount += ComplianceSerialization.failureCount(serialized.cvd);
       const blocked = ComplianceSerialization.blockedPair(pair, diagnostic.target);
       if (blocked !== undefined) {
         blockedPairs.set(key, blocked);
       }
     }
-    for (let index = 0; index < cvd.blocked.length; index += 1) {
-      const blocked = cvd.blocked[index];
+    const result = { 'cvdFailureCount': cvdFailureCount, 'diagnostics': diagnostics, 'pairs': pairs };
+    return result;
+  }
+
+  private static applyCvdBlockers(
+    cvdBlockedPairs: readonly (CvdResultSetInterfaceTypeEntity.Type['blocked'][number])[],
+    diagnostics: ReadonlyMap<string, ContrastReportEntryInterfaceTypeEntity.Type>,
+    target: string,
+    blockedPairs: Map<string, ComplianceBlockedPairInterfaceTypeEntity.Type>
+  ): void {
+    for (let index = 0; index < cvdBlockedPairs.length; index += 1) {
+      const blocked = cvdBlockedPairs[index];
       if (blocked === undefined) {
         continue;
       }
@@ -126,25 +182,21 @@ class ComplianceSerialization {
         'foreground': pair.foreground,
         'reason': blocked.reason,
         'requiredTrichromat': pair.required,
-        'target': diagnostic.target
+        'target': target
       }));
     }
-    const cvdCompliant = cvd.warnings.length === 0;
-    const compliant = diagnostic.compliant && cvdCompliant && blockedPairs.size === 0;
-    if (!compliant && blockedPairs.size === 0) {
-      throw new TypeError('Terminal compliance failure has no blocked pair');
-    }
-    const result = ComplianceReportInterfaceTypeEntity.intake({
-      'blockedPairs': Array.from(blockedPairs.values()),
-      'compliant': compliant,
-      'cvdCompliant': cvdCompliant,
-      'pairs': pairs,
-      'selected': {
-        'algorithm': diagnostic.selectedAlgorithm,
-        'level': diagnostic.target
+  }
+
+  private static failureCount(
+    outcomes: readonly CvdEvalInterfaceTypeEntity.Type[]
+  ): number {
+    let failureCount = 0;
+    for (let index = 0; index < outcomes.length; index += 1) {
+      if (outcomes[index]?.fail === true) {
+        failureCount += 1;
       }
-    });
-    return result;
+    }
+    return failureCount;
   }
 
   private static key(foreground: string, background: string): string {
@@ -154,7 +206,8 @@ class ComplianceSerialization {
 
   private static outcomes(
     pair: ContrastReportEntryInterfaceTypeEntity.Type,
-    warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[]
+    warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[],
+    failurePolicy: CvdFailurePolicy
   ): CvdEvalInterfaceTypeEntity.Type[] {
     const outcomes: CvdEvalInterfaceTypeEntity.Type[] = [];
     for (let index = 0; index < warnings.length; index += 1) {
@@ -162,15 +215,20 @@ class ComplianceSerialization {
       if (warning?.foreground !== pair.foreground || warning?.background !== pair.background) {
         continue;
       }
-      outcomes.push(CvdEvalInterfaceTypeEntity.intake({
+      const evidence = CvdEvalInterfaceTypeEntity.intake({
         'belowFloor': warning.simulatedLuminanceContrast < warning.minimumSimulatedContrast,
         'cvdType': warning.cvdType,
         'drop': warning.drop,
         'exceedsDrop': Math.abs(warning.drop) > warning.dropThreshold,
-        'fail': true,
+        'fail': false,
         'originalContrast': warning.originalLuminanceContrast,
         'simContrast': warning.simulatedLuminanceContrast
-      }));
+      });
+      const outcome = CvdEvalInterfaceTypeEntity.intake({
+        ...evidence,
+        'fail': failurePolicy.blocks(evidence)
+      });
+      outcomes.push(outcome);
     }
     return outcomes;
   }

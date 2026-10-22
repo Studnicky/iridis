@@ -21,6 +21,7 @@ export class CvdProbeScenarioSuite {
       await test('CVD refinement records only pairs with an actually fixed CVD type', CvdProbeScenarioSuite.correctionMetadata);
       await test('CVD refinement resolves cyclic role constraints deterministically', CvdProbeScenarioSuite.cycle);
       await test('CVD refinement advisory mode does not claim correction failure', CvdProbeScenarioSuite.advisory);
+      await test('CVD modes separate observation, nudging, and terminal enforcement', CvdProbeScenarioSuite.modes);
       await test('CVD observation identifies every deficiency matrix', CvdProbeScenarioSuite.deficiencyMatrices);
       await test('CVD refinement finds interior corrections for zero and near-zero chroma', CvdProbeScenarioSuite.achromaticCorrection);
       await test('CVD refinement avoids extreme colors for a non-extreme correction', CvdProbeScenarioSuite.nonExtremeCorrection);
@@ -56,7 +57,7 @@ export class CvdProbeScenarioSuite {
     };
     const input = InputInterfaceTypeEntity.intake({
       'colors': [],
-      'contrast': { 'algorithm': 'apca', 'cvdCorrect': true, 'level': 'Lc' },
+      'contrast': { 'algorithm': 'apca', 'cvdMode': 'enforce', 'level': 'Lc' },
       'roles': {
         'contrastPairs': [
           CvdProbeScenarioSuite.pairAtMinimum('text', 'background', 4.5),
@@ -273,6 +274,133 @@ export class CvdProbeScenarioSuite {
     assert.ok(cvd.warnings.length > 0, '[cvd-advisory-metadata] warnings retained');
     assert.deepEqual(logger.warnings, ['CVD advisory: pairs fail perceptual-stability threshold'], '[cvd-advisory-log] one aggregate advisory per run');
     assert.ok(!logger.warnings.includes('CVD correction could not clear every failing type'), '[cvd-advisory-log] advisory mode has no correction failure');
+  }
+
+  private static modes(): void {
+    const roles = CvdProbeScenarioSuite.statedPairRoles();
+    const pairs = [CvdProbeScenarioSuite.pair('text', 'background')];
+    const stated = ['text', 'background'];
+
+    const warned = ContrastTestPort.runObservedCompliance(
+      roles,
+      pairs,
+      new RecordingLogger(),
+      stated
+    );
+    const nudged = ContrastTestPort.runNudgedCompliance(
+      roles,
+      pairs,
+      new RecordingLogger(),
+      stated
+    );
+    const enforced = ContrastTestPort.runCompliance(
+      roles,
+      pairs,
+      new RecordingLogger(),
+      stated
+    );
+    const movableNudged = ContrastTestPort.runNudgedCompliance(
+      roles,
+      pairs,
+      new RecordingLogger(),
+      ['text']
+    );
+
+    const warnedCvd = ContrastMetadataAssertionPort.cvd(warned);
+    const nudgedCvd = ContrastMetadataAssertionPort.cvd(nudged);
+    const enforcedCvd = ContrastMetadataAssertionPort.cvd(enforced);
+    const movableNudgedCvd = ContrastMetadataAssertionPort.cvd(movableNudged);
+    assert.ok(
+      warnedCvd !== undefined &&
+      nudgedCvd !== undefined &&
+      enforcedCvd !== undefined &&
+      movableNudgedCvd !== undefined,
+      '[cvd-modes] CVD metadata present for every mode'
+    );
+    assert.strictEqual(
+      warned.roles.text?.hex,
+      roles.text.hex,
+      '[cvd-modes] warn preserves the stated foreground'
+    );
+    assert.strictEqual(
+      nudged.roles.background?.hex,
+      roles.background.hex,
+      '[cvd-modes] nudge preserves the stated background when no movable endpoint exists'
+    );
+    assert.deepStrictEqual(
+      warnedCvd.blocked,
+      [],
+      '[cvd-modes] warn never creates a terminal blocker'
+    );
+    assert.deepStrictEqual(
+      nudgedCvd.blocked,
+      [],
+      '[cvd-modes] nudge never creates a terminal blocker'
+    );
+    assert.strictEqual(
+      warnedCvd.corrections.length,
+      0,
+      '[cvd-modes] warn never records a correction'
+    );
+    assert.strictEqual(
+      nudgedCvd.corrections.length,
+      0,
+      '[cvd-modes] nudge records no impossible correction'
+    );
+    assert.notStrictEqual(
+      movableNudged.roles.background?.hex,
+      roles.background.hex,
+      '[cvd-modes] nudge corrects an unstated endpoint'
+    );
+    assert.strictEqual(
+      movableNudgedCvd.blocked.length,
+      0,
+      '[cvd-modes] nudge emits no blocker after a movable correction'
+    );
+    assert.strictEqual(
+      movableNudgedCvd.corrections.length,
+      1,
+      '[cvd-modes] nudge records its applied correction'
+    );
+    assert.ok(
+      warnedCvd.warnings.length > 0 && nudgedCvd.warnings.length > 0,
+      '[cvd-modes] warn and nudge retain unresolved CVD evidence'
+    );
+    assert.deepStrictEqual(
+      enforcedCvd.blocked,
+      [{
+        'background': 'background',
+        'cvdTypes': ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'],
+        'foreground': 'text',
+        'reason': 'stated-both'
+      }],
+      '[cvd-modes] enforce creates the canonical stated-both blocker'
+    );
+
+    const warnedReport = ContrastMetadataAssertionPort.compliance(warned);
+    const nudgedReport = ContrastMetadataAssertionPort.compliance(nudged);
+    const enforcedReport = ContrastMetadataAssertionPort.compliance(enforced);
+    assert.ok(
+      warnedReport !== undefined &&
+      nudgedReport !== undefined &&
+      enforcedReport !== undefined,
+      '[cvd-modes] terminal compliance reports present'
+    );
+    assert.strictEqual(
+      warnedReport.cvdCompliant,
+      true,
+      '[cvd-modes] warn evidence does not reject the palette'
+    );
+    assert.strictEqual(
+      nudgedReport.cvdCompliant,
+      true,
+      '[cvd-modes] unresolved nudge evidence does not reject the palette'
+    );
+    assert.strictEqual(
+      enforcedReport.cvdCompliant,
+      false,
+      '[cvd-modes] unresolved enforce evidence rejects the palette'
+    );
   }
 
   private static statedForeground(): void {
@@ -501,7 +629,7 @@ export class CvdProbeScenarioSuite {
     assert.ok(cvd !== undefined, '[cvd-cycle] metadata present');
     assert.strictEqual(cvd.warnings.length, 8, '[cvd-cycle] every unresolved pair/type reported');
     assert.strictEqual(cvd.corrections.length, 0, '[cvd-cycle] no phantom correction');
-    assert.deepStrictEqual(logger.warnings, ['CVD correction could not clear every failing type'], '[cvd-cycle-log] terminal metadata warnings emit one aggregate correction diagnostic');
+    assert.deepStrictEqual(logger.warnings, ['CVD simulation emitted terminal advisory evidence'], '[cvd-cycle-log] terminal reconciliation emits one aggregate evidence diagnostic');
   }
 
   private static dependencyJoint(): void {
