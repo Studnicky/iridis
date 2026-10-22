@@ -34,11 +34,15 @@ dependencies before applying corrected roles. `input.contrast.cvdCorrect` is
 
 `report:compliance` runs last, after `derive:variant`. It measures the final
 roles and writes `state.metadata['contrast:complianceReport']`:
-`{ compliant, selected: { algorithm, level }, pairs, blockedPairs, cvdCompliant }`.
-Each pair carries `foreground`, `background`, `required`, `actual`, `passed`,
-`adjustedRoles` (the roles the resolver moved), and a `disposition`:
+`{ compliant, cvdCompliant, selected: { algorithm, level }, blockedPairs, pairs }`.
+Each pair carries `foreground`, `background`, `requiredTrichromat`,
+`actualTrichromat`, `cvd` (one evaluation per CVD type), `passed`, the optional
+`adjustedRole` (the role the resolver moved), and a `disposition`:
 `not-needed`, `adjusted-foreground`, `adjusted-background`, `blocked-stated`,
-or `unresolved`. Consumers admit a palette only when `compliant` is `true`.
+or `unresolved`. Each blocked pair carries `foreground`, `background`,
+`requiredTrichromat`, `actualTrichromat`, `target`, and a `reason`:
+`stated-both`, `solver-exhausted`, or `relation-tolerance`. Consumers admit a
+palette only when `compliant` is `true`.
 
 The CVD record lands in `state.metadata['contrast:cvd']`; `corrections[].adjustedRoles`
 lists the roles CVD correction moved, and `blocked` lists pairs whose both
@@ -104,8 +108,8 @@ export function generateAccessiblePalette(roleSchema: RoleSchemaInterfaceType) {
 
   const report = state.metadata['contrast:complianceReport'];
   // report?.compliant     // true when every pair passes the selected standard
-  // report?.pairs         // { foreground, background, required, actual, passed, adjustedRoles, disposition }
-  // report?.blockedPairs  // pairs with both endpoints stated
+  // report?.pairs         // { foreground, background, requiredTrichromat, actualTrichromat, cvd, passed, adjustedRole?, disposition }
+  // report?.blockedPairs  // { foreground, background, requiredTrichromat, actualTrichromat, target, reason }
   // report?.cvdCompliant  // true when CVD validation passes
 
   const cvd = getContrastMetadata(state.metadata, 'contrast:cvd');
