@@ -1,9 +1,10 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-import { colorRecordFactory, ContrastPairInterfaceTypeEntity, contrastWcag21 } from '@studnicky/iridis';
+import { colorRecordFactory, ContrastPairInterfaceTypeEntity, ContrastPolicy, contrastWcag21, InputInterfaceTypeEntity, PaletteRoleState } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { enforceCvdSimulate } from '../../../../src/tasks/EnforceCvdSimulate.ts';
 import { ContrastMetadataAssertionPort } from '../../contrast-plugin/ContrastMetadataAssertionPort.ts';
 import { ContrastTestPort } from '../../contrast-plugin/ContrastTestPort.ts';
 import { RecordingLogger } from '../../contrast-plugin/RecordingLogger.ts';
@@ -35,6 +36,7 @@ export class CvdProbeScenarioSuite {
       await test('CVD refinement preserves a selected policy floor above the original contrast', CvdProbeScenarioSuite.selectedPolicyFloor);
       await test('CVD refinement moves both derived endpoints around a stated chain middle', CvdProbeScenarioSuite.statedMiddleChain);
       await test('CVD refinement keeps a realistic 32-pair correction budget', CvdProbeScenarioSuite.performance);
+      await test('APCA CVD requirements remain in WCAG-ratio units', CvdProbeScenarioSuite.apcaCvdFloor);
     } finally {
       ContrastTestPort.clearCvdSearchBudgetForTesting();
     }
@@ -42,6 +44,97 @@ export class CvdProbeScenarioSuite {
     await test('CVD refinement keeps production stress work bounded for 100 unresolved movable pairs', CvdProbeScenarioSuite.productionStress);
     await test('CVD refinement shares one bounded budget across a cyclic component', CvdProbeScenarioSuite.budgetedCycle);
     await test('canonical compliance remains deterministic for 100 declared roles', CvdProbeScenarioSuite.compliancePerformance);
+    await test('CVD cube bound blocks an unreachable simulated contrast before scoring', CvdProbeScenarioSuite.cubeInfeasible);
+    await test('CVD cube bound preserves feasible randomized corrections deterministically', CvdProbeScenarioSuite.cubeFeasible);
+  }
+
+  private static apcaCvdFloor(): void {
+    const roles = {
+      'background': colorRecordFactory.fromHex('#808080'),
+      'divider': colorRecordFactory.fromHex('#000000'),
+      'text': colorRecordFactory.fromHex('#ffffff')
+    };
+    const input = InputInterfaceTypeEntity.intake({
+      'colors': [],
+      'contrast': { 'algorithm': 'apca', 'cvdCorrect': true, 'level': 'Lc' },
+      'roles': {
+        'contrastPairs': [
+          CvdProbeScenarioSuite.pairAtMinimum('text', 'background', 4.5),
+          CvdProbeScenarioSuite.pairAtMinimum('divider', 'background', 3)
+        ],
+        'name': 'apca-cvd-floor',
+        'roles': []
+      }
+    });
+    const requirements = ContrastPolicy.normalize(input, PaletteRoleState.admit(roles));
+    assert.deepStrictEqual(
+      requirements.map((requirement) => { return requirement.cvdMinimumContrastRatio; }),
+      [4.5, 3],
+      '[cvd-apca-floor] APCA projects declared WCAG AA floors instead of Lc values or zero'
+    );
+  }
+
+  private static cubeInfeasible(): void {
+    enforceCvdSimulate.configureSearchBudgetForTesting(8_000, 48_000);
+    try {
+      const roles = {
+        'background': colorRecordFactory.fromHex('#808080'),
+        'text': colorRecordFactory.fromHex('#000000')
+      };
+      const pairs = [CvdProbeScenarioSuite.pairAtMinimum('text', 'background', 7)];
+      const first = ContrastTestPort.runCorrectedCvd(roles, pairs, new RecordingLogger());
+      const firstUsage = enforceCvdSimulate.searchBudgetUsageForTesting();
+      const second = ContrastTestPort.runCorrectedCvd(roles, pairs, new RecordingLogger());
+      const secondUsage = enforceCvdSimulate.searchBudgetUsageForTesting();
+      const firstCvd = ContrastMetadataAssertionPort.cvd(first);
+      const secondCvd = ContrastMetadataAssertionPort.cvd(second);
+      assert.ok(firstCvd !== undefined && secondCvd !== undefined, '[cvd-cube-infeasible] metadata present');
+      assert.deepStrictEqual(firstUsage, { 'candidateScores': 0, 'weightedUnits': 0 }, '[cvd-cube-infeasible] exact bound scores no candidates');
+      assert.deepStrictEqual(secondUsage, firstUsage, '[cvd-cube-infeasible] score use is deterministic');
+      assert.deepStrictEqual(firstCvd.blocked, [{
+        'background': 'background',
+        'cvdTypes': ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'],
+        'foreground': 'text',
+        'reason': 'solver-infeasible'
+      }], '[cvd-cube-infeasible] cube bound reports the canonical unreachable pair');
+      assert.deepStrictEqual(secondCvd.blocked, firstCvd.blocked, '[cvd-cube-infeasible] blocked signature is deterministic');
+      assert.strictEqual(firstCvd.corrections.length, 0, '[cvd-cube-infeasible] unreachable group has no correction');
+      assert.ok(firstCvd.warnings.length > 0, '[cvd-cube-infeasible] diagnostics remain available');
+    } finally {
+      enforceCvdSimulate.clearSearchBudgetForTesting();
+    }
+  }
+
+  private static cubeFeasible(): void {
+    const backgrounds = ['#10161f', '#2f556b', '#6d8c4e', '#b47a4d', '#d3c1e0'];
+    const pairs = [CvdProbeScenarioSuite.pairAtMinimum('text', 'background', 4.5)];
+    for (let index = 0; index < backgrounds.length; index += 1) {
+      const background = backgrounds[index];
+      if (background === undefined) {
+        continue;
+      }
+      const roles = {
+        'background': colorRecordFactory.fromHex(background),
+        'text': colorRecordFactory.fromHex('#ffffff')
+      };
+      const first = ContrastTestPort.runCorrectedCvd(roles, pairs, new RecordingLogger());
+      const second = ContrastTestPort.runCorrectedCvd(roles, pairs, new RecordingLogger());
+      const firstCvd = ContrastMetadataAssertionPort.cvd(first);
+      const secondCvd = ContrastMetadataAssertionPort.cvd(second);
+      assert.ok(firstCvd !== undefined && secondCvd !== undefined, `[cvd-cube-feasible-${index}] metadata present`);
+      assert.ok(
+        !firstCvd.blocked.some((blocked) => {
+          const result = blocked.reason === 'solver-infeasible';
+          return result;
+        }),
+        `[cvd-cube-feasible-${index}] exact bound does not reject a feasible CVD group`
+      );
+      assert.deepStrictEqual(
+        Object.entries(second.roles).map(([name, role]) => { return [name, role.hex]; }),
+        Object.entries(first.roles).map(([name, role]) => { return [name, role.hex]; }),
+        `[cvd-cube-feasible-${index}] terminal signature remains deterministic`
+      );
+    }
   }
 
   private static achromaticCorrection(): void {

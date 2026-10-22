@@ -23,6 +23,7 @@ class CvdPairConstraint {
   readonly backgroundLuminance: number;
   readonly backgroundName: string;
   readonly baseline: number;
+  readonly foregroundName: string;
   readonly originalFailureTypes: ReadonlySet<CvdEvalInterfaceTypeEntity.Type['cvdType']>;
   readonly requiredTrichromat: number;
   readonly simulatedBackgroundLuminances: readonly number[];
@@ -31,6 +32,7 @@ class CvdPairConstraint {
     backgroundName: string,
     background: ColorRecordInterfaceTypeEntity.Type,
     baseline: number,
+    foregroundName: string,
     originalFailureTypes: ReadonlySet<CvdEvalInterfaceTypeEntity.Type['cvdType']>,
     requiredTrichromat: number
   ) {
@@ -38,6 +40,7 @@ class CvdPairConstraint {
     this.backgroundLuminance = CvdSimulation.luminance(background.rgb);
     this.backgroundName = backgroundName;
     this.baseline = baseline;
+    this.foregroundName = foregroundName;
     this.originalFailureTypes = originalFailureTypes;
     this.requiredTrichromat = requiredTrichromat;
     const simulatedBackgroundLuminances: number[] = [];
@@ -62,12 +65,13 @@ class CvdMoverGroup {
     this.original = original;
   }
 
-  add(backgroundName: string, background: ColorRecordInterfaceTypeEntity.Type, requiredTrichromat: number): void {
+  add(backgroundName: string, background: ColorRecordInterfaceTypeEntity.Type, foregroundName: string, requiredTrichromat: number): void {
     const originalContrast = contrastWcag21.apply(this.original, background);
     this.constraints.push(new CvdPairConstraint(
       backgroundName,
       background,
       Math.max(originalContrast, requiredTrichromat),
+      foregroundName,
       CvdSimulation.failureTypes(this.original, background, requiredTrichromat),
       requiredTrichromat
     ));
@@ -95,6 +99,7 @@ class CvdMoverGroup {
         constraint.backgroundName,
         background,
         constraint.baseline,
+        constraint.foregroundName,
         constraint.originalFailureTypes,
         constraint.requiredTrichromat
       ));
@@ -235,20 +240,15 @@ class CvdSearchColor {
   }
 }
 
-abstract class CvdGridSearchPlan {
-  abstract shouldScore(selection: CvdCandidateSelection, candidate: CvdSearchColor): boolean;
-}
+class CvdOrderedSearchCandidate {
+  readonly candidate: CvdSearchColor;
+  readonly distance: number;
+  readonly ordinal: number;
 
-class CvdUnprunedGridSearchPlan extends CvdGridSearchPlan {
-  shouldScore(_selection: CvdCandidateSelection, _candidate: CvdSearchColor): boolean {
-    return true;
-  }
-}
-
-class CvdDistancePrunedGridSearchPlan extends CvdGridSearchPlan {
-  shouldScore(selection: CvdCandidateSelection, candidate: CvdSearchColor): boolean {
-    const result = selection.couldImprove(candidate.emitted.oklch.l, candidate.emitted.oklch.c);
-    return result;
+  constructor(candidate: CvdSearchColor, distance: number, ordinal: number) {
+    this.candidate = candidate;
+    this.distance = distance;
+    this.ordinal = ordinal;
   }
 }
 
@@ -259,6 +259,16 @@ class CvdScoreMeasurements {
 }
 
 class CvdSimulation {
+  private static readonly cubeCorners: readonly ColorRecordInterfaceTypeEntity.Type['rgb'][] = [
+    { 'b': 0, 'g': 0, 'r': 0 },
+    { 'b': 0, 'g': 0, 'r': 1 },
+    { 'b': 0, 'g': 1, 'r': 0 },
+    { 'b': 0, 'g': 1, 'r': 1 },
+    { 'b': 1, 'g': 0, 'r': 0 },
+    { 'b': 1, 'g': 0, 'r': 1 },
+    { 'b': 1, 'g': 1, 'r': 0 },
+    { 'b': 1, 'g': 1, 'r': 1 }
+  ];
   private static readonly searchCoarseChromaPartitions = 40;
   private static readonly searchCoarseLightnessPartitions = 80;
   private static readonly searchFineChromaPartitions = 80;
@@ -345,6 +355,27 @@ class CvdSimulation {
       });
     }
     return evals;
+  }
+
+  static infeasibleTypes(
+    constraint: CvdPairConstraint
+  ): CvdEvalInterfaceTypeEntity.Type['cvdType'][] {
+    const epsilon = 1e-12;
+    const infeasible: CvdEvalInterfaceTypeEntity.Type['cvdType'][] = [];
+    for (let cvdIndex = 0; cvdIndex < cvdMatrices.length; cvdIndex += 1) {
+      const cvd = cvdMatrices[cvdIndex];
+      const simulatedBackgroundLuminance = constraint.simulatedBackgroundLuminances[cvdIndex];
+      if (cvd === undefined || simulatedBackgroundLuminance === undefined) {
+        throw new TypeError('CVD simulation matrices and luminance measurements are misaligned');
+      }
+      const threshold = CvdSimulation.thresholdFor(cvd);
+      const required = Math.max(threshold.minimumSimulatedContrast, constraint.requiredTrichromat);
+      const maximum = CvdSimulation.maximumCubeContrast(cvd, simulatedBackgroundLuminance);
+      if (maximum + epsilon < required) {
+        infeasible.push(cvd.name);
+      }
+    }
+    return infeasible;
   }
 
   static failureTypes(
@@ -527,31 +558,37 @@ class CvdSimulation {
     return result;
   }
 
-  private static searchGrid(
+  private static searchCandidates(
     selection: CvdCandidateSelection,
-    originalC: number,
-    h: number,
+    candidates: readonly CvdSearchColor[],
     constraints: readonly CvdPairConstraint[],
-    lightnessPartitions: number,
-    chromaPartitions: number,
-    searchPlan: CvdGridSearchPlan,
-    emittedColors: CvdEmittedColorCache,
     budget: CvdSearchBudget
   ): boolean {
-    for (let lightnessIndex = 0; lightnessIndex <= lightnessPartitions; lightnessIndex += 1) {
-      const candidateL = lightnessIndex / lightnessPartitions;
-      for (let chromaIndex = 0; chromaIndex <= chromaPartitions; chromaIndex += 1) {
-        const candidateC = chromaPartitions === 0 ? 0 : originalC * chromaIndex / chromaPartitions;
-        const candidate = new CvdSearchColor(candidateL, candidateC, h, emittedColors);
-        if (!searchPlan.shouldScore(selection, candidate)) {
-          continue;
-        }
-        const score = budget.score(candidate, constraints);
-        if (score === undefined) {
-          return false;
-        }
-        selection.consider(score);
+    const ordered: CvdOrderedSearchCandidate[] = [];
+    for (let index = 0; index < candidates.length; index += 1) {
+      const candidate = candidates[index];
+      if (candidate !== undefined) {
+        ordered.push(new CvdOrderedSearchCandidate(candidate, selection.distanceFromOriginal(candidate), index));
       }
+    }
+    ordered.sort((left, right) => {
+      const distance = left.distance - right.distance;
+      const result = distance === 0 ? left.ordinal - right.ordinal : distance;
+      return result;
+    });
+    for (let candidateIndex = 0; candidateIndex < ordered.length; candidateIndex += 1) {
+      const candidate = ordered[candidateIndex];
+      if (candidate === undefined) {
+        continue;
+      }
+      if (!selection.couldImprove(candidate.candidate)) {
+        return true;
+      }
+      const score = budget.score(candidate.candidate, constraints);
+      if (score === undefined) {
+        return false;
+      }
+      selection.consider(score);
     }
     return true;
   }
@@ -587,7 +624,6 @@ class CvdSimulation {
     const fgL   = fgRecord.oklch.l;
     const c     = fgRecord.oklch.c;
     const h = fgRecord.oklch.h;
-    const coarseChromaPartitions = c === 0 ? 0 : CvdSimulation.searchCoarseChromaPartitions;
     const fineChromaPartitions = c === 0 ? 0 : CvdSimulation.searchFineChromaPartitions;
     const originalCandidate = budget.score(
       new CvdSearchColor(fgL, c, h, emittedColors),
@@ -601,13 +637,14 @@ class CvdSimulation {
     if (CvdCandidateSelection.clearsAll(originalCandidate)) {
       return fgRecord;
     }
-    const initialSearchComplete = CvdSimulation.searchInitialGrids(
+    if (!CvdSimulation.searchLocalGrid(selection, fgL, c, h, constraints, emittedColors, budget)) {
+      return fgRecord;
+    }
+    const initialSearchComplete = CvdSimulation.searchCoverageCandidates(
       selection,
       c,
       h,
       constraints,
-      coarseChromaPartitions,
-      fineChromaPartitions,
       emittedColors,
       budget
     );
@@ -633,6 +670,29 @@ class CvdSimulation {
 
     budget.storeCorrection(fgRecord, constraints, best);
     const result = CvdSimulation.materializeCorrection(best, fgRecord);
+    return result;
+  }
+
+  private static searchLocalGrid(
+    selection: CvdCandidateSelection,
+    lightness: number,
+    chroma: number,
+    hue: number,
+    constraints: readonly CvdPairConstraint[],
+    emittedColors: CvdEmittedColorCache,
+    budget: CvdSearchBudget
+  ): boolean {
+    const candidates: CvdSearchColor[] = [];
+    const lightnessStep = 1 / CvdSimulation.searchCoarseLightnessPartitions;
+    const chromaPartitions = 16;
+    for (let lightnessOffset = -4; lightnessOffset <= 4; lightnessOffset += 1) {
+      const candidateLightness = clamp01.apply(lightness + lightnessOffset * lightnessStep);
+      for (let chromaIndex = 0; chromaIndex <= chromaPartitions; chromaIndex += 1) {
+        const candidateChroma = chroma * (chromaPartitions - chromaIndex) / chromaPartitions;
+        candidates.push(new CvdSearchColor(candidateLightness, candidateChroma, hue, emittedColors));
+      }
+    }
+    const result = CvdSimulation.searchCandidates(selection, candidates, constraints, budget);
     return result;
   }
 
@@ -717,20 +777,40 @@ class CvdSimulation {
     return true;
   }
 
-  private static searchInitialGrids(
+  private static searchCoverageCandidates(
     selection: CvdCandidateSelection,
-    c: number,
-    h: number,
+    chroma: number,
+    hue: number,
     constraints: readonly CvdPairConstraint[],
-    coarseChromaPartitions: number,
-    fineChromaPartitions: number,
     emittedColors: CvdEmittedColorCache,
     budget: CvdSearchBudget
   ): boolean {
-    if (!CvdSimulation.searchGrid(selection, c, h, constraints, CvdSimulation.searchCoarseLightnessPartitions, coarseChromaPartitions, new CvdUnprunedGridSearchPlan(), emittedColors, budget)) {
-      return false;
+    const candidates: CvdSearchColor[] = [];
+    const sampleCount = 96;
+    for (let sample = 0; sample < sampleCount; sample += 1) {
+      const lightness = (sample + 0.5) / sampleCount;
+      const candidateChroma = chroma * CvdSimulation.radicalInverseBaseTwo(sample);
+      candidates.push(new CvdSearchColor(lightness, candidateChroma, hue, emittedColors));
     }
-    const result = CvdSimulation.searchGrid(selection, c, h, constraints, CvdSimulation.searchFineLightnessPartitions, fineChromaPartitions, new CvdDistancePrunedGridSearchPlan(), emittedColors, budget);
+    candidates.push(
+      new CvdSearchColor(0, 0, hue, emittedColors),
+      new CvdSearchColor(0, chroma, hue, emittedColors),
+      new CvdSearchColor(1, 0, hue, emittedColors),
+      new CvdSearchColor(1, chroma, hue, emittedColors)
+    );
+    const result = CvdSimulation.searchCandidates(selection, candidates, constraints, budget);
+    return result;
+  }
+
+  private static radicalInverseBaseTwo(value: number): number {
+    let source = value;
+    let factor = 0.5;
+    let result = 0;
+    while (source > 0) {
+      result += factor * (source % 2);
+      source = Math.floor(source / 2);
+      factor *= 0.5;
+    }
     return result;
   }
 
@@ -777,6 +857,25 @@ class CvdSimulation {
     return true;
   }
 
+  private static maximumCubeContrast(
+    cvd: CvdMatrixInterfaceTypeEntity.Type,
+    simulatedBackgroundLuminance: number
+  ): number {
+    let maximum = 0;
+    for (let cornerIndex = 0; cornerIndex < CvdSimulation.cubeCorners.length; cornerIndex += 1) {
+      const corner = CvdSimulation.cubeCorners[cornerIndex];
+      if (corner === undefined) {
+        continue;
+      }
+      const simulatedCorner = CvdSimulation.luminance(CvdSimulation.color(corner, cvd));
+      const contrast = CvdSimulation.contrastFromLuminances(simulatedCorner, simulatedBackgroundLuminance);
+      if (contrast > maximum) {
+        maximum = contrast;
+      }
+    }
+    return maximum;
+  }
+
   private static originalFailureCount(constraints: readonly CvdPairConstraint[]): number {
     let failureCount = 0;
     for (let constraintIndex = 0; constraintIndex < constraints.length; constraintIndex += 1) {
@@ -814,6 +913,28 @@ class CvdSimulation {
   }
 }
 
+class CvdInfeasibility {
+  static blocked(group: CvdMoverGroup): CvdBlockedPairInterfaceTypeEntity.Type[] {
+    const blocked: CvdBlockedPairInterfaceTypeEntity.Type[] = [];
+    for (let constraintIndex = 0; constraintIndex < group.constraints.length; constraintIndex += 1) {
+      const constraint = group.constraints[constraintIndex];
+      if (constraint === undefined) {
+        continue;
+      }
+      const cvdTypes = CvdSimulation.infeasibleTypes(constraint);
+      if (cvdTypes.length === 0) {
+        continue;
+      }
+      blocked.push(CvdBlockedPairInterfaceTypeEntity.intake({
+        'background': constraint.foregroundName === group.mover ? constraint.backgroundName : group.mover,
+        'cvdTypes': cvdTypes,
+        'foreground': constraint.foregroundName,
+        'reason': 'solver-infeasible'
+      }));
+    }
+    return blocked;
+  }
+}
 
 class CvdSearchBudget {
   private static readonly productionMaximumCandidateScores = 8_000;
@@ -967,15 +1088,20 @@ class CvdCandidateSelection {
     }
   }
 
-  couldImprove(candidateL: number, candidateC: number): boolean {
+  couldImprove(candidate: CvdSearchColor): boolean {
     const current = this.result();
     if (current === undefined) {
       return true;
     }
     const epsilon = 1e-12;
-    const candidateLowerBound = Math.hypot(candidateL - this.originalL, candidateC - this.originalC);
+    const candidateDistance = this.distanceFromOriginal(candidate);
     const currentDistance = Math.hypot(current.l - this.originalL, current.c - this.originalC);
-    const result = !CvdCandidateSelection.clearsAll(current) || candidateLowerBound <= currentDistance + epsilon;
+    const result = !CvdCandidateSelection.clearsAll(current) || candidateDistance <= currentDistance + epsilon;
+    return result;
+  }
+
+  distanceFromOriginal(candidate: CvdSearchColor): number {
+    const result = Math.hypot(candidate.emitted.oklch.l - this.originalL, candidate.emitted.oklch.c - this.originalC);
     return result;
   }
 
@@ -1479,11 +1605,6 @@ class EnforceCvdSimulate implements TaskInterface {
     return grouped.blocked;
   }
 
-  private cvdMinimum(pair: ContrastPolicy.RequirementInterface): number {
-    const result = pair.algorithm === 'wcag21' ? pair.minimumContrastRatio : 0;
-    return result;
-  }
-
   private createSearchBudget(): CvdSearchBudget {
     const configured = this.testingSearchBudget;
     if (configured === undefined) {
@@ -1504,35 +1625,63 @@ class EnforceCvdSimulate implements TaskInterface {
     const provenance = Metadata.roleProvenance(state.metadata);
     for (let index = 0; index < pairs.length; index += 1) {
       const pair = pairs[index];
-      if (pair === undefined) {continue;}
-      const foreground = originals.get(pair.foreground);
-      const background = originals.get(pair.background);
-      if (foreground === undefined || background === undefined) {continue;}
-      const cvdMinimum = this.cvdMinimum(pair);
-      const mover = CvdMover.select(pair.foreground, pair.background, provenance);
-      if (mover === undefined) {
-        const cvdTypes = Array.from(CvdSimulation.failureTypes(foreground, background, cvdMinimum));
-        if (cvdTypes.length > 0) {
-          blocked.push(CvdBlockedPairInterfaceTypeEntity.create({
-            'background': pair.background,
-            'cvdTypes': cvdTypes,
-            'foreground': pair.foreground,
-            'reason': 'stated-both'
-          }));
-        }
+      if (pair !== undefined) {
+        this.addPairGroup(pair, originals, provenance, groups, blocked);
+      }
+    }
+    const entries = Array.from(groups.entries());
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
+      if (entry === undefined) {
         continue;
       }
-      const moverRecord = originals.get(mover.roleName);
-      const counterpart = originals.get(mover.counterpartName);
-      if (moverRecord === undefined || counterpart === undefined) {continue;}
-      let group = groups.get(mover.roleName);
-      if (group === undefined) {
-        group = new CvdMoverGroup(mover.roleName, moverRecord);
-        groups.set(mover.roleName, group);
+      const [mover, group] = entry;
+      const infeasible = CvdInfeasibility.blocked(group);
+      if (infeasible.length === 0) {
+        continue;
       }
-      group.add(mover.counterpartName, counterpart, cvdMinimum);
+      blocked.push(...infeasible);
+      groups.delete(mover);
     }
     return new CvdGroups(groups, blocked);
+  }
+
+  private addPairGroup(
+    pair: ContrastPolicy.RequirementInterface,
+    originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
+    provenance: ReadonlyMap<string, { readonly 'origin': string }>,
+    groups: Map<string, CvdMoverGroup>,
+    blocked: CvdBlockedPairInterfaceTypeEntity.Type[]
+  ): void {
+    const foreground = originals.get(pair.foreground);
+    const background = originals.get(pair.background);
+    if (foreground === undefined || background === undefined) {
+      return;
+    }
+    const mover = CvdMover.select(pair.foreground, pair.background, provenance);
+    if (mover === undefined) {
+      const cvdTypes = Array.from(CvdSimulation.failureTypes(foreground, background, pair.cvdMinimumContrastRatio));
+      if (cvdTypes.length > 0) {
+        blocked.push(CvdBlockedPairInterfaceTypeEntity.create({
+          'background': pair.background,
+          'cvdTypes': cvdTypes,
+          'foreground': pair.foreground,
+          'reason': 'stated-both'
+        }));
+      }
+      return;
+    }
+    const moverRecord = originals.get(mover.roleName);
+    const counterpart = originals.get(mover.counterpartName);
+    if (moverRecord === undefined || counterpart === undefined) {
+      return;
+    }
+    let group = groups.get(mover.roleName);
+    if (group === undefined) {
+      group = new CvdMoverGroup(mover.roleName, moverRecord);
+      groups.set(mover.roleName, group);
+    }
+    group.add(mover.counterpartName, counterpart, pair.foreground, pair.cvdMinimumContrastRatio);
   }
 
   private reportCorrected(pairs: readonly ContrastPolicy.RequirementInterface[], originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>, state: PaletteStateInterface, context: PipelineContextInterface): { readonly 'corrections': CvdCorrectionInterfaceTypeEntity.Type[]; readonly 'warnings': CvdPairWarningInterfaceTypeEntity.Type[]; } {
@@ -1568,7 +1717,7 @@ class EnforceCvdSimulate implements TaskInterface {
     }
     const foreground = colorRecordFactory.fromHex(finalForeground.hex);
     const background = colorRecordFactory.fromHex(finalBackground.hex);
-    const cvdMinimum = this.cvdMinimum(pair);
+    const cvdMinimum = pair.cvdMinimumContrastRatio;
     const evaluations = CvdSimulation.evaluate(
       foreground.rgb,
       background.rgb,
@@ -1642,7 +1791,7 @@ class EnforceCvdSimulate implements TaskInterface {
       originalForeground.rgb,
       originalBackground.rgb,
       contrastWcag21.apply(originalForeground, originalBackground),
-      this.cvdMinimum(pair)
+      pair.cvdMinimumContrastRatio
     );
     const fixed = this.fixedTypes(initial, failures);
     if (fixed.length > 0) {
