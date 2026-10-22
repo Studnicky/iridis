@@ -59,7 +59,7 @@ export function generateGalleryTheme(pixels: InputInterface['colors']) {
     'colors':   pixels,
     'contrast': {
       'algorithm':  'wcag21',
-      'cvdCorrect': true,
+      'cvdMode': 'nudge',
       'extra':      undefined,
       'level':      'AA',
     },

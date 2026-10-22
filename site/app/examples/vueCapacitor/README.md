@@ -45,7 +45,7 @@ Properties are scoped to `[data-category='music']`:
   --c-surface:   #d2c9fb;
   --c-accent:    #5b4894;
   --c-on-accent: #fcfcfc;
-  --c-border:    #6f40cf;
+  --c-border:    #8b5cf6;
   --c-muted:     #8b5cf6;
   --c-text:      #201042;
 }

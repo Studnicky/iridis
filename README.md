@@ -65,7 +65,7 @@ export function generateStylesheet(roleSchema: RoleSchemaInterfaceTypeEntity.Typ
   const state = engine.run({
     bypass: undefined,
     colors: ["#8B5CF6"],
-    contrast: { algorithm: "wcag21", cvdCorrect: true, extra: undefined, level: "AA" },
+    contrast: { algorithm: "wcag21", cvdMode: "nudge", extra: undefined, level: "AA", nonMandatoryLevel: "AA" },
     emit: undefined,
     maxColors: undefined,
     metadata: undefined,
@@ -80,7 +80,12 @@ export function generateStylesheet(roleSchema: RoleSchemaInterfaceTypeEntity.Typ
 }
 ```
 
-`enforce:compliance` applies the selected standard (WCAG 2.1 AA, WCAG 2.1 AAA, or APCA, chosen through `input.contrast`) to every declared contrast pair. Roles you state are never changed; unstated roles are recalculated around them, with colour-vision-deficiency correction applied. A set of stated roles that cannot meet the standard is reported instead of rendered. `report:compliance` writes the typed `contrast:complianceReport`.
+`enforce:compliance` applies the selected standard (WCAG 2.1 AA, WCAG 2.1 AAA, or APCA, chosen through `input.contrast`) to every declared contrast pair. Roles you state are never changed; unstated roles are recalculated around them. A set of stated roles that cannot meet the standard is reported instead of rendered. `report:compliance` writes the typed `contrast:complianceReport`.
+
+Two optional settings in `input.contrast` choose how strictly the engine applies the rest of the checks:
+
+- `cvdMode` — `warn` (default) reports colour-vision-deficiency failures without changing the palette, `nudge` corrects unstated roles toward them, and `enforce` also blocks a palette whose stated roles cannot clear them.
+- `nonMandatoryLevel` — `AA` (default) or `AAA`. For WCAG it selects the standard for declared non-mandatory pairs such as borders and focus rings. With the current APCA schema fallback it selects Lc60 or Lc75 for every Lc60 pair; body text at Lc75 remains mandatory. `level` governs text pairs.
 
 [Read the Engine API →](https://studnicky.github.io/iridis/#04-engine-api)
 

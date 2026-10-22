@@ -39,7 +39,7 @@ npx iridis ./palette.config.json
 ```
 
 The config is validated against `CliConfigSchema`. Required top-level keys:
-`input`, `pipeline`, `output`.
+`input`, `pipeline`, `output`. `input.contrast` also accepts `cvdMode` (`warn`, `nudge`, `enforce`; default `warn`) and `nonMandatoryLevel` (`AA`, `AAA`; default `AA`).
 
 ```json
 {

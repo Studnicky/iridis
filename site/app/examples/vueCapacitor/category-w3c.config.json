@@ -4,7 +4,7 @@
     "contrast": {
       "level": "AAA",
       "algorithm": "wcag21",
-      "cvdCorrect": true
+      "cvdMode": "nudge"
     },
     "metadata": {
       "category":     "music",

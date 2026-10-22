@@ -55,7 +55,7 @@ const state = engine.run({
       'error': '#ef4444'
     }
   }],
-  'contrast': { 'algorithm': 'wcag21', 'cvdCorrect': true, 'extra': undefined, 'level': 'AA' },
+  'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'nudge', 'extra': undefined, 'level': 'AA' },
   'emit': undefined,
   'maxColors': undefined,
   'metadata': { 'themeName': 'Iridis Dark' },

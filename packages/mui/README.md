@@ -52,7 +52,7 @@ export function generateMuiTheme(roleSchema: RoleSchemaInterfaceType): MuiOutput
     'colors':   ['#8B5CF6'],
     'contrast': {
       'algorithm':  'wcag21',
-      'cvdCorrect': true,
+      'cvdMode': 'nudge',
       'extra':      undefined,
       'level':      'AA',
     },

@@ -90,7 +90,7 @@ class CategoryColorService {
       'colors': [seed],
       'contrast': {
         'algorithm': 'wcag21',
-        'cvdCorrect': true,
+        'cvdMode': 'nudge',
         'level': 'AAA'
       },
       'metadata': {
