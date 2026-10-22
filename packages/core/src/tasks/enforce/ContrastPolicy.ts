@@ -29,7 +29,7 @@ class ContrastStandard {
       const result = declaredMinimum ?? 7;
       return result;
     }
-    const result = declaredMinimum >= 4.5 ? 7 : 4.5;
+    const result = declaredMinimum >= 4.5 ? 7 : declaredMinimum;
     return result;
   }
 

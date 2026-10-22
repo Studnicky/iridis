@@ -12,6 +12,7 @@ export namespace ContrastOptionsInterfaceTypeEntity {
     'properties': {
       'algorithm':  { 'enum': ['wcag21', 'apca'] },
       'cvdCorrect': { 'type': 'boolean' },
+      'cvdDropMode': { 'enum': ['advisory', 'enforce'] },
       'extra':      { 'items': ContrastPairInterfaceTypeEntity.Schema, 'type': 'array' },
       'level':      { 'type': 'string' }
     },

@@ -8,6 +8,7 @@ export const InputSchema = {
       'properties': {
         'algorithm':  { 'enum': ['wcag21', 'apca'], 'type': 'string' },
         'cvdCorrect': { 'type': 'boolean' },
+        'cvdDropMode': { 'enum': ['advisory', 'enforce'], 'type': 'string' },
         'extra':      { 'type': 'array' },
         'level':      { 'type': 'string' }
       },

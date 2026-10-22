@@ -781,6 +781,41 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     }),
     roles
   );
+  const aaaAlreadyStrict = ContrastPolicy.normalize(
+    InputInterfaceTypeEntity.intake({
+      'colors': [],
+      'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' },
+      'roles': {
+        'contrastPairs': [
+          {
+            'background': 'background',
+            'foreground': 'text',
+            'minimumContrastRatio': 7
+          }
+        ],
+        'name': 'aaa-already-strict-policy',
+        'roles': []
+      }
+    }),
+    roles
+  );
+  const aaaMissing = ContrastPolicy.normalize(
+    InputInterfaceTypeEntity.intake({
+      'colors': [],
+      'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' },
+      'roles': {
+        'contrastPairs': [
+          {
+            'background': 'background',
+            'foreground': 'text'
+          }
+        ],
+        'name': 'aaa-missing-policy',
+        'roles': []
+      }
+    }),
+    roles
+  );
   const aaaBounded = ContrastPolicy.normalize(
     InputInterfaceTypeEntity.intake({
       'colors': [],
@@ -816,34 +851,52 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     aa.map((requirement) => {return [
       requirement.algorithm,
       requirement.foreground,
+      requirement.cvdMinimumContrastRatio,
       requirement.minimumContrastRatio
     ];}),
     [
-      ['wcag21', 'divider', 3],
-      ['wcag21', 'control', 3]
+      ['wcag21', 'divider', 3, 3],
+      ['wcag21', 'control', 3, 3]
     ],
-    'AA retains each declared pair minimum, including a divider band'
+    'AA retains each declared pair minimum for terminal and CVD policy'
   );
   assert.deepStrictEqual(
     aaa.map((requirement) => {return [
       requirement.algorithm,
+      requirement.cvdMinimumContrastRatio,
       requirement.minimumContrastRatio
     ];}),
-    [['wcag21', 4.5]],
-    'AAA maps a declared divider ratio of 3 to 4.5'
+    [['wcag21', 3, 3]],
+    'AAA preserves an authored non-text ratio of 3 for terminal and CVD policy'
   );
   assert.deepStrictEqual(
-    aaaText.map((requirement) => {return requirement.minimumContrastRatio;}),
-    [7],
-    'AAA maps a declared text ratio of 4.5 to 7'
+    aaaText.map((requirement) => {
+      return [requirement.cvdMinimumContrastRatio, requirement.minimumContrastRatio];
+    }),
+    [[7, 7]],
+    'AAA maps a declared text ratio of 4.5 to 7 for terminal and CVD policy'
   );
   assert.deepStrictEqual(
     aaaBounded.map((requirement) => {return [
       requirement.minimumContrastRatio,
       requirement.maximumContrastRatio
     ];}),
-    [[4.5, 4.5]],
-    'AAA retains an authored maximum while mapping a divider ratio to 4.5'
+    [[3, 4.5]],
+    'AAA retains an authored maximum while preserving a non-text divider minimum'
+  );
+  assert.deepStrictEqual(
+    aaaAlreadyStrict.map((requirement) => {
+      return [requirement.cvdMinimumContrastRatio, requirement.minimumContrastRatio];
+    }),
+    [[7, 7]],
+    'AAA preserves an authored 7 ratio for terminal and CVD policy'
+  );
+  assert.deepStrictEqual(
+    aaaMissing.map((requirement) => {
+      return [requirement.cvdMinimumContrastRatio, requirement.minimumContrastRatio];
+    }),
+    [[7, 7]],
+    'AAA defaults an undeclared pair to 7 for terminal and CVD policy'
   );
   assert.deepStrictEqual(
     apca.map((requirement) => {return [
@@ -881,5 +934,23 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     }),
     [75],
     'APCA ignores an inherited WCAG ratio in favor of its selected Lc target'
+  );
+});
+
+void test('contrast options retain advisory CVD drops by default and admit explicit enforcement', () => {
+  const advisory = ContrastOptionsInterfaceTypeEntity.create({});
+  const enforce = ContrastOptionsInterfaceTypeEntity.create({
+    'cvdDropMode': 'enforce'
+  });
+
+  assert.strictEqual(
+    advisory.cvdDropMode,
+    undefined,
+    'omitting CVD drop mode leaves the canonical advisory default for policy intake'
+  );
+  assert.strictEqual(
+    enforce.cvdDropMode,
+    'enforce',
+    'the closed contrast input admits explicit CVD drop enforcement'
   );
 });
