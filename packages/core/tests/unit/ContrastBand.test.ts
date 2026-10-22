@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
-import type { ContrastReportEntryInterfaceTypeEntity } from '../../src/entities/ContrastReportEntryInterfaceTypeEntity.ts';
 import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
 import type { TaskInterface } from '../../src/interfaces/TaskInterface.ts';
 
@@ -10,6 +9,7 @@ import { Engine } from '../../src/engine/Engine.ts';
 import { ColorHintsInterfaceTypeEntity } from '../../src/entities/ColorHintsInterfaceTypeEntity.ts';
 import { ContrastOptionsInterfaceTypeEntity } from '../../src/entities/ContrastOptionsInterfaceTypeEntity.ts';
 import { ContrastPairInterfaceTypeEntity } from '../../src/entities/ContrastPairInterfaceTypeEntity.ts';
+import { ContrastReportEntryInterfaceTypeEntity } from '../../src/entities/ContrastReportEntryInterfaceTypeEntity.ts';
 import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
 import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
 import { RoleProvenanceInterfaceTypeEntity } from '../../src/entities/RoleProvenanceInterfaceTypeEntity.ts';
@@ -161,7 +161,8 @@ class ContrastBandFixture {
     if (entry === undefined) {
       throw new Error('Expected one contrast report entry.');
     }
-    return entry;
+    const result = ContrastReportEntryInterfaceTypeEntity.intake(entry);
+    return result;
   }
 
   static runPairs(
@@ -212,7 +213,10 @@ class ContrastBandFixture {
     if (report === undefined) {
       throw new Error('Expected a contrast report object.');
     }
-    const result = report.pairs;
+    const result = report.pairs.map((entry) => {
+      const item = ContrastReportEntryInterfaceTypeEntity.intake(entry);
+      return item;
+    });
     return result;
   }
 
@@ -229,7 +233,7 @@ class ContrastBandFixture {
       roleNames.add(pair.background);
     }
     const result = RoleSchemaInterfaceTypeEntity.create({
-      'contrastPairs': pairs,
+      'contrastPairs': [...pairs],
       'name': 'contrast-band',
       'roles': [...roleNames].map((name) => {
         const result = RoleDefinitionInterfaceTypeEntity.create({

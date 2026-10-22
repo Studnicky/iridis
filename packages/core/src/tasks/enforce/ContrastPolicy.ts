@@ -50,7 +50,7 @@ class ContrastStandard {
 /** APCA targets: https://git.apcacontrast.com/documentation/APCAeasyIntro */
 class ApcaTarget {
   static readonly #BODY_READING = 75;
-  static readonly #MEANINGFUL_TEXT = 60;
+  static readonly MEANINGFUL_TEXT = 60;
   static forPair(
     requirement: ContrastPairInterfaceTypeEntity.Type,
     roles: PaletteRoleState
@@ -63,12 +63,23 @@ class ApcaTarget {
     ) {
       return ApcaTarget.#BODY_READING;
     }
-    return ApcaTarget.#MEANINGFUL_TEXT;
+    return ApcaTarget.MEANINGFUL_TEXT;
   }
 }
 
 /** Canonical selected-standard requirements for every schema and run-level contrast pair. */
 export class ContrastPolicy {
+  static selection(
+    input: InputInterfaceTypeEntity.Type
+  ): ContrastPolicy.SelectionInterface {
+    const algorithm = ContrastStandard.algorithm(input);
+    const target = algorithm === 'apca'
+      ? `${ContrastStandard.targetPrefix(input, algorithm)}-${ApcaTarget.MEANINGFUL_TEXT}`
+      : ContrastStandard.targetPrefix(input, algorithm);
+    const result: ContrastPolicy.SelectionInterface = { 'algorithm': algorithm, 'target': target };
+    return result;
+  }
+
   static normalize(
     input: InputInterfaceTypeEntity.Type,
     roles: PaletteRoleState
@@ -111,6 +122,11 @@ export class ContrastPolicy {
 }
 
 export namespace ContrastPolicy {
+  export interface SelectionInterface {
+    readonly 'algorithm': ContrastAlgorithmTypeEntity.Type;
+    readonly 'target': string;
+  }
+
   export interface RequirementInterface {
     readonly 'algorithm': ContrastAlgorithmTypeEntity.Type;
     readonly 'background': string;

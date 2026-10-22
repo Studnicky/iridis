@@ -15,6 +15,7 @@ import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefini
 import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
 import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
+import { Metadata } from '../../src/types/metadata.ts';
 
 class PipelineCompositionFixtures {
   static createEngine(): Engine {
@@ -141,18 +142,19 @@ await test('Pipeline composition records enforced contrast', () => {
       ]
     })
   }));
-  const report = state.metadata['core:contrastReport'];
-  assert.ok(Array.isArray(report));
-  assert.strictEqual(report.length, 1);
-  const firstEntry = report.at(0);
+  const rawReport = state.metadata['core:contrastReport'];
+  assert.ok(rawReport !== undefined);
+  const report = Metadata.contrastReport(state.metadata);
+  assert.ok(report !== undefined);
+  assert.strictEqual(report.pairs.length, 1);
+  const firstEntry = report.pairs.at(0);
   assert.ok(firstEntry !== undefined);
   const entry = ContrastReportEntryInterfaceTypeEntity.intake(firstEntry);
   assert.strictEqual(entry.foreground, 'text');
   assert.strictEqual(entry.background, 'surface');
-  assert.strictEqual(typeof entry.ratio, 'number');
-  assert.strictEqual(typeof entry.minimumContrastRatio, 'number');
+  assert.strictEqual(typeof entry.actual, 'number');
+  assert.strictEqual(typeof entry.required, 'number');
   assert.strictEqual(typeof entry.passed, 'boolean');
-  assert.strictEqual(typeof entry.adjusted, 'boolean');
 });
 
 await test('Pipeline composition makes a second contrast enforcement a no-op', () => {
@@ -187,12 +189,12 @@ await test('Pipeline composition makes a second contrast enforcement a no-op', (
       ]
     })
   }));
-  const report = state.metadata['core:contrastReport'];
-  assert.ok(Array.isArray(report));
-  const lastEntry = report.at(-1);
+  const report = Metadata.contrastReport(state.metadata);
+  assert.ok(report !== undefined);
+  const lastEntry = report.pairs.at(-1);
   assert.ok(lastEntry !== undefined);
   const entry = ContrastReportEntryInterfaceTypeEntity.intake(lastEntry);
-  assert.strictEqual(entry.adjusted, false);
+  assert.strictEqual(entry.disposition, 'not-needed');
 });
 
 await test('Pipeline composition handles empty and absent role schemas', () => {

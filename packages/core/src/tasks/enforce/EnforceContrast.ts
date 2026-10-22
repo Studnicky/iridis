@@ -274,11 +274,12 @@ class ContrastExecution {
 
   static report(
     roles: PaletteRoleState,
-    pending: readonly PendingContrastEntryInterfaceTypeEntity.Type[]
+    pending: readonly PendingContrastEntryInterfaceTypeEntity.Type[],
+    selection: ContrastPolicy.SelectionInterface
   ): ContrastReportInterfaceTypeEntity.Type {
     const pairs: ContrastReportEntryInterfaceTypeEntity.Type[] = [];
-    let selectedAlgorithm = ContrastAlgorithmTypeEntity.intake('wcag21');
-    let target = 'AA';
+    let selectedAlgorithm = selection.algorithm;
+    let target = selection.target;
     for (let index = 0; index < pending.length; index += 1) {
       const entry = pending[index];
       if (entry === undefined) {
@@ -565,17 +566,15 @@ class EnforceContrast implements TaskInterface {
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const roles = PaletteRoleState.admit(state.roles);
+    const selection = ContrastPolicy.selection(state.input);
     const requirements = ContrastPolicy.normalize(state.input, roles);
-    if (requirements.length === 0) {
-      return;
-    }
     const pending = ContrastExecution.queue(
       roles,
       state,
       context,
       requirements
     );
-    const report = ContrastExecution.report(roles, pending);
+    const report = ContrastExecution.report(roles, pending, selection);
     roles.commit();
     Metadata.writeContrastReport(state.metadata, report);
   }
