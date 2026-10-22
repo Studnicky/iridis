@@ -1,1 +1,1 @@
-/** Legacy module retained while consumers migrate to SchemaNameInterfaceTypeEntity. */
+/** Legacy module retained while consumers migrate to SchemaNameEntity. */

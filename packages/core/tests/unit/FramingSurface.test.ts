@@ -7,8 +7,8 @@ import { test } from 'node:test';
 
 import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
 
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
-import { RuntimeOptionsInterfaceTypeEntity } from '../../src/entities/RuntimeOptionsInterfaceTypeEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
+import { RuntimeOptionsEntity } from '../../src/entities/RuntimeOptionsEntity.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { FramingSurface } from '../../src/model/FramingSurface.ts';
 
@@ -21,7 +21,7 @@ class FramingSurfaceFixture {
     variants: PaletteStateInterface['variants'],
     runtime: PaletteStateInterface['runtime']
   ): PaletteStateInterface {
-    const input = InputInterfaceTypeEntity.intake({ 'colors': [] });
+    const input = InputEntity.intake({ 'colors': [] });
     return {
       'colors':   [],
       'input':    input,
@@ -37,7 +37,7 @@ class FramingSurfaceFixture {
     roles: PaletteStateInterface['roles'],
     variants: PaletteStateInterface['variants']
   ) {
-    const result = FramingSurface.resolve(this.state(roles, variants, RuntimeOptionsInterfaceTypeEntity.intake({})));
+    const result = FramingSurface.resolve(this.state(roles, variants, RuntimeOptionsEntity.intake({})));
     return result;
   }
 
@@ -45,7 +45,7 @@ class FramingSurfaceFixture {
     roles: PaletteStateInterface['roles'],
     variants: PaletteStateInterface['variants']
   ) {
-    const result = FramingSurface.resolve(this.state(roles, variants, RuntimeOptionsInterfaceTypeEntity.intake({ 'framing': 'dark' })));
+    const result = FramingSurface.resolve(this.state(roles, variants, RuntimeOptionsEntity.intake({ 'framing': 'dark' })));
     return result;
   }
 
@@ -53,7 +53,7 @@ class FramingSurfaceFixture {
     roles: PaletteStateInterface['roles'],
     variants: PaletteStateInterface['variants']
   ) {
-    const result = FramingSurface.resolve(this.state(roles, variants, RuntimeOptionsInterfaceTypeEntity.intake({ 'framing': 'light' })));
+    const result = FramingSurface.resolve(this.state(roles, variants, RuntimeOptionsEntity.intake({ 'framing': 'light' })));
     return result;
   }
 }

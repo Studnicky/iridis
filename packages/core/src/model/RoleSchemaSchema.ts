@@ -1,11 +1,11 @@
-import { ContrastPairInterfaceTypeEntity } from '../entities/ContrastPairInterfaceTypeEntity.ts';
+import { ContrastPairEntity } from '../entities/ContrastPairEntity.ts';
 
 export const RoleSchemaSchema = {
   '$id':       'https://studnicky.dev/iridis/RoleSchema',
   'additionalProperties': false,
   'properties': {
     'contrastPairs': {
-      'items': ContrastPairInterfaceTypeEntity.Schema,
+      'items': ContrastPairEntity.Schema,
       'type':  'array'
     },
     'description': { 'type': 'string' },

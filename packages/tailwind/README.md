@@ -31,13 +31,13 @@ npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-tailw
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { tailwindPlugin }    from '@studnicky/iridis-tailwind';
 
-export function generateTailwindTheme(roleSchema: RoleSchemaInterfaceType) {
+export function generateTailwindTheme(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(tailwindPlugin);
@@ -77,7 +77,7 @@ export function generateTailwindTheme(roleSchema: RoleSchemaInterfaceType) {
 }
 ```
 
-`state.outputs['tailwind:theme']` is typed as `TailwindOutputInterfaceType`:
+`state.outputs['tailwind:theme']` is typed as `TailwindOutputEntity`:
 
 | Field | Shape | Notes |
 |---|---|---|

@@ -7,7 +7,7 @@ import type {
   TaskInterface
 } from '../../types/index.ts';
 
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { clusterMedianCut } from '../../math/ClusterMedianCut.ts';
 
 const DEFAULT_MAXIMUM_COLOR_COUNT = 64;
@@ -23,7 +23,7 @@ const DEFAULT_MAXIMUM_COLOR_COUNT = 64;
 class ClampCount implements TaskInterface {
   readonly 'name' = 'clamp:count';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Reduces state.colors to maximumColorCount (default 64) via median-cut clustering when the limit is exceeded; Infinity preserves every input color.',
     'name':        'clamp:count',
     'reads':       ['colors', 'input.maximumColorCount'],

@@ -1,10 +1,10 @@
-import { ComplianceReportInterfaceTypeEntity } from '../entities/ComplianceReportInterfaceTypeEntity.ts';
+import { ComplianceReportEntity } from '../entities/ComplianceReportEntity.ts';
 import { CVD_BLOCKED_PAIR_SCHEMA } from './CvdBlockedPairSchema.ts';
 import { CVD_CORRECTION_SCHEMA } from './CvdCorrectionSchema.ts';
 import { CVD_WARNING_SCHEMA } from './CvdWarningSchema.ts';
 
 export const CONTRAST_PLUGIN_SCHEMAS = Object.freeze({
-  'complianceReport': ComplianceReportInterfaceTypeEntity.Schema,
+  'complianceReport': ComplianceReportEntity.Schema,
   'cvd': {
     'additionalProperties': false,
     'properties': {

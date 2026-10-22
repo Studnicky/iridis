@@ -1,6 +1,6 @@
 import type { PaletteStateInterface } from '@studnicky/iridis';
 
-import { ColorRecordInterfaceTypeEntity } from '@studnicky/iridis';
+import { ColorRecordEntity } from '@studnicky/iridis';
 import { GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
 
 import { GalleryHistogramSlotEntity } from './entities/GalleryHistogramSlotEntity.ts';
@@ -18,11 +18,11 @@ export class GalleryMetadataSlot {
     return result;
   }
 
-  public static dominantColors(metadata: PaletteStateInterface['metadata']): ColorRecordInterfaceTypeEntity.Type[] {
+  public static dominantColors(metadata: PaletteStateInterface['metadata']): ColorRecordEntity.Type[] {
     const value = metadata['gallery:dominantColors'];
-    let result: ColorRecordInterfaceTypeEntity.Type[] = [];
+    let result: ColorRecordEntity.Type[] = [];
     if (Array.isArray(value)) {
-      result = value.map(ColorRecordInterfaceTypeEntity.intake);
+      result = value.map(ColorRecordEntity.intake);
     } else if (value !== undefined) {
       throw new TypeError('Metadata slot gallery:dominantColors does not match the color-record schema');
     }

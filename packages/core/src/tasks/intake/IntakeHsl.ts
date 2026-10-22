@@ -2,13 +2,13 @@ import { ValidationError } from '@studnicky/errors/node';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
 import { HslInputEntity } from '../../entities/HslInputEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
@@ -34,7 +34,7 @@ class HslInputBoundary {
 class IntakeHsl implements TaskInterface {
   readonly 'name' = 'intake:hsl';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Parses {h,s,l,a?} (h: deg, s/l: 0..1 or 0..100) into ColorRecord entries. Throws on non-HSL input.',
     'name':        'intake:hsl',
     'reads':       ['input.colors'],
@@ -46,7 +46,7 @@ class IntakeHsl implements TaskInterface {
    * valid `{h,s,l}` object or carries keys from a different format (r/c).
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+  parse(raw: ColorInputEntity.Type): ColorRecordEntity.Type {
     const input = HslInputBoundary.intake(raw);
     if (input === undefined) {
       throw ValidationError.create({
@@ -75,7 +75,7 @@ class IntakeHsl implements TaskInterface {
    * {@link IntakeHsl.run} does not carry a try/catch in its body (V8
    * de-optimises try/catch inside hot loops).
    */
-  #tryParse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type | undefined {
+  #tryParse(raw: ColorInputEntity.Type): ColorRecordEntity.Type | undefined {
     try {
       const result = this.parse(raw);
       return result;

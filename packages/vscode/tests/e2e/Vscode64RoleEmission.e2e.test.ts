@@ -1,6 +1,6 @@
-import type { ColorRecordInterfaceTypeEntity, PaletteStateInterface, PipelineContextInterface } from '@studnicky/iridis';
+import type { ColorRecordEntity, PaletteStateInterface, PipelineContextInterface } from '@studnicky/iridis';
 
-import { InputInterfaceTypeEntity, Metadata, RoleProvenanceInterfaceTypeEntity, RuntimeOptionsInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity, Metadata, RoleProvenanceEntity, RuntimeOptionsEntity } from '@studnicky/iridis';
 import { emitVscodeUiPalette } from '@studnicky/iridis-vscode';
 import { consoleLogger } from '@studnicky/iridis/engine';
 import { colorRecordFactory, mixHsl } from '@studnicky/iridis/math';
@@ -65,12 +65,12 @@ class Vscode64Fixture {
     return { 'logger': consoleLogger, 'startedAt': Date.now() };
   }
 
-  static statedProvenance(roleNames: readonly string[]): Map<string, RoleProvenanceInterfaceTypeEntity.Type> {
-    const provenance = new Map<string, RoleProvenanceInterfaceTypeEntity.Type>();
+  static statedProvenance(roleNames: readonly string[]): Map<string, RoleProvenanceEntity.Type> {
+    const provenance = new Map<string, RoleProvenanceEntity.Type>();
     for (let index = 0; index < roleNames.length; index += 1) {
       const name = roleNames.at(index);
       if (name !== undefined) {
-        provenance.set(name, RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': [], 'origin': 'stated' }));
+        provenance.set(name, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'stated' }));
       }
     }
     return provenance;
@@ -80,7 +80,7 @@ class Vscode64Fixture {
     const schema = VSCODE_ROLE_SCHEMAS_64.dark;
     const roleNames: string[] = [];
     const roleCount = schema.roles.length;
-    const roles: Record<string, ColorRecordInterfaceTypeEntity.Type> = {};
+    const roles: Record<string, ColorRecordEntity.Type> = {};
     for (let index = 0; index < roleCount; index += 1) {
       const name = schema.roles[index]?.name;
       if (name === undefined) {
@@ -99,11 +99,11 @@ class Vscode64Fixture {
     }
     return {
       'colors': [],
-      'input': InputInterfaceTypeEntity.create({ 'colors': [], 'roles': schema }),
+      'input': InputEntity.create({ 'colors': [], 'roles': schema }),
       'metadata': metadata,
       'outputs': {},
       'roles': roles,
-      'runtime': RuntimeOptionsInterfaceTypeEntity.create({}),
+      'runtime': RuntimeOptionsEntity.create({}),
       'variants': {}
     };
   }
@@ -152,8 +152,8 @@ class Vscode64Fixture {
   }
 
   static compareProvenance(
-    left: readonly [string, RoleProvenanceInterfaceTypeEntity.Type],
-    right: readonly [string, RoleProvenanceInterfaceTypeEntity.Type]
+    left: readonly [string, RoleProvenanceEntity.Type],
+    right: readonly [string, RoleProvenanceEntity.Type]
   ): number {
     const result = Vscode64Fixture.compareNames(left[0], right[0]);
     return result;

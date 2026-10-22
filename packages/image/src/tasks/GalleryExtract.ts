@@ -1,11 +1,11 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '@studnicky/iridis';
 
-import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 import { JsonValue } from '@studnicky/types/node';
 
@@ -74,7 +74,7 @@ class TrimLogger {
 class GalleryExtract implements TaskInterface {
   readonly 'name' = 'gallery:extract';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Reduce input records to K dominant colors via median-cut (weighted) or deltaE-merge clustering',
     'name':        'gallery:extract',
     'reads':       ['colors', 'metadata.gallery'],
@@ -119,7 +119,7 @@ class GalleryExtract implements TaskInterface {
       'deltaECap': galleryConfig?.deltaECap,
       'onTrim':    new TrimLogger(context)
     };
-    let dominant: ColorRecordInterfaceTypeEntity.Type[];
+    let dominant: ColorRecordEntity.Type[];
     if (algorithm === 'delta-e') {
       dominant = ClusterDispatcher.deltaE(state.colors, k, deltaEOptions);
     } else if (algorithm === 'k-means') {

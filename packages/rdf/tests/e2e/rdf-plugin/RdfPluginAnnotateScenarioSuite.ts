@@ -1,6 +1,6 @@
-import type { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import type { InputEntity } from '@studnicky/iridis';
 
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../_runner/ScenarioInterface.ts';
@@ -13,11 +13,11 @@ import { RdfPluginScenarioFixture } from './RdfPluginScenarioFixture.ts';
 /** E2E cell 3: N-Quads annotation graph construction. */
 export class RdfPluginAnnotateScenarioSuite {
   static async run(): Promise<void> {
-    const simpleRoles = RoleSchemaInterfaceTypeEntity.intake({
+    const simpleRoles = RoleSchemaEntity.intake({
       'name': 'simple',
       'roles': [{ 'name': 'primary', 'required': true }, { 'name': 'background', 'required': true }]
     });
-    const threeRoles = RoleSchemaInterfaceTypeEntity.intake({
+    const threeRoles = RoleSchemaEntity.intake({
       'name': 'three-role',
       'roles': [
         { 'name': 'primary', 'required': true },
@@ -25,14 +25,14 @@ export class RdfPluginAnnotateScenarioSuite {
         { 'name': 'background', 'required': true }
       ]
     });
-    const wideGamutRoles = RoleSchemaInterfaceTypeEntity.intake({
+    const wideGamutRoles = RoleSchemaEntity.intake({
       'name': 'wide-gamut',
       'roles': [
         { 'chromaRange': [0, 0.5], 'intent': 'accent', 'lightnessRange': [0.05, 0.95], 'name': 'accent', 'required': true },
         { 'chromaRange': [0, 0.03], 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'name': 'background', 'required': true }
       ]
     });
-    const scenarios: readonly ScenarioInterface<InputInterfaceTypeEntity.Type, RdfPluginAnnotateScenarioEntity.Type>[] = [
+    const scenarios: readonly ScenarioInterface<InputEntity.Type, RdfPluginAnnotateScenarioEntity.Type>[] = [
       {
         'assert': ({ 'error': error, 'output': output }): void => {
           assert.strictEqual(error, undefined, 'two-color annotation does not throw');
@@ -74,7 +74,7 @@ export class RdfPluginAnnotateScenarioSuite {
         'name': 'wide-gamut annotation carries display-P3 channels in the N-Quads graph'
       }
     ];
-    const runner = new ScenarioRunner<InputInterfaceTypeEntity.Type, RdfPluginAnnotateScenarioEntity.Type>(
+    const runner = new ScenarioRunner<InputEntity.Type, RdfPluginAnnotateScenarioEntity.Type>(
       'RdfPlugin :: cell-3 :: reason-annotate',
       (input): RdfPluginAnnotateScenarioEntity.Type => {
         const engine = RdfPluginScenarioFixture.createEngine();

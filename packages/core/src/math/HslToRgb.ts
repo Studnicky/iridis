@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 
 import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
@@ -32,7 +32,7 @@ class HslComponents {
 class HslToRgb {
   readonly 'name' = 'hslToRgb';
 
-  apply(h: number, s: number, l: number, alpha = 1): ColorRecordInterfaceTypeEntity.Type {
+  apply(h: number, s: number, l: number, alpha = 1): ColorRecordEntity.Type {
     const [r, g, b] = HslComponents.compute(((h % 360) + 360) % 360, clamp01.apply(s), clamp01.apply(l));
     const result = colorRecordFactory.fromRgb(r, g, b, { 'alpha': alpha });
     return result;

@@ -20,7 +20,7 @@
  */
 
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface
 } from '@studnicky/iridis';
 import type { JSONSchema7Type } from 'json-schema';
@@ -28,10 +28,10 @@ import type { JSONSchema7Type } from 'json-schema';
 import {
   colorRecordFactory,
   darken,
-  InputInterfaceTypeEntity,
+  InputEntity,
   lighten,
-  RoleDefinitionInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity
+  RoleDefinitionEntity,
+  RoleSchemaEntity
 } from '@studnicky/iridis';
 import { muiPlugin } from '@studnicky/iridis-mui';
 import { Engine }    from '@studnicky/iridis/engine';
@@ -75,10 +75,10 @@ class MuiTestFixture {
   static run(
     engine:   Engine,
     pipeline: readonly string[],
-    colors:   InputInterfaceTypeEntity.Type['colors'],
-    roles:    RoleSchemaInterfaceTypeEntity.Type | undefined,
-    metadata: InputInterfaceTypeEntity.Type['metadata'],
-    runtime:  InputInterfaceTypeEntity.Type['runtime']
+    colors:   InputEntity.Type['colors'],
+    roles:    RoleSchemaEntity.Type | undefined,
+    metadata: InputEntity.Type['metadata'],
+    runtime:  InputEntity.Type['runtime']
   ): PaletteStateInterface {
     engine.pipeline(pipeline);
     const rawInput = {
@@ -87,7 +87,7 @@ class MuiTestFixture {
       ...(roles === undefined ? {} : { 'roles': roles }),
       ...(runtime === undefined ? {} : { 'runtime': runtime })
     };
-    const input = InputInterfaceTypeEntity.intake(rawInput);
+    const input = InputEntity.intake(rawInput);
     const result = engine.run(input);
     return result;
   }
@@ -188,7 +188,7 @@ class JsonRecordAccess {
 
 /** Reads an expected hex value out of a `resolve:roles` result computed by a sibling engine run. */
 class ExpectedHex {
-  static of(roles: Record<string, ColorRecordInterfaceTypeEntity.Type>, name: string): string {
+  static of(roles: Record<string, ColorRecordEntity.Type>, name: string): string {
     const role = roles[name];
     if (role === undefined) {
       throw new Error(`ExpectedHex: role '${name}' was not resolved by the parallel resolve:roles run`);
@@ -200,7 +200,7 @@ class ExpectedHex {
 /** Reads an expected hex value out of a `derive:variant` result computed by a sibling engine run. */
 class ExpectedVariantHex {
   static of(
-    variants:    Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    variants:    Record<string, Record<string, ColorRecordEntity.Type>>,
     variantName: string,
     roleName:    string
   ): string {
@@ -249,19 +249,19 @@ class FallbackAssertions {
 class MuiParallelResolve {
   static roles(
     intake: string,
-    colors: InputInterfaceTypeEntity.Type['colors'],
-    roles:  RoleSchemaInterfaceTypeEntity.Type
-  ): Record<string, ColorRecordInterfaceTypeEntity.Type> {
+    colors: InputEntity.Type['colors'],
+    roles:  RoleSchemaEntity.Type
+  ): Record<string, ColorRecordEntity.Type> {
     const engine = MuiTestFixture.bareEngine();
     const state = MuiTestFixture.run(engine, [intake, 'resolve:roles'], colors, roles, undefined, undefined);
     return state.roles;
   }
 
   static variants(
-    colors:   InputInterfaceTypeEntity.Type['colors'],
-    roles:    RoleSchemaInterfaceTypeEntity.Type,
-    metadata: InputInterfaceTypeEntity.Type['metadata']
-  ): Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>> {
+    colors:   InputEntity.Type['colors'],
+    roles:    RoleSchemaEntity.Type,
+    metadata: InputEntity.Type['metadata']
+  ): Record<string, Record<string, ColorRecordEntity.Type>> {
     const engine = MuiTestFixture.bareEngine();
     const state = MuiTestFixture.run(engine, ['intake:hex', 'resolve:roles', 'derive:variant'], colors, roles, metadata, undefined);
     return state.variants;
@@ -271,8 +271,8 @@ class MuiParallelResolve {
 await test('Mui plugin scenario matrix', async () => {
 /** Builds a canonical role definition with no differentiating hue. */
   class PlainRoleFixture {
-    static role(name: string): RoleDefinitionInterfaceTypeEntity.Type {
-      const role = RoleDefinitionInterfaceTypeEntity.create({
+    static role(name: string): RoleDefinitionEntity.Type {
+      const role = RoleDefinitionEntity.create({
         'name':     name,
         'required': true
       });
@@ -281,9 +281,9 @@ await test('Mui plugin scenario matrix', async () => {
 
     static schema(
       schemaName: string,
-      roles: readonly RoleDefinitionInterfaceTypeEntity.Type[]
-    ): RoleSchemaInterfaceTypeEntity.Type {
-      const schema = RoleSchemaInterfaceTypeEntity.create({
+      roles: readonly RoleDefinitionEntity.Type[]
+    ): RoleSchemaEntity.Type {
+      const schema = RoleSchemaEntity.create({
         'name':  schemaName,
         'roles': [...roles]
       });
@@ -317,10 +317,10 @@ await test('Mui plugin scenario matrix', async () => {
   };
 
   class OklchRoleFixture {
-    static role(name: string): RoleDefinitionInterfaceTypeEntity.Type {
+    static role(name: string): RoleDefinitionEntity.Type {
       const hue = ROLE_HUES[name];
       if (hue === undefined) {throw new Error(`OklchRoleFixture: no hue registered for role '${name}'`);}
-      const role = RoleDefinitionInterfaceTypeEntity.create({
+      const role = RoleDefinitionEntity.create({
         'hueOffset': hue,
         'name':      name,
         'required':  true
@@ -328,16 +328,16 @@ await test('Mui plugin scenario matrix', async () => {
       return role;
     }
 
-    static schema(schemaName: string, names: readonly string[]): RoleSchemaInterfaceTypeEntity.Type {
+    static schema(schemaName: string, names: readonly string[]): RoleSchemaEntity.Type {
       const roles = names.map((name) => { const result = OklchRoleFixture.role(name); return result; });
-      const schema = RoleSchemaInterfaceTypeEntity.create({
+      const schema = RoleSchemaEntity.create({
         'name':  schemaName,
         'roles': roles
       });
       return schema;
     }
 
-    static colors(names: readonly string[]): InputInterfaceTypeEntity.Type['colors'] {
+    static colors(names: readonly string[]): InputEntity.Type['colors'] {
       const result = names.map((name) => {
         const hue = ROLE_HUES[name];
         if (hue === undefined) {throw new Error(`OklchRoleFixture: no hue registered for role '${name}'`);}
@@ -374,7 +374,7 @@ await test('Mui plugin scenario matrix', async () => {
   const CUSTOM_VARIANT_ROLES  = PlainRoleFixture.schema('variant-custom', [PlainRoleFixture.role('brand')]);
   const CUSTOM_VARIANT_COLORS = ['#5b21b6'];
 
-  const S300_S700_METADATA: InputInterfaceTypeEntity.Type['metadata'] = {
+  const S300_S700_METADATA: InputEntity.Type['metadata'] = {
     'core:variantConfig': [
       { 'invertLightness': false, 'lightnessOffset': -0.1, 'name': 's300' },
       { 'invertLightness': false, 'lightnessOffset': 0.1,  'name': 's700' }
@@ -384,7 +384,7 @@ await test('Mui plugin scenario matrix', async () => {
   const MODE_ROLES  = PlainRoleFixture.schema('mode-test', [PlainRoleFixture.role('brand')]);
   const MODE_COLORS = ['#5b21b6'];
 
-  const EMPTY_ROLES = RoleSchemaInterfaceTypeEntity.create({
+  const EMPTY_ROLES = RoleSchemaEntity.create({
     'name':  'empty',
     'roles': []
   });
@@ -449,12 +449,12 @@ await test('Mui plugin scenario matrix', async () => {
   // ---------------------------------------------------------------------------
 
   interface FullPaletteInputInterface {
-    readonly 'colors':   InputInterfaceTypeEntity.Type['colors'];
+    readonly 'colors':   InputEntity.Type['colors'];
     readonly 'pipeline': readonly string[];
-    readonly 'roles':    RoleSchemaInterfaceTypeEntity.Type;
+    readonly 'roles':    RoleSchemaEntity.Type;
   }
   interface FullPaletteOutputInterface {
-    readonly 'expectedRoles': Record<string, ColorRecordInterfaceTypeEntity.Type>;
+    readonly 'expectedRoles': Record<string, ColorRecordEntity.Type>;
     readonly 'theme':         MuiThemeScenarioOutputEntity.Type;
   }
 
@@ -546,13 +546,13 @@ await test('Mui plugin scenario matrix', async () => {
   // ---------------------------------------------------------------------------
 
   interface VariantInputInterface {
-    readonly 'colors':   InputInterfaceTypeEntity.Type['colors'];
-    readonly 'metadata': InputInterfaceTypeEntity.Type['metadata'];
+    readonly 'colors':   InputEntity.Type['colors'];
+    readonly 'metadata': InputEntity.Type['metadata'];
     readonly 'pipeline': readonly string[];
-    readonly 'roles':    RoleSchemaInterfaceTypeEntity.Type;
+    readonly 'roles':    RoleSchemaEntity.Type;
   }
   interface VariantOutputInterface {
-    readonly 'expectedRoles': Record<string, ColorRecordInterfaceTypeEntity.Type>;
+    readonly 'expectedRoles': Record<string, ColorRecordEntity.Type>;
     readonly 'theme':         MuiThemeScenarioOutputEntity.Type;
   }
 
@@ -647,7 +647,7 @@ await test('Mui plugin scenario matrix', async () => {
   // ---------------------------------------------------------------------------
 
   interface CustomVariantOutputInterface {
-    readonly 'expectedVariants': Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>;
+    readonly 'expectedVariants': Record<string, Record<string, ColorRecordEntity.Type>>;
     readonly 'theme':            MuiThemeScenarioOutputEntity.Type;
   }
 
@@ -696,12 +696,12 @@ await test('Mui plugin scenario matrix', async () => {
   // ---------------------------------------------------------------------------
 
   interface FallbackInputInterface {
-    readonly 'colors':   InputInterfaceTypeEntity.Type['colors'];
+    readonly 'colors':   InputEntity.Type['colors'];
     readonly 'pipeline': readonly string[];
-    readonly 'roles':    RoleSchemaInterfaceTypeEntity.Type;
+    readonly 'roles':    RoleSchemaEntity.Type;
   }
   interface FallbackOutputInterface {
-    readonly 'expectedRoles': Record<string, ColorRecordInterfaceTypeEntity.Type>;
+    readonly 'expectedRoles': Record<string, ColorRecordEntity.Type>;
     readonly 'theme':         MuiThemeScenarioOutputEntity.Type;
   }
 
@@ -757,7 +757,7 @@ await test('Mui plugin scenario matrix', async () => {
   // ---------------------------------------------------------------------------
 
   interface OmissionOutputInterface {
-    readonly 'expectedRoles': Record<string, ColorRecordInterfaceTypeEntity.Type>;
+    readonly 'expectedRoles': Record<string, ColorRecordEntity.Type>;
     readonly 'theme':         MuiThemeScenarioOutputEntity.Type;
   }
 
@@ -813,10 +813,10 @@ await test('Mui plugin scenario matrix', async () => {
   // ---------------------------------------------------------------------------
 
   interface ModeInputInterface {
-    readonly 'colors':   InputInterfaceTypeEntity.Type['colors'];
+    readonly 'colors':   InputEntity.Type['colors'];
     readonly 'pipeline': readonly string[];
-    readonly 'roles':    RoleSchemaInterfaceTypeEntity.Type;
-    readonly 'runtime':  InputInterfaceTypeEntity.Type['runtime'];
+    readonly 'roles':    RoleSchemaEntity.Type;
+    readonly 'runtime':  InputEntity.Type['runtime'];
   }
   interface ModeOutputInterface {
     readonly 'theme': MuiThemeScenarioOutputEntity.Type;
@@ -868,10 +868,10 @@ await test('Mui plugin scenario matrix', async () => {
   // ---------------------------------------------------------------------------
 
   interface DeterminismInputInterface {
-    readonly 'colors':   InputInterfaceTypeEntity.Type['colors'];
-    readonly 'metadata': InputInterfaceTypeEntity.Type['metadata'];
+    readonly 'colors':   InputEntity.Type['colors'];
+    readonly 'metadata': InputEntity.Type['metadata'];
     readonly 'pipeline': readonly string[];
-    readonly 'roles':    RoleSchemaInterfaceTypeEntity.Type;
+    readonly 'roles':    RoleSchemaEntity.Type;
   }
   interface DeterminismOutputInterface {
     readonly 'first':  MuiThemeScenarioOutputEntity.Type;
@@ -919,9 +919,9 @@ await test('Mui plugin scenario matrix', async () => {
   // ---------------------------------------------------------------------------
 
   interface EmptyRolesInputInterface {
-    readonly 'colors':   InputInterfaceTypeEntity.Type['colors'];
+    readonly 'colors':   InputEntity.Type['colors'];
     readonly 'pipeline': readonly string[];
-    readonly 'roles':    RoleSchemaInterfaceTypeEntity.Type;
+    readonly 'roles':    RoleSchemaEntity.Type;
   }
   interface EmptyRolesOutputInterface {
     readonly 'theme': MuiThemeScenarioOutputEntity.Type;

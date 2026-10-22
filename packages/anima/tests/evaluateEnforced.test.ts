@@ -1,4 +1,4 @@
-import { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import { PaletteEntity } from '@studnicky/iridis-algebra';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -6,7 +6,7 @@ import { enforceContrast, evaluateEnforced } from '../src/index.ts';
 import { EnforcedPaletteFixture } from './fixtures/EnforcedPaletteFixture.ts';
 
 class PaletteRoleAssertions {
-  static require(palette: PaletteInterfaceTypeEntity.Type, roleName: string): PaletteInterfaceTypeEntity.Type[string] {
+  static require(palette: PaletteEntity.Type, roleName: string): PaletteEntity.Type[string] {
     const role = palette[roleName];
     if (role === undefined) {
       throw new Error(`palette omits role ${roleName}`);
@@ -26,7 +26,7 @@ await test('enforceContrast: corrects a deliberately low-contrast frame in place
 });
 
 await test('enforceContrast: passes an already-passing frame through unchanged', () => {
-  const passing = PaletteInterfaceTypeEntity.create({
+  const passing = PaletteEntity.create({
     'background': { 'c': 0.01, 'h': 240, 'l': 0.98 },
     'text':       { 'c': 0.01, 'h': 240, 'l': 0.10 }
   });

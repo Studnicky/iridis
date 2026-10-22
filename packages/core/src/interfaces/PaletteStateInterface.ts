@@ -1,17 +1,17 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
-import type { InputInterfaceTypeEntity } from '../entities/InputInterfaceTypeEntity.ts';
-import type { RuntimeOptionsInterfaceTypeEntity } from '../entities/RuntimeOptionsInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
+import type { InputEntity } from '../entities/InputEntity.ts';
+import type { RuntimeOptionsEntity } from '../entities/RuntimeOptionsEntity.ts';
 
 export interface PaletteStateInterface {
-  'colors':            ColorRecordInterfaceTypeEntity.Type[];
-  readonly 'input':    InputInterfaceTypeEntity.Type;
+  'colors':            ColorRecordEntity.Type[];
+  readonly 'input':    InputEntity.Type;
   'metadata':          Record<string, JSONSchema7Type>;
   'outputs':           Record<string, JSONSchema7Type>;
-  'roles':             Record<string, ColorRecordInterfaceTypeEntity.Type>;
-  readonly 'runtime':  RuntimeOptionsInterfaceTypeEntity.Type;
-  'variants':          Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>;
+  'roles':             Record<string, ColorRecordEntity.Type>;
+  readonly 'runtime':  RuntimeOptionsEntity.Type;
+  'variants':          Record<string, Record<string, ColorRecordEntity.Type>>;
 }
 
 /**
@@ -20,15 +20,15 @@ export interface PaletteStateInterface {
  * task boundary.
  */
 export class PaletteRoleState {
-  readonly #roles: Map<string, ColorRecordInterfaceTypeEntity.Type>;
-  readonly #target: Record<string, ColorRecordInterfaceTypeEntity.Type>;
+  readonly #roles: Map<string, ColorRecordEntity.Type>;
+  readonly #target: Record<string, ColorRecordEntity.Type>;
 
-  private constructor(roles: Map<string, ColorRecordInterfaceTypeEntity.Type>, target: Record<string, ColorRecordInterfaceTypeEntity.Type>) {
+  private constructor(roles: Map<string, ColorRecordEntity.Type>, target: Record<string, ColorRecordEntity.Type>) {
     this.#roles = roles;
     this.#target = target;
   }
 
-  static admit(target: Record<string, ColorRecordInterfaceTypeEntity.Type>): PaletteRoleState {
+  static admit(target: Record<string, ColorRecordEntity.Type>): PaletteRoleState {
     const result = new PaletteRoleState(new Map(Object.entries(target)), target);
     return result;
   }
@@ -51,7 +51,7 @@ export class PaletteRoleState {
     }
   }
 
-  get(name: string): ColorRecordInterfaceTypeEntity.Type | undefined {
+  get(name: string): ColorRecordEntity.Type | undefined {
     const result = this.#roles.get(name);
     return result;
   }
@@ -61,7 +61,7 @@ export class PaletteRoleState {
     return result;
   }
 
-  set(name: string, color: ColorRecordInterfaceTypeEntity.Type): void {
+  set(name: string, color: ColorRecordEntity.Type): void {
     this.#roles.set(name, color);
   }
 }

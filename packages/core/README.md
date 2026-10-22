@@ -29,11 +29,11 @@ npm install @studnicky/iridis
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
 
-export function generatePalette(roleSchema: RoleSchemaInterfaceType) {
+export function generatePalette(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
 
@@ -61,14 +61,14 @@ export function generatePalette(roleSchema: RoleSchemaInterfaceType) {
 Math primitives are direct singleton imports; pull only what you call:
 
 ```ts
-import type { ColorRecordInterfaceType } from '@studnicky/iridis';
+import type { ColorRecordEntity } from '@studnicky/iridis';
 
 import { luminance, contrastWcag21, oklchToRgb } from '@studnicky/iridis';
 
 export function inspectColors(
-  record: ColorRecordInterfaceType,
-  foreground: ColorRecordInterfaceType,
-  background: ColorRecordInterfaceType,
+  record: ColorRecordEntity.Type,
+  foreground: ColorRecordEntity.Type,
+  background: ColorRecordEntity.Type,
 ) {
   const lum    = luminance.apply(record);
   const ratio  = contrastWcag21.apply(foreground, background);

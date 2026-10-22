@@ -27,13 +27,13 @@ npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-panda
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { pandaPlugin }       from '@studnicky/iridis-panda';
 
-export function generatePandaTheme(roleSchema: RoleSchemaInterfaceType) {
+export function generatePandaTheme(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(pandaPlugin);
@@ -73,7 +73,7 @@ export function generatePandaTheme(roleSchema: RoleSchemaInterfaceType) {
 }
 ```
 
-`state.outputs['panda:theme']` is typed as `PandaOutputInterfaceType`:
+`state.outputs['panda:theme']` is typed as `PandaOutputEntity`:
 
 | Field | Shape | Notes |
 |---|---|---|

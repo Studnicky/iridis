@@ -1,4 +1,4 @@
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
 import { chakraPlugin } from '@studnicky/iridis-chakra';
 import { muiPlugin } from '@studnicky/iridis-mui';
@@ -16,22 +16,22 @@ import { COLOR_PIPELINE } from './colorPipeline.ts';
 import { createColorEngine } from './createColorEngine.ts';
 import { MultiOutputEntity } from './entities/MultiOutputEntity.ts';
 import { MultiOutputRequestEntity } from './entities/MultiOutputRequestEntity.ts';
-import { OutputRowInterfaceTypeEntity } from './entities/OutputRowInterfaceTypeEntity.ts';
-import { PaletteResolveRequestInterfaceTypeEntity } from './entities/PaletteResolveRequestInterfaceTypeEntity.ts';
+import { OutputRowEntity } from './entities/OutputRowEntity.ts';
+import { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEntity.ts';
 import { logger } from './logger.ts';
 import { PaletteResolve } from './paletteResolve.ts';
 import { useIridis } from './useIridis.ts';
 
 /** One palette, every real output emitter: CSS, component libraries, mobile, RDF, and JSON. */
-const outputsByKey = VueModule.ref<Record<string, OutputRowInterfaceTypeEntity.Type | undefined>>({});
+const outputsByKey = VueModule.ref<Record<string, OutputRowEntity.Type | undefined>>({});
 
 class MainOutputs {
-  static row(label: string, language: string, text: string): OutputRowInterfaceTypeEntity.Type {
-    const result = OutputRowInterfaceTypeEntity.create({ 'label': label, 'language': language, 'text': text });
+  static row(label: string, language: string, text: string): OutputRowEntity.Type {
+    const result = OutputRowEntity.create({ 'label': label, 'language': language, 'text': text });
     return result;
   }
 
-  static build(request: MultiOutputRequestEntity.Type): Record<string, OutputRowInterfaceTypeEntity.Type | undefined> {
+  static build(request: MultiOutputRequestEntity.Type): Record<string, OutputRowEntity.Type | undefined> {
     const engine = createColorEngine();
     engine.adopt(stylesheetPlugin);
     engine.adopt(tailwindPlugin);
@@ -48,10 +48,10 @@ class MainOutputs {
       'emit:capacitorStatusBar', 'emit:capacitorSplashScreen', 'emit:capacitorTheme', 'emit:androidThemeXml',
       'reason:annotate', 'reason:serialize'
     ]);
-    const input = InputInterfaceTypeEntity.intake(request.input);
+    const input = InputEntity.intake(request.input);
     const state = engine.run(input);
     const output = MultiOutputEntity.intake(state.outputs);
-    const rows: Record<string, OutputRowInterfaceTypeEntity.Type | undefined> = {};
+    const rows: Record<string, OutputRowEntity.Type | undefined> = {};
     const cssVariables = output['stylesheet:cssVars'];
     if (cssVariables !== undefined) {rows.cssVars = MainOutputs.row('CSS variables', 'css', cssVariables.full);}
     const scopedCssVariables = output['stylesheet:cssVarsScoped'];
@@ -91,7 +91,7 @@ class ActivateOperation {
     const { activeSeeds, colorSpace, contrastStrictness, derivationConfig, framing, schemaName, semanticHuesEnabled } = useIridis();
     function generate(): void {
       try {
-        const input = PaletteResolve.input(PaletteResolveRequestInterfaceTypeEntity.create({
+        const input = PaletteResolve.input(PaletteResolveRequestEntity.create({
           'colorSpace': colorSpace.value,
           'derivationConfig': VueModule.toRaw(derivationConfig.value),
           'framing': framing.value,

@@ -1,5 +1,5 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
@@ -7,7 +7,7 @@ import type {
 
 import {
   colorRecordFactory,
-  TaskManifestInterfaceTypeEntity
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
@@ -16,7 +16,7 @@ import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
  *
  * Bucket every record in `state.colors` into a 5-bit-per-channel sRGB
  * histogram (32 768 bins). Replaces `state.colors` with one weighted
- * `ColorRecordInterfaceTypeEntity.Type` per non-empty bin: the centroid is the
+ * `ColorRecordEntity.Type` per non-empty bin: the centroid is the
  * weighted-mean RGB of the bin's contributors, and `hints.weight` is
  * the count. Downstream clustering tasks (median-cut, deltaE-merge)
  * read `hints.weight` and proportionally cluster by pixel density.
@@ -80,7 +80,7 @@ class HistogramMath {
 }
 
 class ColorList {
-  static at(colors: readonly ColorRecordInterfaceTypeEntity.Type[], index: number): ColorRecordInterfaceTypeEntity.Type {
+  static at(colors: readonly ColorRecordEntity.Type[], index: number): ColorRecordEntity.Type {
     const color = colors[index];
     if (color === undefined) {
       throw new RangeError(`Color index ${index} is outside the color list`);
@@ -92,7 +92,7 @@ class ColorList {
 class GalleryHistogram implements TaskInterface {
   readonly 'name' = 'gallery:histogram';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Quantise pixels into a 5-bit-per-channel histogram; emits weighted records keyed by bin centroid.',
     'name':        'gallery:histogram',
     'reads':       ['colors'],
@@ -161,7 +161,7 @@ class GalleryHistogram implements TaskInterface {
       totalPixels += w;
     }
 
-    const records: ColorRecordInterfaceTypeEntity.Type[] = [];
+    const records: ColorRecordEntity.Type[] = [];
     const binSummary: { 'hex': string; 'weight': number }[] = [];
     for (const acc of bins.values()) {
       const r = acc.rSum / acc.weight;

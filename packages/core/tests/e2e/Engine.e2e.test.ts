@@ -5,11 +5,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { Engine } from '../../src/engine/Engine.ts';
-import { ContrastPairInterfaceTypeEntity } from '../../src/entities/ContrastPairInterfaceTypeEntity.ts';
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
-import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
-import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { ContrastPairEntity } from '../../src/entities/ContrastPairEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
+import { RoleDefinitionEntity } from '../../src/entities/RoleDefinitionEntity.ts';
+import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
+import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 import { EngineE2ePatterns } from './engine/EngineE2ePatterns.ts';
 
@@ -37,10 +37,10 @@ class EngineE2eFixture {
     return colors;
   }
 
-  static createSimpleRoles(): RoleSchemaInterfaceTypeEntity.Type {
-    const result = RoleSchemaInterfaceTypeEntity.intake({
+  static createSimpleRoles(): RoleSchemaEntity.Type {
+    const result = RoleSchemaEntity.intake({
       'contrastPairs': [
-        ContrastPairInterfaceTypeEntity.intake({
+        ContrastPairEntity.intake({
           'background': 'secondary',
           'foreground': 'primary',
           'minimumContrastRatio': 1
@@ -48,17 +48,17 @@ class EngineE2eFixture {
       ],
       'name': 'simple',
       'roles': [
-        RoleDefinitionInterfaceTypeEntity.intake({
+        RoleDefinitionEntity.intake({
           'lightnessRange': [0.3, 0.7],
           'name': 'primary',
           'required': true
         }),
-        RoleDefinitionInterfaceTypeEntity.intake({
+        RoleDefinitionEntity.intake({
           'lightnessRange': [0.4, 0.8],
           'name': 'secondary',
           'required': false
         }),
-        RoleDefinitionInterfaceTypeEntity.intake({
+        RoleDefinitionEntity.intake({
           'chromaRange': [0.01, 0.08],
           'derivedFrom': 'primary',
           'name': 'primary-muted'
@@ -68,10 +68,10 @@ class EngineE2eFixture {
     return result;
   }
 
-  static createHighContrastRoles(): RoleSchemaInterfaceTypeEntity.Type {
-    const result = RoleSchemaInterfaceTypeEntity.intake({
+  static createHighContrastRoles(): RoleSchemaEntity.Type {
+    const result = RoleSchemaEntity.intake({
       'contrastPairs': [
-        ContrastPairInterfaceTypeEntity.intake({
+        ContrastPairEntity.intake({
           'background': 'background',
           'foreground': 'text',
           'minimumContrastRatio': 3
@@ -79,11 +79,11 @@ class EngineE2eFixture {
       ],
       'name': 'hi-contrast',
       'roles': [
-        RoleDefinitionInterfaceTypeEntity.intake({
+        RoleDefinitionEntity.intake({
           'name': 'text',
           'required': true
         }),
-        RoleDefinitionInterfaceTypeEntity.intake({
+        RoleDefinitionEntity.intake({
           'name': 'background',
           'required': true
         })
@@ -112,7 +112,7 @@ void test('Engine.e2e :: cell-1 :: full pipeline populates every state surface',
     'derive:variant',
     'emit:json'
   ]);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#5b21b6', '#c4b5fd', '#1e1b4b'],
     'roles': EngineE2eFixture.createSimpleRoles()
   }));
@@ -126,7 +126,7 @@ void test('Engine.e2e :: cell-1 :: full pipeline populates every state surface',
 void test('Engine.e2e :: cell-1 :: one seed expands the derived family role', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#6366f1'],
     'roles': EngineE2eFixture.createSimpleRoles()
   }));
@@ -137,7 +137,7 @@ void test('Engine.e2e :: cell-1 :: one seed expands the derived family role', ()
 void test('Engine.e2e :: cell-2 :: intake:any dispatches hex values', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:any']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#ff6b6b', '#4ecdc4']
   }));
   assert.strictEqual(state.colors.length, 2);
@@ -148,7 +148,7 @@ void test('Engine.e2e :: cell-2 :: intake:any dispatches hex values', () => {
 void test('Engine.e2e :: cell-2 :: intake:any dispatches mixed color representations', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:any']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': [
       '#fff',
       { 'b': 0, 'g': 0, 'r': 1 },
@@ -174,7 +174,7 @@ void test('Engine.e2e :: cell-2 :: intake:any dispatches mixed color representat
 void test('Engine.e2e :: cell-2 :: intake:any canonicalizes short hex values', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:any']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#fff']
   }));
   assert.strictEqual(state.colors.length, 1);
@@ -184,7 +184,7 @@ void test('Engine.e2e :: cell-2 :: intake:any canonicalizes short hex values', (
 void test('Engine.e2e :: cell-2 :: intake:any accepts an empty color list', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:any']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': []
   }));
   assert.strictEqual(state.colors.length, 0);
@@ -200,21 +200,21 @@ void test('Engine.e2e :: cell-3 :: implicit pipeline preserves registration orde
       continue;
     }
     engine.tasks.register({
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': taskName }),
+      'manifest': TaskManifestEntity.create({ 'name': taskName }),
       'name': taskName,
       'run': () => {
         executionOrder.push(taskName);
       }
     });
   }
-  engine.run(InputInterfaceTypeEntity.intake({
+  engine.run(InputEntity.intake({
     'colors': []
   }));
   assert.deepStrictEqual(executionOrder, names);
 });
 
 void test('Engine.e2e :: cell-3 :: an empty registry runs without work', () => {
-  const state = new Engine().run(InputInterfaceTypeEntity.intake({
+  const state = new Engine().run(InputEntity.intake({
     'colors': []
   }));
   assert.strictEqual(state.colors.length, 0);
@@ -223,7 +223,7 @@ void test('Engine.e2e :: cell-3 :: an empty registry runs without work', () => {
 void test('Engine.e2e :: cell-4 :: clamp:count enforces a finite maximum', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:hex', 'clamp:count']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': EngineE2eFixture.createColors(100),
     'maximumColorCount': 64
   }));
@@ -233,7 +233,7 @@ void test('Engine.e2e :: cell-4 :: clamp:count enforces a finite maximum', () =>
 void test('Engine.e2e :: cell-4 :: clamp:count preserves every color at Infinity', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:hex', 'clamp:count']);
-  const state = engine.run(InputInterfaceTypeEntity.create({
+  const state = engine.run(InputEntity.create({
     'colors': EngineE2eFixture.createColors(100),
     'maximumColorCount': Infinity
   }));
@@ -243,7 +243,7 @@ void test('Engine.e2e :: cell-4 :: clamp:count preserves every color at Infinity
 void test('Engine.e2e :: cell-4 :: clamp:count accepts a single-color maximum', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:hex', 'clamp:count']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': EngineE2eFixture.createColors(64),
     'maximumColorCount': 1
   }));
@@ -253,7 +253,7 @@ void test('Engine.e2e :: cell-4 :: clamp:count accepts a single-color maximum', 
 void test('Engine.e2e :: cell-5 :: enforce:contrast retains a passing pair', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:hex', 'resolve:roles', 'enforce:contrast']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#000000', '#ffffff'],
     'roles': EngineE2eFixture.createHighContrastRoles()
   }));
@@ -264,7 +264,7 @@ void test('Engine.e2e :: cell-5 :: enforce:contrast retains a passing pair', () 
 void test('Engine.e2e :: cell-5 :: enforce:contrast completes when roles cannot resolve', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:hex', 'resolve:roles', 'enforce:contrast']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#000000', '#ffffff'],
     'roles': EngineE2eFixture.createHighContrastRoles()
   }));
@@ -279,7 +279,7 @@ void test('Engine.e2e :: cell-6 :: runtime options copy into fresh state', () =>
     'colorSpace': 'displayP3',
     'framing': 'dark'
   };
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#ff0000'],
     'runtime': runtime
   }));
@@ -291,7 +291,7 @@ void test('Engine.e2e :: cell-6 :: runtime options copy into fresh state', () =>
 void test('Engine.e2e :: cell-6 :: omitted runtime options produce undefined fields', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:hex']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#ff0000']
   }));
   assert.strictEqual(state.runtime.colorSpace, undefined);
@@ -309,7 +309,7 @@ void test('Engine.e2e :: cell-7 :: pipeline rejects unknown tasks by name', () =
 void test('Engine.e2e :: cell-7 :: task errors propagate to the caller', () => {
   const engine = new Engine();
   engine.tasks.register({
-    'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'bomb:task' }),
+    'manifest': TaskManifestEntity.create({ 'name': 'bomb:task' }),
     'name': 'bomb:task',
     'run': () => {
       throw new Error('intentional bomb detonation');
@@ -317,7 +317,7 @@ void test('Engine.e2e :: cell-7 :: task errors propagate to the caller', () => {
   });
   engine.pipeline(['bomb:task']);
   assert.throws(() => {
-    engine.run(InputInterfaceTypeEntity.intake({
+    engine.run(InputEntity.intake({
       'colors': ['#ff0000']
     }));
   }, EngineE2ePatterns.intentionalBomb);
@@ -327,7 +327,7 @@ void test('Engine.e2e :: cell-7 :: intake:hex rejects non-hex values', () => {
   const engine = EngineE2eFixture.createEngine();
   engine.pipeline(['intake:hex', 'clamp:count', 'emit:json']);
   assert.throws(() => {
-    engine.run(InputInterfaceTypeEntity.intake({
+    engine.run(InputEntity.intake({
       'colors': [{}, null, 42]
     }));
   }, EngineE2ePatterns.intakeHex);
@@ -344,7 +344,7 @@ void test('Engine.e2e :: cell-8 :: tasks observe runtime framing', () => {
     }
   });
   engine.pipeline(['observe:framing']);
-  engine.run(InputInterfaceTypeEntity.intake({
+  engine.run(InputEntity.intake({
     'colors': [],
     'runtime': { 'framing': 'light' }
   }));

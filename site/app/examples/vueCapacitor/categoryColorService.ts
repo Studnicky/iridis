@@ -1,31 +1,31 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface
 } from '@studnicky/iridis';
-import type { StatusBarOutputInterfaceType } from '@studnicky/iridis-capacitor';
-import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { StatusBarOutputEntity } from '@studnicky/iridis-capacitor';
+import type { CvdMatrixEntity } from '@studnicky/iridis-contrast';
 import type { CssVarsOutputInterface } from '@studnicky/iridis-stylesheet';
 import type { JSONSchema7Type } from 'json-schema';
 
 import {
   clamp01,
   colorRecordFactory,
-  ContrastPairInterfaceTypeEntity,
+  ContrastPairEntity,
   contrastWcag21,
   coreTasks,
   Engine,
-  InputInterfaceTypeEntity,
+  InputEntity,
   linearToSrgb,
-  RgbInterfaceTypeEntity,
+  RgbEntity,
   srgbToLinear
 } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
 import {
-  ComplianceReportInterfaceTypeEntity,
+  ComplianceReportEntity,
   contrastPlugin,
   CVD_THRESHOLDS,
   cvdMatrices,
-  CvdResultSetInterfaceTypeEntity
+  CvdResultSetEntity
 } from '@studnicky/iridis-contrast';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
 
@@ -79,14 +79,14 @@ class CategoryColorService {
 
   // #region apply
   apply(category: string, seed: string): {
-    readonly 'compliance': ComplianceReportInterfaceTypeEntity.Type;
+    readonly 'compliance': ComplianceReportEntity.Type;
     readonly 'cssVars': CssVarsOutputInterface;
-    readonly 'cvd': CvdResultSetInterfaceTypeEntity.Type;
-    readonly 'statusBar': StatusBarOutputInterfaceType;
+    readonly 'cvd': CvdResultSetEntity.Type;
+    readonly 'statusBar': StatusBarOutputEntity;
     readonly 'wcagPairs': readonly CategoryWcagPairInterface[];
   } {
     CategoryColorService.assertCategory(category);
-    const state = this.engine.run(InputInterfaceTypeEntity.create({
+    const state = this.engine.run(InputEntity.create({
       'colors': [seed],
       'contrast': {
         'algorithm': 'wcag21',
@@ -171,7 +171,7 @@ class CategoryColorService {
     return result;
   }
 
-  private static isStatusBarOutput(value: JSONSchema7Type | undefined): value is StatusBarOutputInterfaceType {
+  private static isStatusBarOutput(value: JSONSchema7Type | undefined): value is StatusBarOutputEntity {
     if (!CategoryColorService.isRecord(value)) {
       return false;
     }
@@ -197,7 +197,7 @@ class CategoryColorService {
     return true;
   }
 
-  private static statusBarOutput(value: JSONSchema7Type | undefined): StatusBarOutputInterfaceType {
+  private static statusBarOutput(value: JSONSchema7Type | undefined): StatusBarOutputEntity {
     if (!CategoryColorService.isStatusBarOutput(value)) {
       throw new TypeError('The Capacitor plugin returned an invalid status-bar output.');
     }
@@ -205,7 +205,7 @@ class CategoryColorService {
     return result;
   }
 
-  private static assertCompleteCvdResults(results: CvdResultSetInterfaceTypeEntity.Type): void {
+  private static assertCompleteCvdResults(results: CvdResultSetEntity.Type): void {
     const hasCorrectableWarning = results.warnings.length > 0
       || results.corrections.some((correction) => {
         const result = correction.cvdTypesRemaining.length > 0;
@@ -220,16 +220,16 @@ class CategoryColorService {
     state: PaletteStateInterface,
     cssVars: CssVarsOutputInterface
   ): {
-    readonly 'compliance': ComplianceReportInterfaceTypeEntity.Type;
-    readonly 'cvd': CvdResultSetInterfaceTypeEntity.Type;
+    readonly 'compliance': ComplianceReportEntity.Type;
+    readonly 'cvd': CvdResultSetEntity.Type;
     readonly 'wcagPairs': readonly CategoryWcagPairInterface[];
   } {
     const complianceValue = state.metadata['contrast:complianceReport'];
     const cvdValue = state.metadata['contrast:cvd'];
-    if (cvdValue === undefined || complianceValue === undefined || !ComplianceReportInterfaceTypeEntity.validate(complianceValue)) {
+    if (cvdValue === undefined || complianceValue === undefined || !ComplianceReportEntity.validate(complianceValue)) {
       throw new TypeError('The contrast plugin did not return complete compliance metadata.');
     }
-    const cvd = CvdResultSetInterfaceTypeEntity.intake(cvdValue);
+    const cvd = CvdResultSetEntity.intake(cvdValue);
     if (!complianceValue.compliant || !complianceValue.cvdCompliant) {
       throw new RangeError('The palette does not satisfy every configured contrast contract.');
     }
@@ -242,7 +242,7 @@ class CategoryColorService {
   }
 
   private static finalWcagEvidence(
-    roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
+    roles: ReadonlyMap<string, ColorRecordEntity.Type>
   ): CategoryWcagPairInterface[] {
     const evidence: CategoryWcagPairInterface[] = [];
     const configuredPairs = categoryW3cRoleSchema.contrastPairs ?? [];
@@ -251,7 +251,7 @@ class CategoryColorService {
       if (configuredPair === undefined) {
         throw new RangeError('The category contrast-pair list contains an empty entry.');
       }
-      const pair = ContrastPairInterfaceTypeEntity.intake(configuredPair);
+      const pair = ContrastPairEntity.intake(configuredPair);
       const foreground = roles.get(pair.foreground);
       const background = roles.get(pair.background);
       const required = pair.minimumContrastRatio;
@@ -268,7 +268,7 @@ class CategoryColorService {
   }
 
   private static thresholdFor(
-    cvd: CvdMatrixInterfaceTypeEntity.Type
+    cvd: CvdMatrixEntity.Type
   ): { readonly 'dropMagnitude': number; readonly 'minimumSimulatedContrast': number } {
     if (cvd.name === 'achromatopsia') {
       const result = CVD_THRESHOLDS.achromatopsia;
@@ -289,7 +289,7 @@ class CategoryColorService {
     throw new RangeError(`Unsupported CVD matrix name: ${cvd.name}`);
   }
 
-  private static assertFinalCvd(roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): void {
+  private static assertFinalCvd(roles: ReadonlyMap<string, ColorRecordEntity.Type>): void {
     const epsilon = 1e-12;
     const pairs = categoryW3cRoleSchema.contrastPairs ?? [];
     for (let pairIndex = 0; pairIndex < pairs.length; pairIndex += 1) {
@@ -309,8 +309,8 @@ class CategoryColorService {
           throw new RangeError('The CVD matrix list contains an empty entry.');
         }
         const simulatedContrast = CategoryColorService.rgbContrast(
-          CategoryColorService.simulateCvd(RgbInterfaceTypeEntity.intake(foreground.rgb), matrix),
-          CategoryColorService.simulateCvd(RgbInterfaceTypeEntity.intake(background.rgb), matrix)
+          CategoryColorService.simulateCvd(RgbEntity.intake(foreground.rgb), matrix),
+          CategoryColorService.simulateCvd(RgbEntity.intake(background.rgb), matrix)
         );
         const threshold = CategoryColorService.thresholdFor(matrix);
         if (Math.abs(originalContrast - simulatedContrast) > threshold.dropMagnitude + epsilon || simulatedContrast < threshold.minimumSimulatedContrast - epsilon) {
@@ -323,7 +323,7 @@ class CategoryColorService {
   private static emittedRoles(
     state: PaletteStateInterface,
     cssVars: CssVarsOutputInterface
-  ): ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type> {
+  ): ReadonlyMap<string, ColorRecordEntity.Type> {
     const declarations = new Map<string, string>();
     const lines = cssVars.scopedBlock.split('\n');
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
@@ -337,7 +337,7 @@ class CategoryColorService {
       }
     }
 
-    const emittedRoles = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+    const emittedRoles = new Map<string, ColorRecordEntity.Type>();
     const roles = categoryW3cRoleSchema.roles;
     for (let roleIndex = 0; roleIndex < roles.length; roleIndex += 1) {
       const role = roles[roleIndex];
@@ -359,13 +359,13 @@ class CategoryColorService {
     return emittedRoles;
   }
 
-  private static luminance(rgb: RgbInterfaceTypeEntity.Type): number {
+  private static luminance(rgb: RgbEntity.Type): number {
     const linear = srgbToLinear.apply(rgb.r, rgb.g, rgb.b);
     const result = 0.2126 * linear.r + 0.7152 * linear.g + 0.0722 * linear.b;
     return result;
   }
 
-  private static rgbContrast(foreground: RgbInterfaceTypeEntity.Type, background: RgbInterfaceTypeEntity.Type): number {
+  private static rgbContrast(foreground: RgbEntity.Type, background: RgbEntity.Type): number {
     const foregroundLuminance = CategoryColorService.luminance(foreground);
     const backgroundLuminance = CategoryColorService.luminance(background);
     const result = (
@@ -377,9 +377,9 @@ class CategoryColorService {
   }
 
   private static simulateCvd(
-    rgb: RgbInterfaceTypeEntity.Type,
-    cvd: CvdMatrixInterfaceTypeEntity.Type
-  ): RgbInterfaceTypeEntity.Type {
+    rgb: RgbEntity.Type,
+    cvd: CvdMatrixEntity.Type
+  ): RgbEntity.Type {
     const linear = srgbToLinear.apply(rgb.r, rgb.g, rgb.b);
     const matrix = cvd.matrix;
     const result = linearToSrgb.apply(

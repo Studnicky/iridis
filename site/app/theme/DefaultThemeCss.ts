@@ -1,6 +1,6 @@
-import { DerivationConfigInterfaceTypeEntity } from '../composables/entities/DerivationConfigInterfaceTypeEntity.ts';
-import { PaletteResolveRequestInterfaceTypeEntity } from '../composables/entities/PaletteResolveRequestInterfaceTypeEntity.ts';
-import { SchemaNameInterfaceTypeEntity } from '../composables/entities/SchemaNameInterfaceTypeEntity.ts';
+import { DerivationConfigEntity } from '../composables/entities/DerivationConfigEntity.ts';
+import { PaletteResolveRequestEntity } from '../composables/entities/PaletteResolveRequestEntity.ts';
+import { SchemaNameEntity } from '../composables/entities/SchemaNameEntity.ts';
 import { PaletteResolve } from '../composables/paletteResolve.ts';
 import { Tokens } from './Tokens.ts';
 
@@ -16,14 +16,14 @@ export class DefaultThemeCss {
 
   private static readonly parameters = {
     'colorSpace': 'srgb',
-    'derivationConfig': DerivationConfigInterfaceTypeEntity.defaultValue,
-    'schemaName': SchemaNameInterfaceTypeEntity.defaultValue,
+    'derivationConfig': DerivationConfigEntity.defaultValue,
+    'schemaName': SchemaNameEntity.defaultValue,
     'seeds': DefaultThemeCss.seeds,
     'semanticHuesEnabled': true,
     'strictness': 2
   } as const;
 
-  private static generateFrame(request: PaletteResolveRequestInterfaceTypeEntity.Type, selector: string): string {
+  private static generateFrame(request: PaletteResolveRequestEntity.Type, selector: string): string {
     const snapshot = PaletteResolve.run(request);
     const css = Tokens.toCssText(Tokens.mapFromEngine(Tokens.hexRecord(snapshot.roles), snapshot.scales));
     const themedCss = css.replace(DefaultThemeCss.baseSelector, selector);
@@ -31,8 +31,8 @@ export class DefaultThemeCss {
   }
 
   static generate(): string {
-    const light = DefaultThemeCss.generateFrame(PaletteResolveRequestInterfaceTypeEntity.create({ ...DefaultThemeCss.parameters, 'framing': 'light' }), 'html:root, html:root:not(.dark)');
-    const dark = DefaultThemeCss.generateFrame(PaletteResolveRequestInterfaceTypeEntity.create({ ...DefaultThemeCss.parameters, 'framing': 'dark' }), 'html:root.dark');
+    const light = DefaultThemeCss.generateFrame(PaletteResolveRequestEntity.create({ ...DefaultThemeCss.parameters, 'framing': 'light' }), 'html:root, html:root:not(.dark)');
+    const dark = DefaultThemeCss.generateFrame(PaletteResolveRequestEntity.create({ ...DefaultThemeCss.parameters, 'framing': 'dark' }), 'html:root.dark');
     const themeCss = `${light  }\n${  dark}`;
     return themeCss;
   }

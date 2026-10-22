@@ -1,14 +1,14 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '@studnicky/iridis';
 
-import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import { PandaOutputInterfaceTypeEntity } from '../entities/PandaOutputInterfaceTypeEntity.ts';
+import { PandaOutputEntity } from '../entities/PandaOutputEntity.ts';
 
 /**
  * Token name → ordered candidate role names. Panda and UnoCSS both
@@ -26,7 +26,7 @@ const TOKEN_SOURCE = new Map<string, readonly string[]>([
 ]);
 
 class TokenColors {
-  static build(roles: Record<string, ColorRecordInterfaceTypeEntity.Type>): Map<string, string> {
+  static build(roles: Record<string, ColorRecordEntity.Type>): Map<string, string> {
     const resolvedRoles = new Map(Object.entries(roles));
     const colors = new Map<string, string>();
     for (const [token, candidates] of TOKEN_SOURCE) {
@@ -38,8 +38,8 @@ class TokenColors {
     return colors;
   }
 
-  static output(colors: ReadonlyMap<string, string>): PandaOutputInterfaceTypeEntity.Type['colors'] {
-    const result: PandaOutputInterfaceTypeEntity.Type['colors'] = {};
+  static output(colors: ReadonlyMap<string, string>): PandaOutputEntity.Type['colors'] {
+    const result: PandaOutputEntity.Type['colors'] = {};
     const background = colors.get('background');
     const border = colors.get('border');
     const error = colors.get('error');
@@ -66,7 +66,7 @@ class TokenColors {
   }
 
 
-  private static firstHex(candidates: readonly string[], roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): string | undefined {
+  private static firstHex(candidates: readonly string[], roles: ReadonlyMap<string, ColorRecordEntity.Type>): string | undefined {
     for (let index = 0; index < candidates.length; index += 1) {
       const candidate = candidates[index];
       const role = candidate === undefined ? undefined : roles.get(candidate);
@@ -110,7 +110,7 @@ class UnoConfigModule {
 export class EmitPandaTheme implements TaskInterface {
   readonly 'name' = 'emit:pandaTheme';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Emit Panda CSS token config and a UnoCSS-compatible theme object from the same resolved-role color map',
     'name':        'emit:pandaTheme',
     'reads':       ['roles'],
@@ -124,7 +124,7 @@ export class EmitPandaTheme implements TaskInterface {
     const unoConfig   = UnoConfigModule.serialize(colors);
     const outputColors = TokenColors.output(colors);
 
-    const output = PandaOutputInterfaceTypeEntity.create({
+    const output = PandaOutputEntity.create({
       'colors':      outputColors,
       'pandaConfig': pandaConfig,
       'unoConfig':   unoConfig

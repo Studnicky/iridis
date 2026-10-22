@@ -1,10 +1,10 @@
-import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../ThemeDefinitionInterface.ts';
 
 import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
 import { renderDot } from '../particles/renderDot.ts';
 
 /** Art-gallery minimalism — ambient background fully off, no blobs, grid, or particles at all. Visual (fonts/radius/border) lives in ./gallery.css. */
-export const gallery: ThemeDefinitionInterfaceType = {
+export const gallery: ThemeDefinitionInterface = {
   'ambient': {
     'blobCount':       0,
     'gooFilter':       'none',

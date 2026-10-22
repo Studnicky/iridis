@@ -1,6 +1,6 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-import { ComplianceReportInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import { ComplianceReportEntity } from '@studnicky/iridis-contrast';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -8,8 +8,8 @@ import { AccessibilityBlockers } from '../app/composables/accessibilityBlockers.
 import { ComplianceReportFixture } from './fixtures/ComplianceReportFixture.ts';
 
 class ReportMetadata {
-  public static build(blockedPairs: readonly object[], algorithm: string, level: string): ComplianceReportInterfaceTypeEntity.Type {
-    const result = ComplianceReportInterfaceTypeEntity.intake({
+  public static build(blockedPairs: readonly object[], algorithm: string, level: string): ComplianceReportEntity.Type {
+    const result = ComplianceReportEntity.intake({
       'blockedPairs': blockedPairs,
       'compliant': blockedPairs.length === 0,
       'cvdCompliant': true,

@@ -2,7 +2,7 @@ import type {
   PaletteStateInterface, PipelineContextInterface, TaskInterface
 } from '@studnicky/iridis';
 
-import { Metadata, RoleProvenanceInterfaceTypeEntity, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { Metadata, RoleProvenanceEntity, TaskManifestEntity } from '@studnicky/iridis';
 
 /**
  * Assigns an admitted hint to an unassigned derived role before family
@@ -12,7 +12,7 @@ import { Metadata, RoleProvenanceInterfaceTypeEntity, TaskManifestInterfaceTypeE
 class PinDerivedRoles implements TaskInterface {
   readonly 'name' = 'pin:derivedRoles';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Assigns hint-pinned colors onto derivedFrom roles that ResolveRoles skipped and records them as stated, so a pin overrides hue-rotation and stays exact through contrast enforcement.',
     'name':        'pin:derivedRoles',
     'reads':       ['colors', 'input.roles', 'roles'],
@@ -40,7 +40,7 @@ class PinDerivedRoles implements TaskInterface {
       const derivedUnassigned = role?.derivedFrom !== undefined && role.derivedFrom !== '' && !Object.hasOwn(state.roles, role.name);
       if (role !== undefined && pinned !== undefined && derivedUnassigned) {
         Object.defineProperty(state.roles, role.name, { 'configurable': true, 'enumerable': true, 'value': pinned, 'writable': true });
-        provenance.set(role.name, RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': [], 'origin': 'stated' }));
+        provenance.set(role.name, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'stated' }));
       }
     }
     Metadata.writeRoleProvenance(state.metadata, provenance);

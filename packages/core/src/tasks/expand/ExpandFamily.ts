@@ -1,14 +1,14 @@
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { ColorHintsInterfaceTypeEntity } from '../../entities/ColorHintsInterfaceTypeEntity.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorHintsEntity } from '../../entities/ColorHintsEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import { RoleDefinitionInterfaceTypeEntity } from '../../entities/RoleDefinitionInterfaceTypeEntity.ts';
-import { RoleProvenanceInterfaceTypeEntity } from '../../entities/RoleProvenanceInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { RoleDefinitionEntity } from '../../entities/RoleDefinitionEntity.ts';
+import { RoleProvenanceEntity } from '../../entities/RoleProvenanceEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
@@ -19,9 +19,9 @@ import { RoleGeometry } from '../RoleGeometry.ts';
 /** A derived role whose source has not resolved yet, queued for a later pass by `expand:family`. */
 class PendingDerivedRole {
   readonly 'derivedFrom': string;
-  readonly 'inputRole': RoleDefinitionInterfaceTypeEntity.Type;
+  readonly 'inputRole': RoleDefinitionEntity.Type;
 
-  constructor(derivedFrom: string, inputRole: RoleDefinitionInterfaceTypeEntity.Type) {
+  constructor(derivedFrom: string, inputRole: RoleDefinitionEntity.Type) {
     this.derivedFrom = derivedFrom;
     this.inputRole = inputRole;
   }
@@ -29,11 +29,11 @@ class PendingDerivedRole {
 
 class RoleDerivation {
   static deriveColor(
-    source: ColorRecordInterfaceTypeEntity.Type,
-    role: RoleDefinitionInterfaceTypeEntity.Type
+    source: ColorRecordEntity.Type,
+    role: RoleDefinitionEntity.Type
   ): {
-    readonly 'adjustments': RoleProvenanceInterfaceTypeEntity.Type['adjustments'];
-    readonly 'color': ColorRecordInterfaceTypeEntity.Type;
+    readonly 'adjustments': RoleProvenanceEntity.Type['adjustments'];
+    readonly 'color': ColorRecordEntity.Type;
   } {
     const { c, h, l } = source.oklch;
     const derivesFromSource = role.lightnessOffset !== undefined || role.chromaScale !== undefined;
@@ -67,11 +67,11 @@ class RoleDerivation {
       targetH = ((h + role.hueOffset) % 360 + 360) % 360;
     }
 
-    const hints: ColorHintsInterfaceTypeEntity.Type | undefined = role.intent === undefined
+    const hints: ColorHintsEntity.Type | undefined = role.intent === undefined
       ? undefined
       : { 'intent': role.intent };
     const options = { 'alpha': source.alpha, 'hints': hints };
-    const adjustments: RoleProvenanceInterfaceTypeEntity.Type['adjustments'] = [];
+    const adjustments: RoleProvenanceEntity.Type['adjustments'] = [];
     let color = source;
     const ranged = colorRecordFactory.fromOklch(
       clamp01.apply(targetL),
@@ -122,7 +122,7 @@ class RoleDerivation {
 class ExpandFamily implements TaskInterface {
   readonly 'name' = 'expand:family';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Derives missing roles that have derivedFrom set. Applies OKLCH deltas from the source role (hueOffset/hue/hueClamp, optionally overridden per role via metadata[\'core:hueOffsetOverrides\']/[\'core:hueTargetOverrides\']). Never overwrites an already-assigned role.',
     'name':        'expand:family',
     'reads':       ['roles', 'input.roles', 'metadata'],
@@ -158,7 +158,7 @@ class ExpandFamily implements TaskInterface {
         );
         continue;
       }
-      pending.push(new PendingDerivedRole(derivedFrom, RoleDefinitionInterfaceTypeEntity.intake(inputRole)));
+      pending.push(new PendingDerivedRole(derivedFrom, RoleDefinitionEntity.intake(inputRole)));
     }
     return pending;
   }
@@ -183,7 +183,7 @@ class ExpandFamily implements TaskInterface {
     const hue = targetOverride?.hue ?? inputRole.hue;
     const hueClamp = targetOverride?.hueClamp ?? inputRole.hueClamp;
     const hueOffset = offsetOverride ?? inputRole.hueOffset;
-    const role = RoleDefinitionInterfaceTypeEntity.intake({
+    const role = RoleDefinitionEntity.intake({
       'name': inputRole.name,
       ...(inputRole.chromaRange === undefined ? {} : { 'chromaRange': inputRole.chromaRange }),
       ...(inputRole.chromaScale === undefined ? {} : { 'chromaScale': inputRole.chromaScale }),
@@ -199,7 +199,7 @@ class ExpandFamily implements TaskInterface {
     });
     const derivation = RoleDerivation.deriveColor(sourceColor, role);
     roles.set(role.name, derivation.color);
-    roleProvenance.set(role.name, RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': derivation.adjustments, 'origin': 'derived' }));
+    roleProvenance.set(role.name, RoleProvenanceEntity.create({ 'adjustments': derivation.adjustments, 'origin': 'derived' }));
     context.logger.debug(
       LogBody.create({
         'component': 'ExpandFamily',

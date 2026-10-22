@@ -1,9 +1,9 @@
-import type { ColorRecordInterfaceTypeEntity } from '@studnicky/iridis';
+import type { ColorRecordEntity } from '@studnicky/iridis';
 
 import { GalleryAlgorithmTypeEntity } from '../../entities/GalleryAlgorithmTypeEntity.ts';
 
 /** Placeholder for a not-yet-computed candidate's `colors` — the default-config fallback below never has clustering results at config-build time; `run()` always overwrites it with the real `ClusterDispatcher.run` output before the config object is read again. */
-const EMPTY_CANDIDATE_COLORS: ColorRecordInterfaceTypeEntity.Type[] = [];
+const EMPTY_CANDIDATE_COLORS: ColorRecordEntity.Type[] = [];
 
 const DEFAULT_K = 5;
 

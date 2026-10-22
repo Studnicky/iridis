@@ -27,11 +27,11 @@
  */
 
 import {
-  type ColorRecordInterfaceTypeEntity,
-  InputInterfaceTypeEntity,
+  type ColorRecordEntity,
+  InputEntity,
   type PaletteStateInterface,
-  RoleDefinitionInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity
+  RoleDefinitionEntity,
+  RoleSchemaEntity
 } from '@studnicky/iridis';
 import { chakraPlugin }  from '@studnicky/iridis-chakra';
 import { Engine }        from '@studnicky/iridis/engine';
@@ -76,18 +76,18 @@ class ChakraTestFixture {
   }
 
   static input(
-    colors: InputInterfaceTypeEntity.Type['colors'],
-    roles: RoleSchemaInterfaceTypeEntity.Type
-  ): InputInterfaceTypeEntity.Type {
-    const input = InputInterfaceTypeEntity.intake({ 'colors': colors, 'roles': roles });
+    colors: InputEntity.Type['colors'],
+    roles: RoleSchemaEntity.Type
+  ): InputEntity.Type {
+    const input = InputEntity.intake({ 'colors': colors, 'roles': roles });
     return input;
   }
 
   static run(
     engine: Engine,
     pipeline: readonly string[],
-    colors: InputInterfaceTypeEntity.Type['colors'],
-    roles: RoleSchemaInterfaceTypeEntity.Type
+    colors: InputEntity.Type['colors'],
+    roles: RoleSchemaEntity.Type
   ): PaletteStateInterface {
     engine.pipeline(pipeline);
     const state = engine.run(ChakraTestFixture.input(colors, roles));
@@ -101,8 +101,8 @@ class ChakraTestFixture {
    * per-tier hex values without re-deriving EmitChakraTheme's own logic.
    */
   static resolvedFixture(
-    colors: InputInterfaceTypeEntity.Type['colors'],
-    roles: RoleSchemaInterfaceTypeEntity.Type,
+    colors: InputEntity.Type['colors'],
+    roles: RoleSchemaEntity.Type,
     pipeline: readonly string[]
   ): PaletteStateInterface {
     const engine = ChakraTestFixture.bareEngine();
@@ -148,8 +148,8 @@ const FAMILY_ROLE_ENTRIES: readonly { 'fallback'?: string; 'family': string; 'ro
 ];
 
 class RoleDefinition {
-  static required(name: string): RoleDefinitionInterfaceTypeEntity.Type {
-    const role = RoleDefinitionInterfaceTypeEntity.create({ 'name': name, 'required': true });
+  static required(name: string): RoleDefinitionEntity.Type {
+    const role = RoleDefinitionEntity.create({ 'name': name, 'required': true });
     return role;
   }
 }
@@ -187,7 +187,7 @@ class ChakraColorsLookup {
 }
 
 class ResolvedRoleLookup {
-  static hex(roles: Record<string, ColorRecordInterfaceTypeEntity.Type>, name: string): string {
+  static hex(roles: Record<string, ColorRecordEntity.Type>, name: string): string {
     const record = roles[name];
     if (record === undefined) {
       throw new Error(`test fixture: role '${name}' missing from resolved roles`);
@@ -205,9 +205,9 @@ class ChakraTierAssertions {
   static assertFullCoverage(
     colors: Record<string, Record<string, string>>,
     entries: readonly { readonly 'family': string; readonly 'role': string }[],
-    expectedRoles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
-    expectedLight: Record<string, ColorRecordInterfaceTypeEntity.Type>,
-    expectedDark: Record<string, ColorRecordInterfaceTypeEntity.Type>
+    expectedRoles: Record<string, ColorRecordEntity.Type>,
+    expectedLight: Record<string, ColorRecordEntity.Type>,
+    expectedDark: Record<string, ColorRecordEntity.Type>
   ): void {
     const length = entries.length;
     for (let index = 0; index < length; index += 1) {
@@ -237,7 +237,7 @@ class ChakraTierAssertions {
   static assertTierOnly500(
     colors: Record<string, Record<string, string>>,
     entries: readonly { readonly 'family': string; readonly 'role': string }[],
-    expectedRoles: Record<string, ColorRecordInterfaceTypeEntity.Type>
+    expectedRoles: Record<string, ColorRecordEntity.Type>
   ): void {
     const length = entries.length;
     for (let index = 0; index < length; index += 1) {
@@ -262,7 +262,7 @@ export class ChakraPluginScenarioSuite {
   static async run(): Promise<void> {
     // All 7 primary roles the FAMILY_ROLE_MAP reads directly, present so every
     // family resolves via its primary role rather than a fallback.
-    const ALL_FAMILY_ROLES = RoleSchemaInterfaceTypeEntity.create({
+    const ALL_FAMILY_ROLES = RoleSchemaEntity.create({
       'name': 'all-family-roles',
       'roles': [
         RoleDefinition.required('brand'),
@@ -274,7 +274,7 @@ export class ChakraPluginScenarioSuite {
         RoleDefinition.required('muted')
       ]
     });
-    const ALL_FAMILY_COLORS: InputInterfaceTypeEntity.Type['colors'] = ['#5b21b6', '#0ea5e9', '#16a34a', '#f59e0b', '#dc2626', '#2563eb', '#6b7280'];
+    const ALL_FAMILY_COLORS: InputEntity.Type['colors'] = ['#5b21b6', '#0ea5e9', '#16a34a', '#f59e0b', '#dc2626', '#2563eb', '#6b7280'];
 
     // ---------------------------------------------------------------------------
     // Cell 1 — plugin shape
@@ -356,9 +356,9 @@ export class ChakraPluginScenarioSuite {
     // ---------------------------------------------------------------------------
 
     interface ChakraCoverageOutputInterface {
-      readonly 'expectedDark':  Record<string, ColorRecordInterfaceTypeEntity.Type>;
-      readonly 'expectedLight': Record<string, ColorRecordInterfaceTypeEntity.Type>;
-      readonly 'expectedRoles': Record<string, ColorRecordInterfaceTypeEntity.Type>;
+      readonly 'expectedDark':  Record<string, ColorRecordEntity.Type>;
+      readonly 'expectedLight': Record<string, ColorRecordEntity.Type>;
+      readonly 'expectedRoles': Record<string, ColorRecordEntity.Type>;
       readonly 'theme':         ChakraThemeScenarioOutputEntity.Type['theme'];
     }
 
@@ -412,7 +412,7 @@ export class ChakraPluginScenarioSuite {
     // ---------------------------------------------------------------------------
 
     interface ChakraNoVariantOutputInterface {
-      readonly 'expectedRoles': Record<string, ColorRecordInterfaceTypeEntity.Type>;
+      readonly 'expectedRoles': Record<string, ColorRecordEntity.Type>;
       readonly 'theme':         ChakraThemeScenarioOutputEntity.Type['theme'];
     }
 
@@ -466,19 +466,19 @@ export class ChakraPluginScenarioSuite {
     // consequence of this schema).
     // ---------------------------------------------------------------------------
 
-    const FALLBACK_ROLES = RoleSchemaInterfaceTypeEntity.create({
+    const FALLBACK_ROLES = RoleSchemaEntity.create({
       'name': 'fallback-roles',
       'roles': [
         RoleDefinition.required('brand'),
         RoleDefinition.required('text')
       ]
     });
-    const FALLBACK_COLORS: InputInterfaceTypeEntity.Type['colors'] = ['#5b21b6', '#f8fafc'];
+    const FALLBACK_COLORS: InputEntity.Type['colors'] = ['#5b21b6', '#f8fafc'];
 
     interface ChakraFallbackOutputInterface {
-      readonly 'expectedDark':  Record<string, ColorRecordInterfaceTypeEntity.Type>;
-      readonly 'expectedLight': Record<string, ColorRecordInterfaceTypeEntity.Type>;
-      readonly 'expectedRoles': Record<string, ColorRecordInterfaceTypeEntity.Type>;
+      readonly 'expectedDark':  Record<string, ColorRecordEntity.Type>;
+      readonly 'expectedLight': Record<string, ColorRecordEntity.Type>;
+      readonly 'expectedRoles': Record<string, ColorRecordEntity.Type>;
       readonly 'theme':         ChakraThemeScenarioOutputEntity.Type['theme'];
     }
 
@@ -554,14 +554,14 @@ export class ChakraPluginScenarioSuite {
     // must ALL be absent from colors; only neutral (muted, direct) remains.
     // ---------------------------------------------------------------------------
 
-    const OMISSION_ROLES = RoleSchemaInterfaceTypeEntity.create({
+    const OMISSION_ROLES = RoleSchemaEntity.create({
       'name': 'omission-roles',
       'roles': [
         RoleDefinition.required('muted'),
         RoleDefinition.required('text')
       ]
     });
-    const OMISSION_COLORS: InputInterfaceTypeEntity.Type['colors'] = ['#6b7280', '#f8fafc'];
+    const OMISSION_COLORS: InputEntity.Type['colors'] = ['#6b7280', '#f8fafc'];
 
     interface ChakraOmissionOutputInterface {
       readonly 'theme': ChakraThemeScenarioOutputEntity.Type['theme'];
@@ -650,7 +650,7 @@ export class ChakraPluginScenarioSuite {
     // well-formed, non-throwing string.
     // ---------------------------------------------------------------------------
 
-    const EMPTY_ROLES = RoleSchemaInterfaceTypeEntity.create({
+    const EMPTY_ROLES = RoleSchemaEntity.create({
       'name': 'empty',
       'roles': []
     });

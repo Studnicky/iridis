@@ -1,1 +1,1 @@
-/** Legacy module retained while consumers migrate to FramingInterfaceTypeEntity. */
+/** Legacy module retained while consumers migrate to FramingEntity. */

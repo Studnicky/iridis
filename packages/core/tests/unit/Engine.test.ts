@@ -30,9 +30,9 @@ import type { TaskInterface } from '../../src/interfaces/TaskInterface.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 import { Engine } from '../../src/engine/Engine.ts';
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
-import { RuntimeOptionsInterfaceTypeEntity } from '../../src/entities/RuntimeOptionsInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
+import { RuntimeOptionsEntity } from '../../src/entities/RuntimeOptionsEntity.ts';
+import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { ENGINE_TEST_PATTERNS } from './engine/constants/EngineTestPatterns.ts';
 import { EngineTestFixture } from './engine/EngineTestFixture.ts';
 
@@ -536,7 +536,7 @@ void test('Engine :: cell-4 :: canonical input runs to a state', () => {
 });
 
 void test('Engine :: cell-4 :: input entity admits valid external JSON', () => {
-  const input = InputInterfaceTypeEntity.intake({ 'colors': ['#ff0000'], 'metadata': { 'seed': 'green' } });
+  const input = InputEntity.intake({ 'colors': ['#ff0000'], 'metadata': { 'seed': 'green' } });
   const state = new Engine().run(input);
   assert.deepStrictEqual(input.colors, ['#ff0000'], '[cell=4, scenario=input-entity] colors are preserved');
   assert.strictEqual(state.input, input, '[cell=4, scenario=input-entity] admitted input runs through the engine without a compatibility conversion');
@@ -544,7 +544,7 @@ void test('Engine :: cell-4 :: input entity admits valid external JSON', () => {
 
 void test('Engine :: cell-4 :: missing colors is rejected at the input entity boundary', () => {
   assert.throws(
-    () => { InputInterfaceTypeEntity.intake({}); },
+    () => { InputEntity.intake({}); },
     function(error: Error): boolean {
       const includesColors = error.message.includes('colors');
       return includesColors;
@@ -555,7 +555,7 @@ void test('Engine :: cell-4 :: missing colors is rejected at the input entity bo
 
 void test('Engine :: cell-4 :: non-array colors is rejected at the input entity boundary', () => {
   assert.throws(
-    () => { InputInterfaceTypeEntity.intake({ 'colors': 'not-an-array' }); },
+    () => { InputEntity.intake({ 'colors': 'not-an-array' }); },
     function(error: Error): boolean {
       const includesColors = error.message.includes('colors');
       return includesColors;
@@ -575,7 +575,7 @@ void test('Engine :: cell-4 :: non-array colors is rejected at the input entity 
 // ---------------------------------------------------------------------------
 
 interface StateShapeInputInterface {
-  readonly 'input': InputInterfaceTypeEntity.Type;
+  readonly 'input': InputEntity.Type;
 }
 class EngineStateShapeScenarioMatrix {
   static runStateShape(): void {
@@ -607,7 +607,7 @@ class EngineStateShapeScenarioMatrix {
           assert.strictEqual(error, undefined,                                  '[cell=5, scenario=runtime-clone] no throw');
           assert.deepStrictEqual(output!.runtime, { 'framing': 'dark' }, '[cell=5, scenario=runtime-clone] values copied');
         },
-        'input': { 'input': EngineTestFixture.makeInput({ 'runtime': RuntimeOptionsInterfaceTypeEntity.intake({ 'framing': 'dark' }) }) },
+        'input': { 'input': EngineTestFixture.makeInput({ 'runtime': RuntimeOptionsEntity.intake({ 'framing': 'dark' }) }) },
         'kind': 'edge',
         'name': 'state.runtime is a fresh object (not the same reference as input.runtime)'
       }
@@ -684,7 +684,7 @@ void test('Engine :: cell-7 :: schema.adopt :: unhappy :: task with empty-string
   const run   = (): void => { /* no-op */ };
   const tasks = (): readonly TaskInterface[] => {
     return [{
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': '' }),   // minLength: 1 — should reject
+      'manifest': TaskManifestEntity.create({ 'name': '' }),   // minLength: 1 — should reject
       'name': 'task:bad',
       'run': run
     }];
@@ -795,7 +795,7 @@ void test('Engine :: cell-8 :: schema.run :: unhappy :: output failing plugin sc
   };
   const tasks = (): readonly TaskInterface[] => {
     return [{
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'task:write-bad-output' }),
+      'manifest': TaskManifestEntity.create({ 'name': 'task:write-bad-output' }),
       'name': 'task:write-bad-output',
       'run': run
     }];
@@ -843,7 +843,7 @@ void test('Engine :: cell-8 :: schema.run :: unhappy :: metadata failing plugin 
   };
   const tasks = (): readonly TaskInterface[] => {
     return [{
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'task:write-bad-meta' }),
+      'manifest': TaskManifestEntity.create({ 'name': 'task:write-bad-meta' }),
       'name': 'task:write-bad-meta',
       'run': run
     }];
@@ -887,7 +887,7 @@ void test('Engine :: cell-8 :: schema.run :: happy :: conforming output and meta
   };
   const tasks = (): readonly TaskInterface[] => {
     return [{
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'task:write-good' }),
+      'manifest': TaskManifestEntity.create({ 'name': 'task:write-good' }),
       'name': 'task:write-good',
       'run': run
     }];

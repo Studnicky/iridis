@@ -10,7 +10,7 @@ import {
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../../_runner/ScenarioInterface.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../../../src/entities/ColorRecordEntity.ts';
 import type { ClusterInputEntity } from '../../entities/ClusterInputEntity.ts';
 import type { ClusterOutputEntity } from '../../entities/ClusterOutputEntity.ts';
 import type { ContrastInputEntity } from '../../entities/ContrastInputEntity.ts';
@@ -19,11 +19,11 @@ import type { LightenDarkenInputEntity } from '../../entities/LightenDarkenInput
 import type { LightenDarkenOutputEntity } from '../../entities/LightenDarkenOutputEntity.ts';
 import type { RoundTripOutputEntity } from '../../entities/RoundTripOutputEntity.ts';
 
-import { OklchInterfaceTypeEntity } from '../../../../src/entities/OklchInterfaceTypeEntity.ts';
+import { OklchEntity } from '../../../../src/entities/OklchEntity.ts';
 
 class GreyRamp {
-  static build(count: number): ColorRecordInterfaceTypeEntity.Type[] {
-    const records: ColorRecordInterfaceTypeEntity.Type[] = [];
+  static build(count: number): ColorRecordEntity.Type[] {
+    const records: ColorRecordEntity.Type[] = [];
     for (let index = 0; index < count; index += 1) {
       records.push(oklchToRgb.apply(index / Math.max(count - 1, 1), 0, 0));
     }
@@ -64,12 +64,12 @@ export const MathCompositionScenarios = Object.freeze({
   },
   'roundTrip': {
     'scenarios': [
-      { 'assert': function(output, error) { assert.strictEqual(error, undefined, '[cell=4, scenario=mid-range] no throw'); assert.ok(Math.abs(output!.backL - 0.5) < 0.001, '[cell=4, scenario=mid-range] L round-trip'); assert.ok(Math.abs(output!.backC - 0.1) < 0.001, '[cell=4, scenario=mid-range] C round-trip'); const hueDistance = Math.abs(((output!.backH - 30) + 360) % 360); assert.ok(Math.min(hueDistance, 360 - hueDistance) < 2, '[cell=4, scenario=mid-range] H round-trip'); }, 'input': OklchInterfaceTypeEntity.intake({ 'c': 0.1, 'h': 30, 'l': 0.5 }), 'kind': 'happy', 'name': 'mid-range in-gamut (L=0.5, C=0.1, H=30)' },
-      { 'assert': function(output, error) { assert.strictEqual(error, undefined, '[cell=4, scenario=cyan] no throw'); assert.ok(Math.abs(output!.backL - 0.7) < 0.001, '[cell=4, scenario=cyan] L round-trip'); assert.ok(Math.abs(output!.backC - 0.12) < 0.001, '[cell=4, scenario=cyan] C round-trip'); const hueDistance = Math.abs(((output!.backH - 180) + 360) % 360); assert.ok(Math.min(hueDistance, 360 - hueDistance) < 2, '[cell=4, scenario=cyan] H round-trip'); }, 'input': OklchInterfaceTypeEntity.intake({ 'c': 0.12, 'h': 180, 'l': 0.7 }), 'kind': 'happy', 'name': 'high-L cyan (L=0.7, C=0.12, H=180)' },
-      { 'assert': function(output, error) { assert.strictEqual(error, undefined, '[cell=4, scenario=white] no throw'); assert.ok(Math.abs(output!.backL - 1) < 0.001, '[cell=4, scenario=white] L round-trip'); assert.ok(Math.abs(output!.backC) < 0.001, '[cell=4, scenario=white] C round-trip'); }, 'input': OklchInterfaceTypeEntity.intake({ 'c': 0, 'h': 0, 'l': 1 }), 'kind': 'edge', 'name': 'pure white (L=1, C=0) — achromatic, hue check skipped' },
-      { 'assert': function(output, error) { assert.strictEqual(error, undefined, '[cell=4, scenario=black] no throw'); assert.ok(Math.abs(output!.backL) < 0.001, '[cell=4, scenario=black] L round-trip'); assert.ok(Math.abs(output!.backC) < 0.001, '[cell=4, scenario=black] C round-trip'); }, 'input': OklchInterfaceTypeEntity.intake({ 'c': 0, 'h': 0, 'l': 0 }), 'kind': 'edge', 'name': 'pure black (L=0, C=0) — achromatic, hue check skipped' },
-      { 'assert': function(output, error) { assert.strictEqual(error, undefined, '[cell=4, scenario=purple] no throw'); assert.ok(Math.abs(output!.backL - 0.2) < 0.001, '[cell=4, scenario=purple] L round-trip'); assert.ok(Math.abs(output!.backC - 0.05) < 0.001, '[cell=4, scenario=purple] C round-trip'); const hueDistance = Math.abs(((output!.backH - 320) + 360) % 360); assert.ok(Math.min(hueDistance, 360 - hueDistance) < 2, '[cell=4, scenario=purple] H round-trip'); }, 'input': OklchInterfaceTypeEntity.intake({ 'c': 0.05, 'h': 320, 'l': 0.2 }), 'kind': 'happy', 'name': 'purple-quadrant (L=0.2, C=0.05, H=320)' }
-    ] satisfies readonly ScenarioInterface<OklchInterfaceTypeEntity.Type, RoundTripOutputEntity.Type>[],
-    'subject': function(input: OklchInterfaceTypeEntity.Type): RoundTripOutputEntity.Type { const asRecord = oklchToRgb.apply(input.l, input.c, input.h); const back = rgbToOklch.apply(asRecord.rgb.r, asRecord.rgb.g, asRecord.rgb.b); return { 'backC': back.oklch.c, 'backH': back.oklch.h, 'backL': back.oklch.l }; }
+      { 'assert': function(output, error) { assert.strictEqual(error, undefined, '[cell=4, scenario=mid-range] no throw'); assert.ok(Math.abs(output!.backL - 0.5) < 0.001, '[cell=4, scenario=mid-range] L round-trip'); assert.ok(Math.abs(output!.backC - 0.1) < 0.001, '[cell=4, scenario=mid-range] C round-trip'); const hueDistance = Math.abs(((output!.backH - 30) + 360) % 360); assert.ok(Math.min(hueDistance, 360 - hueDistance) < 2, '[cell=4, scenario=mid-range] H round-trip'); }, 'input': OklchEntity.intake({ 'c': 0.1, 'h': 30, 'l': 0.5 }), 'kind': 'happy', 'name': 'mid-range in-gamut (L=0.5, C=0.1, H=30)' },
+      { 'assert': function(output, error) { assert.strictEqual(error, undefined, '[cell=4, scenario=cyan] no throw'); assert.ok(Math.abs(output!.backL - 0.7) < 0.001, '[cell=4, scenario=cyan] L round-trip'); assert.ok(Math.abs(output!.backC - 0.12) < 0.001, '[cell=4, scenario=cyan] C round-trip'); const hueDistance = Math.abs(((output!.backH - 180) + 360) % 360); assert.ok(Math.min(hueDistance, 360 - hueDistance) < 2, '[cell=4, scenario=cyan] H round-trip'); }, 'input': OklchEntity.intake({ 'c': 0.12, 'h': 180, 'l': 0.7 }), 'kind': 'happy', 'name': 'high-L cyan (L=0.7, C=0.12, H=180)' },
+      { 'assert': function(output, error) { assert.strictEqual(error, undefined, '[cell=4, scenario=white] no throw'); assert.ok(Math.abs(output!.backL - 1) < 0.001, '[cell=4, scenario=white] L round-trip'); assert.ok(Math.abs(output!.backC) < 0.001, '[cell=4, scenario=white] C round-trip'); }, 'input': OklchEntity.intake({ 'c': 0, 'h': 0, 'l': 1 }), 'kind': 'edge', 'name': 'pure white (L=1, C=0) — achromatic, hue check skipped' },
+      { 'assert': function(output, error) { assert.strictEqual(error, undefined, '[cell=4, scenario=black] no throw'); assert.ok(Math.abs(output!.backL) < 0.001, '[cell=4, scenario=black] L round-trip'); assert.ok(Math.abs(output!.backC) < 0.001, '[cell=4, scenario=black] C round-trip'); }, 'input': OklchEntity.intake({ 'c': 0, 'h': 0, 'l': 0 }), 'kind': 'edge', 'name': 'pure black (L=0, C=0) — achromatic, hue check skipped' },
+      { 'assert': function(output, error) { assert.strictEqual(error, undefined, '[cell=4, scenario=purple] no throw'); assert.ok(Math.abs(output!.backL - 0.2) < 0.001, '[cell=4, scenario=purple] L round-trip'); assert.ok(Math.abs(output!.backC - 0.05) < 0.001, '[cell=4, scenario=purple] C round-trip'); const hueDistance = Math.abs(((output!.backH - 320) + 360) % 360); assert.ok(Math.min(hueDistance, 360 - hueDistance) < 2, '[cell=4, scenario=purple] H round-trip'); }, 'input': OklchEntity.intake({ 'c': 0.05, 'h': 320, 'l': 0.2 }), 'kind': 'happy', 'name': 'purple-quadrant (L=0.2, C=0.05, H=320)' }
+    ] satisfies readonly ScenarioInterface<OklchEntity.Type, RoundTripOutputEntity.Type>[],
+    'subject': function(input: OklchEntity.Type): RoundTripOutputEntity.Type { const asRecord = oklchToRgb.apply(input.l, input.c, input.h); const back = rgbToOklch.apply(asRecord.rgb.r, asRecord.rgb.g, asRecord.rgb.b); return { 'backC': back.oklch.c, 'backH': back.oklch.h, 'backL': back.oklch.l }; }
   }
 });

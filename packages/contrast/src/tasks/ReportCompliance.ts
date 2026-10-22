@@ -6,20 +6,20 @@ import type {
 
 import {
   contrastApca,
-  ContrastReportEntryInterfaceTypeEntity,
+  ContrastReportEntryEntity,
   contrastWcag21,
   Metadata,
-  TaskManifestInterfaceTypeEntity
+  TaskManifestEntity
 } from '@studnicky/iridis';
 
-import type { CvdPairWarningInterfaceTypeEntity } from '../entities/CvdPairWarningInterfaceTypeEntity.ts';
+import type { CvdPairWarningEntity } from '../entities/CvdPairWarningEntity.ts';
 
 import { CvdFailurePolicy } from '../CvdFailurePolicy.ts';
-import { ComplianceBlockedPairInterfaceTypeEntity } from '../entities/ComplianceBlockedPairInterfaceTypeEntity.ts';
-import { CompliancePairInterfaceTypeEntity } from '../entities/CompliancePairInterfaceTypeEntity.ts';
-import { ComplianceReportInterfaceTypeEntity } from '../entities/ComplianceReportInterfaceTypeEntity.ts';
-import { CvdEvalInterfaceTypeEntity } from '../entities/CvdEvalInterfaceTypeEntity.ts';
-import { CvdResultSetInterfaceTypeEntity } from '../entities/CvdResultSetInterfaceTypeEntity.ts';
+import { ComplianceBlockedPairEntity } from '../entities/ComplianceBlockedPairEntity.ts';
+import { CompliancePairEntity } from '../entities/CompliancePairEntity.ts';
+import { ComplianceReportEntity } from '../entities/ComplianceReportEntity.ts';
+import { CvdEvalEntity } from '../entities/CvdEvalEntity.ts';
+import { CvdResultSetEntity } from '../entities/CvdResultSetEntity.ts';
 
 class ComplianceSnapshot {
   static matches(state: PaletteStateInterface): boolean {
@@ -50,13 +50,13 @@ class ComplianceSnapshot {
 
 class ComplianceSerialization {
   static blockedPair(
-    pair: ContrastReportEntryInterfaceTypeEntity.Type,
+    pair: ContrastReportEntryEntity.Type,
     target: string
-  ): ComplianceBlockedPairInterfaceTypeEntity.Type | undefined {
+  ): ComplianceBlockedPairEntity.Type | undefined {
     if (pair.passed) {
       return undefined;
     }
-    const result = ComplianceBlockedPairInterfaceTypeEntity.intake({
+    const result = ComplianceBlockedPairEntity.intake({
       'actualTrichromat': pair.actual,
       'background': pair.background,
       'foreground': pair.foreground,
@@ -68,11 +68,11 @@ class ComplianceSerialization {
   }
 
   static pair(
-    pair: ContrastReportEntryInterfaceTypeEntity.Type,
-    warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[],
+    pair: ContrastReportEntryEntity.Type,
+    warnings: readonly CvdPairWarningEntity.Type[],
     failurePolicy: CvdFailurePolicy
-  ): CompliancePairInterfaceTypeEntity.Type {
-    const result = CompliancePairInterfaceTypeEntity.intake({
+  ): CompliancePairEntity.Type {
+    const result = CompliancePairEntity.intake({
       'actualTrichromat': pair.actual,
       ...(pair.adjustedRole === undefined ? {} : { 'adjustedRole': pair.adjustedRole }),
       'background': pair.background,
@@ -85,18 +85,18 @@ class ComplianceSerialization {
     return result;
   }
 
-  static report(state: PaletteStateInterface): ComplianceReportInterfaceTypeEntity.Type | undefined {
+  static report(state: PaletteStateInterface): ComplianceReportEntity.Type | undefined {
     const diagnostic = Metadata.contrastReport(state.metadata);
     if (diagnostic === undefined) {
       return undefined;
     }
-    const cvd = CvdResultSetInterfaceTypeEntity.intake(state.metadata['contrast:cvd'] ?? {
+    const cvd = CvdResultSetEntity.intake(state.metadata['contrast:cvd'] ?? {
       'blocked': [],
       'corrections': [],
       'warnings': []
     });
     const failurePolicy = CvdFailurePolicy.resolve(state.input.contrast);
-    const blockedPairs = new Map<string, ComplianceBlockedPairInterfaceTypeEntity.Type>();
+    const blockedPairs = new Map<string, ComplianceBlockedPairEntity.Type>();
     const serialization = ComplianceSerialization.pairs(
       diagnostic,
       cvd.warnings,
@@ -114,7 +114,7 @@ class ComplianceSerialization {
     if (!compliant && blockedPairs.size === 0) {
       throw new TypeError('Terminal compliance failure has no blocked pair');
     }
-    const result = ComplianceReportInterfaceTypeEntity.intake({
+    const result = ComplianceReportEntity.intake({
       'blockedPairs': Array.from(blockedPairs.values()),
       'compliant': compliant,
       'cvdCompliant': cvdCompliant,
@@ -129,23 +129,23 @@ class ComplianceSerialization {
 
   private static pairs(
     diagnostic: NonNullable<ReturnType<typeof Metadata.contrastReport>>,
-    warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[],
+    warnings: readonly CvdPairWarningEntity.Type[],
     failurePolicy: CvdFailurePolicy,
-    blockedPairs: Map<string, ComplianceBlockedPairInterfaceTypeEntity.Type>
+    blockedPairs: Map<string, ComplianceBlockedPairEntity.Type>
   ): {
     readonly 'cvdFailureCount': number;
-    readonly 'diagnostics': ReadonlyMap<string, ContrastReportEntryInterfaceTypeEntity.Type>;
-    readonly 'pairs': readonly CompliancePairInterfaceTypeEntity.Type[];
+    readonly 'diagnostics': ReadonlyMap<string, ContrastReportEntryEntity.Type>;
+    readonly 'pairs': readonly CompliancePairEntity.Type[];
   } {
-    const diagnostics = new Map<string, ContrastReportEntryInterfaceTypeEntity.Type>();
-    const pairs: CompliancePairInterfaceTypeEntity.Type[] = [];
+    const diagnostics = new Map<string, ContrastReportEntryEntity.Type>();
+    const pairs: CompliancePairEntity.Type[] = [];
     let cvdFailureCount = 0;
     for (let index = 0; index < diagnostic.pairs.length; index += 1) {
       const diagnosticPair = diagnostic.pairs[index];
       if (diagnosticPair === undefined) {
         continue;
       }
-      const pair = ContrastReportEntryInterfaceTypeEntity.intake(diagnosticPair);
+      const pair = ContrastReportEntryEntity.intake(diagnosticPair);
       const key = ComplianceSerialization.key(pair.foreground, pair.background);
       diagnostics.set(key, pair);
       const serialized = ComplianceSerialization.pair(pair, warnings, failurePolicy);
@@ -161,10 +161,10 @@ class ComplianceSerialization {
   }
 
   private static applyCvdBlockers(
-    cvdBlockedPairs: readonly (CvdResultSetInterfaceTypeEntity.Type['blocked'][number])[],
-    diagnostics: ReadonlyMap<string, ContrastReportEntryInterfaceTypeEntity.Type>,
+    cvdBlockedPairs: readonly (CvdResultSetEntity.Type['blocked'][number])[],
+    diagnostics: ReadonlyMap<string, ContrastReportEntryEntity.Type>,
     target: string,
-    blockedPairs: Map<string, ComplianceBlockedPairInterfaceTypeEntity.Type>
+    blockedPairs: Map<string, ComplianceBlockedPairEntity.Type>
   ): void {
     for (let index = 0; index < cvdBlockedPairs.length; index += 1) {
       const blocked = cvdBlockedPairs[index];
@@ -176,7 +176,7 @@ class ComplianceSerialization {
       if (pair === undefined) {
         throw new TypeError('CVD blocked pair is absent from the selected contrast policy');
       }
-      blockedPairs.set(key, ComplianceBlockedPairInterfaceTypeEntity.intake({
+      blockedPairs.set(key, ComplianceBlockedPairEntity.intake({
         'actualTrichromat': pair.actual,
         'background': pair.background,
         'foreground': pair.foreground,
@@ -188,7 +188,7 @@ class ComplianceSerialization {
   }
 
   private static failureCount(
-    outcomes: readonly CvdEvalInterfaceTypeEntity.Type[]
+    outcomes: readonly CvdEvalEntity.Type[]
   ): number {
     let failureCount = 0;
     for (let index = 0; index < outcomes.length; index += 1) {
@@ -205,17 +205,17 @@ class ComplianceSerialization {
   }
 
   private static outcomes(
-    pair: ContrastReportEntryInterfaceTypeEntity.Type,
-    warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[],
+    pair: ContrastReportEntryEntity.Type,
+    warnings: readonly CvdPairWarningEntity.Type[],
     failurePolicy: CvdFailurePolicy
-  ): CvdEvalInterfaceTypeEntity.Type[] {
-    const outcomes: CvdEvalInterfaceTypeEntity.Type[] = [];
+  ): CvdEvalEntity.Type[] {
+    const outcomes: CvdEvalEntity.Type[] = [];
     for (let index = 0; index < warnings.length; index += 1) {
       const warning = warnings[index];
       if (warning?.foreground !== pair.foreground || warning?.background !== pair.background) {
         continue;
       }
-      const evidence = CvdEvalInterfaceTypeEntity.intake({
+      const evidence = CvdEvalEntity.intake({
         'belowFloor': warning.simulatedLuminanceContrast < warning.minimumSimulatedContrast,
         'cvdType': warning.cvdType,
         'drop': warning.drop,
@@ -224,7 +224,7 @@ class ComplianceSerialization {
         'originalContrast': warning.originalLuminanceContrast,
         'simContrast': warning.simulatedLuminanceContrast
       });
-      const outcome = CvdEvalInterfaceTypeEntity.intake({
+      const outcome = CvdEvalEntity.intake({
         ...evidence,
         'fail': failurePolicy.blocks(evidence)
       });
@@ -238,7 +238,7 @@ class ComplianceSerialization {
 class ReportCompliance implements TaskInterface {
   readonly 'name' = 'report:compliance';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Serializes the completed terminal compliance result for rendered role colors without mutating roles.',
     'name': 'report:compliance',
     'reads': ['roles', "metadata['contrast:cvd']", "metadata['core:contrastReport']"],

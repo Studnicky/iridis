@@ -1,12 +1,12 @@
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { JsonOutputEntity } from '../../entities/JsonOutputEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 
 class JsonOutputProjection {
   static #recordFromEntries<ValueType>(entries: Iterable<readonly [string, ValueType]>): Record<string, ValueType> {
@@ -17,7 +17,7 @@ class JsonOutputProjection {
     return result;
   }
 
-  static roles(source: Record<string, ColorRecordInterfaceTypeEntity.Type>): Record<string, string> {
+  static roles(source: Record<string, ColorRecordEntity.Type>): Record<string, string> {
     const sourceEntries = Object.entries(source);
     const result = new Map<string, string>();
     for (let index = 0; index < sourceEntries.length; index += 1) {
@@ -31,7 +31,7 @@ class JsonOutputProjection {
     return serialized;
   }
 
-  static variants(source: Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>): Record<string, Record<string, string>> {
+  static variants(source: Record<string, Record<string, ColorRecordEntity.Type>>): Record<string, Record<string, string>> {
     const sourceEntries = Object.entries(source);
     const result = new Map<string, Record<string, string>>();
     for (let index = 0; index < sourceEntries.length; index += 1) {
@@ -56,7 +56,7 @@ class JsonOutputProjection {
 class EmitJson implements TaskInterface {
   readonly 'name' = 'emit:json';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Writes state.outputs[\'core:json\'] with {colors, roles, variants} flattened to hex strings.',
     'name':        'emit:json',
     'reads':       ['colors', 'roles', 'variants'],
@@ -64,7 +64,7 @@ class EmitJson implements TaskInterface {
   });
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
-    const colors = state.colors.map((color: ColorRecordInterfaceTypeEntity.Type): string => { return color.hex; });
+    const colors = state.colors.map((color: ColorRecordEntity.Type): string => { return color.hex; });
     const roles = JsonOutputProjection.roles(state.roles);
     const variants = JsonOutputProjection.variants(state.variants);
     const output: JsonOutputEntity.Type = { 'colors': colors, 'roles': roles, 'variants': variants };

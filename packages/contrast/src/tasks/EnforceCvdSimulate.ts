@@ -1,5 +1,5 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface
 } from '@studnicky/iridis';
@@ -19,37 +19,37 @@ import {
 } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { CvdEvalInterfaceTypeEntity } from '../entities/CvdEvalInterfaceTypeEntity.ts';
-import type { CvdMatrixInterfaceTypeEntity } from '../entities/CvdMatrixInterfaceTypeEntity.ts';
-import type { CvdPairWarningInterfaceTypeEntity } from '../entities/CvdPairWarningInterfaceTypeEntity.ts';
+import type { CvdEvalEntity } from '../entities/CvdEvalEntity.ts';
+import type { CvdMatrixEntity } from '../entities/CvdMatrixEntity.ts';
+import type { CvdPairWarningEntity } from '../entities/CvdPairWarningEntity.ts';
 
 import { CvdFailurePolicy } from '../CvdFailurePolicy.ts';
 import { cvdMatrices } from '../data/cvdMatrices.ts';
 import { CVD_THRESHOLDS } from '../data/cvdThresholds.ts';
-import { CvdBlockedPairInterfaceTypeEntity } from '../entities/CvdBlockedPairInterfaceTypeEntity.ts';
-import { CvdCorrectionInterfaceTypeEntity } from '../entities/CvdCorrectionInterfaceTypeEntity.ts';
-import { CvdResultSetInterfaceTypeEntity } from '../entities/CvdResultSetInterfaceTypeEntity.ts';
+import { CvdBlockedPairEntity } from '../entities/CvdBlockedPairEntity.ts';
+import { CvdCorrectionEntity } from '../entities/CvdCorrectionEntity.ts';
+import { CvdResultSetEntity } from '../entities/CvdResultSetEntity.ts';
 
 class CvdPairConstraint {
-  readonly background: ColorRecordInterfaceTypeEntity.Type;
+  readonly background: ColorRecordEntity.Type;
   readonly backgroundLuminance: number;
   readonly backgroundName: string;
   readonly baseline: number;
   readonly failurePolicy: CvdFailurePolicy;
   readonly foregroundName: string;
   readonly originalFailureTypes: ReadonlySet<
-    CvdEvalInterfaceTypeEntity.Type['cvdType']
+    CvdEvalEntity.Type['cvdType']
   >;
   readonly requiredTrichromat: number;
   readonly simulatedBackgroundLuminances: readonly number[];
 
   constructor(
     backgroundName: string,
-    background: ColorRecordInterfaceTypeEntity.Type,
+    background: ColorRecordEntity.Type,
     baseline: number,
     foregroundName: string,
     originalFailureTypes: ReadonlySet<
-      CvdEvalInterfaceTypeEntity.Type['cvdType']
+      CvdEvalEntity.Type['cvdType']
     >,
     requiredTrichromat: number,
     failurePolicy: CvdFailurePolicy
@@ -79,11 +79,11 @@ class CvdMoverGroup {
   readonly constraints: CvdPairConstraint[];
   readonly failurePolicy: CvdFailurePolicy;
   readonly mover: string;
-  readonly original: ColorRecordInterfaceTypeEntity.Type;
+  readonly original: ColorRecordEntity.Type;
 
   constructor(
     mover: string,
-    original: ColorRecordInterfaceTypeEntity.Type,
+    original: ColorRecordEntity.Type,
     failurePolicy: CvdFailurePolicy
   ) {
     this.constraints = [];
@@ -94,7 +94,7 @@ class CvdMoverGroup {
 
   add(
     backgroundName: string,
-    background: ColorRecordInterfaceTypeEntity.Type,
+    background: ColorRecordEntity.Type,
     foregroundName: string,
     requiredTrichromat: number
   ): void {
@@ -132,7 +132,7 @@ class CvdMoverGroup {
   }
 
   resolve(
-    roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
+    roles: ReadonlyMap<string, ColorRecordEntity.Type>
   ): CvdPairConstraint[] {
     const resolved: CvdPairConstraint[] = [];
     for (
@@ -187,12 +187,12 @@ class CvdMover {
 }
 
 class CvdGroups {
-  readonly blocked: CvdBlockedPairInterfaceTypeEntity.Type[];
+  readonly blocked: CvdBlockedPairEntity.Type[];
   readonly groups: Map<string, CvdMoverGroup>;
 
   constructor(
     groups: Map<string, CvdMoverGroup>,
-    blocked: CvdBlockedPairInterfaceTypeEntity.Type[]
+    blocked: CvdBlockedPairEntity.Type[]
   ) {
     this.blocked = blocked;
     this.groups = groups;
@@ -204,7 +204,7 @@ class CvdCorrectionCandidate {
   readonly failureCount: number;
   readonly l: number;
   readonly novelFailureCount: number;
-  readonly rgb: ColorRecordInterfaceTypeEntity.Type['rgb'];
+  readonly rgb: ColorRecordEntity.Type['rgb'];
   readonly searchC: number;
   readonly searchL: number;
   readonly trichromatBaselineDeficitCount: number;
@@ -216,7 +216,7 @@ class CvdCorrectionCandidate {
     failureCount: number,
     l: number,
     novelFailureCount: number,
-    rgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
+    rgb: ColorRecordEntity.Type['rgb'],
     searchC: number,
     searchL: number,
     trichromatBaselineDeficitCount: number,
@@ -238,7 +238,7 @@ class CvdCorrectionCandidate {
 
 class Matrix {
   static apply(
-    cvd: CvdMatrixInterfaceTypeEntity.Type,
+    cvd: CvdMatrixEntity.Type,
     r: number,
     g: number,
     b: number
@@ -253,15 +253,15 @@ class Matrix {
 }
 
 class CvdEmittedColorCache {
-  private readonly records: Map<string, ColorRecordInterfaceTypeEntity.Type>;
+  private readonly records: Map<string, ColorRecordEntity.Type>;
 
   constructor() {
     this.records = new Map();
   }
 
   fromRgb(
-    rgb: ColorRecordInterfaceTypeEntity.Type['rgb']
-  ): ColorRecordInterfaceTypeEntity.Type {
+    rgb: ColorRecordEntity.Type['rgb']
+  ): ColorRecordEntity.Type {
     const hex = rgbToHex.apply(rgb.r, rgb.g, rgb.b);
     const cached = this.records.get(hex);
     if (cached !== undefined) {
@@ -274,7 +274,7 @@ class CvdEmittedColorCache {
 }
 
 class CvdSearchColor {
-  readonly emitted: ColorRecordInterfaceTypeEntity.Type;
+  readonly emitted: ColorRecordEntity.Type;
   readonly searchC: number;
   readonly searchL: number;
 
@@ -311,7 +311,7 @@ class CvdScoreMeasurements {
 }
 
 class CvdSimulation {
-  private static readonly cubeCorners: readonly ColorRecordInterfaceTypeEntity.Type['rgb'][] =
+  private static readonly cubeCorners: readonly ColorRecordEntity.Type['rgb'][] =
     [
       { 'b': 0, 'g': 0, 'r': 0 },
       { 'b': 0, 'g': 0, 'r': 1 },
@@ -330,9 +330,9 @@ class CvdSimulation {
   private static readonly searchRefinementRadius = 4;
 
   static color(
-    rgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
-    cvd: CvdMatrixInterfaceTypeEntity.Type
-  ): ColorRecordInterfaceTypeEntity.Type['rgb'] {
+    rgb: ColorRecordEntity.Type['rgb'],
+    cvd: CvdMatrixEntity.Type
+  ): ColorRecordEntity.Type['rgb'] {
     // Convert gamma-encoded sRGB → linear sRGB
     const lin = srgbToLinear.apply(rgb.r, rgb.g, rgb.b);
 
@@ -380,14 +380,14 @@ class CvdSimulation {
    *  Pure — no metadata writes, no logging. Shared by the initial
    *  detection pass and the post-correction final pass. */
   static evaluate(
-    fgRgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
-    bgRgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
+    fgRgb: ColorRecordEntity.Type['rgb'],
+    bgRgb: ColorRecordEntity.Type['rgb'],
     originalContrast: number,
     requiredTrichromat: number,
     failurePolicy: CvdFailurePolicy
-  ): CvdEvalInterfaceTypeEntity.Type[] {
+  ): CvdEvalEntity.Type[] {
     const EPS = 1e-12;
-    const evals: CvdEvalInterfaceTypeEntity.Type[] = [];
+    const evals: CvdEvalEntity.Type[] = [];
     for (let cvdIndex = 0; cvdIndex < cvdMatrices.length; cvdIndex += 1) {
       const cvd = cvdMatrices[cvdIndex];
       if (cvd === undefined) {
@@ -407,7 +407,7 @@ class CvdSimulation {
         simContrast <
         Math.max(threshold.minimumSimulatedContrast, requiredTrichromat) - EPS;
 
-      const evaluation: CvdEvalInterfaceTypeEntity.Type = {
+      const evaluation: CvdEvalEntity.Type = {
         'belowFloor': belowFloor,
         'cvdType': cvd.name,
         'drop': drop,
@@ -424,9 +424,9 @@ class CvdSimulation {
 
   static infeasibleTypes(
     constraint: CvdPairConstraint
-  ): CvdEvalInterfaceTypeEntity.Type['cvdType'][] {
+  ): CvdEvalEntity.Type['cvdType'][] {
     const epsilon = 1e-12;
-    const infeasible: CvdEvalInterfaceTypeEntity.Type['cvdType'][] = [];
+    const infeasible: CvdEvalEntity.Type['cvdType'][] = [];
     for (let cvdIndex = 0; cvdIndex < cvdMatrices.length; cvdIndex += 1) {
       const cvd = cvdMatrices[cvdIndex];
       const simulatedBackgroundLuminance =
@@ -453,11 +453,11 @@ class CvdSimulation {
   }
 
   static failureTypes(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    background: ColorRecordInterfaceTypeEntity.Type,
+    foreground: ColorRecordEntity.Type,
+    background: ColorRecordEntity.Type,
     requiredTrichromat: number,
     failurePolicy: CvdFailurePolicy
-  ): ReadonlySet<CvdEvalInterfaceTypeEntity.Type['cvdType']> {
+  ): ReadonlySet<CvdEvalEntity.Type['cvdType']> {
     const contrast = contrastWcag21.apply(foreground, background);
     const evaluations = CvdSimulation.evaluate(
       foreground.rgb,
@@ -466,7 +466,7 @@ class CvdSimulation {
       requiredTrichromat,
       failurePolicy
     );
-    const failureTypes = new Set<CvdEvalInterfaceTypeEntity.Type['cvdType']>();
+    const failureTypes = new Set<CvdEvalEntity.Type['cvdType']>();
     for (
       let evaluationIndex = 0;
       evaluationIndex < evaluations.length;
@@ -562,7 +562,7 @@ class CvdSimulation {
 
   private static measureSimulations(
     foregroundLuminance: number,
-    rgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
+    rgb: ColorRecordEntity.Type['rgb'],
     constraints: readonly CvdPairConstraint[],
     epsilon: number,
     simulatedLuminanceCache: Map<string, readonly number[]>
@@ -622,7 +622,7 @@ class CvdSimulation {
         simulatedForegroundLuminance,
         simulatedBackgroundLuminance
       );
-      const evaluation: CvdEvalInterfaceTypeEntity.Type = {
+      const evaluation: CvdEvalEntity.Type = {
         'belowFloor': simulatedContrast < Math.max(threshold.minimumSimulatedContrast, constraint.requiredTrichromat) - epsilon,
         'cvdType': cvd.name,
         'drop': contrast - simulatedContrast,
@@ -645,7 +645,7 @@ class CvdSimulation {
   }
 
   private static simulatedLuminances(
-    rgb: ColorRecordInterfaceTypeEntity.Type['rgb'],
+    rgb: ColorRecordEntity.Type['rgb'],
     cache: Map<string, readonly number[]>
   ): readonly number[] {
     const hex = rgbToHex.apply(rgb.r, rgb.g, rgb.b);
@@ -665,7 +665,7 @@ class CvdSimulation {
     return luminances;
   }
 
-  private static thresholdFor(cvd: CvdMatrixInterfaceTypeEntity.Type): {
+  private static thresholdFor(cvd: CvdMatrixEntity.Type): {
     readonly 'dropMagnitude': number;
     readonly 'minimumSimulatedContrast': number;
   } {
@@ -745,7 +745,7 @@ class CvdSimulation {
     constraints: readonly CvdPairConstraint[],
     emittedColors: CvdEmittedColorCache,
     budget: CvdSearchBudget
-  ): ColorRecordInterfaceTypeEntity.Type {
+  ): ColorRecordEntity.Type {
     const fgRecord = group.original;
     const cachedCorrection = budget.cachedCorrection(fgRecord, constraints);
     if (cachedCorrection !== undefined) {
@@ -877,8 +877,8 @@ class CvdSimulation {
 
   private static materializeCorrection(
     candidate: CvdCorrectionCandidate,
-    original: ColorRecordInterfaceTypeEntity.Type
-  ): ColorRecordInterfaceTypeEntity.Type {
+    original: ColorRecordEntity.Type
+  ): ColorRecordEntity.Type {
     const result = colorRecordFactory.fromHex(
       rgbToHex.apply(candidate.rgb.r, candidate.rgb.g, candidate.rgb.b),
       {
@@ -1047,7 +1047,7 @@ class CvdSimulation {
   }
 
   static preservesBaselines(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
+    foreground: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[]
   ): boolean {
     const EPS = 1e-12;
@@ -1069,7 +1069,7 @@ class CvdSimulation {
   }
 
   static improves(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
+    foreground: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[]
   ): boolean {
     const result =
@@ -1081,7 +1081,7 @@ class CvdSimulation {
   }
 
   static preservesFailureSets(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
+    foreground: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[]
   ): boolean {
     for (
@@ -1109,7 +1109,7 @@ class CvdSimulation {
   }
 
   private static maximumCubeContrast(
-    cvd: CvdMatrixInterfaceTypeEntity.Type,
+    cvd: CvdMatrixEntity.Type,
     simulatedBackgroundLuminance: number
   ): number {
     let maximum = 0;
@@ -1154,7 +1154,7 @@ class CvdSimulation {
   }
 
   private static failureCount(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
+    foreground: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[]
   ): number {
     let failureCount = 0;
@@ -1193,8 +1193,8 @@ class CvdSimulation {
 class CvdInfeasibility {
   static blocked(
     group: CvdMoverGroup
-  ): CvdBlockedPairInterfaceTypeEntity.Type[] {
-    const blocked: CvdBlockedPairInterfaceTypeEntity.Type[] = [];
+  ): CvdBlockedPairEntity.Type[] {
+    const blocked: CvdBlockedPairEntity.Type[] = [];
     for (
       let constraintIndex = 0;
       constraintIndex < group.constraints.length;
@@ -1209,7 +1209,7 @@ class CvdInfeasibility {
         continue;
       }
       blocked.push(
-        CvdBlockedPairInterfaceTypeEntity.intake({
+        CvdBlockedPairEntity.intake({
           'background':
             constraint.foregroundName === group.mover
               ? constraint.backgroundName
@@ -1265,7 +1265,7 @@ class CvdSearchBudget {
   }
 
   cachedCorrection(
-    original: ColorRecordInterfaceTypeEntity.Type,
+    original: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[]
   ): CvdCorrectionCandidate | undefined {
     const result = this.correctionCache.get(
@@ -1275,7 +1275,7 @@ class CvdSearchBudget {
   }
 
   storeCorrection(
-    original: ColorRecordInterfaceTypeEntity.Type,
+    original: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[],
     correction: CvdCorrectionCandidate
   ): void {
@@ -1332,7 +1332,7 @@ class CvdSearchBudget {
   }
 
   private groupKey(
-    original: ColorRecordInterfaceTypeEntity.Type,
+    original: ColorRecordEntity.Type,
     constraints: readonly CvdPairConstraint[]
   ): string {
     const result = [original.hex, this.constraintSignature(constraints)].join(
@@ -1385,10 +1385,10 @@ class CvdCandidateSelection {
   private readonly originalFailureCount: number;
   private readonly originalC: number;
   private readonly originalL: number;
-  private readonly originalRgb: ColorRecordInterfaceTypeEntity.Type['rgb'];
+  private readonly originalRgb: ColorRecordEntity.Type['rgb'];
 
   constructor(
-    original: ColorRecordInterfaceTypeEntity.Type,
+    original: ColorRecordEntity.Type,
     originalFailureCount: number
   ) {
     this.bestAny = undefined;
@@ -1496,7 +1496,7 @@ class CvdCandidateSelection {
   }
 
   private static isExtreme(
-    rgb: ColorRecordInterfaceTypeEntity.Type['rgb']
+    rgb: ColorRecordEntity.Type['rgb']
   ): boolean {
     const hexRoundingBoundary = 0.5 / 255;
     const result =
@@ -1614,9 +1614,9 @@ class CvdCorrectionCoordinator {
 
   static resolve(
     groups: ReadonlyMap<string, CvdMoverGroup>,
-    originalRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
+    originalRoles: ReadonlyMap<string, ColorRecordEntity.Type>,
     budget: CvdSearchBudget
-  ): Map<string, ColorRecordInterfaceTypeEntity.Type> {
+  ): Map<string, ColorRecordEntity.Type> {
     const resolvedRoles = new Map(originalRoles);
     const components = new CvdDependencyPlanner().plan(groups);
     const emittedColors = new CvdEmittedColorCache();
@@ -1641,7 +1641,7 @@ class CvdCorrectionCoordinator {
 
   private static resolveComponent(
     component: readonly CvdMoverGroup[],
-    resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>,
+    resolvedRoles: Map<string, ColorRecordEntity.Type>,
     emittedColors: CvdEmittedColorCache,
     budget: CvdSearchBudget
   ): void {
@@ -1669,9 +1669,9 @@ class CvdCorrectionCoordinator {
 
   private static audit(
     groups: ReadonlyMap<string, CvdMoverGroup>,
-    resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>,
-    originalRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
-  ): Map<string, ColorRecordInterfaceTypeEntity.Type> {
+    resolvedRoles: Map<string, ColorRecordEntity.Type>,
+    originalRoles: ReadonlyMap<string, ColorRecordEntity.Type>
+  ): Map<string, ColorRecordEntity.Type> {
     for (let pass = 0; pass <= groups.size; pass += 1) {
       const invalid = CvdCorrectionCoordinator.invalidGroups(
         groups,
@@ -1696,7 +1696,7 @@ class CvdCorrectionCoordinator {
 
   private static invalidGroups(
     groups: ReadonlyMap<string, CvdMoverGroup>,
-    resolvedRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
+    resolvedRoles: ReadonlyMap<string, ColorRecordEntity.Type>
   ): CvdMoverGroup[] {
     const invalid: CvdMoverGroup[] = [];
     const values = Array.from(groups.values());
@@ -1714,7 +1714,7 @@ class CvdCorrectionCoordinator {
 
   private static isResolvedGroupValid(
     group: CvdMoverGroup,
-    resolvedRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
+    resolvedRoles: ReadonlyMap<string, ColorRecordEntity.Type>
   ): boolean {
     const foreground = resolvedRoles.get(group.mover);
     const result =
@@ -1726,7 +1726,7 @@ class CvdCorrectionCoordinator {
   private static restoreInvalidGroups(
     invalid: readonly CvdMoverGroup[],
     groups: ReadonlyMap<string, CvdMoverGroup>,
-    resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>
+    resolvedRoles: Map<string, ColorRecordEntity.Type>
   ): boolean {
     let restoredCount = 0;
     for (let index = 0; index < invalid.length; index += 1) {
@@ -1746,7 +1746,7 @@ class CvdCorrectionCoordinator {
   private static restoreGroup(
     group: CvdMoverGroup,
     groups: ReadonlyMap<string, CvdMoverGroup>,
-    resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>
+    resolvedRoles: Map<string, ColorRecordEntity.Type>
   ): number {
     const foreground = resolvedRoles.get(group.mover);
     if (foreground !== undefined && foreground !== group.original) {
@@ -1773,8 +1773,8 @@ class CvdCorrectionCoordinator {
 
   private static isValid(
     group: CvdMoverGroup,
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    resolvedRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
+    foreground: ColorRecordEntity.Type,
+    resolvedRoles: ReadonlyMap<string, ColorRecordEntity.Type>
   ): boolean {
     const constraints = group.resolve(resolvedRoles);
     const result =
@@ -1787,7 +1787,7 @@ class CvdCorrectionCoordinator {
 
   private static resolveCycle(
     component: readonly CvdMoverGroup[],
-    resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>,
+    resolvedRoles: Map<string, ColorRecordEntity.Type>,
     emittedColors: CvdEmittedColorCache,
     budget: CvdSearchBudget
   ): void {
@@ -1814,7 +1814,7 @@ class CvdCorrectionCoordinator {
 
   private static applyCycle(
     component: readonly CvdMoverGroup[],
-    resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>,
+    resolvedRoles: Map<string, ColorRecordEntity.Type>,
     emittedColors: CvdEmittedColorCache,
     budget: CvdSearchBudget
   ): boolean {
@@ -1846,7 +1846,7 @@ class CvdCorrectionCoordinator {
 
   private static allValid(
     component: readonly CvdMoverGroup[],
-    resolvedRoles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
+    resolvedRoles: ReadonlyMap<string, ColorRecordEntity.Type>
   ): boolean {
     for (let index = 0; index < component.length; index += 1) {
       const group = component[index];
@@ -1862,7 +1862,7 @@ class CvdCorrectionCoordinator {
 
   private static restoreComponent(
     component: readonly CvdMoverGroup[],
-    resolvedRoles: Map<string, ColorRecordInterfaceTypeEntity.Type>
+    resolvedRoles: Map<string, ColorRecordEntity.Type>
   ): void {
     for (let index = 0; index < component.length; index += 1) {
       const group = component[index];
@@ -1873,8 +1873,8 @@ class CvdCorrectionCoordinator {
   }
 
   private static sameColor(
-    a: ColorRecordInterfaceTypeEntity.Type,
-    b: ColorRecordInterfaceTypeEntity.Type
+    a: ColorRecordEntity.Type,
+    b: ColorRecordEntity.Type
   ): boolean {
     const epsilon = 1e-12;
     const result =
@@ -1988,7 +1988,7 @@ class EnforceCvdSimulate {
     state: PaletteStateInterface,
     context: PipelineContextInterface,
     requirements: readonly ContrastPolicy.RequirementInterface[],
-    baseline?: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
+    baseline?: ReadonlyMap<string, ColorRecordEntity.Type>
   ): void {
     this.recordObservation(
       state,
@@ -2003,7 +2003,7 @@ class EnforceCvdSimulate {
     state: PaletteStateInterface,
     context: PipelineContextInterface,
     requirements: readonly ContrastPolicy.RequirementInterface[],
-    baseline: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
+    baseline: ReadonlyMap<string, ColorRecordEntity.Type>
   ): void {
     const failurePolicy = CvdFailurePolicy.resolve(state.input.contrast);
     const results = this.reportCorrected(
@@ -2075,7 +2075,7 @@ class EnforceCvdSimulate {
     context: PipelineContextInterface,
     requirements: readonly ContrastPolicy.RequirementInterface[],
     failurePolicy: CvdFailurePolicy,
-    baseline?: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
+    baseline?: ReadonlyMap<string, ColorRecordEntity.Type>
   ): void {
     if (requirements.length === 0) {
       state.metadata['contrast:cvd'] = {
@@ -2103,11 +2103,11 @@ class EnforceCvdSimulate {
   }
 
   private terminalBlocked(
-    existing: readonly CvdBlockedPairInterfaceTypeEntity.Type[],
+    existing: readonly CvdBlockedPairEntity.Type[],
     requirements: readonly ContrastPolicy.RequirementInterface[],
     state: PaletteStateInterface,
     failurePolicy: CvdFailurePolicy
-  ): CvdBlockedPairInterfaceTypeEntity.Type[] {
+  ): CvdBlockedPairEntity.Type[] {
     const blocked = [...existing];
     const known = new Set<string>();
     for (let index = 0; index < existing.length; index += 1) {
@@ -2130,7 +2130,7 @@ class EnforceCvdSimulate {
         provenance
       );
       blocked.push(
-        CvdBlockedPairInterfaceTypeEntity.intake({
+        CvdBlockedPairEntity.intake({
           'background': group.background,
           'cvdTypes': group.cvdTypes,
           'foreground': group.foreground,
@@ -2219,11 +2219,11 @@ class EnforceCvdSimulate {
   private writeMetadata(
     state: PaletteStateInterface,
     context: PipelineContextInterface,
-    blocked: readonly CvdBlockedPairInterfaceTypeEntity.Type[],
-    corrections: readonly CvdCorrectionInterfaceTypeEntity.Type[],
-    warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[]
+    blocked: readonly CvdBlockedPairEntity.Type[],
+    corrections: readonly CvdCorrectionEntity.Type[],
+    warnings: readonly CvdPairWarningEntity.Type[]
   ): void {
-    const metadata = CvdResultSetInterfaceTypeEntity.intake({
+    const metadata = CvdResultSetEntity.intake({
       'blocked': [...blocked],
       'corrections': [...corrections],
       'warnings': [...warnings]
@@ -2245,7 +2245,7 @@ class EnforceCvdSimulate {
   }
 
   private reportSummary(
-    warnings: readonly CvdPairWarningInterfaceTypeEntity.Type[],
+    warnings: readonly CvdPairWarningEntity.Type[],
     message: string,
     context: PipelineContextInterface
   ): void {
@@ -2275,8 +2275,8 @@ class EnforceCvdSimulate {
 
   private snapshotRoles(
     state: PaletteStateInterface
-  ): Map<string, ColorRecordInterfaceTypeEntity.Type> {
-    const originals = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+  ): Map<string, ColorRecordEntity.Type> {
+    const originals = new Map<string, ColorRecordEntity.Type>();
     const entries = Object.entries(state.roles);
     for (let index = 0; index < entries.length; index += 1) {
       const entry = entries[index];
@@ -2298,11 +2298,11 @@ class EnforceCvdSimulate {
 
   private correctRoles(
     pairs: readonly ContrastPolicy.RequirementInterface[],
-    originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
+    originals: ReadonlyMap<string, ColorRecordEntity.Type>,
     state: PaletteStateInterface,
     budget: CvdSearchBudget,
     failurePolicy: CvdFailurePolicy
-  ): CvdBlockedPairInterfaceTypeEntity.Type[] {
+  ): CvdBlockedPairEntity.Type[] {
     const grouped = this.groupsFor(pairs, originals, state, failurePolicy);
     const resolved = CvdCorrectionCoordinator.resolve(
       grouped.groups,
@@ -2340,12 +2340,12 @@ class EnforceCvdSimulate {
 
   private groupsFor(
     pairs: readonly ContrastPolicy.RequirementInterface[],
-    originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
+    originals: ReadonlyMap<string, ColorRecordEntity.Type>,
     state: PaletteStateInterface,
     failurePolicy: CvdFailurePolicy
   ): CvdGroups {
     const groups = new Map<string, CvdMoverGroup>();
-    const blocked: CvdBlockedPairInterfaceTypeEntity.Type[] = [];
+    const blocked: CvdBlockedPairEntity.Type[] = [];
     const provenance = Metadata.roleProvenance(state.metadata);
     for (let index = 0; index < pairs.length; index += 1) {
       const pair = pairs[index];
@@ -2374,10 +2374,10 @@ class EnforceCvdSimulate {
 
   private addPairGroup(
     pair: ContrastPolicy.RequirementInterface,
-    originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
+    originals: ReadonlyMap<string, ColorRecordEntity.Type>,
     provenance: ReadonlyMap<string, { readonly 'origin': string }>,
     groups: Map<string, CvdMoverGroup>,
-    blocked: CvdBlockedPairInterfaceTypeEntity.Type[],
+    blocked: CvdBlockedPairEntity.Type[],
     failurePolicy: CvdFailurePolicy
   ): void {
     const foreground = originals.get(pair.foreground);
@@ -2397,7 +2397,7 @@ class EnforceCvdSimulate {
       );
       if (cvdTypes.length > 0 && failurePolicy.emitsBlockers()) {
         blocked.push(
-          CvdBlockedPairInterfaceTypeEntity.create({
+          CvdBlockedPairEntity.create({
             'background': pair.background,
             'cvdTypes': cvdTypes,
             'foreground': pair.foreground,
@@ -2427,15 +2427,15 @@ class EnforceCvdSimulate {
 
   private reportCorrected(
     pairs: readonly ContrastPolicy.RequirementInterface[],
-    originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
+    originals: ReadonlyMap<string, ColorRecordEntity.Type>,
     state: PaletteStateInterface,
     context: PipelineContextInterface,
     failurePolicy: CvdFailurePolicy
   ): {
-    readonly 'corrections': CvdCorrectionInterfaceTypeEntity.Type[];
-    readonly 'warnings': CvdPairWarningInterfaceTypeEntity.Type[];
+    readonly 'corrections': CvdCorrectionEntity.Type[];
+    readonly 'warnings': CvdPairWarningEntity.Type[];
   } {
-    const corrections: CvdCorrectionInterfaceTypeEntity.Type[] = [];
+    const corrections: CvdCorrectionEntity.Type[] = [];
     const warnings = this.reportPairs(
       pairs,
       originals,
@@ -2454,15 +2454,15 @@ class EnforceCvdSimulate {
 
   private reportAdvisory(
     pairs: readonly ContrastPolicy.RequirementInterface[],
-    originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
+    originals: ReadonlyMap<string, ColorRecordEntity.Type>,
     state: PaletteStateInterface,
     context: PipelineContextInterface,
     failurePolicy: CvdFailurePolicy
   ): {
-    readonly 'corrections': CvdCorrectionInterfaceTypeEntity.Type[];
-    readonly 'warnings': CvdPairWarningInterfaceTypeEntity.Type[];
+    readonly 'corrections': CvdCorrectionEntity.Type[];
+    readonly 'warnings': CvdPairWarningEntity.Type[];
   } {
-    const corrections: CvdCorrectionInterfaceTypeEntity.Type[] = [];
+    const corrections: CvdCorrectionEntity.Type[] = [];
     const warnings = this.reportPairs(
       pairs,
       originals,
@@ -2481,13 +2481,13 @@ class EnforceCvdSimulate {
 
   private reportPairs(
     pairs: readonly ContrastPolicy.RequirementInterface[],
-    originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
+    originals: ReadonlyMap<string, ColorRecordEntity.Type>,
     state: PaletteStateInterface,
     context: PipelineContextInterface,
-    corrections: CvdCorrectionInterfaceTypeEntity.Type[] | undefined,
+    corrections: CvdCorrectionEntity.Type[] | undefined,
     failurePolicy: CvdFailurePolicy
-  ): CvdPairWarningInterfaceTypeEntity.Type[] {
-    const warnings: CvdPairWarningInterfaceTypeEntity.Type[] = [];
+  ): CvdPairWarningEntity.Type[] {
+    const warnings: CvdPairWarningEntity.Type[] = [];
     for (let index = 0; index < pairs.length; index += 1) {
       const pair = pairs[index];
       if (pair !== undefined) {
@@ -2507,11 +2507,11 @@ class EnforceCvdSimulate {
 
   private reportPair(
     pair: ContrastPolicy.RequirementInterface,
-    originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
+    originals: ReadonlyMap<string, ColorRecordEntity.Type>,
     state: PaletteStateInterface,
     context: PipelineContextInterface,
-    warnings: CvdPairWarningInterfaceTypeEntity.Type[],
-    corrections: CvdCorrectionInterfaceTypeEntity.Type[] | undefined,
+    warnings: CvdPairWarningEntity.Type[],
+    corrections: CvdCorrectionEntity.Type[] | undefined,
     failurePolicy: CvdFailurePolicy
   ): void {
     const finalForeground = state.roles[pair.foreground];
@@ -2550,9 +2550,9 @@ class EnforceCvdSimulate {
   }
 
   private advisories(
-    evaluations: readonly CvdEvalInterfaceTypeEntity.Type[]
-  ): CvdEvalInterfaceTypeEntity.Type[] {
-    const advisories: CvdEvalInterfaceTypeEntity.Type[] = [];
+    evaluations: readonly CvdEvalEntity.Type[]
+  ): CvdEvalEntity.Type[] {
+    const advisories: CvdEvalEntity.Type[] = [];
     for (let index = 0; index < evaluations.length; index += 1) {
       const evaluation = evaluations[index];
       if (
@@ -2566,10 +2566,10 @@ class EnforceCvdSimulate {
   }
 
   private correctionEvidence(
-    evaluations: readonly CvdEvalInterfaceTypeEntity.Type[],
+    evaluations: readonly CvdEvalEntity.Type[],
     failurePolicy: CvdFailurePolicy
-  ): CvdEvalInterfaceTypeEntity.Type[] {
-    const evidence: CvdEvalInterfaceTypeEntity.Type[] = [];
+  ): CvdEvalEntity.Type[] {
+    const evidence: CvdEvalEntity.Type[] = [];
     for (let index = 0; index < evaluations.length; index += 1) {
       const evaluation = evaluations[index];
       if (evaluation !== undefined && failurePolicy.corrects(evaluation)) {
@@ -2580,9 +2580,9 @@ class EnforceCvdSimulate {
   }
 
   private failing(
-    evaluations: readonly CvdEvalInterfaceTypeEntity.Type[]
-  ): CvdEvalInterfaceTypeEntity.Type[] {
-    const failures: CvdEvalInterfaceTypeEntity.Type[] = [];
+    evaluations: readonly CvdEvalEntity.Type[]
+  ): CvdEvalEntity.Type[] {
+    const failures: CvdEvalEntity.Type[] = [];
     for (let index = 0; index < evaluations.length; index += 1) {
       const evaluation = evaluations[index];
       if (evaluation?.fail === true) {
@@ -2594,8 +2594,8 @@ class EnforceCvdSimulate {
 
   private addWarnings(
     pair: ContrastPolicy.RequirementInterface,
-    failures: readonly CvdEvalInterfaceTypeEntity.Type[],
-    warnings: CvdPairWarningInterfaceTypeEntity.Type[],
+    failures: readonly CvdEvalEntity.Type[],
+    warnings: CvdPairWarningEntity.Type[],
     context: PipelineContextInterface,
     requiredTrichromat: number
   ): void {
@@ -2617,10 +2617,10 @@ class EnforceCvdSimulate {
 
   private logRemaining(
     pair: { readonly 'background': string; readonly 'foreground': string },
-    failures: readonly CvdEvalInterfaceTypeEntity.Type[],
+    failures: readonly CvdEvalEntity.Type[],
     context: PipelineContextInterface
   ): void {
-    const types: CvdEvalInterfaceTypeEntity.Type['cvdType'][] = [];
+    const types: CvdEvalEntity.Type['cvdType'][] = [];
     for (let index = 0; index < failures.length; index += 1) {
       const failure = failures[index];
       if (failure !== undefined) {
@@ -2644,11 +2644,11 @@ class EnforceCvdSimulate {
 
   private addCorrection(
     pair: ContrastPolicy.RequirementInterface,
-    originals: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>,
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    background: ColorRecordInterfaceTypeEntity.Type,
-    failures: readonly CvdEvalInterfaceTypeEntity.Type[],
-    corrections: CvdCorrectionInterfaceTypeEntity.Type[],
+    originals: ReadonlyMap<string, ColorRecordEntity.Type>,
+    foreground: ColorRecordEntity.Type,
+    background: ColorRecordEntity.Type,
+    failures: readonly CvdEvalEntity.Type[],
+    corrections: CvdCorrectionEntity.Type[],
     state: PaletteStateInterface,
     failurePolicy: CvdFailurePolicy
   ): void {
@@ -2689,7 +2689,7 @@ class EnforceCvdSimulate {
           ? 'adjusted-foreground'
           : 'adjusted-background';
       corrections.push(
-        CvdCorrectionInterfaceTypeEntity.intake({
+        CvdCorrectionEntity.intake({
           'adjustedRoles': adjustedRoles,
           'background': pair.background,
           'cvdTypesFixed': fixed,
@@ -2702,12 +2702,12 @@ class EnforceCvdSimulate {
   }
 
   private fixedTypes(
-    initial: readonly CvdEvalInterfaceTypeEntity.Type[],
-    failures: readonly CvdEvalInterfaceTypeEntity.Type[],
+    initial: readonly CvdEvalEntity.Type[],
+    failures: readonly CvdEvalEntity.Type[],
     failurePolicy: CvdFailurePolicy
-  ): CvdEvalInterfaceTypeEntity.Type['cvdType'][] {
+  ): CvdEvalEntity.Type['cvdType'][] {
     const remaining = new Set(this.typesFor(failures));
-    const fixed: CvdEvalInterfaceTypeEntity.Type['cvdType'][] = [];
+    const fixed: CvdEvalEntity.Type['cvdType'][] = [];
     for (let index = 0; index < initial.length; index += 1) {
       const evaluation = initial[index];
       if (
@@ -2722,9 +2722,9 @@ class EnforceCvdSimulate {
   }
 
   private typesFor(
-    evaluations: readonly CvdEvalInterfaceTypeEntity.Type[]
-  ): CvdEvalInterfaceTypeEntity.Type['cvdType'][] {
-    const types: CvdEvalInterfaceTypeEntity.Type['cvdType'][] = [];
+    evaluations: readonly CvdEvalEntity.Type[]
+  ): CvdEvalEntity.Type['cvdType'][] {
+    const types: CvdEvalEntity.Type['cvdType'][] = [];
     for (let index = 0; index < evaluations.length; index += 1) {
       const evaluation = evaluations[index];
       if (evaluation !== undefined) {
@@ -2742,10 +2742,10 @@ class CvdWarning {
   static create(
     foreground: string,
     background: string,
-    evaluation: CvdEvalInterfaceTypeEntity.Type,
+    evaluation: CvdEvalEntity.Type,
     context: PipelineContextInterface,
     requiredTrichromat: number
-  ): CvdPairWarningInterfaceTypeEntity.Type {
+  ): CvdPairWarningEntity.Type {
     const threshold = CvdWarning.thresholdFor(evaluation, requiredTrichromat);
     const simulatedContrastRatio =
       evaluation.originalContrast === 0
@@ -2755,7 +2755,7 @@ class CvdWarning {
       evaluation.originalContrast === 0
         ? 0
         : evaluation.drop / evaluation.originalContrast;
-    const warning: CvdPairWarningInterfaceTypeEntity.Type = {
+    const warning: CvdPairWarningEntity.Type = {
       'background': background,
       'cvdType': evaluation.cvdType,
       'drop': evaluation.drop,
@@ -2792,7 +2792,7 @@ class CvdWarning {
   }
 
   private static thresholdFor(
-    evaluation: CvdEvalInterfaceTypeEntity.Type,
+    evaluation: CvdEvalEntity.Type,
     requiredTrichromat: number
   ): {
     readonly 'dropMagnitude': number;

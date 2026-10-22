@@ -5,7 +5,7 @@ import { ModuleError, ValidationError } from '@studnicky/errors/node';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 import { JsonObject, JsonValue } from '@studnicky/types/node';
 
-import type { ValidationErrorInterfaceTypeEntity } from '../entities/ValidationErrorInterfaceTypeEntity.ts';
+import type { ValidationErrorEntity } from '../entities/ValidationErrorEntity.ts';
 import type {
   EngineInterface,
   PaletteStateInterface,
@@ -14,8 +14,8 @@ import type {
   TaskInterface
 } from '../types/index.ts';
 
-import { InputInterfaceTypeEntity } from '../entities/InputInterfaceTypeEntity.ts';
-import { RuntimeOptionsInterfaceTypeEntity } from '../entities/RuntimeOptionsInterfaceTypeEntity.ts';
+import { InputEntity } from '../entities/InputEntity.ts';
+import { RuntimeOptionsEntity } from '../entities/RuntimeOptionsEntity.ts';
 import { ContrastRatioSchema } from '../model/ContrastRatioSchema.ts';
 import { PaletteStateSchema }  from '../model/PaletteStateSchema.ts';
 import { PluginSchema }        from '../model/PluginSchema.ts';
@@ -26,7 +26,7 @@ import { TaskRegistry }        from '../registry/TaskRegistry.ts';
 import { consoleLogger }       from './ConsoleLogger.ts';
 
 class InputJsonRecord {
-  static admit(value: InputInterfaceTypeEntity.Type['metadata'], path: string): Record<string, JSONSchema7Type> | undefined {
+  static admit(value: InputEntity.Type['metadata'], path: string): Record<string, JSONSchema7Type> | undefined {
     if (value === undefined) {
       return undefined;
     }
@@ -395,7 +395,7 @@ export class Engine implements EngineInterface {
    *   - PaletteStateSchema on final state at exit
    *   - Plugin-contributed output/metadata schemas at exit
    */
-  run(input: InputInterfaceTypeEntity.Type): PaletteStateInterface {
+  run(input: InputEntity.Type): PaletteStateInterface {
     this.validateInput(input);
     const state = this.createState(input);
     const context = this.createPipelineContext();
@@ -408,11 +408,11 @@ export class Engine implements EngineInterface {
     return state;
   }
 
-  private validateInput(input: InputInterfaceTypeEntity.Type): void {
+  private validateInput(input: InputEntity.Type): void {
     const { maximumColorCount, ...schemaInput } = input;
     this.validateMaximumColorCount(maximumColorCount);
     const result = this.validator.validate(
-      InputInterfaceTypeEntity.Schema,
+      InputEntity.Schema,
       maximumColorCount === Infinity ? schemaInput : input
     );
     if (result.errors.length > 0) {
@@ -444,7 +444,7 @@ export class Engine implements EngineInterface {
     });
   }
 
-  private validateContrastPairBounds(input: InputInterfaceTypeEntity.Type): void {
+  private validateContrastPairBounds(input: InputEntity.Type): void {
     const defaultDomain = input.contrast?.algorithm === 'apca'
       ? ContrastRatioDomain.apca
       : ContrastRatioDomain.wcag21;
@@ -452,7 +452,7 @@ export class Engine implements EngineInterface {
     this.validateExtraContrastPairs(input, defaultDomain);
   }
 
-  private validateRoleContrastPairs(input: InputInterfaceTypeEntity.Type, defaultDomain: ContrastRatioDomain): void {
+  private validateRoleContrastPairs(input: InputEntity.Type, defaultDomain: ContrastRatioDomain): void {
     const pairs = input.roles?.contrastPairs;
     if (pairs === undefined) {
       return;
@@ -479,7 +479,7 @@ export class Engine implements EngineInterface {
     }
   }
 
-  private validateExtraContrastPairs(input: InputInterfaceTypeEntity.Type, defaultDomain: ContrastRatioDomain): void {
+  private validateExtraContrastPairs(input: InputEntity.Type, defaultDomain: ContrastRatioDomain): void {
     const pairs = input.contrast?.extra;
     if (pairs === undefined) {
       return;
@@ -506,10 +506,10 @@ export class Engine implements EngineInterface {
     }
   }
 
-  private createState(input: InputInterfaceTypeEntity.Type): PaletteStateInterface {
+  private createState(input: InputEntity.Type): PaletteStateInterface {
     const metadata = InputJsonRecord.admit(input.metadata, 'metadata') ?? {};
     const extra = InputJsonRecord.admit(input.runtime?.extra, 'runtime.extra');
-    const runtime = RuntimeOptionsInterfaceTypeEntity.create({
+    const runtime = RuntimeOptionsEntity.create({
       ...(input.runtime?.colorSpace === undefined ? {} : { 'colorSpace': input.runtime.colorSpace }),
       ...(extra === undefined ? {} : { 'extra': extra }),
       ...(input.runtime?.framing === undefined ? {} : { 'framing': input.runtime.framing })
@@ -606,7 +606,7 @@ export class Engine implements EngineInterface {
     }
   }
 
-  private throwInvalid(prefix: string, path: string, errors: ValidationErrorInterfaceTypeEntity.Type[]): void {
+  private throwInvalid(prefix: string, path: string, errors: ValidationErrorEntity.Type[]): void {
     if (errors.length === 0) {
       return;
     }

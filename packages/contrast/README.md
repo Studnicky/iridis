@@ -79,15 +79,15 @@ npm install @studnicky/iridis @studnicky/iridis-contrast
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
 import {
   contrastPlugin,
-  CvdResultSetInterfaceTypeEntity,
+  CvdResultSetEntity,
 } from '@studnicky/iridis-contrast';
 
-export function generateAccessiblePalette(roleSchema: RoleSchemaInterfaceType) {
+export function generateAccessiblePalette(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(contrastPlugin);
@@ -124,7 +124,7 @@ export function generateAccessiblePalette(roleSchema: RoleSchemaInterfaceType) {
   // report?.blockedPairs  // { foreground, background, requiredTrichromat, actualTrichromat, target, reason }
   // report?.cvdCompliant  // true when CVD validation passes
 
-  const cvd = CvdResultSetInterfaceTypeEntity.intake(state.metadata['contrast:cvd']);
+  const cvd = CvdResultSetEntity.intake(state.metadata['contrast:cvd']);
   // cvd.corrections // { foreground, background, adjustedRoles, cvdTypesFixed, cvdTypesRemaining }
   // cvd.blocked     // pairs whose both endpoints are stated
 

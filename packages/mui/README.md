@@ -26,13 +26,13 @@ npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-mui
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks }          from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { muiPlugin, type MuiOutputInterface } from '@studnicky/iridis-mui';
 
-export function generateMuiTheme(roleSchema: RoleSchemaInterfaceType): MuiOutputInterface {
+export function generateMuiTheme(roleSchema: RoleSchemaEntity.Type): MuiOutputInterface {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(muiPlugin);

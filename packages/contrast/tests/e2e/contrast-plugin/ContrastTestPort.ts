@@ -1,8 +1,8 @@
-import type { ColorRecordInterfaceTypeEntity, PaletteStateInterface } from '@studnicky/iridis';
+import type { ColorRecordEntity, PaletteStateInterface } from '@studnicky/iridis';
 import type { LoggerInterface } from '@studnicky/logger/interfaces';
 import type { JSONSchema7Type } from 'json-schema';
 
-import { ContrastPolicy, InputInterfaceTypeEntity, Metadata, PaletteRoleState, RoleProvenanceInterfaceTypeEntity, RuntimeOptionsInterfaceTypeEntity } from '@studnicky/iridis';
+import { ContrastPolicy, InputEntity, Metadata, PaletteRoleState, RoleProvenanceEntity, RuntimeOptionsEntity } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
@@ -25,19 +25,19 @@ export class ContrastTestPort {
     return engine;
   }
 
-  static runCorrectedCvd(roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>, contrastPairs: readonly JSONSchema7Type[], logger: LoggerInterface, statedRoleNames: readonly string[] = []): PaletteStateInterface {
+  static runCorrectedCvd(roles: Readonly<Record<string, ColorRecordEntity.Type>>, contrastPairs: readonly JSONSchema7Type[], logger: LoggerInterface, statedRoleNames: readonly string[] = []): PaletteStateInterface {
     const state = ContrastTestPort.directState(roles, contrastPairs, statedRoleNames);
     enforceCvdSimulate.run(state, { 'logger': logger, 'startedAt': Date.now() });
     return state;
   }
 
   static runNudgedCvd(
-    roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
     contrastPairs: readonly JSONSchema7Type[],
     logger: LoggerInterface,
     statedRoleNames: readonly string[] = []
   ): PaletteStateInterface {
-    const input = InputInterfaceTypeEntity.intake({
+    const input = InputEntity.intake({
       'colors': [],
       'contrast': { 'cvdMode': 'nudge' },
       'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
@@ -48,7 +48,7 @@ export class ContrastTestPort {
   }
 
   static runCompliance(
-    roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
     contrastPairs: readonly JSONSchema7Type[],
     logger: LoggerInterface,
     statedRoleNames: readonly string[] = []
@@ -59,12 +59,12 @@ export class ContrastTestPort {
   }
 
   static runNudgedCompliance(
-    roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
     contrastPairs: readonly JSONSchema7Type[],
     logger: LoggerInterface,
     statedRoleNames: readonly string[] = []
   ): PaletteStateInterface {
-    const input = InputInterfaceTypeEntity.intake({
+    const input = InputEntity.intake({
       'colors': [],
       'contrast': { 'cvdMode': 'nudge' },
       'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
@@ -75,12 +75,12 @@ export class ContrastTestPort {
   }
 
   static runObservedCompliance(
-    roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
     contrastPairs: readonly JSONSchema7Type[],
     logger: LoggerInterface,
     statedRoleNames: readonly string[] = []
   ): PaletteStateInterface {
-    const input = InputInterfaceTypeEntity.intake({
+    const input = InputEntity.intake({
       'colors': [],
       'contrast': { 'cvdMode': 'warn' },
       'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
@@ -90,8 +90,8 @@ export class ContrastTestPort {
     return result;
   }
 
-  static runObservedCvd(roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>, contrastPairs: readonly JSONSchema7Type[], logger: LoggerInterface, statedRoleNames: readonly string[] = []): PaletteStateInterface {
-    const input = InputInterfaceTypeEntity.intake({
+  static runObservedCvd(roles: Readonly<Record<string, ColorRecordEntity.Type>>, contrastPairs: readonly JSONSchema7Type[], logger: LoggerInterface, statedRoleNames: readonly string[] = []): PaletteStateInterface {
+    const input = InputEntity.intake({
       'colors': [],
       'contrast': { 'cvdMode': 'warn' },
       'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
@@ -114,7 +114,7 @@ export class ContrastTestPort {
   }
 
   static runComplianceWithCvdSearchBudgetForTesting(
-    roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
     contrastPairs: readonly JSONSchema7Type[],
     logger: LoggerInterface,
     maximumCandidateScores: number,
@@ -146,11 +146,11 @@ export class ContrastTestPort {
   }
 
   private static directState(
-    roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
     contrastPairs: readonly JSONSchema7Type[],
     statedRoleNames: readonly string[]
   ): PaletteStateInterface {
-    const input = InputInterfaceTypeEntity.intake({
+    const input = InputEntity.intake({
       'colors': [],
       'contrast': { 'cvdMode': 'enforce' },
       'roles': { 'contrastPairs': contrastPairs, 'name': 'cvd-direct-probe', 'roles': [] }
@@ -160,19 +160,19 @@ export class ContrastTestPort {
   }
 
   private static stateFor(
-    input: ReturnType<typeof InputInterfaceTypeEntity.intake>,
-    roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    input: ReturnType<typeof InputEntity.intake>,
+    roles: Readonly<Record<string, ColorRecordEntity.Type>>,
     statedRoleNames: readonly string[]
   ): PaletteStateInterface {
     const state: PaletteStateInterface = {
       'colors': [], 'input': input, 'metadata': {}, 'outputs': {}, 'roles': { ...roles },
-      'runtime': RuntimeOptionsInterfaceTypeEntity.intake({ 'colorSpace': 'srgb', 'extra': {}, 'framing': 'dark' }), 'variants': {}
+      'runtime': RuntimeOptionsEntity.intake({ 'colorSpace': 'srgb', 'extra': {}, 'framing': 'dark' }), 'variants': {}
     };
     const provenance = new Map();
     for (let index = 0; index < statedRoleNames.length; index += 1) {
       const name = statedRoleNames[index];
       if (name !== undefined) {
-        provenance.set(name, RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': [], 'origin': 'stated' }));
+        provenance.set(name, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'stated' }));
       }
     }
     Metadata.writeRoleProvenance(state.metadata, provenance);

@@ -5,7 +5,7 @@ import type {
 } from '@studnicky/iridis';
 import type { JSONSchema7Type } from 'json-schema';
 
-import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 import { JsonValue } from '@studnicky/types/node';
 
@@ -48,7 +48,7 @@ abstract class GalleryCandidateExtractionConfiguration {
 class GalleryExtractCandidates implements TaskInterface {
   readonly 'name' = 'gallery:extractCandidates';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Non-destructively run clustering across several configs, collecting each as a labeled candidate palette',
     'name':        'gallery:extractCandidates',
     'reads':       ['colors', 'metadata.gallery'],

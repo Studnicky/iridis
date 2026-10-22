@@ -1,8 +1,8 @@
 import type { PaletteStateInterface } from '@studnicky/iridis';
-import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
+import type { RoleSchemaEntity } from '@studnicky/iridis/model';
 
-import { InputInterfaceTypeEntity, Metadata } from '@studnicky/iridis';
-import { ComplianceReportInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import { InputEntity, Metadata } from '@studnicky/iridis';
+import { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 import { JsonValue } from '@studnicky/types/node';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -12,7 +12,7 @@ import type { PickerSeedType, SchemaPair } from '../app/composables/types/index.
 import { COLOR_PIPELINE } from '../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../app/composables/createColorEngine.ts';
-import { DerivationConfigInterfaceTypeEntity } from '../app/composables/entities/DerivationConfigInterfaceTypeEntity.ts';
+import { DerivationConfigEntity } from '../app/composables/entities/DerivationConfigEntity.ts';
 import { pickerSeedInputs } from '../app/composables/pickerSeedInputs.ts';
 import { VARIANT_CONFIG } from '../app/composables/variantConfig.ts';
 import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
@@ -58,10 +58,10 @@ class RoleSchemaPipelineFixture {
     assert.deepEqual(resolvedRoleNames, expectedRoleNames);
     assert.equal(state.runtime.framing, 'dark');
     assert.doesNotThrow(() => {
-      ComplianceReportInterfaceTypeEntity.intake(state.metadata['contrast:complianceReport']);
+      ComplianceReportEntity.intake(state.metadata['contrast:complianceReport']);
     });
     assert.doesNotThrow(() => {
-      CvdResultSetInterfaceTypeEntity.intake(state.metadata['contrast:cvd']);
+      CvdResultSetEntity.intake(state.metadata['contrast:cvd']);
     });
 
     for (let index = 0; index < Tokens.SHADE_KEYS.length; index += 1) {
@@ -74,16 +74,16 @@ class RoleSchemaPipelineFixture {
     }
   }
 
-  static run(name: string): { 'schema': RoleSchemaInterfaceTypeEntity.Type; 'state': PaletteStateInterface } {
+  static run(name: string): { 'schema': RoleSchemaEntity.Type; 'state': PaletteStateInterface } {
     const schema = RoleSchemaPipelineFixture.schemaPair(name).dark;
     const engine = createColorEngine();
     engine.pipeline(COLOR_PIPELINE);
-    const state = engine.run(InputInterfaceTypeEntity.create({
+    const state = engine.run(InputEntity.create({
       'colors':   pickerSeedInputs(RoleSchemaPipelineFixture.seeds),
       'contrast': ContrastConfigFor.forStrictness(0),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
+        'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
         'derivation:semanticHuesEnabled': true
       },
       'roles':   schema,
@@ -105,7 +105,7 @@ await test('pinned derived roles remain byte-exact while unpinned roles resolve 
   const schema = RoleSchemaPipelineFixture.schemaPair('iridis-32').dark;
   const engine = createColorEngine();
   engine.pipeline(COLOR_PIPELINE);
-  const state = engine.run(InputInterfaceTypeEntity.create({
+  const state = engine.run(InputEntity.create({
     'colors': pickerSeedInputs([
       { 'hex': '#101820', 'role': 'background' },
       { 'hex': '#f5f7fa', 'role': 'text' },
@@ -115,7 +115,7 @@ await test('pinned derived roles remain byte-exact while unpinned roles resolve 
     'contrast': ContrastConfigFor.forStrictness(0),
     'metadata': {
       'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-      'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
+      'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
       'derivation:semanticHuesEnabled': true
     },
     'roles': schema,

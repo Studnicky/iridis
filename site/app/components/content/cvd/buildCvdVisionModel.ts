@@ -1,30 +1,30 @@
-import type { CvdPairWarningInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
-import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast/types';
+import type { CvdPairWarningEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
+import type { CvdMatrixEntity } from '@studnicky/iridis-contrast/types';
 
 abstract class CvdVisionProfile {
-  public abstract value(): CvdMatrixInterfaceTypeEntity.Type['name'];
+  public abstract value(): CvdMatrixEntity.Type['name'];
 }
 
 class ProtanopiaCvdVisionProfile extends CvdVisionProfile {
-  public value(): CvdMatrixInterfaceTypeEntity.Type['name'] {
+  public value(): CvdMatrixEntity.Type['name'] {
     return 'protanopia';
   }
 }
 
 class DeuteranopiaCvdVisionProfile extends CvdVisionProfile {
-  public value(): CvdMatrixInterfaceTypeEntity.Type['name'] {
+  public value(): CvdMatrixEntity.Type['name'] {
     return 'deuteranopia';
   }
 }
 
 class TritanopiaCvdVisionProfile extends CvdVisionProfile {
-  public value(): CvdMatrixInterfaceTypeEntity.Type['name'] {
+  public value(): CvdMatrixEntity.Type['name'] {
     return 'tritanopia';
   }
 }
 
 class AchromatopsiaCvdVisionProfile extends CvdVisionProfile {
-  public value(): CvdMatrixInterfaceTypeEntity.Type['name'] {
+  public value(): CvdMatrixEntity.Type['name'] {
     return 'achromatopsia';
   }
 }
@@ -47,7 +47,7 @@ class CvdVisionType {
     this.#profile = profile;
   }
 
-  public get value(): CvdMatrixInterfaceTypeEntity.Type['name'] {
+  public get value(): CvdMatrixEntity.Type['name'] {
     const value = this.#profile.value();
     return value;
   }
@@ -55,13 +55,13 @@ class CvdVisionType {
 
 class CvdVisionReport {
   public readonly corrected: number;
-  public readonly list: CvdPairWarningInterfaceTypeEntity.Type[];
+  public readonly list: CvdPairWarningEntity.Type[];
   public readonly stillFailing: number;
   public readonly warnings: number;
 
   public constructor(
     corrected: number,
-    list: CvdPairWarningInterfaceTypeEntity.Type[],
+    list: CvdPairWarningEntity.Type[],
     stillFailing: number,
     warnings: number
   ) {
@@ -100,7 +100,7 @@ export const buildCvdVisionModel = class CvdVisionModel {
     )
   ];
 
-  public static buildReport(cvd: CvdResultSetInterfaceTypeEntity.Type | undefined): CvdVisionReport | undefined {
+  public static buildReport(cvd: CvdResultSetEntity.Type | undefined): CvdVisionReport | undefined {
     if (cvd === undefined) {return undefined;}
     let corrected = 0;
     let stillFailing = 0;
@@ -117,7 +117,7 @@ export const buildCvdVisionModel = class CvdVisionModel {
     return report;
   }
 
-  public static labelType(cvdType: CvdPairWarningInterfaceTypeEntity.Type['cvdType']): string {
+  public static labelType(cvdType: CvdPairWarningEntity.Type['cvdType']): string {
     for (let index = 0; index < CvdVisionModel.types.length; index += 1) {
       const type = CvdVisionModel.types[index];
       if (type?.value === cvdType) {

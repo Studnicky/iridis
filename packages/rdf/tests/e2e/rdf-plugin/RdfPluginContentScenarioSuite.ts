@@ -1,6 +1,6 @@
-import type { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import type { InputEntity } from '@studnicky/iridis';
 
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../_runner/ScenarioInterface.ts';
@@ -13,18 +13,18 @@ import { RdfPluginScenarioFixture } from './RdfPluginScenarioFixture.ts';
 /** E2E cell 5: semantic RDF content for roles, colors, and gamut channels. */
 export class RdfPluginContentScenarioSuite {
   static async run(): Promise<void> {
-    const simpleRoles = RoleSchemaInterfaceTypeEntity.intake({
+    const simpleRoles = RoleSchemaEntity.intake({
       'name': 'content-simple',
       'roles': [{ 'name': 'primary', 'required': true }, { 'name': 'background', 'required': true }]
     });
-    const wideGamutRoles = RoleSchemaInterfaceTypeEntity.intake({
+    const wideGamutRoles = RoleSchemaEntity.intake({
       'name': 'content-wide-gamut',
       'roles': [
         { 'chromaRange': [0, 0.5], 'intent': 'accent', 'lightnessRange': [0.05, 0.95], 'name': 'accent', 'required': true },
         { 'chromaRange': [0, 0.03], 'intent': 'background', 'lightnessRange': [0.05, 0.15], 'name': 'background', 'required': true }
       ]
     });
-    const scenarios: readonly ScenarioInterface<InputInterfaceTypeEntity.Type, RdfPluginContentScenarioEntity.Type>[] = [
+    const scenarios: readonly ScenarioInterface<InputEntity.Type, RdfPluginContentScenarioEntity.Type>[] = [
       {
         'assert': ({ 'error': error, 'output': output }): void => {
           assert.strictEqual(error, undefined, 'semantic content serialization does not throw');
@@ -70,7 +70,7 @@ export class RdfPluginContentScenarioSuite {
         'name': 'wide-gamut accent emits exactly the display-P3 channel vocabulary'
       }
     ];
-    const runner = new ScenarioRunner<InputInterfaceTypeEntity.Type, RdfPluginContentScenarioEntity.Type>(
+    const runner = new ScenarioRunner<InputEntity.Type, RdfPluginContentScenarioEntity.Type>(
       'RdfPlugin :: cell-5 :: rdf-content',
       (input): RdfPluginContentScenarioEntity.Type => {
         const engine = RdfPluginScenarioFixture.createEngine();

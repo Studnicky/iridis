@@ -1,6 +1,6 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-import { colorRecordFactory, ContrastPairInterfaceTypeEntity, ContrastPolicy, contrastWcag21, InputInterfaceTypeEntity, PaletteRoleState } from '@studnicky/iridis';
+import { colorRecordFactory, ContrastPairEntity, ContrastPolicy, contrastWcag21, InputEntity, PaletteRoleState } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
@@ -55,7 +55,7 @@ export class CvdProbeScenarioSuite {
       'divider': colorRecordFactory.fromHex('#000000'),
       'text': colorRecordFactory.fromHex('#ffffff')
     };
-    const input = InputInterfaceTypeEntity.intake({
+    const input = InputEntity.intake({
       'colors': [],
       'contrast': { 'algorithm': 'apca', 'cvdMode': 'enforce', 'level': 'Lc' },
       'roles': {
@@ -764,12 +764,12 @@ export class CvdProbeScenarioSuite {
   }
 
   private static pair(foreground: string, background: string): JSONSchema7Type {
-    const result = ContrastPairInterfaceTypeEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'foreground': foreground, 'minimumContrastRatio': 1 });
+    const result = ContrastPairEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'foreground': foreground, 'minimumContrastRatio': 1 });
     return result;
   }
 
   private static pairAtMinimum(foreground: string, background: string, minimumContrastRatio: number): JSONSchema7Type {
-    const result = ContrastPairInterfaceTypeEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'foreground': foreground, 'minimumContrastRatio': minimumContrastRatio });
+    const result = ContrastPairEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'foreground': foreground, 'minimumContrastRatio': minimumContrastRatio });
     return result;
   }
 

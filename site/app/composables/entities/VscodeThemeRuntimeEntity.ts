@@ -1,7 +1,7 @@
 import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/browser';
-import { RoleProvenanceInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleProvenanceEntity } from '@studnicky/iridis';
 
 import { VscodeThemeJsonEntity } from './VscodeThemeJsonEntity.ts';
 
@@ -11,7 +11,7 @@ export namespace VscodeThemeRuntimeEntity {
     '$id': 'https://iridis.dev/site/vscode-theme-runtime',
     'additionalProperties': false,
     'properties': {
-      'roleProvenance': { 'additionalProperties': RoleProvenanceInterfaceTypeEntity.Schema, 'type': 'object' },
+      'roleProvenance': { 'additionalProperties': RoleProvenanceEntity.Schema, 'type': 'object' },
       'themeJson': VscodeThemeJsonEntity.Schema
     },
     'required': ['roleProvenance', 'themeJson'],

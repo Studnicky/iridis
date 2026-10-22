@@ -1,10 +1,10 @@
-import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../ThemeDefinitionInterface.ts';
 
 import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
 import { renderHeart } from '../particles/renderHeart.ts';
 
 /** Elegant, romantic invitation — sparse drifting-petal ambient, unhurried pace. Visual (fonts/radius/border) lives in ./romance.css. */
-export const romance: ThemeDefinitionInterfaceType = {
+export const romance: ThemeDefinitionInterface = {
   'ambient': {
     'blobCount':       4,
     'gooFilter':       'none',

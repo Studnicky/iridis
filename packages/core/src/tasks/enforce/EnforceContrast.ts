@@ -1,16 +1,16 @@
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
 import { ContrastAlgorithmTypeEntity } from '../../entities/ContrastAlgorithmTypeEntity.ts';
-import { ContrastPairInterfaceTypeEntity } from '../../entities/ContrastPairInterfaceTypeEntity.ts';
-import { ContrastReportEntryInterfaceTypeEntity } from '../../entities/ContrastReportEntryInterfaceTypeEntity.ts';
-import { ContrastReportInterfaceTypeEntity } from '../../entities/ContrastReportInterfaceTypeEntity.ts';
-import { PendingContrastEntryInterfaceTypeEntity } from '../../entities/PendingContrastEntryInterfaceTypeEntity.ts';
-import { RoleProvenanceInterfaceTypeEntity } from '../../entities/RoleProvenanceInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { ContrastPairEntity } from '../../entities/ContrastPairEntity.ts';
+import { ContrastReportEntity } from '../../entities/ContrastReportEntity.ts';
+import { ContrastReportEntryEntity } from '../../entities/ContrastReportEntryEntity.ts';
+import { PendingContrastEntryEntity } from '../../entities/PendingContrastEntryEntity.ts';
+import { RoleProvenanceEntity } from '../../entities/RoleProvenanceEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import {
   PaletteRoleState,
   type PaletteStateInterface
@@ -24,8 +24,8 @@ import { ContrastPolicy } from './ContrastPolicy.ts';
 class ContrastMeasurement {
   static measure(
     algorithm: ContrastAlgorithmTypeEntity.Type,
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    background: ColorRecordInterfaceTypeEntity.Type
+    foreground: ColorRecordEntity.Type,
+    background: ColorRecordEntity.Type
   ): number {
     if (algorithm === 'apca') {
       const result = Math.abs(contrastApca.apply(foreground, background));
@@ -36,8 +36,8 @@ class ContrastMeasurement {
   }
 
   static sameRecord(
-    left: ColorRecordInterfaceTypeEntity.Type,
-    right: ColorRecordInterfaceTypeEntity.Type
+    left: ColorRecordEntity.Type,
+    right: ColorRecordEntity.Type
   ): boolean {
     const leftP3 = left.displayP3;
     const rightP3 = right.displayP3;
@@ -80,55 +80,55 @@ class ContrastBand {
 class ContrastAdjustment {
   static notNeeded(): readonly [
     boolean,
-    PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    PendingContrastEntryEntity.Type['adjustmentDisposition']
   ] {
     const result: readonly [
       boolean,
-      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+      PendingContrastEntryEntity.Type['adjustmentDisposition']
     ] = [false, 'not-needed'];
     return result;
   }
 
   static preservedStated(): readonly [
     boolean,
-    PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    PendingContrastEntryEntity.Type['adjustmentDisposition']
   ] {
     const result: readonly [
       boolean,
-      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+      PendingContrastEntryEntity.Type['adjustmentDisposition']
     ] = [false, 'preserved-stated'];
     return result;
   }
 
   static unresolved(): readonly [
     boolean,
-    PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    PendingContrastEntryEntity.Type['adjustmentDisposition']
   ] {
     const result: readonly [
       boolean,
-      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+      PendingContrastEntryEntity.Type['adjustmentDisposition']
     ] = [false, 'unresolved'];
     return result;
   }
 
   static blockedStatedBoth(): readonly [
     boolean,
-    PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    PendingContrastEntryEntity.Type['adjustmentDisposition']
   ] {
     const result: readonly [
       boolean,
-      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+      PendingContrastEntryEntity.Type['adjustmentDisposition']
     ] = [false, 'blocked-stated-both'];
     return result;
   }
 
   static applied(): readonly [
     boolean,
-    PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+    PendingContrastEntryEntity.Type['adjustmentDisposition']
   ] {
     const result: readonly [
       boolean,
-      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+      PendingContrastEntryEntity.Type['adjustmentDisposition']
     ] = [true, 'applied'];
     return result;
   }
@@ -151,11 +151,11 @@ class ContrastProvenance {
     const provenance = Metadata.roleProvenance(state.metadata);
     const role =
       provenance.get(roleName) ??
-      RoleProvenanceInterfaceTypeEntity.create({
+      RoleProvenanceEntity.create({
         'adjustments': [],
         'origin': 'derived'
       });
-    const nextRole = RoleProvenanceInterfaceTypeEntity.create({
+    const nextRole = RoleProvenanceEntity.create({
       'adjustments': [
         ...role.adjustments,
         { 'afterHex': afterHex, 'beforeHex': beforeHex, 'operation': 'contrast' }
@@ -168,14 +168,14 @@ class ContrastProvenance {
 }
 
 class ContrastMover {
-  readonly 'counterpart': ColorRecordInterfaceTypeEntity.Type;
-  readonly 'record': ColorRecordInterfaceTypeEntity.Type;
+  readonly 'counterpart': ColorRecordEntity.Type;
+  readonly 'record': ColorRecordEntity.Type;
   readonly 'roleName': string;
 
   private constructor(
     roleName: string,
-    record: ColorRecordInterfaceTypeEntity.Type,
-    counterpart: ColorRecordInterfaceTypeEntity.Type
+    record: ColorRecordEntity.Type,
+    counterpart: ColorRecordEntity.Type
   ) {
     this.roleName = roleName;
     this.record = record;
@@ -185,8 +185,8 @@ class ContrastMover {
   static select(
     state: PaletteStateInterface,
     pair: ContrastPolicy.RequirementInterface,
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    background: ColorRecordInterfaceTypeEntity.Type
+    foreground: ColorRecordEntity.Type,
+    background: ColorRecordEntity.Type
   ): ContrastMover | undefined {
     if (!ContrastProvenance.isStated(state, pair.foreground)) {
       return new ContrastMover(pair.foreground, foreground, background);
@@ -209,8 +209,8 @@ class ContrastExecution {
     state: PaletteStateInterface,
     context: PipelineContextInterface,
     requirements: readonly ContrastPolicy.RequirementInterface[]
-  ): PendingContrastEntryInterfaceTypeEntity.Type[] {
-    const entries: (PendingContrastEntryInterfaceTypeEntity.Type | undefined)[] = [];
+  ): PendingContrastEntryEntity.Type[] {
+    const entries: (PendingContrastEntryEntity.Type | undefined)[] = [];
     const maximumPasses = Math.max(1, requirements.length * 2);
     for (let pass = 0; pass < maximumPasses; pass += 1) {
       let adjusted = false;
@@ -237,7 +237,7 @@ class ContrastExecution {
         break;
       }
     }
-    const result: PendingContrastEntryInterfaceTypeEntity.Type[] = [];
+    const result: PendingContrastEntryEntity.Type[] = [];
     for (let index = 0; index < entries.length; index += 1) {
       const entry = entries[index];
       if (entry !== undefined) {
@@ -248,16 +248,16 @@ class ContrastExecution {
   }
 
   private static mergeEntry(
-    previous: PendingContrastEntryInterfaceTypeEntity.Type | undefined,
-    current: PendingContrastEntryInterfaceTypeEntity.Type
-  ): PendingContrastEntryInterfaceTypeEntity.Type {
+    previous: PendingContrastEntryEntity.Type | undefined,
+    current: PendingContrastEntryEntity.Type
+  ): PendingContrastEntryEntity.Type {
     const adjusted = current.adjusted || previous?.adjusted === true;
     const adjustmentDisposition =
       adjusted && current.adjustmentDisposition === 'not-needed'
         ? 'applied'
         : current.adjustmentDisposition;
     const adjustedRole = current.adjustedRole ?? previous?.adjustedRole;
-    const result = PendingContrastEntryInterfaceTypeEntity.create({
+    const result = PendingContrastEntryEntity.create({
       'adjusted': adjusted,
       ...(adjustedRole === undefined ? {} : { 'adjustedRole': adjustedRole }),
       'adjustmentDisposition': adjustmentDisposition,
@@ -274,10 +274,10 @@ class ContrastExecution {
 
   static report(
     roles: PaletteRoleState,
-    pending: readonly PendingContrastEntryInterfaceTypeEntity.Type[],
+    pending: readonly PendingContrastEntryEntity.Type[],
     selection: ContrastPolicy.SelectionInterface
-  ): ContrastReportInterfaceTypeEntity.Type {
-    const pairs: ContrastReportEntryInterfaceTypeEntity.Type[] = [];
+  ): ContrastReportEntity.Type {
+    const pairs: ContrastReportEntryEntity.Type[] = [];
     let selectedAlgorithm = selection.algorithm;
     let target = selection.target;
     for (let index = 0; index < pending.length; index += 1) {
@@ -292,7 +292,7 @@ class ContrastExecution {
         pairs.push(pair);
       }
     }
-    const result = ContrastReportInterfaceTypeEntity.create({
+    const result = ContrastReportEntity.create({
       'compliant': pairs.every((pair) => {return pair.passed;}),
       'pairs': pairs,
       'selectedAlgorithm': selectedAlgorithm,
@@ -306,7 +306,7 @@ class ContrastExecution {
     state: PaletteStateInterface,
     context: PipelineContextInterface,
     requirement: ContrastPolicy.RequirementInterface
-  ): PendingContrastEntryInterfaceTypeEntity.Type | undefined {
+  ): PendingContrastEntryEntity.Type | undefined {
     const foreground = roles.get(requirement.foreground);
     const background = roles.get(requirement.background);
     if (foreground === undefined || background === undefined) {
@@ -422,14 +422,14 @@ class ContrastExecution {
     minimumRatio: number,
     resolveAdjustment: () => readonly [
       boolean,
-      PendingContrastEntryInterfaceTypeEntity.Type['adjustmentDisposition']
+      PendingContrastEntryEntity.Type['adjustmentDisposition']
     ],
     options: ContrastPendingOptionsInterface = {}
-  ): PendingContrastEntryInterfaceTypeEntity.Type {
+  ): PendingContrastEntryEntity.Type {
     const [adjusted, adjustmentDisposition] = resolveAdjustment();
     const adjustedRole = options.adjustedRole;
     const maximumRatio = options.maximumRatio;
-    const result = PendingContrastEntryInterfaceTypeEntity.create({
+    const result = PendingContrastEntryEntity.create({
       'adjusted': adjusted,
       ...(adjustedRole === undefined ? {} : { 'adjustedRole': adjustedRole }),
       'adjustmentDisposition': adjustmentDisposition,
@@ -438,7 +438,7 @@ class ContrastExecution {
         ? {}
         : { 'maximumContrastRatio': maximumRatio }),
       'minimumContrastRatio': minimumRatio,
-      'pair': ContrastPairInterfaceTypeEntity.create({
+      'pair': ContrastPairEntity.create({
         'algorithm': requirement.algorithm,
         'background': requirement.background,
         'foreground': requirement.foreground,
@@ -497,8 +497,8 @@ class ContrastExecution {
 
   private static reportEntry(
     roles: PaletteRoleState,
-    entry: PendingContrastEntryInterfaceTypeEntity.Type
-  ): ContrastReportEntryInterfaceTypeEntity.Type | undefined {
+    entry: PendingContrastEntryEntity.Type
+  ): ContrastReportEntryEntity.Type | undefined {
     const foreground = roles.get(entry.pair.foreground);
     const background = roles.get(entry.pair.background);
     if (foreground === undefined || background === undefined) {
@@ -514,7 +514,7 @@ class ContrastExecution {
       entry.minimumContrastRatio,
       entry.maximumContrastRatio
     );
-    let disposition: ContrastReportEntryInterfaceTypeEntity.Type['disposition'] = 'unresolved';
+    let disposition: ContrastReportEntryEntity.Type['disposition'] = 'unresolved';
     if (entry.adjustmentDisposition === 'not-needed') {
       disposition = 'not-needed';
     } else if (entry.adjustmentDisposition === 'applied') {
@@ -527,7 +527,7 @@ class ContrastExecution {
     ) {
       disposition = 'blocked-stated';
     }
-    const result = ContrastReportEntryInterfaceTypeEntity.create({
+    const result = ContrastReportEntryEntity.create({
       'actual': actual,
       ...(entry.adjustedRole === undefined
         ? {}
@@ -545,8 +545,8 @@ class ContrastExecution {
 class EnforceContrast implements TaskInterface {
   readonly 'name' = 'enforce:contrast';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type =
-    TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type =
+    TaskManifestEntity.create({
       'description':
         'Checks foreground role colors against each contrast-pair ratio band, preserving caller-stated colors and recording adjustments to derived colors.',
       'name': 'enforce:contrast',

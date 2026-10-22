@@ -1,10 +1,10 @@
-import { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
+import { RgbEntity } from '../entities/RgbEntity.ts';
 import { clamp01 } from './Clamp01.ts';
 import { linearToSrgb } from './LinearToSrgb.ts';
 
 /**
  * OKLCH → linear sRGB → gamma sRGB conversion that returns RGB without
- * allocating a {@link import('../types/index.ts').ColorRecordInterfaceType}.
+ * allocating a {@link import('../types/index.ts').ColorRecordEntity}.
  * Hot path for `EnsureContrast`'s scalar loop and an internal step inside
  * {@link import('./ColorRecordFactory.ts').ColorRecordFactory.fromOklch}.
  * Uses the same Björn Ottosson OKLab matrices and gamma curve as the full
@@ -15,7 +15,7 @@ import { linearToSrgb } from './LinearToSrgb.ts';
 class OklchToRgbRaw {
   readonly 'name' = 'oklchToRgbRaw';
 
-  apply(l: number, c: number, h: number): RgbInterfaceTypeEntity.Type {
+  apply(l: number, c: number, h: number): RgbEntity.Type {
     const hRad = (h * Math.PI) / 180;
     const a = c * Math.cos(hRad);
     const b = c * Math.sin(hRad);
@@ -34,7 +34,7 @@ class OklchToRgbRaw {
 
     const encoded = linearToSrgb.apply(rLin, gLin, bLin);
 
-    const result = RgbInterfaceTypeEntity.create({
+    const result = RgbEntity.create({
       'b': clamp01.apply(encoded.b),
       'g': clamp01.apply(encoded.g),
       'r': clamp01.apply(encoded.r)

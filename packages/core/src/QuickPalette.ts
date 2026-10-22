@@ -8,8 +8,8 @@
 
 import { QUICK_PALETTE_DEFAULTS } from './constants/QuickPaletteDefaults.ts';
 import { Engine }                 from './engine/Engine.ts';
-import { InputInterfaceTypeEntity } from './entities/InputInterfaceTypeEntity.ts';
-import { QuickPaletteInterfaceTypeEntity } from './entities/QuickPaletteInterfaceTypeEntity.ts';
+import { InputEntity } from './entities/InputEntity.ts';
+import { QuickPaletteEntity } from './entities/QuickPaletteEntity.ts';
 import { coreTasks }              from './tasks/index.ts';
 
 class QuickPalette {
@@ -22,7 +22,7 @@ class QuickPalette {
   static resolve(
     seeds: readonly string[],
     framing = 'dark'
-  ): QuickPaletteInterfaceTypeEntity.Type {
+  ): QuickPaletteEntity.Type {
     const engine = new Engine();
     for (let index = 0; index < coreTasks.length; index += 1) {
       const task = coreTasks[index];
@@ -32,14 +32,14 @@ class QuickPalette {
     }
     engine.pipeline(QUICK_PALETTE_DEFAULTS.PIPELINE);
 
-    const input = InputInterfaceTypeEntity.intake({
+    const input = InputEntity.intake({
       'colors': [...seeds],
       'runtime': { 'framing': framing }
     });
     const schema = input.runtime?.framing === 'light' ? QUICK_PALETTE_DEFAULTS.SCHEMA_LIGHT : QUICK_PALETTE_DEFAULTS.SCHEMA_DARK;
-    const state = engine.run(InputInterfaceTypeEntity.intake({ ...input, 'roles': schema }));
+    const state = engine.run(InputEntity.intake({ ...input, 'roles': schema }));
 
-    const result = QuickPaletteInterfaceTypeEntity.create({
+    const result = QuickPaletteEntity.create({
       'accent':     state.roles.accent!.hex,
       'background': state.roles.background!.hex,
       'foreground': state.roles.foreground!.hex,

@@ -1,10 +1,10 @@
-import type { PaletteStateInterface, RoleProvenanceInterfaceTypeEntity } from '@studnicky/iridis';
+import type { PaletteStateInterface, RoleProvenanceEntity } from '@studnicky/iridis';
 
-import { colorRecordFactory, InputInterfaceTypeEntity, Metadata } from '@studnicky/iridis';
-import { ComplianceReportInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import { colorRecordFactory, InputEntity, Metadata } from '@studnicky/iridis';
+import { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 import { JsonValue } from '@studnicky/types/browser';
 
-import type { PaletteResolveRequestInterfaceTypeEntity } from './entities/PaletteResolveRequestInterfaceTypeEntity.ts';
+import type { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEntity.ts';
 import type { PickerSeedType } from './types/pickerSeedType.ts';
 
 import { roleSchemaByName } from '../theme/RoleSchemaByName.ts';
@@ -12,27 +12,27 @@ import { Tokens } from '../theme/Tokens.ts';
 import { COLOR_PIPELINE } from './colorPipeline.ts';
 import { ContrastConfigFor } from './contrastConfigFor.ts';
 import { createColorEngine } from './createColorEngine.ts';
-import { PaletteSnapshotInterfaceTypeEntity } from './entities/PaletteSnapshotInterfaceTypeEntity.ts';
+import { PaletteSnapshotEntity } from './entities/PaletteSnapshotEntity.ts';
 import { pickerSeedInputs } from './pickerSeedInputs.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
 import { VARIANT_CONFIG } from './variantConfig.ts';
 
 class ContrastMetadataSlot {
-  static compliance(metadata: PaletteStateInterface['metadata']): ComplianceReportInterfaceTypeEntity.Type | undefined {
+  static compliance(metadata: PaletteStateInterface['metadata']): ComplianceReportEntity.Type | undefined {
     const value = metadata['contrast:complianceReport'];
-    const result = value !== undefined && ComplianceReportInterfaceTypeEntity.validate(value) ? value : undefined;
+    const result = value !== undefined && ComplianceReportEntity.validate(value) ? value : undefined;
     return result;
   }
 
-  static cvd(metadata: PaletteStateInterface['metadata']): CvdResultSetInterfaceTypeEntity.Type | undefined {
+  static cvd(metadata: PaletteStateInterface['metadata']): CvdResultSetEntity.Type | undefined {
     const value = metadata['contrast:cvd'];
-    const result = value === undefined ? undefined : CvdResultSetInterfaceTypeEntity.intake(value);
+    const result = value === undefined ? undefined : CvdResultSetEntity.intake(value);
     return result;
   }
 }
 
 class RoleClampReadModel {
-  private static rangeAdjustment(value: RoleProvenanceInterfaceTypeEntity.Type['adjustments'][number]): { readonly 'afterHex': string; readonly 'beforeHex': string } | undefined {
+  private static rangeAdjustment(value: RoleProvenanceEntity.Type['adjustments'][number]): { readonly 'afterHex': string; readonly 'beforeHex': string } | undefined {
     const result = value.operation === 'role-range' ? { 'afterHex': value.afterHex, 'beforeHex': value.beforeHex } : undefined;
     return result;
   }
@@ -43,8 +43,8 @@ class RoleClampReadModel {
     return result;
   }
 
-  static fromProvenance(provenance: ReadonlyMap<string, RoleProvenanceInterfaceTypeEntity.Type>): PaletteSnapshotInterfaceTypeEntity.Type['clamps'] {
-    const clamps: PaletteSnapshotInterfaceTypeEntity.Type['clamps'] = [];
+  static fromProvenance(provenance: ReadonlyMap<string, RoleProvenanceEntity.Type>): PaletteSnapshotEntity.Type['clamps'] {
+    const clamps: PaletteSnapshotEntity.Type['clamps'] = [];
     for (const [roleName, evidence] of provenance) {
       let rangeAdjustment: { readonly 'afterHex': string; readonly 'beforeHex': string } | undefined;
       for (let index = 0; index < evidence.adjustments.length; index += 1) {
@@ -69,7 +69,7 @@ class RoleClampReadModel {
 
 /** Resolves one palette request to a JSON-serializable snapshot; the single engine path shared by the worker, SSR, and build-time callers. */
 export class PaletteResolve {
-  public static seeds(seeds: readonly PickerSeedType[]): PaletteResolveRequestInterfaceTypeEntity.Type['seeds'] {
+  public static seeds(seeds: readonly PickerSeedType[]): PaletteResolveRequestEntity.Type['seeds'] {
     const result = seeds.map((seed) => {
       const entry = seed.role === undefined ? { 'hex': seed.hex } : { 'hex': seed.hex, 'role': seed.role };
       return entry;
@@ -77,14 +77,14 @@ export class PaletteResolve {
     return result;
   }
 
-  public static input(request: PaletteResolveRequestInterfaceTypeEntity.Type): InputInterfaceTypeEntity.Type {
+  public static input(request: PaletteResolveRequestEntity.Type): InputEntity.Type {
     const pair = roleSchemaByName[request.schemaName];
     const selected = request.framing === 'dark' ? pair.dark : pair.light;
     const seeds = request.seeds.map((seed) => {
       const result = { 'hex': seed.hex, 'role': seed.role };
       return result;
     });
-    const result = InputInterfaceTypeEntity.create({
+    const result = InputEntity.create({
       'colors': pickerSeedInputs(seeds),
       'contrast': ContrastConfigFor.forStrictness(request.strictness),
       'metadata': {
@@ -98,7 +98,7 @@ export class PaletteResolve {
     return result;
   }
 
-  public static run(request: PaletteResolveRequestInterfaceTypeEntity.Type): PaletteSnapshotInterfaceTypeEntity.Type {
+  public static run(request: PaletteResolveRequestEntity.Type): PaletteSnapshotEntity.Type {
     const engine = createColorEngine();
     engine.pipeline(COLOR_PIPELINE);
     const state = engine.run(PaletteResolve.input(request));
@@ -127,7 +127,7 @@ export class PaletteResolve {
     return result;
   }
 
-  private static snapshot(state: PaletteStateInterface): PaletteSnapshotInterfaceTypeEntity.Type {
+  private static snapshot(state: PaletteStateInterface): PaletteSnapshotEntity.Type {
     const provenance = Metadata.roleProvenance(state.metadata);
     const derived: string[] = [];
     const pinned: string[] = [];
@@ -148,7 +148,7 @@ export class PaletteResolve {
     }
     const compliance = ContrastMetadataSlot.compliance(state.metadata);
     const cvd = ContrastMetadataSlot.cvd(state.metadata);
-    const result = PaletteSnapshotInterfaceTypeEntity.create({
+    const result = PaletteSnapshotEntity.create({
       'clamps': RoleClampReadModel.fromProvenance(provenance),
       ...(compliance === undefined ? {} : { 'compliance': compliance }),
       ...(cvd === undefined ? {} : { 'cvd': cvd }),

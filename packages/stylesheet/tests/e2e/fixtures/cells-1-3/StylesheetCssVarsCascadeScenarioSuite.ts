@@ -1,4 +1,4 @@
-import { type InputInterfaceTypeEntity, RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { type InputEntity, RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../../_runner/ScenarioInterface.ts';
@@ -10,12 +10,12 @@ import { StylesheetScenarioFixture } from '../StylesheetScenarioFixture.ts';
 import { StylesheetCellsOneToThreeScenarioPatterns } from './StylesheetCellsOneToThreeScenarioPatterns.ts';
 
 interface CssVarsCascadeInputInterface {
-  readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
+  readonly 'colors': InputEntity.Type['colors'];
   readonly 'pipeline': readonly string[];
-  readonly 'roles': RoleSchemaInterfaceTypeEntity.Type;
+  readonly 'roles': RoleSchemaEntity.Type;
 }
 
-const allIntentRoles = RoleSchemaInterfaceTypeEntity.intake({
+const allIntentRoles = RoleSchemaEntity.intake({
   'name': 'all-intent',
   'roles': [
     { 'intent': 'background', 'name': 'bg', 'required': true },
@@ -31,7 +31,7 @@ const allIntentRoles = RoleSchemaInterfaceTypeEntity.intake({
   ]
 });
 
-const textBackgroundRoles = RoleSchemaInterfaceTypeEntity.intake({
+const textBackgroundRoles = RoleSchemaEntity.intake({
   'name': 'text-bg',
   'roles': [
     { 'intent': 'background', 'name': 'bg', 'required': true },
@@ -39,7 +39,7 @@ const textBackgroundRoles = RoleSchemaInterfaceTypeEntity.intake({
   ]
 });
 
-const wideGamutRole = RoleSchemaInterfaceTypeEntity.intake({
+const wideGamutRole = RoleSchemaEntity.intake({
   'name': 'wide-gamut',
   'roles': [{ 'chromaRange': [0, 0.5], 'intent': 'accent', 'lightnessRange': [0.05, 0.95], 'name': 'primary', 'required': true }]
 });

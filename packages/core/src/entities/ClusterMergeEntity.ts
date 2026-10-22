@@ -2,7 +2,7 @@ import type { InferType } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/node';
 
-import { ColorRecordInterfaceTypeEntity } from './ColorRecordInterfaceTypeEntity.ts';
+import { ColorRecordEntity } from './ColorRecordEntity.ts';
 
 /** A cluster merge candidate: a canonical centroid color and its accumulated weight. */
 export namespace ClusterMergeEntity {
@@ -10,7 +10,7 @@ export namespace ClusterMergeEntity {
     '$id': 'https://iridis.dev/schema/core/cluster-merge',
     'additionalProperties': false,
     'properties': {
-      'centroid': ColorRecordInterfaceTypeEntity.Schema,
+      'centroid': ColorRecordEntity.Schema,
       'weight':   { 'type': 'number' }
     },
     'required': ['centroid', 'weight'],

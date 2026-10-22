@@ -1,6 +1,6 @@
 import type { Engine } from '@studnicky/iridis';
 
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity } from '@studnicky/iridis';
 import { imagePlugin } from '@studnicky/iridis-image';
 import { JsonValue } from '@studnicky/types/browser';
 
@@ -30,7 +30,7 @@ export class ImageExtract {
     const selected = message.framing === 'dark' ? pair.dark : pair.light;
     const engine = ImageExtract.engine();
     engine.pipeline([...IRIDIS_CONSTANTS.COMBINE_EXTRACTION_STAGES]);
-    const state = engine.run(InputInterfaceTypeEntity.create({
+    const state = engine.run(InputEntity.create({
       'colors': message.hexes,
       'contrast': ContrastConfigFor.forStrictness(message.strictness),
       'metadata': {
@@ -60,7 +60,7 @@ export class ImageExtract {
   public static extract(settings: ExtractionSettingsEntity.Type, pixels: ImagePixels): ImageExtractionResultEntity.Type {
     const engine = ImageExtract.engine();
     engine.pipeline(IRIDIS_CONSTANTS.IMAGE_ENTRY_STAGES);
-    const state = engine.run(InputInterfaceTypeEntity.create({
+    const state = engine.run(InputEntity.create({
       'colors': [pixels.input()],
       'metadata': { 'gallery': ImageExtract.gallery(settings) }
     }));

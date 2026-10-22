@@ -28,7 +28,7 @@ class IridisVocab {
   readonly 'oklchL' = `${this.base}oklchL`;
   readonly 'oklchC' = `${this.base}oklchC`;
   readonly 'oklchH' = `${this.base}oklchH`;
-  /** sRGB channel predicates, `[0, 1]` — always representable, per ColorRecordInterfaceType's own guarantee. */
+  /** sRGB channel predicates, `[0, 1]` — always representable, per ColorRecordEntity's own guarantee. */
   readonly 'rgbR' = `${this.base}rgbR`;
   readonly 'rgbG' = `${this.base}rgbG`;
   readonly 'rgbB' = `${this.base}rgbB`;
@@ -72,7 +72,7 @@ class IridisVocab {
   readonly 'pinned' = `${this.base}pinned`;
   /** True when no seed candidate was close enough (all exceeded the schema's max OKLCH distance) and the color was mathematically synthesized instead. */
   readonly 'synthesized' = `${this.base}synthesized`;
-  /** The role schema's canonical ontology hook (RoleDefinitionInterfaceType.intent) — e.g. 'background', 'accent' — consumed by contrast/theming tasks downstream. */
+  /** The role schema's canonical ontology hook (RoleDefinitionEntity.intent) — e.g. 'background', 'accent' — consumed by contrast/theming tasks downstream. */
   readonly 'intent' = `${this.base}intent`;
 
   /**
@@ -84,7 +84,7 @@ class IridisVocab {
   readonly 'greatestPermittedLightness' = `${this.base}lightnessRangeMax`;
   readonly 'leastPermittedChroma'    = `${this.base}chromaRangeMin`;
   readonly 'greatestPermittedChroma'    = `${this.base}chromaRangeMax`;
-  /** Maximum degrees the resolved hue may rotate toward the schema's target `hue` (RoleDefinitionInterfaceType.hueClamp). */
+  /** Maximum degrees the resolved hue may rotate toward the schema's target `hue` (RoleDefinitionEntity.hueClamp). */
   readonly 'hueClamp' = `${this.base}hueClamp`;
 
   /**

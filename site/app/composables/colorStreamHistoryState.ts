@@ -1,4 +1,4 @@
-import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import { reactive } from 'vue';
 
@@ -65,7 +65,7 @@ export class ColorStreamHistoryState {
    * (60x/sec), and a reactive write here would fan a Vue re-render out to
    * every `histories` subscriber on every one of those frames.
    */
-  static record(frame: PaletteInterfaceTypeEntity.Type): void {
+  static record(frame: PaletteEntity.Type): void {
     const entries = Object.entries(DECORATIVE_ALIASES);
     let didRecord = false;
     for (let index = 0; index < entries.length; index += 1) {

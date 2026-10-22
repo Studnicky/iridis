@@ -1,8 +1,8 @@
-import type { InputInterfaceTypeEntity } from '../../entities/InputInterfaceTypeEntity.ts';
+import type { InputEntity } from '../../entities/InputEntity.ts';
 import type { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 
 import { ContrastAlgorithmTypeEntity } from '../../entities/ContrastAlgorithmTypeEntity.ts';
-import { ContrastPairInterfaceTypeEntity } from '../../entities/ContrastPairInterfaceTypeEntity.ts';
+import { ContrastPairEntity } from '../../entities/ContrastPairEntity.ts';
 
 interface WcagMinimumOptionsInterface {
   readonly 'declaredMinimum': number | undefined;
@@ -12,7 +12,7 @@ interface WcagMinimumOptionsInterface {
 
 class ContrastStandard {
   static algorithm(
-    input: InputInterfaceTypeEntity.Type
+    input: InputEntity.Type
   ): ContrastAlgorithmTypeEntity.Type {
     const result = ContrastAlgorithmTypeEntity.intake(
       input.contrast?.algorithm ?? 'wcag21'
@@ -45,7 +45,7 @@ class ContrastStandard {
   }
 
   static targetPrefix(
-    input: InputInterfaceTypeEntity.Type,
+    input: InputEntity.Type,
     algorithm: ContrastAlgorithmTypeEntity.Type
   ): string {
     if (algorithm === 'apca') {
@@ -63,7 +63,7 @@ class ApcaTarget {
   static readonly #BODY_READING = 75;
   static readonly MEANINGFUL_TEXT = 60;
   static forPair(
-    requirement: ContrastPairInterfaceTypeEntity.Type,
+    requirement: ContrastPairEntity.Type,
     roles: PaletteRoleState,
     nonMandatoryLevel: string | undefined
   ): number {
@@ -85,7 +85,7 @@ class ApcaTarget {
 /** Canonical selected-standard requirements for every schema and run-level contrast pair. */
 export class ContrastPolicy {
   static selection(
-    input: InputInterfaceTypeEntity.Type
+    input: InputEntity.Type
   ): ContrastPolicy.SelectionInterface {
     const algorithm = ContrastStandard.algorithm(input);
     const target = algorithm === 'apca'
@@ -96,7 +96,7 @@ export class ContrastPolicy {
   }
 
   static normalize(
-    input: InputInterfaceTypeEntity.Type,
+    input: InputEntity.Type,
     roles: PaletteRoleState
   ): readonly ContrastPolicy.RequirementInterface[] {
     const schemaPairs = input.roles?.contrastPairs ?? [];
@@ -110,7 +110,7 @@ export class ContrastPolicy {
       if (sourcePair === undefined) {
         continue;
       }
-      const pair = ContrastPairInterfaceTypeEntity.intake(sourcePair);
+      const pair = ContrastPairEntity.intake(sourcePair);
       const nonMandatoryLevel = input.contrast?.nonMandatoryLevel;
       const wcagOptions: WcagMinimumOptionsInterface = {
         'declaredMinimum': pair.minimumContrastRatio,

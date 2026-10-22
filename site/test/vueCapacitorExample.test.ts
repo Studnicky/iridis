@@ -1,27 +1,27 @@
-import type { ColorRecordInterfaceTypeEntity } from '@studnicky/iridis';
-import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast/types';
+import type { ColorRecordEntity } from '@studnicky/iridis';
+import type { CvdMatrixEntity } from '@studnicky/iridis-contrast/types';
 import type { PaletteStateInterface } from '@studnicky/iridis/types';
 import type { JSONSchema7Object } from 'json-schema';
 
 import {
   clamp01,
   colorRecordFactory,
-  ContrastOptionsInterfaceTypeEntity,
+  ContrastOptionsEntity,
   contrastWcag21,
   coreTasks,
   Engine,
-  InputInterfaceTypeEntity,
+  InputEntity,
   linearToSrgb,
-  RoleDefinitionInterfaceTypeEntity,
+  RoleDefinitionEntity,
   srgbToLinear
 } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
 import {
-  ComplianceReportInterfaceTypeEntity,
+  ComplianceReportEntity,
   contrastPlugin,
   CVD_THRESHOLDS,
   cvdMatrices,
-  CvdResultSetInterfaceTypeEntity
+  CvdResultSetEntity
 } from '@studnicky/iridis-contrast';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
 import {
@@ -45,7 +45,7 @@ class AccessibilityFixture {
     return result;
   }
 
-  static assertCvd(roles: Map<string, ColorRecordInterfaceTypeEntity.Type>): void {
+  static assertCvd(roles: Map<string, ColorRecordEntity.Type>): void {
     const epsilon = 1e-12;
     const pairs = categoryW3cRoleSchema.contrastPairs ?? [];
 
@@ -86,9 +86,9 @@ class AccessibilityFixture {
   }
 
   static cvdDrop(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    background: ColorRecordInterfaceTypeEntity.Type,
-    matrix: CvdMatrixInterfaceTypeEntity.Type
+    foreground: ColorRecordEntity.Type,
+    background: ColorRecordEntity.Type,
+    matrix: CvdMatrixEntity.Type
   ): number {
     const result = contrastWcag21.apply(foreground, background) - AccessibilityFixture.rgbContrast(
       AccessibilityFixture.simulate(foreground.rgb, matrix),
@@ -101,8 +101,8 @@ class AccessibilityFixture {
   static emittedRoles(
     declarations: Map<string, string>,
     variableMap: Record<string, string>
-  ): Map<string, ColorRecordInterfaceTypeEntity.Type> {
-    const roles = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+  ): Map<string, ColorRecordEntity.Type> {
+    const roles = new Map<string, ColorRecordEntity.Type>();
     const variables = new Map(Object.entries(variableMap));
 
     for (let roleIndex = 0; roleIndex < categoryW3cRoleSchema.roles.length; roleIndex += 1) {
@@ -125,9 +125,9 @@ class AccessibilityFixture {
   }
 
   static role(
-    roles: Map<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Map<string, ColorRecordEntity.Type>,
     roleName: string
-  ): ColorRecordInterfaceTypeEntity.Type {
+  ): ColorRecordEntity.Type {
     const role = roles.get(roleName);
 
     if (role === undefined) {
@@ -157,7 +157,7 @@ class AccessibilityFixture {
     return result;
   }
 
-  private static simulate(rgb: ReturnType<typeof colorRecordFactory.fromHex>['rgb'], cvd: CvdMatrixInterfaceTypeEntity.Type): ReturnType<typeof colorRecordFactory.fromHex>['rgb'] {
+  private static simulate(rgb: ReturnType<typeof colorRecordFactory.fromHex>['rgb'], cvd: CvdMatrixEntity.Type): ReturnType<typeof colorRecordFactory.fromHex>['rgb'] {
     const linear = srgbToLinear.apply(rgb.r, rgb.g, rgb.b);
     const matrix = cvd.matrix;
     const result = linearToSrgb.apply(
@@ -264,13 +264,13 @@ class MalformedOutputEngine {
 }
 
 class RecipeConfigFixture {
-  static input(config: JSONSchema7Object): InputInterfaceTypeEntity.Type {
+  static input(config: JSONSchema7Object): InputEntity.Type {
     const input = RecipeConfigFixture.objectMember(config, 'input');
     const contrast = RecipeConfigFixture.objectMember(input, 'contrast');
     const metadata = RecipeConfigFixture.objectMember(input, 'metadata');
-    const result = InputInterfaceTypeEntity.create({
+    const result = InputEntity.create({
       'colors': RecipeConfigFixture.stringArray(input.colors, 'input.colors'),
-      'contrast': ContrastOptionsInterfaceTypeEntity.intake(contrast),
+      'contrast': ContrastOptionsEntity.intake(contrast),
       'metadata': metadata,
       'roles': categoryW3cRoleSchema
     });
@@ -367,7 +367,7 @@ class RoleSchemaFixture {
       if (role === undefined) {
         throw new Error(`Role ${roleIndex} is missing.`);
       }
-      assert.equal(RoleDefinitionInterfaceTypeEntity.validate(role), true, `${role.name} is canonical`);
+      assert.equal(RoleDefinitionEntity.validate(role), true, `${role.name} is canonical`);
       assert.equal(Object.hasOwn(role, 'name'), true, `${role.name}.name is present`);
       const keys = Object.keys(role);
 
@@ -435,8 +435,8 @@ await test('Vue Capacitor JSON artifacts align with the TypeScript schema and ex
   ]);
 
   const state = RecipeConfigFixture.run(config);
-  const compliance = ComplianceReportInterfaceTypeEntity.intake(state.metadata['contrast:complianceReport']);
-  const cvd = CvdResultSetInterfaceTypeEntity.intake(state.metadata['contrast:cvd']);
+  const compliance = ComplianceReportEntity.intake(state.metadata['contrast:complianceReport']);
+  const cvd = CvdResultSetEntity.intake(state.metadata['contrast:cvd']);
 
   assert.equal(compliance.compliant, true);
   assert.equal(compliance.cvdCompliant, true);

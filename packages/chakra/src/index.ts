@@ -6,4 +6,4 @@ export { ChakraPlugin };
 export { EmitChakraTheme };
 export const chakraPlugin    = new ChakraPlugin();
 export const emitChakraTheme = new EmitChakraTheme();
-export type { ChakraOutputInterfaceType } from './types/index.ts';
+export type { ChakraOutputEntity } from './types/index.ts';

@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 
 import { clamp01 } from './Clamp01.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
@@ -6,7 +6,7 @@ import { colorRecordFactory } from './ColorRecordFactory.ts';
 class MixSrgb {
   readonly 'name' = 'mixSrgb';
 
-  apply(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type, t: number): ColorRecordInterfaceTypeEntity.Type {
+  apply(a: ColorRecordEntity.Type, b: ColorRecordEntity.Type, t: number): ColorRecordEntity.Type {
     const tc = clamp01.apply(t);
     const r = a.rgb.r + (b.rgb.r - a.rgb.r) * tc;
     const g = a.rgb.g + (b.rgb.g - a.rgb.g) * tc;

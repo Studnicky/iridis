@@ -1,6 +1,6 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
-  ContrastPairInterfaceTypeEntity,
+  ColorRecordEntity,
+  ContrastPairEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
@@ -9,20 +9,20 @@ import type {
 import {
   colorRecordFactory,
   consoleLogger,
-  InputInterfaceTypeEntity,
+  InputEntity,
   PaletteRoleState,
-  RoleSchemaInterfaceTypeEntity,
-  RuntimeOptionsInterfaceTypeEntity
+  RoleSchemaEntity,
+  RuntimeOptionsEntity
 } from '@studnicky/iridis';
-import { OklchInterfaceTypeEntity, PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import { OklchEntity, PaletteEntity } from '@studnicky/iridis-algebra';
 import { enforceCompliance } from '@studnicky/iridis-contrast';
 
 class AnimationContrastState {
   static build(
-    palette: PaletteInterfaceTypeEntity.Type,
-    pairs: readonly ContrastPairInterfaceTypeEntity.Type[]
+    palette: PaletteEntity.Type,
+    pairs: readonly ContrastPairEntity.Type[]
   ): PaletteStateInterface {
-    const roleRecords = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+    const roleRecords = new Map<string, ColorRecordEntity.Type>();
     const roleNames = new Set<string>();
     const paletteEntries = Object.entries(palette);
 
@@ -53,7 +53,7 @@ class AnimationContrastState {
       }
     }
 
-    const roles: Record<string, ColorRecordInterfaceTypeEntity.Type> = {};
+    const roles: Record<string, ColorRecordEntity.Type> = {};
     const roleEntries = Array.from(roleRecords);
     for (let index = 0; index < roleEntries.length; index += 1) {
       const entry = roleEntries[index];
@@ -68,13 +68,13 @@ class AnimationContrastState {
       }
     }
     const contrastPairs = pairs.slice();
-    const schema = RoleSchemaInterfaceTypeEntity.create({
+    const schema = RoleSchemaEntity.create({
       'contrastPairs': contrastPairs,
       'name':          'anima:frame',
       'roles':         roleDefinitions
     });
-    const input = InputInterfaceTypeEntity.create({ 'colors': [], 'roles': schema });
-    const runtime = RuntimeOptionsInterfaceTypeEntity.create({});
+    const input = InputEntity.create({ 'colors': [], 'roles': schema });
+    const runtime = RuntimeOptionsEntity.create({});
     const result: PaletteStateInterface = {
       'colors':   [],
       'input':    input,
@@ -90,10 +90,10 @@ class AnimationContrastState {
 
 class EnforceContrast {
   static apply(
-    palette: PaletteInterfaceTypeEntity.Type,
-    pairs: readonly ContrastPairInterfaceTypeEntity.Type[],
+    palette: PaletteEntity.Type,
+    pairs: readonly ContrastPairEntity.Type[],
     enforcer: TaskInterface = enforceCompliance
-  ): PaletteInterfaceTypeEntity.Type {
+  ): PaletteEntity.Type {
     if (pairs.length === 0) {
       return palette;
     }
@@ -105,7 +105,7 @@ class EnforceContrast {
     };
     enforcer.run(state, context);
 
-    const result = new Map<string, PaletteInterfaceTypeEntity.Type[string]>();
+    const result = new Map<string, PaletteEntity.Type[string]>();
     const roleState = PaletteRoleState.admit(state.roles);
     const roleNames = Object.keys(palette);
     for (let index = 0; index < roleNames.length; index += 1) {
@@ -118,7 +118,7 @@ class EnforceContrast {
         result.set(roleName, { 'c': record.oklch.c, 'h': record.oklch.h, 'l': record.oklch.l });
       }
     }
-    const enforcedPalette: PaletteInterfaceTypeEntity.Type = {};
+    const enforcedPalette: PaletteEntity.Type = {};
     const enforcedEntries = Array.from(result);
     for (let index = 0; index < enforcedEntries.length; index += 1) {
       const entry = enforcedEntries[index];
@@ -127,12 +127,12 @@ class EnforceContrast {
         Object.defineProperty(enforcedPalette, roleName, {
           'configurable': true,
           'enumerable':   true,
-          'value':        OklchInterfaceTypeEntity.create(oklch),
+          'value':        OklchEntity.create(oklch),
           'writable':     true
         });
       }
     }
-    const validatedPalette = PaletteInterfaceTypeEntity.create(enforcedPalette);
+    const validatedPalette = PaletteEntity.create(enforcedPalette);
     return validatedPalette;
   }
 }

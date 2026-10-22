@@ -6,14 +6,14 @@ import { test } from 'node:test';
 import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
 
 import { Engine } from '../../src/engine/Engine.ts';
-import { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
-import { ContrastPairInterfaceTypeEntity } from '../../src/entities/ContrastPairInterfaceTypeEntity.ts';
-import { ContrastReportEntryInterfaceTypeEntity } from '../../src/entities/ContrastReportEntryInterfaceTypeEntity.ts';
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
+import { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
+import { ContrastPairEntity } from '../../src/entities/ContrastPairEntity.ts';
+import { ContrastReportEntryEntity } from '../../src/entities/ContrastReportEntryEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
 import { JsonOutputEntity } from '../../src/entities/JsonOutputEntity.ts';
-import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
-import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { RoleDefinitionEntity } from '../../src/entities/RoleDefinitionEntity.ts';
+import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
+import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 import { Metadata } from '../../src/types/metadata.ts';
 
@@ -35,8 +35,8 @@ class PipelineCompositionFixtures {
     blue: number,
     hexadecimal: string,
     roleName: string
-  ): ColorRecordInterfaceTypeEntity.Type {
-    const record = ColorRecordInterfaceTypeEntity.intake({
+  ): ColorRecordEntity.Type {
+    const record = ColorRecordEntity.intake({
       'alpha': 1,
       'hex': hexadecimal,
       'hints': { 'role': roleName },
@@ -51,14 +51,14 @@ class PipelineCompositionFixtures {
 await test('Pipeline composition assigns distance and hinted roles', () => {
   const distanceEngine = PipelineCompositionFixtures.createEngine();
   distanceEngine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'emit:json']);
-  const distanceState = distanceEngine.run(InputInterfaceTypeEntity.intake({
+  const distanceState = distanceEngine.run(InputEntity.intake({
     'colors': ['#6d28d9', '#f5f3ff', '#1c1917'],
-    'roles': RoleSchemaInterfaceTypeEntity.intake({
+    'roles': RoleSchemaEntity.intake({
       'name': 'distance-role-schema',
       'roles': [
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'accent', 'required': true }),
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'surface', 'required': true }),
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'text', 'required': false })
+        RoleDefinitionEntity.intake({ 'name': 'accent', 'required': true }),
+        RoleDefinitionEntity.intake({ 'name': 'surface', 'required': true }),
+        RoleDefinitionEntity.intake({ 'name': 'text', 'required': false })
       ]
     })
   }));
@@ -70,20 +70,20 @@ await test('Pipeline composition assigns distance and hinted roles', () => {
   const hintedSurface = PipelineCompositionFixtures.createHintedColor(0.95, 0.01, 0, 0.95, 0.95, 0.95, '#f2f2f2', 'surface');
   const hintedEngine = PipelineCompositionFixtures.createEngine();
   hintedEngine.tasks.hook({
-    'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'seed:hinted', 'phase': 'onRunStart' }),
+    'manifest': TaskManifestEntity.create({ 'name': 'seed:hinted', 'phase': 'onRunStart' }),
     'name': 'seed:hinted',
     'run': (state: PaletteStateInterface): void => {
       state.colors.push(hintedAccent, hintedSurface);
     }
   });
   hintedEngine.pipeline(['resolve:roles', 'expand:family', 'emit:json']);
-  const hintedState = hintedEngine.run(InputInterfaceTypeEntity.intake({
+  const hintedState = hintedEngine.run(InputEntity.intake({
     'colors': [],
-    'roles': RoleSchemaInterfaceTypeEntity.intake({
+    'roles': RoleSchemaEntity.intake({
       'name': 'hinted-role-schema',
       'roles': [
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'accent', 'required': true }),
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'surface', 'required': true })
+        RoleDefinitionEntity.intake({ 'name': 'accent', 'required': true }),
+        RoleDefinitionEntity.intake({ 'name': 'surface', 'required': true })
       ]
     })
   }));
@@ -94,13 +94,13 @@ await test('Pipeline composition assigns distance and hinted roles', () => {
 await test('Pipeline composition emits dark and light variants', () => {
   const engine = PipelineCompositionFixtures.createEngine();
   engine.pipeline(['intake:hex', 'resolve:roles', 'derive:variant', 'emit:json']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#6366f1', '#a5b4fc'],
-    'roles': RoleSchemaInterfaceTypeEntity.intake({
+    'roles': RoleSchemaEntity.intake({
       'name': 'variant-schema',
       'roles': [
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'primary', 'required': true }),
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'muted', 'required': true })
+        RoleDefinitionEntity.intake({ 'name': 'primary', 'required': true }),
+        RoleDefinitionEntity.intake({ 'name': 'muted', 'required': true })
       ]
     })
   }));
@@ -125,11 +125,11 @@ await test('Pipeline composition emits dark and light variants', () => {
 await test('Pipeline composition records enforced contrast', () => {
   const engine = PipelineCompositionFixtures.createEngine();
   engine.pipeline(['intake:hex', 'resolve:roles', 'enforce:contrast']);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#1a1a2e', '#eeeeff'],
-    'roles': RoleSchemaInterfaceTypeEntity.intake({
+    'roles': RoleSchemaEntity.intake({
       'contrastPairs': [
-        ContrastPairInterfaceTypeEntity.intake({
+        ContrastPairEntity.intake({
           'background': 'surface',
           'foreground': 'text',
           'minimumContrastRatio': 3
@@ -137,8 +137,8 @@ await test('Pipeline composition records enforced contrast', () => {
       ],
       'name': 'contrast-schema',
       'roles': [
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'text', 'required': true }),
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'surface', 'required': true })
+        RoleDefinitionEntity.intake({ 'name': 'text', 'required': true }),
+        RoleDefinitionEntity.intake({ 'name': 'surface', 'required': true })
       ]
     })
   }));
@@ -149,7 +149,7 @@ await test('Pipeline composition records enforced contrast', () => {
   assert.strictEqual(report.pairs.length, 1);
   const firstEntry = report.pairs.at(0);
   assert.ok(firstEntry !== undefined);
-  const entry = ContrastReportEntryInterfaceTypeEntity.intake(firstEntry);
+  const entry = ContrastReportEntryEntity.intake(firstEntry);
   assert.strictEqual(entry.foreground, 'text');
   assert.strictEqual(entry.background, 'surface');
   assert.strictEqual(typeof entry.actual, 'number');
@@ -167,11 +167,11 @@ await test('Pipeline composition makes a second contrast enforcement a no-op', (
     'enforce:contrast',
     'emit:json'
   ]);
-  const state = engine.run(InputInterfaceTypeEntity.intake({
+  const state = engine.run(InputEntity.intake({
     'colors': ['#111111', '#f0f0f0'],
-    'roles': RoleSchemaInterfaceTypeEntity.intake({
+    'roles': RoleSchemaEntity.intake({
       'contrastPairs': [
-        ContrastPairInterfaceTypeEntity.intake({
+        ContrastPairEntity.intake({
           'background': 'surface',
           'foreground': 'text',
           'minimumContrastRatio': 4.5
@@ -179,9 +179,9 @@ await test('Pipeline composition makes a second contrast enforcement a no-op', (
       ],
       'name': 'idempotent-schema',
       'roles': [
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'text', 'required': true }),
-        RoleDefinitionInterfaceTypeEntity.intake({ 'name': 'surface', 'required': true }),
-        RoleDefinitionInterfaceTypeEntity.intake({
+        RoleDefinitionEntity.intake({ 'name': 'text', 'required': true }),
+        RoleDefinitionEntity.intake({ 'name': 'surface', 'required': true }),
+        RoleDefinitionEntity.intake({
           'chromaRange': [0.01, 0.05],
           'derivedFrom': 'text',
           'name': 'text-muted'
@@ -193,16 +193,16 @@ await test('Pipeline composition makes a second contrast enforcement a no-op', (
   assert.ok(report !== undefined);
   const lastEntry = report.pairs.at(-1);
   assert.ok(lastEntry !== undefined);
-  const entry = ContrastReportEntryInterfaceTypeEntity.intake(lastEntry);
+  const entry = ContrastReportEntryEntity.intake(lastEntry);
   assert.strictEqual(entry.disposition, 'not-needed');
 });
 
 await test('Pipeline composition handles empty and absent role schemas', () => {
-  const emptySchemaInput = InputInterfaceTypeEntity.intake({
+  const emptySchemaInput = InputEntity.intake({
     'colors': ['#ff0000', '#00ff00'],
-    'roles': RoleSchemaInterfaceTypeEntity.intake({ 'name': 'empty-role-schema', 'roles': [] })
+    'roles': RoleSchemaEntity.intake({ 'name': 'empty-role-schema', 'roles': [] })
   });
-  const absentSchemaInput = InputInterfaceTypeEntity.intake({
+  const absentSchemaInput = InputEntity.intake({
     'colors': ['#ff6b6b', '#4ecdc4']
   });
   [emptySchemaInput, absentSchemaInput].forEach((input) => {
@@ -220,9 +220,9 @@ await test('Pipeline composition handles empty and absent role schemas', () => {
 
   const emptyInputEngine = PipelineCompositionFixtures.createEngine();
   emptyInputEngine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'enforce:contrast', 'emit:json']);
-  const emptyInputState = emptyInputEngine.run(InputInterfaceTypeEntity.intake({
+  const emptyInputState = emptyInputEngine.run(InputEntity.intake({
     'colors': [],
-    'roles': RoleSchemaInterfaceTypeEntity.intake({ 'name': 'empty-input-role-schema', 'roles': [] })
+    'roles': RoleSchemaEntity.intake({ 'name': 'empty-input-role-schema', 'roles': [] })
   }));
   assert.strictEqual(emptyInputState.colors.length, 0);
   assert.strictEqual(Object.keys(emptyInputState.roles).length, 0);

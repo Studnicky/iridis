@@ -27,13 +27,13 @@ npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-chakr
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { chakraPlugin }      from '@studnicky/iridis-chakra';
 
-export function generateChakraTheme(roleSchema: RoleSchemaInterfaceType) {
+export function generateChakraTheme(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(chakraPlugin);
@@ -72,7 +72,7 @@ export function generateChakraTheme(roleSchema: RoleSchemaInterfaceType) {
 }
 ```
 
-`state.outputs['chakra:theme']` is typed as `ChakraOutputInterfaceType`:
+`state.outputs['chakra:theme']` is typed as `ChakraOutputEntity`:
 
 | Field | Shape | Notes |
 |---|---|---|

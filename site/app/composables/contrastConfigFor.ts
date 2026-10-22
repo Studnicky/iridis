@@ -1,12 +1,12 @@
-import { ContrastOptionsInterfaceTypeEntity } from '@studnicky/iridis';
+import { ContrastOptionsEntity } from '@studnicky/iridis';
 
 abstract class ContrastStandardBehavior {
-  public abstract serialize(): ContrastOptionsInterfaceTypeEntity.Type;
+  public abstract serialize(): ContrastOptionsEntity.Type;
 }
 
 class ApcaContrastStandardBehavior extends ContrastStandardBehavior {
-  public serialize(): ContrastOptionsInterfaceTypeEntity.Type {
-    const result = ContrastOptionsInterfaceTypeEntity.create({
+  public serialize(): ContrastOptionsEntity.Type {
+    const result = ContrastOptionsEntity.create({
       'algorithm': 'apca',
       'cvdMode': 'nudge',
       'level': 'Lc'
@@ -17,8 +17,8 @@ class ApcaContrastStandardBehavior extends ContrastStandardBehavior {
 }
 
 class WcagAaaContrastStandardBehavior extends ContrastStandardBehavior {
-  public serialize(): ContrastOptionsInterfaceTypeEntity.Type {
-    const result = ContrastOptionsInterfaceTypeEntity.create({
+  public serialize(): ContrastOptionsEntity.Type {
+    const result = ContrastOptionsEntity.create({
       'algorithm': 'wcag21',
       'cvdMode': 'nudge',
       'level': 'AAA'
@@ -29,8 +29,8 @@ class WcagAaaContrastStandardBehavior extends ContrastStandardBehavior {
 }
 
 class WcagAaContrastStandardBehavior extends ContrastStandardBehavior {
-  public serialize(): ContrastOptionsInterfaceTypeEntity.Type {
-    const result = ContrastOptionsInterfaceTypeEntity.create({
+  public serialize(): ContrastOptionsEntity.Type {
+    const result = ContrastOptionsEntity.create({
       'algorithm': 'wcag21',
       'cvdMode': 'nudge',
       'level': 'AA'
@@ -48,7 +48,7 @@ export class ContrastConfigFor {
 
   private static readonly apca = new ApcaContrastStandardBehavior();
 
-  public static forStrictness(strictness: number): ContrastOptionsInterfaceTypeEntity.Type {
+  public static forStrictness(strictness: number): ContrastOptionsEntity.Type {
     if (strictness === 0) {
       const result = ContrastConfigFor.wcagAa.serialize();
 

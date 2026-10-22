@@ -1,4 +1,4 @@
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity } from '@studnicky/iridis';
 
 export const CliConfigSchema = {
   '$id': 'https://studnicky.dev/iridis-cli/CliConfig',
@@ -11,7 +11,7 @@ export const CliConfigSchema = {
     'enableStylesheet': { 'type': 'boolean' },
     'enableTailwind':   { 'type': 'boolean' },
     'enableVscode':     { 'type': 'boolean' },
-    'input': InputInterfaceTypeEntity.Schema,
+    'input': InputEntity.Schema,
     'output': {
       'additionalProperties': false,
       'properties': {

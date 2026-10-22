@@ -2,9 +2,9 @@ import type {
   PaletteStateInterface, PipelineContextInterface, TaskInterface
 } from '@studnicky/iridis';
 
-import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { TaskManifestEntity } from '@studnicky/iridis';
 
-import { DerivationConfigInterfaceTypeEntity } from '../composables/entities/DerivationConfigInterfaceTypeEntity.ts';
+import { DerivationConfigEntity } from '../composables/entities/DerivationConfigEntity.ts';
 import { SEMANTIC_HUE } from './semanticHue.ts';
 import { SEMANTIC_HUE_CLAMP } from './semanticHueClamp.ts';
 
@@ -17,7 +17,7 @@ import { SEMANTIC_HUE_CLAMP } from './semanticHueClamp.ts';
 class DeriveSemanticHues implements TaskInterface {
   readonly 'name' = 'derive:semanticHues';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Writes absolute hue/hueClamp targets for success/warning/error/info onto metadata[\'core:hueTargetOverrides\'], skipped for any role with an explicit derivation relation, or entirely when metadata[\'derivation:semanticHuesEnabled\'] is false.',
     'name':        'derive:semanticHues',
     'reads':       ['input.roles', 'metadata'],
@@ -29,8 +29,8 @@ class DeriveSemanticHues implements TaskInterface {
     if (roleSchema === undefined) {return;}
     if (state.metadata['derivation:semanticHuesEnabled'] === false) {return;}
     const configRaw = state.metadata['derivation:config'];
-    const config = DerivationConfigInterfaceTypeEntity.validate(configRaw)
-      ? DerivationConfigInterfaceTypeEntity.intake(configRaw)
+    const config = DerivationConfigEntity.validate(configRaw)
+      ? DerivationConfigEntity.intake(configRaw)
       : undefined;
 
     const overrides = new Map<string, { 'hue': number; 'hueClamp': number }>();

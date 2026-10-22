@@ -1,17 +1,17 @@
 import { ValidationError } from '@studnicky/errors/node';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { ColorHintsInterfaceTypeEntity } from '../../entities/ColorHintsInterfaceTypeEntity.ts';
+import type { ColorHintsEntity } from '../../entities/ColorHintsEntity.ts';
 import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
-import { OklchInterfaceTypeEntity } from '../../entities/OklchInterfaceTypeEntity.ts';
-import { RgbInterfaceTypeEntity } from '../../entities/RgbInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
+import { OklchEntity } from '../../entities/OklchEntity.ts';
+import { RgbEntity } from '../../entities/RgbEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { gamutMapSrgb } from '../../math/GamutMapSrgb.ts';
@@ -21,7 +21,7 @@ import { P3_PATTERNS } from './constants/P3Patterns.ts';
 
 /**
  * Intake task that parses CSS Color 4 `color(display-p3 r g b [/alpha])`
- * strings into {@link ColorRecordInterfaceType} entries with `displayP3`
+ * strings into {@link ColorRecordEntity} entries with `displayP3`
  * populated directly from the input and `rgb` gamut-mapped down to sRGB
  * so sRGB-only consumers stay safe.
  *
@@ -44,7 +44,7 @@ import { P3_PATTERNS } from './constants/P3Patterns.ts';
 class IntakeP3 implements TaskInterface {
   readonly 'name' = 'intake:p3';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Parses CSS color(display-p3 r g b [/ alpha]) strings into ColorRecord entries with displayP3 populated.',
     'name':        'intake:p3',
     'reads':       ['input.colors'],
@@ -56,7 +56,7 @@ class IntakeP3 implements TaskInterface {
    * the input is not a string or does not match the Display-P3 pattern.
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type {
+  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordEntity.Type {
     if (typeof raw !== 'string') {
       throw ValidationError.create({
         'message': 'intake:p3 — expected a string input',
@@ -96,7 +96,7 @@ class IntakeP3 implements TaskInterface {
    * Extracted from {@link IntakeP3.run} so the loop body contains only
    * a function call, not a try-catch, per V8 optimization guidance.
    */
-  private parseEntry(raw: ColorInputEntity.Type | RawImagePixelInputInterface, index: number): ColorRecordInterfaceTypeEntity.Type {
+  private parseEntry(raw: ColorInputEntity.Type | RawImagePixelInputInterface, index: number): ColorRecordEntity.Type {
     try {
       const result = this.parse(raw);
       return result;
@@ -171,8 +171,8 @@ class P3Conversion {
     p3G:   number,
     p3B:   number,
     alpha: number,
-    hints: ColorHintsInterfaceTypeEntity.Type | undefined
-  ): ColorRecordInterfaceTypeEntity.Type {
+    hints: ColorHintsEntity.Type | undefined
+  ): ColorRecordEntity.Type {
     // 1. Display-P3 gamma → linear Display-P3 (sign-preserving for
     //    out-of-range floats; spec guarantees inputs in [0, 1] but be
     //    tolerant of slightly-out-of-range floats).
@@ -200,10 +200,10 @@ class P3Conversion {
       lsG >= 0 && lsG <= 1 &&
       lsB >= 0 && lsB <= 1;
 
-    let safeRgb: RgbInterfaceTypeEntity.Type;
+    let safeRgb: RgbEntity.Type;
     if (inSrgb) {
       const encoded = linearToSrgb.apply(lsR, lsG, lsB);
-      safeRgb = RgbInterfaceTypeEntity.create({
+      safeRgb = RgbEntity.create({
         'b': clamp01.apply(encoded.b),
         'g': clamp01.apply(encoded.g),
         'r': clamp01.apply(encoded.r)
@@ -212,16 +212,16 @@ class P3Conversion {
       const mapped     = gamutMapSrgb.apply(oklch.l, oklch.c, oklch.h);
       const mappedLin  = P3Conversion.oklchToLinearSrgb(mapped.l, mapped.c, mapped.h);
       const mappedSrgb = linearToSrgb.apply(mappedLin.r, mappedLin.g, mappedLin.b);
-      safeRgb = RgbInterfaceTypeEntity.create({
+      safeRgb = RgbEntity.create({
         'b': clamp01.apply(mappedSrgb.b),
         'g': clamp01.apply(mappedSrgb.g),
         'r': clamp01.apply(mappedSrgb.r)
       });
     }
 
-    const result = ColorRecordInterfaceTypeEntity.create({
+    const result = ColorRecordEntity.create({
       'alpha': clamp01.apply(alpha),
-      'displayP3': RgbInterfaceTypeEntity.create({
+      'displayP3': RgbEntity.create({
         'b': clamp01.apply(p3B),
         'g': clamp01.apply(p3G),
         'r': clamp01.apply(p3R)
@@ -241,7 +241,7 @@ class P3Conversion {
    * linear) and avoid clamping for out-of-gamut inputs. Same Björn
    * Ottosson matrices.
    */
-  static linearSrgbToOklch(rl: number, gl: number, bl: number): OklchInterfaceTypeEntity.Type {
+  static linearSrgbToOklch(rl: number, gl: number, bl: number): OklchEntity.Type {
     let x = 0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl;
     let y = 0.2119034982 * rl + 0.6806995451 * gl + 0.1073969566 * bl;
     let z = 0.0883024619 * rl + 0.2817188376 * gl + 0.6299787005 * bl;
@@ -262,7 +262,7 @@ class P3Conversion {
       h += 360;
     }
 
-    const result = OklchInterfaceTypeEntity.create({
+    const result = OklchEntity.create({
       'c': clamp.apply(0, 0.5, c),
       'h': h % 360,
       'l': clamp01.apply(labL)
@@ -281,7 +281,7 @@ class P3Conversion {
 
   /** OKLCH → linear sRGB (Björn Ottosson). Local helper; mirrors the
    *  matrix used in OklchToRgbRaw/OklchToDisplayP3. */
-  static oklchToLinearSrgb(l: number, c: number, h: number): RgbInterfaceTypeEntity.Type {
+  static oklchToLinearSrgb(l: number, c: number, h: number): RgbEntity.Type {
     const hRad = (h * Math.PI) / 180;
     const a = c * Math.cos(hRad);
     const b = c * Math.sin(hRad);
@@ -294,7 +294,7 @@ class P3Conversion {
     y = y * y * y;
     z = z * z * z;
 
-    const result = RgbInterfaceTypeEntity.create({
+    const result = RgbEntity.create({
       'b': -0.0041960863 * x - 0.7034186147 * y + 1.707614701  * z,
       'g': -1.2684380046 * x + 2.6097574011 * y - 0.3413193965 * z,
       'r': +4.0767416621 * x - 3.3077115913 * y + 0.2309699292 * z

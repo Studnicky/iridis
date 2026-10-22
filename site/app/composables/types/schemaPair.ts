@@ -1,6 +1,6 @@
-import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
+import type { RoleSchemaEntity } from '@studnicky/iridis/model';
 
 export declare class SchemaPair {
-  'dark':  RoleSchemaInterfaceTypeEntity.Type;
-  'light': RoleSchemaInterfaceTypeEntity.Type;
+  'dark':  RoleSchemaEntity.Type;
+  'light': RoleSchemaEntity.Type;
 }

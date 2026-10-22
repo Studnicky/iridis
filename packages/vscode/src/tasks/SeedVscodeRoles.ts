@@ -1,6 +1,6 @@
 
 import type {
-  InputInterfaceTypeEntity,
+  InputEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
@@ -8,7 +8,7 @@ import type {
 import type { JSONSchema7Type } from 'json-schema';
 
 import { ValidationError } from '@studnicky/errors/node';
-import { colorRecordFactory, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { colorRecordFactory, TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import { VSCODE_SEED_ROLE_CONSTANTS } from '../constants/VscodeSeedRoleConstants.ts';
@@ -24,7 +24,7 @@ class VscodeSeedPalette {
     });
   }
 
-  static isJsonObject(value: InputInterfaceTypeEntity.Type['colors'][number] | JSONSchema7Type | undefined): value is Record<string, JSONSchema7Type> {
+  static isJsonObject(value: InputEntity.Type['colors'][number] | JSONSchema7Type | undefined): value is Record<string, JSONSchema7Type> {
     const result = value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value);
     return result;
   }
@@ -98,7 +98,7 @@ class VscodeSeedPalette {
 class SeedVscodeRoles implements TaskInterface {
   readonly 'name' = 'vscode:seedRoles';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Parses exactly one input.colors palette object: { tier: 4|8|16|64, framing: dark|light, roles: { exact tier role keys mapped to #rrggbb } }. input.runtime.framing is required and must equal framing.',
     'name':        'vscode:seedRoles',
     'reads':       ['input.colors', 'runtime.framing'],

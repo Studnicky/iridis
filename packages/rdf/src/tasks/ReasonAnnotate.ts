@@ -7,7 +7,7 @@ import type {
 import {
   contrastWcag21,
   Metadata,
-  TaskManifestInterfaceTypeEntity
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 import { DataFactory, Store, Writer } from 'n3';
@@ -53,7 +53,7 @@ class Iri {
 class ReasonAnnotate implements TaskInterface {
   readonly 'name' = 'reason:annotate';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Annotate palette with RDF triples via n3 Store',
     'name':        'reason:annotate',
     'reads':       ['roles', 'colors'],

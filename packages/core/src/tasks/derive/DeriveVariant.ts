@@ -1,26 +1,26 @@
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type {
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '../../types/index.ts';
 
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
-import { VariantConfigInterfaceTypeEntity } from '../../entities/VariantConfigInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
+import { VariantConfigEntity } from '../../entities/VariantConfigEntity.ts';
 import { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 import { clamp } from '../../math/Clamp.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
-const DEFAULT_VARIANTS: readonly VariantConfigInterfaceTypeEntity.Type[] = [
-  VariantConfigInterfaceTypeEntity.create({ 'invertLightness': true, 'name': 'dark' }),
-  VariantConfigInterfaceTypeEntity.create({ 'invertLightness': false, 'name': 'light' })
+const DEFAULT_VARIANTS: readonly VariantConfigEntity.Type[] = [
+  VariantConfigEntity.create({ 'invertLightness': true, 'name': 'dark' }),
+  VariantConfigEntity.create({ 'invertLightness': false, 'name': 'light' })
 ];
 
 class VariantLightness {
-  static invert(color: ColorRecordInterfaceTypeEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+  static invert(color: ColorRecordEntity.Type): ColorRecordEntity.Type {
     const { c, h, l } = color.oklch;
     const inverted = 1 - l;
     const result = colorRecordFactory.fromOklch(
@@ -32,7 +32,7 @@ class VariantLightness {
     return result;
   }
 
-  static offset(color: ColorRecordInterfaceTypeEntity.Type, offset: number): ColorRecordInterfaceTypeEntity.Type {
+  static offset(color: ColorRecordEntity.Type, offset: number): ColorRecordEntity.Type {
     const { c, h, l } = color.oklch;
     const result = colorRecordFactory.fromOklch(
       clamp01.apply(l + offset),
@@ -43,7 +43,7 @@ class VariantLightness {
     return result;
   }
 
-  static target(color: ColorRecordInterfaceTypeEntity.Type, target: number): ColorRecordInterfaceTypeEntity.Type {
+  static target(color: ColorRecordEntity.Type, target: number): ColorRecordEntity.Type {
     const { c, h } = color.oklch;
     const result = colorRecordFactory.fromOklch(
       clamp01.apply(target),
@@ -55,9 +55,9 @@ class VariantLightness {
   }
 
   static apply(
-    color: ColorRecordInterfaceTypeEntity.Type,
-    config: VariantConfigInterfaceTypeEntity.Type
-  ): ColorRecordInterfaceTypeEntity.Type {
+    color: ColorRecordEntity.Type,
+    config: VariantConfigEntity.Type
+  ): ColorRecordEntity.Type {
     if (config.invertLightness) {
       const result = VariantLightness.invert(color);
       return result;
@@ -75,8 +75,8 @@ class VariantLightness {
 }
 
 class VariantRecord {
-  static fromEntries(entries: Iterable<readonly [string, ColorRecordInterfaceTypeEntity.Type]>): Record<string, ColorRecordInterfaceTypeEntity.Type> {
-    const result: Record<string, ColorRecordInterfaceTypeEntity.Type> = {};
+  static fromEntries(entries: Iterable<readonly [string, ColorRecordEntity.Type]>): Record<string, ColorRecordEntity.Type> {
+    const result: Record<string, ColorRecordEntity.Type> = {};
     for (const [name, color] of entries) {
       Object.defineProperty(result, name, { 'configurable': true, 'enumerable': true, 'value': color, 'writable': true });
     }
@@ -86,9 +86,9 @@ class VariantRecord {
   static fromRoleNames(
     roleNames: readonly string[],
     source: PaletteRoleState,
-    config: VariantConfigInterfaceTypeEntity.Type
-  ): Map<string, ColorRecordInterfaceTypeEntity.Type> {
-    const result = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+    config: VariantConfigEntity.Type
+  ): Map<string, ColorRecordEntity.Type> {
+    const result = new Map<string, ColorRecordEntity.Type>();
     for (let index = 0; index < roleNames.length; index += 1) {
       const roleName = roleNames.at(index);
       if (roleName !== undefined) {
@@ -102,9 +102,9 @@ class VariantRecord {
   }
 
   static write(
-    target: Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    target: Record<string, Record<string, ColorRecordEntity.Type>>,
     name: string,
-    roles: Map<string, ColorRecordInterfaceTypeEntity.Type>
+    roles: Map<string, ColorRecordEntity.Type>
   ): void {
     Object.defineProperty(target, name, {
       'configurable': true,
@@ -129,7 +129,7 @@ class VariantRecord {
 class DeriveVariant implements TaskInterface {
   readonly 'name' = 'derive:variant';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Produces light/dark variants by transforming all roles. Reads variantConfig from metadata or uses light/dark defaults.',
     'name':        'derive:variant',
     'reads':       ['roles', 'metadata[\'core:variantConfig\']'],
@@ -138,9 +138,9 @@ class DeriveVariant implements TaskInterface {
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const configRaw = state.metadata['core:variantConfig'];
-    const configs: readonly VariantConfigInterfaceTypeEntity.Type[] = Array.isArray(configRaw)
-      && configRaw.every(VariantConfigInterfaceTypeEntity.validate)
-      ? configRaw.map(VariantConfigInterfaceTypeEntity.intake)
+    const configs: readonly VariantConfigEntity.Type[] = Array.isArray(configRaw)
+      && configRaw.every(VariantConfigEntity.validate)
+      ? configRaw.map(VariantConfigEntity.intake)
       : DEFAULT_VARIANTS;
 
     const roleNames = Object.keys(state.roles);

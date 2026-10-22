@@ -1,10 +1,10 @@
-import { HslResultInterfaceTypeEntity } from '../entities/HslResultInterfaceTypeEntity.ts';
+import { HslResultEntity } from '../entities/HslResultEntity.ts';
 import { clamp01 } from './Clamp01.ts';
 
 class RgbToHsl {
   readonly 'name' = 'rgbToHsl';
 
-  apply(r: number, g: number, b: number, alpha = 1): HslResultInterfaceTypeEntity.Type {
+  apply(r: number, g: number, b: number, alpha = 1): HslResultEntity.Type {
     const maximumChannel = Math.max(r, g, b);
     const minimumChannel = Math.min(r, g, b);
     const delta = maximumChannel - minimumChannel;
@@ -29,7 +29,7 @@ class RgbToHsl {
       }
     }
 
-    const result = HslResultInterfaceTypeEntity.create({
+    const result = HslResultEntity.create({
       'alpha': clamp01.apply(alpha),
       'h': h,
       'l': l,

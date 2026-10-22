@@ -1,4 +1,4 @@
-import { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import type { RoleViewType } from './types/index.ts';
 
@@ -8,8 +8,8 @@ const DECORATIVE_ROLE_NAMES: readonly string[] = [...new Set(Object.values(DECOR
 
 /** Builds a Palette restricted to the decorative role names, from the live engine roleViews. */
 class BuildDecorativePaletteOperation {
-  static run(views: RoleViewType[]): PaletteInterfaceTypeEntity.Type {
-    const palette: PaletteInterfaceTypeEntity.Type = {};
+  static run(views: RoleViewType[]): PaletteEntity.Type {
+    const palette: PaletteEntity.Type = {};
     const viewsByName = new Map(views.map((view) => {return [view.name, view];}));
     for (let index = 0; index < DECORATIVE_ROLE_NAMES.length; index += 1) {
       const name = DECORATIVE_ROLE_NAMES[index];
@@ -20,7 +20,7 @@ class BuildDecorativePaletteOperation {
       if (view === undefined) { continue; }
       Object.defineProperty(palette, name, { 'configurable': true, 'enumerable': true, 'value': { 'c': view.c, 'h': view.h, 'l': view.l }, 'writable': true });
     }
-    const result = PaletteInterfaceTypeEntity.create(palette);
+    const result = PaletteEntity.create(palette);
     return result;
   }
 }

@@ -1,4 +1,4 @@
-import type { InputInterfaceTypeEntity, RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import type { InputEntity, RoleSchemaEntity } from '@studnicky/iridis';
 
 import assert from 'node:assert/strict';
 
@@ -12,9 +12,9 @@ import { StylesheetScenarioPatterns } from '../StylesheetScenarioPatterns.ts';
 import { StylesheetScopedBasicScenarioPatterns } from '../StylesheetScopedBasicScenarioPatterns.ts';
 
 interface CellSixInputInterface {
-  readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
-  readonly 'metadata': InputInterfaceTypeEntity.Type['metadata'];
-  readonly 'roles': RoleSchemaInterfaceTypeEntity.Type;
+  readonly 'colors': InputEntity.Type['colors'];
+  readonly 'metadata': InputEntity.Type['metadata'];
+  readonly 'roles': RoleSchemaEntity.Type;
 }
 
 /** Frozen behavioral scenarios for emit:cssVarsScoped basic output. */

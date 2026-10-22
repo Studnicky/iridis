@@ -1,10 +1,10 @@
-import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
+import type { RoleSchemaEntity } from '@studnicky/iridis/model';
 
 import type { RoleHexMapType } from '~/composables/types/index.ts';
 import type { RoleSortKeyType } from '~/composables/types/roleSortKeyType.ts';
 import type { RoleSortFieldBehaviorInterface } from '~/utils/roleSortFieldBehaviorInterface.ts';
 
-import { RoleSortableRowInterfaceTypeEntity } from '~/composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
 import { sortRoleRows } from '~/utils/sortRoleRows.ts';
 
 class SchemaTreeLeaf {
@@ -20,7 +20,7 @@ class SchemaTreeLeaf {
   public readonly value: string;
 
   public constructor(
-    row: RoleSortableRowInterfaceTypeEntity.Type,
+    row: RoleSortableRowEntity.Type,
     tierLabel: string,
     options: { readonly 'derivedFrom': string | undefined }
   ) {
@@ -51,17 +51,17 @@ class SchemaTreeTier {
 
 export const buildSchemaTree = class SchemaTreeBuilder {
   private static createTier(
-    schema: RoleSchemaInterfaceTypeEntity.Type,
+    schema: RoleSchemaEntity.Type,
     label: string,
     seen: Set<string>,
     options: {
-      readonly 'contrastRowsByName': ReadonlyMap<string, RoleSortableRowInterfaceTypeEntity.Type>;
+      readonly 'contrastRowsByName': ReadonlyMap<string, RoleSortableRowEntity.Type>;
       readonly 'roles': RoleHexMapType;
       readonly 'sortBehaviors': readonly RoleSortFieldBehaviorInterface[];
     }
   ): SchemaTreeTier {
     const leafRows = new Map<string, SchemaTreeLeaf>();
-    const sortableRows: RoleSortableRowInterfaceTypeEntity.Type[] = [];
+    const sortableRows: RoleSortableRowEntity.Type[] = [];
     for (let roleIndex = 0; roleIndex < schema.roles.length; roleIndex += 1) {
       const role = schema.roles[roleIndex];
       if (role === undefined || seen.has(role.name)) {
@@ -69,7 +69,7 @@ export const buildSchemaTree = class SchemaTreeBuilder {
       }
       seen.add(role.name);
       const row = options.contrastRowsByName.get(role.name);
-      const sortableRow = RoleSortableRowInterfaceTypeEntity.create({
+      const sortableRow = RoleSortableRowEntity.create({
         'c': row?.c ?? 0,
         'compliance': row?.compliance ?? 'fail',
         'h': row?.h ?? 0,
@@ -98,11 +98,11 @@ export const buildSchemaTree = class SchemaTreeBuilder {
   public static build(
     schemaSources: readonly {
       readonly 'label': string;
-      readonly 'schema': RoleSchemaInterfaceTypeEntity.Type;
+      readonly 'schema': RoleSchemaEntity.Type;
     }[],
     roles: RoleHexMapType,
     roleSortKeys: readonly RoleSortKeyType[],
-    contrastRowsByName: ReadonlyMap<string, RoleSortableRowInterfaceTypeEntity.Type>
+    contrastRowsByName: ReadonlyMap<string, RoleSortableRowEntity.Type>
   ): SchemaTreeTier[] {
     const seen = new Set<string>();
     const tiers: SchemaTreeTier[] = [];

@@ -1,10 +1,10 @@
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { minimumRatioForRole } from '../app/utils/minimumRatioForRole.ts';
 
-const SCHEMA = RoleSchemaInterfaceTypeEntity.create({
+const SCHEMA = RoleSchemaEntity.create({
   'contrastPairs': [
     {
       'background': 'background',
@@ -26,7 +26,7 @@ await test('minimumRatioForRole falls back to WCAG AA when no foreground pair re
 });
 
 await test('minimumRatioForRole falls back when the matching pair has no numeric target', () => {
-  const schema = RoleSchemaInterfaceTypeEntity.create({
+  const schema = RoleSchemaEntity.create({
     'contrastPairs': [
       {
         'background': 'background',

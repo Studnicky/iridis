@@ -4,7 +4,7 @@ import { EntityCompiler } from '@studnicky/entity/browser';
 
 import { ImageCombineResultEntity } from './ImageCombineResultEntity.ts';
 import { ImageExtractionResultEntity } from './ImageExtractionResultEntity.ts';
-import { PaletteSnapshotInterfaceTypeEntity } from './PaletteSnapshotInterfaceTypeEntity.ts';
+import { PaletteSnapshotEntity } from './PaletteSnapshotEntity.ts';
 
 /** Discriminated union of the replies the engine worker returns: the result for a request id, or the failure message. */
 export namespace WorkerReplyEntity {
@@ -17,7 +17,7 @@ export namespace WorkerReplyEntity {
           'failure': { 'type': 'string' },
           'id': { 'type': 'integer' },
           'kind': { 'const': 'palette', 'type': 'string' },
-          'snapshot': PaletteSnapshotInterfaceTypeEntity.Schema
+          'snapshot': PaletteSnapshotEntity.Schema
         },
         'required': ['id', 'kind'],
         'type': 'object'
@@ -50,7 +50,7 @@ export namespace WorkerReplyEntity {
   export type Type = NominalSchemaType<typeof Schema> & (
     | { 'kind': 'combine'; 'result'?: ImageCombineResultEntity.Type }
     | { 'kind': 'extract'; 'result'?: ImageExtractionResultEntity.Type }
-    | { 'kind': 'palette'; 'snapshot'?: PaletteSnapshotInterfaceTypeEntity.Type }
+    | { 'kind': 'palette'; 'snapshot'?: PaletteSnapshotEntity.Type }
   );
 
   export const validate = EntityCompiler.compile<Type>(Schema);

@@ -1,5 +1,5 @@
-import { DpadActionInterfaceTypeEntity } from './DpadActionInterfaceTypeEntity.ts';
-import { VisualizationModeInterfaceTypeEntity } from './VisualizationModeInterfaceTypeEntity.ts';
+import { DpadActionEntity } from './DpadActionEntity.ts';
+import { VisualizationModeEntity } from './VisualizationModeEntity.ts';
 
 interface DpadHooksInterface {
   can(action: string): boolean;
@@ -32,8 +32,8 @@ class DpadItem {
     this.title = title;
   }
 
-  public get action(): DpadActionInterfaceTypeEntity.Type {
-    const result = DpadActionInterfaceTypeEntity.intake(this.#action);
+  public get action(): DpadActionEntity.Type {
+    const result = DpadActionEntity.intake(this.#action);
     return result;
   }
 
@@ -64,8 +64,8 @@ class DpadState {
     this.zoomText = zoomText;
   }
 
-  public get mode(): VisualizationModeInterfaceTypeEntity.Type {
-    const result = VisualizationModeInterfaceTypeEntity.intake(this.#mode);
+  public get mode(): VisualizationModeEntity.Type {
+    const result = VisualizationModeEntity.intake(this.#mode);
     return result;
   }
 }
@@ -107,11 +107,11 @@ export const DpadMachine = class DpadMachine {
 
   public constructor(hooks: DpadHooksInterface, mode = 'inline') {
     this.#hooks = hooks;
-    this.#mode = VisualizationModeInterfaceTypeEntity.intake(mode);
+    this.#mode = VisualizationModeEntity.intake(mode);
   }
 
   public setMode(mode: string): void {
-    this.#mode = VisualizationModeInterfaceTypeEntity.intake(mode);
+    this.#mode = VisualizationModeEntity.intake(mode);
   }
 
   public state(): DpadState {
@@ -142,7 +142,7 @@ export const DpadMachine = class DpadMachine {
   }
 
   public async press(action: string): Promise<void> {
-    const resolvedAction = DpadActionInterfaceTypeEntity.intake(action);
+    const resolvedAction = DpadActionEntity.intake(action);
     if (!this.#hooks.can(resolvedAction)) {return;}
     await this.#hooks.run(resolvedAction);
   }

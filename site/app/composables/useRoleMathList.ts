@@ -1,4 +1,4 @@
-import { colorRecordFactory, RoleDefinitionInterfaceTypeEntity } from '@studnicky/iridis';
+import { colorRecordFactory, RoleDefinitionEntity } from '@studnicky/iridis';
 import { computed } from 'vue';
 
 import type { RoleMathAlgorithmInfoType } from '~/composables/types/roleMathAlgorithmInfoType.ts';
@@ -6,7 +6,7 @@ import type { RoleMathCandidateType } from '~/composables/types/roleMathCandidat
 import type { RoleMathEntry } from '~/composables/types/roleMathEntry.ts';
 
 import { buildDerivationRelations } from '~/components/content/derivation/buildDerivationRelations.ts';
-import { RoleSortableRowInterfaceTypeEntity } from '~/composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import { RoleSortableRowEntity } from '~/composables/entities/RoleSortableRowEntity.ts';
 import { roleSchemaFor } from '~/composables/roleSchemaFor.ts';
 import { RoleMathCandidatePresentation } from '~/composables/types/RoleMathCandidatePresentation.ts';
 import { RoleMathOrigin } from '~/composables/types/roleMathOrigin.ts';
@@ -111,7 +111,7 @@ class UseRoleMathListOperation {
           'candidates': candidates,
           'clamp': clamp ?? null,
           'compliance': complianceFor(ratio, minimumRatioForRole(schema, roleName)),
-          'def': def === undefined ? undefined : RoleDefinitionInterfaceTypeEntity.intake(def),
+          'def': def === undefined ? undefined : RoleDefinitionEntity.intake(def),
           'h': oklch.h,
           'hex': hex,
           'l': oklch.l,
@@ -125,7 +125,7 @@ class UseRoleMathListOperation {
 
       const entriesByName = new Map(entries.map((entry) => { return [entry.name, entry]; }));
       const sortableRows = entries.map((entry) => {
-        const result = RoleSortableRowInterfaceTypeEntity.create({
+        const result = RoleSortableRowEntity.create({
           'c': entry.c,
           'compliance': entry.compliance,
           'h': entry.h,

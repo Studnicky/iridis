@@ -5,12 +5,12 @@ import {
   contrastWcag21,
   darken,
   Engine,
-  InputInterfaceTypeEntity,
+  InputEntity,
   Metadata,
   mixHsl,
-  RoleProvenanceInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity,
-  TaskManifestInterfaceTypeEntity
+  RoleProvenanceEntity,
+  RoleSchemaEntity,
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { coreTasks } from '@studnicky/iridis/tasks';
 import assert from 'node:assert/strict';
@@ -21,7 +21,7 @@ import { VSCODE_ROLE_SCHEMAS_16, VSCODE_ROLE_SCHEMAS_64, vscodePlugin } from '..
 class StatedSelectionTask implements TaskInterface {
   readonly 'name' = 'test:statedSelection';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Seeds a caller-stated UI role for DeriveVscodeUiRoles coverage.',
     'name': 'test:statedSelection',
     'reads': ['metadata.core:roleProvenance', 'roles'],
@@ -33,7 +33,7 @@ class StatedSelectionTask implements TaskInterface {
     const provenance = Metadata.roleProvenance(state.metadata);
     const selection = colorRecordFactory.fromHex('#123456', { 'hints': { 'role': 'selection' }, 'sourceFormat': 'hex' });
     Object.defineProperty(state.roles, 'selection', { 'configurable': true, 'enumerable': true, 'value': selection, 'writable': true });
-    provenance.set('selection', RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': [], 'origin': 'stated' }));
+    provenance.set('selection', RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'stated' }));
     Metadata.writeRoleProvenance(state.metadata, provenance);
   }
 }
@@ -58,12 +58,12 @@ class DeriveVscodeUiRolesFixture {
 
   static readonly extensionRoles = DeriveVscodeUiRolesFixture.#extensionRoles;
 
-  static notAccentRole(role: RoleSchemaInterfaceTypeEntity.Type['roles'][number]): boolean {
+  static notAccentRole(role: RoleSchemaEntity.Type['roles'][number]): boolean {
     const result = role.name !== 'accent';
     return result;
   }
 
-  static notAccentContrastPair(pair: NonNullable<RoleSchemaInterfaceTypeEntity.Type['contrastPairs']>[number]): boolean {
+  static notAccentContrastPair(pair: NonNullable<RoleSchemaEntity.Type['contrastPairs']>[number]): boolean {
     const result = pair.foreground !== 'accent';
     return result;
   }
@@ -86,19 +86,19 @@ class DeriveVscodeUiRolesFixture {
     return engine;
   }
 
-  static input(roles: RoleSchemaInterfaceTypeEntity.Type): InputInterfaceTypeEntity.Type {
-    const result = InputInterfaceTypeEntity.create({ 'colors': [...DeriveVscodeUiRolesFixture.#seeds], 'roles': roles });
+  static input(roles: RoleSchemaEntity.Type): InputEntity.Type {
+    const result = InputEntity.create({ 'colors': [...DeriveVscodeUiRolesFixture.#seeds], 'roles': roles });
     return result;
   }
 
-  static run(roles: RoleSchemaInterfaceTypeEntity.Type): PaletteStateInterface {
+  static run(roles: RoleSchemaEntity.Type): PaletteStateInterface {
     const engine = DeriveVscodeUiRolesFixture.engine();
     engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'vscode:deriveUiRoles']);
     const result = engine.run(DeriveVscodeUiRolesFixture.input(roles));
     return result;
   }
 
-  static runWithStatedSelection(roles: RoleSchemaInterfaceTypeEntity.Type): PaletteStateInterface {
+  static runWithStatedSelection(roles: RoleSchemaEntity.Type): PaletteStateInterface {
     const engine = DeriveVscodeUiRolesFixture.engineWithStatedSelection();
     engine.pipeline(['intake:hex', 'resolve:roles', 'expand:family', 'test:statedSelection', 'vscode:deriveUiRoles']);
     const result = engine.run(DeriveVscodeUiRolesFixture.input(roles));
@@ -153,7 +153,7 @@ await test('DeriveVscodeUiRoles :: synthesizes a bounded-contrast accent for the
     throw new Error('The 16-role schema requires contrast pairs');
   }
   const legacyPairs = configuredPairs.filter(DeriveVscodeUiRolesFixture.notAccentContrastPair);
-  const legacy = RoleSchemaInterfaceTypeEntity.create({
+  const legacy = RoleSchemaEntity.create({
     ...VSCODE_ROLE_SCHEMAS_16.dark,
     'contrastPairs': legacyPairs,
     'name': 'vscode-legacy-16-dark',

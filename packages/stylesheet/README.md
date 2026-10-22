@@ -31,13 +31,13 @@ npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-style
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks }  from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { stylesheetPlugin }   from '@studnicky/iridis-stylesheet';
 
-export function generateStylesheet(roleSchema: RoleSchemaInterfaceType) {
+export function generateStylesheet(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(stylesheetPlugin);
@@ -73,7 +73,7 @@ export function generateStylesheet(roleSchema: RoleSchemaInterfaceType) {
 }
 ```
 
-`CssVarsOutputInterfaceType` describes the object written to
+`CssVarsOutputEntity` describes the object written to
 `state.outputs['stylesheet:cssVars']`:
 
 | Field | Shape | Notes |

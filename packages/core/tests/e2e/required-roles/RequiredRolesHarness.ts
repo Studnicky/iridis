@@ -1,10 +1,10 @@
 import type { ColorInputEntity } from '../../../src/entities/ColorInputEntity.ts';
-import type { RoleDefinitionInterfaceTypeEntity } from '../../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
+import type { RoleDefinitionEntity } from '../../../src/entities/RoleDefinitionEntity.ts';
 import type { PaletteStateInterface } from '../../../src/interfaces/PaletteStateInterface.ts';
 
 import { Engine } from '../../../src/engine/Engine.ts';
-import { InputInterfaceTypeEntity } from '../../../src/entities/InputInterfaceTypeEntity.ts';
-import { RoleSchemaInterfaceTypeEntity } from '../../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
+import { InputEntity } from '../../../src/entities/InputEntity.ts';
+import { RoleSchemaEntity } from '../../../src/entities/RoleSchemaEntity.ts';
 import { coreTasks } from '../../../src/tasks/index.ts';
 import { REQUIRED_ROLES_PATTERNS } from './constants/RequiredRolesPatterns.ts';
 
@@ -14,7 +14,7 @@ export class RequiredRolesHarness {
 
   static runAny(
     colors: readonly ColorInputEntity.Type[],
-    role: RoleDefinitionInterfaceTypeEntity.Type
+    role: RoleDefinitionEntity.Type
   ): PaletteStateInterface {
     const result = RequiredRolesHarness.run(colors, role, ['intake:any', 'resolve:roles']);
     return result;
@@ -22,7 +22,7 @@ export class RequiredRolesHarness {
 
   static runHex(
     colors: string[],
-    role: RoleDefinitionInterfaceTypeEntity.Type
+    role: RoleDefinitionEntity.Type
   ): PaletteStateInterface {
     const result = RequiredRolesHarness.run(colors, role, ['intake:hex', 'resolve:roles']);
     return result;
@@ -30,7 +30,7 @@ export class RequiredRolesHarness {
 
   private static run(
     colors: readonly ColorInputEntity.Type[],
-    role: RoleDefinitionInterfaceTypeEntity.Type,
+    role: RoleDefinitionEntity.Type,
     tasks: readonly string[]
   ): PaletteStateInterface {
     const engine = new Engine();
@@ -40,9 +40,9 @@ export class RequiredRolesHarness {
         engine.tasks.register(task);
       }
     }
-    const schema = RoleSchemaInterfaceTypeEntity.intake({ 'name': 'required-roles', 'roles': [role] });
+    const schema = RoleSchemaEntity.intake({ 'name': 'required-roles', 'roles': [role] });
     engine.pipeline(tasks);
-    const result = engine.run(InputInterfaceTypeEntity.intake({ 'colors': [...colors], 'roles': schema }));
+    const result = engine.run(InputEntity.intake({ 'colors': [...colors], 'roles': schema }));
     return result;
   }
 }

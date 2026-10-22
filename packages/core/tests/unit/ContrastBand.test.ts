@@ -1,20 +1,20 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import type { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
 import type { TaskInterface } from '../../src/interfaces/TaskInterface.ts';
 
 import { Engine } from '../../src/engine/Engine.ts';
-import { ColorHintsInterfaceTypeEntity } from '../../src/entities/ColorHintsInterfaceTypeEntity.ts';
-import { ContrastOptionsInterfaceTypeEntity } from '../../src/entities/ContrastOptionsInterfaceTypeEntity.ts';
-import { ContrastPairInterfaceTypeEntity } from '../../src/entities/ContrastPairInterfaceTypeEntity.ts';
-import { ContrastReportEntryInterfaceTypeEntity } from '../../src/entities/ContrastReportEntryInterfaceTypeEntity.ts';
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
-import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
-import { RoleProvenanceInterfaceTypeEntity } from '../../src/entities/RoleProvenanceInterfaceTypeEntity.ts';
-import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { ColorHintsEntity } from '../../src/entities/ColorHintsEntity.ts';
+import { ContrastOptionsEntity } from '../../src/entities/ContrastOptionsEntity.ts';
+import { ContrastPairEntity } from '../../src/entities/ContrastPairEntity.ts';
+import { ContrastReportEntryEntity } from '../../src/entities/ContrastReportEntryEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
+import { RoleDefinitionEntity } from '../../src/entities/RoleDefinitionEntity.ts';
+import { RoleProvenanceEntity } from '../../src/entities/RoleProvenanceEntity.ts';
+import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
+import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { PaletteRoleState } from '../../src/interfaces/PaletteStateInterface.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { contrastWcag21 } from '../../src/math/ContrastWcag21.ts';
@@ -23,17 +23,17 @@ import { coreTasks } from '../../src/tasks/index.ts';
 import { Metadata } from '../../src/types/metadata.ts';
 
 class ContrastBandSeedTask implements TaskInterface {
-  readonly #colors: readonly ColorRecordInterfaceTypeEntity.Type[];
+  readonly #colors: readonly ColorRecordEntity.Type[];
   readonly 'name' = 'seed:contrast-band';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type =
-    TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type =
+    TaskManifestEntity.create({
       'name': 'seed:contrast-band',
       'phase': 'onRunStart',
       'writes': ['colors']
     });
 
-  constructor(colors: readonly ColorRecordInterfaceTypeEntity.Type[]) {
+  constructor(colors: readonly ColorRecordEntity.Type[]) {
     this.#colors = colors;
   }
 
@@ -44,20 +44,20 @@ class ContrastBandSeedTask implements TaskInterface {
 
 class ContrastBandRoleSeedTask implements TaskInterface {
   readonly #records: Readonly<
-    Record<string, ColorRecordInterfaceTypeEntity.Type>
+    Record<string, ColorRecordEntity.Type>
   >;
   readonly #statedRoleNames: ReadonlySet<string>;
   readonly 'name' = 'seed:contrast-band-roles';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type =
-    TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type =
+    TaskManifestEntity.create({
       'name': 'seed:contrast-band-roles',
       'phase': 'onRunStart',
       'writes': ['metadata', 'roles']
     });
 
   constructor(
-    records: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    records: Readonly<Record<string, ColorRecordEntity.Type>>,
     statedRoleNames: readonly string[]
   ) {
     this.#records = records;
@@ -67,7 +67,7 @@ class ContrastBandRoleSeedTask implements TaskInterface {
   run(state: PaletteStateInterface): void {
     const provenance = new Map<
       string,
-      RoleProvenanceInterfaceTypeEntity.Type
+      RoleProvenanceEntity.Type
     >();
     const entries = Object.entries(this.#records);
     for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
@@ -84,7 +84,7 @@ class ContrastBandRoleSeedTask implements TaskInterface {
       });
       provenance.set(
         roleName,
-        RoleProvenanceInterfaceTypeEntity.create({
+        RoleProvenanceEntity.create({
           'adjustments': [],
           'origin': this.#statedRoleNames.has(roleName) ? 'stated' : 'derived'
         })
@@ -95,13 +95,13 @@ class ContrastBandRoleSeedTask implements TaskInterface {
 }
 
 interface ContrastRunOptionsInterface { readonly 'backgroundRole'?: string; readonly 'foregroundRole'?: string; }
-interface ContrastPairsOptionsInterface { readonly 'contrast'?: ContrastOptionsInterfaceTypeEntity.Type; readonly 'statedRoleNames'?: readonly string[]; }
+interface ContrastPairsOptionsInterface { readonly 'contrast'?: ContrastOptionsEntity.Type; readonly 'statedRoleNames'?: readonly string[]; }
 
 class ContrastBandFixture {
   static run(
-    pair: ContrastPairInterfaceTypeEntity.Type,
-    foreground: ColorRecordInterfaceTypeEntity.Type | string,
-    background: ColorRecordInterfaceTypeEntity.Type | string,
+    pair: ContrastPairEntity.Type,
+    foreground: ColorRecordEntity.Type | string,
+    background: ColorRecordEntity.Type | string,
     options: ContrastRunOptionsInterface = {}
   ): PaletteStateInterface {
     const foregroundRole = options.foregroundRole;
@@ -113,25 +113,25 @@ class ContrastBandFixture {
         engine.tasks.register(task);
       }
     }
-    let resolvedForeground: ColorRecordInterfaceTypeEntity.Type;
+    let resolvedForeground: ColorRecordEntity.Type;
     if (typeof foreground === 'string') {
       resolvedForeground =
         foregroundRole === undefined
           ? colorRecordFactory.fromHex(foreground)
           : colorRecordFactory.fromHex(foreground, {
-            'hints': ColorHintsInterfaceTypeEntity.intake({
+            'hints': ColorHintsEntity.intake({
               'role': foregroundRole
             })
           });
     } else {
       resolvedForeground = foreground;
     }
-    let resolvedBackground: ColorRecordInterfaceTypeEntity.Type;
+    let resolvedBackground: ColorRecordEntity.Type;
     if (typeof background === 'string') {
       resolvedBackground = backgroundRole === undefined
         ? colorRecordFactory.fromHex(background)
         : colorRecordFactory.fromHex(background, {
-          'hints': ColorHintsInterfaceTypeEntity.intake({
+          'hints': ColorHintsEntity.intake({
             'role': backgroundRole
           })
         });
@@ -145,7 +145,7 @@ class ContrastBandFixture {
     engine.tasks.hook(seedTask);
     engine.pipeline(['resolve:roles', 'enforce:contrast']);
     const result = engine.run(
-      InputInterfaceTypeEntity.intake({
+      InputEntity.intake({
         'colors': [],
         'roles': ContrastBandFixture.schema([pair])
       })
@@ -155,24 +155,24 @@ class ContrastBandFixture {
 
   static report(
     state: PaletteStateInterface
-  ): ContrastReportEntryInterfaceTypeEntity.Type {
+  ): ContrastReportEntryEntity.Type {
     const report = Metadata.contrastReport(state.metadata);
     const [entry] = report?.pairs ?? [];
     if (entry === undefined) {
       throw new Error('Expected one contrast report entry.');
     }
-    const result = ContrastReportEntryInterfaceTypeEntity.intake(entry);
+    const result = ContrastReportEntryEntity.intake(entry);
     return result;
   }
 
   static runPairs(
-    pairs: readonly ContrastPairInterfaceTypeEntity.Type[],
+    pairs: readonly ContrastPairEntity.Type[],
     roleHexes: Readonly<Record<string, string>>,
     options: ContrastPairsOptionsInterface = {}
   ): PaletteStateInterface {
     const statedRoleNames = options.statedRoleNames ?? [];
     const contrast = options.contrast;
-    const records: Record<string, ColorRecordInterfaceTypeEntity.Type> = {};
+    const records: Record<string, ColorRecordEntity.Type> = {};
     const entries = Object.entries(roleHexes);
     for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
       const entry = entries[entryIndex];
@@ -197,7 +197,7 @@ class ContrastBandFixture {
     engine.tasks.hook(new ContrastBandRoleSeedTask(records, statedRoleNames));
     engine.pipeline(['enforce:contrast']);
     const result = engine.run(
-      InputInterfaceTypeEntity.intake({
+      InputEntity.intake({
         'colors': [],
         ...(contrast === undefined ? {} : { 'contrast': contrast }),
         'roles': ContrastBandFixture.schema(pairs)
@@ -208,21 +208,21 @@ class ContrastBandFixture {
 
   static reports(
     state: PaletteStateInterface
-  ): readonly ContrastReportEntryInterfaceTypeEntity.Type[] {
+  ): readonly ContrastReportEntryEntity.Type[] {
     const report = Metadata.contrastReport(state.metadata);
     if (report === undefined) {
       throw new Error('Expected a contrast report object.');
     }
     const result = report.pairs.map((entry) => {
-      const item = ContrastReportEntryInterfaceTypeEntity.intake(entry);
+      const item = ContrastReportEntryEntity.intake(entry);
       return item;
     });
     return result;
   }
 
   private static schema(
-    pairs: readonly ContrastPairInterfaceTypeEntity.Type[]
-  ): RoleSchemaInterfaceTypeEntity.Type {
+    pairs: readonly ContrastPairEntity.Type[]
+  ): RoleSchemaEntity.Type {
     const roleNames = new Set<string>();
     for (let pairIndex = 0; pairIndex < pairs.length; pairIndex += 1) {
       const pair = pairs[pairIndex];
@@ -232,11 +232,11 @@ class ContrastBandFixture {
       roleNames.add(pair.foreground);
       roleNames.add(pair.background);
     }
-    const result = RoleSchemaInterfaceTypeEntity.create({
+    const result = RoleSchemaEntity.create({
       'contrastPairs': [...pairs],
       'name': 'contrast-band',
       'roles': [...roleNames].map((name) => {
-        const result = RoleDefinitionInterfaceTypeEntity.create({
+        const result = RoleDefinitionEntity.create({
           'name': name,
           'required': true
         });
@@ -249,7 +249,7 @@ class ContrastBandFixture {
 
 void test('enforce:contrast reduces an excessive ratio into the declared upper band and reports it', () => {
   const state = ContrastBandFixture.run(
-    ContrastPairInterfaceTypeEntity.intake({
+    ContrastPairEntity.intake({
       'background': 'background',
       'foreground': 'accent',
       'maximumContrastRatio': 4.5,
@@ -295,7 +295,7 @@ void test('enforce:contrast reduces an excessive ratio into the declared upper b
 
 void test('enforce:contrast retains lower-bound adjustment when no upper bound is declared', () => {
   const state = ContrastBandFixture.run(
-    ContrastPairInterfaceTypeEntity.intake({
+    ContrastPairEntity.intake({
       'background': 'background',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
@@ -352,7 +352,7 @@ void test('enforce:contrast moves the derived background around a stated foregro
   const foreground = '#18222f';
   const originalBackground = '#10161f';
   const state = ContrastBandFixture.run(
-    ContrastPairInterfaceTypeEntity.intake({
+    ContrastPairEntity.intake({
       'background': 'background',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
@@ -406,7 +406,7 @@ void test('enforce:contrast moves the derived foreground around a stated backgro
   const background = '#10161f';
   const originalForeground = '#18222f';
   const state = ContrastBandFixture.run(
-    ContrastPairInterfaceTypeEntity.intake({
+    ContrastPairEntity.intake({
       'background': 'background',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
@@ -453,7 +453,7 @@ void test('enforce:contrast reports an infeasible pair when both roles are state
   const foreground = '#18222f';
   const background = '#10161f';
   const state = ContrastBandFixture.run(
-    ContrastPairInterfaceTypeEntity.intake({
+    ContrastPairEntity.intake({
       'background': 'background',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
@@ -511,12 +511,12 @@ void test('enforce:contrast reports an infeasible pair when both roles are state
 
 void test('enforce:contrast remeasures every connected pair after adjusting a shared derived role', () => {
   const pairs = [
-    ContrastPairInterfaceTypeEntity.intake({
+    ContrastPairEntity.intake({
       'background': 'surface',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
     }),
-    ContrastPairInterfaceTypeEntity.intake({
+    ContrastPairEntity.intake({
       'background': 'background',
       'foreground': 'text',
       'minimumContrastRatio': 4.5
@@ -567,12 +567,12 @@ void test('enforce:contrast remeasures every connected pair after adjusting a sh
 void test('enforce:contrast keeps a stated middle role exact while moving both derived neighbours', () => {
   const middle = '#333333';
   const pairs = [
-    ContrastPairInterfaceTypeEntity.intake({
+    ContrastPairEntity.intake({
       'background': 'middle',
       'foreground': 'left',
       'minimumContrastRatio': 4.5
     }),
-    ContrastPairInterfaceTypeEntity.intake({
+    ContrastPairEntity.intake({
       'background': 'right',
       'foreground': 'middle',
       'minimumContrastRatio': 4.5
@@ -622,10 +622,10 @@ void test('enforce:contrast keeps a stated middle role exact while moving both d
 void test('enforce:contrast installs a gamut-mapped bounded solver result even when its hex is unchanged', () => {
   const foreground = colorRecordFactory.fromOklch(0.94, 0.36, 180);
   const background = colorRecordFactory.fromOklch(0.62, 0.16, 180, {
-    'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': 'background' })
+    'hints': ColorHintsEntity.intake({ 'role': 'background' })
   });
   const state = ContrastBandFixture.run(
-    ContrastPairInterfaceTypeEntity.intake({
+    ContrastPairEntity.intake({
       'background': 'background',
       'foreground': 'accent',
       'maximumContrastRatio': 4.5,
@@ -675,7 +675,7 @@ void test('enforce:contrast installs a gamut-mapped bounded solver result even w
 });
 
 void test('enforce:contrast reports an incompatible selected AAA band as terminal noncompliance', () => {
-  const pair = ContrastPairInterfaceTypeEntity.intake({
+  const pair = ContrastPairEntity.intake({
     'background': 'background',
     'foreground': 'text',
     'maximumContrastRatio': 4.5,
@@ -685,7 +685,7 @@ void test('enforce:contrast reports an incompatible selected AAA band as termina
     [pair],
     { 'background': '#10161f', 'text': '#eeeeff' },
     {
-      'contrast': ContrastOptionsInterfaceTypeEntity.create({
+      'contrast': ContrastOptionsEntity.create({
         'algorithm': 'wcag21',
         'level': 'AAA'
       })
@@ -715,14 +715,14 @@ void test('enforce:contrast reports an incompatible selected AAA band as termina
 void test('contrast policy normalizes schema and extra pairs to the selected standard', () => {
   const roles = PaletteRoleState.admit({
     'background': colorRecordFactory.fromHex('#10161f', {
-      'hints': ColorHintsInterfaceTypeEntity.intake({ 'intent': 'background' })
+      'hints': ColorHintsEntity.intake({ 'intent': 'background' })
     }),
     'control': colorRecordFactory.fromHex('#6d28d9', {
-      'hints': ColorHintsInterfaceTypeEntity.intake({ 'intent': 'accent' })
+      'hints': ColorHintsEntity.intake({ 'intent': 'accent' })
     }),
     'divider': colorRecordFactory.fromHex('#64748b'),
     'text': colorRecordFactory.fromHex('#eeeeff', {
-      'hints': ColorHintsInterfaceTypeEntity.intake({ 'intent': 'text' })
+      'hints': ColorHintsEntity.intake({ 'intent': 'text' })
     })
   });
   const base = {
@@ -740,7 +740,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     }
   };
   const aa = ContrastPolicy.normalize(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       ...base,
       'contrast': {
         'algorithm': 'wcag21',
@@ -757,14 +757,14 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     roles
   );
   const aaa = ContrastPolicy.normalize(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       ...base,
       'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' }
     }),
     roles
   );
   const aaaNonMandatory = ContrastPolicy.normalize(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       ...base,
       'contrast': {
         'algorithm': 'wcag21',
@@ -775,7 +775,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     roles
   );
   const aaaText = ContrastPolicy.normalize(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       'colors': [],
       'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' },
       'roles': {
@@ -793,7 +793,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     roles
   );
   const aaaAlreadyStrict = ContrastPolicy.normalize(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       'colors': [],
       'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' },
       'roles': {
@@ -811,7 +811,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     roles
   );
   const aaaMissing = ContrastPolicy.normalize(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       'colors': [],
       'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' },
       'roles': {
@@ -828,7 +828,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     roles
   );
   const aaaBounded = ContrastPolicy.normalize(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       'colors': [],
       'contrast': { 'algorithm': 'wcag21', 'level': 'AAA' },
       'roles': {
@@ -847,7 +847,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     roles
   );
   const apcaNonMandatory = ContrastPolicy.normalize(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       ...base,
       'contrast': {
         'algorithm': 'apca',
@@ -858,7 +858,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     roles
   );
   const apca = ContrastPolicy.normalize(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       ...base,
       'contrast': {
         'algorithm': 'apca',
@@ -951,7 +951,7 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     'APCA applies the configured AAA fallback to every currently indistinguishable Lc60 pair'
   );
   const apcaIgnoringWcagMinimum = ContrastPolicy.normalize(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       'colors': [],
       'contrast': { 'algorithm': 'apca', 'level': 'Lc' },
       'roles': {
@@ -978,10 +978,10 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
 });
 
 void test('contrast options admit canonical CVD modes and default downstream to warn', () => {
-  const omitted = ContrastOptionsInterfaceTypeEntity.create({});
-  const warn = ContrastOptionsInterfaceTypeEntity.create({ 'cvdMode': 'warn' });
-  const nudge = ContrastOptionsInterfaceTypeEntity.create({ 'cvdMode': 'nudge' });
-  const enforce = ContrastOptionsInterfaceTypeEntity.create({ 'cvdMode': 'enforce' });
+  const omitted = ContrastOptionsEntity.create({});
+  const warn = ContrastOptionsEntity.create({ 'cvdMode': 'warn' });
+  const nudge = ContrastOptionsEntity.create({ 'cvdMode': 'nudge' });
+  const enforce = ContrastOptionsEntity.create({ 'cvdMode': 'enforce' });
 
   assert.strictEqual(
     omitted.cvdMode,
@@ -992,7 +992,7 @@ void test('contrast options admit canonical CVD modes and default downstream to 
   assert.strictEqual(nudge.cvdMode, 'nudge', 'the closed input admits corrective nudging');
   assert.strictEqual(enforce.cvdMode, 'enforce', 'the closed input admits blocking enforcement');
   assert.throws(
-    () => { ContrastOptionsInterfaceTypeEntity.intake({ 'cvdMode': 'advisory' }); },
+    () => { ContrastOptionsEntity.intake({ 'cvdMode': 'advisory' }); },
     'the retired CVD mode is rejected by closed schema intake'
   );
 });

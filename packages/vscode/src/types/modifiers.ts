@@ -1,2 +1,2 @@
-// Canonical modifier data is exposed by ModifierTransformInterfaceTypeEntity.
+// Canonical modifier data is exposed by ModifierTransformEntity.
 export {};

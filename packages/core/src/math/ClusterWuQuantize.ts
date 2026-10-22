@@ -2,11 +2,11 @@ import { ValidationError } from '@studnicky/errors/node';
 
 import type { ClusterWeightedBucketEntity } from '../entities/ClusterWeightedBucketEntity.ts';
 
-import { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
 class RecordWeight {
-  static of(record: ColorRecordInterfaceTypeEntity.Type): number {
+  static of(record: ColorRecordEntity.Type): number {
     const weight = record.hints?.weight;
     const result = typeof weight === 'number' && weight > 0 ? weight : 1;
     return result;
@@ -14,8 +14,8 @@ class RecordWeight {
 }
 
 class BucketCentroid {
-  static of(bucket: ClusterWeightedBucketEntity.Type): ColorRecordInterfaceTypeEntity.Type {
-    const colors = bucket.colors.map(ColorRecordInterfaceTypeEntity.intake);
+  static of(bucket: ClusterWeightedBucketEntity.Type): ColorRecordEntity.Type {
+    const colors = bucket.colors.map(ColorRecordEntity.intake);
     const colorCount = colors.length;
     if (colorCount === 0) {
       const result = colorRecordFactory.fromOklch(0.5, 0, 0);
@@ -52,7 +52,7 @@ class BucketCentroid {
 }
 
 class ChannelRange {
-  static chroma(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): number {
+  static chroma(colors: readonly ColorRecordEntity.Type[]): number {
     let maximum = -Infinity;
     let minimum = Infinity;
     const colorCount = colors.length;
@@ -65,7 +65,7 @@ class ChannelRange {
     return result;
   }
 
-  static lightness(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): number {
+  static lightness(colors: readonly ColorRecordEntity.Type[]): number {
     let maximum = -Infinity;
     let minimum = Infinity;
     const colorCount = colors.length;
@@ -85,7 +85,7 @@ class CircularHueStats {
     return result;
   }
 
-  static of(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): { 'gapStart': number; 'range': number } {
+  static of(colors: readonly ColorRecordEntity.Type[]): { 'gapStart': number; 'range': number } {
     const hues = new Array<number>(colors.length);
     const colorCount = colors.length;
     for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
@@ -134,7 +134,7 @@ class WeightedVariance {
 }
 
 class Bucket {
-  static byChroma(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): [ClusterWeightedBucketEntity.Type, ClusterWeightedBucketEntity.Type] {
+  static byChroma(colors: readonly ColorRecordEntity.Type[]): [ClusterWeightedBucketEntity.Type, ClusterWeightedBucketEntity.Type] {
     const sorted = Array.from(colors);
     sorted.sort(Bucket.compareChroma);
     const values = Bucket.chromas(sorted);
@@ -142,7 +142,7 @@ class Bucket {
     return result;
   }
 
-  static byHue(colors: readonly ColorRecordInterfaceTypeEntity.Type[], gapStart: number): [ClusterWeightedBucketEntity.Type, ClusterWeightedBucketEntity.Type] {
+  static byHue(colors: readonly ColorRecordEntity.Type[], gapStart: number): [ClusterWeightedBucketEntity.Type, ClusterWeightedBucketEntity.Type] {
     const sorted = Array.from(colors);
     sorted.sort((first, second) => {
       const result = UnwrappedHue.of(first.oklch.h, gapStart) - UnwrappedHue.of(second.oklch.h, gapStart);
@@ -153,7 +153,7 @@ class Bucket {
     return result;
   }
 
-  static byLightness(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): [ClusterWeightedBucketEntity.Type, ClusterWeightedBucketEntity.Type] {
+  static byLightness(colors: readonly ColorRecordEntity.Type[]): [ClusterWeightedBucketEntity.Type, ClusterWeightedBucketEntity.Type] {
     const sorted = Array.from(colors);
     sorted.sort(Bucket.compareLightness);
     const values = Bucket.lightnesses(sorted);
@@ -161,7 +161,7 @@ class Bucket {
     return result;
   }
 
-  static chromas(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): number[] {
+  static chromas(colors: readonly ColorRecordEntity.Type[]): number[] {
     const result = new Array<number>(colors.length);
     const colorCount = colors.length;
     for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
@@ -170,17 +170,17 @@ class Bucket {
     return result;
   }
 
-  static compareChroma(first: ColorRecordInterfaceTypeEntity.Type, second: ColorRecordInterfaceTypeEntity.Type): number {
+  static compareChroma(first: ColorRecordEntity.Type, second: ColorRecordEntity.Type): number {
     const result = first.oklch.c - second.oklch.c;
     return result;
   }
 
-  static compareLightness(first: ColorRecordInterfaceTypeEntity.Type, second: ColorRecordInterfaceTypeEntity.Type): number {
+  static compareLightness(first: ColorRecordEntity.Type, second: ColorRecordEntity.Type): number {
     const result = first.oklch.l - second.oklch.l;
     return result;
   }
 
-  static fromVarianceSplit(sorted: readonly ColorRecordInterfaceTypeEntity.Type[], values: readonly number[]): [ClusterWeightedBucketEntity.Type, ClusterWeightedBucketEntity.Type] {
+  static fromVarianceSplit(sorted: readonly ColorRecordEntity.Type[], values: readonly number[]): [ClusterWeightedBucketEntity.Type, ClusterWeightedBucketEntity.Type] {
     const splitIndex = Bucket.minimumVarianceSplit(values, sorted);
     const left = sorted.slice(0, splitIndex);
     const right = sorted.slice(splitIndex);
@@ -191,7 +191,7 @@ class Bucket {
     return result;
   }
 
-  static lightnesses(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): number[] {
+  static lightnesses(colors: readonly ColorRecordEntity.Type[]): number[] {
     const result = new Array<number>(colors.length);
     const colorCount = colors.length;
     for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
@@ -200,7 +200,7 @@ class Bucket {
     return result;
   }
 
-  static minimumVarianceSplit(values: readonly number[], colors: readonly ColorRecordInterfaceTypeEntity.Type[]): number {
+  static minimumVarianceSplit(values: readonly number[], colors: readonly ColorRecordEntity.Type[]): number {
     const colorCount = colors.length;
     const prefixWeights: number[] = [0];
     const prefixValues: number[] = [0];
@@ -247,7 +247,7 @@ class Bucket {
   }
 
   static split(bucket: ClusterWeightedBucketEntity.Type): [ClusterWeightedBucketEntity.Type, ClusterWeightedBucketEntity.Type] {
-    const colors = bucket.colors.map(ColorRecordInterfaceTypeEntity.intake);
+    const colors = bucket.colors.map(ColorRecordEntity.intake);
     const lightnessRange = ChannelRange.lightness(colors);
     const chromaRange = ChannelRange.chroma(colors);
     const hueStats = CircularHueStats.of(colors);
@@ -264,7 +264,7 @@ class Bucket {
     return result;
   }
 
-  static unwrappedHues(colors: readonly ColorRecordInterfaceTypeEntity.Type[], gapStart: number): number[] {
+  static unwrappedHues(colors: readonly ColorRecordEntity.Type[], gapStart: number): number[] {
     const result = new Array<number>(colors.length);
     const colorCount = colors.length;
     for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
@@ -273,7 +273,7 @@ class Bucket {
     return result;
   }
 
-  static weight(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): number {
+  static weight(colors: readonly ColorRecordEntity.Type[]): number {
     let result = 0;
     const colorCount = colors.length;
     for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
@@ -291,7 +291,7 @@ class BucketSelection {
     for (let bucketIndex = 0; bucketIndex < bucketCount; bucketIndex++) {
       const bucket = buckets[bucketIndex];
       if (bucket === undefined || bucket.colors.length <= 1) {continue;}
-      const colors = bucket.colors.map(ColorRecordInterfaceTypeEntity.intake);
+      const colors = bucket.colors.map(ColorRecordEntity.intake);
       const hueRange = CircularHueStats.of(colors).range / 360;
       const widestRange = Math.max(ChannelRange.lightness(colors), ChannelRange.chroma(colors), hueRange);
       const score = bucket.totalWeight * widestRange;
@@ -317,9 +317,9 @@ class BucketSelection {
 class ClusterWuQuantize {
   readonly 'name' = 'clusterWuQuantize';
 
-  apply(colors: readonly ColorRecordInterfaceTypeEntity.Type[], k: number): ColorRecordInterfaceTypeEntity.Type[] {
+  apply(colors: readonly ColorRecordEntity.Type[], k: number): ColorRecordEntity.Type[] {
     if (colors.length === 0) {
-      const result: ColorRecordInterfaceTypeEntity.Type[] = [];
+      const result: ColorRecordEntity.Type[] = [];
       return result;
     }
     if (k < 1) {
@@ -346,7 +346,7 @@ class ClusterWuQuantize {
       buckets = Bucket.replace(buckets, selectedIndex, left, right);
     }
 
-    const result = new Array<ColorRecordInterfaceTypeEntity.Type>(buckets.length);
+    const result = new Array<ColorRecordEntity.Type>(buckets.length);
     const bucketCount = buckets.length;
     for (let bucketIndex = 0; bucketIndex < bucketCount; bucketIndex++) {
       result[bucketIndex] = BucketCentroid.of(buckets[bucketIndex]!);

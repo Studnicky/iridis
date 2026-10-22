@@ -2,37 +2,37 @@ import {
   ClusterBucketEntity,
   ClusterMergeEntity,
   ClusterWeightedBucketEntity,
-  ColorHintsInterfaceTypeEntity,
+  ColorHintsEntity,
   ColorInputEntity,
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   ContrastAlgorithmTypeEntity,
-  ContrastOptionsInterfaceTypeEntity,
-  ContrastPairInterfaceTypeEntity,
-  ContrastReportEntryInterfaceTypeEntity,
-  EngineMetadataInterfaceTypeEntity,
+  ContrastOptionsEntity,
+  ContrastPairEntity,
+  ContrastReportEntryEntity,
+  EngineMetadataEntity,
   GamutMapResultEntity,
   HslInputEntity,
-  HslResultInterfaceTypeEntity,
-  HueTargetOverrideInterfaceTypeEntity,
-  InputInterfaceTypeEntity,
+  HslResultEntity,
+  HueTargetOverrideEntity,
+  InputEntity,
   JsonOutputEntity,
   LabInputEntity,
+  OklchEntity,
   OklchInputEntity,
-  OklchInterfaceTypeEntity,
   PaletteRoleState,
-  PendingContrastEntryInterfaceTypeEntity,
+  PendingContrastEntryEntity,
   PluginSchemaContributionInterfaceEntity,
-  QuickPaletteInterfaceTypeEntity,
+  QuickPaletteEntity,
+  RgbEntity,
   RgbInputEntity,
-  RgbInterfaceTypeEntity,
-  RoleClampInterfaceTypeEntity,
-  RoleDefinitionInterfaceTypeEntity,
-  RoleProvenanceInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity,
-  RuntimeOptionsInterfaceTypeEntity,
-  TaskManifestInterfaceTypeEntity,
-  ValidationErrorInterfaceTypeEntity,
-  VariantConfigInterfaceTypeEntity
+  RoleClampEntity,
+  RoleDefinitionEntity,
+  RoleProvenanceEntity,
+  RoleSchemaEntity,
+  RuntimeOptionsEntity,
+  TaskManifestEntity,
+  ValidationErrorEntity,
+  VariantConfigEntity
 } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -41,36 +41,36 @@ const entityNamespaces = [
   ClusterBucketEntity,
   ClusterMergeEntity,
   ClusterWeightedBucketEntity,
-  ColorHintsInterfaceTypeEntity,
+  ColorHintsEntity,
   ColorInputEntity,
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   ContrastAlgorithmTypeEntity,
-  ContrastOptionsInterfaceTypeEntity,
-  ContrastPairInterfaceTypeEntity,
-  ContrastReportEntryInterfaceTypeEntity,
-  EngineMetadataInterfaceTypeEntity,
+  ContrastOptionsEntity,
+  ContrastPairEntity,
+  ContrastReportEntryEntity,
+  EngineMetadataEntity,
   GamutMapResultEntity,
   HslInputEntity,
-  HslResultInterfaceTypeEntity,
-  HueTargetOverrideInterfaceTypeEntity,
-  InputInterfaceTypeEntity,
+  HslResultEntity,
+  HueTargetOverrideEntity,
+  InputEntity,
   JsonOutputEntity,
   LabInputEntity,
   OklchInputEntity,
-  OklchInterfaceTypeEntity,
-  PendingContrastEntryInterfaceTypeEntity,
+  OklchEntity,
+  PendingContrastEntryEntity,
   PluginSchemaContributionInterfaceEntity,
-  QuickPaletteInterfaceTypeEntity,
+  QuickPaletteEntity,
   RgbInputEntity,
-  RgbInterfaceTypeEntity,
-  RoleClampInterfaceTypeEntity,
-  RoleDefinitionInterfaceTypeEntity,
-  RoleProvenanceInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity,
-  RuntimeOptionsInterfaceTypeEntity,
-  TaskManifestInterfaceTypeEntity,
-  ValidationErrorInterfaceTypeEntity,
-  VariantConfigInterfaceTypeEntity
+  RgbEntity,
+  RoleClampEntity,
+  RoleDefinitionEntity,
+  RoleProvenanceEntity,
+  RoleSchemaEntity,
+  RuntimeOptionsEntity,
+  TaskManifestEntity,
+  ValidationErrorEntity,
+  VariantConfigEntity
 ] as const;
 
 void test('core public entrypoint exposes every canonical entity namespace at runtime', () => {
@@ -86,20 +86,20 @@ void test('core public entrypoint exposes every canonical entity namespace at ru
 });
 
 void test('core public entity factories admit canonical plugin contracts', () => {
-  const manifest = TaskManifestInterfaceTypeEntity.create({ 'name': 'plugin:emit' });
+  const manifest = TaskManifestEntity.create({ 'name': 'plugin:emit' });
   const contribution = PluginSchemaContributionInterfaceEntity.create({});
-  const definition = RoleDefinitionInterfaceTypeEntity.create({ 'name': 'background' });
-  const schema = RoleSchemaInterfaceTypeEntity.create({
+  const definition = RoleDefinitionEntity.create({ 'name': 'background' });
+  const schema = RoleSchemaEntity.create({
     'name':  'plugin-roles',
     'roles': [definition]
   });
-  const input = InputInterfaceTypeEntity.intake({ 'colors': ['#112233'] });
-  const runtime = RuntimeOptionsInterfaceTypeEntity.intake({ 'framing': 'dark' });
-  const record = ColorRecordInterfaceTypeEntity.create({
+  const input = InputEntity.intake({ 'colors': ['#112233'] });
+  const runtime = RuntimeOptionsEntity.intake({ 'framing': 'dark' });
+  const record = ColorRecordEntity.create({
     'alpha':        1,
     'hex':          '#112233',
-    'oklch':        OklchInterfaceTypeEntity.create({ 'c': 0.02, 'h': 250, 'l': 0.2 }),
-    'rgb':          RgbInterfaceTypeEntity.create({ 'b': 51, 'g': 34, 'r': 17 }),
+    'oklch':        OklchEntity.create({ 'c': 0.02, 'h': 250, 'l': 0.2 }),
+    'rgb':          RgbEntity.create({ 'b': 51, 'g': 34, 'r': 17 }),
     'sourceFormat': 'hex'
   });
 
@@ -114,11 +114,11 @@ void test('core public entity factories admit canonical plugin contracts', () =>
 void test('core public entrypoint exposes the Map-backed palette role workspace', () => {
   const target = {};
   const workspace = PaletteRoleState.admit(target);
-  const color = ColorRecordInterfaceTypeEntity.create({
+  const color = ColorRecordEntity.create({
     'alpha':        1,
     'hex':          '#112233',
-    'oklch':        OklchInterfaceTypeEntity.create({ 'c': 0.02, 'h': 250, 'l': 0.2 }),
-    'rgb':          RgbInterfaceTypeEntity.create({ 'b': 51, 'g': 34, 'r': 17 }),
+    'oklch':        OklchEntity.create({ 'c': 0.02, 'h': 250, 'l': 0.2 }),
+    'rgb':          RgbEntity.create({ 'b': 51, 'g': 34, 'r': 17 }),
     'sourceFormat': 'hex'
   });
 

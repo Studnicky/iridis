@@ -1,7 +1,7 @@
 import type { PaletteStateInterface } from '@studnicky/iridis';
 
-import { contrastApca, contrastWcag21, InputInterfaceTypeEntity } from '@studnicky/iridis';
-import { ComplianceReportInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import { contrastApca, contrastWcag21, InputEntity } from '@studnicky/iridis';
+import { ComplianceReportEntity } from '@studnicky/iridis-contrast';
 import { JsonValue } from '@studnicky/types/node';
 
 import type { PinRequest } from './PinRequest.ts';
@@ -9,7 +9,7 @@ import type { PinRequest } from './PinRequest.ts';
 import { COLOR_PIPELINE } from '../../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../../app/composables/createColorEngine.ts';
-import { DerivationConfigInterfaceTypeEntity } from '../../app/composables/entities/DerivationConfigInterfaceTypeEntity.ts';
+import { DerivationConfigEntity } from '../../app/composables/entities/DerivationConfigEntity.ts';
 import { VARIANT_CONFIG } from '../../app/composables/variantConfig.ts';
 import { SeedInputEntity } from '../../app/theme/types/SeedInputEntity.ts';
 
@@ -27,13 +27,13 @@ export class PinRun {
   ]);
 
   public readonly elapsedMs: number;
-  public readonly report: ComplianceReportInterfaceTypeEntity.Type;
+  public readonly report: ComplianceReportEntity.Type;
   public readonly request: PinRequest;
   public readonly state: PaletteStateInterface;
 
   public constructor(request: PinRequest, state: PaletteStateInterface, elapsedMs: number) {
     this.elapsedMs = elapsedMs;
-    this.report = ComplianceReportInterfaceTypeEntity.intake(state.metadata['contrast:complianceReport']);
+    this.report = ComplianceReportEntity.intake(state.metadata['contrast:complianceReport']);
     this.request = request;
     this.state = state;
   }
@@ -48,12 +48,12 @@ export class PinRun {
     const engine = createColorEngine();
     engine.pipeline(COLOR_PIPELINE);
     const started = performance.now();
-    const state = engine.run(InputInterfaceTypeEntity.create({
+    const state = engine.run(InputEntity.create({
       'colors': colors,
       'contrast': ContrastConfigFor.forStrictness(request.strictness),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
+        'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
         'derivation:semanticHuesEnabled': true
       },
       'roles': request.roles,

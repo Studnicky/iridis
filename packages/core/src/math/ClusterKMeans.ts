@@ -1,12 +1,12 @@
 import { ValidationError } from '@studnicky/errors/node';
 
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 import type { LabInputEntity } from '../entities/LabInputEntity.ts';
 
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
 class RecordWeight {
-  static of(record: ColorRecordInterfaceTypeEntity.Type): number {
+  static of(record: ColorRecordEntity.Type): number {
     const weight = record.hints?.weight;
     const result = typeof weight === 'number' && weight > 0 ? weight : 1;
     return result;
@@ -15,7 +15,7 @@ class RecordWeight {
 
 /** Cartesian (L, a, b) so hue wraparound never distorts distance/mean the way averaging raw hue degrees would. */
 class Point {
-  static to(record: ColorRecordInterfaceTypeEntity.Type): LabInputEntity.Type {
+  static to(record: ColorRecordEntity.Type): LabInputEntity.Type {
     const hueRadians = (record.oklch.h * Math.PI) / 180;
     const result = { 'a': record.oklch.c * Math.cos(hueRadians), 'b': record.oklch.c * Math.sin(hueRadians), 'l': record.oklch.l };
     return result;
@@ -33,7 +33,7 @@ class SquaredDistance {
 }
 
 class PointConversion {
-  static toRecord(point: LabInputEntity.Type, alpha: number, weight: number): ColorRecordInterfaceTypeEntity.Type {
+  static toRecord(point: LabInputEntity.Type, alpha: number, weight: number): ColorRecordEntity.Type {
     const chroma = Math.sqrt(point.a * point.a + point.b * point.b);
     let hue = (Math.atan2(point.b, point.a) * 180) / Math.PI;
     if (hue < 0) {hue += 360;}
@@ -154,7 +154,7 @@ class ClusterSummary {
     return result;
   }
 
-  static records(centroids: readonly LabInputEntity.Type[], assignments: readonly number[], weights: readonly number[], alphas: readonly number[]): ColorRecordInterfaceTypeEntity.Type[] {
+  static records(centroids: readonly LabInputEntity.Type[], assignments: readonly number[], weights: readonly number[], alphas: readonly number[]): ColorRecordEntity.Type[] {
     const centroidCount = centroids.length;
     const clusterWeights = new Array<number>(centroidCount).fill(0);
     const clusterAlphas = new Array<number>(centroidCount).fill(0);
@@ -165,7 +165,7 @@ class ClusterSummary {
       clusterWeights[centroidIndex]! += weight;
       clusterAlphas[centroidIndex]! += alphas[pointIndex]! * weight;
     }
-    const result: ColorRecordInterfaceTypeEntity.Type[] = [];
+    const result: ColorRecordEntity.Type[] = [];
     for (let centroidIndex = 0; centroidIndex < centroidCount; centroidIndex++) {
       const clusterWeight = clusterWeights[centroidIndex]!;
       if (clusterWeight > 0) {
@@ -194,7 +194,7 @@ const MAXIMUM_ITERATIONS = 20;
 class ClusterKMeans {
   readonly 'name' = 'clusterKMeans';
 
-  apply(colors: readonly ColorRecordInterfaceTypeEntity.Type[], k: number): ColorRecordInterfaceTypeEntity.Type[] {
+  apply(colors: readonly ColorRecordEntity.Type[], k: number): ColorRecordEntity.Type[] {
     if (colors.length === 0) {return [];}
     if (k < 1) {
       throw ValidationError.create({

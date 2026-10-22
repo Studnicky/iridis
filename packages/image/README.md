@@ -94,6 +94,6 @@ export function generateGalleryTheme(pixels: InputInterface['colors']) {
 The shipped `galleryRoleSchema5` (canvas, frame, accent, muted, text) targets
 WCAG AA / AAA across the three required pairs (`text/canvas` 7:1,
 `text/frame` 4.5:1, `accent/canvas` 3:1) and ships as a strict-typed
-`RoleSchemaInterfaceType` instance.
+`RoleSchemaEntity` instance.
 
 Part of [iridis](https://github.com/Studnicky/iridis).

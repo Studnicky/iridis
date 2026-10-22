@@ -1,9 +1,9 @@
 import { ValidationError } from '@studnicky/errors/node';
 
-import type { ColorHintsInterfaceTypeEntity } from '../entities/ColorHintsInterfaceTypeEntity.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorHintsEntity } from '../entities/ColorHintsEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 
-import { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
+import { RgbEntity } from '../entities/RgbEntity.ts';
 import { apcaLc } from './ApcaLc.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
@@ -29,12 +29,12 @@ class WcagContrastRatio {
 }
 
 class ContrastMeasure {
-  readonly #backgroundLuminance: (rgb: RgbInterfaceTypeEntity.Type) => number;
-  readonly #contrast: (foreground: RgbInterfaceTypeEntity.Type, backgroundLuminance: number) => number;
+  readonly #backgroundLuminance: (rgb: RgbEntity.Type) => number;
+  readonly #contrast: (foreground: RgbEntity.Type, backgroundLuminance: number) => number;
 
   private constructor(
-    backgroundLuminance: (rgb: RgbInterfaceTypeEntity.Type) => number,
-    contrast: (foreground: RgbInterfaceTypeEntity.Type, backgroundLuminance: number) => number
+    backgroundLuminance: (rgb: RgbEntity.Type) => number,
+    contrast: (foreground: RgbEntity.Type, backgroundLuminance: number) => number
   ) {
     this.#backgroundLuminance = backgroundLuminance;
     this.#contrast = contrast;
@@ -56,32 +56,32 @@ class ContrastMeasure {
     return measure;
   }
 
-  backgroundLuminance(rgb: RgbInterfaceTypeEntity.Type): number {
+  backgroundLuminance(rgb: RgbEntity.Type): number {
     const result = this.#backgroundLuminance(rgb);
     return result;
   }
 
-  contrast(foreground: RgbInterfaceTypeEntity.Type, backgroundLuminance: number): number {
+  contrast(foreground: RgbEntity.Type, backgroundLuminance: number): number {
     const result = this.#contrast(foreground, backgroundLuminance);
     return result;
   }
 
-  static #apcaBackground(rgb: RgbInterfaceTypeEntity.Type): number {
+  static #apcaBackground(rgb: RgbEntity.Type): number {
     const result = apcaLc.luminance(rgb.r, rgb.g, rgb.b);
     return result;
   }
 
-  static #apcaContrast(foreground: RgbInterfaceTypeEntity.Type, backgroundLuminance: number): number {
+  static #apcaContrast(foreground: RgbEntity.Type, backgroundLuminance: number): number {
     const result = Math.abs(apcaLc.apply(apcaLc.luminance(foreground.r, foreground.g, foreground.b), backgroundLuminance));
     return result;
   }
 
-  static #wcagBackground(rgb: RgbInterfaceTypeEntity.Type): number {
+  static #wcagBackground(rgb: RgbEntity.Type): number {
     const result = RgbLuminance.calculate(rgb.r, rgb.g, rgb.b);
     return result;
   }
 
-  static #wcagContrast(foreground: RgbInterfaceTypeEntity.Type, backgroundLuminance: number): number {
+  static #wcagContrast(foreground: RgbEntity.Type, backgroundLuminance: number): number {
     const result = WcagContrastRatio.between(RgbLuminance.calculate(foreground.r, foreground.g, foreground.b), backgroundLuminance);
     return result;
   }
@@ -120,9 +120,9 @@ class ContrastPolicy {
 class ContrastCandidate {
   readonly 'l': number;
   readonly 'ratio': number;
-  readonly 'record': ColorRecordInterfaceTypeEntity.Type;
+  readonly 'record': ColorRecordEntity.Type;
 
-  constructor(lightness: number, ratio: number, record: ColorRecordInterfaceTypeEntity.Type) {
+  constructor(lightness: number, ratio: number, record: ColorRecordEntity.Type) {
     this.l = lightness;
     this.ratio = ratio;
     this.record = record;
@@ -141,13 +141,13 @@ class ContrastSearchResult {
 
 class ContrastRecordBuilder {
   readonly #alpha: number;
-  readonly #create: (lightness: number, chroma: number, hue: number, alpha: number, hints: ColorHintsInterfaceTypeEntity.Type | undefined, origin: ColorRecordInterfaceTypeEntity.Type) => ColorRecordInterfaceTypeEntity.Type;
-  readonly #hints: ColorHintsInterfaceTypeEntity.Type | undefined;
-  readonly #origin: ColorRecordInterfaceTypeEntity.Type;
+  readonly #create: (lightness: number, chroma: number, hue: number, alpha: number, hints: ColorHintsEntity.Type | undefined, origin: ColorRecordEntity.Type) => ColorRecordEntity.Type;
+  readonly #hints: ColorHintsEntity.Type | undefined;
+  readonly #origin: ColorRecordEntity.Type;
 
   private constructor(
-    origin: ColorRecordInterfaceTypeEntity.Type,
-    create: (lightness: number, chroma: number, hue: number, alpha: number, hints: ColorHintsInterfaceTypeEntity.Type | undefined, origin: ColorRecordInterfaceTypeEntity.Type) => ColorRecordInterfaceTypeEntity.Type
+    origin: ColorRecordEntity.Type,
+    create: (lightness: number, chroma: number, hue: number, alpha: number, hints: ColorHintsEntity.Type | undefined, origin: ColorRecordEntity.Type) => ColorRecordEntity.Type
   ) {
     this.#alpha = origin.alpha;
     this.#create = create;
@@ -155,7 +155,7 @@ class ContrastRecordBuilder {
     this.#origin = origin;
   }
 
-  static resolve(origin: ColorRecordInterfaceTypeEntity.Type): ContrastRecordBuilder {
+  static resolve(origin: ColorRecordEntity.Type): ContrastRecordBuilder {
     const create = ContrastRecordBuilder.#srgbFormats.has(origin.sourceFormat)
       ? ContrastRecordBuilder.#fromRgb
       : ContrastRecordBuilder.#fromOklch;
@@ -163,7 +163,7 @@ class ContrastRecordBuilder {
     return result;
   }
 
-  create(lightness: number, chroma: number, hue: number): ColorRecordInterfaceTypeEntity.Type {
+  create(lightness: number, chroma: number, hue: number): ColorRecordEntity.Type {
     const result = this.#create(lightness, chroma, hue, this.#alpha, this.#hints, this.#origin);
     return result;
   }
@@ -173,9 +173,9 @@ class ContrastRecordBuilder {
     chroma: number,
     hue: number,
     alpha: number,
-    hints: ColorHintsInterfaceTypeEntity.Type | undefined,
-    origin: ColorRecordInterfaceTypeEntity.Type
-  ): ColorRecordInterfaceTypeEntity.Type {
+    hints: ColorHintsEntity.Type | undefined,
+    origin: ColorRecordEntity.Type
+  ): ColorRecordEntity.Type {
     const result = colorRecordFactory.fromOklch(lightness, chroma, hue, { 'alpha': alpha, 'hints': hints, 'origin': origin });
     return result;
   }
@@ -185,9 +185,9 @@ class ContrastRecordBuilder {
     chroma: number,
     hue: number,
     alpha: number,
-    hints: ColorHintsInterfaceTypeEntity.Type | undefined,
-    origin: ColorRecordInterfaceTypeEntity.Type
-  ): ColorRecordInterfaceTypeEntity.Type {
+    hints: ColorHintsEntity.Type | undefined,
+    origin: ColorRecordEntity.Type
+  ): ColorRecordEntity.Type {
     const rgb = oklchToRgbRaw.apply(lightness, chroma, hue);
     const result = colorRecordFactory.fromRgb(rgb.r, rgb.g, rgb.b, { 'alpha': alpha, 'hints': hints, 'origin': origin });
     return result;
@@ -242,7 +242,7 @@ class ContrastSearch {
 
   #candidateAt(lightness: number, chroma: number, hue: number): ContrastCandidate {
     const record = this.#records.create(lightness, chroma, hue);
-    const ratio = this.#measure.contrast(RgbInterfaceTypeEntity.create(record.rgb), this.#backgroundLuminance);
+    const ratio = this.#measure.contrast(RgbEntity.create(record.rgb), this.#backgroundLuminance);
     const result = new ContrastCandidate(lightness, ratio, record);
     return result;
   }
@@ -343,32 +343,32 @@ class EnsureContrast {
   readonly 'name' = 'ensureContrast';
 
   apply(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    background: ColorRecordInterfaceTypeEntity.Type,
+    foreground: ColorRecordEntity.Type,
+    background: ColorRecordEntity.Type,
     minimumRatio: number
-  ): ColorRecordInterfaceTypeEntity.Type;
+  ): ColorRecordEntity.Type;
   apply(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    background: ColorRecordInterfaceTypeEntity.Type,
+    foreground: ColorRecordEntity.Type,
+    background: ColorRecordEntity.Type,
     minimumRatio: number,
     algorithm: string
-  ): ColorRecordInterfaceTypeEntity.Type;
+  ): ColorRecordEntity.Type;
   apply(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    background: ColorRecordInterfaceTypeEntity.Type,
+    foreground: ColorRecordEntity.Type,
+    background: ColorRecordEntity.Type,
     minimumRatio: number,
     options: EnsureContrastOptions
-  ): ColorRecordInterfaceTypeEntity.Type;
+  ): ColorRecordEntity.Type;
   apply(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    background: ColorRecordInterfaceTypeEntity.Type,
+    foreground: ColorRecordEntity.Type,
+    background: ColorRecordEntity.Type,
     minimumRatio: number,
     algorithmOrOptions: string | EnsureContrastOptions = 'wcag21'
-  ): ColorRecordInterfaceTypeEntity.Type {
+  ): ColorRecordEntity.Type {
     const policy = ContrastPolicy.resolve(algorithmOrOptions);
-    const backgroundRgb = RgbInterfaceTypeEntity.create(background.rgb);
+    const backgroundRgb = RgbEntity.create(background.rgb);
     const backgroundLuminance = policy.measure.backgroundLuminance(backgroundRgb);
-    const foregroundRgb = RgbInterfaceTypeEntity.create(foreground.rgb);
+    const foregroundRgb = RgbEntity.create(foreground.rgb);
     const initialContrast = policy.measure.contrast(foregroundRgb, backgroundLuminance);
     if (initialContrast >= minimumRatio && initialContrast <= policy.maximumRatio) {
       return foreground;
@@ -395,8 +395,8 @@ class EnsureContrast {
   }
 
   static #preferredDirection(
-    foreground: ColorRecordInterfaceTypeEntity.Type,
-    background: ColorRecordInterfaceTypeEntity.Type,
+    foreground: ColorRecordEntity.Type,
+    background: ColorRecordEntity.Type,
     initialContrast: number,
     maximumRatio: number,
     backgroundLuminance: number

@@ -1,15 +1,15 @@
-import { ViewerActionIdentifierInterfaceTypeEntity } from './ViewerActionIdentifierInterfaceTypeEntity.ts';
-import { ViewerActionOverridesInterfaceTypeEntity } from './ViewerActionOverridesInterfaceTypeEntity.ts';
+import { ViewerActionIdentifierEntity } from './ViewerActionIdentifierEntity.ts';
+import { ViewerActionOverridesEntity } from './ViewerActionOverridesEntity.ts';
 
 class ViewerActionDefinition {
-  readonly #overrides: ViewerActionOverridesInterfaceTypeEntity.Type;
+  readonly #overrides: ViewerActionOverridesEntity.Type;
   public readonly label: string;
   public readonly title: string;
 
   public constructor(
     label: string,
     title: string,
-    overrides: ViewerActionOverridesInterfaceTypeEntity.Type
+    overrides: ViewerActionOverridesEntity.Type
   ) {
     this.#overrides = overrides;
     this.label = label;
@@ -27,7 +27,7 @@ class ViewerActionDefinition {
     return result;
   }
 
-  public get tone(): ViewerActionOverridesInterfaceTypeEntity.Type['tone'] {
+  public get tone(): ViewerActionOverridesEntity.Type['tone'] {
     const result = this.#overrides.tone;
     return result;
   }
@@ -35,13 +35,13 @@ class ViewerActionDefinition {
 
 class ViewerAction {
   readonly #definition: ViewerActionDefinition;
-  readonly #overrides: ViewerActionOverridesInterfaceTypeEntity.Type;
+  readonly #overrides: ViewerActionOverridesEntity.Type;
   readonly #id: string;
 
   public constructor(
     definition: ViewerActionDefinition,
     id: string,
-    overrides: ViewerActionOverridesInterfaceTypeEntity.Type
+    overrides: ViewerActionOverridesEntity.Type
   ) {
     this.#definition = definition;
     this.#overrides = overrides;
@@ -58,8 +58,8 @@ class ViewerAction {
     return result;
   }
 
-  public get id(): ViewerActionIdentifierInterfaceTypeEntity.Type {
-    const result = ViewerActionIdentifierInterfaceTypeEntity.intake(this.#id);
+  public get id(): ViewerActionIdentifierEntity.Type {
+    const result = ViewerActionIdentifierEntity.intake(this.#id);
     return result;
   }
 
@@ -83,7 +83,7 @@ class ViewerAction {
     return result;
   }
 
-  public get tone(): ViewerActionOverridesInterfaceTypeEntity.Type['tone'] {
+  public get tone(): ViewerActionOverridesEntity.Type['tone'] {
     const result = this.#overrides.tone ?? this.#definition.tone;
     return result;
   }
@@ -91,26 +91,26 @@ class ViewerAction {
 
 export const viewerActionsModel = class ViewerActionsModel {
   static readonly #definitions = new Map<string, ViewerActionDefinition>([
-    ['centre', new ViewerActionDefinition('⊙', 'Centre view', ViewerActionOverridesInterfaceTypeEntity.create({}))],
-    ['clear', new ViewerActionDefinition('🗑 clear', 'Clear', ViewerActionOverridesInterfaceTypeEntity.create({ 'tone': 'danger' }))],
-    ['close', new ViewerActionDefinition('✕', 'Close', ViewerActionOverridesInterfaceTypeEntity.create({ 'shortcut': 'Esc' }))],
-    ['expand', new ViewerActionDefinition('⤢', 'Expand', ViewerActionOverridesInterfaceTypeEntity.create({}))],
-    ['fit', new ViewerActionDefinition('⤢', 'Fit to view', ViewerActionOverridesInterfaceTypeEntity.create({}))],
-    ['fullscreen', new ViewerActionDefinition('⛶', 'Fullscreen', ViewerActionOverridesInterfaceTypeEntity.create({}))],
-    ['zoom-in', new ViewerActionDefinition('＋', 'Zoom in', ViewerActionOverridesInterfaceTypeEntity.create({}))],
-    ['zoom-out', new ViewerActionDefinition('－', 'Zoom out', ViewerActionOverridesInterfaceTypeEntity.create({}))]
+    ['centre', new ViewerActionDefinition('⊙', 'Centre view', ViewerActionOverridesEntity.create({}))],
+    ['clear', new ViewerActionDefinition('🗑 clear', 'Clear', ViewerActionOverridesEntity.create({ 'tone': 'danger' }))],
+    ['close', new ViewerActionDefinition('✕', 'Close', ViewerActionOverridesEntity.create({ 'shortcut': 'Esc' }))],
+    ['expand', new ViewerActionDefinition('⤢', 'Expand', ViewerActionOverridesEntity.create({}))],
+    ['fit', new ViewerActionDefinition('⤢', 'Fit to view', ViewerActionOverridesEntity.create({}))],
+    ['fullscreen', new ViewerActionDefinition('⛶', 'Fullscreen', ViewerActionOverridesEntity.create({}))],
+    ['zoom-in', new ViewerActionDefinition('＋', 'Zoom in', ViewerActionOverridesEntity.create({}))],
+    ['zoom-out', new ViewerActionDefinition('－', 'Zoom out', ViewerActionOverridesEntity.create({}))]
   ]);
 
   public static create(
     id: string,
-    overrides: ViewerActionOverridesInterfaceTypeEntity.Type = ViewerActionOverridesInterfaceTypeEntity.create({})
+    overrides: ViewerActionOverridesEntity.Type = ViewerActionOverridesEntity.create({})
   ): ViewerAction {
-    const resolvedIdentifier = ViewerActionIdentifierInterfaceTypeEntity.intake(id);
+    const resolvedIdentifier = ViewerActionIdentifierEntity.intake(id);
     const definition = viewerActionsModel.#definitions.get(resolvedIdentifier);
     if (definition === undefined) {
       throw new Error(`Unknown viewer action: ${id}`);
     }
-    const normalized = ViewerActionOverridesInterfaceTypeEntity.intake(overrides);
+    const normalized = ViewerActionOverridesEntity.intake(overrides);
     const result = new ViewerAction(definition, resolvedIdentifier, normalized);
     return result;
   }

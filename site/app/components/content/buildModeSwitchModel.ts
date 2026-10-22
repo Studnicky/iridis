@@ -1,4 +1,4 @@
-import { ModeInterfaceTypeEntity } from '~/composables/entities/ModeInterfaceTypeEntity.ts';
+import { ModeEntity } from '~/composables/entities/ModeEntity.ts';
 
 export const buildModeSwitchModel = class ModeSwitchModel {
   public static readonly tabItems = [
@@ -6,8 +6,8 @@ export const buildModeSwitchModel = class ModeSwitchModel {
     { 'icon': 'i-material-symbols-image-outline-rounded', 'label': 'Extract from image', 'value': '1' }
   ] as const;
 
-  public static mode(value: number | string): ModeInterfaceTypeEntity.Type {
-    const result = ModeInterfaceTypeEntity.intake(Number(value) === 0 ? 'picker' : 'image');
+  public static mode(value: number | string): ModeEntity.Type {
+    const result = ModeEntity.intake(Number(value) === 0 ? 'picker' : 'image');
     return result;
   }
 

@@ -25,13 +25,13 @@ npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-shadc
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
 import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { shadcnPlugin }      from '@studnicky/iridis-shadcn';
 
-export function generateShadcnTheme(roleSchema: RoleSchemaInterfaceType) {
+export function generateShadcnTheme(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(shadcnPlugin);
@@ -69,7 +69,7 @@ export function generateShadcnTheme(roleSchema: RoleSchemaInterfaceType) {
 }
 ```
 
-`state.outputs['shadcn:theme']` is typed as `ShadcnOutputInterfaceType`:
+`state.outputs['shadcn:theme']` is typed as `ShadcnOutputEntity`:
 
 | Field | Shape | Notes |
 |---|---|---|

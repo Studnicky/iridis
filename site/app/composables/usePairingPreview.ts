@@ -1,4 +1,4 @@
-import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
+import type { RoleSchemaEntity } from '@studnicky/iridis/model';
 
 import { computed } from 'vue';
 
@@ -29,7 +29,7 @@ class BestForegroundAgainstOperation {
 const bestForegroundAgainst = BestForegroundAgainstOperation.run;
 
 class LabelForOperation {
-  static run(ratio: number, schema: RoleSchemaInterfaceTypeEntity.Type | undefined, roleName: string): string {
+  static run(ratio: number, schema: RoleSchemaEntity.Type | undefined, roleName: string): string {
     const compliance = complianceFor(ratio, minimumRatioForRole(schema, roleName));
     const suffix = compliance === 'fail' ? 'decorative only' : `${compliance} pass`;
     return `${ratio.toFixed(1)}:1 — ${suffix}`;
@@ -50,7 +50,7 @@ class UsePairingPreviewOperation {
   static run() {
     const { 'framing': framing, 'roleViews': roleViews, 'schemaName': schemaName } = useIridis();
 
-    const schema = computed<RoleSchemaInterfaceTypeEntity.Type>(() => {
+    const schema = computed<RoleSchemaEntity.Type>(() => {
       const pair = roleSchemaByName[schemaName.value];
       const selected = framing.value === 'dark' ? pair.dark : pair.light;
       const result = roleSchemaFor(selected);

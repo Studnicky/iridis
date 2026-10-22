@@ -1,10 +1,10 @@
-import type { ComplianceBlockedPairInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { ComplianceBlockedPairEntity } from '@studnicky/iridis-contrast';
 import type { JSONSchema7Type } from 'json-schema';
 
-import { ComplianceReportInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import { ComplianceReportEntity } from '@studnicky/iridis-contrast';
 
 class BlockedPairView {
-  private static readonly reasonSuffixes: ReadonlyMap<ComplianceBlockedPairInterfaceTypeEntity.Type['reason'], string> = new Map([
+  private static readonly reasonSuffixes: ReadonlyMap<ComplianceBlockedPairEntity.Type['reason'], string> = new Map([
     ['relation-tolerance', ' (relation tolerance)'],
     ['solver-exhausted', ' (search exhausted)'],
     ['stated-both', ' (both pinned)']
@@ -16,7 +16,7 @@ class BlockedPairView {
   public readonly required: number;
   public readonly suffix: string;
 
-  public constructor(pair: ComplianceBlockedPairInterfaceTypeEntity.Type) {
+  public constructor(pair: ComplianceBlockedPairEntity.Type) {
     this.actual = pair.actualTrichromat;
     this.background = pair.background;
     this.foreground = pair.foreground;
@@ -73,7 +73,7 @@ export class AccessibilityBlockers {
 
   public static fromReport(report: JSONSchema7Type | undefined): AccessibilityBlockerSet {
     let result = new AccessibilityBlockerSet([], '');
-    if (report !== undefined && ComplianceReportInterfaceTypeEntity.validate(report)) {
+    if (report !== undefined && ComplianceReportEntity.validate(report)) {
       const { algorithm, level } = report.selected;
       const label = AccessibilityBlockers.standardLabel(algorithm, level);
       const pairs = report.blockedPairs.map((pair) => {

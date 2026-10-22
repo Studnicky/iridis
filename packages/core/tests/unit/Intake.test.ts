@@ -25,15 +25,15 @@ import { test } from 'node:test';
 
 import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
 import type { ColorInputEntity } from '../../src/entities/ColorInputEntity.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../src/interfaces/PipelineContextInterface.ts';
 import type { RawImagePixelInputInterface } from '../../src/interfaces/RawImagePixelInputInterface.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 import { consoleLogger } from '../../src/engine/ConsoleLogger.ts';
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
-import { RuntimeOptionsInterfaceTypeEntity } from '../../src/entities/RuntimeOptionsInterfaceTypeEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
+import { RuntimeOptionsEntity } from '../../src/entities/RuntimeOptionsEntity.ts';
 import { intakeAny } from '../../src/tasks/intake/IntakeAny.ts';
 import { intakeHex } from '../../src/tasks/intake/IntakeHex.ts';
 import { intakeHsl } from '../../src/tasks/intake/IntakeHsl.ts';
@@ -58,11 +58,11 @@ const IntakeTestCases = {
       static makeState(colors: readonly (ColorInputEntity.Type | RawImagePixelInputInterface)[]): PaletteStateInterface {
         return {
           'colors': [],
-          'input': InputInterfaceTypeEntity.create({ 'colors': [...colors] }),
+          'input': InputEntity.create({ 'colors': [...colors] }),
           'metadata': {},
           'outputs':  {},
           'roles':    {},
-          'runtime':  RuntimeOptionsInterfaceTypeEntity.create({}),
+          'runtime':  RuntimeOptionsEntity.create({}),
           'variants': {}
         };
       }
@@ -76,13 +76,13 @@ const IntakeTestCases = {
     // ---------------------------------------------------------------------------
     // Cell 1 — IntakeHex.parse: canonical parse contract
     //
-    // parse() returns a ColorRecordInterfaceType on valid hex, throws on any other
+    // parse() returns a ColorRecordEntity on valid hex, throws on any other
     // input (non-string, non-hex string, wrong format). Side-effect-free.
     // ---------------------------------------------------------------------------
 
     const hex = intakeHex;
 
-    const cell1Scenarios: readonly ScenarioInterface<{ 'raw': ColorInputEntity.Type | RawImagePixelInputInterface }, { 'result': ColorRecordInterfaceTypeEntity.Type }>[] = [
+    const cell1Scenarios: readonly ScenarioInterface<{ 'raw': ColorInputEntity.Type | RawImagePixelInputInterface }, { 'result': ColorRecordEntity.Type }>[] = [
       {
         'assert': function(output, error) {
           assert.strictEqual(error, undefined, '[cell=1, scenario=3digit] must not throw');
@@ -139,7 +139,7 @@ const IntakeTestCases = {
       }
     ];
 
-    new ScenarioRunner<{ 'raw': ColorInputEntity.Type | RawImagePixelInputInterface }, { 'result': ColorRecordInterfaceTypeEntity.Type }>(
+    new ScenarioRunner<{ 'raw': ColorInputEntity.Type | RawImagePixelInputInterface }, { 'result': ColorRecordEntity.Type }>(
       'Intake :: cell-1 :: IntakeHex.parse',
       (input) => {return { 'result': hex.parse(input.raw) };}
     ).run(cell1Scenarios);

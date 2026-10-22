@@ -1,6 +1,6 @@
 import type { PaletteStateInterface } from '@studnicky/iridis';
 
-import type { CvdEvalInterfaceTypeEntity } from './entities/CvdEvalInterfaceTypeEntity.ts';
+import type { CvdEvalEntity } from './entities/CvdEvalEntity.ts';
 
 /** Maps configured CVD handling to evidence, correction, and terminal admission decisions. */
 export abstract class CvdFailurePolicy {
@@ -16,14 +16,14 @@ export abstract class CvdFailurePolicy {
     return result;
   }
 
-  observes(evaluation: CvdEvalInterfaceTypeEntity.Type): boolean {
+  observes(evaluation: CvdEvalEntity.Type): boolean {
     const result = evaluation.belowFloor || evaluation.exceedsDrop;
     return result;
   }
 
-  abstract blocks(evaluation: CvdEvalInterfaceTypeEntity.Type): boolean;
+  abstract blocks(evaluation: CvdEvalEntity.Type): boolean;
 
-  abstract corrects(evaluation: CvdEvalInterfaceTypeEntity.Type): boolean;
+  abstract corrects(evaluation: CvdEvalEntity.Type): boolean;
 
   abstract emitsBlockers(): boolean;
 
@@ -31,12 +31,12 @@ export abstract class CvdFailurePolicy {
 }
 
 class EnforceCvdFailurePolicy extends CvdFailurePolicy {
-  blocks(evaluation: CvdEvalInterfaceTypeEntity.Type): boolean {
+  blocks(evaluation: CvdEvalEntity.Type): boolean {
     const result = this.observes(evaluation);
     return result;
   }
 
-  corrects(evaluation: CvdEvalInterfaceTypeEntity.Type): boolean {
+  corrects(evaluation: CvdEvalEntity.Type): boolean {
     const result = this.observes(evaluation);
     return result;
   }
@@ -51,11 +51,11 @@ class EnforceCvdFailurePolicy extends CvdFailurePolicy {
 }
 
 class NudgeCvdFailurePolicy extends CvdFailurePolicy {
-  blocks(_evaluation: CvdEvalInterfaceTypeEntity.Type): boolean {
+  blocks(_evaluation: CvdEvalEntity.Type): boolean {
     return false;
   }
 
-  corrects(evaluation: CvdEvalInterfaceTypeEntity.Type): boolean {
+  corrects(evaluation: CvdEvalEntity.Type): boolean {
     const result = this.observes(evaluation);
     return result;
   }
@@ -70,11 +70,11 @@ class NudgeCvdFailurePolicy extends CvdFailurePolicy {
 }
 
 class WarnCvdFailurePolicy extends CvdFailurePolicy {
-  blocks(_evaluation: CvdEvalInterfaceTypeEntity.Type): boolean {
+  blocks(_evaluation: CvdEvalEntity.Type): boolean {
     return false;
   }
 
-  corrects(_evaluation: CvdEvalInterfaceTypeEntity.Type): boolean {
+  corrects(_evaluation: CvdEvalEntity.Type): boolean {
     return false;
   }
 

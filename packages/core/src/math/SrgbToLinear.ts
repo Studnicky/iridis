@@ -1,4 +1,4 @@
-import { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
+import { RgbEntity } from '../entities/RgbEntity.ts';
 
 class GammaDecode {
   static channel(v: number): number {
@@ -14,8 +14,8 @@ class GammaDecode {
 class SrgbToLinear {
   readonly 'name' = 'srgbToLinear';
 
-  apply(r: number, g: number, b: number): RgbInterfaceTypeEntity.Type {
-    const result = RgbInterfaceTypeEntity.create({
+  apply(r: number, g: number, b: number): RgbEntity.Type {
+    const result = RgbEntity.create({
       'b': GammaDecode.channel(b),
       'g': GammaDecode.channel(g),
       'r': GammaDecode.channel(r)

@@ -1,4 +1,4 @@
-import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../ThemeDefinitionInterface.ts';
 
 import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
 import { renderDot } from '../particles/renderDot.ts';
@@ -9,7 +9,7 @@ import { renderDot } from '../particles/renderDot.ts';
  * starfield/particles at all; a spreadsheet doesn't have flashing dots
  * drifting across it. Visual (fonts/radius/border) lives in ./dayAtWork.css.
  */
-export const dayAtWork: ThemeDefinitionInterfaceType = {
+export const dayAtWork: ThemeDefinitionInterface = {
   'ambient': {
     'blobCount':       0,
     'gooFilter':       'none',

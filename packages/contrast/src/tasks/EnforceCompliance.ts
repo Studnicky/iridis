@@ -1,5 +1,5 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
@@ -10,15 +10,15 @@ import {
   enforceContrast,
   Metadata,
   PaletteRoleState,
-  TaskManifestInterfaceTypeEntity
+  TaskManifestEntity
 } from '@studnicky/iridis';
 
 import { CvdFailurePolicy } from '../CvdFailurePolicy.ts';
 import { enforceCvdSimulate } from './EnforceCvdSimulate.ts';
 
 class ComplianceRoles {
-  static capture(state: PaletteStateInterface): ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type> {
-    const result = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+  static capture(state: PaletteStateInterface): ReadonlyMap<string, ColorRecordEntity.Type> {
+    const result = new Map<string, ColorRecordEntity.Type>();
     const entries = Object.entries(state.roles);
     for (let index = 0; index < entries.length; index += 1) {
       const entry = entries[index];
@@ -31,7 +31,7 @@ class ComplianceRoles {
 
   static restore(
     state: PaletteStateInterface,
-    snapshot: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>
+    snapshot: ReadonlyMap<string, ColorRecordEntity.Type>
   ): void {
     for (const [roleName, role] of snapshot) {
       Object.defineProperty(state.roles, roleName, {
@@ -48,7 +48,7 @@ class ComplianceRoles {
 class EnforceCompliance implements TaskInterface {
   readonly 'name' = 'enforce:compliance';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Applies the selected contrast standard, CVD refinement, and terminal standard remeasurement without mutating stated roles.',
     'name': 'enforce:compliance',
     'reads': [

@@ -1,10 +1,10 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-import type { HueTargetOverrideInterfaceTypeEntity } from '../entities/HueTargetOverrideInterfaceTypeEntity.ts';
+import type { HueTargetOverrideEntity } from '../entities/HueTargetOverrideEntity.ts';
 
-import { ContrastReportInterfaceTypeEntity } from '../entities/ContrastReportInterfaceTypeEntity.ts';
-import { EngineMetadataInterfaceTypeEntity } from '../entities/EngineMetadataInterfaceTypeEntity.ts';
-import { RoleProvenanceInterfaceTypeEntity } from '../entities/RoleProvenanceInterfaceTypeEntity.ts';
+import { ContrastReportEntity } from '../entities/ContrastReportEntity.ts';
+import { EngineMetadataEntity } from '../entities/EngineMetadataEntity.ts';
+import { RoleProvenanceEntity } from '../entities/RoleProvenanceEntity.ts';
 
 /** Validates known metadata slots at intake and serializes dynamic runtime Maps at the metadata boundary. */
 export class Metadata {
@@ -30,7 +30,7 @@ export class Metadata {
     if (value === undefined) {
       return undefined;
     }
-    const normalized = EngineMetadataInterfaceTypeEntity.intake({
+    const normalized = EngineMetadataEntity.intake({
       'core:hueOffsetOverrides': value
     });
     return normalized['core:hueOffsetOverrides'];
@@ -38,12 +38,12 @@ export class Metadata {
 
   static hueTargetOverrides(
     metadataRecord: Record<string, JSONSchema7Type>
-  ): Record<string, HueTargetOverrideInterfaceTypeEntity.Type> | undefined {
+  ): Record<string, HueTargetOverrideEntity.Type> | undefined {
     const value = metadataRecord['core:hueTargetOverrides'];
     if (value === undefined) {
       return undefined;
     }
-    const normalized = EngineMetadataInterfaceTypeEntity.intake({
+    const normalized = EngineMetadataEntity.intake({
       'core:hueTargetOverrides': value
     });
     return normalized['core:hueTargetOverrides'];
@@ -56,7 +56,7 @@ export class Metadata {
     if (value === undefined) {
       return new Map();
     }
-    const normalized = EngineMetadataInterfaceTypeEntity.intake({
+    const normalized = EngineMetadataEntity.intake({
       'core:roleDistances': value
     });
     const source = normalized['core:roleDistances'];
@@ -78,16 +78,16 @@ export class Metadata {
 
   static roleProvenance(
     metadataRecord: Record<string, JSONSchema7Type>
-  ): Map<string, RoleProvenanceInterfaceTypeEntity.Type> {
+  ): Map<string, RoleProvenanceEntity.Type> {
     const value = metadataRecord['core:roleProvenance'];
     if (value === undefined) {
       return new Map();
     }
-    const normalized = EngineMetadataInterfaceTypeEntity.intake({
+    const normalized = EngineMetadataEntity.intake({
       'core:roleProvenance': value
     });
     const source = normalized['core:roleProvenance'];
-    const result = new Map<string, RoleProvenanceInterfaceTypeEntity.Type>();
+    const result = new Map<string, RoleProvenanceEntity.Type>();
     if (source === undefined) {
       return result;
     }
@@ -100,7 +100,7 @@ export class Metadata {
       const [roleName, provenance] = entry;
       result.set(
         roleName,
-        RoleProvenanceInterfaceTypeEntity.intake(provenance)
+        RoleProvenanceEntity.intake(provenance)
       );
     }
     return result;
@@ -108,20 +108,20 @@ export class Metadata {
 
   static contrastReport(
     metadataRecord: Record<string, JSONSchema7Type>
-  ): ContrastReportInterfaceTypeEntity.Type | undefined {
+  ): ContrastReportEntity.Type | undefined {
     const value = metadataRecord['core:contrastReport'];
     if (value === undefined) {
       return undefined;
     }
-    const result = ContrastReportInterfaceTypeEntity.intake(value);
+    const result = ContrastReportEntity.intake(value);
     return result;
   }
 
   static writeContrastReport(
     metadataRecord: Record<string, JSONSchema7Type>,
-    report: ContrastReportInterfaceTypeEntity.Type
+    report: ContrastReportEntity.Type
   ): void {
-    const normalized = EngineMetadataInterfaceTypeEntity.create({
+    const normalized = EngineMetadataEntity.create({
       'core:contrastReport': report
     });
     const value = normalized['core:contrastReport'];
@@ -138,7 +138,7 @@ export class Metadata {
     for (const [roleName, candidates] of distances) {
       serializedEntries.set(roleName, Metadata.#recordFromEntries(candidates));
     }
-    const normalized = EngineMetadataInterfaceTypeEntity.create({
+    const normalized = EngineMetadataEntity.create({
       'core:roleDistances': Metadata.#recordFromEntries(serializedEntries)
     });
     const value = normalized['core:roleDistances'];
@@ -149,9 +149,9 @@ export class Metadata {
 
   static writeRoleProvenance(
     metadataRecord: Record<string, JSONSchema7Type>,
-    provenance: Map<string, RoleProvenanceInterfaceTypeEntity.Type>
+    provenance: Map<string, RoleProvenanceEntity.Type>
   ): void {
-    const normalized = EngineMetadataInterfaceTypeEntity.create({
+    const normalized = EngineMetadataEntity.create({
       'core:roleProvenance': Metadata.#recordFromEntries(provenance)
     });
     const value = normalized['core:roleProvenance'];

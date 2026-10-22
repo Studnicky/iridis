@@ -22,15 +22,15 @@
  * lightness/chroma envelopes; enforce:compliance lifts pairs to threshold.
  */
 
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 
-import type { SchemaNameInterfaceTypeEntity } from '../composables/entities/SchemaNameInterfaceTypeEntity.ts';
+import type { SchemaNameEntity } from '../composables/entities/SchemaNameEntity.ts';
 import type { SchemaPair } from '../composables/types/index.ts';
 
 /* ─── iridis-4 ─────────────────────────────────────────────────────── */
 
 namespace RoleSchemas {
-  const iridis4Dark = RoleSchemaInterfaceTypeEntity.create({
+  const iridis4Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'brand', 'minimumContrastRatio': 4.5 },
@@ -46,7 +46,7 @@ namespace RoleSchemas {
     ]
   });
 
-  const iridis4Light = RoleSchemaInterfaceTypeEntity.create({
+  const iridis4Light = RoleSchemaEntity.create({
     'contrastPairs': [
       { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'brand', 'minimumContrastRatio': 4.5 },
@@ -64,7 +64,7 @@ namespace RoleSchemas {
 
   /* ─── iridis-8 ─────────────────────────────────────────────────────── */
 
-  const iridis8Dark = RoleSchemaInterfaceTypeEntity.create({
+  const iridis8Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis4Dark.contrastPairs ?? []),
       { 'algorithm': 'wcag21',     'background': 'surface',    'foreground': 'text', 'minimumContrastRatio': 4.5 },
@@ -83,7 +83,7 @@ namespace RoleSchemas {
     ]
   });
 
-  const iridis8Light = RoleSchemaInterfaceTypeEntity.create({
+  const iridis8Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis4Light.contrastPairs ?? []),
       { 'algorithm': 'wcag21',     'background': 'surface',    'foreground': 'text', 'minimumContrastRatio': 4.5 },
@@ -104,7 +104,7 @@ namespace RoleSchemas {
 
   /* ─── iridis-12 ────────────────────────────────────────────────────── */
 
-  const iridis12Dark = RoleSchemaInterfaceTypeEntity.create({
+  const iridis12Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis8Dark.contrastPairs ?? []),
       { 'algorithm': 'wcag21',       'background': 'background', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
@@ -123,7 +123,7 @@ namespace RoleSchemas {
     ]
   });
 
-  const iridis12Light = RoleSchemaInterfaceTypeEntity.create({
+  const iridis12Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis8Light.contrastPairs ?? []),
       { 'algorithm': 'wcag21',       'background': 'background', 'foreground': 'success', 'minimumContrastRatio': 4.5 },
@@ -144,7 +144,7 @@ namespace RoleSchemas {
 
   /* ─── iridis-16 ────────────────────────────────────────────────────── */
 
-  const iridis16Dark = RoleSchemaInterfaceTypeEntity.create({
+  const iridis16Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis12Dark.contrastPairs ?? []),
       { 'algorithm': 'wcag21',   'background': 'bg-soft', 'foreground': 'syntax-string', 'minimumContrastRatio': 4.5 },
@@ -163,7 +163,7 @@ namespace RoleSchemas {
     ]
   });
 
-  const iridis16Light = RoleSchemaInterfaceTypeEntity.create({
+  const iridis16Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis12Light.contrastPairs ?? []),
       { 'algorithm': 'wcag21',   'background': 'bg-soft', 'foreground': 'syntax-string', 'minimumContrastRatio': 4.5 },
@@ -189,7 +189,7 @@ namespace RoleSchemas {
    the conceptual surface that large-scale design systems (vscode,
    ide themes, full chrome+code+status surfaces) consume. */
 
-  const iridis32Dark = RoleSchemaInterfaceTypeEntity.create({
+  const iridis32Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis16Dark.contrastPairs ?? []),
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text-strong', 'minimumContrastRatio': 7.0 },
@@ -235,7 +235,7 @@ namespace RoleSchemas {
     ]
   });
 
-  const iridis32Light = RoleSchemaInterfaceTypeEntity.create({
+  const iridis32Light = RoleSchemaEntity.create({
     'contrastPairs': [
       ...(iridis16Light.contrastPairs ?? []),
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'text-strong', 'minimumContrastRatio': 7.0 },
@@ -277,7 +277,7 @@ namespace RoleSchemas {
 
   /* ─── Public registry ─────────────────────────────────────────────── */
 
-  export const byName: Record<SchemaNameInterfaceTypeEntity.Type, SchemaPair> = {
+  export const byName: Record<SchemaNameEntity.Type, SchemaPair> = {
     'iridis-12': { 'dark': iridis12Dark, 'light': iridis12Light },
     'iridis-16': { 'dark': iridis16Dark, 'light': iridis16Light },
     'iridis-32': { 'dark': iridis32Dark, 'light': iridis32Light },

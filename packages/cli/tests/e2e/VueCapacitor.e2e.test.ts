@@ -1,7 +1,7 @@
-import { type ColorRecordInterfaceTypeEntity, CssVarName, type PaletteStateInterface } from '@studnicky/iridis';
+import { type ColorRecordEntity, CssVarName, type PaletteStateInterface } from '@studnicky/iridis';
 import { CapacitorOutputsEntity } from '@studnicky/iridis-capacitor';
 import { Cli, ConfigLoader } from '@studnicky/iridis-cli';
-import { ComplianceReportInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 import { Engine } from '@studnicky/iridis/engine';
 import { contrastWcag21 } from '@studnicky/iridis/math';
 import { coreTasks } from '@studnicky/iridis/tasks';
@@ -39,7 +39,7 @@ class VueCapacitorTestFixture {
     return engine;
   }
 
-  static requireRole(state: PaletteStateInterface, name: string): ColorRecordInterfaceTypeEntity.Type {
+  static requireRole(state: PaletteStateInterface, name: string): ColorRecordEntity.Type {
     const role = state.roles[name];
     if (role === undefined) {
       throw new Error(`Expected resolved role ${name}.`);
@@ -86,8 +86,8 @@ await test('Vue Capacitor example admits canonical configuration and contrast me
   }
   assert.equal(wcagPairs.length, 4);
   const state = await VueCapacitorTestFixture.runPipeline();
-  const compliance = ComplianceReportInterfaceTypeEntity.intake(state.metadata['contrast:complianceReport']);
-  const cvd = CvdResultSetInterfaceTypeEntity.intake(state.metadata['contrast:cvd']);
+  const compliance = ComplianceReportEntity.intake(state.metadata['contrast:complianceReport']);
+  const cvd = CvdResultSetEntity.intake(state.metadata['contrast:cvd']);
   assert.equal(compliance.compliant, true);
   assert.equal(compliance.cvdCompliant, true);
   assert.equal(compliance.pairs.length > 0, true);

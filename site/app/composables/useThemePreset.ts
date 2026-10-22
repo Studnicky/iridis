@@ -15,7 +15,7 @@ import * as VueModule from 'vue';
 
 import { onNuxtReady } from '#imports';
 
-import type { ThemeDefinitionInterfaceType } from '../theme/ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../theme/ThemeDefinitionInterface.ts';
 
 import { THEMES } from '../theme/presets/index.ts';
 import { THEME_PRESET_CONSTANTS } from './constants/ThemePresetConstants.ts';
@@ -30,14 +30,14 @@ const initialTheme = THEMES.get(THEME_PRESET_CONSTANTS.DEFAULT_THEME_KEY);
 if (initialTheme === undefined) {
   throw new TypeError('Theme registry must contain the default theme');
 }
-const defaultTheme: ThemeDefinitionInterfaceType = initialTheme;
+const defaultTheme: ThemeDefinitionInterface = initialTheme;
 
 /** Reactive ambient config AmbientBackground.vue reads — kept as its own ref so the component only re-renders on ambient changes, not on unrelated theme fields. */
-const activeAmbient = VueModule.ref<ThemeDefinitionInterfaceType['ambient']>(defaultTheme.ambient);
+const activeAmbient = VueModule.ref<ThemeDefinitionInterface['ambient']>(defaultTheme.ambient);
 
 /** DOM writer — SSR-guarded. Sets the theme data attribute (its own adapter stylesheet cascades in font/radius/border-style) and updates the reactive ambient config. */
 class ThemePreset {
-  static resolve(key: string): ThemeDefinitionInterfaceType {
+  static resolve(key: string): ThemeDefinitionInterface {
     const result = THEMES.get(key) ?? defaultTheme;
     return result;
   }
@@ -81,7 +81,7 @@ class UseThemePresetOperation {
     'activeAmbient': typeof activeAmbient;
     'activeThemeKey': typeof activeThemeKey;
     'applyThemePreset': (key: string) => void;
-    'THEMES': ReadonlyMap<string, ThemeDefinitionInterfaceType>;
+    'THEMES': ReadonlyMap<string, ThemeDefinitionInterface>;
   } {
     if (!booted) {
       booted = true;

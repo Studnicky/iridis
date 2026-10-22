@@ -1,8 +1,8 @@
-import { contrastWcag21, InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { contrastWcag21, InputEntity } from '@studnicky/iridis';
 import {
-  ComplianceReportInterfaceTypeEntity,
+  ComplianceReportEntity,
   contrastPlugin,
-  CvdResultSetInterfaceTypeEntity
+  CvdResultSetEntity
 } from '@studnicky/iridis-contrast';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
@@ -63,7 +63,7 @@ await test('ContrastPlugin compiles metadata schemas and rejects incomplete repo
   );
   assert.throws(
     () => {
-      const result = ComplianceReportInterfaceTypeEntity.intake({
+      const result = ComplianceReportEntity.intake({
         'blockedPairs': [],
         'compliant': true,
         'cvdCompliant': true,
@@ -76,7 +76,7 @@ await test('ContrastPlugin compiles metadata schemas and rejects incomplete repo
   );
   assert.throws(
     () => {
-      const result = CvdResultSetInterfaceTypeEntity.intake({
+      const result = CvdResultSetEntity.intake({
         'blocked': [],
         'corrections': []
       });
@@ -98,7 +98,7 @@ await test('canonical compliance emits an admissible zero-pair report', () => {
     'report:compliance'
   ]);
   const state = engine.run(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       'colors': ['#000000', '#ffffff'],
       'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'enforce', 'level': 'AA' },
       'roles': {
@@ -128,7 +128,7 @@ await test('canonical compliance emits an admissible zero-pair report', () => {
     rawReport !== undefined,
     'terminal report exists without declared pairs'
   );
-  const report = ComplianceReportInterfaceTypeEntity.intake(rawReport);
+  const report = ComplianceReportEntity.intake(rawReport);
   assert.strictEqual(
     report.compliant,
     true,
@@ -162,7 +162,7 @@ await test('canonical compliance records an already compliant pair as not-needed
     'report:compliance'
   ]);
   const state = engine.run(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       'colors': ['#000000', '#ffffff'],
       'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'enforce', 'level': 'AA' },
       'roles': {
@@ -195,7 +195,7 @@ await test('canonical compliance records an already compliant pair as not-needed
   );
   const rawReport = state.metadata['contrast:complianceReport'];
   assert.ok(rawReport !== undefined, 'terminal report exists');
-  const report = ComplianceReportInterfaceTypeEntity.intake(rawReport);
+  const report = ComplianceReportEntity.intake(rawReport);
   const pair = report.pairs.at(0);
   assert.ok(pair !== undefined, 'declared pair is observed');
   assert.strictEqual(
@@ -216,7 +216,7 @@ await test('canonical compliance records an already compliant pair as not-needed
 });
 
 await test('canonical compliance corrects a failing AAA pair to seven to one', () => {
-  const input = InputInterfaceTypeEntity.intake({
+  const input = InputEntity.intake({
     'colors': ['#777777', '#ffffff'],
     'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'enforce', 'level': 'AAA' },
     'roles': {
@@ -266,7 +266,7 @@ await test('canonical compliance corrects a failing AAA pair to seven to one', (
   const state = engine.run(input);
   const rawReport = state.metadata['contrast:complianceReport'];
   assert.ok(rawReport !== undefined, 'terminal report exists');
-  const report = ComplianceReportInterfaceTypeEntity.intake(rawReport);
+  const report = ComplianceReportEntity.intake(rawReport);
   const pair = report.pairs.at(0);
   assert.ok(pair !== undefined, 'declared pair is observed');
   assert.strictEqual(pair.requiredTrichromat, 7, 'AAA maps a declared text pair to seven to one');
@@ -285,7 +285,7 @@ await test('canonical compliance solves a non-background APCA pair at Lc sixty',
     'report:compliance'
   ]);
   const state = engine.run(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       'colors': ['#777777', '#ffffff'],
       'contrast': { 'algorithm': 'apca', 'cvdMode': 'enforce', 'level': 'Lc' },
       'roles': {
@@ -318,7 +318,7 @@ await test('canonical compliance solves a non-background APCA pair at Lc sixty',
   );
   const rawReport = state.metadata['contrast:complianceReport'];
   assert.ok(rawReport !== undefined, 'terminal report exists');
-  const report = ComplianceReportInterfaceTypeEntity.intake(rawReport);
+  const report = ComplianceReportEntity.intake(rawReport);
   const pair = report.pairs.at(0);
   assert.ok(pair !== undefined, 'declared pair is observed');
   assert.strictEqual(
@@ -348,7 +348,7 @@ await test('canonical compliance preserves its terminal report through variant d
     'report:compliance'
   ]);
   const state = engine.run(
-    InputInterfaceTypeEntity.intake({
+    InputEntity.intake({
       'colors': ['#aaaaaa', '#ffffff'],
       'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'enforce', 'level': 'AA' },
       'roles': {
@@ -381,7 +381,7 @@ await test('canonical compliance preserves its terminal report through variant d
   );
   const rawReport = state.metadata['contrast:complianceReport'];
   assert.ok(rawReport !== undefined, 'contrast plugin terminal report present');
-  const report = ComplianceReportInterfaceTypeEntity.intake(rawReport);
+  const report = ComplianceReportEntity.intake(rawReport);
   assert.strictEqual(report.compliant, true, 'terminal rendered roles comply');
   assert.strictEqual(
     report.cvdCompliant,
@@ -437,7 +437,7 @@ await test('canonical compliance applies AAA and APCA targets to every declared 
       'report:compliance'
     ]);
     const state = engine.run(
-      InputInterfaceTypeEntity.intake({
+      InputEntity.intake({
         'colors': ['#000000', '#ffffff'],
         'contrast': {
           'algorithm': selection.algorithm,
@@ -474,7 +474,7 @@ await test('canonical compliance applies AAA and APCA targets to every declared 
     );
     const rawReport = state.metadata['contrast:complianceReport'];
     assert.ok(rawReport !== undefined, 'terminal report present');
-    const report = ComplianceReportInterfaceTypeEntity.intake(rawReport);
+    const report = ComplianceReportEntity.intake(rawReport);
     const pair = report.pairs.at(0);
     assert.ok(pair !== undefined, 'declared pair reported');
     assert.strictEqual(

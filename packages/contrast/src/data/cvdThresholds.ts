@@ -72,8 +72,8 @@
  *                protanomaly + protanopia).
  */
 
-import type { CvdEvalInterfaceTypeEntity } from '../entities/CvdEvalInterfaceTypeEntity.ts';
-import type { CvdThresholdInterfaceTypeEntity } from '../entities/CvdThresholdInterfaceTypeEntity.ts';
+import type { CvdEvalEntity } from '../entities/CvdEvalEntity.ts';
+import type { CvdThresholdEntity } from '../entities/CvdThresholdEntity.ts';
 
 /**
  * `dropMagnitude`: maximum allowed |WCAG-21 contrast drop| between
@@ -90,8 +90,8 @@ import type { CvdThresholdInterfaceTypeEntity } from '../entities/CvdThresholdIn
  * trichromat perception.
  */
 export const CVD_THRESHOLDS: Readonly<Record<
-  CvdEvalInterfaceTypeEntity.Type['cvdType'],
-  CvdThresholdInterfaceTypeEntity.Type
+  CvdEvalEntity.Type['cvdType'],
+  CvdThresholdEntity.Type
 >> = {
   /* Achromatopsia: rod monochromacy preserves luminance contrast
      exactly, so the drop signal is identically 0 [WS82]. We never want

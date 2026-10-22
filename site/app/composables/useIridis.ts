@@ -6,9 +6,9 @@
  * from hueOffset on the schema roles. The projector only reads those hexes.
  */
 
-import type { ComplianceReportInterfaceTypeEntity, CvdMatrixInterfaceTypeEntity, CvdResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { ComplianceReportEntity, CvdMatrixEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 import type { ClusterStrategyInterface, GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
-import type { GalleryHistogramSlotInterfaceType } from '@studnicky/iridis-image/types';
+import type { GalleryHistogramSlotInterface } from '@studnicky/iridis-image/types';
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
 import { ClusterDispatcher } from '@studnicky/iridis-image';
@@ -16,8 +16,8 @@ import * as VueModule from 'vue';
 
 import { useNuxtApp, useRuntimeConfig, useState } from '#imports';
 
-import type { DerivationRelationInterfaceTypeEntity } from './entities/DerivationRelationInterfaceTypeEntity.ts';
-import type { PaletteSnapshotInterfaceTypeEntity } from './entities/PaletteSnapshotInterfaceTypeEntity.ts';
+import type { DerivationRelationEntity } from './entities/DerivationRelationEntity.ts';
+import type { PaletteSnapshotEntity } from './entities/PaletteSnapshotEntity.ts';
 import type { WorkerEnvelopeEntity } from './entities/WorkerEnvelopeEntity.ts';
 import type { WorkerReplyEntity } from './entities/WorkerReplyEntity.ts';
 import type { PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType, UploadedImage } from './types/index.ts';
@@ -38,13 +38,13 @@ import { sortRoleRows } from '../utils/sortRoleRows.ts';
 import { AccessibilityBlockers } from './accessibilityBlockers.ts';
 import { BrowserWorkerPort } from './browserWorkerPort.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
-import { DerivationConfigInterfaceTypeEntity } from './entities/DerivationConfigInterfaceTypeEntity.ts';
+import { DerivationConfigEntity } from './entities/DerivationConfigEntity.ts';
 import { ExtractionSettingsEntity } from './entities/ExtractionSettingsEntity.ts';
-import { FramingInterfaceTypeEntity } from './entities/FramingInterfaceTypeEntity.ts';
-import { ModeInterfaceTypeEntity } from './entities/ModeInterfaceTypeEntity.ts';
-import { PaletteResolveRequestInterfaceTypeEntity } from './entities/PaletteResolveRequestInterfaceTypeEntity.ts';
-import { RoleSortableRowInterfaceTypeEntity } from './entities/RoleSortableRowInterfaceTypeEntity.ts';
-import { SchemaNameInterfaceTypeEntity } from './entities/SchemaNameInterfaceTypeEntity.ts';
+import { FramingEntity } from './entities/FramingEntity.ts';
+import { ModeEntity } from './entities/ModeEntity.ts';
+import { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEntity.ts';
+import { RoleSortableRowEntity } from './entities/RoleSortableRowEntity.ts';
+import { SchemaNameEntity } from './entities/SchemaNameEntity.ts';
 import { WorkerMessageEntity } from './entities/WorkerMessageEntity.ts';
 import { ImagePixels } from './imagePixels.ts';
 import { PaletteAdmission } from './paletteAdmission.ts';
@@ -61,7 +61,7 @@ class ViteModule {
 }
 
 class CvdTypeRegistry {
-  static resolve(value: string): CvdMatrixInterfaceTypeEntity.Type['name'] {
+  static resolve(value: string): CvdMatrixEntity.Type['name'] {
     if (value === 'protanopia' || value === 'deuteranopia' || value === 'tritanopia' || value === 'achromatopsia') {
       const result = value;
       return result;
@@ -89,9 +89,9 @@ class IridisContextFactory {
       }
     }
 
-    const mode = VueModule.computed<ModeInterfaceTypeEntity.Type>({
+    const mode = VueModule.computed<ModeEntity.Type>({
       'get': () => {
-        const result = ModeInterfaceTypeEntity.intake(uiState.value.selectsImageMode() ? 'image' : 'picker');
+        const result = ModeEntity.intake(uiState.value.selectsImageMode() ? 'image' : 'picker');
         return result;
       },
       'set': ModeSetOperation.run
@@ -153,7 +153,7 @@ class IridisContextFactory {
 
     const hydratePaletteSeeds = HydratePaletteSeedsOperation.run;
 
-    const framing = VueModule.ref<FramingInterfaceTypeEntity.Type>(FramingInterfaceTypeEntity.intake('dark'));
+    const framing = VueModule.ref<FramingEntity.Type>(FramingEntity.intake('dark'));
     class ApplyCurrentFramingTokensOperation {
       static run(tokens: RoleHexMapType): void {
         if (framing.value === 'dark') {
@@ -166,7 +166,7 @@ class IridisContextFactory {
 
     const applyCurrentFramingTokens = ApplyCurrentFramingTokensOperation.run;
 
-    const schemaName = VueModule.ref<SchemaNameInterfaceTypeEntity.Type>(SchemaNameInterfaceTypeEntity.defaultValue);
+    const schemaName = VueModule.ref<SchemaNameEntity.Type>(SchemaNameEntity.defaultValue);
     const contrastStrictness = VueModule.ref<number>(2);
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
 
@@ -178,12 +178,12 @@ class IridisContextFactory {
  * whole pipeline via the FSM's schedule(), the same as any other palette
  * parameter — never recomputed and reapplied client-side.
  */
-    const derivationConfig = VueModule.ref<DerivationConfigInterfaceTypeEntity.Type>(DerivationConfigInterfaceTypeEntity.defaultValue);
+    const derivationConfig = VueModule.ref<DerivationConfigEntity.Type>(DerivationConfigEntity.defaultValue);
 
     /** Merges a single relation's config into `derivationConfig` and re-runs the pipeline — the ONLY way a relation changes; the resolved hue is always recomputed by derive:roleRelations, never written directly here. */
     class RelationUpdateOperation {
-      static run(roleName: string, relation: DerivationRelationInterfaceTypeEntity.Type): void {
-        const patch: Record<string, DerivationRelationInterfaceTypeEntity.Type> = {};
+      static run(roleName: string, relation: DerivationRelationEntity.Type): void {
+        const patch: Record<string, DerivationRelationEntity.Type> = {};
         Object.defineProperty(patch, roleName, { 'configurable': true, 'enumerable': true, 'value': relation, 'writable': true });
         relationsUpdate(patch);
       }
@@ -201,8 +201,8 @@ class IridisContextFactory {
  * One dispatch carrying every changed relation sidesteps the race entirely.
  */
     class RelationsUpdateOperation {
-      static run(newRelations: Record<string, DerivationRelationInterfaceTypeEntity.Type>): void {
-        const updated = DerivationConfigInterfaceTypeEntity.create({ 'relations': { ...derivationConfig.value.relations, ...newRelations } });
+      static run(newRelations: Record<string, DerivationRelationEntity.Type>): void {
+        const updated = DerivationConfigEntity.create({ 'relations': { ...derivationConfig.value.relations, ...newRelations } });
         sendUiEvent(IridisUiEvent.setDerivationConfig(updated));
       }
     }
@@ -243,7 +243,7 @@ class IridisContextFactory {
  * Empty = preview off. Consumed by a display-layer component, not by the
  * engine pipeline — changing it never triggers a recompute.
  */
-    const cvdPreviewTypes = VueModule.ref<Set<CvdMatrixInterfaceTypeEntity.Type['name']>>(new Set());
+    const cvdPreviewTypes = VueModule.ref<Set<CvdMatrixEntity.Type['name']>>(new Set());
 
     /** Diagram view state (zoom level, pan offset, expanded fullscreen mode). */
     const diagramScale = VueModule.ref<number>(1);
@@ -259,7 +259,7 @@ class IridisContextFactory {
     const rolesPinned = VueModule.ref<string[]>([]);
     const rolesDerived = VueModule.ref<string[]>([]);
     const scales = VueModule.ref<ScaleMapType>({});
-    const histogram = VueModule.ref<GalleryHistogramSlotInterfaceType['bins']>([]);
+    const histogram = VueModule.ref<GalleryHistogramSlotInterface['bins']>([]);
     /**
  * Reference-counted rather than a single boolean: run(), combineNowRun(), and
  * addUploadedImagesUnqueued() can all be in flight at once (e.g. a debounced
@@ -311,7 +311,7 @@ class IridisContextFactory {
       { 'behavior': RoleSortBehavior.descending(ratioField.value) }
     ]);
 
-    const roleContrastRows = VueModule.computed<RoleSortableRowInterfaceTypeEntity.Type[]>(() => {
+    const roleContrastRows = VueModule.computed<RoleSortableRowEntity.Type[]>(() => {
       // 'background' is a required role in every schema tier (RoleSchemaByName.ts),
       // and run() resolves it synchronously before any component can read this —
       // never a hardcoded placeholder.
@@ -325,7 +325,7 @@ class IridisContextFactory {
       })();
       const result = roleViews.value.map((role) => {
         const ratio = contrastRatio(role.hex, bg);
-        const row = RoleSortableRowInterfaceTypeEntity.create({ 'c': role.c, 'compliance': complianceFor(ratio, minimumRatioForRole(schema, role.name)), 'h': role.h, 'hex': role.hex, 'l': role.l, 'name': role.name, 'ratio': ratio });
+        const row = RoleSortableRowEntity.create({ 'c': role.c, 'compliance': complianceFor(ratio, minimumRatioForRole(schema, role.name)), 'h': role.h, 'hex': role.hex, 'l': role.l, 'name': role.name, 'ratio': ratio });
         return row;
       });
       return result;
@@ -342,15 +342,15 @@ class IridisContextFactory {
     /** Counts admitted palettes; consumers wait on it instead of timers. */
     const paletteRevision = VueModule.ref<number>(0);
     /** The palette resolved during SSR; the client renders it before any worker exists. */
-    const serverSnapshot = useState<PaletteSnapshotInterfaceTypeEntity.Type | null>('iridis-palette-snapshot', () => {
+    const serverSnapshot = useState<PaletteSnapshotEntity.Type | null>('iridis-palette-snapshot', () => {
       const initial = null;
       return initial;
     });
 
     /** Compliance and CVD reports from the last run. */
     const contrastReport = VueModule.shallowRef<{
-      'compliance'?: ComplianceReportInterfaceTypeEntity.Type;
-      'cvd'?:        CvdResultSetInterfaceTypeEntity.Type;
+      'compliance'?: ComplianceReportEntity.Type;
+      'cvd'?:        CvdResultSetEntity.Type;
     }>({});
 
     /* Image-extraction controls (mirror the engine's gallery config knobs). */
@@ -423,7 +423,7 @@ class IridisContextFactory {
     });
 
     class IngestOperation {
-      static run(snapshot: PaletteSnapshotInterfaceTypeEntity.Type): void {
+      static run(snapshot: PaletteSnapshotEntity.Type): void {
         const clamps = new Map<string, RoleMathClampType>();
         for (let index = 0; index < snapshot.clamps.length; index += 1) {
           const clamp = snapshot.clamps[index];
@@ -481,7 +481,7 @@ class IridisContextFactory {
  * (and therefore `<html class="dark">`) changes. Once the snapshot arrives,
  * the framing commit and the repaint land in one synchronous block.
  */
-    let pendingFraming: FramingInterfaceTypeEntity.Type | undefined;
+    let pendingFraming: FramingEntity.Type | undefined;
     let transitionEpoch = 0;
     /** Opens the shared color-transition window; the newest window closes the class. */
     class ThemeTransitionOperation {
@@ -500,7 +500,7 @@ class IridisContextFactory {
     }
 
     class FramingSwapOperation {
-      static run(request: PaletteResolveRequestInterfaceTypeEntity.Type): void {
+      static run(request: PaletteResolveRequestEntity.Type): void {
         if (request.framing !== framing.value) {
           framing.value = request.framing;
           if (typeof document !== 'undefined') {
@@ -516,7 +516,7 @@ class IridisContextFactory {
 
     /** Admits a resolved snapshot and commits framing, palette state, and tokens as one unit. */
     class CommitSnapshotOperation {
-      static run(snapshot: PaletteSnapshotInterfaceTypeEntity.Type, request: PaletteResolveRequestInterfaceTypeEntity.Type): void {
+      static run(snapshot: PaletteSnapshotEntity.Type, request: PaletteResolveRequestEntity.Type): void {
         const blockers = AccessibilityBlockers.fromReport(snapshot.compliance);
         accessibilityBlockers.value = blockers;
         if (paletteAdmission.admit(blockers)) {
@@ -529,13 +529,13 @@ class IridisContextFactory {
     }
 
     class ResolveRequestOperation {
-      static build(): PaletteResolveRequestInterfaceTypeEntity.Type {
+      static build(): PaletteResolveRequestEntity.Type {
         // Neither pickerSeeds nor imageSeeds has a seed yet on the very first pass
         // (in-browser sample-image extraction hasn't resolved) — feed the engine one
         // bootstrap seed so it resolves a real role set from tick one, WITHOUT writing
         // that seed into either user-visible seed list.
         const seeds = activeSeeds.value.length > 0 ? activeSeeds.value : BOOTSTRAP_SEEDS;
-        const result = PaletteResolveRequestInterfaceTypeEntity.create({
+        const result = PaletteResolveRequestEntity.create({
           'colorSpace': colorSpace.value,
           'derivationConfig': VueModule.toRaw(derivationConfig.value),
           'framing': pendingFraming ?? framing.value,
@@ -585,7 +585,7 @@ class IridisContextFactory {
         error.value = message;
       }
 
-      private static palette(reply: Extract<WorkerReplyEntity.Type, { 'kind': 'palette' }>, request: PaletteResolveRequestInterfaceTypeEntity.Type): void {
+      private static palette(reply: Extract<WorkerReplyEntity.Type, { 'kind': 'palette' }>, request: PaletteResolveRequestEntity.Type): void {
         if (reply.snapshot === undefined) {
           throw new TypeError('Palette resolve reply carried no snapshot');
         }
@@ -1173,9 +1173,9 @@ class IridisContextFactory {
       static disableSemanticHues(): void { semanticHuesEnabled.value = false; schedule(); }
       static enableSemanticHues(): void { semanticHuesEnabled.value = true; schedule(); }
       static setContrastStrictness(strictness: number): void { contrastStrictness.value = strictness; schedule(); }
-      static setDarkFraming(): void { pendingFraming = FramingInterfaceTypeEntity.intake('dark'); run(); }
+      static setDarkFraming(): void { pendingFraming = FramingEntity.intake('dark'); run(); }
       static setDeltaEImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('delta-e'); scheduleCombine(); }
-      static setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): void { derivationConfig.value = config; schedule(); }
+      static setDerivationConfig(config: DerivationConfigEntity.Type): void { derivationConfig.value = config; schedule(); }
       static setDisplayP3ColorSpace(): void { colorSpace.value = 'displayP3'; schedule(); }
       static setImageChromaRange(range: [number, number][]): void { imgChromaRange.value = range; scheduleCombine(); }
       static setImageDeltaECap(cap: number): void { imgDeltaECap.value = cap; scheduleCombine(); }
@@ -1184,10 +1184,10 @@ class IridisContextFactory {
       static setImageK(k: number): void { imgK.value = k; scheduleCombine(); }
       static setImageLightnessRange(range: [number, number][]): void { imgLightnessRange.value = range; scheduleCombine(); }
       static setKMeansImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('k-means'); scheduleCombine(); }
-      static setLightFraming(): void { pendingFraming = FramingInterfaceTypeEntity.intake('light'); run(); }
+      static setLightFraming(): void { pendingFraming = FramingEntity.intake('light'); run(); }
       static setMedianCutImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('median-cut'); scheduleCombine(); }
       static setRoleSort(keys: RoleSortKeyType[]): void { roleSortKeys.value = keys; }
-      static setSchema(nextSchemaName: string): void { schemaName.value = SchemaNameInterfaceTypeEntity.intake(nextSchemaName); schedule(); scheduleCombine(); }
+      static setSchema(nextSchemaName: string): void { schemaName.value = SchemaNameEntity.intake(nextSchemaName); schedule(); scheduleCombine(); }
       static setSrgbColorSpace(): void { colorSpace.value = 'srgb'; schedule(); }
       static setWuQuantizeImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('wu-quantize'); scheduleCombine(); }
     }

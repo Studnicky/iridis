@@ -1,9 +1,9 @@
-import type { ColorRecordInterfaceTypeEntity } from '@studnicky/iridis';
+import type { ColorRecordEntity } from '@studnicky/iridis';
 
 import type { GalleryAlgorithmTypeEntity } from '../entities/GalleryAlgorithmTypeEntity.ts';
 
 /** Resolved clustering operation used after metadata admission. */
 export interface ClusterStrategyInterface {
-  apply(colors: readonly ColorRecordInterfaceTypeEntity.Type[], k: number, deltaECap: number | undefined): ColorRecordInterfaceTypeEntity.Type[];
+  apply(colors: readonly ColorRecordEntity.Type[], k: number, deltaECap: number | undefined): ColorRecordEntity.Type[];
   serializeAlgorithm(): GalleryAlgorithmTypeEntity.Type;
 }

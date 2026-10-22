@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { CvdMatrixEntity } from '@studnicky/iridis-contrast';
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
 import { IridisUiEvent } from '~/composables/types/index.ts';
@@ -19,7 +19,7 @@ const cvdReport = computed(() => {
   return buildCvdVisionModel.buildReport(contrastReport.value.cvd);
 });
 
-function toggleCvdPreview(cvdType: CvdMatrixInterfaceTypeEntity.Type['name']): void {
+function toggleCvdPreview(cvdType: CvdMatrixEntity.Type['name']): void {
   send(IridisUiEvent.toggleCvdPreview(cvdType));
 }
 </script>

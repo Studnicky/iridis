@@ -1,6 +1,6 @@
 import type { PaletteStateInterface } from '@studnicky/iridis';
 
-import { InputInterfaceTypeEntity, Metadata } from '@studnicky/iridis';
+import { InputEntity, Metadata } from '@studnicky/iridis';
 import { JsonValue } from '@studnicky/types/node';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -10,7 +10,7 @@ import type { PickerSeedType } from '../app/composables/types/index.ts';
 import { COLOR_PIPELINE } from '../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../app/composables/createColorEngine.ts';
-import { DerivationConfigInterfaceTypeEntity } from '../app/composables/entities/DerivationConfigInterfaceTypeEntity.ts';
+import { DerivationConfigEntity } from '../app/composables/entities/DerivationConfigEntity.ts';
 import { pickerSeedInputs } from '../app/composables/pickerSeedInputs.ts';
 import { VARIANT_CONFIG } from '../app/composables/variantConfig.ts';
 import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
@@ -24,12 +24,12 @@ class PinnedPaletteRun {
     ];
     const engine = createColorEngine();
     engine.pipeline(COLOR_PIPELINE);
-    const result = engine.run(InputInterfaceTypeEntity.create({
+    const result = engine.run(InputEntity.create({
       'colors':   pickerSeedInputs(seeds),
       'contrast': ContrastConfigFor.forStrictness(2),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
+        'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
         'derivation:semanticHuesEnabled': true
       },
       'roles':   roleSchemaByName['iridis-32'].dark,

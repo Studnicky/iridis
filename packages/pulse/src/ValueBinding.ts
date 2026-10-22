@@ -1,4 +1,4 @@
-import type { ValueBindingOptionsInterfaceTypeEntity } from './entities/ValueBindingOptionsInterfaceTypeEntity.ts';
+import type { ValueBindingOptionsEntity } from './entities/ValueBindingOptionsEntity.ts';
 
 import { UnitInterval } from './clock/UnitInterval.ts';
 
@@ -18,7 +18,7 @@ export class ValueBinding {
     this.mapRaw = mapRaw;
   }
 
-  static create(options: ValueBindingOptionsInterfaceTypeEntity.Type): ValueBinding {
+  static create(options: ValueBindingOptionsEntity.Type): ValueBinding {
     const mapRaw: (raw: number) => number = options.clamp === false ? Number : UnitInterval.clamp;
     const result = new ValueBinding(options.minimum, options.maximum, mapRaw);
     return result;

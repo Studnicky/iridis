@@ -1,15 +1,15 @@
 import type { PaletteStateInterface, PipelineContextInterface, TaskInterface } from '@studnicky/iridis';
 
 import { ModuleError } from '@studnicky/errors/node';
-import { FramingSurface, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { FramingSurface, TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 import { JsonObject } from '@studnicky/types/node';
 
 import { VSCODE_SCOPE_MAPPINGS } from '../constants/VscodeScopeMappings.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
-import { SemanticRuleEntryInterfaceTypeEntity } from '../entities/SemanticRuleEntryInterfaceTypeEntity.ts';
-import { ThemeJsonInterfaceTypeEntity } from '../entities/ThemeJsonInterfaceTypeEntity.ts';
-import { TokenColorRuleInterfaceTypeEntity } from '../entities/TokenColorRuleInterfaceTypeEntity.ts';
+import { SemanticRuleEntryEntity } from '../entities/SemanticRuleEntryEntity.ts';
+import { ThemeJsonEntity } from '../entities/ThemeJsonEntity.ts';
+import { TokenColorRuleEntity } from '../entities/TokenColorRuleEntity.ts';
 import { VscodeMetadata } from '../VscodeMetadata.ts';
 import { VscodeOutputs } from '../VscodeOutputs.ts';
 
@@ -20,8 +20,8 @@ class ThemeJsonValues {
     return result;
   }
 
-  static semanticTokenColors(rules: ReadonlyMap<string, SemanticRuleEntryInterfaceTypeEntity.Type>): Record<string, string | SemanticRuleEntryInterfaceTypeEntity.Type> {
-    const result = new Map<string, string | SemanticRuleEntryInterfaceTypeEntity.Type>();
+  static semanticTokenColors(rules: ReadonlyMap<string, SemanticRuleEntryEntity.Type>): Record<string, string | SemanticRuleEntryEntity.Type> {
+    const result = new Map<string, string | SemanticRuleEntryEntity.Type>();
     for (const [selector, rule] of rules) {
       if (rule.fontStyle !== undefined && rule.fontStyle.length > 0) {
         result.set(selector, rule);
@@ -33,10 +33,10 @@ class ThemeJsonValues {
     return semanticTokenColors;
   }
 
-  static tokenColors(baseTokens: ReadonlyMap<string, { readonly 'hex': string }>): TokenColorRuleInterfaceTypeEntity.Type[] {
+  static tokenColors(baseTokens: ReadonlyMap<string, { readonly 'hex': string }>): TokenColorRuleEntity.Type[] {
     const mappingEntries = Object.entries(VSCODE_SCOPE_MAPPINGS.mappings);
     const mappingBaseTokens = new Map(Object.entries(VSCODE_SCOPE_MAPPINGS.baseTokens));
-    const result: TokenColorRuleInterfaceTypeEntity.Type[] = [];
+    const result: TokenColorRuleEntity.Type[] = [];
     for (let index = 0; index < mappingEntries.length; index += 1) {
       const entry = mappingEntries.at(index);
       if (entry === undefined) {
@@ -52,11 +52,11 @@ class ThemeJsonValues {
         });
       }
       const fontStyle = FONT_STYLES[paletteKey];
-      const settings = SemanticRuleEntryInterfaceTypeEntity.create({
+      const settings = SemanticRuleEntryEntity.create({
         ...(fontStyle === undefined || fontStyle.length === 0 ? {} : { 'fontStyle': fontStyle }),
         'foreground': foregroundRecord.hex
       });
-      result.push(TokenColorRuleInterfaceTypeEntity.create({
+      result.push(TokenColorRuleEntity.create({
         'name':     paletteKey,
         'scope':    [...scopes],
         'settings': settings
@@ -69,7 +69,7 @@ class ThemeJsonValues {
 class EmitVscodeThemeJson implements TaskInterface {
   readonly 'name' = 'emit:vscodeThemeJson';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Assembles the complete VS Code theme JSON: { name, type, colors, semanticTokenColors, tokenColors }.',
     'name':        'emit:vscodeThemeJson',
     'reads':       [
@@ -93,7 +93,7 @@ class EmitVscodeThemeJson implements TaskInterface {
     const themeType: 'dark' | 'light' = FramingSurface.isLight(roles) ? 'light' : 'dark';
     const semanticTokenColors = ThemeJsonValues.semanticTokenColors(semanticTokenRules);
     const tokenColors = ThemeJsonValues.tokenColors(baseTokens);
-    const themeJson = ThemeJsonInterfaceTypeEntity.create({
+    const themeJson = ThemeJsonEntity.create({
       'colors':               JsonObject.fromEntries(workbenchColors),
       'name':                 themeName,
       'semanticHighlighting': true,

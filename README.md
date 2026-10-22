@@ -40,13 +40,13 @@ pnpm add @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-styleshe
 The engine resolves seed colours into named OKLCH roles. Adopt the contrast plugin to apply an accessibility standard, then adopt one output plugin for each artifact you need. The pipeline lists the task names to run, in order.
 
 ```typescript
-import type { RoleSchemaInterfaceTypeEntity } from "@studnicky/iridis";
+import type { RoleSchemaEntity } from "@studnicky/iridis";
 
 import { Engine, coreTasks } from "@studnicky/iridis";
 import { contrastPlugin } from "@studnicky/iridis-contrast";
 import { stylesheetPlugin } from "@studnicky/iridis-stylesheet";
 
-export function generateStylesheet(roleSchema: RoleSchemaInterfaceTypeEntity.Type) {
+export function generateStylesheet(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(contrastPlugin);

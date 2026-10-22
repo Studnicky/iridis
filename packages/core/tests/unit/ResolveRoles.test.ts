@@ -24,13 +24,13 @@ import type { TaskInterface } from '../../src/interfaces/TaskInterface.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 import { Engine } from '../../src/engine/Engine.ts';
-import { ColorHintsInterfaceTypeEntity } from '../../src/entities/ColorHintsInterfaceTypeEntity.ts';
-import { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
-import { ContrastPairInterfaceTypeEntity } from '../../src/entities/ContrastPairInterfaceTypeEntity.ts';
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
-import { RoleDefinitionInterfaceTypeEntity } from '../../src/entities/RoleDefinitionInterfaceTypeEntity.ts';
-import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { ColorHintsEntity } from '../../src/entities/ColorHintsEntity.ts';
+import { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
+import { ContrastPairEntity } from '../../src/entities/ContrastPairEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
+import { RoleDefinitionEntity } from '../../src/entities/RoleDefinitionEntity.ts';
+import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
+import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 import { intakeP3 } from '../../src/tasks/intake/IntakeP3.ts';
@@ -50,17 +50,17 @@ class TestEngineFixture {
     return engine;
   }
 
-  static admitRoleSchema(value: JSONSchema7Type): RoleSchemaInterfaceTypeEntity.Type {
-    const schema = RoleSchemaInterfaceTypeEntity.intake(value);
+  static admitRoleSchema(value: JSONSchema7Type): RoleSchemaEntity.Type {
+    const schema = RoleSchemaEntity.intake(value);
     const contrastPairs = schema.contrastPairs?.map((pair) => {
-      const result = ContrastPairInterfaceTypeEntity.intake(pair);
+      const result = ContrastPairEntity.intake(pair);
       return result;
     });
     const roles = schema.roles.map((role) => {
-      const result = RoleDefinitionInterfaceTypeEntity.intake(role);
+      const result = RoleDefinitionEntity.intake(role);
       return result;
     });
-    const result = RoleSchemaInterfaceTypeEntity.intake({
+    const result = RoleSchemaEntity.intake({
       ...(contrastPairs === undefined ? {} : { 'contrastPairs': contrastPairs }),
       ...(schema.description === undefined ? {} : { 'description': schema.description }),
       'name': schema.name,
@@ -69,8 +69,8 @@ class TestEngineFixture {
     return result;
   }
 
-  static input(colors: readonly string[], roles: RoleSchemaInterfaceTypeEntity.Type | undefined = undefined): InputInterfaceTypeEntity.Type {
-    const result = InputInterfaceTypeEntity.create({
+  static input(colors: readonly string[], roles: RoleSchemaEntity.Type | undefined = undefined): InputEntity.Type {
+    const result = InputEntity.create({
       'colors': [...colors],
       ...(roles === undefined ? {} : { 'roles': roles })
     });
@@ -423,7 +423,7 @@ new ScenarioRunner<Cell3InputInterface, {
 
     // Build the hinted record directly via factory
     const hintedRecord = colorRecordFactory.fromHex(input.hintedHex, {
-      'hints': ColorHintsInterfaceTypeEntity.create({ 'role': input.hintRole }),
+      'hints': ColorHintsEntity.create({ 'role': input.hintRole }),
       'sourceFormat': 'hex'
     });
 
@@ -437,7 +437,7 @@ new ScenarioRunner<Cell3InputInterface, {
       state.colors.push(hintedRecord);
     };
     const seedTask: TaskInterface = {
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'seed:hint', 'phase': 'onRunStart' }),
+      'manifest': TaskManifestEntity.create({ 'name': 'seed:hint', 'phase': 'onRunStart' }),
       'name':     'seed:hint',
       'run':      seedHintRun
     };
@@ -596,13 +596,13 @@ new ScenarioRunner<Cell5InputInterface, Cell5OutputInterface>(
 class RoleSeedTask implements TaskInterface {
   readonly 'name' = 'seed:role-resolution-contract';
 
-  readonly 'manifest': TaskInterface['manifest'] = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskInterface['manifest'] = TaskManifestEntity.create({
     'name': 'seed:role-resolution-contract',
     'phase': 'onRunStart',
     'writes': ['colors']
   });
 
-  constructor(private readonly seeds: readonly ColorRecordInterfaceTypeEntity.Type[]) {}
+  constructor(private readonly seeds: readonly ColorRecordEntity.Type[]) {}
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
     state.colors.push(...this.seeds);
@@ -610,7 +610,7 @@ class RoleSeedTask implements TaskInterface {
 }
 
 class RoleResolutionFixture {
-  static run(schema: JSONSchema7Type, seeds: readonly ColorRecordInterfaceTypeEntity.Type[]): PaletteStateInterface {
+  static run(schema: JSONSchema7Type, seeds: readonly ColorRecordEntity.Type[]): PaletteStateInterface {
     const engine = new Engine();
     for (let taskIndex = 0; taskIndex < coreTasks.length; taskIndex += 1) {
       const task = coreTasks[taskIndex];
@@ -622,10 +622,10 @@ class RoleResolutionFixture {
     return result;
   }
 
-  static seed(role: string, l: number, c: number, h: number): ColorRecordInterfaceTypeEntity.Type {
+  static seed(role: string, l: number, c: number, h: number): ColorRecordEntity.Type {
     const result = colorRecordFactory.fromOklch(l, c, h, {
       'alpha': 1,
-      'hints': ColorHintsInterfaceTypeEntity.create({ 'role': role }),
+      'hints': ColorHintsEntity.create({ 'role': role }),
       'sourceFormat': 'oklch'
     });
     return result;
@@ -695,11 +695,11 @@ void test('a conformant Display-P3 role seed retains verbatim P3 metadata when r
   const p3Candidate = intakeP3.parse('color(display-p3 0.9 0.2 0.1)');
   const p3Channels = p3Candidate.displayP3;
   assert.ok(p3Channels !== undefined, 'Display-P3 intake retains P3 channels');
-  const hintedP3 = ColorRecordInterfaceTypeEntity.create({
+  const hintedP3 = ColorRecordEntity.create({
     'alpha': p3Candidate.alpha,
     'displayP3': p3Channels,
     'hex': p3Candidate.hex,
-    'hints': ColorHintsInterfaceTypeEntity.create({ 'role': 'accent' }),
+    'hints': ColorHintsEntity.create({ 'role': 'accent' }),
     'oklch': p3Candidate.oklch,
     'rgb': p3Candidate.rgb,
     'sourceFormat': p3Candidate.sourceFormat

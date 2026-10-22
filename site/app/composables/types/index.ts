@@ -1,7 +1,7 @@
-export type * from '../entities/FramingInterfaceTypeEntity.ts';
-export type * from '../entities/ModeInterfaceTypeEntity.ts';
-export type * from '../entities/SchemaNameInterfaceTypeEntity.ts';
-export type * from '../entities/SupportedLangInterfaceTypeEntity.ts';
+export type * from '../entities/FramingEntity.ts';
+export type * from '../entities/ModeEntity.ts';
+export type * from '../entities/SchemaNameEntity.ts';
+export type * from '../entities/SupportedLangEntity.ts';
 export type * from './carouselCardType.ts';
 export type * from './colorDerivation.ts';
 export * from './colorDerivation.ts';

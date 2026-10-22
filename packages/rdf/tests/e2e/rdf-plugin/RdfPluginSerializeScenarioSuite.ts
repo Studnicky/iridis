@@ -1,6 +1,6 @@
-import type { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import type { InputEntity } from '@studnicky/iridis';
 
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../_runner/ScenarioInterface.ts';
@@ -13,11 +13,11 @@ import { RdfPluginSerializeScenarioEntity } from './RdfPluginSerializeScenarioEn
 /** E2E cell 4: serializer format negotiation and fallback behavior. */
 export class RdfPluginSerializeScenarioSuite {
   static async run(): Promise<void> {
-    const roles = RoleSchemaInterfaceTypeEntity.intake({
+    const roles = RoleSchemaEntity.intake({
       'name': 'serialize',
       'roles': [{ 'name': 'primary', 'required': true }, { 'name': 'background', 'required': true }]
     });
-    const scenarios: readonly ScenarioInterface<InputInterfaceTypeEntity.Type, RdfPluginSerializeScenarioEntity.Type>[] = [
+    const scenarios: readonly ScenarioInterface<InputEntity.Type, RdfPluginSerializeScenarioEntity.Type>[] = [
       {
         'assert': ({ 'error': error, 'output': output }): void => {
           assert.strictEqual(error, undefined, 'default serialization does not throw');
@@ -83,7 +83,7 @@ export class RdfPluginSerializeScenarioSuite {
         'name': 'non-string format safely falls back to Turtle'
       }
     ];
-    const runner = new ScenarioRunner<InputInterfaceTypeEntity.Type, RdfPluginSerializeScenarioEntity.Type>(
+    const runner = new ScenarioRunner<InputEntity.Type, RdfPluginSerializeScenarioEntity.Type>(
       'RdfPlugin :: cell-4 :: reason-serialize',
       (input): RdfPluginSerializeScenarioEntity.Type => {
         const engine = RdfPluginScenarioFixture.createEngine();

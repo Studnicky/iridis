@@ -7,8 +7,8 @@ import type { WorkerPortInterface } from '../app/composables/interfaces/WorkerPo
 
 import { ExtractionSettingsEntity } from '../app/composables/entities/ExtractionSettingsEntity.ts';
 import { ImageExtractionResultEntity } from '../app/composables/entities/ImageExtractionResultEntity.ts';
-import { PaletteResolveRequestInterfaceTypeEntity } from '../app/composables/entities/PaletteResolveRequestInterfaceTypeEntity.ts';
-import { PaletteSnapshotInterfaceTypeEntity } from '../app/composables/entities/PaletteSnapshotInterfaceTypeEntity.ts';
+import { PaletteResolveRequestEntity } from '../app/composables/entities/PaletteResolveRequestEntity.ts';
+import { PaletteSnapshotEntity } from '../app/composables/entities/PaletteSnapshotEntity.ts';
 import { WorkerMessageEntity } from '../app/composables/entities/WorkerMessageEntity.ts';
 import { WorkerReplyEntity } from '../app/composables/entities/WorkerReplyEntity.ts';
 import { WorkerRequestClient } from '../app/composables/workerRequestClient.ts';
@@ -113,7 +113,7 @@ class ClientFixture {
   }
 
   public static palette(strictness: number): WorkerMessageEntity.Type {
-    const request = PaletteResolveRequestInterfaceTypeEntity.create({ ...PaletteResolveFixture.request(), 'strictness': strictness });
+    const request = PaletteResolveRequestEntity.create({ ...PaletteResolveFixture.request(), 'strictness': strictness });
     const result = WorkerMessageEntity.create({ 'kind': 'palette', 'request': request });
     return result;
   }
@@ -122,7 +122,7 @@ class ClientFixture {
     const result = WorkerReplyEntity.create({
       'id': id,
       'kind': 'palette',
-      'snapshot': PaletteSnapshotInterfaceTypeEntity.create(PaletteResolveFixture.snapshot())
+      'snapshot': PaletteSnapshotEntity.create(PaletteResolveFixture.snapshot())
     });
     return result;
   }

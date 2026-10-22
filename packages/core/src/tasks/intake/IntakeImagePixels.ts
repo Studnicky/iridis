@@ -2,13 +2,13 @@ import { ValidationError } from '@studnicky/errors/node';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { IsImagePixelInput } from './IsImagePixelInput.ts';
 
@@ -19,7 +19,7 @@ import { IsImagePixelInput } from './IsImagePixelInput.ts';
 class IntakeImagePixels implements TaskInterface {
   readonly 'name' = 'intake:imagePixels';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Parses ImageData or {data: Uint8ClampedArray, width, height} and pushes non-transparent pixels. Throws on non-image input.',
     'name':        'intake:imagePixels',
     'reads':       ['input.colors'],
@@ -30,7 +30,7 @@ class IntakeImagePixels implements TaskInterface {
    * Parses an ImageData entry and returns its first non-transparent pixel as a
    * format-match sentinel for IntakeAny.
    */
-  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type {
+  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordEntity.Type {
     if (!IsImagePixelInput.check(raw)) {
       throw ValidationError.create({
         'message': 'intake:imagePixels — expected an ImageData-shaped object',

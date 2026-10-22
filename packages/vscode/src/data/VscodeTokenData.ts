@@ -1,6 +1,6 @@
 // Lifted from vscode-arcade-blaster/dev/themes/tools/tokenDerivation.ts:35-124
 
-import type { DerivationParametersInterfaceTypeEntity } from '../entities/DerivationParametersInterfaceTypeEntity.ts';
+import type { DerivationParametersEntity } from '../entities/DerivationParametersEntity.ts';
 
 /**
  * Namespaced data bag for VS Code token derivation constants.
@@ -17,7 +17,7 @@ import type { DerivationParametersInterfaceTypeEntity } from '../entities/Deriva
  *   muted    → operator (mix with foreground)
  */
 export const VscodeTokenData: {
-  readonly 'DERIVATION_PARAMETERS': Readonly<Record<string, DerivationParametersInterfaceTypeEntity.Type>>;
+  readonly 'DERIVATION_PARAMETERS': Readonly<Record<string, DerivationParametersEntity.Type>>;
   readonly 'TOKEN_FAMILY': Readonly<Record<string, string>>;
   readonly 'TOKEN_MODIFIERS': readonly string[];
   readonly 'TOKEN_TYPES': readonly string[];
