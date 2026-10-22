@@ -765,7 +765,9 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
     'control': colorRecordFactory.fromHex('#6d28d9', {
       'hints': ColorHintsEntity.intake({ 'intent': 'accent' })
     }),
-    'divider': colorRecordFactory.fromHex('#64748b'),
+    'divider': colorRecordFactory.fromHex('#64748b', {
+      'hints': ColorHintsEntity.intake({ 'intent': 'muted' })
+    }),
     'text': colorRecordFactory.fromHex('#eeeeff', {
       'hints': ColorHintsEntity.intake({ 'intent': 'text' })
     })
@@ -983,17 +985,17 @@ void test('contrast policy normalizes schema and extra pairs to the selected sta
       requirement.minimumContrastRatio
     ];}),
     [
-      ['apca', 'divider', 60],
+      ['apca', 'divider', 45],
       ['apca', 'control', 60]
     ],
-    'APCA applies its Lc targets independently of WCAG pair minima'
+    'APCA classifies the declared 3:1 pair as non-mandatory independently of role intent'
   );
   assert.deepStrictEqual(
     apcaNonMandatory.map((requirement) => {
       return [requirement.minimumContrastRatio, requirement.target];
     }),
-    [[75, 'APCA-Lc-75']],
-    'APCA applies the configured AAA fallback to every currently indistinguishable Lc60 pair'
+    [[60, 'APCA-Lc-60']],
+    'APCA lifts a declared non-mandatory pair to Lc60 when the selected non-mandatory standard is AAA'
   );
   const apcaIgnoringWcagMinimum = ContrastPolicy.normalize(
     InputEntity.intake({

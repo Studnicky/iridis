@@ -27,10 +27,10 @@ Targets:
   non-text/UI minimum below 4.5:1 at its AA value unless
   `nonMandatoryLevel: 'AAA'` is selected; that selection maps 3:1 to 4.5:1.
   Missing pair minima use 4.5:1 at AA and 7:1 at AAA.
-- APCA uses Lc 75 for body text pairs (text intent on background intent) and
-  Lc 60 for every other pair. Until schemas author a non-text class,
-  `nonMandatoryLevel: 'AAA'` applies Lc 75 to every Lc 60 pair; its AA value
-  preserves Lc 60.
+- APCA uses Lc 75 for body text pairs (text intent on background intent).
+  A pair declared below 4.5:1 uses the non-mandatory standard: Lc 45 at
+  `nonMandatoryLevel: 'AA'` and Lc 60 at `'AAA'`. Every other pair uses Lc 60
+  at AA or Lc 75 at AAA.
 
 CVD evaluates all four CVD types (`protanopia`, `deuteranopia`,
 `tritanopia`, `achromatopsia`) with a bounded OKLCH lightness/chroma search

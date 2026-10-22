@@ -62,6 +62,7 @@ class ContrastStandard {
 /** APCA targets: https://git.apcacontrast.com/documentation/APCAeasyIntro */
 class ApcaTarget {
   static readonly #BODY_READING = 75;
+  static readonly #NON_TEXT = 45;
   static readonly MEANINGFUL_TEXT = 60;
   static forPair(
     requirement: ContrastPairEntity.Type,
@@ -75,6 +76,12 @@ class ApcaTarget {
       background?.hints?.intent === 'background'
     ) {
       return ApcaTarget.#BODY_READING;
+    }
+    if (requirement.minimumContrastRatio !== undefined && requirement.minimumContrastRatio < 4.5) {
+      const result = nonMandatoryLevel === 'AAA'
+        ? ApcaTarget.MEANINGFUL_TEXT
+        : ApcaTarget.#NON_TEXT;
+      return result;
     }
     const result = nonMandatoryLevel === 'AAA'
       ? ApcaTarget.#BODY_READING
