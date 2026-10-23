@@ -6,7 +6,6 @@ import type {
 
 import { TaskManifestEntity } from '@studnicky/iridis';
 
-import { CompliancePairEntity } from '../entities/CompliancePairEntity.ts';
 import { ComplianceReportEntity } from '../entities/ComplianceReportEntity.ts';
 
 class ComplianceWithholding {
@@ -14,7 +13,7 @@ class ComplianceWithholding {
     const result =
       state.input.contrast?.enableStrictCompliance === true &&
       report.problemPairs.length > 0 &&
-      report.withheld === false;
+      report.disposition !== 'withheld';
     return result;
   }
 
@@ -29,25 +28,9 @@ class ComplianceWithholding {
   }
 
   static report(report: ComplianceReportEntity.Type): ComplianceReportEntity.Type {
-    const pairs = report.pairs.map((pair) => {
-      if (pair.passed) {
-        return pair;
-      }
-      const result = CompliancePairEntity.create({
-        ...pair,
-        'disposition': 'withheld'
-      });
-      return result;
-    });
-    const problemPairs = pairs.filter((pair) => {
-      const result = pair.passed === false;
-      return result;
-    });
     const result = ComplianceReportEntity.create({
       ...report,
-      'pairs': pairs,
-      'problemPairs': problemPairs,
-      'withheld': true
+      'disposition': 'withheld'
     });
     return result;
   }

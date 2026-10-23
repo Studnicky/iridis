@@ -158,7 +158,6 @@ await test('ContrastPlugin compiles metadata schemas and rejects incomplete repo
     () => {
       const result = ComplianceReportEntity.intake({
         'compliant': true,
-        'cvdCompliant': true,
         'pairs': [],
         'problemPairs': [],
         'selected': { 'algorithm': 'wcag21', 'level': 'AA' }
@@ -228,11 +227,7 @@ await test('canonical compliance emits an admissible zero-pair report', () => {
     true,
     'zero declared pairs are compliant'
   );
-  assert.strictEqual(
-    report.cvdCompliant,
-    true,
-    'zero declared pairs are CVD-compliant'
-  );
+  assert.strictEqual(report.disposition, 'resolved', 'zero declared pairs resolve the report');
   assert.deepStrictEqual(
     report.pairs,
     [],
@@ -292,11 +287,8 @@ await test('canonical compliance records an already compliant pair as resolved',
   const report = ComplianceReportEntity.intake(rawReport);
   const pair = report.pairs.at(0);
   assert.ok(pair !== undefined, 'declared pair is observed');
-  assert.strictEqual(
-    pair.disposition,
-    'resolved',
-    'compliant pair is resolved'
-  );
+  assert.strictEqual(report.disposition, 'resolved', 'compliant report is resolved');
+  assert.deepStrictEqual(pair.constraints, [], 'compliant pair has no constraints');
   assert.deepStrictEqual(
     pair.adjustedRoles,
     [],
@@ -477,11 +469,7 @@ await test('canonical compliance preserves its terminal report through variant d
   assert.ok(rawReport !== undefined, 'contrast plugin terminal report present');
   const report = ComplianceReportEntity.intake(rawReport);
   assert.strictEqual(report.compliant, true, 'terminal rendered roles comply');
-  assert.strictEqual(
-    report.cvdCompliant,
-    true,
-    'terminal rendered roles are CVD-compliant'
-  );
+  assert.strictEqual(report.disposition, 'resolved', 'terminal rendered roles resolve the report');
   assert.deepStrictEqual(
     report.selected,
     { 'algorithm': 'wcag21', 'level': 'AA' },
@@ -498,7 +486,7 @@ await test('canonical compliance preserves its terminal report through variant d
     pair.actual >= pair.required,
     'terminal measurement meets selected minimum'
   );
-  assert.deepStrictEqual(pair.cvd, [], 'no CVD deficiency remains');
+  assert.deepStrictEqual(pair.constraints, [], 'no terminal constraint remains');
 });
 
 await test('canonical compliance applies AAA and APCA targets to every declared pair', () => {
@@ -595,16 +583,8 @@ await test('canonical compliance applies AAA and APCA targets to every declared 
       true,
       'selected-standard terminal report is compliant'
     );
-    assert.strictEqual(
-      report.cvdCompliant,
-      true,
-      'CVD uses ratio-unit thresholds alongside the selected standard'
-    );
-    assert.deepStrictEqual(
-      pair.cvd,
-      [],
-      'selected-standard terminal pair has no CVD deficiency'
-    );
+    assert.strictEqual(report.disposition, 'resolved', 'selected-standard report resolves');
+    assert.deepStrictEqual(pair.constraints, [], 'selected-standard pair has no terminal constraint');
   }
 });
 
@@ -616,9 +596,8 @@ await test('strict false keeps the best-effort palette and terminal evidence', (
   assert.ok(rawReport !== undefined, 'terminal report exists');
   const report = ComplianceReportEntity.intake(rawReport);
   assert.strictEqual(report.compliant, false, 'infeasible range-bounded pair remains noncompliant');
-  assert.strictEqual(report.withheld, false, 'best-effort mode keeps its palette');
+  assert.strictEqual(report.disposition, 'best-effort', 'best-effort mode keeps its palette');
   assert.strictEqual(report.problemPairs.length, 1, 'terminal evidence retains the failing pair');
-  assert.strictEqual(report.problemPairs[0]?.disposition, 'best-effort', 'failure stays best-effort');
   assert.ok(Object.keys(state.roles).length > 0, 'best-effort roles remain available');
   assert.ok(Object.keys(state.variants).length > 0, 'best-effort variants remain available');
 });
@@ -633,11 +612,10 @@ await test('strict true withholds an infeasible palette after retaining terminal
   const pair = report.problemPairs[0];
   assert.ok(pair !== undefined, 'terminal report retains the failing pair');
   assert.strictEqual(report.compliant, false, 'withholding preserves noncompliant evidence');
-  assert.strictEqual(report.withheld, true, 'strict mode reports the withheld result');
-  assert.strictEqual(pair.disposition, 'withheld', 'terminal failure explains strict withholding');
+  assert.strictEqual(report.disposition, 'withheld', 'strict mode reports the withheld result');
   assert.ok(pair.actual < pair.required, 'withheld evidence preserves actual and required values');
   assert.ok(pair.shortfall > 0, 'withheld evidence preserves the shortfall');
-  assert.ok(pair.causes.length > 0, 'withheld evidence preserves constraints');
+  assert.ok(pair.constraints.length > 0, 'withheld evidence preserves constraints');
   assert.deepStrictEqual(state.roles, {}, 'strict mode clears resolved roles');
   assert.deepStrictEqual(state.variants, {}, 'strict mode clears derived variants');
 });
@@ -686,7 +664,7 @@ await test('strict true retains a compliant palette', () => {
   assert.ok(rawReport !== undefined, 'terminal report exists');
   const report = ComplianceReportEntity.intake(rawReport);
   assert.strictEqual(report.compliant, true, 'fixture remains compliant');
-  assert.strictEqual(report.withheld, false, 'strict mode does not withhold a compliant palette');
+  assert.strictEqual(report.disposition, 'resolved', 'strict mode does not withhold a compliant palette');
   assert.deepStrictEqual(report.problemPairs, [], 'compliant palette has no terminal problems');
   assert.ok(Object.keys(state.roles).length > 0, 'compliant strict roles remain available');
   assert.ok(Object.keys(state.variants).length > 0, 'compliant strict variants remain available');

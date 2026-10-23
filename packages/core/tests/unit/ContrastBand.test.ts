@@ -284,7 +284,7 @@ void test('enforce:contrast reduces an excessive ratio into the declared upper b
     ratio >= 3 && ratio <= 4.5,
     `accent ratio enters [3, 4.5], got ${ratio}`
   );
-  assert.strictEqual(report.disposition, 'resolved', 'upper-band violation resolves');
+  assert.deepStrictEqual(report.constraints, [], 'upper-band violation has no blocking constraint');
   assert.deepStrictEqual(report.adjustedRoles, ['accent'], 'report records the adjusted endpoint');
   assert.strictEqual(
     report.passed,
@@ -317,7 +317,7 @@ void test('enforce:contrast retains lower-bound adjustment when no upper bound i
   );
   const ratio = contrastWcag21.apply(text, background);
   assert.ok(ratio >= 4.5, `text ratio reaches the lower floor, got ${ratio}`);
-  assert.strictEqual(report.disposition, 'resolved', 'lower-band violation resolves');
+  assert.deepStrictEqual(report.constraints, [], 'lower-band violation has no blocking constraint');
   assert.deepStrictEqual(
     report.adjustedRoles,
     ['text', 'background'],
@@ -527,8 +527,7 @@ void test('enforce:contrast preserves a derived mover when its role range cannot
   assert.ok(report !== undefined, 'the constrained pair produces a report');
   assert.ok(background !== undefined, 'the derived background remains available');
   assert.strictEqual(background.hex, '#ffffff', 'the range-constrained mover remains unchanged');
-  assert.strictEqual(report.disposition, 'best-effort', 'the impossible ranged adjustment is best effort');
-  assert.deepStrictEqual(report.causes, ['solver-exhausted'], 'the current bounded solver reports its limit');
+  assert.deepStrictEqual(report.constraints, ['range'], 'the range-bounded adjustment reports the limiting constraint');
   assert.strictEqual(report.passed, false, 'the impossible ranged adjustment stays noncompliant');
 });
 
@@ -563,8 +562,7 @@ void test('enforce:contrast reports an infeasible pair when both roles are state
     background,
     'stated background remains byte-identical'
   );
-  assert.strictEqual(report.disposition, 'best-effort', 'an infeasible pair remains best effort');
-  assert.deepStrictEqual(report.causes, ['pin'], 'report identifies the stated-only blocker');
+  assert.deepStrictEqual(report.constraints, ['pin'], 'report identifies the stated-only blocker');
   assert.strictEqual(
     report.passed,
     false,
@@ -730,7 +728,7 @@ void test('enforce:contrast installs a gamut-mapped bounded solver result even w
     contrastWcag21.apply(accent, resolvedBackground) >= 3,
     'the installed solver result reaches the lower bound'
   );
-  assert.strictEqual(report.disposition, 'resolved', 'the observable solver result is installed');
+  assert.deepStrictEqual(report.constraints, [], 'the observable solver result has no remaining constraint');
   assert.deepStrictEqual(report.adjustedRoles, ['accent'], 'the report records the installed solver result');
   assert.strictEqual(
     report.passed,
@@ -770,12 +768,7 @@ void test('enforce:contrast reports an incompatible selected AAA band as termina
     false,
     'a contradictory band remains terminally noncompliant'
   );
-  assert.strictEqual(
-    entry.disposition,
-    'best-effort',
-    'the terminal report identifies the unsatisfiable derived adjustment'
-  );
-  assert.deepStrictEqual(entry.causes, ['solver-exhausted'], 'the bounded solver identifies the unresolved cause');
+  assert.deepStrictEqual(entry.constraints, [], 'unproven bounded exhaustion does not invent a constraint cause');
 });
 
 void test('contrast policy normalizes schema and extra pairs to the selected standard', () => {

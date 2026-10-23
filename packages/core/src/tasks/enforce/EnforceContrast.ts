@@ -298,7 +298,6 @@ class ContrastCoordinateScore {
 
 interface ContrastPendingOptionsInterface {
   readonly 'adjustedRole'?: string;
-  readonly 'causes'?: readonly string[];
   readonly 'maximumRatio'?: number;
 }
 
@@ -680,17 +679,17 @@ class ContrastExecution {
         ? 'applied'
         : current.adjustmentDisposition;
     const adjustedRole = current.adjustedRole ?? previous?.adjustedRole;
-    const causes =
+    const constraints =
       current.adjustmentDisposition === 'not-needed' ||
       current.adjustmentDisposition === 'applied'
         ? []
-        : current.causes;
+        : current.constraints;
     const result = PendingContrastEntryEntity.create({
       'adjusted': adjusted,
       ...(adjustedRole === undefined ? {} : { 'adjustedRole': adjustedRole }),
       'adjustmentDisposition': adjustmentDisposition,
       'algo': current.algo,
-      'causes': [...causes],
+      'constraints': [...constraints],
       ...(current.maximumContrastRatio === undefined
         ? {}
         : { 'maximumContrastRatio': current.maximumContrastRatio }),
@@ -722,16 +721,27 @@ class ContrastExecution {
         pairs.push(pair);
       }
     }
+    pairs.sort((left, right) => {
+      const foreground = ContrastExecution.compareStrings(left.foreground, right.foreground);
+      const result = foreground === 0
+        ? ContrastExecution.compareStrings(left.background, right.background)
+        : foreground;
+      return result;
+    });
     const problemPairs = pairs.filter((pair) => {
       const result = !pair.passed;
       return result;
     });
+    const compliant = problemPairs.length === 0;
     const result = ContrastReportEntity.create({
-      'compliant': problemPairs.length === 0,
+      'compliant': compliant,
+      'disposition': compliant ? 'resolved' : 'best-effort',
       'pairs': pairs,
       'problemPairs': problemPairs,
-      'selectedAlgorithm': selectedAlgorithm,
-      'target': target
+      'selected': {
+        'algorithm': selectedAlgorithm,
+        'level': target
+      }
     });
     return result;
   }
@@ -788,15 +798,11 @@ class ContrastExecution {
       ratio
     );
     if (mover === undefined) {
-      const result = ContrastExecution.pendingEntry(
+      const result = ContrastExecution.pinnedEntry(
         requirement,
         algorithm,
         minimumRatio,
-        ContrastAdjustment.blockedStatedBoth,
-        {
-          'causes': ['pin'],
-          ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio })
-        }
+        maximumRatio
       );
       return result;
     }
@@ -822,20 +828,15 @@ class ContrastExecution {
       minimumRatio,
       maximumRatio
     );
-    if (
-      !resolvedPassed ||
-      !ContrastPolicy.allowsRoleRecord(state.input, mover.roleName, resolved) ||
-      ContrastMeasurement.sameRecord(resolved, mover.record)
-    ) {
-      const result = ContrastExecution.pendingEntry(
+    const allowed = ContrastPolicy.allowsRoleRecord(state.input, mover.roleName, resolved);
+    if (!resolvedPassed || !allowed || ContrastMeasurement.sameRecord(resolved, mover.record)) {
+      const result = ContrastExecution.unresolvedEntry(
         requirement,
         algorithm,
         minimumRatio,
-        ContrastAdjustment.unresolved,
-        {
-          'causes': ['solver-exhausted'],
-          ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio })
-        }
+        maximumRatio,
+        mover.roleName,
+        state.input
       );
       return result;
     }
@@ -879,6 +880,74 @@ class ContrastExecution {
     return result;
   }
 
+  private static pinnedEntry(
+    requirement: ContrastPolicy.RequirementInterface,
+    algorithm: ContrastAlgorithmTypeEntity.Type,
+    minimumRatio: number,
+    maximumRatio: number | undefined
+  ): PendingContrastEntryEntity.Type {
+    const entry = ContrastExecution.pendingEntry(
+      requirement,
+      algorithm,
+      minimumRatio,
+      ContrastAdjustment.blockedStatedBoth,
+      { ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio }) }
+    );
+    const result = PendingContrastEntryEntity.create({
+      ...entry,
+      'constraints': ['pin']
+    });
+    return result;
+  }
+
+  private static unresolvedEntry(
+    requirement: ContrastPolicy.RequirementInterface,
+    algorithm: ContrastAlgorithmTypeEntity.Type,
+    minimumRatio: number,
+    maximumRatio: number | undefined,
+    roleName: string,
+    input: PaletteStateInterface['input']
+  ): PendingContrastEntryEntity.Type {
+    const range = ContrastPolicy.roleRange(input, roleName);
+    if (range.chromaRange !== undefined || range.lightnessRange !== undefined) {
+      const result = ContrastExecution.rangeEntry(
+        requirement,
+        algorithm,
+        minimumRatio,
+        maximumRatio
+      );
+      return result;
+    }
+    const result = ContrastExecution.pendingEntry(
+      requirement,
+      algorithm,
+      minimumRatio,
+      ContrastAdjustment.unresolved,
+      { ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio }) }
+    );
+    return result;
+  }
+
+  private static rangeEntry(
+    requirement: ContrastPolicy.RequirementInterface,
+    algorithm: ContrastAlgorithmTypeEntity.Type,
+    minimumRatio: number,
+    maximumRatio: number | undefined
+  ): PendingContrastEntryEntity.Type {
+    const entry = ContrastExecution.pendingEntry(
+      requirement,
+      algorithm,
+      minimumRatio,
+      ContrastAdjustment.unresolved,
+      { ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio }) }
+    );
+    const result = PendingContrastEntryEntity.create({
+      ...entry,
+      'constraints': ['range']
+    });
+    return result;
+  }
+
   private static pendingEntry(
     requirement: ContrastPolicy.RequirementInterface,
     algorithm: ContrastAlgorithmTypeEntity.Type,
@@ -891,14 +960,13 @@ class ContrastExecution {
   ): PendingContrastEntryEntity.Type {
     const [adjusted, adjustmentDisposition] = resolveAdjustment();
     const adjustedRole = options.adjustedRole;
-    const causes = options.causes ?? [];
     const maximumRatio = options.maximumRatio;
     const result = PendingContrastEntryEntity.create({
       'adjusted': adjusted,
       ...(adjustedRole === undefined ? {} : { 'adjustedRole': adjustedRole }),
       'adjustmentDisposition': adjustmentDisposition,
       'algo': algorithm,
-      'causes': [...causes],
+      'constraints': [],
       ...(maximumRatio === undefined
         ? {}
         : { 'maximumContrastRatio': maximumRatio }),
@@ -985,8 +1053,7 @@ class ContrastExecution {
       'actual': actual,
       'adjustedRoles': adjustedRoles,
       'background': entry.pair.background,
-      'causes': passed ? [] : entry.causes,
-      'disposition': passed ? 'resolved' : 'best-effort',
+      'constraints': passed ? [] : entry.constraints,
       'foreground': entry.pair.foreground,
       'passed': passed,
       'required': entry.minimumContrastRatio,

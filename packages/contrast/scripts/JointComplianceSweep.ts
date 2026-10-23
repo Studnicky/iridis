@@ -338,8 +338,7 @@ class SweepReport {
           return {
             'actual': pair.actual,
             'background': pair.background,
-            'causes': pair.causes,
-            'disposition': pair.disposition,
+            'constraints': pair.constraints,
             'foreground': pair.foreground,
             'required': pair.required,
             'shortfall': pair.shortfall

@@ -48,9 +48,9 @@ export namespace PendingContrastEntryEntity {
         ]
       },
       'algo': { 'enum': ['wcag21', 'apca'] },
-      'causes': {
+      'constraints': {
         'items': {
-          'enum': ['pin', 'range', 'hue-relationship', 'gamut', 'cvd', 'solver-exhausted'],
+          'enum': ['pin', 'range', 'hue-relationship', 'gamut', 'cvd-floor', 'cvd-drop'],
           'type': 'string'
         },
         'type': 'array',
@@ -64,7 +64,7 @@ export namespace PendingContrastEntryEntity {
     'required': [
       'adjusted',
       'adjustmentDisposition',
-      'causes',
+      'constraints',
       'algo',
       'minimumContrastRatio',
       'pair',

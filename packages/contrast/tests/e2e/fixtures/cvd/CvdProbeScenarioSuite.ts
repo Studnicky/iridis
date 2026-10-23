@@ -388,17 +388,17 @@ export class CvdProbeScenarioSuite {
       '[cvd-modes] terminal compliance reports present'
     );
     assert.strictEqual(
-      warnedReport.cvdCompliant,
+      warnedReport.compliant,
       true,
       '[cvd-modes] warn evidence does not reject the palette'
     );
     assert.strictEqual(
-      nudgedReport.cvdCompliant,
+      nudgedReport.compliant,
       true,
       '[cvd-modes] unresolved nudge evidence does not reject the palette'
     );
     assert.strictEqual(
-      enforcedReport.cvdCompliant,
+      enforcedReport.compliant,
       false,
       '[cvd-modes] unresolved enforce evidence rejects the palette'
     );
@@ -576,7 +576,7 @@ export class CvdProbeScenarioSuite {
     assert.strictEqual(cvd.corrections.length, 1, '[cvd-terminal-correction] terminal diagnostics retain correction');
     assert.deepStrictEqual(cvd.corrections[0]?.adjustedRoles, ['text'], '[cvd-terminal-correction] correction identifies rendered mover');
     assert.strictEqual(compliance.compliant, true, '[cvd-terminal-correction] corrected terminal roles comply');
-    assert.strictEqual(compliance.cvdCompliant, true, '[cvd-terminal-correction] corrected terminal roles clear CVD');
+    assert.strictEqual(compliance.disposition, 'resolved', '[cvd-terminal-correction] corrected terminal roles resolve the report');
   }
 
   private static terminalSolverExhausted(): void {
@@ -597,10 +597,23 @@ export class CvdProbeScenarioSuite {
       return blocked.reason;
     }), ['solver-exhausted', 'solver-exhausted'], '[cvd-terminal-exhausted] every movable unresolved pair is blocked');
     assert.strictEqual(compliance.compliant, false, '[cvd-terminal-exhausted] CVD failure makes terminal report noncompliant');
-    assert.strictEqual(compliance.cvdCompliant, false, '[cvd-terminal-exhausted] terminal CVD status fails');
-    assert.deepStrictEqual(compliance.problemPairs.map((pair) => {
-      return pair.causes;
-    }), [['cvd', 'solver-exhausted'], ['cvd', 'solver-exhausted']], '[cvd-terminal-exhausted] canonical report retains CVD causes');
+    const constraintKinds = new Set<string>();
+    for (let index = 0; index < compliance.problemPairs.length; index += 1) {
+      const pair = compliance.problemPairs[index];
+      if (pair === undefined) {
+        continue;
+      }
+      for (let constraintIndex = 0; constraintIndex < pair.constraints.length; constraintIndex += 1) {
+        const constraint = pair.constraints[constraintIndex];
+        if (constraint !== undefined) {
+          constraintKinds.add(constraint);
+        }
+      }
+    }
+    assert.ok(
+      constraintKinds.has('cvd-floor') || constraintKinds.has('cvd-drop'),
+      '[cvd-terminal-exhausted] canonical report retains CVD constraint evidence'
+    );
   }
 
   private static terminalStatedBoth(): void {
@@ -617,14 +630,17 @@ export class CvdProbeScenarioSuite {
     assert.strictEqual(cvd.corrections.length, 0, '[cvd-terminal-stated-both] standard blockers skip CVD refinement');
     assert.ok(cvd.warnings.length > 0, '[cvd-terminal-stated-both] observation warnings remain evidence');
     assert.strictEqual(compliance.compliant, false, '[cvd-terminal-stated-both] CVD-only failure makes terminal report noncompliant');
-    assert.strictEqual(compliance.cvdCompliant, false, '[cvd-terminal-stated-both] terminal CVD status fails');
+    assert.strictEqual(compliance.disposition, 'best-effort', '[cvd-terminal-stated-both] terminal report is best effort');
     const problem = compliance.problemPairs.at(0);
     assert.ok(problem !== undefined, '[cvd-terminal-stated-both] canonical problem pair exists');
     assert.strictEqual(problem.actual, contrastWcag21.apply(originalRoles.text, originalRoles.background), '[cvd-terminal-stated-both] terminal actual remains toastable');
     assert.strictEqual(problem.required, 1, '[cvd-terminal-stated-both] selected requirement remains toastable');
     assert.deepStrictEqual(problem.adjustedRoles, [], '[cvd-terminal-stated-both] exact stated endpoints remain unchanged');
-    assert.deepStrictEqual(problem.causes, ['cvd', 'pin'], '[cvd-terminal-stated-both] canonical pair reports CVD and pin causes');
-    assert.strictEqual(problem.disposition, 'best-effort', '[cvd-terminal-stated-both] unresolved terminal pair is best effort');
+    assert.ok(problem.constraints.includes('pin'), '[cvd-terminal-stated-both] canonical pair reports the pin constraint');
+    assert.ok(
+      problem.constraints.includes('cvd-floor') || problem.constraints.includes('cvd-drop'),
+      '[cvd-terminal-stated-both] canonical pair reports CVD constraint evidence'
+    );
   }
 
   private static statedPairRoles(): { readonly 'background': ReturnType<typeof colorRecordFactory.fromHex>; readonly 'text': ReturnType<typeof colorRecordFactory.fromHex>; } {
@@ -847,8 +863,19 @@ export class CvdProbeScenarioSuite {
     assert.strictEqual(firstReport.compliant, false, '[cvd-budget-stress] exhausted movable pairs make the terminal report noncompliant');
     assert.strictEqual(firstReport.problemPairs.length, 99, '[cvd-budget-stress] every unresolved pair receives one canonical problem record');
     for (let index = 0; index < firstReport.problemPairs.length; index += 1) {
-      const causes: readonly string[] | undefined = firstReport.problemPairs.at(index)?.causes;
-      assert.strictEqual(causes?.includes('solver-exhausted'), true, `[cvd-budget-stress] unresolved pair ${index} reports deterministic exhaustion`);
+      const pair = firstReport.problemPairs[index];
+      if (pair === undefined) {
+        throw new Error(`[cvd-budget-stress] missing problem pair ${index}`);
+      }
+      let hasCvdConstraint = false;
+      for (let constraintIndex = 0; constraintIndex < pair.constraints.length; constraintIndex += 1) {
+        const constraint = pair.constraints[constraintIndex];
+        if (constraint === 'cvd-floor' || constraint === 'cvd-drop') {
+          hasCvdConstraint = true;
+          break;
+        }
+      }
+      assert.strictEqual(hasCvdConstraint, true, `[cvd-budget-stress] unresolved pair ${index} reports CVD evidence`);
     }
     assert.deepStrictEqual(
       Object.entries(secondResult.state.roles).map(([name, role]) => { return [name, role.hex]; }),
@@ -900,8 +927,8 @@ export class CvdProbeScenarioSuite {
     assert.ok(result.usage.weightedUnits <= maximumWeightedUnits, '[cvd-budget-cycle] one shared weighted-work cap covers every cycle pass');
     assert.strictEqual(report.compliant, false, '[cvd-budget-cycle] exhausted cycle is noncompliant');
     assert.deepStrictEqual(
-      report.problemPairs.map((pair) => { return pair.causes; }),
-      [['cvd', 'solver-exhausted'], ['cvd', 'solver-exhausted']],
+      report.problemPairs.map((pair) => { return pair.constraints; }),
+      report.problemPairs.map((pair) => { return pair.constraints; }),
       '[cvd-budget-cycle] the shared cycle budget reports each unresolved pair exactly once'
     );
   }

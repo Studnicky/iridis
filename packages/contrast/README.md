@@ -3,11 +3,11 @@
 Resolves WCAG 2.1 AA / AAA luminance contrast and APCA Lc (WCAG 3 draft)
 compliance, validates and refines the result under color vision deficiency
 (CVD) simulation with fixed Machado–Oliveira–Fernandes severity-1 matrices,
-and reports the final state. The plugin registers two tasks:
-`enforce:compliance` and `report:compliance`.
+and reports the final state. The plugin registers three tasks:
+`enforce:compliance`, `report:compliance`, and `withhold:compliance`.
 
 The selected standard and CVD behavior are input, not stages:
-`input.contrast` is `{ algorithm: 'wcag21' | 'apca', level: 'AA' | 'AAA' | 'Lc', nonMandatoryLevel?: 'AA' | 'AAA', cvdMode?: 'warn' | 'nudge' | 'enforce' }`. `cvdMode` defaults to `warn`; `nonMandatoryLevel` defaults to `AA`.
+`input.contrast` is `{ algorithm: 'wcag21' | 'apca', level: 'AA' | 'AAA' | 'Lc', enableStrictCompliance?: boolean, nonMandatoryLevel?: 'AA' | 'AAA', cvdMode?: 'warn' | 'nudge' | 'enforce' }`. `cvdMode` defaults to `warn`; `nonMandatoryLevel` defaults to `AA`; `enableStrictCompliance` defaults to `false`.
 
 `enforce:compliance` is one bounded, deterministic resolver. It applies the
 selected standard to every declared contrast pair, schema pairs and extra
@@ -42,15 +42,14 @@ evidence.
 
 `report:compliance` runs last, after `derive:variant`. It measures the final
 roles and writes `state.metadata['contrast:complianceReport']`:
-`{ compliant, cvdCompliant, selected: { algorithm, level }, blockedPairs, pairs }`.
-Each pair carries `foreground`, `background`, `requiredTrichromat`,
-`actualTrichromat`, `cvd` (one evaluation per CVD type), `passed`, the optional
-`adjustedRole` (the role the resolver moved), and a `disposition`:
-`not-needed`, `adjusted-foreground`, `adjusted-background`, `blocked-stated`,
-or `unresolved`. Each blocked pair carries `foreground`, `background`,
-`requiredTrichromat`, `actualTrichromat`, `target`, and a `reason`:
-`stated-both`, `solver-exhausted`, or `relation-tolerance`. Consumers admit a
-palette only when `compliant` is `true`.
+`{ compliant, disposition, selected: { algorithm, level }, pairs, problemPairs }`.
+`disposition` is `resolved` when every pair passes, `best-effort` when a
+non-strict run has unresolved pairs, and `withheld` when strict compliance
+withholds unresolved roles. Each pair carries `foreground`, `background`,
+`required`, `actual`, `shortfall`, `passed`, `adjustedRoles`, and `constraints`.
+Constraints are `pin`, `range`, `hue-relationship`, `gamut`, `cvd-floor`, or
+`cvd-drop`. `problemPairs` is the stable-sorted subset of the same pair records
+whose `passed` value is false.
 
 The CVD record lands in `state.metadata['contrast:cvd']`.
 `warnings` retain `belowFloor` and `exceedsDrop` evidence for every mode;
@@ -120,9 +119,9 @@ export function generateAccessiblePalette(roleSchema: RoleSchemaEntity.Type) {
 
   const report = state.metadata['contrast:complianceReport'];
   // report?.compliant     // true when every pair passes the selected standard
-  // report?.pairs         // { foreground, background, requiredTrichromat, actualTrichromat, cvd, passed, adjustedRole?, disposition }
-  // report?.blockedPairs  // { foreground, background, requiredTrichromat, actualTrichromat, target, reason }
-  // report?.cvdCompliant  // true when CVD validation passes
+  // report?.disposition   // resolved | best-effort | withheld
+  // report?.pairs         // { foreground, background, required, actual, shortfall, passed, adjustedRoles, constraints }
+  // report?.problemPairs  // stable-sorted failed subset of report.pairs
 
   const cvd = CvdResultSetEntity.intake(state.metadata['contrast:cvd']);
   // cvd.corrections // { foreground, background, adjustedRoles, cvdTypesFixed, cvdTypesRemaining }
@@ -138,6 +137,7 @@ export function generateAccessiblePalette(roleSchema: RoleSchemaEntity.Type) {
 |---|---|
 | `enforce:compliance` | Applies the selected standard (`input.contrast`) to every declared pair, runs CVD correction as a validator and refiner of the same policy, re-measures after correction, and moves only derived endpoints. |
 | `report:compliance` | Measures the final roles and writes `metadata['contrast:complianceReport']`. |
+| `withhold:compliance` | Clears roles and variants only when `enableStrictCompliance` is true and the terminal report has problem pairs. |
 
 Corrected derived roles are replaced in `state.roles`; stated roles are never
 mutated. Downstream emit tasks read the final records without additional

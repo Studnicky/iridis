@@ -18,17 +18,13 @@ export namespace ContrastReportEntryEntity {
         'uniqueItems': true
       },
       'background': { 'type': 'string' },
-      'causes': {
+      'constraints': {
         'items': {
-          'enum': ['pin', 'range', 'hue-relationship', 'gamut', 'cvd', 'solver-exhausted'],
+          'enum': ['pin', 'range', 'hue-relationship', 'gamut', 'cvd-floor', 'cvd-drop'],
           'type': 'string'
         },
         'type': 'array',
         'uniqueItems': true
-      },
-      'disposition': {
-        'enum': ['resolved', 'best-effort', 'withheld'],
-        'type': 'string'
       },
       'foreground': { 'type': 'string' },
       'passed': { 'type': 'boolean' },
@@ -39,8 +35,7 @@ export namespace ContrastReportEntryEntity {
       'actual',
       'adjustedRoles',
       'background',
-      'causes',
-      'disposition',
+      'constraints',
       'foreground',
       'passed',
       'required',

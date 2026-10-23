@@ -4,8 +4,6 @@ import type { JSONSchema7Type } from 'json-schema';
 import { EntityCompiler } from '@studnicky/entity/node';
 import { Validator } from '@studnicky/iridis/model';
 
-import { CvdEvalEntity } from './CvdEvalEntity.ts';
-
 /** Terminal selected-standard outcome for one semantic contrast pair. */
 export namespace CompliancePairEntity {
   export const Schema = {
@@ -18,21 +16,13 @@ export namespace CompliancePairEntity {
         'uniqueItems': true
       },
       'background': { 'type': 'string' },
-      'causes': {
+      'constraints': {
         'items': {
-          'enum': ['pin', 'range', 'hue-relationship', 'gamut', 'cvd', 'solver-exhausted'],
+          'enum': ['pin', 'range', 'hue-relationship', 'gamut', 'cvd-floor', 'cvd-drop'],
           'type': 'string'
         },
         'type': 'array',
         'uniqueItems': true
-      },
-      'cvd': {
-        'items': CvdEvalEntity.Schema,
-        'type': 'array'
-      },
-      'disposition': {
-        'enum': ['resolved', 'best-effort', 'withheld'],
-        'type': 'string'
       },
       'foreground': { 'type': 'string' },
       'passed': { 'type': 'boolean' },
@@ -43,9 +33,7 @@ export namespace CompliancePairEntity {
       'actual',
       'adjustedRoles',
       'background',
-      'causes',
-      'cvd',
-      'disposition',
+      'constraints',
       'foreground',
       'passed',
       'required',

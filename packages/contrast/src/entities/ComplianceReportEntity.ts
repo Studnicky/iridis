@@ -13,7 +13,10 @@ export namespace ComplianceReportEntity {
     'additionalProperties': false,
     'properties': {
       'compliant': { 'type': 'boolean' },
-      'cvdCompliant': { 'type': 'boolean' },
+      'disposition': {
+        'enum': ['resolved', 'best-effort', 'withheld'],
+        'type': 'string'
+      },
       'pairs': { 'items': CompliancePairEntity.Schema, 'type': 'array' },
       'problemPairs': { 'items': CompliancePairEntity.Schema, 'type': 'array' },
       'selected': {
@@ -24,10 +27,9 @@ export namespace ComplianceReportEntity {
         },
         'required': ['algorithm', 'level'],
         'type': 'object'
-      },
-      'withheld': { 'type': 'boolean' }
+      }
     },
-    'required': ['compliant', 'cvdCompliant', 'pairs', 'problemPairs', 'selected', 'withheld'],
+    'required': ['compliant', 'disposition', 'pairs', 'problemPairs', 'selected'],
     'type': 'object'
   } as const;
 

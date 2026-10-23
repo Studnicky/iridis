@@ -14,6 +14,10 @@ export namespace ContrastReportEntity {
     'additionalProperties': false,
     'properties': {
       'compliant': { 'type': 'boolean' },
+      'disposition': {
+        'enum': ['resolved', 'best-effort', 'withheld'],
+        'type': 'string'
+      },
       'pairs': {
         'items': ContrastReportEntryEntity.Schema,
         'type': 'array'
@@ -22,10 +26,17 @@ export namespace ContrastReportEntity {
         'items': ContrastReportEntryEntity.Schema,
         'type': 'array'
       },
-      'selectedAlgorithm': { 'enum': ['wcag21', 'apca'] },
-      'target': { 'type': 'string' }
+      'selected': {
+        'additionalProperties': false,
+        'properties': {
+          'algorithm': { 'enum': ['wcag21', 'apca'], 'type': 'string' },
+          'level': { 'type': 'string' }
+        },
+        'required': ['algorithm', 'level'],
+        'type': 'object'
+      }
     },
-    'required': ['compliant', 'pairs', 'problemPairs', 'selectedAlgorithm', 'target'],
+    'required': ['compliant', 'disposition', 'pairs', 'problemPairs', 'selected'],
     'type': 'object'
   } as const;
 
