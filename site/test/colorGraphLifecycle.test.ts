@@ -24,8 +24,22 @@ class ColorGraphLifecycleBrowser {
   // The graph publishes its lifecycle FSM state, so waits follow transitions, not timers.
   // Pass every state that satisfies the condition, so a transient state cannot be missed.
   static async awaitState(page: Page, ...states: string[]): Promise<void> {
-    await ColorGraphLifecycleBrowser.activeGraph(page, states).first()
-      .waitFor({ 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
+    try {
+      await ColorGraphLifecycleBrowser.activeGraph(page, states).first()
+        .waitFor({ 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
+    } catch (error) {
+      const observed = await page.locator('#explore .cg-wrap').evaluateAll((nodes) => {
+        const result = nodes.map((node) => {
+          const state = node.getAttribute('data-graph-state');
+
+          return state;
+        });
+
+        return result;
+      });
+
+      throw new Error(`Expected graph state ${states.join('|')}, observed [${observed.join(', ')}].`, { 'cause': error });
+    }
   }
 
   static async selectGraphCard(page: Page): Promise<void> {

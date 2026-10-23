@@ -119,6 +119,8 @@ let graphBooting = false;
 const fitTimers: ReturnType<typeof setTimeout>[] = [];
 let captureFitZoomOnEnd = false;
 let startSimulationAfterFit = false;
+let zoomIdleTimer: ReturnType<typeof setTimeout> | null = null;
+const ZOOM_IDLE_MS = 250;
 const LABEL_PAINT_BUDGET_MS = 1000 / 30;
 const GRAPH_VISIBILITY_POLL_MS = 750;
 // Caps how many times initCosmos() is allowed to retry a failing
@@ -163,6 +165,14 @@ function stopVisibilityPoll(): void {
     clearInterval(visibilityPoll);
     visibilityPoll = null;
   }
+}
+
+function armZoomIdle(): void {
+  if (zoomIdleTimer !== null) clearTimeout(zoomIdleTimer);
+  zoomIdleTimer = setTimeout(() => {
+    zoomIdleTimer = null;
+    signal(ColorGraphLifecycleEvent.zoomEnded());
+  }, ZOOM_IDLE_MS);
 }
 
 function cancelFitSequence(): void {
@@ -275,6 +285,10 @@ function teardownGraphRuntime(): void {
   }
   window.removeEventListener('keydown', onKeydown);
   cancelFitSequence();
+  if (zoomIdleTimer !== null) {
+    clearTimeout(zoomIdleTimer);
+    zoomIdleTimer = null;
+  }
   if (labelRaf !== null) {
     cancelAnimationFrame(labelRaf);
     labelRaf = null;
@@ -334,6 +348,7 @@ function initCosmos(container: HTMLDivElement): void {
       'onSimulationTick': () => { scheduleLabelPaint(); },
       'onZoom': () => {
         signal(ColorGraphLifecycleEvent.zoomed());
+        armZoomIdle();
         scheduleLabelPaint();
         pollZoom();
         const g = graph.value;
@@ -354,6 +369,7 @@ function initCosmos(container: HTMLDivElement): void {
         if (handle === null) return;
         try { fitZoomLevel.value = handle.getZoomLevel(); } catch { /* ignore */ }
         signal(ColorGraphLifecycleEvent.fitSettled());
+        signal(ColorGraphLifecycleEvent.zoomEnded());
         if (shouldStartSimulation) {
           try { handle.start(1); } catch { /* ignore */ }
         }
