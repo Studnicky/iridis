@@ -31,7 +31,7 @@ Every task registered by the core engine and by each official plugin, grouped by
 | Task | Reads | Writes | Requires | Description |
 |---|---|---|---|---|
 | `enforce:compliance` | `roles`, `input.roles`, `input.contrast`, `metadata['core:roleProvenance']` | `roles`, `metadata['contrast:cvd']`, `metadata['contrast:complianceReport']` | — | Resolves the selected standard (`input.contrast`) over every declared pair, runs CVD correction as a validator and refiner of the same policy, and moves only derived endpoints. Stated roles keep their exact color. |
-| `report:compliance` | `roles`, `metadata['contrast:cvd']` | `metadata['contrast:complianceReport']` | — | Measures the final roles and writes `{compliant, selected, pairs, blockedPairs, cvdCompliant}`; consumers admit a palette only when `compliant` is true. |
+| `report:compliance` | `roles`, `metadata['contrast:cvd']` | `metadata['contrast:complianceReport']` | — | Measures the final roles and writes `{compliant, selected, pairs, problemPairs, cvdCompliant}`, where `problemPairs` is the failing subset of `pairs` and each pair carries `required`, `actual`, `shortfall` and `causes`; consumers admit a palette only when `compliant` is true. |
 
 ## `@studnicky/iridis-image`
 

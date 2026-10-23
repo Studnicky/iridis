@@ -37,17 +37,21 @@ export class PaletteResolveFixture {
         'seedOklch': 'L 0.50 · C 0.04 · H 260'
       })]),
       'compliance': ({
-        'blockedPairs': ([({
-          'actualTrichromat': 2.5,
-          'background': 'surface',
-          'foreground': 'accent',
-          'reason': 'solver-exhausted',
-          'requiredTrichromat': 3,
-          'target': 'accent'
-        })]),
         'compliant': false,
         'cvdCompliant': false,
         'pairs': ([]),
+        'problemPairs': ([({
+          'actual': 2.5,
+          'adjustedRoles': ([]),
+          'background': 'surface',
+          'causes': (['solver-exhausted']),
+          'cvd': ([]),
+          'disposition': 'best-effort',
+          'foreground': 'accent',
+          'passed': false,
+          'required': 3,
+          'shortfall': 0.5
+        })]),
         'selected': ({
           'algorithm': 'apca',
           'level': 'Lc'

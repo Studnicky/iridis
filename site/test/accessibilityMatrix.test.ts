@@ -37,10 +37,10 @@ class AccessibilityMatrix {
     if (run.report.compliant) {
       return;
     }
-    for (let blockedIndex = 0; blockedIndex < run.report.blockedPairs.length; blockedIndex += 1) {
-      const pair = run.report.blockedPairs[blockedIndex];
+    for (let blockedIndex = 0; blockedIndex < run.report.problemPairs.length; blockedIndex += 1) {
+      const pair = run.report.problemPairs[blockedIndex];
       if (pair !== undefined) {
-        blocked.push(`${label}: ${pair.foreground}/${pair.background} ${pair.reason} required=${pair.requiredTrichromat} actual=${pair.actualTrichromat} target=${pair.target}`);
+        blocked.push(`${label}: ${pair.foreground}/${pair.background} ${pair.causes.join('+')} required=${pair.required} actual=${pair.actual}`);
       }
     }
   }

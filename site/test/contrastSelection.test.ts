@@ -76,10 +76,10 @@ class PaletteTraffic {
 }
 
 class PairRequirements {
-  static count(pairs: readonly { readonly 'requiredTrichromat': number }[], requirement: number): number {
+  static count(pairs: readonly { readonly 'required': number }[], requirement: number): number {
     let matches = 0;
     for (let index = 0; index < pairs.length; index += 1) {
-      if (pairs[index]?.requiredTrichromat === requirement) {matches += 1;}
+      if (pairs[index]?.required === requirement) {matches += 1;}
     }
     return matches;
   }

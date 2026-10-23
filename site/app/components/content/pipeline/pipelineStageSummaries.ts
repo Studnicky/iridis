@@ -2,7 +2,7 @@ import type { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/irid
 
 export const pipelineStageSummaries = class PipelineStageSummaries {
   public static buildPairSummary(report: ComplianceReportEntity.Type): string {
-    const passing = report.pairs.length - report.blockedPairs.length;
+    const passing = report.pairs.length - report.problemPairs.length;
     return `${passing}/${report.pairs.length} pairs passing`;
   }
 

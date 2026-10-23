@@ -20,7 +20,7 @@ export class PinAssertions {
   public static compliant(run: PinRun): void {
     assert.equal(run.report.compliant, true);
     assert.equal(run.report.cvdCompliant, true);
-    assert.deepEqual(run.report.blockedPairs, []);
+    assert.deepEqual(run.report.problemPairs, []);
     assert.equal(run.report.pairs.length > 0, true);
     for (let index = 0; index < run.report.pairs.length; index += 1) {
       const pair = run.report.pairs[index];
@@ -28,7 +28,7 @@ export class PinAssertions {
         const label = `${pair.foreground}/${pair.background}`;
         const measured = run.measure(pair.foreground, pair.background);
         assert.equal(pair.passed, true, `${label} passes`);
-        assert.equal(measured + RATIO_TOLERANCE >= pair.requiredTrichromat, true, `${label} measures ${measured.toFixed(2)} against ${pair.requiredTrichromat.toFixed(2)}`);
+        assert.equal(measured + RATIO_TOLERANCE >= pair.required, true, `${label} measures ${measured.toFixed(2)} against ${pair.required.toFixed(2)}`);
       }
     }
   }
@@ -59,18 +59,23 @@ export class PinAssertions {
 
   public static blocked(run: PinRun): void {
     assert.equal(run.report.compliant, false);
-    assert.equal(run.report.blockedPairs.length > 0, true);
-    for (let index = 0; index < run.report.blockedPairs.length; index += 1) {
-      assert.equal((run.report.blockedPairs[index]?.reason ?? '').length > 0, true);
+    assert.equal(run.report.problemPairs.length > 0, true);
+    for (let index = 0; index < run.report.problemPairs.length; index += 1) {
+      assert.equal((run.report.problemPairs[index]?.causes.length ?? 0) > 0, true);
     }
   }
 
-  public static blockedWith(run: PinRun, foreground: string, background: string, reason: string): void {
-    const match = run.report.blockedPairs.some((pair) => {
-      const matches = pair.foreground === foreground && pair.background === background && pair.reason === reason;
-      return matches;
-    });
-    assert.equal(match, true, `${foreground}/${background} is blocked as ${reason}`);
+  public static blockedWith(run: PinRun, foreground: string, background: string, cause: string): void {
+    const key = `${foreground}/${background}`;
+    const causesByPair = new Map<string, ReadonlySet<string>>();
+    for (let index = 0; index < run.report.problemPairs.length; index += 1) {
+      const pair = run.report.problemPairs[index];
+      if (pair !== undefined) {
+        causesByPair.set(`${pair.foreground}/${pair.background}`, new Set(pair.causes));
+      }
+    }
+    const match = causesByPair.get(key)?.has(cause) === true;
+    assert.equal(match, true, `${foreground}/${background} is blocked by ${cause}`);
   }
 
   public static noFalsePass(run: PinRun): void {
@@ -78,7 +83,7 @@ export class PinAssertions {
       const pair = run.report.pairs[index];
       if (pair?.passed === true) {
         const measured = run.measure(pair.foreground, pair.background);
-        assert.equal(measured + RATIO_TOLERANCE >= pair.requiredTrichromat, true, `${pair.foreground}/${pair.background} is reported passed at ${measured.toFixed(2)} against ${pair.requiredTrichromat.toFixed(2)}`);
+        assert.equal(measured + RATIO_TOLERANCE >= pair.required, true, `${pair.foreground}/${pair.background} is reported passed at ${measured.toFixed(2)} against ${pair.required.toFixed(2)}`);
       }
     }
   }

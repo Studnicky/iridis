@@ -8,12 +8,12 @@ import { AccessibilityBlockers } from '../app/composables/accessibilityBlockers.
 import { ComplianceReportFixture } from './fixtures/ComplianceReportFixture.ts';
 
 class ReportMetadata {
-  public static build(blockedPairs: readonly object[], algorithm: string, level: string): ComplianceReportEntity.Type {
+  public static build(problemPairs: readonly object[], algorithm: string, level: string): ComplianceReportEntity.Type {
     const result = ComplianceReportEntity.intake({
-      'blockedPairs': blockedPairs,
-      'compliant': blockedPairs.length === 0,
+      'compliant': problemPairs.length === 0,
       'cvdCompliant': true,
       'pairs': [],
+      'problemPairs': problemPairs,
       'selected': { 'algorithm': algorithm, 'level': level }
     });
     return result;
@@ -34,7 +34,7 @@ await test('blocked report yields a sorted deterministic key and toast text', ()
   assert.equal(set.key, 'WCAG AA|accent/surface|text/surface');
   const message = AccessibilityBlockers.toastMessage(set);
   assert.equal(message.title, 'Pinned roles cannot meet WCAG AA');
-  assert.equal(message.description, 'text on surface needs 4.50, reaches 1.09 (both pinned); accent on surface needs 3.00, reaches 2.50 (search exhausted)');
+  assert.equal(message.description, 'text on surface needs 4.50, reaches 1.09 (pinned); accent on surface needs 3.00, reaches 2.50 (search exhausted)');
 });
 
 await test('pair order does not change the key', () => {
@@ -61,8 +61,8 @@ await test('missing or malformed reports are compliant with no pairs', () => {
     void 0,
     null,
     'nope',
-    { 'blockedPairs': 'x', 'compliant': false },
-    { 'blockedPairs': [{ 'foreground': 1 }], 'compliant': false, 'cvdCompliant': true, 'pairs': [], 'selected': { 'algorithm': 'wcag21', 'level': 'AA' } }
+    { 'compliant': false, 'problemPairs': 'x' },
+    { 'compliant': false, 'cvdCompliant': true, 'pairs': [], 'problemPairs': [{ 'foreground': 1 }], 'selected': { 'algorithm': 'wcag21', 'level': 'AA' } }
   ];
   for (let index = 0; index < malformed.length; index += 1) {
     const candidate = malformed[index];

@@ -65,7 +65,7 @@ export const buildSchemaComplianceSummaries = class SchemaComplianceSummariesBui
   public static build(report: ComplianceReportEntity.Type | undefined, selection: ContrastSelectionInterface): SchemaStageSummary[] {
     const summaries: SchemaStageSummary[] = [];
     if (report !== undefined) {
-      const passing = report.pairs.length - report.blockedPairs.length;
+      const passing = report.pairs.length - report.problemPairs.length;
       summaries.push(new SchemaStageSummary(
         SchemaComplianceStatus.resolve(passing, report.pairs.length),
         'compliance',

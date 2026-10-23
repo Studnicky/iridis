@@ -1,13 +1,16 @@
-import type { ComplianceBlockedPairEntity } from '@studnicky/iridis-contrast';
+import type { CompliancePairEntity } from '@studnicky/iridis-contrast';
 import type { JSONSchema7Type } from 'json-schema';
 
 import { ComplianceReportEntity } from '@studnicky/iridis-contrast';
 
 class BlockedPairView {
-  private static readonly reasonSuffixes: ReadonlyMap<ComplianceBlockedPairEntity.Type['reason'], string> = new Map([
-    ['relation-tolerance', ' (relation tolerance)'],
-    ['solver-exhausted', ' (search exhausted)'],
-    ['stated-both', ' (both pinned)']
+  private static readonly causeLabels: ReadonlyMap<CompliancePairEntity.Type['causes'][number], string> = new Map([
+    ['cvd', 'colour-vision floor'],
+    ['gamut', 'gamut'],
+    ['hue-relationship', 'hue relationship'],
+    ['pin', 'pinned'],
+    ['range', 'role range'],
+    ['solver-exhausted', 'search exhausted']
   ]);
 
   public readonly actual: number;
@@ -16,12 +19,16 @@ class BlockedPairView {
   public readonly required: number;
   public readonly suffix: string;
 
-  public constructor(pair: ComplianceBlockedPairEntity.Type) {
-    this.actual = pair.actualTrichromat;
+  public constructor(pair: CompliancePairEntity.Type) {
+    const labels = pair.causes.map((cause) => {
+      const label = BlockedPairView.causeLabels.get(cause) ?? cause;
+      return label;
+    });
+    this.actual = pair.actual;
     this.background = pair.background;
     this.foreground = pair.foreground;
-    this.required = pair.requiredTrichromat;
-    this.suffix = BlockedPairView.reasonSuffixes.get(pair.reason) ?? '';
+    this.required = pair.required;
+    this.suffix = labels.length === 0 ? '' : ` (${labels.join(', ')})`;
   }
 
   public get id(): string {
@@ -76,7 +83,7 @@ export class AccessibilityBlockers {
     if (report !== undefined && ComplianceReportEntity.validate(report)) {
       const { algorithm, level } = report.selected;
       const label = AccessibilityBlockers.standardLabel(algorithm, level);
-      const pairs = report.blockedPairs.map((pair) => {
+      const pairs = report.problemPairs.map((pair) => {
         return new BlockedPairView(pair);
       });
       result = new AccessibilityBlockerSet(pairs, label);

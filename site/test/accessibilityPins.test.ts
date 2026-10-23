@@ -30,7 +30,7 @@ await test('R4 dark APCA pinned background #808080 and text #909090 is blocked w
   PinAssertions.pinsExact(run);
   PinAssertions.noFalsePass(run);
   PinAssertions.blocked(run);
-  PinAssertions.blockedWith(run, 'text', 'background', 'stated-both');
+  PinAssertions.blockedWith(run, 'text', 'background', 'pin');
 });
 
 await test('R5 light APCA pinned text #f59e0b keeps the pin and reports truthfully', (context) => {
@@ -52,5 +52,5 @@ await test('R7 dark APCA pinned text and surface at #808080 is blocked with both
   PinAssertions.pinsExact(run);
   PinAssertions.noFalsePass(run);
   PinAssertions.blocked(run);
-  PinAssertions.blockedWith(run, 'text', 'surface', 'stated-both');
+  PinAssertions.blockedWith(run, 'text', 'surface', 'pin');
 });
