@@ -19,7 +19,6 @@ export class PinAssertions {
 
   public static compliant(run: PinRun): void {
     assert.equal(run.report.compliant, true);
-    assert.equal(run.report.cvdCompliant, true);
     assert.deepEqual(run.report.problemPairs, []);
     assert.equal(run.report.pairs.length > 0, true);
     for (let index = 0; index < run.report.pairs.length; index += 1) {
@@ -61,20 +60,20 @@ export class PinAssertions {
     assert.equal(run.report.compliant, false);
     assert.equal(run.report.problemPairs.length > 0, true);
     for (let index = 0; index < run.report.problemPairs.length; index += 1) {
-      assert.equal((run.report.problemPairs[index]?.causes.length ?? 0) > 0, true);
+      assert.equal((run.report.problemPairs[index]?.constraints.length ?? 0) > 0, true);
     }
   }
 
   public static blockedWith(run: PinRun, foreground: string, background: string, cause: string): void {
     const key = `${foreground}/${background}`;
-    const causesByPair = new Map<string, ReadonlySet<string>>();
+    const constraintsByPair = new Map<string, ReadonlySet<string>>();
     for (let index = 0; index < run.report.problemPairs.length; index += 1) {
       const pair = run.report.problemPairs[index];
       if (pair !== undefined) {
-        causesByPair.set(`${pair.foreground}/${pair.background}`, new Set(pair.causes));
+        constraintsByPair.set(`${pair.foreground}/${pair.background}`, new Set(pair.constraints));
       }
     }
-    const match = causesByPair.get(key)?.has(cause) === true;
+    const match = constraintsByPair.get(key)?.has(cause) === true;
     assert.equal(match, true, `${foreground}/${background} is blocked by ${cause}`);
   }
 

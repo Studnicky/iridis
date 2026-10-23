@@ -40,7 +40,7 @@ class AccessibilityMatrix {
     for (let blockedIndex = 0; blockedIndex < run.report.problemPairs.length; blockedIndex += 1) {
       const pair = run.report.problemPairs[blockedIndex];
       if (pair !== undefined) {
-        blocked.push(`${label}: ${pair.foreground}/${pair.background} ${pair.causes.join('+')} required=${pair.required} actual=${pair.actual}`);
+        blocked.push(`${label}: ${pair.foreground}/${pair.background} ${pair.constraints.join('+')} required=${pair.required} actual=${pair.actual}`);
       }
     }
   }

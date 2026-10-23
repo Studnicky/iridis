@@ -7,11 +7,10 @@ class BlockerSetBuilder {
   public static report(problemPairs: readonly object[]): ComplianceReportEntity.Type {
     const result = ComplianceReportEntity.intake({
       'compliant': problemPairs.length === 0,
-      'cvdCompliant': true,
+      'disposition': problemPairs.length === 0 ? 'resolved' : 'best-effort',
       'pairs': [],
       'problemPairs': problemPairs,
-      'selected': { 'algorithm': 'wcag21', 'level': 'AA' },
-      'withheld': false
+      'selected': { 'algorithm': 'wcag21', 'level': 'AA' }
     });
     return result;
   }
@@ -22,5 +21,5 @@ const blockedReport = BlockerSetBuilder.report([ComplianceReportFixture.TEXT_ON_
 export const BlockerSetFixture = Object.freeze({
   'blocked': AccessibilityBlockers.fromReport(blockedReport),
   'compliant': AccessibilityBlockers.fromReport(BlockerSetBuilder.report([])),
-  'withheld': AccessibilityBlockers.fromReport(ComplianceReportEntity.create({ ...blockedReport, 'withheld': true }))
+  'withheld': AccessibilityBlockers.fromReport(ComplianceReportEntity.create({ ...blockedReport, 'disposition': 'withheld' }))
 });

@@ -90,7 +90,7 @@ class CategoryColorService {
       'colors': [seed],
       'contrast': {
         'algorithm': 'wcag21',
-        'cvdMode': 'nudge',
+        'cvdMode': 'enforce',
         'level': 'AAA'
       },
       'metadata': {
@@ -230,7 +230,7 @@ class CategoryColorService {
       throw new TypeError('The contrast plugin did not return complete compliance metadata.');
     }
     const cvd = CvdResultSetEntity.intake(cvdValue);
-    if (!complianceValue.compliant || !complianceValue.cvdCompliant) {
+    if (!complianceValue.compliant) {
       throw new RangeError('The palette does not satisfy every configured contrast contract.');
     }
     CategoryColorService.assertCompleteCvdResults(cvd);

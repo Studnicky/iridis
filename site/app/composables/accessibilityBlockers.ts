@@ -4,13 +4,13 @@ import type { JSONSchema7Type } from 'json-schema';
 import { ComplianceReportEntity } from '@studnicky/iridis-contrast';
 
 class BlockedPairView {
-  private static readonly causeLabels: ReadonlyMap<CompliancePairEntity.Type['causes'][number], string> = new Map([
-    ['cvd', 'colour-vision floor'],
+  private static readonly constraintLabels: ReadonlyMap<CompliancePairEntity.Type['constraints'][number], string> = new Map([
+    ['cvd-drop', 'colour-vision drop'],
+    ['cvd-floor', 'colour-vision floor'],
     ['gamut', 'gamut'],
     ['hue-relationship', 'hue relationship'],
     ['pin', 'pinned'],
-    ['range', 'role range'],
-    ['solver-exhausted', 'search exhausted']
+    ['range', 'role range']
   ]);
 
   public readonly actual: number;
@@ -20,8 +20,8 @@ class BlockedPairView {
   public readonly suffix: string;
 
   public constructor(pair: CompliancePairEntity.Type) {
-    const labels = pair.causes.map((cause) => {
-      const label = BlockedPairView.causeLabels.get(cause) ?? cause;
+    const labels = pair.constraints.map((constraint) => {
+      const label = BlockedPairView.constraintLabels.get(constraint) ?? constraint;
       return label;
     });
     this.actual = pair.actual;
@@ -111,7 +111,7 @@ export class AccessibilityBlockers {
       const pairs = report.problemPairs.map((pair) => {
         return new BlockedPairView(pair);
       });
-      const disposition = report.withheld ? new WithheldPaletteDisposition() : new AdmittedPaletteDisposition();
+      const disposition = report.disposition === 'withheld' ? new WithheldPaletteDisposition() : new AdmittedPaletteDisposition();
       result = new AccessibilityBlockerSet(pairs, label, disposition);
     }
     return result;

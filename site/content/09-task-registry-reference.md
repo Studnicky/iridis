@@ -31,8 +31,8 @@ Every task registered by the core engine and by each official plugin, grouped by
 | Task | Reads | Writes | Requires | Description |
 |---|---|---|---|---|
 | `enforce:compliance` | `roles`, `input.roles`, `input.contrast`, `metadata['core:roleProvenance']` | `roles`, `metadata['contrast:cvd']`, `metadata['contrast:complianceReport']` | — | Resolves the selected standard (`input.contrast`) over every declared pair, runs CVD correction as a validator and refiner of the same policy, and moves only derived endpoints. Stated roles keep their exact color. |
-| `report:compliance` | `roles`, `metadata['contrast:cvd']` | `metadata['contrast:complianceReport']` | — | Measures the final roles and writes `{compliant, selected, pairs, problemPairs, cvdCompliant, withheld}`, where `problemPairs` is the failing subset of `pairs` and each pair carries `required`, `actual`, `shortfall` and `causes`. |
-| `withhold:compliance` | `roles`, `variants`, `input.contrast`, `metadata['contrast:complianceReport']` | `roles`, `variants`, `metadata['contrast:complianceReport']` | — | Runs last. When `input.contrast.enableStrictCompliance` is true and the report has problem pairs, clears the roles and variants and sets `withheld` on the report; otherwise the closest palette stays. |
+| `report:compliance` | `roles`, `metadata['contrast:cvd']` | `metadata['contrast:complianceReport']` | — | Measures the final roles and writes `{compliant, disposition, selected, pairs, problemPairs}`, where `disposition` is `resolved`, `best-effort` or `withheld`, `problemPairs` is the failing subset of `pairs`, and each pair carries `required`, `actual`, `shortfall`, `adjustedRoles` and `constraints`. |
+| `withhold:compliance` | `roles`, `variants`, `input.contrast`, `metadata['contrast:complianceReport']` | `roles`, `variants`, `metadata['contrast:complianceReport']` | — | Runs last. When `input.contrast.enableStrictCompliance` is true and the report has problem pairs, clears the roles and variants and sets the report `disposition` to `withheld`; otherwise the closest palette stays. |
 
 ## `@studnicky/iridis-image`
 

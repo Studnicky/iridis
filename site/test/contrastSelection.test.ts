@@ -1,3 +1,5 @@
+import type { ComplianceReportEntity } from '@studnicky/iridis-contrast';
+
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import { test } from 'node:test';
@@ -72,6 +74,18 @@ class PaletteTraffic {
     PaletteTraffic.requests.length = 0;
     PaletteTraffic.#byId.clear();
     PaletteTraffic.#waiters.length = 0;
+  }
+}
+
+class CvdConstraints {
+  static count(report: ComplianceReportEntity.Type | undefined): number {
+    let matches = 0;
+    const pairs = report?.problemPairs ?? [];
+    for (let index = 0; index < pairs.length; index += 1) {
+      const constraints: readonly string[] = pairs[index]?.constraints ?? [];
+      if (constraints.includes('cvd-floor') || constraints.includes('cvd-drop')) {matches += 1;}
+    }
+    return matches;
   }
 }
 
@@ -281,8 +295,8 @@ await test('the engine resolves CVD evidence according to the selected cvdMode',
   const nudge = PaletteResolve.run(PaletteResolveRequestEntity.create({ ...base, 'cvdMode': 'nudge' }));
   const enforce = PaletteResolve.run(PaletteResolveRequestEntity.create({ ...base, 'cvdMode': 'enforce' }));
 
-  assert.equal(warn.compliance?.cvdCompliant, true);
-  assert.equal(nudge.compliance?.cvdCompliant, true);
-  assert.equal(enforce.compliance?.cvdCompliant, false, 'enforce reports unresolved CVD evidence as non-compliant');
+  assert.equal(CvdConstraints.count(warn.compliance), 0);
+  assert.equal(CvdConstraints.count(nudge.compliance), 0);
+  assert.equal(CvdConstraints.count(enforce.compliance) > 0, true, 'enforce reports unresolved CVD evidence as a constraint');
   assert.deepEqual(warn.roles, nudge.roles);
 });

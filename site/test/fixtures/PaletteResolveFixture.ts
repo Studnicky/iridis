@@ -39,15 +39,13 @@ export class PaletteResolveFixture {
       })]),
       'compliance': ({
         'compliant': false,
-        'cvdCompliant': false,
+        'disposition': 'best-effort',
         'pairs': ([]),
         'problemPairs': ([({
           'actual': 2.5,
           'adjustedRoles': ([]),
           'background': 'surface',
-          'causes': (['solver-exhausted']),
-          'cvd': ([]),
-          'disposition': 'best-effort',
+          'constraints': ([]),
           'foreground': 'accent',
           'passed': false,
           'required': 3,
@@ -56,8 +54,7 @@ export class PaletteResolveFixture {
         'selected': ({
           'algorithm': 'apca',
           'level': 'Lc'
-        }),
-        'withheld': false
+        })
       }),
       'cvd': ({
         'blocked': ([]),

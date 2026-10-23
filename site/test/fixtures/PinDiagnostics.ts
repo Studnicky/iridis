@@ -12,6 +12,6 @@ export class PinDiagnostics {
         ratios.push(`${pair.foreground}/${pair.background}=${measured.toFixed(2)}/${pair.required.toFixed(2)}${failure}`);
       }
     }
-    context.diagnostic(`${label}: ${run.elapsedMs.toFixed(0)}ms compliant=${String(run.report.compliant)} cvdCompliant=${String(run.report.cvdCompliant)} ${ratios.join(' ')}`);
+    context.diagnostic(`${label}: ${run.elapsedMs.toFixed(0)}ms compliant=${String(run.report.compliant)} disposition=${run.report.disposition} ${ratios.join(' ')}`);
   }
 }

@@ -7,7 +7,7 @@ export const pipelineStageSummaries = class PipelineStageSummaries {
   }
 
   public static buildWithholdSummary(report: ComplianceReportEntity.Type): string {
-    const result = report.withheld
+    const result = report.disposition === 'withheld'
       ? `palette withheld: ${report.problemPairs.length} pairs below the standard`
       : 'palette released';
     return result;

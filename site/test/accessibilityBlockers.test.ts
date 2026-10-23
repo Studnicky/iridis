@@ -8,15 +8,19 @@ import { AccessibilityBlockers } from '../app/composables/accessibilityBlockers.
 import { ComplianceReportFixture } from './fixtures/ComplianceReportFixture.ts';
 
 class ReportMetadata {
-  public static build(problemPairs: readonly object[], algorithm: string, level: string, withheld = false): ComplianceReportEntity.Type {
+  public static build(problemPairs: readonly object[], algorithm: string, level: string): ComplianceReportEntity.Type {
     const result = ComplianceReportEntity.intake({
       'compliant': problemPairs.length === 0,
-      'cvdCompliant': true,
+      'disposition': problemPairs.length === 0 ? 'resolved' : 'best-effort',
       'pairs': [],
       'problemPairs': problemPairs,
-      'selected': { 'algorithm': algorithm, 'level': level },
-      'withheld': withheld
+      'selected': { 'algorithm': algorithm, 'level': level }
     });
+    return result;
+  }
+
+  public static buildWithheld(problemPairs: readonly object[], algorithm: string, level: string): ComplianceReportEntity.Type {
+    const result = ComplianceReportEntity.intake({ ...ReportMetadata.build(problemPairs, algorithm, level), 'disposition': 'withheld' });
     return result;
   }
 }
@@ -35,7 +39,7 @@ await test('blocked report yields a sorted deterministic key and toast text', ()
   assert.equal(set.key, 'WCAG AA|accent/surface|text/surface');
   const message = AccessibilityBlockers.toastMessage(set);
   assert.equal(message.title, 'Pinned roles cannot meet WCAG AA');
-  assert.equal(message.description, 'text on surface needs 4.50, reaches 1.09 (pinned); accent on surface needs 3.00, reaches 2.50 (search exhausted)');
+  assert.equal(message.description, 'text on surface needs 4.50, reaches 1.09 (pinned); accent on surface needs 3.00, reaches 2.50');
 });
 
 await test('pair order does not change the key', () => {
@@ -58,8 +62,8 @@ await test('stated-pair and cvd-type blockers are both reported', () => {
 });
 
 await test('the blocker set carries the report withheld flag', () => {
-  const withheld = AccessibilityBlockers.fromReport(ReportMetadata.build([ComplianceReportFixture.TEXT_ON_SURFACE], 'wcag21', 'AA', true));
-  const bestEffort = AccessibilityBlockers.fromReport(ReportMetadata.build([ComplianceReportFixture.TEXT_ON_SURFACE], 'wcag21', 'AA', false));
+  const withheld = AccessibilityBlockers.fromReport(ReportMetadata.buildWithheld([ComplianceReportFixture.TEXT_ON_SURFACE], 'wcag21', 'AA'));
+  const bestEffort = AccessibilityBlockers.fromReport(ReportMetadata.build([ComplianceReportFixture.TEXT_ON_SURFACE], 'wcag21', 'AA'));
   assert.equal(withheld.withheld, true);
   assert.equal(bestEffort.withheld, false);
   assert.equal(AccessibilityBlockers.fromReport(undefined).withheld, false);
@@ -71,7 +75,7 @@ await test('missing or malformed reports are compliant with no pairs', () => {
     null,
     'nope',
     { 'compliant': false, 'problemPairs': 'x' },
-    { 'compliant': false, 'cvdCompliant': true, 'pairs': [], 'problemPairs': [{ 'foreground': 1 }], 'selected': { 'algorithm': 'wcag21', 'level': 'AA' } }
+    { 'compliant': false, 'disposition': 'resolved', 'pairs': [], 'problemPairs': [{ 'foreground': 1 }], 'selected': { 'algorithm': 'wcag21', 'level': 'AA' } }
   ];
   for (let index = 0; index < malformed.length; index += 1) {
     const candidate = malformed[index];
