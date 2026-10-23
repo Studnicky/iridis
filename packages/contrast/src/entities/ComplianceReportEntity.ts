@@ -24,9 +24,10 @@ export namespace ComplianceReportEntity {
         },
         'required': ['algorithm', 'level'],
         'type': 'object'
-      }
+      },
+      'withheld': { 'type': 'boolean' }
     },
-    'required': ['compliant', 'cvdCompliant', 'pairs', 'problemPairs', 'selected'],
+    'required': ['compliant', 'cvdCompliant', 'pairs', 'problemPairs', 'selected', 'withheld'],
     'type': 'object'
   } as const;
 

@@ -11,6 +11,99 @@ import { test } from 'node:test';
 
 import { CvdProbeScenarioSuite } from './fixtures/cvd/CvdProbeScenarioSuite.ts';
 
+class StrictComplianceScenario {
+  static bestEffortInput() {
+    const result = InputEntity.intake({
+      'colors': ['#777777', '#ffffff'],
+      'contrast': {
+        'algorithm': 'wcag21',
+        'cvdMode': 'warn',
+        'enableStrictCompliance': false,
+        'level': 'AA'
+      },
+      'roles': {
+        'contrastPairs': [
+          {
+            'background': 'background',
+            'foreground': 'text',
+            'minimumContrastRatio': 4.5
+          }
+        ],
+        'name': 'strict-compliance-e2e',
+        'roles': [
+          {
+            'chromaRange': [0, 0.05],
+            'intent': 'text',
+            'lightnessRange': [0.45, 0.46],
+            'name': 'text',
+            'required': true
+          },
+          {
+            'chromaRange': [0, 0.05],
+            'intent': 'background',
+            'lightnessRange': [0.5, 0.51],
+            'name': 'background',
+            'required': true
+          }
+        ]
+      }
+    });
+    return result;
+  }
+
+  static strictInput() {
+    const result = InputEntity.intake({
+      'colors': ['#777777', '#ffffff'],
+      'contrast': {
+        'algorithm': 'wcag21',
+        'cvdMode': 'warn',
+        'enableStrictCompliance': true,
+        'level': 'AA'
+      },
+      'roles': {
+        'contrastPairs': [
+          {
+            'background': 'background',
+            'foreground': 'text',
+            'minimumContrastRatio': 4.5
+          }
+        ],
+        'name': 'strict-compliance-e2e',
+        'roles': [
+          {
+            'chromaRange': [0, 0.05],
+            'intent': 'text',
+            'lightnessRange': [0.45, 0.46],
+            'name': 'text',
+            'required': true
+          },
+          {
+            'chromaRange': [0, 0.05],
+            'intent': 'background',
+            'lightnessRange': [0.5, 0.51],
+            'name': 'background',
+            'required': true
+          }
+        ]
+      }
+    });
+    return result;
+  }
+
+  static pipeline(): readonly string[] {
+    const result = [
+      'intake:hex',
+      'resolve:roles',
+      'expand:family',
+      'enforce:compliance',
+      'derive:variant',
+      'report:compliance',
+      'withhold:compliance'
+    ];
+    return result;
+  }
+}
+
 class ComplianceTestEngine {
   static create(): Engine {
     const engine = new Engine();
@@ -42,7 +135,7 @@ await test('ContrastPlugin registers only the canonical compliance stages', () =
   );
   assert.deepStrictEqual(
     names,
-    ['enforce:compliance', 'report:compliance'],
+    ['enforce:compliance', 'report:compliance', 'withhold:compliance'],
     'plugin task order is stable'
   );
   const metadata = contrastPlugin.schemas().metadata;
@@ -67,7 +160,8 @@ await test('ContrastPlugin compiles metadata schemas and rejects incomplete repo
         'compliant': true,
         'cvdCompliant': true,
         'pairs': [],
-        'problemPairs': []
+        'problemPairs': [],
+        'selected': { 'algorithm': 'wcag21', 'level': 'AA' }
       });
       return result;
     },
@@ -512,6 +606,90 @@ await test('canonical compliance applies AAA and APCA targets to every declared 
       'selected-standard terminal pair has no CVD deficiency'
     );
   }
+});
+
+await test('strict false keeps the best-effort palette and terminal evidence', () => {
+  const engine = ComplianceTestEngine.create();
+  engine.pipeline(StrictComplianceScenario.pipeline());
+  const state = engine.run(StrictComplianceScenario.bestEffortInput());
+  const rawReport = state.metadata['contrast:complianceReport'];
+  assert.ok(rawReport !== undefined, 'terminal report exists');
+  const report = ComplianceReportEntity.intake(rawReport);
+  assert.strictEqual(report.compliant, false, 'infeasible range-bounded pair remains noncompliant');
+  assert.strictEqual(report.withheld, false, 'best-effort mode keeps its palette');
+  assert.strictEqual(report.problemPairs.length, 1, 'terminal evidence retains the failing pair');
+  assert.strictEqual(report.problemPairs[0]?.disposition, 'best-effort', 'failure stays best-effort');
+  assert.ok(Object.keys(state.roles).length > 0, 'best-effort roles remain available');
+  assert.ok(Object.keys(state.variants).length > 0, 'best-effort variants remain available');
+});
+
+await test('strict true withholds an infeasible palette after retaining terminal evidence', () => {
+  const engine = ComplianceTestEngine.create();
+  engine.pipeline(StrictComplianceScenario.pipeline());
+  const state = engine.run(StrictComplianceScenario.strictInput());
+  const rawReport = state.metadata['contrast:complianceReport'];
+  assert.ok(rawReport !== undefined, 'terminal report exists before palette withholding');
+  const report = ComplianceReportEntity.intake(rawReport);
+  const pair = report.problemPairs[0];
+  assert.ok(pair !== undefined, 'terminal report retains the failing pair');
+  assert.strictEqual(report.compliant, false, 'withholding preserves noncompliant evidence');
+  assert.strictEqual(report.withheld, true, 'strict mode reports the withheld result');
+  assert.strictEqual(pair.disposition, 'withheld', 'terminal failure explains strict withholding');
+  assert.ok(pair.actual < pair.required, 'withheld evidence preserves actual and required values');
+  assert.ok(pair.shortfall > 0, 'withheld evidence preserves the shortfall');
+  assert.ok(pair.causes.length > 0, 'withheld evidence preserves constraints');
+  assert.deepStrictEqual(state.roles, {}, 'strict mode clears resolved roles');
+  assert.deepStrictEqual(state.variants, {}, 'strict mode clears derived variants');
+});
+
+await test('strict true retains a compliant palette', () => {
+  const engine = ComplianceTestEngine.create();
+  engine.pipeline(StrictComplianceScenario.pipeline());
+  const state = engine.run(
+    InputEntity.intake({
+      'colors': ['#000000', '#ffffff'],
+      'contrast': {
+        'algorithm': 'wcag21',
+        'cvdMode': 'warn',
+        'enableStrictCompliance': true,
+        'level': 'AA'
+      },
+      'roles': {
+        'contrastPairs': [
+          {
+            'background': 'background',
+            'foreground': 'text',
+            'minimumContrastRatio': 4.5
+          }
+        ],
+        'name': 'strict-compliant-e2e',
+        'roles': [
+          {
+            'chromaRange': [0, 0.05],
+            'intent': 'text',
+            'lightnessRange': [0, 0.1],
+            'name': 'text',
+            'required': true
+          },
+          {
+            'chromaRange': [0, 0.05],
+            'intent': 'background',
+            'lightnessRange': [0.9, 1],
+            'name': 'background',
+            'required': true
+          }
+        ]
+      }
+    })
+  );
+  const rawReport = state.metadata['contrast:complianceReport'];
+  assert.ok(rawReport !== undefined, 'terminal report exists');
+  const report = ComplianceReportEntity.intake(rawReport);
+  assert.strictEqual(report.compliant, true, 'fixture remains compliant');
+  assert.strictEqual(report.withheld, false, 'strict mode does not withhold a compliant palette');
+  assert.deepStrictEqual(report.problemPairs, [], 'compliant palette has no terminal problems');
+  assert.ok(Object.keys(state.roles).length > 0, 'compliant strict roles remain available');
+  assert.ok(Object.keys(state.variants).length > 0, 'compliant strict variants remain available');
 });
 
 await CvdProbeScenarioSuite.run();

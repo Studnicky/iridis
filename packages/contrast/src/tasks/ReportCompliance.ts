@@ -87,7 +87,8 @@ class ComplianceSerialization {
       'selected': {
         'algorithm': diagnostic.selectedAlgorithm,
         'level': diagnostic.target
-      }
+      },
+      'withheld': false
     });
     return result;
   }

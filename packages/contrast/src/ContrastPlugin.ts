@@ -8,6 +8,7 @@ import { PluginSchemaContributionInterfaceEntity } from '@studnicky/iridis';
 import { CONTRAST_PLUGIN_SCHEMAS } from './constants/ContrastPluginSchemas.ts';
 import { enforceCompliance } from './tasks/EnforceCompliance.ts';
 import { reportCompliance } from './tasks/ReportCompliance.ts';
+import { withholdCompliance } from './tasks/WithholdCompliance.ts';
 
 export class ContrastPlugin implements PluginInterface {
   readonly 'name'    = 'contrast';
@@ -17,7 +18,8 @@ export class ContrastPlugin implements PluginInterface {
   tasks(): readonly TaskInterface[] {
     return [
       enforceCompliance,
-      reportCompliance
+      reportCompliance,
+      withholdCompliance
     ];
   }
 

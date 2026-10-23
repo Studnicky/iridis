@@ -15,4 +15,5 @@ export { CvdResultSetEntity } from './entities/CvdResultSetEntity.ts';
 export { CvdThresholdEntity } from './entities/CvdThresholdEntity.ts';
 export { enforceCompliance } from './tasks/EnforceCompliance.ts';
 export { reportCompliance } from './tasks/ReportCompliance.ts';
+export { withholdCompliance } from './tasks/WithholdCompliance.ts';
 export type * from './types/index.ts';
