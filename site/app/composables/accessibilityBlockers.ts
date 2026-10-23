@@ -37,12 +37,31 @@ class BlockedPairView {
   }
 }
 
+abstract class PaletteDisposition {
+  public abstract get withheld(): boolean;
+}
+
+class AdmittedPaletteDisposition extends PaletteDisposition {
+  public get withheld(): boolean {
+    const result = false;
+    return result;
+  }
+}
+
+class WithheldPaletteDisposition extends PaletteDisposition {
+  public get withheld(): boolean {
+    const result = true;
+    return result;
+  }
+}
+
 class AccessibilityBlockerSet {
   public readonly key: string;
   public readonly pairs: readonly BlockedPairView[];
   public readonly standardLabel: string;
+  readonly #disposition: PaletteDisposition;
 
-  public constructor(pairs: readonly BlockedPairView[], standardLabel: string) {
+  public constructor(pairs: readonly BlockedPairView[], standardLabel: string, disposition: PaletteDisposition) {
     const ids = pairs.map((pair) => {
       return pair.id;
     }).sort((left, right) => {
@@ -52,6 +71,12 @@ class AccessibilityBlockerSet {
     this.key = ids.length === 0 ? '' : [standardLabel, ...ids].join('|');
     this.pairs = pairs;
     this.standardLabel = standardLabel;
+    this.#disposition = disposition;
+  }
+
+  public get withheld(): boolean {
+    const result = this.#disposition.withheld;
+    return result;
   }
 
   public get compliant(): boolean {
@@ -79,14 +104,15 @@ export class AccessibilityBlockers {
   }
 
   public static fromReport(report: JSONSchema7Type | undefined): AccessibilityBlockerSet {
-    let result = new AccessibilityBlockerSet([], '');
+    let result = new AccessibilityBlockerSet([], '', new AdmittedPaletteDisposition());
     if (report !== undefined && ComplianceReportEntity.validate(report)) {
       const { algorithm, level } = report.selected;
       const label = AccessibilityBlockers.standardLabel(algorithm, level);
       const pairs = report.problemPairs.map((pair) => {
         return new BlockedPairView(pair);
       });
-      result = new AccessibilityBlockerSet(pairs, label);
+      const disposition = report.withheld ? new WithheldPaletteDisposition() : new AdmittedPaletteDisposition();
+      result = new AccessibilityBlockerSet(pairs, label, disposition);
     }
     return result;
   }

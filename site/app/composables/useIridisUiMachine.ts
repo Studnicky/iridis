@@ -15,7 +15,9 @@ interface IridisUiEffectHandlersInterface {
   addSeed(hex: string | undefined): void;
   clearCvdPreviews(): void;
   disableSemanticHues(): void;
+  disableStrictCompliance(): void;
   enableSemanticHues(): void;
+  enableStrictCompliance(): void;
   extractImageFiles(files: File | File[]): void;
   extractSampleImage(): void;
   fitDiagram(): void;

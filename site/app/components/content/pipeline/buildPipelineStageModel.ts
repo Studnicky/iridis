@@ -31,10 +31,15 @@ export const buildPipelineStageModel = class PipelineStageModelBuilder {
     contrastReport: PipelineContrastReport
   ): PipelineStageModel {
     const isComplianceReport = stageValue === 'report:compliance';
+    const isWithholdStage = stageValue === 'withhold:compliance';
     const isCvdStage = stageValue === 'enforce:compliance';
-    const contrastSummary = isComplianceReport && contrastReport.compliance !== undefined
+    const reportSummary = isComplianceReport && contrastReport.compliance !== undefined
       ? pipelineStageSummaries.buildPairSummary(contrastReport.compliance)
       : undefined;
+    const withholdSummary = isWithholdStage && contrastReport.compliance !== undefined
+      ? pipelineStageSummaries.buildWithholdSummary(contrastReport.compliance)
+      : undefined;
+    const contrastSummary = reportSummary ?? withholdSummary;
     const cvdWarningCount = isCvdStage && contrastReport.cvd !== undefined
       ? contrastReport.cvd.warnings.length
       : undefined;

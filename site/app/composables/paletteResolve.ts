@@ -89,6 +89,7 @@ export class PaletteResolve {
       'colors': pickerSeedInputs(seeds),
       'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({
         'cvdMode': request.cvdMode,
+        'enableStrictCompliance': request.enableStrictCompliance,
         'nonMandatoryLevel': request.nonMandatoryLevel,
         'strictness': request.strictness
       })),

@@ -92,7 +92,7 @@ class RoleSchemaFeasibility {
     engine.pipeline(COLOR_PIPELINE);
     const result = engine.run(InputEntity.create({
       'colors': [SeedInputEntity.intake('#000000'), SeedInputEntity.intake('#ffffff')],
-      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': strictness })),
+      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': strictness })),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),

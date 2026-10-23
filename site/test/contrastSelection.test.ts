@@ -262,7 +262,17 @@ await test('the cvdMode and nonMandatoryLevel events reach the worker request an
   assert.equal(enforced.cvdMode, 'enforce');
   assert.equal(enforced.nonMandatoryLevel, 'AAA');
   assert.ok(state.accessibilityBlockers.value.pairs.length > 0, 'enforce surfaces unresolved CVD evidence as blockers');
-  assert.equal(state.paletteRevision.value, revisionBefore + 2, 'a palette with blockers is withheld, so the revision stays');
+  assert.equal(state.paletteRevision.value, revisionBefore + 3, 'without strict compliance the best-effort palette is admitted');
+
+  const strictRevision = state.paletteRevision.value;
+  const strict = await Session.resolveAfter(state, IridisUiEvent.enableStrictCompliance(), () => {
+    const applied = state.enableStrictCompliance.value;
+    return applied;
+  });
+  assert.equal(strict.enableStrictCompliance, true);
+  assert.ok(state.accessibilityBlockers.value.pairs.length > 0, 'a withheld palette still reports its problem pairs');
+  assert.equal(state.accessibilityBlockers.value.withheld, true);
+  assert.equal(state.paletteRevision.value, strictRevision, 'a withheld palette keeps the last admitted revision');
 });
 
 await test('the engine resolves CVD evidence according to the selected cvdMode', () => {

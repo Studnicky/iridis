@@ -35,6 +35,7 @@ export class ImageExtract {
       'colors': message.hexes,
       'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({
         'cvdMode': message.cvdMode,
+        'enableStrictCompliance': message.enableStrictCompliance,
         'nonMandatoryLevel': message.nonMandatoryLevel,
         'strictness': message.strictness
       })),

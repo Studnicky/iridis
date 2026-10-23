@@ -104,6 +104,7 @@ await test('the host combines weighted hexes into seeds and resolves a palette r
     'colorSpace': request.colorSpace,
     'cvdMode': request.cvdMode,
     'derivationConfig': request.derivationConfig,
+    'enableStrictCompliance': request.enableStrictCompliance,
     'framing': request.framing,
     'hexes': ['#7c3aed', '#7c3aed', '#06b6d4', '#101820'],
     'kind': 'combine',

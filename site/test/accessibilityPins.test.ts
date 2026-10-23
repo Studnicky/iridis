@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { PinAssertions } from './fixtures/PinAssertions.ts';
@@ -53,4 +54,18 @@ await test('R7 dark APCA pinned text and surface at #808080 is blocked with both
   PinAssertions.noFalsePass(run);
   PinAssertions.blocked(run);
   PinAssertions.blockedWith(run, 'text', 'surface', 'pin');
+});
+
+await test('strict compliance withholds an impossible pin set and keeps the problem pairs', () => {
+  const run = PinRun.execute(PinRequest.dark(2, new Map([['surface', '#808080'], ['text', '#808080']]), true));
+  assert.equal(run.report.withheld, true);
+  assert.equal(run.report.problemPairs.length > 0, true);
+  assert.deepEqual(Object.keys(run.state.roles), []);
+});
+
+await test('without strict compliance the same pin set renders its roles and is not withheld', () => {
+  const run = PinRun.execute(PinRequest.dark(2, new Map([['surface', '#808080'], ['text', '#808080']]), false));
+  assert.equal(run.report.withheld, false);
+  assert.equal(run.report.problemPairs.length > 0, true);
+  assert.equal(Object.keys(run.state.roles).length > 0, true);
 });

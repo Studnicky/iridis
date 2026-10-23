@@ -8,13 +8,14 @@ import { AccessibilityBlockers } from '../app/composables/accessibilityBlockers.
 import { ComplianceReportFixture } from './fixtures/ComplianceReportFixture.ts';
 
 class ReportMetadata {
-  public static build(problemPairs: readonly object[], algorithm: string, level: string): ComplianceReportEntity.Type {
+  public static build(problemPairs: readonly object[], algorithm: string, level: string, withheld = false): ComplianceReportEntity.Type {
     const result = ComplianceReportEntity.intake({
       'compliant': problemPairs.length === 0,
       'cvdCompliant': true,
       'pairs': [],
       'problemPairs': problemPairs,
-      'selected': { 'algorithm': algorithm, 'level': level }
+      'selected': { 'algorithm': algorithm, 'level': level },
+      'withheld': withheld
     });
     return result;
   }
@@ -54,6 +55,14 @@ await test('the selected standard labels the title and key', () => {
 await test('stated-pair and cvd-type blockers are both reported', () => {
   const set = AccessibilityBlockers.fromReport(ReportMetadata.build([ComplianceReportFixture.TEXT_ON_SURFACE, ComplianceReportFixture.ACCENT_ON_SURFACE], 'wcag21', 'AA'));
   assert.equal(set.pairs.length, 2);
+});
+
+await test('the blocker set carries the report withheld flag', () => {
+  const withheld = AccessibilityBlockers.fromReport(ReportMetadata.build([ComplianceReportFixture.TEXT_ON_SURFACE], 'wcag21', 'AA', true));
+  const bestEffort = AccessibilityBlockers.fromReport(ReportMetadata.build([ComplianceReportFixture.TEXT_ON_SURFACE], 'wcag21', 'AA', false));
+  assert.equal(withheld.withheld, true);
+  assert.equal(bestEffort.withheld, false);
+  assert.equal(AccessibilityBlockers.fromReport(undefined).withheld, false);
 });
 
 await test('missing or malformed reports are compliant with no pairs', () => {

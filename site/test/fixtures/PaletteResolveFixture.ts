@@ -11,6 +11,7 @@ export class PaletteResolveFixture {
           })
         })
       }),
+      'enableStrictCompliance': false,
       'framing': 'dark',
       'nonMandatoryLevel': 'AA',
       'schemaName': 'iridis-8',
@@ -55,7 +56,8 @@ export class PaletteResolveFixture {
         'selected': ({
           'algorithm': 'apca',
           'level': 'Lc'
-        })
+        }),
+        'withheld': false
       }),
       'cvd': ({
         'blocked': ([]),

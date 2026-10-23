@@ -53,7 +53,7 @@ export const buildPipelinePhaseGroups = class PipelinePhaseGroupsBuilder {
   private static readonly phaseDefinitions: readonly PipelinePhaseDefinition[] = [
     new PipelinePhaseDefinition('Intake', ['intake']),
     new PipelinePhaseDefinition('Resolve', ['derive', 'resolve', 'pin', 'expand']),
-    new PipelinePhaseDefinition('Enforce', ['enforce', 'report']),
+    new PipelinePhaseDefinition('Enforce', ['enforce', 'report', 'withhold']),
     new PipelinePhaseDefinition('Emit', ['emit'])
   ];
 

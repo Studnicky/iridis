@@ -5,6 +5,7 @@ import { AccessibilityBlockers } from '~/composables/accessibilityBlockers.ts';
 interface ContrastSelectionInterface {
   readonly 'cvdMode': string;
   readonly 'nonMandatoryLevel': string;
+  readonly 'strictCompliance': string;
 }
 
 abstract class SchemaComplianceStatus {
@@ -75,6 +76,7 @@ export const buildSchemaComplianceSummaries = class SchemaComplianceSummariesBui
     }
     const neutral = new SchemaComplianceNeutralStatus();
     summaries.push(new SchemaStageSummary(neutral, 'cvdMode', 'CVD mode', selection.cvdMode));
+    summaries.push(new SchemaStageSummary(neutral, 'strictCompliance', 'Strict compliance', selection.strictCompliance));
     summaries.push(new SchemaStageSummary(neutral, 'nonMandatoryLevel', 'Non-mandatory level', selection.nonMandatoryLevel));
     return summaries;
   }

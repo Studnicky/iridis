@@ -171,6 +171,7 @@ class IridisContextFactory {
     const schemaName = VueModule.ref<SchemaNameEntity.Type>(SchemaNameEntity.defaultValue);
     const contrastStrictness = VueModule.ref<number>(2);
     const cvdMode = VueModule.ref<CvdModeEntity.Type>(CvdModeEntity.defaultValue);
+    const enableStrictCompliance = VueModule.ref<boolean>(false);
     const nonMandatoryLevel = VueModule.ref<NonMandatoryLevelEntity.Type>(NonMandatoryLevelEntity.defaultValue);
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
 
@@ -340,7 +341,6 @@ class IridisContextFactory {
 
     /** Compliance blockers from the latest run; the empty set when the run is compliant. */
     const accessibilityBlockers = VueModule.shallowRef(AccessibilityBlockers.fromReport(undefined));
-    const paletteAdmission = new PaletteAdmission();
     /** True while a palette request is in flight in the resolve worker. */
     const resolving = VueModule.ref<boolean>(false);
     /** Counts admitted palettes; consumers wait on it instead of timers. */
@@ -523,7 +523,7 @@ class IridisContextFactory {
       static run(snapshot: PaletteSnapshotEntity.Type, request: PaletteResolveRequestEntity.Type): void {
         const blockers = AccessibilityBlockers.fromReport(snapshot.compliance);
         accessibilityBlockers.value = blockers;
-        if (paletteAdmission.admit(blockers)) {
+        if (PaletteAdmission.admit(blockers)) {
           FramingSwapOperation.run(request);
           ingest(snapshot);
           paletteRevision.value += 1;
@@ -543,6 +543,7 @@ class IridisContextFactory {
           'colorSpace': colorSpace.value,
           'cvdMode': cvdMode.value,
           'derivationConfig': VueModule.toRaw(derivationConfig.value),
+          'enableStrictCompliance': enableStrictCompliance.value,
           'framing': pendingFraming ?? framing.value,
           'nonMandatoryLevel': nonMandatoryLevel.value,
           'schemaName': schemaName.value,
@@ -940,6 +941,7 @@ class IridisContextFactory {
           'colorSpace': colorSpace.value,
           'cvdMode': cvdMode.value,
           'derivationConfig': VueModule.toRaw(derivationConfig.value),
+          'enableStrictCompliance': enableStrictCompliance.value,
           'framing': framing.value,
           'hexes': combinedHexes,
           'kind': 'combine',
@@ -1179,7 +1181,9 @@ class IridisContextFactory {
 
     class PaletteParameterOperation {
       static disableSemanticHues(): void { semanticHuesEnabled.value = false; schedule(); }
+      static disableStrictCompliance(): void { enableStrictCompliance.value = false; schedule(); }
       static enableSemanticHues(): void { semanticHuesEnabled.value = true; schedule(); }
+      static enableStrictCompliance(): void { enableStrictCompliance.value = true; schedule(); }
       static setContrastStrictness(strictness: number): void { contrastStrictness.value = strictness; schedule(); }
       static setCvdMode(nextCvdMode: string): void { cvdMode.value = CvdModeEntity.intake(nextCvdMode); schedule(); }
       static setNonMandatoryLevel(nextLevel: string): void { nonMandatoryLevel.value = NonMandatoryLevelEntity.intake(nextLevel); schedule(); }
@@ -1284,7 +1288,9 @@ class IridisContextFactory {
       'addSeed': SeedMutationOperation.add,
       'clearCvdPreviews': CvdPreviewOperation.clear,
       'disableSemanticHues': PaletteParameterOperation.disableSemanticHues,
+      'disableStrictCompliance': PaletteParameterOperation.disableStrictCompliance,
       'enableSemanticHues': PaletteParameterOperation.enableSemanticHues,
+      'enableStrictCompliance': PaletteParameterOperation.enableStrictCompliance,
       'extractImageFiles': ImageEffectExtractionOperation.files,
       'extractSampleImage': ImageEffectExtractionOperation.sample,
       'fitDiagram': DiagramViewOperation.fit,
@@ -1379,7 +1385,7 @@ class IridisContextFactory {
         void addUploadedImages([logoUrl()], ['Sample']);
         // framing is intentionally absent here — its swap is dispatched directly by
         // the framing setters via run(), not through this debounce.
-        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, nonMandatoryLevel, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
+        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
         stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
       }
     }
@@ -1394,7 +1400,7 @@ class IridisContextFactory {
         const result = {
           'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdMode': cvdMode,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
           'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
-          'effectiveHexesFor': effectiveHexesFor, 'error': error, 'framing': framing,
+          'effectiveHexesFor': effectiveHexesFor, 'enableStrictCompliance': enableStrictCompliance, 'error': error, 'framing': framing,
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
           'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'nonMandatoryLevel': nonMandatoryLevel, 'paletteRevision': paletteRevision, 'pickerSeeds': pickerSeeds,

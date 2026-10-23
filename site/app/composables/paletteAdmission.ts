@@ -1,14 +1,9 @@
-interface BlockedPairsInterface {
-  readonly 'pairs': readonly object[];
-}
+import type { AccessibilityBlockers } from './accessibilityBlockers.ts';
 
-/** Admits a resolved palette for rendering; the first one is always admitted, later ones only when no pair is blocked. */
+/** Admits a resolved palette for rendering unless the engine withheld it. */
 export class PaletteAdmission {
-  #committed = false;
-
-  public admit(blockers: BlockedPairsInterface): boolean {
-    const result = blockers.pairs.length === 0 || !this.#committed;
-    this.#committed = this.#committed || result;
+  public static admit(blockers: ReturnType<typeof AccessibilityBlockers.fromReport>): boolean {
+    const result = !blockers.withheld;
     return result;
   }
 }

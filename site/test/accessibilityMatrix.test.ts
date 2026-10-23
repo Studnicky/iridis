@@ -11,15 +11,15 @@ import { PinRun } from './fixtures/PinRun.ts';
 
 class AccessibilityMatrix {
   private static readonly configurations: readonly { readonly 'label': string; readonly 'options': ContrastConfigOptionsEntity.Type; }[] = [
-    { 'label': 'AA/warn', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'warn', 'nonMandatoryLevel': 'AA', 'strictness': 0 }) },
-    { 'label': 'AA/nudge', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': 0 }) },
-    { 'label': 'AA/enforce', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'enforce', 'nonMandatoryLevel': 'AA', 'strictness': 0 }) },
-    { 'label': 'AAA/warn', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'warn', 'nonMandatoryLevel': 'AA', 'strictness': 1 }) },
-    { 'label': 'AAA/nudge', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': 1 }) },
-    { 'label': 'AAA/enforce', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'enforce', 'nonMandatoryLevel': 'AA', 'strictness': 1 }) },
-    { 'label': 'APCA/warn', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'warn', 'nonMandatoryLevel': 'AA', 'strictness': 2 }) },
-    { 'label': 'APCA/nudge', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': 2 }) },
-    { 'label': 'APCA/enforce', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'enforce', 'nonMandatoryLevel': 'AA', 'strictness': 2 }) }
+    { 'label': 'AA/warn', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'warn', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 0 }) },
+    { 'label': 'AA/nudge', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 0 }) },
+    { 'label': 'AA/enforce', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'enforce', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 0 }) },
+    { 'label': 'AAA/warn', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'warn', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 1 }) },
+    { 'label': 'AAA/nudge', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 1 }) },
+    { 'label': 'AAA/enforce', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'enforce', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 1 }) },
+    { 'label': 'APCA/warn', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'warn', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 2 }) },
+    { 'label': 'APCA/nudge', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 2 }) },
+    { 'label': 'APCA/enforce', 'options': ContrastConfigOptionsEntity.create({ 'cvdMode': 'enforce', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 2 }) }
   ];
 
   private static readonly framings = ['dark', 'light'] as const;

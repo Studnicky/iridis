@@ -36,7 +36,9 @@ abstract class IridisUiEffectHandler {
   abstract setSchema(schemaName: string): void;
   abstract setSeed(index: number, hex: string): void;
   abstract disableSemanticHues(): void;
+  abstract disableStrictCompliance(): void;
   abstract enableSemanticHues(): void;
+  abstract enableStrictCompliance(): void;
   abstract toggleCvdPreview(cvdType: string): void;
   abstract toggleDiagramExpansion(): void;
   abstract zoomDiagram(factor: number): void;
@@ -83,6 +85,8 @@ export abstract class IridisUiEffect {
   static setColorSpace(selection: ColorSpaceSelection): IridisUiEffect { return new SetColorSpaceEffect(selection); }
   static setContrastStrictness(strictness: number): IridisUiEffect { return new SetContrastStrictnessEffect(strictness); }
   static setCvdMode(cvdMode: string): IridisUiEffect { return new SetCvdModeEffect(cvdMode); }
+  static disableStrictCompliance(): IridisUiEffect { return new DisableStrictComplianceEffect(); }
+  static enableStrictCompliance(): IridisUiEffect { return new EnableStrictComplianceEffect(); }
   static setNonMandatoryLevel(nonMandatoryLevel: string): IridisUiEffect { return new SetNonMandatoryLevelEffect(nonMandatoryLevel); }
   static setDerivationConfig(config: DerivationConfigEntity.Type): IridisUiEffect { return new SetDerivationConfigEffect(config); }
   static darkFraming(): FramingSelection { return new DarkFramingSelection(); }
@@ -173,6 +177,14 @@ class SetCvdModeEffect extends IridisUiEffect {
   readonly #cvdMode: string; readonly type = 'SET_CVD_MODE';
   constructor(cvdMode: string) { super(); this.#cvdMode = cvdMode; }
   execute(handler: IridisUiEffectHandler): void { handler.setCvdMode(this.#cvdMode); }
+}
+class DisableStrictComplianceEffect extends IridisUiEffect {
+  readonly type = 'DISABLE_STRICT_COMPLIANCE';
+  execute(handler: IridisUiEffectHandler): void { handler.disableStrictCompliance(); }
+}
+class EnableStrictComplianceEffect extends IridisUiEffect {
+  readonly type = 'ENABLE_STRICT_COMPLIANCE';
+  execute(handler: IridisUiEffectHandler): void { handler.enableStrictCompliance(); }
 }
 class SetNonMandatoryLevelEffect extends IridisUiEffect {
   readonly #nonMandatoryLevel: string; readonly type = 'SET_NON_MANDATORY_LEVEL';

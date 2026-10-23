@@ -6,6 +6,13 @@ export const pipelineStageSummaries = class PipelineStageSummaries {
     return `${passing}/${report.pairs.length} pairs passing`;
   }
 
+  public static buildWithholdSummary(report: ComplianceReportEntity.Type): string {
+    const result = report.withheld
+      ? `palette withheld: ${report.problemPairs.length} pairs below the standard`
+      : 'palette released';
+    return result;
+  }
+
   public static buildCvdCorrectionSummary(report: CvdResultSetEntity.Type): string {
     let autoCorrected = 0;
     let stillFailing = 0;

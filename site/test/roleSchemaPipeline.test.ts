@@ -81,7 +81,7 @@ class RoleSchemaPipelineFixture {
     engine.pipeline(COLOR_PIPELINE);
     const state = engine.run(InputEntity.create({
       'colors':   pickerSeedInputs(RoleSchemaPipelineFixture.seeds),
-      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': 0 })),
+      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 0 })),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
@@ -113,7 +113,7 @@ await test('pinned derived roles remain byte-exact while unpinned roles resolve 
       { 'hex': '#7c3aed', 'role': 'brand' },
       { 'hex': '#b55bc7', 'role': 'success' }
     ]),
-    'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': 0 })),
+    'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 0 })),
     'metadata': {
       'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
       'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
