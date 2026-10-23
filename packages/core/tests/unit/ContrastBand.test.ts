@@ -1043,3 +1043,23 @@ void test('contrast options admit canonical CVD modes and default downstream to 
     'the retired CVD mode is rejected by closed schema intake'
   );
 });
+
+void test('contrast options admit the positive strict-compliance toggle', () => {
+  const defaultOptions = ContrastOptionsEntity.intake({});
+  const strictOptions = ContrastOptionsEntity.intake({ 'enableStrictCompliance': true });
+
+  assert.strictEqual(
+    Reflect.get(defaultOptions, 'enableStrictCompliance'),
+    undefined,
+    'omitting strict compliance delegates to the default best-effort policy'
+  );
+  assert.strictEqual(
+    Reflect.get(strictOptions, 'enableStrictCompliance'),
+    true,
+    'the positive strict-compliance toggle is admitted at input intake'
+  );
+  assert.throws(
+    () => { ContrastOptionsEntity.intake({ 'enableStrictCompliance': 'true' }); },
+    'the strict-compliance toggle remains boolean-only at the closed input boundary'
+  );
+});

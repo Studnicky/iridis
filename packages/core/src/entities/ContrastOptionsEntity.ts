@@ -12,6 +12,7 @@ export namespace ContrastOptionsEntity {
     'properties': {
       'algorithm':  { 'enum': ['wcag21', 'apca'] },
       'cvdMode':     { 'enum': ['warn', 'nudge', 'enforce'] },
+      'enableStrictCompliance': { 'type': 'boolean' },
       'extra':      { 'items': ContrastPairEntity.Schema, 'type': 'array' },
       'level':      { 'type': 'string' },
       'nonMandatoryLevel': { 'enum': ['AA', 'AAA'] }
