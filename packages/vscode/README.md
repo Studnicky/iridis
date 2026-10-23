@@ -1,6 +1,6 @@
 # @studnicky/iridis-vscode
 
-Generate a portable VS Code `theme.json` from an explicitly framed, tiered palette. The plugin resolves a 64-role vocabulary, emits 129 registry-backed workbench colours, semantic-token rules, and TextMate token colours. Every emitted colour is sRGB `#RRGGBB` or `#RRGGBBAA`.
+Generate a portable VS Code `theme.json` from an explicitly framed, tiered palette. The plugin resolves a 64-role vocabulary, emits 132 registry-backed workbench colours, semantic-token rules, and TextMate token colours. Every emitted colour is sRGB `#RRGGBB` or `#RRGGBBAA`.
 
 ## Install
 

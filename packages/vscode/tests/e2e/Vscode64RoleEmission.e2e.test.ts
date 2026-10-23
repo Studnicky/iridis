@@ -28,7 +28,7 @@ const EXTENSION_OWNERSHIP: Readonly<Record<string, readonly string[]>> = {
   'ansiRed':            ['terminal.ansiRed'],
   'ansiWhite':          ['terminal.ansiWhite'],
   'ansiYellow':         ['terminal.ansiYellow'],
-  'border':             ['activityBar.border', 'editorGroupHeader.tabsBorder', 'input.border', 'panel.border', 'sideBar.border', 'statusBar.border', 'tab.border', 'titleBar.border'],
+  'border':             ['activityBar.border', 'editorGroupHeader.tabsBorder', 'input.border', 'panel.border', 'sideBar.border', 'statusBar.border', 'statusBar.noFolderBorder', 'tab.border', 'titleBar.border'],
   'bracketLevel1':      ['editorBracketHighlight.foreground1'],
   'bracketLevel2':      ['editorBracketHighlight.foreground2'],
   'bracketLevel3':      ['editorBracketHighlight.foreground3'],
@@ -37,8 +37,8 @@ const EXTENSION_OWNERSHIP: Readonly<Record<string, readonly string[]>> = {
   'bracketLevel6':      ['editorBracketHighlight.foreground6'],
   'bracketMatch':       ['editorBracketMatch.background', 'editorBracketMatch.border'],
   'buttonSecondary':    ['button.secondaryBackground', 'button.secondaryHoverBackground'],
-  'chrome':             ['statusBar.background', 'titleBar.activeBackground'],
-  'chromeForeground':   ['statusBar.foreground', 'titleBar.activeForeground', 'sideBar.foreground'],
+  'chrome':             ['statusBar.background', 'statusBar.noFolderBackground', 'titleBar.activeBackground'],
+  'chromeForeground':   ['statusBar.foreground', 'statusBar.noFolderForeground', 'titleBar.activeForeground', 'sideBar.foreground'],
   'chromeInactive':     ['activityBar.background', 'titleBar.inactiveBackground'],
   'diffInserted':       ['diffEditor.insertedTextBackground', 'diffEditor.insertedLineBackground'],
   'diffRemoved':        ['diffEditor.removedTextBackground', 'diffEditor.removedLineBackground'],
@@ -176,7 +176,7 @@ class Vscode64Fixture {
   }
 }
 
-await test('Vscode64RoleEmission :: all 64 caller-stated roles emit the canonical 129-key sRGB registry surface', () => {
+await test('Vscode64RoleEmission :: all 64 caller-stated roles emit the canonical 132-key sRGB registry surface', () => {
   const state = Vscode64Fixture.run();
   const expectedRoles = Object.keys(Vscode64Fixture.state().roles).sort(Vscode64Fixture.compareNames);
   const actualRoles = Object.keys(state.roles).sort(Vscode64Fixture.compareNames);
@@ -194,7 +194,7 @@ await test('Vscode64RoleEmission :: all 64 caller-stated roles emit the canonica
       assert.strictEqual(Reflect.get(state.roles, role).hints?.role, role, `${role} remains caller-stated through derivation`);
     }
   }
-  assert.strictEqual(Object.keys(colors).length, 129, 'all and only the canonical registry-backed workbench keys emit');
+  assert.strictEqual(Object.keys(colors).length, 132, 'all and only the canonical registry-backed workbench keys emit');
   assert.ok(!Object.hasOwn(colors, 'warningForeground'), 'inert warningForeground is absent');
   const colorEntries = Object.entries(colors);
   for (let index = 0; index < colorEntries.length; index += 1) {

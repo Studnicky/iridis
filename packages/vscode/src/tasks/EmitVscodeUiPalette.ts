@@ -27,7 +27,7 @@ class EmitVscodeUiPalette implements TaskInterface {
   readonly 'name' = 'emit:vscodeUiPalette';
 
   readonly 'manifest' = TaskManifestEntity.create({
-    'description': 'Emits 129 VS Code workbench colors from the resolved 64-role VS Code vocabulary.',
+    'description': 'Emits 132 VS Code workbench colors from the resolved 64-role VS Code vocabulary.',
     'name':        'emit:vscodeUiPalette',
     'reads':       ['roles', 'metadata.core:roleProvenance', 'runtime.framing', 'variants'],
     'requires':    ['vscode:deriveUiRoles'],
@@ -147,6 +147,9 @@ class EmitVscodeUiPalette implements TaskInterface {
       'statusBar.debuggingBackground':                 color('accent'),
       'statusBar.debuggingForeground':                 color('onAccent'),
       'statusBar.foreground':                          color('chromeForeground'),
+      'statusBar.noFolderBackground':                  color('chrome'),
+      'statusBar.noFolderBorder':                      color('border'),
+      'statusBar.noFolderForeground':                  color('chromeForeground'),
       'tab.activeBackground':                          color('background'),
       'tab.activeBorder':                              color('accent'),
       'tab.activeForeground':                          color('foreground'),

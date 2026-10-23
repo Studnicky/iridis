@@ -155,8 +155,8 @@ await test('runVscodeTheme emits canonical dark and light VS Code theme data', (
   assert.equal(light.palette.framing, 'light');
   assert.equal(dark.palette.tier, 4);
   assert.equal(light.palette.tier, 4);
-  assert.equal(Object.keys(dark.workbenchColors).length, 129);
-  assert.equal(Object.keys(light.workbenchColors).length, 129);
+  assert.equal(Object.keys(dark.workbenchColors).length, 132);
+  assert.equal(Object.keys(light.workbenchColors).length, 132);
   assert.equal(Object.keys(dark.semanticTokenColors).length > 0, true);
   assert.equal(Object.keys(light.semanticTokenColors).length > 0, true);
 });

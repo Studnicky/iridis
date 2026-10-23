@@ -7,7 +7,7 @@
  *
  * Cells:
  *   1. plugin-shape        — singleton, version, task list, manifest fields
- *   2. workbench-colors    — 129-key palette, key slots present, sRGB/P3 routing
+ *   2. workbench-colors    — 132-key palette, key slots present, sRGB/P3 routing
  *   3. semantic-rules      — base rules, modifier-selector cross-product, fontStyle
  *   4. theme-json-assembly — assembled ThemeJsonEntity shape invariants
  *   5. token-colors        — tokenColors array from SCOPE_MAPPINGS + baseTokens
@@ -188,7 +188,7 @@ await new ScenarioRunner<PluginShapeInputInterface, PluginShapeOutputInterface>(
 // ---------------------------------------------------------------------------
 // Cell 2 — workbench colors (outputs.vscode.workbenchColors)
 //
-// emit:vscodeUiPalette emits 129 VS Code workbench-color slots from the
+// emit:vscodeUiPalette emits 132 VS Code workbench-color slots from the
 // resolved 16-role palette. This cell asserts:
 //   - the slot map is populated with expected UI keys
 //   - direct-passthrough slots carry the role's color form (hex for sRGB roles)
