@@ -41,7 +41,7 @@ namespace RoleSchemas {
     'roles': [
       { 'chromaRange': [0.00, 0.04], 'intent': 'background', 'lightnessRange': [0.04, 0.14], 'name': 'background', 'required': true },
       { 'chromaRange': [0.00, 0.04], 'intent': 'text', 'lightnessRange': [0.85, 0.96], 'name': 'text', 'required': true },
-      { 'chromaRange': [0.12, 0.30], 'intent': 'accent', 'lightnessRange': [0.55, 0.78], 'name': 'brand', 'required': true },
+      { 'chromaRange': [0.12, 0.30], 'intent': 'accent', 'lightnessRange': [0.55, 0.84], 'name': 'brand', 'required': true },
       { 'chromaRange': [0.00, 0.06], 'intent': 'muted', 'lightnessRange': [0.50, 0.77], 'name': 'muted' }
     ]
   });
@@ -118,7 +118,7 @@ namespace RoleSchemas {
       ...iridis8Dark.roles,
       { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'positive', 'lightnessRange': [0.65, 0.78], 'name': 'success' },
       { 'chromaRange': [0.16, 0.28], 'derivedFrom': 'brand', 'hueOffset': 85, 'intent': 'positive', 'lightnessRange': [0.70, 0.82], 'name': 'warning' },
-      { 'chromaRange': [0.18, 0.30], 'intent': 'critical', 'lightnessRange': [0.62, 0.78], 'name': 'error' },
+      { 'chromaRange': [0.10, 0.30], 'intent': 'critical', 'lightnessRange': [0.62, 0.84], 'name': 'error' },
       { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'intent': 'accent', 'lightnessRange': [0.68, 0.82], 'name': 'syntax-keyword' }
     ]
   });
