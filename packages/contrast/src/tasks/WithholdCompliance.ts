@@ -17,16 +17,6 @@ class ComplianceWithholding {
     return result;
   }
 
-  static clear<Value>(target: Record<string, Value>): void {
-    const names = Object.keys(target);
-    for (let index = 0; index < names.length; index += 1) {
-      const name = names[index];
-      if (name !== undefined && !Reflect.deleteProperty(target, name)) {
-        throw new TypeError('Unable to withhold resolved palette data');
-      }
-    }
-  }
-
   static report(report: ComplianceReportEntity.Type): ComplianceReportEntity.Type {
     const result = ComplianceReportEntity.create({
       ...report,
@@ -36,15 +26,15 @@ class ComplianceWithholding {
   }
 }
 
-/** Withholds unresolved strict-compliance palette roles after terminal evidence is recorded. */
+/** Marks unresolved strict-compliance output as withheld after recording terminal evidence. */
 class WithholdCompliance implements TaskInterface {
   readonly 'name' = 'withhold:compliance';
 
   readonly 'manifest' = TaskManifestEntity.create({
-    'description': 'Withholds unresolved strict-compliance roles and variants after preserving terminal compliance evidence.',
+    'description': 'Marks unresolved strict-compliance output as withheld while preserving the best-achievable roles and variants.',
     'name': 'withhold:compliance',
-    'reads': ['roles', 'variants', 'input.contrast', "metadata['contrast:complianceReport']"],
-    'writes': ['roles', 'variants', "metadata['contrast:complianceReport']"]
+    'reads': ['input.contrast', "metadata['contrast:complianceReport']"],
+    'writes': ["metadata['contrast:complianceReport']"]
   });
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
@@ -57,8 +47,6 @@ class WithholdCompliance implements TaskInterface {
       return;
     }
     state.metadata['contrast:complianceReport'] = ComplianceWithholding.report(report);
-    ComplianceWithholding.clear(state.roles);
-    ComplianceWithholding.clear(state.variants);
   }
 }
 

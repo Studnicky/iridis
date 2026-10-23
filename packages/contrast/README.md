@@ -137,7 +137,7 @@ export function generateAccessiblePalette(roleSchema: RoleSchemaEntity.Type) {
 |---|---|
 | `enforce:compliance` | Applies the selected standard (`input.contrast`) to every declared pair, runs CVD correction as a validator and refiner of the same policy, re-measures after correction, and moves only derived endpoints. |
 | `report:compliance` | Measures the final roles and writes `metadata['contrast:complianceReport']`. |
-| `withhold:compliance` | Clears roles and variants only when `enableStrictCompliance` is true and the terminal report has problem pairs. |
+| `withhold:compliance` | Marks the terminal report `withheld` when `enableStrictCompliance` is true and problem pairs remain, while preserving the best-achievable roles and variants. |
 
 Corrected derived roles are replaced in `state.roles`; stated roles are never
 mutated. Downstream emit tasks read the final records without additional
