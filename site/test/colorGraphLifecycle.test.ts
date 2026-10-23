@@ -42,6 +42,50 @@ class ColorGraphLifecycleBrowser {
     }
   }
 
+  static async awaitZoomAbove(page: Page, floor: number): Promise<void> {
+    try {
+      await page.waitForFunction((reference) => {
+        const text = document.querySelector('#explore .cyl-face.active .dagonizer-dpad-hud-level')?.textContent;
+        const current = Number.parseFloat(text?.replace('×', '') ?? 'NaN');
+        const result = Number.isFinite(current) && current > reference;
+
+        return result;
+      }, floor, { 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
+    } catch (error) {
+      throw await ColorGraphLifecycleBrowser.zoomTimeout(page, `above ${floor}`, error);
+    }
+  }
+
+  static async awaitZoomBelow(page: Page, ceiling: number): Promise<void> {
+    try {
+      await page.waitForFunction((reference) => {
+        const text = document.querySelector('#explore .cyl-face.active .dagonizer-dpad-hud-level')?.textContent;
+        const current = Number.parseFloat(text?.replace('×', '') ?? 'NaN');
+        const result = Number.isFinite(current) && current < reference;
+
+        return result;
+      }, ceiling, { 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
+    } catch (error) {
+      throw await ColorGraphLifecycleBrowser.zoomTimeout(page, `below ${ceiling}`, error);
+    }
+  }
+
+  private static async zoomTimeout(page: Page, expectation: string, cause: unknown): Promise<Error> {
+    const hud = await page.locator('#explore .cyl-face.active .dagonizer-dpad-hud-level').innerText();
+    const states = await page.locator('#explore .cg-wrap').evaluateAll((nodes) => {
+      const result = nodes.map((node) => {
+        const state = node.getAttribute('data-graph-state');
+
+        return state;
+      });
+
+      return result;
+    });
+    const result = new Error(`Expected zoom ${expectation}; the HUD shows "${hud}" with graph state [${states.join(', ')}].`, { 'cause': cause });
+
+    return result;
+  }
+
   static async selectGraphCard(page: Page): Promise<void> {
     await page.locator('#explore').getByRole('button', {
       'exact': true,
@@ -109,13 +153,7 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
 
   await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
   await page.mouse.wheel(0, ColorGraphLifecycleBrowser.wheelZoomInDelta);
-  await page.waitForFunction((floor) => {
-    const text = document.querySelector('#explore .cyl-face.active .dagonizer-dpad-hud-level')?.textContent;
-    const current = Number.parseFloat(text?.replace('×', '') ?? 'NaN');
-    const result = Number.isFinite(current) && current > floor;
-
-    return result;
-  }, fitZoom, { 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
+  await ColorGraphLifecycleBrowser.awaitZoomAbove(page, fitZoom);
   await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
   const beforeZoomOut = await ColorGraphLifecycleBrowser.zoomText(page);
 
@@ -125,13 +163,7 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
       'name': 'Zoom out'
     })
     .click();
-  await page.waitForFunction((previous) => {
-    const text = document.querySelector('#explore .cyl-face.active .dagonizer-dpad-hud-level')?.textContent;
-    const current = Number.parseFloat(text?.replace('×', '') ?? 'NaN');
-    const result = Number.isFinite(current) && current < previous;
-
-    return result;
-  }, beforeZoomOut, { 'timeout': ColorGraphLifecycleBrowser.graphWaitMs });
+  await ColorGraphLifecycleBrowser.awaitZoomBelow(page, beforeZoomOut);
   const afterZoomOut = await ColorGraphLifecycleBrowser.zoomText(page);
 
   assert.ok(afterZoomOut < beforeZoomOut, JSON.stringify({
