@@ -9,10 +9,10 @@ import type { PinRequest } from './PinRequest.ts';
 import { COLOR_PIPELINE } from '../../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../../app/composables/createColorEngine.ts';
-import { ContrastConfigOptionsEntity } from '../../app/composables/entities/ContrastConfigOptionsEntity.ts';
 import { DerivationConfigEntity } from '../../app/composables/entities/DerivationConfigEntity.ts';
 import { VARIANT_CONFIG } from '../../app/composables/variantConfig.ts';
 import { SeedInputEntity } from '../../app/theme/types/SeedInputEntity.ts';
+import { CvdBudgetDiagnostics } from './CvdBudgetDiagnostics.ts';
 
 /** The pipeline outcome of one PinRequest with its terminal compliance report and measured ratios. */
 export class PinRun {
@@ -27,12 +27,19 @@ export class PinRun {
     }]
   ]);
 
+  public readonly budgetUsage: { readonly 'candidateScores': number; readonly 'weightedUnits': number };
   public readonly elapsedMs: number;
   public readonly report: ComplianceReportEntity.Type;
   public readonly request: PinRequest;
   public readonly state: PaletteStateInterface;
 
-  public constructor(request: PinRequest, state: PaletteStateInterface, elapsedMs: number) {
+  public constructor(
+    request: PinRequest,
+    state: PaletteStateInterface,
+    elapsedMs: number,
+    budgetUsage: { readonly 'candidateScores': number; readonly 'weightedUnits': number }
+  ) {
+    this.budgetUsage = budgetUsage;
     this.elapsedMs = elapsedMs;
     this.report = ComplianceReportEntity.intake(state.metadata['contrast:complianceReport']);
     this.request = request;
@@ -40,7 +47,10 @@ export class PinRun {
   }
 
   public static execute(request: PinRequest): PinRun {
-    const colors = [SeedInputEntity.intake('#000000'), SeedInputEntity.intake('#ffffff')];
+    const colors = request.seeds.map((seed) => {
+      const color = SeedInputEntity.intake(seed);
+      return color;
+    });
     const roleNames = Array.from(request.pins.keys());
     for (let index = 0; index < roleNames.length; index += 1) {
       const role = roleNames[index] ?? '';
@@ -49,18 +59,27 @@ export class PinRun {
     const engine = createColorEngine();
     engine.pipeline(COLOR_PIPELINE);
     const started = performance.now();
-    const state = engine.run(InputEntity.create({
-      'colors': colors,
-      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': request.strictness })),
-      'metadata': {
-        'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
-        'derivation:semanticHuesEnabled': true
-      },
-      'roles': request.roles,
-      'runtime': request.runtime
-    }));
-    const result = new PinRun(request, state, performance.now() - started);
+    const observed = CvdBudgetDiagnostics.observe(() => {
+      const result = engine.run(InputEntity.create({
+        'colors': colors,
+        'contrast': ContrastConfigFor.forOptions(request.options),
+        'metadata': {
+          'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
+          'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
+          'derivation:semanticHuesEnabled': true
+        },
+        'roles': request.roles,
+        'runtime': request.runtime
+      }));
+      return result;
+    });
+    const result = new PinRun(
+      request,
+      observed.result,
+      performance.now() - started,
+      observed.usage
+    );
+
     return result;
   }
 
