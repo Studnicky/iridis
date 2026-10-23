@@ -33,7 +33,20 @@ class AccessibilityMatrix {
     );
   }
 
-  public static assertDefaults(): void {
+  private static recordBlockedPairs(blocked: string[], label: string, run: PinRun): void {
+    if (run.report.compliant) {
+      return;
+    }
+    for (let blockedIndex = 0; blockedIndex < run.report.blockedPairs.length; blockedIndex += 1) {
+      const pair = run.report.blockedPairs[blockedIndex];
+      if (pair !== undefined) {
+        blocked.push(`${label}: ${pair.foreground}/${pair.background} ${pair.reason} required=${pair.requiredTrichromat} actual=${pair.actualTrichromat} target=${pair.target}`);
+      }
+    }
+  }
+
+  public static assertDefaults(): readonly string[] {
+    const blocked: string[] = [];
     const schemas = Object.entries(roleSchemaByName);
     for (let schemaIndex = 0; schemaIndex < schemas.length; schemaIndex += 1) {
       const [, schemaPair] = schemas[schemaIndex]!;
@@ -46,10 +59,17 @@ class AccessibilityMatrix {
           const run = PinRun.execute(PinRequest.forSchema(schema, runtime, configuration.options, new Map()));
           PinAssertions.truthful(run);
           PinAssertions.staysWithinRoleRanges(run);
-          AccessibilityMatrix.assertNormalBudget(run, `${schema.name}/${framing}/${configuration.label}`);
+          const label = `${schema.name}/${framing}/${configuration.label}`;
+          AccessibilityMatrix.assertNormalBudget(run, label);
+          AccessibilityMatrix.recordBlockedPairs(blocked, label, run);
         }
       }
     }
+    const result = blocked.toSorted((left, right) => {
+      const comparison = left.localeCompare(right);
+      return comparison;
+    });
+    return result;
   }
 
   public static assertSampleImagePalette(): void {
@@ -88,8 +108,11 @@ class AccessibilityMatrix {
   }
 }
 
-await test('built-in default palettes report truthfully for every standard and CVD mode', () => {
-  AccessibilityMatrix.assertDefaults();
+await test('built-in default palettes report truthfully for every standard and CVD mode', (context) => {
+  const blocked = AccessibilityMatrix.assertDefaults();
+  if (blocked.length > 0) {
+    context.diagnostic(`Default blocked or noncompliant cases:\n${blocked.join('\n')}`);
+  }
 });
 
 await test('the deterministic sample-image palette reports truthfully for every standard and CVD mode', () => {
