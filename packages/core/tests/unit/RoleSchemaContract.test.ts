@@ -108,16 +108,20 @@ await test('role schemas expose derivation controls and contrast bands at the in
 await test('contrast reports and pending entries carry optional maximum-ratio data', () => {
   assert.strictEqual(ContrastReportEntryEntity.validate({
     'actual': 3.5,
+    'adjustedRoles': [],
     'background': 'background',
-    'disposition': 'not-needed',
+    'causes': [],
+    'disposition': 'resolved',
     'foreground': 'accent',
     'passed': true,
-    'required': 3
+    'required': 3,
+    'shortfall': 0
   }), true);
   assert.strictEqual(PendingContrastEntryEntity.validate({
     'adjusted': false,
     'adjustmentDisposition': 'not-needed',
     'algo': 'wcag21',
+    'causes': [],
     'maximumContrastRatio': 4.5,
     'minimumContrastRatio': 3,
     'pair': {
@@ -133,16 +137,20 @@ await test('contrast reports and pending entries carry optional maximum-ratio da
 await test('APCA reports and pending entries retain APCA Lc targets', () => {
   assert.strictEqual(ContrastReportEntryEntity.validate({
     'actual': 82,
+    'adjustedRoles': [],
     'background': 'background',
-    'disposition': 'not-needed',
+    'causes': [],
+    'disposition': 'resolved',
     'foreground': 'bodyText',
     'passed': true,
-    'required': 75
+    'required': 75,
+    'shortfall': 0
   }), true);
   assert.strictEqual(PendingContrastEntryEntity.validate({
     'adjusted': false,
     'adjustmentDisposition': 'not-needed',
     'algo': 'apca',
+    'causes': [],
     'minimumContrastRatio': 60,
     'pair': {
       'algorithm': 'apca',

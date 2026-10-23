@@ -1,4 +1,3 @@
-export type { ComplianceBlockedPairEntity } from '../entities/ComplianceBlockedPairEntity.ts';
 export type { CompliancePairEntity } from '../entities/CompliancePairEntity.ts';
 export type { ComplianceReportEntity } from '../entities/ComplianceReportEntity.ts';
 export type { CvdBlockedPairEntity } from '../entities/CvdBlockedPairEntity.ts';

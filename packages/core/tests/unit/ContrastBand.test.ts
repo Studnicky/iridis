@@ -284,17 +284,8 @@ void test('enforce:contrast reduces an excessive ratio into the declared upper b
     ratio >= 3 && ratio <= 4.5,
     `accent ratio enters [3, 4.5], got ${ratio}`
   );
-  assert.strictEqual(
-    report.disposition === 'adjusted-foreground' ||
-      report.disposition === 'adjusted-background',
-    true,
-    'upper-band violation adjusts the foreground'
-  );
-  assert.strictEqual(
-    report.disposition,
-    'adjusted-foreground',
-    'report records the adjustment action'
-  );
+  assert.strictEqual(report.disposition, 'resolved', 'upper-band violation resolves');
+  assert.deepStrictEqual(report.adjustedRoles, ['accent'], 'report records the adjusted endpoint');
   assert.strictEqual(
     report.passed,
     true,
@@ -326,17 +317,8 @@ void test('enforce:contrast retains lower-bound adjustment when no upper bound i
   );
   const ratio = contrastWcag21.apply(text, background);
   assert.ok(ratio >= 4.5, `text ratio reaches the lower floor, got ${ratio}`);
-  assert.strictEqual(
-    report.disposition === 'adjusted-foreground' ||
-      report.disposition === 'adjusted-background',
-    true,
-    'lower-band violation adjusts the foreground'
-  );
-  assert.strictEqual(
-    report.disposition,
-    'adjusted-foreground',
-    'report records the adjustment action'
-  );
+  assert.strictEqual(report.disposition, 'resolved', 'lower-band violation resolves');
+  assert.deepStrictEqual(report.adjustedRoles, ['text'], 'report records the adjusted endpoint');
   assert.strictEqual(
     'maximumContrastRatio' in report,
     false,
@@ -396,9 +378,9 @@ void test('enforce:contrast moves the derived background around a stated foregro
     contrastWcag21.apply(text, background) >= 4.5,
     'the terminal pair reaches the declared minimum'
   );
-  assert.strictEqual(
-    report.adjustedRole,
-    'background',
+  assert.deepStrictEqual(
+    report.adjustedRoles,
+    ['background'],
     'report names the endpoint that moved'
   );
   assert.strictEqual(
@@ -450,9 +432,9 @@ void test('enforce:contrast moves the derived foreground around a stated backgro
     contrastWcag21.apply(text, resolvedBackground) >= 4.5,
     'the terminal pair reaches the declared minimum'
   );
-  assert.strictEqual(
-    report.adjustedRole,
-    'text',
+  assert.deepStrictEqual(
+    report.adjustedRoles,
+    ['text'],
     'report names the endpoint that moved'
   );
   assert.strictEqual(
@@ -490,7 +472,8 @@ void test('enforce:contrast preserves a derived mover when its role range cannot
   assert.ok(report !== undefined, 'the constrained pair produces a report');
   assert.ok(background !== undefined, 'the derived background remains available');
   assert.strictEqual(background.hex, '#ffffff', 'the range-constrained mover remains unchanged');
-  assert.strictEqual(report.disposition, 'unresolved', 'the impossible ranged adjustment is unresolved');
+  assert.strictEqual(report.disposition, 'best-effort', 'the impossible ranged adjustment is best effort');
+  assert.deepStrictEqual(report.causes, ['solver-exhausted'], 'the current bounded solver reports its limit');
   assert.strictEqual(report.passed, false, 'the impossible ranged adjustment stays noncompliant');
 });
 
@@ -525,17 +508,8 @@ void test('enforce:contrast reports an infeasible pair when both roles are state
     background,
     'stated background remains byte-identical'
   );
-  assert.strictEqual(
-    report.disposition === 'adjusted-foreground' ||
-      report.disposition === 'adjusted-background',
-    false,
-    'an infeasible pair does not mutate either stated role'
-  );
-  assert.strictEqual(
-    report.disposition,
-    'blocked-stated',
-    'report identifies the stated-only block'
-  );
+  assert.strictEqual(report.disposition, 'best-effort', 'an infeasible pair remains best effort');
+  assert.deepStrictEqual(report.causes, ['pin'], 'report identifies the stated-only blocker');
   assert.strictEqual(
     report.passed,
     false,
@@ -658,8 +632,8 @@ void test('enforce:contrast keeps a stated middle role exact while moving both d
     'both pair directions reach the selected floor around the stated middle role'
   );
   assert.deepStrictEqual(
-    reports.map((report) => {return report.adjustedRole;}),
-    ['left', 'right'],
+    reports.map((report) => {return report.adjustedRoles;}),
+    [['left'], ['right']],
     'each pair identifies its independently movable endpoint'
   );
 });
@@ -701,17 +675,8 @@ void test('enforce:contrast installs a gamut-mapped bounded solver result even w
     contrastWcag21.apply(accent, resolvedBackground) >= 3,
     'the installed solver result reaches the lower bound'
   );
-  assert.strictEqual(
-    report.disposition === 'adjusted-foreground' ||
-      report.disposition === 'adjusted-background',
-    true,
-    'the observable solver result is installed'
-  );
-  assert.strictEqual(
-    report.disposition,
-    'adjusted-foreground',
-    'the report records the installed solver result'
-  );
+  assert.strictEqual(report.disposition, 'resolved', 'the observable solver result is installed');
+  assert.deepStrictEqual(report.adjustedRoles, ['accent'], 'the report records the installed solver result');
   assert.strictEqual(
     report.passed,
     true,
@@ -752,9 +717,10 @@ void test('enforce:contrast reports an incompatible selected AAA band as termina
   );
   assert.strictEqual(
     entry.disposition,
-    'unresolved',
+    'best-effort',
     'the terminal report identifies the unsatisfiable derived adjustment'
   );
+  assert.deepStrictEqual(entry.causes, ['solver-exhausted'], 'the bounded solver identifies the unresolved cause');
 });
 
 void test('contrast policy normalizes schema and extra pairs to the selected standard', () => {

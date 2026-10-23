@@ -18,10 +18,14 @@ export namespace ContrastReportEntity {
         'items': ContrastReportEntryEntity.Schema,
         'type': 'array'
       },
+      'problemPairs': {
+        'items': ContrastReportEntryEntity.Schema,
+        'type': 'array'
+      },
       'selectedAlgorithm': { 'enum': ['wcag21', 'apca'] },
       'target': { 'type': 'string' }
     },
-    'required': ['compliant', 'pairs', 'selectedAlgorithm', 'target'],
+    'required': ['compliant', 'pairs', 'problemPairs', 'selectedAlgorithm', 'target'],
     'type': 'object'
   } as const;
 

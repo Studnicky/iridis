@@ -64,10 +64,10 @@ await test('ContrastPlugin compiles metadata schemas and rejects incomplete repo
   assert.throws(
     () => {
       const result = ComplianceReportEntity.intake({
-        'blockedPairs': [],
         'compliant': true,
         'cvdCompliant': true,
-        'pairs': []
+        'pairs': [],
+        'problemPairs': []
       });
       return result;
     },
@@ -145,13 +145,13 @@ await test('canonical compliance emits an admissible zero-pair report', () => {
     'zero declared pairs produce no pair observations'
   );
   assert.deepStrictEqual(
-    report.blockedPairs,
+    report.problemPairs,
     [],
     'zero declared pairs produce no blockers'
   );
 });
 
-await test('canonical compliance records an already compliant pair as not-needed', () => {
+await test('canonical compliance records an already compliant pair as resolved', () => {
   const engine = ComplianceTestEngine.create();
   engine.pipeline([
     'intake:hex',
@@ -200,13 +200,13 @@ await test('canonical compliance records an already compliant pair as not-needed
   assert.ok(pair !== undefined, 'declared pair is observed');
   assert.strictEqual(
     pair.disposition,
-    'not-needed',
-    'compliant pair keeps its original role values'
+    'resolved',
+    'compliant pair is resolved'
   );
-  assert.strictEqual(
-    pair.adjustedRole,
-    undefined,
-    'compliant pair has no adjusted role'
+  assert.deepStrictEqual(
+    pair.adjustedRoles,
+    [],
+    'compliant pair has no adjusted roles'
   );
   assert.strictEqual(
     pair.passed,
@@ -269,8 +269,8 @@ await test('canonical compliance corrects a failing AAA pair to seven to one', (
   const report = ComplianceReportEntity.intake(rawReport);
   const pair = report.pairs.at(0);
   assert.ok(pair !== undefined, 'declared pair is observed');
-  assert.strictEqual(pair.requiredTrichromat, 7, 'AAA maps a declared text pair to seven to one');
-  assert.ok(pair.actualTrichromat >= 7, 'terminal AAA contrast meets seven to one');
+  assert.strictEqual(pair.required, 7, 'AAA maps a declared text pair to seven to one');
+  assert.ok(pair.actual >= 7, 'terminal AAA contrast meets seven to one');
   assert.strictEqual(pair.passed, true, 'terminal AAA pair passes');
 });
 
@@ -327,12 +327,12 @@ await test('canonical compliance solves a non-background APCA pair at Lc sixty',
     'non-background pair uses the conservative Lc sixty target'
   );
   assert.strictEqual(
-    pair.requiredTrichromat,
+    pair.required,
     60,
     'terminal APCA target is Lc sixty'
   );
   assert.ok(
-    pair.actualTrichromat >= 60,
+    pair.actual >= 60,
     'terminal APCA contrast meets Lc sixty'
   );
   assert.strictEqual(pair.passed, true, 'terminal APCA pair passes');
@@ -394,14 +394,14 @@ await test('canonical compliance preserves its terminal report through variant d
     'selected target retained'
   );
   assert.strictEqual(
-    report.blockedPairs.length,
+    report.problemPairs.length,
     0,
     'no terminal pair is blocked'
   );
   const pair = report.pairs.at(0);
   assert.ok(pair !== undefined, 'declared pair reported once');
   assert.ok(
-    pair.actualTrichromat >= pair.requiredTrichromat,
+    pair.actual >= pair.required,
     'terminal measurement meets selected minimum'
   );
   assert.deepStrictEqual(pair.cvd, [], 'no CVD deficiency remains');
@@ -488,12 +488,12 @@ await test('canonical compliance applies AAA and APCA targets to every declared 
       'selected target retained'
     );
     assert.strictEqual(
-      pair.requiredTrichromat,
+      pair.required,
       selection.expectedMinimum,
       'selected target controls the requirement'
     );
     assert.ok(
-      pair.actualTrichromat >= pair.requiredTrichromat,
+      pair.actual >= pair.required,
       'terminal pair meets the selected requirement'
     );
     assert.strictEqual(

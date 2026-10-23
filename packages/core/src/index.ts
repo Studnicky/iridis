@@ -8,6 +8,7 @@ export { ColorRecordEntity } from './entities/ColorRecordEntity.ts';
 export { ContrastAlgorithmTypeEntity } from './entities/ContrastAlgorithmTypeEntity.ts';
 export { ContrastOptionsEntity } from './entities/ContrastOptionsEntity.ts';
 export { ContrastPairEntity } from './entities/ContrastPairEntity.ts';
+export { ContrastReportEntity } from './entities/ContrastReportEntity.ts';
 export { ContrastReportEntryEntity } from './entities/ContrastReportEntryEntity.ts';
 export { EngineMetadataEntity } from './entities/EngineMetadataEntity.ts';
 export { GamutMapResultEntity } from './entities/GamutMapResultEntity.ts';

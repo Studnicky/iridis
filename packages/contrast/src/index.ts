@@ -4,7 +4,6 @@ export { ContrastPlugin } from './ContrastPlugin.ts';
 export const contrastPlugin = new ContrastPlugin();
 export { cvdMatrices }         from './data/cvdMatrices.ts';
 export { CVD_THRESHOLDS }      from './data/cvdThresholds.ts';
-export { ComplianceBlockedPairEntity } from './entities/ComplianceBlockedPairEntity.ts';
 export { CompliancePairEntity } from './entities/CompliancePairEntity.ts';
 export { ComplianceReportEntity } from './entities/ComplianceReportEntity.ts';
 export { CvdBlockedPairEntity } from './entities/CvdBlockedPairEntity.ts';
