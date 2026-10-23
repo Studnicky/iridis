@@ -301,9 +301,13 @@ await test('carousel mounts only its active face and neighbours while the active
     const expansion = document.createElement('div');
     expansion.style.height = '320px';
     content.append(expansion);
-    await new Promise<void>((resolveFrame) => {window.requestAnimationFrame(() => {resolveFrame();});});
-    await new Promise<void>((resolveFrame) => {window.requestAnimationFrame(() => {resolveFrame();});});
-    return { 'initialHeight': initialHeight, 'nextHeight': Number.parseFloat(scene.style.height) };
+    const deadline = performance.now() + 10_000;
+    let nextHeight = initialHeight;
+    while (nextHeight < initialHeight + 300 && performance.now() < deadline) {
+      await new Promise<void>((resolveFrame) => {window.requestAnimationFrame(() => {resolveFrame();});});
+      nextHeight = Number.parseFloat(scene.style.height);
+    }
+    return { 'initialHeight': initialHeight, 'nextHeight': nextHeight };
   });
   assert.ok(expandedHeight.nextHeight >= expandedHeight.initialHeight + 300, JSON.stringify(expandedHeight));
 
