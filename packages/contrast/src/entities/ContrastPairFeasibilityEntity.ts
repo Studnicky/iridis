@@ -5,6 +5,7 @@ import { EntityCompiler } from '@studnicky/entity/node';
 import { Validator } from '@studnicky/iridis/model';
 
 import { ContrastFeasibilityProofEntity } from './ContrastFeasibilityProofEntity.ts';
+import { ContrastSampledFeasibilityEvidenceEntity } from './ContrastSampledFeasibilityEvidenceEntity.ts';
 import { HueRangeEntity } from './HueRangeEntity.ts';
 
 /** Reachability classification and optional measured evidence for one declared role pair. */
@@ -16,13 +17,14 @@ export namespace ContrastPairFeasibilityEntity {
       'foreground': { 'type': 'string' },
       'proof': ContrastFeasibilityProofEntity.Schema,
       'reachability': {
-        'enum': ['always-reachable', 'never-reachable', 'reachable-only-for-some-hues'],
+        'enum': ['always-reachable', 'never-reachable', 'reachable-only-for-some-hues', 'indeterminate'],
         'type': 'string'
       },
       'reachableHueRanges': {
         'items': HueRangeEntity.Schema,
         'type': 'array'
-      }
+      },
+      'sampled': ContrastSampledFeasibilityEvidenceEntity.Schema
     },
     'required': ['background', 'foreground', 'reachableHueRanges', 'reachability'],
     'type': 'object'

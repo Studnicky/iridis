@@ -1,5 +1,6 @@
 import { ContrastPlugin } from './ContrastPlugin.ts';
 
+export { ContrastFeasibility } from './ContrastFeasibility.ts';
 export { ContrastPlugin } from './ContrastPlugin.ts';
 export const contrastPlugin = new ContrastPlugin();
 export { cvdMatrices }         from './data/cvdMatrices.ts';
@@ -10,6 +11,7 @@ export { ContrastFeasibilityProofEntity } from './entities/ContrastFeasibilityPr
 export { ContrastFeasibilityReportEntity } from './entities/ContrastFeasibilityReportEntity.ts';
 export { ContrastLimitingBoundEntity } from './entities/ContrastLimitingBoundEntity.ts';
 export { ContrastPairFeasibilityEntity } from './entities/ContrastPairFeasibilityEntity.ts';
+export { ContrastSampledFeasibilityEvidenceEntity } from './entities/ContrastSampledFeasibilityEvidenceEntity.ts';
 export { CvdBlockedPairEntity } from './entities/CvdBlockedPairEntity.ts';
 export { CvdCorrectionEntity } from './entities/CvdCorrectionEntity.ts';
 export { CvdEvalEntity } from './entities/CvdEvalEntity.ts';
