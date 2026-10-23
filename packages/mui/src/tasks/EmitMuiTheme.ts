@@ -1,12 +1,12 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '@studnicky/iridis';
 import type { JSONSchema7Type } from 'json-schema';
 
-import { darken, lighten, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { darken, lighten, TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 import { JsonValue } from '@studnicky/types/node';
 
@@ -28,8 +28,8 @@ import { DERIVED_SHADE_OFFSETS } from './constants/DerivedShadeOffsets.ts';
  */
 class PaletteFamily {
   static build(
-    roles:    Record<string, ColorRecordInterfaceTypeEntity.Type>,
-    variants: Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    roles:    Record<string, ColorRecordEntity.Type>,
+    variants: Record<string, Record<string, ColorRecordEntity.Type>>,
     role:     string
   ): MuiPaletteColorEntity.Type | undefined {
     const base = roles[role];
@@ -79,7 +79,7 @@ class PaletteToJs {
 export class EmitMuiTheme implements TaskInterface {
   readonly 'name' = 'emit:muiTheme';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Emit an MUI createTheme() palette object from resolved roles and shade variants',
     'name':        'emit:muiTheme',
     'reads':       ['roles', 'variants', 'runtime'],

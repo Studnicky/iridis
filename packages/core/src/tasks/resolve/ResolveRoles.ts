@@ -1,15 +1,15 @@
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
-import type { ColorHintsInterfaceTypeEntity } from '../../entities/ColorHintsInterfaceTypeEntity.ts';
-import type { RoleSchemaInterfaceTypeEntity } from '../../entities/RoleSchemaInterfaceTypeEntity.ts';
+import type { ColorHintsEntity } from '../../entities/ColorHintsEntity.ts';
+import type { RoleSchemaEntity } from '../../entities/RoleSchemaEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
-import { RoleDefinitionInterfaceTypeEntity } from '../../entities/RoleDefinitionInterfaceTypeEntity.ts';
-import { RoleProvenanceInterfaceTypeEntity } from '../../entities/RoleProvenanceInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
+import { RoleDefinitionEntity } from '../../entities/RoleDefinitionEntity.ts';
+import { RoleProvenanceEntity } from '../../entities/RoleProvenanceEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { Metadata } from '../../types/metadata.ts';
@@ -21,7 +21,7 @@ import { RoleGeometry } from '../RoleGeometry.ts';
  * is applied as a signed relative delta, otherwise the candidate's own hue is left unchanged.
  */
 class TargetHue {
-  static resolve(h: number, role: RoleDefinitionInterfaceTypeEntity.Type): number {
+  static resolve(h: number, role: RoleDefinitionEntity.Type): number {
     if (role.hue !== undefined) {
       const result = RoleGeometry.hueTowards(h, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
       return result;
@@ -38,7 +38,7 @@ class RoleNudge {
     return value;
   }
 
-  static distanceToRoleCenter(color: ColorRecordInterfaceTypeEntity.Type, role: RoleDefinitionInterfaceTypeEntity.Type): number {
+  static distanceToRoleCenter(color: ColorRecordEntity.Type, role: RoleDefinitionEntity.Type): number {
     const { c, l } = color.oklch;
     let distance = 0;
 
@@ -56,9 +56,9 @@ class RoleNudge {
   }
 
   static hintsFor(
-    candidate: ColorRecordInterfaceTypeEntity.Type,
-    role: RoleDefinitionInterfaceTypeEntity.Type
-  ): ColorHintsInterfaceTypeEntity.Type | undefined {
+    candidate: ColorRecordEntity.Type,
+    role: RoleDefinitionEntity.Type
+  ): ColorHintsEntity.Type | undefined {
     const result = role.intent === undefined
       ? candidate.hints
       : {
@@ -70,10 +70,10 @@ class RoleNudge {
   }
 
   static copyWithHints(
-    candidate: ColorRecordInterfaceTypeEntity.Type,
-    hints: ColorHintsInterfaceTypeEntity.Type | undefined
-  ): ColorRecordInterfaceTypeEntity.Type {
-    const result = ColorRecordInterfaceTypeEntity.create({
+    candidate: ColorRecordEntity.Type,
+    hints: ColorHintsEntity.Type | undefined
+  ): ColorRecordEntity.Type {
+    const result = ColorRecordEntity.create({
       'alpha': candidate.alpha,
       ...(candidate.displayP3 === undefined ? {} : { 'displayP3': candidate.displayP3 }),
       'hex': candidate.hex,
@@ -86,15 +86,15 @@ class RoleNudge {
   }
 
   static intoRole(
-    candidate: ColorRecordInterfaceTypeEntity.Type,
-    role: RoleDefinitionInterfaceTypeEntity.Type
+    candidate: ColorRecordEntity.Type,
+    role: RoleDefinitionEntity.Type
   ) {
     const { c, h, l } = candidate.oklch;
     const targetL = role.lightnessRange !== undefined ? RoleNudge.clampToRange(l, role.lightnessRange) : l;
     const targetC = role.chromaRange !== undefined ? RoleNudge.clampToRange(c, role.chromaRange) : c;
     const targetH = TargetHue.resolve(h, role);
     const nextHints = RoleNudge.hintsFor(candidate, role);
-    const adjustments: RoleProvenanceInterfaceTypeEntity.Type['adjustments'] = [];
+    const adjustments: RoleProvenanceEntity.Type['adjustments'] = [];
     let record = candidate;
 
     if (targetH !== h) {
@@ -129,7 +129,7 @@ class RoleNudge {
   }
 }
 class RoleSynthesis {
-  static hueFor(role: RoleDefinitionInterfaceTypeEntity.Type): number {
+  static hueFor(role: RoleDefinitionEntity.Type): number {
     if (role.hue !== undefined) {
       const result = ((role.hue % 360) + 360) % 360;
       return result;
@@ -138,11 +138,11 @@ class RoleSynthesis {
     return result;
   }
 
-  static forRole(role: RoleDefinitionInterfaceTypeEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+  static forRole(role: RoleDefinitionEntity.Type): ColorRecordEntity.Type {
     const l = role.lightnessRange !== undefined ? RoleGeometry.rangeCenter(role.lightnessRange) : 0.5;
     const c = role.chromaRange    !== undefined ? RoleGeometry.rangeCenter(role.chromaRange)    : 0;
     const h = RoleSynthesis.hueFor(role);
-    const hints: ColorHintsInterfaceTypeEntity.Type | undefined = role.intent === undefined
+    const hints: ColorHintsEntity.Type | undefined = role.intent === undefined
       ? undefined
       : { 'intent': role.intent };
     const result = colorRecordFactory.fromOklch(l, c, h, { 'alpha': 1, 'hints': hints, 'sourceFormat': 'oklch' });
@@ -156,12 +156,12 @@ class RoleSynthesis {
  * candidates are resolver-derived and record every colour adjustment.
  */
 class RoleCandidateSelection {
-  readonly 'color': ColorRecordInterfaceTypeEntity.Type | undefined;
+  readonly 'color': ColorRecordEntity.Type | undefined;
   readonly 'distance': number;
   readonly 'distances': Map<string, number>;
 
   constructor(
-    color: ColorRecordInterfaceTypeEntity.Type | undefined,
+    color: ColorRecordEntity.Type | undefined,
     distance: number,
     distances: Map<string, number>
   ) {
@@ -174,7 +174,7 @@ class RoleCandidateSelection {
 class ResolveRoles implements TaskInterface {
   readonly 'name' = 'resolve:roles';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Assigns caller-stated colors by role hint, otherwise resolves the closest candidate into schema constraints and records canonical role provenance.',
     'name':        'resolve:roles',
     'reads':       ['colors', 'input.roles', 'metadata'],
@@ -182,9 +182,9 @@ class ResolveRoles implements TaskInterface {
   });
 
   private static admitRole(
-    rawInputRole: RoleSchemaInterfaceTypeEntity.Type['roles'][number]
-  ): RoleDefinitionInterfaceTypeEntity.Type {
-    const result = RoleDefinitionInterfaceTypeEntity.create({
+    rawInputRole: RoleSchemaEntity.Type['roles'][number]
+  ): RoleDefinitionEntity.Type {
+    const result = RoleDefinitionEntity.create({
       'name': rawInputRole.name,
       ...(rawInputRole.chromaRange === undefined ? {} : { 'chromaRange': rawInputRole.chromaRange }),
       ...(rawInputRole.chromaScale === undefined ? {} : { 'chromaScale': rawInputRole.chromaScale }),
@@ -201,8 +201,8 @@ class ResolveRoles implements TaskInterface {
     return result;
   }
 
-  private static colorsByRoleHint(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): Map<string, ColorRecordInterfaceTypeEntity.Type> {
-    const result = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+  private static colorsByRoleHint(colors: readonly ColorRecordEntity.Type[]): Map<string, ColorRecordEntity.Type> {
+    const result = new Map<string, ColorRecordEntity.Type>();
     for (let colorIndex = 0; colorIndex < colors.length; colorIndex += 1) {
       const color = colors[colorIndex];
       const role = color?.hints?.role;
@@ -214,10 +214,10 @@ class ResolveRoles implements TaskInterface {
   }
 
   private static selectCandidate(
-    colors: readonly ColorRecordInterfaceTypeEntity.Type[],
-    role: RoleDefinitionInterfaceTypeEntity.Type
+    colors: readonly ColorRecordEntity.Type[],
+    role: RoleDefinitionEntity.Type
   ): RoleCandidateSelection {
-    let candidate: ColorRecordInterfaceTypeEntity.Type | undefined;
+    let candidate: ColorRecordEntity.Type | undefined;
     let distance = Infinity;
     const distances = new Map<string, number>();
     for (let colorIndex = 0; colorIndex < colors.length; colorIndex += 1) {
@@ -237,9 +237,9 @@ class ResolveRoles implements TaskInterface {
   }
 
   private static overrideRole(
-    inputRole: RoleDefinitionInterfaceTypeEntity.Type,
+    inputRole: RoleDefinitionEntity.Type,
     hueTargetOverrides: ReturnType<typeof Metadata.hueTargetOverrides>
-  ): RoleDefinitionInterfaceTypeEntity.Type {
+  ): RoleDefinitionEntity.Type {
     if (hueTargetOverrides === undefined || !Object.hasOwn(hueTargetOverrides, inputRole.name)) {
       return inputRole;
     }
@@ -248,7 +248,7 @@ class ResolveRoles implements TaskInterface {
       return inputRole;
     }
     const hueClamp = targetOverride.hueClamp ?? inputRole.hueClamp;
-    const result = RoleDefinitionInterfaceTypeEntity.intake({
+    const result = RoleDefinitionEntity.intake({
       'name': inputRole.name,
       ...(inputRole.chromaRange === undefined ? {} : { 'chromaRange': inputRole.chromaRange }),
       ...(inputRole.chromaScale === undefined ? {} : { 'chromaScale': inputRole.chromaScale }),
@@ -266,14 +266,14 @@ class ResolveRoles implements TaskInterface {
   }
 
   private static assignStated(
-    role: RoleDefinitionInterfaceTypeEntity.Type,
-    color: ColorRecordInterfaceTypeEntity.Type,
+    role: RoleDefinitionEntity.Type,
+    color: ColorRecordEntity.Type,
     roles: PaletteRoleState,
-    provenance: Map<string, RoleProvenanceInterfaceTypeEntity.Type>,
+    provenance: Map<string, RoleProvenanceEntity.Type>,
     context: PipelineContextInterface
   ): void {
     roles.set(role.name, color);
-    provenance.set(role.name, RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': [], 'origin': 'stated' }));
+    provenance.set(role.name, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'stated' }));
     context.logger.debug(
       LogBody.create({
         'component': 'ResolveRoles',
@@ -286,16 +286,16 @@ class ResolveRoles implements TaskInterface {
   }
 
   private static synthesize(
-    role: RoleDefinitionInterfaceTypeEntity.Type,
+    role: RoleDefinitionEntity.Type,
     roles: PaletteRoleState,
-    provenance: Map<string, RoleProvenanceInterfaceTypeEntity.Type>,
+    provenance: Map<string, RoleProvenanceEntity.Type>,
     context: PipelineContextInterface
   ): void {
     if (role.required !== true) {
       return;
     }
     roles.set(role.name, RoleSynthesis.forRole(role));
-    provenance.set(role.name, RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': [], 'origin': 'synthesized' }));
+    provenance.set(role.name, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'synthesized' }));
     context.logger.debug(
       LogBody.create({
         'component': 'ResolveRoles',
@@ -308,10 +308,10 @@ class ResolveRoles implements TaskInterface {
   }
 
   private static assignDerived(
-    role: RoleDefinitionInterfaceTypeEntity.Type,
-    colors: readonly ColorRecordInterfaceTypeEntity.Type[],
+    role: RoleDefinitionEntity.Type,
+    colors: readonly ColorRecordEntity.Type[],
     roles: PaletteRoleState,
-    provenance: Map<string, RoleProvenanceInterfaceTypeEntity.Type>,
+    provenance: Map<string, RoleProvenanceEntity.Type>,
     distances: Map<string, Map<string, number>>,
     context: PipelineContextInterface
   ): void {
@@ -323,7 +323,7 @@ class ResolveRoles implements TaskInterface {
     }
     const resolved = RoleNudge.intoRole(selected.color, role);
     roles.set(role.name, resolved.record);
-    provenance.set(role.name, RoleProvenanceInterfaceTypeEntity.create({ 'adjustments': resolved.adjustments, 'origin': 'derived' }));
+    provenance.set(role.name, RoleProvenanceEntity.create({ 'adjustments': resolved.adjustments, 'origin': 'derived' }));
     context.logger.debug(
       LogBody.create({
         'component': 'ResolveRoles',
@@ -336,11 +336,11 @@ class ResolveRoles implements TaskInterface {
   }
 
   private static resolveRole(
-    rawInputRole: RoleSchemaInterfaceTypeEntity.Type['roles'][number],
-    colorsByRoleHint: Map<string, ColorRecordInterfaceTypeEntity.Type>,
+    rawInputRole: RoleSchemaEntity.Type['roles'][number],
+    colorsByRoleHint: Map<string, ColorRecordEntity.Type>,
     state: PaletteStateInterface,
     roles: PaletteRoleState,
-    provenance: Map<string, RoleProvenanceInterfaceTypeEntity.Type>,
+    provenance: Map<string, RoleProvenanceEntity.Type>,
     distances: Map<string, Map<string, number>>,
     hueTargetOverrides: ReturnType<typeof Metadata.hueTargetOverrides>,
     context: PipelineContextInterface

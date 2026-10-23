@@ -1,6 +1,6 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-export abstract class ChakraOutputInterfaceType {
+export abstract class ChakraOutputEntity {
   [key: string]: JSONSchema7Type;
 
   abstract 'colors': Record<string, Record<string, string>>;

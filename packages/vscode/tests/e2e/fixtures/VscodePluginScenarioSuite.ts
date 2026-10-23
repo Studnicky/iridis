@@ -7,9 +7,9 @@
  *
  * Cells:
  *   1. plugin-shape        — singleton, version, task list, manifest fields
- *   2. workbench-colors    — 129-key palette, key slots present, sRGB/P3 routing
+ *   2. workbench-colors    — 132-key palette, key slots present, sRGB/P3 routing
  *   3. semantic-rules      — base rules, modifier-selector cross-product, fontStyle
- *   4. theme-json-assembly — assembled ThemeJsonInterfaceType shape invariants
+ *   4. theme-json-assembly — assembled ThemeJsonEntity shape invariants
  *   5. token-colors        — tokenColors array from SCOPE_MAPPINGS + baseTokens
  *   6. p3-propagation      — wide-gamut input surfaces P3 form in direct-passthrough slots
  *   7. math-derived-slots  — math-derived and alpha-suffix slots never emit P3
@@ -17,15 +17,15 @@
  */
 
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   PluginInterface,
-  RoleSchemaInterfaceTypeEntity,
+  RoleSchemaEntity,
   TaskInterface
 } from '@studnicky/iridis';
 
-import { InputInterfaceTypeEntity, RuntimeOptionsInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity, RuntimeOptionsEntity } from '@studnicky/iridis';
 import {
   applyModifiers,
   deriveVscodeUiRoles,
@@ -40,9 +40,9 @@ import { colorRecordFactory, luminance } from '@studnicky/iridis/math';
 import assert from 'node:assert/strict';
 import { test }    from 'node:test';
 
-import type { SemanticRuleEntryInterfaceTypeEntity } from '../../../src/entities/SemanticRuleEntryInterfaceTypeEntity.ts';
-import type { ThemeJsonInterfaceTypeEntity } from '../../../src/entities/ThemeJsonInterfaceTypeEntity.ts';
-import type { TokenColorRuleInterfaceTypeEntity } from '../../../src/entities/TokenColorRuleInterfaceTypeEntity.ts';
+import type { SemanticRuleEntryEntity } from '../../../src/entities/SemanticRuleEntryEntity.ts';
+import type { ThemeJsonEntity } from '../../../src/entities/ThemeJsonEntity.ts';
+import type { TokenColorRuleEntity } from '../../../src/entities/TokenColorRuleEntity.ts';
 
 import { ScenarioRunner } from '../../_runner/ScenarioRunner.ts';
 import { VSCODE_ROLE_SCHEMAS_16 } from '../../../src/index.ts';
@@ -59,7 +59,7 @@ await test('VscodePlugin :: role schemas :: dark and light expose the complete 1
     'background', 'foreground', 'surface', 'muted', 'keyword', 'type', 'function', 'variable',
     'string', 'number', 'constant', 'comment', 'error', 'warning', 'info', 'success'
   ];
-  const schemas: readonly (readonly ['dark' | 'light', RoleSchemaInterfaceTypeEntity.Type])[] = [
+  const schemas: readonly (readonly ['dark' | 'light', RoleSchemaEntity.Type])[] = [
     ['dark', VSCODE_ROLE_SCHEMAS_16.dark],
     ['light', VSCODE_ROLE_SCHEMAS_16.light]
   ];
@@ -188,7 +188,7 @@ await new ScenarioRunner<PluginShapeInputInterface, PluginShapeOutputInterface>(
 // ---------------------------------------------------------------------------
 // Cell 2 — workbench colors (outputs.vscode.workbenchColors)
 //
-// emit:vscodeUiPalette emits 129 VS Code workbench-color slots from the
+// emit:vscodeUiPalette emits 132 VS Code workbench-color slots from the
 // resolved 16-role palette. This cell asserts:
 //   - the slot map is populated with expected UI keys
 //   - direct-passthrough slots carry the role's color form (hex for sRGB roles)
@@ -371,8 +371,8 @@ interface SemanticRulesInputInterface {
   readonly 'seeds': readonly string[];
 };
 interface SemanticRulesOutputInterface {
-  readonly 'metaRules':   Record<string, SemanticRuleEntryInterfaceTypeEntity.Type>;
-  readonly 'outputRules': Record<string, SemanticRuleEntryInterfaceTypeEntity.Type>;
+  readonly 'metaRules':   Record<string, SemanticRuleEntryEntity.Type>;
+  readonly 'outputRules': Record<string, SemanticRuleEntryEntity.Type>;
 };
 
 class SemanticRulesScenarioData {
@@ -499,7 +499,7 @@ await new ScenarioRunner<SemanticRulesInputInterface, SemanticRulesOutputInterfa
 // ---------------------------------------------------------------------------
 // Cell 4 — theme JSON assembly (outputs.vscode.themeJson)
 //
-// emit:vscodeThemeJson assembles the full ThemeJsonInterfaceType from three
+// emit:vscodeThemeJson assembles the full ThemeJsonEntity from three
 // upstream slots. Shape invariants:
 //   - name: non-empty string (default or from metadata.themeName)
 //   - type: 'dark' | 'light' (by background luminance)
@@ -516,7 +516,7 @@ interface ThemeJsonInputInterface {
   readonly 'themeName'?: string;
 };
 interface ThemeJsonOutputInterface {
-  readonly 'themeJson':   ThemeJsonInterfaceTypeEntity.Type;
+  readonly 'themeJson':   ThemeJsonEntity.Type;
   readonly 'workbench':   Record<string, string>;
 };
 
@@ -573,7 +573,7 @@ class ThemeJsonScenarioData {
         const stc = output!.themeJson.semanticTokenColors;
         // Find any object-form entry (a rule with fontStyle)
         const entries = Object.entries(stc);
-        const objectEntries: [string, SemanticRuleEntryInterfaceTypeEntity.Type][] = [];
+        const objectEntries: [string, SemanticRuleEntryEntity.Type][] = [];
         let stringEntryCount = 0;
         for (let index = 0; index < entries.length; index += 1) {
           const entry = entries.at(index);
@@ -665,8 +665,8 @@ interface TokenColorsInputInterface {
   readonly 'seeds': readonly string[];
 };
 abstract class TokenColorsOutput {
-  abstract readonly 'commentEntry': TokenColorRuleInterfaceTypeEntity.Type | undefined;
-  abstract readonly 'tokenColors': readonly TokenColorRuleInterfaceTypeEntity.Type[];
+  abstract readonly 'commentEntry': TokenColorRuleEntity.Type | undefined;
+  abstract readonly 'tokenColors': readonly TokenColorRuleEntity.Type[];
 }
 
 class TokenColorsScenarioData {
@@ -735,7 +735,7 @@ await new ScenarioRunner<TokenColorsInputInterface, TokenColorsOutput>(
     const state     = VscodePluginFixture.runFull(input.seeds, pipeline);
     const themeJson = VscodePluginState.themeJson(state);
     const tokenColors = themeJson?.tokenColors ?? [];
-    const commentEntry = tokenColors.find((entry: TokenColorRuleInterfaceTypeEntity.Type) => {
+    const commentEntry = tokenColors.find((entry: TokenColorRuleEntity.Type) => {
       const result = entry.name === 'comment';
       return result;
     });
@@ -761,7 +761,7 @@ interface P3PropagationInputInterface {
 abstract class P3PropagationOutput {
   abstract readonly 'cursorForeground': string;
   abstract readonly 'findMatchBg': string;
-  abstract readonly 'keyword': ColorRecordInterfaceTypeEntity.Type;
+  abstract readonly 'keyword': ColorRecordEntity.Type;
   abstract readonly 'tabActiveBorder': string;
 }
 
@@ -993,7 +993,7 @@ class UnhappyScenarioData {
             'derive:variant',
             'vscode:applyModifiers'
           ]);
-          const result = engine.run(InputInterfaceTypeEntity.create({ 'colors': [...VscodePluginFixture.seedsSrgb], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
+          const result = engine.run(InputEntity.create({ 'colors': [...VscodePluginFixture.seedsSrgb], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
           return result;
         }
       },
@@ -1022,7 +1022,7 @@ class UnhappyScenarioData {
             'vscode:expandTokens',
             'emit:vscodeSemanticRules'
           ]);
-          const result = engine.run(InputInterfaceTypeEntity.create({ 'colors': [...VscodePluginFixture.seedsSrgb], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
+          const result = engine.run(InputEntity.create({ 'colors': [...VscodePluginFixture.seedsSrgb], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
           return result;
         }
       },
@@ -1053,7 +1053,7 @@ class UnhappyScenarioData {
             'emit:vscodeSemanticRules',
             'emit:vscodeThemeJson'
           ]);
-          const result = engine.run(InputInterfaceTypeEntity.create({ 'colors': [...VscodePluginFixture.seedsSrgb], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
+          const result = engine.run(InputEntity.create({ 'colors': [...VscodePluginFixture.seedsSrgb], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
           return result;
         }
       },
@@ -1085,7 +1085,7 @@ class UnhappyScenarioData {
             'emit:vscodeUiPalette',
             'emit:vscodeThemeJson'
           ]);
-          const result = engine.run(InputInterfaceTypeEntity.create({ 'colors': [...VscodePluginFixture.seedsSrgb], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
+          const result = engine.run(InputEntity.create({ 'colors': [...VscodePluginFixture.seedsSrgb], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
           return result;
         }
       },
@@ -1109,7 +1109,7 @@ class UnhappyScenarioData {
           engine.adopt(vscodePlugin);
           engine.pipeline(['vscode:expandTokens']);
           // No roles in input — roles map will be empty after running
-          const result = engine.run(InputInterfaceTypeEntity.create({ 'colors': [], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
+          const result = engine.run(InputEntity.create({ 'colors': [], 'roles': VSCODE_ROLE_SCHEMAS_16.dark }));
           return result;
         }
       },
@@ -1205,7 +1205,7 @@ await new ScenarioRunner<'dark' | 'light' | undefined, FramingOutputInterface>(
     const unsetState = VscodePluginFixture.runFull(VscodePluginFixture.seedsSrgb, VscodePluginFixture.pipelineHex);
     const unsetColors = VscodePluginState.workbenchColors(unsetState);
 
-    const runtime = framing === undefined ? undefined : RuntimeOptionsInterfaceTypeEntity.create({ 'framing': framing });
+    const runtime = framing === undefined ? undefined : RuntimeOptionsEntity.create({ 'framing': framing });
     const roles = framing === 'light' ? VSCODE_ROLE_SCHEMAS_16.light : VSCODE_ROLE_SCHEMAS_16.dark;
     const state = VscodePluginFixture.runFullWithOptions(VscodePluginFixture.seedsSrgb, {
       'pipeline': VscodePluginFixture.pipelineHex,
@@ -1214,7 +1214,7 @@ await new ScenarioRunner<'dark' | 'light' | undefined, FramingOutputInterface>(
     });
     const colors = VscodePluginState.workbenchColors(state);
     const themeJson = VscodePluginState.themeJson(state);
-    const commentEntry = themeJson?.tokenColors.find((entry: TokenColorRuleInterfaceTypeEntity.Type) => { const result = entry.name === 'comment'; return result; });
+    const commentEntry = themeJson?.tokenColors.find((entry: TokenColorRuleEntity.Type) => { const result = entry.name === 'comment'; return result; });
 
     const result = {
       'colors':            colors,
@@ -1230,19 +1230,19 @@ await test('VscodePlugin :: cell-9 :: runtime-framing :: framing=light changes s
   const darkState = VscodePluginFixture.runFullWithOptions(VscodePluginFixture.seedsSrgb, {
     'pipeline': VscodePluginFixture.pipelineHex,
     'roles': VSCODE_ROLE_SCHEMAS_16.dark,
-    'runtime': RuntimeOptionsInterfaceTypeEntity.create({ 'framing': 'dark' })
+    'runtime': RuntimeOptionsEntity.create({ 'framing': 'dark' })
   });
   const lightState = VscodePluginFixture.runFullWithOptions(VscodePluginFixture.seedsSrgb, {
     'pipeline': VscodePluginFixture.pipelineHex,
     'roles': VSCODE_ROLE_SCHEMAS_16.light,
-    'runtime': RuntimeOptionsInterfaceTypeEntity.create({ 'framing': 'light' })
+    'runtime': RuntimeOptionsEntity.create({ 'framing': 'light' })
   });
 
   const darkThemeJson  = VscodePluginState.themeJson(darkState);
   const lightThemeJson = VscodePluginState.themeJson(lightState);
 
-  const darkComment  = darkThemeJson?.tokenColors.find((entry: TokenColorRuleInterfaceTypeEntity.Type) => { const result = entry.name === 'comment'; return result; });
-  const lightComment = lightThemeJson?.tokenColors.find((entry: TokenColorRuleInterfaceTypeEntity.Type) => { const result = entry.name === 'comment'; return result; });
+  const darkComment  = darkThemeJson?.tokenColors.find((entry: TokenColorRuleEntity.Type) => { const result = entry.name === 'comment'; return result; });
+  const lightComment = lightThemeJson?.tokenColors.find((entry: TokenColorRuleEntity.Type) => { const result = entry.name === 'comment'; return result; });
 
   assert.ok(darkComment !== undefined && lightComment !== undefined, '[cell=9] comment tokenColors present in both runs');
   assert.notStrictEqual(
@@ -1269,7 +1269,7 @@ await test('VscodePlugin :: cell-9 :: runtime-framing :: framing=light changes s
 class DirectTaskFixture {
   /** Sixteen roles the vscode tasks require, independent of any role-schema clamp. */
   static buildState(backgroundHex: string): PaletteStateInterface {
-    const roles: Record<string, ColorRecordInterfaceTypeEntity.Type> = {
+    const roles: Record<string, ColorRecordEntity.Type> = {
       'accent':     colorRecordFactory.fromHex('#7c3aed'),
       'background': colorRecordFactory.fromHex(backgroundHex),
       'comment':    colorRecordFactory.fromHex('#6a737d'),
@@ -1289,7 +1289,7 @@ class DirectTaskFixture {
       'warning':    colorRecordFactory.fromHex('#d29922')
     };
 
-    const input = InputInterfaceTypeEntity.create({ 'colors': [] });
+    const input = InputEntity.create({ 'colors': [] });
 
     return {
       'colors':   [],
@@ -1297,7 +1297,7 @@ class DirectTaskFixture {
       'metadata': {},
       'outputs':  {},
       'roles':    roles,
-      'runtime': RuntimeOptionsInterfaceTypeEntity.create({}),
+      'runtime': RuntimeOptionsEntity.create({}),
       'variants': {}
     };
   }
@@ -1424,7 +1424,7 @@ await test('VscodePlugin :: golden :: themeJson key set is stable across refacto
   }
 
   // tokenColors must include keyword and comment entries
-  const tokenNames = (tj?.tokenColors ?? []).map((entry: TokenColorRuleInterfaceTypeEntity.Type) => { const result = entry.name; return result; });
+  const tokenNames = (tj?.tokenColors ?? []).map((entry: TokenColorRuleEntity.Type) => { const result = entry.name; return result; });
   assert.ok(tokenNames.includes('keyword'), '[golden] tokenColors includes keyword entry');
   assert.ok(tokenNames.includes('comment'), '[golden] tokenColors includes comment entry');
 });

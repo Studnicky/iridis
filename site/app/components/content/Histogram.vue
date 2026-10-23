@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useIridis } from '~/composables/useIridis.ts';
-import type { GalleryHistogramSlotInterfaceType } from '@studnicky/iridis-image/types';
+import type { GalleryHistogramSlotInterface } from '@studnicky/iridis-image/types';
 import { buildHistogramBars } from './histogram/buildHistogramBars.ts';
 
 /**
@@ -13,9 +13,9 @@ import { buildHistogramBars } from './histogram/buildHistogramBars.ts';
  * image's own Stage-1 histogram instead of the shared combine-stage one —
  * when omitted, falls back to the combine-stage `histogram` ref as before.
  */
-const props = defineProps<{ bins?: GalleryHistogramSlotInterfaceType['bins'] }>();
+const props = defineProps<{ bins?: GalleryHistogramSlotInterface['bins'] }>();
 const { histogram } = useIridis();
-const source = computed<GalleryHistogramSlotInterfaceType['bins']>(() => props.bins ?? histogram.value);
+const source = computed<GalleryHistogramSlotInterface['bins']>(() => props.bins ?? histogram.value);
 const bars = computed(() => buildHistogramBars.build(source.value));
 </script>
 

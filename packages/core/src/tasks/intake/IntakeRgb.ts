@@ -2,14 +2,14 @@ import { ValidationError } from '@studnicky/errors/node';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
 import { RgbInputEntity } from '../../entities/RgbInputEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 const RGB_BYTE_SCALE_THRESHOLD = 2;
@@ -18,14 +18,14 @@ const RGB_BYTE_SCALE_THRESHOLD = 2;
 class IntakeRgb implements TaskInterface {
   readonly 'name' = 'intake:rgb';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Parses {r,g,b,a?} in 0..1 or 0..255 (auto-detected by max value) into ColorRecord entries. Throws on non-RGB input.',
     'name':        'intake:rgb',
     'reads':       ['input.colors'],
     'writes':      ['colors']
   });
 
-  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type {
+  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordEntity.Type {
     let input: RgbInputEntity.Type;
     try {
       input = RgbInputEntity.intake(raw);
@@ -53,7 +53,7 @@ class IntakeRgb implements TaskInterface {
     return result;
   }
 
-  #tryParse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type | undefined {
+  #tryParse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordEntity.Type | undefined {
     try {
       const result = this.parse(raw);
       return result;

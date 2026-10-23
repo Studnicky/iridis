@@ -18,25 +18,25 @@ import type { TaskInterface } from '../../src/interfaces/TaskInterface.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 import { Engine } from '../../src/engine/Engine.ts';
-import { ColorHintsInterfaceTypeEntity } from '../../src/entities/ColorHintsInterfaceTypeEntity.ts';
-import { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import { ColorHintsEntity } from '../../src/entities/ColorHintsEntity.ts';
+import { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
 import { HslInputEntity } from '../../src/entities/HslInputEntity.ts';
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
 import { LabInputEntity } from '../../src/entities/LabInputEntity.ts';
 import { OklchInputEntity } from '../../src/entities/OklchInputEntity.ts';
 import { RgbInputEntity } from '../../src/entities/RgbInputEntity.ts';
-import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
+import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 
 class TestColorRecordFixture {
   static assertShape(
-    record: ColorRecordInterfaceTypeEntity.Type,
+    record: ColorRecordEntity.Type,
     expectedKeys: readonly string[],
     message: string
   ): void {
-    assert.strictEqual(ColorRecordInterfaceTypeEntity.validate(record), true, `${message} schema validation`);
+    assert.strictEqual(ColorRecordEntity.validate(record), true, `${message} schema validation`);
     assert.deepStrictEqual(Object.keys(record), expectedKeys, `${message} key order`);
   }
 
@@ -54,12 +54,12 @@ class TestColorRecordFixture {
 }
 
 class TestSeedHintedTask implements TaskInterface {
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({ 'name': 'seed:hinted', 'phase': 'onRunStart' });
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({ 'name': 'seed:hinted', 'phase': 'onRunStart' });
   readonly 'name' = 'seed:hinted';
 
-  readonly #hinted: ColorRecordInterfaceTypeEntity.Type;
+  readonly #hinted: ColorRecordEntity.Type;
 
-  constructor(hinted: ColorRecordInterfaceTypeEntity.Type) {
+  constructor(hinted: ColorRecordEntity.Type) {
     this.#hinted = hinted;
   }
 
@@ -71,18 +71,18 @@ class TestSeedHintedTask implements TaskInterface {
 interface Cell1InputInterface {
   readonly 'expectedKeys': readonly string[];
   readonly 'label': string;
-  readonly 'record': ColorRecordInterfaceTypeEntity.Type;
+  readonly 'record': ColorRecordEntity.Type;
 }
 
 interface Cell1OutputInterface {
   readonly 'expectedKeys': readonly string[];
   readonly 'label': string;
-  readonly 'record': ColorRecordInterfaceTypeEntity.Type;
+  readonly 'record': ColorRecordEntity.Type;
 }
 
 interface Cell2InputInterface {
   readonly 'expectedKeys': readonly string[];
-  readonly 'input': Parameters<typeof InputInterfaceTypeEntity.create>[0];
+  readonly 'input': Parameters<typeof InputEntity.create>[0];
   readonly 'label': string;
   readonly 'pipeline': readonly string[];
 }
@@ -90,12 +90,12 @@ interface Cell2InputInterface {
 interface Cell2OutputInterface {
   readonly 'expectedKeys': readonly string[];
   readonly 'label': string;
-  readonly 'records': readonly ColorRecordInterfaceTypeEntity.Type[];
+  readonly 'records': readonly ColorRecordEntity.Type[];
 }
 
 interface Cell3InputInterface {
   readonly 'expectedKeys': readonly string[];
-  readonly 'input': Parameters<typeof InputInterfaceTypeEntity.create>[0];
+  readonly 'input': Parameters<typeof InputEntity.create>[0];
   readonly 'label': string;
   readonly 'onRunStartTask': TestSeedHintedTask | undefined;
   readonly 'pipeline': readonly string[];
@@ -104,7 +104,7 @@ interface Cell3InputInterface {
 interface Cell3OutputInterface {
   readonly 'expectedKeys': readonly string[];
   readonly 'label': string;
-  readonly 'record': ColorRecordInterfaceTypeEntity.Type;
+  readonly 'record': ColorRecordEntity.Type;
 }
 
 class ColorRecordShapeScenarios {
@@ -131,7 +131,7 @@ class ColorRecordShapeScenarios {
         'input': {
           'expectedKeys': ['alpha', 'displayP3', 'hex', 'hints', 'oklch', 'rgb', 'sourceFormat'],
           'label': 'fromOklch+hints',
-          'record': colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': 'accent' }) })
+          'record': colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': ColorHintsEntity.intake({ 'role': 'accent' }) })
         },
         'kind': 'happy',
         'name': 'fromOklch emits the hints field only when supplied'
@@ -407,7 +407,7 @@ class ColorRecordShapeScenarios {
       (input) => {
         const engine = TestColorRecordFixture.makeEngine();
         engine.pipeline(input.pipeline);
-        const state = engine.run(InputInterfaceTypeEntity.create(input.input));
+        const state = engine.run(InputEntity.create(input.input));
         return { 'expectedKeys': input.expectedKeys, 'label': input.label, 'records': state.colors };
       }
     ).run(scenarios);
@@ -424,7 +424,7 @@ class ColorRecordShapeScenarios {
           'expectedKeys': ['alpha', 'hex', 'oklch', 'rgb', 'sourceFormat'],
           'input': {
             'colors': ['#3b82f6'],
-            'roles': RoleSchemaInterfaceTypeEntity.intake({
+            'roles': RoleSchemaEntity.intake({
               'name': 'tight-blue',
               'roles': [{ 'chromaRange': [0, 0.02], 'lightnessRange': [0.5, 0.6], 'name': 'background' }]
             })
@@ -448,14 +448,14 @@ class ColorRecordShapeScenarios {
           'expectedKeys': ['alpha', 'hex', 'hints', 'oklch', 'rgb', 'sourceFormat'],
           'input': {
             'colors': [],
-            'roles': RoleSchemaInterfaceTypeEntity.intake({
+            'roles': RoleSchemaEntity.intake({
               'name': 'tight-blue',
               'roles': [{ 'chromaRange': [0, 0.02], 'lightnessRange': [0.5, 0.6], 'name': 'background', 'required': true }]
             })
           },
           'label': 'clamp:oklch+hint',
           'onRunStartTask': new TestSeedHintedTask(colorRecordFactory.fromHex('#3b82f6', {
-            'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': 'background' }),
+            'hints': ColorHintsEntity.intake({ 'role': 'background' }),
             'sourceFormat': 'hex'
           })),
           'pipeline': ['clamp:oklch']
@@ -473,7 +473,7 @@ class ColorRecordShapeScenarios {
           engine.tasks.hook(input.onRunStartTask);
         }
         engine.pipeline(input.pipeline);
-        const state = engine.run(InputInterfaceTypeEntity.create(input.input));
+        const state = engine.run(InputEntity.create(input.input));
         const record = state.colors.at(0);
         if (record === undefined) {
           throw new Error('[cell=3] expected clamp pipeline to produce one record');
@@ -485,9 +485,9 @@ class ColorRecordShapeScenarios {
 
   static runStabilityScenario(): void {
     void test('ColorRecordShape :: cell-4 :: stability :: every factory path keeps canonical ordering for its actual shape', () => {
-      const records: readonly ColorRecordInterfaceTypeEntity.Type[] = [
+      const records: readonly ColorRecordEntity.Type[] = [
         colorRecordFactory.fromOklch(0.5, 0.1, 200),
-        colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': 'r' }) }),
+        colorRecordFactory.fromOklch(0.5, 0.1, 200, { 'hints': ColorHintsEntity.intake({ 'role': 'r' }) }),
         colorRecordFactory.fromRgb(0.3, 0.6, 0.9),
         colorRecordFactory.fromRgb(0.3, 0.6, 0.9, { 'sourceFormat': 'lab' }),
         colorRecordFactory.fromHex('#abcdef'),

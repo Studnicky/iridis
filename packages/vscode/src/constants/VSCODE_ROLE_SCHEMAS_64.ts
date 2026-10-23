@@ -1,4 +1,4 @@
-import { ContrastPairInterfaceTypeEntity, RoleDefinitionInterfaceTypeEntity, RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { ContrastPairEntity, RoleDefinitionEntity, RoleSchemaEntity } from '@studnicky/iridis';
 
 class VscodeRoleSchemas64 {
   static readonly #darkFraming = {
@@ -13,21 +13,21 @@ class VscodeRoleSchemas64 {
     'surfaceLightnessOffset': -0.06
   };
 
-  static readonly dark: RoleSchemaInterfaceTypeEntity.Type = RoleSchemaInterfaceTypeEntity.create({
+  static readonly dark: RoleSchemaEntity.Type = RoleSchemaEntity.create({
     'contrastPairs': VscodeRoleSchemas64.contrastPairs(),
     'description': '64-role VS Code schema for dark editor themes.',
     'name': 'vscode-64-dark',
     'roles': [...VscodeRoleSchemas64.baseRoles(VscodeRoleSchemas64.#darkFraming), ...VscodeRoleSchemas64.extensionRoles(VscodeRoleSchemas64.#darkFraming)]
   });
 
-  static readonly light: RoleSchemaInterfaceTypeEntity.Type = RoleSchemaInterfaceTypeEntity.create({
+  static readonly light: RoleSchemaEntity.Type = RoleSchemaEntity.create({
     'contrastPairs': VscodeRoleSchemas64.contrastPairs(),
     'description': '64-role VS Code schema for light editor themes.',
     'name': 'vscode-64-light',
     'roles': [...VscodeRoleSchemas64.baseRoles(VscodeRoleSchemas64.#lightFraming), ...VscodeRoleSchemas64.extensionRoles(VscodeRoleSchemas64.#lightFraming)]
   });
 
-  static contrastPairs(): ContrastPairInterfaceTypeEntity.Type[] {
+  static contrastPairs(): ContrastPairEntity.Type[] {
     const rawPairs = [
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'foreground', 'minimumContrastRatio': 7.0 },
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'comment', 'minimumContrastRatio': 4.5 },
@@ -49,7 +49,7 @@ class VscodeRoleSchemas64 {
       { 'algorithm': 'wcag21', 'background': 'background', 'foreground': 'link', 'minimumContrastRatio': 4.5 },
       { 'algorithm': 'wcag21', 'background': 'chrome', 'foreground': 'chromeForeground', 'minimumContrastRatio': 4.5 }
     ];
-    const result = rawPairs.map(ContrastPairInterfaceTypeEntity.create);
+    const result = rawPairs.map(ContrastPairEntity.create);
     return result;
   }
 
@@ -57,7 +57,7 @@ class VscodeRoleSchemas64 {
     readonly 'accentLightnessOffset': number;
     readonly 'range': (dark: [number, number], light: [number, number]) => [number, number];
     readonly 'surfaceLightnessOffset': number;
-  }): RoleDefinitionInterfaceTypeEntity.Type[] {
+  }): RoleDefinitionEntity.Type[] {
     const semanticChroma = framing.range([0.06, 0.18], [0.05, 0.16]);
     const semanticLightness = framing.range([0.60, 0.80], [0.28, 0.48]);
     const accentChroma = framing.range([0.06, 0.18], [0.05, 0.16]);
@@ -88,7 +88,7 @@ class VscodeRoleSchemas64 {
     readonly 'accentLightnessOffset': number;
     readonly 'range': (dark: [number, number], light: [number, number]) => [number, number];
     readonly 'surfaceLightnessOffset': number;
-  }): RoleDefinitionInterfaceTypeEntity.Type[] {
+  }): RoleDefinitionEntity.Type[] {
     const uiChroma: [number, number] = [0.04, 0.14];
     const uiLightness = framing.range([0.42, 0.62], [0.44, 0.62]);
     const surfaceLightness = framing.range([0.10, 0.30], [0.70, 0.94]);
@@ -160,9 +160,9 @@ class VscodeRoleSchemas64 {
     chromaRange: [number, number],
     lightnessRange: [number, number],
     ...derivation: readonly [string | undefined, number | undefined, { readonly 'chromaScale'?: number; readonly 'lightnessOffset'?: number }?]
-  ): RoleDefinitionInterfaceTypeEntity.Type {
+  ): RoleDefinitionEntity.Type {
     const [derivedFrom, hueOffset, options = {}] = derivation;
-    const definition = RoleDefinitionInterfaceTypeEntity.create({
+    const definition = RoleDefinitionEntity.create({
       'chromaRange': chromaRange,
       'description': description,
       ...(classification.length === 0 ? {} : { 'intent': classification }),

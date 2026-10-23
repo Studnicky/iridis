@@ -1,12 +1,12 @@
 import type { PaletteStateInterface, PipelineContextInterface, TaskInterface } from '@studnicky/iridis';
 
-import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 import { JsonObject } from '@studnicky/types/node';
 
 import { VSCODE_SCOPE_MAPPINGS } from '../constants/VscodeScopeMappings.ts';
 import { FONT_STYLES } from '../data/fontStyles.ts';
-import { SemanticRuleEntryInterfaceTypeEntity } from '../entities/SemanticRuleEntryInterfaceTypeEntity.ts';
+import { SemanticRuleEntryEntity } from '../entities/SemanticRuleEntryEntity.ts';
 import { VscodeMetadata } from '../VscodeMetadata.ts';
 
 class SemanticRuleStyle {
@@ -16,7 +16,7 @@ class SemanticRuleStyle {
     return result;
   }
 
-  static entry(selector: string, rule: SemanticRuleEntryInterfaceTypeEntity.Type): SemanticRuleEntryInterfaceTypeEntity.Type {
+  static entry(selector: string, rule: SemanticRuleEntryEntity.Type): SemanticRuleEntryEntity.Type {
     const foreground = typeof rule.foreground === 'string' && rule.foreground.length > 0 ? rule.foreground : undefined;
     const candidateFontStyle = typeof rule.fontStyle === 'string' ? rule.fontStyle : SemanticRuleStyle.defaultFontStyle(selector);
     const fontStyle = candidateFontStyle !== undefined && candidateFontStyle.length > 0 ? candidateFontStyle : undefined;
@@ -24,7 +24,7 @@ class SemanticRuleStyle {
       ...(fontStyle === undefined ? {} : { 'fontStyle': fontStyle }),
       ...(foreground === undefined ? {} : { 'foreground': foreground })
     };
-    const result = SemanticRuleEntryInterfaceTypeEntity.create(candidate);
+    const result = SemanticRuleEntryEntity.create(candidate);
     return result;
   }
 }
@@ -32,7 +32,7 @@ class SemanticRuleStyle {
 class EmitVscodeSemanticRules implements TaskInterface {
   readonly 'name' = 'emit:vscodeSemanticRules';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Shapes the semantic token rule map for VS Code editor.semanticTokenColorCustomizations.rules using SCOPE_MAPPINGS and FONT_STYLES.',
     'name':        'emit:vscodeSemanticRules',
     'reads':       ['metadata.vscode:semanticTokenRules', 'metadata.vscode:baseTokens'],
@@ -42,7 +42,7 @@ class EmitVscodeSemanticRules implements TaskInterface {
 
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const semanticRules = VscodeMetadata.semanticTokenRules(state.metadata);
-    const emittedRules = new Map<string, SemanticRuleEntryInterfaceTypeEntity.Type>();
+    const emittedRules = new Map<string, SemanticRuleEntryEntity.Type>();
     for (const [selector, rule] of semanticRules) {
       emittedRules.set(selector, SemanticRuleStyle.entry(selector, rule));
     }

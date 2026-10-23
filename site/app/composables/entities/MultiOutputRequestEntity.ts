@@ -1,7 +1,7 @@
 import type { CanonicalShapeType, NominalSchemaType } from '@studnicky/json-tology/types';
 
 import { EntityCompiler } from '@studnicky/entity/browser';
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity } from '@studnicky/iridis';
 
 /** Canonical request passed from reactive site state into the multi-output pipeline. */
 export namespace MultiOutputRequestEntity {
@@ -9,10 +9,9 @@ export namespace MultiOutputRequestEntity {
     '$id': 'https://iridis.dev/site/multi-output-request',
     'additionalProperties': false,
     'properties': {
-      'contrastStrictness': { 'enum': [0, 1, 2], 'type': 'number' },
-      'input':              InputInterfaceTypeEntity.Schema
+      'input': InputEntity.Schema
     },
-    'required': ['contrastStrictness', 'input'],
+    'required': ['input'],
     'type': 'object'
   } as const;
 

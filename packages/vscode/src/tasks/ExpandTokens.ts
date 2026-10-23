@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceTypeEntity, PaletteStateInterface, PipelineContextInterface, TaskInterface } from '@studnicky/iridis';
+import type { ColorRecordEntity, PaletteStateInterface, PipelineContextInterface, TaskInterface } from '@studnicky/iridis';
 
 import { ModuleError } from '@studnicky/errors/node';
 import {
@@ -10,19 +10,19 @@ import {
   lighten,
   mixHsl,
   saturate,
-  TaskManifestInterfaceTypeEntity
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 import { JsonObject } from '@studnicky/types/node';
 
 import { VscodeTokenData } from '../data/VscodeTokenData.ts';
-import { DerivationParametersInterfaceTypeEntity } from '../entities/DerivationParametersInterfaceTypeEntity.ts';
+import { DerivationParametersEntity } from '../entities/DerivationParametersEntity.ts';
 
 class TokenDerivation {
   static readonly #familyByToken = new Map(Object.entries(VscodeTokenData.TOKEN_FAMILY));
   static readonly #parametersByToken = new Map(Object.entries(VscodeTokenData.DERIVATION_PARAMETERS));
 
-  static apply(color: ColorRecordInterfaceTypeEntity.Type, parameters: DerivationParametersInterfaceTypeEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+  static apply(color: ColorRecordEntity.Type, parameters: DerivationParametersEntity.Type): ColorRecordEntity.Type {
     const hueShifted = parameters.hue === undefined || parameters.hue === 0 ? color : hueShift.apply(color, parameters.hue);
     const saturationAdjusted = TokenDerivation.#saturation(hueShifted, parameters.sat);
     const result = TokenDerivation.#lightness(saturationAdjusted, parameters.light);
@@ -34,15 +34,15 @@ class TokenDerivation {
     return result;
   }
 
-  static parameters(tokenType: string): DerivationParametersInterfaceTypeEntity.Type {
-    const result = TokenDerivation.#parametersByToken.get(tokenType) ?? DerivationParametersInterfaceTypeEntity.create({});
+  static parameters(tokenType: string): DerivationParametersEntity.Type {
+    const result = TokenDerivation.#parametersByToken.get(tokenType) ?? DerivationParametersEntity.create({});
     return result;
   }
 
-  static requiredRoles(roles: ReadonlyMap<string, ColorRecordInterfaceTypeEntity.Type>): {
-    readonly 'background': ColorRecordInterfaceTypeEntity.Type;
-    readonly 'foreground': ColorRecordInterfaceTypeEntity.Type;
-    readonly 'muted': ColorRecordInterfaceTypeEntity.Type;
+  static requiredRoles(roles: ReadonlyMap<string, ColorRecordEntity.Type>): {
+    readonly 'background': ColorRecordEntity.Type;
+    readonly 'foreground': ColorRecordEntity.Type;
+    readonly 'muted': ColorRecordEntity.Type;
   } {
     const background = roles.get('background');
     const muted = roles.get('muted');
@@ -61,7 +61,7 @@ class TokenDerivation {
     return result;
   }
 
-  static #lightness(color: ColorRecordInterfaceTypeEntity.Type, lightness: number | undefined): ColorRecordInterfaceTypeEntity.Type {
+  static #lightness(color: ColorRecordEntity.Type, lightness: number | undefined): ColorRecordEntity.Type {
     if (lightness === undefined || lightness === 0) {
       return color;
     }
@@ -70,7 +70,7 @@ class TokenDerivation {
     return result;
   }
 
-  static #saturation(color: ColorRecordInterfaceTypeEntity.Type, saturation: number | undefined): ColorRecordInterfaceTypeEntity.Type {
+  static #saturation(color: ColorRecordEntity.Type, saturation: number | undefined): ColorRecordEntity.Type {
     if (saturation === undefined || saturation === 0) {
       return color;
     }
@@ -83,7 +83,7 @@ class TokenDerivation {
 class ExpandTokens implements TaskInterface {
   readonly 'name' = 'vscode:expandTokens';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Derives 27 VS Code base token colours from the 16 palette roles using derivation parameters.',
     'name':        'vscode:expandTokens',
     'reads':       ['roles', 'runtime.framing', 'variants'],
@@ -93,7 +93,7 @@ class ExpandTokens implements TaskInterface {
   run(state: PaletteStateInterface, context: PipelineContextInterface): void {
     const roleRecords = new Map(Object.entries(FramingSurface.resolve(state)));
     const requiredRoles = TokenDerivation.requiredRoles(roleRecords);
-    const baseTokens = new Map<string, ColorRecordInterfaceTypeEntity.Type>();
+    const baseTokens = new Map<string, ColorRecordEntity.Type>();
     const tokenTypes = VscodeTokenData.TOKEN_TYPES;
     for (let index = 0; index < tokenTypes.length; index += 1) {
       const tokenType = tokenTypes.at(index);

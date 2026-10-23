@@ -20,10 +20,10 @@
  *           rod-only viewing).
  */
 
-import { CvdMatrixInterfaceTypeEntity } from '../entities/CvdMatrixInterfaceTypeEntity.ts';
+import { CvdMatrixEntity } from '../entities/CvdMatrixEntity.ts';
 
 /** Protanopia: L-cone (red) absent. [MOF09], severity 1.0. */
-export const cvdMatrices: readonly CvdMatrixInterfaceTypeEntity.Type[] = [{
+export const cvdMatrices: readonly CvdMatrixEntity.Type[] = [{
   'matrix': [
     0.152286, 1.052583, -0.204868,
     0.114503, 0.786281,  0.099216,
@@ -68,6 +68,6 @@ export const cvdMatrices: readonly CvdMatrixInterfaceTypeEntity.Type[] = [{
   ],
   'name':   'achromatopsia'
 }].map((matrix) => {
-  const result = CvdMatrixInterfaceTypeEntity.intake(matrix);
+  const result = CvdMatrixEntity.intake(matrix);
   return result;
 });

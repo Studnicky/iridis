@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { EngineMetadataInterfaceTypeEntity } from '../../src/entities/EngineMetadataInterfaceTypeEntity.ts';
-import { RoleProvenanceInterfaceTypeEntity } from '../../src/entities/RoleProvenanceInterfaceTypeEntity.ts';
+import { EngineMetadataEntity } from '../../src/entities/EngineMetadataEntity.ts';
+import { RoleProvenanceEntity } from '../../src/entities/RoleProvenanceEntity.ts';
 
 await test('role provenance preserves stated roles and records derived adjustments', () => {
   const stated = {
@@ -18,9 +18,9 @@ await test('role provenance preserves stated roles and records derived adjustmen
     'origin': 'derived'
   };
 
-  assert.strictEqual(RoleProvenanceInterfaceTypeEntity.validate(stated), true);
-  assert.strictEqual(RoleProvenanceInterfaceTypeEntity.validate(derived), true);
-  assert.strictEqual(EngineMetadataInterfaceTypeEntity.validate({
+  assert.strictEqual(RoleProvenanceEntity.validate(stated), true);
+  assert.strictEqual(RoleProvenanceEntity.validate(derived), true);
+  assert.strictEqual(EngineMetadataEntity.validate({
     'core:roleProvenance': {
       'type': stated
     }
@@ -28,7 +28,7 @@ await test('role provenance preserves stated roles and records derived adjustmen
 });
 
 await test('engine metadata accepts canonical provenance and rejects retired resolution metadata', () => {
-  assert.strictEqual(EngineMetadataInterfaceTypeEntity.validate({
+  assert.strictEqual(EngineMetadataEntity.validate({
     'core:roleProvenance': {
       'type': {
         'adjustments': [],
@@ -36,18 +36,18 @@ await test('engine metadata accepts canonical provenance and rejects retired res
       }
     }
   }), true);
-  assert.strictEqual(EngineMetadataInterfaceTypeEntity.validate({ 'core:roleClamps': {} }), false);
-  assert.strictEqual(EngineMetadataInterfaceTypeEntity.validate({ 'core:rolesDerived': [] }), false);
-  assert.strictEqual(EngineMetadataInterfaceTypeEntity.validate({ 'core:rolesPinned': [] }), false);
-  assert.strictEqual(EngineMetadataInterfaceTypeEntity.validate({ 'core:rolesSynthesized': [] }), false);
+  assert.strictEqual(EngineMetadataEntity.validate({ 'core:roleClamps': {} }), false);
+  assert.strictEqual(EngineMetadataEntity.validate({ 'core:rolesDerived': [] }), false);
+  assert.strictEqual(EngineMetadataEntity.validate({ 'core:rolesPinned': [] }), false);
+  assert.strictEqual(EngineMetadataEntity.validate({ 'core:rolesSynthesized': [] }), false);
 });
 
 await test('role provenance rejects unknown origins and unsupported stated transformations', () => {
-  assert.strictEqual(RoleProvenanceInterfaceTypeEntity.validate({
+  assert.strictEqual(RoleProvenanceEntity.validate({
     'adjustments': [],
     'origin': 'pinned'
   }), false);
-  assert.strictEqual(RoleProvenanceInterfaceTypeEntity.validate({
+  assert.strictEqual(RoleProvenanceEntity.validate({
     'adjustments': [{
       'afterHex':  '#afa073',
       'beforeHex': '#a898c3',
@@ -55,7 +55,7 @@ await test('role provenance rejects unknown origins and unsupported stated trans
     }],
     'origin': 'stated'
   }), false);
-  assert.strictEqual(RoleProvenanceInterfaceTypeEntity.validate({
+  assert.strictEqual(RoleProvenanceEntity.validate({
     'adjustments': [{
       'afterHex': '#b2a478',
       'operation': 'contrast'

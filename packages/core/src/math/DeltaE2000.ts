@@ -1,7 +1,7 @@
 // Delta E 2000 computed via OKLCH-derived Lab (D65). OKLCH is a direct reparametrisation
 // of OKLab, so (L, a*, b*) = (oklch.l, c*cos(h), c*sin(h)) in the OKLab encoding.
 // The CIE ΔE 2000 formula is applied to these Lab values per Sharma et al. 2005.
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 
 class OklabConversion {
   static from(l: number, c: number, h: number): [number, number, number] {
@@ -26,7 +26,7 @@ class AngleUnits {
 class DeltaE2000 {
   readonly 'name' = 'deltaE2000';
 
-  apply(a: ColorRecordInterfaceTypeEntity.Type, b: ColorRecordInterfaceTypeEntity.Type): number {
+  apply(a: ColorRecordEntity.Type, b: ColorRecordEntity.Type): number {
     const [L1, a1, b1] = OklabConversion.from(a.oklch.l, a.oklch.c, a.oklch.h);
     const [L2, a2, b2] = OklabConversion.from(b.oklch.l, b.oklch.c, b.oklch.h);
 

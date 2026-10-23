@@ -1,6 +1,6 @@
-import type { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import type { InputEntity } from '@studnicky/iridis';
 
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../../_runner/ScenarioInterface.ts';
@@ -13,9 +13,9 @@ import { StylesheetScenarioPatterns } from '../StylesheetScenarioPatterns.ts';
 import { StylesheetWideGamutScenarioPatterns } from '../StylesheetWideGamutScenarioPatterns.ts';
 
 interface CellFiveInputInterface {
-  readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
+  readonly 'colors': InputEntity.Type['colors'];
   readonly 'pipeline': readonly string[];
-  readonly 'roles': RoleSchemaInterfaceTypeEntity.Type;
+  readonly 'roles': RoleSchemaEntity.Type;
 }
 
 /** Frozen behavioral scenarios for emit:cssVars wide-gamut fallback chains. */
@@ -23,7 +23,7 @@ export class StylesheetCellFiveScenarioSuite {
   private static readonly oklchPipeline = Object.freeze(['intake:oklch', 'resolve:roles', 'emit:cssVars']);
   private static readonly p3Pipeline = Object.freeze(['intake:p3', 'resolve:roles', 'emit:cssVars']);
   private static readonly srgbPipeline = Object.freeze(['intake:hex', 'resolve:roles', 'emit:cssVars']);
-  private static readonly wideGamutRoles = RoleSchemaInterfaceTypeEntity.intake({
+  private static readonly wideGamutRoles = RoleSchemaEntity.intake({
     'name': 'wide-gamut',
     'roles': [{
       'chromaRange': [0, 0.5],

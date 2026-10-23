@@ -11,7 +11,7 @@
 
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
-import { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import { PaletteEntity } from '@studnicky/iridis-algebra';
 import { evaluate } from '@studnicky/iridis-anima';
 import { ClockBinding } from '@studnicky/iridis-pulse';
 import { onScopeDispose } from 'vue';
@@ -29,7 +29,7 @@ class ViteModule {
 }
 
 declare class FrameRecorderInterface {
-  record(frame: PaletteInterfaceTypeEntity.Type): void;
+  record(frame: PaletteEntity.Type): void;
 }
 
 declare class LivingBackgroundInvocationOptions {
@@ -65,19 +65,19 @@ class Loop {
 
     const { 'framing': framing, 'roleViews': roleViews } = useIridis();
 
-    let from = PaletteInterfaceTypeEntity.intake(buildDecorativePalette(roleViews.value));
-    let to = PaletteInterfaceTypeEntity.intake(driftTarget(from));
+    let from = PaletteEntity.intake(buildDecorativePalette(roleViews.value));
+    let to = PaletteEntity.intake(driftTarget(from));
     let clock = ClockBinding.create({ 'durationMs': LIVING_BACKGROUND.CYCLE_MS, 'mode': 'real' });
 
     const tick = (): void => {
       if (isPaused || activeConsumers <= 0) { return; }
-      from = PaletteInterfaceTypeEntity.intake(resolveFromPalette(from, roleViews.value));
+      from = PaletteEntity.intake(resolveFromPalette(from, roleViews.value));
       if (Object.keys(from).length > 0) {
         if (Object.keys(to).length === 0) {
-          to = PaletteInterfaceTypeEntity.intake(driftTarget(from));
+          to = PaletteEntity.intake(driftTarget(from));
         }
         const t = clock.t;
-        const frame = PaletteInterfaceTypeEntity.intake(evaluate(from, to, t));
+        const frame = PaletteEntity.intake(evaluate(from, to, t));
         const tokens = tokensForFrame(frame);
         if (framing.value === 'dark') {
           Tokens.applyDark(tokens);
@@ -88,8 +88,8 @@ class Loop {
           recorder.record(frame);
         });
         if (t >= 1) {
-          from = PaletteInterfaceTypeEntity.intake(buildDecorativePalette(roleViews.value));
-          to = PaletteInterfaceTypeEntity.intake(driftTarget(from));
+          from = PaletteEntity.intake(buildDecorativePalette(roleViews.value));
+          to = PaletteEntity.intake(driftTarget(from));
           clock = ClockBinding.create({ 'durationMs': LIVING_BACKGROUND.CYCLE_MS, 'mode': 'real' });
         }
       }

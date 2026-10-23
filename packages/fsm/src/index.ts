@@ -1,7 +1,7 @@
 export { PaletteStateMachine } from './PaletteStateMachine.ts';
 
 export type {
-  PaletteStateInterfaceType,
+  PaletteStateEntity,
   PaletteStateSchemaType,
   PaletteTransitionTableType
 } from './types/index.ts';

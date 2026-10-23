@@ -27,7 +27,7 @@ npm install @studnicky/iridis-fsm
 ## Usage
 
 ```ts
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import type {
   PaletteStateSchemaType,
@@ -36,9 +36,9 @@ import type {
 
 import { PaletteStateMachine } from '@studnicky/iridis-fsm';
 
-const idle: PaletteInterfaceType  = { accent: { l: 0.5,  c: 0.05, h: 200 } };
-const alert: PaletteInterfaceType = { accent: { l: 0.6,  c: 0.20, h: 20  } };
-const focus: PaletteInterfaceType = { accent: { l: 0.55, c: 0.15, h: 260 } };
+const idle: PaletteEntity  = { accent: { l: 0.5,  c: 0.05, h: 200 } };
+const alert: PaletteEntity = { accent: { l: 0.6,  c: 0.20, h: 20  } };
+const focus: PaletteEntity = { accent: { l: 0.55, c: 0.15, h: 260 } };
 
 const states: PaletteStateSchemaType = {
   alert: { palette: alert },
@@ -57,7 +57,7 @@ class SiteMachine extends PaletteStateMachine {
     super(states, transitions, 'idle');
   }
 
-  protected override onTick(palette: PaletteInterfaceType, t: number): void {
+  protected override onTick(palette: PaletteEntity, t: number): void {
     // apply `palette` to your document, e.g. one CSS custom property per role
   }
 

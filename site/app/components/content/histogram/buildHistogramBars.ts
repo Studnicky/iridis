@@ -1,4 +1,4 @@
-import type { GalleryHistogramSlotInterfaceType } from '@studnicky/iridis-image/types';
+import type { GalleryHistogramSlotInterface } from '@studnicky/iridis-image/types';
 
 class HistogramBar {
   public readonly h: number;
@@ -12,7 +12,7 @@ class HistogramBar {
 
 export const buildHistogramBars = class HistogramBarsBuilder {
   public static build(
-    bins: readonly GalleryHistogramSlotInterfaceType['bins'][number][]
+    bins: readonly GalleryHistogramSlotInterface['bins'][number][]
   ): readonly HistogramBar[] {
     const sortedBins = [...bins].sort((left, right) => {
       const hueDifference = this.resolveHue(left.hex) - this.resolveHue(right.hex);

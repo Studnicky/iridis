@@ -1,7 +1,7 @@
 import type { CliConfigInterface } from '@studnicky/iridis-cli/types';
 import type { PaletteStateInterface } from '@studnicky/iridis/model';
 
-import { InputInterfaceTypeEntity, RuntimeOptionsInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity, RuntimeOptionsEntity } from '@studnicky/iridis';
 import { CliConfigEntity } from '@studnicky/iridis-cli';
 import { JsonValue } from '@studnicky/types/node';
 import { mkdtemp } from 'node:fs/promises';
@@ -16,8 +16,8 @@ export class OutputWriterTestFixture {
   }
 
   static state(): PaletteStateInterface {
-    const input = InputInterfaceTypeEntity.create({ 'colors': [] });
-    const runtime = RuntimeOptionsInterfaceTypeEntity.create({});
+    const input = InputEntity.create({ 'colors': [] });
+    const runtime = RuntimeOptionsEntity.create({});
     const result: PaletteStateInterface = {
       'colors': [],
       'input': input,

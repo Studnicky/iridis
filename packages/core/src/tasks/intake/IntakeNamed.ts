@@ -2,12 +2,12 @@ import { ValidationError } from '@studnicky/errors/node';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 const CSS_NAMED_COLORS: Readonly<Record<string, string>> = {
@@ -170,7 +170,7 @@ const CSS_NAMED_COLORS: Readonly<Record<string, string>> = {
 class IntakeNamed implements TaskInterface {
   readonly 'name' = 'intake:named';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Parses CSS named color strings (e.g. "rebeccapurple") into ColorRecord entries. Throws on unrecognised input.',
     'name':        'intake:named',
     'reads':       ['input.colors'],
@@ -182,7 +182,7 @@ class IntakeNamed implements TaskInterface {
    * a recognized CSS named color string.
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+  parse(raw: ColorInputEntity.Type): ColorRecordEntity.Type {
     if (typeof raw !== 'string') {
       throw ValidationError.create({
         'message': 'intake:named — expected a string input',
@@ -216,7 +216,7 @@ class IntakeNamed implements TaskInterface {
    * Extracted from {@link IntakeNamed.run} so the loop body contains only
    * a function call, not a try-catch, per V8 optimization guidance.
    */
-  private parseEntry(raw: ColorInputEntity.Type, index: number): ColorRecordInterfaceTypeEntity.Type {
+  private parseEntry(raw: ColorInputEntity.Type, index: number): ColorRecordEntity.Type {
     try {
       const result = this.parse(raw);
       return result;

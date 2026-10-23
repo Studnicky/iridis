@@ -33,9 +33,9 @@ import type { ErrorPathInputEntity } from './entities/ErrorPathInputEntity.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 import { Engine } from '../../src/engine/Engine.ts';
-import { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
+import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { PaletteRoleState } from '../../src/interfaces/PaletteStateInterface.ts';
 import { ContextOutputEntity } from './entities/ContextOutputEntity.ts';
 import { EdgeInputsOutputEntity } from './entities/EdgeInputsOutputEntity.ts';
@@ -52,7 +52,7 @@ class StubTasks {
     for (let index = 0; index < state.input.colors.length; index += 1) {
       const raw = state.input.colors[index];
       const hex = typeof raw === 'string' ? raw : '#000000';
-      state.colors.push(ColorRecordInterfaceTypeEntity.create({
+      state.colors.push(ColorRecordEntity.create({
         'alpha': 1,
         'hex': hex,
         'oklch': { 'c': 0.1, 'h': 0, 'l': 0.5 },
@@ -87,7 +87,7 @@ class StubTasks {
 
   static intakeTask(): TaskInterface {
     return {
-      'manifest': TaskManifestInterfaceTypeEntity.create({
+      'manifest': TaskManifestEntity.create({
         'name': 'stub:intake',
         'reads': ['input.colors'],
         'writes': ['colors']
@@ -99,7 +99,7 @@ class StubTasks {
 
   static transformTask(): TaskInterface {
     return {
-      'manifest': TaskManifestInterfaceTypeEntity.create({
+      'manifest': TaskManifestEntity.create({
         'name': 'stub:transform',
         'reads': ['colors'],
         'writes': ['roles']
@@ -111,7 +111,7 @@ class StubTasks {
 
   static emitTask(): TaskInterface {
     return {
-      'manifest': TaskManifestInterfaceTypeEntity.create({
+      'manifest': TaskManifestEntity.create({
         'name': 'stub:emit',
         'reads': ['roles'],
         'writes': ['outputs.stub']
@@ -144,7 +144,7 @@ class StubTasks {
 //   - pass input.metadata through to state.metadata unchanged
 // ---------------------------------------------------------------------------
 
-new ScenarioRunner<InputInterfaceTypeEntity.Type, StateFlowOutputEntity.Type>(
+new ScenarioRunner<InputEntity.Type, StateFlowOutputEntity.Type>(
   'Pipeline.integration :: cell-1 :: state-flow',
   (input) => {
     const engine = new Engine();
@@ -199,12 +199,12 @@ void test('Pipeline.integration :: cell-2 :: context :: tasks receive one contex
   }
 
   const loggerInspector: TaskInterface = {
-    'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'inspect:logger' }),
+    'manifest': TaskManifestEntity.create({ 'name': 'inspect:logger' }),
     'name': 'inspect:logger',
     'run': inspectLoggerRun
   };
   const timestampInspector: TaskInterface = {
-    'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'inspect:timestamp' }),
+    'manifest': TaskManifestEntity.create({ 'name': 'inspect:timestamp' }),
     'name': 'inspect:timestamp',
     'run': inspectTimestampRun
   };
@@ -217,7 +217,7 @@ void test('Pipeline.integration :: cell-2 :: context :: tasks receive one contex
     'version': '0.0.1'
   });
   engine.pipeline(['inspect:logger', 'inspect:timestamp']);
-  const input = InputInterfaceTypeEntity.intake({ 'colors': [] });
+  const input = InputEntity.intake({ 'colors': [] });
   const runStartedAt = Date.now();
   engine.run(input);
   const runCompletedAt = Date.now();
@@ -250,7 +250,7 @@ new ScenarioRunner<EdgeInputsInputEntity.Type, EdgeInputsOutputEntity.Type>(
       const engine = new Engine();
       engine.adopt(StubTasks.plugin());
       engine.pipeline(['stub:intake', 'stub:transform', 'stub:emit']);
-      const runInput = InputInterfaceTypeEntity.intake({ 'colors': [] });
+      const runInput = InputEntity.intake({ 'colors': [] });
       const state = engine.run(runInput);
       const stub = state.outputs.stub;
       const result = EdgeInputsOutputEntity.create({
@@ -273,7 +273,7 @@ new ScenarioRunner<EdgeInputsInputEntity.Type, EdgeInputsOutputEntity.Type>(
       roleState.commit();
     }
     const multiTransform: TaskInterface = {
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'stub:transform' }),
+      'manifest': TaskManifestEntity.create({ 'name': 'stub:transform' }),
       'name': 'stub:transform',
       'run': multiTransformRun
     };
@@ -286,7 +286,7 @@ new ScenarioRunner<EdgeInputsInputEntity.Type, EdgeInputsOutputEntity.Type>(
     const engine = new Engine();
     engine.adopt(plugin);
     engine.pipeline(['stub:intake', 'stub:transform', 'stub:emit']);
-    const multiColorInput = InputInterfaceTypeEntity.intake({ 'colors': ['#ff0000', '#00ff00', '#0000ff'] });
+    const multiColorInput = InputEntity.intake({ 'colors': ['#ff0000', '#00ff00', '#0000ff'] });
     const state = engine.run(multiColorInput);
     const stub = state.outputs.stub;
     const result = EdgeInputsOutputEntity.create({
@@ -311,7 +311,7 @@ new ScenarioRunner<ErrorPathInputEntity.Type, ErrorPathOutputEntity.Type>(
     const engine = new Engine();
     function errorTaskRun(): void { throw new Error(input.message); }
     const errorTask: TaskInterface = {
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': 'task:throws' }),
+      'manifest': TaskManifestEntity.create({ 'name': 'task:throws' }),
       'name': 'task:throws',
       'run': errorTaskRun
     };
@@ -322,7 +322,7 @@ new ScenarioRunner<ErrorPathInputEntity.Type, ErrorPathOutputEntity.Type>(
       'version': '0.0.1'
     });
     engine.pipeline(['task:throws']);
-    const runInput = InputInterfaceTypeEntity.intake({ 'colors': ['#000'] });
+    const runInput = InputEntity.intake({ 'colors': ['#000'] });
     engine.run(runInput);
     const result = ErrorPathOutputEntity.create({});
     return result;

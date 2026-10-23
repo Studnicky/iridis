@@ -1,3 +1,3 @@
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 
-export const roleSchemaFor = RoleSchemaInterfaceTypeEntity.intake;
+export const roleSchemaFor = RoleSchemaEntity.intake;

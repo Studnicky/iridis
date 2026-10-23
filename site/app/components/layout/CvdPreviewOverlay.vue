@@ -2,12 +2,11 @@
 /**
  * Visual CVD preview: a real SVG filter that recolors the whole app the way
  * a person with the selected color-vision deficiency would see it. This is
- * distinct from `cvdCorrect` (packages/contrast enforce:cvdSimulate), which
- * adjusts the palette's own colors so a CVD-affected viewer can still
- * distinguish them — that's a contrast-math correction, applied unconditionally
- * to what everyone sees. This overlay is the inverse: it never touches the
- * palette, it only changes what THIS viewer sees, so a non-affected user can
- * observe the current (corrected or not) palette through simulated eyes.
+ * distinct from the always-on CVD correction (packages/contrast
+ * enforce:compliance), which adjusts the palette's own colors so a
+ * CVD-affected viewer can still distinguish them. This overlay never touches
+ * the palette, it only changes what THIS viewer sees, so a non-affected user
+ * can observe the corrected palette through simulated eyes.
  * `cvdPreviewTypes` is read-only here; the toggle UI lives in PaletteControls.vue.
  * It's a Set, not a single value — real CVD isn't always one condition, so
  * more than one type can be active at once. When it is, their filters chain:
@@ -25,7 +24,7 @@
  * browsers' own accessibility/CVD-simulation tools use for real-time filters.
  * All four filters are predefined so toggling any combination is instant.
  */
-import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { CvdMatrixEntity } from '@studnicky/iridis-contrast';
 
 import { cvdMatrices } from '@studnicky/iridis-contrast';
 import { computed } from 'vue';
@@ -37,7 +36,7 @@ const { cvdPreviewTypes } = useIridis();
 const SRGB_GAMMA = 2.2;
 
 /** Pads a row-major 3x3 RGB matrix into feColorMatrix's 4x5 grid (alpha untouched). */
-function toFeColorMatrixValues(m: CvdMatrixInterfaceTypeEntity.Type): string {
+function toFeColorMatrixValues(m: CvdMatrixEntity.Type): string {
   const v = m.matrix;
   return [
     v[0], v[1], v[2], 0, 0,

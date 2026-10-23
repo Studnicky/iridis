@@ -1,31 +1,18 @@
-import { APCA_PAIR_RESULT_SCHEMA } from './ApcaPairResultSchema.ts';
+import { ComplianceReportEntity } from '../entities/ComplianceReportEntity.ts';
+import { CVD_BLOCKED_PAIR_SCHEMA } from './CvdBlockedPairSchema.ts';
 import { CVD_CORRECTION_SCHEMA } from './CvdCorrectionSchema.ts';
 import { CVD_WARNING_SCHEMA } from './CvdWarningSchema.ts';
-import { WCAG_PAIR_RESULT_SCHEMA } from './WcagPairResultSchema.ts';
 
 export const CONTRAST_PLUGIN_SCHEMAS = Object.freeze({
-  'aa': {
-    'additionalProperties': false,
-    'properties': { 'pairs': { 'items': WCAG_PAIR_RESULT_SCHEMA, 'type': 'array' } },
-    'type': 'object'
-  },
-  'aaa': {
-    'additionalProperties': false,
-    'properties': { 'pairs': { 'items': WCAG_PAIR_RESULT_SCHEMA, 'type': 'array' } },
-    'type': 'object'
-  },
-  'apca': {
-    'additionalProperties': false,
-    'properties': { 'pairs': { 'items': APCA_PAIR_RESULT_SCHEMA, 'type': 'array' } },
-    'type': 'object'
-  },
+  'complianceReport': ComplianceReportEntity.Schema,
   'cvd': {
     'additionalProperties': false,
     'properties': {
+      'blocked': { 'items': CVD_BLOCKED_PAIR_SCHEMA, 'type': 'array' },
       'corrections': { 'items': CVD_CORRECTION_SCHEMA, 'type': 'array' },
       'warnings': { 'items': CVD_WARNING_SCHEMA, 'type': 'array' }
     },
-    'required': ['corrections', 'warnings'],
+    'required': ['blocked', 'corrections', 'warnings'],
     'type': 'object'
   }
 } as const);

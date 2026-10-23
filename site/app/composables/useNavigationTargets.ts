@@ -6,18 +6,18 @@ import { documentPanelId } from './documentPanelId.ts';
 import { PanelAccordionState } from './panelAccordionState.ts';
 import { sanitizeDocumentAnchorId } from './sanitizeDocumentAnchorId.ts';
 import { STAGE_GROUPS } from './stageGroups.ts';
-import { NavigationTargetInterfaceType } from './types/navigationTargetInterfaceType.ts';
+import { NavigationTargetInterface } from './types/NavigationTargetInterface.ts';
 
-const cardTargets: readonly NavigationTargetInterfaceType[] = STAGE_GROUPS.flatMap((group) => {
+const cardTargets: readonly NavigationTargetInterface[] = STAGE_GROUPS.flatMap((group) => {
   const result = group.items.map((item) => {
-    const result = NavigationTargetInterfaceType.card(item.key, item.label, group.name);
+    const result = NavigationTargetInterface.card(item.key, item.label, group.name);
     return result;
   });
   return result;
 });
 
-const stageTargets: readonly NavigationTargetInterfaceType[] = STAGE_GROUPS.map((group) => {
-  const result = NavigationTargetInterfaceType.stage(group.name, group.label);
+const stageTargets: readonly NavigationTargetInterface[] = STAGE_GROUPS.map((group) => {
+  const result = NavigationTargetInterface.stage(group.name, group.label);
   return result;
 });
 
@@ -39,9 +39,9 @@ class CardIndexOperation {
 /** Mutable navigation coordination owned by one Nuxt app/request. */
 class NavigationTargetsContext {
   readonly #accordionState: PanelAccordionState;
-  readonly #documentTargets = VueModule.shallowRef<readonly NavigationTargetInterfaceType[]>([]);
+  readonly #documentTargets = VueModule.shallowRef<readonly NavigationTargetInterface[]>([]);
   readonly #stageIndexSetters = new Map<string, (index: number) => void>();
-  readonly #targets = VueModule.computed<readonly NavigationTargetInterfaceType[]>(() => {
+  readonly #targets = VueModule.computed<readonly NavigationTargetInterface[]>(() => {
     const result = [...cardTargets, ...stageTargets, ...this.#documentTargets.value];
     return result;
   });
@@ -99,7 +99,7 @@ class NavigationTargetsContext {
     documents: readonly { readonly 'path': string; readonly 'title'?: string }[]
   ): void => {
     this.#documentTargets.value = documents.map((documentEntry) => {
-      const result = NavigationTargetInterfaceType.document(
+      const result = NavigationTargetInterface.document(
         sanitizeDocumentAnchorId(documentEntry.path),
         documentEntry.title ?? documentEntry.path,
         documentPanelId(documentEntry.path)

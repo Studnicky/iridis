@@ -1,7 +1,7 @@
-import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { ModuleError, ValidationError } from '@studnicky/errors/node';
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity } from '@studnicky/iridis';
 import { shadcnPlugin, ShadcnPlugin } from '@studnicky/iridis-shadcn';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
@@ -18,9 +18,9 @@ import { PluginShapeScenarioOutputEntity } from './entities/PluginShapeScenarioO
 import { ShadcnPluginScenarioFixture } from './fixtures/ShadcnPluginScenarioFixture.ts';
 
 interface ShadcnRunInputInterface {
-  readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
+  readonly 'colors': InputEntity.Type['colors'];
   readonly 'pipeline': readonly string[];
-  readonly 'roles': RoleSchemaInterfaceTypeEntity.Type | undefined;
+  readonly 'roles': RoleSchemaEntity.Type | undefined;
 }
 
 interface DeterminismOutputInterface {
@@ -33,7 +33,7 @@ interface RoleCoverageOutputInterface {
 }
 
 interface InvalidInputInputInterface {
-  readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
+  readonly 'colors': InputEntity.Type['colors'];
 }
 
 /** Registers every behavioral scenario for the public Shadcn plugin contract. */
@@ -374,7 +374,7 @@ export class ShadcnPluginScenarioSuite {
   private static runInvalidInput(input: InvalidInputInputInterface): InvalidInputOutputEntity.Type {
     const engine = ShadcnPluginScenarioFixture.freshEngine();
     engine.pipeline(ShadcnPluginScenarioFixture.hexPipeline());
-    const state = engine.run(InputInterfaceTypeEntity.create({
+    const state = engine.run(InputEntity.create({
       'colors': input.colors,
       'roles': ShadcnPluginScenarioFixture.fullCoverageRoles()
     }));

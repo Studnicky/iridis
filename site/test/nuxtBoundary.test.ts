@@ -188,7 +188,13 @@ await test('canonical VS Code tier demo keeps its controls, output, feedback, an
   assert.equal(await framingSwitch.count(), 1);
   const initialFraming = await framingSwitch.getAttribute('aria-checked');
   const initialFramingDescription = await demo.getByText('Color framing:', { 'exact': false }).textContent();
+  const revisionBeforeFlip = Number(await page.locator('html').getAttribute('data-iridis-palette-revision'));
   await framingSwitch.click();
+  await page.waitForFunction((before) => {
+    const revision = Number(document.documentElement.dataset.iridisPaletteRevision);
+    const advanced = revision > before;
+    return advanced;
+  }, revisionBeforeFlip);
   assert.notEqual(await framingSwitch.getAttribute('aria-checked'), initialFraming);
   const framingDescription = await demo.getByText('Color framing:', { 'exact': false }).textContent();
   if (framingDescription === null) { throw new Error('The canonical demo must expose its shared framing state.'); }

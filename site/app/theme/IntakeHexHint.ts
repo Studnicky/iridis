@@ -2,7 +2,7 @@ import type {
   PaletteStateInterface, PipelineContextInterface, TaskInterface
 } from '@studnicky/iridis';
 
-import { colorRecordFactory, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { colorRecordFactory, TaskManifestEntity } from '@studnicky/iridis';
 
 import { SeedInputEntity } from './types/SeedInputEntity.ts';
 
@@ -16,7 +16,7 @@ import { SeedInputEntity } from './types/SeedInputEntity.ts';
 class IntakeHexHint implements TaskInterface {
   readonly 'name' = 'intake:hexHint';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Parses hex strings or {hex, role} pin objects into ColorRecords, attaching hints.role when a role is pinned.',
     'name':        'intake:hexHint',
     'reads':       ['input.colors'],

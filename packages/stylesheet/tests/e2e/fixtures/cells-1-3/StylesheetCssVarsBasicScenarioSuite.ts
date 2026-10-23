@@ -1,4 +1,4 @@
-import { type InputInterfaceTypeEntity, RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { type InputEntity, RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../../_runner/ScenarioInterface.ts';
@@ -10,12 +10,12 @@ import { StylesheetScenarioFixture } from '../StylesheetScenarioFixture.ts';
 import { StylesheetCellsOneToThreeScenarioPatterns } from './StylesheetCellsOneToThreeScenarioPatterns.ts';
 
 interface CssVarsBasicInputInterface {
-  readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
+  readonly 'colors': InputEntity.Type['colors'];
   readonly 'pipeline': readonly string[];
-  readonly 'roles': RoleSchemaInterfaceTypeEntity.Type;
+  readonly 'roles': RoleSchemaEntity.Type;
 }
 
-const allIntentRoles = RoleSchemaInterfaceTypeEntity.intake({
+const allIntentRoles = RoleSchemaEntity.intake({
   'name': 'all-intent',
   'roles': [
     { 'intent': 'background', 'name': 'bg', 'required': true },

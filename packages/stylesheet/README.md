@@ -25,27 +25,29 @@ the `@studnicky` scope before installing:
 ```
 
 ```bash
-npm install @studnicky/iridis @studnicky/iridis-stylesheet
+npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-stylesheet
 ```
 
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks }  from '@studnicky/iridis';
+import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { stylesheetPlugin }   from '@studnicky/iridis-stylesheet';
 
-export function generateStylesheet(roleSchema: RoleSchemaInterfaceType) {
+export function generateStylesheet(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(stylesheetPlugin);
+  engine.adopt(contrastPlugin);
 
   engine.pipeline([
     'intake:any',
     'resolve:roles',
     'expand:family',
-    'enforce:contrast',
+    'enforce:compliance',
     'derive:variant',
     'emit:cssVars',
   ]);
@@ -55,7 +57,7 @@ export function generateStylesheet(roleSchema: RoleSchemaInterfaceType) {
     'colors':   ['#8B5CF6'],
     'contrast': {
       'algorithm':  'wcag21',
-      'cvdCorrect': undefined,
+      'cvdMode': 'nudge',
       'extra':      undefined,
       'level':      'AA',
     },
@@ -71,7 +73,7 @@ export function generateStylesheet(roleSchema: RoleSchemaInterfaceType) {
 }
 ```
 
-`CssVarsOutputInterfaceType` describes the object written to
+`CssVarsOutputEntity` describes the object written to
 `state.outputs['stylesheet:cssVars']`:
 
 | Field | Shape | Notes |

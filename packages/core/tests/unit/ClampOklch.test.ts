@@ -9,30 +9,30 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import type { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../src/interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../src/interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../src/interfaces/TaskInterface.ts';
 
 import { Engine } from '../../src/engine/Engine.ts';
-import { ColorHintsInterfaceTypeEntity } from '../../src/entities/ColorHintsInterfaceTypeEntity.ts';
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
-import { RoleSchemaInterfaceTypeEntity } from '../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { ColorHintsEntity } from '../../src/entities/ColorHintsEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
+import { RoleSchemaEntity } from '../../src/entities/RoleSchemaEntity.ts';
+import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 
 class SeedColorTask implements TaskInterface {
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'name': 'seed:onRunStart',
     'phase': 'onRunStart'
   });
 
   readonly 'name' = 'seed:onRunStart';
 
-  readonly #color: ColorRecordInterfaceTypeEntity.Type;
+  readonly #color: ColorRecordEntity.Type;
 
-  constructor(color: ColorRecordInterfaceTypeEntity.Type) {
+  constructor(color: ColorRecordEntity.Type) {
     this.#color = color;
   }
 
@@ -42,7 +42,7 @@ class SeedColorTask implements TaskInterface {
 }
 
 class ClampOklchFixture {
-  static engine(seed: ColorRecordInterfaceTypeEntity.Type): Engine {
+  static engine(seed: ColorRecordEntity.Type): Engine {
     const engine = new Engine();
     const taskCount = coreTasks.length;
     for (let index = 0; index < taskCount; index += 1) {
@@ -56,20 +56,20 @@ class ClampOklchFixture {
     return engine;
   }
 
-  static input(roles?: RoleSchemaInterfaceTypeEntity.Type): InputInterfaceTypeEntity.Type {
+  static input(roles?: RoleSchemaEntity.Type): InputEntity.Type {
     const candidate = {
       'colors': [],
       ...(roles === undefined ? {} : { 'roles': roles })
     };
-    assert.strictEqual(InputInterfaceTypeEntity.validate(candidate), true, 'fixture input conforms to the public input entity');
-    const result = InputInterfaceTypeEntity.intake(candidate);
+    assert.strictEqual(InputEntity.validate(candidate), true, 'fixture input conforms to the public input entity');
+    const result = InputEntity.intake(candidate);
     return result;
   }
 
   static run(
-    seed: ColorRecordInterfaceTypeEntity.Type,
-    roles?: RoleSchemaInterfaceTypeEntity.Type
-  ): ColorRecordInterfaceTypeEntity.Type {
+    seed: ColorRecordEntity.Type,
+    roles?: RoleSchemaEntity.Type
+  ): ColorRecordEntity.Type {
     const engine = ClampOklchFixture.engine(seed);
     const state = engine.run(ClampOklchFixture.input(roles));
     const result = state.colors.at(0);
@@ -90,7 +90,7 @@ await test('ClampOklch uses the default envelope without a role schema', () => {
 });
 
 await test('ClampOklch uses a declared role envelope for a hinted record', () => {
-  const roles = RoleSchemaInterfaceTypeEntity.intake({
+  const roles = RoleSchemaEntity.intake({
     'name': 'tight-accent',
     'roles': [{ 'chromaRange': [0.05, 0.15], 'lightnessRange': [0.40, 0.60], 'name': 'accent' }]
   });
@@ -98,7 +98,7 @@ await test('ClampOklch uses a declared role envelope for a hinted record', () =>
     0.5,
     0.1,
     200,
-    { 'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': 'accent' }) }
+    { 'hints': ColorHintsEntity.intake({ 'role': 'accent' }) }
   );
   const color = ClampOklchFixture.run(seed, roles);
 
@@ -107,7 +107,7 @@ await test('ClampOklch uses a declared role envelope for a hinted record', () =>
 });
 
 await test('ClampOklch falls back to the default envelope when a declared role has no ranges', () => {
-  const roles = RoleSchemaInterfaceTypeEntity.intake({
+  const roles = RoleSchemaEntity.intake({
     'name': 'mystery-only',
     'roles': [{ 'name': 'mystery' }]
   });
@@ -115,7 +115,7 @@ await test('ClampOklch falls back to the default envelope when a declared role h
     0.5,
     0.1,
     200,
-    { 'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': 'mystery' }) }
+    { 'hints': ColorHintsEntity.intake({ 'role': 'mystery' }) }
   );
   const color = ClampOklchFixture.run(seed, roles);
 
@@ -124,7 +124,7 @@ await test('ClampOklch falls back to the default envelope when a declared role h
 });
 
 await test('ClampOklch falls back to the default envelope when the hinted role is undeclared', () => {
-  const roles = RoleSchemaInterfaceTypeEntity.intake({
+  const roles = RoleSchemaEntity.intake({
     'name': 'no-match',
     'roles': [{ 'lightnessRange': [0.40, 0.60], 'name': 'accent' }]
   });
@@ -132,7 +132,7 @@ await test('ClampOklch falls back to the default envelope when the hinted role i
     0.5,
     0.1,
     200,
-    { 'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': 'unknown-role' }) }
+    { 'hints': ColorHintsEntity.intake({ 'role': 'unknown-role' }) }
   );
   const color = ClampOklchFixture.run(seed, roles);
 
@@ -158,7 +158,7 @@ await test('ClampOklch clamps lightness below the default envelope', () => {
 });
 
 await test('ClampOklch clamps chroma above a role envelope', () => {
-  const roles = RoleSchemaInterfaceTypeEntity.intake({
+  const roles = RoleSchemaEntity.intake({
     'name': 'tight-accent',
     'roles': [{ 'chromaRange': [0, 0.1], 'name': 'accent' }]
   });
@@ -166,7 +166,7 @@ await test('ClampOklch clamps chroma above a role envelope', () => {
     0.5,
     0.3,
     200,
-    { 'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': 'accent' }) }
+    { 'hints': ColorHintsEntity.intake({ 'role': 'accent' }) }
   );
   const color = ClampOklchFixture.run(seed, roles);
 
@@ -188,7 +188,7 @@ await test('ClampOklch preserves supplied hints when rebuilding a record', () =>
     0.999,
     0.1,
     200,
-    { 'hints': ColorHintsInterfaceTypeEntity.intake({ 'role': 'bg', 'weight': 5 }) }
+    { 'hints': ColorHintsEntity.intake({ 'role': 'bg', 'weight': 5 }) }
   );
   const color = ClampOklchFixture.run(seed);
 

@@ -1,4 +1,4 @@
-import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import type { RoleViewType } from './types/index.ts';
 
@@ -14,7 +14,7 @@ import { buildDecorativePalette } from './buildDecorativePalette.ts';
  * loop pick up the palette once it becomes available.
  */
 class ResolveFromPaletteOperation {
-  static run(from: PaletteInterfaceTypeEntity.Type, views: RoleViewType[]): PaletteInterfaceTypeEntity.Type {
+  static run(from: PaletteEntity.Type, views: RoleViewType[]): PaletteEntity.Type {
     if (Object.keys(from).length > 0) {
       const result = from;
       return result;

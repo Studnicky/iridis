@@ -1,4 +1,4 @@
-import type { PaletteInterfaceTypeEntity } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import type { RoleHexMapType } from './types/index.ts';
 
@@ -7,7 +7,7 @@ import { DECORATIVE_ALIASES } from './decorativeAliases.ts';
 
 /** Builds the partial `--ui-color-{alias}-500` token set for one animation frame's palette. */
 class TokensForFrameOperation {
-  static run(frame: PaletteInterfaceTypeEntity.Type): RoleHexMapType {
+  static run(frame: PaletteEntity.Type): RoleHexMapType {
     const tokens: RoleHexMapType = {};
     const entries = Object.entries(DECORATIVE_ALIASES);
     for (let index = 0; index < entries.length; index += 1) {

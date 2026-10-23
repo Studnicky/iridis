@@ -1,11 +1,11 @@
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
 class OklchToRgb {
   readonly 'name' = 'oklchToRgb';
 
-  apply(l: number, c: number, h: number, alpha = 1): ColorRecordInterfaceTypeEntity.Type {
+  apply(l: number, c: number, h: number, alpha = 1): ColorRecordEntity.Type {
     const result = colorRecordFactory.fromOklch(l, c, h, { 'alpha': alpha });
     return result;
   }

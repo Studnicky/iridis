@@ -1,10 +1,10 @@
-import type { LerpOptionsInterfaceTypeEntity } from './entities/LerpOptionsInterfaceTypeEntity.ts';
+import type { LerpOptionsEntity } from './entities/LerpOptionsEntity.ts';
 import type { PaletteDistanceMetricInterface } from './interfaces/PaletteDistanceMetricInterface.ts';
 
 import { VECTOR_DEFAULTS } from './constants/VectorDefaults.ts';
 import { DefaultPaletteDistance } from './DefaultPaletteDistance.ts';
-import { OklchInterfaceTypeEntity } from './entities/OklchInterfaceTypeEntity.ts';
-import { PaletteInterfaceTypeEntity } from './entities/PaletteInterfaceTypeEntity.ts';
+import { OklchEntity } from './entities/OklchEntity.ts';
+import { PaletteEntity } from './entities/PaletteEntity.ts';
 import { LerpHue } from './LerpHue.ts';
 import { WrapHueDelta } from './WrapHueDelta.ts';
 
@@ -16,7 +16,7 @@ class Vector {
     ['shortestArc', LerpHue.shortestArc]
   ]);
 
-  private static requireRole(palette: PaletteInterfaceTypeEntity.Type, role: string): PaletteInterfaceTypeEntity.Type[string] {
+  private static requireRole(palette: PaletteEntity.Type, role: string): PaletteEntity.Type[string] {
     const record = palette[role];
     if (record === undefined) {throw new Error(`Palette is missing role "${role}"`);}
     return record;
@@ -24,65 +24,65 @@ class Vector {
 
   /** Per-role OKLCH lerp between two palettes; hue wraps around the 0/360 circle. */
   static lerp(
-    a: PaletteInterfaceTypeEntity.Type,
-    b: PaletteInterfaceTypeEntity.Type,
+    a: PaletteEntity.Type,
+    b: PaletteEntity.Type,
     t: number,
-    options?: LerpOptionsInterfaceTypeEntity.Type
-  ): PaletteInterfaceTypeEntity.Type {
+    options?: LerpOptionsEntity.Type
+  ): PaletteEntity.Type {
     const hueDirection = options?.hueDirection ?? 'shortestArc';
     const interpolateHue = Vector.HUE_INTERPOLATORS.get(hueDirection);
     if (interpolateHue === undefined) {throw new Error(`Unsupported hue direction: ${hueDirection}`);}
 
-    const result = new Map<string, PaletteInterfaceTypeEntity.Type[string]>();
+    const result = new Map<string, PaletteEntity.Type[string]>();
     const roles = Object.keys(a);
     for (let index = 0; index < roles.length; index += 1) {
       const role = roles[index]!;
       const roleA = Vector.requireRole(a, role);
       const roleB = Vector.requireRole(b, role);
-      const interpolatedRole = OklchInterfaceTypeEntity.create({
+      const interpolatedRole = OklchEntity.create({
         'c': roleA.c + t * (roleB.c - roleA.c),
         'h': interpolateHue(roleA.h, roleB.h, t),
         'l': roleA.l + t * (roleB.l - roleA.l)
       });
       result.set(role, interpolatedRole);
     }
-    const palette: PaletteInterfaceTypeEntity.Type = {};
+    const palette: PaletteEntity.Type = {};
     for (const [role, interpolatedRole] of result) {
       Object.defineProperty(palette, role, { 'configurable': true, 'enumerable': true, 'value': interpolatedRole, 'writable': true });
     }
-    const validatedPalette = PaletteInterfaceTypeEntity.create(palette);
+    const validatedPalette = PaletteEntity.create(palette);
     return validatedPalette;
   }
 
   /** Per-role OKLCH delta (a - b); hue delta is wrapped to [-180, 180]. */
-  static subtract(a: PaletteInterfaceTypeEntity.Type, b: PaletteInterfaceTypeEntity.Type): PaletteInterfaceTypeEntity.Type {
-    const result = new Map<string, PaletteInterfaceTypeEntity.Type[string]>();
+  static subtract(a: PaletteEntity.Type, b: PaletteEntity.Type): PaletteEntity.Type {
+    const result = new Map<string, PaletteEntity.Type[string]>();
     const roles = Object.keys(a);
     for (let index = 0; index < roles.length; index += 1) {
       const role = roles[index]!;
       const roleA = Vector.requireRole(a, role);
       const roleB = Vector.requireRole(b, role);
-      const deltaRole = OklchInterfaceTypeEntity.create({
+      const deltaRole = OklchEntity.create({
         'c': roleA.c - roleB.c,
         'h': WrapHueDelta.of(roleA.h - roleB.h),
         'l': roleA.l - roleB.l
       });
       result.set(role, deltaRole);
     }
-    const palette: PaletteInterfaceTypeEntity.Type = {};
+    const palette: PaletteEntity.Type = {};
     for (const [role, deltaRole] of result) {
       Object.defineProperty(palette, role, { 'configurable': true, 'enumerable': true, 'value': deltaRole, 'writable': true });
     }
-    const validatedPalette = PaletteInterfaceTypeEntity.create(palette);
+    const validatedPalette = PaletteEntity.create(palette);
     return validatedPalette;
   }
 
   /** Returns whichever palette in `corpus` is closest to `target` under `metric`. */
   static nearest(
-    target: PaletteInterfaceTypeEntity.Type,
-    corpus: PaletteInterfaceTypeEntity.Type[],
+    target: PaletteEntity.Type,
+    corpus: PaletteEntity.Type[],
     metric: PaletteDistanceMetricInterface = DefaultPaletteDistance
-  ): PaletteInterfaceTypeEntity.Type {
+  ): PaletteEntity.Type {
     const corpusLength = corpus.length;
     if (corpusLength === 0) {throw new Error('nearest() requires a non-empty corpus');}
 
@@ -100,7 +100,7 @@ class Vector {
   }
 
   /** True when the perceptual distance between `current` and `derived` exceeds `threshold` — signals a re-derivation is due. */
-  static drift(current: PaletteInterfaceTypeEntity.Type, derived: PaletteInterfaceTypeEntity.Type, threshold: number): boolean {
+  static drift(current: PaletteEntity.Type, derived: PaletteEntity.Type, threshold: number): boolean {
     const hasDrifted = DefaultPaletteDistance.measure(current, derived) > threshold;
     return hasDrifted;
   }
@@ -111,20 +111,20 @@ class Vector {
    * All other roles pass through unchanged.
    */
   static perpendicular(
-    a: PaletteInterfaceTypeEntity.Type,
+    a: PaletteEntity.Type,
     roleAxis: string,
     delta: number = VECTOR_DEFAULTS.DEFAULT_PERPENDICULAR_DELTA
-  ): PaletteInterfaceTypeEntity.Type {
+  ): PaletteEntity.Type {
     const target = Vector.requireRole(a, roleAxis);
-    const result: PaletteInterfaceTypeEntity.Type = {};
+    const result: PaletteEntity.Type = {};
     Object.defineProperties(result, Object.getOwnPropertyDescriptors(a));
-    const perpendicularRole = OklchInterfaceTypeEntity.create({
+    const perpendicularRole = OklchEntity.create({
       'c': Math.min(VECTOR_DEFAULTS.MAXIMUM_CHROMA, Math.max(0, target.c + delta)),
       'h': target.h,
       'l': target.l
     });
     Object.defineProperty(result, roleAxis, { 'configurable': true, 'enumerable': true, 'value': perpendicularRole, 'writable': true });
-    const validatedPalette = PaletteInterfaceTypeEntity.create(result);
+    const validatedPalette = PaletteEntity.create(result);
     return validatedPalette;
   }
 }

@@ -1,13 +1,14 @@
-import type { ApcaPairResultSetInterfaceTypeEntity, WcagPairResultSetInterfaceTypeEntity } from '@studnicky/iridis-contrast';
+import type { ComplianceReportEntity } from '@studnicky/iridis-contrast';
 
-class SchemaContrastReports {
-  public readonly aa: WcagPairResultSetInterfaceTypeEntity.Type | undefined;
-  public readonly aaa: WcagPairResultSetInterfaceTypeEntity.Type | undefined;
-  public readonly apca: ApcaPairResultSetInterfaceTypeEntity.Type | undefined;
+import { AccessibilityBlockers } from '~/composables/accessibilityBlockers.ts';
+
+interface ContrastSelectionInterface {
+  readonly 'cvdMode': string;
+  readonly 'nonMandatoryLevel': string;
 }
 
 abstract class SchemaComplianceStatus {
-  public abstract get color(): 'success' | 'warning';
+  public abstract get color(): 'neutral' | 'success' | 'warning';
 
   public static resolve(passing: number, total: number): SchemaComplianceStatus {
     const result = passing === total ? new SchemaComplianceSuccessStatus() : new SchemaComplianceWarningStatus();
@@ -18,6 +19,13 @@ abstract class SchemaComplianceStatus {
 class SchemaComplianceSuccessStatus extends SchemaComplianceStatus {
   public get color(): 'success' {
     const result = 'success';
+    return result;
+  }
+}
+
+class SchemaComplianceNeutralStatus extends SchemaComplianceStatus {
+  public get color(): 'neutral' {
+    const result = 'neutral';
     return result;
   }
 }
@@ -47,47 +55,27 @@ class SchemaStageSummary {
     this.text = text;
   }
 
-  public get color(): 'success' | 'warning' {
+  public get color(): 'neutral' | 'success' | 'warning' {
     const result = this.#status.color;
     return result;
   }
 }
 
 export const buildSchemaComplianceSummaries = class SchemaComplianceSummariesBuilder {
-  private static buildSummary(
-    key: string,
-    label: string,
-    report: ApcaPairResultSetInterfaceTypeEntity.Type | WcagPairResultSetInterfaceTypeEntity.Type
-  ): SchemaStageSummary {
-    let passing = 0;
-    for (const pair of report.pairs) {
-      if (pair.pass) {
-        passing += 1;
-      }
-    }
-    const result = new SchemaStageSummary(
-      SchemaComplianceStatus.resolve(passing, report.pairs.length),
-      key,
-      label,
-      `${passing}/${report.pairs.length} pairs passing`
-    );
-    return result;
-  }
-
-  public static build(
-    enabledStageNames: ReadonlySet<string>,
-    reports: SchemaContrastReports
-  ): SchemaStageSummary[] {
+  public static build(report: ComplianceReportEntity.Type | undefined, selection: ContrastSelectionInterface): SchemaStageSummary[] {
     const summaries: SchemaStageSummary[] = [];
-    if (enabledStageNames.has('enforce:wcagAA') && reports.aa !== undefined) {
-      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('aa', 'WCAG AA', reports.aa));
+    if (report !== undefined) {
+      const passing = report.pairs.length - report.blockedPairs.length;
+      summaries.push(new SchemaStageSummary(
+        SchemaComplianceStatus.resolve(passing, report.pairs.length),
+        'compliance',
+        AccessibilityBlockers.standardLabel(report.selected.algorithm, report.selected.level),
+        `${passing}/${report.pairs.length} pairs passing`
+      ));
     }
-    if (enabledStageNames.has('enforce:wcagAAA') && reports.aaa !== undefined) {
-      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('aaa', 'WCAG AAA', reports.aaa));
-    }
-    if (enabledStageNames.has('enforce:apca') && reports.apca !== undefined) {
-      summaries.push(SchemaComplianceSummariesBuilder.buildSummary('apca', 'APCA', reports.apca));
-    }
+    const neutral = new SchemaComplianceNeutralStatus();
+    summaries.push(new SchemaStageSummary(neutral, 'cvdMode', 'CVD mode', selection.cvdMode));
+    summaries.push(new SchemaStageSummary(neutral, 'nonMandatoryLevel', 'Non-mandatory level', selection.nonMandatoryLevel));
     return summaries;
   }
 };

@@ -1,4 +1,4 @@
-import { type InputInterfaceTypeEntity, RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { type InputEntity, RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 
 import type { ScenarioInterface } from '../../_runner/ScenarioInterface.ts';
@@ -11,13 +11,13 @@ import { StylesheetScenarioPatterns } from './StylesheetScenarioPatterns.ts';
 import { StylesheetWideGamutScenarioPatterns } from './StylesheetWideGamutScenarioPatterns.ts';
 
 interface CssVarsWideGamutInputInterface {
-  readonly 'colors': InputInterfaceTypeEntity.Type['colors'];
-  readonly 'metadata'?: InputInterfaceTypeEntity.Type['metadata'];
+  readonly 'colors': InputEntity.Type['colors'];
+  readonly 'metadata'?: InputEntity.Type['metadata'];
   readonly 'pipeline': readonly string[];
-  readonly 'roles': RoleSchemaInterfaceTypeEntity.Type;
+  readonly 'roles': RoleSchemaEntity.Type;
 }
 
-const WIDE_GAMUT_ROLE_SCHEMA = RoleSchemaInterfaceTypeEntity.intake({
+const WIDE_GAMUT_ROLE_SCHEMA = RoleSchemaEntity.intake({
   'name': 'wide-gamut',
   'roles': [{
     'chromaRange': [0, 0.5],

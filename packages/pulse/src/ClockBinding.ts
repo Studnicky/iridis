@@ -1,6 +1,6 @@
 import type { ClockProviderInterface } from './clock/ClockProviderInterface.ts';
-import type { ClockBindingOptionsInterfaceTypeEntity } from './entities/ClockBindingOptionsInterfaceTypeEntity.ts';
-import type { SignalBindingInterfaceTypeEntity } from './entities/SignalBindingInterfaceTypeEntity.ts';
+import type { ClockBindingOptionsEntity } from './entities/ClockBindingOptionsEntity.ts';
+import type { SignalBindingEntity } from './entities/SignalBindingEntity.ts';
 
 import { RealClockProvider } from './clock/RealClockProvider.ts';
 import { VirtualClockProvider } from './clock/VirtualClockProvider.ts';
@@ -10,14 +10,14 @@ import { VirtualClockProvider } from './clock/VirtualClockProvider.ts';
  * real-time source (`Date.now()`) or a deterministic virtual stepper driven
  * by `advance(deltaMs)`. Construct via `ClockBinding.create(options)`.
  */
-export class ClockBinding implements SignalBindingInterfaceTypeEntity.Type {
+export class ClockBinding implements SignalBindingEntity.Type {
   private readonly provider: ClockProviderInterface;
 
   protected constructor(provider: ClockProviderInterface) {
     this.provider = provider;
   }
 
-  static create(options: ClockBindingOptionsInterfaceTypeEntity.Type): ClockBinding {
+  static create(options: ClockBindingOptionsEntity.Type): ClockBinding {
     const provider = options.mode === 'real'
       ? RealClockProvider.create(options.durationMs)
       : VirtualClockProvider.create(options.durationMs);

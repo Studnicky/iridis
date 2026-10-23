@@ -4,13 +4,7 @@
     "contrast": {
       "level": "AAA",
       "algorithm": "wcag21",
-      "cvdCorrect": true,
-      "extra": [
-        { "foreground": "text",     "background": "canvas",  "minimumContrastRatio": 75, "algorithm": "apca" },
-        { "foreground": "text",     "background": "surface", "minimumContrastRatio": 75, "algorithm": "apca" },
-        { "foreground": "onAccent", "background": "accent",  "minimumContrastRatio": 60, "algorithm": "apca" },
-        { "foreground": "border",   "background": "canvas",  "minimumContrastRatio": 45, "algorithm": "apca" }
-      ]
+      "cvdMode": "nudge"
     },
     "metadata": {
       "category":     "music",
@@ -88,11 +82,9 @@
     "intake:any",
     "resolve:roles",
     "expand:family",
-    "enforce:wcagAA",
-    "enforce:wcagAAA",
-    "enforce:apca",
-    "enforce:cvdSimulate",
+    "enforce:compliance",
     "derive:variant",
+    "report:compliance",
     "emit:cssVars",
     "emit:capacitorStatusBar",
     "emit:capacitorTheme"

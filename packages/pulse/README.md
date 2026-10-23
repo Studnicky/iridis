@@ -33,13 +33,13 @@ Drives `t` from elapsed time, either a real clock (`Date.now()`) or a
 deterministic virtual stepper for tests and reproducible playback.
 
 ```ts
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
 
 import { ClockBinding } from '@studnicky/iridis-pulse';
 import { evaluate } from '@studnicky/iridis-anima';
 
-declare const day: PaletteInterfaceType;
-declare const night: PaletteInterfaceType;
+declare const day: PaletteEntity;
+declare const night: PaletteEntity;
 
 const clock = ClockBinding.create({ durationMs: 2000, mode: 'real' });
 
@@ -82,9 +82,9 @@ window.addEventListener('scroll', () => {
 | `ClockBinding` | class | `ClockBinding.create({ durationMs, mode })` where `mode` is `'real'` or `'virtual'`. `.t` reads current progress; `.advance(deltaMs)` moves virtual-mode time forward manually (real-mode providers ignore it). |
 | `ValueBinding` | class | `ValueBinding.create({ max, min, clamp? })`, `clamp` defaults to `true`. `.mapToT(value)` linearly maps `value` from `[min, max]` onto `[0, 1]`, clamping when `clamp` is `true`. |
 
-`SignalBindingInterfaceType` is the shared shape (a `t` getter) both bindings
+`SignalBindingEntity` is the shared shape (a `t` getter) both bindings
 implement, exported as a type for callers writing their own signal source.
-`ClockBindingOptionsInterfaceType` and `ValueBindingOptionsInterfaceType` are
+`ClockBindingOptionsEntity` and `ValueBindingOptionsEntity` are
 also exported for typing the options object passed to each `.create()` call.
 
 Part of [iridis](https://github.com/Studnicky/iridis).

@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { luminance }          from './Luminance.ts';
@@ -6,7 +6,7 @@ import { luminance }          from './Luminance.ts';
 class ContrastText {
   readonly 'name' = 'contrastText';
 
-  apply(background: ColorRecordInterfaceTypeEntity.Type, threshold = 0.179): ColorRecordInterfaceTypeEntity.Type {
+  apply(background: ColorRecordEntity.Type, threshold = 0.179): ColorRecordEntity.Type {
     const lum = luminance.apply(background);
 
     if (lum > threshold) {

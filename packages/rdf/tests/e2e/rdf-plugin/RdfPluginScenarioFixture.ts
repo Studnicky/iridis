@@ -1,6 +1,6 @@
-import type { PaletteStateInterface, RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import type { PaletteStateInterface, RoleSchemaEntity } from '@studnicky/iridis';
 
-import { Engine, InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { Engine, InputEntity } from '@studnicky/iridis';
 import { rdfPlugin } from '@studnicky/iridis-rdf';
 import { coreTasks } from '@studnicky/iridis/tasks';
 
@@ -20,11 +20,11 @@ export class RdfPluginScenarioFixture {
   }
 
   static createInput(
-    colors: InputInterfaceTypeEntity.Type['colors'],
-    roles: RoleSchemaInterfaceTypeEntity.Type,
-    metadata?: InputInterfaceTypeEntity.Type['metadata']
-  ): InputInterfaceTypeEntity.Type {
-    const result = InputInterfaceTypeEntity.create({
+    colors: InputEntity.Type['colors'],
+    roles: RoleSchemaEntity.Type,
+    metadata?: InputEntity.Type['metadata']
+  ): InputEntity.Type {
+    const result = InputEntity.create({
       'colors': [...colors],
       ...(metadata === undefined ? {} : { 'metadata': metadata }),
       'roles': roles

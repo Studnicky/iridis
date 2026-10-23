@@ -1,4 +1,4 @@
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 
 /**
  * Five-role schema for art-gallery chrome re-skinning.
@@ -14,7 +14,7 @@ import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
  * muted:  low-chroma non-neutral (caption background, secondary UI). C ≤ 0.08.
  * text:   derived: white or black depending on canvas lightness.
  */
-export const galleryRoleSchema5 = RoleSchemaInterfaceTypeEntity.create({
+export const galleryRoleSchema5 = RoleSchemaEntity.create({
   'contrastPairs': [
     {
       'algorithm':  'wcag21',

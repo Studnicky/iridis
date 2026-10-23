@@ -2,10 +2,10 @@ import type {
   PaletteStateInterface, PipelineContextInterface, TaskInterface
 } from '@studnicky/iridis';
 
-import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { TaskManifestEntity } from '@studnicky/iridis';
 
-import { DerivationConfigInterfaceTypeEntity } from '../composables/entities/DerivationConfigInterfaceTypeEntity.ts';
-import { DerivationRelationInterfaceTypeEntity } from '../composables/entities/DerivationRelationInterfaceTypeEntity.ts';
+import { DerivationConfigEntity } from '../composables/entities/DerivationConfigEntity.ts';
+import { DerivationRelationEntity } from '../composables/entities/DerivationRelationEntity.ts';
 import { effectiveRelation } from '../utils/effectiveRelation.ts';
 import { resolveHueOffset } from '../utils/resolveHueOffset.ts';
 
@@ -18,7 +18,7 @@ import { resolveHueOffset } from '../utils/resolveHueOffset.ts';
 class DeriveRoleRelations implements TaskInterface {
   readonly 'name' = 'derive:roleRelations';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Computes each derivedFrom role\'s effective hueOffset from the user-selected per-relation hue algorithm, writing overrides for expand:family to apply.',
     'name':        'derive:roleRelations',
     'reads':       ['input.roles', 'metadata'],
@@ -28,8 +28,8 @@ class DeriveRoleRelations implements TaskInterface {
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
     const configRaw = state.metadata['derivation:config'];
     const roleSchema = state.input.roles;
-    if (roleSchema === undefined || !DerivationConfigInterfaceTypeEntity.validate(configRaw)) {return;}
-    const config = DerivationConfigInterfaceTypeEntity.intake(configRaw);
+    if (roleSchema === undefined || !DerivationConfigEntity.validate(configRaw)) {return;}
+    const config = DerivationConfigEntity.intake(configRaw);
 
     const overrides = new Map<string, number>();
     const roles = roleSchema.roles;
@@ -39,7 +39,7 @@ class DeriveRoleRelations implements TaskInterface {
       const storedRelation = config.relations[role.name];
       const authoredRelation = storedRelation === undefined
         ? undefined
-        : DerivationRelationInterfaceTypeEntity.intake(storedRelation);
+        : DerivationRelationEntity.intake(storedRelation);
       const relation = effectiveRelation({ 'relation': authoredRelation, 'schemaHueOffset': role.hueOffset });
       overrides.set(role.name, resolveHueOffset(relation));
     }

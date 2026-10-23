@@ -23,7 +23,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { ScenarioInterface } from '../_runner/ScenarioInterface.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../src/entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../src/entities/ColorRecordEntity.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
@@ -53,7 +53,7 @@ namespace AlphaChannelScenarioFixture {
     'required': ['hex'],
     'type': 'object'
   } as const;
-  export const fromHexScenarios: readonly ScenarioInterface<InferType<typeof FromHexInputSchema>, ColorRecordInterfaceTypeEntity.Type>[] = [
+  export const fromHexScenarios: readonly ScenarioInterface<InferType<typeof FromHexInputSchema>, ColorRecordEntity.Type>[] = [
     {
       'assert': function(output, error) {
         assert.strictEqual(error,         undefined, '[cell=1, scenario=6-digit] no throw');
@@ -108,7 +108,7 @@ namespace AlphaChannelScenarioFixture {
     }
   ];
 
-  new ScenarioRunner<InferType<typeof FromHexInputSchema>, ColorRecordInterfaceTypeEntity.Type>(
+  new ScenarioRunner<InferType<typeof FromHexInputSchema>, ColorRecordEntity.Type>(
     'AlphaChannel :: cell-1 :: fromHex',
     (input) => {
       const record = colorRecordFactory.fromHex(input.hex);

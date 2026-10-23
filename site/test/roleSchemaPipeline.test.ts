@@ -1,21 +1,20 @@
 import type { PaletteStateInterface } from '@studnicky/iridis';
-import type { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis/model';
+import type { RoleSchemaEntity } from '@studnicky/iridis/model';
 
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
-import { getContrastMetadata } from '@studnicky/iridis-contrast';
+import { InputEntity, Metadata } from '@studnicky/iridis';
+import { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 import { JsonValue } from '@studnicky/types/node';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { PickerSeedType, SchemaPair } from '../app/composables/types/index.ts';
 
+import { COLOR_PIPELINE } from '../app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../app/composables/createColorEngine.ts';
-import { DerivationConfigInterfaceTypeEntity } from '../app/composables/entities/DerivationConfigInterfaceTypeEntity.ts';
-import { optionalContrastStages } from '../app/composables/optionalContrastStages.ts';
+import { ContrastConfigOptionsEntity } from '../app/composables/entities/ContrastConfigOptionsEntity.ts';
+import { DerivationConfigEntity } from '../app/composables/entities/DerivationConfigEntity.ts';
 import { pickerSeedInputs } from '../app/composables/pickerSeedInputs.ts';
-import { REQUIRED_COLOR_STAGES } from '../app/composables/requiredColorStages.ts';
-import { spliceOptionalStages } from '../app/composables/spliceOptionalStages.ts';
 import { VARIANT_CONFIG } from '../app/composables/variantConfig.ts';
 import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
 import { Tokens } from '../app/theme/Tokens.ts';
@@ -34,7 +33,7 @@ class RoleSchemaPipelineFixture {
     return comparison;
   }
 
-  private static schemaPair(name: string): SchemaPair {
+  static schemaPair(name: string): SchemaPair {
     const entries = Object.entries(roleSchemaByName);
     for (let index = 0; index < entries.length; index += 1) {
       const [registeredName, pair] = entries[index]!;
@@ -59,8 +58,12 @@ class RoleSchemaPipelineFixture {
 
     assert.deepEqual(resolvedRoleNames, expectedRoleNames);
     assert.equal(state.runtime.framing, 'dark');
-    assert.equal(getContrastMetadata(state.metadata, 'contrast:aa') === undefined, false);
-    assert.equal(getContrastMetadata(state.metadata, 'contrast:cvd') === undefined, false);
+    assert.doesNotThrow(() => {
+      ComplianceReportEntity.intake(state.metadata['contrast:complianceReport']);
+    });
+    assert.doesNotThrow(() => {
+      CvdResultSetEntity.intake(state.metadata['contrast:cvd']);
+    });
 
     for (let index = 0; index < Tokens.SHADE_KEYS.length; index += 1) {
       const shade = Tokens.SHADE_KEYS[index]!;
@@ -72,16 +75,16 @@ class RoleSchemaPipelineFixture {
     }
   }
 
-  static run(name: string): { 'schema': RoleSchemaInterfaceTypeEntity.Type; 'state': PaletteStateInterface } {
+  static run(name: string): { 'schema': RoleSchemaEntity.Type; 'state': PaletteStateInterface } {
     const schema = RoleSchemaPipelineFixture.schemaPair(name).dark;
     const engine = createColorEngine();
-    engine.pipeline(spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(0)));
-    const state = engine.run(InputInterfaceTypeEntity.create({
+    engine.pipeline(COLOR_PIPELINE);
+    const state = engine.run(InputEntity.create({
       'colors':   pickerSeedInputs(RoleSchemaPipelineFixture.seeds),
-      'contrast': ContrastConfigFor.forStrictness(0, ContrastConfigFor.correctingCvd),
+      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': 0 })),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-        'derivation:config': JsonValue.from(DerivationConfigInterfaceTypeEntity.defaultValue),
+        'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
         'derivation:semanticHuesEnabled': true
       },
       'roles':   schema,
@@ -98,3 +101,28 @@ for (let index = 0; index < RoleSchemaPipelineFixture.names.length; index += 1) 
     return result;
   });
 }
+
+await test('pinned derived roles remain byte-exact while unpinned roles resolve around them', () => {
+  const schema = RoleSchemaPipelineFixture.schemaPair('iridis-32').dark;
+  const engine = createColorEngine();
+  engine.pipeline(COLOR_PIPELINE);
+  const state = engine.run(InputEntity.create({
+    'colors': pickerSeedInputs([
+      { 'hex': '#101820', 'role': 'background' },
+      { 'hex': '#f5f7fa', 'role': 'text' },
+      { 'hex': '#7c3aed', 'role': 'brand' },
+      { 'hex': '#b55bc7', 'role': 'success' }
+    ]),
+    'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': 0 })),
+    'metadata': {
+      'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
+      'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),
+      'derivation:semanticHuesEnabled': true
+    },
+    'roles': schema,
+    'runtime': { 'colorSpace': 'srgb', 'framing': 'dark' }
+  }));
+  assert.equal(state.roles.success?.hex, '#b55bc7');
+  const provenance = Metadata.roleProvenance(state.metadata).get('success');
+  assert.deepEqual(provenance, { 'adjustments': [], 'origin': 'stated' });
+});

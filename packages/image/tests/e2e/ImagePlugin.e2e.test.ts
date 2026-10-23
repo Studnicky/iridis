@@ -1,6 +1,6 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity } from '@studnicky/iridis';
 import { galleryRoleSchema5, imagePlugin, ImagePlugin } from '@studnicky/iridis-image';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
@@ -21,7 +21,7 @@ class ImagePluginFixture {
   }
 
   static input(colors: string[], gallery: Record<string, JSONSchema7Type>) {
-    const result = InputInterfaceTypeEntity.create({ 'colors': colors, 'metadata': { 'gallery': gallery } });
+    const result = InputEntity.create({ 'colors': colors, 'metadata': { 'gallery': gallery } });
     return result;
   }
 }

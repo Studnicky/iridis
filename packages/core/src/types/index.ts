@@ -1,7 +1,7 @@
 export type { ContrastAlgorithmTypeEntity } from '../entities/ContrastAlgorithmTypeEntity.ts';
-export type { ContrastPairInterfaceTypeEntity } from '../entities/ContrastPairInterfaceTypeEntity.ts';
-export type { RoleDefinitionInterfaceTypeEntity } from '../entities/RoleDefinitionInterfaceTypeEntity.ts';
-export type { RoleSchemaInterfaceTypeEntity } from '../entities/RoleSchemaInterfaceTypeEntity.ts';
+export type { ContrastPairEntity } from '../entities/ContrastPairEntity.ts';
+export type { RoleDefinitionEntity } from '../entities/RoleDefinitionEntity.ts';
+export type { RoleSchemaEntity } from '../entities/RoleSchemaEntity.ts';
 export type { EngineInterface } from '../interfaces/EngineInterface.ts';
 export type { PaletteStateInterface } from '../interfaces/PaletteStateInterface.ts';
 export type { PipelineContextInterface } from '../interfaces/PipelineContextInterface.ts';

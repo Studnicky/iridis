@@ -1,19 +1,19 @@
 import type {
-  ColorHintsInterfaceTypeEntity,
-  ColorRecordInterfaceTypeEntity,
+  ColorHintsEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '@studnicky/iridis';
 
-import { TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import { CapacitorOutputsEntity } from '../entities/CapacitorOutputsEntity.ts';
 
 class IntentMapBuilder {
-  static build(roles: Record<string, ColorRecordInterfaceTypeEntity.Type>): ReadonlyMap<NonNullable<ColorHintsInterfaceTypeEntity.Type['intent']>, string> {
-    const map = new Map<NonNullable<ColorHintsInterfaceTypeEntity.Type['intent']>, string>();
+  static build(roles: Record<string, ColorRecordEntity.Type>): ReadonlyMap<NonNullable<ColorHintsEntity.Type['intent']>, string> {
+    const map = new Map<NonNullable<ColorHintsEntity.Type['intent']>, string>();
     // Keep the first match per intent; role name takes precedence in Hex.resolve below.
     const records = Object.values(roles);
     for (let index = 0; index < records.length; index += 1) {
@@ -32,7 +32,7 @@ class IntentMapBuilder {
 
 class Hex {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles: Record<string, ColorRecordEntity.Type>,
     primaryName: string,
     fallback: string
   ): string {
@@ -43,8 +43,8 @@ class Hex {
 
 class VariantHex {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>,
-    variants: Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>,
+    roles: Record<string, ColorRecordEntity.Type>,
+    variants: Record<string, Record<string, ColorRecordEntity.Type>>,
     roleName: string,
     variantName: string,
     fallback: string
@@ -75,7 +75,7 @@ class VariantHex {
 class EmitCapacitorTheme implements TaskInterface {
   readonly 'name' = 'emit:capacitorTheme';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Emit flat Capacitor theme map from resolved roles for native preference storage.',
     'name':        'emit:capacitorTheme',
     'reads':       ['roles', 'variants'],

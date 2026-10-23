@@ -1,4 +1,4 @@
-import type { PaletteInterfaceTypeEntity } from './entities/PaletteInterfaceTypeEntity.ts';
+import type { PaletteEntity } from './entities/PaletteEntity.ts';
 
 import { WrapHueDelta } from './WrapHueDelta.ts';
 
@@ -11,7 +11,7 @@ const HUE_NORMALIZATION_FACTOR = 180;
  * full l or c swing (comparable to l ∈ [0,1] and c ∈ [0,0.5]).
  */
 class DefaultPaletteDistance {
-  static measure(a: PaletteInterfaceTypeEntity.Type, b: PaletteInterfaceTypeEntity.Type): number {
+  static measure(a: PaletteEntity.Type, b: PaletteEntity.Type): number {
     let total = 0;
     const roles = Object.keys(a);
     for (let index = 0; index < roles.length; index += 1) {

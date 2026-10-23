@@ -1,4 +1,4 @@
-import { ModalCloseReasonInterfaceTypeEntity } from './ModalCloseReasonInterfaceTypeEntity.ts';
+import { ModalCloseReasonEntity } from './ModalCloseReasonEntity.ts';
 
 /** Shared lifecycle controller for visualization modal and expanded shells. */
 class ModalLifecycleState {
@@ -61,7 +61,7 @@ export const ModalController = class ModalController {
   }
 
   public close(reason = 'programmatic'): boolean {
-    const resolvedReason = ModalCloseReasonInterfaceTypeEntity.intake(reason);
+    const resolvedReason = ModalCloseReasonEntity.intake(reason);
     const didClose = this.#state.close();
     if (!didClose) {
       return false;

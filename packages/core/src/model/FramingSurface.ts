@@ -3,7 +3,7 @@
  * single shared "is this light or dark" measure every plugin uses to
  * answer that question.
  *
- * `state.runtime.framing` is public API (see {@link RuntimeOptionsInterfaceTypeEntity})
+ * `state.runtime.framing` is public API (see {@link RuntimeOptionsEntity})
  * but does nothing on its own: `resolve:roles` always populates
  * `state.roles` from the intake seeds regardless of the requested
  * framing, and `derive:variant` only ever adds alternate surfaces to
@@ -29,7 +29,7 @@
  * matches the requested framing.
  */
 
-import type { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../interfaces/PaletteStateInterface.ts';
 
 import { luminance } from '../math/Luminance.ts';
@@ -43,7 +43,7 @@ class FramingSurface {
    * light/dark threshold. Missing `background` reads as dark (false),
    * matching the pre-`framing` default across every emitter.
    */
-  static isLight(roles: Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>>): boolean {
+  static isLight(roles: Readonly<Record<string, ColorRecordEntity.Type>>): boolean {
     const background = roles.background;
     if (background === undefined) { return false; }
     const result = luminance.apply(background) > LIGHT_LUMINANCE_THRESHOLD;
@@ -63,7 +63,7 @@ class FramingSurface {
    *   `state.roles` when no variant matches (e.g. `derive:variant`
    *   did not run, or every configured variant shares one appearance).
    */
-  static resolve(state: PaletteStateInterface): Readonly<Record<string, ColorRecordInterfaceTypeEntity.Type>> {
+  static resolve(state: PaletteStateInterface): Readonly<Record<string, ColorRecordEntity.Type>> {
     const framing = state.runtime.framing;
     if (framing === undefined) { return state.roles; }
 

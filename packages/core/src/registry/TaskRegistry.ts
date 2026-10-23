@@ -3,7 +3,7 @@ import { ModuleError, ValidationError } from '@studnicky/errors/node';
 import type { TaskInterface } from '../interfaces/TaskInterface.ts';
 import type { TaskRegistryInterface } from '../interfaces/TaskRegistryInterface.ts';
 
-import { TaskManifestInterfaceTypeEntity } from '../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../entities/TaskManifestEntity.ts';
 
 /**
  * Holds the mutable set of pipeline tasks an `Engine` will run. Tasks
@@ -69,11 +69,11 @@ export class TaskRegistry implements TaskRegistryInterface {
     return result;
   }
 
-  list(): readonly TaskManifestInterfaceTypeEntity.Type[] {
-    const out: TaskManifestInterfaceTypeEntity.Type[] = [];
+  list(): readonly TaskManifestEntity.Type[] {
+    const out: TaskManifestEntity.Type[] = [];
 
     for (const task of this.entries.values()) {
-      out.push(task.manifest ?? TaskManifestInterfaceTypeEntity.create({ 'name': task.name }));
+      out.push(task.manifest ?? TaskManifestEntity.create({ 'name': task.name }));
     }
 
     return out;

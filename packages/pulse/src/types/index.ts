@@ -1,3 +1,3 @@
-export type { ClockBindingOptionsInterfaceTypeEntity } from '../entities/ClockBindingOptionsInterfaceTypeEntity.ts';
-export type { SignalBindingInterfaceTypeEntity } from '../entities/SignalBindingInterfaceTypeEntity.ts';
-export type { ValueBindingOptionsInterfaceTypeEntity } from '../entities/ValueBindingOptionsInterfaceTypeEntity.ts';
+export type { ClockBindingOptionsEntity } from '../entities/ClockBindingOptionsEntity.ts';
+export type { SignalBindingEntity } from '../entities/SignalBindingEntity.ts';
+export type { ValueBindingOptionsEntity } from '../entities/ValueBindingOptionsEntity.ts';

@@ -5,6 +5,7 @@ import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
 import { buildSchemaComplianceSummaries } from './schema/buildSchemaComplianceSummaries.ts';
+import { ContrastChoiceModels } from './contrastChoiceModels.ts';
 import SchemaSelector from './SchemaSelector.vue';
 
 /**
@@ -16,20 +17,18 @@ import SchemaSelector from './SchemaSelector.vue';
  * their own Derivation Relations card (see DerivationRelations.vue).
  */
 const {
-  schemaName, contrastStrictness, colorSpace,
-  contrastReport, enabledOptionalStages
+  schemaName, contrastStrictness, cvdMode, nonMandatoryLevel, colorSpace,
+  contrastReport
 } = useIridis();
 const { send } = useIridisUiMachine();
 const { activateTarget } = useNavigationTargets();
 
-/** Compact pass/fail summary badges for whichever optional stages are currently enabled. */
+/** Pass/fail summary badge for the selected contrast standard. */
 const stageSummaries = computed(() => {
-  const reports = {
-    'aa': contrastReport.value.aa,
-    'aaa': contrastReport.value.aaa,
-    'apca': contrastReport.value.apca
-  };
-  const result = buildSchemaComplianceSummaries.build(enabledOptionalStages.value, reports);
+  const result = buildSchemaComplianceSummaries.build(contrastReport.value.compliance, {
+    'cvdMode': cvdMode.value,
+    'nonMandatoryLevel': nonMandatoryLevel.value
+  });
   return result;
 });
 
@@ -40,6 +39,14 @@ function updateColorSpace(colorSpace: 'displayP3' | 'srgb'): void {
 
 function updateContrastStrictness(strictness: number): void {
   send(IridisUiEvent.setContrastStrictness(strictness));
+}
+
+function updateCvdMode(value: string): void {
+  send(IridisUiEvent.setCvdMode(value));
+}
+
+function updateNonMandatoryLevel(value: string): void {
+  send(IridisUiEvent.setNonMandatoryLevel(value));
 }
 </script>
 
@@ -79,6 +86,16 @@ function updateContrastStrictness(strictness: number): void {
         <ContrastStrictnessControl
           :strictness="contrastStrictness"
           @update="updateContrastStrictness"
+        />
+        <ContrastChoiceControl
+          :model="ContrastChoiceModels.nonMandatoryLevel"
+          :selected="nonMandatoryLevel"
+          @update="updateNonMandatoryLevel"
+        />
+        <ContrastChoiceControl
+          :model="ContrastChoiceModels.cvdMode"
+          :selected="cvdMode"
+          @update="updateCvdMode"
         />
         <div class="flex justify-end">
           <UButton

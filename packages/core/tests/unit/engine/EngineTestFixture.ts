@@ -2,25 +2,25 @@ import type { LogRecordEntity } from '@studnicky/logger/entities';
 import type { JSONSchema7Type } from 'json-schema';
 
 import type { ColorInputEntity } from '../../../src/entities/ColorInputEntity.ts';
-import type { ContrastOptionsInterfaceTypeEntity } from '../../../src/entities/ContrastOptionsInterfaceTypeEntity.ts';
-import type { RoleSchemaInterfaceTypeEntity } from '../../../src/entities/RoleSchemaInterfaceTypeEntity.ts';
-import type { RuntimeOptionsInterfaceTypeEntity } from '../../../src/entities/RuntimeOptionsInterfaceTypeEntity.ts';
+import type { ContrastOptionsEntity } from '../../../src/entities/ContrastOptionsEntity.ts';
+import type { RoleSchemaEntity } from '../../../src/entities/RoleSchemaEntity.ts';
+import type { RuntimeOptionsEntity } from '../../../src/entities/RuntimeOptionsEntity.ts';
 import type { PaletteStateInterface } from '../../../src/interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../../src/interfaces/PipelineContextInterface.ts';
 import type { PluginInterface } from '../../../src/interfaces/PluginInterface.ts';
 import type { TaskInterface } from '../../../src/interfaces/TaskInterface.ts';
 
-import { InputInterfaceTypeEntity } from '../../../src/entities/InputInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { InputEntity } from '../../../src/entities/InputEntity.ts';
+import { TaskManifestEntity } from '../../../src/entities/TaskManifestEntity.ts';
 
 interface EngineInputOverridesInterface {
   readonly 'colors'?: readonly ColorInputEntity.Type[];
-  readonly 'contrast'?: ContrastOptionsInterfaceTypeEntity.Type;
+  readonly 'contrast'?: ContrastOptionsEntity.Type;
   readonly 'emit'?: readonly string[];
   readonly 'maximumColorCount'?: number;
   readonly 'metadata'?: Readonly<Record<string, JSONSchema7Type>>;
-  readonly 'roles'?: RoleSchemaInterfaceTypeEntity.Type;
-  readonly 'runtime'?: RuntimeOptionsInterfaceTypeEntity.Type;
+  readonly 'roles'?: RoleSchemaEntity.Type;
+  readonly 'runtime'?: RuntimeOptionsEntity.Type;
 }
 
 class WarningCaptureSession {
@@ -47,8 +47,8 @@ export class EngineTestFixture {
     return new WarningCaptureSession();
   }
 
-  static makeInput(extra: EngineInputOverridesInterface = {}): InputInterfaceTypeEntity.Type {
-    const result = InputInterfaceTypeEntity.intake({
+  static makeInput(extra: EngineInputOverridesInterface = {}): InputEntity.Type {
+    const result = InputEntity.intake({
       ...extra,
       'colors': [...(extra.colors ?? ['#ff0000'])]
     });
@@ -87,7 +87,7 @@ export class EngineTestFixture {
       options?.onRun?.(state, context);
     };
     const result = {
-      'manifest': TaskManifestInterfaceTypeEntity.create({
+      'manifest': TaskManifestEntity.create({
         'name': name,
         ...(options?.requires === undefined ? {} : { 'requires': options.requires })
       }),
@@ -105,7 +105,7 @@ export class EngineTestFixture {
       onRun?.(state, context);
     };
     const result = {
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': name, 'phase': 'onRunEnd' }),
+      'manifest': TaskManifestEntity.create({ 'name': name, 'phase': 'onRunEnd' }),
       'name': name,
       'run': run
     };
@@ -120,7 +120,7 @@ export class EngineTestFixture {
       onRun?.(state, context);
     };
     const result = {
-      'manifest': TaskManifestInterfaceTypeEntity.create({ 'name': name, 'phase': 'onRunStart' }),
+      'manifest': TaskManifestEntity.create({ 'name': name, 'phase': 'onRunStart' }),
       'name': name,
       'run': run
     };

@@ -33,27 +33,29 @@ the `@studnicky` scope before installing:
 ```
 
 ```bash
-npm install @studnicky/iridis @studnicky/iridis-rdf
+npm install @studnicky/iridis @studnicky/iridis-contrast @studnicky/iridis-rdf
 ```
 
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
+import { contrastPlugin } from '@studnicky/iridis-contrast';
 import { rdfPlugin }         from '@studnicky/iridis-rdf';
 
-export function generateReasoningGraph(roleSchema: RoleSchemaInterfaceType) {
+export function generateReasoningGraph(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
   engine.adopt(rdfPlugin);
+  engine.adopt(contrastPlugin);
 
   engine.pipeline([
     'intake:any',
     'resolve:roles',
     'expand:family',
-    'enforce:contrast',
+    'enforce:compliance',
     'reason:annotate',
     'reason:serialize',
   ]);
@@ -63,7 +65,7 @@ export function generateReasoningGraph(roleSchema: RoleSchemaInterfaceType) {
     'colors':   ['#8B5CF6'],
     'contrast': {
       'algorithm':  'wcag21',
-      'cvdCorrect': undefined,
+      'cvdMode': 'nudge',
       'extra':      undefined,
       'level':      'AA',
     },

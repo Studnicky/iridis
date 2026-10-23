@@ -25,7 +25,7 @@ import type { PluginInterface } from '../../src/interfaces/PluginInterface.ts';
 
 import { ScenarioRunner } from '../_runner/ScenarioRunner.ts';
 import { Engine }               from '../../src/engine/Engine.ts';
-import { InputInterfaceTypeEntity } from '../../src/entities/InputInterfaceTypeEntity.ts';
+import { InputEntity } from '../../src/entities/InputEntity.ts';
 import { InputSchema }          from '../../src/model/InputSchema.ts';
 import { Validator }            from '../../src/model/Validator.ts';
 import { validatorPatternFixture } from './validator/ValidatorPatternFixture.ts';
@@ -45,8 +45,8 @@ const validator = new Validator();
 // ---------------------------------------------------------------------------
 
 class ValidatorTestSuite {
-  static input(): InputInterfaceTypeEntity.Type {
-    const result = InputInterfaceTypeEntity.intake({ 'colors': [] });
+  static input(): InputEntity.Type {
+    const result = InputEntity.intake({ 'colors': [] });
     return result;
   }
 
@@ -796,7 +796,7 @@ class ValidatorTestSuite {
     // propagating out of the task callback.
     // ---------------------------------------------------------------------------
 
-    const cell7RunScenarios: readonly ScenarioInterface<{ readonly 'mutate': (input: InputInterfaceTypeEntity.Type) => void }, {
+    const cell7RunScenarios: readonly ScenarioInterface<{ readonly 'mutate': (input: InputEntity.Type) => void }, {
       readonly 'placeholder': true;
     }>[] = [
       {
@@ -828,7 +828,7 @@ class ValidatorTestSuite {
       }
     ];
 
-    new ScenarioRunner<{ readonly 'mutate': (input: InputInterfaceTypeEntity.Type) => void }, {
+    new ScenarioRunner<{ readonly 'mutate': (input: InputEntity.Type) => void }, {
       readonly 'placeholder': true;
     }>(
       'Validator :: cell-7 :: engine-run',

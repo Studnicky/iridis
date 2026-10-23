@@ -1,14 +1,14 @@
-import type { CvdPairWarningInterfaceTypeEntity } from '@studnicky/iridis-contrast/types';
+import type { CvdPairWarningEntity } from '@studnicky/iridis-contrast/types';
 
 class CvdWarningsPanelReport {
   public readonly corrected: number;
-  public readonly list: CvdPairWarningInterfaceTypeEntity.Type[];
+  public readonly list: CvdPairWarningEntity.Type[];
   public readonly stillFailing: number;
   public readonly warnings: number;
 
   public constructor(
     corrected: number,
-    list: CvdPairWarningInterfaceTypeEntity.Type[],
+    list: CvdPairWarningEntity.Type[],
     stillFailing: number,
     warnings: number
   ) {

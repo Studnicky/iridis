@@ -1,10 +1,10 @@
-import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../ThemeDefinitionInterface.ts';
 
 import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
 import { renderDot } from '../particles/renderDot.ts';
 
 /** Sci-fi default — dense twinkling starfield, gooey lava blobs, perspective grid floor. Visual (fonts/radius/border) lives in ./futuristic.css. */
-export const futuristic: ThemeDefinitionInterfaceType = {
+export const futuristic: ThemeDefinitionInterface = {
   'ambient': {
     'blobCount':       18,
     'gooFilter':       'blur(28px)',

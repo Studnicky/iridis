@@ -2,28 +2,28 @@ import { ValidationError } from '@studnicky/errors/node';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { RawImagePixelInputInterface } from '../../interfaces/RawImagePixelInputInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
 import { OklchInputEntity } from '../../entities/OklchInputEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
 /** Strict intake task for canonical {l,c,h,a?} OKLCH literals. */
 class IntakeOklch implements TaskInterface {
   readonly 'name' = 'intake:oklch';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Parses {l,c,h,a?} OKLCH (l: 0..1, c: 0..0.5, h: 0..360) into ColorRecord entries. Throws on non-OKLCH input.',
     'name':        'intake:oklch',
     'reads':       ['input.colors'],
     'writes':      ['colors']
   });
 
-  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type {
+  parse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordEntity.Type {
     let input: OklchInputEntity.Type;
     try {
       input = OklchInputEntity.intake(raw);
@@ -43,7 +43,7 @@ class IntakeOklch implements TaskInterface {
     return result;
   }
 
-  #tryParse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordInterfaceTypeEntity.Type | undefined {
+  #tryParse(raw: ColorInputEntity.Type | RawImagePixelInputInterface): ColorRecordEntity.Type | undefined {
     try {
       const result = this.parse(raw);
       return result;

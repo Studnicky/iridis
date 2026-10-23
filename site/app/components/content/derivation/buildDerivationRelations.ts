@@ -1,7 +1,7 @@
 import type { HueAlgorithmBehaviorInterface } from '../../../composables/interfaces/HueAlgorithmBehaviorInterface.ts';
 import type { RoleMathEntry } from '../../../composables/types/roleMathEntry.ts';
 
-import { DerivationRelationInterfaceTypeEntity } from '../../../composables/entities/DerivationRelationInterfaceTypeEntity.ts';
+import { DerivationRelationEntity } from '../../../composables/entities/DerivationRelationEntity.ts';
 import { SEMANTIC_HUE } from '../../../theme/semanticHue.ts';
 import { capitalize } from '../../../utils/capitalize.ts';
 import { getAnalogousHues } from '../../../utils/getAnalogousHues.ts';
@@ -22,7 +22,7 @@ abstract class HueAlgorithmBehavior implements HueAlgorithmBehaviorInterface {
     options?: { readonly 'freeformOffsets'?: readonly number[] }
   ) => readonly number[];
 
-  public abstract createRelation(freeformOffset: number, hueVariantIndex: number): DerivationRelationInterfaceTypeEntity.Type;
+  public abstract createRelation(freeformOffset: number, hueVariantIndex: number): DerivationRelationEntity.Type;
   public abstract isFreeform(): boolean;
 }
 
@@ -31,8 +31,8 @@ class HueAlgorithmRelationFactory {
     algorithm: string,
     freeformOffset: number | undefined,
     hueVariantIndex: number
-  ): DerivationRelationInterfaceTypeEntity.Type {
-    const result = DerivationRelationInterfaceTypeEntity.create({
+  ): DerivationRelationEntity.Type {
+    const result = DerivationRelationEntity.create({
       'algorithm': algorithm,
       'freeformOffset': freeformOffset,
       'hueVariantIndex': hueVariantIndex
@@ -44,7 +44,7 @@ class HueAlgorithmRelationFactory {
 class MonochromaticHueAlgorithm extends HueAlgorithmBehavior {
   public readonly apply = getMonochromaticHues;
 
-  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationInterfaceTypeEntity.Type {
+  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationEntity.Type {
     const result = HueAlgorithmRelationFactory.create(
       'monochromatic',
       undefined,
@@ -61,7 +61,7 @@ class MonochromaticHueAlgorithm extends HueAlgorithmBehavior {
 class ComplementaryHueAlgorithm extends HueAlgorithmBehavior {
   public readonly apply = getComplementaryHues;
 
-  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationInterfaceTypeEntity.Type {
+  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationEntity.Type {
     const result = HueAlgorithmRelationFactory.create(
       'complementary',
       undefined,
@@ -84,7 +84,7 @@ class AnalogousHueAlgorithm extends HueAlgorithmBehavior {
     return result;
   };
 
-  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationInterfaceTypeEntity.Type {
+  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationEntity.Type {
     const result = HueAlgorithmRelationFactory.create(
       'analogous',
       undefined,
@@ -101,7 +101,7 @@ class AnalogousHueAlgorithm extends HueAlgorithmBehavior {
 class TriadicHueAlgorithm extends HueAlgorithmBehavior {
   public readonly apply = getTriadicHues;
 
-  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationInterfaceTypeEntity.Type {
+  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationEntity.Type {
     const result = HueAlgorithmRelationFactory.create(
       'triadic',
       undefined,
@@ -118,7 +118,7 @@ class TriadicHueAlgorithm extends HueAlgorithmBehavior {
 class TetradicHueAlgorithm extends HueAlgorithmBehavior {
   public readonly apply = getTetracticHues;
 
-  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationInterfaceTypeEntity.Type {
+  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationEntity.Type {
     const result = HueAlgorithmRelationFactory.create(
       'tetradic',
       undefined,
@@ -141,7 +141,7 @@ class SplitComplementaryHueAlgorithm extends HueAlgorithmBehavior {
     return result;
   };
 
-  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationInterfaceTypeEntity.Type {
+  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationEntity.Type {
     const result = HueAlgorithmRelationFactory.create(
       'split-complementary',
       undefined,
@@ -164,7 +164,7 @@ class CompoundHueAlgorithm extends HueAlgorithmBehavior {
     return result;
   };
 
-  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationInterfaceTypeEntity.Type {
+  public createRelation(_freeformOffset: number, hueVariantIndex: number): DerivationRelationEntity.Type {
     const result = HueAlgorithmRelationFactory.create(
       'compound',
       undefined,
@@ -192,7 +192,7 @@ class FreeformHueAlgorithm extends HueAlgorithmBehavior {
     return result;
   };
 
-  public createRelation(freeformOffset: number, _hueVariantIndex: number): DerivationRelationInterfaceTypeEntity.Type {
+  public createRelation(freeformOffset: number, _hueVariantIndex: number): DerivationRelationEntity.Type {
     const normalizedOffset = normalizeHue(freeformOffset);
     const result = HueAlgorithmRelationFactory.create(
       'freeform',
@@ -386,13 +386,13 @@ export const buildDerivationRelations = class DerivationRelationsBuilder {
   public static buildGroupRelationBatch(
     group: DerivationRelationGroup,
     algorithm: HueAlgorithmBehavior
-  ): Record<string, DerivationRelationInterfaceTypeEntity.Type> {
+  ): Record<string, DerivationRelationEntity.Type> {
     const offsets = algorithm.apply(0);
     const candidateHues = offsets.map((offset) => {
       const result = normalizeHue(group.parentHue + offset);
       return result;
     });
-    const result: Record<string, DerivationRelationInterfaceTypeEntity.Type> = {};
+    const result: Record<string, DerivationRelationEntity.Type> = {};
     for (let childIndex = 0; childIndex < group.children.length; childIndex += 1) {
       const child = group.children[childIndex];
       if (child === undefined) {continue;}
@@ -420,7 +420,7 @@ export const buildDerivationRelations = class DerivationRelationsBuilder {
   public static buildAlgorithmRelationUpdate(
     role: RoleMathEntry,
     algorithm: HueAlgorithmBehavior
-  ): DerivationRelationInterfaceTypeEntity.Type {
+  ): DerivationRelationEntity.Type {
     const freeformOffset = role.algorithmInfo?.offsetDeg ?? 0;
     const result = algorithm.createRelation(freeformOffset, 0);
     return result;
@@ -429,13 +429,13 @@ export const buildDerivationRelations = class DerivationRelationsBuilder {
   public static buildVariantRelationUpdate(
     role: RoleMathEntry,
     hueVariantIndex: number
-  ): DerivationRelationInterfaceTypeEntity.Type {
+  ): DerivationRelationEntity.Type {
     const algorithm = this.resolveHueAlgorithm(role.algorithmInfo?.algorithm);
     const result = algorithm.createRelation(0, hueVariantIndex);
     return result;
   }
 
-  public static buildFreeformRelationUpdate(offsetDegrees: number): DerivationRelationInterfaceTypeEntity.Type {
+  public static buildFreeformRelationUpdate(offsetDegrees: number): DerivationRelationEntity.Type {
     const result = this.freeform.createRelation(offsetDegrees, 0);
     return result;
   }

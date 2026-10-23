@@ -1,9 +1,10 @@
 import type { JSONSchema7Type } from 'json-schema';
 
-import { colorRecordFactory, ContrastPairInterfaceTypeEntity, contrastWcag21 } from '@studnicky/iridis';
+import { colorRecordFactory, ContrastPairEntity, ContrastPolicy, contrastWcag21, InputEntity, PaletteRoleState, RoleSchemaEntity } from '@studnicky/iridis';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { enforceCvdSimulate } from '../../../../src/tasks/EnforceCvdSimulate.ts';
 import { ContrastMetadataAssertionPort } from '../../contrast-plugin/ContrastMetadataAssertionPort.ts';
 import { ContrastTestPort } from '../../contrast-plugin/ContrastTestPort.ts';
 import { RecordingLogger } from '../../contrast-plugin/RecordingLogger.ts';
@@ -11,14 +12,255 @@ import { RecordingLogger } from '../../contrast-plugin/RecordingLogger.ts';
 /** Independent direct probes for CVD correction integrity, determinism, and workload behavior. */
 export class CvdProbeScenarioSuite {
   static async run(): Promise<void> {
-    await test('enforce:cvdSimulate validates and stores the exact emitted hex colors', CvdProbeScenarioSuite.emittedHex);
-    await test('enforce:cvdSimulate resolves dependency chains against terminal backgrounds', CvdProbeScenarioSuite.dependencyRollback);
-    await test('enforce:cvdSimulate finds a jointly valid dependency-chain correction', CvdProbeScenarioSuite.dependencyJoint);
-    await test('enforce:cvdSimulate never swaps original pair failures for new CVD types', CvdProbeScenarioSuite.failureSet);
-    await test('enforce:cvdSimulate records only pairs with an actually fixed CVD type', CvdProbeScenarioSuite.correctionMetadata);
-    await test('enforce:cvdSimulate resolves cyclic role constraints deterministically', CvdProbeScenarioSuite.cycle);
-    await test('enforce:cvdSimulate advisory mode does not claim correction failure', CvdProbeScenarioSuite.advisory);
-    await test('enforce:cvdSimulate keeps a realistic 32-pair correction budget', CvdProbeScenarioSuite.performance);
+    ContrastTestPort.configureCvdSearchBudgetForTesting(500_000, 3_000_000);
+    try {
+      await test('CVD refinement validates and stores the exact emitted hex colors', CvdProbeScenarioSuite.emittedHex);
+      await test('CVD refinement resolves dependency chains against terminal backgrounds', CvdProbeScenarioSuite.dependencyRollback);
+      await test('CVD refinement finds a jointly valid dependency-chain correction', CvdProbeScenarioSuite.dependencyJoint);
+      await test('CVD refinement never swaps original pair failures for new CVD types', CvdProbeScenarioSuite.failureSet);
+      await test('CVD refinement records only pairs with an actually fixed CVD type', CvdProbeScenarioSuite.correctionMetadata);
+      await test('CVD refinement resolves cyclic role constraints deterministically', CvdProbeScenarioSuite.cycle);
+      await test('CVD refinement advisory mode does not claim correction failure', CvdProbeScenarioSuite.advisory);
+      await test('CVD modes separate observation, nudging, and terminal enforcement', CvdProbeScenarioSuite.modes);
+      await test('CVD observation identifies every deficiency matrix', CvdProbeScenarioSuite.deficiencyMatrices);
+      await test('CVD refinement finds interior corrections for zero and near-zero chroma', CvdProbeScenarioSuite.achromaticCorrection);
+      await test('CVD refinement avoids extreme colors for a non-extreme correction', CvdProbeScenarioSuite.nonExtremeCorrection);
+      await test('CVD refinement preserves an exact baseline boundary when no safe correction exists', CvdProbeScenarioSuite.baselineBoundary);
+      await test('CVD refinement resolves a shared foreground against every declared background', CvdProbeScenarioSuite.sharedForeground);
+      await test('CVD refinement records exact fixed and remaining deficiency sets for a partial correction', CvdProbeScenarioSuite.partialCorrection);
+      await test('CVD refinement moves a derived background when the foreground is stated', CvdProbeScenarioSuite.statedForeground);
+      await test('CVD refinement does not move a derived endpoint outside its role range', CvdProbeScenarioSuite.rangeBoundedMover);
+      await test('CVD refinement moves a derived foreground when the background is stated', CvdProbeScenarioSuite.statedBackground);
+      await test('CVD refinement blocks a pair when both semantic endpoints are stated', CvdProbeScenarioSuite.statedBoth);
+      await test('CVD terminal compliance reports a CVD-only stated-both block', CvdProbeScenarioSuite.terminalStatedBoth);
+      await test('CVD terminal compliance reports a movable solver-exhausted block', CvdProbeScenarioSuite.terminalSolverExhausted);
+      await test('CVD terminal compliance retains a surviving correction', CvdProbeScenarioSuite.terminalCorrection);
+      await test('CVD refinement preserves a selected policy floor above the original contrast', CvdProbeScenarioSuite.selectedPolicyFloor);
+      await test('CVD refinement moves both derived endpoints around a stated chain middle', CvdProbeScenarioSuite.statedMiddleChain);
+      await test('CVD refinement keeps a realistic 32-pair correction budget', CvdProbeScenarioSuite.performance);
+      await test('APCA CVD requirements remain in WCAG-ratio units', CvdProbeScenarioSuite.apcaCvdFloor);
+    } finally {
+      ContrastTestPort.clearCvdSearchBudgetForTesting();
+    }
+    await test('CVD refinement bounds 100 unresolved movable pairs deterministically', CvdProbeScenarioSuite.budgetedStress);
+    await test('CVD refinement keeps production stress work bounded for 100 unresolved movable pairs', CvdProbeScenarioSuite.productionStress);
+    await test('CVD refinement shares one bounded budget across a cyclic component', CvdProbeScenarioSuite.budgetedCycle);
+    await test('canonical compliance remains deterministic for 100 declared roles', CvdProbeScenarioSuite.compliancePerformance);
+    await test('CVD cube bound blocks an unreachable simulated contrast before scoring', CvdProbeScenarioSuite.cubeInfeasible);
+    await test('CVD cube bound preserves feasible randomized corrections deterministically', CvdProbeScenarioSuite.cubeFeasible);
+  }
+
+  private static apcaCvdFloor(): void {
+    const roles = {
+      'background': colorRecordFactory.fromHex('#808080'),
+      'divider': colorRecordFactory.fromHex('#000000'),
+      'text': colorRecordFactory.fromHex('#ffffff')
+    };
+    const input = InputEntity.intake({
+      'colors': [],
+      'contrast': { 'algorithm': 'apca', 'cvdMode': 'enforce', 'level': 'Lc' },
+      'roles': {
+        'contrastPairs': [
+          CvdProbeScenarioSuite.pairAtMinimum('text', 'background', 4.5),
+          CvdProbeScenarioSuite.pairAtMinimum('divider', 'background', 3)
+        ],
+        'name': 'apca-cvd-floor',
+        'roles': []
+      }
+    });
+    const requirements = ContrastPolicy.normalize(input, PaletteRoleState.admit(roles));
+    assert.deepStrictEqual(
+      requirements.map((requirement) => { return requirement.cvdMinimumContrastRatio; }),
+      [4.5, 3],
+      '[cvd-apca-floor] APCA projects declared WCAG AA floors instead of Lc values or zero'
+    );
+  }
+
+  private static cubeInfeasible(): void {
+    enforceCvdSimulate.configureSearchBudgetForTesting(8_000, 48_000);
+    try {
+      const roles = {
+        'background': colorRecordFactory.fromHex('#808080'),
+        'text': colorRecordFactory.fromHex('#000000')
+      };
+      const pairs = [CvdProbeScenarioSuite.pairAtMinimum('text', 'background', 7)];
+      const first = ContrastTestPort.runCorrectedCvd(roles, pairs, new RecordingLogger());
+      const firstUsage = enforceCvdSimulate.searchBudgetUsageForTesting();
+      const second = ContrastTestPort.runCorrectedCvd(roles, pairs, new RecordingLogger());
+      const secondUsage = enforceCvdSimulate.searchBudgetUsageForTesting();
+      const firstCvd = ContrastMetadataAssertionPort.cvd(first);
+      const secondCvd = ContrastMetadataAssertionPort.cvd(second);
+      assert.ok(firstCvd !== undefined && secondCvd !== undefined, '[cvd-cube-infeasible] metadata present');
+      assert.deepStrictEqual(firstUsage, { 'candidateScores': 0, 'weightedUnits': 0 }, '[cvd-cube-infeasible] exact bound scores no candidates');
+      assert.deepStrictEqual(secondUsage, firstUsage, '[cvd-cube-infeasible] score use is deterministic');
+      assert.deepStrictEqual(firstCvd.blocked, [{
+        'background': 'background',
+        'cvdTypes': ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'],
+        'foreground': 'text',
+        'reason': 'solver-infeasible'
+      }], '[cvd-cube-infeasible] cube bound reports the canonical unreachable pair');
+      assert.deepStrictEqual(secondCvd.blocked, firstCvd.blocked, '[cvd-cube-infeasible] blocked signature is deterministic');
+      assert.strictEqual(firstCvd.corrections.length, 0, '[cvd-cube-infeasible] unreachable group has no correction');
+      assert.ok(firstCvd.warnings.length > 0, '[cvd-cube-infeasible] diagnostics remain available');
+    } finally {
+      enforceCvdSimulate.clearSearchBudgetForTesting();
+    }
+  }
+
+  private static cubeFeasible(): void {
+    const backgrounds = ['#10161f', '#2f556b', '#6d8c4e', '#b47a4d', '#d3c1e0'];
+    const pairs = [CvdProbeScenarioSuite.pairAtMinimum('text', 'background', 4.5)];
+    for (let index = 0; index < backgrounds.length; index += 1) {
+      const background = backgrounds[index];
+      if (background === undefined) {
+        continue;
+      }
+      const roles = {
+        'background': colorRecordFactory.fromHex(background),
+        'text': colorRecordFactory.fromHex('#ffffff')
+      };
+      const first = ContrastTestPort.runCorrectedCvd(roles, pairs, new RecordingLogger());
+      const second = ContrastTestPort.runCorrectedCvd(roles, pairs, new RecordingLogger());
+      const firstCvd = ContrastMetadataAssertionPort.cvd(first);
+      const secondCvd = ContrastMetadataAssertionPort.cvd(second);
+      assert.ok(firstCvd !== undefined && secondCvd !== undefined, `[cvd-cube-feasible-${index}] metadata present`);
+      assert.ok(
+        !firstCvd.blocked.some((blocked) => {
+          const result = blocked.reason === 'solver-infeasible';
+          return result;
+        }),
+        `[cvd-cube-feasible-${index}] exact bound does not reject a feasible CVD group`
+      );
+      assert.deepStrictEqual(
+        Object.entries(second.roles).map(([name, role]) => { return [name, role.hex]; }),
+        Object.entries(first.roles).map(([name, role]) => { return [name, role.hex]; }),
+        `[cvd-cube-feasible-${index}] terminal signature remains deterministic`
+      );
+    }
+  }
+
+  private static achromaticCorrection(): void {
+    const scenarios = [
+      {
+        'background': colorRecordFactory.fromOklch(0.65, 0, 0),
+        'chroma': function(value: number): boolean { const result = value < 0.000_000_1; return result; },
+        'name': 'zero',
+        'text': colorRecordFactory.fromOklch(0.5, 0, 0)
+      },
+      {
+        'background': colorRecordFactory.fromOklch(0.65, 0.000_000_01, 300),
+        'chroma': function(value: number): boolean { const result = value > 0 && value < 0.000_001; return result; },
+        'name': 'near-zero',
+        'text': colorRecordFactory.fromOklch(0.5, 0.000_000_01, 123)
+      }
+    ];
+    for (let index = 0; index < scenarios.length; index += 1) {
+      const scenario = scenarios[index];
+      if (scenario === undefined) {
+        continue;
+      }
+      const state = ContrastTestPort.runCorrectedCvd({ 'background': scenario.background, 'text': scenario.text }, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+      const text = state.roles.text;
+      const cvd = ContrastMetadataAssertionPort.cvd(state);
+      assert.ok(text !== undefined && cvd !== undefined, `[cvd-achromatic-${scenario.name}] terminal data present`);
+      assert.ok(scenario.chroma(text.oklch.c), `[cvd-achromatic-${scenario.name}] correction preserves achromatic search space`);
+      assert.ok(text.oklch.l > 0 && text.oklch.l < 1, `[cvd-achromatic-${scenario.name}] correction remains interior`);
+      assert.strictEqual(cvd.warnings.length, 0, `[cvd-achromatic-${scenario.name}] correction clears every CVD failure`);
+      assert.strictEqual(cvd.corrections.length, 1, `[cvd-achromatic-${scenario.name}] correction recorded`);
+    }
+  }
+
+  private static nonExtremeCorrection(): void {
+    const originalRoles = {
+      'background': colorRecordFactory.fromOklch(0.12004924674202846, 0.015276054573075558, 252.51270656713),
+      'text': colorRecordFactory.fromOklch(0.665, 0.11, 206.1)
+    };
+    const state = ContrastTestPort.runCorrectedCvd(originalRoles, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+    const text = state.roles.text;
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(text !== undefined && cvd !== undefined, '[cvd-non-extreme] terminal data present');
+    assert.notStrictEqual(text.hex, originalRoles.text.hex, '[cvd-non-extreme] correction moves the failing foreground');
+    assert.notStrictEqual(text.hex, '#000000', '[cvd-non-extreme] correction does not collapse to black');
+    assert.notStrictEqual(text.hex, '#ffffff', '[cvd-non-extreme] correction does not collapse to white');
+    assert.ok(text.oklch.l > 0 && text.oklch.l < 1, '[cvd-non-extreme] correction remains interior');
+    assert.strictEqual(cvd.warnings.length, 0, '[cvd-non-extreme] correction clears every CVD failure');
+    assert.strictEqual(cvd.corrections.length, 1, '[cvd-non-extreme] correction recorded');
+  }
+
+  private static baselineBoundary(): void {
+    const originalRoles = {
+      'background': colorRecordFactory.fromOklch(0.665, 0.11, 206.1),
+      'text': colorRecordFactory.fromOklch(0.12004924674202846, 0.015276054573075558, 252.51270656713)
+    };
+    const state = ContrastTestPort.runCorrectedCvd(originalRoles, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+    const text = state.roles.text;
+    const background = state.roles.background;
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(text !== undefined && background !== undefined && cvd !== undefined, '[cvd-baseline-boundary] terminal data present');
+    assert.ok(contrastWcag21.apply(text, background) + 1e-12 >= contrastWcag21.apply(originalRoles.text, originalRoles.background), '[cvd-baseline-boundary] correction never weakens the exact trichromat baseline');
+    assert.ok(cvd.warnings.length > 0 || cvd.corrections.length > 0, '[cvd-baseline-boundary] terminal CVD outcome remains explicit');
+  }
+
+  private static sharedForeground(): void {
+    const originalRoles = {
+      'backgroundHigh': colorRecordFactory.fromHex('#00a000'),
+      'backgroundLow': colorRecordFactory.fromHex('#008000'),
+      'text': colorRecordFactory.fromHex('#d00000')
+    };
+    const pairs = [CvdProbeScenarioSuite.pair('text', 'backgroundLow'), CvdProbeScenarioSuite.pair('text', 'backgroundHigh')];
+    const state = ContrastTestPort.runCorrectedCvd(originalRoles, pairs, new RecordingLogger());
+    const text = state.roles.text;
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(text !== undefined && cvd !== undefined, '[cvd-shared-foreground] terminal data present');
+    assert.notStrictEqual(text.hex, originalRoles.text.hex, '[cvd-shared-foreground] shared foreground moves once for its constraints');
+    assert.strictEqual(cvd.warnings.length, 0, '[cvd-shared-foreground] both declared backgrounds clear');
+    const backgrounds = new Set(cvd.corrections.map((correction) => { return correction.background; }));
+    assert.deepStrictEqual(backgrounds, new Set(['backgroundHigh', 'backgroundLow']), '[cvd-shared-foreground] diagnostics retain both semantic constraints');
+  }
+
+  private static partialCorrection(): void {
+    const originalRoles = {
+      'background': colorRecordFactory.fromOklch(0.441858619148843, 0.2611666344795376, 45.69293302483857),
+      'text': colorRecordFactory.fromOklch(0.6787660075817258, 0.1514103825194761, 255.34034740179777)
+    };
+    const state = ContrastTestPort.runCorrectedCvd(originalRoles, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(cvd !== undefined, '[cvd-partial-correction] metadata present');
+    const correction = cvd.corrections.find((entry) => { const result = entry.foreground === 'text' && entry.background === 'background'; return result; });
+    assert.ok(correction !== undefined, '[cvd-partial-correction] partial correction recorded');
+    const warningTypes = CvdProbeScenarioSuite.cvdTypesFor(cvd.warnings, 'text', 'background');
+    assert.ok(correction.cvdTypesFixed.length > 0, '[cvd-partial-correction] at least one deficiency improves');
+    assert.deepStrictEqual(new Set(correction.cvdTypesRemaining), warningTypes, '[cvd-partial-correction] remaining correction diagnostics equal terminal warnings');
+    for (let index = 0; index < correction.cvdTypesFixed.length; index += 1) {
+      const fixed = correction.cvdTypesFixed[index];
+      assert.ok(fixed !== undefined && !warningTypes.has(fixed), '[cvd-partial-correction] fixed deficiencies are absent from terminal warnings');
+    }
+  }
+
+  private static deficiencyMatrices(): void {
+    const scenarios = [
+      { 'background': '#008000', 'cvdType': 'deuteranopia', 'foreground': '#d00000' },
+      { 'background': '#00cc00', 'cvdType': 'protanopia', 'foreground': '#ff0000' },
+      { 'background': '#ffff00', 'cvdType': 'tritanopia', 'foreground': '#0000ff' },
+      { 'background': '#00d800', 'cvdType': 'achromatopsia', 'foreground': '#ff0000' }
+    ];
+    for (let index = 0; index < scenarios.length; index += 1) {
+      const scenario = scenarios[index];
+      if (scenario === undefined) {
+        continue;
+      }
+      const state = ContrastTestPort.runObservedCvd({
+        'background': colorRecordFactory.fromHex(scenario.background),
+        'text': colorRecordFactory.fromHex(scenario.foreground)
+      }, [CvdProbeScenarioSuite.pair('text', 'background')], new RecordingLogger());
+      const cvd = ContrastMetadataAssertionPort.cvd(state);
+      assert.ok(cvd !== undefined, `[cvd-deficiency-${scenario.cvdType}] metadata present`);
+      const isReported = cvd.warnings.some((warning) => {
+        const result = warning.cvdType === scenario.cvdType;
+        return result;
+      });
+      assert.ok(isReported, `[cvd-deficiency-${scenario.cvdType}] named deficiency is reported`);
+    }
   }
 
   private static advisory(): void {
@@ -33,6 +275,364 @@ export class CvdProbeScenarioSuite {
     assert.ok(cvd.warnings.length > 0, '[cvd-advisory-metadata] warnings retained');
     assert.deepEqual(logger.warnings, ['CVD advisory: pairs fail perceptual-stability threshold'], '[cvd-advisory-log] one aggregate advisory per run');
     assert.ok(!logger.warnings.includes('CVD correction could not clear every failing type'), '[cvd-advisory-log] advisory mode has no correction failure');
+  }
+
+  private static modes(): void {
+    const roles = CvdProbeScenarioSuite.statedPairRoles();
+    const pairs = [CvdProbeScenarioSuite.pair('text', 'background')];
+    const stated = ['text', 'background'];
+
+    const warned = ContrastTestPort.runObservedCompliance(
+      roles,
+      pairs,
+      new RecordingLogger(),
+      stated
+    );
+    const nudged = ContrastTestPort.runNudgedCompliance(
+      roles,
+      pairs,
+      new RecordingLogger(),
+      stated
+    );
+    const enforced = ContrastTestPort.runCompliance(
+      roles,
+      pairs,
+      new RecordingLogger(),
+      stated
+    );
+    const movableNudged = ContrastTestPort.runNudgedCompliance(
+      roles,
+      pairs,
+      new RecordingLogger(),
+      ['text']
+    );
+
+    const warnedCvd = ContrastMetadataAssertionPort.cvd(warned);
+    const nudgedCvd = ContrastMetadataAssertionPort.cvd(nudged);
+    const enforcedCvd = ContrastMetadataAssertionPort.cvd(enforced);
+    const movableNudgedCvd = ContrastMetadataAssertionPort.cvd(movableNudged);
+    assert.ok(
+      warnedCvd !== undefined &&
+      nudgedCvd !== undefined &&
+      enforcedCvd !== undefined &&
+      movableNudgedCvd !== undefined,
+      '[cvd-modes] CVD metadata present for every mode'
+    );
+    assert.strictEqual(
+      warned.roles.text?.hex,
+      roles.text.hex,
+      '[cvd-modes] warn preserves the stated foreground'
+    );
+    assert.strictEqual(
+      nudged.roles.background?.hex,
+      roles.background.hex,
+      '[cvd-modes] nudge preserves the stated background when no movable endpoint exists'
+    );
+    assert.deepStrictEqual(
+      warnedCvd.blocked,
+      [],
+      '[cvd-modes] warn never creates a terminal blocker'
+    );
+    assert.deepStrictEqual(
+      nudgedCvd.blocked,
+      [],
+      '[cvd-modes] nudge never creates a terminal blocker'
+    );
+    assert.strictEqual(
+      warnedCvd.corrections.length,
+      0,
+      '[cvd-modes] warn never records a correction'
+    );
+    assert.strictEqual(
+      nudgedCvd.corrections.length,
+      0,
+      '[cvd-modes] nudge records no impossible correction'
+    );
+    assert.notStrictEqual(
+      movableNudged.roles.background?.hex,
+      roles.background.hex,
+      '[cvd-modes] nudge corrects an unstated endpoint'
+    );
+    assert.strictEqual(
+      movableNudgedCvd.blocked.length,
+      0,
+      '[cvd-modes] nudge emits no blocker after a movable correction'
+    );
+    assert.strictEqual(
+      movableNudgedCvd.corrections.length,
+      1,
+      '[cvd-modes] nudge records its applied correction'
+    );
+    assert.ok(
+      warnedCvd.warnings.length > 0 && nudgedCvd.warnings.length > 0,
+      '[cvd-modes] warn and nudge retain unresolved CVD evidence'
+    );
+    assert.deepStrictEqual(
+      enforcedCvd.blocked,
+      [{
+        'background': 'background',
+        'cvdTypes': ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'],
+        'foreground': 'text',
+        'reason': 'stated-both'
+      }],
+      '[cvd-modes] enforce creates the canonical stated-both blocker'
+    );
+
+    const warnedReport = ContrastMetadataAssertionPort.compliance(warned);
+    const nudgedReport = ContrastMetadataAssertionPort.compliance(nudged);
+    const enforcedReport = ContrastMetadataAssertionPort.compliance(enforced);
+    assert.ok(
+      warnedReport !== undefined &&
+      nudgedReport !== undefined &&
+      enforcedReport !== undefined,
+      '[cvd-modes] terminal compliance reports present'
+    );
+    assert.strictEqual(
+      warnedReport.cvdCompliant,
+      true,
+      '[cvd-modes] warn evidence does not reject the palette'
+    );
+    assert.strictEqual(
+      nudgedReport.cvdCompliant,
+      true,
+      '[cvd-modes] unresolved nudge evidence does not reject the palette'
+    );
+    assert.strictEqual(
+      enforcedReport.cvdCompliant,
+      false,
+      '[cvd-modes] unresolved enforce evidence rejects the palette'
+    );
+  }
+
+  private static statedForeground(): void {
+    const originalRoles = CvdProbeScenarioSuite.statedPairRoles();
+    const state = ContrastTestPort.runCorrectedCvd(
+      originalRoles,
+      [CvdProbeScenarioSuite.pair('text', 'background')],
+      new RecordingLogger(),
+      ['text']
+    );
+    const text = state.roles.text;
+    const background = state.roles.background;
+    assert.ok(text !== undefined && background !== undefined, '[cvd-stated-foreground] roles remain present');
+    assert.strictEqual(text.hex, originalRoles.text.hex, '[cvd-stated-foreground] stated foreground remains byte-exact');
+    assert.notStrictEqual(background.hex, originalRoles.background.hex, '[cvd-stated-foreground] derived background moves');
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(cvd !== undefined, '[cvd-stated-foreground] metadata present');
+    assert.strictEqual(cvd.blocked.length, 0, '[cvd-stated-foreground] movable pair is not blocked');
+    assert.strictEqual(cvd.warnings.length, 0, '[cvd-stated-foreground] moved background clears CVD failures');
+    assert.deepStrictEqual(cvd.corrections, [{
+      'adjustedRoles': ['background'],
+      'background': 'background',
+      'cvdTypesFixed': ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'],
+      'cvdTypesRemaining': [],
+      'disposition': 'adjusted-background',
+      'foreground': 'text'
+    }], '[cvd-stated-foreground] correction records the moved background');
+  }
+
+  private static rangeBoundedMover(): void {
+    const originalRoles = CvdProbeScenarioSuite.statedPairRoles();
+    const background = originalRoles.background;
+    const roleSchema = RoleSchemaEntity.intake({
+      'contrastPairs': [CvdProbeScenarioSuite.pair('text', 'background')],
+      'name': 'cvd-range-bounded-mover',
+      'roles': [
+        {
+          'chromaRange': [background.oklch.c, background.oklch.c],
+          'lightnessRange': [background.oklch.l, background.oklch.l],
+          'name': 'background',
+          'required': true
+        },
+        { 'name': 'text', 'required': true }
+      ]
+    });
+    const state = ContrastTestPort.runCorrectedCvdWithRoleSchema(
+      originalRoles,
+      roleSchema,
+      new RecordingLogger(),
+      ['text']
+    );
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+
+    assert.ok(cvd !== undefined, '[cvd-range-bounded] metadata present');
+    assert.strictEqual(
+      state.roles.background?.hex,
+      originalRoles.background.hex,
+      '[cvd-range-bounded] correction never writes an out-of-range background'
+    );
+    assert.deepStrictEqual(
+      cvd.blocked,
+      [{
+        'background': 'background',
+        'cvdTypes': ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'],
+        'foreground': 'text',
+        'reason': 'solver-exhausted'
+      }],
+      '[cvd-range-bounded] enforce reports the constrained unresolved pair'
+    );
+  }
+
+  private static statedBackground(): void {
+    const originalRoles = CvdProbeScenarioSuite.statedPairRoles();
+    const state = ContrastTestPort.runCorrectedCvd(
+      originalRoles,
+      [CvdProbeScenarioSuite.pair('text', 'background')],
+      new RecordingLogger(),
+      ['background']
+    );
+    const text = state.roles.text;
+    const background = state.roles.background;
+    assert.ok(text !== undefined && background !== undefined, '[cvd-stated-background] roles remain present');
+    assert.notStrictEqual(text.hex, originalRoles.text.hex, '[cvd-stated-background] derived foreground moves');
+    assert.strictEqual(background.hex, originalRoles.background.hex, '[cvd-stated-background] stated background remains byte-exact');
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(cvd !== undefined, '[cvd-stated-background] metadata present');
+    assert.strictEqual(cvd.blocked.length, 0, '[cvd-stated-background] movable pair is not blocked');
+    assert.strictEqual(cvd.warnings.length, 0, '[cvd-stated-background] moved foreground clears CVD failures');
+    assert.deepStrictEqual(cvd.corrections, [{
+      'adjustedRoles': ['text'],
+      'background': 'background',
+      'cvdTypesFixed': ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'],
+      'cvdTypesRemaining': [],
+      'disposition': 'adjusted-foreground',
+      'foreground': 'text'
+    }], '[cvd-stated-background] correction records the moved foreground');
+  }
+
+  private static statedBoth(): void {
+    const originalRoles = CvdProbeScenarioSuite.statedPairRoles();
+    const state = ContrastTestPort.runCorrectedCvd(
+      originalRoles,
+      [CvdProbeScenarioSuite.pair('text', 'background')],
+      new RecordingLogger(),
+      ['text', 'background']
+    );
+    assert.strictEqual(state.roles.text?.hex, originalRoles.text.hex, '[cvd-stated-both] stated foreground remains byte-exact');
+    assert.strictEqual(state.roles.background?.hex, originalRoles.background.hex, '[cvd-stated-both] stated background remains byte-exact');
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(cvd !== undefined, '[cvd-stated-both] metadata present');
+    assert.deepStrictEqual(cvd.blocked, [{
+      'background': 'background',
+      'cvdTypes': ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'],
+      'foreground': 'text',
+      'reason': 'stated-both'
+    }], '[cvd-stated-both] blocked pair identifies the exact fixed endpoints');
+    assert.strictEqual(cvd.corrections.length, 0, '[cvd-stated-both] no correction claims a stated role changed');
+    assert.ok(cvd.warnings.length > 0, '[cvd-stated-both] unresolved CVD warnings remain explicit');
+  }
+
+  private static selectedPolicyFloor(): void {
+    const originalRoles = {
+      'background': colorRecordFactory.fromHex('#008000'),
+      'text': colorRecordFactory.fromHex('#d00000')
+    };
+    const state = ContrastTestPort.runCorrectedCvd(
+      originalRoles,
+      [CvdProbeScenarioSuite.pairAtMinimum('text', 'background', 4.5)],
+      new RecordingLogger()
+    );
+    const text = state.roles.text;
+    const background = state.roles.background;
+    assert.ok(text !== undefined && background !== undefined, '[cvd-selected-floor] terminal roles present');
+    assert.ok(contrastWcag21.apply(text, background) >= 4.5, '[cvd-selected-floor] selected standard floor remains valid');
+  }
+
+  private static statedMiddleChain(): void {
+    const originalRoles = {
+      'A': colorRecordFactory.fromOklch(0.8063462371006608, 0.2377493067085743, 107.108104666695),
+      'B': colorRecordFactory.fromOklch(0.8175662238150835, 0.2222650540433824, 338.6068118736148),
+      'C': colorRecordFactory.fromOklch(0.8744853308424354, 0.24525246489793062, 218.68581217713654)
+    };
+    const state = ContrastTestPort.runCorrectedCvd(
+      originalRoles,
+      [CvdProbeScenarioSuite.pair('A', 'B'), CvdProbeScenarioSuite.pair('B', 'C')],
+      new RecordingLogger(),
+      ['B']
+    );
+    assert.strictEqual(state.roles.B?.hex, originalRoles.B.hex, '[cvd-stated-middle] stated middle remains byte-exact');
+    assert.notStrictEqual(state.roles.A?.hex, originalRoles.A.hex, '[cvd-stated-middle] derived foreground moves');
+    assert.notStrictEqual(state.roles.C?.hex, originalRoles.C.hex, '[cvd-stated-middle] derived counterpart moves');
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    assert.ok(cvd !== undefined, '[cvd-stated-middle] metadata present');
+    assert.strictEqual(cvd.blocked.length, 0, '[cvd-stated-middle] movable chain is not blocked');
+    assert.strictEqual(cvd.warnings.length, 0, '[cvd-stated-middle] chain correction clears CVD failures');
+    assert.deepStrictEqual(cvd.corrections.map((correction) => {
+      return correction.adjustedRoles;
+    }), [['A'], ['C']], '[cvd-stated-middle] each semantic pair records its actual mover');
+  }
+
+  private static terminalCorrection(): void {
+    const originalRoles = CvdProbeScenarioSuite.statedPairRoles();
+    const state = ContrastTestPort.runCompliance(
+      originalRoles,
+      [CvdProbeScenarioSuite.pair('text', 'background')],
+      new RecordingLogger()
+    );
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    const compliance = ContrastMetadataAssertionPort.compliance(state);
+    assert.ok(cvd !== undefined && compliance !== undefined, '[cvd-terminal-correction] terminal metadata present');
+    assert.notStrictEqual(state.roles.text?.hex, originalRoles.text.hex, '[cvd-terminal-correction] rendered foreground retains CVD correction');
+    assert.strictEqual(cvd.corrections.length, 1, '[cvd-terminal-correction] terminal diagnostics retain correction');
+    assert.deepStrictEqual(cvd.corrections[0]?.adjustedRoles, ['text'], '[cvd-terminal-correction] correction identifies rendered mover');
+    assert.strictEqual(compliance.compliant, true, '[cvd-terminal-correction] corrected terminal roles comply');
+    assert.strictEqual(compliance.cvdCompliant, true, '[cvd-terminal-correction] corrected terminal roles clear CVD');
+  }
+
+  private static terminalSolverExhausted(): void {
+    const originalRoles = {
+      'A': colorRecordFactory.fromHex('#d00000'),
+      'B': colorRecordFactory.fromHex('#008000')
+    };
+    const state = ContrastTestPort.runCompliance(
+      originalRoles,
+      [CvdProbeScenarioSuite.pair('A', 'B'), CvdProbeScenarioSuite.pair('B', 'A')],
+      new RecordingLogger()
+    );
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    const compliance = ContrastMetadataAssertionPort.compliance(state);
+    assert.ok(cvd !== undefined && compliance !== undefined, '[cvd-terminal-exhausted] terminal metadata present');
+    assert.strictEqual(cvd.warnings.length, 8, '[cvd-terminal-exhausted] terminal warnings remain explicit');
+    assert.deepStrictEqual(cvd.blocked.map((blocked) => {
+      return blocked.reason;
+    }), ['solver-exhausted', 'solver-exhausted'], '[cvd-terminal-exhausted] every movable unresolved pair is blocked');
+    assert.strictEqual(compliance.compliant, false, '[cvd-terminal-exhausted] CVD failure makes terminal report noncompliant');
+    assert.strictEqual(compliance.cvdCompliant, false, '[cvd-terminal-exhausted] terminal CVD status fails');
+    assert.deepStrictEqual(compliance.blockedPairs.map((blocked) => {
+      return blocked.reason;
+    }), ['solver-exhausted', 'solver-exhausted'], '[cvd-terminal-exhausted] canonical report retains CVD blockers');
+  }
+
+  private static terminalStatedBoth(): void {
+    const originalRoles = CvdProbeScenarioSuite.statedPairRoles();
+    const state = ContrastTestPort.runCompliance(
+      originalRoles,
+      [CvdProbeScenarioSuite.pair('text', 'background')],
+      new RecordingLogger(),
+      ['text', 'background']
+    );
+    const cvd = ContrastMetadataAssertionPort.cvd(state);
+    const compliance = ContrastMetadataAssertionPort.compliance(state);
+    assert.ok(cvd !== undefined && compliance !== undefined, '[cvd-terminal-stated-both] terminal metadata present');
+    assert.strictEqual(cvd.corrections.length, 0, '[cvd-terminal-stated-both] standard blockers skip CVD refinement');
+    assert.ok(cvd.warnings.length > 0, '[cvd-terminal-stated-both] observation warnings remain evidence');
+    assert.strictEqual(compliance.compliant, false, '[cvd-terminal-stated-both] CVD-only failure makes terminal report noncompliant');
+    assert.strictEqual(compliance.cvdCompliant, false, '[cvd-terminal-stated-both] terminal CVD status fails');
+    assert.deepStrictEqual(compliance.blockedPairs, [{
+      'actualTrichromat': contrastWcag21.apply(originalRoles.text, originalRoles.background),
+      'background': 'background',
+      'foreground': 'text',
+      'reason': 'stated-both',
+      'requiredTrichromat': 1,
+      'target': 'AA'
+    }], '[cvd-terminal-stated-both] exact terminal blocker remains toastable');
+  }
+
+  private static statedPairRoles(): { readonly 'background': ReturnType<typeof colorRecordFactory.fromHex>; readonly 'text': ReturnType<typeof colorRecordFactory.fromHex>; } {
+    return {
+      'background': colorRecordFactory.fromHex('#46092e'),
+      'text': colorRecordFactory.fromHex('#0b375d')
+    };
   }
 
   private static correctionMetadata(): void {
@@ -72,7 +672,7 @@ export class CvdProbeScenarioSuite {
     assert.ok(cvd !== undefined, '[cvd-cycle] metadata present');
     assert.strictEqual(cvd.warnings.length, 8, '[cvd-cycle] every unresolved pair/type reported');
     assert.strictEqual(cvd.corrections.length, 0, '[cvd-cycle] no phantom correction');
-    assert.deepStrictEqual(logger.warnings, ['CVD correction could not clear every failing type'], '[cvd-cycle-log] terminal metadata warnings emit one aggregate correction diagnostic');
+    assert.deepStrictEqual(logger.warnings, ['CVD simulation emitted terminal advisory evidence'], '[cvd-cycle-log] terminal reconciliation emits one aggregate evidence diagnostic');
   }
 
   private static dependencyJoint(): void {
@@ -93,6 +693,12 @@ export class CvdProbeScenarioSuite {
     const cvd = ContrastMetadataAssertionPort.cvd(state);
     assert.ok(cvd !== undefined, '[cvd-dependency-joint] metadata present');
     assert.strictEqual(cvd.warnings.length, 0, '[cvd-dependency-joint] pairs clear');
+    const pairedCorrection = cvd.corrections.find((correction) => {
+      const matches = correction.foreground === 'A' && correction.background === 'B';
+      return matches;
+    });
+    assert.ok(pairedCorrection !== undefined, '[cvd-dependency-joint] A over B correction recorded');
+    assert.deepStrictEqual(pairedCorrection.adjustedRoles, ['A', 'B'], '[cvd-dependency-joint] semantic pair records both changed endpoints in semantic order');
   }
 
   private static dependencyRollback(): void {
@@ -201,8 +807,139 @@ export class CvdProbeScenarioSuite {
   }
 
   private static pair(foreground: string, background: string): JSONSchema7Type {
-    const result = ContrastPairInterfaceTypeEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'foreground': foreground, 'minimumContrastRatio': 1 });
+    const result = ContrastPairEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'foreground': foreground, 'minimumContrastRatio': 1 });
     return result;
+  }
+
+  private static pairAtMinimum(foreground: string, background: string, minimumContrastRatio: number): JSONSchema7Type {
+    const result = ContrastPairEntity.intake({ 'algorithm': 'wcag21', 'background': background, 'foreground': foreground, 'minimumContrastRatio': minimumContrastRatio });
+    return result;
+  }
+
+  private static budgetedStress(): void {
+    const maximumCandidateScores = 1;
+    const maximumWeightedUnits = 6;
+    const roles: Record<string, ReturnType<typeof colorRecordFactory.fromHex>> = {
+      'background': colorRecordFactory.fromHex('#008000')
+    };
+    const pairs: JSONSchema7Type[] = [];
+    for (let index = 0; index < 99; index += 1) {
+      const foreground = `text${index}`;
+      Object.defineProperty(roles, foreground, {
+        'configurable': true,
+        'enumerable': true,
+        'value': colorRecordFactory.fromHex('#d00000'),
+        'writable': true
+      });
+      pairs.push(CvdProbeScenarioSuite.pair(foreground, 'background'));
+    }
+    const firstResult = ContrastTestPort.runComplianceWithCvdSearchBudgetForTesting(
+      roles, pairs, new RecordingLogger(), maximumCandidateScores, maximumWeightedUnits
+    );
+    const secondResult = ContrastTestPort.runComplianceWithCvdSearchBudgetForTesting(
+      roles, pairs, new RecordingLogger(), maximumCandidateScores, maximumWeightedUnits
+    );
+    const firstReport = ContrastMetadataAssertionPort.compliance(firstResult.state);
+    const secondReport = ContrastMetadataAssertionPort.compliance(secondResult.state);
+    assert.ok(firstReport !== undefined && secondReport !== undefined, '[cvd-budget-stress] terminal reports present');
+    assert.ok(firstResult.usage.candidateScores <= maximumCandidateScores, '[cvd-budget-stress] global score count never exceeds the injected candidate cap');
+    assert.ok(firstResult.usage.weightedUnits <= maximumWeightedUnits, '[cvd-budget-stress] global weighted work never exceeds the injected work cap');
+    assert.deepStrictEqual(secondResult.usage, firstResult.usage, '[cvd-budget-stress] deterministic score budget usage');
+    assert.strictEqual(firstReport.compliant, false, '[cvd-budget-stress] exhausted movable pairs make the terminal report noncompliant');
+    assert.strictEqual(firstReport.blockedPairs.length, 99, '[cvd-budget-stress] every unresolved pair receives one canonical blocker');
+    for (let index = 0; index < firstReport.blockedPairs.length; index += 1) {
+      const reason: string | undefined = firstReport.blockedPairs.at(index)?.reason;
+      assert.strictEqual(reason, 'solver-exhausted', `[cvd-budget-stress] unresolved pair ${index} reports deterministic exhaustion`);
+    }
+    assert.deepStrictEqual(
+      Object.entries(secondResult.state.roles).map(([name, role]) => { return [name, role.hex]; }),
+      Object.entries(firstResult.state.roles).map(([name, role]) => { return [name, role.hex]; }),
+      '[cvd-budget-stress] bounded resolution is deterministic'
+    );
+  }
+
+  private static productionStress(): void {
+    const roles: Record<string, ReturnType<typeof colorRecordFactory.fromHex>> = {
+      'background': colorRecordFactory.fromHex('#008000')
+    };
+    const pairs: JSONSchema7Type[] = [];
+    for (let index = 0; index < 99; index += 1) {
+      const foreground = `text${index}`;
+      Object.defineProperty(roles, foreground, {
+        'configurable': true,
+        'enumerable': true,
+        'value': colorRecordFactory.fromHex('#d00000'),
+        'writable': true
+      });
+      pairs.push(CvdProbeScenarioSuite.pair(foreground, 'background'));
+    }
+    const startedAt = performance.now();
+    const state = ContrastTestPort.runCompliance(roles, pairs, new RecordingLogger());
+    const elapsedMs = performance.now() - startedAt;
+    const report = ContrastMetadataAssertionPort.compliance(state);
+    assert.ok(report !== undefined, '[cvd-production-stress] terminal report present');
+    assert.strictEqual(report.compliant, true, '[cvd-production-stress] shared score and group-result caches retain a valid correction for each repeated failing pair');
+    assert.strictEqual(report.blockedPairs.length, 0, '[cvd-production-stress] corrected pairs need no terminal blocker');
+    const localCeilingMs = 900;
+    assert.ok(elapsedMs <= localCeilingMs, `[cvd-production-stress] bounded CVD search took ${elapsedMs.toFixed(2)} ms against the local ${localCeilingMs} ms ceiling`);
+  }
+
+  private static budgetedCycle(): void {
+    const maximumCandidateScores = 1;
+    const maximumWeightedUnits = 6;
+    const roles = {
+      'A': colorRecordFactory.fromHex('#d00000'),
+      'B': colorRecordFactory.fromHex('#008000')
+    };
+    const pairs = [CvdProbeScenarioSuite.pair('A', 'B'), CvdProbeScenarioSuite.pair('B', 'A')];
+    const result = ContrastTestPort.runComplianceWithCvdSearchBudgetForTesting(
+      roles, pairs, new RecordingLogger(), maximumCandidateScores, maximumWeightedUnits
+    );
+    const report = ContrastMetadataAssertionPort.compliance(result.state);
+    assert.ok(report !== undefined, '[cvd-budget-cycle] terminal report present');
+    assert.ok(result.usage.candidateScores <= maximumCandidateScores, '[cvd-budget-cycle] one shared score cap covers every cycle pass');
+    assert.ok(result.usage.weightedUnits <= maximumWeightedUnits, '[cvd-budget-cycle] one shared weighted-work cap covers every cycle pass');
+    assert.strictEqual(report.compliant, false, '[cvd-budget-cycle] exhausted cycle is noncompliant');
+    assert.deepStrictEqual(
+      report.blockedPairs.map((blocked) => { return blocked.reason; }),
+      ['solver-exhausted', 'solver-exhausted'],
+      '[cvd-budget-cycle] the shared cycle budget blocks each unresolved pair exactly once'
+    );
+  }
+
+  private static compliancePerformance(): void {
+    const roles: Record<string, ReturnType<typeof colorRecordFactory.fromHex>> = {
+      'background': colorRecordFactory.fromHex('#ffffff')
+    };
+    const pairs: JSONSchema7Type[] = [];
+    const text = colorRecordFactory.fromHex('#000000');
+    for (let index = 0; index < 99; index += 1) {
+      const foreground = `text${index}`;
+      Object.defineProperty(roles, foreground, {
+        'configurable': true,
+        'enumerable': true,
+        'value': text,
+        'writable': true
+      });
+      pairs.push(CvdProbeScenarioSuite.pairAtMinimum(foreground, 'background', 4.5));
+    }
+    const startedAt = performance.now();
+    const first = ContrastTestPort.runCompliance(roles, pairs, new RecordingLogger());
+    const elapsedMs = performance.now() - startedAt;
+    const second = ContrastTestPort.runCompliance(roles, pairs, new RecordingLogger());
+    const firstReport = ContrastMetadataAssertionPort.compliance(first);
+    const secondReport = ContrastMetadataAssertionPort.compliance(second);
+    assert.ok(firstReport !== undefined && secondReport !== undefined, '[compliance-100-role] terminal reports present');
+    assert.strictEqual(Object.keys(first.roles).length, 100, '[compliance-100-role] all declared roles remain present');
+    assert.strictEqual(firstReport.pairs.length, 99, '[compliance-100-role] every declared pair is measured');
+    assert.strictEqual(firstReport.compliant, true, '[compliance-100-role] terminal roles comply');
+    assert.deepStrictEqual(
+      Object.entries(second.roles).map(([name, role]) => { return [name, role.hex]; }),
+      Object.entries(first.roles).map(([name, role]) => { return [name, role.hex]; }),
+      '[compliance-100-role] canonical resolver is deterministic'
+    );
+    const localGenerousBoundMs = 8_000;
+    assert.ok(elapsedMs <= localGenerousBoundMs, `[compliance-100-role] enforce:compliance plus report:compliance took ${elapsedMs.toFixed(2)} ms against the generous ${localGenerousBoundMs} ms local bound`);
   }
 
   private static performance(): void {

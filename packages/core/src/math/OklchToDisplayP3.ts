@@ -1,4 +1,4 @@
-import { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
+import { RgbEntity } from '../entities/RgbEntity.ts';
 
 /**
  * OKLCH → linear sRGB → linear Display-P3 → gamma-encoded Display-P3.
@@ -23,7 +23,7 @@ import { RgbInterfaceTypeEntity } from '../entities/RgbInterfaceTypeEntity.ts';
 class OklchToDisplayP3 {
   readonly 'name' = 'oklchToDisplayP3';
 
-  apply(l: number, c: number, h: number): RgbInterfaceTypeEntity.Type {
+  apply(l: number, c: number, h: number): RgbEntity.Type {
     const hRad = (h * Math.PI) / 180;
     const a = c * Math.cos(hRad);
     const b = c * Math.sin(hRad);
@@ -48,7 +48,7 @@ class OklchToDisplayP3 {
     const p3bLin = 0.0170827 * rLin + 0.0723968 * gLin + 0.9105206 * bLin;
 
     // Display-P3 transfer function (same gamma curve as sRGB).
-    const result = RgbInterfaceTypeEntity.create({
+    const result = RgbEntity.create({
       'b': P3.encode(p3bLin),
       'g': P3.encode(p3gLin),
       'r': P3.encode(p3rLin)

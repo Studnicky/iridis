@@ -2,12 +2,12 @@ import { ValidationError } from '@studnicky/errors/node';
 
 import type { ClusterBucketEntity } from '../entities/ClusterBucketEntity.ts';
 
-import { ColorRecordInterfaceTypeEntity } from '../entities/ColorRecordInterfaceTypeEntity.ts';
+import { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 
 class BucketMedian {
-  static of(bucket: ClusterBucketEntity.Type): ColorRecordInterfaceTypeEntity.Type {
-    const colors = bucket.colors.map(ColorRecordInterfaceTypeEntity.intake);
+  static of(bucket: ClusterBucketEntity.Type): ColorRecordEntity.Type {
+    const colors = bucket.colors.map(ColorRecordEntity.intake);
     const colorCount = colors.length;
     if (colorCount === 0) {
       const result = colorRecordFactory.fromOklch(0.5, 0, 0);
@@ -41,7 +41,7 @@ class BucketMedian {
 }
 
 class ChannelRange {
-  static lightness(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): number {
+  static lightness(colors: readonly ColorRecordEntity.Type[]): number {
     let maximum = -Infinity;
     let minimum = Infinity;
     const colorCount = colors.length;
@@ -54,7 +54,7 @@ class ChannelRange {
     return result;
   }
 
-  static chroma(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): number {
+  static chroma(colors: readonly ColorRecordEntity.Type[]): number {
     let maximum = -Infinity;
     let minimum = Infinity;
     const colorCount = colors.length;
@@ -80,7 +80,7 @@ class CircularHueStats {
     return result;
   }
 
-  static of(colors: readonly ColorRecordInterfaceTypeEntity.Type[]): { 'gapStart': number; 'range': number } {
+  static of(colors: readonly ColorRecordEntity.Type[]): { 'gapStart': number; 'range': number } {
     const hues: number[] = [];
     const colorCount = colors.length;
     for (let colorIndex = 0; colorIndex < colorCount; colorIndex++) {
@@ -118,17 +118,17 @@ class UnwrappedHue {
 }
 
 class Bucket {
-  static compareHue(first: ColorRecordInterfaceTypeEntity.Type, second: ColorRecordInterfaceTypeEntity.Type, gapStart: number): number {
+  static compareHue(first: ColorRecordEntity.Type, second: ColorRecordEntity.Type, gapStart: number): number {
     const result = UnwrappedHue.of(first.oklch.h, gapStart) - UnwrappedHue.of(second.oklch.h, gapStart);
     return result;
   }
 
-  static compareChroma(first: ColorRecordInterfaceTypeEntity.Type, second: ColorRecordInterfaceTypeEntity.Type): number {
+  static compareChroma(first: ColorRecordEntity.Type, second: ColorRecordEntity.Type): number {
     const result = first.oklch.c - second.oklch.c;
     return result;
   }
 
-  static compareLightness(first: ColorRecordInterfaceTypeEntity.Type, second: ColorRecordInterfaceTypeEntity.Type): number {
+  static compareLightness(first: ColorRecordEntity.Type, second: ColorRecordEntity.Type): number {
     const result = first.oklch.l - second.oklch.l;
     return result;
   }
@@ -152,7 +152,7 @@ class Bucket {
   }
 
   static split(bucket: ClusterBucketEntity.Type): [ClusterBucketEntity.Type, ClusterBucketEntity.Type] {
-    const colors = bucket.colors.map(ColorRecordInterfaceTypeEntity.intake);
+    const colors = bucket.colors.map(ColorRecordEntity.intake);
     const lightnessRange = ChannelRange.lightness(colors);
     const chromaRange = ChannelRange.chroma(colors);
     const hueStats = CircularHueStats.of(colors);
@@ -192,9 +192,9 @@ class Bucket {
 class ClusterMedianCut {
   readonly 'name' = 'clusterMedianCut';
 
-  apply(colors: readonly ColorRecordInterfaceTypeEntity.Type[], k: number): ColorRecordInterfaceTypeEntity.Type[] {
+  apply(colors: readonly ColorRecordEntity.Type[], k: number): ColorRecordEntity.Type[] {
     if (colors.length === 0) {
-      const result: ColorRecordInterfaceTypeEntity.Type[] = [];
+      const result: ColorRecordEntity.Type[] = [];
       return result;
     }
     if (k < 1) {
@@ -236,7 +236,7 @@ class ClusterMedianCut {
       }
     }
 
-    const result = new Array<ColorRecordInterfaceTypeEntity.Type>(buckets.length);
+    const result = new Array<ColorRecordEntity.Type>(buckets.length);
     const bucketCount = buckets.length;
     for (let bucketIndex = 0; bucketIndex < bucketCount; bucketIndex++) {
       result[bucketIndex] = BucketMedian.of(buckets[bucketIndex]!);

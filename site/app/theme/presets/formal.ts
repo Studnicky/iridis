@@ -1,4 +1,4 @@
-import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../ThemeDefinitionInterface.ts';
 
 import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
 import { renderDot } from '../particles/renderDot.ts';
@@ -8,7 +8,7 @@ import { renderDot } from '../particles/renderDot.ts';
  * particles drifting through it — no starfield, no blobs, no motion at all.
  * Visual (fonts/radius/border) lives in ./formal.css.
  */
-export const formal: ThemeDefinitionInterfaceType = {
+export const formal: ThemeDefinitionInterface = {
   'ambient': {
     'blobCount':       0,
     'gooFilter':       'none',

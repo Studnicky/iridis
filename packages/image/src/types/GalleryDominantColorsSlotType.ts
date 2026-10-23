@@ -1,4 +1,4 @@
-import type { ColorRecordInterfaceTypeEntity } from '@studnicky/iridis';
+import type { ColorRecordEntity } from '@studnicky/iridis';
 
 /** Dominant colour records written by gallery:extract. */
-export abstract class GalleryDominantColorsSlotType extends Array<ColorRecordInterfaceTypeEntity.Type> {}
+export abstract class GalleryDominantColorsSlotType extends Array<ColorRecordEntity.Type> {}

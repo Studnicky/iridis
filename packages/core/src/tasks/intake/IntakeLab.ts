@@ -2,13 +2,13 @@ import { ValidationError } from '@studnicky/errors/node';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { ColorInputEntity } from '../../entities/ColorInputEntity.ts';
-import type { ColorRecordInterfaceTypeEntity } from '../../entities/ColorRecordInterfaceTypeEntity.ts';
+import type { ColorRecordEntity } from '../../entities/ColorRecordEntity.ts';
 import type { PaletteStateInterface } from '../../interfaces/PaletteStateInterface.ts';
 import type { PipelineContextInterface } from '../../interfaces/PipelineContextInterface.ts';
 import type { TaskInterface } from '../../interfaces/TaskInterface.ts';
 
 import { LabInputEntity } from '../../entities/LabInputEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../entities/TaskManifestInterfaceTypeEntity.ts';
+import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { clamp01 } from '../../math/Clamp01.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 
@@ -81,7 +81,7 @@ class LabConversion {
 class IntakeLab implements TaskInterface {
   readonly 'name' = 'intake:lab';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Parses {l,a,b} CIE Lab D65 into ColorRecord entries. Throws on non-Lab input.',
     'name':        'intake:lab',
     'reads':       ['input.colors'],
@@ -93,7 +93,7 @@ class IntakeLab implements TaskInterface {
    * a valid `{l,a,b}` object or carries conflicting format keys.
    * Used by IntakeAny for format dispatch (via try/catch).
    */
-  parse(raw: ColorInputEntity.Type): ColorRecordInterfaceTypeEntity.Type {
+  parse(raw: ColorInputEntity.Type): ColorRecordEntity.Type {
     const input = LabInputBoundary.intake(raw);
     if (input === undefined) {
       throw ValidationError.create({
@@ -118,7 +118,7 @@ class IntakeLab implements TaskInterface {
    * Extracted from {@link IntakeLab.run} so the loop body contains only
    * a function call, not a try-catch, per V8 optimization guidance.
    */
-  private parseEntry(raw: ColorInputEntity.Type, index: number): ColorRecordInterfaceTypeEntity.Type {
+  private parseEntry(raw: ColorInputEntity.Type, index: number): ColorRecordEntity.Type {
     try {
       const result = this.parse(raw);
       return result;

@@ -1,17 +1,17 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '@studnicky/iridis';
 
-import { luminance, PaletteMetadataSlot, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { luminance, PaletteMetadataSlot, TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import { CapacitorOutputsEntity } from '../entities/CapacitorOutputsEntity.ts';
 
 class BarStyle {
-  static pick(barColor: ColorRecordInterfaceTypeEntity.Type): 'DARK' | 'LIGHT' {
+  static pick(barColor: ColorRecordEntity.Type): 'DARK' | 'LIGHT' {
     // LIGHT style = light icons/text on dark bar. DARK style = dark icons/text on light bar.
     const style = luminance.apply(barColor) < 0.18 ? 'LIGHT' : 'DARK';
     return style;
@@ -20,8 +20,8 @@ class BarStyle {
 
 class BarColor {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>
-  ): ColorRecordInterfaceTypeEntity.Type | undefined {
+    roles: Record<string, ColorRecordEntity.Type>
+  ): ColorRecordEntity.Type | undefined {
     // Preference: topBar > surface > base > first role
     const barColor = roles.topBar ?? roles.surface ?? roles.base ?? Object.values(roles)[0];
     return barColor;
@@ -30,8 +30,8 @@ class BarColor {
 
 class TextColor {
   static resolve(
-    roles: Record<string, ColorRecordInterfaceTypeEntity.Type>
-  ): ColorRecordInterfaceTypeEntity.Type | undefined {
+    roles: Record<string, ColorRecordEntity.Type>
+  ): ColorRecordEntity.Type | undefined {
     const textColor = roles.text ?? roles.onSurface ?? Object.values(roles)[1];
     return textColor;
   }
@@ -40,7 +40,7 @@ class TextColor {
 class EmitCapacitorStatusBar implements TaskInterface {
   readonly 'name' = 'emit:capacitorStatusBar';
 
-  readonly 'manifest': TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest': TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Emit Capacitor StatusBar configuration from surface/topBar role.',
     'name':        'emit:capacitorStatusBar',
     'reads':       ['roles'],

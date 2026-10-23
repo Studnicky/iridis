@@ -1,1 +1,1 @@
-/** Legacy module retained while consumers migrate to OutputRowInterfaceTypeEntity. */
+/** Legacy module retained while consumers migrate to OutputRowEntity. */

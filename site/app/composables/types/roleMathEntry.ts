@@ -1,4 +1,4 @@
-import type { RoleDefinitionInterfaceTypeEntity } from '@studnicky/iridis';
+import type { RoleDefinitionEntity } from '@studnicky/iridis';
 
 import type { RoleMathAlgorithmInfoType } from './roleMathAlgorithmInfoType.ts';
 import type { RoleMathCandidateType } from './roleMathCandidateType.ts';
@@ -11,7 +11,7 @@ export declare class RoleMathEntry {
   'candidates': RoleMathCandidateType[];
   'clamp': RoleMathClampType | null;
   'compliance': string;
-  'def': RoleDefinitionInterfaceTypeEntity.Type | undefined;
+  'def': RoleDefinitionEntity.Type | undefined;
   'h': number;
   'hex': string;
   'origin': typeof RoleMathOrigin.Direct;

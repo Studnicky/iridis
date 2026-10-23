@@ -1,32 +1,19 @@
 import type { PaletteStateInterface } from '@studnicky/iridis';
 
-import { ApcaPairResultSetInterfaceTypeEntity } from '../../../src/entities/ApcaPairResultSetInterfaceTypeEntity.ts';
-import { CvdResultSetInterfaceTypeEntity } from '../../../src/entities/CvdResultSetInterfaceTypeEntity.ts';
-import { WcagPairResultSetInterfaceTypeEntity } from '../../../src/entities/WcagPairResultSetInterfaceTypeEntity.ts';
+import { ComplianceReportEntity } from '../../../src/entities/ComplianceReportEntity.ts';
+import { CvdResultSetEntity } from '../../../src/entities/CvdResultSetEntity.ts';
 
 /** Validated metadata access for contrast scenario assertions. */
 export class ContrastMetadataAssertionPort {
-  static aa(state: PaletteStateInterface): WcagPairResultSetInterfaceTypeEntity.Type | undefined {
-    const value = state.metadata['contrast:aa'];
-    const result = value === undefined ? undefined : WcagPairResultSetInterfaceTypeEntity.intake(value);
+  static compliance(state: PaletteStateInterface): ComplianceReportEntity.Type | undefined {
+    const value = state.metadata['contrast:complianceReport'];
+    const result = value === undefined ? undefined : ComplianceReportEntity.intake(value);
     return result;
   }
 
-  static aaa(state: PaletteStateInterface): WcagPairResultSetInterfaceTypeEntity.Type | undefined {
-    const value = state.metadata['contrast:aaa'];
-    const result = value === undefined ? undefined : WcagPairResultSetInterfaceTypeEntity.intake(value);
-    return result;
-  }
-
-  static apca(state: PaletteStateInterface): ApcaPairResultSetInterfaceTypeEntity.Type | undefined {
-    const value = state.metadata['contrast:apca'];
-    const result = value === undefined ? undefined : ApcaPairResultSetInterfaceTypeEntity.intake(value);
-    return result;
-  }
-
-  static cvd(state: PaletteStateInterface): CvdResultSetInterfaceTypeEntity.Type | undefined {
+  static cvd(state: PaletteStateInterface): CvdResultSetEntity.Type | undefined {
     const value = state.metadata['contrast:cvd'];
-    const result = value === undefined ? undefined : CvdResultSetInterfaceTypeEntity.intake(value);
+    const result = value === undefined ? undefined : CvdResultSetEntity.intake(value);
     return result;
   }
 }

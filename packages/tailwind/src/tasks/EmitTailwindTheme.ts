@@ -1,11 +1,11 @@
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface,
   TaskInterface
 } from '@studnicky/iridis';
 
-import { CssVarName, TaskManifestInterfaceTypeEntity } from '@studnicky/iridis';
+import { CssVarName, TaskManifestEntity } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
 import type { TailwindOutputInterface } from '../interfaces/TailwindOutputInterface.ts';
@@ -24,7 +24,7 @@ import { EMIT_TAILWIND_THEME_CONSTANTS } from './constants/EmitTailwindThemeCons
  * dep graph between themselves).
  */
 class P3 {
-  static serialize(p3: ColorRecordInterfaceTypeEntity.Type['displayP3']): string {
+  static serialize(p3: ColorRecordEntity.Type['displayP3']): string {
     if (p3 === undefined) {return '';}
     const r = p3.r.toFixed(4);
     const g = p3.g.toFixed(4);
@@ -40,7 +40,7 @@ class P3 {
  * (kept flat) to avoid single-key nested objects.
  */
 class ColorsShape {
-  static build(roles: Record<string, ColorRecordInterfaceTypeEntity.Type>): ColorsShapeRecordEntity.Type {
+  static build(roles: Record<string, ColorRecordEntity.Type>): ColorsShapeRecordEntity.Type {
     const groups = new Map<string, Map<string, string>>();
     const flat = new Map<string, string>();
     const roleEntries = Object.entries(roles);
@@ -143,7 +143,7 @@ class CssVarsSheet {
   }
 
   static build(
-    roles:  Record<string, ColorRecordInterfaceTypeEntity.Type>,
+    roles:  Record<string, ColorRecordEntity.Type>,
     prefix: string
   ): string {
     const decls = Object.entries(roles).map(([role, record]) => {
@@ -179,7 +179,7 @@ class CssVarsSheet {
 export class EmitTailwindTheme implements TaskInterface {
   readonly 'name' = 'emit:tailwindTheme';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Emit Tailwind theme.colors object and config module from resolved roles',
     'name':        'emit:tailwindTheme',
     'reads':       ['roles', 'metadata'],

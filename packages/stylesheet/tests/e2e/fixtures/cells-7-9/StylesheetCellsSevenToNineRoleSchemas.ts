@@ -1,7 +1,7 @@
-import { RoleSchemaInterfaceTypeEntity } from '@studnicky/iridis';
+import { RoleSchemaEntity } from '@studnicky/iridis';
 
 export const StylesheetCellsSevenToNineRoleSchemas = Object.freeze({
-  'wideGamut': RoleSchemaInterfaceTypeEntity.intake({
+  'wideGamut': RoleSchemaEntity.intake({
     'name': 'wide-gamut',
     'roles': [{
       'chromaRange': [0, 0.5],

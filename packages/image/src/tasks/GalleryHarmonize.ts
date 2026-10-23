@@ -7,7 +7,7 @@ import type {
 import {
   deltaE2000,
   hueShift,
-  TaskManifestInterfaceTypeEntity
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 
@@ -26,7 +26,7 @@ import { LOG_STATUS, LogBody } from '@studnicky/logger/node';
 class GalleryHarmonize implements TaskInterface {
   readonly 'name' = 'gallery:harmonize';
 
-  readonly 'manifest' = TaskManifestInterfaceTypeEntity.create({
+  readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Shift accent hue by 30° when deltaE2000 vs frame is < 10',
     'name':        'gallery:harmonize',
     'reads':       ['roles', 'metadata.gallery'],

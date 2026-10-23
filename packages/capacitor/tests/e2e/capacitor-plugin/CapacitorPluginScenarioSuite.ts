@@ -15,14 +15,14 @@
  */
 
 import type {
-  ColorRecordInterfaceTypeEntity,
+  ColorRecordEntity,
   PaletteStateInterface,
   PipelineContextInterface
 } from '@studnicky/iridis';
 import type { LogDataEntity } from '@studnicky/logger/entities';
 import type { LoggerInterface } from '@studnicky/logger/interfaces';
 
-import { InputInterfaceTypeEntity, RoleSchemaInterfaceTypeEntity , RuntimeOptionsInterfaceTypeEntity} from '@studnicky/iridis';
+import { InputEntity, RoleSchemaEntity , RuntimeOptionsEntity} from '@studnicky/iridis';
 import {
   capacitorPlugin,
   CapacitorPlugin,
@@ -99,8 +99,8 @@ class CapacitorOutputs {
 }
 
 interface EngineInputOptionsInterface {
-  readonly 'metadata'?: InputInterfaceTypeEntity.Type['metadata'];
-  readonly 'roles'?: RoleSchemaInterfaceTypeEntity.Type;
+  readonly 'metadata'?: InputEntity.Type['metadata'];
+  readonly 'roles'?: RoleSchemaEntity.Type;
 }
 
 
@@ -116,16 +116,16 @@ class TestFixture {
   /** Build a minimal PaletteStateInterface with the given roles pre-populated. */
   static state(options?: {
     readonly 'metadata'?: PaletteStateInterface['metadata'];
-    readonly 'roles'?:    Record<string, ColorRecordInterfaceTypeEntity.Type>;
-    readonly 'variants'?: Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>;
+    readonly 'roles'?:    Record<string, ColorRecordEntity.Type>;
+    readonly 'variants'?: Record<string, Record<string, ColorRecordEntity.Type>>;
   }): PaletteStateInterface {
     return {
       'colors':   [],
-      'input':    InputInterfaceTypeEntity.create({ 'colors': [] }),
+      'input':    InputEntity.create({ 'colors': [] }),
       'metadata': options?.metadata ?? {},
       'outputs':  {},
       'roles':    options?.roles ?? {},
-      'runtime':  RuntimeOptionsInterfaceTypeEntity.create({}),
+      'runtime':  RuntimeOptionsEntity.create({}),
       'variants': options?.variants ?? {}
     };
   }
@@ -133,8 +133,8 @@ class TestFixture {
   /** Build a color record from a hex string (sRGB only, no displayP3). */
   static colorFromHex(
     colorHex: string,
-    hints?: ColorRecordInterfaceTypeEntity.Type['hints']
-  ): ColorRecordInterfaceTypeEntity.Type {
+    hints?: ColorRecordEntity.Type['hints']
+  ): ColorRecordEntity.Type {
     const result = colorRecordFactory.fromHex(colorHex, {
       'hints':        hints,
       'sourceFormat': 'hex'
@@ -143,16 +143,16 @@ class TestFixture {
   }
 
   static invalidInput(): never {
-    InputInterfaceTypeEntity.intake({});
+    InputEntity.intake({});
     throw new Error('Input intake accepted a missing colors array');
   }
 
   static engineInput(
-    colors: InputInterfaceTypeEntity.Type['colors'],
+    colors: InputEntity.Type['colors'],
     options: EngineInputOptionsInterface = {}
-  ): InputInterfaceTypeEntity.Type {
+  ): InputEntity.Type {
 
-    const result = InputInterfaceTypeEntity.create({
+    const result = InputEntity.create({
       'colors': colors,
       'maximumColorCount': 64,
       ...(options.metadata === undefined ? {} : { 'metadata': options.metadata }),
@@ -175,7 +175,7 @@ class TestFixture {
 
 export class CapacitorPluginScenarioSuite {
   static async run(): Promise<void> {
-    const FULL_ROLES = RoleSchemaInterfaceTypeEntity.create({
+    const FULL_ROLES = RoleSchemaEntity.create({
       'name': 'full',
       'roles': [
         { 'intent': 'background', 'name': 'primary', 'required': true },
@@ -269,7 +269,7 @@ export class CapacitorPluginScenarioSuite {
 
     interface Cell2InputInterface {
       readonly 'metadata': PaletteStateInterface['metadata'];
-      readonly 'roles':    Record<string, ColorRecordInterfaceTypeEntity.Type>;
+      readonly 'roles':    Record<string, ColorRecordEntity.Type>;
     }
     interface Cell2OutputInterface {
       readonly 'statusBar': CapacitorOutputsEntity.Type['statusBar'] | undefined;
@@ -445,8 +445,8 @@ export class CapacitorPluginScenarioSuite {
     // ---------------------------------------------------------------------------
 
     interface Cell3InputInterface {
-      readonly 'roles':    Record<string, ColorRecordInterfaceTypeEntity.Type>;
-      readonly 'variants': Record<string, Record<string, ColorRecordInterfaceTypeEntity.Type>>;
+      readonly 'roles':    Record<string, ColorRecordEntity.Type>;
+      readonly 'variants': Record<string, Record<string, ColorRecordEntity.Type>>;
     };
     abstract class Cell3Output {
       abstract readonly 'theme': CapacitorOutputsEntity.Type['theme'] | undefined;
@@ -603,7 +603,7 @@ export class CapacitorPluginScenarioSuite {
 
     interface Cell4InputInterface {
       readonly 'metadata': PaletteStateInterface['metadata'];
-      readonly 'roles':    Record<string, ColorRecordInterfaceTypeEntity.Type>;
+      readonly 'roles':    Record<string, ColorRecordEntity.Type>;
     }
     interface Cell4OutputInterface {
       readonly 'splashScreen': CapacitorOutputsEntity.Type['splashScreen'] | undefined;
@@ -747,7 +747,7 @@ export class CapacitorPluginScenarioSuite {
     interface Cell5InputInterface {
       readonly 'priorSplashScreen'?: string;  // pre-seeded into outputs.capacitor.splashScreen
       readonly 'priorStatusBar'?:    string;   // pre-seeded into outputs.capacitor.statusBar
-      readonly 'roles':         Record<string, ColorRecordInterfaceTypeEntity.Type>;
+      readonly 'roles':         Record<string, ColorRecordEntity.Type>;
     };
     abstract class Cell5Output {
       abstract readonly 'statusBarColor': string | undefined;
@@ -907,7 +907,7 @@ export class CapacitorPluginScenarioSuite {
     class MissingColorsInput {}
 
     interface Cell6InputInterface {
-      readonly 'engineInput'?: InputInterfaceTypeEntity.Type;
+      readonly 'engineInput'?: InputEntity.Type;
       readonly 'invalidInput'?: MissingColorsInput;
       readonly 'pipeline': readonly string[];
     }

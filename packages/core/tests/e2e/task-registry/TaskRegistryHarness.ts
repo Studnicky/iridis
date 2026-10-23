@@ -5,9 +5,9 @@ import type { PipelineContextInterface } from '../../../src/interfaces/PipelineC
 import type { TaskInterface } from '../../../src/interfaces/TaskInterface.ts';
 
 import { Engine } from '../../../src/engine/Engine.ts';
-import { ColorRecordInterfaceTypeEntity } from '../../../src/entities/ColorRecordInterfaceTypeEntity.ts';
-import { InputInterfaceTypeEntity } from '../../../src/entities/InputInterfaceTypeEntity.ts';
-import { TaskManifestInterfaceTypeEntity } from '../../../src/entities/TaskManifestInterfaceTypeEntity.ts';
+import { ColorRecordEntity } from '../../../src/entities/ColorRecordEntity.ts';
+import { InputEntity } from '../../../src/entities/InputEntity.ts';
+import { TaskManifestEntity } from '../../../src/entities/TaskManifestEntity.ts';
 import { TaskRegistry } from '../../../src/registry/TaskRegistry.ts';
 import { TASK_REGISTRY_ERROR_PATTERNS } from './constants/TaskRegistryErrorPatterns.ts';
 
@@ -103,22 +103,22 @@ export class TaskRegistryHarness {
   }
 
   private static task(name: string, run: TaskInterface['run']): TaskInterface {
-    const manifest = TaskManifestInterfaceTypeEntity.create({ 'name': name });
+    const manifest = TaskManifestEntity.create({ 'name': name });
     return { 'manifest': manifest, 'name': name, 'run': run };
   }
 
   private static runStartTask(name: string, run: TaskInterface['run']): TaskInterface {
-    const manifest = TaskManifestInterfaceTypeEntity.create({ 'name': name, 'phase': 'onRunStart' });
+    const manifest = TaskManifestEntity.create({ 'name': name, 'phase': 'onRunStart' });
     return { 'manifest': manifest, 'name': name, 'run': run };
   }
 
   private static runEndTask(name: string, run: TaskInterface['run']): TaskInterface {
-    const manifest = TaskManifestInterfaceTypeEntity.create({ 'name': name, 'phase': 'onRunEnd' });
+    const manifest = TaskManifestEntity.create({ 'name': name, 'phase': 'onRunEnd' });
     return { 'manifest': manifest, 'name': name, 'run': run };
   }
 
-  private static emptyInput(): InputInterfaceTypeEntity.Type {
-    const result = InputInterfaceTypeEntity.intake({ 'colors': [] });
+  private static emptyInput(): InputEntity.Type {
+    const result = InputEntity.intake({ 'colors': [] });
     return result;
   }
 
@@ -142,7 +142,7 @@ export class TaskRegistryHarness {
   private static appendColor(execution: string[], label: string): TaskInterface['run'] {
     return (state: PaletteStateInterface, _context: PipelineContextInterface): void => {
       execution.push(label);
-      state.colors.push(ColorRecordInterfaceTypeEntity.create({
+      state.colors.push(ColorRecordEntity.create({
         'alpha': 1,
         'hex': '#80cc33',
         'oklch': { 'c': 0.1, 'h': 120, 'l': 0.5 },

@@ -6,29 +6,20 @@
  * from hueOffset on the schema roles. The projector only reads those hexes.
  */
 
-import type {
-  ColorRecordInterfaceTypeEntity, PaletteStateInterface, RoleProvenanceInterfaceTypeEntity
-} from '@studnicky/iridis';
-import type { CvdMatrixInterfaceTypeEntity } from '@studnicky/iridis-contrast';
-import type { ClusterStrategyInterface } from '@studnicky/iridis-image';
-import type {
-  GalleryDominantColorsSlotType, GalleryHistogramSlotInterfaceType
-} from '@studnicky/iridis-image/types';
+import type { ComplianceReportEntity, CvdMatrixEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
+import type { ClusterStrategyInterface, GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
+import type { GalleryHistogramSlotInterface } from '@studnicky/iridis-image/types';
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
 
-import { colorRecordFactory, InputInterfaceTypeEntity, Metadata } from '@studnicky/iridis';
-import {
-  ApcaPairResultSetInterfaceTypeEntity,
-  CvdResultSetInterfaceTypeEntity,
-  WcagPairResultSetInterfaceTypeEntity
-} from '@studnicky/iridis-contrast';
-import { ClusterDispatcher, GalleryCandidateOutputEntity, imagePlugin } from '@studnicky/iridis-image';
-import { JsonValue } from '@studnicky/types/browser';
+import { ClusterDispatcher } from '@studnicky/iridis-image';
 import * as VueModule from 'vue';
 
-import { useNuxtApp, useRuntimeConfig } from '#imports';
+import { useNuxtApp, useRuntimeConfig, useState } from '#imports';
 
-import type { DerivationRelationInterfaceTypeEntity } from './entities/DerivationRelationInterfaceTypeEntity.ts';
+import type { DerivationRelationEntity } from './entities/DerivationRelationEntity.ts';
+import type { PaletteSnapshotEntity } from './entities/PaletteSnapshotEntity.ts';
+import type { WorkerEnvelopeEntity } from './entities/WorkerEnvelopeEntity.ts';
+import type { WorkerReplyEntity } from './entities/WorkerReplyEntity.ts';
 import type { PickerSeedType, RoleHexMapType, RoleViewType, ScaleMapType, UploadedImage } from './types/index.ts';
 import type { RoleMathClampType } from './types/roleMathClampType.ts';
 import type { RoleSortKeyType } from './types/roleSortKeyType.ts';
@@ -39,50 +30,40 @@ import { Tokens } from '../theme/Tokens.ts';
 import { cloneRanges } from '../utils/cloneRanges.ts';
 import { complianceFor } from '../utils/complianceFor.ts';
 import { debounce } from '../utils/debounce.ts';
-import { isValidHex } from '../utils/isValidHex.ts';
 import { keyedDebounce } from '../utils/keyedDebounce.ts';
 import { minimumRatioForRole } from '../utils/minimumRatioForRole.ts';
 import { RoleSortBehavior } from '../utils/roleSortBehavior.ts';
 import { ROLE_SORT_FIELD_OPTIONS } from '../utils/roleSortFieldOptions.ts';
 import { sortRoleRows } from '../utils/sortRoleRows.ts';
+import { AccessibilityBlockers } from './accessibilityBlockers.ts';
+import { BrowserWorkerPort } from './browserWorkerPort.ts';
 import { IRIDIS_CONSTANTS } from './constants/IridisConstants.ts';
-import { ContrastConfigFor } from './contrastConfigFor.ts';
-import { createColorEngine } from './createColorEngine.ts';
-import { DerivationConfigInterfaceTypeEntity } from './entities/DerivationConfigInterfaceTypeEntity.ts';
-import { FramingInterfaceTypeEntity } from './entities/FramingInterfaceTypeEntity.ts';
-import { ModeInterfaceTypeEntity } from './entities/ModeInterfaceTypeEntity.ts';
-import { RoleSortableRowInterfaceTypeEntity } from './entities/RoleSortableRowInterfaceTypeEntity.ts';
-import { SchemaNameInterfaceTypeEntity } from './entities/SchemaNameInterfaceTypeEntity.ts';
-import { optionalContrastStages } from './optionalContrastStages.ts';
-import { pickerSeedInputs } from './pickerSeedInputs.ts';
-import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
+import { CvdModeEntity } from './entities/CvdModeEntity.ts';
+import { DerivationConfigEntity } from './entities/DerivationConfigEntity.ts';
+import { ExtractionSettingsEntity } from './entities/ExtractionSettingsEntity.ts';
+import { FramingEntity } from './entities/FramingEntity.ts';
+import { ModeEntity } from './entities/ModeEntity.ts';
+import { NonMandatoryLevelEntity } from './entities/NonMandatoryLevelEntity.ts';
+import { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEntity.ts';
+import { RoleSortableRowEntity } from './entities/RoleSortableRowEntity.ts';
+import { SchemaNameEntity } from './entities/SchemaNameEntity.ts';
+import { WorkerMessageEntity } from './entities/WorkerMessageEntity.ts';
+import { ImagePixels } from './imagePixels.ts';
+import { PaletteAdmission } from './paletteAdmission.ts';
+import { PaletteResolve } from './paletteResolve.ts';
 import { roleSchemaFor } from './roleSchemaFor.ts';
 import { schemaRoleCount } from './schemaRoleCount.ts';
-import { spliceOptionalStages } from './spliceOptionalStages.ts';
 import { IridisUiEvent } from './types/index.ts';
 import { useIridisUiMachine } from './useIridisUiMachine.ts';
 import { useNavigationTargets } from './useNavigationTargets.ts';
-import { VARIANT_CONFIG } from './variantConfig.ts';
+import { WorkerRequestClient } from './workerRequestClient.ts';
 
 class ViteModule {
   static readonly metadata: ImportMeta & { readonly 'hot'?: ViteHotContext } = import.meta;
 }
 
-/** Builds the serializable candidate requests accepted at the gallery metadata boundary. The extraction task resolves each algorithm into its executable ClusterStrategy internally. */
-class AllCandidateAlgorithmsOperation {
-  static run(k: number) {
-    const result = IRIDIS_CONSTANTS.ALL_CANDIDATE_ALGORITHM_NAMES.map((algorithm) => {
-      const candidate = { 'algorithm': algorithm, 'k': k, 'label': algorithm };
-      return candidate;
-    });
-    return result;
-  }
-}
-
-const allCandidateAlgorithms = AllCandidateAlgorithmsOperation.run;
-
 class CvdTypeRegistry {
-  static resolve(value: string): CvdMatrixInterfaceTypeEntity.Type['name'] {
+  static resolve(value: string): CvdMatrixEntity.Type['name'] {
     if (value === 'protanopia' || value === 'deuteranopia' || value === 'tritanopia' || value === 'achromatopsia') {
       const result = value;
       return result;
@@ -91,221 +72,8 @@ class CvdTypeRegistry {
   }
 }
 
-namespace GalleryMetadataSlotEntity {
-  export class GalleryMetadataSlot {
-    private static isRecord(value: unknown): value is Record<string, unknown> {
-      const result = value !== null && typeof value === 'object' && !Array.isArray(value);
-      return result;
-    }
-
-    private static isRgb(value: unknown): boolean {
-      const result = GalleryMetadataSlot.isRecord(value)
-        && typeof value.b === 'number'
-        && typeof value.g === 'number'
-        && typeof value.r === 'number';
-      return result;
-    }
-
-    private static isOklch(value: unknown): boolean {
-      const result = GalleryMetadataSlot.isRecord(value)
-        && typeof value.c === 'number'
-        && typeof value.h === 'number'
-        && typeof value.l === 'number';
-      return result;
-    }
-
-    private static isSourceFormat(value: unknown): boolean {
-      const result = value === 'hex'
-        || value === 'rgb'
-        || value === 'hsl'
-        || value === 'oklch'
-        || value === 'lab'
-        || value === 'named'
-        || value === 'imagePixel'
-        || value === 'displayP3';
-      return result;
-    }
-
-    private static isIntent(value: unknown): boolean {
-      const result = value === undefined
-        || value === 'text'
-        || value === 'background'
-        || value === 'accent'
-        || value === 'muted'
-        || value === 'critical'
-        || value === 'positive'
-        || value === 'link'
-        || value === 'button'
-        || value === 'onAccent'
-        || value === 'onButton';
-      return result;
-    }
-
-    private static isHints(value: unknown): boolean {
-      const result = value === undefined
-        || (GalleryMetadataSlot.isRecord(value)
-          && GalleryMetadataSlot.isIntent(value.intent)
-          && (value.role === undefined || typeof value.role === 'string')
-          && (value.weight === undefined || typeof value.weight === 'number'));
-      return result;
-    }
-
-    private static isColorRecord(value: unknown): value is ColorRecordInterfaceTypeEntity.Type {
-      const result = GalleryMetadataSlot.isRecord(value)
-        && typeof value.alpha === 'number'
-        && typeof value.hex === 'string'
-        && GalleryMetadataSlot.isOklch(value.oklch)
-        && GalleryMetadataSlot.isRgb(value.rgb)
-        && GalleryMetadataSlot.isSourceFormat(value.sourceFormat)
-        && (value.displayP3 === undefined || GalleryMetadataSlot.isRgb(value.displayP3))
-        && GalleryMetadataSlot.isHints(value.hints);
-      return result;
-    }
-
-    private static isDominantColors(value: unknown): value is GalleryDominantColorsSlotType {
-      const result = Array.isArray(value) && value.every(GalleryMetadataSlot.isColorRecord);
-      return result;
-    }
-
-    private static isHistogram(value: unknown): value is GalleryHistogramSlotInterfaceType {
-      const result = GalleryMetadataSlot.isRecord(value)
-        && typeof value.binCount === 'number'
-        && Array.isArray(value.bins)
-        && value.bins.every((bin) => {
-          const isValid = GalleryMetadataSlot.isRecord(bin) && typeof bin.hex === 'string' && typeof bin.weight === 'number';
-          return isValid;
-        })
-        && typeof value.totalPixels === 'number';
-      return result;
-    }
-
-    static candidates(metadata: PaletteStateInterface['metadata']): GalleryCandidateOutputEntity.Type[] {
-      const value = metadata['gallery:candidates'];
-      if (value === undefined) {return [];}
-      if (!Array.isArray(value)) {
-        throw new TypeError('Metadata slot gallery:candidates does not match the candidate palette schema');
-      }
-      const result = value.map(GalleryCandidateOutputEntity.intake);
-      return result;
-    }
-
-    static dominantColors(metadata: PaletteStateInterface['metadata']): GalleryDominantColorsSlotType {
-      const value = metadata['gallery:dominantColors'];
-      if (value === undefined) {return [];}
-      if (GalleryMetadataSlot.isDominantColors(value)) {return value;}
-      throw new TypeError('Metadata slot gallery:dominantColors does not match the color-record schema');
-    }
-
-    static histogram(metadata: PaletteStateInterface['metadata']): GalleryHistogramSlotInterfaceType['bins'] {
-      const value = metadata['gallery:histogram'];
-      if (value === undefined) {return [];}
-      if (GalleryMetadataSlot.isHistogram(value)) {return value.bins;}
-      throw new TypeError('Metadata slot gallery:histogram does not match the histogram schema');
-    }
-  }
-
-}
-class ContrastMetadataSlot {
-  static apca(metadata: PaletteStateInterface['metadata']): ApcaPairResultSetInterfaceTypeEntity.Type | undefined {
-    const value = metadata['contrast:apca'];
-    if (value === undefined) {
-      const result = undefined;
-      return result;
-    }
-    const result = ApcaPairResultSetInterfaceTypeEntity.intake(value);
-    return result;
-  }
-
-  static cvd(metadata: PaletteStateInterface['metadata']): CvdResultSetInterfaceTypeEntity.Type | undefined {
-    const value = metadata['contrast:cvd'];
-    if (value === undefined) {
-      const result = undefined;
-      return result;
-    }
-    const result = CvdResultSetInterfaceTypeEntity.intake(value);
-    return result;
-  }
-
-  static wcagAa(metadata: PaletteStateInterface['metadata']): WcagPairResultSetInterfaceTypeEntity.Type | undefined {
-    const value = metadata['contrast:aa'];
-    if (value === undefined) {
-      const result = undefined;
-      return result;
-    }
-    const result = WcagPairResultSetInterfaceTypeEntity.intake(value);
-    return result;
-  }
-
-  static wcagAaa(metadata: PaletteStateInterface['metadata']): WcagPairResultSetInterfaceTypeEntity.Type | undefined {
-    const value = metadata['contrast:aaa'];
-    if (value === undefined) {
-      const result = undefined;
-      return result;
-    }
-    const result = WcagPairResultSetInterfaceTypeEntity.intake(value);
-    return result;
-  }
-}
-
-class RoleClampReadModel {
-  private static rangeAdjustment(value: RoleProvenanceInterfaceTypeEntity.Type['adjustments'][number]): { readonly 'afterHex': string; readonly 'beforeHex': string } | undefined {
-    if (value.operation !== 'role-range') {
-      const result = undefined;
-      return result;
-    }
-    const result = { 'afterHex': value.afterHex, 'beforeHex': value.beforeHex };
-    return result;
-  }
-
-  static fromProvenance(provenance: ReadonlyMap<string, RoleProvenanceInterfaceTypeEntity.Type>): Map<string, RoleMathClampType> {
-    const clamps = new Map<string, RoleMathClampType>();
-    for (const [roleName, evidence] of provenance) {
-      let rangeAdjustment: { readonly 'afterHex': string; readonly 'beforeHex': string } | undefined;
-      for (let adjustmentIndex = 0; adjustmentIndex < evidence.adjustments.length; adjustmentIndex += 1) {
-        const adjustment = evidence.adjustments[adjustmentIndex];
-        if (adjustment === undefined) {
-          throw new RangeError(`Role provenance for ${roleName} is missing adjustment ${adjustmentIndex}`);
-        }
-        const candidate = RoleClampReadModel.rangeAdjustment(adjustment);
-        if (candidate !== undefined) {
-          rangeAdjustment = candidate;
-          break;
-        }
-      }
-      if (rangeAdjustment === undefined) {continue;}
-      const resolvedOklch = colorRecordFactory.fromHex(rangeAdjustment.afterHex).oklch;
-      const seedOklch = colorRecordFactory.fromHex(rangeAdjustment.beforeHex).oklch;
-      clamps.set(roleName, {
-        'resolvedHex': rangeAdjustment.afterHex.toLowerCase(),
-        'roleOklch': `L ${resolvedOklch.l.toFixed(2)} · C ${resolvedOklch.c.toFixed(2)} · H ${Math.round(resolvedOklch.h)}`,
-        'seedHex': rangeAdjustment.beforeHex.toLowerCase(),
-        'seedOklch': `L ${seedOklch.l.toFixed(2)} · C ${seedOklch.c.toFixed(2)} · H ${Math.round(seedOklch.h)}`
-      });
-    }
-    const result = clamps;
-    return result;
-  }
-}
-
 class IridisContextFactory {
   static create() {
-    /** Which optional stages currently run based on strictness. */
-    const enabledOptionalStages = VueModule.computed<Set<string>>(() => {const result = optionalContrastStages(contrastStrictness.value);
-      return result;});
-
-    /** Slots the currently-enabled optional stages into `required` right after enforce:contrast. */
-    class PipelineBuildOperation {
-      static run(required: readonly string[]): string[] {
-        const result = spliceOptionalStages(required, enabledOptionalStages.value);
-        return result;
-      }
-    }
-
-    const pipelineBuild = PipelineBuildOperation.run;
-
-    const engine = createColorEngine();
-    engine.adopt(imagePlugin);
-
     /* ─── shared reactive state ─── */
     const { 'registerEffectHandlers': registerEffectHandlers, 'send': sendUiEvent, 'state': uiState } = useIridisUiMachine();
     /** Derived from the shared UI FSM so ModeSwitch and image-drop mode changes stay in sync with the carousel. */
@@ -323,9 +91,9 @@ class IridisContextFactory {
       }
     }
 
-    const mode = VueModule.computed<ModeInterfaceTypeEntity.Type>({
+    const mode = VueModule.computed<ModeEntity.Type>({
       'get': () => {
-        const result = ModeInterfaceTypeEntity.intake(uiState.value.selectsImageMode() ? 'image' : 'picker');
+        const result = ModeEntity.intake(uiState.value.selectsImageMode() ? 'image' : 'picker');
         return result;
       },
       'set': ModeSetOperation.run
@@ -387,7 +155,7 @@ class IridisContextFactory {
 
     const hydratePaletteSeeds = HydratePaletteSeedsOperation.run;
 
-    const framing = VueModule.ref<FramingInterfaceTypeEntity.Type>(FramingInterfaceTypeEntity.intake('dark'));
+    const framing = VueModule.ref<FramingEntity.Type>(FramingEntity.intake('dark'));
     class ApplyCurrentFramingTokensOperation {
       static run(tokens: RoleHexMapType): void {
         if (framing.value === 'dark') {
@@ -400,15 +168,11 @@ class IridisContextFactory {
 
     const applyCurrentFramingTokens = ApplyCurrentFramingTokensOperation.run;
 
-    const schemaName = VueModule.ref<SchemaNameInterfaceTypeEntity.Type>(SchemaNameInterfaceTypeEntity.defaultValue);
+    const schemaName = VueModule.ref<SchemaNameEntity.Type>(SchemaNameEntity.defaultValue);
     const contrastStrictness = VueModule.ref<number>(2);
+    const cvdMode = VueModule.ref<CvdModeEntity.Type>(CvdModeEntity.defaultValue);
+    const nonMandatoryLevel = VueModule.ref<NonMandatoryLevelEntity.Type>(NonMandatoryLevelEntity.defaultValue);
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
-    /**
- * CVD "correct" mode flag, threaded through as `input.contrast.cvdCorrect` —
- * when true, enforce:cvdSimulate (packages/contrast) auto-corrects failing
- * pairs instead of only warning. Off by default.
- */
-    const cvdCorrect = VueModule.ref<boolean>(false);
 
     /**
  * Color derivation configuration — one hue-algorithm choice per derivedFrom
@@ -418,12 +182,12 @@ class IridisContextFactory {
  * whole pipeline via the FSM's schedule(), the same as any other palette
  * parameter — never recomputed and reapplied client-side.
  */
-    const derivationConfig = VueModule.ref<DerivationConfigInterfaceTypeEntity.Type>(DerivationConfigInterfaceTypeEntity.defaultValue);
+    const derivationConfig = VueModule.ref<DerivationConfigEntity.Type>(DerivationConfigEntity.defaultValue);
 
     /** Merges a single relation's config into `derivationConfig` and re-runs the pipeline — the ONLY way a relation changes; the resolved hue is always recomputed by derive:roleRelations, never written directly here. */
     class RelationUpdateOperation {
-      static run(roleName: string, relation: DerivationRelationInterfaceTypeEntity.Type): void {
-        const patch: Record<string, DerivationRelationInterfaceTypeEntity.Type> = {};
+      static run(roleName: string, relation: DerivationRelationEntity.Type): void {
+        const patch: Record<string, DerivationRelationEntity.Type> = {};
         Object.defineProperty(patch, roleName, { 'configurable': true, 'enumerable': true, 'value': relation, 'writable': true });
         relationsUpdate(patch);
       }
@@ -441,8 +205,8 @@ class IridisContextFactory {
  * One dispatch carrying every changed relation sidesteps the race entirely.
  */
     class RelationsUpdateOperation {
-      static run(newRelations: Record<string, DerivationRelationInterfaceTypeEntity.Type>): void {
-        const updated = DerivationConfigInterfaceTypeEntity.create({ 'relations': { ...derivationConfig.value.relations, ...newRelations } });
+      static run(newRelations: Record<string, DerivationRelationEntity.Type>): void {
+        const updated = DerivationConfigEntity.create({ 'relations': { ...derivationConfig.value.relations, ...newRelations } });
         sendUiEvent(IridisUiEvent.setDerivationConfig(updated));
       }
     }
@@ -475,19 +239,15 @@ class IridisContextFactory {
 
     /**
  * Visual CVD preview — purely a display-time filter over whatever the engine
- * already resolved, genuinely independent of `cvdCorrect`. This is the "see
- * it as an afflicted person would" toggle; `cvdCorrect` is the "fix the
- * colors so everyone can distinguish them" toggle. Neither implies the
- * other: a user can correct without previewing (never sees simulated
- * vision, just sees their palette get more distinguishable), preview
- * without correcting (sees the CURRENT palette through a CVD filter,
- * unmodified), or both. A `Set` because real CVD isn't always a single
+ * already resolved, independent of the always-on CVD correction. This is the
+ * "see it as an afflicted person would" toggle: the previewed palette is the
+ * corrected one. A `Set` because real CVD isn't always a single
  * condition — combined/comorbid deficiencies exist, so more than one type
  * can be active at once (CvdPreviewOverlay.vue chains their filters).
  * Empty = preview off. Consumed by a display-layer component, not by the
  * engine pipeline — changing it never triggers a recompute.
  */
-    const cvdPreviewTypes = VueModule.ref<Set<CvdMatrixInterfaceTypeEntity.Type['name']>>(new Set());
+    const cvdPreviewTypes = VueModule.ref<Set<CvdMatrixEntity.Type['name']>>(new Set());
 
     /** Diagram view state (zoom level, pan offset, expanded fullscreen mode). */
     const diagramScale = VueModule.ref<number>(1);
@@ -503,7 +263,7 @@ class IridisContextFactory {
     const rolesPinned = VueModule.ref<string[]>([]);
     const rolesDerived = VueModule.ref<string[]>([]);
     const scales = VueModule.ref<ScaleMapType>({});
-    const histogram = VueModule.ref<GalleryHistogramSlotInterfaceType['bins']>([]);
+    const histogram = VueModule.ref<GalleryHistogramSlotInterface['bins']>([]);
     /**
  * Reference-counted rather than a single boolean: run(), combineNowRun(), and
  * addUploadedImagesUnqueued() can all be in flight at once (e.g. a debounced
@@ -555,7 +315,7 @@ class IridisContextFactory {
       { 'behavior': RoleSortBehavior.descending(ratioField.value) }
     ]);
 
-    const roleContrastRows = VueModule.computed<RoleSortableRowInterfaceTypeEntity.Type[]>(() => {
+    const roleContrastRows = VueModule.computed<RoleSortableRowEntity.Type[]>(() => {
       // 'background' is a required role in every schema tier (RoleSchemaByName.ts),
       // and run() resolves it synchronously before any component can read this —
       // never a hardcoded placeholder.
@@ -563,16 +323,13 @@ class IridisContextFactory {
       if (bg === undefined) {throw new Error('Resolved palette is missing the required background role');}
       const schema = (() => {
         const pair = roleSchemaByName[schemaName.value];
-        if (pair === undefined) {
-          throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-        }
         const selected = framing.value === 'dark' ? pair.dark : pair.light;
         const result = roleSchemaFor(selected);
         return result;
       })();
       const result = roleViews.value.map((role) => {
         const ratio = contrastRatio(role.hex, bg);
-        const row = RoleSortableRowInterfaceTypeEntity.create({ 'c': role.c, 'compliance': complianceFor(ratio, minimumRatioForRole(schema, role.name)), 'h': role.h, 'hex': role.hex, 'l': role.l, 'name': role.name, 'ratio': ratio });
+        const row = RoleSortableRowEntity.create({ 'c': role.c, 'compliance': complianceFor(ratio, minimumRatioForRole(schema, role.name)), 'h': role.h, 'hex': role.hex, 'l': role.l, 'name': role.name, 'ratio': ratio });
         return row;
       });
       return result;
@@ -581,12 +338,23 @@ class IridisContextFactory {
     const sortedRoleContrastRows = VueModule.computed(() => { const result = sortRoleRows(roleContrastRows.value, roleSortKeys.value.map((key) => { return key.behavior; })); return result; });
     const error = VueModule.ref<string | null>(null);
 
-    /** Raw contrast-check metadata from the last run, keyed by algorithm rather than the `contrast:*` metadata prefix. */
-    const contrastReport = VueModule.ref<{
-      'aa'?:   WcagPairResultSetInterfaceTypeEntity.Type;
-      'aaa'?:  WcagPairResultSetInterfaceTypeEntity.Type;
-      'apca'?: ApcaPairResultSetInterfaceTypeEntity.Type;
-      'cvd'?:  CvdResultSetInterfaceTypeEntity.Type;
+    /** Compliance blockers from the latest run; the empty set when the run is compliant. */
+    const accessibilityBlockers = VueModule.shallowRef(AccessibilityBlockers.fromReport(undefined));
+    const paletteAdmission = new PaletteAdmission();
+    /** True while a palette request is in flight in the resolve worker. */
+    const resolving = VueModule.ref<boolean>(false);
+    /** Counts admitted palettes; consumers wait on it instead of timers. */
+    const paletteRevision = VueModule.ref<number>(0);
+    /** The palette resolved during SSR; the client renders it before any worker exists. */
+    const serverSnapshot = useState<PaletteSnapshotEntity.Type | null>('iridis-palette-snapshot', () => {
+      const initial = null;
+      return initial;
+    });
+
+    /** Compliance and CVD reports from the last run. */
+    const contrastReport = VueModule.shallowRef<{
+      'compliance'?: ComplianceReportEntity.Type;
+      'cvd'?:        CvdResultSetEntity.Type;
     }>({});
 
     /* Image-extraction controls (mirror the engine's gallery config knobs). */
@@ -647,9 +415,6 @@ class IridisContextFactory {
     const pinnableRoles = VueModule.computed<string[]>(() => {
       const schema = (() => {
         const pair = roleSchemaByName[schemaName.value];
-        if (pair === undefined) {
-          throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-        }
         const selected = framing.value === 'dark' ? pair.dark : pair.light;
         const result = roleSchemaFor(selected);
         return result;
@@ -662,120 +427,222 @@ class IridisContextFactory {
     });
 
     class IngestOperation {
-      static run(state: PaletteStateInterface): void {
-        const engineMaps = Tokens.extractEngineMaps(state);
-        const views: RoleViewType[] = [];
-        const roleNames = Object.keys(state.roles);
-        for (let index = 0; index < roleNames.length; index += 1) {
-          const name = roleNames[index];
-          if (name === undefined) {
-            throw new RangeError(`Resolved role list is missing entry ${index}`);
+      static run(snapshot: PaletteSnapshotEntity.Type): void {
+        const clamps = new Map<string, RoleMathClampType>();
+        for (let index = 0; index < snapshot.clamps.length; index += 1) {
+          const clamp = snapshot.clamps[index];
+          if (clamp !== undefined) {
+            clamps.set(clamp.roleName, { 'resolvedHex': clamp.resolvedHex, 'roleOklch': clamp.roleOklch, 'seedHex': clamp.seedHex, 'seedOklch': clamp.seedOklch });
           }
-          const role = state.roles[name];
-          if (role === undefined) {
-            throw new RangeError(`Resolved role ${name} is missing its color record`);
+        }
+        const distances = new Map<string, ReadonlyMap<string, number>>();
+        const distanceEntries = Object.entries(snapshot.distances);
+        for (let index = 0; index < distanceEntries.length; index += 1) {
+          const entry = distanceEntries[index];
+          if (entry !== undefined) {
+            distances.set(entry[0], new Map(Object.entries(entry[1])));
           }
-          views.push({ 'c': role.oklch.c, 'displayP3': role.displayP3, 'h': role.oklch.h, 'hex': role.hex, 'l': role.oklch.l, 'name': name });
         }
-        roles.value = engineMaps.roles;
-        roleViews.value = views;
-        const provenance = Metadata.roleProvenance(state.metadata);
-        roleClamps.value = RoleClampReadModel.fromProvenance(provenance);
-        roleDistances.value = Metadata.roleDistances(state.metadata);
-        const derivedRoles: string[] = [];
-        const statedRoles: string[] = [];
-        const synthesizedRoles: string[] = [];
-        for (const [roleName, evidence] of provenance) {
-          if (evidence.origin === 'derived') {derivedRoles.push(roleName);}
-          if (evidence.origin === 'stated') {statedRoles.push(roleName);}
-          if (evidence.origin === 'synthesized') {synthesizedRoles.push(roleName);}
-        }
-        rolesSynthesized.value = synthesizedRoles;
-        rolesPinned.value = statedRoles;
-        rolesDerived.value = derivedRoles;
-        scales.value = engineMaps.scales;
-        contrastReport.value = {
-          'aa':   ContrastMetadataSlot.wcagAa(state.metadata),
-          'aaa':  ContrastMetadataSlot.wcagAaa(state.metadata),
-          'apca': ContrastMetadataSlot.apca(state.metadata),
-          'cvd':  ContrastMetadataSlot.cvd(state.metadata)
-        };
+        roles.value = Tokens.hexRecord(snapshot.roles);
+        roleViews.value = snapshot.roles.map((role) => {
+          const view = { 'c': role.c, 'displayP3': role.displayP3, 'h': role.h, 'hex': role.hex, 'l': role.l, 'name': role.name };
+          return view;
+        });
+        roleClamps.value = clamps;
+        roleDistances.value = distances;
+        rolesSynthesized.value = snapshot.provenance.synthesized;
+        rolesPinned.value = snapshot.provenance.pinned;
+        rolesDerived.value = snapshot.provenance.derived;
+        scales.value = snapshot.scales;
+        contrastReport.value = { 'compliance': snapshot.compliance, 'cvd': snapshot.cvd };
         if (typeof document !== 'undefined') {
-          applyCurrentFramingTokens(Tokens.mapFromEngine(engineMaps.roles, engineMaps.scales));
+          applyCurrentFramingTokens(Tokens.mapFromEngine(roles.value, scales.value));
         }
       }
     }
 
     const ingest = IngestOperation.run;
 
+    /** Pinned roles named by a blocked pair; the picker marks them pending. */
+    const rejectedPinRoles = VueModule.computed<readonly string[]>(() => {
+      const blockedNames = new Set<string>(accessibilityBlockers.value.pairs.flatMap((pair) => {
+        const names = [pair.foreground, pair.background];
+        return names;
+      }));
+      const result = activeSeeds.value.flatMap((seed) => {
+        const pinned = seed.role !== undefined && blockedNames.has(seed.role) ? [seed.role] : [];
+        return pinned;
+      });
+      return result;
+    });
+
     /** run()'s engine input whenever neither seed list has anything yet (see run() below) — never surfaced as pickerSeeds/imageSeeds, so it never appears as a phantom entry in Manual or the per-image cards. */
     const BOOTSTRAP_SEEDS: PickerSeedType[] = defaultPaletteSeeds();
 
     /**
- * `framingOverride`, when given, is the target framing of an in-flight
- * dark/light swap: the engine resolves the FULL new token set against it
- * BEFORE `framing.value` (and therefore `<html class="dark">`, read
- * directly off that ref in app.vue) ever changes. Only once the new state
- * is ready do we commit `framing.value` and call `ingest()` — one
- * synchronous block, so the class toggle and the actual color repaint land
- * in the same tick instead of the class flipping instantly while the old
- * colors linger for a debounce window.
+ * `pendingFraming` is the target framing of an in-flight dark/light swap: the
+ * worker resolves the FULL new token set against it BEFORE `framing.value`
+ * (and therefore `<html class="dark">`) changes. Once the snapshot arrives,
+ * the framing commit and the repaint land in one synchronous block.
  */
-    let pendingFraming: FramingInterfaceTypeEntity.Type | undefined;
-    class RunOperation {
-      static run(): void {
-        const targetFraming = pendingFraming ?? framing.value;
-
-        // Neither pickerSeeds nor imageSeeds has a seed yet on the very first pass
-        // (in-browser sample-image extraction hasn't resolved, and can't even run
-        // during SSR — no canvas there) — feed the engine one bootstrap seed so it
-        // resolves a real role set from tick one instead of leaving roles.value
-        // empty, WITHOUT writing that seed into either user-visible seed list (the
-        // Manual card must only ever show what the user actually entered).
-        const seeds = activeSeeds.value.length > 0 ? activeSeeds.value : BOOTSTRAP_SEEDS;
-        beginOperation();
-        error.value = null;
-        try {
-          engine.pipeline(pipelineBuild(REQUIRED_COLOR_STAGES));
-          const targetRoles = (() => {
-            const pair = roleSchemaByName[schemaName.value];
-            if (pair === undefined) {
-              throw new RangeError(`No role schema is registered for ${schemaName.value}`);
+    let pendingFraming: FramingEntity.Type | undefined;
+    let transitionEpoch = 0;
+    /** Opens the shared color-transition window; the newest window closes the class. */
+    class ThemeTransitionOperation {
+      static begin(): void {
+        if (typeof document !== 'undefined') {
+          transitionEpoch += 1;
+          const epoch = transitionEpoch;
+          document.documentElement.classList.add('is-switching-theme');
+          setTimeout(() => {
+            if (epoch === transitionEpoch) {
+              document.documentElement.classList.remove('is-switching-theme');
             }
-            const selected = targetFraming === 'dark' ? pair.dark : pair.light;
-            const result = roleSchemaFor(selected);
-            return result;
-          })();
-          const state = engine.run(InputInterfaceTypeEntity.create({
-            'colors':   pickerSeedInputs(seeds),
-            'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
-            'metadata': { 'core:variantConfig': JsonValue.from(VARIANT_CONFIG), 'derivation:config': JsonValue.from(derivationConfig.value), 'derivation:semanticHuesEnabled': JsonValue.from(semanticHuesEnabled.value) },
-            'roles':    targetRoles,
-            'runtime':  { 'colorSpace': colorSpace.value, 'framing': String(targetFraming) }
-          }));
-          if (pendingFraming !== undefined) {
-            framing.value = pendingFraming;
-            if (typeof document !== 'undefined') {
-              document.documentElement.classList.add('is-switching-theme');
-              if (pendingFraming === 'dark') {
-                document.documentElement.classList.add('dark');
-              } else {
-                document.documentElement.classList.remove('dark');
-              }
-              setTimeout(() => {
-                document.documentElement.classList.remove('is-switching-theme');
-              }, 180); // slightly longer than --iridis-tune (150ms)
+          }, 180); // slightly longer than --iridis-tune (150ms)
+        }
+      }
+    }
+
+    class FramingSwapOperation {
+      static run(request: PaletteResolveRequestEntity.Type): void {
+        if (request.framing !== framing.value) {
+          framing.value = request.framing;
+          if (typeof document !== 'undefined') {
+            if (request.framing === 'dark') {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
             }
           }
-          ingest(state);
-          pendingFraming = undefined;
-          if (typeof document !== 'undefined') {
-            applyCurrentFramingTokens(Tokens.mapFromEngine(roles.value, scales.value));
+        }
+      }
+    }
+
+    /** Admits a resolved snapshot and commits framing, palette state, and tokens as one unit. */
+    class CommitSnapshotOperation {
+      static run(snapshot: PaletteSnapshotEntity.Type, request: PaletteResolveRequestEntity.Type): void {
+        const blockers = AccessibilityBlockers.fromReport(snapshot.compliance);
+        accessibilityBlockers.value = blockers;
+        if (paletteAdmission.admit(blockers)) {
+          FramingSwapOperation.run(request);
+          ingest(snapshot);
+          paletteRevision.value += 1;
+        }
+        pendingFraming = undefined;
+      }
+    }
+
+    class ResolveRequestOperation {
+      static build(): PaletteResolveRequestEntity.Type {
+        // Neither pickerSeeds nor imageSeeds has a seed yet on the very first pass
+        // (in-browser sample-image extraction hasn't resolved) — feed the engine one
+        // bootstrap seed so it resolves a real role set from tick one, WITHOUT writing
+        // that seed into either user-visible seed list.
+        const seeds = activeSeeds.value.length > 0 ? activeSeeds.value : BOOTSTRAP_SEEDS;
+        const result = PaletteResolveRequestEntity.create({
+          'colorSpace': colorSpace.value,
+          'cvdMode': cvdMode.value,
+          'derivationConfig': VueModule.toRaw(derivationConfig.value),
+          'framing': pendingFraming ?? framing.value,
+          'nonMandatoryLevel': nonMandatoryLevel.value,
+          'schemaName': schemaName.value,
+          'seeds': PaletteResolve.seeds(seeds),
+          'semanticHuesEnabled': semanticHuesEnabled.value,
+          'strictness': contrastStrictness.value
+        });
+        return result;
+      }
+    }
+
+    /** Receives worker outcomes: the newest reply of each lane applies to the reactive state; a palette snapshot commits inside one theme transition. */
+    class ClientHandlersOperation {
+      static accept(reply: WorkerReplyEntity.Type, envelope: WorkerEnvelopeEntity.Type): void {
+        const message = envelope.message;
+        try {
+          if (reply.kind === 'palette' && message.kind === 'palette') {
+            ClientHandlersOperation.palette(reply, message.request);
+          } else if (reply.kind === 'extract' && message.kind === 'extract') {
+            ExtractionApplyOperation.run(message.imageId, reply);
+          } else if (reply.kind === 'combine' && message.kind === 'combine') {
+            CombineApplyOperation.run(reply);
           }
         } catch (e) {
           error.value = e instanceof Error ? e.message : String(e);
-        } finally {
+        }
+      }
+
+      static busy(message: WorkerMessageEntity.Type): void {
+        if (message.kind === 'palette') {
+          resolving.value = true;
+        } else {
+          beginOperation();
+        }
+      }
+
+      static idle(message: WorkerMessageEntity.Type): void {
+        if (message.kind === 'palette') {
+          resolving.value = false;
+        } else {
           endOperation();
+        }
+      }
+
+      static reject(message: string): void {
+        error.value = message;
+      }
+
+      private static palette(reply: Extract<WorkerReplyEntity.Type, { 'kind': 'palette' }>, request: PaletteResolveRequestEntity.Type): void {
+        if (reply.snapshot === undefined) {
+          throw new TypeError('Palette resolve reply carried no snapshot');
+        }
+        ThemeTransitionOperation.begin();
+        CommitSnapshotOperation.run(reply.snapshot, request);
+      }
+    }
+
+    let client: WorkerRequestClient | undefined;
+    const clientWaiters: ((opened: WorkerRequestClient) => void)[] = [];
+
+    /** Hands the open worker client to callers that arrive before or after the first consumer mounts. */
+    class ClientAccessOperation {
+      static open(): Promise<WorkerRequestClient> {
+        const result = client === undefined
+          ? new Promise<WorkerRequestClient>((resolve) => { clientWaiters.push(resolve); })
+          : Promise.resolve(client);
+        return result;
+      }
+
+      static publish(opened: WorkerRequestClient): void {
+        const waiting = clientWaiters.splice(0);
+        for (let index = 0; index < waiting.length; index += 1) {
+          waiting[index]?.(opened);
+        }
+      }
+    }
+
+    let mountedConsumers = 0;
+    /** Set when a resolve is requested before any consumer has mounted; the first mount runs it. */
+    let awaitingMount = false;
+
+    class RunOperation {
+      static run(): void {
+        error.value = null;
+        const request = ResolveRequestOperation.build();
+        if (client !== undefined) {
+          void client.request(WorkerMessageEntity.create({ 'kind': 'palette', 'request': request }));
+        } else if (typeof window === 'undefined') {
+          beginOperation();
+          try {
+            const snapshot = PaletteResolve.run(request);
+            serverSnapshot.value = snapshot;
+            CommitSnapshotOperation.run(snapshot, request);
+          } catch (e) {
+            error.value = e instanceof Error ? e.message : String(e);
+          } finally {
+            endOperation();
+          }
+        } else {
+          awaitingMount = true;
         }
       }
     }
@@ -784,7 +651,7 @@ class IridisContextFactory {
 
     /** Decode an image source into raw pixel data, downscaled for the gallery pipeline. */
     class ToPixels {
-      static async decode(sourceUrl: string): Promise<{ 'data': Uint8ClampedArray; 'height': number; 'width': number; }> {
+      static async decode(sourceUrl: string): Promise<ImagePixels> {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         await new Promise<void>((resolve, reject) => {
@@ -802,14 +669,14 @@ class IridisContextFactory {
         const context = canvas.getContext('2d', { 'willReadFrequently': true });
         if (context === null) {throw new Error('no 2D context');}
         context.drawImage(img, 0, 0, w, h);
-        const result = { 'data': context.getImageData(0, 0, w, h).data, 'height': h, 'width': w };
+        const result = new ImagePixels(context.getImageData(0, 0, w, h).data.buffer, h, w);
         return result;
       }
     }
 
-    /** Raw decoded pixel buffers, keyed by `UploadedImage.id` — kept out of the reactive `uploadedImages` entries so Vue never deep-wraps a pixel array. */
-    class PixelCache {
-      static readonly entries = new Map<string, { 'data': Uint8ClampedArray; 'height': number; 'width': number }>();
+    /** Entries whose first extraction is in flight; they join `uploadedImages` once it lands. */
+    class PendingEntries {
+      static readonly entries = new Map<string, UploadedImage>();
     }
     let nextImageId = 0;
     /**
@@ -865,59 +732,75 @@ class IridisContextFactory {
 
     const defaultEntrySettings = DefaultEntrySettingsOperation.run;
 
-    /** Builds the `metadata.gallery` object handed to engine.run() — shared by EntryStage1.extract (per-image, passing that entry directly) and combineNowRun (the combine stage itself, passing `defaultEntrySettings()`), rather than two independent object literals repeating the same field list and range-cloning. */
-    class GalleryMetadata {
-      static build(source: UploadedImage) {
-        const result = {
-          'algorithm':          source.strategy.serializeAlgorithm(),
-          'candidates':         allCandidateAlgorithms(source.k),
-          'chromaRange':        cloneRanges(source.chromaRange),
-          'deltaECap':          source.deltaECap,
+    /** Serializable extraction settings of one uploaded image or of the combine stage (`defaultEntrySettings()`). */
+    class ExtractionSettingsOperation {
+      static from(source: UploadedImage): ExtractionSettingsEntity.Type {
+        const result = ExtractionSettingsEntity.create({
+          'algorithm': source.strategy.serializeAlgorithm(),
+          'chromaRange': cloneRanges(source.chromaRange),
+          'deltaECap': source.deltaECap,
           'harmonizeThreshold': source.harmonizeThreshold,
-          'histogramBits':      source.histogramBits,
-          'k':                  source.k,
-          'lightnessRange':     cloneRanges(source.lightnessRange)
-        };
+          'histogramBits': source.histogramBits,
+          'k': source.k,
+          'lightnessRange': cloneRanges(source.lightnessRange)
+        });
         return result;
       }
     }
 
+    /** Applies an image extraction reply to the entry it was requested for. */
+    class ExtractionApplyOperation {
+      static run(imageId: string, reply: Extract<WorkerReplyEntity.Type, { 'kind': 'extract' }>): void {
+        const entry = uploadedImages.value.find((uploadedImage) => {
+          const result = uploadedImage.id === imageId;
+          return result;
+        }) ?? PendingEntries.entries.get(imageId);
+        if (reply.result === undefined) {
+          throw new TypeError('Image extraction reply carried no result');
+        }
+        if (entry !== undefined) {
+          entry.histogram = reply.result.histogram;
+          entry.dominantColorRecords = reply.result.dominantColorRecords;
+          entry.candidates = reply.result.candidates;
+        }
+      }
+    }
+
+    /** Applies the combine reply: histogram, seeds, and candidate palettes of the merged extraction. */
+    class CombineApplyOperation {
+      static run(reply: Extract<WorkerReplyEntity.Type, { 'kind': 'combine' }>): void {
+        if (reply.result === undefined) {
+          throw new TypeError('Combine reply carried no result');
+        }
+        histogram.value = reply.result.histogram;
+        imageSeeds.value = hydratePaletteSeeds(reply.result.extracted, imageSeeds.value);
+        pickerSeeds.value = hydratePaletteSeeds(reply.result.extracted, pickerSeeds.value);
+        candidates.value = reply.result.candidates;
+        selectedCandidateLabel.value = null;
+        sendUiEvent(IridisUiEvent.populatePickerFromImage(reply.result.extracted));
+      }
+    }
+
     /**
- * Stage 1 — reduces ONE image's own cached pixels to its own dominant
- * colors, using ONLY that entry's own settings. Independent of every other
- * uploaded image: re-running this for entry A never touches entry B's
- * histogram/dominantColors.
+ * Stage 1 — reduces ONE image's own pixels (held by the engine worker) to
+ * its own dominant colors, using ONLY that entry's own settings. Independent
+ * of every other uploaded image: re-running this for entry A never touches
+ * entry B's histogram/dominantColors. Resolves true when the reply landed.
  */
     class EntryStage1 {
-      static extract(entry: UploadedImage): void {
-        const pixels = PixelCache.entries.get(entry.id);
-        if (pixels === undefined) {return;}
-        engine.pipeline(IRIDIS_CONSTANTS.IMAGE_ENTRY_STAGES);
-        const state = engine.run(InputInterfaceTypeEntity.create({
-          'colors': [pixels],
-          'metadata': {
-            'gallery': JsonValue.from(GalleryMetadata.build(entry))
-          }
-        }));
-        const hist = GalleryMetadataSlotEntity.GalleryMetadataSlot.histogram(state.metadata);
-        const sortedHistogram = [...hist].sort((left, right) => {
-          const result = right.weight - left.weight;
-          return result;
-        });
-        entry.histogram = sortedHistogram.slice(0, 96);
-        const dominant = GalleryMetadataSlotEntity.GalleryMetadataSlot.dominantColors(state.metadata);
-        const dominantColorRecords: { 'hex': string; 'weight': number }[] = [];
-        for (let index = 0; index < dominant.length; index += 1) {
-          const color = dominant[index];
-          if (color === undefined) {
-            throw new RangeError(`Dominant color list is missing entry ${index}`);
-          }
-          if (isValidHex(color.hex)) {
-            dominantColorRecords.push({ 'hex': color.hex, 'weight': color.hints?.weight ?? 1 });
-          }
+      static async extract(entry: UploadedImage): Promise<boolean> {
+        const opened = await ClientAccessOperation.open();
+        if (!opened.holdsPixels(entry.id)) {
+          await EntryStage1.upload(opened, entry.id, await ToPixels.decode(entry.source));
         }
-        entry.dominantColorRecords = dominantColorRecords;
-        entry.candidates = GalleryMetadataSlotEntity.GalleryMetadataSlot.candidates(state.metadata);
+        const reply = await opened.request(WorkerMessageEntity.create({ 'imageId': entry.id, 'kind': 'extract', 'settings': ExtractionSettingsOperation.from(entry) }));
+        const result = reply !== undefined;
+        return result;
+      }
+
+      /** Transfers the decoded buffer to the worker; the main thread keeps no pixel copy. */
+      static async upload(opened: WorkerRequestClient, imageId: string, pixels: ImagePixels): Promise<void> {
+        await opened.request(WorkerMessageEntity.create({ 'height': pixels.height, 'imageId': imageId, 'kind': 'pixels', 'width': pixels.width }), pixels.buffer);
       }
     }
 
@@ -1044,6 +927,7 @@ class IridisContextFactory {
           return result;});
         const combinedHexes = expandWeighted(weightedContributions, IRIDIS_CONSTANTS.CUMULATIVE_HISTOGRAM_BUDGET);
         if (combinedHexes.length === 0) {
+          client?.cancelCombine();
           histogram.value = [];
           imageSeeds.value = defaultPaletteSeeds();
           pickerSeeds.value = defaultPaletteSeeds();
@@ -1051,54 +935,25 @@ class IridisContextFactory {
           selectedCandidateLabel.value = null;
           return;
         }
-        beginOperation();
         error.value = null;
-        try {
-          const activeRoles = (() => {
-            const pair = roleSchemaByName[schemaName.value];
-            if (pair === undefined) {
-              throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-            }
-            const selected = framing.value === 'dark' ? pair.dark : pair.light;
-            const result = roleSchemaFor(selected);
-            return result;
-          })();
-          engine.pipeline([...IRIDIS_CONSTANTS.COMBINE_EXTRACTION_STAGES]);
-          const state = engine.run(InputInterfaceTypeEntity.create({
-            'colors':   combinedHexes,
-            'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
-            'metadata': {
-              'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
-              'derivation:config': JsonValue.from(derivationConfig.value),
-              'derivation:semanticHuesEnabled': JsonValue.from(semanticHuesEnabled.value),
-              'gallery': JsonValue.from(GalleryMetadata.build(defaultEntrySettings()))
-            },
-            'roles':    activeRoles,
-            'runtime':  { 'colorSpace': colorSpace.value, 'framing': String(framing.value) }
-          }));
-          const hist = GalleryMetadataSlotEntity.GalleryMetadataSlot.histogram(state.metadata);
-          const sortedHistogram = [...hist].sort((left, right) => {
-            const result = right.weight - left.weight;
-            return result;
-          });
-          histogram.value = sortedHistogram.slice(0, 96);
-          const dominant = GalleryMetadataSlotEntity.GalleryMetadataSlot.dominantColors(state.metadata);
-          const schemaCount = schemaRoleCount(schemaName.value);
-          const extracted: string[] = [];
-          for (const color of dominant) {
-            if (isValidHex(color.hex)) { extracted.push(color.hex); }
-            if (extracted.length >= schemaCount) { break; }
-          }
-          imageSeeds.value = hydratePaletteSeeds(extracted, imageSeeds.value);
-          pickerSeeds.value = hydratePaletteSeeds(extracted, pickerSeeds.value);
-          candidates.value = GalleryMetadataSlotEntity.GalleryMetadataSlot.candidates(state.metadata);
-          selectedCandidateLabel.value = null;
-          sendUiEvent(IridisUiEvent.populatePickerFromImage(extracted));
-        } catch (e) {
-          error.value = e instanceof Error ? e.message : String(e);
-        } finally {
-          endOperation();
-        }
+        void CombineNowRunOperation.send(WorkerMessageEntity.create({
+          'colorSpace': colorSpace.value,
+          'cvdMode': cvdMode.value,
+          'derivationConfig': VueModule.toRaw(derivationConfig.value),
+          'framing': framing.value,
+          'hexes': combinedHexes,
+          'kind': 'combine',
+          'nonMandatoryLevel': nonMandatoryLevel.value,
+          'schemaName': schemaName.value,
+          'semanticHuesEnabled': semanticHuesEnabled.value,
+          'settings': ExtractionSettingsOperation.from(defaultEntrySettings()),
+          'strictness': contrastStrictness.value
+        }));
+      }
+
+      private static async send(message: WorkerMessageEntity.Type): Promise<void> {
+        const opened = await ClientAccessOperation.open();
+        await opened.request(message);
       }
     }
 
@@ -1127,6 +982,27 @@ class IridisContextFactory {
 
     const addUploadedImages = AddUploadedImagesOperation.run;
 
+    /** Decodes one source, hands its pixels to the worker, and resolves the extracted entry; a failed extraction releases the worker's pixels and resolves undefined. */
+    class AddEntryOperation {
+      static async run(opened: WorkerRequestClient, source: File | string, sampleName: string | undefined): Promise<UploadedImage | undefined> {
+        const sourceUrl = typeof source === 'string' ? source : URL.createObjectURL(source);
+        const pixels = await ToPixels.decode(sourceUrl);
+        const entry = defaultEntrySettings();
+        entry.id = ImageId.make();
+        entry.name = typeof source === 'string' ? (sampleName ?? 'Sample') : source.name;
+        entry.source = sourceUrl;
+        PendingEntries.entries.set(entry.id, entry);
+        await EntryStage1.upload(opened, entry.id, pixels);
+        const extracted = await EntryStage1.extract(entry);
+        PendingEntries.entries.delete(entry.id);
+        if (!extracted) {
+          void opened.request(WorkerMessageEntity.create({ 'imageId': entry.id, 'kind': 'release' }));
+        }
+        const result = extracted ? entry : undefined;
+        return result;
+      }
+    }
+
     class AddUploadedImagesUnqueuedOperation {
       static async run(sources: readonly (File | string)[], sampleNames?: readonly string[]): Promise<void> {
         if (typeof document === 'undefined' || sources.length === 0) {return;}
@@ -1134,24 +1010,27 @@ class IridisContextFactory {
         error.value = null;
         try {
           const added: UploadedImage[] = [];
+          const opened = await ClientAccessOperation.open();
           const sourceCount = sources.length;
-          for (let i = 0; i < sourceCount; i++) {
+          let complete = true;
+          for (let i = 0; i < sourceCount && complete; i++) {
             const source = sources[i];
             if (source === undefined) {throw new RangeError(`Image source index ${i} is outside the supplied source list`);}
-            const sourceUrl = typeof source === 'string' ? source : URL.createObjectURL(source);
-            const name = typeof source === 'string' ? (sampleNames?.[i] ?? 'Sample') : source.name;
-            const pixels = await ToPixels.decode(sourceUrl);
-            const id = ImageId.make();
-            PixelCache.entries.set(id, pixels);
-            const entry = defaultEntrySettings();
-            entry.id = id;
-            entry.name = name;
-            entry.source = sourceUrl;
-            EntryStage1.extract(entry);
-            added.push(entry);
+            const entry = await AddEntryOperation.run(opened, source, sampleNames?.[i]);
+            if (entry === undefined) {
+              complete = false;
+            } else {
+              added.push(entry);
+            }
           }
-          uploadedImages.value = [...uploadedImages.value, ...added];
-          combine();
+          if (complete) {
+            uploadedImages.value = [...uploadedImages.value, ...added];
+            combine();
+          } else {
+            for (let index = 0; index < added.length; index += 1) {
+              void opened.request(WorkerMessageEntity.create({ 'imageId': added[index]?.id ?? '', 'kind': 'release' }));
+            }
+          }
         } catch (e) {
           error.value = e instanceof Error ? e.message : String(e);
         } finally {
@@ -1172,7 +1051,9 @@ class IridisContextFactory {
         if (entry?.source.startsWith('blob:') === true) {
           URL.revokeObjectURL(entry.source);
         }
-        PixelCache.entries.delete(id);
+        if (client !== undefined) {
+          void client.request(WorkerMessageEntity.create({ 'imageId': id, 'kind': 'release' }));
+        }
         entryReextract.cancel(id);
         uploadedImages.value = uploadedImages.value.filter((uploadedImage) => {
           const result = uploadedImage.id !== id;
@@ -1206,15 +1087,22 @@ class IridisContextFactory {
 
     const uploadedImageSettingUpdate = UploadedImageSettingUpdateOperation.run;
 
+    /** Re-extracts one image in the worker, then recombines once that extraction's reply landed; a superseded or failed extraction leaves the recombine to the newer reply. */
+    class EntryReextractOperation {
+      static async run(id: string): Promise<void> {
+        const entry = uploadedImages.value.find((uploadedImage) => {
+          const result = uploadedImage.id === id;
+          return result;
+        });
+        const settled = entry === undefined || await EntryStage1.extract(entry);
+        if (settled) {
+          combine();
+        }
+      }
+    }
+
     /** Per-entry debounce so rapid slider drags on one image's settings don't re-run its extraction on every step. */
-    const entryReextract = keyedDebounce((id: string) => {
-      const entry = uploadedImages.value.find((uploadedImage) => {
-        const result = uploadedImage.id === id;
-        return result;
-      });
-      if (entry !== undefined) {EntryStage1.extract(entry);}
-      combine();
-    }, 180);
+    const entryReextract = keyedDebounce((id: string) => { void EntryReextractOperation.run(id); }, 180);
 
     /** Debounced combine-stage re-run — triggered by adding/removing an image, a per-image setting change, or a combine-stage setting change. */
     const scheduleCombine = debounce(() => { combine(); }, 180);
@@ -1290,14 +1178,14 @@ class IridisContextFactory {
     }
 
     class PaletteParameterOperation {
-      static disableCvdCorrection(): void { cvdCorrect.value = false; schedule(); }
       static disableSemanticHues(): void { semanticHuesEnabled.value = false; schedule(); }
-      static enableCvdCorrection(): void { cvdCorrect.value = true; schedule(); }
       static enableSemanticHues(): void { semanticHuesEnabled.value = true; schedule(); }
       static setContrastStrictness(strictness: number): void { contrastStrictness.value = strictness; schedule(); }
-      static setDarkFraming(): void { pendingFraming = FramingInterfaceTypeEntity.intake('dark'); run(); }
+      static setCvdMode(nextCvdMode: string): void { cvdMode.value = CvdModeEntity.intake(nextCvdMode); schedule(); }
+      static setNonMandatoryLevel(nextLevel: string): void { nonMandatoryLevel.value = NonMandatoryLevelEntity.intake(nextLevel); schedule(); }
+      static setDarkFraming(): void { pendingFraming = FramingEntity.intake('dark'); run(); }
       static setDeltaEImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('delta-e'); scheduleCombine(); }
-      static setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): void { derivationConfig.value = config; schedule(); }
+      static setDerivationConfig(config: DerivationConfigEntity.Type): void { derivationConfig.value = config; schedule(); }
       static setDisplayP3ColorSpace(): void { colorSpace.value = 'displayP3'; schedule(); }
       static setImageChromaRange(range: [number, number][]): void { imgChromaRange.value = range; scheduleCombine(); }
       static setImageDeltaECap(cap: number): void { imgDeltaECap.value = cap; scheduleCombine(); }
@@ -1306,10 +1194,10 @@ class IridisContextFactory {
       static setImageK(k: number): void { imgK.value = k; scheduleCombine(); }
       static setImageLightnessRange(range: [number, number][]): void { imgLightnessRange.value = range; scheduleCombine(); }
       static setKMeansImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('k-means'); scheduleCombine(); }
-      static setLightFraming(): void { pendingFraming = FramingInterfaceTypeEntity.intake('light'); run(); }
+      static setLightFraming(): void { pendingFraming = FramingEntity.intake('light'); run(); }
       static setMedianCutImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('median-cut'); scheduleCombine(); }
       static setRoleSort(keys: RoleSortKeyType[]): void { roleSortKeys.value = keys; }
-      static setSchema(nextSchemaName: string): void { schemaName.value = SchemaNameInterfaceTypeEntity.intake(nextSchemaName); schedule(); scheduleCombine(); }
+      static setSchema(nextSchemaName: string): void { schemaName.value = SchemaNameEntity.intake(nextSchemaName); schedule(); scheduleCombine(); }
       static setSrgbColorSpace(): void { colorSpace.value = 'srgb'; schedule(); }
       static setWuQuantizeImageAlgorithm(): void { imgStrategy.value = ClusterDispatcher.resolve('wu-quantize'); scheduleCombine(); }
     }
@@ -1395,9 +1283,7 @@ class IridisContextFactory {
     registerEffectHandlers({
       'addSeed': SeedMutationOperation.add,
       'clearCvdPreviews': CvdPreviewOperation.clear,
-      'disableCvdCorrection': PaletteParameterOperation.disableCvdCorrection,
       'disableSemanticHues': PaletteParameterOperation.disableSemanticHues,
-      'enableCvdCorrection': PaletteParameterOperation.enableCvdCorrection,
       'enableSemanticHues': PaletteParameterOperation.enableSemanticHues,
       'extractImageFiles': ImageEffectExtractionOperation.files,
       'extractSampleImage': ImageEffectExtractionOperation.sample,
@@ -1410,6 +1296,7 @@ class IridisContextFactory {
       'resetDiagram': DiagramViewOperation.reset,
       'selectImageCandidate': SelectImageCandidateOperation.run,
       'setContrastStrictness': PaletteParameterOperation.setContrastStrictness,
+      'setCvdMode': PaletteParameterOperation.setCvdMode,
       'setDarkFraming': PaletteParameterOperation.setDarkFraming,
       'setDeltaEImageAlgorithm': PaletteParameterOperation.setDeltaEImageAlgorithm,
       'setDerivationConfig': PaletteParameterOperation.setDerivationConfig,
@@ -1423,6 +1310,7 @@ class IridisContextFactory {
       'setKMeansImageAlgorithm': PaletteParameterOperation.setKMeansImageAlgorithm,
       'setLightFraming': PaletteParameterOperation.setLightFraming,
       'setMedianCutImageAlgorithm': PaletteParameterOperation.setMedianCutImageAlgorithm,
+      'setNonMandatoryLevel': PaletteParameterOperation.setNonMandatoryLevel,
       'setRoleSort': PaletteParameterOperation.setRoleSort,
       'setSchema': PaletteParameterOperation.setSchema,
       'setSeed': SeedMutationOperation.set,
@@ -1438,32 +1326,79 @@ class IridisContextFactory {
     let stopWatches: (() => void)[] = [];
     const schedule = debounce(() => { run(); }, 120);
 
+    /** Opens the resolve worker with the first mounted consumer and closes it with the last. */
+    class ConsumerLifecycleOperation {
+      static mounted(): void {
+        mountedConsumers += 1;
+        if (client === undefined) {
+          client = new WorkerRequestClient(BrowserWorkerPort.open(), ClientHandlersOperation);
+          ClientAccessOperation.publish(client);
+          if (awaitingMount) {
+            awaitingMount = false;
+            run();
+          }
+        }
+      }
+
+      static register(): void {
+        if (typeof window !== 'undefined') {
+          if (VueModule.getCurrentInstance() === null) {
+            ConsumerLifecycleOperation.mounted();
+          } else {
+            VueModule.onMounted(ConsumerLifecycleOperation.mounted);
+            VueModule.onUnmounted(ConsumerLifecycleOperation.unmounted);
+          }
+        }
+      }
+
+      static unmounted(): void {
+        mountedConsumers -= 1;
+        if (mountedConsumers === 0) {
+          client?.dispose();
+          client = undefined;
+        }
+      }
+    }
+
+    class BootOperation {
+      static run(): void {
+        // The server resolves synchronously and hands its snapshot to the client through the Nuxt payload,
+        // so hydration starts from the server palette and no engine work happens before a consumer mounts.
+        if (typeof window === 'undefined') {
+          run();
+          return;
+        }
+        const snapshot = serverSnapshot.value;
+        if (snapshot === null) {
+          awaitingMount = true;
+        } else {
+          serverSnapshot.value = null;
+          CommitSnapshotOperation.run(snapshot, ResolveRequestOperation.build());
+        }
+        // Load default sample palette on page init
+        void addUploadedImages([logoUrl()], ['Sample']);
+        // framing is intentionally absent here — its swap is dispatched directly by
+        // the framing setters via run(), not through this debounce.
+        stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, nonMandatoryLevel, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
+        stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
+      }
+    }
+
     class UseIridisContextOperation {
       static run() {
         if (!booted) {
           booted = true;
-          // Runs on the server too: engine.run() is pure computation.
-          // This makes the SSR-rendered palette identical to the client's,
-          // so hydration never has to re-theme the page.
-          run();
-          if (typeof window !== 'undefined') {
-            // Load default sample palette on page init
-            void addUploadedImages([logoUrl()], ['Sample']);
-            // framing is intentionally absent here — its swap is dispatched synchronously
-            // by paletteParamSet() via run(effect.value), not through this debounce.
-            stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, colorSpace, mode, enabledOptionalStages, cvdCorrect, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
-            stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
-          }
+          BootOperation.run();
         }
+        ConsumerLifecycleOperation.register();
         const result = {
-          'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdCorrect': cvdCorrect,
-          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
+          'accessibilityBlockers': accessibilityBlockers, 'activeSeeds': activeSeeds, 'addUploadedImages': addUploadedImages, 'candidates': candidates, 'colorSpace': colorSpace, 'combineLocked': combineLocked, 'contrastReport': contrastReport, 'contrastStrictness': contrastStrictness, 'cvdMode': cvdMode,          'cvdPreviewTypes': cvdPreviewTypes, 'derivationConfig': derivationConfig, 'diagramIsExpanded': diagramIsExpanded, 'diagramScale': diagramScale,
           'diagramTranslateX': diagramTranslateX, 'diagramTranslateY': diagramTranslateY,
-          'effectiveHexesFor': effectiveHexesFor, 'enabledOptionalStages': enabledOptionalStages, 'error': error, 'framing': framing,
+          'effectiveHexesFor': effectiveHexesFor, 'error': error, 'framing': framing,
           'histogram': histogram,
           'imageSeeds': imageSeeds, 'imgChromaRange': imgChromaRange, 'imgDeltaECap': imgDeltaECap,
-          'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'pickerSeeds': pickerSeeds,
-          'pinnableRoles': pinnableRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
+          'imgHarmonize': imgHarmonize, 'imgHistogramBits': imgHistogramBits, 'imgK': imgK, 'imgLightnessRange': imgLightnessRange, 'imgStrategy': imgStrategy, 'mode': mode, 'nonMandatoryLevel': nonMandatoryLevel, 'paletteRevision': paletteRevision, 'pickerSeeds': pickerSeeds,
+          'pinnableRoles': pinnableRoles, 'rejectedPinRoles': rejectedPinRoles, 'removeUploadedImage': removeUploadedImage, 'reRunCombine': reRunCombine, 'resolving': resolving, 'roleClamps': roleClamps, 'roleDistances': roleDistances,
           'roles': roles, 'rolesDerived': rolesDerived,
           'roleSortKeys': roleSortKeys, 'rolesPinned': rolesPinned, 'rolesSynthesized': rolesSynthesized,
           'roleViews': roleViews,
@@ -1487,6 +1422,10 @@ class IridisContextFactory {
         stopWatch();
       }
       stopWatches = [];
+      client?.dispose();
+      client = undefined;
+      mountedConsumers = 0;
+      awaitingMount = false;
       booted = false;
     };
 

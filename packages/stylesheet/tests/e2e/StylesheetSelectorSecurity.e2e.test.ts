@@ -5,9 +5,9 @@ import type {
 } from '@studnicky/iridis';
 
 import {
-  InputInterfaceTypeEntity,
-  RoleSchemaInterfaceTypeEntity,
-  TaskManifestInterfaceTypeEntity
+  InputEntity,
+  RoleSchemaEntity,
+  TaskManifestEntity
 } from '@studnicky/iridis';
 import { Engine } from '@studnicky/iridis/engine';
 import { coreTasks } from '@studnicky/iridis/tasks';
@@ -23,7 +23,7 @@ import { StylesheetSelectorSecurityTestData } from '../fixtures/StylesheetSelect
 class HostileVariantTask implements TaskInterface {
   readonly name = 'test:addHostileVariant';
 
-  readonly manifest: TaskManifestInterfaceTypeEntity.Type = TaskManifestInterfaceTypeEntity.create({
+  readonly manifest: TaskManifestEntity.Type = TaskManifestEntity.create({
     'description': 'Add a hostile variant name for selector-boundary testing',
     'name':        'test:addHostileVariant',
     'reads':       ['roles'],
@@ -41,7 +41,7 @@ class HostileVariantTask implements TaskInterface {
 }
 
 class StylesheetSelectorSecurityFixture {
-  static runCssVars(metadata: InputInterfaceTypeEntity.Type['metadata']): CssVarsScenarioOutputEntity.Type['cssVars'] {
+  static runCssVars(metadata: InputEntity.Type['metadata']): CssVarsScenarioOutputEntity.Type['cssVars'] {
     const result = StylesheetSelectorSecurityFixture.runCssVarsForPipeline(
       metadata,
       ['intake:hex', 'resolve:roles', 'emit:cssVars'],
@@ -50,7 +50,7 @@ class StylesheetSelectorSecurityFixture {
     return result;
   }
 
-  static runCssVarsWithVariant(metadata: InputInterfaceTypeEntity.Type['metadata']): CssVarsScenarioOutputEntity.Type['cssVars'] {
+  static runCssVarsWithVariant(metadata: InputEntity.Type['metadata']): CssVarsScenarioOutputEntity.Type['cssVars'] {
     const result = StylesheetSelectorSecurityFixture.runCssVarsForPipeline(
       metadata,
       ['intake:oklch', 'resolve:roles', 'derive:variant', 'emit:cssVars'],
@@ -59,7 +59,7 @@ class StylesheetSelectorSecurityFixture {
     return result;
   }
 
-  static runCssVarsScoped(metadata: InputInterfaceTypeEntity.Type['metadata']): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
+  static runCssVarsScoped(metadata: InputEntity.Type['metadata']): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
     const result = StylesheetSelectorSecurityFixture.runCssVarsScopedForPipeline(
       metadata,
       ['intake:hex', 'resolve:roles', 'emit:cssVarsScoped'],
@@ -68,7 +68,7 @@ class StylesheetSelectorSecurityFixture {
     return result;
   }
 
-  static runCssVarsScopedWithHostileVariant(metadata: InputInterfaceTypeEntity.Type['metadata']): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
+  static runCssVarsScopedWithHostileVariant(metadata: InputEntity.Type['metadata']): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
     const result = StylesheetSelectorSecurityFixture.runCssVarsScopedForPipeline(
       metadata,
       ['intake:hex', 'resolve:roles', 'test:addHostileVariant', 'emit:cssVarsScoped'],
@@ -77,7 +77,7 @@ class StylesheetSelectorSecurityFixture {
     return result;
   }
 
-  static runCssVarsScopedWithHostileWideGamutVariant(metadata: InputInterfaceTypeEntity.Type['metadata']): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
+  static runCssVarsScopedWithHostileWideGamutVariant(metadata: InputEntity.Type['metadata']): CssVarsScopedScenarioOutputEntity.Type['scoped'] {
     const result = StylesheetSelectorSecurityFixture.runCssVarsScopedForPipeline(
       metadata,
       ['intake:oklch', 'resolve:roles', 'test:addHostileVariant', 'emit:cssVarsScoped'],
@@ -152,13 +152,13 @@ class StylesheetSelectorSecurityFixture {
   }
 
   private static input(
-    metadata: InputInterfaceTypeEntity.Type['metadata'],
-    colors: InputInterfaceTypeEntity.Type['colors']
-  ): InputInterfaceTypeEntity.Type {
-    const result = InputInterfaceTypeEntity.create({
+    metadata: InputEntity.Type['metadata'],
+    colors: InputEntity.Type['colors']
+  ): InputEntity.Type {
+    const result = InputEntity.create({
       'colors': colors,
       ...(metadata === undefined ? {} : { 'metadata': metadata }),
-      'roles': RoleSchemaInterfaceTypeEntity.intake(StylesheetSelectorSecurityTestData.RAW_ROLE_SCHEMA)
+      'roles': RoleSchemaEntity.intake(StylesheetSelectorSecurityTestData.RAW_ROLE_SCHEMA)
     });
     return result;
   }
@@ -174,9 +174,9 @@ class StylesheetSelectorSecurityFixture {
   }
 
   private static runCssVarsForPipeline(
-    metadata: InputInterfaceTypeEntity.Type['metadata'],
+    metadata: InputEntity.Type['metadata'],
     pipeline: readonly string[],
-    colors: InputInterfaceTypeEntity.Type['colors']
+    colors: InputEntity.Type['colors']
   ): CssVarsScenarioOutputEntity.Type['cssVars'] {
     const engine = StylesheetSelectorSecurityFixture.engine();
     engine.pipeline(pipeline);
@@ -193,10 +193,10 @@ class StylesheetSelectorSecurityFixture {
   }
 
   private static runCssVarsScopedForPipeline(
-    metadata: InputInterfaceTypeEntity.Type['metadata'],
+    metadata: InputEntity.Type['metadata'],
     pipeline: readonly string[],
     options: {
-      readonly 'colors'?: InputInterfaceTypeEntity.Type['colors'];
+      readonly 'colors'?: InputEntity.Type['colors'];
       readonly 'task'?:   TaskInterface;
     }
   ): CssVarsScopedScenarioOutputEntity.Type['scoped'] {

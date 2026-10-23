@@ -1,21 +1,21 @@
-import { SupportedLangInterfaceTypeEntity } from '~/composables/entities/SupportedLangInterfaceTypeEntity.ts';
+import { SupportedLangEntity } from '~/composables/entities/SupportedLangEntity.ts';
 
 export const resolveSupportedCodeLang = class SupportedCodeLangResolver {
-  private static readonly contentLangToSupportedLang: Record<string, SupportedLangInterfaceTypeEntity.Type> = {
-    'bash': SupportedLangInterfaceTypeEntity.intake('bash'),
-    'css': SupportedLangInterfaceTypeEntity.intake('css'),
-    'html': SupportedLangInterfaceTypeEntity.intake('html'),
-    'javascript': SupportedLangInterfaceTypeEntity.intake('javascript'),
-    'js': SupportedLangInterfaceTypeEntity.intake('javascript'),
-    'json': SupportedLangInterfaceTypeEntity.intake('json'),
-    'sh': SupportedLangInterfaceTypeEntity.intake('bash'),
-    'ts': SupportedLangInterfaceTypeEntity.intake('typescript'),
-    'typescript': SupportedLangInterfaceTypeEntity.intake('typescript'),
-    'xml': SupportedLangInterfaceTypeEntity.intake('xml')
+  private static readonly contentLangToSupportedLang: Record<string, SupportedLangEntity.Type> = {
+    'bash': SupportedLangEntity.intake('bash'),
+    'css': SupportedLangEntity.intake('css'),
+    'html': SupportedLangEntity.intake('html'),
+    'javascript': SupportedLangEntity.intake('javascript'),
+    'js': SupportedLangEntity.intake('javascript'),
+    'json': SupportedLangEntity.intake('json'),
+    'sh': SupportedLangEntity.intake('bash'),
+    'ts': SupportedLangEntity.intake('typescript'),
+    'typescript': SupportedLangEntity.intake('typescript'),
+    'xml': SupportedLangEntity.intake('xml')
   };
 
-  public static resolve(language: string | undefined): SupportedLangInterfaceTypeEntity.Type {
-    const result = SupportedCodeLangResolver.contentLangToSupportedLang[language ?? ''] ?? SupportedLangInterfaceTypeEntity.intake('bash');
+  public static resolve(language: string | undefined): SupportedLangEntity.Type {
+    const result = SupportedCodeLangResolver.contentLangToSupportedLang[language ?? ''] ?? SupportedLangEntity.intake('bash');
     return result;
   }
 };

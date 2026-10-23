@@ -1,4 +1,4 @@
-import type { RoleSortableRowInterfaceTypeEntity } from '../composables/entities/RoleSortableRowInterfaceTypeEntity.ts';
+import type { RoleSortableRowEntity } from '../composables/entities/RoleSortableRowEntity.ts';
 import type { RoleSortFieldBehaviorInterface } from './roleSortFieldBehaviorInterface.ts';
 import type { RoleSortFieldComparatorInterface } from './roleSortFieldComparatorInterface.ts';
 
@@ -11,7 +11,7 @@ class AscendingRoleSortBehavior implements RoleSortFieldBehaviorInterface {
     this.label = field.label;
   }
 
-  public compare(left: RoleSortableRowInterfaceTypeEntity.Type, right: RoleSortableRowInterfaceTypeEntity.Type): number {
+  public compare(left: RoleSortableRowEntity.Type, right: RoleSortableRowEntity.Type): number {
     const comparison = this.field.compare(left, right);
     return comparison;
   }
@@ -41,7 +41,7 @@ class DescendingRoleSortBehavior implements RoleSortFieldBehaviorInterface {
     this.label = field.label;
   }
 
-  public compare(left: RoleSortableRowInterfaceTypeEntity.Type, right: RoleSortableRowInterfaceTypeEntity.Type): number {
+  public compare(left: RoleSortableRowEntity.Type, right: RoleSortableRowEntity.Type): number {
     const comparison = -this.field.compare(left, right);
     return comparison;
   }

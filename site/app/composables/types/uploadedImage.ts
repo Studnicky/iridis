@@ -1,5 +1,5 @@
 import type { ClusterStrategyInterface, GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
-import type { GalleryHistogramSlotInterfaceType } from '@studnicky/iridis-image/types';
+import type { GalleryHistogramSlotInterface } from '@studnicky/iridis-image/types';
 
 /**
  * One uploaded image's own extraction state — decoded and reduced to
@@ -17,7 +17,7 @@ export declare class UploadedImage {
   /** Each color plus its cluster weight (pixel-count share), preserved from gallery:extract's ColorRecord.hints.weight so the combine stage can build a genuinely cumulative, pixel-weighted merge instead of treating every representative color as equally significant. */
   'dominantColorRecords': { 'hex': string; 'weight': number }[];
   'harmonizeThreshold': number;
-  'histogram': GalleryHistogramSlotInterfaceType['bins'];
+  'histogram': GalleryHistogramSlotInterface['bins'];
   'histogramBits': number;
   'id': string;
   'k': number;

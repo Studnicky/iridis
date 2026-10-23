@@ -5,7 +5,7 @@ The engine. Composition spine + canonical models for the iridis chromatic pipeli
 ## What ships
 
 - `Engine` with `TaskRegistry`
-- Canonical pipeline tasks: `intake:* / clamp:* / resolve:roles / expand:family / enforce:contrast / derive:variant / emit:json`
+- Canonical palette composition: `intake:* / clamp:* / resolve:roles / expand:family / enforce:compliance / derive:variant / report:compliance / emit:json`; the contrast plugin supplies `enforce:compliance` and `report:compliance`, while core exports the models and policy primitives they consume
 - 33 math primitives (OKLCH ↔ RGB ↔ HSL ↔ Hex, sRGB ↔ linear ↔ Display-P3, gamut-mapping, mix/lighten/darken/saturate/desaturate/hueShift, WCAG 2.1 + APCA contrast, ΔE2000, `ensureContrast`, median-cut clustering, luminance, contrastText), each exported as a class plus a singleton instance for direct import
 - Models: `ColorRecord`, `PaletteState`, `RoleSchema`, `RuntimeOptions` (typed cross-output toggles)
 
@@ -29,11 +29,11 @@ npm install @studnicky/iridis
 ## Usage
 
 ```ts
-import type { RoleSchemaInterfaceType } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from '@studnicky/iridis';
 
 import { Engine, coreTasks } from '@studnicky/iridis';
 
-export function generatePalette(roleSchema: RoleSchemaInterfaceType) {
+export function generatePalette(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
 
@@ -61,14 +61,14 @@ export function generatePalette(roleSchema: RoleSchemaInterfaceType) {
 Math primitives are direct singleton imports; pull only what you call:
 
 ```ts
-import type { ColorRecordInterfaceType } from '@studnicky/iridis';
+import type { ColorRecordEntity } from '@studnicky/iridis';
 
 import { luminance, contrastWcag21, oklchToRgb } from '@studnicky/iridis';
 
 export function inspectColors(
-  record: ColorRecordInterfaceType,
-  foreground: ColorRecordInterfaceType,
-  background: ColorRecordInterfaceType,
+  record: ColorRecordEntity.Type,
+  foreground: ColorRecordEntity.Type,
+  background: ColorRecordEntity.Type,
 ) {
   const lum    = luminance.apply(record);
   const ratio  = contrastWcag21.apply(foreground, background);

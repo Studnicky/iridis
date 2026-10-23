@@ -36,17 +36,17 @@ The registry seeds itself with the built-in set on construction; register
 additional named trajectories alongside them:
 
 ```ts
-import type { PaletteInterfaceType } from '@studnicky/iridis-algebra';
-import type { TrajectoryDefinitionInterfaceType } from '@studnicky/iridis-trajectory';
+import type { PaletteEntity } from '@studnicky/iridis-algebra';
+import type { TrajectoryDefinitionEntity } from '@studnicky/iridis-trajectory';
 
 import { TrajectoryRegistry } from '@studnicky/iridis-trajectory';
 
-declare const quietPalette: PaletteInterfaceType;
-declare const activePalette: PaletteInterfaceType;
+declare const quietPalette: PaletteEntity;
+declare const activePalette: PaletteEntity;
 
 const registry = new TrajectoryRegistry();
 
-const brandPulse: TrajectoryDefinitionInterfaceType = {
+const brandPulse: TrajectoryDefinitionEntity = {
   opts: { chromaticDetourRoles: undefined, easing: undefined, hueDirection: 'shortestArc' },
   stops: [quietPalette, activePalette, quietPalette],
 };
@@ -78,7 +78,7 @@ const frame = evaluateStops(sunriseTrajectory.stops, 0.3, sunriseTrajectory.opts
 | Export | Kind | Notes |
 |---|---|---|
 | `TrajectoryRegistry` | class | `registerTrajectory(name, definition)` adds or overwrites an entry; `resolve(name, t)` evaluates the named trajectory's stops at `t` via `evaluateStops`, throwing on an unknown name. Constructed with the built-in set already registered. |
-| `sunriseTrajectory` / `duskFadeTrajectory` / `focusPulseTrajectory` | `TrajectoryDefinitionInterfaceType` | The built-in definitions, each `{ opts, stops }` -- importable standalone without going through the registry. |
-| `TrajectoryDefinitionInterfaceType` | type | `{ opts: CurveOptionsInterfaceType \| undefined; stops: PaletteInterfaceType[] }` -- the shape every registered trajectory (built-in or custom) must satisfy. |
+| `sunriseTrajectory` / `duskFadeTrajectory` / `focusPulseTrajectory` | `TrajectoryDefinitionEntity` | The built-in definitions, each `{ opts, stops }` -- importable standalone without going through the registry. |
+| `TrajectoryDefinitionEntity` | type | `{ opts: CurveOptionsEntity \| undefined; stops: PaletteEntity[] }` -- the shape every registered trajectory (built-in or custom) must satisfy. |
 
 Part of [iridis](https://github.com/Studnicky/iridis).

@@ -1,10 +1,10 @@
-import type { ThemeDefinitionInterfaceType } from '../ThemeDefinitionInterfaceType.ts';
+import type { ThemeDefinitionInterface } from '../ThemeDefinitionInterface.ts';
 
 import { DataLayoutStrategy } from '../DataLayoutStrategy.ts';
 import { renderStreak } from '../particles/renderStreak.ts';
 
 /** Terminal/CRT hacker — densest starfield of any theme, visible scanline grid, fast cascading pace. Visual (fonts/radius/border) lives in ./hackerman.css. */
-export const hackerman: ThemeDefinitionInterfaceType = {
+export const hackerman: ThemeDefinitionInterface = {
   'ambient': {
     'blobCount':       4,
     'gooFilter':       'none',

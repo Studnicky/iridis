@@ -1,4 +1,4 @@
-import { InputInterfaceTypeEntity } from '@studnicky/iridis';
+import { InputEntity } from '@studnicky/iridis';
 import { capacitorPlugin } from '@studnicky/iridis-capacitor';
 import { chakraPlugin } from '@studnicky/iridis-chakra';
 import { muiPlugin } from '@studnicky/iridis-mui';
@@ -8,43 +8,30 @@ import { shadcnPlugin } from '@studnicky/iridis-shadcn';
 import { stylesheetPlugin } from '@studnicky/iridis-stylesheet';
 import { tailwindPlugin } from '@studnicky/iridis-tailwind';
 import { LOG_STATUS, LogBody } from '@studnicky/logger/browser';
-import { JsonValue } from '@studnicky/types/browser';
 import * as VueModule from 'vue';
 
-import { roleSchemaByName } from '~/theme/RoleSchemaByName.ts';
 import { debounce } from '~/utils/debounce.ts';
 
-import { ContrastConfigFor } from './contrastConfigFor.ts';
+import { COLOR_PIPELINE } from './colorPipeline.ts';
 import { createColorEngine } from './createColorEngine.ts';
 import { MultiOutputEntity } from './entities/MultiOutputEntity.ts';
 import { MultiOutputRequestEntity } from './entities/MultiOutputRequestEntity.ts';
-import { OutputRowInterfaceTypeEntity } from './entities/OutputRowInterfaceTypeEntity.ts';
+import { OutputRowEntity } from './entities/OutputRowEntity.ts';
+import { PaletteResolveRequestEntity } from './entities/PaletteResolveRequestEntity.ts';
 import { logger } from './logger.ts';
-import { optionalContrastStages } from './optionalContrastStages.ts';
-import { pickerSeedInputs } from './pickerSeedInputs.ts';
-import { REQUIRED_COLOR_STAGES } from './requiredColorStages.ts';
-import { roleSchemaFor } from './roleSchemaFor.ts';
-import { spliceOptionalStages } from './spliceOptionalStages.ts';
+import { PaletteResolve } from './paletteResolve.ts';
 import { useIridis } from './useIridis.ts';
-import { VARIANT_CONFIG } from './variantConfig.ts';
 
 /** One palette, every real output emitter: CSS, component libraries, mobile, RDF, and JSON. */
-const outputsByKey = VueModule.ref<Record<string, OutputRowInterfaceTypeEntity.Type | undefined>>({});
-
-class ColorStages {
-  static build(strictness: number): string[] {
-    const result = spliceOptionalStages(REQUIRED_COLOR_STAGES, optionalContrastStages(strictness));
-    return result;
-  }
-}
+const outputsByKey = VueModule.ref<Record<string, OutputRowEntity.Type | undefined>>({});
 
 class MainOutputs {
-  static row(label: string, language: string, text: string): OutputRowInterfaceTypeEntity.Type {
-    const result = OutputRowInterfaceTypeEntity.create({ 'label': label, 'language': language, 'text': text });
+  static row(label: string, language: string, text: string): OutputRowEntity.Type {
+    const result = OutputRowEntity.create({ 'label': label, 'language': language, 'text': text });
     return result;
   }
 
-  static build(request: MultiOutputRequestEntity.Type): Record<string, OutputRowInterfaceTypeEntity.Type | undefined> {
+  static build(request: MultiOutputRequestEntity.Type): Record<string, OutputRowEntity.Type | undefined> {
     const engine = createColorEngine();
     engine.adopt(stylesheetPlugin);
     engine.adopt(tailwindPlugin);
@@ -55,16 +42,16 @@ class MainOutputs {
     engine.adopt(capacitorPlugin);
     engine.adopt(rdfPlugin);
     engine.pipeline([
-      ...ColorStages.build(request.contrastStrictness),
+      ...COLOR_PIPELINE,
       'emit:cssVars', 'emit:cssVarsScoped', 'emit:tailwindTheme', 'emit:json',
       'emit:shadcnTheme', 'emit:muiTheme', 'emit:chakraTheme', 'emit:pandaTheme',
       'emit:capacitorStatusBar', 'emit:capacitorSplashScreen', 'emit:capacitorTheme', 'emit:androidThemeXml',
       'reason:annotate', 'reason:serialize'
     ]);
-    const input = InputInterfaceTypeEntity.intake(request.input);
+    const input = InputEntity.intake(request.input);
     const state = engine.run(input);
     const output = MultiOutputEntity.intake(state.outputs);
-    const rows: Record<string, OutputRowInterfaceTypeEntity.Type | undefined> = {};
+    const rows: Record<string, OutputRowEntity.Type | undefined> = {};
     const cssVariables = output['stylesheet:cssVars'];
     if (cssVariables !== undefined) {rows.cssVars = MainOutputs.row('CSS variables', 'css', cssVariables.full);}
     const scopedCssVariables = output['stylesheet:cssVarsScoped'];
@@ -101,27 +88,21 @@ class ActivateOperation {
   static run(): void {
     if (activated) {return;}
     activated = true;
-    const { activeSeeds, colorSpace, contrastStrictness, cvdCorrect, derivationConfig, framing, schemaName, semanticHuesEnabled } = useIridis();
+    const { activeSeeds, colorSpace, contrastStrictness, cvdMode, derivationConfig, framing, nonMandatoryLevel, schemaName, semanticHuesEnabled } = useIridis();
     function generate(): void {
       try {
-        const pair = roleSchemaByName[schemaName.value];
-        if (pair === undefined) {
-          throw new RangeError(`No role schema is registered for ${schemaName.value}`);
-        }
-        const selected = framing.value === 'dark' ? pair.dark : pair.light;
-        const roles = roleSchemaFor(selected);
-        const input = InputInterfaceTypeEntity.create({
-          'colors':   pickerSeedInputs(activeSeeds.value),
-          'contrast': ContrastConfigFor.forStrictness(contrastStrictness.value, cvdCorrect.value ? ContrastConfigFor.correctingCvd : ContrastConfigFor.advisoryCvd),
-          'metadata': {
-            'core:variantConfig':              JsonValue.from(VARIANT_CONFIG),
-            'derivation:config':               JsonValue.from(derivationConfig.value),
-            'derivation:semanticHuesEnabled':  JsonValue.from(semanticHuesEnabled.value)
-          },
-          'roles':   roles,
-          'runtime': { 'colorSpace': colorSpace.value, 'framing': String(framing.value) }
-        });
-        const request = MultiOutputRequestEntity.create({ 'contrastStrictness': contrastStrictness.value, 'input': input });
+        const input = PaletteResolve.input(PaletteResolveRequestEntity.create({
+          'colorSpace': colorSpace.value,
+          'cvdMode': cvdMode.value,
+          'derivationConfig': VueModule.toRaw(derivationConfig.value),
+          'framing': framing.value,
+          'nonMandatoryLevel': nonMandatoryLevel.value,
+          'schemaName': schemaName.value,
+          'seeds': PaletteResolve.seeds(activeSeeds.value),
+          'semanticHuesEnabled': semanticHuesEnabled.value,
+          'strictness': contrastStrictness.value
+        }));
+        const request = MultiOutputRequestEntity.create({ 'input': input });
         outputsByKey.value = MainOutputs.build(request);
       } catch (error) {
         logger.error(LogBody.create({
@@ -136,7 +117,7 @@ class ActivateOperation {
     }
     const schedule = debounce(generate, 120);
     generate();
-    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, derivationConfig, semanticHuesEnabled, cvdCorrect, colorSpace], schedule, { 'deep': true });
+    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, cvdMode, nonMandatoryLevel, derivationConfig, semanticHuesEnabled, colorSpace], schedule, { 'deep': true });
   }
 }
 

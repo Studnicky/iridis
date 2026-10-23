@@ -1,4 +1,4 @@
-import type { DerivationConfigInterfaceTypeEntity } from '../entities/DerivationConfigInterfaceTypeEntity.ts';
+import type { DerivationConfigEntity } from '../entities/DerivationConfigEntity.ts';
 import type { RoleSortKeyType } from './roleSortKeyType.ts';
 
 abstract class IridisUiEffectHandler {
@@ -17,9 +17,9 @@ abstract class IridisUiEffectHandler {
   abstract setDisplayP3ColorSpace(): void;
   abstract setSrgbColorSpace(): void;
   abstract setContrastStrictness(strictness: number): void;
-  abstract disableCvdCorrection(): void;
-  abstract enableCvdCorrection(): void;
-  abstract setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): void;
+  abstract setCvdMode(cvdMode: string): void;
+  abstract setNonMandatoryLevel(nonMandatoryLevel: string): void;
+  abstract setDerivationConfig(config: DerivationConfigEntity.Type): void;
   abstract setDarkFraming(): void;
   abstract setLightFraming(): void;
   abstract setDeltaEImageAlgorithm(): void;
@@ -45,9 +45,6 @@ abstract class IridisUiEffectHandler {
 abstract class ColorSpaceSelection { abstract apply(handler: IridisUiEffectHandler): void; }
 class DisplayP3ColorSpaceSelection extends ColorSpaceSelection { apply(handler: IridisUiEffectHandler): void { handler.setDisplayP3ColorSpace(); } }
 class SrgbColorSpaceSelection extends ColorSpaceSelection { apply(handler: IridisUiEffectHandler): void { handler.setSrgbColorSpace(); } }
-abstract class CvdCorrectionSelection { abstract apply(handler: IridisUiEffectHandler): void; }
-class CvdCorrectionDisabledSelection extends CvdCorrectionSelection { apply(handler: IridisUiEffectHandler): void { handler.disableCvdCorrection(); } }
-class CvdCorrectionEnabledSelection extends CvdCorrectionSelection { apply(handler: IridisUiEffectHandler): void { handler.enableCvdCorrection(); } }
 abstract class FramingSelection { abstract apply(handler: IridisUiEffectHandler): void; }
 class DarkFramingSelection extends FramingSelection { apply(handler: IridisUiEffectHandler): void { handler.setDarkFraming(); } }
 class LightFramingSelection extends FramingSelection { apply(handler: IridisUiEffectHandler): void { handler.setLightFraming(); } }
@@ -85,10 +82,9 @@ export abstract class IridisUiEffect {
   static srgbColorSpace(): ColorSpaceSelection { return new SrgbColorSpaceSelection(); }
   static setColorSpace(selection: ColorSpaceSelection): IridisUiEffect { return new SetColorSpaceEffect(selection); }
   static setContrastStrictness(strictness: number): IridisUiEffect { return new SetContrastStrictnessEffect(strictness); }
-  static cvdCorrectionDisabled(): CvdCorrectionSelection { return new CvdCorrectionDisabledSelection(); }
-  static cvdCorrectionEnabled(): CvdCorrectionSelection { return new CvdCorrectionEnabledSelection(); }
-  static setCvdCorrection(selection: CvdCorrectionSelection): IridisUiEffect { return new SetCvdCorrectionEffect(selection); }
-  static setDerivationConfig(config: DerivationConfigInterfaceTypeEntity.Type): IridisUiEffect { return new SetDerivationConfigEffect(config); }
+  static setCvdMode(cvdMode: string): IridisUiEffect { return new SetCvdModeEffect(cvdMode); }
+  static setNonMandatoryLevel(nonMandatoryLevel: string): IridisUiEffect { return new SetNonMandatoryLevelEffect(nonMandatoryLevel); }
+  static setDerivationConfig(config: DerivationConfigEntity.Type): IridisUiEffect { return new SetDerivationConfigEffect(config); }
   static darkFraming(): FramingSelection { return new DarkFramingSelection(); }
   static lightFraming(): FramingSelection { return new LightFramingSelection(); }
   static setFraming(selection: FramingSelection): IridisUiEffect { return new SetFramingEffect(selection); }
@@ -173,14 +169,19 @@ class SetContrastStrictnessEffect extends IridisUiEffect {
   constructor(strictness: number) { super(); this.#strictness = strictness; }
   execute(handler: IridisUiEffectHandler): void { handler.setContrastStrictness(this.#strictness); }
 }
-class SetCvdCorrectionEffect extends IridisUiEffect {
-  readonly #selection: CvdCorrectionSelection; readonly type = 'SET_CVD_CORRECT';
-  constructor(selection: CvdCorrectionSelection) { super(); this.#selection = selection; }
-  execute(handler: IridisUiEffectHandler): void { this.#selection.apply(handler); }
+class SetCvdModeEffect extends IridisUiEffect {
+  readonly #cvdMode: string; readonly type = 'SET_CVD_MODE';
+  constructor(cvdMode: string) { super(); this.#cvdMode = cvdMode; }
+  execute(handler: IridisUiEffectHandler): void { handler.setCvdMode(this.#cvdMode); }
+}
+class SetNonMandatoryLevelEffect extends IridisUiEffect {
+  readonly #nonMandatoryLevel: string; readonly type = 'SET_NON_MANDATORY_LEVEL';
+  constructor(nonMandatoryLevel: string) { super(); this.#nonMandatoryLevel = nonMandatoryLevel; }
+  execute(handler: IridisUiEffectHandler): void { handler.setNonMandatoryLevel(this.#nonMandatoryLevel); }
 }
 class SetDerivationConfigEffect extends IridisUiEffect {
-  readonly #config: DerivationConfigInterfaceTypeEntity.Type; readonly type = 'SET_DERIVATION_CONFIG';
-  constructor(config: DerivationConfigInterfaceTypeEntity.Type) { super(); this.#config = config; }
+  readonly #config: DerivationConfigEntity.Type; readonly type = 'SET_DERIVATION_CONFIG';
+  constructor(config: DerivationConfigEntity.Type) { super(); this.#config = config; }
   execute(handler: IridisUiEffectHandler): void { handler.setDerivationConfig(this.#config); }
 }
 class SetFramingEffect extends IridisUiEffect {

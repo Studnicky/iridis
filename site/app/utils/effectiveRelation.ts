@@ -1,4 +1,4 @@
-import { DerivationRelationInterfaceTypeEntity } from '../composables/entities/DerivationRelationInterfaceTypeEntity.ts';
+import { DerivationRelationEntity } from '../composables/entities/DerivationRelationEntity.ts';
 
 /**
  * Every relation this codebase resolves goes through this function, whether
@@ -10,11 +10,11 @@ import { DerivationRelationInterfaceTypeEntity } from '../composables/entities/D
  */
 class EffectiveRelationOperation {
   static run({ relation, schemaHueOffset }: {
-    readonly 'relation': DerivationRelationInterfaceTypeEntity.Type | undefined;
+    readonly 'relation': DerivationRelationEntity.Type | undefined;
     readonly 'schemaHueOffset': number | undefined;
-  }): DerivationRelationInterfaceTypeEntity.Type {
+  }): DerivationRelationEntity.Type {
     if (relation !== undefined) {return relation;}
-    const freeformRelation = DerivationRelationInterfaceTypeEntity.create({
+    const freeformRelation = DerivationRelationEntity.create({
       'algorithm': 'freeform',
       'freeformOffset': schemaHueOffset ?? 0,
       'hueVariantIndex': 0
