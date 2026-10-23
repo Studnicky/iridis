@@ -318,7 +318,11 @@ void test('enforce:contrast retains lower-bound adjustment when no upper bound i
   const ratio = contrastWcag21.apply(text, background);
   assert.ok(ratio >= 4.5, `text ratio reaches the lower floor, got ${ratio}`);
   assert.strictEqual(report.disposition, 'resolved', 'lower-band violation resolves');
-  assert.deepStrictEqual(report.adjustedRoles, ['text'], 'report records the adjusted endpoint');
+  assert.deepStrictEqual(
+    report.adjustedRoles,
+    ['text', 'background'],
+    'the joint solver may move both legal endpoints to minimize component displacement'
+  );
   assert.strictEqual(
     'maximumContrastRatio' in report,
     false,
@@ -340,6 +344,57 @@ void test('enforce:contrast retains lower-bound adjustment when no upper bound i
       'origin': 'derived'
     },
     'derived foreground records its exact contrast adjustment'
+  );
+});
+
+void test('enforce:contrast produces deterministic joint component output', () => {
+  const pairs = [
+    ContrastPairEntity.intake({
+      'background': 'surface',
+      'foreground': 'text',
+      'minimumContrastRatio': 4.5
+    }),
+    ContrastPairEntity.intake({
+      'background': 'background',
+      'foreground': 'text',
+      'minimumContrastRatio': 4.5
+    })
+  ];
+  const input = {
+    'background': '#414141',
+    'surface': '#10161f',
+    'text': '#18222f'
+  };
+  const first = ContrastBandFixture.runPairs(pairs, input);
+  const second = ContrastBandFixture.runPairs(pairs, input);
+  const roleHexes = (state: PaletteStateInterface): Readonly<Record<string, string>> => {
+    const result: Record<string, string> = {};
+    const entries = Object.entries(state.roles);
+    for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
+      const entry = entries[entryIndex];
+      if (entry === undefined) {
+        continue;
+      }
+      const [roleName, record] = entry;
+      Object.defineProperty(result, roleName, {
+        'configurable': true,
+        'enumerable': true,
+        'value': record.hex,
+        'writable': true
+      });
+    }
+    return result;
+  };
+
+  assert.deepStrictEqual(
+    roleHexes(first),
+    roleHexes(second),
+    'fixed input produces the same terminal role records'
+  );
+  assert.deepStrictEqual(
+    ContrastBandFixture.reports(first),
+    ContrastBandFixture.reports(second),
+    'fixed input produces the same terminal component report'
   );
 });
 
