@@ -121,6 +121,11 @@ class ClientFixture {
     return result;
   }
 
+  public static schemaFeasibility(): WorkerMessageEntity.Type {
+    const result = WorkerMessageEntity.create({ 'kind': 'schema-feasibility', 'request': PaletteResolveFixture.request() });
+    return result;
+  }
+
   public static paletteReply(id: number): WorkerReplyEntity.Type {
     const result = WorkerReplyEntity.create({
       'id': id,
@@ -161,6 +166,19 @@ await test('a single request posts once and delivers its reply with the originat
   assert.deepEqual(fixture.accepted(), ['palette#1']);
   assert.deepEqual(fixture.handlers.states, ['busy:palette', 'idle:palette']);
   assert.deepEqual(await settled, reply);
+});
+
+await test('schema feasibility runs independently of the palette lane', () => {
+  const fixture = new ClientFixture();
+
+  void fixture.client.request(ClientFixture.palette(0));
+  void fixture.client.request(ClientFixture.schemaFeasibility());
+  assert.deepEqual(fixture.port.ids(), [1, 2]);
+  assert.deepEqual(fixture.handlers.states, ['busy:palette', 'busy:schema-feasibility']);
+
+  fixture.port.reply(WorkerReplyEntity.create({ 'id': 2, 'kind': 'schema-feasibility' }));
+  fixture.port.reply(ClientFixture.paletteReply(1));
+  assert.deepEqual(fixture.accepted(), ['schema-feasibility#2', 'palette#1']);
 });
 
 await test('latest wins: a busy lane holds only the newest request and the superseded reply is discarded', async () => {

@@ -6,7 +6,7 @@
  * from hueOffset on the schema roles. The projector only reads those hexes.
  */
 
-import type { ComplianceReportEntity, CvdMatrixEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
+import type { ComplianceReportEntity, ContrastFeasibilityReportEntity, CvdMatrixEntity, CvdResultSetEntity } from '@studnicky/iridis-contrast';
 import type { ClusterStrategyInterface, GalleryCandidateOutputEntity } from '@studnicky/iridis-image';
 import type { GalleryHistogramSlotInterface } from '@studnicky/iridis-image/types';
 import type { ViteHotContext } from 'vite/types/hot.d.ts';
@@ -343,6 +343,8 @@ class IridisContextFactory {
     const accessibilityBlockers = VueModule.shallowRef(AccessibilityBlockers.fromReport(undefined));
     /** True while a palette request is in flight in the resolve worker. */
     const resolving = VueModule.ref<boolean>(false);
+    const schemaFeasibilityChecking = VueModule.ref<boolean>(false);
+    const schemaFeasibilityReport = VueModule.shallowRef<ContrastFeasibilityReportEntity.Type | undefined>(undefined);
     /** Counts admitted palettes; consumers wait on it instead of timers. */
     const paletteRevision = VueModule.ref<number>(0);
     /** The palette resolved during SSR; the client renders it before any worker exists. */
@@ -555,6 +557,21 @@ class IridisContextFactory {
       }
     }
 
+    class SchemaFeasibilityOperation {
+      static run(): void {
+        if (client === undefined) {
+          if (typeof window !== 'undefined') {
+            awaitingSchemaFeasibility = true;
+          }
+          return;
+        }
+        awaitingSchemaFeasibility = false;
+        schemaFeasibilityReport.value = undefined;
+        const request = ResolveRequestOperation.build();
+        void client.request(WorkerMessageEntity.create({ 'kind': 'schema-feasibility', 'request': request }));
+      }
+    }
+
     /** Receives worker outcomes: the newest reply of each lane applies to the reactive state; a palette snapshot commits inside one theme transition. */
     class ClientHandlersOperation {
       static accept(reply: WorkerReplyEntity.Type, envelope: WorkerEnvelopeEntity.Type): void {
@@ -562,6 +579,8 @@ class IridisContextFactory {
         try {
           if (reply.kind === 'palette' && message.kind === 'palette') {
             ClientHandlersOperation.palette(reply, message.request);
+          } else if (reply.kind === 'schema-feasibility' && message.kind === 'schema-feasibility') {
+            ClientHandlersOperation.schemaFeasibility(reply);
           } else if (reply.kind === 'extract' && message.kind === 'extract') {
             ExtractionApplyOperation.run(message.imageId, reply);
           } else if (reply.kind === 'combine' && message.kind === 'combine') {
@@ -575,6 +594,8 @@ class IridisContextFactory {
       static busy(message: WorkerMessageEntity.Type): void {
         if (message.kind === 'palette') {
           resolving.value = true;
+        } else if (message.kind === 'schema-feasibility') {
+          schemaFeasibilityChecking.value = true;
         } else {
           beginOperation();
         }
@@ -583,6 +604,8 @@ class IridisContextFactory {
       static idle(message: WorkerMessageEntity.Type): void {
         if (message.kind === 'palette') {
           resolving.value = false;
+        } else if (message.kind === 'schema-feasibility') {
+          schemaFeasibilityChecking.value = false;
         } else {
           endOperation();
         }
@@ -590,6 +613,13 @@ class IridisContextFactory {
 
       static reject(message: string): void {
         error.value = message;
+      }
+
+      private static schemaFeasibility(reply: Extract<WorkerReplyEntity.Type, { 'kind': 'schema-feasibility' }>): void {
+        if (reply.report === undefined) {
+          throw new TypeError('Schema feasibility reply carried no report');
+        }
+        schemaFeasibilityReport.value = reply.report;
       }
 
       private static palette(reply: Extract<WorkerReplyEntity.Type, { 'kind': 'palette' }>, request: PaletteResolveRequestEntity.Type): void {
@@ -602,6 +632,7 @@ class IridisContextFactory {
     }
 
     let client: WorkerRequestClient | undefined;
+    let awaitingSchemaFeasibility = false;
     const clientWaiters: ((opened: WorkerRequestClient) => void)[] = [];
 
     /** Hands the open worker client to callers that arrive before or after the first consumer mounts. */
@@ -1331,6 +1362,7 @@ class IridisContextFactory {
     /** Stop-handles for the two deep watches below, captured so HMR teardown can release them — empty until `useIridis()` has booted once on the client. */
     let stopWatches: (() => void)[] = [];
     const schedule = debounce(() => { run(); }, 120);
+    const scheduleSchemaFeasibility = debounce(() => { SchemaFeasibilityOperation.run(); }, 180);
 
     /** Opens the resolve worker with the first mounted consumer and closes it with the last. */
     class ConsumerLifecycleOperation {
@@ -1342,6 +1374,9 @@ class IridisContextFactory {
           if (awaitingMount) {
             awaitingMount = false;
             run();
+          }
+          if (awaitingSchemaFeasibility) {
+            SchemaFeasibilityOperation.run();
           }
         }
       }
@@ -1386,6 +1421,8 @@ class IridisContextFactory {
         // framing is intentionally absent here — its swap is dispatched directly by
         // the framing setters via run(), not through this debounce.
         stopWatches.push(VueModule.watch([pickerSeeds, imageSeeds, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace, mode, derivationConfig, semanticHuesEnabled], schedule, { 'deep': true }));
+        stopWatches.push(VueModule.watch([schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, derivationConfig, semanticHuesEnabled], scheduleSchemaFeasibility, { 'deep': true }));
+        scheduleSchemaFeasibility();
         stopWatches.push(VueModule.watch([schemaName, imgStrategy, imgK, imgHistogramBits, imgDeltaECap, imgHarmonize, imgLightnessRange, imgChromaRange], scheduleCombine, { 'deep': true }));
       }
     }
@@ -1410,6 +1447,7 @@ class IridisContextFactory {
           'roleViews': roleViews,
           'run': run, 'running': running,
           'scales': scales,
+          'schemaFeasibilityChecking': schemaFeasibilityChecking, 'schemaFeasibilityReport': schemaFeasibilityReport,
           'schemaName': schemaName,
           'selectedCandidateLabel': selectedCandidateLabel,
           'selectEntryCandidate': selectEntryCandidate, 'semanticHuesEnabled': semanticHuesEnabled, 'send': sendUiEvent, 'setSemanticHuesEnabled': semanticHuesEnabledSet, 'sortedRoleContrastRows': sortedRoleContrastRows, 'updateRelation': relationUpdate, 'updateRelations': relationsUpdate,
@@ -1432,6 +1470,8 @@ class IridisContextFactory {
       client = undefined;
       mountedConsumers = 0;
       awaitingMount = false;
+      awaitingSchemaFeasibility = false;
+      schemaFeasibilityChecking.value = false;
       booted = false;
     };
 

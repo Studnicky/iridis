@@ -5,6 +5,7 @@ import { useIridis } from '~/composables/useIridis.ts';
 import { useIridisUiMachine } from '~/composables/useIridisUiMachine.ts';
 import { useNavigationTargets } from '~/composables/useNavigationTargets.ts';
 import { buildSchemaComplianceSummaries } from './schema/buildSchemaComplianceSummaries.ts';
+import { buildSchemaFeasibilityRows } from './schema/buildSchemaFeasibilityRows.ts';
 import { ContrastChoiceModels } from './contrastChoiceModels.ts';
 import SchemaSelector from './SchemaSelector.vue';
 
@@ -18,7 +19,7 @@ import SchemaSelector from './SchemaSelector.vue';
  */
 const {
   schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace,
-  contrastReport
+  contrastReport, schemaFeasibilityChecking, schemaFeasibilityReport
 } = useIridis();
 const { send } = useIridisUiMachine();
 const { activateTarget } = useNavigationTargets();
@@ -32,6 +33,18 @@ const stageSummaries = computed(() => {
   });
   return result;
 });
+
+const feasibilityRows = computed(() => {
+  const result = buildSchemaFeasibilityRows.build(schemaFeasibilityReport.value);
+  return result;
+});
+
+function feasibilityBadgeColor(status: string): 'error' | 'neutral' | 'success' | 'warning' {
+  if (status === 'Always reachable') { return 'success'; }
+  if (status === 'Never reachable') { return 'error'; }
+  if (status === 'Some hues') { return 'warning'; }
+  return 'neutral';
+}
 
 function updateColorSpace(colorSpace: 'displayP3' | 'srgb'): void {
   send(colorSpace === 'displayP3' ? IridisUiEvent.displayP3ColorSpace() : IridisUiEvent.setSrgbColorSpace());
@@ -125,5 +138,51 @@ function updateNonMandatoryLevel(value: string): void {
     </div>
 
     <SchemaComplianceFooter :stage-summaries="stageSummaries" />
+
+    <SectionIntro
+      title="Schema reachability"
+      body="Checks whether each declared pair is reachable inside its authored constraints."
+    >
+      <div
+        v-if="schemaFeasibilityChecking"
+        class="text-sm text-muted"
+        aria-live="polite"
+      >
+        Checking schema reachability…
+      </div>
+      <ul
+        v-else-if="feasibilityRows.length > 0"
+        class="space-y-2"
+      >
+        <li
+          v-for="row in feasibilityRows"
+          :key="row.id"
+          class="rounded-md border border-default px-3 py-2"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm text-highlighted">{{ row.label }}</span>
+            <UBadge
+              :color="feasibilityBadgeColor(row.status)"
+              variant="soft"
+              size="xs"
+            >
+              {{ row.status }}
+            </UBadge>
+          </div>
+          <p
+            v-if="row.detail !== ''"
+            class="mt-1 text-xs text-muted"
+          >
+            {{ row.detail }}
+          </p>
+        </li>
+      </ul>
+      <p
+        v-else
+        class="text-sm text-muted"
+      >
+        Schema reachability is pending.
+      </p>
+    </SectionIntro>
   </div>
 </template>

@@ -27,6 +27,15 @@ export namespace WorkerMessageEntity {
       {
         'additionalProperties': false,
         'properties': {
+          'kind': { 'const': 'schema-feasibility', 'type': 'string' },
+          'request': PaletteResolveRequestEntity.Schema
+        },
+        'required': ['kind', 'request'],
+        'type': 'object'
+      },
+      {
+        'additionalProperties': false,
+        'properties': {
           'imageId': { 'type': 'string' },
           'kind': { 'const': 'extract', 'type': 'string' },
           'settings': ExtractionSettingsEntity.Schema
@@ -93,6 +102,7 @@ export namespace WorkerMessageEntity {
     | { 'derivationConfig': DerivationConfigEntity.Type; 'kind': 'combine'; 'settings': ExtractionSettingsEntity.Type }
     | { 'kind': 'extract'; 'settings': ExtractionSettingsEntity.Type }
     | { 'kind': 'palette'; 'request': PaletteResolveRequestEntity.Type }
+    | { 'kind': 'schema-feasibility'; 'request': PaletteResolveRequestEntity.Type }
     | { 'kind': 'pixels' }
     | { 'kind': 'release' }
   );

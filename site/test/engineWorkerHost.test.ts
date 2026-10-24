@@ -124,6 +124,17 @@ await test('the host combines weighted hexes into seeds and resolves a palette r
   assert.ok(resolved?.kind === 'palette' && resolved.snapshot !== undefined);
 });
 
+await test('the host analyzes schema feasibility on its independent worker message path', () => {
+  const fixture = new HostFixture();
+  const request = PaletteResolveFixture.request();
+  const id = fixture.send(WorkerMessageEntity.create({ 'kind': 'schema-feasibility', 'request': request }));
+  const reply = fixture.scope.replies.at(-1);
+
+  assert.equal(reply?.id, id);
+  assert.equal(reply?.kind, 'schema-feasibility');
+  assert.ok(reply?.kind === 'schema-feasibility' && (reply.report?.pairs.length ?? 0) > 0);
+});
+
 await test('the host ignores messages whose origin is not its owner', () => {
   const fixture = new HostFixture();
 
