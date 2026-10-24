@@ -224,6 +224,42 @@ await test('ContrastFeasibility proves a resolved run with the same canonical re
   assert.strictEqual(pair.reachability, 'always-reachable');
 });
 
+await test('ContrastFeasibility samples derived hue offsets from their shared root', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{
+      'background': 'brand',
+      'foreground': 'opposite',
+      'minimumContrastRatio': 1
+    }],
+    'name': 'derived-hue-sampling',
+    'roles': [
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.2, 0.2],
+        'lightnessRange': [0.15, 0.15],
+        'name': 'brand'
+      }),
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.2, 0.2],
+        'derivedFrom': 'brand',
+        'hueOffset': 180,
+        'lightnessRange': [0.85, 0.85],
+        'name': 'opposite'
+      })
+    ]
+  });
+  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
+  const pair = report.pairs[0];
+  const expected = Math.max(...[0, 120, 240, 360].map((hue): number => {
+    const foreground = colorRecordFactory.fromOklch(0.85, 0.2, (hue + 180) % 360);
+    const background = colorRecordFactory.fromOklch(0.15, 0.2, hue);
+    const result = contrastWcag21.apply(foreground, background);
+    return result;
+  }));
+
+  assert.ok(pair?.sampled !== undefined, 'unanchored root retains sampled evidence');
+  assert.strictEqual(pair.sampled.bestActual, expected, 'offset uses the shared root hue at every sample');
+});
+
 await test('ContrastFeasibility uses resolved run hues without unanchored sampling', () => {
   const schema = ContrastFeasibilityFixture.schema(
     ContrastFeasibilityFixture.role('foreground', 0.45, 0.1),

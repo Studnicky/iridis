@@ -13,7 +13,7 @@ import {
   PaletteRoleState,
   RoleSchemaEntity
 } from '@studnicky/iridis';
-import { ContrastPolicy } from '@studnicky/iridis/tasks';
+import { ContrastPolicy, RoleGeometry } from '@studnicky/iridis/tasks';
 
 import { ContrastFeasibilityProofEntity } from './entities/ContrastFeasibilityProofEntity.ts';
 import { ContrastFeasibilityReportEntity } from './entities/ContrastFeasibilityReportEntity.ts';
@@ -33,6 +33,11 @@ interface HueEvaluationInterface {
   readonly 'hue': number;
 }
 
+interface HueRelationInterface {
+  resolve(rootHue: number): number;
+  readonly 'root': string;
+}
+
 interface RoleDomainInterface {
   readonly 'chroma': readonly [number, number];
   readonly 'fixedRecord'?: ColorRecordEntity.Type;
@@ -40,10 +45,12 @@ interface RoleDomainInterface {
   readonly 'hue'?: number;
   readonly 'lightness': readonly [number, number];
   readonly 'name': string;
+  readonly 'relation'?: HueRelationInterface;
 }
 
 interface RoleDomainOptionsInterface {
   readonly 'fixedRecord'?: ColorRecordEntity.Type;
+  readonly 'relation'?: HueRelationInterface;
   readonly 'resolvedHue'?: number;
 }
 
@@ -125,14 +132,15 @@ class ContrastFeasibilityDomain {
     role: RoleSchemaEntity.Type['roles'][number],
     options?: RoleDomainOptionsInterface
   ): RoleDomainInterface {
-    const hue = options?.resolvedHue ?? role.hue;
+    const hue = options?.resolvedHue ?? (role.derivedFrom === undefined ? role.hue : undefined);
     const result: RoleDomainInterface = {
       'chroma': role.chromaRange ?? [0, 0.5],
       ...(options?.fixedRecord === undefined ? {} : { 'fixedRecord': options.fixedRecord }),
       ...(hue === undefined ? {} : { 'hue': hue }),
       ...(role.intent === undefined ? {} : { 'hints': { 'intent': role.intent } }),
       'lightness': role.lightnessRange ?? [0, 1],
-      'name': role.name
+      'name': role.name,
+      ...(options?.relation === undefined ? {} : { 'relation': options.relation })
     };
     return result;
   }
@@ -265,11 +273,13 @@ class ContrastFeasibilityDomain {
   private static evaluateHue(
     foreground: RoleDomainInterface,
     background: RoleDomainInterface,
-    hue: number,
+    foregroundHue: number,
+    backgroundHue: number,
+    sourceHue: number,
     requirement: ContrastPolicy.RequirementInterface
   ): HueEvaluationInterface {
-    const foregroundExtrema = ContrastFeasibilityDomain.extrema(foreground, hue, requirement);
-    const backgroundExtrema = ContrastFeasibilityDomain.extrema(background, hue, requirement);
+    const foregroundExtrema = ContrastFeasibilityDomain.extrema(foreground, foregroundHue, requirement);
+    const backgroundExtrema = ContrastFeasibilityDomain.extrema(background, backgroundHue, requirement);
     const foregroundCoordinates = [foregroundExtrema.minimum, foregroundExtrema.maximum];
     const backgroundCoordinates = [backgroundExtrema.minimum, backgroundExtrema.maximum];
     let actual = -Infinity;
@@ -300,7 +310,7 @@ class ContrastFeasibilityDomain {
       'actual': actual,
       'background': selectedBackground,
       'foreground': selectedForeground,
-      'hue': hue
+      'hue': sourceHue
     };
   }
 
@@ -311,8 +321,17 @@ class ContrastFeasibilityDomain {
     requirement: ContrastPolicy.RequirementInterface
   ): readonly HueEvaluationInterface[] {
     const hues = [0, 120, 240, 360] as const;
-    const result = hues.map((hue): HueEvaluationInterface => {
-      const evaluation = ContrastFeasibilityDomain.evaluateHue(foreground, background, hue, requirement);
+    const result = hues.map((sourceHue): HueEvaluationInterface => {
+      const foregroundHue = foreground.relation?.resolve(sourceHue) ?? sourceHue;
+      const backgroundHue = background.relation?.resolve(sourceHue) ?? sourceHue;
+      const evaluation = ContrastFeasibilityDomain.evaluateHue(
+        foreground,
+        background,
+        foregroundHue,
+        backgroundHue,
+        sourceHue,
+        requirement
+      );
       return evaluation;
     });
     return result;
@@ -517,7 +536,7 @@ class ContrastFeasibilityDomain {
     background: RoleDomainInterface,
     requirement: ContrastPolicy.RequirementInterface
   ): readonly HueEvaluationInterface[] {
-    const result = [ContrastFeasibilityDomain.evaluateHue(foreground, background, 0, requirement)];
+    const result = [ContrastFeasibilityDomain.evaluateHue(foreground, background, 0, 0, 0, requirement)];
     return result;
   }
 }
@@ -554,6 +573,8 @@ export class ContrastFeasibility {
       readonly 'roles'?: Readonly<Record<string, ColorRecordEntity.Type>>;
     }
   ): ReadonlyMap<string, RoleDomainInterface> {
+    const roles = ContrastFeasibility.roleIndex(schema);
+    const relations = ContrastFeasibility.hueRelations(roles);
     const result = new Map<string, RoleDomainInterface>();
     for (let index = 0; index < schema.roles.length; index += 1) {
       const role = schema.roles[index];
@@ -563,11 +584,75 @@ export class ContrastFeasibility {
       const resolved = options?.roles?.[role.name];
       const fixed = options?.provenance?.get(role.name)?.origin === 'stated' ? resolved : undefined;
       const resolvedHue = resolved?.oklch.h;
+      const relation = resolvedHue === undefined && role.derivedFrom !== undefined
+        ? relations.get(role.name)
+        : undefined;
       const domainOptions: RoleDomainOptionsInterface = {
         ...(fixed === undefined ? {} : { 'fixedRecord': fixed }),
+        ...(relation === undefined ? {} : { 'relation': relation }),
         ...(resolvedHue === undefined ? {} : { 'resolvedHue': resolvedHue })
       };
       result.set(role.name, ContrastFeasibilityDomain.domain(role, domainOptions));
+    }
+    return result;
+  }
+
+  private static roleIndex(
+    schema: RoleSchemaEntity.Type
+  ): ReadonlyMap<string, RoleSchemaEntity.Type['roles'][number]> {
+    const result = new Map<string, RoleSchemaEntity.Type['roles'][number]>();
+    for (let index = 0; index < schema.roles.length; index += 1) {
+      const role = schema.roles[index];
+      if (role !== undefined) {
+        result.set(role.name, role);
+      }
+    }
+    return result;
+  }
+
+  private static hueRelations(
+    roles: ReadonlyMap<string, RoleSchemaEntity.Type['roles'][number]>
+  ): ReadonlyMap<string, HueRelationInterface> {
+    const resolving = new Set<string>();
+    const result = new Map<string, HueRelationInterface>();
+    const resolve = (role: RoleSchemaEntity.Type['roles'][number]): HueRelationInterface | undefined => {
+      const existing = result.get(role.name);
+      if (existing !== undefined) {
+        return existing;
+      }
+      if (resolving.has(role.name)) {
+        return undefined;
+      }
+      resolving.add(role.name);
+      const source = role.derivedFrom === undefined || role.derivedFrom.length === 0
+        ? undefined
+        : roles.get(role.derivedFrom);
+      const sourceRelation = source === undefined ? undefined : resolve(source);
+      const isDerived = role.derivedFrom !== undefined && role.derivedFrom.length > 0;
+      if (isDerived && sourceRelation === undefined) {
+        resolving.delete(role.name);
+        return undefined;
+      }
+      const root = sourceRelation?.root ?? role.name;
+      const relation: HueRelationInterface = {
+        'resolve': (rootHue: number): number => {
+          const sourceHue = sourceRelation === undefined ? rootHue : sourceRelation.resolve(rootHue);
+          if (role.hue !== undefined) {
+            const result = RoleGeometry.hueTowards(sourceHue, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
+            return result;
+          }
+          const offset = role.hueOffset ?? 0;
+          const result = ((sourceHue + offset) % 360 + 360) % 360;
+          return result;
+        },
+        'root': root
+      };
+      resolving.delete(role.name);
+      result.set(role.name, relation);
+      return relation;
+    };
+    for (const role of roles.values()) {
+      resolve(role);
     }
     return result;
   }
