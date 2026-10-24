@@ -39,13 +39,6 @@ const feasibilityRows = computed(() => {
   return result;
 });
 
-function feasibilityBadgeColor(status: string): 'error' | 'neutral' | 'success' | 'warning' {
-  if (status === 'Always reachable') { return 'success'; }
-  if (status === 'Never reachable') { return 'error'; }
-  if (status === 'Some hues') { return 'warning'; }
-  return 'neutral';
-}
-
 function updateColorSpace(colorSpace: 'displayP3' | 'srgb'): void {
   send(colorSpace === 'displayP3' ? IridisUiEvent.displayP3ColorSpace() : IridisUiEvent.setSrgbColorSpace());
   activateTarget('pairingPreview');
@@ -143,15 +136,15 @@ function updateNonMandatoryLevel(value: string): void {
       title="Schema reachability"
       body="Checks whether each declared pair is reachable inside its authored constraints."
     >
-      <div
+      <p
         v-if="schemaFeasibilityChecking"
         class="text-sm text-muted"
         aria-live="polite"
       >
         Checking schema reachability…
-      </div>
+      </p>
       <ul
-        v-else-if="feasibilityRows.length > 0"
+        v-if="feasibilityRows.length > 0"
         class="space-y-2"
       >
         <li
@@ -162,7 +155,7 @@ function updateNonMandatoryLevel(value: string): void {
           <div class="flex items-center justify-between gap-2">
             <span class="text-sm text-highlighted">{{ row.label }}</span>
             <UBadge
-              :color="feasibilityBadgeColor(row.status)"
+              :color="row.color"
               variant="soft"
               size="xs"
             >
@@ -178,7 +171,7 @@ function updateNonMandatoryLevel(value: string): void {
         </li>
       </ul>
       <p
-        v-else
+        v-else-if="!schemaFeasibilityChecking"
         class="text-sm text-muted"
       >
         Schema reachability is pending.

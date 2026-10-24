@@ -45,6 +45,7 @@ await test('schema feasibility rows distinguish certified, sampled, and constrai
     ['accent/background', 'Some hues'],
     ['semantic/background', 'Indeterminate']
   ]);
+  assert.deepEqual(rows.map((row) => { return row.color; }), ['success', 'error', 'warning', 'neutral']);
   assert.equal(rows[1]?.detail.includes('border lightness maximum 0.50'), true);
   assert.equal(rows[2]?.detail, 'Reachable at 30°–90°');
   assert.equal(rows[3]?.detail, 'Sampled best 5.20; not proof');

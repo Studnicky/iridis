@@ -168,7 +168,7 @@ await test('a single request posts once and delivers its reply with the originat
   assert.deepEqual(await settled, reply);
 });
 
-await test('schema feasibility runs independently of the palette lane', () => {
+await test('client request lanes schedule schema feasibility and palette work before worker replies', () => {
   const fixture = new ClientFixture();
 
   void fixture.client.request(ClientFixture.palette(0));

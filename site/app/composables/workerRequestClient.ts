@@ -17,7 +17,7 @@ class RequestLane {
   }
 }
 
-/** Sends messages to the engine worker with latest-wins sequencing per independent request lane; a superseded or cancelled reply is discarded. */
+/** Client-side latest-wins sequencing per request lane; worker messages still execute serially. */
 export class WorkerRequestClient {
   #alive = true;
   readonly #flights = new Map<number, string>();

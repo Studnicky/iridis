@@ -566,7 +566,6 @@ class IridisContextFactory {
           return;
         }
         awaitingSchemaFeasibility = false;
-        schemaFeasibilityReport.value = undefined;
         const request = ResolveRequestOperation.build();
         void client.request(WorkerMessageEntity.create({ 'kind': 'schema-feasibility', 'request': request }));
       }

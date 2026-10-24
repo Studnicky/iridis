@@ -1,32 +1,67 @@
 import type { ContrastFeasibilityReportEntity } from '@studnicky/iridis-contrast';
 
+abstract class SchemaFeasibilityStatus {
+  public abstract get color(): 'error' | 'neutral' | 'success' | 'warning';
+  public abstract get label(): string;
+}
+
+class AlwaysReachableStatus extends SchemaFeasibilityStatus {
+  public get color(): 'success' { return 'success'; }
+  public get label(): string { return 'Always reachable'; }
+}
+
+class IndeterminateStatus extends SchemaFeasibilityStatus {
+  public get color(): 'neutral' { return 'neutral'; }
+  public get label(): string { return 'Indeterminate'; }
+}
+
+class NeverReachableStatus extends SchemaFeasibilityStatus {
+  public get color(): 'error' { return 'error'; }
+  public get label(): string { return 'Never reachable'; }
+}
+
+class SomeHuesStatus extends SchemaFeasibilityStatus {
+  public get color(): 'warning' { return 'warning'; }
+  public get label(): string { return 'Some hues'; }
+}
+
 class SchemaFeasibilityRow {
+  readonly #status: SchemaFeasibilityStatus;
   public readonly detail: string;
   public readonly id: string;
   public readonly label: string;
-  public readonly status: string;
 
-  private constructor(detail: string, pair: ContrastFeasibilityReportEntity.Type['pairs'][number], status: string) {
+  private constructor(detail: string, pair: ContrastFeasibilityReportEntity.Type['pairs'][number], status: SchemaFeasibilityStatus) {
+    this.#status = status;
     this.detail = detail;
     this.id = `${pair.foreground}/${pair.background}`;
     this.label = `${pair.foreground} on ${pair.background}`;
-    this.status = status;
+  }
+
+  public get color(): 'error' | 'neutral' | 'success' | 'warning' {
+    const result = this.#status.color;
+    return result;
+  }
+
+  public get status(): string {
+    const result = this.#status.label;
+    return result;
   }
 
   public static build(pair: ContrastFeasibilityReportEntity.Type['pairs'][number]): SchemaFeasibilityRow {
     if (pair.reachability === 'always-reachable') {
-      const result = new SchemaFeasibilityRow('', pair, 'Always reachable');
+      const result = new SchemaFeasibilityRow('', pair, new AlwaysReachableStatus());
       return result;
     }
     if (pair.reachability === 'never-reachable') {
-      const result = new SchemaFeasibilityRow(SchemaFeasibilityRow.proof(pair), pair, 'Never reachable');
+      const result = new SchemaFeasibilityRow(SchemaFeasibilityRow.proof(pair), pair, new NeverReachableStatus());
       return result;
     }
     if (pair.reachability === 'reachable-only-for-some-hues') {
-      const result = new SchemaFeasibilityRow(SchemaFeasibilityRow.ranges(pair), pair, 'Some hues');
+      const result = new SchemaFeasibilityRow(SchemaFeasibilityRow.ranges(pair), pair, new SomeHuesStatus());
       return result;
     }
-    const result = new SchemaFeasibilityRow(SchemaFeasibilityRow.sample(pair), pair, 'Indeterminate');
+    const result = new SchemaFeasibilityRow(SchemaFeasibilityRow.sample(pair), pair, new IndeterminateStatus());
     return result;
   }
 
