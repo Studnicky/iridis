@@ -44,6 +44,27 @@ export class ColorCoordinate {
     this.rgbR = rgbR;
   }
 
+  /** Conservative APCA-magnitude envelope for independent foreground and background luminance intervals. */
+  static apcaMagnitudeBounds(
+    foregroundMinimum: number,
+    foregroundMaximum: number,
+    backgroundMinimum: number,
+    backgroundMaximum: number
+  ): readonly [number, number] {
+    const candidates = [
+      Math.abs(apcaLc.apply(foregroundMinimum, backgroundMinimum)),
+      Math.abs(apcaLc.apply(foregroundMinimum, backgroundMaximum)),
+      Math.abs(apcaLc.apply(foregroundMaximum, backgroundMinimum)),
+      Math.abs(apcaLc.apply(foregroundMaximum, backgroundMaximum))
+    ];
+    const crossesPolarity =
+      foregroundMinimum <= backgroundMaximum &&
+      foregroundMaximum >= backgroundMinimum;
+    const minimum = crossesPolarity ? 0 : Math.min(...candidates);
+    const result: readonly [number, number] = [minimum, Math.max(...candidates)];
+    return result;
+  }
+
   static fromRecord(record: ColorRecordEntity.Type): ColorCoordinate {
     const result = new ColorCoordinate(
       record.oklch.l,

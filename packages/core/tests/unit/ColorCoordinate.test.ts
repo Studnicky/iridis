@@ -65,6 +65,20 @@ void test('ColorCoordinate preserves gamut mapping, RGB channels, and factory se
 });
 
 
+void test('ColorCoordinate bounds APCA magnitude across luminance intervals', () => {
+  const foreground = ColorCoordinate.fromOklch(0.2, 0.1, 20);
+  const background = ColorCoordinate.fromOklch(0.8, 0.1, 200);
+  const bounds = ColorCoordinate.apcaMagnitudeBounds(
+    Math.min(foreground.apcaLuminance, background.apcaLuminance),
+    Math.max(foreground.apcaLuminance, background.apcaLuminance),
+    Math.min(foreground.apcaLuminance, background.apcaLuminance),
+    Math.max(foreground.apcaLuminance, background.apcaLuminance)
+  );
+  const actual = Math.abs(foreground.apca(background));
+  assert.ok(actual >= bounds[0]);
+  assert.ok(actual <= bounds[1]);
+});
+
 void test('ColorCoordinate preserves exact stored RGB for record-backed scoring', () => {
   const records = ['#000000', '#5e35b1', '#ffffff'];
   for (let index = 0; index < records.length; index += 1) {
