@@ -21,6 +21,7 @@ import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
 import { deltaE2000 } from '../../math/DeltaE2000.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
 import { Metadata } from '../../types/metadata.ts';
+import { contrastCoordinateCounters } from './ContrastCoordinateCounters.ts';
 import { ContrastPolicy } from './ContrastPolicy.ts';
 
 class ContrastMeasurement {
@@ -312,6 +313,7 @@ class ContrastExecution {
     const entries: (PendingContrastEntryEntity.Type | undefined)[] = [];
     const maximumPasses = Math.max(1, requirements.length * 2);
     for (let pass = 0; pass < maximumPasses; pass += 1) {
+      contrastCoordinateCounters.recordRepairPass();
       let adjusted = false;
       for (let index = 0; index < requirements.length; index += 1) {
         const requirement = requirements[index];
@@ -373,6 +375,7 @@ class ContrastExecution {
     let bestRecords: ReadonlyMap<string, ColorRecordEntity.Type> = new Map(initial);
     const maximumPasses = Math.min(12, Math.max(1, roleNames.length * 2));
     for (let pass = 0; pass < maximumPasses; pass += 1) {
+      contrastCoordinateCounters.recordOptimizerPass();
       const score = ContrastExecution.optimizePass(
         roles,
         state,
@@ -536,6 +539,10 @@ class ContrastExecution {
       const candidate = candidates[index];
       if (candidate === undefined || ContrastMeasurement.sameRecord(current, candidate)) {
         continue;
+      }
+      if (contrastCoordinateCounters.enabled) {
+        contrastCoordinateCounters.recordCandidate();
+        contrastCoordinateCounters.recordCandidateScore();
       }
       roles.set(roleName, candidate);
       const score = ContrastExecution.coordinateScore(roles, preferences, component, roleNames);

@@ -18,6 +18,7 @@ import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { PaletteRoleState } from '../../src/interfaces/PaletteStateInterface.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { contrastWcag21 } from '../../src/math/ContrastWcag21.ts';
+import { contrastCoordinateCounters } from '../../src/tasks/enforce/ContrastCoordinateCounters.ts';
 import { ContrastPolicy } from '../../src/tasks/enforce/ContrastPolicy.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
 import { Metadata } from '../../src/types/metadata.ts';
@@ -396,6 +397,55 @@ void test('enforce:contrast produces deterministic joint component output', () =
     ContrastBandFixture.reports(second),
     'fixed input produces the same terminal component report'
   );
+});
+
+void test('enforce:contrast exposes deterministic coordinate work counters', () => {
+  const pairs = [
+    ContrastPairEntity.intake({
+      'background': 'surface',
+      'foreground': 'text',
+      'minimumContrastRatio': 4.5
+    }),
+    ContrastPairEntity.intake({
+      'background': 'background',
+      'foreground': 'text',
+      'minimumContrastRatio': 4.5
+    })
+  ];
+  const input = {
+    'background': '#414141',
+    'surface': '#10161f',
+    'text': '#18222f'
+  };
+  const run = (): { readonly 'usage': ReturnType<typeof contrastCoordinateCounters.end> } => {
+    contrastCoordinateCounters.begin();
+    try {
+      ContrastBandFixture.runPairs(pairs, input);
+      const usage = contrastCoordinateCounters.end();
+      return { 'usage': usage };
+    } finally {
+      if (contrastCoordinateCounters.enabled) {
+        contrastCoordinateCounters.end();
+      }
+    }
+  };
+
+  const first = run();
+  const second = run();
+
+  assert.deepStrictEqual(
+    first.usage,
+    second.usage,
+    'fixed component input produces identical optimizer work'
+  );
+  assert.ok(first.usage.candidateCount > 0, 'optimizer evaluates candidates');
+  assert.strictEqual(
+    first.usage.candidateScoreCalls,
+    first.usage.candidateCount,
+    'every candidate evaluation records one deterministic score'
+  );
+  assert.ok(first.usage.optimizerPasses > 0, 'optimizer records component passes');
+  assert.ok(first.usage.repairPasses > 0, 'repair loop records passes');
 });
 
 void test('enforce:contrast moves the derived background around a stated foreground', () => {
