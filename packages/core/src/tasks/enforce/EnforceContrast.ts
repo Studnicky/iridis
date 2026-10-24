@@ -369,7 +369,7 @@ class ContrastExecution {
   ): void {
     const roleNames = ContrastExecution.componentRoleNames(component);
     const initial = ContrastExecution.componentRecords(roles, roleNames);
-    let best = ContrastExecution.coordinateScore(roles, preferences, component);
+    let best = ContrastExecution.coordinateScore(roles, preferences, component, roleNames);
     let bestRecords: ReadonlyMap<string, ColorRecordEntity.Type> = new Map(initial);
     const maximumPasses = Math.min(12, Math.max(1, roleNames.length * 2));
     for (let pass = 0; pass < maximumPasses; pass += 1) {
@@ -431,13 +431,14 @@ class ContrastExecution {
         state,
         preferences,
         component,
+        roleNames,
         roleName,
         current,
         score
       );
       if (selected !== undefined) {
         roles.set(roleName, selected);
-        score = ContrastExecution.coordinateScore(roles, preferences, component);
+        score = ContrastExecution.coordinateScore(roles, preferences, component, roleNames);
       }
     }
     return score;
@@ -523,6 +524,7 @@ class ContrastExecution {
     state: PaletteStateInterface,
     preferences: ReadonlyMap<string, ColorRecordEntity.Type>,
     component: readonly ContrastPolicy.RequirementInterface[],
+    roleNames: readonly string[],
     roleName: string,
     current: ColorRecordEntity.Type,
     baseline: ContrastCoordinateScore
@@ -536,7 +538,7 @@ class ContrastExecution {
         continue;
       }
       roles.set(roleName, candidate);
-      const score = ContrastExecution.coordinateScore(roles, preferences, component);
+      const score = ContrastExecution.coordinateScore(roles, preferences, component, roleNames);
       roles.set(roleName, current);
       if (ContrastCoordinateScore.compare(score, baseline) >= 0 ||
         (selectedScore !== undefined && ContrastCoordinateScore.compare(score, selectedScore) >= 0)) {
@@ -586,9 +588,9 @@ class ContrastExecution {
   private static coordinateScore(
     roles: PaletteRoleState,
     preferences: ReadonlyMap<string, ColorRecordEntity.Type>,
-    component: readonly ContrastPolicy.RequirementInterface[]
+    component: readonly ContrastPolicy.RequirementInterface[],
+    roleNames: readonly string[]
   ): ContrastCoordinateScore {
-    const roleNames = ContrastExecution.componentRoleNames(component);
     let failureCount = 0;
     let maximumShortfall = 0;
     let totalShortfall = 0;
