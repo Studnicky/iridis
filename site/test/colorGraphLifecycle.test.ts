@@ -8,6 +8,8 @@ import { ProductionNitroServer } from './fixtures/ProductionNitroServer.ts';
 
 class ColorGraphLifecycleBrowser {
   static readonly graphWaitMs = 60_000;
+  static readonly wheelAttemptMs = 3_000;
+  static readonly wheelAttempts = 12;
   static readonly wheelZoomInDelta = -420;
 
   static activeGraph(page: Page, states: readonly string[]): Locator {
@@ -40,6 +42,38 @@ class ColorGraphLifecycleBrowser {
 
       throw new Error(`Expected graph state ${states.join('|')}, observed [${observed.join(', ')}].`, { 'cause': error });
     }
+  }
+
+  // The carousel face can still be moving when a wheel lands, so each attempt re-measures the canvas.
+  static async wheelZoomIn(page: Page, canvas: Locator, floor: number): Promise<void> {
+    for (let attempt = 0; attempt < ColorGraphLifecycleBrowser.wheelAttempts; attempt += 1) {
+      const bounds = await canvas.boundingBox();
+
+      if (bounds !== null) {
+        await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+        await page.mouse.wheel(0, ColorGraphLifecycleBrowser.wheelZoomInDelta);
+      }
+      if (await ColorGraphLifecycleBrowser.zoomRaised(page, floor)) {
+        return;
+      }
+    }
+    await ColorGraphLifecycleBrowser.awaitZoomAbove(page, floor);
+  }
+
+  static async zoomRaised(page: Page, floor: number): Promise<boolean> {
+    try {
+      await page.waitForFunction((reference) => {
+        const text = document.querySelector('#explore .cyl-face.active .dagonizer-dpad-hud-level')?.textContent;
+        const current = Number.parseFloat(text?.replace('×', '') ?? 'NaN');
+        const result = Number.isFinite(current) && current > reference;
+
+        return result;
+      }, floor, { 'timeout': ColorGraphLifecycleBrowser.wheelAttemptMs });
+    } catch {
+      return false;
+    }
+
+    return true;
   }
 
   static async awaitZoomAbove(page: Page, floor: number): Promise<void> {
@@ -151,9 +185,7 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
   }
   const fitZoom = await ColorGraphLifecycleBrowser.zoomText(page);
 
-  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-  await page.mouse.wheel(0, ColorGraphLifecycleBrowser.wheelZoomInDelta);
-  await ColorGraphLifecycleBrowser.awaitZoomAbove(page, fitZoom);
+  await ColorGraphLifecycleBrowser.wheelZoomIn(page, canvas, fitZoom);
   await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
   const beforeZoomOut = await ColorGraphLifecycleBrowser.zoomText(page);
 

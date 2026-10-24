@@ -56,11 +56,11 @@ await test('R7 dark APCA pinned text and surface at #808080 is blocked with both
   PinAssertions.blockedWith(run, 'text', 'surface', 'pin');
 });
 
-await test('strict compliance withholds an impossible pin set and keeps the problem pairs', () => {
+await test('strict compliance withholds an impossible pin set, keeps the problem pairs and preserves the roles', () => {
   const run = PinRun.execute(PinRequest.dark(2, new Map([['surface', '#808080'], ['text', '#808080']]), true));
   assert.equal(run.report.disposition, 'withheld');
   assert.equal(run.report.problemPairs.length > 0, true);
-  assert.deepEqual(Object.keys(run.state.roles), []);
+  assert.equal(Object.keys(run.state.roles).length > 0, true);
 });
 
 await test('without strict compliance the same pin set renders its roles and is not withheld', () => {

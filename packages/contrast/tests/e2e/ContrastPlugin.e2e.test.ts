@@ -602,7 +602,10 @@ await test('strict false keeps the best-effort palette and terminal evidence', (
   assert.ok(Object.keys(state.variants).length > 0, 'best-effort variants remain available');
 });
 
-await test('strict true withholds an infeasible palette after retaining terminal evidence', () => {
+await test('strict true withholds an infeasible palette while preserving its best-achievable state', () => {
+  const bestEffortEngine = ComplianceTestEngine.create();
+  bestEffortEngine.pipeline(StrictComplianceScenario.pipeline());
+  const bestEffortState = bestEffortEngine.run(StrictComplianceScenario.bestEffortInput());
   const engine = ComplianceTestEngine.create();
   engine.pipeline(StrictComplianceScenario.pipeline());
   const state = engine.run(StrictComplianceScenario.strictInput());
@@ -616,8 +619,16 @@ await test('strict true withholds an infeasible palette after retaining terminal
   assert.ok(pair.actual < pair.required, 'withheld evidence preserves actual and required values');
   assert.ok(pair.shortfall > 0, 'withheld evidence preserves the shortfall');
   assert.ok(pair.constraints.length > 0, 'withheld evidence preserves constraints');
-  assert.deepStrictEqual(state.roles, {}, 'strict mode clears resolved roles');
-  assert.deepStrictEqual(state.variants, {}, 'strict mode clears derived variants');
+  assert.deepStrictEqual(
+    state.roles,
+    bestEffortState.roles,
+    'strict withholding retains the best-achievable roles for downstream emitters'
+  );
+  assert.deepStrictEqual(
+    state.variants,
+    bestEffortState.variants,
+    'strict withholding retains the best-achievable variants for downstream emitters'
+  );
 });
 
 await test('strict true retains a compliant palette', () => {
