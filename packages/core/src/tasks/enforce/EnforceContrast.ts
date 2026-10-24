@@ -15,10 +15,10 @@ import {
   PaletteRoleState,
   type PaletteStateInterface
 } from '../../interfaces/PaletteStateInterface.ts';
+import { ColorCoordinate } from '../../math/ColorCoordinate.ts';
 import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { contrastApca } from '../../math/ContrastApca.ts';
 import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
-import { deltaE2000 } from '../../math/DeltaE2000.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
 import { Metadata } from '../../types/metadata.ts';
 import { contrastCoordinateCounters } from './ContrastCoordinateCounters.ts';
@@ -371,15 +371,22 @@ class ContrastExecution {
   ): void {
     const roleNames = ContrastExecution.componentRoleNames(component);
     const initial = ContrastExecution.componentRecords(roles, roleNames);
-    let best = ContrastExecution.coordinateScore(roles, preferences, component, roleNames);
-    let bestRecords: ReadonlyMap<string, ColorRecordEntity.Type> = new Map(initial);
+    const coordinates = ContrastExecution.componentCoordinates(initial, roleNames);
+    const preferenceCoordinates = ContrastExecution.preferenceCoordinates(preferences, roleNames);
+    let best = ContrastExecution.coordinateScore(
+      coordinates,
+      preferenceCoordinates,
+      component,
+      roleNames
+    );
+    let bestCoordinates: ReadonlyMap<string, ColorCoordinate> = new Map(coordinates);
     const maximumPasses = Math.min(12, Math.max(1, roleNames.length * 2));
     for (let pass = 0; pass < maximumPasses; pass += 1) {
       contrastCoordinateCounters.recordOptimizerPass();
       const score = ContrastExecution.optimizePass(
-        roles,
+        coordinates,
         state,
-        preferences,
+        preferenceCoordinates,
         component,
         roleNames,
         best
@@ -388,9 +395,30 @@ class ContrastExecution {
         break;
       }
       best = score;
-      bestRecords = ContrastExecution.componentRecords(roles, roleNames);
+      bestCoordinates = new Map(coordinates);
     }
-    ContrastExecution.restoreComponent(roles, state, roleNames, initial, bestRecords);
+    ContrastExecution.restoreComponent(roles, state, roleNames, initial, bestCoordinates);
+  }
+
+  private static componentCoordinates(
+    records: ReadonlyMap<string, ColorRecordEntity.Type>,
+    roleNames: readonly string[]
+  ): Map<string, ColorCoordinate> {
+    const coordinates = new Map<string, ColorCoordinate>();
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      if (roleName === undefined) {
+        continue;
+      }
+      const record = records.get(roleName);
+      if (record !== undefined) {
+        coordinates.set(
+          roleName,
+          ColorCoordinate.fromRecord(record)
+        );
+      }
+    }
+    return coordinates;
   }
 
   private static componentRecords(
@@ -412,9 +440,9 @@ class ContrastExecution {
   }
 
   private static optimizePass(
-    roles: PaletteRoleState,
+    coordinates: Map<string, ColorCoordinate>,
     state: PaletteStateInterface,
-    preferences: ReadonlyMap<string, ColorRecordEntity.Type>,
+    preferences: ReadonlyMap<string, ColorCoordinate>,
     component: readonly ContrastPolicy.RequirementInterface[],
     roleNames: readonly string[],
     initialScore: ContrastCoordinateScore
@@ -425,12 +453,12 @@ class ContrastExecution {
       if (roleName === undefined || ContrastProvenance.isStated(state, roleName)) {
         continue;
       }
-      const current = roles.get(roleName);
+      const current = coordinates.get(roleName);
       if (current === undefined) {
         continue;
       }
       const selected = ContrastExecution.coordinateCandidate(
-        roles,
+        coordinates,
         state,
         preferences,
         component,
@@ -440,11 +468,37 @@ class ContrastExecution {
         score
       );
       if (selected !== undefined) {
-        roles.set(roleName, selected);
-        score = ContrastExecution.coordinateScore(roles, preferences, component, roleNames);
+        coordinates.set(roleName, selected);
+        score = ContrastExecution.coordinateScore(
+          coordinates,
+          preferences,
+          component,
+          roleNames
+        );
       }
     }
     return score;
+  }
+
+  private static preferenceCoordinates(
+    preferences: ReadonlyMap<string, ColorRecordEntity.Type>,
+    roleNames: readonly string[]
+  ): ReadonlyMap<string, ColorCoordinate> {
+    const coordinates = new Map<string, ColorCoordinate>();
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      if (roleName === undefined) {
+        continue;
+      }
+      const preference = preferences.get(roleName);
+      if (preference !== undefined) {
+        coordinates.set(
+          roleName,
+          ColorCoordinate.fromRecord(preference)
+        );
+      }
+    }
+    return coordinates;
   }
 
   private static restoreComponent(
@@ -452,7 +506,7 @@ class ContrastExecution {
     state: PaletteStateInterface,
     roleNames: readonly string[],
     initial: ReadonlyMap<string, ColorRecordEntity.Type>,
-    bestRecords: ReadonlyMap<string, ColorRecordEntity.Type>
+    bestCoordinates: ReadonlyMap<string, ColorCoordinate>
   ): void {
     for (let index = 0; index < roleNames.length; index += 1) {
       const roleName = roleNames[index];
@@ -460,15 +514,35 @@ class ContrastExecution {
         continue;
       }
       const original = initial.get(roleName);
-      const resolved = bestRecords.get(roleName);
-      if (original === undefined || resolved === undefined) {
+      const coordinate = bestCoordinates.get(roleName);
+      if (original === undefined || coordinate === undefined) {
         continue;
       }
+      const resolved = ContrastExecution.sameCoordinate(original, coordinate)
+        ? original
+        : colorRecordFactory.fromCoordinate(
+          coordinate,
+          { 'alpha': original.alpha, 'hints': original.hints, 'origin': original }
+        );
       roles.set(roleName, resolved);
       if (!ContrastMeasurement.sameRecord(original, resolved)) {
         ContrastProvenance.recordAdjustment(state, roleName, original.hex, resolved.hex);
       }
     }
+  }
+
+  private static sameCoordinate(
+    record: ColorRecordEntity.Type,
+    coordinate: ColorCoordinate
+  ): boolean {
+    const result =
+      record.oklch.l === coordinate.l &&
+      record.oklch.c === coordinate.c &&
+      record.oklch.h === coordinate.h &&
+      record.rgb.r === coordinate.rgbR &&
+      record.rgb.g === coordinate.rgbG &&
+      record.rgb.b === coordinate.rgbB;
+    return result;
   }
 
   private static components(
@@ -523,30 +597,35 @@ class ContrastExecution {
   }
 
   private static coordinateCandidate(
-    roles: PaletteRoleState,
+    coordinates: Map<string, ColorCoordinate>,
     state: PaletteStateInterface,
-    preferences: ReadonlyMap<string, ColorRecordEntity.Type>,
+    preferences: ReadonlyMap<string, ColorCoordinate>,
     component: readonly ContrastPolicy.RequirementInterface[],
     roleNames: readonly string[],
     roleName: string,
-    current: ColorRecordEntity.Type,
+    current: ColorCoordinate,
     baseline: ContrastCoordinateScore
-  ): ColorRecordEntity.Type | undefined {
+  ): ColorCoordinate | undefined {
     const candidates = ContrastExecution.coordinateCandidates(state, roleName, current);
-    let selected: ColorRecordEntity.Type | undefined;
+    let selected: ColorCoordinate | undefined;
     let selectedScore: ContrastCoordinateScore | undefined;
     for (let index = 0; index < candidates.length; index += 1) {
       const candidate = candidates[index];
-      if (candidate === undefined || ContrastMeasurement.sameRecord(current, candidate)) {
+      if (candidate === undefined || ContrastExecution.sameCoordinates(current, candidate)) {
         continue;
       }
       if (contrastCoordinateCounters.enabled) {
         contrastCoordinateCounters.recordCandidate();
         contrastCoordinateCounters.recordCandidateScore();
       }
-      roles.set(roleName, candidate);
-      const score = ContrastExecution.coordinateScore(roles, preferences, component, roleNames);
-      roles.set(roleName, current);
+      coordinates.set(roleName, candidate);
+      const score = ContrastExecution.coordinateScore(
+        coordinates,
+        preferences,
+        component,
+        roleNames
+      );
+      coordinates.set(roleName, current);
       if (ContrastCoordinateScore.compare(score, baseline) >= 0 ||
         (selectedScore !== undefined && ContrastCoordinateScore.compare(score, selectedScore) >= 0)) {
         continue;
@@ -560,14 +639,14 @@ class ContrastExecution {
   private static coordinateCandidates(
     state: PaletteStateInterface,
     roleName: string,
-    current: ColorRecordEntity.Type
-  ): readonly ColorRecordEntity.Type[] {
+    current: ColorCoordinate
+  ): readonly ColorCoordinate[] {
     const range = ContrastPolicy.roleRange(state.input, roleName);
-    const lightnessRange = range.lightnessRange ?? [current.oklch.l, current.oklch.l] as const;
-    const chromaRange = range.chromaRange ?? [current.oklch.c, current.oklch.c] as const;
-    const lightnesses = ContrastExecution.coordinateValues(current.oklch.l, lightnessRange);
-    const chromas = ContrastExecution.coordinateValues(current.oklch.c, chromaRange);
-    const result: ColorRecordEntity.Type[] = [];
+    const lightnessRange = range.lightnessRange ?? [current.l, current.l] as const;
+    const chromaRange = range.chromaRange ?? [current.c, current.c] as const;
+    const lightnesses = ContrastExecution.coordinateValues(current.l, lightnessRange);
+    const chromas = ContrastExecution.coordinateValues(current.c, chromaRange);
+    const result: ColorCoordinate[] = [];
     for (let lightnessIndex = 0; lightnessIndex < lightnesses.length; lightnessIndex += 1) {
       const lightness = lightnesses[lightnessIndex];
       if (lightness === undefined) {
@@ -578,13 +657,8 @@ class ContrastExecution {
         if (chroma === undefined) {
           continue;
         }
-        const candidate = colorRecordFactory.fromOklch(
-          lightness,
-          chroma,
-          current.oklch.h,
-          { 'alpha': current.alpha, 'hints': current.hints, 'origin': current }
-        );
-        if (ContrastPolicy.allowsRoleRecord(state.input, roleName, candidate)) {
+        const candidate = ColorCoordinate.fromOklch(lightness, chroma, current.h);
+        if (ContrastPolicy.allowsRoleCoordinates(state.input, roleName, candidate)) {
           result.push(candidate);
         }
       }
@@ -593,8 +667,8 @@ class ContrastExecution {
   }
 
   private static coordinateScore(
-    roles: PaletteRoleState,
-    preferences: ReadonlyMap<string, ColorRecordEntity.Type>,
+    coordinates: ReadonlyMap<string, ColorCoordinate>,
+    preferences: ReadonlyMap<string, ColorCoordinate>,
     component: readonly ContrastPolicy.RequirementInterface[],
     roleNames: readonly string[]
   ): ContrastCoordinateScore {
@@ -606,12 +680,12 @@ class ContrastExecution {
       if (requirement === undefined) {
         continue;
       }
-      const foreground = roles.get(requirement.foreground);
-      const background = roles.get(requirement.background);
+      const foreground = coordinates.get(requirement.foreground);
+      const background = coordinates.get(requirement.background);
       if (foreground === undefined || background === undefined) {
         continue;
       }
-      const ratio = ContrastMeasurement.measure(requirement.algorithm, foreground, background);
+      const ratio = ContrastExecution.coordinateMeasure(requirement.algorithm, foreground, background);
       const shortfall = ContrastBand.shortfall(
         ratio,
         requirement.minimumContrastRatio,
@@ -629,10 +703,10 @@ class ContrastExecution {
       if (roleName === undefined) {
         continue;
       }
-      const record = roles.get(roleName);
+      const coordinate = coordinates.get(roleName);
       const preference = preferences.get(roleName);
-      if (record !== undefined && preference !== undefined) {
-        totalDisplacement += deltaE2000.apply(preference, record);
+      if (coordinate !== undefined && preference !== undefined) {
+        totalDisplacement += preference.deltaE2000(coordinate);
       }
     }
     return new ContrastCoordinateScore(
@@ -641,6 +715,33 @@ class ContrastExecution {
       totalShortfall,
       totalDisplacement
     );
+  }
+
+  private static coordinateMeasure(
+    algorithm: ContrastAlgorithmTypeEntity.Type,
+    foreground: ColorCoordinate,
+    background: ColorCoordinate
+  ): number {
+    if (algorithm === 'apca') {
+      const result = Math.abs(foreground.apca(background));
+      return result;
+    }
+    const result = foreground.wcag21(background);
+    return result;
+  }
+
+  private static sameCoordinates(
+    left: ColorCoordinate,
+    right: ColorCoordinate
+  ): boolean {
+    const result =
+      left.l === right.l &&
+      left.c === right.c &&
+      left.h === right.h &&
+      left.rgbR === right.rgbR &&
+      left.rgbG === right.rgbG &&
+      left.rgbB === right.rgbB;
+    return result;
   }
 
   private static coordinateValues(

@@ -1,3 +1,5 @@
+import { writeFileSync } from 'node:fs';
+
 import type {
   ColorRecordEntity,
   PaletteStateInterface
@@ -326,9 +328,74 @@ class DisplacementSamples {
   }
 }
 
+class SweepSignature {
+  static create(
+    benchmarkCase: CaseInterface,
+    state: PaletteStateInterface,
+    report: ComplianceReportEntity.Type
+  ): object {
+    const roles = Object.entries(state.roles).toSorted((left, right) => {
+      const result = left[0].localeCompare(right[0]);
+      return result;
+    }).map(([roleName, record]) => {
+      return {
+        'alpha': SweepSignature.number(record.alpha),
+        'hex': record.hex,
+        'oklch': {
+          'c': SweepSignature.number(record.oklch.c),
+          'h': SweepSignature.number(record.oklch.h),
+          'l': SweepSignature.number(record.oklch.l)
+        },
+        'rgb': {
+          'b': SweepSignature.number(record.rgb.b),
+          'g': SweepSignature.number(record.rgb.g),
+          'r': SweepSignature.number(record.rgb.r)
+        },
+        'roleName': roleName
+      };
+    });
+    const problemPairs = report.problemPairs.map((pair) => {
+      return {
+        'actual': SweepSignature.number(pair.actual),
+        'id': pair.foreground + '/' + pair.background,
+        'shortfall': SweepSignature.number(pair.shortfall)
+      };
+    });
+    const result = {
+      'caseId': SweepSignature.caseId(benchmarkCase),
+      'disposition': report.disposition,
+      'problemPairs': problemPairs,
+      'roles': roles
+    };
+    return result;
+  }
+
+  static write(path: string, signatures: readonly object[]): void {
+    writeFileSync(path, JSON.stringify(signatures, undefined, 2) + '\n');
+  }
+
+  private static caseId(benchmarkCase: CaseInterface): string {
+    const result = [
+      benchmarkCase.schema,
+      benchmarkCase.framing,
+      benchmarkCase.options.strictness,
+      benchmarkCase.options.nonMandatoryLevel,
+      benchmarkCase.options.cvdMode,
+      benchmarkCase.seeds.join(',')
+    ].join('|');
+    return result;
+  }
+
+  private static number(value: number): string {
+    const result = value.toPrecision(17);
+    return result;
+  }
+}
+
 class SweepReport {
-  static create(cases: readonly CaseInterface[]): object {
+  static create(cases: readonly CaseInterface[], signaturePath: string | undefined): object {
     const chunkStarted = performance.now();
+    const signatures: object[] = [];
     const seedFaithful = new DisplacementSamples();
     const relationshipHued = new DisplacementSamples();
     const fixedHueRoles = new Set<string>();
@@ -354,6 +421,9 @@ class SweepReport {
       const input = PaletteInput.create(benchmarkCase);
       const run = SweepRun.execute(input);
       const report = ComplianceReportEntity.intake(run.resolved.metadata['contrast:complianceReport']);
+      if (signaturePath !== undefined) {
+        signatures.push(SweepSignature.create(benchmarkCase, run.resolved, report));
+      }
       if (report.compliant) {
         compliantCases += 1;
       } else {
@@ -426,6 +496,9 @@ class SweepReport {
         }
       }
     }
+    if (signaturePath !== undefined) {
+      SweepSignature.write(signaturePath, signatures);
+    }
     return {
       'budgetUsage': { 'candidateScores': candidateScores, 'weightedUnits': weightedUnits },
       'chunkElapsedMs': performance.now() - chunkStarted,
@@ -467,6 +540,11 @@ const offset = offsetText === undefined ? 0 : Number.parseInt(offsetText.slice('
 if (!Number.isInteger(offset) || offset < 0) {
   throw new Error('--offset must be a non-negative integer');
 }
+const signatureFileText = process.argv.find((argument) => { return argument.startsWith('--signatureFile='); });
+const signatureFile = signatureFileText?.slice('--signatureFile='.length);
 const allCases = SweepCases.create();
 const cases = limit === undefined ? allCases.slice(offset) : allCases.slice(offset, offset + limit);
-console.log(JSON.stringify(SweepReport.create(cases), undefined, 2));
+const report = SweepReport.create(cases, signatureFile);
+if (signatureFile === undefined) {
+  console.log(JSON.stringify(report, undefined, 2));
+}

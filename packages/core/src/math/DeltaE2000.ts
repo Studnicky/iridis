@@ -26,9 +26,12 @@ class AngleUnits {
 class DeltaE2000 {
   readonly 'name' = 'deltaE2000';
 
-  apply(a: ColorRecordEntity.Type, b: ColorRecordEntity.Type): number {
-    const [L1, a1, b1] = OklabConversion.from(a.oklch.l, a.oklch.c, a.oklch.h);
-    const [L2, a2, b2] = OklabConversion.from(b.oklch.l, b.oklch.c, b.oklch.h);
+  coordinates(
+    left: Readonly<{ 'c': number; 'h': number; 'l': number }>,
+    right: Readonly<{ 'c': number; 'h': number; 'l': number }>
+  ): number {
+    const [L1, a1, b1] = OklabConversion.from(left.l, left.c, left.h);
+    const [L2, a2, b2] = OklabConversion.from(right.l, right.c, right.h);
 
     // OKLab L is 0..1; CIE Lab L is 0..100. Scale so the formula's hard-coded
     // constants (Sharma et al. 2005) operate on the magnitudes they expect.
@@ -106,6 +109,11 @@ class DeltaE2000 {
       RT * (dCp / (kC * SC)) * (dHp / (kH * SH))
     );
     return delta;
+  }
+
+  apply(a: ColorRecordEntity.Type, b: ColorRecordEntity.Type): number {
+    const result = this.coordinates(a.oklch, b.oklch);
+    return result;
   }
 }
 

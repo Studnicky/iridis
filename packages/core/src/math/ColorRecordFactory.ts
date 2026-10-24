@@ -7,10 +7,9 @@ import { OklchEntity } from '../entities/OklchEntity.ts';
 import { RgbEntity } from '../entities/RgbEntity.ts';
 import { clamp } from './Clamp.ts';
 import { clamp01 } from './Clamp01.ts';
+import { ColorCoordinate } from './ColorCoordinate.ts';
 import { HEX_PATTERNS } from './constants/HexPatterns.ts';
-import { gamutMapSrgb } from './GamutMapSrgb.ts';
 import { oklchToDisplayP3 } from './OklchToDisplayP3.ts';
-import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
 import { rgbToHex } from './RgbToHex.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
@@ -195,13 +194,25 @@ class ColorRecordFactory {
     h: number,
     options?: { 'alpha'?: number; 'hints'?: ColorHintsEntity.Type | undefined; 'origin'?: ColorRecordEntity.Type | undefined; 'sourceFormat'?: string; }
   ): ColorRecordEntity.Type {
+    const coordinate = ColorCoordinate.fromOklch(l, c, h);
+    const result = this.fromCoordinate(coordinate, options);
+    return result;
+  }
+
+  fromCoordinate(
+    coordinate: ColorCoordinate,
+    options?: { 'alpha'?: number; 'hints'?: ColorHintsEntity.Type | undefined; 'origin'?: ColorRecordEntity.Type | undefined; 'sourceFormat'?: string; }
+  ): ColorRecordEntity.Type {
     const { alpha = 1, hints, origin, sourceFormat = 'oklch' } = options ?? {};
-    const mapped = gamutMapSrgb.apply(l, c, h);
-    const rgb    = oklchToRgbRaw.apply(mapped.l, mapped.c, mapped.h);
+    const rgb = RgbEntity.create({
+      'b': coordinate.rgbB,
+      'g': coordinate.rgbG,
+      'r': coordinate.rgbR
+    });
 
     let displayP3: RgbEntity.Type | undefined;
-    if (!mapped.inGamut) {
-      const p3 = oklchToDisplayP3.apply(l, c, h);
+    if (coordinate.requiresDisplayP3()) {
+      const p3 = oklchToDisplayP3.apply(coordinate.l, coordinate.c, coordinate.h);
       displayP3 = RgbEntity.create({
         'b': clamp01.apply(p3.b),
         'g': clamp01.apply(p3.g),
@@ -214,7 +225,11 @@ class ColorRecordFactory {
     const result = ColorRecordOrigin.resolve(origin?.sourceFormat ?? sourceFormat).write(
       clamp01.apply(alpha),
       rgbToHex.apply(rgb.r, rgb.g, rgb.b),
-      OklchEntity.create({ 'c': clamp.apply(0, 0.5, c), 'h': ((h % 360) + 360) % 360, 'l': clamp01.apply(l) }),
+      OklchEntity.create({
+        'c': clamp.apply(0, 0.5, coordinate.c),
+        'h': ((coordinate.h % 360) + 360) % 360,
+        'l': clamp01.apply(coordinate.l)
+      }),
       rgb,
       { ...(displayP3 === undefined ? {} : { 'displayP3': displayP3 }), ...(hints === undefined ? {} : { 'hints': hints }) }
     );
