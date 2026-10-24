@@ -129,6 +129,44 @@ await test('ContrastFeasibility emits sampled evidence rather than a continuous 
   assert.ok(pair.sampled.bestActual >= 4, 'sampled evidence retains the best measured final contrast');
 });
 
+await test('ContrastFeasibility certifies independent hue roots with a bounded witness', () => {
+  const schema = ContrastFeasibilityFixture.schema(
+    ContrastFeasibilityFixture.role('foreground', 0.95, 0.01),
+    ContrastFeasibilityFixture.role('background', 0.05, 0.01),
+    4.5
+  );
+  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
+  const pair = report.pairs[0];
+
+  assert.ok(pair !== undefined, 'independent-root pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'always-reachable', 'one fixed envelope witness clears every bounded root-hue cell');
+  assert.strictEqual(pair.sampled, undefined, 'a bounded witness does not rely on sampled evidence');
+});
+
+await test('ContrastFeasibility certifies a hue-independent neutral envelope without sampling', () => {
+  const schema = ContrastFeasibilityFixture.schema(
+    RoleDefinitionEntity.intake({
+      'chromaRange': [0, 0.2],
+      'lightnessRange': [0.85, 0.9],
+      'name': 'foreground'
+    }),
+    RoleDefinitionEntity.intake({
+      'chromaRange': [0, 0.2],
+      'lightnessRange': [0.05, 0.1],
+      'name': 'background'
+    }),
+    4.5
+  );
+
+  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
+  const pair = report.pairs[0];
+
+  assert.ok(pair !== undefined, 'declared pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'always-reachable');
+  assert.deepStrictEqual(pair.reachableHueRanges, [{ 'end': 360, 'start': 0 }]);
+  assert.strictEqual(pair.sampled, undefined, 'a hue-independent certificate needs no sampled evidence');
+});
+
 await test('ContrastFeasibility treats stated run roles as exact pin bounds', () => {
   const schema = ContrastFeasibilityFixture.schema(
     ContrastFeasibilityFixture.role('foreground', 0.9, 0.1, 120),
@@ -198,6 +236,112 @@ await test('ContrastFeasibility proves a resolved run with the same canonical re
 
   assert.ok(pair !== undefined, 'run pair receives a feasibility result');
   assert.strictEqual(pair.reachability, 'always-reachable');
+});
+
+await test('ContrastFeasibility certifies derived hue offsets from their shared root', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{
+      'background': 'brand',
+      'foreground': 'opposite',
+      'minimumContrastRatio': 1
+    }],
+    'name': 'derived-hue-sampling',
+    'roles': [
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.2, 0.2],
+        'lightnessRange': [0.15, 0.15],
+        'name': 'brand'
+      }),
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.2, 0.2],
+        'derivedFrom': 'brand',
+        'hueOffset': 180,
+        'lightnessRange': [0.85, 0.85],
+        'name': 'opposite'
+      })
+    ]
+  });
+  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
+  const pair = report.pairs[0];
+  const measured: number[] = [];
+  for (let hue = 0; hue <= 360; hue += 30) {
+    const foreground = colorRecordFactory.fromOklch(0.85, 0.2, (hue + 180) % 360);
+    const background = colorRecordFactory.fromOklch(0.15, 0.2, hue);
+    measured.push(contrastWcag21.apply(foreground, background));
+  }
+
+  assert.ok(pair !== undefined, 'derived pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'always-reachable', 'bounded affine arcs certify every root hue');
+  assert.strictEqual(pair.sampled, undefined, 'the affine certificate does not depend on sampled evidence');
+  assert.ok(
+    Math.min(...measured) >= 1,
+    'the certificate holds at each coarse independent hue probe through the emitted color records'
+  );
+});
+
+await test('ContrastFeasibility certifies an affine derived hue arc when its gamut bounds clear the requirement', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{
+      'background': 'brand',
+      'foreground': 'opposite',
+      'minimumContrastRatio': 4.5
+    }],
+    'name': 'derived-hue-arc-certificate',
+    'roles': [
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.01, 0.01],
+        'lightnessRange': [0.05, 0.05],
+        'name': 'brand'
+      }),
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.01, 0.01],
+        'derivedFrom': 'brand',
+        'hueOffset': 180,
+        'lightnessRange': [0.95, 0.95],
+        'name': 'opposite'
+      })
+    ]
+  });
+
+  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
+  const pair = report.pairs[0];
+
+  assert.ok(pair !== undefined, 'declared pair receives an affine-arc result');
+  assert.strictEqual(pair.reachability, 'always-reachable');
+  assert.strictEqual(pair.sampled, undefined, 'the certificate does not depend on sampled evidence');
+});
+
+await test('ContrastFeasibility retains sampled evidence for hue-target clamp relationships', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{
+      'background': 'brand',
+      'foreground': 'semantic',
+      'minimumContrastRatio': 4.5
+    }],
+    'name': 'hue-target-clamp-indeterminate',
+    'roles': [
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.1, 0.1],
+        'lightnessRange': [0.1, 0.1],
+        'name': 'brand'
+      }),
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.1, 0.1],
+        'derivedFrom': 'brand',
+        'hue': 25,
+        'hueClamp': 45,
+        'lightnessRange': [0.9, 0.9],
+        'name': 'semantic'
+      })
+    ]
+  });
+
+  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
+  const pair = report.pairs[0];
+
+  assert.ok(pair !== undefined, 'hue-target pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'indeterminate', 'non-affine hue clamp relations do not receive a continuous certificate');
+  assert.ok(pair.sampled !== undefined, 'indeterminate hue clamp relations retain sampled evidence');
 });
 
 await test('ContrastFeasibility uses resolved run hues without unanchored sampling', () => {

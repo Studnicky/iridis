@@ -8,12 +8,13 @@ import type {
 import {
   ColorCoordinate,
   colorRecordFactory,
+  HueIntervalBounds,
   InputEntity,
   Metadata,
   PaletteRoleState,
   RoleSchemaEntity
 } from '@studnicky/iridis';
-import { ContrastPolicy } from '@studnicky/iridis/tasks';
+import { ContrastPolicy, RoleGeometry } from '@studnicky/iridis/tasks';
 
 import { ContrastFeasibilityProofEntity } from './entities/ContrastFeasibilityProofEntity.ts';
 import { ContrastFeasibilityReportEntity } from './entities/ContrastFeasibilityReportEntity.ts';
@@ -33,6 +34,24 @@ interface HueEvaluationInterface {
   readonly 'hue': number;
 }
 
+interface HueRelationInterface {
+  readonly 'affineOffset'?: number;
+  resolve(rootHue: number): number;
+  readonly 'root': string;
+}
+
+interface HueArcInterface {
+  readonly 'end': number;
+  readonly 'start': number;
+}
+
+interface LuminanceBoundsInterface {
+  readonly 'maximumApca': number;
+  readonly 'maximumWcag': number;
+  readonly 'minimumApca': number;
+  readonly 'minimumWcag': number;
+}
+
 interface RoleDomainInterface {
   readonly 'chroma': readonly [number, number];
   readonly 'fixedRecord'?: ColorRecordEntity.Type;
@@ -40,10 +59,12 @@ interface RoleDomainInterface {
   readonly 'hue'?: number;
   readonly 'lightness': readonly [number, number];
   readonly 'name': string;
+  readonly 'relation'?: HueRelationInterface;
 }
 
 interface RoleDomainOptionsInterface {
   readonly 'fixedRecord'?: ColorRecordEntity.Type;
+  readonly 'relation'?: HueRelationInterface;
   readonly 'resolvedHue'?: number;
 }
 
@@ -55,16 +76,15 @@ interface SearchCellInterface {
 }
 
 /**
- * Numerically evaluates schema envelopes through the same emitted sRGB records
- * and contrast primitives used by the engine. Hue cells terminate at 0.5° and
- * lightness/chroma cells terminate at 1/1024 and the gamut mapper's 0.02 chroma
- * just-noticeable-difference threshold. These are production-precision numeric
- * classifications, not symbolic claims about every real-valued hue.
+ * Evaluates schema envelopes through the engine's emitted sRGB records and contrast primitives.
+ * Hue-independent neutral envelopes receive exact all-hue certificates. Fixed hues use bounded
+ * lightness/chroma extrema; unanchored hue domains retain explicitly sampled, indeterminate evidence.
  */
 class ContrastFeasibilityDomain {
   static readonly #BLACK = ColorCoordinate.fromOklch(0, 0, 0);
   static readonly #CHROMA_PRECISION = 0.02;
-  static readonly #HUE_PRECISION = 0.5;
+  /** Each independent root hue domain is certified in eight conservative 45-degree cells. */
+  static readonly #INDEPENDENT_HUE_DIVISIONS = 8;
   static readonly #LIGHTNESS_PRECISION = 1 / 1024;
 
   static #isHigher(current: number, candidate: number): boolean {
@@ -82,8 +102,23 @@ class ContrastFeasibilityDomain {
     background: RoleDomainInterface,
     requirement: ContrastPolicy.RequirementInterface
   ): ContrastPairFeasibilityEntity.Type {
-    const evaluations = ContrastFeasibilityDomain.evaluateHues(foreground, background, requirement);
+    const neutral = ContrastFeasibilityDomain.neutralEvaluation(foreground, background, requirement);
+    if (neutral !== undefined && neutral.actual >= requirement.minimumContrastRatio) {
+      const result = ContrastFeasibilityDomain.alwaysReachable(foreground, background);
+      return result;
+    }
+    const analyticHueArcs = ContrastFeasibilityDomain.analyticHueArcs(foreground, background, requirement);
+    if (analyticHueArcs !== undefined) {
+      return analyticHueArcs;
+    }
+    const independentHueArcs = ContrastFeasibilityDomain.independentHueArcs(foreground, background, requirement);
+    if (independentHueArcs !== undefined) {
+      return independentHueArcs;
+    }
     const hasFixedHueDomain = ContrastFeasibilityDomain.hasFixedHueDomain(foreground, background);
+    const evaluations = hasFixedHueDomain
+      ? ContrastFeasibilityDomain.evaluateHues(foreground, background, requirement)
+      : ContrastFeasibilityDomain.representativeEvaluations(foreground, background, requirement);
     const best = ContrastFeasibilityDomain.bestEvaluation(evaluations);
     if (!hasFixedHueDomain) {
       const result = ContrastPairFeasibilityEntity.intake({
@@ -112,18 +147,353 @@ class ContrastFeasibilityDomain {
     return result;
   }
 
+  private static alwaysReachable(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface
+  ): ContrastPairFeasibilityEntity.Type {
+    const result = ContrastPairFeasibilityEntity.intake({
+      'background': background.name,
+      'foreground': foreground.name,
+      'reachability': 'always-reachable',
+      'reachableHueRanges': [HueRangeEntity.intake({ 'end': 360, 'start': 0 })]
+    });
+    return result;
+  }
+
+  private static independentHueArcs(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface,
+    requirement: ContrastPolicy.RequirementInterface
+  ): ContrastPairFeasibilityEntity.Type | undefined {
+    const foregroundRoot = foreground.relation?.root ?? foreground.name;
+    const backgroundRoot = background.relation?.root ?? background.name;
+    if (foregroundRoot === backgroundRoot || foreground.hue !== undefined || background.hue !== undefined) {
+      return undefined;
+    }
+    for (let foregroundIndex = 0; foregroundIndex < ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS; foregroundIndex += 1) {
+      const foregroundArc = {
+        'end': ((foregroundIndex + 1) * 360) / ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS,
+        'start': (foregroundIndex * 360) / ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS
+      };
+      for (let backgroundIndex = 0; backgroundIndex < ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS; backgroundIndex += 1) {
+        const backgroundArc = {
+          'end': ((backgroundIndex + 1) * 360) / ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS,
+          'start': (backgroundIndex * 360) / ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS
+        };
+        if (!ContrastFeasibilityDomain.hasWitness(foreground, background, foregroundRoot, backgroundRoot, foregroundArc, backgroundArc, requirement)) {
+          return undefined;
+        }
+      }
+    }
+    const result = ContrastFeasibilityDomain.alwaysReachable(foreground, background);
+    return result;
+  }
+
+  private static hasWitness(
+    foreground: RoleDomainInterface, background: RoleDomainInterface, foregroundRoot: string, backgroundRoot: string,
+    foregroundArc: HueArcInterface, backgroundArc: HueArcInterface, requirement: ContrastPolicy.RequirementInterface
+  ): boolean {
+    const foregroundHue = ContrastFeasibilityDomain.domainHueArc(foreground, foregroundRoot, foregroundArc);
+    const backgroundHue = ContrastFeasibilityDomain.domainHueArc(background, backgroundRoot, backgroundArc);
+    if (
+      foregroundHue === undefined ||
+      backgroundHue === undefined ||
+      foregroundHue.start < 0 || foregroundHue.end > 360 ||
+      backgroundHue.start < 0 || backgroundHue.end > 360
+    ) {
+      return false;
+    }
+    const foregroundCandidates = ContrastFeasibilityDomain.candidates(foreground);
+    const backgroundCandidates = ContrastFeasibilityDomain.candidates(background);
+    for (let foregroundIndex = 0; foregroundIndex < foregroundCandidates.length; foregroundIndex += 1) {
+      const foregroundCandidate = foregroundCandidates[foregroundIndex];
+      if (foregroundCandidate === undefined) { continue; }
+      for (let backgroundIndex = 0; backgroundIndex < backgroundCandidates.length; backgroundIndex += 1) {
+        const backgroundCandidate = backgroundCandidates[backgroundIndex];
+        if (backgroundCandidate === undefined) { continue; }
+        if (ContrastFeasibilityDomain.witnessPasses(foregroundCandidate, backgroundCandidate, foregroundHue, backgroundHue, requirement)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private static candidates(domain: RoleDomainInterface): readonly (readonly [number, number])[] {
+    const result = [
+      [domain.lightness[0], domain.chroma[0]], [domain.lightness[0], domain.chroma[1]],
+      [domain.lightness[1], domain.chroma[0]], [domain.lightness[1], domain.chroma[1]]
+    ] as const;
+    return result;
+  }
+
+  private static witnessPasses(
+    foreground: readonly [number, number], background: readonly [number, number], foregroundHue: HueArcInterface, backgroundHue: HueArcInterface, requirement: ContrastPolicy.RequirementInterface
+  ): boolean {
+    const foregroundBounds = HueIntervalBounds.fixedArc(foreground[0], foreground[1], foregroundHue.start, foregroundHue.end);
+    const backgroundBounds = HueIntervalBounds.fixedArc(background[0], background[1], backgroundHue.start, backgroundHue.end);
+    const wcagLower = ContrastFeasibilityDomain.wcagLowerBound(
+      foregroundBounds.minimumRelativeLuminance,
+      foregroundBounds.maximumRelativeLuminance,
+      backgroundBounds.minimumRelativeLuminance,
+      backgroundBounds.maximumRelativeLuminance
+    );
+    const lower = requirement.algorithm === 'apca'
+      ? HueIntervalBounds.apcaMagnitudeBounds(foregroundBounds.minimumApcaLuminance, foregroundBounds.maximumApcaLuminance, backgroundBounds.minimumApcaLuminance, backgroundBounds.maximumApcaLuminance)[0]
+      : wcagLower;
+    const result = lower >= requirement.minimumContrastRatio;
+    return result;
+  }
+
+  private static wcagLowerBound(
+    foregroundMinimum: number,
+    foregroundMaximum: number,
+    backgroundMinimum: number,
+    backgroundMaximum: number
+  ): number {
+    if (foregroundMinimum > backgroundMaximum) {
+      const result = (foregroundMinimum + 0.05) / (backgroundMaximum + 0.05);
+      return result;
+    }
+    if (backgroundMinimum > foregroundMaximum) {
+      const result = (backgroundMinimum + 0.05) / (foregroundMaximum + 0.05);
+      return result;
+    }
+    return 1;
+  }
+
+  private static analyticHueArcs(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface,
+    requirement: ContrastPolicy.RequirementInterface
+  ): ContrastPairFeasibilityEntity.Type | undefined {
+    const root = ContrastFeasibilityDomain.sharedHueRoot(foreground, background);
+    if (root === undefined) {
+      return undefined;
+    }
+    const arcs = ContrastFeasibilityDomain.hueArcs(foreground, background, root);
+    const passing: HueArcInterface[] = [];
+    let indeterminate = false;
+    for (let index = 0; index < arcs.length; index += 1) {
+      const arc = arcs[index];
+      if (arc === undefined) {
+        continue;
+      }
+      const bounds = ContrastFeasibilityDomain.arcContrastBounds(foreground, background, root, arc, requirement);
+      if (bounds === undefined) {
+        indeterminate = true;
+        continue;
+      }
+      const [minimum, maximum] = bounds;
+      if (minimum >= requirement.minimumContrastRatio) {
+        passing.push(arc);
+        continue;
+      }
+      if (maximum >= requirement.minimumContrastRatio) {
+        indeterminate = true;
+      }
+    }
+    const evaluations = ContrastFeasibilityDomain.representativeEvaluations(foreground, background, requirement);
+    const best = ContrastFeasibilityDomain.bestEvaluation(evaluations);
+    if (passing.length === arcs.length) {
+      const result = ContrastFeasibilityDomain.alwaysReachable(foreground, background);
+      return result;
+    }
+    if (passing.length > 0 && !indeterminate) {
+      const ranges = passing.map((arc): HueRangeEntity.Type => {
+        const result = HueRangeEntity.intake({ 'end': arc.end, 'start': arc.start });
+        return result;
+      });
+      const result = ContrastPairFeasibilityEntity.intake({
+        'background': background.name,
+        'foreground': foreground.name,
+        'reachability': 'reachable-only-for-some-hues',
+        'reachableHueRanges': ranges
+      });
+      return result;
+    }
+    const result = ContrastPairFeasibilityEntity.intake({
+      'background': background.name,
+      'foreground': foreground.name,
+      'reachability': 'indeterminate',
+      'reachableHueRanges': [],
+      'sampled': ContrastFeasibilityDomain.sampled(evaluations, best)
+    });
+    return result;
+  }
+
+  private static arcContrastBounds(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface,
+    root: string,
+    arc: HueArcInterface,
+    requirement: ContrastPolicy.RequirementInterface
+  ): readonly [number, number] | undefined {
+    const foregroundBounds = ContrastFeasibilityDomain.arcLuminanceBounds(foreground, root, arc);
+    const backgroundBounds = ContrastFeasibilityDomain.arcLuminanceBounds(background, root, arc);
+    if (foregroundBounds === undefined || backgroundBounds === undefined) {
+      return undefined;
+    }
+    if (requirement.algorithm === 'apca') {
+      const result = HueIntervalBounds.apcaMagnitudeBounds(
+        foregroundBounds.minimumApca,
+        foregroundBounds.maximumApca,
+        backgroundBounds.minimumApca,
+        backgroundBounds.maximumApca
+      );
+      return result;
+    }
+    const minimum = ContrastFeasibilityDomain.wcagLowerBound(
+      foregroundBounds.minimumWcag,
+      foregroundBounds.maximumWcag,
+      backgroundBounds.minimumWcag,
+      backgroundBounds.maximumWcag
+    );
+    const maximum = Math.max(
+      (foregroundBounds.maximumWcag + 0.05) / (backgroundBounds.minimumWcag + 0.05),
+      (backgroundBounds.maximumWcag + 0.05) / (foregroundBounds.minimumWcag + 0.05)
+    );
+    const result: readonly [number, number] = [minimum, maximum];
+    return result;
+  }
+
+  private static arcLuminanceBounds(
+    domain: RoleDomainInterface,
+    root: string,
+    arc: HueArcInterface
+  ): LuminanceBoundsInterface | undefined {
+    if (domain.fixedRecord !== undefined) {
+      const coordinate = ColorCoordinate.fromRecord(domain.fixedRecord);
+      return {
+        'maximumApca': coordinate.apcaLuminance,
+        'maximumWcag': coordinate.relativeLuminance,
+        'minimumApca': coordinate.apcaLuminance,
+        'minimumWcag': coordinate.relativeLuminance
+      };
+    }
+    const hue = ContrastFeasibilityDomain.domainHueArc(domain, root, arc);
+    if (hue === undefined) {
+      return undefined;
+    }
+    const bounds = HueIntervalBounds.range(domain.lightness, domain.chroma, hue.start, hue.end);
+    return {
+      'maximumApca': bounds.maximumApcaLuminance,
+      'maximumWcag': bounds.maximumRelativeLuminance,
+      'minimumApca': bounds.minimumApcaLuminance,
+      'minimumWcag': bounds.minimumRelativeLuminance
+    };
+  }
+
+  private static domainHueArc(
+    domain: RoleDomainInterface,
+    root: string,
+    arc: HueArcInterface
+  ): HueArcInterface | undefined {
+    if (domain.hue !== undefined) {
+      const result = { 'end': domain.hue, 'start': domain.hue };
+      return result;
+    }
+    const offset = ContrastFeasibilityDomain.domainAffineOffset(domain, root);
+    if (offset === undefined) {
+      return undefined;
+    }
+    const start = ContrastFeasibilityDomain.shiftHueAtArcStart(arc.start, offset);
+    const end = ContrastFeasibilityDomain.shiftHueAtArcEnd(arc.end, offset);
+    if (start > end) {
+      return undefined;
+    }
+    const result = { 'end': end, 'start': start };
+    return result;
+  }
+
+  private static domainAffineOffset(domain: RoleDomainInterface, root: string): number | undefined {
+    if (domain.relation?.root === root && domain.relation.affineOffset !== undefined) {
+      return domain.relation.affineOffset;
+    }
+    if (domain.relation === undefined && domain.name === root && domain.hue === undefined) {
+      return 0;
+    }
+    return undefined;
+  }
+
+  private static hueArcs(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface,
+    root: string
+  ): readonly HueArcInterface[] {
+    const offsets = [
+      ContrastFeasibilityDomain.domainAffineOffset(foreground, root),
+      ContrastFeasibilityDomain.domainAffineOffset(background, root)
+    ];
+    const boundaries = new Set<number>([0, 360]);
+    for (let index = 0; index < offsets.length; index += 1) {
+      const offset = offsets[index];
+      if (offset === undefined || offset === 0) {
+        continue;
+      }
+      boundaries.add(360 - offset);
+    }
+    const sorted = [...boundaries].sort((left, right): number => {
+      const result = left - right;
+      return result;
+    });
+    const result: HueArcInterface[] = [];
+    for (let index = 1; index < sorted.length; index += 1) {
+      const start = sorted[index - 1];
+      const end = sorted[index];
+      if (start !== undefined && end !== undefined) {
+        result.push({ 'end': end, 'start': start });
+      }
+    }
+    return result;
+  }
+
+  private static sharedHueRoot(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface
+  ): string | undefined {
+    const foregroundRoot = foreground.relation?.root;
+    const backgroundRoot = background.relation?.root;
+    if (foregroundRoot !== undefined && backgroundRoot !== undefined && foregroundRoot !== backgroundRoot) {
+      return undefined;
+    }
+    const root = foregroundRoot ?? backgroundRoot;
+    if (root === undefined) {
+      return undefined;
+    }
+    const foregroundOffset = ContrastFeasibilityDomain.domainAffineOffset(foreground, root);
+    const backgroundOffset = ContrastFeasibilityDomain.domainAffineOffset(background, root);
+    const foregroundKnown = foreground.hue !== undefined || foreground.fixedRecord !== undefined || foregroundOffset !== undefined;
+    const backgroundKnown = background.hue !== undefined || background.fixedRecord !== undefined || backgroundOffset !== undefined;
+    const result = foregroundKnown && backgroundKnown ? root : undefined;
+    return result;
+  }
+
+  private static shiftHueAtArcEnd(value: number, offset: number): number {
+    const shifted = value + offset;
+    const result = shifted > 360 ? shifted - 360 : shifted;
+    return result;
+  }
+
+  private static shiftHueAtArcStart(value: number, offset: number): number {
+    const shifted = value + offset;
+    const result = shifted >= 360 ? shifted - 360 : shifted;
+    return result;
+  }
+
   static domain(
     role: RoleSchemaEntity.Type['roles'][number],
     options?: RoleDomainOptionsInterface
   ): RoleDomainInterface {
-    const hue = options?.resolvedHue ?? role.hue;
+    const hue = options?.resolvedHue ?? (role.derivedFrom === undefined ? role.hue : undefined);
     const result: RoleDomainInterface = {
       'chroma': role.chromaRange ?? [0, 0.5],
       ...(options?.fixedRecord === undefined ? {} : { 'fixedRecord': options.fixedRecord }),
       ...(hue === undefined ? {} : { 'hue': hue }),
       ...(role.intent === undefined ? {} : { 'hints': { 'intent': role.intent } }),
       'lightness': role.lightnessRange ?? [0, 1],
-      'name': role.name
+      'name': role.name,
+      ...(options?.relation === undefined ? {} : { 'relation': options.relation })
     };
     return result;
   }
@@ -200,14 +570,69 @@ class ContrastFeasibilityDomain {
     return result;
   }
 
+  private static neutralEvaluation(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface,
+    requirement: ContrastPolicy.RequirementInterface
+  ): HueEvaluationInterface | undefined {
+    if (
+      foreground.fixedRecord !== undefined ||
+      background.fixedRecord !== undefined ||
+      foreground.chroma[0] > 0 ||
+      background.chroma[0] > 0
+    ) {
+      return undefined;
+    }
+    const foregroundCoordinates = foreground.lightness.map((lightness): ColorCoordinate => {
+      const result = ColorCoordinate.fromOklch(lightness, 0, 0);
+      return result;
+    });
+    const backgroundCoordinates = background.lightness.map((lightness): ColorCoordinate => {
+      const result = ColorCoordinate.fromOklch(lightness, 0, 0);
+      return result;
+    });
+    let actual = -Infinity;
+    let selectedForeground = foregroundCoordinates[0];
+    let selectedBackground = backgroundCoordinates[0];
+    if (selectedForeground === undefined || selectedBackground === undefined) {
+      throw new TypeError('Contrast feasibility neutral extrema are empty');
+    }
+    for (let foregroundIndex = 0; foregroundIndex < foregroundCoordinates.length; foregroundIndex += 1) {
+      const foregroundCoordinate = foregroundCoordinates[foregroundIndex];
+      if (foregroundCoordinate === undefined) {
+        continue;
+      }
+      for (let backgroundIndex = 0; backgroundIndex < backgroundCoordinates.length; backgroundIndex += 1) {
+        const backgroundCoordinate = backgroundCoordinates[backgroundIndex];
+        if (backgroundCoordinate === undefined) {
+          continue;
+        }
+        const candidate = ContrastFeasibilityDomain.measure(foregroundCoordinate, backgroundCoordinate, requirement);
+        if (candidate > actual) {
+          actual = candidate;
+          selectedForeground = foregroundCoordinate;
+          selectedBackground = backgroundCoordinate;
+        }
+      }
+    }
+    return {
+      'actual': actual,
+      'background': selectedBackground,
+      'foreground': selectedForeground,
+      'hue': 0
+    };
+  }
+
   private static evaluateHue(
     foreground: RoleDomainInterface,
     background: RoleDomainInterface,
-    hue: number,
+    foregroundHue: number,
+    backgroundHue: number,
+    sourceHue: number,
     requirement: ContrastPolicy.RequirementInterface
   ): HueEvaluationInterface {
-    const foregroundExtrema = ContrastFeasibilityDomain.extrema(foreground, hue, requirement);
-    const backgroundExtrema = ContrastFeasibilityDomain.extrema(background, hue, requirement);
+    const foregroundExtrema = ContrastFeasibilityDomain.extrema(foreground, foregroundHue, requirement);
+    const backgroundExtrema = ContrastFeasibilityDomain.extrema(background, backgroundHue, requirement);
     const foregroundCoordinates = [foregroundExtrema.minimum, foregroundExtrema.maximum];
     const backgroundCoordinates = [backgroundExtrema.minimum, backgroundExtrema.maximum];
     let actual = -Infinity;
@@ -238,28 +663,30 @@ class ContrastFeasibilityDomain {
       'actual': actual,
       'background': selectedBackground,
       'foreground': selectedForeground,
-      'hue': hue
+      'hue': sourceHue
     };
   }
 
-  private static evaluateHues(
+
+  private static representativeEvaluations(
     foreground: RoleDomainInterface,
     background: RoleDomainInterface,
     requirement: ContrastPolicy.RequirementInterface
   ): readonly HueEvaluationInterface[] {
-    if (foreground.hue !== undefined && background.hue !== undefined) {
-      const result = [ContrastFeasibilityDomain.evaluateHue(foreground, background, 0, requirement)];
-      return result;
-    }
-    const result: HueEvaluationInterface[] = [];
-    ContrastFeasibilityDomain.subdivideHue(
-      foreground,
-      background,
-      requirement,
-      0,
-      360,
-      result
-    );
+    const hues = [0, 120, 240, 360] as const;
+    const result = hues.map((sourceHue): HueEvaluationInterface => {
+      const foregroundHue = foreground.relation?.resolve(sourceHue) ?? sourceHue;
+      const backgroundHue = background.relation?.resolve(sourceHue) ?? sourceHue;
+      const evaluation = ContrastFeasibilityDomain.evaluateHue(
+        foreground,
+        background,
+        foregroundHue,
+        backgroundHue,
+        sourceHue,
+        requirement
+      );
+      return evaluation;
+    });
     return result;
   }
 
@@ -457,25 +884,13 @@ class ContrastFeasibilityDomain {
     return result;
   }
 
-  private static subdivideHue(
+  private static evaluateHues(
     foreground: RoleDomainInterface,
     background: RoleDomainInterface,
-    requirement: ContrastPolicy.RequirementInterface,
-    start: number,
-    end: number,
-    result: HueEvaluationInterface[]
-  ): void {
-    const width = end - start;
-    if (width <= ContrastFeasibilityDomain.#HUE_PRECISION) {
-      result.push(ContrastFeasibilityDomain.evaluateHue(foreground, background, start, requirement));
-      if (end === 360) {
-        result.push(ContrastFeasibilityDomain.evaluateHue(foreground, background, end, requirement));
-      }
-      return;
-    }
-    const midpoint = (start + end) / 2;
-    ContrastFeasibilityDomain.subdivideHue(foreground, background, requirement, start, midpoint, result);
-    ContrastFeasibilityDomain.subdivideHue(foreground, background, requirement, midpoint, end, result);
+    requirement: ContrastPolicy.RequirementInterface
+  ): readonly HueEvaluationInterface[] {
+    const result = [ContrastFeasibilityDomain.evaluateHue(foreground, background, 0, 0, 0, requirement)];
+    return result;
   }
 }
 
@@ -511,6 +926,8 @@ export class ContrastFeasibility {
       readonly 'roles'?: Readonly<Record<string, ColorRecordEntity.Type>>;
     }
   ): ReadonlyMap<string, RoleDomainInterface> {
+    const roles = ContrastFeasibility.roleIndex(schema);
+    const relations = ContrastFeasibility.hueRelations(roles);
     const result = new Map<string, RoleDomainInterface>();
     for (let index = 0; index < schema.roles.length; index += 1) {
       const role = schema.roles[index];
@@ -520,11 +937,80 @@ export class ContrastFeasibility {
       const resolved = options?.roles?.[role.name];
       const fixed = options?.provenance?.get(role.name)?.origin === 'stated' ? resolved : undefined;
       const resolvedHue = resolved?.oklch.h;
+      const relation = resolvedHue === undefined && role.derivedFrom !== undefined
+        ? relations.get(role.name)
+        : undefined;
       const domainOptions: RoleDomainOptionsInterface = {
         ...(fixed === undefined ? {} : { 'fixedRecord': fixed }),
+        ...(relation === undefined ? {} : { 'relation': relation }),
         ...(resolvedHue === undefined ? {} : { 'resolvedHue': resolvedHue })
       };
       result.set(role.name, ContrastFeasibilityDomain.domain(role, domainOptions));
+    }
+    return result;
+  }
+
+  private static roleIndex(
+    schema: RoleSchemaEntity.Type
+  ): ReadonlyMap<string, RoleSchemaEntity.Type['roles'][number]> {
+    const result = new Map<string, RoleSchemaEntity.Type['roles'][number]>();
+    for (let index = 0; index < schema.roles.length; index += 1) {
+      const role = schema.roles[index];
+      if (role !== undefined) {
+        result.set(role.name, role);
+      }
+    }
+    return result;
+  }
+
+  private static hueRelations(
+    roles: ReadonlyMap<string, RoleSchemaEntity.Type['roles'][number]>
+  ): ReadonlyMap<string, HueRelationInterface> {
+    const resolving = new Set<string>();
+    const result = new Map<string, HueRelationInterface>();
+    const resolve = (role: RoleSchemaEntity.Type['roles'][number]): HueRelationInterface | undefined => {
+      const existing = result.get(role.name);
+      if (existing !== undefined) {
+        return existing;
+      }
+      if (resolving.has(role.name)) {
+        return undefined;
+      }
+      resolving.add(role.name);
+      const source = role.derivedFrom === undefined || role.derivedFrom.length === 0
+        ? undefined
+        : roles.get(role.derivedFrom);
+      const sourceRelation = source === undefined ? undefined : resolve(source);
+      const isDerived = role.derivedFrom !== undefined && role.derivedFrom.length > 0;
+      if (isDerived && sourceRelation === undefined) {
+        resolving.delete(role.name);
+        return undefined;
+      }
+      const root = sourceRelation?.root ?? role.name;
+      const sourceOffset = sourceRelation?.affineOffset;
+      const ownOffset = role.hueOffset ?? 0;
+      const affineOffset = role.hue === undefined && (sourceRelation === undefined || sourceOffset !== undefined)
+        ? ((sourceOffset ?? 0) + ownOffset) % 360
+        : undefined;
+      const relation: HueRelationInterface = {
+        ...(affineOffset === undefined ? {} : { 'affineOffset': affineOffset }),
+        'resolve': (rootHue: number): number => {
+          const sourceHue = sourceRelation === undefined ? rootHue : sourceRelation.resolve(rootHue);
+          if (role.hue !== undefined) {
+            const result = RoleGeometry.hueTowards(sourceHue, role.hue, role.hueClamp ?? RoleGeometry.DEFAULT_HUE_CLAMP);
+            return result;
+          }
+          const result = ((sourceHue + ownOffset) % 360 + 360) % 360;
+          return result;
+        },
+        'root': root
+      };
+      resolving.delete(role.name);
+      result.set(role.name, relation);
+      return relation;
+    };
+    for (const role of roles.values()) {
+      resolve(role);
     }
     return result;
   }

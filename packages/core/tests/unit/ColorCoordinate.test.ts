@@ -64,7 +64,6 @@ void test('ColorCoordinate preserves gamut mapping, RGB channels, and factory se
   }
 });
 
-
 void test('ColorCoordinate preserves exact stored RGB for record-backed scoring', () => {
   const records = ['#000000', '#5e35b1', '#ffffff'];
   for (let index = 0; index < records.length; index += 1) {

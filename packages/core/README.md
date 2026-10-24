@@ -6,7 +6,7 @@ The engine. Composition spine + canonical models for the iridis chromatic pipeli
 
 - `Engine` with `TaskRegistry`
 - Canonical palette composition: `intake:* / clamp:* / resolve:roles / expand:family / enforce:compliance / derive:variant / report:compliance / emit:json`; the contrast plugin supplies `enforce:compliance` and `report:compliance`, while core exports the models and policy primitives they consume
-- 33 math primitives (OKLCH ↔ RGB ↔ HSL ↔ Hex, sRGB ↔ linear ↔ Display-P3, gamut-mapping, mix/lighten/darken/saturate/desaturate/hueShift, WCAG 2.1 + APCA contrast, ΔE2000, `ensureContrast`, median-cut clustering, luminance, contrastText), each exported as a class plus a singleton instance for direct import
+- Math primitives cover OKLCH ↔ RGB ↔ HSL ↔ Hex, sRGB ↔ linear ↔ Display-P3, gamut mapping, mix/lighten/darken/saturate/desaturate/hueShift, WCAG 2.1 + APCA contrast, ΔE2000, `ensureContrast`, clustering, luminance, contrast text, and `HueIntervalBounds` for conservative emitted-sRGB luminance and APCA bounds over hue arcs
 - Models: `ColorRecord`, `PaletteState`, `RoleSchema`, `RuntimeOptions` (typed cross-output toggles)
 
 ## Install
@@ -29,49 +29,49 @@ npm install @studnicky/iridis
 ## Usage
 
 ```ts
-import type { RoleSchemaEntity } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from "@studnicky/iridis";
 
-import { Engine, coreTasks } from '@studnicky/iridis';
+import { Engine, coreTasks } from "@studnicky/iridis";
 
 export function generatePalette(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
   for (const task of coreTasks) engine.tasks.register(task);
 
-  engine.pipeline(['intake:any', 'resolve:roles', 'emit:json']);
+  engine.pipeline(["intake:any", "resolve:roles", "emit:json"]);
 
   const state = engine.run({
-    'bypass':    undefined,
-    'colors':    ['#8B5CF6'],
-    'contrast':  undefined,
-    'emit':      undefined,
-    'maxColors': undefined,
-    'metadata':  undefined,
-    'roles':     roleSchema,
-    'runtime':   {
-      'colorSpace': undefined,
-      'extra':      undefined,
-      'framing':    'dark',
+    bypass: undefined,
+    colors: ["#8B5CF6"],
+    contrast: undefined,
+    emit: undefined,
+    maxColors: undefined,
+    metadata: undefined,
+    roles: roleSchema,
+    runtime: {
+      colorSpace: undefined,
+      extra: undefined,
+      framing: "dark",
     },
   });
 
-  return state.outputs['core:json'];
+  return state.outputs["core:json"];
 }
 ```
 
 Math primitives are direct singleton imports; pull only what you call:
 
 ```ts
-import type { ColorRecordEntity } from '@studnicky/iridis';
+import type { ColorRecordEntity } from "@studnicky/iridis";
 
-import { luminance, contrastWcag21, oklchToRgb } from '@studnicky/iridis';
+import { luminance, contrastWcag21, oklchToRgb } from "@studnicky/iridis";
 
 export function inspectColors(
   record: ColorRecordEntity.Type,
   foreground: ColorRecordEntity.Type,
   background: ColorRecordEntity.Type,
 ) {
-  const lum    = luminance.apply(record);
-  const ratio  = contrastWcag21.apply(foreground, background);
+  const lum = luminance.apply(record);
+  const ratio = contrastWcag21.apply(foreground, background);
   const purple = oklchToRgb.apply(0.62, 0.18, 290);
 
   return { lum, purple, ratio };
