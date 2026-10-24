@@ -17,6 +17,7 @@ export { intakeOklch } from './intake/IntakeOklch.ts';
 export { intakeP3 } from './intake/IntakeP3.ts';
 export { intakeRgb } from './intake/IntakeRgb.ts';
 export { resolveRoles } from './resolve/ResolveRoles.ts';
+export { RoleGeometry } from './RoleGeometry.ts';
 
 import { clampCount } from './clamp/ClampCount.ts';
 import { clampOklch } from './clamp/ClampOklch.ts';
