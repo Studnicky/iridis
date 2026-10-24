@@ -263,17 +263,20 @@ await test('ContrastFeasibility certifies derived hue offsets from their shared 
   });
   const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
   const pair = report.pairs[0];
-  const expected = Math.max(...[0, 120, 240, 360].map((hue): number => {
+  const measured: number[] = [];
+  for (let hue = 0; hue <= 360; hue += 30) {
     const foreground = colorRecordFactory.fromOklch(0.85, 0.2, (hue + 180) % 360);
     const background = colorRecordFactory.fromOklch(0.15, 0.2, hue);
-    const result = contrastWcag21.apply(foreground, background);
-    return result;
-  }));
+    measured.push(contrastWcag21.apply(foreground, background));
+  }
 
   assert.ok(pair !== undefined, 'derived pair receives a feasibility result');
   assert.strictEqual(pair.reachability, 'always-reachable', 'bounded affine arcs certify every root hue');
   assert.strictEqual(pair.sampled, undefined, 'the affine certificate does not depend on sampled evidence');
-  assert.ok(expected >= 1, 'the shared root relation preserves its declared offset at every probe hue');
+  assert.ok(
+    Math.min(...measured) >= 1,
+    'the certificate holds at each coarse independent hue probe through the emitted color records'
+  );
 });
 
 await test('ContrastFeasibility certifies an affine derived hue arc when its gamut bounds clear the requirement', () => {
