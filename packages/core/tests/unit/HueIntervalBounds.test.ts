@@ -35,6 +35,28 @@ void test('HueIntervalBounds contains gamut-mapped luminance throughout determin
   }
 });
 
+void test('HueIntervalBounds contains deterministic randomized and split wrap-around arcs', () => {
+  let state = 0x6d2b79f5;
+  const next = (): number => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    const result = state / 0x1_0000_0000;
+    return result;
+  };
+  for (let index = 0; index < 64; index += 1) {
+    const lightness = next();
+    const chroma = next() * 0.5;
+    const start = next() * 360;
+    const span = 5 + next() * 355;
+    const end = start + span;
+    if (end <= 360) {
+      HueIntervalBoundsFixture.verify(lightness, chroma, start, end);
+      continue;
+    }
+    HueIntervalBoundsFixture.verify(lightness, chroma, start, 360);
+    HueIntervalBoundsFixture.verify(lightness, chroma, 0, end - 360);
+  }
+});
+
 void test('HueIntervalBounds rejects wrapping arcs so callers split at the hue boundary', () => {
   assert.throws(() => { HueIntervalBounds.fixedArc(0.5, 0.2, 350, 10); });
 });
