@@ -10,7 +10,7 @@ import {
 import { ContrastFeasibility } from '@studnicky/iridis-contrast';
 import { ContrastPolicy, RoleGeometry } from '@studnicky/iridis/tasks';
 
-import { roleSchemaByName } from '../app/theme/RoleSchemaByName.ts';
+import { roleSchemaByName } from '../../../site/app/theme/RoleSchemaByName.ts';
 
 type Role = RoleSchemaEntity.Type['roles'][number];
 
