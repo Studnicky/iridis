@@ -102,6 +102,7 @@ class SweepCases {
                 'framing': framing,
                 'options': ContrastConfigOptionsEntity.create({
                   'cvdMode': cvdMode,
+                  'enableStrictCompliance': false,
                   'nonMandatoryLevel': nonMandatoryLevel,
                   'strictness': strictness
                 }),
@@ -312,6 +313,7 @@ class DisplacementSamples {
 
 class SweepReport {
   static create(cases: readonly CaseInterface[]): object {
+    const chunkStarted = performance.now();
     const seedFaithful = new DisplacementSamples();
     const relationshipHued = new DisplacementSamples();
     const fixedHueRoles = new Set<string>();
@@ -320,6 +322,7 @@ class SweepReport {
     let compliantCases = 0;
     let movedRoles = 0;
     let maximumCandidateScores = 0;
+    let maximumCaseElapsedMs = 0;
     let maximumWeightedUnits = 0;
     let runtimeMs = 0;
     let weightedUnits = 0;
@@ -377,6 +380,7 @@ class SweepReport {
       maximumWeightedUnits = Math.max(maximumWeightedUnits, run.budget.weightedUnits);
       weightedUnits += run.budget.weightedUnits;
       runtimeMs += run.elapsedMs;
+      maximumCaseElapsedMs = Math.max(maximumCaseElapsedMs, run.elapsedMs);
       const references = SeedReference.resolve(run.authored, benchmarkCase.seeds);
       for (const [roleName, resolved] of Object.entries(run.resolved.roles)) {
         const reference = references.get(roleName);
@@ -397,6 +401,8 @@ class SweepReport {
     }
     return {
       'budgetUsage': { 'candidateScores': candidateScores, 'weightedUnits': weightedUnits },
+      'chunkElapsedMs': performance.now() - chunkStarted,
+      'maximumCaseElapsedMs': maximumCaseElapsedMs,
       'maximumBudgetUsage': {
         'candidateScores': maximumCandidateScores,
         'weightedUnits': maximumWeightedUnits
