@@ -439,7 +439,6 @@ await test('Vue Capacitor JSON artifacts align with the TypeScript schema and ex
   const cvd = CvdResultSetEntity.intake(state.metadata['contrast:cvd']);
 
   assert.equal(compliance.compliant, true);
-  assert.equal(compliance.cvdCompliant, true);
   assert.equal(compliance.pairs.length > 0, true);
   assert.equal(cvd.warnings.length, 0);
   const everyCorrectionCleared = cvd.corrections.every((correction) => {
@@ -495,7 +494,6 @@ await test('Vue Capacitor schema exposes complete role shapes and produces valid
   assert.equal(typeof output.statusBar.overlay, 'boolean');
   assert.equal(output.statusBar.style === 'DARK' || output.statusBar.style === 'LIGHT', true);
   assert.equal(output.compliance.compliant, true);
-  assert.equal(output.compliance.cvdCompliant, true);
   assert.equal(output.wcagPairs.length, categoryW3cRoleSchema.contrastPairs?.length);
   const wcagPasses = output.wcagPairs.every((pair) => {
     const result = pair.actual >= pair.required;

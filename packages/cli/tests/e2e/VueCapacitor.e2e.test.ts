@@ -89,7 +89,6 @@ await test('Vue Capacitor example admits canonical configuration and contrast me
   const compliance = ComplianceReportEntity.intake(state.metadata['contrast:complianceReport']);
   const cvd = CvdResultSetEntity.intake(state.metadata['contrast:cvd']);
   assert.equal(compliance.compliant, true);
-  assert.equal(compliance.cvdCompliant, true);
   assert.equal(compliance.pairs.length > 0, true);
   assert.equal(cvd.warnings.length, 0);
   const correctionsAreComplete = cvd.corrections.every((correction) => {

@@ -1,3 +1,5 @@
+import type { ComplianceReportEntity } from '@studnicky/iridis-contrast';
+
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import { test } from 'node:test';
@@ -75,11 +77,23 @@ class PaletteTraffic {
   }
 }
 
+class CvdConstraints {
+  static count(report: ComplianceReportEntity.Type | undefined): number {
+    let matches = 0;
+    const pairs = report?.problemPairs ?? [];
+    for (let index = 0; index < pairs.length; index += 1) {
+      const constraints: readonly string[] = pairs[index]?.constraints ?? [];
+      if (constraints.includes('cvd-floor') || constraints.includes('cvd-drop')) {matches += 1;}
+    }
+    return matches;
+  }
+}
+
 class PairRequirements {
-  static count(pairs: readonly { readonly 'requiredTrichromat': number }[], requirement: number): number {
+  static count(pairs: readonly { readonly 'required': number }[], requirement: number): number {
     let matches = 0;
     for (let index = 0; index < pairs.length; index += 1) {
-      if (pairs[index]?.requiredTrichromat === requirement) {matches += 1;}
+      if (pairs[index]?.required === requirement) {matches += 1;}
     }
     return matches;
   }
@@ -262,7 +276,17 @@ await test('the cvdMode and nonMandatoryLevel events reach the worker request an
   assert.equal(enforced.cvdMode, 'enforce');
   assert.equal(enforced.nonMandatoryLevel, 'AAA');
   assert.ok(state.accessibilityBlockers.value.pairs.length > 0, 'enforce surfaces unresolved CVD evidence as blockers');
-  assert.equal(state.paletteRevision.value, revisionBefore + 2, 'a palette with blockers is withheld, so the revision stays');
+  assert.equal(state.paletteRevision.value, revisionBefore + 3, 'without strict compliance the best-effort palette is admitted');
+
+  const strictRevision = state.paletteRevision.value;
+  const strict = await Session.resolveAfter(state, IridisUiEvent.enableStrictCompliance(), () => {
+    const applied = state.enableStrictCompliance.value;
+    return applied;
+  });
+  assert.equal(strict.enableStrictCompliance, true);
+  assert.ok(state.accessibilityBlockers.value.pairs.length > 0, 'a withheld palette still reports its problem pairs');
+  assert.equal(state.accessibilityBlockers.value.withheld, true);
+  assert.equal(state.paletteRevision.value, strictRevision, 'a withheld palette keeps the last admitted revision');
 });
 
 await test('the engine resolves CVD evidence according to the selected cvdMode', () => {
@@ -271,8 +295,8 @@ await test('the engine resolves CVD evidence according to the selected cvdMode',
   const nudge = PaletteResolve.run(PaletteResolveRequestEntity.create({ ...base, 'cvdMode': 'nudge' }));
   const enforce = PaletteResolve.run(PaletteResolveRequestEntity.create({ ...base, 'cvdMode': 'enforce' }));
 
-  assert.equal(warn.compliance?.cvdCompliant, true);
-  assert.equal(nudge.compliance?.cvdCompliant, true);
-  assert.equal(enforce.compliance?.cvdCompliant, false, 'enforce reports unresolved CVD evidence as non-compliant');
+  assert.equal(CvdConstraints.count(warn.compliance), 0);
+  assert.equal(CvdConstraints.count(nudge.compliance), 0);
+  assert.equal(CvdConstraints.count(enforce.compliance) > 0, true, 'enforce reports unresolved CVD evidence as a constraint');
   assert.deepEqual(warn.roles, nudge.roles);
 });

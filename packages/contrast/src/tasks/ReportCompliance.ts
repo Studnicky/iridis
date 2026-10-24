@@ -15,7 +15,6 @@ import {
 import type { CvdPairWarningEntity } from '../entities/CvdPairWarningEntity.ts';
 
 import { CvdFailurePolicy } from '../CvdFailurePolicy.ts';
-import { ComplianceBlockedPairEntity } from '../entities/ComplianceBlockedPairEntity.ts';
 import { CompliancePairEntity } from '../entities/CompliancePairEntity.ts';
 import { ComplianceReportEntity } from '../entities/ComplianceReportEntity.ts';
 import { CvdEvalEntity } from '../entities/CvdEvalEntity.ts';
@@ -37,7 +36,7 @@ class ComplianceSnapshot {
       if (foreground === undefined || background === undefined) {
         return false;
       }
-      const actual = report.selectedAlgorithm === 'apca'
+      const actual = report.selected.algorithm === 'apca'
         ? Math.abs(contrastApca.apply(foreground, background))
         : contrastWcag21.apply(foreground, background);
       if (Math.abs(actual - pair.actual) > 1e-12) {
@@ -49,42 +48,6 @@ class ComplianceSnapshot {
 }
 
 class ComplianceSerialization {
-  static blockedPair(
-    pair: ContrastReportEntryEntity.Type,
-    target: string
-  ): ComplianceBlockedPairEntity.Type | undefined {
-    if (pair.passed) {
-      return undefined;
-    }
-    const result = ComplianceBlockedPairEntity.intake({
-      'actualTrichromat': pair.actual,
-      'background': pair.background,
-      'foreground': pair.foreground,
-      'reason': pair.disposition === 'blocked-stated' ? 'stated-both' : 'solver-exhausted',
-      'requiredTrichromat': pair.required,
-      'target': target
-    });
-    return result;
-  }
-
-  static pair(
-    pair: ContrastReportEntryEntity.Type,
-    warnings: readonly CvdPairWarningEntity.Type[],
-    failurePolicy: CvdFailurePolicy
-  ): CompliancePairEntity.Type {
-    const result = CompliancePairEntity.intake({
-      'actualTrichromat': pair.actual,
-      ...(pair.adjustedRole === undefined ? {} : { 'adjustedRole': pair.adjustedRole }),
-      'background': pair.background,
-      'cvd': ComplianceSerialization.outcomes(pair, warnings, failurePolicy),
-      'disposition': pair.disposition,
-      'foreground': pair.foreground,
-      'passed': pair.passed,
-      'requiredTrichromat': pair.required
-    });
-    return result;
-  }
-
   static report(state: PaletteStateInterface): ComplianceReportEntity.Type | undefined {
     const diagnostic = Metadata.contrastReport(state.metadata);
     if (diagnostic === undefined) {
@@ -96,141 +59,183 @@ class ComplianceSerialization {
       'warnings': []
     });
     const failurePolicy = CvdFailurePolicy.resolve(state.input.contrast);
-    const blockedPairs = new Map<string, ComplianceBlockedPairEntity.Type>();
-    const serialization = ComplianceSerialization.pairs(
-      diagnostic,
+    const blockers = ComplianceSerialization.blockers(cvd.blocked);
+    const diagnosticPairs = diagnostic.pairs.map((pair) => {
+      const result = ContrastReportEntryEntity.intake(pair);
+      return result;
+    });
+    const pairs = ComplianceSerialization.pairs(
+      diagnosticPairs,
       cvd.warnings,
+      cvd.corrections,
       failurePolicy,
-      blockedPairs
+      blockers
     );
-    ComplianceSerialization.applyCvdBlockers(
-      cvd.blocked,
-      serialization.diagnostics,
-      diagnostic.target,
-      blockedPairs
-    );
-    const cvdCompliant = serialization.cvdFailureCount === 0;
-    const compliant = diagnostic.compliant && cvdCompliant && blockedPairs.size === 0;
-    if (!compliant && blockedPairs.size === 0) {
-      throw new TypeError('Terminal compliance failure has no blocked pair');
-    }
+    pairs.sort(ComplianceSerialization.comparePairs);
+    const problemPairs = pairs.filter((pair) => {
+      const result = !pair.passed;
+      return result;
+    });
+    const compliant = problemPairs.length === 0;
     const result = ComplianceReportEntity.intake({
-      'blockedPairs': Array.from(blockedPairs.values()),
       'compliant': compliant,
-      'cvdCompliant': cvdCompliant,
-      'pairs': serialization.pairs,
-      'selected': {
-        'algorithm': diagnostic.selectedAlgorithm,
-        'level': diagnostic.target
-      }
+      'disposition': compliant ? 'resolved' : 'best-effort',
+      'pairs': pairs,
+      'problemPairs': problemPairs,
+      'selected': diagnostic.selected
     });
     return result;
   }
 
-  private static pairs(
-    diagnostic: NonNullable<ReturnType<typeof Metadata.contrastReport>>,
-    warnings: readonly CvdPairWarningEntity.Type[],
-    failurePolicy: CvdFailurePolicy,
-    blockedPairs: Map<string, ComplianceBlockedPairEntity.Type>
-  ): {
-    readonly 'cvdFailureCount': number;
-    readonly 'diagnostics': ReadonlyMap<string, ContrastReportEntryEntity.Type>;
-    readonly 'pairs': readonly CompliancePairEntity.Type[];
-  } {
-    const diagnostics = new Map<string, ContrastReportEntryEntity.Type>();
-    const pairs: CompliancePairEntity.Type[] = [];
-    let cvdFailureCount = 0;
-    for (let index = 0; index < diagnostic.pairs.length; index += 1) {
-      const diagnosticPair = diagnostic.pairs[index];
-      if (diagnosticPair === undefined) {
-        continue;
-      }
-      const pair = ContrastReportEntryEntity.intake(diagnosticPair);
-      const key = ComplianceSerialization.key(pair.foreground, pair.background);
-      diagnostics.set(key, pair);
-      const serialized = ComplianceSerialization.pair(pair, warnings, failurePolicy);
-      pairs.push(serialized);
-      cvdFailureCount += ComplianceSerialization.failureCount(serialized.cvd);
-      const blocked = ComplianceSerialization.blockedPair(pair, diagnostic.target);
-      if (blocked !== undefined) {
-        blockedPairs.set(key, blocked);
-      }
-    }
-    const result = { 'cvdFailureCount': cvdFailureCount, 'diagnostics': diagnostics, 'pairs': pairs };
-    return result;
-  }
-
-  private static applyCvdBlockers(
-    cvdBlockedPairs: readonly (CvdResultSetEntity.Type['blocked'][number])[],
-    diagnostics: ReadonlyMap<string, ContrastReportEntryEntity.Type>,
-    target: string,
-    blockedPairs: Map<string, ComplianceBlockedPairEntity.Type>
-  ): void {
-    for (let index = 0; index < cvdBlockedPairs.length; index += 1) {
-      const blocked = cvdBlockedPairs[index];
-      if (blocked === undefined) {
+  private static blockers(
+    blockedPairs: readonly CvdResultSetEntity.Type['blocked'][number][]
+  ): ReadonlyMap<string, ReadonlySet<CompliancePairEntity.Type['constraints'][number]>> {
+    const result = new Map<
+      string,
+      Set<CompliancePairEntity.Type['constraints'][number]>
+    >();
+    for (let index = 0; index < blockedPairs.length; index += 1) {
+      const blocked = blockedPairs[index];
+      if (blocked?.reason !== 'stated-both') {
         continue;
       }
       const key = ComplianceSerialization.key(blocked.foreground, blocked.background);
-      const pair = diagnostics.get(key);
-      if (pair === undefined) {
-        throw new TypeError('CVD blocked pair is absent from the selected contrast policy');
-      }
-      blockedPairs.set(key, ComplianceBlockedPairEntity.intake({
-        'actualTrichromat': pair.actual,
-        'background': pair.background,
-        'foreground': pair.foreground,
-        'reason': blocked.reason,
-        'requiredTrichromat': pair.required,
-        'target': target
-      }));
+      const constraints = result.get(key) ?? new Set<CompliancePairEntity.Type['constraints'][number]>();
+      constraints.add('pin');
+      result.set(key, constraints);
     }
-  }
-
-  private static failureCount(
-    outcomes: readonly CvdEvalEntity.Type[]
-  ): number {
-    let failureCount = 0;
-    for (let index = 0; index < outcomes.length; index += 1) {
-      if (outcomes[index]?.fail === true) {
-        failureCount += 1;
-      }
-    }
-    return failureCount;
-  }
-
-  private static key(foreground: string, background: string): string {
-    const result = `${foreground}\u0000${background}`;
     return result;
   }
 
-  private static outcomes(
+  private static comparePairs(
+    left: CompliancePairEntity.Type,
+    right: CompliancePairEntity.Type
+  ): number {
+    const foreground = left.foreground.localeCompare(right.foreground);
+    const result = foreground === 0
+      ? left.background.localeCompare(right.background)
+      : foreground;
+    return result;
+  }
+
+  private static cvdConstraints(
     pair: ContrastReportEntryEntity.Type,
     warnings: readonly CvdPairWarningEntity.Type[],
     failurePolicy: CvdFailurePolicy
-  ): CvdEvalEntity.Type[] {
-    const outcomes: CvdEvalEntity.Type[] = [];
+  ): ReadonlySet<CompliancePairEntity.Type['constraints'][number]> {
+    const result = new Set<CompliancePairEntity.Type['constraints'][number]>();
     for (let index = 0; index < warnings.length; index += 1) {
       const warning = warnings[index];
-      if (warning?.foreground !== pair.foreground || warning?.background !== pair.background) {
+      if (warning?.foreground !== pair.foreground || warning.background !== pair.background) {
         continue;
       }
+      const belowFloor = warning.simulatedLuminanceContrast < warning.minimumSimulatedContrast;
+      const exceedsDrop = Math.abs(warning.drop) > warning.dropThreshold;
       const evidence = CvdEvalEntity.intake({
-        'belowFloor': warning.simulatedLuminanceContrast < warning.minimumSimulatedContrast,
+        'belowFloor': belowFloor,
         'cvdType': warning.cvdType,
         'drop': warning.drop,
-        'exceedsDrop': Math.abs(warning.drop) > warning.dropThreshold,
+        'exceedsDrop': exceedsDrop,
         'fail': false,
         'originalContrast': warning.originalLuminanceContrast,
         'simContrast': warning.simulatedLuminanceContrast
       });
-      const outcome = CvdEvalEntity.intake({
-        ...evidence,
-        'fail': failurePolicy.blocks(evidence)
-      });
-      outcomes.push(outcome);
+      if (belowFloor && failurePolicy.blocks(evidence)) {
+        result.add('cvd-floor');
+      }
+      if (exceedsDrop && failurePolicy.blocks(evidence)) {
+        result.add('cvd-drop');
+      }
     }
-    return outcomes;
+    return result;
+  }
+
+  private static pairs(
+    diagnostics: readonly ContrastReportEntryEntity.Type[],
+    warnings: readonly CvdPairWarningEntity.Type[],
+    corrections: CvdResultSetEntity.Type['corrections'],
+    failurePolicy: CvdFailurePolicy,
+    blockers: ReadonlyMap<string, ReadonlySet<CompliancePairEntity.Type['constraints'][number]>>
+  ): CompliancePairEntity.Type[] {
+    const pairs: CompliancePairEntity.Type[] = [];
+    for (let index = 0; index < diagnostics.length; index += 1) {
+      const pair = diagnostics[index];
+      if (pair === undefined) {
+        continue;
+      }
+      pairs.push(ComplianceSerialization.pair(
+        pair,
+        warnings,
+        corrections,
+        failurePolicy,
+        blockers
+      ));
+    }
+    return pairs;
+  }
+
+  private static pair(
+    pair: ContrastReportEntryEntity.Type,
+    warnings: readonly CvdPairWarningEntity.Type[],
+    corrections: CvdResultSetEntity.Type['corrections'],
+    failurePolicy: CvdFailurePolicy,
+    blockers: ReadonlyMap<string, ReadonlySet<CompliancePairEntity.Type['constraints'][number]>>
+  ): CompliancePairEntity.Type {
+    const constraints = new Set<CompliancePairEntity.Type['constraints'][number]>(pair.constraints);
+    const cvdConstraints = ComplianceSerialization.cvdConstraints(pair, warnings, failurePolicy);
+    for (const constraint of cvdConstraints) {
+      constraints.add(constraint);
+    }
+    const blockerConstraints = blockers.get(ComplianceSerialization.key(pair.foreground, pair.background));
+    if (blockerConstraints !== undefined) {
+      for (const constraint of blockerConstraints) {
+        constraints.add(constraint);
+      }
+    }
+    const passed = pair.passed && constraints.size === 0;
+    const result = CompliancePairEntity.intake({
+      'actual': pair.actual,
+      'adjustedRoles': ComplianceSerialization.adjustedRoles(pair, corrections),
+      'background': pair.background,
+      'constraints': passed
+        ? []
+        : Array.from(constraints).sort((left, right) => {
+          const result = left.localeCompare(right);
+          return result;
+        }),
+      'foreground': pair.foreground,
+      'passed': passed,
+      'required': pair.required,
+      'shortfall': pair.shortfall
+    });
+    return result;
+  }
+
+  private static adjustedRoles(
+    pair: ContrastReportEntryEntity.Type,
+    corrections: CvdResultSetEntity.Type['corrections']
+  ): string[] {
+    const result = [...pair.adjustedRoles];
+    const names = new Set(result);
+    for (let index = 0; index < corrections.length; index += 1) {
+      const correction = corrections[index];
+      if (correction?.foreground !== pair.foreground || correction.background !== pair.background) {
+        continue;
+      }
+      for (let roleIndex = 0; roleIndex < correction.adjustedRoles.length; roleIndex += 1) {
+        const role = correction.adjustedRoles[roleIndex];
+        if (role !== undefined && !names.has(role)) {
+          names.add(role);
+          result.push(role);
+        }
+      }
+    }
+    return result;
+  }
+
+  private static key(foreground: string, background: string): string {
+    const result = foreground + String.fromCharCode(0) + background;
+    return result;
   }
 }
 

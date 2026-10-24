@@ -5,28 +5,16 @@ import { buildRefinePaletteSeedGridModel } from '../app/components/content/refin
 import { PaletteAdmission } from '../app/composables/paletteAdmission.ts';
 import { BlockerSetFixture } from './fixtures/BlockerSetFixture.ts';
 
-await test('PaletteAdmission admits a compliant palette after one is committed', () => {
-  const admission = new PaletteAdmission();
-  assert.equal(admission.admit(BlockerSetFixture.compliant), true);
-  assert.equal(admission.admit(BlockerSetFixture.compliant), true);
+await test('PaletteAdmission admits a compliant palette', () => {
+  assert.equal(PaletteAdmission.admit(BlockerSetFixture.compliant), true);
 });
 
-await test('PaletteAdmission rejects a noncompliant palette after one is committed', () => {
-  const admission = new PaletteAdmission();
-  assert.equal(admission.admit(BlockerSetFixture.compliant), true);
-  assert.equal(admission.admit(BlockerSetFixture.blocked), false);
+await test('PaletteAdmission admits a best-effort palette that has problem pairs but was not withheld', () => {
+  assert.equal(PaletteAdmission.admit(BlockerSetFixture.blocked), true);
 });
 
-await test('PaletteAdmission admits a noncompliant palette when nothing is committed', () => {
-  const admission = new PaletteAdmission();
-  assert.equal(admission.admit(BlockerSetFixture.blocked), true);
-});
-
-await test('PaletteAdmission rejects a noncompliant palette after a noncompliant first commit', () => {
-  const admission = new PaletteAdmission();
-  assert.equal(admission.admit(BlockerSetFixture.blocked), true);
-  assert.equal(admission.admit(BlockerSetFixture.blocked), false);
-  assert.equal(admission.admit(BlockerSetFixture.compliant), true);
+await test('PaletteAdmission rejects a palette the engine withheld', () => {
+  assert.equal(PaletteAdmission.admit(BlockerSetFixture.withheld), false);
 });
 
 await test('buildRefinePaletteSeedGridModel marks only rejected pins pending', () => {

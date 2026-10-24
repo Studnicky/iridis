@@ -37,7 +37,7 @@ class RoleSchemaFeasibility {
           const standard = strictness === 1 ? 'AAA' : 'APCA';
           const label = `${schemaName}/${framing}/${standard}`;
           assert.equal(report.compliant, true, `${label} is compliant`);
-          assert.deepEqual(report.blockedPairs, [], `${label} has no blocked pairs`);
+          assert.deepEqual(report.problemPairs, [], `${label} has no problem pairs`);
           RoleSchemaFeasibility.assertPairs(report, label);
           RoleSchemaFeasibility.assertRanges(schema, state, label);
         }
@@ -54,7 +54,7 @@ class RoleSchemaFeasibility {
       const pairLabel = `${label} ${pair.foreground}/${pair.background}`;
       assert.equal(pair.passed, true, `${pairLabel} passes`);
       assert.equal(
-        pair.actualTrichromat + RoleSchemaFeasibility.tolerance >= pair.requiredTrichromat,
+        pair.actual + RoleSchemaFeasibility.tolerance >= pair.required,
         true,
         `${pairLabel} meets its selected target`
       );
@@ -92,7 +92,7 @@ class RoleSchemaFeasibility {
     engine.pipeline(COLOR_PIPELINE);
     const result = engine.run(InputEntity.create({
       'colors': [SeedInputEntity.intake('#000000'), SeedInputEntity.intake('#ffffff')],
-      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': strictness })),
+      'contrast': ContrastConfigFor.forOptions(ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': strictness })),
       'metadata': {
         'core:variantConfig': JsonValue.from(VARIANT_CONFIG),
         'derivation:config': JsonValue.from(DerivationConfigEntity.defaultValue),

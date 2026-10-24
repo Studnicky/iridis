@@ -194,7 +194,8 @@ await test('Pipeline composition makes a second contrast enforcement a no-op', (
   const lastEntry = report.pairs.at(-1);
   assert.ok(lastEntry !== undefined);
   const entry = ContrastReportEntryEntity.intake(lastEntry);
-  assert.strictEqual(entry.disposition, 'not-needed');
+  assert.strictEqual(entry.passed, true);
+  assert.deepStrictEqual(entry.constraints, []);
 });
 
 await test('Pipeline composition handles empty and absent role schemas', () => {

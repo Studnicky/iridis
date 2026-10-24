@@ -1,13 +1,16 @@
-import type { ComplianceBlockedPairEntity } from '@studnicky/iridis-contrast';
+import type { CompliancePairEntity } from '@studnicky/iridis-contrast';
 import type { JSONSchema7Type } from 'json-schema';
 
 import { ComplianceReportEntity } from '@studnicky/iridis-contrast';
 
 class BlockedPairView {
-  private static readonly reasonSuffixes: ReadonlyMap<ComplianceBlockedPairEntity.Type['reason'], string> = new Map([
-    ['relation-tolerance', ' (relation tolerance)'],
-    ['solver-exhausted', ' (search exhausted)'],
-    ['stated-both', ' (both pinned)']
+  private static readonly constraintLabels: ReadonlyMap<CompliancePairEntity.Type['constraints'][number], string> = new Map([
+    ['cvd-drop', 'colour-vision drop'],
+    ['cvd-floor', 'colour-vision floor'],
+    ['gamut', 'gamut'],
+    ['hue-relationship', 'hue relationship'],
+    ['pin', 'pinned'],
+    ['range', 'role range']
   ]);
 
   public readonly actual: number;
@@ -16,12 +19,16 @@ class BlockedPairView {
   public readonly required: number;
   public readonly suffix: string;
 
-  public constructor(pair: ComplianceBlockedPairEntity.Type) {
-    this.actual = pair.actualTrichromat;
+  public constructor(pair: CompliancePairEntity.Type) {
+    const labels = pair.constraints.map((constraint) => {
+      const label = BlockedPairView.constraintLabels.get(constraint) ?? constraint;
+      return label;
+    });
+    this.actual = pair.actual;
     this.background = pair.background;
     this.foreground = pair.foreground;
-    this.required = pair.requiredTrichromat;
-    this.suffix = BlockedPairView.reasonSuffixes.get(pair.reason) ?? '';
+    this.required = pair.required;
+    this.suffix = labels.length === 0 ? '' : ` (${labels.join(', ')})`;
   }
 
   public get id(): string {
@@ -30,12 +37,31 @@ class BlockedPairView {
   }
 }
 
+abstract class PaletteDisposition {
+  public abstract get withheld(): boolean;
+}
+
+class AdmittedPaletteDisposition extends PaletteDisposition {
+  public get withheld(): boolean {
+    const result = false;
+    return result;
+  }
+}
+
+class WithheldPaletteDisposition extends PaletteDisposition {
+  public get withheld(): boolean {
+    const result = true;
+    return result;
+  }
+}
+
 class AccessibilityBlockerSet {
   public readonly key: string;
   public readonly pairs: readonly BlockedPairView[];
   public readonly standardLabel: string;
+  readonly #disposition: PaletteDisposition;
 
-  public constructor(pairs: readonly BlockedPairView[], standardLabel: string) {
+  public constructor(pairs: readonly BlockedPairView[], standardLabel: string, disposition: PaletteDisposition) {
     const ids = pairs.map((pair) => {
       return pair.id;
     }).sort((left, right) => {
@@ -45,6 +71,12 @@ class AccessibilityBlockerSet {
     this.key = ids.length === 0 ? '' : [standardLabel, ...ids].join('|');
     this.pairs = pairs;
     this.standardLabel = standardLabel;
+    this.#disposition = disposition;
+  }
+
+  public get withheld(): boolean {
+    const result = this.#disposition.withheld;
+    return result;
   }
 
   public get compliant(): boolean {
@@ -72,14 +104,15 @@ export class AccessibilityBlockers {
   }
 
   public static fromReport(report: JSONSchema7Type | undefined): AccessibilityBlockerSet {
-    let result = new AccessibilityBlockerSet([], '');
+    let result = new AccessibilityBlockerSet([], '', new AdmittedPaletteDisposition());
     if (report !== undefined && ComplianceReportEntity.validate(report)) {
       const { algorithm, level } = report.selected;
       const label = AccessibilityBlockers.standardLabel(algorithm, level);
-      const pairs = report.blockedPairs.map((pair) => {
+      const pairs = report.problemPairs.map((pair) => {
         return new BlockedPairView(pair);
       });
-      result = new AccessibilityBlockerSet(pairs, label);
+      const disposition = report.disposition === 'withheld' ? new WithheldPaletteDisposition() : new AdmittedPaletteDisposition();
+      result = new AccessibilityBlockerSet(pairs, label, disposition);
     }
     return result;
   }

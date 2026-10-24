@@ -11,6 +11,7 @@ class ApcaContrastStandardBehavior extends ContrastStandardBehavior {
     const result = ContrastOptionsEntity.create({
       'algorithm': 'apca',
       'cvdMode': options.cvdMode,
+      'enableStrictCompliance': options.enableStrictCompliance,
       'level': 'Lc',
       'nonMandatoryLevel': options.nonMandatoryLevel
     });
@@ -24,6 +25,7 @@ class WcagAaaContrastStandardBehavior extends ContrastStandardBehavior {
     const result = ContrastOptionsEntity.create({
       'algorithm': 'wcag21',
       'cvdMode': options.cvdMode,
+      'enableStrictCompliance': options.enableStrictCompliance,
       'level': 'AAA',
       'nonMandatoryLevel': options.nonMandatoryLevel
     });
@@ -37,6 +39,7 @@ class WcagAaContrastStandardBehavior extends ContrastStandardBehavior {
     const result = ContrastOptionsEntity.create({
       'algorithm': 'wcag21',
       'cvdMode': options.cvdMode,
+      'enableStrictCompliance': options.enableStrictCompliance,
       'level': 'AA',
       'nonMandatoryLevel': options.nonMandatoryLevel
     });

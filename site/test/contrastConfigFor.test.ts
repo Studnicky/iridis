@@ -26,10 +26,11 @@ await test('forOptions produces the exact entity for every strictness, cvdMode a
       const cvdMode = modes[modeIndex]!;
       for (let levelIndex = 0; levelIndex < levels.length; levelIndex += 1) {
         const nonMandatoryLevel = levels[levelIndex]!;
-        const options = ContrastConfigOptionsEntity.create({ 'cvdMode': cvdMode, 'nonMandatoryLevel': nonMandatoryLevel, 'strictness': standard.strictness });
+        const options = ContrastConfigOptionsEntity.create({ 'cvdMode': cvdMode, 'enableStrictCompliance': false, 'nonMandatoryLevel': nonMandatoryLevel, 'strictness': standard.strictness });
         assert.deepEqual(ContrastConfigFor.forOptions(options), {
           'algorithm': standard.algorithm,
           'cvdMode': cvdMode,
+          'enableStrictCompliance': false,
           'level': standard.level,
           'nonMandatoryLevel': nonMandatoryLevel
         });
@@ -42,6 +43,17 @@ await test('forOptions produces the exact entity for every strictness, cvdMode a
 
 await test('the options entity rejects an unknown cvdMode', () => {
   assert.throws(() => {
-    ContrastConfigOptionsEntity.intake({ 'cvdMode': 'loud', 'nonMandatoryLevel': 'AA', 'strictness': 0 });
+    ContrastConfigOptionsEntity.intake({ 'cvdMode': 'loud', 'enableStrictCompliance': false, 'nonMandatoryLevel': 'AA', 'strictness': 0 });
   });
+});
+
+await test('forOptions forwards enableStrictCompliance for every standard', () => {
+  const enabledStates = [true, false] as const;
+  for (let strictness = 0; strictness <= 2; strictness += 1) {
+    for (let index = 0; index < enabledStates.length; index += 1) {
+      const enabled = enabledStates[index]!;
+      const options = ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': enabled, 'nonMandatoryLevel': 'AA', 'strictness': strictness });
+      assert.equal(ContrastConfigFor.forOptions(options).enableStrictCompliance, enabled);
+    }
+  }
 });

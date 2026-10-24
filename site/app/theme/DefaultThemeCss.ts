@@ -20,6 +20,7 @@ export class DefaultThemeCss {
     'colorSpace': 'srgb',
     'cvdMode': CvdModeEntity.defaultValue,
     'derivationConfig': DerivationConfigEntity.defaultValue,
+    'enableStrictCompliance': false,
     'nonMandatoryLevel': NonMandatoryLevelEntity.defaultValue,
     'schemaName': SchemaNameEntity.defaultValue,
     'seeds': DefaultThemeCss.seeds,

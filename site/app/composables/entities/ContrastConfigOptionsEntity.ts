@@ -12,10 +12,11 @@ export namespace ContrastConfigOptionsEntity {
     'additionalProperties': false,
     'properties': {
       'cvdMode': CvdModeEntity.Schema,
+      'enableStrictCompliance': { 'type': 'boolean' },
       'nonMandatoryLevel': NonMandatoryLevelEntity.Schema,
       'strictness': { 'type': 'integer' }
     },
-    'required': ['cvdMode', 'nonMandatoryLevel', 'strictness'],
+    'required': ['cvdMode', 'enableStrictCompliance', 'nonMandatoryLevel', 'strictness'],
     'type': 'object'
   } as const;
 

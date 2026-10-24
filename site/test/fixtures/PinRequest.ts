@@ -27,16 +27,16 @@ export class PinRequest {
     this.seeds = seeds;
   }
 
-  public static dark(strictness: number, pins: ReadonlyMap<string, string>): PinRequest {
+  public static dark(strictness: number, pins: ReadonlyMap<string, string>, enableStrictCompliance = false): PinRequest {
     const runtime = RuntimeOptionsEntity.create({ 'colorSpace': 'srgb', 'framing': 'dark' });
-    const options = ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': strictness });
+    const options = ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': enableStrictCompliance, 'nonMandatoryLevel': 'AA', 'strictness': strictness });
     const result = new PinRequest(roleSchemaByName['iridis-32'].dark, runtime, options, pins);
     return result;
   }
 
-  public static light(strictness: number, pins: ReadonlyMap<string, string>): PinRequest {
+  public static light(strictness: number, pins: ReadonlyMap<string, string>, enableStrictCompliance = false): PinRequest {
     const runtime = RuntimeOptionsEntity.create({ 'colorSpace': 'srgb', 'framing': 'light' });
-    const options = ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'nonMandatoryLevel': 'AA', 'strictness': strictness });
+    const options = ContrastConfigOptionsEntity.create({ 'cvdMode': 'nudge', 'enableStrictCompliance': enableStrictCompliance, 'nonMandatoryLevel': 'AA', 'strictness': strictness });
     const result = new PinRequest(roleSchemaByName['iridis-32'].light, runtime, options, pins);
     return result;
   }

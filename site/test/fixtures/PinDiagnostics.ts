@@ -9,9 +9,9 @@ export class PinDiagnostics {
       if (pair !== undefined) {
         const measured = run.measure(pair.foreground, pair.background);
         const failure = pair.passed ? '' : ' FAIL';
-        ratios.push(`${pair.foreground}/${pair.background}=${measured.toFixed(2)}/${pair.requiredTrichromat.toFixed(2)}${failure}`);
+        ratios.push(`${pair.foreground}/${pair.background}=${measured.toFixed(2)}/${pair.required.toFixed(2)}${failure}`);
       }
     }
-    context.diagnostic(`${label}: ${run.elapsedMs.toFixed(0)}ms compliant=${String(run.report.compliant)} cvdCompliant=${String(run.report.cvdCompliant)} ${ratios.join(' ')}`);
+    context.diagnostic(`${label}: ${run.elapsedMs.toFixed(0)}ms compliant=${String(run.report.compliant)} disposition=${run.report.disposition} ${ratios.join(' ')}`);
   }
 }

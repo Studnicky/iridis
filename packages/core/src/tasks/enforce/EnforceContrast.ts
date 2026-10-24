@@ -15,8 +15,10 @@ import {
   PaletteRoleState,
   type PaletteStateInterface
 } from '../../interfaces/PaletteStateInterface.ts';
+import { colorRecordFactory } from '../../math/ColorRecordFactory.ts';
 import { contrastApca } from '../../math/ContrastApca.ts';
 import { contrastWcag21 } from '../../math/ContrastWcag21.ts';
+import { deltaE2000 } from '../../math/DeltaE2000.ts';
 import { ensureContrast } from '../../math/EnsureContrast.ts';
 import { Metadata } from '../../types/metadata.ts';
 import { ContrastPolicy } from './ContrastPolicy.ts';
@@ -73,6 +75,13 @@ class ContrastMeasurement {
 class ContrastBand {
   static passes(ratio: number, minimum: number, maximum: number | undefined): boolean {
     const result = ratio >= minimum && (maximum === undefined || ratio <= maximum);
+    return result;
+  }
+
+  static shortfall(ratio: number, minimum: number, maximum: number | undefined): number {
+    const lower = Math.max(0, minimum - ratio);
+    const upper = maximum === undefined ? 0 : Math.max(0, ratio - maximum);
+    const result = Math.max(lower, upper);
     return result;
   }
 }
@@ -198,6 +207,95 @@ class ContrastMover {
   }
 }
 
+class ContrastPreference {
+  static capture(state: PaletteStateInterface): ReadonlyMap<string, ColorRecordEntity.Type> {
+    const colorsByHex = new Map<string, ColorRecordEntity.Type>();
+    for (let index = 0; index < state.colors.length; index += 1) {
+      const color = state.colors[index];
+      if (color !== undefined) {
+        colorsByHex.set(color.hex.toLowerCase(), color);
+      }
+    }
+    const distances = Metadata.roleDistances(state.metadata);
+    const preferences = new Map<string, ColorRecordEntity.Type>();
+    const roleEntries = Object.entries(state.roles);
+    for (let index = 0; index < roleEntries.length; index += 1) {
+      const entry = roleEntries[index];
+      if (entry === undefined) {
+        continue;
+      }
+      const [roleName, record] = entry;
+      const sourceHex = ContrastPreference.nearestSourceHex(distances.get(roleName));
+      const source = sourceHex === undefined ? undefined : colorsByHex.get(sourceHex.toLowerCase());
+      const preference = source === undefined
+        ? record
+        : colorRecordFactory.fromOklch(
+          source.oklch.l,
+          source.oklch.c,
+          record.oklch.h,
+          { 'alpha': record.alpha, 'hints': record.hints, 'origin': record }
+        );
+      preferences.set(roleName, preference);
+    }
+    return preferences;
+  }
+
+  private static nearestSourceHex(distances: ReadonlyMap<string, number> | undefined): string | undefined {
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    let nearestHex: string | undefined;
+    if (distances === undefined) {
+      return nearestHex;
+    }
+    for (const [hex, distance] of distances) {
+      if (distance < nearestDistance ||
+        (distance === nearestDistance && (nearestHex === undefined || hex.localeCompare(nearestHex) < 0))) {
+        nearestDistance = distance;
+        nearestHex = hex;
+      }
+    }
+    return nearestHex;
+  }
+}
+
+class ContrastCoordinateScore {
+  readonly 'failureCount': number;
+  readonly 'maximumShortfall': number;
+  readonly 'totalDisplacement': number;
+  readonly 'totalShortfall': number;
+
+  constructor(
+    failureCount: number,
+    maximumShortfall: number,
+    totalShortfall: number,
+    totalDisplacement: number
+  ) {
+    this.failureCount = failureCount;
+    this.maximumShortfall = maximumShortfall;
+    this.totalShortfall = totalShortfall;
+    this.totalDisplacement = totalDisplacement;
+  }
+
+  static compare(left: ContrastCoordinateScore, right: ContrastCoordinateScore): number {
+    const dimensions: readonly (readonly [number, number])[] = [
+      [left.failureCount, right.failureCount],
+      [left.maximumShortfall, right.maximumShortfall],
+      [left.totalShortfall, right.totalShortfall],
+      [left.totalDisplacement, right.totalDisplacement]
+    ];
+    for (let index = 0; index < dimensions.length; index += 1) {
+      const dimension = dimensions[index];
+      if (dimension === undefined) {
+        continue;
+      }
+      const difference = dimension[0] - dimension[1];
+      if (Math.abs(difference) > 1e-12) {
+        return difference;
+      }
+    }
+    return 0;
+  }
+}
+
 interface ContrastPendingOptionsInterface {
   readonly 'adjustedRole'?: string;
   readonly 'maximumRatio'?: number;
@@ -210,6 +308,7 @@ class ContrastExecution {
     context: PipelineContextInterface,
     requirements: readonly ContrastPolicy.RequirementInterface[]
   ): PendingContrastEntryEntity.Type[] {
+    ContrastExecution.optimizeCoordinates(roles, state, requirements);
     const entries: (PendingContrastEntryEntity.Type | undefined)[] = [];
     const maximumPasses = Math.max(1, requirements.length * 2);
     for (let pass = 0; pass < maximumPasses; pass += 1) {
@@ -247,6 +346,329 @@ class ContrastExecution {
     return result;
   }
 
+  private static optimizeCoordinates(
+    roles: PaletteRoleState,
+    state: PaletteStateInterface,
+    requirements: readonly ContrastPolicy.RequirementInterface[]
+  ): void {
+    const preferences = ContrastPreference.capture(state);
+    const components = ContrastExecution.components(requirements);
+    for (let componentIndex = 0; componentIndex < components.length; componentIndex += 1) {
+      const component = components[componentIndex];
+      if (component !== undefined) {
+        ContrastExecution.optimizeComponent(roles, state, preferences, component);
+      }
+    }
+  }
+
+  private static optimizeComponent(
+    roles: PaletteRoleState,
+    state: PaletteStateInterface,
+    preferences: ReadonlyMap<string, ColorRecordEntity.Type>,
+    component: readonly ContrastPolicy.RequirementInterface[]
+  ): void {
+    const roleNames = ContrastExecution.componentRoleNames(component);
+    const initial = ContrastExecution.componentRecords(roles, roleNames);
+    let best = ContrastExecution.coordinateScore(roles, preferences, component);
+    let bestRecords: ReadonlyMap<string, ColorRecordEntity.Type> = new Map(initial);
+    const maximumPasses = Math.min(12, Math.max(1, roleNames.length * 2));
+    for (let pass = 0; pass < maximumPasses; pass += 1) {
+      const score = ContrastExecution.optimizePass(
+        roles,
+        state,
+        preferences,
+        component,
+        roleNames,
+        best
+      );
+      if (ContrastCoordinateScore.compare(score, best) >= 0) {
+        break;
+      }
+      best = score;
+      bestRecords = ContrastExecution.componentRecords(roles, roleNames);
+    }
+    ContrastExecution.restoreComponent(roles, state, roleNames, initial, bestRecords);
+  }
+
+  private static componentRecords(
+    roles: PaletteRoleState,
+    roleNames: readonly string[]
+  ): ReadonlyMap<string, ColorRecordEntity.Type> {
+    const records = new Map<string, ColorRecordEntity.Type>();
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      if (roleName === undefined) {
+        continue;
+      }
+      const record = roles.get(roleName);
+      if (record !== undefined) {
+        records.set(roleName, record);
+      }
+    }
+    return records;
+  }
+
+  private static optimizePass(
+    roles: PaletteRoleState,
+    state: PaletteStateInterface,
+    preferences: ReadonlyMap<string, ColorRecordEntity.Type>,
+    component: readonly ContrastPolicy.RequirementInterface[],
+    roleNames: readonly string[],
+    initialScore: ContrastCoordinateScore
+  ): ContrastCoordinateScore {
+    let score = initialScore;
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      if (roleName === undefined || ContrastProvenance.isStated(state, roleName)) {
+        continue;
+      }
+      const current = roles.get(roleName);
+      if (current === undefined) {
+        continue;
+      }
+      const selected = ContrastExecution.coordinateCandidate(
+        roles,
+        state,
+        preferences,
+        component,
+        roleName,
+        current,
+        score
+      );
+      if (selected !== undefined) {
+        roles.set(roleName, selected);
+        score = ContrastExecution.coordinateScore(roles, preferences, component);
+      }
+    }
+    return score;
+  }
+
+  private static restoreComponent(
+    roles: PaletteRoleState,
+    state: PaletteStateInterface,
+    roleNames: readonly string[],
+    initial: ReadonlyMap<string, ColorRecordEntity.Type>,
+    bestRecords: ReadonlyMap<string, ColorRecordEntity.Type>
+  ): void {
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      if (roleName === undefined) {
+        continue;
+      }
+      const original = initial.get(roleName);
+      const resolved = bestRecords.get(roleName);
+      if (original === undefined || resolved === undefined) {
+        continue;
+      }
+      roles.set(roleName, resolved);
+      if (!ContrastMeasurement.sameRecord(original, resolved)) {
+        ContrastProvenance.recordAdjustment(state, roleName, original.hex, resolved.hex);
+      }
+    }
+  }
+
+  private static components(
+    requirements: readonly ContrastPolicy.RequirementInterface[]
+  ): readonly (readonly ContrastPolicy.RequirementInterface[])[] {
+    const remaining = new Set(requirements);
+    const result: ContrastPolicy.RequirementInterface[][] = [];
+    while (remaining.size > 0) {
+      const seed = remaining.values().next().value;
+      if (seed === undefined) {
+        break;
+      }
+      remaining.delete(seed);
+      const component: ContrastPolicy.RequirementInterface[] = [seed];
+      const roleNames = new Set([seed.background, seed.foreground]);
+      let expanded = true;
+      while (expanded) {
+        expanded = false;
+        const candidates = Array.from(remaining);
+        for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex += 1) {
+          const candidate = candidates[candidateIndex];
+          if (candidate === undefined ||
+            (!roleNames.has(candidate.foreground) && !roleNames.has(candidate.background))) {
+            continue;
+          }
+          remaining.delete(candidate);
+          component.push(candidate);
+          roleNames.add(candidate.foreground);
+          roleNames.add(candidate.background);
+          expanded = true;
+        }
+      }
+      result.push(component);
+    }
+    return result;
+  }
+
+  private static componentRoleNames(
+    component: readonly ContrastPolicy.RequirementInterface[]
+  ): readonly string[] {
+    const roleNames = new Set<string>();
+    for (let index = 0; index < component.length; index += 1) {
+      const requirement = component[index];
+      if (requirement !== undefined) {
+        roleNames.add(requirement.foreground);
+        roleNames.add(requirement.background);
+      }
+    }
+    const result = Array.from(roleNames);
+    result.sort(ContrastExecution.compareStrings);
+    return result;
+  }
+
+  private static coordinateCandidate(
+    roles: PaletteRoleState,
+    state: PaletteStateInterface,
+    preferences: ReadonlyMap<string, ColorRecordEntity.Type>,
+    component: readonly ContrastPolicy.RequirementInterface[],
+    roleName: string,
+    current: ColorRecordEntity.Type,
+    baseline: ContrastCoordinateScore
+  ): ColorRecordEntity.Type | undefined {
+    const candidates = ContrastExecution.coordinateCandidates(state, roleName, current);
+    let selected: ColorRecordEntity.Type | undefined;
+    let selectedScore: ContrastCoordinateScore | undefined;
+    for (let index = 0; index < candidates.length; index += 1) {
+      const candidate = candidates[index];
+      if (candidate === undefined || ContrastMeasurement.sameRecord(current, candidate)) {
+        continue;
+      }
+      roles.set(roleName, candidate);
+      const score = ContrastExecution.coordinateScore(roles, preferences, component);
+      roles.set(roleName, current);
+      if (ContrastCoordinateScore.compare(score, baseline) >= 0 ||
+        (selectedScore !== undefined && ContrastCoordinateScore.compare(score, selectedScore) >= 0)) {
+        continue;
+      }
+      selected = candidate;
+      selectedScore = score;
+    }
+    return selected;
+  }
+
+  private static coordinateCandidates(
+    state: PaletteStateInterface,
+    roleName: string,
+    current: ColorRecordEntity.Type
+  ): readonly ColorRecordEntity.Type[] {
+    const range = ContrastPolicy.roleRange(state.input, roleName);
+    const lightnessRange = range.lightnessRange ?? [current.oklch.l, current.oklch.l] as const;
+    const chromaRange = range.chromaRange ?? [current.oklch.c, current.oklch.c] as const;
+    const lightnesses = ContrastExecution.coordinateValues(current.oklch.l, lightnessRange);
+    const chromas = ContrastExecution.coordinateValues(current.oklch.c, chromaRange);
+    const result: ColorRecordEntity.Type[] = [];
+    for (let lightnessIndex = 0; lightnessIndex < lightnesses.length; lightnessIndex += 1) {
+      const lightness = lightnesses[lightnessIndex];
+      if (lightness === undefined) {
+        continue;
+      }
+      for (let chromaIndex = 0; chromaIndex < chromas.length; chromaIndex += 1) {
+        const chroma = chromas[chromaIndex];
+        if (chroma === undefined) {
+          continue;
+        }
+        const candidate = colorRecordFactory.fromOklch(
+          lightness,
+          chroma,
+          current.oklch.h,
+          { 'alpha': current.alpha, 'hints': current.hints, 'origin': current }
+        );
+        if (ContrastPolicy.allowsRoleRecord(state.input, roleName, candidate)) {
+          result.push(candidate);
+        }
+      }
+    }
+    return result;
+  }
+
+  private static coordinateScore(
+    roles: PaletteRoleState,
+    preferences: ReadonlyMap<string, ColorRecordEntity.Type>,
+    component: readonly ContrastPolicy.RequirementInterface[]
+  ): ContrastCoordinateScore {
+    const roleNames = ContrastExecution.componentRoleNames(component);
+    let failureCount = 0;
+    let maximumShortfall = 0;
+    let totalShortfall = 0;
+    for (let index = 0; index < component.length; index += 1) {
+      const requirement = component[index];
+      if (requirement === undefined) {
+        continue;
+      }
+      const foreground = roles.get(requirement.foreground);
+      const background = roles.get(requirement.background);
+      if (foreground === undefined || background === undefined) {
+        continue;
+      }
+      const ratio = ContrastMeasurement.measure(requirement.algorithm, foreground, background);
+      const shortfall = ContrastBand.shortfall(
+        ratio,
+        requirement.minimumContrastRatio,
+        requirement.maximumContrastRatio
+      );
+      if (shortfall > 1e-12) {
+        failureCount += 1;
+        maximumShortfall = Math.max(maximumShortfall, shortfall);
+        totalShortfall += shortfall;
+      }
+    }
+    let totalDisplacement = 0;
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      if (roleName === undefined) {
+        continue;
+      }
+      const record = roles.get(roleName);
+      const preference = preferences.get(roleName);
+      if (record !== undefined && preference !== undefined) {
+        totalDisplacement += deltaE2000.apply(preference, record);
+      }
+    }
+    return new ContrastCoordinateScore(
+      failureCount,
+      maximumShortfall,
+      totalShortfall,
+      totalDisplacement
+    );
+  }
+
+  private static coordinateValues(
+    current: number,
+    range: readonly [number, number]
+  ): readonly number[] {
+    const [minimum, maximum] = range;
+    const candidates = [
+      current,
+      minimum,
+      maximum,
+      minimum + (maximum - minimum) * 0.25,
+      minimum + (maximum - minimum) * 0.5,
+      minimum + (maximum - minimum) * 0.75
+    ];
+    const values = new Set<number>();
+    for (let index = 0; index < candidates.length; index += 1) {
+      const candidate = candidates[index];
+      if (candidate !== undefined) {
+        values.add(Math.max(minimum, Math.min(maximum, candidate)));
+      }
+    }
+    const result = Array.from(values);
+    result.sort(ContrastExecution.compareNumbers);
+    return result;
+  }
+
+  private static compareNumbers(left: number, right: number): number {
+    const result = left - right;
+    return result;
+  }
+
+  private static compareStrings(left: string, right: string): number {
+    const result = left.localeCompare(right);
+    return result;
+  }
+
   private static mergeEntry(
     previous: PendingContrastEntryEntity.Type | undefined,
     current: PendingContrastEntryEntity.Type
@@ -257,11 +679,17 @@ class ContrastExecution {
         ? 'applied'
         : current.adjustmentDisposition;
     const adjustedRole = current.adjustedRole ?? previous?.adjustedRole;
+    const constraints =
+      current.adjustmentDisposition === 'not-needed' ||
+      current.adjustmentDisposition === 'applied'
+        ? []
+        : current.constraints;
     const result = PendingContrastEntryEntity.create({
       'adjusted': adjusted,
       ...(adjustedRole === undefined ? {} : { 'adjustedRole': adjustedRole }),
       'adjustmentDisposition': adjustmentDisposition,
       'algo': current.algo,
+      'constraints': [...constraints],
       ...(current.maximumContrastRatio === undefined
         ? {}
         : { 'maximumContrastRatio': current.maximumContrastRatio }),
@@ -275,7 +703,8 @@ class ContrastExecution {
   static report(
     roles: PaletteRoleState,
     pending: readonly PendingContrastEntryEntity.Type[],
-    selection: ContrastPolicy.SelectionInterface
+    selection: ContrastPolicy.SelectionInterface,
+    provenance: ReadonlyMap<string, RoleProvenanceEntity.Type>
   ): ContrastReportEntity.Type {
     const pairs: ContrastReportEntryEntity.Type[] = [];
     let selectedAlgorithm = selection.algorithm;
@@ -287,16 +716,32 @@ class ContrastExecution {
       }
       selectedAlgorithm = ContrastAlgorithmTypeEntity.intake(entry.algo);
       target = entry.target;
-      const pair = ContrastExecution.reportEntry(roles, entry);
+      const pair = ContrastExecution.reportEntry(roles, entry, provenance);
       if (pair !== undefined) {
         pairs.push(pair);
       }
     }
+    pairs.sort((left, right) => {
+      const foreground = ContrastExecution.compareStrings(left.foreground, right.foreground);
+      const result = foreground === 0
+        ? ContrastExecution.compareStrings(left.background, right.background)
+        : foreground;
+      return result;
+    });
+    const problemPairs = pairs.filter((pair) => {
+      const result = !pair.passed;
+      return result;
+    });
+    const compliant = problemPairs.length === 0;
     const result = ContrastReportEntity.create({
-      'compliant': pairs.every((pair) => {return pair.passed;}),
+      'compliant': compliant,
+      'disposition': compliant ? 'resolved' : 'best-effort',
       'pairs': pairs,
-      'selectedAlgorithm': selectedAlgorithm,
-      'target': target
+      'problemPairs': problemPairs,
+      'selected': {
+        'algorithm': selectedAlgorithm,
+        'level': target
+      }
     });
     return result;
   }
@@ -353,12 +798,11 @@ class ContrastExecution {
       ratio
     );
     if (mover === undefined) {
-      const result = ContrastExecution.pendingEntry(
+      const result = ContrastExecution.pinnedEntry(
         requirement,
         algorithm,
         minimumRatio,
-        ContrastAdjustment.blockedStatedBoth,
-        ...(maximumRatio === undefined ? [] : [{ 'maximumRatio': maximumRatio }])
+        maximumRatio
       );
       return result;
     }
@@ -384,17 +828,15 @@ class ContrastExecution {
       minimumRatio,
       maximumRatio
     );
-    if (
-      !resolvedPassed ||
-      !ContrastPolicy.allowsRoleRecord(state.input, mover.roleName, resolved) ||
-      ContrastMeasurement.sameRecord(resolved, mover.record)
-    ) {
-      const result = ContrastExecution.pendingEntry(
+    const allowed = ContrastPolicy.allowsRoleRecord(state.input, mover.roleName, resolved);
+    if (!resolvedPassed || !allowed || ContrastMeasurement.sameRecord(resolved, mover.record)) {
+      const result = ContrastExecution.unresolvedEntry(
         requirement,
         algorithm,
         minimumRatio,
-        ContrastAdjustment.unresolved,
-        ...(maximumRatio === undefined ? [] : [{ 'maximumRatio': maximumRatio }])
+        maximumRatio,
+        mover.roleName,
+        state.input
       );
       return result;
     }
@@ -438,6 +880,74 @@ class ContrastExecution {
     return result;
   }
 
+  private static pinnedEntry(
+    requirement: ContrastPolicy.RequirementInterface,
+    algorithm: ContrastAlgorithmTypeEntity.Type,
+    minimumRatio: number,
+    maximumRatio: number | undefined
+  ): PendingContrastEntryEntity.Type {
+    const entry = ContrastExecution.pendingEntry(
+      requirement,
+      algorithm,
+      minimumRatio,
+      ContrastAdjustment.blockedStatedBoth,
+      { ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio }) }
+    );
+    const result = PendingContrastEntryEntity.create({
+      ...entry,
+      'constraints': ['pin']
+    });
+    return result;
+  }
+
+  private static unresolvedEntry(
+    requirement: ContrastPolicy.RequirementInterface,
+    algorithm: ContrastAlgorithmTypeEntity.Type,
+    minimumRatio: number,
+    maximumRatio: number | undefined,
+    roleName: string,
+    input: PaletteStateInterface['input']
+  ): PendingContrastEntryEntity.Type {
+    const range = ContrastPolicy.roleRange(input, roleName);
+    if (range.chromaRange !== undefined || range.lightnessRange !== undefined) {
+      const result = ContrastExecution.rangeEntry(
+        requirement,
+        algorithm,
+        minimumRatio,
+        maximumRatio
+      );
+      return result;
+    }
+    const result = ContrastExecution.pendingEntry(
+      requirement,
+      algorithm,
+      minimumRatio,
+      ContrastAdjustment.unresolved,
+      { ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio }) }
+    );
+    return result;
+  }
+
+  private static rangeEntry(
+    requirement: ContrastPolicy.RequirementInterface,
+    algorithm: ContrastAlgorithmTypeEntity.Type,
+    minimumRatio: number,
+    maximumRatio: number | undefined
+  ): PendingContrastEntryEntity.Type {
+    const entry = ContrastExecution.pendingEntry(
+      requirement,
+      algorithm,
+      minimumRatio,
+      ContrastAdjustment.unresolved,
+      { ...(maximumRatio === undefined ? {} : { 'maximumRatio': maximumRatio }) }
+    );
+    const result = PendingContrastEntryEntity.create({
+      ...entry,
+      'constraints': ['range']
+    });
+    return result;
+  }
+
   private static pendingEntry(
     requirement: ContrastPolicy.RequirementInterface,
     algorithm: ContrastAlgorithmTypeEntity.Type,
@@ -456,6 +966,7 @@ class ContrastExecution {
       ...(adjustedRole === undefined ? {} : { 'adjustedRole': adjustedRole }),
       'adjustmentDisposition': adjustmentDisposition,
       'algo': algorithm,
+      'constraints': [],
       ...(maximumRatio === undefined
         ? {}
         : { 'maximumContrastRatio': maximumRatio }),
@@ -519,7 +1030,8 @@ class ContrastExecution {
 
   private static reportEntry(
     roles: PaletteRoleState,
-    entry: PendingContrastEntryEntity.Type
+    entry: PendingContrastEntryEntity.Type,
+    provenance: ReadonlyMap<string, RoleProvenanceEntity.Type>
   ): ContrastReportEntryEntity.Type | undefined {
     const foreground = roles.get(entry.pair.foreground);
     const background = roles.get(entry.pair.background);
@@ -536,30 +1048,48 @@ class ContrastExecution {
       entry.minimumContrastRatio,
       entry.maximumContrastRatio
     );
-    let disposition: ContrastReportEntryEntity.Type['disposition'] = 'unresolved';
-    if (entry.adjustmentDisposition === 'not-needed') {
-      disposition = 'not-needed';
-    } else if (entry.adjustmentDisposition === 'applied') {
-      disposition = entry.adjustedRole === entry.pair.foreground
-        ? 'adjusted-foreground'
-        : 'adjusted-background';
-    } else if (
-      entry.adjustmentDisposition === 'preserved-stated' ||
-      entry.adjustmentDisposition === 'blocked-stated-both'
-    ) {
-      disposition = 'blocked-stated';
-    }
+    const adjustedRoles = ContrastExecution.adjustedRoles(entry, provenance);
     const result = ContrastReportEntryEntity.create({
       'actual': actual,
-      ...(entry.adjustedRole === undefined
-        ? {}
-        : { 'adjustedRole': entry.adjustedRole }),
+      'adjustedRoles': adjustedRoles,
       'background': entry.pair.background,
-      'disposition': disposition,
+      'constraints': passed ? [] : entry.constraints,
       'foreground': entry.pair.foreground,
       'passed': passed,
-      'required': entry.minimumContrastRatio
+      'required': entry.minimumContrastRatio,
+      'shortfall': ContrastBand.shortfall(
+        actual,
+        entry.minimumContrastRatio,
+        entry.maximumContrastRatio
+      )
     });
+    return result;
+  }
+
+  private static adjustedRoles(
+    entry: PendingContrastEntryEntity.Type,
+    provenance: ReadonlyMap<string, RoleProvenanceEntity.Type>
+  ): string[] {
+    const roleNames = [entry.pair.foreground, entry.pair.background];
+    const result: string[] = [];
+    for (let index = 0; index < roleNames.length; index += 1) {
+      const roleName = roleNames[index];
+      if (roleName === undefined) {
+        continue;
+      }
+      const adjustments = provenance.get(roleName)?.adjustments ?? [];
+      let adjusted = false;
+      for (let adjustmentIndex = 0; adjustmentIndex < adjustments.length; adjustmentIndex += 1) {
+        const adjustment = adjustments[adjustmentIndex];
+        if (adjustment?.operation === 'contrast') {
+          adjusted = true;
+          break;
+        }
+      }
+      if (adjusted) {
+        result.push(roleName);
+      }
+    }
     return result;
   }
 }
@@ -596,7 +1126,7 @@ class EnforceContrast implements TaskInterface {
       context,
       requirements
     );
-    const report = ContrastExecution.report(roles, pending, selection);
+    const report = ContrastExecution.report(roles, pending, selection, Metadata.roleProvenance(state.metadata));
     roles.commit();
     Metadata.writeContrastReport(state.metadata, report);
   }

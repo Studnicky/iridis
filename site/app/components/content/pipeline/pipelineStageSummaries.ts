@@ -2,8 +2,15 @@ import type { ComplianceReportEntity, CvdResultSetEntity } from '@studnicky/irid
 
 export const pipelineStageSummaries = class PipelineStageSummaries {
   public static buildPairSummary(report: ComplianceReportEntity.Type): string {
-    const passing = report.pairs.length - report.blockedPairs.length;
+    const passing = report.pairs.length - report.problemPairs.length;
     return `${passing}/${report.pairs.length} pairs passing`;
+  }
+
+  public static buildWithholdSummary(report: ComplianceReportEntity.Type): string {
+    const result = report.disposition === 'withheld'
+      ? `palette withheld: ${report.problemPairs.length} pairs below the standard`
+      : 'palette released';
+    return result;
   }
 
   public static buildCvdCorrectionSummary(report: CvdResultSetEntity.Type): string {

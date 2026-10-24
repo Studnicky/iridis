@@ -88,6 +88,7 @@ class ClientFixture {
       'colorSpace': 'srgb',
       'cvdMode': 'nudge',
       'derivationConfig': PaletteResolveFixture.request().derivationConfig,
+      'enableStrictCompliance': false,
       'framing': 'dark',
       'hexes': ['#112233'],
       'kind': 'combine',

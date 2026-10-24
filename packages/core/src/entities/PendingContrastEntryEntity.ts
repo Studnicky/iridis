@@ -48,6 +48,14 @@ export namespace PendingContrastEntryEntity {
         ]
       },
       'algo': { 'enum': ['wcag21', 'apca'] },
+      'constraints': {
+        'items': {
+          'enum': ['pin', 'range', 'hue-relationship', 'gamut', 'cvd-floor', 'cvd-drop'],
+          'type': 'string'
+        },
+        'type': 'array',
+        'uniqueItems': true
+      },
       'maximumContrastRatio': ContrastRatioSchema.permissive,
       'minimumContrastRatio': ContrastRatioSchema.permissive,
       'pair': ContrastPairEntity.Schema,
@@ -56,6 +64,7 @@ export namespace PendingContrastEntryEntity {
     'required': [
       'adjusted',
       'adjustmentDisposition',
+      'constraints',
       'algo',
       'minimumContrastRatio',
       'pair',

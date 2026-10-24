@@ -4,7 +4,6 @@ import type { JSONSchema7Type } from 'json-schema';
 import { EntityCompiler } from '@studnicky/entity/node';
 import { Validator } from '@studnicky/iridis/model';
 
-import { ComplianceBlockedPairEntity } from './ComplianceBlockedPairEntity.ts';
 import { CompliancePairEntity } from './CompliancePairEntity.ts';
 
 /** Canonical terminal admission report for rendered palette roles. */
@@ -13,10 +12,13 @@ export namespace ComplianceReportEntity {
     '$id': 'https://iridis.dev/schema/contrast/compliance-report',
     'additionalProperties': false,
     'properties': {
-      'blockedPairs': { 'items': ComplianceBlockedPairEntity.Schema, 'type': 'array' },
       'compliant': { 'type': 'boolean' },
-      'cvdCompliant': { 'type': 'boolean' },
+      'disposition': {
+        'enum': ['resolved', 'best-effort', 'withheld'],
+        'type': 'string'
+      },
       'pairs': { 'items': CompliancePairEntity.Schema, 'type': 'array' },
+      'problemPairs': { 'items': CompliancePairEntity.Schema, 'type': 'array' },
       'selected': {
         'additionalProperties': false,
         'properties': {
@@ -27,7 +29,7 @@ export namespace ComplianceReportEntity {
         'type': 'object'
       }
     },
-    'required': ['blockedPairs', 'compliant', 'cvdCompliant', 'pairs', 'selected'],
+    'required': ['compliant', 'disposition', 'pairs', 'problemPairs', 'selected'],
     'type': 'object'
   } as const;
 
@@ -38,6 +40,6 @@ export namespace ComplianceReportEntity {
     const isValid = result.errors.length === 0;
     return isValid;
   };
-  export const intake = EntityCompiler.compileIntake<Type>(Schema);
-  export const create = EntityCompiler.compileCreate<Type>(Schema);
+  export const intake: ReturnType<typeof EntityCompiler.compileIntake<Type>> = EntityCompiler.compileIntake<Type>(Schema);
+  export const create: ReturnType<typeof EntityCompiler.compileCreate<Type>> = EntityCompiler.compileCreate<Type>(Schema);
 }

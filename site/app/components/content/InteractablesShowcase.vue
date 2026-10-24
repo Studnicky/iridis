@@ -33,7 +33,7 @@ const checkedColors = ref<AliasColorEntity.Type[]>(buildInteractablesShowcaseMod
 const showcaseModel = computed(() => {
   const compliance = contrastReport.value.compliance;
   const apcaPairCount = compliance?.pairs.length ?? 0;
-  const apcaPassingPairCount = apcaPairCount - (compliance?.blockedPairs.length ?? 0);
+  const apcaPassingPairCount = apcaPairCount - (compliance?.problemPairs.length ?? 0);
   const result = buildInteractablesShowcaseModel.build(
     contrastStrictness.value,
     sortedRoleContrastRows.value,

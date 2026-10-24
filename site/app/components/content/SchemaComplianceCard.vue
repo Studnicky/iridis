@@ -17,7 +17,7 @@ import SchemaSelector from './SchemaSelector.vue';
  * their own Derivation Relations card (see DerivationRelations.vue).
  */
 const {
-  schemaName, contrastStrictness, cvdMode, nonMandatoryLevel, colorSpace,
+  schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, colorSpace,
   contrastReport
 } = useIridis();
 const { send } = useIridisUiMachine();
@@ -27,6 +27,7 @@ const { activateTarget } = useNavigationTargets();
 const stageSummaries = computed(() => {
   const result = buildSchemaComplianceSummaries.build(contrastReport.value.compliance, {
     'cvdMode': cvdMode.value,
+    'strictCompliance': enableStrictCompliance.value ? 'on' : 'off',
     'nonMandatoryLevel': nonMandatoryLevel.value
   });
   return result;
@@ -43,6 +44,10 @@ function updateContrastStrictness(strictness: number): void {
 
 function updateCvdMode(value: string): void {
   send(IridisUiEvent.setCvdMode(value));
+}
+
+function updateEnableStrictCompliance(value: boolean): void {
+  send(value ? IridisUiEvent.enableStrictCompliance() : IridisUiEvent.disableStrictCompliance());
 }
 
 function updateNonMandatoryLevel(value: string): void {
@@ -97,6 +102,16 @@ function updateNonMandatoryLevel(value: string): void {
           :selected="cvdMode"
           @update="updateCvdMode"
         />
+        <SectionIntro
+          title="Strict compliance"
+          body="When on, a palette that cannot meet the selected standard is withheld and the last compliant palette stays; when off, the closest palette renders with its shortfall report."
+        >
+          <USwitch
+            :model-value="enableStrictCompliance"
+            label="Strict compliance"
+            @update:model-value="updateEnableStrictCompliance"
+          />
+        </SectionIntro>
         <div class="flex justify-end">
           <UButton
             label="Open CVD panel"

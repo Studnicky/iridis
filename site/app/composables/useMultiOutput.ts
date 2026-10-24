@@ -88,13 +88,14 @@ class ActivateOperation {
   static run(): void {
     if (activated) {return;}
     activated = true;
-    const { activeSeeds, colorSpace, contrastStrictness, cvdMode, derivationConfig, framing, nonMandatoryLevel, schemaName, semanticHuesEnabled } = useIridis();
+    const { activeSeeds, colorSpace, contrastStrictness, cvdMode, derivationConfig, enableStrictCompliance, framing, nonMandatoryLevel, schemaName, semanticHuesEnabled } = useIridis();
     function generate(): void {
       try {
         const input = PaletteResolve.input(PaletteResolveRequestEntity.create({
           'colorSpace': colorSpace.value,
           'cvdMode': cvdMode.value,
           'derivationConfig': VueModule.toRaw(derivationConfig.value),
+          'enableStrictCompliance': enableStrictCompliance.value,
           'framing': framing.value,
           'nonMandatoryLevel': nonMandatoryLevel.value,
           'schemaName': schemaName.value,
@@ -117,7 +118,7 @@ class ActivateOperation {
     }
     const schedule = debounce(generate, 120);
     generate();
-    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, cvdMode, nonMandatoryLevel, derivationConfig, semanticHuesEnabled, colorSpace], schedule, { 'deep': true });
+    VueModule.watch([activeSeeds, framing, schemaName, contrastStrictness, cvdMode, enableStrictCompliance, nonMandatoryLevel, derivationConfig, semanticHuesEnabled, colorSpace], schedule, { 'deep': true });
   }
 }
 

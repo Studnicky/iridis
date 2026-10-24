@@ -31,6 +31,8 @@ export abstract class IridisUiEvent {
   static selectImageMode(): IridisUiEvent { return new SelectImageModeIridisUiEvent(); }
   static selectPickerMode(): IridisUiEvent { return new SelectPickerModeIridisUiEvent(); }
   static setContrastStrictness(strictness: number): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CONTRAST_STRICTNESS', IridisUiEffect.setContrastStrictness(strictness)); }
+  static disableStrictCompliance(): IridisUiEvent { return new EffectOnlyIridisUiEvent('DISABLE_STRICT_COMPLIANCE', IridisUiEffect.disableStrictCompliance()); }
+  static enableStrictCompliance(): IridisUiEvent { return new EffectOnlyIridisUiEvent('ENABLE_STRICT_COMPLIANCE', IridisUiEffect.enableStrictCompliance()); }
   static setCvdMode(cvdMode: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_CVD_MODE', IridisUiEffect.setCvdMode(cvdMode)); }
   static setNonMandatoryLevel(nonMandatoryLevel: string): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_NON_MANDATORY_LEVEL', IridisUiEffect.setNonMandatoryLevel(nonMandatoryLevel)); }
   static setDarkFraming(): IridisUiEvent { return new EffectOnlyIridisUiEvent('SET_FRAMING', IridisUiEffect.setFraming(IridisUiEffect.darkFraming())); }

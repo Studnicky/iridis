@@ -5,35 +5,41 @@ import type {
 
 import { EntityCompiler } from '@studnicky/entity/node';
 
-/** Final standard contrast outcome for one named role pair; adjustedRole names its unique provenance-selected direct mover. */
+/** Final selected-standard outcome for one named role pair. */
 export namespace ContrastReportEntryEntity {
   export const Schema = {
     '$id': 'https://iridis.dev/schema/core/contrast-report-entry',
     'additionalProperties': false,
     'properties': {
       'actual': { 'type': 'number' },
-      'adjustedRole': { 'type': 'string' },
+      'adjustedRoles': {
+        'items': { 'type': 'string' },
+        'type': 'array',
+        'uniqueItems': true
+      },
       'background': { 'type': 'string' },
-      'disposition': {
-        'enum': [
-          'not-needed',
-          'adjusted-foreground',
-          'adjusted-background',
-          'blocked-stated',
-          'unresolved'
-        ]
+      'constraints': {
+        'items': {
+          'enum': ['pin', 'range', 'hue-relationship', 'gamut', 'cvd-floor', 'cvd-drop'],
+          'type': 'string'
+        },
+        'type': 'array',
+        'uniqueItems': true
       },
       'foreground': { 'type': 'string' },
       'passed': { 'type': 'boolean' },
-      'required': { 'type': 'number' }
+      'required': { 'type': 'number' },
+      'shortfall': { 'minimum': 0, 'type': 'number' }
     },
     'required': [
       'actual',
+      'adjustedRoles',
       'background',
-      'disposition',
+      'constraints',
       'foreground',
       'passed',
-      'required'
+      'required',
+      'shortfall'
     ],
     'type': 'object'
   } as const;
