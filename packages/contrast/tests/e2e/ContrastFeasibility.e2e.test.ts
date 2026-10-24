@@ -129,6 +129,30 @@ await test('ContrastFeasibility emits sampled evidence rather than a continuous 
   assert.ok(pair.sampled.bestActual >= 4, 'sampled evidence retains the best measured final contrast');
 });
 
+await test('ContrastFeasibility certifies a hue-independent neutral envelope without sampling', () => {
+  const schema = ContrastFeasibilityFixture.schema(
+    RoleDefinitionEntity.intake({
+      'chromaRange': [0, 0.2],
+      'lightnessRange': [0.85, 0.9],
+      'name': 'foreground'
+    }),
+    RoleDefinitionEntity.intake({
+      'chromaRange': [0, 0.2],
+      'lightnessRange': [0.05, 0.1],
+      'name': 'background'
+    }),
+    4.5
+  );
+
+  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
+  const pair = report.pairs[0];
+
+  assert.ok(pair !== undefined, 'declared pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'always-reachable');
+  assert.deepStrictEqual(pair.reachableHueRanges, [{ 'end': 360, 'start': 0 }]);
+  assert.strictEqual(pair.sampled, undefined, 'a hue-independent certificate needs no sampled evidence');
+});
+
 await test('ContrastFeasibility treats stated run roles as exact pin bounds', () => {
   const schema = ContrastFeasibilityFixture.schema(
     ContrastFeasibilityFixture.role('foreground', 0.9, 0.1, 120),

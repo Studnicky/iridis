@@ -55,16 +55,13 @@ interface SearchCellInterface {
 }
 
 /**
- * Numerically evaluates schema envelopes through the same emitted sRGB records
- * and contrast primitives used by the engine. Hue cells terminate at 0.5° and
- * lightness/chroma cells terminate at 1/1024 and the gamut mapper's 0.02 chroma
- * just-noticeable-difference threshold. These are production-precision numeric
- * classifications, not symbolic claims about every real-valued hue.
+ * Evaluates schema envelopes through the engine's emitted sRGB records and contrast primitives.
+ * Hue-independent neutral envelopes receive exact all-hue certificates. Fixed hues use bounded
+ * lightness/chroma extrema; unanchored hue domains retain explicitly sampled, indeterminate evidence.
  */
 class ContrastFeasibilityDomain {
   static readonly #BLACK = ColorCoordinate.fromOklch(0, 0, 0);
   static readonly #CHROMA_PRECISION = 0.02;
-  static readonly #HUE_PRECISION = 0.5;
   static readonly #LIGHTNESS_PRECISION = 1 / 1024;
 
   static #isHigher(current: number, candidate: number): boolean {
@@ -82,8 +79,20 @@ class ContrastFeasibilityDomain {
     background: RoleDomainInterface,
     requirement: ContrastPolicy.RequirementInterface
   ): ContrastPairFeasibilityEntity.Type {
-    const evaluations = ContrastFeasibilityDomain.evaluateHues(foreground, background, requirement);
+    const neutral = ContrastFeasibilityDomain.neutralEvaluation(foreground, background, requirement);
+    if (neutral !== undefined && neutral.actual >= requirement.minimumContrastRatio) {
+      const result = ContrastPairFeasibilityEntity.intake({
+        'background': background.name,
+        'foreground': foreground.name,
+        'reachability': 'always-reachable',
+        'reachableHueRanges': [HueRangeEntity.intake({ 'end': 360, 'start': 0 })]
+      });
+      return result;
+    }
     const hasFixedHueDomain = ContrastFeasibilityDomain.hasFixedHueDomain(foreground, background);
+    const evaluations = hasFixedHueDomain
+      ? ContrastFeasibilityDomain.evaluateHues(foreground, background, requirement)
+      : ContrastFeasibilityDomain.representativeEvaluations(foreground, background, requirement);
     const best = ContrastFeasibilityDomain.bestEvaluation(evaluations);
     if (!hasFixedHueDomain) {
       const result = ContrastPairFeasibilityEntity.intake({
@@ -200,6 +209,59 @@ class ContrastFeasibilityDomain {
     return result;
   }
 
+  private static neutralEvaluation(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface,
+    requirement: ContrastPolicy.RequirementInterface
+  ): HueEvaluationInterface | undefined {
+    if (
+      foreground.fixedRecord !== undefined ||
+      background.fixedRecord !== undefined ||
+      foreground.chroma[0] > 0 ||
+      background.chroma[0] > 0
+    ) {
+      return undefined;
+    }
+    const foregroundCoordinates = foreground.lightness.map((lightness): ColorCoordinate => {
+      const result = ColorCoordinate.fromOklch(lightness, 0, 0);
+      return result;
+    });
+    const backgroundCoordinates = background.lightness.map((lightness): ColorCoordinate => {
+      const result = ColorCoordinate.fromOklch(lightness, 0, 0);
+      return result;
+    });
+    let actual = -Infinity;
+    let selectedForeground = foregroundCoordinates[0];
+    let selectedBackground = backgroundCoordinates[0];
+    if (selectedForeground === undefined || selectedBackground === undefined) {
+      throw new TypeError('Contrast feasibility neutral extrema are empty');
+    }
+    for (let foregroundIndex = 0; foregroundIndex < foregroundCoordinates.length; foregroundIndex += 1) {
+      const foregroundCoordinate = foregroundCoordinates[foregroundIndex];
+      if (foregroundCoordinate === undefined) {
+        continue;
+      }
+      for (let backgroundIndex = 0; backgroundIndex < backgroundCoordinates.length; backgroundIndex += 1) {
+        const backgroundCoordinate = backgroundCoordinates[backgroundIndex];
+        if (backgroundCoordinate === undefined) {
+          continue;
+        }
+        const candidate = ContrastFeasibilityDomain.measure(foregroundCoordinate, backgroundCoordinate, requirement);
+        if (candidate > actual) {
+          actual = candidate;
+          selectedForeground = foregroundCoordinate;
+          selectedBackground = backgroundCoordinate;
+        }
+      }
+    }
+    return {
+      'actual': actual,
+      'background': selectedBackground,
+      'foreground': selectedForeground,
+      'hue': 0
+    };
+  }
+
   private static evaluateHue(
     foreground: RoleDomainInterface,
     background: RoleDomainInterface,
@@ -242,24 +304,17 @@ class ContrastFeasibilityDomain {
     };
   }
 
-  private static evaluateHues(
+
+  private static representativeEvaluations(
     foreground: RoleDomainInterface,
     background: RoleDomainInterface,
     requirement: ContrastPolicy.RequirementInterface
   ): readonly HueEvaluationInterface[] {
-    if (foreground.hue !== undefined && background.hue !== undefined) {
-      const result = [ContrastFeasibilityDomain.evaluateHue(foreground, background, 0, requirement)];
-      return result;
-    }
-    const result: HueEvaluationInterface[] = [];
-    ContrastFeasibilityDomain.subdivideHue(
-      foreground,
-      background,
-      requirement,
-      0,
-      360,
-      result
-    );
+    const hues = [0, 120, 240, 360] as const;
+    const result = hues.map((hue): HueEvaluationInterface => {
+      const evaluation = ContrastFeasibilityDomain.evaluateHue(foreground, background, hue, requirement);
+      return evaluation;
+    });
     return result;
   }
 
@@ -457,25 +512,13 @@ class ContrastFeasibilityDomain {
     return result;
   }
 
-  private static subdivideHue(
+  private static evaluateHues(
     foreground: RoleDomainInterface,
     background: RoleDomainInterface,
-    requirement: ContrastPolicy.RequirementInterface,
-    start: number,
-    end: number,
-    result: HueEvaluationInterface[]
-  ): void {
-    const width = end - start;
-    if (width <= ContrastFeasibilityDomain.#HUE_PRECISION) {
-      result.push(ContrastFeasibilityDomain.evaluateHue(foreground, background, start, requirement));
-      if (end === 360) {
-        result.push(ContrastFeasibilityDomain.evaluateHue(foreground, background, end, requirement));
-      }
-      return;
-    }
-    const midpoint = (start + end) / 2;
-    ContrastFeasibilityDomain.subdivideHue(foreground, background, requirement, start, midpoint, result);
-    ContrastFeasibilityDomain.subdivideHue(foreground, background, requirement, midpoint, end, result);
+    requirement: ContrastPolicy.RequirementInterface
+  ): readonly HueEvaluationInterface[] {
+    const result = [ContrastFeasibilityDomain.evaluateHue(foreground, background, 0, requirement)];
+    return result;
   }
 }
 
