@@ -43,6 +43,11 @@ interface RoleDomainInterface {
   readonly 'name': string;
 }
 
+interface RoleDomainOptionsInterface {
+  readonly 'fixedRecord'?: ColorRecordEntity.Type;
+  readonly 'resolvedHue'?: number;
+}
+
 interface SearchCellInterface {
   readonly 'cMaximum': number;
   readonly 'cMinimum': number;
@@ -79,9 +84,7 @@ class ContrastFeasibilityDomain {
     requirement: ContrastPolicy.RequirementInterface
   ): ContrastPairFeasibilityEntity.Type {
     const evaluations = ContrastFeasibilityDomain.evaluateHues(foreground, background, requirement);
-    const hasFixedHueDomain =
-      (foreground.fixedRecord !== undefined || foreground.hue !== undefined) &&
-      (background.fixedRecord !== undefined || background.hue !== undefined);
+    const hasFixedHueDomain = ContrastFeasibilityDomain.hasFixedHueDomain(foreground, background);
     const best = ContrastFeasibilityDomain.bestEvaluation(evaluations);
     if (!hasFixedHueDomain) {
       const result = ContrastPairFeasibilityEntity.intake({
@@ -112,19 +115,19 @@ class ContrastFeasibilityDomain {
 
   static domain(
     role: RoleSchemaEntity.Type['roles'][number],
-    fixedRecord?: ColorRecordEntity.Type
+    options?: RoleDomainOptionsInterface
   ): RoleDomainInterface {
+    const hue = options?.resolvedHue ?? role.hue;
     const result: RoleDomainInterface = {
       'chroma': role.chromaRange ?? [0, 0.5],
-      ...(fixedRecord === undefined ? {} : { 'fixedRecord': fixedRecord }),
-      ...(role.hue === undefined ? {} : { 'hue': role.hue }),
+      ...(options?.fixedRecord === undefined ? {} : { 'fixedRecord': options.fixedRecord }),
+      ...(hue === undefined ? {} : { 'hue': hue }),
       ...(role.intent === undefined ? {} : { 'hints': { 'intent': role.intent } }),
       'lightness': role.lightnessRange ?? [0, 1],
       'name': role.name
     };
     return result;
   }
-
   static record(
     domain: RoleDomainInterface,
     lightness: number,
@@ -137,6 +140,15 @@ class ContrastFeasibilityDomain {
     return result;
   }
 
+  private static hasFixedHueDomain(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface
+  ): boolean {
+    const result =
+      (foreground.fixedRecord !== undefined || foreground.hue !== undefined) &&
+      (background.fixedRecord !== undefined || background.hue !== undefined);
+    return result;
+  }
   private static bestSample(
     candidates: readonly ColorRecordEntity.Type[],
     requirement: ContrastPolicy.RequirementInterface,
@@ -497,7 +509,12 @@ export class ContrastFeasibility {
       }
       const resolved = options?.roles?.[role.name];
       const fixed = options?.provenance?.get(role.name)?.origin === 'stated' ? resolved : undefined;
-      result.set(role.name, ContrastFeasibilityDomain.domain(role, fixed));
+      const resolvedHue = resolved?.oklch.h;
+      const domainOptions: RoleDomainOptionsInterface = {
+        ...(fixed === undefined ? {} : { 'fixedRecord': fixed }),
+        ...(resolvedHue === undefined ? {} : { 'resolvedHue': resolvedHue })
+      };
+      result.set(role.name, ContrastFeasibilityDomain.domain(role, domainOptions));
     }
     return result;
   }

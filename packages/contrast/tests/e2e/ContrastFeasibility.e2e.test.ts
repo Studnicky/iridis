@@ -199,3 +199,35 @@ await test('ContrastFeasibility proves a resolved run with the same canonical re
   assert.ok(pair !== undefined, 'run pair receives a feasibility result');
   assert.strictEqual(pair.reachability, 'always-reachable');
 });
+
+await test('ContrastFeasibility uses resolved run hues without unanchored sampling', () => {
+  const schema = ContrastFeasibilityFixture.schema(
+    ContrastFeasibilityFixture.role('foreground', 0.45, 0.1),
+    ContrastFeasibilityFixture.role('background', 0.5, 0.1),
+    4.5
+  );
+  const state = {
+    'colors': [],
+    'input': InputEntity.intake({
+      'colors': [],
+      'contrast': ContrastFeasibilityFixture.options(),
+      'roles': schema
+    }),
+    'metadata': {},
+    'outputs': {},
+    'roles': {
+      'background': colorRecordFactory.fromOklch(0.5, 0.1, 240),
+      'foreground': colorRecordFactory.fromOklch(0.45, 0.1, 120)
+    },
+    'runtime': RuntimeOptionsEntity.intake({}),
+    'variants': {}
+  };
+
+  const report = ContrastFeasibility.proveRun(state);
+  const pair = report.pairs[0];
+
+  assert.ok(pair !== undefined, 'resolved pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'never-reachable', 'resolved schema hues make the run certifiable');
+  assert.ok(pair.proof !== undefined, 'resolved-hue failure retains its exact proof');
+  assert.strictEqual(pair.sampled, undefined, 'terminal run never samples unanchored hue domains');
+});
