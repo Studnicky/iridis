@@ -16,6 +16,7 @@ class BlockedPairView {
   public readonly actual: number;
   public readonly background: string;
   public readonly foreground: string;
+  public readonly proofText: string;
   public readonly required: number;
   public readonly suffix: string;
 
@@ -27,8 +28,21 @@ class BlockedPairView {
     this.actual = pair.actual;
     this.background = pair.background;
     this.foreground = pair.foreground;
+    this.proofText = BlockedPairView.proofText(pair.proof);
     this.required = pair.required;
     this.suffix = labels.length === 0 ? '' : ` (${labels.join(', ')})`;
+  }
+
+  private static proofText(proof: CompliancePairEntity.Type['proof']): string {
+    let result = '';
+    if (proof !== undefined) {
+      const bounds = proof.limitingBounds.map((bound) => {
+        return `${bound.role} ${bound.channel} ${bound.edge} ${bound.value.toFixed(2)}`;
+      });
+      const limits = bounds.length === 0 ? '' : `, limited by ${bounds.join(', ')}`;
+      result = `; best reachable ${proof.bestActual.toFixed(2)}${limits}`;
+    }
+    return result;
   }
 
   public get id(): string {
@@ -119,7 +133,7 @@ export class AccessibilityBlockers {
 
   public static toastMessage(set: AccessibilityBlockerSet): AccessibilityToastMessageInterface {
     const lines = set.pairs.map((pair) => {
-      return `${pair.foreground} on ${pair.background} needs ${pair.required.toFixed(2)}, reaches ${pair.actual.toFixed(2)}${pair.suffix}`;
+      return `${pair.foreground} on ${pair.background} needs ${pair.required.toFixed(2)}, reaches ${pair.actual.toFixed(2)}${pair.suffix}${pair.proofText}`;
     });
     const result: AccessibilityToastMessageInterface = {
       'description': lines.join('; '),

@@ -42,6 +42,12 @@ await test('blocked report yields a sorted deterministic key and toast text', ()
   assert.equal(message.description, 'text on surface needs 4.50, reaches 1.09 (pinned); accent on surface needs 3.00, reaches 2.50');
 });
 
+await test('a pair with a feasibility proof reports its best reachable value and limiting bound', () => {
+  const set = AccessibilityBlockers.fromReport(ReportMetadata.build([ComplianceReportFixture.ACCENT_ON_SURFACE_PROVEN], 'wcag21', 'AA'));
+  const message = AccessibilityBlockers.toastMessage(set);
+  assert.equal(message.description, 'accent on surface needs 3.00, reaches 2.50 (role range); best reachable 2.75, limited by accent lightness maximum 0.58');
+});
+
 await test('pair order does not change the key', () => {
   const forward = AccessibilityBlockers.fromReport(ReportMetadata.build([ComplianceReportFixture.TEXT_ON_SURFACE, ComplianceReportFixture.ACCENT_ON_SURFACE], 'wcag21', 'AA'));
   const reverse = AccessibilityBlockers.fromReport(ReportMetadata.build([ComplianceReportFixture.ACCENT_ON_SURFACE, ComplianceReportFixture.TEXT_ON_SURFACE], 'wcag21', 'AA'));
