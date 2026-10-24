@@ -5,6 +5,7 @@ export { clusterKMeans            } from './ClusterKMeans.ts';
 export { clusterMedianCut         } from './ClusterMedianCut.ts';
 export { clusterMedianCutWeighted } from './ClusterMedianCutWeighted.ts';
 export { clusterWuQuantize        } from './ClusterWuQuantize.ts';
+export { ColorCoordinate } from './ColorCoordinate.ts';
 export { colorRecordFactory } from './ColorRecordFactory.ts';
 export { contrastApca     } from './ContrastApca.ts';
 export { contrastText     } from './ContrastText.ts';
