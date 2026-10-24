@@ -114,6 +114,10 @@ class ContrastFeasibilityDomain {
     if (analyticHueArcs !== undefined) {
       return analyticHueArcs;
     }
+    const independentHueArcs = ContrastFeasibilityDomain.independentHueArcs(foreground, background, requirement);
+    if (independentHueArcs !== undefined) {
+      return independentHueArcs;
+    }
     const hasFixedHueDomain = ContrastFeasibilityDomain.hasFixedHueDomain(foreground, background);
     const evaluations = hasFixedHueDomain
       ? ContrastFeasibilityDomain.evaluateHues(foreground, background, requirement)
@@ -143,6 +147,93 @@ class ContrastFeasibilityDomain {
         ? [HueRangeEntity.intake({ 'end': 360, 'start': 0 })]
         : []
     });
+    return result;
+  }
+
+  private static independentHueArcs(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface,
+    requirement: ContrastPolicy.RequirementInterface
+  ): ContrastPairFeasibilityEntity.Type | undefined {
+    const foregroundRoot = foreground.relation?.root ?? foreground.name;
+    const backgroundRoot = background.relation?.root ?? background.name;
+    if (foregroundRoot === backgroundRoot || foreground.hue !== undefined || background.hue !== undefined) {
+      return undefined;
+    }
+    const divisions = 8;
+    for (let foregroundIndex = 0; foregroundIndex < divisions; foregroundIndex += 1) {
+      const foregroundArc = { 'end': ((foregroundIndex + 1) * 360) / divisions, 'start': (foregroundIndex * 360) / divisions };
+      for (let backgroundIndex = 0; backgroundIndex < divisions; backgroundIndex += 1) {
+        const backgroundArc = { 'end': ((backgroundIndex + 1) * 360) / divisions, 'start': (backgroundIndex * 360) / divisions };
+        if (!ContrastFeasibilityDomain.hasWitness(foreground, background, foregroundRoot, backgroundRoot, foregroundArc, backgroundArc, requirement)) {
+          return undefined;
+        }
+      }
+    }
+    const result = ContrastPairFeasibilityEntity.intake({
+      'background': background.name,
+      'foreground': foreground.name,
+      'reachability': 'always-reachable',
+      'reachableHueRanges': [HueRangeEntity.intake({ 'end': 360, 'start': 0 })]
+    });
+    return result;
+  }
+
+  private static hasWitness(
+    foreground: RoleDomainInterface, background: RoleDomainInterface, foregroundRoot: string, backgroundRoot: string,
+    foregroundArc: HueArcInterface, backgroundArc: HueArcInterface, requirement: ContrastPolicy.RequirementInterface
+  ): boolean {
+    const foregroundHue = ContrastFeasibilityDomain.domainHueArc(foreground, foregroundRoot, foregroundArc);
+    const backgroundHue = ContrastFeasibilityDomain.domainHueArc(background, backgroundRoot, backgroundArc);
+    if (
+      foregroundHue === undefined ||
+      backgroundHue === undefined ||
+      foregroundHue.start < 0 || foregroundHue.end > 360 ||
+      backgroundHue.start < 0 || backgroundHue.end > 360
+    ) {
+      return false;
+    }
+    const foregroundCandidates = ContrastFeasibilityDomain.candidates(foreground);
+    const backgroundCandidates = ContrastFeasibilityDomain.candidates(background);
+    for (let foregroundIndex = 0; foregroundIndex < foregroundCandidates.length; foregroundIndex += 1) {
+      const foregroundCandidate = foregroundCandidates[foregroundIndex];
+      if (foregroundCandidate === undefined) { continue; }
+      for (let backgroundIndex = 0; backgroundIndex < backgroundCandidates.length; backgroundIndex += 1) {
+        const backgroundCandidate = backgroundCandidates[backgroundIndex];
+        if (backgroundCandidate === undefined) { continue; }
+        if (ContrastFeasibilityDomain.witnessPasses(foregroundCandidate, backgroundCandidate, foregroundHue, backgroundHue, requirement)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private static candidates(domain: RoleDomainInterface): readonly (readonly [number, number])[] {
+    const result = [
+      [domain.lightness[0], domain.chroma[0]], [domain.lightness[0], domain.chroma[1]],
+      [domain.lightness[1], domain.chroma[0]], [domain.lightness[1], domain.chroma[1]]
+    ] as const;
+    return result;
+  }
+
+  private static witnessPasses(
+    foreground: readonly [number, number], background: readonly [number, number], foregroundHue: HueArcInterface, backgroundHue: HueArcInterface, requirement: ContrastPolicy.RequirementInterface
+  ): boolean {
+    const foregroundBounds = HueIntervalBounds.fixedArc(foreground[0], foreground[1], foregroundHue.start, foregroundHue.end);
+    const backgroundBounds = HueIntervalBounds.fixedArc(background[0], background[1], backgroundHue.start, backgroundHue.end);
+    const foregroundAbove = foregroundBounds.minimumRelativeLuminance > backgroundBounds.maximumRelativeLuminance;
+    const backgroundAbove = backgroundBounds.minimumRelativeLuminance > foregroundBounds.maximumRelativeLuminance;
+    let wcagLower = 1;
+    if (foregroundAbove) {
+      wcagLower = (foregroundBounds.minimumRelativeLuminance + 0.05) / (backgroundBounds.maximumRelativeLuminance + 0.05);
+    } else if (backgroundAbove) {
+      wcagLower = (backgroundBounds.minimumRelativeLuminance + 0.05) / (foregroundBounds.maximumRelativeLuminance + 0.05);
+    }
+    const lower = requirement.algorithm === 'apca'
+      ? ColorCoordinate.apcaMagnitudeBounds(foregroundBounds.minimumApcaLuminance, foregroundBounds.maximumApcaLuminance, backgroundBounds.minimumApcaLuminance, backgroundBounds.maximumApcaLuminance)[0]
+      : wcagLower;
+    const result = lower >= requirement.minimumContrastRatio;
     return result;
   }
 
@@ -260,14 +351,11 @@ class ContrastFeasibilityDomain {
         'minimumWcag': coordinate.relativeLuminance
       };
     }
-    if (domain.lightness[0] !== domain.lightness[1] || domain.chroma[0] !== domain.chroma[1]) {
-      return undefined;
-    }
     const hue = ContrastFeasibilityDomain.domainHueArc(domain, root, arc);
     if (hue === undefined) {
       return undefined;
     }
-    const bounds = HueIntervalBounds.fixedArc(domain.lightness[0], domain.chroma[0], hue.start, hue.end);
+    const bounds = HueIntervalBounds.range(domain.lightness, domain.chroma, hue.start, hue.end);
     return {
       'maximumApca': bounds.maximumApcaLuminance,
       'maximumWcag': bounds.maximumRelativeLuminance,

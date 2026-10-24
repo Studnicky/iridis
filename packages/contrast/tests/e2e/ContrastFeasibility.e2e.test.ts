@@ -129,6 +129,20 @@ await test('ContrastFeasibility emits sampled evidence rather than a continuous 
   assert.ok(pair.sampled.bestActual >= 4, 'sampled evidence retains the best measured final contrast');
 });
 
+await test('ContrastFeasibility certifies independent hue roots with a bounded witness', () => {
+  const schema = ContrastFeasibilityFixture.schema(
+    ContrastFeasibilityFixture.role('foreground', 0.95, 0.01),
+    ContrastFeasibilityFixture.role('background', 0.05, 0.01),
+    4.5
+  );
+  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
+  const pair = report.pairs[0];
+
+  assert.ok(pair !== undefined, 'independent-root pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'always-reachable', 'one fixed envelope witness clears every bounded root-hue cell');
+  assert.strictEqual(pair.sampled, undefined, 'a bounded witness does not rely on sampled evidence');
+});
+
 await test('ContrastFeasibility certifies a hue-independent neutral envelope without sampling', () => {
   const schema = ContrastFeasibilityFixture.schema(
     RoleDefinitionEntity.intake({
