@@ -49,19 +49,33 @@ class SchemaFeasibilityRow {
   }
 
   public static build(pair: ContrastFeasibilityReportEntity.Type['pairs'][number]): SchemaFeasibilityRow {
+    const status = SchemaFeasibilityRow.#statusByReachability[pair.reachability];
+    const detail = SchemaFeasibilityRow.detail(pair);
+    const result = new SchemaFeasibilityRow(detail, pair, status);
+    return result;
+  }
+
+  static readonly #statusByReachability: Readonly<Record<ContrastFeasibilityReportEntity.Type['pairs'][number]['reachability'], SchemaFeasibilityStatus>> = {
+    'always-reachable': new AlwaysReachableStatus(),
+    'indeterminate': new IndeterminateStatus(),
+    'never-reachable': new NeverReachableStatus(),
+    'reachable-only-for-some-hues': new SomeHuesStatus()
+  };
+
+  private static detail(pair: ContrastFeasibilityReportEntity.Type['pairs'][number]): string {
     if (pair.reachability === 'always-reachable') {
-      const result = new SchemaFeasibilityRow('', pair, new AlwaysReachableStatus());
+      const result = '';
       return result;
     }
     if (pair.reachability === 'never-reachable') {
-      const result = new SchemaFeasibilityRow(SchemaFeasibilityRow.proof(pair), pair, new NeverReachableStatus());
+      const result = SchemaFeasibilityRow.proof(pair);
       return result;
     }
     if (pair.reachability === 'reachable-only-for-some-hues') {
-      const result = new SchemaFeasibilityRow(SchemaFeasibilityRow.ranges(pair), pair, new SomeHuesStatus());
+      const result = SchemaFeasibilityRow.ranges(pair);
       return result;
     }
-    const result = new SchemaFeasibilityRow(SchemaFeasibilityRow.sample(pair), pair, new IndeterminateStatus());
+    const result = SchemaFeasibilityRow.sample(pair);
     return result;
   }
 
