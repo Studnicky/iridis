@@ -14,6 +14,7 @@ import {
 
 import type { CvdPairWarningEntity } from '../entities/CvdPairWarningEntity.ts';
 
+import { ContrastFeasibility } from '../ContrastFeasibility.ts';
 import { CvdFailurePolicy } from '../CvdFailurePolicy.ts';
 import { CompliancePairEntity } from '../entities/CompliancePairEntity.ts';
 import { ComplianceReportEntity } from '../entities/ComplianceReportEntity.ts';
@@ -72,7 +73,8 @@ class ComplianceSerialization {
       blockers
     );
     pairs.sort(ComplianceSerialization.comparePairs);
-    const problemPairs = pairs.filter((pair) => {
+    const proofedPairs = ComplianceSerialization.attachProofs(state, pairs);
+    const problemPairs = proofedPairs.filter((pair) => {
       const result = !pair.passed;
       return result;
     });
@@ -80,9 +82,42 @@ class ComplianceSerialization {
     const result = ComplianceReportEntity.intake({
       'compliant': compliant,
       'disposition': compliant ? 'resolved' : 'best-effort',
-      'pairs': pairs,
+      'pairs': proofedPairs,
       'problemPairs': problemPairs,
       'selected': diagnostic.selected
+    });
+    return result;
+  }
+
+  private static attachProofs(
+    state: PaletteStateInterface,
+    pairs: readonly CompliancePairEntity.Type[]
+  ): CompliancePairEntity.Type[] {
+    const hasProblems = pairs.some((pair): boolean => {
+      const result = !pair.passed;
+      return result;
+    });
+    if (!hasProblems) {
+      const result = [...pairs];
+      return result;
+    }
+    const feasibility = ContrastFeasibility.proveRun(state);
+    const proofs = new Map<string, NonNullable<typeof feasibility.pairs[number]['proof']>>();
+    for (let index = 0; index < feasibility.pairs.length; index += 1) {
+      const pair = feasibility.pairs[index];
+      if (pair?.proof !== undefined) {
+        proofs.set(ComplianceSerialization.key(pair.foreground, pair.background), pair.proof);
+      }
+    }
+    const result = pairs.map((pair): CompliancePairEntity.Type => {
+      const proof = pair.passed
+        ? undefined
+        : proofs.get(ComplianceSerialization.key(pair.foreground, pair.background));
+      if (proof === undefined) {
+        return pair;
+      }
+      const result = CompliancePairEntity.intake({ ...pair, 'proof': proof });
+      return result;
     });
     return result;
   }
@@ -246,7 +281,14 @@ class ReportCompliance implements TaskInterface {
   readonly 'manifest' = TaskManifestEntity.create({
     'description': 'Serializes the completed terminal compliance result for rendered role colors without mutating roles.',
     'name': 'report:compliance',
-    'reads': ['roles', "metadata['contrast:cvd']", "metadata['core:contrastReport']"],
+    'reads': [
+      'roles',
+      'input.contrast',
+      'input.roles',
+      "metadata['contrast:cvd']",
+      "metadata['core:contrastReport']",
+      "metadata['core:roleProvenance']"
+    ],
     'writes': ["metadata['contrast:complianceReport']"]
   });
 

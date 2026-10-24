@@ -14,6 +14,7 @@ import { ComplianceReportEntity } from '@studnicky/iridis-contrast';
 import { JsonValue } from '@studnicky/types/node';
 
 import { enforceCvdSimulate } from '../src/tasks/EnforceCvdSimulate.ts';
+import { contrastCoordinateCounters } from '../../core/src/tasks/enforce/ContrastCoordinateCounters.ts';
 import { COLOR_PIPELINE } from '../../../site/app/composables/colorPipeline.ts';
 import { ContrastConfigFor } from '../../../site/app/composables/contrastConfigFor.ts';
 import { createColorEngine } from '../../../site/app/composables/createColorEngine.ts';
@@ -38,10 +39,18 @@ interface DisplacementInterface {
   readonly 'chroma': DistributionInterface;
 }
 
+interface OptimizerUsageInterface {
+  readonly 'candidateCount': number;
+  readonly 'candidateScoreCalls': number;
+  readonly 'optimizerPasses': number;
+  readonly 'repairPasses': number;
+}
+
 interface RunInterface {
   readonly 'authored': PaletteStateInterface;
   readonly 'budget': { readonly 'candidateScores': number; readonly 'weightedUnits': number };
   readonly 'elapsedMs': number;
+  readonly 'optimizer': OptimizerUsageInterface;
   readonly 'resolved': PaletteStateInterface;
 }
 
@@ -102,6 +111,7 @@ class SweepCases {
                 'framing': framing,
                 'options': ContrastConfigOptionsEntity.create({
                   'cvdMode': cvdMode,
+                  'enableStrictCompliance': false,
                   'nonMandatoryLevel': nonMandatoryLevel,
                   'strictness': strictness
                 }),
@@ -160,6 +170,7 @@ class SweepRun {
     const engine = createColorEngine();
     engine.pipeline(COLOR_PIPELINE);
     enforceCvdSimulate.configureSearchBudgetForTesting(8_000, 48_000);
+    contrastCoordinateCounters.begin();
     const started = performance.now();
     try {
       const resolved = engine.run(input);
@@ -167,14 +178,19 @@ class SweepRun {
         'candidateScores': 0,
         'weightedUnits': 0
       };
+      const optimizer = contrastCoordinateCounters.end();
       const result: RunInterface = {
         'authored': authored,
         'budget': budget,
         'elapsedMs': performance.now() - started,
+        'optimizer': optimizer,
         'resolved': resolved
       };
       return result;
     } finally {
+      if (contrastCoordinateCounters.enabled) {
+        contrastCoordinateCounters.end();
+      }
       enforceCvdSimulate.clearSearchBudgetForTesting();
     }
   }
@@ -312,6 +328,7 @@ class DisplacementSamples {
 
 class SweepReport {
   static create(cases: readonly CaseInterface[]): object {
+    const chunkStarted = performance.now();
     const seedFaithful = new DisplacementSamples();
     const relationshipHued = new DisplacementSamples();
     const fixedHueRoles = new Set<string>();
@@ -320,7 +337,13 @@ class SweepReport {
     let compliantCases = 0;
     let movedRoles = 0;
     let maximumCandidateScores = 0;
+    let maximumCaseElapsedMs = 0;
+    let slowestCase: (CaseInterface & { readonly 'elapsedMs': number }) | undefined;
     let maximumWeightedUnits = 0;
+    let maximumOptimizerCandidateCount = 0;
+    let maximumOptimizerCandidateScoreCalls = 0;
+    let maximumOptimizerPasses = 0;
+    let maximumOptimizerRepairPasses = 0;
     let runtimeMs = 0;
     let weightedUnits = 0;
     for (let index = 0; index < cases.length; index += 1) {
@@ -375,8 +398,16 @@ class SweepReport {
       candidateScores += run.budget.candidateScores;
       maximumCandidateScores = Math.max(maximumCandidateScores, run.budget.candidateScores);
       maximumWeightedUnits = Math.max(maximumWeightedUnits, run.budget.weightedUnits);
+      maximumOptimizerCandidateCount = Math.max(maximumOptimizerCandidateCount, run.optimizer.candidateCount);
+      maximumOptimizerCandidateScoreCalls = Math.max(maximumOptimizerCandidateScoreCalls, run.optimizer.candidateScoreCalls);
+      maximumOptimizerPasses = Math.max(maximumOptimizerPasses, run.optimizer.optimizerPasses);
+      maximumOptimizerRepairPasses = Math.max(maximumOptimizerRepairPasses, run.optimizer.repairPasses);
       weightedUnits += run.budget.weightedUnits;
       runtimeMs += run.elapsedMs;
+      if (run.elapsedMs > maximumCaseElapsedMs) {
+        maximumCaseElapsedMs = run.elapsedMs;
+        slowestCase = { ...benchmarkCase, 'elapsedMs': run.elapsedMs };
+      }
       const references = SeedReference.resolve(run.authored, benchmarkCase.seeds);
       for (const [roleName, resolved] of Object.entries(run.resolved.roles)) {
         const reference = references.get(roleName);
@@ -397,6 +428,15 @@ class SweepReport {
     }
     return {
       'budgetUsage': { 'candidateScores': candidateScores, 'weightedUnits': weightedUnits },
+      'chunkElapsedMs': performance.now() - chunkStarted,
+      'maximumCaseElapsedMs': maximumCaseElapsedMs,
+      ...(slowestCase === undefined ? {} : { 'slowestCase': slowestCase }),
+      'maximumOptimizerUsage': {
+        'candidateCount': maximumOptimizerCandidateCount,
+        'candidateScoreCalls': maximumOptimizerCandidateScoreCalls,
+        'optimizerPasses': maximumOptimizerPasses,
+        'repairPasses': maximumOptimizerRepairPasses
+      },
       'maximumBudgetUsage': {
         'candidateScores': maximumCandidateScores,
         'weightedUnits': maximumWeightedUnits

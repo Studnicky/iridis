@@ -4,6 +4,8 @@ import type { JSONSchema7Type } from 'json-schema';
 import { EntityCompiler } from '@studnicky/entity/node';
 import { Validator } from '@studnicky/iridis/model';
 
+import { ContrastFeasibilityProofEntity } from './ContrastFeasibilityProofEntity.ts';
+
 /** Terminal selected-standard outcome for one semantic contrast pair. */
 export namespace CompliancePairEntity {
   export const Schema = {
@@ -26,6 +28,7 @@ export namespace CompliancePairEntity {
       },
       'foreground': { 'type': 'string' },
       'passed': { 'type': 'boolean' },
+      'proof': ContrastFeasibilityProofEntity.Schema,
       'required': { 'type': 'number' },
       'shortfall': { 'minimum': 0, 'type': 'number' }
     },

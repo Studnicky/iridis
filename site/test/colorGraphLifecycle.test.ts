@@ -44,20 +44,35 @@ class ColorGraphLifecycleBrowser {
     }
   }
 
-  // The carousel face can still be moving when a wheel lands, so each attempt re-measures the canvas.
-  static async wheelZoomIn(page: Page, canvas: Locator, floor: number): Promise<void> {
-    for (let attempt = 0; attempt < ColorGraphLifecycleBrowser.wheelAttempts; attempt += 1) {
-      const bounds = await canvas.boundingBox();
+  // The wheel targets the centre of the canvas area inside the viewport and reports the element that receives it.
+  // The tuple is [x, y, description of the element under the point].
+  static async wheelTarget(canvas: Locator): Promise<readonly [number, number, string]> {
+    const result = await canvas.evaluate((node): readonly [number, number, string] => {
+      const rect = node.getBoundingClientRect();
+      const left = (Math.max(rect.left, 0) + Math.min(rect.right, window.innerWidth)) / 2;
+      const top = (Math.max(rect.top, 0) + Math.min(rect.bottom, window.innerHeight)) / 2;
+      const hit = document.elementFromPoint(left, top);
+      const target = [left, top, hit === null ? 'none' : `${hit.tagName}.${hit.className}`] as const;
 
-      if (bounds !== null) {
-        await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-        await page.mouse.wheel(0, ColorGraphLifecycleBrowser.wheelZoomInDelta);
-      }
+      return target;
+    });
+
+    return result;
+  }
+
+  // The carousel face can still be moving when a wheel lands, so each attempt re-measures the target.
+  static async wheelZoomIn(page: Page, canvas: Locator, floor: number): Promise<void> {
+    let target = await ColorGraphLifecycleBrowser.wheelTarget(canvas);
+
+    for (let attempt = 0; attempt < ColorGraphLifecycleBrowser.wheelAttempts; attempt += 1) {
+      target = await ColorGraphLifecycleBrowser.wheelTarget(canvas);
+      await page.mouse.move(target[0], target[1]);
+      await page.mouse.wheel(0, ColorGraphLifecycleBrowser.wheelZoomInDelta);
       if (await ColorGraphLifecycleBrowser.zoomRaised(page, floor)) {
         return;
       }
     }
-    await ColorGraphLifecycleBrowser.awaitZoomAbove(page, floor);
+    throw new Error(`The wheel never raised the zoom above ${floor}; last target ${JSON.stringify(target)}.`);
   }
 
   static async zoomRaised(page: Page, floor: number): Promise<boolean> {

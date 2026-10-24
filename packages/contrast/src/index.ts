@@ -1,11 +1,17 @@
 import { ContrastPlugin } from './ContrastPlugin.ts';
 
+export { ContrastFeasibility } from './ContrastFeasibility.ts';
 export { ContrastPlugin } from './ContrastPlugin.ts';
 export const contrastPlugin = new ContrastPlugin();
 export { cvdMatrices }         from './data/cvdMatrices.ts';
 export { CVD_THRESHOLDS }      from './data/cvdThresholds.ts';
 export { CompliancePairEntity } from './entities/CompliancePairEntity.ts';
 export { ComplianceReportEntity } from './entities/ComplianceReportEntity.ts';
+export { ContrastFeasibilityProofEntity } from './entities/ContrastFeasibilityProofEntity.ts';
+export { ContrastFeasibilityReportEntity } from './entities/ContrastFeasibilityReportEntity.ts';
+export { ContrastLimitingBoundEntity } from './entities/ContrastLimitingBoundEntity.ts';
+export { ContrastPairFeasibilityEntity } from './entities/ContrastPairFeasibilityEntity.ts';
+export { ContrastSampledFeasibilityEvidenceEntity } from './entities/ContrastSampledFeasibilityEvidenceEntity.ts';
 export { CvdBlockedPairEntity } from './entities/CvdBlockedPairEntity.ts';
 export { CvdCorrectionEntity } from './entities/CvdCorrectionEntity.ts';
 export { CvdEvalEntity } from './entities/CvdEvalEntity.ts';
@@ -13,6 +19,7 @@ export { CvdMatrixEntity } from './entities/CvdMatrixEntity.ts';
 export { CvdPairWarningEntity } from './entities/CvdPairWarningEntity.ts';
 export { CvdResultSetEntity } from './entities/CvdResultSetEntity.ts';
 export { CvdThresholdEntity } from './entities/CvdThresholdEntity.ts';
+export { HueRangeEntity } from './entities/HueRangeEntity.ts';
 export { enforceCompliance } from './tasks/EnforceCompliance.ts';
 export { reportCompliance } from './tasks/ReportCompliance.ts';
 export { withholdCompliance } from './tasks/WithholdCompliance.ts';

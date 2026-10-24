@@ -299,6 +299,7 @@ await test('canonical compliance records an already compliant pair as resolved',
     true,
     'compliant pair is reported as passing'
   );
+  assert.strictEqual(pair.proof, undefined, 'passing pair omits feasibility proof');
 });
 
 await test('canonical compliance corrects a failing AAA pair to seven to one', () => {
@@ -600,6 +601,61 @@ await test('strict false keeps the best-effort palette and terminal evidence', (
   assert.strictEqual(report.problemPairs.length, 1, 'terminal evidence retains the failing pair');
   assert.ok(Object.keys(state.roles).length > 0, 'best-effort roles remain available');
   assert.ok(Object.keys(state.variants).length > 0, 'best-effort variants remain available');
+});
+
+await test('terminal problem pairs carry an exact feasibility proof when schema hues are fixed', () => {
+  const engine = ComplianceTestEngine.create();
+  engine.pipeline([
+    'intake:hex',
+    'resolve:roles',
+    'expand:family',
+    'enforce:compliance',
+    'derive:variant',
+    'report:compliance'
+  ]);
+  const state = engine.run(
+    InputEntity.intake({
+      'colors': ['#777777', '#ffffff'],
+      'contrast': { 'algorithm': 'wcag21', 'cvdMode': 'warn', 'level': 'AA' },
+      'roles': {
+        'contrastPairs': [{
+          'background': 'background',
+          'foreground': 'text',
+          'minimumContrastRatio': 4.5
+        }],
+        'name': 'fixed-hue-feasibility-proof',
+        'roles': [
+          {
+            'chromaRange': [0, 0.05],
+            'hue': 120,
+            'intent': 'text',
+            'lightnessRange': [0.45, 0.46],
+            'name': 'text',
+            'required': true
+          },
+          {
+            'chromaRange': [0, 0.05],
+            'hue': 120,
+            'intent': 'background',
+            'lightnessRange': [0.5, 0.51],
+            'name': 'background',
+            'required': true
+          }
+        ]
+      }
+    })
+  );
+  const rawReport = state.metadata['contrast:complianceReport'];
+  assert.ok(rawReport !== undefined, 'terminal report exists');
+  const report = ComplianceReportEntity.intake(rawReport);
+  const pair = report.problemPairs[0];
+  const renderedPair = report.pairs[0];
+
+  assert.ok(pair !== undefined && renderedPair !== undefined, 'failing pair appears in both terminal collections');
+  assert.ok(pair.proof !== undefined, 'fixed-hue failure carries exact feasibility evidence');
+  assert.strictEqual(pair.proof.required, pair.required, 'proof uses the terminal pair requirement');
+  assert.ok(pair.proof.bestActual < pair.proof.required, 'proof preserves the best achievable shortfall');
+  assert.deepStrictEqual(renderedPair.proof, pair.proof, 'pairs and problemPairs carry the same proof object shape');
 });
 
 await test('strict true withholds an infeasible palette while preserving its best-achievable state', () => {
