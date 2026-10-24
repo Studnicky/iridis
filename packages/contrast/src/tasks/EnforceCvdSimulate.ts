@@ -721,6 +721,9 @@ class CvdSimulation {
       if (!selection.couldImprove(candidate.candidate)) {
         return true;
       }
+      if (!selection.canConsider(candidate.candidate.emitted)) {
+        continue;
+      }
       const score = budget.score(candidate.candidate, constraints);
       if (score === undefined) {
         return false;
@@ -1003,6 +1006,9 @@ class CvdSimulation {
         h,
         emittedColors
       );
+      if (!selection.canConsider(candidate.emitted)) {
+        continue;
+      }
       const score = budget.score(candidate, constraints);
       if (score === undefined) {
         return false;
@@ -1479,19 +1485,23 @@ class CvdCandidateSelection {
     return result;
   }
 
-  private isEligible(
-    candidate: CvdCorrectionCandidate,
-    record: ColorRecordEntity.Type
-  ): boolean {
-    const inRange =
+  canConsider(record: ColorRecordEntity.Type): boolean {
+    const result =
       (this.roleRange.chromaRange === undefined ||
         (record.oklch.c >= this.roleRange.chromaRange[0] &&
           record.oklch.c <= this.roleRange.chromaRange[1])) &&
       (this.roleRange.lightnessRange === undefined ||
         (record.oklch.l >= this.roleRange.lightnessRange[0] &&
           record.oklch.l <= this.roleRange.lightnessRange[1]));
+    return result;
+  }
+
+  private isEligible(
+    candidate: CvdCorrectionCandidate,
+    record: ColorRecordEntity.Type
+  ): boolean {
     const result =
-      inRange &&
+      this.canConsider(record) &&
       candidate.trichromatBaselineDeficitCount === 0 &&
       candidate.novelFailureCount === 0 &&
       candidate.failureCount < this.originalFailureCount;

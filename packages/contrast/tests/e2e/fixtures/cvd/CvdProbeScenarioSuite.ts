@@ -470,7 +470,13 @@ export class CvdProbeScenarioSuite {
       ['text']
     );
     const cvd = ContrastMetadataAssertionPort.cvd(state);
+    const usage = enforceCvdSimulate.searchBudgetUsageForTesting();
 
+    assert.deepStrictEqual(
+      usage,
+      { 'candidateScores': 1, 'weightedUnits': 6 },
+      '[cvd-range-bounded] candidates outside the authored envelope are not scored'
+    );
     assert.ok(cvd !== undefined, '[cvd-range-bounded] metadata present');
     assert.strictEqual(
       state.roles.background?.hex,
