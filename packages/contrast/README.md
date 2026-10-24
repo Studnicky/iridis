@@ -51,6 +51,13 @@ Constraints are `pin`, `range`, `hue-relationship`, `gamut`, `cvd-floor`, or
 `cvd-drop`. `problemPairs` is the stable-sorted subset of the same pair records
 whose `passed` value is false.
 
+`ContrastFeasibility.analyzeSchema(schema, options)` evaluates declared pair envelopes for schema authors.
+It reports reachable, unreachable, hue-dependent, or indeterminate reachability without changing a palette.
+`ContrastFeasibility.proveRun(state)` evaluates the terminal resolved roles with the engine contrast primitives.
+A failing pair may carry an optional `proof` containing its required value, best actual value, shortfall, and limiting bounds.
+Fixed relationship hues produce direct proof evidence; unanchored-hue analysis keeps sampled evidence explicitly separate.
+The advisory APIs preserve the same range, gamut, pin, selected-standard, and CVD-floor constraints as compliance.
+
 The CVD record lands in `state.metadata['contrast:cvd']`.
 `warnings` retain `belowFloor` and `exceedsDrop` evidence for every mode;
 `corrections[].adjustedRoles` lists roles changed by `nudge` or `enforce`;
@@ -78,13 +85,10 @@ npm install @studnicky/iridis @studnicky/iridis-contrast
 ## Usage
 
 ```ts
-import type { RoleSchemaEntity } from '@studnicky/iridis';
+import type { RoleSchemaEntity } from "@studnicky/iridis";
 
-import { Engine, coreTasks } from '@studnicky/iridis';
-import {
-  contrastPlugin,
-  CvdResultSetEntity,
-} from '@studnicky/iridis-contrast';
+import { Engine, coreTasks } from "@studnicky/iridis";
+import { contrastPlugin, CvdResultSetEntity } from "@studnicky/iridis-contrast";
 
 export function generateAccessiblePalette(roleSchema: RoleSchemaEntity.Type) {
   const engine = new Engine();
@@ -92,38 +96,38 @@ export function generateAccessiblePalette(roleSchema: RoleSchemaEntity.Type) {
   engine.adopt(contrastPlugin);
 
   engine.pipeline([
-    'intake:any',
-    'resolve:roles',
-    'expand:family',
-    'enforce:compliance',
-    'derive:variant',
-    'report:compliance',
+    "intake:any",
+    "resolve:roles",
+    "expand:family",
+    "enforce:compliance",
+    "derive:variant",
+    "report:compliance",
   ]);
 
   const state = engine.run({
-    'bypass':   undefined,
-    'colors':   ['#8B5CF6'],
-    'contrast': {
-      'algorithm':          'wcag21',
-      'cvdMode':            'enforce',
-      'extra':              undefined,
-      'level':              'AA',
-      'nonMandatoryLevel': 'AA',
+    bypass: undefined,
+    colors: ["#8B5CF6"],
+    contrast: {
+      algorithm: "wcag21",
+      cvdMode: "enforce",
+      extra: undefined,
+      level: "AA",
+      nonMandatoryLevel: "AA",
     },
-    'emit':      undefined,
-    'maxColors': undefined,
-    'metadata':  undefined,
-    'roles':     roleSchema,
-    'runtime':   undefined,
+    emit: undefined,
+    maxColors: undefined,
+    metadata: undefined,
+    roles: roleSchema,
+    runtime: undefined,
   });
 
-  const report = state.metadata['contrast:complianceReport'];
+  const report = state.metadata["contrast:complianceReport"];
   // report?.compliant     // true when every pair passes the selected standard
   // report?.disposition   // resolved | best-effort | withheld
   // report?.pairs         // { foreground, background, required, actual, shortfall, passed, adjustedRoles, constraints }
   // report?.problemPairs  // stable-sorted failed subset of report.pairs
 
-  const cvd = CvdResultSetEntity.intake(state.metadata['contrast:cvd']);
+  const cvd = CvdResultSetEntity.intake(state.metadata["contrast:cvd"]);
   // cvd.corrections // { foreground, background, adjustedRoles, cvdTypesFixed, cvdTypesRemaining }
   // cvd.blocked     // pairs whose both endpoints are stated
 
@@ -133,11 +137,11 @@ export function generateAccessiblePalette(roleSchema: RoleSchemaEntity.Type) {
 
 ## Tasks
 
-| Name | Behaviour |
-|---|---|
-| `enforce:compliance` | Applies the selected standard (`input.contrast`) to every declared pair, runs CVD correction as a validator and refiner of the same policy, re-measures after correction, and moves only derived endpoints. |
-| `report:compliance` | Measures the final roles and writes `metadata['contrast:complianceReport']`. |
-| `withhold:compliance` | Marks the terminal report `withheld` when `enableStrictCompliance` is true and problem pairs remain, while preserving the best-achievable roles and variants. |
+| Name                  | Behaviour                                                                                                                                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enforce:compliance`  | Applies the selected standard (`input.contrast`) to every declared pair, runs CVD correction as a validator and refiner of the same policy, re-measures after correction, and moves only derived endpoints. |
+| `report:compliance`   | Measures the final roles and writes `metadata['contrast:complianceReport']`.                                                                                                                                |
+| `withhold:compliance` | Marks the terminal report `withheld` when `enableStrictCompliance` is true and problem pairs remain, while preserving the best-achievable roles and variants.                                               |
 
 Corrected derived roles are replaced in `state.roles`; stated roles are never
 mutated. Downstream emit tasks read the final records without additional
