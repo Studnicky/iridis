@@ -15,6 +15,28 @@ class HueIntervalBoundsFixture {
       assert.ok(coordinate.apcaLuminance <= bounds.maximumApcaLuminance, `APCA upper H=${hue}`);
     }
   }
+
+  public static verifyRange(
+    lightness: readonly [number, number],
+    chroma: readonly [number, number],
+    startHue: number,
+    endHue: number
+  ): void {
+    const bounds = HueIntervalBounds.range(lightness, chroma, startHue, endHue);
+    for (let hue = startHue; hue <= endHue; hue += 1) {
+      for (let lightnessIndex = 0; lightnessIndex <= 4; lightnessIndex += 1) {
+        const candidateLightness = lightness[0] + ((lightness[1] - lightness[0]) * lightnessIndex) / 4;
+        for (let chromaIndex = 0; chromaIndex <= 4; chromaIndex += 1) {
+          const candidateChroma = chroma[0] + ((chroma[1] - chroma[0]) * chromaIndex) / 4;
+          const coordinate = ColorCoordinate.fromOklch(candidateLightness, candidateChroma, hue);
+          assert.ok(coordinate.relativeLuminance >= bounds.minimumRelativeLuminance, `range relative lower H=${hue}`);
+          assert.ok(coordinate.relativeLuminance <= bounds.maximumRelativeLuminance, `range relative upper H=${hue}`);
+          assert.ok(coordinate.apcaLuminance >= bounds.minimumApcaLuminance, `range APCA lower H=${hue}`);
+          assert.ok(coordinate.apcaLuminance <= bounds.maximumApcaLuminance, `range APCA upper H=${hue}`);
+        }
+      }
+    }
+  }
 }
 
 void test('HueIntervalBounds contains gamut-mapped luminance throughout deterministic hue arcs', () => {
@@ -55,6 +77,11 @@ void test('HueIntervalBounds contains deterministic randomized and split wrap-ar
     HueIntervalBoundsFixture.verify(lightness, chroma, start, 360);
     HueIntervalBoundsFixture.verify(lightness, chroma, 0, end - 360);
   }
+});
+
+void test('HueIntervalBounds contains sampled lightness and chroma envelopes', () => {
+  HueIntervalBoundsFixture.verifyRange([0.15, 0.85], [0.05, 0.35], 45, 135);
+  HueIntervalBoundsFixture.verifyRange([0.4, 0.95], [0, 0.5], 180, 360);
 });
 
 void test('HueIntervalBounds rejects wrapping arcs so callers split at the hue boundary', () => {

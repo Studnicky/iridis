@@ -74,17 +74,36 @@ export class HueIntervalBounds {
   }
 
   public static fixedArc(lightness: number, chroma: number, startHue: number, endHue: number): HueIntervalBounds {
-    if (!Number.isFinite(lightness) || !Number.isFinite(chroma) || !Number.isFinite(startHue) || !Number.isFinite(endHue)) {
+    const result = HueIntervalBounds.range([lightness, lightness], [chroma, chroma], startHue, endHue);
+    return result;
+  }
+
+  public static range(
+    lightnessRange: readonly [number, number],
+    chromaRange: readonly [number, number],
+    startHue: number,
+    endHue: number
+  ): HueIntervalBounds {
+    const [minimumLightness, maximumLightness] = lightnessRange;
+    const [minimumChroma, maximumChroma] = chromaRange;
+    if (
+      !Number.isFinite(minimumLightness) ||
+      !Number.isFinite(maximumLightness) ||
+      !Number.isFinite(minimumChroma) ||
+      !Number.isFinite(maximumChroma) ||
+      !Number.isFinite(startHue) ||
+      !Number.isFinite(endHue)
+    ) {
       throw new TypeError('Hue interval requires finite OKLCH coordinates');
     }
-    if (chroma < 0) {
-      throw new RangeError('Hue interval requires non-negative chroma');
+    if (minimumLightness > maximumLightness || minimumChroma < 0 || minimumChroma > maximumChroma) {
+      throw new RangeError('Hue interval requires ordered non-negative OKLCH ranges');
     }
     if (startHue < 0 || endHue > 360 || startHue > endHue) {
       throw new RangeError('Hue interval must be non-wrapping and within 0–360 degrees');
     }
-    const l = NumericInterval.point(lightness);
-    const c = new NumericInterval(0, chroma);
+    const l = new NumericInterval(minimumLightness, maximumLightness);
+    const c = new NumericInterval(0, maximumChroma);
     const radians = new NumericInterval((startHue * Math.PI) / 180, (endHue * Math.PI) / 180);
     const a = c.multiply(HueIntervalBounds.cosine(radians));
     const b = c.multiply(HueIntervalBounds.sine(radians));
