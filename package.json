@@ -18,9 +18,11 @@
       "launch-editor": ">=2.14.2",
       "@apidevtools/json-schema-ref-parser>js-yaml": "4.3.2",
       "shell-quote": "1.11.0",
-      "@studnicky/fetch>undici": "8.11.2",
-      "@digitalbazaar/http-client>undici": "6.28.1",
-      "@nuxt/devtools": "3.4.3"
+      "@studnicky/fetch>undici": "8.12.2",
+      "@digitalbazaar/http-client>undici": "6.29.1",
+      "nuxt>undici": "8.12.2",
+      "@nuxt/devtools": "3.4.3",
+      "zod": "4.6.7"
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",
