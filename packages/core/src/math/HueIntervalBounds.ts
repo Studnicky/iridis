@@ -1,3 +1,4 @@
+import { apcaLc } from './ApcaLc.ts';
 import { linearToSrgb } from './LinearToSrgb.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
 
@@ -56,7 +57,10 @@ class NumericInterval {
   }
 }
 
-/** Conservative sRGB luminance bounds for a fixed OKLCH L/C hue arc after the engine gamut map. */
+/**
+ * The gamut map preserves lightness and only reduces chroma before clipping, so emitted colors lie in the clipped L/[0,Cmax] envelope.
+ * Outward-rounded interval operations conservatively contain its sRGB luminance and APCA luminance.
+ */
 export class HueIntervalBounds {
   public readonly maximumApcaLuminance: number;
   public readonly maximumRelativeLuminance: number;
@@ -71,6 +75,25 @@ export class HueIntervalBounds {
     this.maximumRelativeLuminance = 0.2126 * redLinear.maximum + 0.7152 * greenLinear.maximum + 0.0722 * blueLinear.maximum;
     this.minimumApcaLuminance = 0.2126729 * redLinear.minimum + 0.7151522 * greenLinear.minimum + 0.072175 * blueLinear.minimum;
     this.maximumApcaLuminance = 0.2126729 * redLinear.maximum + 0.7151522 * greenLinear.maximum + 0.072175 * blueLinear.maximum;
+  }
+
+  public static apcaMagnitudeBounds(
+    foregroundMinimum: number,
+    foregroundMaximum: number,
+    backgroundMinimum: number,
+    backgroundMaximum: number
+  ): readonly [number, number] {
+    const candidates = [
+      Math.abs(apcaLc.apply(foregroundMinimum, backgroundMinimum)),
+      Math.abs(apcaLc.apply(foregroundMinimum, backgroundMaximum)),
+      Math.abs(apcaLc.apply(foregroundMaximum, backgroundMinimum)),
+      Math.abs(apcaLc.apply(foregroundMaximum, backgroundMaximum))
+    ];
+    const overlaps =
+      foregroundMinimum <= backgroundMaximum &&
+      foregroundMaximum >= backgroundMinimum;
+    const minimum = overlaps ? 0 : Math.min(...candidates);
+    return [minimum, Math.max(...candidates)];
   }
 
   public static fixedArc(lightness: number, chroma: number, startHue: number, endHue: number): HueIntervalBounds {

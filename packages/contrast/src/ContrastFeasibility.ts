@@ -231,7 +231,7 @@ class ContrastFeasibilityDomain {
       wcagLower = (backgroundBounds.minimumRelativeLuminance + 0.05) / (foregroundBounds.maximumRelativeLuminance + 0.05);
     }
     const lower = requirement.algorithm === 'apca'
-      ? ColorCoordinate.apcaMagnitudeBounds(foregroundBounds.minimumApcaLuminance, foregroundBounds.maximumApcaLuminance, backgroundBounds.minimumApcaLuminance, backgroundBounds.maximumApcaLuminance)[0]
+      ? HueIntervalBounds.apcaMagnitudeBounds(foregroundBounds.minimumApcaLuminance, foregroundBounds.maximumApcaLuminance, backgroundBounds.minimumApcaLuminance, backgroundBounds.maximumApcaLuminance)[0]
       : wcagLower;
     const result = lower >= requirement.minimumContrastRatio;
     return result;
@@ -315,7 +315,7 @@ class ContrastFeasibilityDomain {
       return undefined;
     }
     if (requirement.algorithm === 'apca') {
-      const result = ColorCoordinate.apcaMagnitudeBounds(
+      const result = HueIntervalBounds.apcaMagnitudeBounds(
         foregroundBounds.minimumApca,
         foregroundBounds.maximumApca,
         backgroundBounds.minimumApca,

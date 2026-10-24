@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { apcaLc } from '../../src/math/ApcaLc.ts';
 import { ColorCoordinate } from '../../src/math/ColorCoordinate.ts';
 import { HueIntervalBounds } from '../../src/math/HueIntervalBounds.ts';
 
@@ -82,6 +83,47 @@ void test('HueIntervalBounds contains deterministic randomized and split wrap-ar
 void test('HueIntervalBounds contains sampled lightness and chroma envelopes', () => {
   HueIntervalBoundsFixture.verifyRange([0.15, 0.85], [0.05, 0.35], 45, 135);
   HueIntervalBoundsFixture.verifyRange([0.4, 0.95], [0, 0.5], 180, 360);
+});
+
+void test('HueIntervalBounds bounds APCA magnitude for disjoint foreground-above-background intervals', () => {
+  const bounds = HueIntervalBounds.apcaMagnitudeBounds(0.8, 0.9, 0.1, 0.2);
+  const foregroundValues = [0.8, 0.9];
+  const backgroundValues = [0.1, 0.2];
+  for (let foregroundIndex = 0; foregroundIndex < foregroundValues.length; foregroundIndex += 1) {
+    const foreground = foregroundValues[foregroundIndex];
+    if (foreground === undefined) { continue; }
+    for (let backgroundIndex = 0; backgroundIndex < backgroundValues.length; backgroundIndex += 1) {
+      const background = backgroundValues[backgroundIndex];
+      if (background === undefined) { continue; }
+      const actual = Math.abs(apcaLc.apply(foreground, background));
+      assert.ok(actual >= bounds[0], 'lower APCA magnitude bound contains each foreground-above corner');
+      assert.ok(actual <= bounds[1], 'upper APCA magnitude bound contains each foreground-above corner');
+    }
+  }
+  assert.ok(bounds[0] > 0, 'disjoint intervals have a positive minimum magnitude');
+});
+
+void test('HueIntervalBounds bounds APCA magnitude for disjoint background-above-foreground intervals', () => {
+  const bounds = HueIntervalBounds.apcaMagnitudeBounds(0.1, 0.2, 0.8, 0.9);
+  const foregroundValues = [0.1, 0.2];
+  const backgroundValues = [0.8, 0.9];
+  for (let foregroundIndex = 0; foregroundIndex < foregroundValues.length; foregroundIndex += 1) {
+    const foreground = foregroundValues[foregroundIndex];
+    if (foreground === undefined) { continue; }
+    for (let backgroundIndex = 0; backgroundIndex < backgroundValues.length; backgroundIndex += 1) {
+      const background = backgroundValues[backgroundIndex];
+      if (background === undefined) { continue; }
+      const actual = Math.abs(apcaLc.apply(foreground, background));
+      assert.ok(actual >= bounds[0], 'lower APCA magnitude bound contains each background-above corner');
+      assert.ok(actual <= bounds[1], 'upper APCA magnitude bound contains each background-above corner');
+    }
+  }
+  assert.ok(bounds[0] > 0, 'reversed disjoint intervals have a positive minimum magnitude');
+});
+
+void test('HueIntervalBounds gives overlapping APCA intervals a zero minimum magnitude', () => {
+  const bounds = HueIntervalBounds.apcaMagnitudeBounds(0.2, 0.8, 0.5, 0.9);
+  assert.strictEqual(bounds[0], 0);
 });
 
 void test('HueIntervalBounds rejects wrapping arcs so callers split at the hue boundary', () => {
