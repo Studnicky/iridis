@@ -294,6 +294,39 @@ await test('ContrastFeasibility certifies an affine derived hue arc when its gam
   assert.strictEqual(pair.sampled, undefined, 'the certificate does not depend on sampled evidence');
 });
 
+await test('ContrastFeasibility retains sampled evidence for hue-target clamp relationships', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{
+      'background': 'brand',
+      'foreground': 'semantic',
+      'minimumContrastRatio': 4.5
+    }],
+    'name': 'hue-target-clamp-indeterminate',
+    'roles': [
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.1, 0.1],
+        'lightnessRange': [0.1, 0.1],
+        'name': 'brand'
+      }),
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.1, 0.1],
+        'derivedFrom': 'brand',
+        'hue': 25,
+        'hueClamp': 45,
+        'lightnessRange': [0.9, 0.9],
+        'name': 'semantic'
+      })
+    ]
+  });
+
+  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
+  const pair = report.pairs[0];
+
+  assert.ok(pair !== undefined, 'hue-target pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'indeterminate', 'non-affine hue clamp relations do not receive a continuous certificate');
+  assert.ok(pair.sampled !== undefined, 'indeterminate hue clamp relations retain sampled evidence');
+});
+
 await test('ContrastFeasibility uses resolved run hues without unanchored sampling', () => {
   const schema = ContrastFeasibilityFixture.schema(
     ContrastFeasibilityFixture.role('foreground', 0.45, 0.1),
