@@ -145,10 +145,23 @@ class ContrastAdjustment {
 }
 
 class ContrastProvenance {
+  static readonly #changes = new WeakSet<PaletteStateInterface>();
+  static readonly #values = new WeakMap<
+    PaletteStateInterface,
+    Map<string, RoleProvenanceEntity.Type>
+  >();
+
+  static commit(state: PaletteStateInterface): void {
+    const values = ContrastProvenance.#values.get(state);
+    if (ContrastProvenance.#changes.has(state) && values !== undefined) {
+      Metadata.writeRoleProvenance(state.metadata, values);
+    }
+    ContrastProvenance.#changes.delete(state);
+    ContrastProvenance.#values.delete(state);
+  }
+
   static isStated(state: PaletteStateInterface, roleName: string): boolean {
-    const result =
-      Metadata.roleProvenance(state.metadata).get(roleName)?.origin ===
-      'stated';
+    const result = ContrastProvenance.values(state).get(roleName)?.origin === 'stated';
     return result;
   }
 
@@ -158,7 +171,7 @@ class ContrastProvenance {
     beforeHex: string,
     afterHex: string
   ): void {
-    const provenance = Metadata.roleProvenance(state.metadata);
+    const provenance = ContrastProvenance.values(state);
     const role =
       provenance.get(roleName) ??
       RoleProvenanceEntity.create({
@@ -173,7 +186,76 @@ class ContrastProvenance {
       'origin': role.origin
     });
     provenance.set(roleName, nextRole);
-    Metadata.writeRoleProvenance(state.metadata, provenance);
+    ContrastProvenance.#changes.add(state);
+  }
+
+  static values(
+    state: PaletteStateInterface
+  ): Map<string, RoleProvenanceEntity.Type> {
+    const cached = ContrastProvenance.#values.get(state);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const values = Metadata.roleProvenance(state.metadata);
+    ContrastProvenance.#values.set(state, values);
+    return values;
+  }
+}
+
+class ContrastRangeCache {
+  static readonly #values = new WeakMap<
+    PaletteStateInterface['input'],
+    ReadonlyMap<string, ContrastPolicy.RoleRangeInterface>
+  >();
+
+  static allows(
+    input: PaletteStateInterface['input'],
+    roleName: string,
+    coordinate: Readonly<{ 'c': number; 'l': number }>
+  ): boolean {
+    const range = ContrastRangeCache.range(input, roleName);
+    const result =
+      (range.chromaRange === undefined ||
+        (coordinate.c >= range.chromaRange[0] && coordinate.c <= range.chromaRange[1])) &&
+      (range.lightnessRange === undefined ||
+        (coordinate.l >= range.lightnessRange[0] && coordinate.l <= range.lightnessRange[1]));
+    return result;
+  }
+
+  static range(
+    input: PaletteStateInterface['input'],
+    roleName: string
+  ): ContrastPolicy.RoleRangeInterface {
+    const cached = ContrastRangeCache.values(input).get(roleName);
+    const result = cached ?? {};
+    return result;
+  }
+
+  private static values(
+    input: PaletteStateInterface['input']
+  ): ReadonlyMap<string, ContrastPolicy.RoleRangeInterface> {
+    const cached = ContrastRangeCache.#values.get(input);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const values = new Map<string, ContrastPolicy.RoleRangeInterface>();
+    const definitions = input.roles?.roles ?? [];
+    for (let index = 0; index < definitions.length; index += 1) {
+      const definition = definitions[index];
+      if (definition === undefined) {
+        continue;
+      }
+      values.set(definition.name, {
+        ...(definition.chromaRange === undefined
+          ? {}
+          : { 'chromaRange': definition.chromaRange }),
+        ...(definition.lightnessRange === undefined
+          ? {}
+          : { 'lightnessRange': definition.lightnessRange })
+      });
+    }
+    ContrastRangeCache.#values.set(input, values);
+    return values;
   }
 }
 
@@ -641,7 +723,7 @@ class ContrastExecution {
     roleName: string,
     current: ColorCoordinate
   ): readonly ColorCoordinate[] {
-    const range = ContrastPolicy.roleRange(state.input, roleName);
+    const range = ContrastRangeCache.range(state.input, roleName);
     const lightnessRange = range.lightnessRange ?? [current.l, current.l] as const;
     const chromaRange = range.chromaRange ?? [current.c, current.c] as const;
     const lightnesses = ContrastExecution.coordinateValues(current.l, lightnessRange);
@@ -658,7 +740,7 @@ class ContrastExecution {
           continue;
         }
         const candidate = ColorCoordinate.fromOklch(lightness, chroma, current.h);
-        if (ContrastPolicy.allowsRoleCoordinates(state.input, roleName, candidate)) {
+        if (ContrastRangeCache.allows(state.input, roleName, candidate)) {
           result.push(candidate);
         }
       }
@@ -938,7 +1020,7 @@ class ContrastExecution {
       minimumRatio,
       maximumRatio
     );
-    const allowed = ContrastPolicy.allowsRoleRecord(state.input, mover.roleName, resolved);
+    const allowed = ContrastRangeCache.allows(state.input, mover.roleName, resolved.oklch);
     if (!resolvedPassed || !allowed || ContrastMeasurement.sameRecord(resolved, mover.record)) {
       const result = ContrastExecution.unresolvedEntry(
         requirement,
@@ -974,7 +1056,7 @@ class ContrastExecution {
     minimumRatio: number,
     maximumRatio: number | undefined
   ): ColorRecordEntity.Type {
-    const roleRange = ContrastPolicy.roleRange(state.input, mover.roleName);
+    const roleRange = ContrastRangeCache.range(state.input, mover.roleName);
     const result = ensureContrast.apply(
       mover.record,
       mover.counterpart,
@@ -1018,7 +1100,7 @@ class ContrastExecution {
     roleName: string,
     input: PaletteStateInterface['input']
   ): PendingContrastEntryEntity.Type {
-    const range = ContrastPolicy.roleRange(input, roleName);
+    const range = ContrastRangeCache.range(input, roleName);
     if (range.chromaRange !== undefined || range.lightnessRange !== undefined) {
       const result = ContrastExecution.rangeEntry(
         requirement,
@@ -1236,9 +1318,10 @@ class EnforceContrast implements TaskInterface {
       context,
       requirements
     );
-    const report = ContrastExecution.report(roles, pending, selection, Metadata.roleProvenance(state.metadata));
+    const report = ContrastExecution.report(roles, pending, selection, ContrastProvenance.values(state));
     roles.commit();
     Metadata.writeContrastReport(state.metadata, report);
+    ContrastProvenance.commit(state);
   }
 }
 
