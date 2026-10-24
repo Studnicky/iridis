@@ -20,6 +20,8 @@ Build accessible, role-based colour systems from seed colours.
 > [!NOTE]
 > This README helps you choose a package. Complete usage guidance, APIs, and examples are on GitHub Pages.
 
+The workspace emits 1,436 artifacts from 359 TypeScript sources across 18 public packages.
+
 ## Install
 
 Packages are published to GitHub Packages. Add the registry to your project's `.npmrc` with a token that has `read:packages` access:

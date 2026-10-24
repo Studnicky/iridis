@@ -6,9 +6,8 @@ import type {
 } from '@studnicky/iridis';
 
 import {
+  ColorCoordinate,
   colorRecordFactory,
-  contrastApca,
-  contrastWcag21,
   InputEntity,
   Metadata,
   PaletteRoleState,
@@ -23,14 +22,14 @@ import { ContrastSampledFeasibilityEvidenceEntity } from './entities/ContrastSam
 import { HueRangeEntity } from './entities/HueRangeEntity.ts';
 
 interface ColorExtremaInterface {
-  readonly 'maximum': ColorRecordEntity.Type;
-  readonly 'minimum': ColorRecordEntity.Type;
+  readonly 'maximum': ColorCoordinate;
+  readonly 'minimum': ColorCoordinate;
 }
 
 interface HueEvaluationInterface {
   readonly 'actual': number;
-  readonly 'background': ColorRecordEntity.Type;
-  readonly 'foreground': ColorRecordEntity.Type;
+  readonly 'background': ColorCoordinate;
+  readonly 'foreground': ColorCoordinate;
   readonly 'hue': number;
 }
 
@@ -63,7 +62,7 @@ interface SearchCellInterface {
  * classifications, not symbolic claims about every real-valued hue.
  */
 class ContrastFeasibilityDomain {
-  static readonly #BLACK = colorRecordFactory.fromOklch(0, 0, 0);
+  static readonly #BLACK = ColorCoordinate.fromOklch(0, 0, 0);
   static readonly #CHROMA_PRECISION = 0.02;
   static readonly #HUE_PRECISION = 0.5;
   static readonly #LIGHTNESS_PRECISION = 1 / 1024;
@@ -140,6 +139,16 @@ class ContrastFeasibilityDomain {
     return result;
   }
 
+  static coordinate(
+    domain: RoleDomainInterface,
+    lightness: number,
+    chroma: number,
+    hue: number
+  ): ColorCoordinate {
+    const result = ColorCoordinate.fromOklch(lightness, chroma, domain.hue ?? hue);
+    return result;
+  }
+
   private static hasFixedHueDomain(
     foreground: RoleDomainInterface,
     background: RoleDomainInterface
@@ -150,10 +159,10 @@ class ContrastFeasibilityDomain {
     return result;
   }
   private static bestSample(
-    candidates: readonly ColorRecordEntity.Type[],
+    candidates: readonly ColorCoordinate[],
     requirement: ContrastPolicy.RequirementInterface,
     isImprovement: (current: number, candidate: number) => boolean
-  ): ColorRecordEntity.Type {
+  ): ColorCoordinate {
     const first = candidates[0];
     if (first === undefined) {
       throw new TypeError('Contrast feasibility sample set is empty');
@@ -199,29 +208,29 @@ class ContrastFeasibilityDomain {
   ): HueEvaluationInterface {
     const foregroundExtrema = ContrastFeasibilityDomain.extrema(foreground, hue, requirement);
     const backgroundExtrema = ContrastFeasibilityDomain.extrema(background, hue, requirement);
-    const foregroundRecords = [foregroundExtrema.minimum, foregroundExtrema.maximum];
-    const backgroundRecords = [backgroundExtrema.minimum, backgroundExtrema.maximum];
+    const foregroundCoordinates = [foregroundExtrema.minimum, foregroundExtrema.maximum];
+    const backgroundCoordinates = [backgroundExtrema.minimum, backgroundExtrema.maximum];
     let actual = -Infinity;
-    let selectedForeground = foregroundRecords[0];
-    let selectedBackground = backgroundRecords[0];
+    let selectedForeground = foregroundCoordinates[0];
+    let selectedBackground = backgroundCoordinates[0];
     if (selectedForeground === undefined || selectedBackground === undefined) {
       throw new TypeError('Contrast feasibility extrema are empty');
     }
-    for (let foregroundIndex = 0; foregroundIndex < foregroundRecords.length; foregroundIndex += 1) {
-      const foregroundRecord = foregroundRecords[foregroundIndex];
-      if (foregroundRecord === undefined) {
+    for (let foregroundIndex = 0; foregroundIndex < foregroundCoordinates.length; foregroundIndex += 1) {
+      const foregroundCoordinate = foregroundCoordinates[foregroundIndex];
+      if (foregroundCoordinate === undefined) {
         continue;
       }
-      for (let backgroundIndex = 0; backgroundIndex < backgroundRecords.length; backgroundIndex += 1) {
-        const backgroundRecord = backgroundRecords[backgroundIndex];
-        if (backgroundRecord === undefined) {
+      for (let backgroundIndex = 0; backgroundIndex < backgroundCoordinates.length; backgroundIndex += 1) {
+        const backgroundCoordinate = backgroundCoordinates[backgroundIndex];
+        if (backgroundCoordinate === undefined) {
           continue;
         }
-        const candidate = ContrastFeasibilityDomain.measure(foregroundRecord, backgroundRecord, requirement);
+        const candidate = ContrastFeasibilityDomain.measure(foregroundCoordinate, backgroundCoordinate, requirement);
         if (candidate > actual) {
           actual = candidate;
-          selectedForeground = foregroundRecord;
-          selectedBackground = backgroundRecord;
+          selectedForeground = foregroundCoordinate;
+          selectedBackground = backgroundCoordinate;
         }
       }
     }
@@ -260,7 +269,8 @@ class ContrastFeasibilityDomain {
     requirement: ContrastPolicy.RequirementInterface
   ): ColorExtremaInterface {
     if (domain.fixedRecord !== undefined) {
-      return { 'maximum': domain.fixedRecord, 'minimum': domain.fixedRecord };
+      const coordinate = ColorCoordinate.fromRecord(domain.fixedRecord);
+      return { 'maximum': coordinate, 'minimum': coordinate };
     }
     const initial: SearchCellInterface = {
       'cMaximum': domain.chroma[1],
@@ -277,41 +287,41 @@ class ContrastFeasibilityDomain {
 
   private static limitingBounds(
     domain: RoleDomainInterface,
-    record: ColorRecordEntity.Type
+    coordinate: ColorCoordinate
   ): readonly ContrastFeasibilityProofEntity.Type['limitingBounds'][number][] {
     if (domain.fixedRecord !== undefined) {
       return [{
         'channel': 'pin',
         'edge': 'fixed',
         'role': domain.name,
-        'value': record.oklch.l
+        'value': coordinate.l
       }];
     }
     const result: ContrastFeasibilityProofEntity.Type['limitingBounds'] = [];
-    const lightnessEdge = ContrastFeasibilityDomain.edge(domain.lightness, record.oklch.l);
+    const lightnessEdge = ContrastFeasibilityDomain.edge(domain.lightness, coordinate.l);
     if (lightnessEdge !== undefined) {
       result.push({
         'channel': 'lightness',
         'edge': lightnessEdge,
         'role': domain.name,
-        'value': record.oklch.l
+        'value': coordinate.l
       });
     }
-    const chromaEdge = ContrastFeasibilityDomain.edge(domain.chroma, record.oklch.c);
+    const chromaEdge = ContrastFeasibilityDomain.edge(domain.chroma, coordinate.c);
     if (chromaEdge !== undefined) {
       result.push({
         'channel': 'chroma',
         'edge': chromaEdge,
         'role': domain.name,
-        'value': record.oklch.c
+        'value': coordinate.c
       });
     }
-    if (record.displayP3 !== undefined) {
+    if (coordinate.requiresDisplayP3()) {
       result.push({
         'channel': 'gamut',
         'edge': 'fixed',
         'role': domain.name,
-        'value': record.oklch.c
+        'value': coordinate.c
       });
     }
     return result;
@@ -331,13 +341,13 @@ class ContrastFeasibilityDomain {
   }
 
   private static measure(
-    foreground: ColorRecordEntity.Type,
-    background: ColorRecordEntity.Type,
+    foreground: ColorCoordinate,
+    background: ColorCoordinate,
     requirement: ContrastPolicy.RequirementInterface
   ): number {
     const result = requirement.algorithm === 'apca'
-      ? Math.abs(contrastApca.apply(foreground, background))
-      : contrastWcag21.apply(foreground, background);
+      ? Math.abs(foreground.apca(background))
+      : foreground.wcag21(background);
     return result;
   }
 
@@ -384,7 +394,7 @@ class ContrastFeasibilityDomain {
     requirement: ContrastPolicy.RequirementInterface,
     cell: SearchCellInterface,
     isImprovement: (current: number, candidate: number) => boolean
-  ): ColorRecordEntity.Type {
+  ): ColorCoordinate {
     const selected = ContrastFeasibilityDomain.bestSample(
       ContrastFeasibilityDomain.samples(domain, hue, cell),
       requirement,
@@ -399,10 +409,10 @@ class ContrastFeasibilityDomain {
     ) {
       return selected;
     }
-    const lLower = selected.oklch.l <= lMidpoint ? cell.lMinimum : lMidpoint;
-    const lUpper = selected.oklch.l <= lMidpoint ? lMidpoint : cell.lMaximum;
-    const cLower = selected.oklch.c <= cMidpoint ? cell.cMinimum : cMidpoint;
-    const cUpper = selected.oklch.c <= cMidpoint ? cMidpoint : cell.cMaximum;
+    const lLower = selected.l <= lMidpoint ? cell.lMinimum : lMidpoint;
+    const lUpper = selected.l <= lMidpoint ? lMidpoint : cell.lMaximum;
+    const cLower = selected.c <= cMidpoint ? cell.cMinimum : cMidpoint;
+    const cUpper = selected.c <= cMidpoint ? cMidpoint : cell.cMaximum;
     const next: SearchCellInterface = {
       'cMaximum': chromaSpan <= ContrastFeasibilityDomain.#CHROMA_PRECISION ? cell.cMaximum : cUpper,
       'cMinimum': chromaSpan <= ContrastFeasibilityDomain.#CHROMA_PRECISION ? cell.cMinimum : cLower,
@@ -417,11 +427,11 @@ class ContrastFeasibilityDomain {
     domain: RoleDomainInterface,
     hue: number,
     cell: SearchCellInterface
-  ): readonly ColorRecordEntity.Type[] {
+  ): readonly ColorCoordinate[] {
     const [lMidpoint, cMidpoint] = ContrastFeasibilityDomain.midpoint(cell);
     const lightness = [cell.lMinimum, lMidpoint, cell.lMaximum];
     const chroma = [cell.cMinimum, cMidpoint, cell.cMaximum];
-    const result: ColorRecordEntity.Type[] = [];
+    const result: ColorCoordinate[] = [];
     for (let lIndex = 0; lIndex < lightness.length; lIndex += 1) {
       const l = lightness[lIndex];
       if (l === undefined) {
@@ -430,7 +440,7 @@ class ContrastFeasibilityDomain {
       for (let cIndex = 0; cIndex < chroma.length; cIndex += 1) {
         const c = chroma[cIndex];
         if (c !== undefined) {
-          result.push(ContrastFeasibilityDomain.record(domain, l, c, hue));
+          result.push(ContrastFeasibilityDomain.coordinate(domain, l, c, hue));
         }
       }
     }
@@ -438,12 +448,12 @@ class ContrastFeasibilityDomain {
   }
 
   private static luminance(
-    record: ColorRecordEntity.Type,
+    coordinate: ColorCoordinate,
     requirement: ContrastPolicy.RequirementInterface
   ): number {
     const result = requirement.algorithm === 'apca'
-      ? Math.abs(contrastApca.apply(record, ContrastFeasibilityDomain.#BLACK))
-      : contrastWcag21.apply(record, ContrastFeasibilityDomain.#BLACK);
+      ? Math.abs(coordinate.apca(ContrastFeasibilityDomain.#BLACK))
+      : coordinate.wcag21(ContrastFeasibilityDomain.#BLACK);
     return result;
   }
 

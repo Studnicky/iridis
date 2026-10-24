@@ -3,8 +3,8 @@ import { ValidationError } from '@studnicky/errors/node';
 import type { ColorHintsEntity } from '../entities/ColorHintsEntity.ts';
 import type { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 
-import { RgbEntity } from '../entities/RgbEntity.ts';
 import { apcaLc } from './ApcaLc.ts';
+import { ColorCoordinate } from './ColorCoordinate.ts';
 import { colorRecordFactory } from './ColorRecordFactory.ts';
 import { oklchToRgbRaw } from './OklchToRgbRaw.ts';
 import { srgbToLinear } from './SrgbToLinear.ts';
@@ -28,13 +28,19 @@ class WcagContrastRatio {
   }
 }
 
+interface RgbCoordinatesInterface {
+  readonly 'b': number;
+  readonly 'g': number;
+  readonly 'r': number;
+}
+
 class ContrastMeasure {
-  readonly #backgroundLuminance: (rgb: RgbEntity.Type) => number;
-  readonly #contrast: (foreground: RgbEntity.Type, backgroundLuminance: number) => number;
+  readonly #backgroundLuminance: (rgb: RgbCoordinatesInterface) => number;
+  readonly #contrast: (foreground: RgbCoordinatesInterface, backgroundLuminance: number) => number;
 
   private constructor(
-    backgroundLuminance: (rgb: RgbEntity.Type) => number,
-    contrast: (foreground: RgbEntity.Type, backgroundLuminance: number) => number
+    backgroundLuminance: (rgb: RgbCoordinatesInterface) => number,
+    contrast: (foreground: RgbCoordinatesInterface, backgroundLuminance: number) => number
   ) {
     this.#backgroundLuminance = backgroundLuminance;
     this.#contrast = contrast;
@@ -56,32 +62,32 @@ class ContrastMeasure {
     return measure;
   }
 
-  backgroundLuminance(rgb: RgbEntity.Type): number {
+  backgroundLuminance(rgb: RgbCoordinatesInterface): number {
     const result = this.#backgroundLuminance(rgb);
     return result;
   }
 
-  contrast(foreground: RgbEntity.Type, backgroundLuminance: number): number {
+  contrast(foreground: RgbCoordinatesInterface, backgroundLuminance: number): number {
     const result = this.#contrast(foreground, backgroundLuminance);
     return result;
   }
 
-  static #apcaBackground(rgb: RgbEntity.Type): number {
+  static #apcaBackground(rgb: RgbCoordinatesInterface): number {
     const result = apcaLc.luminance(rgb.r, rgb.g, rgb.b);
     return result;
   }
 
-  static #apcaContrast(foreground: RgbEntity.Type, backgroundLuminance: number): number {
+  static #apcaContrast(foreground: RgbCoordinatesInterface, backgroundLuminance: number): number {
     const result = Math.abs(apcaLc.apply(apcaLc.luminance(foreground.r, foreground.g, foreground.b), backgroundLuminance));
     return result;
   }
 
-  static #wcagBackground(rgb: RgbEntity.Type): number {
+  static #wcagBackground(rgb: RgbCoordinatesInterface): number {
     const result = RgbLuminance.calculate(rgb.r, rgb.g, rgb.b);
     return result;
   }
 
-  static #wcagContrast(foreground: RgbEntity.Type, backgroundLuminance: number): number {
+  static #wcagContrast(foreground: RgbCoordinatesInterface, backgroundLuminance: number): number {
     const result = WcagContrastRatio.between(RgbLuminance.calculate(foreground.r, foreground.g, foreground.b), backgroundLuminance);
     return result;
   }
@@ -137,14 +143,14 @@ class ContrastPolicy {
 }
 
 class ContrastCandidate {
+  readonly 'coordinate': ColorCoordinate;
   readonly 'l': number;
   readonly 'ratio': number;
-  readonly 'record': ColorRecordEntity.Type;
 
-  constructor(lightness: number, ratio: number, record: ColorRecordEntity.Type) {
-    this.l = lightness;
+  constructor(coordinate: ColorCoordinate, ratio: number) {
+    this.coordinate = coordinate;
+    this.l = coordinate.l;
     this.ratio = ratio;
-    this.record = record;
   }
 }
 
@@ -182,7 +188,14 @@ class ContrastRecordBuilder {
     return result;
   }
 
-  create(lightness: number, chroma: number, hue: number): ColorRecordEntity.Type {
+  coordinate(lightness: number, chroma: number, hue: number): ColorCoordinate {
+    const result = ContrastRecordBuilder.#srgbFormats.has(this.#origin.sourceFormat)
+      ? ColorCoordinate.fromRawOklch(lightness, chroma, hue)
+      : ColorCoordinate.fromOklch(lightness, chroma, hue);
+    return result;
+  }
+
+  materialize(lightness: number, chroma: number, hue: number): ColorRecordEntity.Type {
     const result = this.#create(lightness, chroma, hue, this.#alpha, this.#hints, this.#origin);
     return result;
   }
@@ -264,9 +277,12 @@ class ContrastSearch {
   }
 
   candidateAt(lightness: number, chroma: number, hue: number): ContrastCandidate {
-    const record = this.#records.create(lightness, chroma, hue);
-    const ratio = this.#measure.contrast(RgbEntity.create(record.rgb), this.#backgroundLuminance);
-    const result = new ContrastCandidate(lightness, ratio, record);
+    const coordinate = this.#records.coordinate(lightness, chroma, hue);
+    const ratio = this.#measure.contrast(
+      { 'b': coordinate.rgbB, 'g': coordinate.rgbG, 'r': coordinate.rgbR },
+      this.#backgroundLuminance
+    );
+    const result = new ContrastCandidate(coordinate, ratio);
     return result;
   }
 
@@ -389,10 +405,8 @@ class EnsureContrast {
     algorithmOrOptions: string | EnsureContrastOptions = 'wcag21'
   ): ColorRecordEntity.Type {
     const policy = ContrastPolicy.resolve(algorithmOrOptions);
-    const backgroundRgb = RgbEntity.create(background.rgb);
-    const backgroundLuminance = policy.measure.backgroundLuminance(backgroundRgb);
-    const foregroundRgb = RgbEntity.create(foreground.rgb);
-    const initialContrast = policy.measure.contrast(foregroundRgb, backgroundLuminance);
+    const backgroundLuminance = policy.measure.backgroundLuminance(background.rgb);
+    const initialContrast = policy.measure.contrast(foreground.rgb, backgroundLuminance);
     const initialLightness = policy.constrainLightness(foreground.oklch.l);
     if (
       initialLightness === foreground.oklch.l &&
@@ -422,7 +436,11 @@ class EnsureContrast {
     const primary = search.searchDirection(initial, foreground.oklch.c, foreground.oklch.h, direction, minimumRatio, policy.maximumRatio);
     const opposite = search.searchDirection(initial, foreground.oklch.c, foreground.oklch.h, -direction, minimumRatio, policy.maximumRatio);
     const selected = EnsureContrast.#selectCandidate(primary, opposite, initial.l);
-    const result = selected.record;
+    const result = ContrastRecordBuilder.resolve(foreground).materialize(
+      selected.l,
+      foreground.oklch.c,
+      foreground.oklch.h
+    );
     return result;
   }
 

@@ -76,6 +76,13 @@ export class ColorCoordinate {
     return result;
   }
 
+  /** Preserves the source-format raw sRGB conversion for internal numeric searches. */
+  static fromRawOklch(l: number, c: number, h: number): ColorCoordinate {
+    const rgb = oklchToRgbRaw.coordinates(l, c, h);
+    const result = new ColorCoordinate(l, c, h, l, c, h, rgb.r, rgb.g, rgb.b);
+    return result;
+  }
+
   apca(other: ColorCoordinate): number {
     const result = apcaLc.apply(this.apcaLuminance, other.apcaLuminance);
     return result;
