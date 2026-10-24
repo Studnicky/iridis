@@ -323,6 +323,7 @@ class SweepReport {
     let movedRoles = 0;
     let maximumCandidateScores = 0;
     let maximumCaseElapsedMs = 0;
+    let slowestCase: (CaseInterface & { readonly 'elapsedMs': number }) | undefined;
     let maximumWeightedUnits = 0;
     let runtimeMs = 0;
     let weightedUnits = 0;
@@ -380,7 +381,10 @@ class SweepReport {
       maximumWeightedUnits = Math.max(maximumWeightedUnits, run.budget.weightedUnits);
       weightedUnits += run.budget.weightedUnits;
       runtimeMs += run.elapsedMs;
-      maximumCaseElapsedMs = Math.max(maximumCaseElapsedMs, run.elapsedMs);
+      if (run.elapsedMs > maximumCaseElapsedMs) {
+        maximumCaseElapsedMs = run.elapsedMs;
+        slowestCase = { ...benchmarkCase, 'elapsedMs': run.elapsedMs };
+      }
       const references = SeedReference.resolve(run.authored, benchmarkCase.seeds);
       for (const [roleName, resolved] of Object.entries(run.resolved.roles)) {
         const reference = references.get(roleName);
@@ -403,6 +407,7 @@ class SweepReport {
       'budgetUsage': { 'candidateScores': candidateScores, 'weightedUnits': weightedUnits },
       'chunkElapsedMs': performance.now() - chunkStarted,
       'maximumCaseElapsedMs': maximumCaseElapsedMs,
+      ...(slowestCase === undefined ? {} : { 'slowestCase': slowestCase }),
       'maximumBudgetUsage': {
         'candidateScores': maximumCandidateScores,
         'weightedUnits': maximumWeightedUnits
