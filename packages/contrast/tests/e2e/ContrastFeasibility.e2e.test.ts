@@ -224,7 +224,7 @@ await test('ContrastFeasibility proves a resolved run with the same canonical re
   assert.strictEqual(pair.reachability, 'always-reachable');
 });
 
-await test('ContrastFeasibility samples derived hue offsets from their shared root', () => {
+await test('ContrastFeasibility certifies derived hue offsets from their shared root', () => {
   const schema = RoleSchemaEntity.intake({
     'contrastPairs': [{
       'background': 'brand',
@@ -256,8 +256,42 @@ await test('ContrastFeasibility samples derived hue offsets from their shared ro
     return result;
   }));
 
-  assert.ok(pair?.sampled !== undefined, 'unanchored root retains sampled evidence');
-  assert.strictEqual(pair.sampled.bestActual, expected, 'offset uses the shared root hue at every sample');
+  assert.ok(pair !== undefined, 'derived pair receives a feasibility result');
+  assert.strictEqual(pair.reachability, 'always-reachable', 'bounded affine arcs certify every root hue');
+  assert.strictEqual(pair.sampled, undefined, 'the affine certificate does not depend on sampled evidence');
+  assert.ok(expected >= 1, 'the shared root relation preserves its declared offset at every probe hue');
+});
+
+await test('ContrastFeasibility certifies an affine derived hue arc when its gamut bounds clear the requirement', () => {
+  const schema = RoleSchemaEntity.intake({
+    'contrastPairs': [{
+      'background': 'brand',
+      'foreground': 'opposite',
+      'minimumContrastRatio': 4.5
+    }],
+    'name': 'derived-hue-arc-certificate',
+    'roles': [
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.01, 0.01],
+        'lightnessRange': [0.05, 0.05],
+        'name': 'brand'
+      }),
+      RoleDefinitionEntity.intake({
+        'chromaRange': [0.01, 0.01],
+        'derivedFrom': 'brand',
+        'hueOffset': 180,
+        'lightnessRange': [0.95, 0.95],
+        'name': 'opposite'
+      })
+    ]
+  });
+
+  const report = ContrastFeasibility.analyzeSchema(schema, ContrastFeasibilityFixture.options());
+  const pair = report.pairs[0];
+
+  assert.ok(pair !== undefined, 'declared pair receives an affine-arc result');
+  assert.strictEqual(pair.reachability, 'always-reachable');
+  assert.strictEqual(pair.sampled, undefined, 'the certificate does not depend on sampled evidence');
 });
 
 await test('ContrastFeasibility uses resolved run hues without unanchored sampling', () => {
