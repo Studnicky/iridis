@@ -92,18 +92,26 @@ class ApcaTarget {
 
 /** Canonical selected-standard requirements for every schema and run-level contrast pair. */
 export class ContrastPolicy {
+  static allowsRoleCoordinates(
+    input: InputEntity.Type,
+    roleName: string,
+    coordinate: Readonly<{ 'c': number; 'l': number }>
+  ): boolean {
+    const range = ContrastPolicy.roleRange(input, roleName);
+    const result =
+      (range.chromaRange === undefined ||
+        (coordinate.c >= range.chromaRange[0] && coordinate.c <= range.chromaRange[1])) &&
+      (range.lightnessRange === undefined ||
+        (coordinate.l >= range.lightnessRange[0] && coordinate.l <= range.lightnessRange[1]));
+    return result;
+  }
+
   static allowsRoleRecord(
     input: InputEntity.Type,
     roleName: string,
     record: ColorRecordEntity.Type
   ): boolean {
-    const range = ContrastPolicy.roleRange(input, roleName);
-    const { c, l } = record.oklch;
-    const result =
-      (range.chromaRange === undefined ||
-        (c >= range.chromaRange[0] && c <= range.chromaRange[1])) &&
-      (range.lightnessRange === undefined ||
-        (l >= range.lightnessRange[0] && l <= range.lightnessRange[1]));
+    const result = ContrastPolicy.allowsRoleCoordinates(input, roleName, record.oklch);
     return result;
   }
 
