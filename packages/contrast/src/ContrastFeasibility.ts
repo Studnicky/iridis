@@ -83,6 +83,8 @@ interface SearchCellInterface {
 class ContrastFeasibilityDomain {
   static readonly #BLACK = ColorCoordinate.fromOklch(0, 0, 0);
   static readonly #CHROMA_PRECISION = 0.02;
+  /** Each independent root hue domain is certified in eight conservative 45-degree cells. */
+  static readonly #INDEPENDENT_HUE_DIVISIONS = 8;
   static readonly #LIGHTNESS_PRECISION = 1 / 1024;
 
   static #isHigher(current: number, candidate: number): boolean {
@@ -102,12 +104,7 @@ class ContrastFeasibilityDomain {
   ): ContrastPairFeasibilityEntity.Type {
     const neutral = ContrastFeasibilityDomain.neutralEvaluation(foreground, background, requirement);
     if (neutral !== undefined && neutral.actual >= requirement.minimumContrastRatio) {
-      const result = ContrastPairFeasibilityEntity.intake({
-        'background': background.name,
-        'foreground': foreground.name,
-        'reachability': 'always-reachable',
-        'reachableHueRanges': [HueRangeEntity.intake({ 'end': 360, 'start': 0 })]
-      });
+      const result = ContrastFeasibilityDomain.alwaysReachable(foreground, background);
       return result;
     }
     const analyticHueArcs = ContrastFeasibilityDomain.analyticHueArcs(foreground, background, requirement);
@@ -150,6 +147,19 @@ class ContrastFeasibilityDomain {
     return result;
   }
 
+  private static alwaysReachable(
+    foreground: RoleDomainInterface,
+    background: RoleDomainInterface
+  ): ContrastPairFeasibilityEntity.Type {
+    const result = ContrastPairFeasibilityEntity.intake({
+      'background': background.name,
+      'foreground': foreground.name,
+      'reachability': 'always-reachable',
+      'reachableHueRanges': [HueRangeEntity.intake({ 'end': 360, 'start': 0 })]
+    });
+    return result;
+  }
+
   private static independentHueArcs(
     foreground: RoleDomainInterface,
     background: RoleDomainInterface,
@@ -160,22 +170,22 @@ class ContrastFeasibilityDomain {
     if (foregroundRoot === backgroundRoot || foreground.hue !== undefined || background.hue !== undefined) {
       return undefined;
     }
-    const divisions = 8;
-    for (let foregroundIndex = 0; foregroundIndex < divisions; foregroundIndex += 1) {
-      const foregroundArc = { 'end': ((foregroundIndex + 1) * 360) / divisions, 'start': (foregroundIndex * 360) / divisions };
-      for (let backgroundIndex = 0; backgroundIndex < divisions; backgroundIndex += 1) {
-        const backgroundArc = { 'end': ((backgroundIndex + 1) * 360) / divisions, 'start': (backgroundIndex * 360) / divisions };
+    for (let foregroundIndex = 0; foregroundIndex < ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS; foregroundIndex += 1) {
+      const foregroundArc = {
+        'end': ((foregroundIndex + 1) * 360) / ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS,
+        'start': (foregroundIndex * 360) / ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS
+      };
+      for (let backgroundIndex = 0; backgroundIndex < ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS; backgroundIndex += 1) {
+        const backgroundArc = {
+          'end': ((backgroundIndex + 1) * 360) / ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS,
+          'start': (backgroundIndex * 360) / ContrastFeasibilityDomain.#INDEPENDENT_HUE_DIVISIONS
+        };
         if (!ContrastFeasibilityDomain.hasWitness(foreground, background, foregroundRoot, backgroundRoot, foregroundArc, backgroundArc, requirement)) {
           return undefined;
         }
       }
     }
-    const result = ContrastPairFeasibilityEntity.intake({
-      'background': background.name,
-      'foreground': foreground.name,
-      'reachability': 'always-reachable',
-      'reachableHueRanges': [HueRangeEntity.intake({ 'end': 360, 'start': 0 })]
-    });
+    const result = ContrastFeasibilityDomain.alwaysReachable(foreground, background);
     return result;
   }
 
@@ -222,19 +232,34 @@ class ContrastFeasibilityDomain {
   ): boolean {
     const foregroundBounds = HueIntervalBounds.fixedArc(foreground[0], foreground[1], foregroundHue.start, foregroundHue.end);
     const backgroundBounds = HueIntervalBounds.fixedArc(background[0], background[1], backgroundHue.start, backgroundHue.end);
-    const foregroundAbove = foregroundBounds.minimumRelativeLuminance > backgroundBounds.maximumRelativeLuminance;
-    const backgroundAbove = backgroundBounds.minimumRelativeLuminance > foregroundBounds.maximumRelativeLuminance;
-    let wcagLower = 1;
-    if (foregroundAbove) {
-      wcagLower = (foregroundBounds.minimumRelativeLuminance + 0.05) / (backgroundBounds.maximumRelativeLuminance + 0.05);
-    } else if (backgroundAbove) {
-      wcagLower = (backgroundBounds.minimumRelativeLuminance + 0.05) / (foregroundBounds.maximumRelativeLuminance + 0.05);
-    }
+    const wcagLower = ContrastFeasibilityDomain.wcagLowerBound(
+      foregroundBounds.minimumRelativeLuminance,
+      foregroundBounds.maximumRelativeLuminance,
+      backgroundBounds.minimumRelativeLuminance,
+      backgroundBounds.maximumRelativeLuminance
+    );
     const lower = requirement.algorithm === 'apca'
       ? HueIntervalBounds.apcaMagnitudeBounds(foregroundBounds.minimumApcaLuminance, foregroundBounds.maximumApcaLuminance, backgroundBounds.minimumApcaLuminance, backgroundBounds.maximumApcaLuminance)[0]
       : wcagLower;
     const result = lower >= requirement.minimumContrastRatio;
     return result;
+  }
+
+  private static wcagLowerBound(
+    foregroundMinimum: number,
+    foregroundMaximum: number,
+    backgroundMinimum: number,
+    backgroundMaximum: number
+  ): number {
+    if (foregroundMinimum > backgroundMaximum) {
+      const result = (foregroundMinimum + 0.05) / (backgroundMaximum + 0.05);
+      return result;
+    }
+    if (backgroundMinimum > foregroundMaximum) {
+      const result = (backgroundMinimum + 0.05) / (foregroundMaximum + 0.05);
+      return result;
+    }
+    return 1;
   }
 
   private static analyticHueArcs(
@@ -271,12 +296,7 @@ class ContrastFeasibilityDomain {
     const evaluations = ContrastFeasibilityDomain.representativeEvaluations(foreground, background, requirement);
     const best = ContrastFeasibilityDomain.bestEvaluation(evaluations);
     if (passing.length === arcs.length) {
-      const result = ContrastPairFeasibilityEntity.intake({
-        'background': background.name,
-        'foreground': foreground.name,
-        'reachability': 'always-reachable',
-        'reachableHueRanges': [HueRangeEntity.intake({ 'end': 360, 'start': 0 })]
-      });
+      const result = ContrastFeasibilityDomain.alwaysReachable(foreground, background);
       return result;
     }
     if (passing.length > 0 && !indeterminate) {
@@ -323,12 +343,12 @@ class ContrastFeasibilityDomain {
       );
       return result;
     }
-    let minimum = 1;
-    if (foregroundBounds.minimumWcag > backgroundBounds.maximumWcag) {
-      minimum = (foregroundBounds.minimumWcag + 0.05) / (backgroundBounds.maximumWcag + 0.05);
-    } else if (backgroundBounds.minimumWcag > foregroundBounds.maximumWcag) {
-      minimum = (backgroundBounds.minimumWcag + 0.05) / (foregroundBounds.maximumWcag + 0.05);
-    }
+    const minimum = ContrastFeasibilityDomain.wcagLowerBound(
+      foregroundBounds.minimumWcag,
+      foregroundBounds.maximumWcag,
+      backgroundBounds.minimumWcag,
+      backgroundBounds.maximumWcag
+    );
     const maximum = Math.max(
       (foregroundBounds.maximumWcag + 0.05) / (backgroundBounds.minimumWcag + 0.05),
       (backgroundBounds.maximumWcag + 0.05) / (foregroundBounds.minimumWcag + 0.05)
