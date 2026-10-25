@@ -69,6 +69,7 @@ jobs:
               append_entry '{"name":"lint","command":"bash scripts/ci-suite.sh lint"}'
               append_entry '{"name":"test","command":"bash scripts/ci-suite.sh test"}'
               append_entry '{"name":"build","command":"bash scripts/ci-suite.sh build"}'
+              append_entry '{"name":"package-consumer","command":"pnpm run packages:pipeline:test && pnpm run packages:consumer:test && pnpm run packages:consumer:smoke"}'
               ;;
             audit)
               append_entry '{"name":"audit","command":"bash scripts/ci-suite.sh audit"}'

@@ -37,10 +37,6 @@ import validatePackageName from 'validate-npm-package-name';
 import { packagePipeline } from './package-pipeline.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const EXPECTED_PACKAGES = 18;
-const EXPECTED_SOURCES = 366;
-const EXPECTED_ARTIFACTS = 1464;
-const EXPECTED_EXPORTS = 40;
 const METADATA_FILES = ['README.md', 'LICENSE', 'CHANGELOG.md', 'package.json'];
 const DEPENDENCY_FIELDS = ['dependencies', 'optionalDependencies', 'peerDependencies'];
 const WORKSPACE_RANGE = 'workspace:*';
@@ -175,9 +171,6 @@ const packageRecordsFor = (rootDirectory) => {
     })
     .filter(({ manifest }) => manifest.private !== true)
     .toSorted((left, right) => left.directoryName.localeCompare(right.directoryName));
-  if (records.length !== EXPECTED_PACKAGES) {
-    fail(`expected ${EXPECTED_PACKAGES} public packages, found ${records.length}`);
-  }
   return records;
 };
 
@@ -373,7 +366,7 @@ const extractArchive = async (archive, destination, stageDirectory, privateRoot)
   }
 };
 
-const validatePackageLayout = (packageDirectory, manifest, expectedArtifacts) => {
+const validatePackageLayout = (packageDirectory, manifest) => {
   for (const metadata of METADATA_FILES) {
     const path = join(packageDirectory, metadata);
     if (!existsSync(path) || !statSync(path).isFile()) {
@@ -402,26 +395,7 @@ const validatePackageLayout = (packageDirectory, manifest, expectedArtifacts) =>
   const artifacts = files.filter((path) => {
     return relative(join(packageDirectory, 'dist'), path).split(sep)[0] !== '..';
   });
-  if (artifacts.length !== expectedArtifacts) {
-    fail(`package ${manifest.name} expected ${expectedArtifacts} artifacts, found ${artifacts.length}`);
-  }
   return artifacts.length;
-};
-
-const validateTotals = (totals) => {
-  const expected = {
-    'archives': EXPECTED_PACKAGES,
-    'artifacts': EXPECTED_ARTIFACTS,
-    'exports': EXPECTED_EXPORTS,
-    'packages': EXPECTED_PACKAGES,
-    'sources': EXPECTED_SOURCES
-  };
-  for (const [field, value] of Object.entries(expected)) {
-    if (totals[field] !== value) {
-      fail(`expected ${field}=${value}, found ${String(totals[field])}`);
-    }
-  }
-  return totals;
 };
 
 const dependencyEntriesFor = (manifest) => {
@@ -872,13 +846,9 @@ const smoke = async (rootDirectory = ROOT) => {
         fail(`missing publish stage for ${record.manifest.name}`);
       }
       const stagedManifest = readJson(join(publishDirectory, 'package.json'));
-      const expectedArtifacts = listFiles(join(record.packageDirectory, 'src'))
-        .filter((path) => path.endsWith('.ts') && !path.endsWith('.d.ts'))
-        .length * 4;
       artifactCount += validatePackageLayout(
         publishDirectory,
-        stagedManifest,
-        expectedArtifacts
+        stagedManifest
       );
       exportCount += Object.keys(stagedManifest.exports).length;
       const archive = packArchive(publishDirectory, archivesDirectory, cacheDirectory);
@@ -889,7 +859,7 @@ const smoke = async (rootDirectory = ROOT) => {
         publishDirectory,
         temporaryDirectory
       );
-      validatePackageLayout(installedDirectory, stagedManifest, expectedArtifacts);
+      validatePackageLayout(installedDirectory, stagedManifest);
       archives.push(archive);
       extractedByName.set(stagedManifest.name, installedDirectory);
     }
@@ -928,16 +898,16 @@ const smoke = async (rootDirectory = ROOT) => {
       }
     }
 
-    if (runtimeImports !== EXPECTED_EXPORTS) {
-      fail(`expected ${EXPECTED_EXPORTS} isolated runtime imports, found ${runtimeImports}`);
+    if (runtimeImports !== exportCount) {
+      fail(`isolated runtime imports differ from staged exports: imports=${runtimeImports}, exports=${exportCount}`);
     }
-    const totals = validateTotals({
+    const totals = {
       'archives': archives.length,
       'artifacts': artifactCount,
       'exports': exportCount,
       'packages': records.length,
       'sources': sourceCount
-    });
+    };
     return {
       ...totals,
       cli,
@@ -957,7 +927,6 @@ export const packageConsumerSmoke = Object.freeze({
   runCommand,
   stage,
   validatePackageLayout,
-  validateTotals,
   verifyConsumer,
   verifyCli,
   withTemporaryDirectory

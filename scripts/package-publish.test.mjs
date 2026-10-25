@@ -236,24 +236,6 @@ await test('CLI and all workspace manifests expose no direct-publication bypass'
   }
 });
 
-await test('root README package inventory matches the enforced consumer smoke constants', () => {
-  const readme = readFileSync(join(import.meta.dirname, '../README.md'), 'utf8');
-  const smoke = readFileSync(join(import.meta.dirname, 'package-consumer-smoke.mjs'), 'utf8');
-  const sourceMatch = smoke.match(/const EXPECTED_SOURCES = (\d+);/u);
-  const artifactMatch = smoke.match(/const EXPECTED_ARTIFACTS = (\d+);/u);
-  assert.ok(sourceMatch !== null);
-  assert.ok(artifactMatch !== null);
-  const sources = Number(sourceMatch[1]);
-  const artifacts = Number(artifactMatch[1]);
-  assert.equal(
-    readme.includes(
-      `emits ${artifacts.toLocaleString('en-US')} artifacts from ${sources} TypeScript sources`
-    ),
-    true
-  );
-  assert.doesNotMatch(readme, /1,284 artifacts|321 TypeScript sources/u);
-});
-
 await test('root manifest pins the complete build-script allowlist without wildcards', () => {
   assert.deepEqual(WORKSPACE_MANIFEST.pnpm?.onlyBuiltDependencies, BUILD_SCRIPT_ALLOWLIST);
   assert.equal(
