@@ -22,7 +22,7 @@
  * lightness/chroma envelopes; enforce:compliance lifts pairs to threshold.
  */
 
-import { RoleSchemaEntity } from '@studnicky/iridis';
+import { RoleRelationshipEntity, RoleRelationshipGraphEntity, RoleSchemaEntity } from '@studnicky/iridis';
 
 import type { SchemaNameEntity } from '../composables/entities/SchemaNameEntity.ts';
 import type { SchemaPair } from '../composables/types/index.ts';
@@ -30,6 +30,71 @@ import type { SchemaPair } from '../composables/types/index.ts';
 /* ─── iridis-4 ─────────────────────────────────────────────────────── */
 
 namespace RoleSchemas {
+  class RelationshipGraphs {
+    static create(
+      relationships: RoleRelationshipEntity.Type[]
+    ): RoleRelationshipGraphEntity.Type {
+      const result = RoleRelationshipGraphEntity.create({
+        'groups': [{
+          'anchor': 'brand',
+          'defaultMode': 'default',
+          'id': 'palette',
+          'modes': [{ 'hueOffsets': [{ 'degrees': 0, 'variantId': 'default' }], 'id': 'default' }],
+          'name': 'Palette relationships',
+          'relationships': relationships
+        }]
+      });
+      return result;
+    }
+
+    static alias(id: string, source: string, target: string): RoleRelationshipEntity.Type {
+      const result = RoleRelationshipEntity.create({
+        'id': id, 'operation': 'alias', 'priority': 0, 'relaxability': 'fixed', 'source': source, 'target': target
+      });
+      return result;
+    }
+
+    static hueOffset(id: string, source: string, target: string, degrees: number): RoleRelationshipEntity.Type {
+      const result = RoleRelationshipEntity.create({
+        'degrees': degrees, 'id': id, 'operation': 'hue-offset', 'priority': 0, 'relaxability': 'fixed', 'source': source, 'target': target
+      });
+      return result;
+    }
+
+    static hueTarget(id: string, target: string, hue: number, source?: string): RoleRelationshipEntity.Type {
+      const result = RoleRelationshipEntity.create({
+        'clamp': 90, 'hue': hue, 'id': id, 'operation': 'hue-target', 'priority': 0, 'relaxability': 'fixed', 'target': target,
+        ...(source === undefined ? {} : { 'source': source })
+      });
+      return result;
+    }
+  }
+
+  const iridis8Relationships = [
+    RelationshipGraphs.alias('surface', 'background', 'surface'), RelationshipGraphs.alias('bg-soft', 'background', 'bg-soft'),
+    RelationshipGraphs.alias('divider', 'background', 'divider'), RelationshipGraphs.alias('on-brand', 'brand', 'on-brand')
+  ];
+  const iridis12Relationships = [
+    ...iridis8Relationships,
+    RelationshipGraphs.hueTarget('success', 'success', 160, 'brand'), RelationshipGraphs.hueTarget('warning', 'warning', 60, 'brand'),
+    RelationshipGraphs.hueTarget('error', 'error', 25), RelationshipGraphs.alias('syntax-keyword', 'brand', 'syntax-keyword')
+  ];
+  const iridis16Relationships = [
+    ...iridis12Relationships,
+    RelationshipGraphs.hueOffset('syntax-string', 'brand', 'syntax-string', 120), RelationshipGraphs.hueOffset('syntax-number', 'brand', 'syntax-number', 60),
+    RelationshipGraphs.hueOffset('syntax-function', 'brand', 'syntax-function', 180), RelationshipGraphs.hueOffset('syntax-type', 'brand', 'syntax-type', 210)
+  ];
+  const iridis32Relationships = [
+    ...iridis16Relationships,
+    RelationshipGraphs.alias('text-strong', 'text', 'text-strong'), RelationshipGraphs.alias('text-subtle', 'text', 'text-subtle'),
+    RelationshipGraphs.hueOffset('link', 'brand', 'link', -15), RelationshipGraphs.hueOffset('link-hover', 'brand', 'link-hover', -15),
+    RelationshipGraphs.alias('focus-ring', 'brand', 'focus-ring'), RelationshipGraphs.alias('border', 'divider', 'border'),
+    RelationshipGraphs.alias('border-strong', 'divider', 'border-strong'), RelationshipGraphs.alias('code-bg', 'bg-soft', 'code-bg'),
+    RelationshipGraphs.hueTarget('info', 'info', 230, 'brand'), RelationshipGraphs.hueOffset('accent-alt', 'brand', 'accent-alt', 150),
+    RelationshipGraphs.alias('syntax-comment', 'muted', 'syntax-comment'), RelationshipGraphs.hueOffset('syntax-tag', 'brand', 'syntax-tag', 240),
+    RelationshipGraphs.hueOffset('syntax-attribute', 'brand', 'syntax-attribute', 270), RelationshipGraphs.hueOffset('syntax-operator', 'brand', 'syntax-operator', 300),
+    RelationshipGraphs.hueOffset('syntax-class', 'brand', 'syntax-class', 30), RelationshipGraphs.alias('syntax-punctuation', 'muted', 'syntax-punctuation')
+  ];
   const iridis4Dark = RoleSchemaEntity.create({
     'contrastPairs': [
       { 'algorithm': 'wcag21',  'background': 'background', 'foreground': 'text', 'minimumContrastRatio': 4.5 },
@@ -74,6 +139,7 @@ namespace RoleSchemas {
     ],
     'description': 'Eight-role schema (dark framing). Adds surface, bgSoft, divider, onBrand.',
     'name':        'iridis-8-dark',
+    'relationshipGraph': RelationshipGraphs.create(iridis8Relationships),
     'roles': [
       ...iridis4Dark.roles,
       { 'chromaRange': [0.00, 0.06], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.08, 0.18], 'name': 'surface', 'required': true },
@@ -93,6 +159,7 @@ namespace RoleSchemas {
     ],
     'description': 'Eight-role schema (light framing). Adds surface, bg-soft, divider, on-brand.',
     'name':        'iridis-8-light',
+    'relationshipGraph': RelationshipGraphs.create(iridis8Relationships),
     'roles': [
       ...iridis4Light.roles,
       { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'background', 'intent': 'background', 'lightnessRange': [0.88, 0.96], 'name': 'surface', 'required': true },
@@ -114,6 +181,7 @@ namespace RoleSchemas {
     ],
     'description': 'Twelve-role schema (dark framing). Adds success, warning, error, syntaxKeyword.',
     'name':        'iridis-12-dark',
+    'relationshipGraph': RelationshipGraphs.create(iridis12Relationships),
     'roles': [
       ...iridis8Dark.roles,
       { 'chromaRange': [0.14, 0.28], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'positive', 'lightnessRange': [0.65, 0.78], 'name': 'success' },
@@ -133,6 +201,7 @@ namespace RoleSchemas {
     ],
     'description': 'Twelve-role schema (light framing). Adds success, warning, error, syntaxKeyword.',
     'name':        'iridis-12-light',
+    'relationshipGraph': RelationshipGraphs.create(iridis12Relationships),
     'roles': [
       ...iridis8Light.roles,
       { 'chromaRange': [0.16, 0.30], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'positive', 'lightnessRange': [0.40, 0.52], 'name': 'success' },
@@ -154,6 +223,7 @@ namespace RoleSchemas {
     ],
     'description': 'Full sixteen-role schema (dark framing). Complete chrome + status + syntax theme.',
     'name':        'iridis-16-dark',
+    'relationshipGraph': RelationshipGraphs.create(iridis16Relationships),
     'roles': [
       ...iridis12Dark.roles,
       { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'accent', 'lightnessRange': [0.70, 0.85], 'name': 'syntax-string' },
@@ -173,6 +243,7 @@ namespace RoleSchemas {
     ],
     'description': 'Full sixteen-role schema (light framing). Complete chrome + status + syntax theme.',
     'name':        'iridis-16-light',
+    'relationshipGraph': RelationshipGraphs.create(iridis16Relationships),
     'roles': [
       ...iridis12Light.roles,
       { 'chromaRange': [0.14, 0.26], 'derivedFrom': 'brand', 'hueOffset': 120, 'intent': 'accent', 'lightnessRange': [0.40, 0.52], 'name': 'syntax-string' },
@@ -207,6 +278,7 @@ namespace RoleSchemas {
     ],
     'description': 'Thirty-two-role schema (dark framing). Adds emphasis tiers, interaction colors, chrome variants, and extended syntax tokens.',
     'name':        'iridis-32-dark',
+    'relationshipGraph': RelationshipGraphs.create(iridis32Relationships),
     'roles': [
       ...iridis16Dark.roles,
       /* Emphasis tiers: text-strong reads as primary headings, text-subtle as captions / metadata. */
@@ -253,6 +325,7 @@ namespace RoleSchemas {
     ],
     'description': 'Thirty-two-role schema (light framing). Adds emphasis tiers, interaction colors, chrome variants, and extended syntax tokens.',
     'name':        'iridis-32-light',
+    'relationshipGraph': RelationshipGraphs.create(iridis32Relationships),
     'roles': [
       ...iridis16Light.roles,
       { 'chromaRange': [0.00, 0.04], 'derivedFrom': 'text', 'intent': 'text', 'lightnessRange': [0.04, 0.12], 'name': 'text-strong' },

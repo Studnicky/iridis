@@ -126,3 +126,19 @@ await test('pinned derived roles remain byte-exact while unpinned roles resolve 
   const provenance = Metadata.roleProvenance(state.metadata).get('success');
   assert.deepEqual(provenance, { 'adjustments': [], 'origin': 'stated' });
 });
+
+await test('iridis-32 graph status relationships preserve the semantic role snapshot', () => {
+  const { state } = RoleSchemaPipelineFixture.run('iridis-32');
+  const snapshot = {
+    'error': state.roles.error?.hex,
+    'info': state.roles.info?.hex,
+    'success': state.roles.success?.hex,
+    'warning': state.roles.warning?.hex
+  };
+  assert.deepEqual(snapshot, {
+    'error': '#b68ee2',
+    'info': '#5a8bfd',
+    'success': '#cd9a0d',
+    'warning': '#fb942a'
+  });
+});
