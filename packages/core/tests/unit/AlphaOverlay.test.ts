@@ -3,7 +3,6 @@ import { test } from 'node:test';
 
 import { alphaOverlay } from '../../src/math/AlphaOverlay.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
-import { linearToSrgb } from '../../src/math/LinearToSrgb.ts';
 
 class AlphaOverlayAssertion {
   static approximatelyEqual(actual: number, expected: number): void {
@@ -22,9 +21,9 @@ void test('alpha overlay replaces an opaque base with an opaque overlay', () => 
   assert.equal(result.hex, '#ffffff');
 });
 
-void test('alpha overlay preserves the base at zero relationship alpha', () => {
+void test('alpha overlay preserves a base beneath a fully transparent overlay', () => {
   const base = colorRecordFactory.fromHex('#33669980');
-  const result = alphaOverlay.apply(base, colorRecordFactory.fromHex('#ff0000'), 0);
+  const result = alphaOverlay.apply(base, colorRecordFactory.fromHex('#ff000000'), 1);
 
   AlphaOverlayAssertion.approximatelyEqual(result.alpha, base.alpha);
   AlphaOverlayAssertion.approximatelyEqual(result.rgb.r, base.rgb.r);
@@ -32,7 +31,20 @@ void test('alpha overlay preserves the base at zero relationship alpha', () => {
   AlphaOverlayAssertion.approximatelyEqual(result.rgb.b, base.rgb.b);
 });
 
-void test('alpha overlay composites translucent records in linear sRGB', () => {
+void test('alpha overlay composites a half-opacity overlay in gamma-encoded sRGB', () => {
+  const result = alphaOverlay.apply(
+    colorRecordFactory.fromHex('#000000'),
+    colorRecordFactory.fromHex('#ffffff'),
+    0.5
+  );
+
+  AlphaOverlayAssertion.approximatelyEqual(result.alpha, 1);
+  AlphaOverlayAssertion.approximatelyEqual(result.rgb.r, 0.5);
+  AlphaOverlayAssertion.approximatelyEqual(result.rgb.g, 0.5);
+  AlphaOverlayAssertion.approximatelyEqual(result.rgb.b, 0.5);
+});
+
+void test('alpha overlay composites a translucent base with straight-alpha gamma sRGB channels', () => {
   const result = alphaOverlay.apply(
     colorRecordFactory.fromHex('#00000080'),
     colorRecordFactory.fromHex('#ffffff80'),
@@ -41,7 +53,7 @@ void test('alpha overlay composites translucent records in linear sRGB', () => {
   const overlayAlpha = 0.5 * (0x80 / 255);
   const baseAlpha = 0x80 / 255;
   const expectedAlpha = overlayAlpha + baseAlpha * (1 - overlayAlpha);
-  const expectedChannel = linearToSrgb.channel(overlayAlpha / expectedAlpha);
+  const expectedChannel = overlayAlpha / expectedAlpha;
 
   AlphaOverlayAssertion.approximatelyEqual(result.alpha, expectedAlpha);
   AlphaOverlayAssertion.approximatelyEqual(result.rgb.r, expectedChannel);
