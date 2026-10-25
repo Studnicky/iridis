@@ -75,6 +75,15 @@ class RelationshipOperation {
       );
       return result;
     }
+    if (relationship.operation === 'hue-target') {
+      const result = colorRecordFactory.fromOklch(
+        source.oklch.l,
+        source.oklch.c,
+        RoleGeometry.hueTowards(source.oklch.h, relationship.hue, relationship.clamp ?? RoleGeometry.DEFAULT_HUE_CLAMP),
+        { 'alpha': source.alpha }
+      );
+      return result;
+    }
     const degrees = RelationshipHueDegrees.resolve(group, relationship);
     const result = colorRecordFactory.fromOklch(
       source.oklch.l,

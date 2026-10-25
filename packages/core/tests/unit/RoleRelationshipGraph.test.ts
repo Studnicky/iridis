@@ -399,3 +399,20 @@ void test('hue-offset rejects degrees and modeId together at structural admissio
     'target': 'accent'
   }), false);
 });
+
+void test('hue-target admits a bounded absolute hue and rejects values outside its authored domain', () => {
+  const relationship = {
+    'clamp': 90,
+    'hue': 120,
+    'id': 'semantic',
+    'operation': 'hue-target',
+    'priority': 0,
+    'relaxability': 'fixed',
+    'source': 'brand',
+    'target': 'success'
+  };
+
+  assert.equal(RoleRelationshipEntity.validate(relationship), true);
+  assert.equal(RoleRelationshipEntity.validate({ ...relationship, 'hue': 361 }), false);
+  assert.equal(RoleRelationshipEntity.validate({ ...relationship, 'clamp': 181 }), false);
+});

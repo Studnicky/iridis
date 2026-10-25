@@ -13,6 +13,7 @@ import { TaskManifestEntity } from '../../src/entities/TaskManifestEntity.ts';
 import { colorRecordFactory } from '../../src/math/ColorRecordFactory.ts';
 import { mixOklch } from '../../src/math/MixOklch.ts';
 import { coreTasks } from '../../src/tasks/index.ts';
+import { RoleGeometry } from '../../src/tasks/RoleGeometry.ts';
 import { Metadata } from '../../src/types/metadata.ts';
 
 class DeriveRoleRelationsFixture {
@@ -84,13 +85,14 @@ void test('derive:roleRelations resolves every canonical relationship operation'
     RoleRelationshipEntity.create({ 'id': 'offset', 'operation': 'hue-offset', 'priority': 1, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent-near', 'variantId': 'near' }),
     RoleRelationshipEntity.create({ 'id': 'delta', 'lightnessOffset': 0.1, 'operation': 'oklch-delta', 'priority': 2, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent-light' }),
     RoleRelationshipEntity.create({ 'id': 'interpolate', 'operation': 'oklch-interpolate', 'priority': 3, 'relaxability': 'fixed', 'source': 'brand', 'target': 'accent-soft', 'toward': 'background', 'weight': 0.6 }),
-    RoleRelationshipEntity.create({ 'alpha': 0.4, 'base': 'background', 'id': 'overlay', 'operation': 'alpha-overlay', 'overlay': 'brand', 'priority': 4, 'relaxability': 'fixed', 'target': 'brand-overlay' })
+    RoleRelationshipEntity.create({ 'alpha': 0.4, 'base': 'background', 'id': 'overlay', 'operation': 'alpha-overlay', 'overlay': 'brand', 'priority': 4, 'relaxability': 'fixed', 'target': 'brand-overlay' }),
+    RoleRelationshipEntity.create({ 'hue': 120, 'id': 'semantic', 'operation': 'hue-target', 'priority': 5, 'relaxability': 'fixed', 'source': 'brand', 'target': 'semantic' })
   ];
-  const brand = DeriveRoleRelationsFixture.color('#b45af2', 'brand');
+  const brand = DeriveRoleRelationsFixture.color('#b45af280', 'brand');
   const background = DeriveRoleRelationsFixture.color('#15151c80', 'background');
   const state = DeriveRoleRelationsFixture.run(
     relationships,
-    ['brand', 'background', 'accent', 'accent-near', 'accent-light', 'accent-soft', 'brand-overlay'],
+    ['brand', 'background', 'accent', 'accent-near', 'accent-light', 'accent-soft', 'brand-overlay', 'semantic'],
     [brand, background]
   );
 
@@ -99,17 +101,24 @@ void test('derive:roleRelations resolves every canonical relationship operation'
   const light = state.roles['accent-light'];
   const soft = state.roles['accent-soft'];
   const overlay = state.roles['brand-overlay'];
+  const semantic = state.roles.semantic;
   assert.ok(near !== undefined);
   assert.ok(light !== undefined);
   assert.ok(soft !== undefined);
   assert.ok(overlay !== undefined);
+  assert.ok(semantic !== undefined);
   assert.ok(Math.abs(near.oklch.h - brand.oklch.h) > 20);
   assert.ok(light.oklch.l > brand.oklch.l);
   assert.equal(soft.hex, mixOklch.apply(brand, background, 0.6).hex);
   assert.ok(overlay.alpha < 1);
+  assert.equal(semantic.alpha, brand.alpha);
+  assert.equal(semantic.oklch.l, brand.oklch.l);
+  assert.equal(semantic.oklch.c, brand.oklch.c);
+  assert.equal(semantic.oklch.h, RoleGeometry.hueTowards(brand.oklch.h, 120, RoleGeometry.DEFAULT_HUE_CLAMP));
   const resolution = Metadata.relationshipResolution(state.metadata);
   assert.equal(resolution.get('brand-overlay')?.relationshipId, 'overlay');
   assert.equal(resolution.get('brand-overlay')?.after?.hex, overlay.hex);
+  assert.equal(resolution.get('semantic')?.operation, 'hue-target');
 });
 
 void test('derive:roleRelations resolves dependent targets after their sources become available', () => {
