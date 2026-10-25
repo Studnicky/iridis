@@ -7,6 +7,7 @@ import { ColorRecordEntity } from '../entities/ColorRecordEntity.ts';
 import { RelationshipResolutionEntity } from '../entities/RelationshipResolutionEntity.ts';
 import { RelationshipToleranceEntity } from '../entities/RelationshipToleranceEntity.ts';
 import { RoleRelationshipEntity } from '../entities/RoleRelationshipEntity.ts';
+import { RoleRelationshipGraphEntity } from '../entities/RoleRelationshipGraphEntity.ts';
 import { RoleRelationshipGroupEntity } from '../entities/RoleRelationshipGroupEntity.ts';
 import { Metadata } from '../types/metadata.ts';
 import { RelationshipConstraintDomain } from './RelationshipConstraintDomain.ts';
@@ -35,7 +36,9 @@ export class RelationshipConstraint {
     metadata: Record<string, JSONSchema7Type>,
     roleName: string
   ): RelationshipConstraintDomain | undefined {
-    const graph = input.roles?.relationshipGraph;
+    const graph = input.roles?.relationshipGraph === undefined
+      ? undefined
+      : RoleRelationshipGraphEntity.intake(input.roles.relationshipGraph);
     if (graph === undefined) {
       return undefined;
     }

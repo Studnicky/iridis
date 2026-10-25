@@ -9,7 +9,6 @@ import { EntityCompiler } from '@studnicky/entity/node';
 
 import { ContrastReportEntity } from './ContrastReportEntity.ts';
 import { HueTargetOverrideEntity } from './HueTargetOverrideEntity.ts';
-import { RelationshipResolutionEntity } from './RelationshipResolutionEntity.ts';
 import { RoleProvenanceEntity } from './RoleProvenanceEntity.ts';
 
 /** Known `state.metadata` keys written by core tasks, and their runtime shapes. */
@@ -24,10 +23,6 @@ export namespace EngineMetadataEntity {
       },
       'core:hueTargetOverrides': {
         'additionalProperties': HueTargetOverrideEntity.Schema,
-        'type': 'object'
-      },
-      'core:relationshipResolution': {
-        'additionalProperties': RelationshipResolutionEntity.Schema,
         'type': 'object'
       },
       'core:roleDistances': {

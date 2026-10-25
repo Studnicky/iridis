@@ -306,6 +306,18 @@ void test('relationship-resolution metadata preserves full color records includi
   assert.equal(restored.get('brand-overlay')?.after?.alpha, 0.25098039215686274);
 });
 
+void test('relationship-resolution metadata validates each stored entry', () => {
+  const metadata: Record<string, JSONSchema7Type> = {
+    'core:relationshipResolution': {
+      'invalid': {}
+    }
+  };
+
+  assert.throws(() => {
+    Metadata.relationshipResolution(metadata);
+  });
+});
+
 void test('relationship graph integrity rejects incoherent authored references', () => {
   const cases = [
     { 'graph': RelationshipGraphFixture.withDuplicateGroup(), 'message': 'must be unique', 'path': 'relationshipGraph.groups[1].id' },

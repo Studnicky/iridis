@@ -6,6 +6,7 @@ import type { RelationshipGraphShape } from '../../model/RelationshipGraphShape.
 
 import { RelationshipResolutionEntity } from '../../entities/RelationshipResolutionEntity.ts';
 import { RoleProvenanceEntity } from '../../entities/RoleProvenanceEntity.ts';
+import { RoleRelationshipGraphEntity } from '../../entities/RoleRelationshipGraphEntity.ts';
 import { TaskManifestEntity } from '../../entities/TaskManifestEntity.ts';
 import { PaletteRoleState } from '../../interfaces/PaletteStateInterface.ts';
 import { alphaOverlay } from '../../math/AlphaOverlay.ts';
@@ -96,7 +97,9 @@ class DeriveRoleRelations implements TaskInterface {
   });
 
   run(state: PaletteStateInterface, _context: PipelineContextInterface): void {
-    const graph = state.input.roles?.relationshipGraph;
+    const graph = state.input.roles?.relationshipGraph === undefined
+      ? undefined
+      : RoleRelationshipGraphEntity.intake(state.input.roles.relationshipGraph);
     if (graph === undefined) {
       return;
     }

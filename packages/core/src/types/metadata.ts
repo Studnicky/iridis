@@ -114,15 +114,11 @@ export class Metadata {
     if (value === undefined) {
       return new Map();
     }
-    const normalized = EngineMetadataEntity.intake({
-      'core:relationshipResolution': value
-    });
-    const source = normalized['core:relationshipResolution'];
-    const result = new Map<string, RelationshipResolutionEntity.Type>();
-    if (source === undefined) {
-      return result;
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      throw new TypeError('core:relationshipResolution must be an object');
     }
-    const entries = Object.entries(source);
+    const result = new Map<string, RelationshipResolutionEntity.Type>();
+    const entries = Object.entries(value);
     for (let entryIndex = 0; entryIndex < entries.length; entryIndex += 1) {
       const entry = entries.at(entryIndex);
       if (entry === undefined) {
@@ -192,12 +188,10 @@ export class Metadata {
     metadataRecord: Record<string, JSONSchema7Type>,
     resolution: Map<string, RelationshipResolutionEntity.Type>
   ): void {
-    const normalized = EngineMetadataEntity.create({
-      'core:relationshipResolution': Metadata.#recordFromEntries(resolution)
-    });
-    const value = normalized['core:relationshipResolution'];
-    if (value !== undefined) {
-      metadataRecord['core:relationshipResolution'] = value;
+    const serialized = new Map<string, RelationshipResolutionEntity.Type>();
+    for (const [roleName, entry] of resolution) {
+      serialized.set(roleName, RelationshipResolutionEntity.intake(entry));
     }
+    metadataRecord['core:relationshipResolution'] = Metadata.#recordFromEntries(serialized);
   }
 }

@@ -3,6 +3,7 @@ import type { RelationshipGraphShape } from './RelationshipGraphShape.ts';
 
 import { HarmonyModeEntity } from '../entities/HarmonyModeEntity.ts';
 import { RoleRelationshipEntity } from '../entities/RoleRelationshipEntity.ts';
+import { RoleRelationshipGraphEntity } from '../entities/RoleRelationshipGraphEntity.ts';
 import { RoleRelationshipGroupEntity } from '../entities/RoleRelationshipGroupEntity.ts';
 import { ValidationErrorEntity } from '../entities/ValidationErrorEntity.ts';
 
@@ -22,7 +23,9 @@ class GraphIntegrityContext {
 /** Validates graph references that JSON Schema cannot express. */
 export class RoleRelationshipGraphIntegrity {
   static validate(schema: NonNullable<InputEntity.Type['roles']>): ValidationErrorEntity.Type[] {
-    const graph = schema.relationshipGraph;
+    const graph = schema.relationshipGraph === undefined
+      ? undefined
+      : RoleRelationshipGraphEntity.intake(schema.relationshipGraph);
     if (graph === undefined) {
       return [];
     }
