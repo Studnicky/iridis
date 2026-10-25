@@ -93,6 +93,52 @@ class IridisVocab {
    * retains the operation and exact before/after links.
    */
   readonly 'clampedFrom' = `${this.base}clampedFrom`;
+
+  // Authored relationship graph and resolved relationship provenance.
+  readonly 'RelationshipGraph' = `${this.base}RelationshipGraph`;
+  readonly 'RelationshipGroup' = `${this.base}RelationshipGroup`;
+  readonly 'HarmonyMode' = `${this.base}HarmonyMode`;
+  readonly 'HarmonyVariant' = `${this.base}HarmonyVariant`;
+  readonly 'RoleRelationship' = `${this.base}RoleRelationship`;
+  readonly 'RelationshipResolution' = `${this.base}RelationshipResolution`;
+  readonly 'RelationshipTolerance' = `${this.base}RelationshipTolerance`;
+  readonly 'hasRelationshipGraph' = `${this.base}hasRelationshipGraph`;
+  readonly 'hasRelationshipGroup' = `${this.base}hasRelationshipGroup`;
+  readonly 'hasHarmonyMode' = `${this.base}hasHarmonyMode`;
+  readonly 'hasHarmonyVariant' = `${this.base}hasHarmonyVariant`;
+  readonly 'hasRelationship' = `${this.base}hasRelationship`;
+  readonly 'hasRelationshipResolution' = `${this.base}hasRelationshipResolution`;
+  readonly 'graphAnchor' = `${this.base}graphAnchor`;
+  readonly 'defaultHarmonyMode' = `${this.base}defaultHarmonyMode`;
+  readonly 'selectedHarmonyMode' = `${this.base}selectedHarmonyMode`;
+  readonly 'relationshipGroupName' = `${this.base}relationshipGroupName`;
+  readonly 'harmonyVariant' = `${this.base}harmonyVariant`;
+  readonly 'hueVariantId' = `${this.base}hueVariantId`;
+  readonly 'hueDegrees' = `${this.base}hueDegrees`;
+  readonly 'hueOffset' = `${this.base}hueOffset`;
+  readonly 'lightnessOffset' = `${this.base}lightnessOffset`;
+  readonly 'chromaScale' = `${this.base}chromaScale`;
+  readonly 'interpolationWeight' = `${this.base}interpolationWeight`;
+  readonly 'overlayAlpha' = `${this.base}overlayAlpha`;
+  readonly 'relationshipTarget' = `${this.base}relationshipTarget`;
+  readonly 'relationshipSource' = `${this.base}relationshipSource`;
+  readonly 'relationshipOperation' = `${this.base}relationshipOperation`;
+  readonly 'relationshipPriority' = `${this.base}relationshipPriority`;
+  readonly 'relationshipRelaxability' = `${this.base}relationshipRelaxability`;
+  readonly 'relationshipTolerance' = `${this.base}relationshipTolerance`;
+  readonly 'toleranceAlpha' = `${this.base}toleranceAlpha`;
+  readonly 'toleranceChroma' = `${this.base}toleranceChroma`;
+  readonly 'toleranceHue' = `${this.base}toleranceHue`;
+  readonly 'toleranceLightness' = `${this.base}toleranceLightness`;
+  readonly 'resolutionRelationship' = `${this.base}resolutionRelationship`;
+  readonly 'resolutionGroup' = `${this.base}resolutionGroup`;
+  readonly 'resolutionMode' = `${this.base}resolutionMode`;
+  readonly 'resolutionSource' = `${this.base}resolutionSource`;
+  readonly 'resolutionDisposition' = `${this.base}resolutionDisposition`;
+  readonly 'resolutionBlockedReason' = `${this.base}resolutionBlockedReason`;
+  readonly 'resolutionBefore' = `${this.base}resolutionBefore`;
+  readonly 'resolutionAfter' = `${this.base}resolutionAfter`;
+  readonly 'resolutionDeviation' = `${this.base}resolutionDeviation`;
 }
 
 export const iridisVocab = new IridisVocab();
