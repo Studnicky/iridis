@@ -55,11 +55,16 @@ Constraints are `pin`, `range`, `hue-relationship`, `gamut`, `cvd-floor`, or
 `passed` value is false.
 
 A relationship graph resolves each target through one authored relationship before
-compliance. Fixed relationships require their exact resolved record; tolerant
-relationships bound compliance movement to the declared channel deltas. An
+compliance. An operation that explicitly computes lightness or chroma clamps that
+coordinate into the target range. An operation that preserves a source coordinate
+uses the target range midpoint when that range exists and otherwise preserves the
+source coordinate. A source-less `hue-target` retains its already-resolved target
+lightness, chroma, and alpha. `core:relationshipResolution.after` records this
+final coordinate result. Fixed relationships preserve that record; tolerant
+relationships bound compliance movement to their declared channel deltas. An
 `alpha-overlay` relationship uses the emitted source-over composite for contrast
-measurement. Its schema analysis remains
-indeterminate with sampled evidence unless interval bounds can certify the composite.
+measurement. Its schema analysis remains indeterminate with sampled evidence unless
+interval bounds can certify the composite.
 
 `ContrastFeasibility.analyzeSchema(schema, options)` evaluates declared pair envelopes for schema authors.
 It reports reachable, unreachable, hue-dependent, or indeterminate reachability without changing a palette.
@@ -115,7 +120,7 @@ export function generateAccessiblePalette(roleSchema: RoleSchemaEntity.Type) {
   engine.pipeline([
     "intake:any",
     "resolve:roles",
-    "expand:family",
+    "derive:roleRelations",
     "enforce:compliance",
     "derive:variant",
     "report:compliance",
