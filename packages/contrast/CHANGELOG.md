@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.14.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @studnicky/iridis@0.14.1
+
+## 0.14.0
+
+### Minor Changes
+
+- 0ac5b09: Expose provenance-aware selected-standard compliance through the canonical enforce:compliance and report:compliance stages. input.contrast.cvdMode selects warn, nudge, or enforce CVD behavior, and nonMandatoryLevel selects AA or AAA requirements for non-mandatory pairs. APCA derives non-mandatory status from a declared pair minimum below 4.5:1. CVD evidence, corrections, and enforce-mode blockers are recorded separately at metadata['contrast:cvd'], not on the compliance report.
+- 4b6918d: Failing pairs in the contrast:complianceReport carry an optional `proof` that states whether the pair is reachable at the run's resolved hues, and `analyzeSchema` reports the same reachability for a schema before any run. `analyzeSchema` certifies neutral envelopes and bounded authored hue arcs with conservative luminance witnesses. A pair whose hue is not fixed is reported as indeterminate with its sampled evidence kept separate from the proof.
+- f904046: The contrast:complianceReport is `{compliant, disposition, selected, pairs, problemPairs}`, where `disposition` is resolved, best-effort or withheld and `problemPairs` is the failing subset of `pairs`. Each pair carries foreground, background, required, actual, shortfall, passed, adjustedRoles and constraints, plus an optional proof; constraints are pin, range, hue-relationship, gamut, cvd-floor or cvd-drop. The report has no blockedPairs, cvdCompliant or causes field. When withhold:compliance runs after report:compliance, input.contrast.enableStrictCompliance marks an unresolved report withheld. Connected roles are optimized jointly inside their authored ranges.
+
+### Patch Changes
+
+- 646d87d: The contrast README states the performance bounds and safety guarantees of schema feasibility analysis, CVD correction, and strict compliance.
+- 6eb117b: Contrast repair, feasibility proofs, and the color-vision search measure candidates as plain numeric coordinates, build validated color records only for selected results, and skip CVD candidates outside the mover’s authored lightness and chroma ranges. `ColorCoordinate` is exported from `@studnicky/iridis/math`.
+  
+  `HueIntervalBounds` is exported from `@studnicky/iridis/math` for conservative emitted-sRGB luminance and APCA bounds over non-wrapping OKLCH hue arcs, and `RoleGeometry` is exported from `@studnicky/iridis/tasks` for consumers that apply the engine’s canonical hue-target clamp.
+- 6f3c284: CVD floor and drop evaluation, simulation math, luminance and contrast measurement live in one internal evaluator that CVD correction and the terminal compliance report both use.
+- 8116e75: A report withheld by input.contrast.enableStrictCompliance keeps the resolved roles and variants, so the report disposition is the only withheld signal.
+- Updated dependencies [0ac5b09]
+- Updated dependencies [4b6918d]
+- Updated dependencies [6eb117b]
+- Updated dependencies [f904046]
+- Updated dependencies [13ca891]
+- Updated dependencies [fda1be3]
+  - @studnicky/iridis@0.14.0
+
 ## 0.13.2
 
 ### Patch Changes

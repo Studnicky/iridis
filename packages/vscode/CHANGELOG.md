@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.14.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @studnicky/iridis@0.14.1
+
+## 0.14.0
+
+### Minor Changes
+
+- 3bd6075: Export VscodeOutputs from the package index so consumers read vscode:workbenchColors and vscode:semanticTokenRules without deep imports. The emitter includes statusBar.noFolderBackground, statusBar.noFolderBorder and statusBar.noFolderForeground, for 132 workbench colors.
+
+### Patch Changes
+
+- Updated dependencies [0ac5b09]
+- Updated dependencies [4b6918d]
+- Updated dependencies [6eb117b]
+- Updated dependencies [f904046]
+- Updated dependencies [13ca891]
+- Updated dependencies [fda1be3]
+  - @studnicky/iridis@0.14.0
+
 ## 0.13.2
 
 ### Patch Changes

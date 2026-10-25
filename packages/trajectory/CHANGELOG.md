@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.14.1
+
+### Patch Changes
+
+- @studnicky/iridis-anima@0.14.1
+  - @studnicky/iridis-algebra@0.14.1
+
+## 0.14.0
+
+### Patch Changes
+
+- @studnicky/iridis-anima@0.14.0
+  - @studnicky/iridis-algebra@0.14.0
+
 ## 0.13.2
 
 ### Patch Changes

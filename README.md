@@ -20,7 +20,7 @@ Build accessible, role-based colour systems from seed colours.
 > [!NOTE]
 > This README helps you choose a package. Complete usage guidance, APIs, and examples are on GitHub Pages.
 
-The workspace emits 1,436 artifacts from 359 TypeScript sources across 18 public packages.
+The workspace emits 1,464 artifacts from 366 TypeScript sources across 18 public packages.
 
 ## Install
 
