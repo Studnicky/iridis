@@ -25,27 +25,27 @@ class RelationshipGraphRdfFixture {
     const state = engine.run(InputEntity.intake({
       'colors': ['#7c3aed', '#111827'],
       'roles': RoleSchemaEntity.intake({
-        'name': 'relationship-rdf',
+        'name': 'relationship/rdf #1',
         'relationshipGraph': {
           'groups': [{
             'anchor': 'brand',
-            'defaultMode': 'opposite',
-            'id': 'brand-family',
+            'defaultMode': 'opposite mode/#',
+            'id': 'brand/family #1',
             'modes': [{
-              'hueOffsets': [{ 'degrees': 180, 'variantId': 'opposite' }],
-              'id': 'opposite'
+              'hueOffsets': [{ 'degrees': 180, 'variantId': 'opposite variant/#' }],
+              'id': 'opposite mode/#'
             }],
             'name': 'Brand family',
             'relationships': [
               {
-                'id': 'accent-opposite',
+                'degrees': 12.345,
+                'id': 'accent/opposite #1',
                 'operation': 'hue-offset',
                 'priority': 0,
                 'relaxability': 'tolerant',
                 'source': 'brand',
                 'target': 'accent',
-                'tolerance': { 'hue': 8 },
-                'variantId': 'opposite'
+                'tolerance': { 'hue': 0.00004 }
               },
               {
                 'id': 'brand-alias',
@@ -116,9 +116,9 @@ class RelationshipGraphRdfFixture {
 
 void test('reason:annotate projects authored relationship graphs and resolved role explanations', () => {
   const graph = RelationshipGraphRdfFixture.run();
-  const graphNode = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship-rdf');
-  const group = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship-rdf/group/brand-family');
-  const relationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship-rdf/group/brand-family/relationship/accent-opposite');
+  const graphNode = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship%2Frdf%20%231');
+  const group = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship%2Frdf%20%231/group/brand%2Ffamily%20%231');
+  const relationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship%2Frdf%20%231/group/brand%2Ffamily%20%231/relationship/accent%2Fopposite%20%231');
   const brand = DataFactory.namedNode('https://studnicky.dev/iridis/role/brand');
   const accent = DataFactory.namedNode('https://studnicky.dev/iridis/role/accent');
   const resolution = DataFactory.namedNode('https://studnicky.dev/iridis/role/accent/relationship-resolution');
@@ -173,34 +173,51 @@ void test('reason:annotate projects authored relationship graphs and resolved ro
     1,
     'tolerant relationship links a queryable tolerance resource'
   );
+  const tolerance = graph.getQuads(relationship, DataFactory.namedNode(iridisVocab.relationshipTolerance), null, null)[0]?.object;
+  assert.ok(tolerance !== undefined, 'tolerant relationship exposes its tolerance resource');
+  assert.strictEqual(
+    graph.countQuads(relationship, DataFactory.namedNode(iridisVocab.hueDegrees), DataFactory.literal('12.345', DataFactory.namedNode('http://www.w3.org/2001/XMLSchema#double')), null),
+    1,
+    'hue degrees retain the exact authored number'
+  );
+  const authoredHue = graph.getQuads(relationship, DataFactory.namedNode(iridisVocab.hueDegrees), null, null)[0]?.object;
+  if (authoredHue?.termType !== 'Literal') {
+    throw new Error('hue degrees are an RDF literal');
+  }
+  assert.ok(Math.abs(Number(authoredHue.value) - 12.345) < Number.EPSILON, 'hue degrees round-trip to the authored number');
+  assert.strictEqual(
+    graph.countQuads(tolerance, DataFactory.namedNode(iridisVocab.toleranceHue), DataFactory.literal('0.00004', DataFactory.namedNode('http://www.w3.org/2001/XMLSchema#double')), null),
+    1,
+    'tolerance retains the exact authored number'
+  );
 
-  const deltaRelationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship-rdf/group/brand-family/relationship/brand-delta');
-  const interpolationRelationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship-rdf/group/brand-family/relationship/brand-background-interpolate');
-  const overlayRelationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship-rdf/group/brand-family/relationship/brand-overlay');
-  const decimal = DataFactory.namedNode('http://www.w3.org/2001/XMLSchema#decimal');
+  const deltaRelationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship%2Frdf%20%231/group/brand%2Ffamily%20%231/relationship/brand-delta');
+  const interpolationRelationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship%2Frdf%20%231/group/brand%2Ffamily%20%231/relationship/brand-background-interpolate');
+  const overlayRelationship = DataFactory.namedNode('https://studnicky.dev/iridis/relationship-graph/relationship%2Frdf%20%231/group/brand%2Ffamily%20%231/relationship/brand-overlay');
+  const double = DataFactory.namedNode('http://www.w3.org/2001/XMLSchema#double');
 
   assert.strictEqual(
-    graph.countQuads(deltaRelationship, DataFactory.namedNode(iridisVocab.lightnessOffset), DataFactory.literal('0.0800', decimal), null),
+    graph.countQuads(deltaRelationship, DataFactory.namedNode(iridisVocab.lightnessOffset), DataFactory.literal('0.08', double), null),
     1,
     'OKLCH delta exposes its authored lightness offset'
   );
   assert.strictEqual(
-    graph.countQuads(deltaRelationship, DataFactory.namedNode(iridisVocab.chromaScale), DataFactory.literal('0.7000', decimal), null),
+    graph.countQuads(deltaRelationship, DataFactory.namedNode(iridisVocab.chromaScale), DataFactory.literal('0.7', double), null),
     1,
     'OKLCH delta exposes its authored chroma scale'
   );
   assert.strictEqual(
-    graph.countQuads(deltaRelationship, DataFactory.namedNode(iridisVocab.hueOffset), DataFactory.literal('24.00', decimal), null),
+    graph.countQuads(deltaRelationship, DataFactory.namedNode(iridisVocab.hueOffset), DataFactory.literal('24', double), null),
     1,
     'OKLCH delta exposes its authored hue offset'
   );
   assert.strictEqual(
-    graph.countQuads(interpolationRelationship, DataFactory.namedNode(iridisVocab.interpolationWeight), DataFactory.literal('0.2500', decimal), null),
+    graph.countQuads(interpolationRelationship, DataFactory.namedNode(iridisVocab.interpolationWeight), DataFactory.literal('0.25', double), null),
     1,
     'OKLCH interpolation exposes its authored weight'
   );
   assert.strictEqual(
-    graph.countQuads(overlayRelationship, DataFactory.namedNode(iridisVocab.overlayAlpha), DataFactory.literal('0.4000', decimal), null),
+    graph.countQuads(overlayRelationship, DataFactory.namedNode(iridisVocab.overlayAlpha), DataFactory.literal('0.4', double), null),
     1,
     'alpha overlay exposes its authored alpha'
   );

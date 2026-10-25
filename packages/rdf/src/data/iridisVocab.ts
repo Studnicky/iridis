@@ -110,7 +110,6 @@ class IridisVocab {
   readonly 'hasRelationshipResolution' = `${this.base}hasRelationshipResolution`;
   readonly 'graphAnchor' = `${this.base}graphAnchor`;
   readonly 'defaultHarmonyMode' = `${this.base}defaultHarmonyMode`;
-  readonly 'selectedHarmonyMode' = `${this.base}selectedHarmonyMode`;
   readonly 'relationshipGroupName' = `${this.base}relationshipGroupName`;
   readonly 'harmonyVariant' = `${this.base}harmonyVariant`;
   readonly 'hueVariantId' = `${this.base}hueVariantId`;
