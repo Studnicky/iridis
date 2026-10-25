@@ -366,7 +366,45 @@ const extractArchive = async (archive, destination, stageDirectory, privateRoot)
   }
 };
 
-const validatePackageLayout = (packageDirectory, manifest) => {
+const sourceOutputFor = (packageDirectory) => {
+  const configPath = join(packageDirectory, 'tsconfig.build.json');
+  const config = typescript.readConfigFile(configPath, typescript.sys.readFile);
+  if (config.error !== undefined) {
+    fail(`TypeScript could not read build config: ${configPath}`);
+  }
+  const parsed = typescript.parseJsonConfigFileContent(
+    config.config,
+    typescript.sys,
+    packageDirectory,
+    undefined,
+    configPath
+  );
+  if (parsed.errors.length > 0) {
+    fail(`TypeScript could not parse build config: ${configPath}`);
+  }
+  const sourceCount = parsed.fileNames.filter((path) => {
+    return path.endsWith('.ts')
+      && !path.endsWith('.d.ts')
+      && !/(?:^|[/\\])(?:tests?|__tests__)(?:[/\\]|$)|(?:\.test|\.spec)\.ts$/u.test(path);
+  }).length;
+  const options = parsed.options;
+  const emitsJavaScript = options.emitDeclarationOnly !== true;
+  const emittedFilesPerSource = [
+    emitsJavaScript,
+    options.declaration === true,
+    emitsJavaScript && options.sourceMap === true && options.inlineSourceMap !== true,
+    options.declaration === true && options.declarationMap === true
+  ].filter(Boolean).length;
+  if (emittedFilesPerSource === 0) {
+    fail(`TypeScript build config emits no files: ${configPath}`);
+  }
+  return {
+    'artifacts': sourceCount * emittedFilesPerSource,
+    'sources': sourceCount
+  };
+};
+
+const validatePackageLayout = (packageDirectory, manifest, expectedArtifacts) => {
   for (const metadata of METADATA_FILES) {
     const path = join(packageDirectory, metadata);
     if (!existsSync(path) || !statSync(path).isFile()) {
@@ -395,6 +433,9 @@ const validatePackageLayout = (packageDirectory, manifest) => {
   const artifacts = files.filter((path) => {
     return relative(join(packageDirectory, 'dist'), path).split(sep)[0] !== '..';
   });
+  if (artifacts.length !== expectedArtifacts) {
+    fail(`package ${manifest.name} expected ${expectedArtifacts} artifacts, found ${artifacts.length}`);
+  }
   return artifacts.length;
 };
 
@@ -821,10 +862,11 @@ const stage = (rootDirectory = ROOT) => {
 const smoke = async (rootDirectory = ROOT) => {
   const records = packageRecordsFor(rootDirectory);
   const recordsByName = new Map(records.map((record) => [record.manifest.name, record]));
-  const sourceCount = records.reduce((total, { packageDirectory }) => {
-    return total + listFiles(join(packageDirectory, 'src')).filter((path) => {
-      return path.endsWith('.ts') && !path.endsWith('.d.ts');
-    }).length;
+  const sourceOutputs = new Map(records.map((record) => {
+    return [record.directoryName, sourceOutputFor(record.packageDirectory)];
+  }));
+  const sourceCount = [...sourceOutputs.values()].reduce((total, output) => {
+    return total + output.sources;
   }, 0);
   const publishDirectories = stage(rootDirectory);
   return withTemporaryDirectory('iridis-consumer-', async (temporaryDirectory) => {
@@ -845,10 +887,15 @@ const smoke = async (rootDirectory = ROOT) => {
       if (publishDirectory === undefined) {
         fail(`missing publish stage for ${record.manifest.name}`);
       }
+      const sourceOutput = sourceOutputs.get(record.directoryName);
+      if (sourceOutput === undefined) {
+        fail(`missing source output description for ${record.manifest.name}`);
+      }
       const stagedManifest = readJson(join(publishDirectory, 'package.json'));
       artifactCount += validatePackageLayout(
         publishDirectory,
-        stagedManifest
+        stagedManifest,
+        sourceOutput.artifacts
       );
       exportCount += Object.keys(stagedManifest.exports).length;
       const archive = packArchive(publishDirectory, archivesDirectory, cacheDirectory);
@@ -859,7 +906,7 @@ const smoke = async (rootDirectory = ROOT) => {
         publishDirectory,
         temporaryDirectory
       );
-      validatePackageLayout(installedDirectory, stagedManifest);
+      validatePackageLayout(installedDirectory, stagedManifest, sourceOutput.artifacts);
       archives.push(archive);
       extractedByName.set(stagedManifest.name, installedDirectory);
     }
@@ -925,6 +972,7 @@ export const packageConsumerSmoke = Object.freeze({
   packArchive,
   'run': smoke,
   runCommand,
+  sourceOutputFor,
   stage,
   validatePackageLayout,
   verifyConsumer,

@@ -895,3 +895,40 @@ test('package layout validation rejects a missing export target', () => {
     rmSync(root, { 'force': true, 'recursive': true });
   }
 });
+
+test('package layout validation rejects a missing emitted artifact', () => {
+  const root = mkdtempSync(join(tmpdir(), 'iridis-emitted-artifact-test-'));
+  try {
+    const source = join(root, 'source');
+    const stage = join(root, 'stage');
+    writeStage(stage);
+    mkdirSync(join(source, 'src'), { 'recursive': true });
+    writeFileSync(join(source, 'src', 'index.ts'), 'export const fixture = true;\n');
+    writeFileSync(join(source, 'src', 'index.test.ts'), 'export const fixtureTest = true;\n');
+    writeFileSync(join(source, 'tsconfig.build.json'), `${JSON.stringify({
+      'compilerOptions': {
+        'declaration': true,
+        'declarationMap': true,
+        'sourceMap': true
+      },
+      'exclude': ['src/**/*.test.ts'],
+      'include': ['src/**/*.ts']
+    }, null, 2)}\n`);
+    const expected = packageConsumerSmoke.sourceOutputFor(source);
+    assert.equal(expected.sources, 1);
+    assert.throws(
+      () => packageConsumerSmoke.validatePackageLayout(stage, {
+        'name': '@fixture/archive',
+        'exports': {
+          '.': {
+            'types': './dist/index.d.ts',
+            'import': './dist/index.js'
+          }
+        }
+      }, expected.artifacts),
+      /expected .* artifacts, found 2/u
+    );
+  } finally {
+    rmSync(root, { 'force': true, 'recursive': true });
+  }
+});
