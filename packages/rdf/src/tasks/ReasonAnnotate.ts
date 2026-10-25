@@ -317,14 +317,17 @@ class ReasonAnnotate implements TaskInterface {
   }
 
   private static relationshipSources(relationship: RoleRelationshipEntity.Type): readonly string[] {
-    if ('source' in relationship) {
-      const result = relationship.operation === 'oklch-interpolate'
-        ? [relationship.source, relationship.toward]
-        : [relationship.source];
+    if (relationship.operation === 'alpha-overlay') {
+      return [relationship.base, relationship.overlay];
+    }
+    if (relationship.operation === 'oklch-interpolate') {
+      return [relationship.source, relationship.toward];
+    }
+    if (relationship.operation === 'hue-target') {
+      const result = relationship.source === undefined ? [] : [relationship.source];
       return result;
     }
-    const result = [relationship.base, relationship.overlay];
-    return result;
+    return [relationship.source];
   }
 
   private static emitTolerance(
