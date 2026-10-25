@@ -84,6 +84,35 @@ const feasibility = ContrastFeasibility.analyzeSchema(yourRoleSchema, {
 
 The advisory reports `always-reachable`, `never-reachable`, `reachable-only-for-some-hues`, or `indeterminate` for each declared pair. Indeterminate results retain sampled evidence, which is labelled as sampled rather than proof.
 
+### Demo controls
+
+The Schema card on this site exposes each `input.contrast` field as a control:
+
+| Control | `input.contrast` field | Values |
+|---|---|---|
+| Contrast target | `algorithm` + `level` | AA, AAA, APCA |
+| Non-mandatory level | `nonMandatoryLevel` | `AA`, `AAA` |
+| CVD mode | `cvdMode` | `warn`, `nudge`, `enforce` |
+| Strict compliance | `enableStrictCompliance` | on, off |
+
+Changing a control reruns the pipeline and the schema reachability list. The reachability list shows one badge per declared pair, the limiting bounds for pairs that cannot be met, and the hue ranges for pairs that depend on the seed. A failing pair in the accessibility toast names its best reachable value and the bound that limits it.
+
+### Performance
+
+Feasibility and CVD correction run on closed-form and bounded numeric paths rather than sampling.
+
+- `analyzeSchema` certifies neutral, shared-root, and independent-root hue envelopes with interval witnesses over the lightness/chroma corners of each role. A role schema with 32 roles analyzes in about 25 ms.
+- Repair scoring, proofs, and CVD range pruning share one numeric `ColorCoordinate` model, which `@studnicky/iridis/math` exports for callers that score candidates themselves.
+- CVD correction runs against a fixed search budget per run. A run that exhausts its budget returns the best candidate found and reports the unresolved constraints.
+- The demo runs palette work and the schema reachability check in one engine worker; the check uses latest-wins sequencing so a stale reply never overwrites a newer result.
+
+### Safety
+
+- Roles stated by the caller are pinned: no step mutates them, and a pair with both endpoints pinned reports the `pin` constraint rather than moving either side.
+- `enableStrictCompliance` never discards the resolved palette. It changes `disposition` to `withheld`; the consumer decides whether to admit it. The demo keeps the last admitted palette on screen while a withheld palette's report stays visible.
+- Every shortfall is reported with its `constraints`, so an unresolved pair names the range, gamut, hue-relationship, pin, or CVD limit that blocks it.
+- A `proof` is present only when the analyzer can state it. Sampled evidence is labelled as sampled and is never presented as proof.
+
 ### As a CLI
 
 Install `@studnicky/iridis-cli`, write a JSON config with `enable*` flags, and run:
