@@ -39,6 +39,12 @@ class VscodeTierDemoData {
     const result = isSeedColorPatternError ? 'Each supplied seed color must be a six-digit hexadecimal color such as #101820.' : error.message;
     return result;
   }
+
+  static paletteAnnouncement(paletteName: string, tier: number): string {
+    const roleCount = VscodeTierDemoData.roleNames(tier).length;
+    const result = `${paletteName} palette with ${roleCount} supplied seed roles is ready. Use the shared page framing switch to change light and dark output.`;
+    return result;
+  }
 }
 
 class VscodeTierDemoOperation {
@@ -47,7 +53,7 @@ class VscodeTierDemoOperation {
     const tier = VueModule.ref(4);
     const paletteName = VueModule.ref('aurora');
     const roles = VueModule.ref<Record<string, string>>(VscodeTierDemoData.roles(tier.value, paletteName.value));
-    const announcement = VueModule.ref('Aurora 4-role palette is ready. Use the shared page framing switch to change light and dark output.');
+    const announcement = VueModule.ref(VscodeTierDemoData.paletteAnnouncement(paletteName.value, tier.value));
     const seedRoles = VueModule.computed(() => { const result = VscodeTierDemoData.roleNames(tier.value);
       return result; });
     const result = VueModule.computed(() => {
@@ -67,7 +73,7 @@ class VscodeTierDemoOperation {
       if (!VscodeTierDemoData.colorsByPalette.has(value)) { return; }
       paletteName.value = value;
       roles.value = VscodeTierDemoData.roles(tier.value, value);
-      announcement.value = `${value} palette loaded with ${tier.value} supplied seed roles.`;
+      announcement.value = VscodeTierDemoData.paletteAnnouncement(value, tier.value);
     }
     VueModule.watch(framing, (value) => { announcement.value = `Shared ${value} framing applied to the VS Code theme output.`; });
     return { 'announcement': announcement, 'framing': framing, 'paletteName': paletteName, 'result': result, 'roles': roles, 'seedRoles': seedRoles, 'setPalette': setPalette, 'setTier': setTier, 'tier': tier };

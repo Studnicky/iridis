@@ -1,9 +1,9 @@
 ---
-title: 2. The Four Stages
-description: The four conceptual stages of iridis and how data flows through the pipeline.
+title: Pipeline Stages
+description: The conceptual stages of iridis and how data flows through the pipeline.
 ---
 
-Every iridis pipeline passes through four conceptual stages, even though the task names and execution order are fully controlled by you:
+Every iridis pipeline passes through conceptual stages, even though task names and execution order remain fully controlled by you:
 
 ```
 intake → resolve → enforce → emit
@@ -45,4 +45,4 @@ For every registered, non-lifecycle task named by `manifest.requires`, the engin
 
 Core `intake`/`resolve`/`emit` stages ship with iridis itself. The `enforce:compliance`, `report:compliance` and `withhold:compliance` stages are contributed by `@studnicky/iridis-contrast`; the selected standard (WCAG AA, WCAG AAA, or APCA) is the `input.contrast` setting, not a separate stage.
 
-A plugin is any object satisfying `PluginInterface` (a `name`, a `version`, and a `tasks()` method); `engine.adopt(plugin)` registers all of a plugin's tasks in one call. iridis ships seven plugins beyond the core task set: `@studnicky/iridis-vscode`, `-stylesheet`, `-tailwind`, `-image`, `-contrast`, `-capacitor`, and `-rdf`. Each is a separate package — install only what a project needs.
+A plugin is any object satisfying `PluginInterface` (a `name`, a `version`, and a `tasks()` method); `engine.adopt(plugin)` registers all of a plugin's tasks in one call. Plugin packages extend the core task set, including `@studnicky/iridis-vscode`, `-stylesheet`, `-tailwind`, `-image`, `-contrast`, `-capacitor`, and `-rdf`. Each is a separate package — install only what a project needs.

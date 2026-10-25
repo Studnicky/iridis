@@ -72,7 +72,7 @@ issue array. Checks, independent of each other:
 
 ### `createDesignSystemPlugin(config)`
 
-Returns a standard ESLint plugin object with three rules:
+Returns a standard ESLint plugin object with the following rules:
 
 - `known-class-names`
 - `known-dynamic-class-expr`
@@ -88,7 +88,7 @@ plus an enabled-rules map. Config keys:
 - `designTokens`: `Set<string>` of known CSS custom-property names
 - `frameworks`: optional context selector (`vue`, `runtime`, `html`) to scope
   extractor subsets
-- `rules`: optional array of rule ids to enable (defaults to all three) —
+- `rules`: optional array of rule ids to enable (defaults to every rule) —
   used by `design-tokens.mjs` to enable only `known-design-tokens`
 
 ### Profiles
@@ -173,7 +173,7 @@ and trimmed for iridis's actual stack and CSS-naming conventions:
   concept in the source package at all — schema-forms deliberately excludes
   `tokens.css` from its input). It expresses the invariant
   `site/test/siteDesignSystemCss.test.ts` enforces today via a hardcoded
-  12-file `CHROME_STYLESHEETS` allowlist, as a real per-file ESLint rule
+  `CHROME_STYLESHEETS` allowlist, as a real per-file ESLint rule
   instead — no allowlist maintenance, every matched file is checked
   automatically.
 - **Duplicated helpers**: the source's `demos/design-system/contracts.mjs`

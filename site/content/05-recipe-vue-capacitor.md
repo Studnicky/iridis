@@ -1,21 +1,19 @@
 ---
-title: "5. Recipe: Vue + Capacitor Per-Category Palettes"
-description: A worked example wiring Iridis into a Vue 3 + Capacitor app for per-category dynamic palettes.
+title: "Recipe: Vue + Capacitor Per-Category Palettes"
+description: A worked example wiring Iridis into a Vue + Capacitor app for per-category dynamic palettes.
 ---
 
 A worked example of the mapping strategy: `site/app/examples/vueCapacitor/categoryColorService.ts` is a service that takes a category name and a seed hex color, runs the Iridis pipeline, writes scoped CSS custom properties to the document, and returns Capacitor `StatusBar` parameters for native chrome.
 
-`CategoryColorService` is a singleton that owns a single `Engine` instance configured at construction time. The engine is set up once; individual calls to `apply(category, seed)` just invoke `engine.run()` with a new input.
+`CategoryColorService` owns an `Engine` instance configured at construction time. Calls to `apply(category, seed)` invoke `engine.run()` with a new input.
 
 <<< @/site/app/examples/vueCapacitor/categoryColorService.ts#construct
 
-The `private constructor` + `static shared()` pattern wires the engine once. Each service owns its own `Engine` instance and therefore its own isolated `TaskRegistry`, which matters when multiple services in the same application need different pipeline configurations.
+The `private constructor` + `static shared()` pattern wires the engine during service construction. Each service owns an isolated `TaskRegistry`, which matters when services in the same application need different pipeline configurations.
 
 ## From seed to palette
 
-Using seed `#8B5CF6` (a mid-purple, high chroma) against `categoryW3cRoleSchema`: `intake:any` parses the hex and converts it to OKLCH (approximately L=0.61, C=0.22, H=293). `resolve:roles` assigns it to the `accent` role and clamps it to the schema's L 0.35–0.46 and C 0.10–0.12 brand range. `expand:family` derives `onAccent` at the light end of its declared range. The terminal `#5b4894` accent and `#fcfcfc` foreground have a WCAG 2.1 contrast ratio of approximately 7.31:1.
-
-The AAA-strength schema requires 7:1 for all three text relations and 3:1 for the non-text border relation. `enforce:compliance` enforces those relationships under the WCAG AAA standard selected by `input.contrast`, together with CVD correction, and `report:compliance` records the final measurements. The text role's L 0.10–0.23 and C 0.08–0.09 range produces terminal `#201042`, which reaches approximately 13.53:1 on canvas and 11.11:1 on surface. The service reparses the emitted hexadecimal values, independently recomputes WCAG, and re-simulates every CVD matrix with each linear channel clamped before gamma encoding. A palette that cannot satisfy the terminal contract throws without creating or changing a style element.
+`intake:any` normalizes the seed, `resolve:roles` assigns it through the schema, and `expand:family` derives schema-authored roles. `enforce:compliance` applies the selected `input.contrast` standard and CVD mode; `report:compliance` records terminal measurements. The service reparses emitted hexadecimal values, independently recomputes WCAG, and re-simulates CVD matrices with each linear channel clamped before gamma encoding. A palette that cannot satisfy the terminal contract throws without creating or changing a style element.
 
 `emit:cssVars` writes `state.outputs['stylesheet:cssVars']` with `full` (the complete CSS string), `scopedBlock` (the `[data-category='music'] { ... }` block), and `map` (the role-to-custom-property mapping). `emit:capacitorStatusBar` writes `state.outputs['capacitor:statusBar']`, and `emit:capacitorTheme` writes `state.outputs['capacitor:theme']`. The returned `compliance` member is the engine compliance report, `wcagPairs` contains measurements rebuilt from the terminal emitted values, and `cvd` contains the terminal simulation result.
 
@@ -27,7 +25,7 @@ Any component that sets `data-category="music"` on its root element automaticall
 
 Category names are lowercase kebab-case identifiers. The service rejects invalid names before pipeline execution so untrusted text cannot alter the generated selector or style-element identifier.
 
-## Vue 3 SFC integration
+## Vue SFC integration
 
 <<< @/site/app/examples/vueCapacitor/MusicCategoryView.vue
 
@@ -42,4 +40,4 @@ async function onCategoryChange(category: string, seed: string) {
 
 The `emit:capacitorStatusBar` task writes `state.outputs['capacitor:statusBar'].backgroundColor` (the resolved `surface`/`topBar` role hex) and `.style` (`'DARK'` or `'LIGHT'` depending on background luminance) — pass these directly to the Capacitor `StatusBar` plugin.
 
-In v1, iridis re-derives one category palette per call; calling `apply()` for different categories in sequence is supported, and multiple categories can coexist in the DOM simultaneously as long as they use distinct `data-category` values. Full living-color animation (smooth palette morphing between categories) is a v2 concern — see the [Roadmap section](#roadmap-living-color) of the architecture page.
+iridis re-derives a category palette for each `apply()` call. Different categories can coexist in the DOM as long as they use distinct `data-category` values. See the [living-color architecture](#roadmap-living-color) for palette morphing guidance.

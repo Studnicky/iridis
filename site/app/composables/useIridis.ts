@@ -1,7 +1,7 @@
 /**
  * Shared iridis engine state. Two mutually-exclusive modes — a color picker and
  * an image extractor — each with its own palette; switching modes swaps which
- * palette themes the page. Every color (roles AND the 50→950 scales) is produced
+ * palette themes the page. Every color (roles and tonal scales) is produced
  * by engine.run(): scales come from derive:variant tonal steps, semantic hues
  * from hueOffset on the schema roles. The projector only reads those hexes.
  */
@@ -176,7 +176,7 @@ class IridisContextFactory {
     const colorSpace = VueModule.ref<'srgb' | 'displayP3'>('srgb');
 
     /**
- * Color derivation configuration — one hue-algorithm choice per derivedFrom
+ * Color derivation configuration — a hue-algorithm choice per derivedFrom
  * relation (keyed by the child role's own name). Passed through metadata to
  * the derive:roleRelations/derive:semanticHues pipeline tasks, which write
  * the resolved overrides those relations consult; changing it re-runs the
@@ -377,7 +377,7 @@ class IridisContextFactory {
  * entry's `dominantColors` into the final palette that themes the page.
  */
     const uploadedImages = VueModule.ref<UploadedImage[]>([]);
-    /** The (typically 3) non-destructive candidate palettes from gallery:extractCandidates for the last image-driven run — one algorithm's clustering result each. */
+    /** Non-destructive candidate palettes from gallery:extractCandidates for the last image-driven run. */
     const candidates = VueModule.ref<GalleryCandidateOutputEntity.Type[]>([]);
     /** Label of the candidate currently populating imageSeeds, if the user picked one via PaletteCandidatePicker.vue — null means imageSeeds still holds the default gallery:dominantColors extraction. */
     const selectedCandidateLabel = VueModule.ref<string | null>(null);
@@ -390,8 +390,8 @@ class IridisContextFactory {
     const combineLocked = VueModule.ref<boolean>(false);
 
     /**
- * Image extraction's color COUNT is the same concept as the role schema's
- * role count (iridis-4/8/12/16/32) — not a second, independently-tunable
+ * Image extraction's color count is the same concept as the role schema's
+ * role count — not a second, independently-tunable
  * number. schemaName is the single source of truth; this keeps imgK in sync
  * whenever it changes (from either the Schema & Compliance control or the
  * mirrored control in the Image card).

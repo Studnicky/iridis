@@ -1,5 +1,5 @@
 ---
-title: 9. Task Registry Reference
+title: Task Registry Reference
 description: Every task registered by the core engine and each official plugin, grouped by plugin.
 ---
 
@@ -19,7 +19,7 @@ Every task registered by the core engine and by each official plugin, grouped by
 | `intake:named` | `input.colors` | `colors` | — | Parses CSS named color strings (e.g. `rebeccapurple`). |
 | `intake:imagePixels` | `input.colors` | `colors` | — | Parses `ImageData` or `{data, width, height}`, pushing non-transparent pixels. |
 | `clamp:oklch` | `colors`, `input.roles` | `colors` | — | Clamps each color's OKLCH lightness and chroma into role-defined (or default) ranges. |
-| `clamp:count` | `colors`, `input.maxColors`, `input.bypass` | `colors` | — | Reduces colors to `maxColors` (default 64) via weighted median-cut clustering when exceeded. |
+| `clamp:count` | `colors`, `input.maxColors`, `input.bypass` | `colors` | — | Reduces colors to `maxColors` through weighted median-cut clustering when exceeded. |
 | `resolve:roles` | `colors`, `input.roles`, `metadata` | `roles`, `metadata` | — | Assigns colors to schema roles by hint match then OKLCH distance, then nudges into declared ranges. |
 | `expand:family` | `roles`, `input.roles`, `metadata` | `roles` | — | Derives missing roles with `derivedFrom` set, applying OKLCH deltas from the source role. |
 | `enforce:contrast` | `roles`, `input.roles`, `input.contrast` | `roles`, `metadata['core:contrastReport']` | — | Core stage over the shared contrast policy: enforces every declared contrast pair, including `minRatio` and optional `maxRatio` bounds, moves only derived endpoints, preserves stated roles, and writes the typed `{compliant, pairs}` object to `core:contrastReport`. |
@@ -38,22 +38,22 @@ Every task registered by the core engine and by each official plugin, grouped by
 
 | Task | Reads | Writes | Requires | Description |
 |---|---|---|---|---|
-| `gallery:histogram` | `colors` | `colors`, `metadata.gallery:histogram` | — | Quantizes pixels into a 5-bit-per-channel histogram; emits weighted records keyed by bin centroid. |
+| `gallery:histogram` | `colors` | `colors`, `metadata.gallery:histogram` | — | Quantizes pixels into a histogram and emits weighted records keyed by bin centroid. |
 | `gallery:extract` | `colors`, `metadata.gallery` | `colors`, `metadata.gallery:dominantColors` | — | Reduces input records to K dominant colors via median-cut (weighted), deltaE-merge, Wu quantize, or k-means clustering. |
 | `gallery:extractCandidates` | `colors`, `metadata.gallery` | `metadata.gallery:candidates` | — | Non-destructive sibling of `gallery:extract`: runs several clustering configs against the same input and collects each as a labeled candidate palette. |
 | `gallery:assignRoles` | `colors` | `roles` | — | Assigns dominant colors to gallery roles: `canvas`, `frame`, `accent`, `muted`, `text`. |
-| `gallery:harmonize` | `roles`, `metadata.gallery` | `roles.accent`, `metadata.gallery:harmonized` | — | Shifts accent hue by 30° when its `deltaE2000` distance to the frame color is under 10. |
+| `gallery:harmonize` | `roles`, `metadata.gallery` | `roles.accent`, `metadata.gallery:harmonized` | — | Shifts accent hue when its `deltaE2000` distance to the frame color is below the harmonization threshold. |
 
 ## `@studnicky/iridis-vscode`
 
 | Task | Reads | Writes | Requires | Description |
 |---|---|---|---|---|
-| `vscode:seedRoles` | `input.colors`, `runtime.framing` | `colors` | — | Validates exactly one `{ tier, framing, roles }` palette body, requires matching framing, and creates named seed records for the exact 4/8/16/64 tier key set. |
+| `vscode:seedRoles` | `input.colors`, `runtime.framing` | `colors` | — | Validates the `{ tier, framing, roles }` palette body, requires matching framing, and creates named seed records for the selected tier's exact key set. |
 | `vscode:deriveUiRoles` | `roles`, `metadata.core:roleProvenance` | `roles` | `expand:family` | Derives missing UI extension roles from the resolved vocabulary and preserves caller-stated role values. |
-| `vscode:expandTokens` | `roles`, `runtime.framing`, `variants` | `metadata.vscode:baseTokens` | — | Derives 27 syntax and TextMate base tokens from the resolved framing surface. |
+| `vscode:expandTokens` | `roles`, `runtime.framing`, `variants` | `metadata.vscode:baseTokens` | — | Derives syntax and TextMate base tokens from the resolved framing surface. |
 | `vscode:applyModifiers` | `metadata.vscode:baseTokens`, `roles`, `runtime.framing`, `variants` | `metadata.vscode:semanticTokenRules` | `vscode:expandTokens` | Creates semantic-token rules and applies background contrast enforcement. |
 | `emit:vscodeSemanticRules` | `metadata.vscode:semanticTokenRules`, `metadata.vscode:baseTokens` | `outputs.vscode:semanticTokenRules` | `vscode:applyModifiers` | Shapes semantic rules for VS Code’s semantic-token customisation map. |
-| `emit:vscodeUiPalette` | `roles`, `runtime.framing`, `variants` | `outputs.vscode:workbenchColors` | `vscode:deriveUiRoles` | Emits 129 registry-backed workbench colour slots from the 64-role vocabulary. |
+| `emit:vscodeUiPalette` | `roles`, `runtime.framing`, `variants` | `outputs.vscode:workbenchColors` | `vscode:deriveUiRoles` | Emits registry-backed workbench colour slots from the resolved vocabulary. |
 | `emit:vscodeThemeJson` | `outputs.vscode:workbenchColors`, `outputs.vscode:semanticTokenRules`, `metadata.vscode:baseTokens`, `roles`, `runtime.framing`, `variants` | `outputs.vscode:themeJson` | `emit:vscodeSemanticRules`, `emit:vscodeUiPalette` | Assembles `{ name, type, colors, semanticTokenColors, tokenColors }`. |
 
 ## `@studnicky/iridis-stylesheet`
@@ -85,7 +85,7 @@ Every task registered by the core engine and by each official plugin, grouped by
 
 | Task | Reads | Writes | Requires | Description |
 |---|---|---|---|---|
-| `emit:chakraTheme` | `roles`, `variants` | `outputs.chakra:theme` | — | Emits a Chakra UI `extendTheme()` color-token scale (100/500/900 per family) from resolved roles and dark/light variants. |
+| `emit:chakraTheme` | `roles`, `variants` | `outputs.chakra:theme` | — | Emits a Chakra UI `extendTheme()` color-token scale from resolved roles and dark/light variants. |
 
 ## `@studnicky/iridis-panda`
 

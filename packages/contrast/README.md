@@ -3,7 +3,7 @@
 Resolves WCAG 2.1 AA / AAA luminance contrast and APCA Lc (WCAG 3 draft)
 compliance, validates and refines the result under color vision deficiency
 (CVD) simulation with fixed Machado–Oliveira–Fernandes severity-1 matrices,
-and reports the final state. The plugin registers three tasks:
+and reports the final state. The plugin registers the compliance tasks:
 `enforce:compliance`, `report:compliance`, and `withhold:compliance`.
 
 The selected standard and CVD behavior are input, not stages:
@@ -32,7 +32,7 @@ Targets:
   `nonMandatoryLevel: 'AA'` and Lc 60 at `'AAA'`. Every other pair uses Lc 60
   at AA or Lc 75 at AAA.
 
-CVD evaluates all four CVD types (`protanopia`, `deuteranopia`,
+CVD evaluates the supported CVD types (`protanopia`, `deuteranopia`,
 `tritanopia`, `achromatopsia`) with a bounded OKLCH lightness/chroma search
 for corrective modes. `warn` observes `belowFloor` and `exceedsDrop`
 evidence without changing roles or blocking admission. `nudge` corrects
@@ -58,7 +58,7 @@ A failing pair may carry an optional `proof` containing its required value, best
 Fixed relationship hues produce direct proof evidence; unanchored-hue analysis keeps sampled evidence explicitly separate.
 The advisory APIs preserve the same range, gamut, pin, selected-standard, and CVD-floor constraints as compliance.
 
-Performance: `analyzeSchema` certifies neutral, shared-root, and independent-root hue envelopes with closed-form interval witnesses and answers in tens of milliseconds for a 32-role schema. CVD correction searches a fixed budget per run and reports the constraints it could not resolve.
+Performance: `analyzeSchema` certifies neutral, shared-root, and independent-root hue envelopes with closed-form interval witnesses. CVD correction searches a fixed budget per run and reports the constraints it could not resolve.
 Safety: stated roles are never mutated, `enableStrictCompliance` withholds through `disposition` without discarding the closest palette, and sampled evidence is never reported as proof.
 
 The CVD record lands in `state.metadata['contrast:cvd']`.
