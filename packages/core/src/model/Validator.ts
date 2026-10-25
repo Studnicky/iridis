@@ -30,6 +30,7 @@ class CoreRegistry {
     // validation, not canonical-graph shape dedup.
     CoreRegistry.#state.instance ??= JsonTology.create({
       'baseIri': 'https://studnicky.dev/iridis',
+      'enableDuplicateDetection': false,
       'enableStrictGraph': false,
       'schemas': CORE_SCHEMAS
     });
