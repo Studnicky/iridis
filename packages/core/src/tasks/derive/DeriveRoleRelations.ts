@@ -164,15 +164,17 @@ class DeriveRoleRelations implements TaskInterface {
     const roles = PaletteRoleState.admit(state.roles);
     const provenance = Metadata.roleProvenance(state.metadata);
     const resolution = Metadata.relationshipResolution(state.metadata);
+    const distances = Metadata.roleDistances(state.metadata);
     const targets = new Map(state.input.roles?.roles.map((role) => {
       return [role.name, RoleDefinitionEntity.intake(role)] as const;
     }) ?? []);
     const pending = DeriveRoleRelations.workItems(graph.groups);
-    const unresolved = DeriveRoleRelations.resolvePending(roles, provenance, resolution, targets, pending);
+    const unresolved = DeriveRoleRelations.resolvePending(roles, provenance, resolution, distances, targets, pending);
     DeriveRoleRelations.recordUnresolved(roles, resolution, unresolved);
     roles.commit();
     Metadata.writeRoleProvenance(state.metadata, provenance);
     Metadata.writeRelationshipResolution(state.metadata, resolution);
+    Metadata.writeRoleDistances(state.metadata, distances);
   }
 
   private static workItems(
@@ -199,6 +201,7 @@ class DeriveRoleRelations implements TaskInterface {
     roles: PaletteRoleState,
     provenance: ReturnType<typeof Metadata.roleProvenance>,
     resolution: ReturnType<typeof Metadata.relationshipResolution>,
+    distances: ReturnType<typeof Metadata.roleDistances>,
     targets: ReadonlyMap<string, RoleDefinitionEntity.Type>,
     initialPending: readonly RelationshipWorkItem[]
   ): RelationshipWorkItem[] {
@@ -206,13 +209,14 @@ class DeriveRoleRelations implements TaskInterface {
     let progressed = true;
     while (pending.length > 0 && progressed) {
       progressed = false;
+      const pendingTargets = new Set(pending.map((item) => { return item.relationship.target; }));
       const next: RelationshipWorkItem[] = [];
       for (let index = 0; index < pending.length; index += 1) {
         const item = pending[index];
         if (item === undefined) {
           continue;
         }
-        if (DeriveRoleRelations.resolveItem(roles, provenance, resolution, targets, item)) {
+        if (DeriveRoleRelations.resolveItem(roles, provenance, resolution, distances, pendingTargets, targets, item)) {
           progressed = true;
         } else {
           next.push(item);
@@ -245,9 +249,7 @@ class DeriveRoleRelations implements TaskInterface {
     relationship: RelationshipGraphShape.GroupInterface['relationships'][number],
     existing: ColorRecordEntity.Type | undefined
   ): readonly ColorRecordEntity.Type[] | undefined {
-    const ownsTarget = relationship.operation === 'hue-target' && (
-      relationship.source === undefined || relationship.source === relationship.target
-    );
+    const ownsTarget = DeriveRoleRelations.ownsTarget(relationship);
     if (ownsTarget) {
       if (existing === undefined) {
         return undefined;
@@ -259,10 +261,35 @@ class DeriveRoleRelations implements TaskInterface {
     return result;
   }
 
+  private static ownsTarget(
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number]
+  ): boolean {
+    const result = relationship.operation === 'hue-target' && (
+      relationship.source === undefined || relationship.source === relationship.target
+    );
+    return result;
+  }
+
+  private static sourcePending(
+    relationship: RelationshipGraphShape.GroupInterface['relationships'][number],
+    pendingTargets: ReadonlySet<string>
+  ): boolean {
+    if (DeriveRoleRelations.ownsTarget(relationship)) {
+      return false;
+    }
+    const result = RelationshipSources.names(relationship).some((source) => {
+      const pending = pendingTargets.has(source);
+      return pending;
+    });
+    return result;
+  }
+
   private static resolveItem(
     roles: PaletteRoleState,
     provenance: ReturnType<typeof Metadata.roleProvenance>,
     resolution: ReturnType<typeof Metadata.relationshipResolution>,
+    distances: ReturnType<typeof Metadata.roleDistances>,
+    pendingTargets: ReadonlySet<string>,
     targets: ReadonlyMap<string, RoleDefinitionEntity.Type>,
     item: RelationshipWorkItem
   ): boolean {
@@ -287,12 +314,20 @@ class DeriveRoleRelations implements TaskInterface {
     if (target === undefined) {
       throw new TypeError(`${relationship.target} relationship target is not declared`);
     }
+    const ownsTarget = DeriveRoleRelations.ownsTarget(relationship);
+    const sourcePending = DeriveRoleRelations.sourcePending(relationship, pendingTargets);
+    if (sourcePending) {
+      return false;
+    }
     const sources = DeriveRoleRelations.sourcesFor(roles, relationship, existing);
     if (sources === undefined) {
       return false;
     }
     const derived = RelationshipOperation.apply(group, relationship, sources, target);
     roles.set(relationship.target, derived);
+    if (!ownsTarget) {
+      distances.delete(relationship.target);
+    }
     if (!provenance.has(relationship.target)) {
       provenance.set(relationship.target, RoleProvenanceEntity.create({ 'adjustments': [], 'origin': 'derived' }));
     }

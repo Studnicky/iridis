@@ -168,6 +168,7 @@ void test('derive:roleRelations resolves dependent targets after their sources b
   assert.ok(accent !== undefined);
   assert.ok(highlight !== undefined);
   assert.ok(accent.oklch.l > brand.oklch.l);
+  assert.equal(highlight.hex, accent.hex);
   assert.equal(Metadata.relationshipResolution(state.metadata).get('highlight')?.relationshipId, 'highlight-alias');
 });
 
