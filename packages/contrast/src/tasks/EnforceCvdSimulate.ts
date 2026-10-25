@@ -23,6 +23,7 @@ import type { CvdEvalEntity } from '../entities/CvdEvalEntity.ts';
 import type { CvdMatrixEntity } from '../entities/CvdMatrixEntity.ts';
 import type { CvdPairWarningEntity } from '../entities/CvdPairWarningEntity.ts';
 
+import { CvdEvaluator } from '../CvdEvaluator.ts';
 import { CvdFailurePolicy } from '../CvdFailurePolicy.ts';
 import { cvdMatrices } from '../data/cvdMatrices.ts';
 import { CVD_THRESHOLDS } from '../data/cvdThresholds.ts';
@@ -379,52 +380,6 @@ class CvdSimulation {
     return result;
   }
 
-  /** Evaluates a foreground/background rgb pair against every CVD matrix.
-   *  Pure — no metadata writes, no logging. Shared by the initial
-   *  detection pass and the post-correction final pass. */
-  static evaluate(
-    fgRgb: ColorRecordEntity.Type['rgb'],
-    bgRgb: ColorRecordEntity.Type['rgb'],
-    originalContrast: number,
-    requiredTrichromat: number,
-    failurePolicy: CvdFailurePolicy
-  ): CvdEvalEntity.Type[] {
-    const EPS = 1e-12;
-    const evals: CvdEvalEntity.Type[] = [];
-    for (let cvdIndex = 0; cvdIndex < cvdMatrices.length; cvdIndex += 1) {
-      const cvd = cvdMatrices[cvdIndex];
-      if (cvd === undefined) {
-        continue;
-      }
-      const threshold = CvdSimulation.thresholdFor(cvd);
-      const simulatedForeground = CvdSimulation.color(fgRgb, cvd);
-      const simulatedBackground = CvdSimulation.color(bgRgb, cvd);
-      const simContrast = CvdSimulation.contrast(
-        simulatedForeground,
-        simulatedBackground
-      );
-      const drop = originalContrast - simContrast;
-
-      const exceedsDrop = Math.abs(drop) > threshold.dropMagnitude + EPS;
-      const belowFloor =
-        simContrast <
-        Math.max(threshold.minimumSimulatedContrast, requiredTrichromat) - EPS;
-
-      const evaluation: CvdEvalEntity.Type = {
-        'belowFloor': belowFloor,
-        'cvdType': cvd.name,
-        'drop': drop,
-        'exceedsDrop': exceedsDrop,
-        'fail': false,
-        'originalContrast': originalContrast,
-        'simContrast': simContrast
-      };
-      evaluation.fail = failurePolicy.blocks(evaluation);
-      evals.push(evaluation);
-    }
-    return evals;
-  }
-
   static infeasibleTypes(
     constraint: CvdPairConstraint
   ): CvdEvalEntity.Type['cvdType'][] {
@@ -462,7 +417,7 @@ class CvdSimulation {
     failurePolicy: CvdFailurePolicy
   ): ReadonlySet<CvdEvalEntity.Type['cvdType']> {
     const contrast = contrastWcag21.apply(foreground, background);
-    const evaluations = CvdSimulation.evaluate(
+    const evaluations = CvdEvaluator.evaluate(
       foreground.rgb,
       background.rgb,
       contrast,
@@ -620,20 +575,17 @@ class CvdSimulation {
           'CVD simulation matrices and luminance measurements are misaligned'
         );
       }
-      const threshold = CvdSimulation.thresholdFor(cvd);
       const simulatedContrast = CvdSimulation.contrastFromLuminances(
         simulatedForegroundLuminance,
         simulatedBackgroundLuminance
       );
-      const evaluation: CvdEvalEntity.Type = {
-        'belowFloor': simulatedContrast < Math.max(threshold.minimumSimulatedContrast, constraint.requiredTrichromat) - epsilon,
-        'cvdType': cvd.name,
-        'drop': contrast - simulatedContrast,
-        'exceedsDrop': Math.abs(contrast - simulatedContrast) > threshold.dropMagnitude + epsilon,
-        'fail': false,
-        'originalContrast': contrast,
-        'simContrast': simulatedContrast
-      };
+      const evaluation = CvdEvaluator.evaluateMeasurements(
+        cvd,
+        contrast,
+        simulatedContrast,
+        constraint.requiredTrichromat,
+        constraint.failurePolicy
+      );
       const failed = constraint.failurePolicy.corrects(evaluation);
       if (failed) {
         measurements.failureCount += 1;
@@ -1185,7 +1137,7 @@ class CvdSimulation {
         continue;
       }
       const contrast = contrastWcag21.apply(foreground, constraint.background);
-      const evaluations = CvdSimulation.evaluate(
+      const evaluations = CvdEvaluator.evaluate(
         foreground.rgb,
         constraint.background.rgb,
         contrast,
@@ -2242,7 +2194,7 @@ class EnforceCvdSimulate {
     }
     const emittedForeground = colorRecordFactory.fromHex(foreground.hex);
     const emittedBackground = colorRecordFactory.fromHex(background.hex);
-    const evaluations = CvdSimulation.evaluate(
+    const evaluations = CvdEvaluator.evaluate(
       emittedForeground.rgb,
       emittedBackground.rgb,
       contrastWcag21.apply(emittedForeground, emittedBackground),
@@ -2584,7 +2536,7 @@ class EnforceCvdSimulate {
     const foreground = colorRecordFactory.fromHex(finalForeground.hex);
     const background = colorRecordFactory.fromHex(finalBackground.hex);
     const cvdMinimum = pair.cvdMinimumContrastRatio;
-    const evaluations = CvdSimulation.evaluate(
+    const evaluations = CvdEvaluator.evaluate(
       foreground.rgb,
       background.rgb,
       contrastWcag21.apply(foreground, background),
@@ -2737,7 +2689,7 @@ class EnforceCvdSimulate {
     if (adjustedRoles.length === 0) {
       return;
     }
-    const initial = CvdSimulation.evaluate(
+    const initial = CvdEvaluator.evaluate(
       originalForeground.rgb,
       originalBackground.rgb,
       contrastWcag21.apply(originalForeground, originalBackground),

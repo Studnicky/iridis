@@ -15,10 +15,10 @@ import {
 import type { CvdPairWarningEntity } from '../entities/CvdPairWarningEntity.ts';
 
 import { ContrastFeasibility } from '../ContrastFeasibility.ts';
+import { CvdEvaluator } from '../CvdEvaluator.ts';
 import { CvdFailurePolicy } from '../CvdFailurePolicy.ts';
 import { CompliancePairEntity } from '../entities/CompliancePairEntity.ts';
 import { ComplianceReportEntity } from '../entities/ComplianceReportEntity.ts';
-import { CvdEvalEntity } from '../entities/CvdEvalEntity.ts';
 import { CvdResultSetEntity } from '../entities/CvdResultSetEntity.ts';
 
 class ComplianceSnapshot {
@@ -164,21 +164,11 @@ class ComplianceSerialization {
       if (warning?.foreground !== pair.foreground || warning.background !== pair.background) {
         continue;
       }
-      const belowFloor = warning.simulatedLuminanceContrast < warning.minimumSimulatedContrast;
-      const exceedsDrop = Math.abs(warning.drop) > warning.dropThreshold;
-      const evidence = CvdEvalEntity.intake({
-        'belowFloor': belowFloor,
-        'cvdType': warning.cvdType,
-        'drop': warning.drop,
-        'exceedsDrop': exceedsDrop,
-        'fail': false,
-        'originalContrast': warning.originalLuminanceContrast,
-        'simContrast': warning.simulatedLuminanceContrast
-      });
-      if (belowFloor && failurePolicy.blocks(evidence)) {
+      const evidence = CvdEvaluator.fromWarning(warning, failurePolicy);
+      if (evidence.belowFloor && failurePolicy.blocks(evidence)) {
         result.add('cvd-floor');
       }
-      if (exceedsDrop && failurePolicy.blocks(evidence)) {
+      if (evidence.exceedsDrop && failurePolicy.blocks(evidence)) {
         result.add('cvd-drop');
       }
     }
