@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.1
+
+### Patch Changes
+
+- The release package verification expects the current 1,464 artifacts and 366 TypeScript sources, so the packed archives of all 18 packages pass the consumer smoke gate.
+
 ## 0.14.0
 
 ### Minor Changes

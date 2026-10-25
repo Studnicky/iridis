@@ -1,7 +1,7 @@
 {
   "name": "@studnicky/iridis-shadcn",
   "description": "Emits shadcn/ui CSS variables from resolved roles.",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "type": "module",
   "exports": {
     ".": {
