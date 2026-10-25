@@ -76,6 +76,20 @@ class ColorGraphLifecycleBrowser {
     throw new Error(`The wheel never raised the zoom well above ${floor}; last target ${JSON.stringify(target)}.`);
   }
 
+  // A refit while the carousel settles can reset the zoom, so the raised zoom is confirmed after the graph settles.
+  static async wheelZoomInSettled(page: Page, canvas: Locator, floor: number): Promise<void> {
+    for (let attempt = 0; attempt < ColorGraphLifecycleBrowser.wheelAttempts; attempt += 1) {
+      await ColorGraphLifecycleBrowser.wheelZoomIn(page, canvas, floor);
+      await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
+      const settledZoom = await ColorGraphLifecycleBrowser.zoomText(page);
+
+      if (settledZoom > floor * ColorGraphLifecycleBrowser.wheelZoomRatio) {
+        return;
+      }
+    }
+    throw new Error(`The settled zoom never stayed above ${floor}.`);
+  }
+
   static async zoomRaised(page: Page, floor: number): Promise<boolean> {
     try {
       await page.waitForFunction((reference) => {
@@ -201,8 +215,7 @@ await test('tearing down during a final fit cannot impose a zoom floor on a repl
   }
   const fitZoom = await ColorGraphLifecycleBrowser.zoomText(page);
 
-  await ColorGraphLifecycleBrowser.wheelZoomIn(page, canvas, fitZoom);
-  await ColorGraphLifecycleBrowser.awaitState(page, 'settled');
+  await ColorGraphLifecycleBrowser.wheelZoomInSettled(page, canvas, fitZoom);
   const beforeZoomOut = await ColorGraphLifecycleBrowser.zoomText(page);
 
   await page.locator('#explore .cyl-face.active').getByLabel('Navigation D-pad')
